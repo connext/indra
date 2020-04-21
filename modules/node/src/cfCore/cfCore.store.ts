@@ -13,6 +13,7 @@ import {
   StateProgressedContractEvent,
   ChallengeUpdatedContractEvent,
 } from "@connext/types";
+import { toBN } from "@connext/utils";
 import { Zero, AddressZero } from "ethers/constants";
 import { getManager } from "typeorm";
 import { bigNumberify } from "ethers/utils";
@@ -33,6 +34,7 @@ import { SetStateCommitment } from "../setStateCommitment/setStateCommitment.ent
 import { Channel } from "../channel/channel.entity";
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
+import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
@@ -78,7 +80,11 @@ export class CFCoreStore implements IStoreService {
     return this.channelRepository.getStateChannelByAppIdentityHash(appIdentityHash);
   }
 
-  async createStateChannel(stateChannel: StateChannelJSON): Promise<void> {
+  async createStateChannel(
+    stateChannel: StateChannelJSON,
+    signedSetupCommitment: MinimalTransaction,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+  ): Promise<void> {
     const setup = await this.setupCommitmentRepository.findByMultisigAddressOrThrow(
       stateChannel.multisigAddress,
     );
@@ -149,7 +155,29 @@ export class CFCoreStore implements IStoreService {
     freeBalanceApp.type = AppType.FREE_BALANCE;
 
     channel.appInstances = [freeBalanceApp];
-    await this.channelRepository.save(channel);
+
+    const setupCommitment = new SetupCommitment();
+    setupCommitment.data = signedSetupCommitment.data;
+    setupCommitment.to = signedSetupCommitment.to;
+    setupCommitment.value = toBN(signedSetupCommitment.value);
+    setupCommitment.multisigAddress = stateChannel.multisigAddress;
+
+    channel.setupCommitment = setupCommitment;
+
+    const freeBalanceUpdateCommitment = new SetStateCommitment();
+    freeBalanceUpdateCommitment.app = freeBalanceApp;
+    freeBalanceUpdateCommitment.appIdentity = signedFreeBalanceUpdate.appIdentity;
+    freeBalanceUpdateCommitment.appStateHash = signedFreeBalanceUpdate.appStateHash;
+    freeBalanceUpdateCommitment.challengeRegistryAddress =
+      signedFreeBalanceUpdate.challengeRegistryAddress;
+    freeBalanceUpdateCommitment.signatures = signedFreeBalanceUpdate.signatures;
+    freeBalanceUpdateCommitment.stateTimeout = signedFreeBalanceUpdate.stateTimeout;
+    freeBalanceUpdateCommitment.versionNumber = signedFreeBalanceUpdate.versionNumber;
+
+    await getManager().transaction(async transactionalEntityManager => {
+      await transactionalEntityManager.save(channel);
+      await transactionalEntityManager.save(freeBalanceUpdateCommitment);
+    });
   }
 
   getAppInstance(appIdentityHash: string): Promise<AppInstanceJson> {
@@ -569,17 +597,11 @@ export class CFCoreStore implements IStoreService {
     throw new Error("Disputes not implememented");
   }
 
-  async createAppChallenge(
-    multisigAddress: string,
-    appChallenge: AppChallenge,
-  ): Promise<void> {
+  async createAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
-  async updateAppChallenge(
-    multisigAddress: string,
-    appChallenge: AppChallenge,
-  ): Promise<void> {
+  async updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 

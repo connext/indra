@@ -124,8 +124,26 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     });
   }
 
-  async createStateChannel(stateChannel: StateChannelJSON): Promise<void> {
-    return this.saveStateChannel(stateChannel);
+  async createStateChannel(
+    stateChannel: StateChannelJSON,
+    signedSetupCommitment: MinimalTransaction,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+  ): Promise<void> {
+    try {
+      await Promise.all([
+        this.saveStateChannel(stateChannel),
+        this.createSetupCommitment(stateChannel.multisigAddress, signedSetupCommitment),
+        this.createSetStateCommitment(
+          stateChannel.freeBalanceAppInstance.identityHash,
+          signedFreeBalanceUpdate,
+        ),
+      ]);
+    } catch (e) {
+      await this.removeStateChannel(stateChannel.multisigAddress);
+      await this.removeSetupCommitment(stateChannel.multisigAddress);
+      await this.removeSetStateCommitment(stateChannel.freeBalanceAppInstance.identityHash);
+      throw e;
+    }
   }
 
   async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
@@ -291,6 +309,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.setItem(setupCommitmentKey, commitment);
   }
 
+  private async removeSetupCommitment(multisigAddress: string): Promise<void> {
+    const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
+    return this.removeItem(setupCommitmentKey);
+  }
+
   async getSetStateCommitment(
     appIdentityHash: string,
   ): Promise<SetStateCommitmentJSON | undefined> {
@@ -322,6 +345,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       throw new Error(`Cannot find set state commitment to update for ${appIdentityHash}`);
     }
     return this.setItem(setStateKey, commitment);
+  }
+
+  private async removeSetStateCommitment(appIdentityHash: string): Promise<void> {
+    const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
+    return this.removeItem(setStateKey);
   }
 
   async getConditionalTransactionCommitment(
@@ -432,17 +460,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     throw new Error("Disputes not implememented");
   }
 
-  async createAppChallenge(
-    multisigAddress: string,
-    appChallenge: AppChallenge,
-  ): Promise<void> {
+  async createAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
-  async updateAppChallenge(
-    multisigAddress: string,
-    appChallenge: AppChallenge,
-  ): Promise<void> {
+  async updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
@@ -510,6 +532,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       ]),
       appInstances: stateChannel.appInstances.map(([id, app]) => [id, app]),
     });
+  }
+
+  private async removeStateChannel(multisigAddress: string): Promise<void> {
+    const channelKey = this.getKey(CHANNEL_KEY, multisigAddress);
+    await this.removeItem(channelKey);
   }
 
   private hasAppIdentityHash(
