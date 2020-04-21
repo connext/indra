@@ -97,7 +97,9 @@ export class ConnextStore implements IClientStore {
       }
 
       case StoreTypes.Memory: {
-        this.internalStore = new MemoryStorage();
+        this.internalStore = new KeyValueStorage(
+          new MemoryStorage(this.prefix, this.separator, this.backupService),
+        );
         break;
       }
 
@@ -316,9 +318,7 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.updateLatestProcessedBlock(blockNumber);
   }
 
-  getStateProgressedEvents(
-    appIdentityHash: string,
-  ): Promise<StateProgressedEventPayload[]> {
+  getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
     return this.internalStore.getStateProgressedEvents(appIdentityHash);
   }
 
@@ -336,9 +336,7 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.updateStateProgressedEvent(appIdentityHash, event);
   }
 
-  getChallengeUpdatedEvents(
-    appIdentityHash: string,
-  ): Promise<ChallengeUpdatedEventPayload[]> {
+  getChallengeUpdatedEvents(appIdentityHash: string): Promise<ChallengeUpdatedEventPayload[]> {
     return this.internalStore.getChallengeUpdatedEvents(appIdentityHash);
   }
 
