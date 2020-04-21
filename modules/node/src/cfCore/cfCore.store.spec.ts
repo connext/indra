@@ -122,7 +122,7 @@ describe("CFCoreStore", () => {
   });
 
   describe("Channel", () => {
-    it.only("should create a state channel", async () => {
+    it("should create a state channel", async () => {
       const nodeIdentifier = configService.getPublicIdentifier();
       const {
         multisigAddress,
@@ -149,7 +149,10 @@ describe("CFCoreStore", () => {
       const freeBalanceUpdateFromStore = await cfCoreStore.getSetStateCommitment(
         channelJson.freeBalanceAppInstance.identityHash,
       );
-      expect(freeBalanceUpdateFromStore).toMatchObject(freeBalanceUpdate);
+      expect(freeBalanceUpdateFromStore).toMatchObject({
+        ...freeBalanceUpdate,
+        appIdentityHash: channelJson.freeBalanceAppInstance.identityHash,
+      });
     });
   });
 
