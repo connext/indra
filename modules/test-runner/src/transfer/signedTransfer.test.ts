@@ -74,7 +74,7 @@ describe("Signed Transfers", () => {
       } as PublicParams.SignedTransfer),
       new Promise(async res => {
         clientB.once(
-          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
           (data: EventPayloads.SignedTransferReceived) => {
             res(data);
           },
@@ -146,7 +146,7 @@ describe("Signed Transfers", () => {
       } as PublicParams.SignedTransfer),
       new Promise(async res => {
         clientB.once(
-          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
           (data: EventPayloads.SignedTransferReceived) => {
             res(data);
           },
@@ -325,7 +325,7 @@ describe("Signed Transfers", () => {
 
       // TODO: what are these errors
       await new Promise(async res => {
-        clientB.once(EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT, async data => {
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async data => {
           res();
         });
         await clientA.conditionalTransfer({

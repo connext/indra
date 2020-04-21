@@ -44,6 +44,9 @@ import {
   SimpleSignedTransferAppAction,
   SimpleLinkedTransferAppAction,
   HashLockTransferAppAction,
+  UnlockedLinkedTransferMeta,
+  UnlockedHashLockTransferMeta,
+  UnlockedSignedTransferMeta,
 } from "@connext/types";
 import { bigNumberifyJson, stringify } from "@connext/utils";
 
@@ -137,7 +140,7 @@ export class ConnextListener extends ConnextEventEmitter {
     },
     UPDATE_STATE_EVENT: async (msg: UpdateStateMessage): Promise<void> => {
       this.emitAndLog(UPDATE_STATE_EVENT, msg.data);
-      await this.handleAppUpdate(msg.data.appIdentityHash, msg.data.newState, msg.data.action);
+      await this.handleAppUpdate(msg.data.appIdentityHash, msg.data.newState as AppState, msg.data.action as AppAction);
     },
     WITHDRAWAL_CONFIRMED_EVENT: (msg: UninstallMessage): void => {
       this.emitAndLog(WITHDRAWAL_CONFIRMED_EVENT, msg.data);
@@ -456,59 +459,76 @@ export class ConnextListener extends ConnextEventEmitter {
       case SimpleLinkedTransferAppName: {
         const transferState = state as SimpleLinkedTransferAppState
         const transferAction = action as SimpleLinkedTransferAppAction
-        const recipient = appInstance.meta["recipient"];
-        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
-            type: ConditionalTransferTypes.LinkedTransfer,
-            amount: transferState.coinTransfers[0].amount,
-            assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
-            paymentId: transferState.paymentId,
-            sender: this.connext.publicIdentifier,
-            recipient,
-            meta: appInstance.meta,
-            transferMeta: {
-              preImage: transferAction.preImage,
-            },
-          } as EventPayloads.LinkedTransferUnlocked,
-        );
+        // Only emit on sender side. Receiver side needs to be emitted after uninstall
+        // in resolve controller.
+        if(
+          appInstance.meta["sender"] == this.connext.publicIdentifier ||
+          !appInstance.meta // See: https://github.com/ConnextProject/indra/issues/1054
+        ) {
+          const recipient = appInstance.meta["recipient"] || undefined;
+          this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
+              type: ConditionalTransferTypes.LinkedTransfer,
+              amount: transferState.coinTransfers[0].amount,
+              assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+              paymentId: transferState.paymentId,
+              sender: this.connext.publicIdentifier,
+              recipient,
+              meta: appInstance.meta,
+              transferMeta: {
+                preImage: transferAction.preImage,
+              } as UnlockedLinkedTransferMeta,
+            } as EventPayloads.LinkedTransferUnlocked,
+          );
+        }
         break;
       }
       case HashLockTransferAppName: {
         const transferState = state as HashLockTransferAppState
         const transferAction = action as HashLockTransferAppAction
-        const recipient = appInstance.meta["recipient"];
-        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
-            type: ConditionalTransferTypes.HashLockTransfer,
-            amount: transferState.coinTransfers[0].amount,
-            assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
-            paymentId: HashZero,
-            sender: this.connext.publicIdentifier,
-            recipient,
-            meta: appInstance.meta,
-            transferMeta: {
-              preImage: transferAction.preImage
-            }
-          } as EventPayloads.HashLockTransferUnlocked
-        );
+        if(
+          appInstance.meta["sender"] == this.connext.publicIdentifier ||
+          !appInstance.meta // See: https://github.com/ConnextProject/indra/issues/1054
+        ) {
+          const recipient = appInstance.meta["recipient"] || undefined;
+          this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
+              type: ConditionalTransferTypes.HashLockTransfer,
+              amount: transferState.coinTransfers[0].amount,
+              assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+              paymentId: HashZero,
+              sender: this.connext.publicIdentifier,
+              recipient,
+              meta: appInstance.meta,
+              transferMeta: {
+                preImage: transferAction.preImage
+              } as UnlockedHashLockTransferMeta,
+            } as EventPayloads.HashLockTransferUnlocked
+          );
+        }
         break;
       }
       case SimpleSignedTransferAppName: {
         const transferState = state as SimpleSignedTransferAppState
         const transferAction = action as SimpleSignedTransferAppAction
-        const recipient = appInstance.meta["recipient"];
-        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
-            type: ConditionalTransferTypes.SignedTransfer,
-            amount: transferState.coinTransfers[0].amount,
-            assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
-            paymentId: transferState.paymentId,
-            sender: this.connext.publicIdentifier,
-            recipient,
-            meta: appInstance.meta,
-            transferMeta: {
-              signature: transferAction.signature,
-              data: transferAction.data,
-            },
-          } as EventPayloads.SignedTransferUnlocked,
-        );
+        if(
+          appInstance.meta["sender"] == this.connext.publicIdentifier ||
+          !appInstance.meta // See: https://github.com/ConnextProject/indra/issues/1054
+        ) {
+          const recipient = appInstance.meta["recipient"] || undefined;
+          this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
+              type: ConditionalTransferTypes.SignedTransfer,
+              amount: transferState.coinTransfers[0].amount,
+              assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+              paymentId: transferState.paymentId,
+              sender: this.connext.publicIdentifier,
+              recipient,
+              meta: appInstance.meta,
+              transferMeta: {
+                signature: transferAction.signature,
+                data: transferAction.data,
+              } as UnlockedSignedTransferMeta,
+            } as EventPayloads.SignedTransferUnlocked,
+          );
+        }
         break;
       }
       default: {

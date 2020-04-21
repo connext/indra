@@ -75,7 +75,7 @@ describe("HashLock Transfers", () => {
       } as PublicParams.HashLockTransfer),
       new Promise(res => {
         clientB.on(
-          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
           (eventPayload: EventPayloads.HashLockTransferReceived) => {
             expect(eventPayload).to.deep.contain({
               amount: transfer.amount,
@@ -142,7 +142,7 @@ describe("HashLock Transfers", () => {
       } as PublicParams.HashLockTransfer),
       new Promise(res => {
         clientB.on(
-          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
           (eventPayload: EventPayloads.HashLockTransferReceived) => {
             expect(eventPayload).to.deep.contain({
               amount: transfer.amount,

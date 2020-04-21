@@ -30,7 +30,6 @@ import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
-  CONDITIONAL_TRANSFER_RECEIVED_EVENT,
   CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
   CONDITIONAL_TRANSFER_FAILED_EVENT,
   CREATE_CHANNEL_EVENT,
@@ -79,9 +78,6 @@ export default class ListenerService implements OnModuleInit {
     return {
       CONDITIONAL_TRANSFER_CREATED_EVENT: (data: DepositConfirmationMessage): void => {
         this.logEvent(CONDITIONAL_TRANSFER_CREATED_EVENT, data);
-      },
-      CONDITIONAL_TRANSFER_RECEIVED_EVENT: (data: DepositConfirmationMessage): void => {
-        this.logEvent(CONDITIONAL_TRANSFER_RECEIVED_EVENT, data);
       },
       CONDITIONAL_TRANSFER_UNLOCKED_EVENT: (data: DepositConfirmationMessage): void => {
         this.logEvent(CONDITIONAL_TRANSFER_UNLOCKED_EVENT, data);
