@@ -27,7 +27,7 @@ export type AppChallenge = {
 // keep synced w contracts/adjudicator/libs/LibDispute.sol
 
 // The status of a challenge in the ChallengeRegistry
-export const enum ChallengeStatus {
+export enum ChallengeStatus {
   NO_CHALLENGE = 0,
   IN_DISPUTE = 1,
   IN_ONCHAIN_PROGRESSION = 2,
