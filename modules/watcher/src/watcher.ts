@@ -4,20 +4,23 @@ import {
   SetStateCommitment,
 } from "@connext/contracts";
 import {
-  NetworkContext,
+  AppChallenge,
+  AppIdentity,
+  AppInstanceJson,
+  ChallengeEvents,
+  ChallengeUpdated,
+  IChannelSigner,
   ILoggerService,
-  IWatcherStoreService,
-  WatcherInitOptions,
   IWatcher,
+  IWatcherStoreService,
+  MinimalTransaction,
+  NetworkContext,
+  SignedCancelChallengeRequest,
+  StateChannelJSON,
+  StateProgressed,
   WatcherEvent,
   WatcherEventData,
-  IChannelSigner,
-  SignedCancelChallengeRequest,
-  AppInstanceJson,
-  AppIdentity,
-  MinimalTransaction,
-  StateChannelJSON,
-  AppChallenge,
+  WatcherInitOptions,
 } from "@connext/types";
 import {
   ConsoleLogger,
@@ -31,7 +34,6 @@ import { Contract } from "ethers";
 import { Interface, BigNumber, defaultAbiCoder } from "ethers/utils";
 
 import { ChainListener } from "./chainListener";
-import { ChallengeEvents, StateProgressed, ChallengeUpdated } from "../../types/dist/src";
 
 /**
  * Watchers will watch for contract events and respond to disputes on behalf

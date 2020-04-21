@@ -1,3 +1,4 @@
+import { ChallengeRegistry } from "@connext/contracts";
 import {
   ILoggerService,
   NetworkContext,
@@ -9,7 +10,6 @@ import {
   Address,
   ChallengeUpdated,
 } from "@connext/types";
-import { ChallengeRegistry } from "@connext/contracts";
 import { toBN } from "@connext/utils";
 import { Contract, Event } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";

@@ -21,6 +21,7 @@ import { ILoggerService, ILogger } from "./logger";
 
 ////////////////////////////////////////
 // Watcher external parameters
+
 export type WatcherInitOptions = {
   signer: IChannelSigner | string; // wallet or pk
   provider: JsonRpcProvider | string;
@@ -33,6 +34,7 @@ export type WatcherInitOptions = {
 
 ////////////////////////////////////////
 // Events
+
 export const ChallengeInitiatedEvent = "ChallengeInitiatedEvent";
 export type ChallengeInitiatedEventData = {
   transaction: TransactionReceipt;
@@ -93,6 +95,7 @@ export type WatcherEventData = {
 
 ////////////////////////////////////////
 // Watcher interface
+
 export interface IWatcher {
   //////// Listener methods
   emit<T extends WatcherEvent>(event: T, data: WatcherEventData[T]): void;
@@ -116,6 +119,7 @@ export interface IWatcher {
 
 ////////////////////////////////////////
 // Listener interface
+
 export interface IChainListener {
   //////// Listener methods
   emit<T extends ChallengeEvent>(event: T, data: ChallengeEventData[T]): void;
@@ -137,25 +141,28 @@ export interface IChainListener {
 }
 
 ////////////////////////////////////////
-///// Storage
+// Storage
+
 export interface IWatcherStoreService {
-  ///// Disputes
+  // Disputes
   getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined>;
   createAppChallenge(appIdentityHash: string, appChallenge: AppChallenge): Promise<void>;
   updateAppChallenge(appIdentityHash: string, appChallenge: AppChallenge): Promise<void>;
   getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]>;
 
-  ///// Events
+  // Events
   getLatestProcessedBlock(): Promise<number>;
   updateLatestProcessedBlock(blockNumber: number): Promise<void>;
 
   getStateProgressedEvents(
     appIdentityHash: string,
   ): Promise<StateProgressedContractEvent[]>;
+
   createStateProgressedEvent(
     appIdentityHash: string,
     event: StateProgressedContractEvent,
   ): Promise<void>;
+
   updateStateProgressedEvent(
     appIdentityHash: string,
     event: StateProgressedContractEvent,
@@ -164,45 +171,49 @@ export interface IWatcherStoreService {
   getChallengeUpdatedEvents(
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedContractEvent[]>;
+
   createChallengeUpdatedEvent(
     appIdentityHash: string,
     event: ChallengeUpdatedContractEvent,
   ): Promise<void>;
+
   updateChallengeUpdatedEvent(
     appIdentityHash: string,
     event: ChallengeUpdatedContractEvent,
   ): Promise<void>;
 
-  ///// Channel data /////
-  ///// Schema version
+  ////////////////////////////////////////
+  //// Channel data
+
+  // Schema version
   getSchemaVersion(): Promise<number>;
 
-  ///// State channels
+  // State channels
   getAllChannels(): Promise<StateChannelJSON[]>;
   getStateChannel(multisigAddress: Address): Promise<StateChannelJSON | undefined>;
   getStateChannelByOwners(owners: Address[]): Promise<StateChannelJSON | undefined>;
   getStateChannelByAppIdentityHash(appIdentityHash: Bytes32): Promise<StateChannelJSON | undefined>;
 
-  ///// App instances
+  // App instances
   getAppInstance(appIdentityHash: Bytes32): Promise<AppInstanceJson | undefined>;
 
-  ///// App proposals
+  // App proposals
   getAppProposal(appIdentityHash: Bytes32): Promise<AppInstanceProposal | undefined>;
 
-  ///// Free balance
+  // Free balance
   getFreeBalance(multisigAddress: Address): Promise<AppInstanceJson | undefined>;
 
-  ///// Setup commitment
+  // Setup commitment
   getSetupCommitment(multisigAddress: Address): Promise<MinimalTransaction | undefined>;
 
-  ///// SetState commitment
+  // SetState commitment
   getSetStateCommitments(appIdentityHash: Bytes32): Promise<SetStateCommitmentJSON[]>;
 
-  ///// Conditional tx commitment
+  // Conditional tx commitment
   getConditionalTransactionCommitment(
     appIdentityHash: Bytes32,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined>;
 
-  ///// Withdrawal commitment
+  // Withdrawal commitment
   getWithdrawalCommitment(multisigAddress: Address): Promise<MinimalTransaction | undefined>;
 }
