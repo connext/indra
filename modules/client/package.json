@@ -30,7 +30,7 @@
     "ethers": "4.0.46",
     "human-standard-token-abi": "2.0.0",
     "regenerator-runtime": "0.13.3",
-    "ts-natsutil": "1.0.4",
+    "ts-natsutil": "1.0.6",
     "uuid": "3.4.0"
   },
   "devDependencies": {
