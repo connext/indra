@@ -4,7 +4,7 @@ import {
   MinimalTransaction,
   MultisigTransaction,
 } from "@connext/types";
-import { verifyChannelMessage } from "@connext/utils";
+import { recoverAddressFromChannelMessage } from "@connext/utils";
 import { Interface, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
 
 import * as MinimumViableMultisig from "../build/MinimumViableMultisig.json";
@@ -29,7 +29,7 @@ export abstract class MultisigCommitment implements EthereumCommitment {
 
   public async addSignatures(signature1: string, signature2: string): Promise<void> {
     for (const sig of [signature1, signature2]) {
-      const recovered = await verifyChannelMessage(this.hashToSign(), sig);
+      const recovered = await recoverAddressFromChannelMessage(this.hashToSign(), sig);
       if (recovered === this.multisigOwners[0]) {
         this.initiatorSignature = sig;
       } else if (recovered === this.multisigOwners[1]) {

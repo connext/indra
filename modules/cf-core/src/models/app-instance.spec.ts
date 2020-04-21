@@ -1,5 +1,5 @@
 import { OutcomeType } from "@connext/types";
-import { createRandomAddress, toBN } from "@connext/utils";
+import { getRandomAddress, toBN } from "@connext/utils";
 import { AddressZero, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 
@@ -18,16 +18,16 @@ describe("AppInstance", () => {
       /* responder*/ participants[1],
       /* default timeout */ toBN(Math.ceil(Math.random() * 2e10)).toHexString(),
       /* appInterface */ {
-        addr: getAddress(createRandomAddress()),
+        addr: getAddress(getRandomAddress()),
         stateEncoding: "tuple(address foo, uint256 bar)",
         actionEncoding: undefined,
       },
       /* appSeqNo */ Math.ceil(Math.random() * 2e10),
-      /* latestState */ { foo: getAddress(createRandomAddress()), bar: 0 },
+      /* latestState */ { foo: getAddress(getRandomAddress()), bar: 0 },
       /* latestVersionNumber */ 999,
       /* stateTimeout */ toBN(Math.ceil(1000 * Math.random())).toHexString(),
       /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-      /* multisigAddress */ getAddress(createRandomAddress()),
+      /* multisigAddress */ getRandomAddress(),
       /* meta */ undefined,
       /* latestAction */ undefined,
       /* twoPartyOutcomeInterpreterParamsInternal */ {

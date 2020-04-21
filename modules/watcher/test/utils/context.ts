@@ -1,19 +1,20 @@
-/////////////////////////////
-
-import { JsonRpcProvider, BigNumber } from "@connext/types";
-import { Wallet, ContractFactory } from "ethers";
 import { ChallengeRegistry, AppWithAction } from "@connext/contracts";
-import { createRandomAddress, computeAppChallengeHash, ChannelSigner } from "@connext/utils";
+import { JsonRpcProvider, BigNumber } from "@connext/types";
+import { getRandomAddress, computeAppChallengeHash, ChannelSigner } from "@connext/utils";
+import { Wallet, ContractFactory } from "ethers";
+import { One, Zero } from "ethers/constants";
+import { keccak256 } from "ethers/utils";
+
 import {
   AppWithCounterClass,
   AppWithCounterState,
   AppWithCounterAction,
   ActionType,
 } from "./appWithCounter";
-import { One, Zero } from "ethers/constants";
-import { keccak256 } from "ethers/utils";
 
-//// Context
+/////////////////////////////
+// Context
+
 export const setupContext = async () => {
   const ethProvider = process.env.ETHPROVIDER_URL;
 
@@ -32,7 +33,7 @@ export const setupContext = async () => {
   // setup constants
   const channelInitiator = Wallet.createRandom().connect(provider);
   const channelResponder = Wallet.createRandom().connect(provider);
-  const multisigAddress = createRandomAddress();
+  const multisigAddress = getRandomAddress();
 
   const appInstance = new AppWithCounterClass(
     [channelInitiator.address, channelResponder.address],

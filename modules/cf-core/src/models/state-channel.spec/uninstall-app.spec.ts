@@ -1,4 +1,4 @@
-import { createRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Zero, AddressZero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 
@@ -18,7 +18,7 @@ describe("StateChannel::uninstallApp", () => {
   let testApp: AppInstance;
 
   beforeAll(() => {
-    const multisigAddress = getAddress(createRandomAddress());
+    const multisigAddress = getAddress(getRandomAddress());
     const ids = getRandomPublicIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(

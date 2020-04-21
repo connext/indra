@@ -15,7 +15,7 @@ import { AddressZero } from "ethers/constants";
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { IsEthAddress, IsAddress } from "../validate";
+import { IsEthAddress, IsValidPublicIdentifier } from "../validate";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 
@@ -31,12 +31,12 @@ export class Channel {
   addresses!: CriticalStateChannelAddresses;
 
   @Column("text")
-  @IsAddress()
+  @IsValidPublicIdentifier()
   userIdentifier!: string;
 
   // might not need this
   @Column("text")
-  @IsAddress()
+  @IsValidPublicIdentifier()
   nodeIdentifier!: string;
 
   @Column("text", { unique: true })

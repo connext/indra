@@ -1,219 +1,135 @@
-import { IChannelSigner } from "@connext/types";
-import bs58check from "bs58check";
+import { Address, Bytes32, HexString, PublicKey, PrivateKey, SignatureString } from "@connext/types";
+import { arrayify, getAddress, hexlify, randomBytes, toUtf8String } from "ethers/utils";
 import {
-  sign,
-  encrypt,
-  decrypt,
-  keccak256,
-  serialize,
-  deserialize,
-  hexToBuffer,
-  bufferToHex,
-  utf8ToBuffer,
-  bufferToUtf8,
-  concatBuffers,
-  addHexPrefix,
-  recover,
-  isHexString,
   arrayToBuffer,
-  removeHexPrefix,
-  compress,
+  concatBuffers,
   decompress,
-  isCompressed,
-  isDecompressed,
+  decrypt as libDecrypt,
+  deserialize,
+  encrypt as libEncrypt,
   getPublic,
-  randomBytes,
+  hexToBuffer,
+  isDecompressed,
+  keccak256,
+  recover,
+  serialize,
+  sign,
+  utf8ToBuffer,
 } from "eccrypto-js";
-import { TransactionResponse, TransactionRequest, JsonRpcProvider } from "ethers/providers";
-import { Wallet } from "ethers";
 
-// signing constants
-export const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
+import { getAddressError, getHexStringError, isValidHexString } from "./hexStrings";
+
 export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
 
-// publicIdentifier constants
-export const INDRA_PUB_ID_PREFIX = "indra";
-
-function toChecksumAddress(address: string): string {
-  address = removeHexPrefix(address);
-  const hash = bufferToHex(keccak256(utf8ToBuffer(address)));
-  let checksum = "";
-  for (let i = 0; i < address.length; i++) {
-    if (parseInt(hash[i], 16) > 7) {
-      checksum += address[i].toUpperCase();
-    } else {
-      checksum += address[i];
-    }
-  }
-  return addHexPrefix(checksum);
-}
-
-function getPublicKeyFromPrivate(privateKey: string): string {
-  const publicKey = getPublic(bufferify(privateKey));
-  return bufferToHex(publicKey, true);
-}
-
-function hashMessage(message: Buffer | string, prefix: string): string {
-  const data = bufferify(message);
-  const length = bufferify(`${data.length}`);
-  const hash = keccak256(concatBuffers(bufferify(prefix), length, data));
-  return bufferToHex(hash, true);
-}
-
-async function signMessage(
-  privateKey: Buffer | string,
-  message: Buffer | string,
-  prefix: string,
-): Promise<string> {
-  const hash = hashMessage(message, prefix);
-  return signDigest(privateKey, bufferify(hash));
-}
-
-async function recoverPublicKey(digest: Buffer | string, sig: Buffer | string): Promise<string> {
-  const publicKey = await recover(bufferify(digest), bufferify(sig));
-  return bufferToHex(publicKey, true);
-}
-
-async function verifyMessage(
-  message: Buffer | string,
-  sig: Buffer | string,
-  prefix: string,
-): Promise<string> {
-  return recoverAddress(hashMessage(message, prefix), sig);
-}
-
 ////////////////////////////////////////
-// exports
+// Misc
 
-export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
-  return typeof input === "string"
-    ? isHexString(input)
+export const bufferify = (input: Uint8Array | Buffer | string): Buffer =>
+  typeof input === "string"
+    ? isValidHexString(input)
       ? hexToBuffer(input)
       : utf8ToBuffer(input)
     : !Buffer.isBuffer(input)
-    ? arrayToBuffer(new Uint8Array(input))
+    ? arrayToBuffer(arrayify(input))
     : input;
-}
 
-export function getPublicIdentifierFromPublicKey(publicKey: string): string {
-  const buf = hexToBuffer(publicKey);
-  const compressedPubKey = isCompressed(buf) ? buf : compress(buf);
-  const base58id = bs58check.encode(compressedPubKey);
-  return INDRA_PUB_ID_PREFIX + base58id;
-}
+export const getRandomPrivateKey = (): PrivateKey => hexlify(randomBytes(32));
 
-export function getPublicKeyFromPublicIdentifier(publicIdentifier: string): string {
-  publicIdentifier = publicIdentifier.replace(INDRA_PUB_ID_PREFIX, "");
-  publicIdentifier = publicIdentifier.replace(/^1+/, "");
-  const buf: Buffer = bs58check.decode(publicIdentifier);
-  const publicKey = decompress(buf);
-  return bufferToHex(publicKey);
-}
+////////////////////////////////////////
+// Validators
 
-export function getSignerAddressFromPublicIdentifier(publicIdentifier: string): string {
-  const publicKey = getPublicKeyFromPublicIdentifier(publicIdentifier);
-  return getChecksumAddress(publicKey);
-}
-
-export function getLowerCaseAddress(publicKey: Buffer | string): string {
-  const buf = typeof publicKey === "string" ? hexToBuffer(publicKey) : publicKey;
-  const pubKey = isDecompressed(buf) ? buf : decompress(buf);
-  const hash = keccak256(pubKey.slice(1));
-  return addHexPrefix(bufferToHex(hash.slice(12)));
-}
-
-export async function signDigest(
-  privateKey: Buffer | string,
-  digest: Buffer | string,
-): Promise<string> {
-  const signature = await sign(bufferify(privateKey), bufferify(digest), true);
-  return bufferToHex(signature, true);
-}
-
-export async function recoverAddress(
-  digest: Buffer | string,
-  sig: Buffer | string,
-): Promise<string> {
-  const publicKey = await recoverPublicKey(digest, sig);
-  return getChecksumAddress(publicKey);
-}
-
-export function getChecksumAddress(publicKey: Buffer | string): string {
-  const address = getLowerCaseAddress(publicKey);
-  return toChecksumAddress(address);
-}
-
-export async function signChannelMessage(
-  privateKey: Buffer | string,
-  message: Buffer | string,
-): Promise<string> {
-  return signMessage(privateKey, message, INDRA_SIGN_PREFIX);
-}
-
-export async function verifyChannelMessage(
-  message: Buffer | string,
-  sig: Buffer | string,
-): Promise<string> {
-  return verifyMessage(message, sig, INDRA_SIGN_PREFIX);
-}
-
-export const getRandomPrivateKey = () => bufferToHex(randomBytes(32), true);
-
-export const getRandomChannelSigner = (ethProviderUrl?: string) =>
-  new ChannelSigner(getRandomPrivateKey(), ethProviderUrl);
-
-export class ChannelSigner implements IChannelSigner {
-  public address: string;
-  public publicKey: string;
-  public readonly provider?: JsonRpcProvider;
-
-  // NOTE: without this property, the Signer.isSigner
-  // function will not return true, even though this class
-  // extends / implements the signer interface. See:
-  // https://github.com/ethers-io/ethers.js/issues/779
-  private readonly _ethersType = "Signer";
-
-  constructor(private readonly privateKey: string, ethProvider?: string | JsonRpcProvider) {
-    this.provider = ethProvider
-      ? typeof ethProvider === "string"
-        ? new JsonRpcProvider(ethProvider)
-        : ethProvider
+export const getPublicKeyError = (value: any): string | undefined => {
+  try {
+    const hexStringError = getHexStringError(value, 65);
+    if (hexStringError) return hexStringError;
+    const addressError = getAddressError(getAddressFromPublicKey(value));
+    return addressError
+      ? `Got invalid address from public key ${value}: ${addressError}`
       : undefined;
-    this.privateKey = privateKey;
-    this.publicKey = getPublicKeyFromPrivate(this.privateKey);
-    this.address = getChecksumAddress(this.publicKey);
+  } catch (e) {
+    return e.message;
   }
+};
+export const isValidPublicKey = (value: any): boolean =>
+  !getPublicKeyError(value);
 
-  get publicIdentifier(): string {
-    return getPublicIdentifierFromPublicKey(this.publicKey);
+export const getPrivateKeyError = (value: any): string | undefined => {
+  try {
+    const hexStringError = getHexStringError(value, 32);
+    if (hexStringError) return hexStringError;
+    const addressError = getAddressError(getAddressFromPrivateKey(value));
+    return addressError
+      ? `Got invalid address from private key: ${addressError}`
+      : undefined;
+  } catch (e) {
+    return e.message;
   }
+};
+export const isValidPrivateKey = (value: any): boolean =>
+  !getPrivateKeyError(value);
 
-  public async encrypt(message: string, publicKey: string): Promise<string> {
-    const encrypted = await encrypt(hexToBuffer(publicKey), utf8ToBuffer(message));
-    return bufferToHex(serialize(encrypted));
-  }
+export const getEthSignatureError = (value: any): string | undefined => {
+  const hexStringError = getHexStringError(value, 65);
+  if (hexStringError) return hexStringError;
+  return undefined;
+};
+export const isValidEthSignature = (value: any): boolean => !getEthSignatureError(value);
 
-  public async decrypt(message: string): Promise<string> {
-    const encrypted = deserialize(hexToBuffer(message));
-    const decrypted = await decrypt(hexToBuffer(this.privateKey), encrypted);
-    return bufferToUtf8(decrypted);
-  }
+////////////////////////////////////////
+// Conversions
 
-  public async signMessage(message: string): Promise<string> {
-    return signChannelMessage(this.privateKey, message);
-  }
+export const getPublicKeyFromPrivateKey = (privateKey: PrivateKey): PublicKey =>
+  hexlify(getPublic(bufferify(privateKey)));
 
-  public async getAddress(): Promise<string> {
-    return this.address;
-  }
+export const getAddressFromPublicKey = (publicKey: PublicKey): Address => {
+  const buf = bufferify(publicKey);
+  return getAddress(hexlify(
+    keccak256(
+      (isDecompressed(buf) ? buf : decompress(buf)).slice(1),
+    ).slice(12),
+  ));
+};
 
-  public async sendTransaction(transaction: TransactionRequest): Promise<TransactionResponse> {
-    if (!this.provider) {
-      throw new Error(
-        `ChannelSigner can't send transactions without being connected to a provider`,
-      );
-    }
-    const wallet = new Wallet(this.privateKey, this.provider);
-    return wallet.sendTransaction(transaction);
-  }
-}
+export const getAddressFromPrivateKey = (privateKey: PrivateKey): Address =>
+  getAddressFromPublicKey(getPublicKeyFromPrivateKey(privateKey));
+
+////////////////////////////////////////
+// Crypto functions
+
+export const hashChannelMessage = (message: string): Bytes32 =>
+  hexlify(keccak256(concatBuffers(
+    bufferify(INDRA_SIGN_PREFIX),
+    bufferify(`${bufferify(message).length}`),
+    bufferify(message),
+  )));
+
+export const encrypt = async (message: string, publicKey: PublicKey): Promise<HexString> =>
+  hexlify(serialize(await libEncrypt(
+    bufferify(publicKey),
+    utf8ToBuffer(message),
+  )));
+
+export const decrypt = async (encrypted: HexString, privateKey: PrivateKey): Promise<HexString> =>
+  toUtf8String(await libDecrypt(
+    bufferify(privateKey),
+    deserialize(bufferify(`0x${encrypted.replace(/^0x/, "")}`)),
+  ));
+
+export const signChannelMessage = async (
+  message: string,
+  privateKey: PrivateKey,
+): Promise<HexString> =>
+  hexlify(await sign(
+    bufferify(privateKey),
+    bufferify(hashChannelMessage(message)),
+    true,
+  ));
+
+export const recoverAddressFromChannelMessage = async (
+  message: HexString,
+  sig: SignatureString,
+): Promise<Address> =>
+  getAddressFromPublicKey(hexlify(await recover(
+    bufferify(hashChannelMessage(message)),
+    bufferify(sig),
+  )));

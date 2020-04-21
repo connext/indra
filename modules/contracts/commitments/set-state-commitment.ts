@@ -7,7 +7,7 @@ import {
   SetStateCommitmentJSON,
   SignedAppChallengeUpdate,
 } from "@connext/types";
-import { appIdentityToHash, toBN, verifyChannelMessage } from "@connext/utils";
+import { appIdentityToHash, recoverAddressFromChannelMessage, toBN } from "@connext/utils";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
 
 import * as ChallengeRegistry from "../build/ChallengeRegistry.json";
@@ -117,7 +117,10 @@ export class SetStateCommitment implements EthereumCommitment {
         // to be used in the `progressState` path
         continue;
       }
-      const signer = await verifyChannelMessage(this.hashToSign(), this.signatures[idx]);
+      const signer = await recoverAddressFromChannelMessage(
+        this.hashToSign(),
+        this.signatures[idx],
+      );
       if (signer !== this.appIdentity.participants[idx]) {
         throw new Error(
           `Got ${signer} and expected ${this.appIdentity.participants[idx]} in set state commitment`,

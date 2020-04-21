@@ -35,7 +35,9 @@ export abstract class AbstractController {
   /**
    * @returns {string} appIdentityHash - Installed app's identityHash
    */
-  proposeAndInstallLedgerApp = async (params: MethodParams.ProposeInstall): Promise<string> => {
+  public proposeAndInstallLedgerApp = async (
+    params: MethodParams.ProposeInstall,
+  ): Promise<string> => {
     // 163 ms
     this.log.info(`Calling propose install`);
     this.log.debug(`Calling propose install with ${stringify(params)}`);
@@ -77,6 +79,13 @@ export abstract class AbstractController {
       throw new Error(e.stack || e.message);
     } finally {
       this.cleanupInstallListeners(boundReject, appIdentityHash);
+    }
+  };
+
+  public throwIfAny = (...maybeErrorMessages: Array<string | undefined>): void => {
+    const errors = maybeErrorMessages.filter(c => !!c);
+    if (errors.length > 0) {
+      throw new Error(errors.join(", "));
     }
   };
 

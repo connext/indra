@@ -1,5 +1,5 @@
 import { NetworkContext } from "@connext/types";
-import { createRandomAddress } from "@connext/utils";
+import { getRandomAddress } from "@connext/utils";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, AddressZero } from "ethers/constants";
 
@@ -40,7 +40,7 @@ describe("set state on free balance", () => {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
       },
-      getAddress(createRandomAddress()),
+      getAddress(getRandomAddress()),
       initiatorNode.publicIdentifier,
       responderNode.publicIdentifier,
     );
