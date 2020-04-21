@@ -42,6 +42,7 @@ export class CFCoreStore implements IStoreService {
   constructor(
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
+    // eslint-disable-next-line max-len
     private readonly conditionalTransactionCommitmentRepository: ConditionalTransactionCommitmentRepository,
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
     private readonly withdrawCommitmentRepository: WithdrawCommitmentRepository,

@@ -1,8 +1,7 @@
-import { AppInstanceJson, MinimalTransaction } from "@connext/types";
+import { AppInstanceJson } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 import { getConnection } from "typeorm";
 
