@@ -9,7 +9,7 @@ import {
 
 import { Challenge } from "../challenge/challenge.entity";
 import { StateProgressedEventPayload, AppName, AppActions, Address } from "@connext/types";
-import { IsEthAddress } from "src/validate";
+import { IsEthAddress } from "../validate";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 import { toBN } from "@connext/utils";
 
