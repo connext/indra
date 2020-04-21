@@ -444,6 +444,15 @@ export class ConnextListener extends ConnextEventEmitter {
       return app.appDefinitionAddress === appInstance.appInterface.addr;
     });
 
+    let sender, recipient;
+    if(appInstance.meta) { // See: https://github.com/ConnextProject/indra/issues/1054
+      sender = appInstance.meta["sender"];
+      appInstance.meta["recipient"];
+    } else {
+      sender = undefined;
+      recipient = undefined;
+    }
+
     switch (registryAppInfo.name) {
       case WithdrawAppName: {
         const withdrawState = state as WithdrawAppState;
@@ -461,11 +470,9 @@ export class ConnextListener extends ConnextEventEmitter {
         const transferAction = action as SimpleLinkedTransferAppAction
         // Only emit on sender side. Receiver side needs to be emitted after uninstall
         // in resolve controller.
-        const sender = appInstance.meta["sender"] || undefined;
-        const recipient = appInstance.meta["recipient"] || undefined;
         if(
           sender == this.connext.publicIdentifier ||
-          !appInstance.meta // See: https://github.com/ConnextProject/indra/issues/1054
+          sender == undefined
         ) {
           this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
               type: ConditionalTransferTypes.LinkedTransfer,
@@ -488,11 +495,9 @@ export class ConnextListener extends ConnextEventEmitter {
         const transferAction = action as HashLockTransferAppAction
         // Only emit on sender side. Receiver side needs to be emitted after uninstall
         // in resolve controller.
-        const sender = appInstance.meta["sender"] || undefined;
-        const recipient = appInstance.meta["recipient"] || undefined;
         if(
           sender == this.connext.publicIdentifier ||
-          !appInstance.meta // See: https://github.com/ConnextProject/indra/issues/1054
+          sender == undefined
         ) {
           this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
               type: ConditionalTransferTypes.HashLockTransfer,
@@ -515,11 +520,9 @@ export class ConnextListener extends ConnextEventEmitter {
         const transferAction = action as SimpleSignedTransferAppAction
         // Only emit on sender side. Receiver side needs to be emitted after uninstall
         // in resolve controller.
-        const sender = appInstance.meta["sender"] || undefined;
-        const recipient = appInstance.meta["recipient"] || undefined;
         if(
           sender == this.connext.publicIdentifier ||
-          !appInstance.meta // See: https://github.com/ConnextProject/indra/issues/1054
+          sender == undefined
         ) {
           this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
               type: ConditionalTransferTypes.SignedTransfer,
