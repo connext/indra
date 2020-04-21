@@ -172,8 +172,16 @@ export class ConnextStore implements IClientStore {
     );
   }
 
-  updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
-    return this.internalStore.updateAppInstance(multisigAddress, appInstance);
+  updateAppInstance(
+    multisigAddress: string,
+    appInstance: AppInstanceJson,
+    signedSetStateCommitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    return this.internalStore.updateAppInstance(
+      multisigAddress,
+      appInstance,
+      signedSetStateCommitment,
+    );
   }
 
   removeAppInstance(
@@ -237,12 +245,11 @@ export class ConnextStore implements IClientStore {
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {}
 
-  updateSetStateCommitment(
+  // deprecated
+  async updateSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
-  ): Promise<void> {
-    return this.internalStore.updateSetStateCommitment(appIdentityHash, commitment);
-  }
+  ): Promise<void> {}
 
   getConditionalTransactionCommitment(
     appIdentityHash: string,

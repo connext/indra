@@ -121,17 +121,19 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
-      setStateCommitment,
-      appIdentityHash,
-    ];
-
-    yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.UpdateInstance,
       postProtocolStateChannel,
       appInstance,
+      setStateCommitment,
+    ];
+
+    // deprecated
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.UpdateSetState,
+      setStateCommitment,
+      appIdentityHash,
     ];
     logTime(log, start, `Finished Initiating`);
   },
@@ -208,17 +210,19 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
-      setStateCommitment,
-      appIdentityHash,
-    ];
-
-    yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.UpdateInstance,
       postProtocolStateChannel,
       appInstance,
+      setStateCommitment,
+    ];
+
+    // deprecated
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.UpdateSetState,
+      setStateCommitment,
+      appIdentityHash,
     ];
 
     // 0ms

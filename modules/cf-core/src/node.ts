@@ -355,6 +355,7 @@ export class Node {
             await this.storeService.updateAppInstance(
               multisigAddress,
               (app as AppInstance).toJson(),
+              signedSetStateCommitment.toJson(),
             );
             break;
           }

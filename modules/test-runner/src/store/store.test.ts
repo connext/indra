@@ -170,7 +170,7 @@ describe("ConnextStore", () => {
         );
         const retrieved = await store.getAppInstance(app.identityHash);
         expect(retrieved).to.deep.eq(app);
-        await store.updateAppInstance(multisigAddress, edited);
+        await store.updateAppInstance(multisigAddress, edited, TEST_STORE_SET_STATE_COMMITMENT);
         const editedRetrieved = await store.getAppInstance(app.identityHash);
         expect(editedRetrieved).to.deep.eq(edited);
         const chan = await store.getStateChannel(multisigAddress);

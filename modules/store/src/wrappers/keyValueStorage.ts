@@ -200,7 +200,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     }
   }
 
-  async updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+  async updateAppInstance(
+    multisigAddress: string,
+    appInstance: AppInstanceJson,
+    signedSetStateCommitment: SetStateCommitmentJSON,
+  ): Promise<void> {
     const channel = await this.getStateChannel(multisigAddress);
     if (!channel) {
       throw new Error(`Can't save app instance without channel`);
@@ -208,9 +212,21 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
       throw new Error(`Could not find app instance with hash ${appInstance.identityHash}`);
     }
+    const oldChannel = channel;
     const idx = channel.appInstances.findIndex(([app]) => app === appInstance.identityHash);
     channel.appInstances[idx] = [appInstance.identityHash, appInstance];
-    return this.saveStateChannel(channel);
+    const oldCommitment = await this.getSetStateCommitment(appInstance.identityHash);
+    try {
+      await Promise.all([
+        this.saveStateChannel(channel),
+        this.updateSetStateCommitment(appInstance.identityHash, signedSetStateCommitment),
+      ]);
+    } catch (e) {
+      console.error(`Caught error during updateAppInstance, reverting store changes: ${e}`);
+      await this.saveStateChannel(oldChannel);
+      await this.updateSetStateCommitment(appInstance.identityHash, oldCommitment);
+    }
+    return;
   }
 
   async removeAppInstance(

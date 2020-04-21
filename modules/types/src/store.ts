@@ -95,7 +95,11 @@ export interface IStoreService extends IWatcherStoreService {
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
     signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void>;
-  updateAppInstance(multisigAddress: Address, appInstance: AppInstanceJson): Promise<void>;
+  updateAppInstance(
+    multisigAddress: Address,
+    appInstance: AppInstanceJson,
+    signedSetStateCommitment: SetStateCommitmentJSON,
+  ): Promise<void>;
   removeAppInstance(
     multisigAddress: Address,
     appIdentityHash: Bytes32,

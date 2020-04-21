@@ -107,7 +107,11 @@ export class MiniNode {
           }
 
           case PersistAppType.UpdateInstance: {
-            await this.store.updateAppInstance(multisigAddress, (app as AppInstance).toJson());
+            await this.store.updateAppInstance(
+              multisigAddress,
+              (app as AppInstance).toJson(),
+              signedSetStateCommitment.toJson(),
+            );
             break;
           }
 
