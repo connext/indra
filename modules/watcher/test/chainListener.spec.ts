@@ -6,11 +6,13 @@ import {
   NetworkContext,
   StateProgressedContractEvent,
 } from "@connext/types";
-import { stateToHash, setupContext, AppWithCounterClass, ActionType, expect } from "./utils";
 import { nullLogger, toBN, ChannelSigner, computeAppChallengeHash } from "@connext/utils";
-import { ChainListener } from "../src";
-import { beforeEach } from "mocha";
 import { Zero, One } from "ethers/constants";
+import { beforeEach } from "mocha";
+
+import { stateToHash, setupContext, AppWithCounterClass, ActionType, expect } from "./utils";
+
+import { ChainListener } from "../src";
 
 describe("ChainListener", () => {
   let challengeRegistry: Contract;
