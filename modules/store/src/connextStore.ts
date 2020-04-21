@@ -25,7 +25,7 @@ import {
 import {
   FileStorage,
   KeyValueStorage,
-  MemoryStorage,
+  WrappedMemoryStorage,
   WrappedAsyncStorage,
   WrappedLocalStorage,
   WrappedPostgresStorage,
@@ -98,7 +98,7 @@ export class ConnextStore implements IClientStore {
 
       case StoreTypes.Memory: {
         this.internalStore = new KeyValueStorage(
-          new MemoryStorage(this.prefix, this.separator, this.backupService),
+          new WrappedMemoryStorage(this.prefix, this.separator, this.backupService),
         );
         break;
       }
