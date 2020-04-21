@@ -1,5 +1,5 @@
 import {
-  AppChallenge,
+  StoredAppChallenge,
   AppInstanceJson,
   AppInstanceProposal,
   ChallengeUpdatedEventPayload,
@@ -12,6 +12,7 @@ import {
   STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
   WrappedStorage,
+  ChallengeStatus,
 } from "@connext/types";
 import { stringify } from "@connext/utils";
 
@@ -22,6 +23,10 @@ import {
   SETUP_COMMITMENT_KEY,
   WITHDRAWAL_COMMITMENT_KEY,
   STORE_SCHEMA_VERSION_KEY,
+  CHALLENGE_KEY,
+  BLOCK_PROCESSED_KEY,
+  STATE_PROGRESSED_EVENT_KEY,
+  CHALLENGE_UPDATED_EVENT_KEY,
 } from "../constants";
 
 function properlyConvertChannelNullVals(json: any): StateChannelJSON {
@@ -291,9 +296,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.setItem(setupCommitmentKey, commitment);
   }
 
-  async getSetStateCommitments(
-    appIdentityHash: string,
-  ): Promise<SetStateCommitmentJSON[]> {
+  async getSetStateCommitments(appIdentityHash: string): Promise<SetStateCommitmentJSON[]> {
     const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
     const item = await this.getItem<SetStateCommitmentJSON[]>(setStateKey);
     return item;
@@ -448,69 +451,155 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   ////// Watcher methods
-  async getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined> {
-    throw new Error("Disputes not implememented");
+  getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined> {
+    const challengeKey = this.getKey(CHALLENGE_KEY, appIdentityHash);
+    return this.getItem<StoredAppChallenge>(challengeKey);
   }
 
-  async createAppChallenge(appIdentityHash: string, appChallenge: AppChallenge): Promise<void> {
-    throw new Error("Disputes not implememented");
+  async createAppChallenge(
+    appIdentityHash: string,
+    appChallenge: StoredAppChallenge,
+  ): Promise<void> {
+    const challengeKey = this.getKey(CHALLENGE_KEY, appIdentityHash);
+    const existing = await this.getItem<StoredAppChallenge>(challengeKey);
+    if (existing) {
+      throw new Error(
+        `Could not create challenge, found existing challenge for app ${appIdentityHash}`,
+      );
+    }
+    return this.setItem(challengeKey, appChallenge);
   }
 
-  async updateAppChallenge(appIdentityHash: string, appChallenge: AppChallenge): Promise<void> {
-    throw new Error("Disputes not implememented");
+  async updateAppChallenge(
+    appIdentityHash: string,
+    appChallenge: StoredAppChallenge,
+  ): Promise<void> {
+    const challengeKey = this.getKey(CHALLENGE_KEY, appIdentityHash);
+    const existing = await this.getItem<StoredAppChallenge>(challengeKey);
+    if (!existing) {
+      throw new Error(`Could not find existing challenge for app ${appIdentityHash}`);
+    }
+    return this.setItem(challengeKey, appChallenge);
   }
 
-  getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]> {
-    throw new Error("Disputes not implememented");
+  async getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
+    const channel = await this.getItem<StateChannelJSON>(multisigAddress);
+    if (!channel) {
+      throw new Error(`Could not find channel for multisig: ${multisigAddress}`);
+    }
+    // get all stored challenges
+    const keys = await this.getKeys();
+    const relevant = keys.filter(key => key.includes(CHALLENGE_KEY));
+    const challenges = await Promise.all(
+      relevant.map(key => this.getItem<StoredAppChallenge>(key)),
+    );
+    const inactiveStatuses = [ChallengeStatus.NO_CHALLENGE, ChallengeStatus.OUTCOME_SET];
+    const allActive = challenges.filter(
+      challenge => !!challenge && !inactiveStatuses.find(status => status === challenge.status),
+    );
+    // now find which ones are in the channel and in dispute
+    return allActive.filter(challenge =>
+      this.hasAppIdentityHash(challenge.identityHash, channel.appInstances),
+    );
   }
 
   ///// Events
   async getLatestProcessedBlock(): Promise<number> {
-    throw new Error("Disputes not implememented");
+    const key = this.getKey(BLOCK_PROCESSED_KEY);
+    return (await this.getItem<number>(key)) || 0;
   }
 
-  async updateLatestProcessedBlock(blockNumber: number): Promise<void> {
-    throw new Error("Disputes not implememented");
+  updateLatestProcessedBlock(blockNumber: number): Promise<void> {
+    const key = this.getKey(BLOCK_PROCESSED_KEY);
+    return this.setItem(key, blockNumber);
   }
 
-  async getStateProgressedEvents(
-    appIdentityHash: string,
-  ): Promise<StateProgressedEventPayload[]> {
-    throw new Error("Disputes not implememented");
+  async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
+    const key = this.getKey(STATE_PROGRESSED_EVENT_KEY, appIdentityHash);
+    const relevant = (await this.getKeys()).filter(k => k.includes(key));
+    const events = await Promise.all(
+      relevant.map(k => this.getItem<StateProgressedEventPayload>(k)),
+    );
+    return events.filter(x => !!x);
   }
 
   async createStateProgressedEvent(
     appIdentityHash: string,
-    appChallenge: StateProgressedEventPayload,
+    event: StateProgressedEventPayload,
   ): Promise<void> {
-    throw new Error("Disputes not implememented");
+    const key = this.getKey(
+      STATE_PROGRESSED_EVENT_KEY,
+      appIdentityHash,
+      event.versionNumber.toString(),
+    );
+    if (await this.getItem(key)) {
+      throw new Error(
+        `Found existing state progressed event for app ${appIdentityHash} at nonce ${event.versionNumber.toString()}`,
+      );
+    }
+    return this.setItem(key, event);
   }
 
   async updateStateProgressedEvent(
     appIdentityHash: string,
-    appChallenge: StateProgressedEventPayload,
+    event: StateProgressedEventPayload,
   ): Promise<void> {
-    throw new Error("Disputes not implememented");
+    const key = this.getKey(
+      STATE_PROGRESSED_EVENT_KEY,
+      appIdentityHash,
+      event.versionNumber.toString(),
+    );
+    if (!(await this.getItem(key))) {
+      throw new Error(
+        `Did not find existing state progressed event for app ${appIdentityHash} at nonce ${event.versionNumber.toString()}`,
+      );
+    }
+    return this.setItem(key, event);
   }
 
   async getChallengeUpdatedEvents(
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]> {
-    throw new Error("Disputes not implememented");
+    const key = this.getKey(CHALLENGE_UPDATED_EVENT_KEY, appIdentityHash);
+    const relevant = (await this.getKeys()).filter(k => k.includes(key));
+    const events = await Promise.all(
+      relevant.map(k => this.getItem<ChallengeUpdatedEventPayload>(k)),
+    );
+    return events.filter(x => !!x);
   }
 
   async createChallengeUpdatedEvent(
     appIdentityHash: string,
     event: ChallengeUpdatedEventPayload,
   ): Promise<void> {
-    throw new Error("Disputes not implememented");
+    const key = this.getKey(
+      CHALLENGE_UPDATED_EVENT_KEY,
+      appIdentityHash,
+      event.versionNumber.toString(),
+    );
+    if (await this.getItem(key)) {
+      throw new Error(
+        `Found existing challenge updated event for app ${appIdentityHash} at nonce ${event.versionNumber.toString()}`,
+      );
+    }
+    return this.setItem(key, event);
   }
 
   async updateChallengeUpdatedEvent(
     appIdentityHash: string,
-    appChallenge: ChallengeUpdatedEventPayload,
+    event: ChallengeUpdatedEventPayload,
   ): Promise<void> {
-    throw new Error("Disputes not implememented");
+    const key = this.getKey(
+      CHALLENGE_UPDATED_EVENT_KEY,
+      appIdentityHash,
+      event.versionNumber.toString(),
+    );
+    if (!(await this.getItem(key))) {
+      throw new Error(
+        `Did not find existing challenge updated event for app ${appIdentityHash} at nonce ${event.versionNumber.toString()}`,
+      );
+    }
+    return this.setItem(key, event);
   }
 
   ////// Helper methods
