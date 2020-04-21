@@ -137,14 +137,14 @@ export class MockStoreService implements IStoreService {
   }
 
   async createAppChallenge(
-    multisigAddress: string,
+    appIdentityHash: string,
     appChallenge: AppChallenge,
   ): Promise<void> {
     return Promise.resolve();
   }
 
   async updateAppChallenge(
-    multisigAddress: string,
+    appIdentityHash: string,
     appChallenge: AppChallenge,
   ): Promise<void> {
     return Promise.resolve();
@@ -163,41 +163,41 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve();
   }
 
-  async getStateProgressedEvent(
+  async getStateProgressedEvents(
     appIdentityHash: string,
-  ): Promise<StateProgressedContractEvent | undefined> {
-    return Promise.resolve(undefined);
+  ): Promise<StateProgressedContractEvent[]> {
+    return Promise.resolve([]);
   }
 
   async createStateProgressedEvent(
-    multisigAddress: string,
+    appIdentityHash: string,
     appChallenge: StateProgressedContractEvent,
   ): Promise<void> {
     return Promise.resolve();
   }
 
   async updateStateProgressedEvent(
-    multisigAddress: string,
+    appIdentityHash: string,
     appChallenge: StateProgressedContractEvent,
   ): Promise<void> {
     return Promise.resolve();
   }
 
-  async getChallengeUpdatedEvent(
+  async getChallengeUpdatedEvents(
     appIdentityHash: string,
-  ): Promise<ChallengeUpdatedContractEvent | undefined> {
-    return Promise.resolve(undefined);
+  ): Promise<ChallengeUpdatedContractEvent[]> {
+    return Promise.resolve([]);
   }
 
   async createChallengeUpdatedEvent(
-    multisigAddress: string,
+    appIdentityHash: string,
     event: ChallengeUpdatedContractEvent,
   ): Promise<void> {
     return Promise.resolve();
   }
 
   async updateChallengeUpdatedEvent(
-    multisigAddress: string,
+    appIdentityHash: string,
     appChallenge: ChallengeUpdatedContractEvent,
   ): Promise<void> {
     return Promise.resolve();

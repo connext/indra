@@ -141,35 +141,35 @@ export interface IChainListener {
 export interface IWatcherStoreService {
   ///// Disputes
   getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined>;
-  createAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void>;
-  updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void>;
+  createAppChallenge(appIdentityHash: string, appChallenge: AppChallenge): Promise<void>;
+  updateAppChallenge(appIdentityHash: string, appChallenge: AppChallenge): Promise<void>;
   getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]>;
 
   ///// Events
   getLatestProcessedBlock(): Promise<number>;
   updateLatestProcessedBlock(blockNumber: number): Promise<void>;
 
-  getStateProgressedEvent(
+  getStateProgressedEvents(
     appIdentityHash: string,
-  ): Promise<StateProgressedContractEvent | undefined>;
+  ): Promise<StateProgressedContractEvent[]>;
   createStateProgressedEvent(
-    multisigAddress: string,
+    appIdentityHash: string,
     event: StateProgressedContractEvent,
   ): Promise<void>;
   updateStateProgressedEvent(
-    multisigAddress: string,
+    appIdentityHash: string,
     event: StateProgressedContractEvent,
   ): Promise<void>;
 
-  getChallengeUpdatedEvent(
+  getChallengeUpdatedEvents(
     appIdentityHash: string,
-  ): Promise<ChallengeUpdatedContractEvent | undefined>;
+  ): Promise<ChallengeUpdatedContractEvent[]>;
   createChallengeUpdatedEvent(
-    multisigAddress: string,
+    appIdentityHash: string,
     event: ChallengeUpdatedContractEvent,
   ): Promise<void>;
   updateChallengeUpdatedEvent(
-    multisigAddress: string,
+    appIdentityHash: string,
     event: ChallengeUpdatedContractEvent,
   ): Promise<void>;
 

@@ -597,11 +597,11 @@ export class CFCoreStore implements IStoreService {
     throw new Error("Disputes not implememented");
   }
 
-  async createAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
+  async createAppChallenge(appIdentityHash: string, appChallenge: AppChallenge): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
-  async updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
+  async updateAppChallenge(appIdentityHash: string, appChallenge: AppChallenge): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
@@ -618,41 +618,41 @@ export class CFCoreStore implements IStoreService {
     throw new Error("Disputes not implememented");
   }
 
-  async getStateProgressedEvent(
+  async getStateProgressedEvents(
     appIdentityHash: string,
-  ): Promise<StateProgressedContractEvent | undefined> {
+  ): Promise<StateProgressedContractEvent[]> {
     throw new Error("Disputes not implememented");
   }
 
   async createStateProgressedEvent(
-    multisigAddress: string,
+    appIdentityHash: string,
     appChallenge: StateProgressedContractEvent,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
   async updateStateProgressedEvent(
-    multisigAddress: string,
+    appIdentityHash: string,
     appChallenge: StateProgressedContractEvent,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
-  async getChallengeUpdatedEvent(
+  async getChallengeUpdatedEvents(
     appIdentityHash: string,
-  ): Promise<ChallengeUpdatedContractEvent | undefined> {
+  ): Promise<ChallengeUpdatedContractEvent[]> {
     throw new Error("Disputes not implememented");
   }
 
   async createChallengeUpdatedEvent(
-    multisigAddress: string,
+    appIdentityHash: string,
     event: ChallengeUpdatedContractEvent,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
   async updateChallengeUpdatedEvent(
-    multisigAddress: string,
+    appIdentityHash: string,
     appChallenge: ChallengeUpdatedContractEvent,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
