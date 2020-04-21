@@ -5,7 +5,7 @@ import {
   CFChannelProviderOptions,
   ChannelMethods,
   ChannelProviderConfig,
-  ConditionalTransactionCommitmentJSON,   
+  ConditionalTransactionCommitmentJSON,
   ConnextClientStorePrefix,
   ConnextEventEmitter,
   CreateChannelMessage,
@@ -109,7 +109,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     };
   }
 
-  public async send(payload: JsonRpcRequest): Promise<any> {
+  public async send<T = any>(payload: JsonRpcRequest): Promise<T> {
     const { method, params } = payload;
     let result;
     switch (method) {
@@ -141,7 +141,11 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         result = await this.restoreState();
         break;
       case ChannelMethods.chan_setStateChannel:
-        result = await this.setStateChannel(params.state);
+        result = await this.setStateChannel(
+          params.state,
+          params.signedSetupCommitment,
+          params.signedFreeBalanceUpdate,
+        );
         break;
       case ChannelMethods.chan_walletDeposit:
         result = await this.walletDeposit(params);
@@ -245,8 +249,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     return this.store.updateUserWithdrawal(value);
   };
 
-  private setStateChannel = async (channel: StateChannelJSON): Promise<void> => {
-    return this.store.createStateChannel(channel);
+  private setStateChannel = async (
+    channel: StateChannelJSON,
+    signedSetupCommitment: MinimalTransaction,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+  ): Promise<void> => {
+    return this.store.createStateChannel(channel, signedSetupCommitment, signedFreeBalanceUpdate);
   };
 
   private restoreState = async (): Promise<void> => {
