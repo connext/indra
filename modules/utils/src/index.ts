@@ -1,6 +1,7 @@
 export * from "./bigNumbers";
 export * from "./channelSigner";
 export * from "./comparisons";
+export * from "./contracts";
 export * from "./crypto";
 export * from "./currency";
 export * from "./delay";

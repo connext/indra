@@ -10,7 +10,7 @@ import {
   BigNumber,
 } from "ethers/utils";
 
-import { AddressZero, Zero, HashZero } from "ethers/constants";
+import { Zero, HashZero } from "ethers/constants";
 export * from "./context";
 
 // include all top level utils
@@ -21,7 +21,7 @@ export const randomState = (numBytes: number = 64) => hexlify(randomBytes(numByt
 // App State With Action types for testing
 export type AppWithCounterState = {
   counter: BigNumber;
-}
+};
 
 export enum ActionType {
   SUBMIT_COUNTER_INCREMENT,
@@ -31,13 +31,13 @@ export enum ActionType {
 export enum TwoPartyFixedOutcome {
   SEND_TO_ADDR_ONE,
   SEND_TO_ADDR_TWO,
-  SPLIT_AND_SEND_TO_BOTH_ADDRS
+  SPLIT_AND_SEND_TO_BOTH_ADDRS,
 }
 
 export type AppWithCounterAction = {
-  actionType: ActionType,
-  increment: BigNumber,
-}
+  actionType: ActionType;
+  increment: BigNumber;
+};
 
 export function encodeState(state: AppWithCounterState) {
   return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
@@ -52,15 +52,13 @@ export function encodeOutcome() {
 }
 
 // TS version of MChallengeRegistryCore::computeCancelDisputeHash
-export const computeCancelDisputeHash = (
-  identityHash: string,
-  versionNumber: BigNumber,
-) => keccak256(
-  solidityPack(
-    ["uint8", "bytes32", "uint256"],
-    [CommitmentTarget.CANCEL_DISPUTE, identityHash, versionNumber],
-  ),
-);
+export const computeCancelDisputeHash = (identityHash: string, versionNumber: BigNumber) =>
+  keccak256(
+    solidityPack(
+      ["uint8", "bytes32", "uint256"],
+      [CommitmentTarget.CANCEL_DISPUTE, identityHash, versionNumber],
+    ),
+  );
 
 // TS version of MChallengeRegistryCore::appStateToHash
 export const appStateToHash = (state: string) => keccak256(state);
@@ -89,7 +87,7 @@ export class AppWithCounterClass {
           this.channelNonce,
           keccak256(solidityPack(["address[]"], [this.participants])),
           this.appDefinition,
-          this.defaultTimeout
+          this.defaultTimeout,
         ],
       ),
     );
