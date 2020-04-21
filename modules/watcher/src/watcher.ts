@@ -24,6 +24,7 @@ import {
   ConsoleLogger,
   ChannelSigner,
   getSignerAddressFromPublicIdentifier,
+  nullLogger,
   toBN,
 } from "@connext/utils";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
@@ -70,17 +71,18 @@ export class Watcher implements IWatcher {
   // in options (which are cast to the proper values)
   public static init = async (opts: WatcherInitOptions): Promise<Watcher> => {
     const {
-      loggerService,
-      logLevel,
-      logger: providedLogger,
+      logger,
       signer: providedSigner,
       provider: ethProvider,
       context,
       store,
     } = opts;
-    const log = loggerService
-      ? loggerService.newContext("WatcherInit")
-      : new ConsoleLogger("WatcherInit", logLevel, providedLogger);
+
+    const log = logger && typeof (logger as ILoggerService).newContext === "function"
+      ? (logger as ILoggerService).newContext("WatcherInit")
+      : logger
+      ? new ConsoleLogger("WatcherInit", undefined, logger)
+      : nullLogger;
 
     log.debug(`Creating new Watcher`);
 

@@ -147,6 +147,7 @@ export class ChainListener implements IChainListener {
 
   //////// Private methods
   // created listeners for the challenge registry
+
   private removeChallengeRegistryListeners = (): void => {
     const challengeRegistry = new Contract(
       this.context.ChallengeRegistry,

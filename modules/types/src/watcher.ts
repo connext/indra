@@ -27,9 +27,7 @@ export type WatcherInitOptions = {
   provider: JsonRpcProvider | string;
   context: NetworkContext;
   store: IWatcherStoreService;
-  loggerService?: ILoggerService;
-  logLevel?: number;
-  logger?: ILogger;
+  logger?: ILoggerService | ILogger;
 };
 
 ////////////////////////////////////////
