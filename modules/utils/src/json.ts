@@ -39,7 +39,7 @@ export const safeJsonStringify = (value: any): string => {
   }
 };
 
-export const safeJsonParse = (value: any): string => {
+export const safeJsonParse = (value: any): any => {
   try {
     return typeof value === "string" ? JSON.parse(value, nullify) : value;
   } catch (e) {
