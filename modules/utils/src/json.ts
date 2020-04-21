@@ -20,9 +20,9 @@ export const stringify = (value: any, abrv: boolean = false): string =>
     (key: string, value: any): any =>
       value && value._hex
         ? bigNumberify(value).toString()
-        : abrv && value && typeof value === "string" && value.startsWith("address")
-        ? `${value.substring(0, 8)}..${value.substring(value.length - 4)}`
-        : abrv && value && typeof value === "string" && value.startsWith("0x")
+        : abrv && value && typeof value === "string" && value.startsWith("indra")
+        ? `${value.substring(0, 9)}..${value.substring(value.length - 4)}`
+        : abrv && value && typeof value === "string" && value.startsWith("0x") && value.length > 12
         ? `${value.substring(0, 6)}..${value.substring(value.length - 4)}`
         : value,
     2,

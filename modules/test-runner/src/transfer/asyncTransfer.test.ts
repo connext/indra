@@ -248,7 +248,7 @@ describe("Async Transfers", () => {
         preImage: getRandomBytes32(),
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`is not a valid hex string`);
+    ).to.be.rejectedWith(`Invalid hex string`);
   });
 
   it("Bot A tries to transfer with a preImage that is not 32 bytes", async () => {
@@ -264,7 +264,7 @@ describe("Async Transfers", () => {
         preImage,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`is not a valid hex string`);
+    ).to.be.rejectedWith(`Invalid hex string`);
   });
 
   it("Experimental: Average latency of 10 async transfers with Eth", async () => {
