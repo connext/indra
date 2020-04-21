@@ -28,39 +28,22 @@ export const stringify = (value: any, abrv: boolean = false): string =>
     2,
   );
 
+const nullify = (key: string, value: any) => typeof value === "undefined" ? null : value;
+
 export const safeJsonStringify = (value: any): string => {
-  // make sure undefined are converted to null
   try {
-    return typeof value === "string"
-      ? value
-      : JSON.stringify(
-        value,
-        (key: string, value: any) => typeof value === "undefined" ? null : value,
-      );
+    return typeof value === "string" ? value : JSON.stringify(value, nullify);
   } catch (e) {
-    return e.message;
+    console.log(`Failed to safeJsonstringify value ${value}: ${e.message}`);
+    return value;
   }
 };
 
-export const safeJsonParse = (value: any): any => {
-  const convertObjectValuesRecursive = (obj: any, target: any, replacement: any): any => {
-    if (typeof obj === "object" && typeof obj.length === "number") {
-      return obj;
-    }
-    const ret = { ...obj };
-    Object.keys(ret).forEach(key => {
-      if (ret[key] === target) {
-        ret[key] = replacement;
-      } else if (typeof ret[key] === "object" && !Array.isArray(ret[key])) {
-        ret[key] = convertObjectValuesRecursive(ret[key], target, replacement);
-      }
-    });
-    return ret;
-  };
+export const safeJsonParse = (value: any): string => {
   try {
-    // assert null --> undefined conversion
-    return convertObjectValuesRecursive(JSON.parse(value), null, undefined);
-  } catch {
+    return typeof value === "string" ? JSON.parse(value, nullify) : value;
+  } catch (e) {
+    console.log(`Failed to safeJsonParse value ${value}: ${e.message}`);
     return value;
   }
 };
