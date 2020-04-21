@@ -9,7 +9,7 @@ import {
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
   OutcomeType,
-  AppChallenge,
+  StoredAppChallenge,
   StateProgressedEventPayload,
   ChallengeUpdatedEventPayload,
 } from "@connext/types";
@@ -44,8 +44,7 @@ export class CFCoreStore implements IStoreService {
   constructor(
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
-    private readonly conditionalTransactionCommitmentRepository:
-      ConditionalTransactionCommitmentRepository,
+    private readonly conditionalTransactionCommitmentRepository: ConditionalTransactionCommitmentRepository,
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
     private readonly withdrawCommitmentRepository: WithdrawCommitmentRepository,
     private readonly configService: ConfigService,
@@ -595,19 +594,25 @@ export class CFCoreStore implements IStoreService {
   }
 
   ////// Watcher methods
-  async getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined> {
+  async getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined> {
     throw new Error("Disputes not implememented");
   }
 
-  async createAppChallenge(appIdentityHash: string, appChallenge: AppChallenge): Promise<void> {
+  async createAppChallenge(
+    appIdentityHash: string,
+    appChallenge: StoredAppChallenge,
+  ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
-  async updateAppChallenge(appIdentityHash: string, appChallenge: AppChallenge): Promise<void> {
+  async updateAppChallenge(
+    appIdentityHash: string,
+    appChallenge: StoredAppChallenge,
+  ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
-  async getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]> {
+  async getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
     throw new Error("Disputes not implememented");
   }
 
@@ -620,22 +625,20 @@ export class CFCoreStore implements IStoreService {
     throw new Error("Disputes not implememented");
   }
 
-  async getStateProgressedEvents(
-    appIdentityHash: string,
-  ): Promise<StateProgressedEventPayload[]> {
+  async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
     throw new Error("Disputes not implememented");
   }
 
   async createStateProgressedEvent(
     appIdentityHash: string,
-    appChallenge: StateProgressedEventPayload,
+    event: StateProgressedEventPayload,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
   async updateStateProgressedEvent(
     appIdentityHash: string,
-    appChallenge: StateProgressedEventPayload,
+    event: StateProgressedEventPayload,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
@@ -655,7 +658,7 @@ export class CFCoreStore implements IStoreService {
 
   async updateChallengeUpdatedEvent(
     appIdentityHash: string,
-    appChallenge: ChallengeUpdatedEventPayload,
+    event: ChallengeUpdatedEventPayload,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }

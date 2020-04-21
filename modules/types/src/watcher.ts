@@ -31,7 +31,7 @@ export type WatcherInitOptions = {
 };
 
 ////////////////////////////////////////
-// Events
+// Watcher Events
 
 export const ChallengeInitiatedEvent = "ChallengeInitiatedEvent";
 export type ChallengeInitiatedEventData = {
@@ -92,6 +92,10 @@ export type WatcherEventData = {
 };
 
 ////////////////////////////////////////
+// Listener Events
+
+
+////////////////////////////////////////
 // Watcher interface
 
 export interface IWatcher {
@@ -141,12 +145,16 @@ export interface IChainListener {
 ////////////////////////////////////////
 // Storage
 
+export type StoredAppChallenge = AppChallenge & {
+  identityHash: Bytes32;
+}
+
 export interface IWatcherStoreService {
   // Disputes
-  getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined>;
-  createAppChallenge(appIdentityHash: string, appChallenge: AppChallenge): Promise<void>;
-  updateAppChallenge(appIdentityHash: string, appChallenge: AppChallenge): Promise<void>;
-  getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]>;
+  getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined>;
+  createAppChallenge(appIdentityHash: string, appChallenge: StoredAppChallenge): Promise<void>;
+  updateAppChallenge(appIdentityHash: string, appChallenge: StoredAppChallenge): Promise<void>;
+  getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]>;
 
   // Events
   getLatestProcessedBlock(): Promise<number>;

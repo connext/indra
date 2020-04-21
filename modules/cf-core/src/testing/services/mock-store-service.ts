@@ -7,7 +7,7 @@ import {
   SetStateCommitmentJSON,
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
-  AppChallenge,
+  StoredAppChallenge,
   StateProgressedEventPayload,
   ChallengeUpdatedEventPayload,
 } from "@connext/types";
@@ -132,25 +132,25 @@ export class MockStoreService implements IStoreService {
   }
 
   ////// Watcher methods
-  async getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined> {
+  async getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined> {
     return Promise.resolve(undefined);
   }
 
   async createAppChallenge(
     appIdentityHash: string,
-    appChallenge: AppChallenge,
+    appChallenge: StoredAppChallenge,
   ): Promise<void> {
     return Promise.resolve();
   }
 
   async updateAppChallenge(
     appIdentityHash: string,
-    appChallenge: AppChallenge,
+    appChallenge: StoredAppChallenge,
   ): Promise<void> {
     return Promise.resolve();
   }
 
-  async getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]> {
+  async getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
     return Promise.resolve([]);
   }
 
@@ -163,22 +163,20 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve();
   }
 
-  async getStateProgressedEvents(
-    appIdentityHash: string,
-  ): Promise<StateProgressedEventPayload[]> {
+  async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
     return Promise.resolve([]);
   }
 
   async createStateProgressedEvent(
     appIdentityHash: string,
-    appChallenge: StateProgressedEventPayload,
+    event: StateProgressedEventPayload,
   ): Promise<void> {
     return Promise.resolve();
   }
 
   async updateStateProgressedEvent(
     appIdentityHash: string,
-    appChallenge: StateProgressedEventPayload,
+    event: StateProgressedEventPayload,
   ): Promise<void> {
     return Promise.resolve();
   }
@@ -198,7 +196,7 @@ export class MockStoreService implements IStoreService {
 
   async updateChallengeUpdatedEvent(
     appIdentityHash: string,
-    appChallenge: ChallengeUpdatedEventPayload,
+    event: ChallengeUpdatedEventPayload,
   ): Promise<void> {
     return Promise.resolve();
   }

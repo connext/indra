@@ -1,5 +1,5 @@
 import {
-  AppChallenge,
+  StoredAppChallenge,
   AppInstanceJson,
   AppInstanceProposal,
   ChallengeUpdatedEventPayload,
@@ -293,19 +293,19 @@ export class ConnextStore implements IClientStore {
   }
 
   ////// Watcher methods
-  getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined> {
+  getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined> {
     return this.internalStore.getAppChallenge(appIdentityHash);
   }
 
-  createAppChallenge(appIdentityHash: string, appChallenge: AppChallenge): Promise<void> {
+  createAppChallenge(appIdentityHash: string, appChallenge: StoredAppChallenge): Promise<void> {
     return this.internalStore.createAppChallenge(appIdentityHash, appChallenge);
   }
 
-  updateAppChallenge(appIdentityHash: string, appChallenge: AppChallenge): Promise<void> {
+  updateAppChallenge(appIdentityHash: string, appChallenge: StoredAppChallenge): Promise<void> {
     return this.internalStore.updateAppChallenge(appIdentityHash, appChallenge);
   }
 
-  getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]> {
+  getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
     return this.internalStore.getActiveChallenges(multisigAddress);
   }
 
