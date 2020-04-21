@@ -55,6 +55,9 @@ export class ResolveHashLockTransferController extends AbstractController {
       sender,
       recipient: this.connext.publicIdentifier,
       meta: hashlockApp.meta,
+      transferMeta: {
+        preImage
+      }
     } as EventPayloads.HashLockTransferUnlocked);
 
     const result: PublicResults.ResolveHashLockTransfer = {

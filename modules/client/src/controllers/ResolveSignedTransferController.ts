@@ -78,7 +78,10 @@ export class ResolveSignedTransferController extends AbstractController {
         sender,
         recipient: this.connext.publicIdentifier,
         meta,
-        transferMeta: {},
+        transferMeta: {
+          signature,
+          data
+        },
       } as EventPayloads.SignedTransferUnlocked,
     );
 

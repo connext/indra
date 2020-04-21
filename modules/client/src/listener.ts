@@ -41,6 +41,9 @@ import {
   WithdrawAppState,
   AppAction,
   AppState,
+  SimpleSignedTransferAppAction,
+  SimpleLinkedTransferAppAction,
+  HashLockTransferAppAction,
 } from "@connext/types";
 import { bigNumberifyJson, stringify } from "@connext/utils";
 
@@ -49,7 +52,6 @@ import { HashZero } from "ethers/constants";
 
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
-  CONDITIONAL_TRANSFER_RECEIVED_EVENT,
   CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
   CONDITIONAL_TRANSFER_FAILED_EVENT,
   WITHDRAWAL_CONFIRMED_EVENT,
@@ -85,9 +87,6 @@ export class ConnextListener extends ConnextEventEmitter {
     },
     CONDITIONAL_TRANSFER_CREATED_EVENT: (msg: any): void => {
       this.emitAndLog(CONDITIONAL_TRANSFER_CREATED_EVENT, msg.data);
-    },
-    CONDITIONAL_TRANSFER_RECEIVED_EVENT: (msg: any): void => {
-      this.emitAndLog(CONDITIONAL_TRANSFER_RECEIVED_EVENT, msg.data);
     },
     CONDITIONAL_TRANSFER_UNLOCKED_EVENT: (msg: any): void => {
       this.emitAndLog(CONDITIONAL_TRANSFER_UNLOCKED_EVENT, msg.data);
@@ -372,7 +371,7 @@ export class ConnextListener extends ConnextEventEmitter {
         const initalState = params.initialState as SimpleSignedTransferAppState;
         const { initiatorDepositAssetId: assetId, meta } = params;
         const amount = initalState.coinTransfers[0].amount;
-        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT, {
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
           appIdentityHash,
           assetId,
@@ -384,14 +383,14 @@ export class ConnextListener extends ConnextEventEmitter {
           type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
           paymentId: initalState.paymentId,
           recipient: meta["recipient"],
-        } as EventPayloads.SignedTransferReceived);
+        } as EventPayloads.SignedTransferCreated);
         break;
       }
       case HashLockTransferAppName: {
         const initalState = params.initialState as HashLockTransferAppState;
         const { initiatorDepositAssetId: assetId, meta } = params;
         const amount = initalState.coinTransfers[0].amount;
-        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT, {
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
           appIdentityHash,
           assetId,
@@ -404,14 +403,14 @@ export class ConnextListener extends ConnextEventEmitter {
           type: ConditionalTransferTypes[ConditionalTransferTypes.HashLockTransfer],
           paymentId: initalState.lockHash,
           recipient: meta["recipient"],
-        } as EventPayloads.HashLockTransferReceived);
+        } as EventPayloads.HashLockTransferCreated);
         break;
       }
       case SimpleLinkedTransferAppName: {
         const initalState = params.initialState as SimpleLinkedTransferAppState;
         const { initiatorDepositAssetId: assetId, meta } = params;
         const amount = initalState.coinTransfers[0].amount;
-        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT, {
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
           appIdentityHash,
           assetId,
@@ -423,7 +422,7 @@ export class ConnextListener extends ConnextEventEmitter {
           type: ConditionalTransferTypes[ConditionalTransferTypes.LinkedTransfer],
           paymentId: initalState.paymentId,
           recipient: meta["recipient"],
-        } as EventPayloads.LinkedTransferReceived);
+        } as EventPayloads.LinkedTransferCreated);
         break;
       }
     }
@@ -456,6 +455,7 @@ export class ConnextListener extends ConnextEventEmitter {
       }
       case SimpleLinkedTransferAppName: {
         const transferState = state as SimpleLinkedTransferAppState
+        const transferAction = action as SimpleLinkedTransferAppAction
         const recipient = appInstance.meta["recipient"];
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
             type: ConditionalTransferTypes.LinkedTransfer,
@@ -466,7 +466,7 @@ export class ConnextListener extends ConnextEventEmitter {
             recipient,
             meta: appInstance.meta,
             transferMeta: {
-              preImage: transferState.preImage,
+              preImage: transferAction.preImage,
             },
           } as EventPayloads.LinkedTransferUnlocked,
         );
@@ -474,6 +474,7 @@ export class ConnextListener extends ConnextEventEmitter {
       }
       case HashLockTransferAppName: {
         const transferState = state as HashLockTransferAppState
+        const transferAction = action as HashLockTransferAppAction
         const recipient = appInstance.meta["recipient"];
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
             type: ConditionalTransferTypes.HashLockTransfer,
@@ -483,12 +484,16 @@ export class ConnextListener extends ConnextEventEmitter {
             sender: this.connext.publicIdentifier,
             recipient,
             meta: appInstance.meta,
+            transferMeta: {
+              preImage: transferAction.preImage
+            }
           } as EventPayloads.HashLockTransferUnlocked
         );
         break;
       }
       case SimpleSignedTransferAppName: {
         const transferState = state as SimpleSignedTransferAppState
+        const transferAction = action as SimpleSignedTransferAppAction
         const recipient = appInstance.meta["recipient"];
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
             type: ConditionalTransferTypes.SignedTransfer,
@@ -498,7 +503,10 @@ export class ConnextListener extends ConnextEventEmitter {
             sender: this.connext.publicIdentifier,
             recipient,
             meta: appInstance.meta,
-            transferMeta: {},
+            transferMeta: {
+              signature: transferAction.signature,
+              data: transferAction.data,
+            },
           } as EventPayloads.SignedTransferUnlocked,
         );
         break;
