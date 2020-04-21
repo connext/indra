@@ -1,5 +1,5 @@
 import { AppInstanceJson } from "@connext/types";
-import { toBN } from "@connext/utils";
+import { toBN, toBNJson } from "@connext/utils";
 import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AddressZero } from "ethers/constants";
@@ -347,7 +347,9 @@ describe("CFCoreStore", () => {
         setStateCommitment.appIdentityHash,
         setStateCommitment,
       );
-      const retrieved = await cfCoreStore.getSetStateCommitment(setStateCommitment.appIdentityHash);
+      const retrieved = await cfCoreStore.getSetStateCommitments(
+        setStateCommitment.appIdentityHash,
+      );
       expect(retrieved).toMatchObject(setStateCommitment);
     });
 
@@ -366,12 +368,14 @@ describe("CFCoreStore", () => {
       const updated = createSetStateCommitmentJSON({
         ...setStateCommitment,
         appStateHash: mkHash("0xfeef"),
-        versionNumber: 42,
-        stateTimeout: bigNumberify(1337).toHexString(),
+        versionNumber: toBNJson(42),
+        stateTimeout: toBNJson(1337),
       });
       await cfCoreStore.updateSetStateCommitment(setStateCommitment.appIdentityHash, updated);
 
-      const retrieved = await cfCoreStore.getSetStateCommitment(setStateCommitment.appIdentityHash);
+      const retrieved = await cfCoreStore.getSetStateCommitments(
+        setStateCommitment.appIdentityHash,
+      );
       expect(retrieved).toMatchObject(updated);
     });
   });
