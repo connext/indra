@@ -97,9 +97,7 @@ export class ConnextStore implements IClientStore {
       }
 
       case StoreTypes.Memory: {
-        this.internalStore = new KeyValueStorage(
-          new MemoryStorage(this.prefix, this.separator),
-        );
+        this.internalStore = new KeyValueStorage(new MemoryStorage(this.prefix, this.separator));
         break;
       }
 
@@ -162,8 +160,16 @@ export class ConnextStore implements IClientStore {
     multisigAddress: string,
     appInstance: AppInstanceJson,
     freeBalance: AppInstanceJson,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+    signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
-    return this.internalStore.createAppInstance(multisigAddress, appInstance, freeBalance);
+    return this.internalStore.createAppInstance(
+      multisigAddress,
+      appInstance,
+      freeBalance,
+      signedFreeBalanceUpdate,
+      signedConditionalTxCommitment,
+    );
   }
 
   updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
@@ -186,8 +192,14 @@ export class ConnextStore implements IClientStore {
     appIdentityHash: string,
     proposal: AppInstanceProposal,
     numProposedApps: number,
+    signedSetStateCommitment: SetStateCommitmentJSON,
   ): Promise<void> {
-    return this.internalStore.createAppProposal(appIdentityHash, proposal, numProposedApps);
+    return this.internalStore.createAppProposal(
+      appIdentityHash,
+      proposal,
+      numProposedApps,
+      signedSetStateCommitment,
+    );
   }
 
   removeAppProposal(multisigAddress: string, appIdentityHash: string): Promise<void> {
@@ -209,20 +221,21 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getSetupCommitment(multisigAddress);
   }
 
-  createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void> {
-    return this.internalStore.createSetupCommitment(multisigAddress, commitment);
-  }
+  // deprecated
+  async createSetupCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> {}
 
   getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON> {
     return this.internalStore.getSetStateCommitment(appIdentityHash);
   }
 
-  createSetStateCommitment(
+  // deprecated
+  async createSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
-  ): Promise<void> {
-    return this.internalStore.createSetStateCommitment(appIdentityHash, commitment);
-  }
+  ): Promise<void> {}
 
   updateSetStateCommitment(
     appIdentityHash: string,
@@ -237,19 +250,17 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getConditionalTransactionCommitment(appIdentityHash);
   }
 
-  createConditionalTransactionCommitment(
+  // deprecated
+  async createConditionalTransactionCommitment(
     appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void> {
-    return this.internalStore.createConditionalTransactionCommitment(appIdentityHash, commitment);
-  }
+  ): Promise<void> {}
 
-  updateConditionalTransactionCommitment(
+  // deprecated
+  async updateConditionalTransactionCommitment(
     appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void> {
-    return this.internalStore.updateConditionalTransactionCommitment(appIdentityHash, commitment);
-  }
+  ): Promise<void> {}
 
   getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction> {
     return this.internalStore.getWithdrawalCommitment(multisigAddress);

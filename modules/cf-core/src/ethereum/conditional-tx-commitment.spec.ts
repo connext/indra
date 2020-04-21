@@ -71,22 +71,6 @@ describe("ConditionalTransactionCommitment", () => {
     expect(tx.value).toBe(0);
   });
 
-  describe("storage", () => {
-    it("should be stored correctly", async () => {
-      const store = new ConnextStore(StoreTypes.Memory);
-      await store.createConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
-      const retrieved = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
-      expect(retrieved).toMatchObject(commitment);
-      await commitment.addSignatures(
-        await initiator.signMessage(commitment.hashToSign()),
-        await responder.signMessage(commitment.hashToSign()),
-      );
-      await store.updateConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
-      const signed = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
-      expect(signed).toMatchObject(commitment);
-    });
-  });
-
   describe("the calldata", () => {
     let iface: Interface;
     let calldata: TransactionDescription;

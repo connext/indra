@@ -179,16 +179,17 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
 
     // 78 ms(!)
-    // will also save the app array into the state channel
     yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.CreateProposal,
       postProtocolStateChannel,
       appInstanceProposal,
+      setStateCommitment,
     ];
     logTime(log, substart, `Persisted app instance`);
     substart = Date.now();
 
+    // deprecated
     yield [
       PERSIST_COMMITMENT,
       PersistCommitmentType.CreateSetState,
@@ -341,10 +342,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       PersistAppType.CreateProposal,
       postProtocolStateChannel,
       appInstanceProposal,
+      setStateCommitment,
     ];
     logTime(log, substart, `Persisted app instance`);
     substart = Date.now();
 
+    // deprecated
     yield [
       PERSIST_COMMITMENT,
       PersistCommitmentType.CreateSetState,

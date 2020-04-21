@@ -230,13 +230,14 @@ export class Node {
 
     protocolRunner.register(
       Opcode.PERSIST_STATE_CHANNEL,
-      async (args: [[StateChannel, MinimalTransaction, SetStateCommitment]]) => {
-        const [[stateChannel, signedSetupCommitment, signedFreeBalanceUpdate]] = args;
+      async (args: [StateChannel, MinimalTransaction, SetStateCommitment]) => {
+        const [stateChannel, signedSetupCommitment, signedFreeBalanceUpdate] = args;
         await this.storeService.createStateChannel(
           stateChannel.toJson(),
           signedSetupCommitment,
           signedFreeBalanceUpdate.toJson(),
         );
+        await this.storeService.updateSchemaVersion(STORE_SCHEMA_VERSION);
       },
     );
 
@@ -251,17 +252,9 @@ export class Node {
       ) => {
         const [commitmentType, commitment, identifier] = args;
 
-        // will create a commitment if it does not exist, or update an
-        // existing commitment
         switch (commitmentType) {
           case PersistCommitmentType.CreateSetup: {
-            await this.storeService.createSetupCommitment(
-              identifier,
-              commitment as MinimalTransaction,
-            );
-            // if you are creating a setup commitment, make sure to
-            // update the store version
-            await this.storeService.updateSchemaVersion(STORE_SCHEMA_VERSION);
+            this.log.warn(`Deprecated method called: PersistCommitmentType.CreateSetup`);
             break;
           }
           case PersistCommitmentType.CreateConditional: {
@@ -279,10 +272,7 @@ export class Node {
             break;
           }
           case PersistCommitmentType.CreateSetState: {
-            await this.storeService.createSetStateCommitment(
-              identifier,
-              (commitment as SetStateCommitment).toJson(),
-            );
+            this.log.warn(`Deprecated method called: PersistCommitmentType.CreateSetState`);
             break;
           }
           case PersistCommitmentType.UpdateSetState: {
@@ -315,8 +305,22 @@ export class Node {
 
     protocolRunner.register(
       Opcode.PERSIST_APP_INSTANCE,
-      async (args: [PersistAppType, StateChannel, AppInstance | AppInstanceProposal]) => {
-        const [type, postProtocolChannel, app] = args;
+      async (
+        args: [
+          PersistAppType,
+          StateChannel,
+          AppInstance | AppInstanceProposal,
+          SetStateCommitment,
+          ConditionalTransactionCommitment,
+        ],
+      ) => {
+        const [
+          type,
+          postProtocolChannel,
+          app,
+          signedSetStateCommitment,
+          signedConditionalTxCommitment,
+        ] = args;
         const { multisigAddress, numProposedApps, freeBalance } = postProtocolChannel;
         const { identityHash } = app;
 
@@ -326,6 +330,7 @@ export class Node {
               multisigAddress,
               app as AppInstanceProposal,
               numProposedApps,
+              signedSetStateCommitment.toJson(),
             );
             break;
           }
@@ -340,6 +345,8 @@ export class Node {
               multisigAddress,
               (app as AppInstance).toJson(),
               freeBalance.toJson(),
+              signedSetStateCommitment.toJson(),
+              signedConditionalTxCommitment.toJson(),
             );
             break;
           }

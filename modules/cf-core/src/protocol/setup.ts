@@ -123,7 +123,9 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_STATE_CHANNEL,
-      [stateChannel, await setupCommitment.getSignedTransaction(), freeBalanceUpdateData],
+      stateChannel,
+      await setupCommitment.getSignedTransaction(),
+      freeBalanceUpdateData,
     ];
 
     // DEPRECATED: removed from store implemetations, only here for backwards compatibility
@@ -214,7 +216,9 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_STATE_CHANNEL,
-      [stateChannel, await setupCommitment.getSignedTransaction(), freeBalanceUpdateData],
+      stateChannel,
+      await setupCommitment.getSignedTransaction(),
+      freeBalanceUpdateData,
     ];
 
     // DEPRECATED: removed from store implemetations, only here for backwards compatibility

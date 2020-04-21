@@ -6,6 +6,7 @@ import {
   Opcode,
   PublicIdentifier,
   MinimalTransaction,
+  SetStateCommitmentJSON,
 } from "@connext/types";
 import { getRandomChannelSigner, nullLogger } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
@@ -13,7 +14,7 @@ import { JsonRpcProvider } from "ethers/providers";
 import { ProtocolRunner } from "../machine";
 import { AppInstance, StateChannel } from "../models";
 import { PersistAppType } from "../types";
-import { SetStateCommitment } from "../ethereum";
+import { SetStateCommitment, ConditionalTransactionCommitment } from "../ethereum";
 
 /// Returns a function that can be registered with IO_SEND{_AND_WAIT}
 const makeSigner = (signer: IChannelSigner) => {
@@ -48,8 +49,8 @@ export class MiniNode {
     this.protocolRunner.register(Opcode.PERSIST_COMMITMENT, () => {});
     this.protocolRunner.register(
       Opcode.PERSIST_STATE_CHANNEL,
-      async (args: [[StateChannel, MinimalTransaction, SetStateCommitment]]) => {
-        const [[stateChannel, signedSetupCommitment, signedFreeBalanceUpdate]] = args;
+      async (args: [StateChannel, MinimalTransaction, SetStateCommitment]) => {
+        const [stateChannel, signedSetupCommitment, signedFreeBalanceUpdate] = args;
         await this.store.createStateChannel(
           stateChannel.toJson(),
           signedSetupCommitment,
@@ -59,8 +60,22 @@ export class MiniNode {
     );
     this.protocolRunner.register(
       Opcode.PERSIST_APP_INSTANCE,
-      async (args: [PersistAppType, StateChannel, AppInstance | AppInstanceProposal]) => {
-        const [type, postProtocolChannel, app] = args;
+      async (
+        args: [
+          PersistAppType,
+          StateChannel,
+          AppInstance | AppInstanceProposal,
+          SetStateCommitment,
+          ConditionalTransactionCommitment,
+        ],
+      ) => {
+        const [
+          type,
+          postProtocolChannel,
+          app,
+          signedSetStateCommitment,
+          signedConditionalTxCommitment,
+        ] = args;
         const { multisigAddress, numProposedApps, freeBalance } = postProtocolChannel;
         const { identityHash } = app;
 
@@ -70,6 +85,7 @@ export class MiniNode {
               multisigAddress,
               app as AppInstanceProposal,
               numProposedApps,
+              signedSetStateCommitment.toJson(),
             );
             break;
           }
@@ -84,6 +100,8 @@ export class MiniNode {
               multisigAddress,
               (app as AppInstance).toJson(),
               freeBalance.toJson(),
+              signedSetStateCommitment.toJson(),
+              signedConditionalTxCommitment.toJson(),
             );
             break;
           }

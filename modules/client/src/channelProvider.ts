@@ -151,7 +151,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         result = await this.walletDeposit(params);
         break;
       case ChannelMethods.chan_createSetupCommitment:
-        result = await this.createSetupCommitment(params.multisigAddress, params.commitment);
+        // deprecated
         break;
       case ChannelMethods.chan_createSetStateCommitment:
         result = await this.createSetStateCommitment(params.appIdentityHash, params.commitment);
@@ -254,21 +254,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     signedSetupCommitment: MinimalTransaction,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> => {
+    await this.store.updateSchemaVersion();
     return this.store.createStateChannel(channel, signedSetupCommitment, signedFreeBalanceUpdate);
   };
 
   private restoreState = async (): Promise<void> => {
     await this.store.restore();
-  };
-
-  private createSetupCommitment = async (
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> => {
-    await this.store.createSetupCommitment(multisigAddress, commitment);
-    // may be called on restore, if this is ever called assume the schema
-    // should be updated (either on start or restart)
-    await this.store.updateSchemaVersion();
   };
 
   private createSetStateCommitment = async (

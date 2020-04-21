@@ -162,6 +162,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     multisigAddress: string,
     appInstance: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+    signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
     const channel = await this.getStateChannel(multisigAddress);
     if (!channel) {
@@ -170,11 +172,32 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
       throw new Error(`App instance with hash ${appInstance.identityHash} already exists`);
     }
+    const oldChannel = channel;
+    const oldFreeBalanceUpdate = await this.getSetStateCommitment(
+      freeBalanceAppInstance.identityHash,
+    );
     channel.appInstances.push([appInstance.identityHash, appInstance]);
-    return this.saveStateChannel({
-      ...channel,
-      freeBalanceAppInstance,
-    });
+    try {
+      await Promise.all([
+        this.saveStateChannel({
+          ...channel,
+          freeBalanceAppInstance,
+        }),
+        this.updateSetStateCommitment(freeBalanceAppInstance.identityHash, signedFreeBalanceUpdate),
+        this.createConditionalTransactionCommitment(
+          appInstance.identityHash,
+          signedConditionalTxCommitment,
+        ),
+      ]);
+    } catch (e) {
+      console.error(`Caught error during createAppInstance, reverting store changes: ${e}`);
+      await this.saveStateChannel(oldChannel);
+      await this.updateSetStateCommitment(
+        freeBalanceAppInstance.identityHash,
+        oldFreeBalanceUpdate,
+      );
+      await this.removeConditionalTransactionCommitment(appInstance.identityHash);
+    }
   }
 
   async updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
@@ -228,6 +251,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     multisigAddress: string,
     appInstance: AppInstanceProposal,
     monotonicNumProposedApps: number,
+    signedSetStateCommitment: SetStateCommitmentJSON,
   ): Promise<void> {
     const channel = await this.getStateChannel(multisigAddress);
     if (!channel) {
@@ -236,8 +260,18 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (this.hasAppIdentityHash(appInstance.identityHash, channel.proposedAppInstances)) {
       throw new Error(`App proposal with hash ${appInstance.identityHash} already exists`);
     }
+    // in case we need to roll back
+    const oldChannel = channel;
     channel.proposedAppInstances.push([appInstance.identityHash, appInstance]);
-    return this.saveStateChannel({ ...channel, monotonicNumProposedApps });
+    try {
+      await Promise.all([
+        this.saveStateChannel({ ...channel, monotonicNumProposedApps }),
+        this.createSetStateCommitment(appInstance.identityHash, signedSetStateCommitment),
+      ]);
+    } catch (e) {
+      await this.saveStateChannel(oldChannel);
+      await this.removeSetStateCommitment(appInstance.identityHash);
+    }
   }
 
   async updateAppProposal(
@@ -298,6 +332,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return item;
   }
 
+  // deprecated from public interface
   async createSetupCommitment(
     multisigAddress: string,
     commitment: MinimalTransaction,
@@ -383,6 +418,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       throw new Error(`Cannot find conditional commitment to update for ${appIdentityHash}`);
     }
     return this.setItem(conditionalCommitmentKey, commitment);
+  }
+
+  private async removeConditionalTransactionCommitment(appIdentityHash: string): Promise<void> {
+    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
+    return this.removeItem(conditionalCommitmentKey);
   }
 
   async getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
