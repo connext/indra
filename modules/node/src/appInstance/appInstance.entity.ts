@@ -1,4 +1,4 @@
-import { AppState, HexString, OutcomeType } from "@connext/types";
+import { AppActions, AppStates, AppName, HexString, OutcomeType } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import {
   Entity,
@@ -21,7 +21,7 @@ export enum AppType {
 }
 
 @Entity()
-export class AppInstance<T extends AppState = any> {
+export class AppInstance<T extends AppName = any> {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -46,10 +46,10 @@ export class AppInstance<T extends AppState = any> {
   identityHash!: string;
 
   @Column("jsonb")
-  initialState!: T;
+  initialState!: AppStates[T];
 
   @Column("jsonb")
-  latestState!: T;
+  latestState!: AppStates[T];
 
   @Column("integer")
   latestVersionNumber!: number;
@@ -107,6 +107,9 @@ export class AppInstance<T extends AppState = any> {
 
   @Column("jsonb", { nullable: true })
   meta?: object;
+
+  @Column("jsonb", { nullable: true })
+  latestAction!: AppActions[T];
 
   // Interpreter-related Fields
   @Column("jsonb", { nullable: true })
