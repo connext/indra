@@ -16,7 +16,7 @@ import {
 import { toBN } from "@connext/utils";
 import { Zero, AddressZero } from "ethers/constants";
 import { getManager } from "typeorm";
-import { bigNumberify } from "ethers/utils";
+import { bigNumberify, defaultAbiCoder } from "ethers/utils";
 
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import {
@@ -37,6 +37,16 @@ import { SetStateCommitment } from "../setStateCommitment/setStateCommitment.ent
 import { Channel } from "../channel/channel.entity";
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
+import { entityToStoredChallenge, ChallengeRepository, ProcessedBlockRepository } from "../challenge/challenge.repository";
+import { Challenge, ProcessedBlock } from "../challenge/challenge.entity";
+import {
+  entityToStateProgressedEventPayload,
+  StateProgressedEvent,
+} from "../stateProgressedEvent/stateProgressedEvent.entity";
+import {
+  entityToChallengeUpdatedPayload,
+  ChallengeUpdatedEvent,
+} from "../challengeUpdatedEvent/challengeUpdatedEvent.entity";
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
@@ -49,6 +59,8 @@ export class CFCoreStore implements IStoreService {
     private readonly withdrawCommitmentRepository: WithdrawCommitmentRepository,
     private readonly configService: ConfigService,
     private readonly setupCommitmentRepository: SetupCommitmentRepository,
+    private readonly challengeRepository: ChallengeRepository,
+    private readonly processedBlockRepository: ProcessedBlockRepository,
   ) {}
 
   getSchemaVersion(): Promise<number> {
@@ -595,71 +607,154 @@ export class CFCoreStore implements IStoreService {
 
   ////// Watcher methods
   async getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined> {
-    throw new Error("Disputes not implememented");
+    const challenge = await this.challengeRepository.findByIdentityHash(appIdentityHash);
+    return entityToStoredChallenge(challenge);
   }
 
   async createAppChallenge(
     appIdentityHash: string,
     appChallenge: StoredAppChallenge,
   ): Promise<void> {
-    throw new Error("Disputes not implememented");
+    const app = await this.appInstanceRepository.findByIdentityHashOrThrow(appIdentityHash);
+
+    const channel = await this.channelRepository.findByAppIdentityHashOrThrow(appIdentityHash);
+
+    const existing = await this.challengeRepository.findByIdentityHash(appIdentityHash);
+    if (existing) {
+      throw new Error(`Found existing app challenge for app ${appIdentityHash}`);
+    }
+    await this.challengeRepository
+      .createQueryBuilder("challenge")
+      .insert()
+      .into(Challenge)
+      .values({
+        ...appChallenge,
+        app,
+        channel,
+      })
+      .execute();
   }
 
   async updateAppChallenge(
     appIdentityHash: string,
     appChallenge: StoredAppChallenge,
   ): Promise<void> {
-    throw new Error("Disputes not implememented");
+    const existing = await this.challengeRepository.findByIdentityHash(appIdentityHash);
+    if (!existing) {
+      throw new Error(`Could not find existing app challenge for app ${appIdentityHash}`);
+    }
+
+    await this.challengeRepository
+      .createQueryBuilder("challenge")
+      .update(Challenge)
+      .set({
+        ...appChallenge,
+      })
+      .where("challenge.app.identityHash = :appIdentityHash", { appIdentityHash })
+      .execute();
   }
 
   async getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
-    throw new Error("Disputes not implememented");
+    const active = await this.challengeRepository.findActiveChallengesByMultisig(multisigAddress);
+    return active.map(entityToStoredChallenge);
   }
 
   ///// Events
   async getLatestProcessedBlock(): Promise<number> {
-    throw new Error("Disputes not implememented");
+    const latest = await this.processedBlockRepository.findLatestProcessedBlock();
+    if (!latest) {
+      return 0;
+    }
+    return latest.blockNumber;
   }
 
   async updateLatestProcessedBlock(blockNumber: number): Promise<void> {
-    throw new Error("Disputes not implememented");
+    const entity = new ProcessedBlock();
+    entity.blockNumber = blockNumber;
+    await this.processedBlockRepository.save(entity);
   }
 
   async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
-    throw new Error("Disputes not implememented");
+    const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
+
+    return challenge.stateProgressedEvents.map(entityToStateProgressedEventPayload);
   }
 
   async createStateProgressedEvent(
     appIdentityHash: string,
     event: StateProgressedEventPayload,
   ): Promise<void> {
-    throw new Error("Disputes not implememented");
-  }
+    const { signature, action, timeout, turnTaker } = event;
+    // safe to throw here because challenges should never be created from a
+    // `StateProgressed` event, must always go through the set state game
+    const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
+    const entity = new StateProgressedEvent();
+    entity.action = defaultAbiCoder.decode([challenge.app.actionEncoding!], action);
+    entity.challenge = challenge;
+    entity.signature = signature;
+    entity.timeout = timeout;
+    entity.turnTaker = turnTaker;
 
-  async updateStateProgressedEvent(
-    appIdentityHash: string,
-    event: StateProgressedEventPayload,
-  ): Promise<void> {
-    throw new Error("Disputes not implememented");
+    await getManager().transaction(async transactionalEntityManager => {
+      await transactionalEntityManager.save(entity);
+
+      // all contracts emit a `ChallengeUpdated` event, so update any
+      // challenge fields using data from that event, not this one
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .relation(Challenge, "stateProgressedEvents")
+        .of(challenge.id)
+        .add(entity.id);
+    });
   }
 
   async getChallengeUpdatedEvents(
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]> {
-    throw new Error("Disputes not implememented");
+    const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
+
+    return challenge.challengeUpdatedEvents.map(entityToChallengeUpdatedPayload);
   }
 
   async createChallengeUpdatedEvent(
     appIdentityHash: string,
     event: ChallengeUpdatedEventPayload,
   ): Promise<void> {
-    throw new Error("Disputes not implememented");
-  }
+    const { appStateHash, versionNumber, finalizesAt, status } = event;
+    // safe to throw here because challenges should never be created from a
+    // `StateProgressed` event, must always go through the set state game
+    let challenge = await this.challengeRepository.findByIdentityHash(appIdentityHash);
+    if (!challenge) {
+      // could be catching event that creates a challenge
+      const storedChallenge: StoredAppChallenge = {
+        identityHash: appIdentityHash,
+        appStateHash,
+        versionNumber,
+        finalizesAt,
+        status,
+      };
+      await this.createAppChallenge(appIdentityHash, storedChallenge);
+      challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
+    }
+    const entity = new ChallengeUpdatedEvent();
+    entity.appStateHash = appStateHash;
+    entity.challenge = challenge;
+    entity.finalizesAt = finalizesAt;
+    entity.status = status;
+    entity.versionNumber = versionNumber;
 
-  async updateChallengeUpdatedEvent(
-    appIdentityHash: string,
-    event: ChallengeUpdatedEventPayload,
-  ): Promise<void> {
-    throw new Error("Disputes not implememented");
+    await getManager().transaction(async transactionalEntityManager => {
+      await transactionalEntityManager.save(entity);
+
+      // all contracts emit a `ChallengeUpdated` event, so update any
+      // challenge fields using data from that event, not this one
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .relation(Challenge, "stateProgressedEvents")
+        .of(challenge.id)
+        .add(entity.id);
+    });
   }
 }
