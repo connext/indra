@@ -8,6 +8,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  PrimaryColumn,
 } from "typeorm";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
@@ -21,7 +22,7 @@ import { toBN } from "@connext/utils";
 
 @Entity()
 export class ProcessedBlock {
-  @Column("integer", { unique: true })
+  @PrimaryColumn("integer", { unique: true })
   blockNumber: number;
 }
 
