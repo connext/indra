@@ -62,6 +62,8 @@ export class Watcher implements IWatcher {
     );
   }
 
+  /////////////////////////////////////
+  //////// Static methods
   // used to create a new watcher instance from the passed
   // in options (which are cast to the proper values)
   public static init = async (opts: WatcherInitOptions): Promise<Watcher> => {
@@ -98,7 +100,8 @@ export class Watcher implements IWatcher {
     return watcher;
   };
 
-  //////// Watcher methods
+  /////////////////////////////////////
+  //////// Public methods
   // will begin an onchain dispute. emits a `DisputeInitiated` event if
   // the initiation was successful, otherwise emits a `DisputeFailed`
   // event
@@ -187,6 +190,7 @@ export class Watcher implements IWatcher {
     this.emitter.removeAllListeners();
   }
 
+  /////////////////////////////////////
   //////// Private methods
   // will insert + respond to any events that have occurred from
   // the latest processed block to the provided block
