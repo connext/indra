@@ -9,13 +9,8 @@ import {
 import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { getSetStateCommitment } from "../ethereum";
-import {
-  Context,
-  PersistAppType,
-  PersistCommitmentType,
-  ProtocolExecutionFlow,
-} from "../types";
+import { getSetStateCommitment, SetStateCommitment } from "../ethereum";
+import { Context, PersistAppType, PersistCommitmentType, ProtocolExecutionFlow } from "../types";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
@@ -89,6 +84,29 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 6ms
     const mySignature = yield [OP_SIGN, setStateCommitmentHash];
 
+    // add singly signed set state commitment to store without overwriting
+    // or removing previous set state commitment to allow watcher service
+    // to dispute using the `progressState` or `setAndProgressState` paths
+    // using only items in the store
+    const isAppInitiator = appInstance.initiatorIdentifier !== responderIdentifier;
+    await setStateCommitment.addSignatures(
+      isAppInitiator ? (mySignature as any) : undefined,
+      isAppInitiator ? undefined : (mySignature as any),
+    );
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.CreateSetState,
+      setStateCommitment,
+      appIdentityHash,
+    ];
+    // also save the app instance with a `latestAction`
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.UpdateInstance,
+      preProtocolStateChannel,
+      preAppInstance.setAction(action),
+    ];
+
     // 117ms
     const {
       customData: { signature: counterpartySig },
@@ -110,22 +128,31 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     await assertIsValidSignature(responderAddr, setStateCommitmentHash, counterpartySig);
 
     // add signatures and write commitment to store
-    const isAppInitiator = appInstance.initiatorIdentifier !== responderIdentifier;
     await setStateCommitment.addSignatures(
-      isAppInitiator
-        ? mySignature as any
-        : counterpartySig,
-      isAppInitiator
-        ? counterpartySig
-        : mySignature as any,
+      isAppInitiator ? (mySignature as any) : counterpartySig,
+      isAppInitiator ? counterpartySig : (mySignature as any),
     );
 
+    // add sigs to most recent set state
     yield [
       PERSIST_COMMITMENT,
       PersistCommitmentType.UpdateSetState,
       setStateCommitment,
       appIdentityHash,
     ];
+
+    // remove previous commitment
+    const jsonToRemove = (await store.getSetStateCommitments(appIdentityHash)).filter(
+      commitment => commitment.versionNumber === setStateCommitment.versionNumber - 1,
+    )[0];
+    if (jsonToRemove) {
+      yield [
+        PERSIST_COMMITMENT,
+        PersistCommitmentType.RemoveSetState,
+        SetStateCommitment.fromJson(jsonToRemove),
+        appIdentityHash,
+      ];
+    }
 
     yield [
       PERSIST_APP_INSTANCE,
@@ -199,14 +226,12 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // add signatures and write commitment to store
     const isAppInitiator = appInstance.initiatorIdentifier !== initiatorIdentifier;
     await setStateCommitment.addSignatures(
-      isAppInitiator
-        ? mySignature as any
-        : counterpartySignature,
-      isAppInitiator
-        ? counterpartySignature
-        : mySignature as any,
+      isAppInitiator ? (mySignature as any) : counterpartySignature,
+      isAppInitiator ? counterpartySignature : (mySignature as any),
     );
 
+    // responder will not be able to call `progressState` or
+    // `setAndProgressState` so only save double signed commitment
     yield [
       PERSIST_COMMITMENT,
       PersistCommitmentType.UpdateSetState,

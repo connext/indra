@@ -291,6 +291,13 @@ export class Node {
             );
             break;
           }
+          case PersistCommitmentType.RemoveSetState: {
+            await this.storeService.removeSetStateCommitment(
+              identifier,
+              (commitment as SetStateCommitment).toJson(),
+            );
+            break;
+          }
           case PersistCommitmentType.CreateWithdrawal: {
             await this.storeService.createWithdrawalCommitment(
               identifier,
