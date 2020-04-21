@@ -143,6 +143,7 @@ export interface IWatcherStoreService {
   getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined>;
   createAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void>;
   updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void>;
+  getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]>;
 
   ///// Events
   getLatestProcessedBlock(): Promise<number>;
@@ -195,7 +196,7 @@ export interface IWatcherStoreService {
   getSetupCommitment(multisigAddress: Address): Promise<MinimalTransaction | undefined>;
 
   ///// SetState commitment
-  getSetStateCommitment(appIdentityHash: Bytes32): Promise<SetStateCommitmentJSON | undefined>;
+  getSetStateCommitments(appIdentityHash: Bytes32): Promise<SetStateCommitmentJSON[]>;
 
   ///// Conditional tx commitment
   getConditionalTransactionCommitment(
