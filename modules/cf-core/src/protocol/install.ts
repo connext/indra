@@ -485,6 +485,7 @@ function computeStateChannelTransition(
     /* outcomeType */ outcomeType,
     /* multisig */ stateChannel.multisigAddress,
     meta,
+    /* latestAction */ undefined,
     twoPartyOutcomeInterpreterParams,
     multiAssetMultiPartyCoinTransferInterpreterParams,
     singleAssetTwoPartyCoinTransferInterpreterParams,

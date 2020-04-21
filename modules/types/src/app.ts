@@ -44,6 +44,7 @@ export type AppInstanceJson = {
   stateTimeout: HexString;
   outcomeType: string;
   meta?: object;
+  latestAction?: SolidityValueType;
   // Interpreter Params
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParamsJson;
   multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParamsJson;
