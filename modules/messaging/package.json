@@ -18,7 +18,7 @@
   "dependencies": {
     "@connext/types": "6.0.6",
     "@connext/utils": "6.0.6",
-    "ts-natsutil": "1.0.4"
+    "ts-natsutil": "1.0.6"
   },
   "devDependencies": {
     "rollup": "1.31.1",
