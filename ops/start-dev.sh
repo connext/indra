@@ -87,7 +87,7 @@ nats_ws_port="4221"
 # docker images
 builder_image="${project}_builder"
 webserver_image="$builder_image"
-database_image="postgres:9-alpine"
+database_image="${project}_database"
 ethprovider_image="$builder_image"
 nats_image="provide/nats-server:indra"
 node_image="$builder_image"
@@ -246,6 +246,7 @@ services:
     deploy:
       mode: 'global'
     environment:
+      CHAIN_ID: '$chainId'
       POSTGRES_DB: '$project'
       POSTGRES_PASSWORD_FILE: '$pg_password_file'
       POSTGRES_USER: '$project'

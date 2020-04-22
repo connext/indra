@@ -4,13 +4,15 @@ set -e
 ########################################
 ## Setup Env
 
-export ETH_NETWORK=$ETH_NETWORK
+export CHAIN_ID=$CHAIN_ID
 
 # 60 sec/min * 30 min = 1800
 backup_frequency="1800"
 should_restore_backup="no"
-mkdir -p snapshots
-backup_file="snapshots/`ls snapshots | grep "$ETH_NETWORK" | sort -r | head -n 1`"
+mkdir -p snapshots /var/lib/postgresql/data/pg_log
+backup_file="snapshots/`ls snapshots | grep "$CHAIN_ID" | sort -r | head -n 1`"
+
+cp -f postgresql.conf /var/lib/postgresql/data/postgresql.conf
 
 ########################################
 ## Helper functions
@@ -82,7 +84,7 @@ fi
 # Start backing up the db periodically
 log "===> Starting backer upper"
 while true
-do sleep $backup_frequency && bash backup.sh $ETH_NETWORK
+do sleep $backup_frequency && bash backup.sh $CHAIN_ID
 done &
 
 # Start database to serve requests from clients
