@@ -146,9 +146,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         ),
       ]);
     } catch (e) {
-      await this.removeStateChannel(stateChannel.multisigAddress);
-      await this.removeSetupCommitment(stateChannel.multisigAddress);
       await this.removeSetStateCommitment(signedFreeBalanceUpdate);
+      await this.removeSetupCommitment(stateChannel.multisigAddress);
+      await this.removeStateChannel(stateChannel.multisigAddress);
       throw e;
     }
   }
@@ -201,6 +201,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
           ...channel,
           freeBalanceAppInstance,
         }),
+        this.removeSetStateCommitment(oldFreeBalanceUpdate),
         this.saveSetStateCommitment(freeBalanceAppInstance.identityHash, signedFreeBalanceUpdate),
         this.saveConditionalTransactionCommitment(
           appInstance.identityHash,
@@ -208,10 +209,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         ),
       ]);
     } catch (e) {
-      console.error(`Caught error during createAppInstance, reverting store changes: ${e}`);
-      await this.saveStateChannel(oldChannel);
-      await this.saveSetStateCommitment(freeBalanceAppInstance.identityHash, oldFreeBalanceUpdate);
       await this.removeConditionalTransactionCommitment(appInstance.identityHash);
+      await this.removeSetStateCommitment(signedFreeBalanceUpdate);
+      await this.saveSetStateCommitment(freeBalanceAppInstance.identityHash, oldFreeBalanceUpdate);
+      await this.saveStateChannel(oldChannel);
+      throw e;
     }
   }
 
@@ -237,12 +239,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     try {
       await Promise.all([
         this.saveStateChannel(channel),
+        this.removeSetStateCommitment(oldCommitment),
         this.saveSetStateCommitment(appInstance.identityHash, signedSetStateCommitment),
       ]);
     } catch (e) {
-      console.error(`Caught error during updateAppInstance, reverting store changes: ${e}`);
-      await this.saveStateChannel(oldChannel);
+      await this.removeSetStateCommitment(signedSetStateCommitment);
       await this.saveSetStateCommitment(appInstance.identityHash, oldCommitment);
+      await this.saveStateChannel(oldChannel);
+      throw e;
     }
     return;
   }
@@ -277,18 +281,20 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
           ...channel,
           freeBalanceAppInstance,
         }),
+        this.removeSetStateCommitment(oldFreeBalanceUpdate),
         this.saveSetStateCommitment(
           channel.freeBalanceAppInstance.identityHash,
           signedFreeBalanceUpdate,
         ),
       ]);
     } catch (e) {
-      console.error(`Caught error during removeAppInstance, reverting store changes: ${e}`);
-      await this.saveStateChannel(oldChannel);
-      this.saveSetStateCommitment(
+      await this.removeSetStateCommitment(signedFreeBalanceUpdate);
+      await this.saveSetStateCommitment(
         channel.freeBalanceAppInstance.identityHash,
         oldFreeBalanceUpdate,
       );
+      await this.saveStateChannel(oldChannel);
+      throw e;
     }
   }
 
@@ -326,8 +332,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         this.saveSetStateCommitment(appInstance.identityHash, signedSetStateCommitment),
       ]);
     } catch (e) {
-      await this.saveStateChannel(oldChannel);
       await this.removeSetStateCommitment(signedSetStateCommitment);
+      await this.saveStateChannel(oldChannel);
+      throw e;
     }
   }
 
@@ -353,10 +360,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return channel.freeBalanceAppInstance;
   }
 
-  async updateFreeBalance(
-    multisigAddress: string,
-    freeBalance: AppInstanceJson,
-  ): Promise<void> {
+  async updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
     const channel = await this.getStateChannel(multisigAddress);
     if (!channel) {
       throw new Error(`Cannot update free balance without channel: ${multisigAddress}`);
