@@ -169,8 +169,9 @@ export const connect = async (
   // Make sure our store schema is up-to-date
   const schemaVersion = await client.channelProvider.getSchemaVersion();
   if (!schemaVersion || schemaVersion !== STORE_SCHEMA_VERSION) {
-    logger.debug(`Outdated store schema detected, restoring state`);
+    logger.info(`Outdated store schema detected, restoring state`);
     await client.restoreState();
+    logger.info(`State restored successfully`);
     // increment / update store schema version, defaults to types const
     // of `STORE_SCHEMA_VERSION`
     await client.channelProvider.updateSchemaVersion();
@@ -180,8 +181,9 @@ export const connect = async (
     await client.getFreeBalance();
   } catch (e) {
     if (e.message.includes("StateChannel does not exist yet")) {
-      logger.debug(`Restoring client state: ${e.stack || e.message}`);
+      logger.info(`Our store does not contain channel, attempting to restore: ${e.stack || e.message}`);
       await client.restoreState();
+      logger.info(`State restored successfully`);
     } else {
       logger.error(`Failed to get free balance: ${e.stack || e.message}`);
       throw e;
@@ -191,15 +193,16 @@ export const connect = async (
   // Make sure our state schema is up-to-date
   const { data: sc } = await client.getStateChannel();
   if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion || !sc.addresses) {
-    logger.debug("State schema is out-of-date, restoring an up-to-date client state");
+    logger.info("State schema is out-of-date, restoring an up-to-date client state");
     await client.restoreState();
+    logger.info(`State restored successfully`);
   }
 
   logger.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
   // cleanup any hanging registry apps
-  logger.debug("Cleaning up registry apps");
+  logger.info("Cleaning up registry apps");
   try {
     await client.cleanupRegistryApps();
   } catch (e) {
@@ -208,6 +211,7 @@ export const connect = async (
         e.message}... will attempt again on next connection`,
     );
   }
+  logger.info("Cleaned up registry apps");
 
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting
