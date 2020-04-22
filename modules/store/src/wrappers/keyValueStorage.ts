@@ -395,15 +395,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return item;
   }
 
-  async getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
-    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
-    const item = await this.getItem<MinimalTransaction>(withdrawalKey);
-    if (!item) {
-      return undefined;
-    }
-    return item;
-  }
-
   async getUserWithdrawals(): Promise<WithdrawalMonitorObject[]> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
     const item = await this.getItem<WithdrawalMonitorObject[]>(withdrawalKey);

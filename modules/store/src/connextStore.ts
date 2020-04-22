@@ -249,10 +249,6 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getConditionalTransactionCommitment(appIdentityHash);
   }
 
-  getWithdrawalCommitment(multisigAddress: Address): Promise<MinimalTransaction> {
-    return this.internalStore.getWithdrawalCommitment(multisigAddress);
-  }
-
   getUserWithdrawals(): Promise<WithdrawalMonitorObject[]> {
     return this.internalStore.getUserWithdrawals();
   }

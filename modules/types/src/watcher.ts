@@ -209,7 +209,4 @@ export interface IWatcherStoreService {
   getConditionalTransactionCommitment(
     appIdentityHash: Bytes32,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined>;
-
-  // Withdrawal commitment
-  getWithdrawalCommitment(multisigAddress: Address): Promise<MinimalTransaction | undefined>;
 }

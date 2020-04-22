@@ -637,10 +637,6 @@ export class CFCoreStore implements IStoreService {
     );
   }
 
-  getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction> {
-    return this.withdrawCommitmentRepository.getWithdrawalCommitmentTx(multisigAddress);
-  }
-
   clear(): Promise<void> {
     throw new Error("Method not implemented.");
   }
