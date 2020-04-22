@@ -61,8 +61,9 @@ const createTestChannelWithAppInstance = async (
     multisigAddress,
   );
 
+  const setStateCommitment = createSetStateCommitmentJSON();
   const appProposal = createAppInstanceProposal({ appSeqNo: 2 });
-  await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2);
+  await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2, setStateCommitment);
 
   const userParticipantAddr = userIdentifier;
   const nodeParticipantAddr = nodeIdentifier;
@@ -77,7 +78,15 @@ const createTestChannelWithAppInstance = async (
     ...channelJson.freeBalanceAppInstance!,
     latestState: { appState: "created app instance" },
   };
-  await cfCoreStore.createAppInstance(multisigAddress, appInstance, updatedFreeBalance);
+  const freeBalanceUpdateCommitment = createSetStateCommitmentJSON();
+  const conditionalCommitment = createConditionalTransactionCommitmentJSON();
+  await cfCoreStore.createAppInstance(
+    multisigAddress,
+    appInstance,
+    updatedFreeBalance,
+    freeBalanceUpdateCommitment,
+    conditionalCommitment,
+  );
 
   return {
     multisigAddress,

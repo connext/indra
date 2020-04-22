@@ -23,7 +23,7 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
 import { getConditionalTransactionCommitment, getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
-import { Context, PersistAppType, PersistCommitmentType, ProtocolExecutionFlow } from "../types";
+import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
@@ -35,7 +35,6 @@ const {
   IO_SEND,
   IO_SEND_AND_WAIT,
   PERSIST_APP_INSTANCE,
-  PERSIST_COMMITMENT,
 } = Opcode;
 
 /**
@@ -195,30 +194,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       newAppInstance,
       freeBalanceUpdateData,
       conditionalTxCommitment,
-    ];
-
-    // deprecated
-    // 12ms
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateConditional,
-      conditionalTxCommitment,
-      newAppInstance.identityHash,
-    ];
-
-    yield [
-      PERSIST_APP_INSTANCE,
-      PersistAppType.RemoveProposal,
-      stateChannelAfter,
-      stateChannelBefore.proposedAppInstances.get(newAppInstance.identityHash),
-    ];
-
-    // 10ms
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
-      freeBalanceUpdateData,
-      stateChannelAfter.freeBalance.identityHash,
     ];
 
     // 51ms
@@ -391,29 +366,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       newAppInstance,
       freeBalanceUpdateData,
       conditionalTxCommitment,
-    ];
-
-    // deprecated
-    // 12ms
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateConditional,
-      conditionalTxCommitment,
-      newAppInstance.identityHash,
-    ];
-
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
-      freeBalanceUpdateData,
-      stateChannelAfter.freeBalance.identityHash,
-    ];
-
-    yield [
-      PERSIST_APP_INSTANCE,
-      PersistAppType.RemoveProposal,
-      stateChannelAfter,
-      stateChannelBefore.proposedAppInstances.get(newAppInstance.identityHash),
     ];
 
     const m4 = {

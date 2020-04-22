@@ -11,7 +11,7 @@ import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment, getSetStateCommitment } from "../ethereum";
 import { StateChannel } from "../models";
-import { Context, PersistCommitmentType, ProtocolExecutionFlow } from "../types";
+import { Context, ProtocolExecutionFlow } from "../types";
 
 import { assertIsValidSignature } from "./utils";
 
@@ -21,10 +21,8 @@ const {
   OP_VALIDATE,
   IO_SEND,
   IO_SEND_AND_WAIT,
-  PERSIST_COMMITMENT,
   PERSIST_STATE_CHANNEL,
 } = Opcode;
-const { CreateSetup } = PersistCommitmentType;
 
 /**
  * @description This exchange is described at the following URL:
@@ -128,21 +126,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceUpdateData,
     ];
 
-    // DEPRECATED: removed from store implemetations, only here for backwards compatibility
-    yield [
-      PERSIST_COMMITMENT,
-      CreateSetup,
-      await setupCommitment.getSignedTransaction(),
-      stateChannel.multisigAddress,
-    ];
-
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateSetState,
-      freeBalanceUpdateData,
-      stateChannel.freeBalance.identityHash,
-    ];
-
     logTime(log, start, `Initiation finished`);
   },
 
@@ -219,21 +202,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel,
       await setupCommitment.getSignedTransaction(),
       freeBalanceUpdateData,
-    ];
-
-    // DEPRECATED: removed from store implemetations, only here for backwards compatibility
-    yield [
-      PERSIST_COMMITMENT,
-      CreateSetup,
-      await setupCommitment.getSignedTransaction(),
-      stateChannel.multisigAddress,
-    ];
-
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateSetState,
-      freeBalanceUpdateData,
-      stateChannel.freeBalance.identityHash,
     ];
 
     yield [

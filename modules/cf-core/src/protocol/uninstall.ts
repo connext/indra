@@ -16,7 +16,6 @@ import { AppInstance, StateChannel } from "../models";
 import {
   Context,
   PersistAppType,
-  PersistCommitmentType,
   ProtocolExecutionFlow,
 } from "../types";
 
@@ -34,7 +33,6 @@ const {
   IO_SEND,
   IO_SEND_AND_WAIT,
   PERSIST_APP_INSTANCE,
-  PERSIST_COMMITMENT,
 } = Opcode;
 /**
  * @description This exchange is described at the following URL:
@@ -140,14 +138,6 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       uninstallCommitment,
     ];
 
-    // deprecated
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
-      uninstallCommitment,
-      postProtocolStateChannel.freeBalance.identityHash,
-    ];
-
     // 204ms
     logTime(log, start, `Initiation finished`);
   },
@@ -235,13 +225,6 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
       appToUninstall,
       uninstallCommitment,
-    ];
-
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
-      uninstallCommitment,
-      postProtocolStateChannel.freeBalance.identityHash,
     ];
 
     // 0ms

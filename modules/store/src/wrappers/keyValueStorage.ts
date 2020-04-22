@@ -357,8 +357,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return item;
   }
 
-  // deprecated from public interface
-  async createSetupCommitment(
+  private async createSetupCommitment(
     multisigAddress: string,
     commitment: MinimalTransaction,
   ): Promise<void> {
@@ -385,7 +384,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return item;
   }
 
-  async createSetStateCommitment(
+  private async createSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
@@ -396,7 +395,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.setItem(setStateKey, commitment);
   }
 
-  async updateSetStateCommitment(
+  private async updateSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
@@ -457,28 +456,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       return undefined;
     }
     return item;
-  }
-
-  async createWithdrawalCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
-    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
-    if (await this.getItem<MinimalTransaction>(withdrawalKey)) {
-      throw new Error(`Found existing withdrawal commitment for ${withdrawalKey}`);
-    }
-    return this.setItem(withdrawalKey, commitment);
-  }
-
-  async updateWithdrawalCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
-    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
-    if (!(await this.getItem<MinimalTransaction>(withdrawalKey))) {
-      throw new Error(`Could not find existing withdrawal commitment for ${withdrawalKey}`);
-    }
-    return this.setItem(withdrawalKey, commitment);
   }
 
   async getUserWithdrawals(): Promise<WithdrawalMonitorObject[]> {

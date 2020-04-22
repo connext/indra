@@ -235,27 +235,9 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getSetupCommitment(multisigAddress);
   }
 
-  // deprecated
-  async createSetupCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {}
-
   getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON> {
     return this.internalStore.getSetStateCommitment(appIdentityHash);
   }
-
-  // deprecated
-  async createSetStateCommitment(
-    appIdentityHash: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> {}
-
-  // deprecated
-  async updateSetStateCommitment(
-    appIdentityHash: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> {}
 
   getConditionalTransactionCommitment(
     appIdentityHash: string,
@@ -263,34 +245,8 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getConditionalTransactionCommitment(appIdentityHash);
   }
 
-  // deprecated
-  async createConditionalTransactionCommitment(
-    appIdentityHash: string,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void> {}
-
-  // deprecated
-  async updateConditionalTransactionCommitment(
-    appIdentityHash: string,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void> {}
-
   getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction> {
     return this.internalStore.getWithdrawalCommitment(multisigAddress);
-  }
-
-  createWithdrawalCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
-    return this.internalStore.createWithdrawalCommitment(multisigAddress, commitment);
-  }
-
-  updateWithdrawalCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
-    return this.internalStore.updateWithdrawalCommitment(multisigAddress, commitment);
   }
 
   getUserWithdrawals(): Promise<WithdrawalMonitorObject[]> {

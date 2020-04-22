@@ -5,7 +5,6 @@ import {
   CFChannelProviderOptions,
   ChannelMethods,
   ChannelProviderConfig,
-  ConditionalTransactionCommitmentJSON,
   ConnextClientStorePrefix,
   ConnextEventEmitter,
   CreateChannelMessage,
@@ -150,15 +149,6 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case ChannelMethods.chan_walletDeposit:
         result = await this.walletDeposit(params);
         break;
-      case ChannelMethods.chan_createSetupCommitment:
-        // deprecated
-        break;
-      case ChannelMethods.chan_createSetStateCommitment:
-        result = await this.createSetStateCommitment(params.appIdentityHash, params.commitment);
-        break;
-      case ChannelMethods.chan_createConditionalCommitment:
-        result = await this.createConditionalCommitment(params.appIdentityHash, params.commitment);
-        break;
       case ChannelMethods.chan_getSchemaVersion:
         result = await this.getSchemaVersion();
         break;
@@ -260,20 +250,6 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   private restoreState = async (): Promise<void> => {
     await this.store.restore();
-  };
-
-  private createSetStateCommitment = async (
-    appIdentityHash: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> => {
-    await this.store.createSetStateCommitment(appIdentityHash, commitment);
-  };
-
-  private createConditionalCommitment = async (
-    appIdentityHash: string,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void> => {
-    await this.store.createConditionalTransactionCommitment(appIdentityHash, commitment);
   };
 
   private async getSchemaVersion() {

@@ -6,7 +6,6 @@ import {
   Opcode,
   PublicIdentifier,
   MinimalTransaction,
-  SetStateCommitmentJSON,
 } from "@connext/types";
 import { getRandomChannelSigner, nullLogger } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
@@ -46,7 +45,6 @@ export class MiniNode {
     this.protocolRunner = new ProtocolRunner(networkContext, provider, store, nullLogger);
     this.scm = new Map<string, StateChannel>();
     this.protocolRunner.register(Opcode.OP_SIGN, makeSigner(this.signer));
-    this.protocolRunner.register(Opcode.PERSIST_COMMITMENT, () => {});
     this.protocolRunner.register(
       Opcode.PERSIST_STATE_CHANNEL,
       async (args: [StateChannel, MinimalTransaction, SetStateCommitment]) => {

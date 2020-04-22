@@ -123,44 +123,6 @@ export interface IStoreService extends IWatcherStoreService {
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void>;
 
-  ///// Setup commitment
-  // deprecated
-  createSetupCommitment(multisigAddress: Address, commitment: MinimalTransaction): Promise<void>;
-  // no update, only ever created once
-
-  ///// SetState commitment
-  createSetStateCommitment(
-    appIdentityHash: Bytes32,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void>;
-  updateSetStateCommitment(
-    appIdentityHash: Bytes32,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void>;
-  // no removal for disputes, only 1 per app thats
-  // always updated when app is updated
-
-  ///// Conditional tx commitment
-  createConditionalTransactionCommitment(
-    appIdentityHash: Bytes32,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void>;
-  updateConditionalTransactionCommitment(
-    appIdentityHash: Bytes32,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void>;
-  // no removal for disputes
-
-  ///// Withdrawal commitment
-  createWithdrawalCommitment(
-    multisigAddress: Address,
-    commitment: MinimalTransaction,
-  ): Promise<void>;
-  updateWithdrawalCommitment(
-    multisigAddress: Address,
-    commitment: MinimalTransaction,
-  ): Promise<void>;
-
   ///// Resetting methods
   clear(): Promise<void>;
   restore(): Promise<void>;

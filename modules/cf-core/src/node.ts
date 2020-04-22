@@ -29,7 +29,6 @@ import { createRpcRouter } from "./methods";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
 import {
-  MultisigCommitment,
   SetStateCommitment,
   ConditionalTransactionCommitment,
 } from "./ethereum";
@@ -38,7 +37,7 @@ import { StateChannel, AppInstance } from "./models";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
-import { MethodRequest, MethodResponse, PersistAppType, PersistCommitmentType } from "./types";
+import { MethodRequest, MethodResponse, PersistAppType } from "./types";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -238,68 +237,6 @@ export class Node {
           signedFreeBalanceUpdate.toJson(),
         );
         await this.storeService.updateSchemaVersion(STORE_SCHEMA_VERSION);
-      },
-    );
-
-    protocolRunner.register(
-      Opcode.PERSIST_COMMITMENT,
-      async (
-        args: [
-          PersistCommitmentType,
-          MultisigCommitment | SetStateCommitment | MinimalTransaction,
-          string,
-        ],
-      ) => {
-        const [commitmentType, commitment, identifier] = args;
-
-        switch (commitmentType) {
-          case PersistCommitmentType.CreateSetup: {
-            this.log.warn(`Deprecated method called: PersistCommitmentType.CreateSetup`);
-            break;
-          }
-          case PersistCommitmentType.CreateConditional: {
-            await this.storeService.createConditionalTransactionCommitment(
-              identifier,
-              (commitment as ConditionalTransactionCommitment).toJson(),
-            );
-            break;
-          }
-          case PersistCommitmentType.UpdateConditional: {
-            await this.storeService.updateConditionalTransactionCommitment(
-              identifier,
-              (commitment as ConditionalTransactionCommitment).toJson(),
-            );
-            break;
-          }
-          case PersistCommitmentType.CreateSetState: {
-            this.log.warn(`Deprecated method called: PersistCommitmentType.CreateSetState`);
-            break;
-          }
-          case PersistCommitmentType.UpdateSetState: {
-            await this.storeService.updateSetStateCommitment(
-              identifier,
-              (commitment as SetStateCommitment).toJson(),
-            );
-            break;
-          }
-          case PersistCommitmentType.CreateWithdrawal: {
-            await this.storeService.createWithdrawalCommitment(
-              identifier,
-              commitment as MinimalTransaction,
-            );
-            break;
-          }
-          case PersistCommitmentType.UpdateWithdrawal: {
-            await this.storeService.updateWithdrawalCommitment(
-              identifier,
-              commitment as MinimalTransaction,
-            );
-            break;
-          }
-          default: {
-            throw new Error(`Unrecognized commitment type: ${commitmentType}`);
-          }
-        }
       },
     );
 

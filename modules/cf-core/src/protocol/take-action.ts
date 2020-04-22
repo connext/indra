@@ -13,7 +13,6 @@ import { getSetStateCommitment } from "../ethereum";
 import {
   Context,
   PersistAppType,
-  PersistCommitmentType,
   ProtocolExecutionFlow,
 } from "../types";
 
@@ -26,7 +25,6 @@ const {
   IO_SEND,
   IO_SEND_AND_WAIT,
   PERSIST_APP_INSTANCE,
-  PERSIST_COMMITMENT,
 } = Opcode;
 /**
  * @description This exchange is described at the following URL:
@@ -128,13 +126,6 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       setStateCommitment,
     ];
 
-    // deprecated
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
-      setStateCommitment,
-      appIdentityHash,
-    ];
     logTime(log, start, `Finished Initiating`);
   },
 
@@ -215,14 +206,6 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
       appInstance,
       setStateCommitment,
-    ];
-
-    // deprecated
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
-      setStateCommitment,
-      appIdentityHash,
     ];
 
     // 0ms
