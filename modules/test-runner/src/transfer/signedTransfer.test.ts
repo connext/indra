@@ -70,7 +70,7 @@ describe("Signed Transfers", () => {
         signer: signerAddress,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
-        meta: { foo: "bar" },
+       meta: { foo: "bar", sender: clientA.publicIdentifier },
       } as PublicParams.SignedTransfer),
       new Promise(async res => {
         clientB.once(
@@ -142,7 +142,7 @@ describe("Signed Transfers", () => {
         signer: signerAddress,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
-        meta: { foo: "bar" },
+       meta: { foo: "bar", sender: clientA.publicIdentifier },
       } as PublicParams.SignedTransfer),
       new Promise(async res => {
         clientB.once(
@@ -211,7 +211,7 @@ describe("Signed Transfers", () => {
       paymentId,
       signer: signerAddress,
       assetId: transfer.assetId,
-      meta: { foo: "bar" },
+     meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
 
     const retrievedTransfer = await clientB.getSignedTransfer(paymentId);
@@ -221,7 +221,7 @@ describe("Signed Transfers", () => {
       paymentId,
       senderIdentifier: clientA.publicIdentifier,
       status: SignedTransferStatus.PENDING,
-      meta: { foo: "bar" },
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as NodeResponses.GetSignedTransfer);
   });
 
@@ -238,7 +238,7 @@ describe("Signed Transfers", () => {
       paymentId,
       signer: signerAddress,
       assetId: transfer.assetId,
-      meta: { foo: "bar" },
+     meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
     // disconnect so that it cant be unlocked
     await clientA.messaging.disconnect();
@@ -266,7 +266,7 @@ describe("Signed Transfers", () => {
       senderIdentifier: clientA.publicIdentifier,
       receiverIdentifier: clientB.publicIdentifier,
       status: SignedTransferStatus.COMPLETED,
-      meta: { foo: "bar" },
+     meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as NodeResponses.GetSignedTransfer);
   });
 
@@ -283,7 +283,7 @@ describe("Signed Transfers", () => {
       paymentId,
       signer: signerAddress,
       assetId: transfer.assetId,
-      meta: { foo: "bar" },
+     meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
 
     const badSig = hexlify(randomBytes(65));
@@ -334,7 +334,7 @@ describe("Signed Transfers", () => {
           paymentId,
           signer: signerAddress,
           assetId: transfer.assetId,
-          meta: { foo: "bar" },
+         meta: { foo: "bar", sender: clientA.publicIdentifier },
           recipient: clientB.publicIdentifier,
         } as PublicParams.SignedTransfer);
       });
