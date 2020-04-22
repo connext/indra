@@ -133,9 +133,16 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
+      PersistCommitmentType.CreateSetState,
       uninstallCommitment,
       postProtocolStateChannel.freeBalance.identityHash,
+    ];
+
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.RemoveSetState,
+      getSetStateCommitment(context, preProtocolStateChannel.freeBalance),
+      preProtocolStateChannel.freeBalance.identityHash,
     ];
 
     // 24ms
@@ -228,9 +235,16 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
+      PersistCommitmentType.CreateSetState,
       uninstallCommitment,
       postProtocolStateChannel.freeBalance.identityHash,
+    ];
+
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.RemoveSetState,
+      getSetStateCommitment(context, preProtocolStateChannel.freeBalance),
+      preProtocolStateChannel.freeBalance.identityHash,
     ];
 
     // 59ms

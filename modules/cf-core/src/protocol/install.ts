@@ -204,9 +204,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 10ms
     yield [
       PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
+      PersistCommitmentType.CreateSetState,
       freeBalanceUpdateData,
       stateChannelAfter.freeBalance.identityHash,
+    ];
+
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.RemoveSetState,
+      getSetStateCommitment(context, stateChannelBefore.freeBalance),
+      stateChannelBefore.freeBalance.identityHash,
     ];
 
     yield [PERSIST_APP_INSTANCE, PersistAppType.CreateInstance, stateChannelAfter, newAppInstance];
@@ -391,9 +398,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 13ms
     yield [
       PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
+      PersistCommitmentType.CreateSetState,
       freeBalanceUpdateData,
       stateChannelAfter.freeBalance.identityHash,
+    ];
+
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.RemoveSetState,
+      getSetStateCommitment(context, stateChannelBefore.freeBalance),
+      stateChannelBefore.freeBalance.identityHash,
     ];
 
     yield [PERSIST_APP_INSTANCE, PersistAppType.CreateInstance, stateChannelAfter, newAppInstance];
