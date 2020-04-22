@@ -1,15 +1,18 @@
-import {
-  IConnextClient,
-  BigNumberish,
-  BigNumber,
-  DepositAppState,
-} from "@connext/types";
+import { IConnextClient, BigNumberish, BigNumber, DepositAppState } from "@connext/types";
 import { delay, toBN } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero, One } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
-import { expect, NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS, TOKEN_AMOUNT_SM, TOKEN_AMOUNT } from "../util";
+import {
+  expect,
+  NEGATIVE_ONE,
+  ONE,
+  TWO,
+  WRONG_ADDRESS,
+  TOKEN_AMOUNT_SM,
+  TOKEN_AMOUNT,
+} from "../util";
 import { createClient } from "../util/client";
 import { getOnchainBalance, ethProvider } from "../util/ethprovider";
 
@@ -32,26 +35,26 @@ describe("Deposits", () => {
     client: IConnextClient,
     expected: { node: BigNumberish; client: BigNumberish; assetId?: string },
   ): Promise<void> => {
-    await client.restoreState();
     await assertClientFreeBalance(client, expected);
   };
 
   const assertOnchainBalance = async (
     client: IConnextClient,
-    expected: {node: BigNumberish; client: BigNumberish; assetId?: string },
+    expected: { node: BigNumberish; client: BigNumberish; assetId?: string },
   ): Promise<void> => {
-    const onchainBalance: BigNumber = expected.assetId === AddressZero ?
-      await ethProvider.getBalance(client.multisigAddress) :
-      await new Contract(expected.assetId!, tokenAbi, ethProvider)
-        .functions
-        .balanceOf(client.multisigAddress);
+    const onchainBalance: BigNumber =
+      expected.assetId === AddressZero
+        ? await ethProvider.getBalance(client.multisigAddress)
+        : await new Contract(expected.assetId!, tokenAbi, ethProvider).functions.balanceOf(
+            client.multisigAddress,
+          );
     expect(onchainBalance.eq(toBN(expected.node).add(toBN(expected.client))));
   };
 
   beforeEach(async () => {
     client = await createClient();
     tokenAddress = client.config.contractAddresses.Token;
-    nodeSignerAddress = client.nodeSignerAddress;;
+    nodeSignerAddress = client.nodeSignerAddress;
   });
 
   afterEach(async () => {
@@ -82,7 +85,9 @@ describe("Deposits", () => {
   });
 
   it("client should not be able to deposit with invalid token address", async () => {
-    await expect(client.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejectedWith("invalid");
+    await expect(client.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejectedWith(
+      "invalid",
+    );
   });
 
   it("client should not be able to deposit with negative amount", async () => {
@@ -94,9 +99,7 @@ describe("Deposits", () => {
   it("client should not be able to propose deposit with value it doesn't have", async () => {
     await expect(
       client.deposit({
-        amount: (await getOnchainBalance(client.signerAddress, tokenAddress))
-          .add(1)
-          .toString(),
+        amount: (await getOnchainBalance(client.signerAddress, tokenAddress)).add(1).toString(),
         assetId: client.config.contractAddresses.Token,
       }),
     ).to.be.rejectedWith("is not less than or equal to");
@@ -112,7 +115,7 @@ describe("Deposits", () => {
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
-    const { appIdentityHash } = await client.checkDepositRights({ 
+    const { appIdentityHash } = await client.checkDepositRights({
       assetId: client.config.contractAddresses.Token,
     });
     expect(appIdentityHash).to.be.undefined;
@@ -137,7 +140,7 @@ describe("Deposits", () => {
     // for nodes proposed deposit app and install event will not be
     // emitted
     await new Promise(async (resolve, reject) => {
-      receiver.on("PROPOSE_INSTALL_EVENT", (msg) => {
+      receiver.on("PROPOSE_INSTALL_EVENT", msg => {
         if (msg.params.appDefinition === receiver.config.contractAddresses.DepositApp) {
           resolve();
         }
@@ -151,11 +154,11 @@ describe("Deposits", () => {
     });
     const getDepositApps = async () => {
       const apps = await receiver.getAppInstances();
-      return apps.filter(app => 
-        app.appInterface.addr === client.config.contractAddresses.DepositApp,
+      return apps.filter(
+        app => app.appInterface.addr === client.config.contractAddresses.DepositApp,
       )[0];
     };
-    while(!(await getDepositApps())) {
+    while (!(await getDepositApps())) {
       await delay(200);
     }
     const depositApp = await getDepositApps();
@@ -166,7 +169,9 @@ describe("Deposits", () => {
     expect(latestState.transfers[1].to).to.be.eq(receiver.signerAddress);
 
     // try to deposit
-    await expect(receiver.deposit({ amount: ONE, assetId: expected.assetId })).to.be.rejectedWith("Node has unfinalized deposit");
+    await expect(receiver.deposit({ amount: ONE, assetId: expected.assetId })).to.be.rejectedWith(
+      "Node has unfinalized deposit",
+    );
   });
 
   it.skip("client proposes deposit but never sends tx to chain", async () => {});
