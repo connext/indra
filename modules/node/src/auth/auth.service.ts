@@ -110,6 +110,7 @@ export class AuthService {
       if (addressError) {
         throw new Error(`Subject's first item isn't a valid address: ${addressError}`);
       }
+      this.log.debug(`Parsed address ${address}`);
       return callback(address, data);
     };
   }
@@ -121,6 +122,7 @@ export class AuthService {
       if (!identifier || !isValidPublicIdentifier(identifier)) {
         throw new Error(`Subject's first item isn't a valid identifier: ${identifier}`);
       }
+      this.log.debug(`Parsed identifier ${identifier}`);
       return callback(identifier, data);
     };
   }
@@ -139,6 +141,7 @@ export class AuthService {
       //   return this.badSubject(`Subject's last item isn't a valid lockName: ${subject}`);
       // }
 
+      this.log.debug(`Parsed lockName ${lockName}`);
       return callback(lockName, data);
     };
   }
