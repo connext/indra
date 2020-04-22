@@ -275,6 +275,10 @@ services:
       POSTGRES_DB: '$project'
       POSTGRES_PASSWORD_FILE: '$pg_password_file'
       POSTGRES_USER: '$project'
+    logging:
+      driver: 'json-file'
+      options:
+          max-size: '100m'
     secrets:
       - '$db_secret'
     volumes:
