@@ -37,6 +37,7 @@ export async function asyncTransferAsset(
             expect(data).to.deep.include({
               amount: transferAmount,
               sender: clientA.publicIdentifier,
+              recipient: clientB.publicIdentifier
             });
             resolve();
           });
@@ -48,10 +49,9 @@ export async function asyncTransferAsset(
         }),
       ]),
       new Promise((resolve: Function): void => {
-        clientA.on(EventNames.UNINSTALL_EVENT, data => {
-          if (data.appIdentityHash === senderAppId) {
-            resolve();
-          }
+        clientA.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, data => {
+          // TODO: Sender/recipient are undefined here because https://github.com/ConnextProject/indra/issues/1054
+          resolve();
         });
       }),
     ]);
@@ -104,7 +104,7 @@ export async function asyncTransferAsset(
     receiverIdentifier: clientB.publicIdentifier,
     senderIdentifier: clientA.publicIdentifier,
     status: LinkedTransferStatus.COMPLETED,
-    meta: { ...SENDER_INPUT_META },
+    meta: { ...SENDER_INPUT_META, sender: clientA.publicIdentifier },
   });
   expect(paymentA.encryptedPreImage).to.be.ok;
 
