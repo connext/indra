@@ -2,7 +2,7 @@ import { IConnextClient, IChannelSigner, EventNames, EventPayloads, StoreTypes }
 import { AddressZero, Zero } from "ethers/constants";
 
 import { expect, TOKEN_AMOUNT, createClient, ETH_AMOUNT_SM, fundChannel, TOKEN_AMOUNT_SM, env } from "../util";
-import { getRandomChannelSigner, stringify, delay } from "@connext/utils";
+import { getRandomChannelSigner, stringify } from "@connext/utils";
 import { ConnextStore } from "@connext/store";
 
 describe("Restore State", () => {
