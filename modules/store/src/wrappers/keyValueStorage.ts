@@ -132,8 +132,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     try {
       await Promise.all([
         this.saveStateChannel(stateChannel),
-        this.createSetupCommitment(stateChannel.multisigAddress, signedSetupCommitment),
-        this.createSetStateCommitment(
+        this.saveSetupCommitment(stateChannel.multisigAddress, signedSetupCommitment),
+        this.saveSetStateCommitment(
           stateChannel.freeBalanceAppInstance.identityHash,
           signedFreeBalanceUpdate,
         ),
@@ -191,8 +191,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
           ...channel,
           freeBalanceAppInstance,
         }),
-        this.updateSetStateCommitment(freeBalanceAppInstance.identityHash, signedFreeBalanceUpdate),
-        this.createConditionalTransactionCommitment(
+        this.saveSetStateCommitment(freeBalanceAppInstance.identityHash, signedFreeBalanceUpdate),
+        this.saveConditionalTransactionCommitment(
           appInstance.identityHash,
           signedConditionalTxCommitment,
         ),
@@ -200,7 +200,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     } catch (e) {
       console.error(`Caught error during createAppInstance, reverting store changes: ${e}`);
       await this.saveStateChannel(oldChannel);
-      await this.updateSetStateCommitment(
+      await this.saveSetStateCommitment(
         freeBalanceAppInstance.identityHash,
         oldFreeBalanceUpdate,
       );
@@ -227,12 +227,12 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     try {
       await Promise.all([
         this.saveStateChannel(channel),
-        this.updateSetStateCommitment(appInstance.identityHash, signedSetStateCommitment),
+        this.saveSetStateCommitment(appInstance.identityHash, signedSetStateCommitment),
       ]);
     } catch (e) {
       console.error(`Caught error during updateAppInstance, reverting store changes: ${e}`);
       await this.saveStateChannel(oldChannel);
-      await this.updateSetStateCommitment(appInstance.identityHash, oldCommitment);
+      await this.saveSetStateCommitment(appInstance.identityHash, oldCommitment);
     }
     return;
   }
@@ -264,7 +264,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
           ...channel,
           freeBalanceAppInstance,
         }),
-        this.updateSetStateCommitment(
+        this.saveSetStateCommitment(
           channel.freeBalanceAppInstance.identityHash,
           signedFreeBalanceUpdate,
         ),
@@ -272,7 +272,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     } catch (e) {
       console.error(`Caught error during removeAppInstance, reverting store changes: ${e}`);
       await this.saveStateChannel(oldChannel);
-      this.updateSetStateCommitment(
+      this.saveSetStateCommitment(
         channel.freeBalanceAppInstance.identityHash,
         oldFreeBalanceUpdate,
       );
@@ -310,7 +310,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     try {
       await Promise.all([
         this.saveStateChannel({ ...channel, monotonicNumProposedApps }),
-        this.createSetStateCommitment(appInstance.identityHash, signedSetStateCommitment),
+        this.saveSetStateCommitment(appInstance.identityHash, signedSetStateCommitment),
       ]);
     } catch (e) {
       await this.saveStateChannel(oldChannel);
@@ -357,14 +357,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return item;
   }
 
-  private async createSetupCommitment(
+  private async saveSetupCommitment(
     multisigAddress: string,
     commitment: MinimalTransaction,
   ): Promise<void> {
     const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
-    if (await this.getItem(setupCommitmentKey)) {
-      throw new Error(`Found existing setup commitment for ${multisigAddress}`);
-    }
     return this.setItem(setupCommitmentKey, commitment);
   }
 
@@ -384,25 +381,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return item;
   }
 
-  private async createSetStateCommitment(
+  private async saveSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
     const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
-    if (await this.getItem(setStateKey)) {
-      throw new Error(`Found existing set state commitment for ${appIdentityHash}`);
-    }
-    return this.setItem(setStateKey, commitment);
-  }
-
-  private async updateSetStateCommitment(
-    appIdentityHash: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> {
-    const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
-    if (!(await this.getItem(setStateKey))) {
-      throw new Error(`Cannot find set state commitment to update for ${appIdentityHash}`);
-    }
     return this.setItem(setStateKey, commitment);
   }
 
@@ -422,25 +405,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return item;
   }
 
-  async createConditionalTransactionCommitment(
+  async saveConditionalTransactionCommitment(
     appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
     const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
-    if (await this.getItem(conditionalCommitmentKey)) {
-      throw new Error(`Found conditional commitment to update for ${appIdentityHash}`);
-    }
-    return this.setItem(conditionalCommitmentKey, commitment);
-  }
-
-  async updateConditionalTransactionCommitment(
-    appIdentityHash: string,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void> {
-    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
-    if (!(await this.getItem(conditionalCommitmentKey))) {
-      throw new Error(`Cannot find conditional commitment to update for ${appIdentityHash}`);
-    }
     return this.setItem(conditionalCommitmentKey, commitment);
   }
 
