@@ -434,23 +434,35 @@ export class ConnextListener extends ConnextEventEmitter {
     );
   };
 
+  private resolveUninstallEvent = (
+    resolve: (value?: unknown) => void, 
+    appIdentityHash: string,
+    msg: UninstallMessage
+  ): UninstallMessage => {
+    if(msg.data.appIdentityHash == appIdentityHash) {
+      resolve(msg);
+    }
+    return msg;
+  } 
+
+  private cleanupUninstallListener = (boundResolve: any): void => {
+    this.channelProvider.off(EventNames.UNINSTALL_EVENT, boundResolve);
+  };
+
   private handleAppUpdate = async (
     appIdentityHash: string,
     state: AppState,
     action: AppAction
   ): Promise<void> => {
+    let boundResolve: (reason?: any) => void;
     const appInstance = (await this.connext.getAppInstance(appIdentityHash)).appInstance;
     const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
       return app.appDefinitionAddress === appInstance.appInterface.addr;
     });
     const waitForUninstall = () =>
       new Promise((resolve): void => {
-        this.channelProvider.on(EventNames.UNINSTALL_EVENT, (msg: UninstallMessage) => {
-          if(msg.data.appIdentityHash == appIdentityHash) {
-            console.log("TODO remove listener")
-            resolve();
-          }
-        })
+        boundResolve = this.resolveUninstallEvent.bind(null, resolve, appIdentityHash);
+        this.channelProvider.on(EventNames.UNINSTALL_EVENT, boundResolve)
       })
 
     switch (registryAppInfo.name) {
@@ -469,6 +481,7 @@ export class ConnextListener extends ConnextEventEmitter {
         const transferState = state as SimpleLinkedTransferAppState
         const transferAction = action as SimpleLinkedTransferAppAction
         await waitForUninstall();
+        this.cleanupUninstallListener(boundResolve)
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
             type: ConditionalTransferTypes.LinkedTransfer,
             amount: transferState.coinTransfers[0].amount,
@@ -488,6 +501,7 @@ export class ConnextListener extends ConnextEventEmitter {
         const transferState = state as HashLockTransferAppState
         const transferAction = action as HashLockTransferAppAction
         await waitForUninstall();
+        this.cleanupUninstallListener(boundResolve)
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
             type: ConditionalTransferTypes.HashLockTransfer,
             amount: transferState.coinTransfers[0].amount,
@@ -507,6 +521,7 @@ export class ConnextListener extends ConnextEventEmitter {
         const transferState = state as SimpleSignedTransferAppState
         const transferAction = action as SimpleSignedTransferAppAction
         await waitForUninstall();
+        this.cleanupUninstallListener(boundResolve)
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
             type: ConditionalTransferTypes.SignedTransfer,
             amount: transferState.coinTransfers[0].amount,

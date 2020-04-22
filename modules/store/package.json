@@ -1,6 +1,6 @@
 {
   "name": "@connext/store",
-  "version": "6.0.7",
+  "version": "6.0.8",
   "description": "Store module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -13,8 +13,8 @@
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
-    "@connext/types": "6.0.7",
-    "@connext/utils": "6.0.7",
+    "@connext/types": "6.0.8",
+    "@connext/utils": "6.0.8",
     "ethers": "4.0.46",
     "localStorage": "1.0.4",
     "pg": "8.0.0",
