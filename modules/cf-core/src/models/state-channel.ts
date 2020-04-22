@@ -269,7 +269,7 @@ export class StateChannel {
         freeBalanceTimeout || HARD_CODED_ASSUMPTIONS.freeBalanceDefaultTimeout,
         multisigAddress,
       ),
-      1,
+      1, // num proposed apps
     );
   }
 

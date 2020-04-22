@@ -126,7 +126,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       hashOfLatestState: keccak256(
         defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
       ),
-      versionNumber: 0,
+      versionNumber: 1,
       stateTimeout: stateTimeout.toHexString(),
     };
 
@@ -288,7 +288,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       hashOfLatestState: keccak256(
         defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
       ),
-      versionNumber: 0,
+      versionNumber: 1,
       stateTimeout: stateTimeout.toHexString(),
     };
 
