@@ -70,20 +70,20 @@ describe("HashLock Transfers", () => {
         lockHash,
         timelock,
         assetId: transfer.assetId,
-        meta: { foo: "bar" },
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
       new Promise(res => {
         clientB.on(
-          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
-          (eventPayload: EventPayloads.HashLockTransferReceived) => {
+          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
+          (eventPayload: EventPayloads.HashLockTransferCreated) => {
             expect(eventPayload).to.deep.contain({
               amount: transfer.amount,
               assetId: transfer.assetId,
               type: ConditionalTransferTypes.HashLockTransfer,
               paymentId: lockHash,
               recipient: clientB.publicIdentifier,
-            } as EventPayloads.HashLockTransferReceived);
+            } as EventPayloads.HashLockTransferCreated);
             expect(eventPayload.transferMeta).to.deep.eq({
               lockHash,
               timelock: bigNumberify(timelock).sub(100),
@@ -137,20 +137,20 @@ describe("HashLock Transfers", () => {
         lockHash,
         timelock,
         assetId: transfer.assetId,
-        meta: { foo: "bar" },
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
       new Promise(res => {
         clientB.on(
-          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
-          (eventPayload: EventPayloads.HashLockTransferReceived) => {
+          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
+          (eventPayload: EventPayloads.HashLockTransferCreated) => {
             expect(eventPayload).to.deep.contain({
               amount: transfer.amount,
               assetId: transfer.assetId,
               type: ConditionalTransferTypes.HashLockTransfer,
               paymentId: lockHash,
               recipient: clientB.publicIdentifier,
-            } as EventPayloads.HashLockTransferReceived);
+            } as EventPayloads.HashLockTransferCreated);
             expect(eventPayload.transferMeta).to.deep.eq({
               lockHash,
               timelock: bigNumberify(timelock).sub(100),
@@ -204,7 +204,7 @@ describe("HashLock Transfers", () => {
         lockHash,
         timelock,
         assetId: transfer.assetId,
-        meta: { foo: "bar" },
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
       new Promise(res => {
@@ -221,7 +221,7 @@ describe("HashLock Transfers", () => {
       senderIdentifier: clientA.publicIdentifier,
       receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.PENDING,
-      meta: { foo: "bar" },
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as NodeResponses.GetHashLockTransfer);
   });
 
@@ -240,7 +240,7 @@ describe("HashLock Transfers", () => {
         lockHash,
         timelock,
         assetId: transfer.assetId,
-        meta: { foo: "bar" },
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
       new Promise(res => {
@@ -265,7 +265,7 @@ describe("HashLock Transfers", () => {
       senderIdentifier: clientA.publicIdentifier,
       receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.COMPLETED,
-      meta: { foo: "bar" },
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as NodeResponses.GetHashLockTransfer);
   });
 
@@ -283,7 +283,7 @@ describe("HashLock Transfers", () => {
         lockHash,
         timelock,
         assetId: transfer.assetId,
-        meta: { foo: "bar" },
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
       new Promise(res => {
@@ -315,7 +315,7 @@ describe("HashLock Transfers", () => {
         lockHash,
         timelock,
         assetId: transfer.assetId,
-        meta: { foo: "bar" },
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
       new Promise(res => {
@@ -367,7 +367,7 @@ describe("HashLock Transfers", () => {
           lockHash,
           timelock,
           assetId: transfer.assetId,
-          meta: { foo: "bar" },
+          meta: { foo: "bar", sender: clientA.publicIdentifier },
           recipient: clientB.publicIdentifier,
         } as PublicParams.HashLockTransfer),
         // eslint-disable-next-line no-loop-func
@@ -379,7 +379,7 @@ describe("HashLock Transfers", () => {
 
       // eslint-disable-next-line no-loop-func
       await new Promise(async res => {
-        clientA.once("UNINSTALL_EVENT", async data => {
+        clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async data => {
           res();
         });
         await clientB.resolveCondition({
