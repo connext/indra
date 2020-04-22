@@ -23,7 +23,7 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
 import { getConditionalTransactionCommitment, getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
-import { Context, PersistAppType, PersistCommitmentType, ProtocolExecutionFlow } from "../types";
+import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
@@ -35,7 +35,6 @@ const {
   IO_SEND,
   IO_SEND_AND_WAIT,
   PERSIST_APP_INSTANCE,
-  PERSIST_COMMITMENT,
 } = Opcode;
 
 /**
@@ -163,14 +162,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         : (mySignatureOnConditionalTransaction as any),
     );
 
-    // 12ms
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateConditional,
-      conditionalTxCommitment,
-      newAppInstance.identityHash,
-    ];
-
     const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
     const freeBalanceUpdateDataHash = freeBalanceUpdateData.hashToSign();
 
@@ -196,28 +187,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         : (mySignatureOnFreeBalanceStateUpdate as any),
     );
 
-    // 10ms
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateSetState,
-      freeBalanceUpdateData,
-      stateChannelAfter.freeBalance.identityHash,
-    ];
-
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.RemoveSetState,
-      getSetStateCommitment(context, stateChannelBefore.freeBalance),
-      stateChannelBefore.freeBalance.identityHash,
-    ];
-
-    yield [PERSIST_APP_INSTANCE, PersistAppType.CreateInstance, stateChannelAfter, newAppInstance];
-
     yield [
       PERSIST_APP_INSTANCE,
-      PersistAppType.RemoveProposal,
+      PersistAppType.CreateInstance,
       stateChannelAfter,
-      stateChannelBefore.proposedAppInstances.get(newAppInstance.identityHash),
+      newAppInstance,
+      freeBalanceUpdateData,
+      conditionalTxCommitment,
     ];
 
     // 51ms
@@ -341,14 +317,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         : (mySignatureOnConditionalTransaction as any),
     );
 
-    // 12ms
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateConditional,
-      conditionalTxCommitment,
-      newAppInstance.identityHash,
-    ];
-
     const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
     const freeBalanceUpdateDataHash = freeBalanceUpdateData.hashToSign();
 
@@ -392,26 +360,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 13ms
     yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateSetState,
-      freeBalanceUpdateData,
-      stateChannelAfter.freeBalance.identityHash,
-    ];
-
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.RemoveSetState,
-      getSetStateCommitment(context, stateChannelBefore.freeBalance),
-      stateChannelBefore.freeBalance.identityHash,
-    ];
-
-    yield [PERSIST_APP_INSTANCE, PersistAppType.CreateInstance, stateChannelAfter, newAppInstance];
-
-    yield [
       PERSIST_APP_INSTANCE,
-      PersistAppType.RemoveProposal,
+      PersistAppType.CreateInstance,
       stateChannelAfter,
-      stateChannelBefore.proposedAppInstances.get(newAppInstance.identityHash),
+      newAppInstance,
+      freeBalanceUpdateData,
+      conditionalTxCommitment,
     ];
 
     const m4 = {

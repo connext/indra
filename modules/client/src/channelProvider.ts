@@ -5,7 +5,6 @@ import {
   CFChannelProviderOptions,
   ChannelMethods,
   ChannelProviderConfig,
-  ConditionalTransactionCommitmentJSON,   
   ConnextClientStorePrefix,
   ConnextEventEmitter,
   CreateChannelMessage,
@@ -109,7 +108,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     };
   }
 
-  public async send(payload: JsonRpcRequest): Promise<any> {
+  public async send<T = any>(payload: JsonRpcRequest): Promise<T> {
     const { method, params } = payload;
     let result;
     switch (method) {
@@ -141,19 +140,14 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         result = await this.restoreState();
         break;
       case ChannelMethods.chan_setStateChannel:
-        result = await this.setStateChannel(params.state);
+        result = await this.setStateChannel(
+          params.state,
+          params.signedSetupCommitment,
+          params.signedFreeBalanceUpdate,
+        );
         break;
       case ChannelMethods.chan_walletDeposit:
         result = await this.walletDeposit(params);
-        break;
-      case ChannelMethods.chan_createSetupCommitment:
-        result = await this.createSetupCommitment(params.multisigAddress, params.commitment);
-        break;
-      case ChannelMethods.chan_createSetStateCommitment:
-        result = await this.createSetStateCommitment(params.appIdentityHash, params.commitment);
-        break;
-      case ChannelMethods.chan_createConditionalCommitment:
-        result = await this.createConditionalCommitment(params.appIdentityHash, params.commitment);
         break;
       case ChannelMethods.chan_getSchemaVersion:
         result = await this.getSchemaVersion();
@@ -245,36 +239,17 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     return this.store.updateUserWithdrawal(value);
   };
 
-  private setStateChannel = async (channel: StateChannelJSON): Promise<void> => {
-    return this.store.createStateChannel(channel);
+  private setStateChannel = async (
+    channel: StateChannelJSON,
+    signedSetupCommitment: MinimalTransaction,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+  ): Promise<void> => {
+    await this.store.updateSchemaVersion();
+    return this.store.createStateChannel(channel, signedSetupCommitment, signedFreeBalanceUpdate);
   };
 
   private restoreState = async (): Promise<void> => {
     await this.store.restore();
-  };
-
-  private createSetupCommitment = async (
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> => {
-    await this.store.createSetupCommitment(multisigAddress, commitment);
-    // may be called on restore, if this is ever called assume the schema
-    // should be updated (either on start or restart)
-    await this.store.updateSchemaVersion();
-  };
-
-  private createSetStateCommitment = async (
-    appIdentityHash: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> => {
-    await this.store.createSetStateCommitment(appIdentityHash, commitment);
-  };
-
-  private createConditionalCommitment = async (
-    appIdentityHash: string,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void> => {
-    await this.store.createConditionalTransactionCommitment(appIdentityHash, commitment);
   };
 
   private async getSchemaVersion() {

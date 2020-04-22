@@ -1,4 +1,5 @@
-import { OutcomeType, ProtocolNames, ProtocolParams } from "@connext/types";
+import { ConnextStore } from "@connext/store";
+import { OutcomeType, ProtocolNames, ProtocolParams, StoreTypes } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero, HashZero, AddressZero } from "ethers/constants";
@@ -13,7 +14,6 @@ import { MessageRouter } from "./message-router";
 import { MiniNode } from "./mininode";
 import { newWallet } from "./utils";
 import { StateChannel } from "../models";
-import { MemoryStoreServiceFactory } from "./services";
 
 expect.extend({ toBeEq });
 
@@ -50,11 +50,9 @@ export class TestRunner {
 
     this.defaultTimeout = bigNumberify(100);
 
-    const storeFactory = new MemoryStoreServiceFactory();
-
-    this.mininodeA = new MiniNode(network, this.provider, storeFactory.createStoreService());
-    this.mininodeB = new MiniNode(network, this.provider, storeFactory.createStoreService());
-    this.mininodeC = new MiniNode(network, this.provider, storeFactory.createStoreService());
+    this.mininodeA = new MiniNode(network, this.provider, new ConnextStore(StoreTypes.Memory));
+    this.mininodeB = new MiniNode(network, this.provider, new ConnextStore(StoreTypes.Memory));
+    this.mininodeC = new MiniNode(network, this.provider, new ConnextStore(StoreTypes.Memory));
 
     this.multisigAB = await getCreate2MultisigAddress(
       this.mininodeA.publicIdentifier,
@@ -362,7 +360,10 @@ export class TestRunner {
           mininode.scm
             .get(multisig)!
             .getFreeBalanceClass()
-            .getBalance(tokenAddress, getSignerAddressFromPublicIdentifier(mininode.publicIdentifier)),
+            .getBalance(
+              tokenAddress,
+              getSignerAddressFromPublicIdentifier(mininode.publicIdentifier),
+            ),
         ).toBeEq(expected);
       }
     }

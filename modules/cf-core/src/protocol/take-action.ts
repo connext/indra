@@ -6,12 +6,15 @@ import {
   ProtocolRoles,
   TakeActionMiddlewareContext,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime, toBN } from "@connext/utils";
-import { One } from "ethers/constants";
+import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { getSetStateCommitment, SetStateCommitment } from "../ethereum";
-import { Context, PersistAppType, PersistCommitmentType, ProtocolExecutionFlow } from "../types";
+import { getSetStateCommitment } from "../ethereum";
+import {
+  Context,
+  PersistAppType,
+  ProtocolExecutionFlow,
+} from "../types";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
@@ -22,7 +25,6 @@ const {
   IO_SEND,
   IO_SEND_AND_WAIT,
   PERSIST_APP_INSTANCE,
-  PERSIST_COMMITMENT,
 } = Opcode;
 /**
  * @description This exchange is described at the following URL:
@@ -136,31 +138,13 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
 
     // add sigs to most recent set state
     yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
-      setStateCommitment,
-      appIdentityHash,
-    ];
-
-    // remove previous commitment
-    const jsonToRemove = (await store.getSetStateCommitments(appIdentityHash)).filter(commitment =>
-      toBN(commitment.versionNumber).eq(toBN(setStateCommitment.versionNumber).add(One)),
-    )[0];
-    if (jsonToRemove) {
-      yield [
-        PERSIST_COMMITMENT,
-        PersistCommitmentType.RemoveSetState,
-        SetStateCommitment.fromJson(jsonToRemove),
-        appIdentityHash,
-      ];
-    }
-
-    yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.UpdateInstance,
       postProtocolStateChannel,
       appInstance,
+      setStateCommitment,
     ];
+
     logTime(log, start, `Finished Initiating`);
   },
 
@@ -234,17 +218,11 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // responder will not be able to call `progressState` or
     // `setAndProgressState` so only save double signed commitment
     yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
-      setStateCommitment,
-      appIdentityHash,
-    ];
-
-    yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.UpdateInstance,
       postProtocolStateChannel,
       appInstance,
+      setStateCommitment,
     ];
 
     // 0ms

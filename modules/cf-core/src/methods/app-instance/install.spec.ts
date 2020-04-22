@@ -1,8 +1,10 @@
+import { ConnextStore } from "@connext/store";
 import {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext,
   ProtocolNames,
   IStoreService,
+  StoreTypes,
 } from "@connext/types";
 import {
   getRandomBytes32,
@@ -43,7 +45,7 @@ describe("Can handle correct & incorrect installs", () => {
   let initiatorIdentifier: string;
 
   beforeAll(() => {
-    store = new MemoryStoreServiceFactory().createStoreService();
+    store = new ConnextStore(StoreTypes.Memory);
     protocolRunner = new ProtocolRunner(
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
       {} as JsonRpcProvider,
@@ -113,26 +115,38 @@ describe("Can handle correct & incorrect installs", () => {
       publicIdentifiers[1],
     );
 
-    expect(
-      stateChannel
-        .getFreeBalanceClass()
-        .getBalance(AddressZero, participants[0]),
-    ).toEqual(Zero);
-    expect(
-      stateChannel
-        .getFreeBalanceClass()
-        .getBalance(AddressZero, participants[1]),
-    ).toEqual(Zero);
+    expect(stateChannel.getFreeBalanceClass().getBalance(AddressZero, participants[0])).toEqual(
+      Zero,
+    );
+    expect(stateChannel.getFreeBalanceClass().getBalance(AddressZero, participants[1])).toEqual(
+      Zero,
+    );
 
-    await store.createStateChannel(stateChannel.toJson());
+    await store.createStateChannel(
+      stateChannel.toJson(),
+      {
+        data: "0x",
+        to: stateChannel.multisigAddress,
+        value: Zero,
+      },
+      {
+        appIdentity: {} as any,
+        stateTimeout: "0",
+        appIdentityHash,
+        appStateHash: HashZero,
+        challengeRegistryAddress: AddressZero,
+        signatures: ["0x0", "0x0"],
+        versionNumber: 1,
+      },
+    );
 
     const appInstanceProposal = createAppInstanceProposalForTest(appIdentityHash);
 
     when(mockedStore.getAppProposal(appIdentityHash)).thenResolve(appInstanceProposal);
 
-    when(
-      mockedStore.getStateChannelByAppIdentityHash(appIdentityHash),
-    ).thenResolve(stateChannel.toJson());
+    when(mockedStore.getStateChannelByAppIdentityHash(appIdentityHash)).thenResolve(
+      stateChannel.toJson(),
+    );
 
     // Gets around having to register middleware into the machine
     // and just returns a basic <string, StateChannel> map with the

@@ -21,12 +21,6 @@ export const PersistAppType = enumify({
 export type PersistAppType = typeof PersistAppType[keyof typeof PersistAppType];
 
 export const PersistCommitmentType = enumify({
-  CreateSetup: "CreateSetup",
-  CreateSetState: "CreateSetState",
-  UpdateSetState: "UpdateSetState",
-  RemoveSetState: "RemoveSetState",
-  CreateConditional: "CreateConditional",
-  UpdateConditional: "UpdateConditional",
   CreateWithdrawal: "CreateWithdrawal",
   UpdateWithdrawal: "UpdateWithdrawal",
 });

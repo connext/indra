@@ -16,7 +16,6 @@ import { AppInstance, StateChannel } from "../models";
 import {
   Context,
   PersistAppType,
-  PersistCommitmentType,
   ProtocolExecutionFlow,
 } from "../types";
 
@@ -34,7 +33,6 @@ const {
   IO_SEND,
   IO_SEND_AND_WAIT,
   PERSIST_APP_INSTANCE,
-  PERSIST_COMMITMENT,
 } = Opcode;
 /**
  * @description This exchange is described at the following URL:
@@ -131,26 +129,13 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         : mySignature as any,
     );
 
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateSetState,
-      uninstallCommitment,
-      postProtocolStateChannel.freeBalance.identityHash,
-    ];
-
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.RemoveSetState,
-      getSetStateCommitment(context, preProtocolStateChannel.freeBalance),
-      preProtocolStateChannel.freeBalance.identityHash,
-    ];
-
     // 24ms
     yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.RemoveInstance,
       postProtocolStateChannel,
       appToUninstall,
+      uninstallCommitment,
     ];
 
     // 204ms
@@ -233,26 +218,13 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         : mySignature as any,
     );
 
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateSetState,
-      uninstallCommitment,
-      postProtocolStateChannel.freeBalance.identityHash,
-    ];
-
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.RemoveSetState,
-      getSetStateCommitment(context, preProtocolStateChannel.freeBalance),
-      preProtocolStateChannel.freeBalance.identityHash,
-    ];
-
     // 59ms
     yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.RemoveInstance,
       postProtocolStateChannel,
       appToUninstall,
+      uninstallCommitment,
     ];
 
     // 0ms

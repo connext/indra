@@ -81,19 +81,30 @@ export interface IStoreService extends IWatcherStoreService {
   updateSchemaVersion(version?: number): Promise<void>;
 
   ///// State channels
-  createStateChannel(stateChannel: StateChannelJSON): Promise<void>;
+  createStateChannel(
+    stateChannel: StateChannelJSON,
+    signedSetupCommitment: MinimalTransaction,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+  ): Promise<void>;
 
   ///// App instances
   createAppInstance(
     multisigAddress: Address,
     appInstance: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+    signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void>;
-  updateAppInstance(multisigAddress: Address, appInstance: AppInstanceJson): Promise<void>;
+  updateAppInstance(
+    multisigAddress: Address,
+    appInstance: AppInstanceJson,
+    signedSetStateCommitment: SetStateCommitmentJSON,
+  ): Promise<void>;
   removeAppInstance(
     multisigAddress: Address,
     appIdentityHash: Bytes32,
     freeBalanceAppInstance: AppInstanceJson,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void>;
 
   ///// App proposals
@@ -101,6 +112,7 @@ export interface IStoreService extends IWatcherStoreService {
     multisigAddress: Address,
     appProposal: AppInstanceProposal,
     numProposedApps: number,
+    signedSetStateCommitment: SetStateCommitmentJSON,
   ): Promise<void>;
   removeAppProposal(multisigAddress: Address, appIdentityHash: Bytes32): Promise<void>;
   // proposals dont need to be updated

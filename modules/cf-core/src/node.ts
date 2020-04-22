@@ -29,7 +29,6 @@ import { createRpcRouter } from "./methods";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
 import {
-  MultisigCommitment,
   SetStateCommitment,
   ConditionalTransactionCommitment,
 } from "./ethereum";
@@ -38,7 +37,7 @@ import { StateChannel, AppInstance } from "./models";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
-import { MethodRequest, MethodResponse, PersistAppType, PersistCommitmentType } from "./types";
+import { MethodRequest, MethodResponse, PersistAppType } from "./types";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -228,98 +227,37 @@ export class Node {
       return (msg as ProtocolMessage).data;
     });
 
-    protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
-      const [stateChannels] = args;
-
-      for (const stateChannel of stateChannels) {
-        await this.storeService.createStateChannel(stateChannel.toJson());
-      }
-    });
-
     protocolRunner.register(
-      Opcode.PERSIST_COMMITMENT,
-      async (
-        args: [
-          PersistCommitmentType,
-          MultisigCommitment | SetStateCommitment | MinimalTransaction,
-          string,
-        ],
-      ) => {
-        const [commitmentType, commitment, identifier] = args;
-
-        // will create a commitment if it does not exist, or update an
-        // existing commitment
-        switch (commitmentType) {
-          case PersistCommitmentType.CreateSetup: {
-            await this.storeService.createSetupCommitment(
-              identifier,
-              commitment as MinimalTransaction,
-            );
-            // if you are creating a setup commitment, make sure to
-            // update the store version
-            await this.storeService.updateSchemaVersion(STORE_SCHEMA_VERSION);
-            break;
-          }
-          case PersistCommitmentType.CreateConditional: {
-            await this.storeService.createConditionalTransactionCommitment(
-              identifier,
-              (commitment as ConditionalTransactionCommitment).toJson(),
-            );
-            break;
-          }
-          case PersistCommitmentType.UpdateConditional: {
-            await this.storeService.updateConditionalTransactionCommitment(
-              identifier,
-              (commitment as ConditionalTransactionCommitment).toJson(),
-            );
-            break;
-          }
-          case PersistCommitmentType.CreateSetState: {
-            await this.storeService.createSetStateCommitment(
-              identifier,
-              (commitment as SetStateCommitment).toJson(),
-            );
-            break;
-          }
-          case PersistCommitmentType.UpdateSetState: {
-            await this.storeService.updateSetStateCommitment(
-              identifier,
-              (commitment as SetStateCommitment).toJson(),
-            );
-            break;
-          }
-          case PersistCommitmentType.RemoveSetState: {
-            await this.storeService.removeSetStateCommitment(
-              identifier,
-              (commitment as SetStateCommitment).toJson(),
-            );
-            break;
-          }
-          case PersistCommitmentType.CreateWithdrawal: {
-            await this.storeService.createWithdrawalCommitment(
-              identifier,
-              commitment as MinimalTransaction,
-            );
-            break;
-          }
-          case PersistCommitmentType.UpdateWithdrawal: {
-            await this.storeService.updateWithdrawalCommitment(
-              identifier,
-              commitment as MinimalTransaction,
-            );
-            break;
-          }
-          default: {
-            throw new Error(`Unrecognized commitment type: ${commitmentType}`);
-          }
-        }
+      Opcode.PERSIST_STATE_CHANNEL,
+      async (args: [StateChannel, MinimalTransaction, SetStateCommitment]) => {
+        const [stateChannel, signedSetupCommitment, signedFreeBalanceUpdate] = args;
+        await this.storeService.createStateChannel(
+          stateChannel.toJson(),
+          signedSetupCommitment,
+          signedFreeBalanceUpdate.toJson(),
+        );
+        await this.storeService.updateSchemaVersion(STORE_SCHEMA_VERSION);
       },
     );
 
     protocolRunner.register(
       Opcode.PERSIST_APP_INSTANCE,
-      async (args: [PersistAppType, StateChannel, AppInstance | AppInstanceProposal]) => {
-        const [type, postProtocolChannel, app] = args;
+      async (
+        args: [
+          PersistAppType,
+          StateChannel,
+          AppInstance | AppInstanceProposal,
+          SetStateCommitment,
+          ConditionalTransactionCommitment,
+        ],
+      ) => {
+        const [
+          type,
+          postProtocolChannel,
+          app,
+          signedSetStateCommitment,
+          signedConditionalTxCommitment,
+        ] = args;
         const { multisigAddress, numProposedApps, freeBalance } = postProtocolChannel;
         const { identityHash } = app;
 
@@ -329,6 +267,7 @@ export class Node {
               multisigAddress,
               app as AppInstanceProposal,
               numProposedApps,
+              signedSetStateCommitment.toJson(),
             );
             break;
           }
@@ -343,6 +282,8 @@ export class Node {
               multisigAddress,
               (app as AppInstance).toJson(),
               freeBalance.toJson(),
+              signedSetStateCommitment.toJson(),
+              signedConditionalTxCommitment.toJson(),
             );
             break;
           }
@@ -351,6 +292,7 @@ export class Node {
             await this.storeService.updateAppInstance(
               multisigAddress,
               (app as AppInstance).toJson(),
+              signedSetStateCommitment.toJson(),
             );
             break;
           }
@@ -360,6 +302,7 @@ export class Node {
               multisigAddress,
               identityHash,
               freeBalance.toJson(),
+              signedSetStateCommitment.toJson(),
             );
             break;
           }

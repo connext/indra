@@ -17,7 +17,6 @@ import { AppInstance } from "../models";
 import {
   Context,
   PersistAppType,
-  PersistCommitmentType,
   ProtocolExecutionFlow,
 } from "../types";
 import { appIdentityToHash } from "../utils";
@@ -31,7 +30,6 @@ const {
   IO_SEND,
   IO_SEND_AND_WAIT,
   PERSIST_APP_INSTANCE,
-  PERSIST_COMMITMENT,
 } = Opcode;
 
 /**
@@ -179,22 +177,15 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
 
     // 78 ms(!)
-    // will also save the app array into the state channel
     yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.CreateProposal,
       postProtocolStateChannel,
       appInstanceProposal,
+      setStateCommitment,
     ];
     logTime(log, substart, `Persisted app instance`);
     substart = Date.now();
-
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateSetState,
-      setStateCommitment,
-      appInstanceProposal.identityHash,
-    ];
 
     // Total 298ms
     logTime(log, start, `Initiation finished`);
@@ -341,16 +332,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       PersistAppType.CreateProposal,
       postProtocolStateChannel,
       appInstanceProposal,
+      setStateCommitment,
     ];
     logTime(log, substart, `Persisted app instance`);
     substart = Date.now();
-
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateSetState,
-      setStateCommitment,
-      appInstanceProposal.identityHash,
-    ];
     logTime(log, start, `Response finished`);
   },
 };
