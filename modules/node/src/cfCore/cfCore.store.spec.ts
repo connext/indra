@@ -31,6 +31,7 @@ import { ConfigService } from "../config/config.service";
 import { CFCoreRecordRepository } from "./cfCore.repository";
 import { CFCoreStore } from "./cfCore.store";
 import { ChallengeRepository, ProcessedBlockRepository } from "../challenge/challenge.repository";
+import { One } from "ethers/constants";
 
 const createTestChannel = async (
   cfCoreStore: CFCoreStore,
@@ -178,12 +179,16 @@ describe("CFCoreStore", () => {
   describe("Channel", () => {
     it("should create a state channel", async () => {
       const nodeIdentifier = configService.getPublicIdentifier();
-      const { multisigAddress, channelJson, setupCommitment,
-        freeBalanceUpdate } = await createTestChannel(cfCoreStore, nodeIdentifier);
+      const {
+        multisigAddress,
+        channelJson,
+        setupCommitment,
+        freeBalanceUpdate,
+      } = await createTestChannel(cfCoreStore, nodeIdentifier);
 
-        const channelFromStore = await cfCoreStore.getStateChannel(multisigAddress);
-        const userIdentifier = channelJson.userIdentifiers.find(x => x !== nodeIdentifier);
-        expect(channelFromStore).toMatchObject({
+      const channelFromStore = await cfCoreStore.getStateChannel(multisigAddress);
+      const userIdentifier = channelJson.userIdentifiers.find(x => x !== nodeIdentifier);
+      expect(channelFromStore).toMatchObject({
         ...channelJson,
         userIdentifiers: [nodeIdentifier, userIdentifier],
         freeBalanceAppInstance: {
@@ -372,7 +377,10 @@ describe("CFCoreStore", () => {
         initiatorIdentifier: userIdentifier,
         responderIdentifier: configService.getPublicIdentifier(),
       });
-      const setStateCommitment = createSetStateCommitmentJSON();
+      const setStateCommitment = createSetStateCommitmentJSON({
+        appIdentityHash: appProposal.identityHash,
+        versionNumber: toBNJson(One),
+      });
       await cfCoreStore.createAppProposal(
         multisigAddress,
         appProposal,
@@ -383,8 +391,14 @@ describe("CFCoreStore", () => {
       const userParticipantAddr = userIdentifier;
       const nodeParticipantAddr = configService.getPublicIdentifier();
 
-      const updatedFreeBalanceCommitment = createSetStateCommitmentJSON();
-      const conditionalTx = createConditionalTransactionCommitmentJSON();
+      const updatedFreeBalanceCommitment = createSetStateCommitmentJSON({
+        appIdentityHash: channelJson.freeBalanceAppInstance.identityHash,
+        versionNumber: toBNJson(channelJson.freeBalanceAppInstance.latestVersionNumber),
+      });
+      const conditionalTx = createConditionalTransactionCommitmentJSON({
+        appIdentityHash: appProposal.identityHash,
+        freeBalanceAppIdentityHash: channelJson.freeBalanceAppInstance.identityHash,
+      });
       const appInstance = createAppInstanceJson({
         identityHash: appProposal.identityHash,
         multisigAddress,
@@ -400,7 +414,7 @@ describe("CFCoreStore", () => {
         conditionalTx,
       );
 
-      const retrievedConditional = await cfCoreStore.getSetStateCommitment(
+      const retrievedConditional = await cfCoreStore.getConditionalTransactionCommitment(
         appInstance.identityHash,
       );
       expect(retrievedConditional).toMatchObject(conditionalTx);
@@ -415,7 +429,7 @@ describe("CFCoreStore", () => {
 
       const updatedSetStateCommitment = createSetStateCommitmentJSON({
         appIdentityHash: appInstance.identityHash,
-        versionNumber: toBNJson(100),
+        versionNumber: toBNJson(updated.latestVersionNumber),
       });
       await cfCoreStore.updateAppInstance(multisigAddress, updated, updatedSetStateCommitment);
       const app = await cfCoreStore.getAppInstance(appInstance.identityHash);
@@ -459,52 +473,6 @@ describe("CFCoreStore", () => {
         freeBalanceAppInstance: updatedFreeBalance,
         monotonicNumProposedApps: 2,
       });
-    });
-  });
-
-  describe("Set State Commitment", () => {
-    it("creates a set state commitment", async () => {
-      const { appInstance } = await createTestChannelWithAppInstance(
-        cfCoreStore,
-        configService.getPublicIdentifier(),
-      );
-      const setStateCommitment = createSetStateCommitmentJSON({
-        appIdentityHash: appInstance.identityHash,
-      });
-      await cfCoreStore.createSetStateCommitment(
-        setStateCommitment.appIdentityHash,
-        setStateCommitment,
-      );
-      const retrieved = await cfCoreStore.getSetStateCommitments(
-        setStateCommitment.appIdentityHash,
-      );
-      expect(retrieved).toMatchObject([setStateCommitment]);
-    });
-
-    it("updates a set state commitment", async () => {
-      const { appInstance } = await createTestChannelWithAppInstance(
-        cfCoreStore,
-        configService.getPublicIdentifier(),
-      );
-      const setStateCommitment = createSetStateCommitmentJSON({
-        appIdentityHash: appInstance.identityHash,
-      });
-      await cfCoreStore.createSetStateCommitment(
-        setStateCommitment.appIdentityHash,
-        setStateCommitment,
-      );
-      const updated = createSetStateCommitmentJSON({
-        ...setStateCommitment,
-        appStateHash: mkHash("0xfeef"),
-        versionNumber: toBNJson(42),
-        stateTimeout: toBNJson(1337),
-      });
-      await cfCoreStore.updateSetStateCommitment(setStateCommitment.appIdentityHash, updated);
-
-      const retrieved = await cfCoreStore.getSetStateCommitments(
-        setStateCommitment.appIdentityHash,
-      );
-      expect(retrieved).toMatchObject([updated]);
     });
   });
 
