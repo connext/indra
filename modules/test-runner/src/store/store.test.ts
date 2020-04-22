@@ -6,7 +6,6 @@ import {
   env,
   TEST_STORE_ETH_ADDRESS,
   TEST_STORE_CHANNEL,
-  TEST_STORE_APP_INSTANCE,
   TEST_STORE_MINIMAL_TX,
   TEST_STORE_SET_STATE_COMMITMENT,
   TEST_STORE_CONDITIONAL_COMMITMENT,
@@ -14,7 +13,7 @@ import {
 
 export const storeTypes = Object.keys(StoreTypes);
 
-describe("ConnextStore", () => {
+describe.only("ConnextStore", () => {
   const fileDir = env.storeDir;
 
   describe("getSchemaVersion", () => {
@@ -47,12 +46,12 @@ describe("ConnextStore", () => {
         expect(retrieved).to.deep.eq(channel);
 
         const setup = await store.getSetupCommitment(channel.multisigAddress);
-        expect(setup).to.deep.eq(TEST_STORE_MINIMAL_TX);
+        expect(setup).to.containSubset(TEST_STORE_MINIMAL_TX);
 
         const setState = await store.getSetStateCommitment(
           channel.freeBalanceAppInstance!.identityHash,
         );
-        expect(setState).to.deep.eq(TEST_STORE_SET_STATE_COMMITMENT);
+        expect(setState).to.containSubset(TEST_STORE_SET_STATE_COMMITMENT);
 
         // edit channel
         await store.createStateChannel(
@@ -134,7 +133,7 @@ describe("ConnextStore", () => {
         const freeBalance = await store.getSetStateCommitment(
           channel.freeBalanceAppInstance!.identityHash,
         );
-        expect(freeBalance).to.deep.eq(TEST_STORE_SET_STATE_COMMITMENT);
+        expect(freeBalance).to.containSubset(TEST_STORE_SET_STATE_COMMITMENT);
         await store.updateAppInstance(multisigAddress, edited, {
           ...TEST_STORE_SET_STATE_COMMITMENT,
           versionNumber: 12,
@@ -142,7 +141,7 @@ describe("ConnextStore", () => {
         const editedRetrieved = await store.getAppInstance(app.identityHash);
         expect(editedRetrieved).to.deep.eq(edited);
         const updatedState = await store.getSetStateCommitment(app.identityHash);
-        expect(updatedState).to.deep.eq({
+        expect(updatedState).to.containSubset({
           ...TEST_STORE_SET_STATE_COMMITMENT,
           versionNumber: 12,
         });
@@ -186,7 +185,10 @@ describe("ConnextStore", () => {
         const freeBalance = await store.getSetStateCommitment(
           channel.freeBalanceAppInstance!.identityHash,
         );
-        expect(freeBalance).to.deep.eq({ ...TEST_STORE_SET_STATE_COMMITMENT, versionNumber: 1337 });
+        expect(freeBalance).to.containSubset({
+          ...TEST_STORE_SET_STATE_COMMITMENT,
+          versionNumber: 1337,
+        });
         await store.clear();
       });
     });
@@ -321,6 +323,10 @@ describe("ConnextStore", () => {
 
   describe("restore", async () => {
     storeTypes.forEach(type => {
+      if (type === StoreTypes.Memory) {
+        return;
+      }
+
       it(`${type} - should restore empty state when not provided with a backup service`, async () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
         await store.updateSchemaVersion();
@@ -336,10 +342,6 @@ describe("ConnextStore", () => {
         await expect(store.restore()).to.be.rejectedWith(`No backup provided, store cleared`);
         expect(await store.getStateChannel(multisigAddress)).to.containSubset(undefined);
       });
-
-      if (type === StoreTypes.Memory) {
-        return;
-      }
 
       it(`${type} - should backup state when provided with a backup service`, async () => {
         const store = await createConnextStore(type as StoreTypes, {
