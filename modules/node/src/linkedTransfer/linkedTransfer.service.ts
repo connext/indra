@@ -121,12 +121,7 @@ export class LinkedTransferService {
       }
     } else {
       // request collateral normally without awaiting
-      this.channelService.rebalance(
-        userIdentifier,
-        assetId,
-        RebalanceType.COLLATERALIZE,
-        amountBN,
-      );
+      this.channelService.rebalance(userIdentifier, assetId, RebalanceType.COLLATERALIZE, amountBN);
     }
 
     const initialState: SimpleLinkedTransferAppState = {
