@@ -493,8 +493,8 @@ export class ConnextListener extends ConnextEventEmitter {
             amount: transferState.coinTransfers[0].amount,
             assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
             paymentId: HashZero,
-            sender: appInstance.meta["sender"], 
-            recipient: appInstance.meta["recipient"],
+            sender: appInstance.meta ? appInstance.meta["sender"] : undefined, // https://github.com/ConnextProject/indra/issues/1054
+            recipient: appInstance.meta ? appInstance.meta["recipient"] : undefined,
             meta: appInstance.meta,
             transferMeta: {
               preImage: transferAction.preImage
@@ -512,8 +512,8 @@ export class ConnextListener extends ConnextEventEmitter {
             amount: transferState.coinTransfers[0].amount,
             assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
             paymentId: transferState.paymentId,
-            sender: appInstance.meta["sender"],
-            recipient: appInstance.meta["recipient"],
+            sender: appInstance.meta ? appInstance.meta["sender"] : undefined, // https://github.com/ConnextProject/indra/issues/1054
+            recipient: appInstance.meta ? appInstance.meta["recipient"] : undefined,
             meta: appInstance.meta,
             transferMeta: {
               signature: transferAction.signature,

@@ -47,18 +47,6 @@ export class ResolveHashLockTransferController extends AbstractController {
       throw e;
     }
     const sender = hashlockApp.meta["sender"];
-    this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
-      type: ConditionalTransferTypes.HashLockTransfer,
-      amount: amount,
-      assetId: assetId,
-      paymentId: HashZero,
-      sender,
-      recipient: this.connext.publicIdentifier,
-      meta: hashlockApp.meta,
-      transferMeta: {
-        preImage
-      }
-    } as EventPayloads.HashLockTransferUnlocked);
 
     const result: PublicResults.ResolveHashLockTransfer = {
       amount,
