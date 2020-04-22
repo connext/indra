@@ -461,11 +461,11 @@ export class ConnextClient implements IConnextClient {
       if (!channel) {
         throw new Error(`No matching states found by node for ${this.publicIdentifier}`);
       }
-      this.log.info(`Found state to restore from node`);
+      this.log.info(`Found state to restore from node: ${stringify(channel)}`);
       await this.channelProvider.send(ChannelMethods.chan_setStateChannel, {
         state: channel,
       });
-      this.log.info(`Restored channel: ${stringify(channel)}`);
+      this.log.info(`Restored channel: ${channel.multisigAddress}`);
     }
     await this.restart();
   };
