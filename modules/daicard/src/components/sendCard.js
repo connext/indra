@@ -1,5 +1,5 @@
 import { ConditionalTransferTypes } from "@connext/types";
-import { Currency, toBN, createRandom32ByteHexString } from "@connext/utils";
+import { Currency, toBN, getRandomBytes32 } from "@connext/utils";
 import {
   Button,
   CircularProgress,
@@ -107,8 +107,8 @@ export const SendCard = style(
             assetId: token.address,
             amount: amount.value.wad.toString(),
             conditionType: ConditionalTransferTypes.LinkedTransfer,
-            paymentId: createRandom32ByteHexString(),
-            preImage: createRandom32ByteHexString(),
+            paymentId: getRandomBytes32(),
+            preImage: getRandomBytes32(),
             recipient: recipient.value,
             meta: { source: "daicard" },
           });
@@ -140,8 +140,8 @@ export const SendCard = style(
           assetId: token.address,
           amount: amount.value.wad.toString(),
           conditionType: ConditionalTransferTypes.LinkedTransfer,
-          paymentId: createRandom32ByteHexString(),
-          preImage: createRandom32ByteHexString(),
+          paymentId: getRandomBytes32(),
+          preImage: getRandomBytes32(),
           meta: { source: "daicard" },
         });
         console.log(`Created link payment: ${JSON.stringify(link, null, 2)}`);

@@ -1,5 +1,5 @@
 import { MultisigTransaction } from "@connext/types";
-import { createRandomAddress, getRandomChannelSigner } from "@connext/utils";
+import { getRandomAddress, getRandomChannelSigner } from "@connext/utils";
 import {
   getAddress,
   Interface,
@@ -44,7 +44,7 @@ describe("SetupCommitment", () => {
       proxyFactory: context.network.ProxyFactory,
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
-    getAddress(createRandomAddress()),
+    getAddress(getRandomAddress()),
     initiatorId,
     responderId,
   );

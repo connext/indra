@@ -2,6 +2,7 @@ import { DEFAULT_APP_TIMEOUT, DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
 import { MinimumViableMultisig } from "@connext/contracts";
 import {
   AppInstanceJson,
+  BigNumber,
   DefaultApp,
   DepositAppName,
   DepositAppState,
@@ -11,19 +12,16 @@ import {
   PublicResults,
   CONVENTION_FOR_ETH_ASSET_ID,
   EventPayloads,
-  PublicResult,
 } from "@connext/types";
 import {
   getAddressFromAssetId,
-  invalidAddress,
+  getAddressError,
   notGreaterThan,
   notLessThanOrEqualTo,
   toBN,
-  validate,
 } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { AbstractController } from "./AbstractController";
@@ -35,9 +33,8 @@ export class DepositController extends AbstractController {
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
-    validate(invalidAddress(assetId));
-    // NOTE: when the `walletDeposit` is not used, these parameters
-    // do not have to be validated
+    this.throwIfAny(getAddressError(assetId));
+    // NOTE: when the `walletDeposit` is not used, these parameters do not have to be validated
     const tokenAddress = getAddressFromAssetId(assetId);
     this.log.info(`Depositing ${amount.toString()} of ${tokenAddress} into channel`);
     const startingBalance =
@@ -46,7 +43,7 @@ export class DepositController extends AbstractController {
         : await new Contract(tokenAddress, tokenAbi, this.ethProvider).functions.balanceOf(
             this.connext.signerAddress,
           );
-    validate(notLessThanOrEqualTo(amount, startingBalance), notGreaterThan(amount, Zero));
+    this.throwIfAny(notLessThanOrEqualTo(amount, startingBalance), notGreaterThan(amount, Zero));
     const { appIdentityHash } = await this.requestDepositRights({ assetId });
 
     let ret: PublicResults.RescindDepositRights;
@@ -95,7 +92,7 @@ export class DepositController extends AbstractController {
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
-    validate(invalidAddress(assetId));
+    this.throwIfAny(getAddressError(assetId));
     const tokenAddress = getAddressFromAssetId(assetId);
     const depositApp = await this.getDepositApp({ assetId: tokenAddress });
 
@@ -137,7 +134,7 @@ export class DepositController extends AbstractController {
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
-    validate(invalidAddress(assetId));
+    this.throwIfAny(getAddressError(assetId));
     const tokenAddress = getAddressFromAssetId(assetId);
     // get the app instance
     const app = await this.getDepositApp({ assetId: tokenAddress });

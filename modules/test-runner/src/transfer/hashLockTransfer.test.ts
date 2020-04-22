@@ -8,7 +8,7 @@ import {
   PublicParams,
   EventPayloads,
 } from "@connext/types";
-import { createRandom32ByteHexString } from "@connext/utils";
+import { getRandomBytes32 } from "@connext/utils";
 import { providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { soliditySha256, bigNumberify } from "ethers/utils";
@@ -58,7 +58,7 @@ describe("HashLock Transfers", () => {
   it("happy case: client A hashlock transfers eth to client B through node", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const preImage = createRandom32ByteHexString();
+    const preImage = getRandomBytes32();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
@@ -125,7 +125,7 @@ describe("HashLock Transfers", () => {
   it("happy case: client A hashlock transfers tokens to client B through node", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const preImage = createRandom32ByteHexString();
+    const preImage = getRandomBytes32();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
@@ -192,7 +192,7 @@ describe("HashLock Transfers", () => {
   it("gets a pending hashlock transfer by lock hash", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const preImage = createRandom32ByteHexString();
+    const preImage = getRandomBytes32();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
@@ -228,7 +228,7 @@ describe("HashLock Transfers", () => {
   it("gets a completed hashlock transfer by lock hash", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const preImage = createRandom32ByteHexString();
+    const preImage = getRandomBytes32();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
@@ -272,7 +272,7 @@ describe("HashLock Transfers", () => {
   it("cannot resolve a hashlock transfer if pre image is wrong", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const preImage = createRandom32ByteHexString();
+    const preImage = getRandomBytes32();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
@@ -292,7 +292,7 @@ describe("HashLock Transfers", () => {
       }),
     ]);
 
-    const badPreImage = createRandom32ByteHexString();
+    const badPreImage = getRandomBytes32();
     await expect(
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
@@ -304,7 +304,7 @@ describe("HashLock Transfers", () => {
   it("cannot resolve a hashlock if timelock is expired", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const preImage = createRandom32ByteHexString();
+    const preImage = getRandomBytes32();
     const timelock = (await provider.getBlockNumber()) + 101;
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
@@ -352,7 +352,7 @@ describe("HashLock Transfers", () => {
         [clientB.nodeSignerAddress]: nodeBPreBal,
       } = await clientB.getFreeBalance(transfer.assetId);
 
-      const preImage = createRandom32ByteHexString();
+      const preImage = getRandomBytes32();
       const timelock = ((await provider.getBlockNumber()) + 5000).toString();
       const lockHash = soliditySha256(["bytes32"], [preImage]);
 

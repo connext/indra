@@ -9,7 +9,7 @@ import {
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
-import { verifyChannelMessage } from "@connext/utils";
+import { recoverAddressFromChannelMessage } from "@connext/utils";
 
 import { ChallengeRegistry } from "../contracts";
 import { AppInstance } from "../models";
@@ -136,7 +136,7 @@ export class SetStateCommitment implements EthereumCommitment {
     }
 
     for (const idx in this.signatures) {
-      const signer = await verifyChannelMessage(this.hashToSign(), this.signatures[idx]);
+      const signer = await recoverAddressFromChannelMessage(this.hashToSign(), this.signatures[idx]);
       if (signer !== this.appIdentity.participants[idx]) {
         throw new Error(`Got ${signer} and expected ${this.appIdentity.participants[idx]} in set state commitment`);
       }

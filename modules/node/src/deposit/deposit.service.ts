@@ -52,7 +52,7 @@ export class DepositService {
         app.appDefinition === depositRegistry.appDefinitionAddress &&
         app.latestState.assetId === tokenAddress,
     )[0];
-    this.log.debug(`Found deposit app: ${stringify(depositApp, 2)}`);
+    this.log.debug(`Found deposit app: ${stringify(depositApp)}`);
     if (depositApp && depositApp.latestState.transfers[0].to === channel.userIdentifier) {
       throw new Error(
         `Cannot deposit, user has deposit app installed for asset ${tokenAddress}, app: ${depositApp.identityHash}`,

@@ -1,5 +1,5 @@
 import { IConnextClient, ConditionalTransferTypes } from "@connext/types";
-import { createRandom32ByteHexString } from "@connext/utils";
+import { getRandomBytes32 } from "@connext/utils";
 import { AddressZero, One } from "ethers/constants";
 
 import { expect } from "../util";
@@ -17,8 +17,8 @@ describe("Get Linked Transfer", () => {
   });
 
   it.skip("happy case: get linked transfer by payment id", async () => {
-    const paymentId = createRandom32ByteHexString();
-    const preImage = createRandom32ByteHexString();
+    const paymentId = getRandomBytes32();
+    const preImage = getRandomBytes32();
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -45,8 +45,8 @@ describe("Get Linked Transfer", () => {
 
   it("happy case: get linked transfer to recipient by payment id", async () => {
     const clientB = await createClient();
-    const paymentId = createRandom32ByteHexString();
-    const preImage = createRandom32ByteHexString();
+    const paymentId = getRandomBytes32();
+    const preImage = getRandomBytes32();
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -70,8 +70,8 @@ describe("Get Linked Transfer", () => {
 
   it("cannot get linked transfer for invalid payment id", async () => {
     const clientB = await createClient();
-    const paymentId = createRandom32ByteHexString();
-    const preImage = createRandom32ByteHexString();
+    const paymentId = getRandomBytes32();
+    const preImage = getRandomBytes32();
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -83,7 +83,7 @@ describe("Get Linked Transfer", () => {
       preImage,
       recipient: clientB.publicIdentifier,
     });
-    const linkedTransfer = await clientA.getLinkedTransfer(createRandom32ByteHexString());
+    const linkedTransfer = await clientA.getLinkedTransfer(getRandomBytes32());
     expect(linkedTransfer).to.not.be.ok;
   });
 });

@@ -82,7 +82,7 @@ export const connect = async (
     }
 
     signer =
-      typeof opts.signer === "string" ? new ChannelSigner(opts.signer, ethProvider) : opts.signer;
+      typeof opts.signer === "string" ? new ChannelSigner(opts.signer, ethProviderUrl) : opts.signer;
 
     store = store || new ConnextStore(StoreTypes.LocalStorage);
 
