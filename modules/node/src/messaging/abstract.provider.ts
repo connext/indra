@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { getPublicIdentifierError } from "@connext/utils";
+import { getPublicIdentifierError, logTime } from "@connext/utils";
 import { RpcException } from "@nestjs/microservices";
 
 import { LoggerService } from "../logger/logger.service";
@@ -33,16 +33,8 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
       if (msg.reply) {
         try {
           const start = Date.now();
-          const subject = msg.subject;
           const response = await processor(msg.subject, msg.data);
-          const diff = Date.now() - start;
-          if (diff >= 5 && diff < 50) {
-            this.log.info(`Responded to ${subject} in ${diff} ms`);
-          } else if (diff >= 50 && diff < 250) {
-            this.log.warn(`Responded to ${subject} in ${diff} ms`);
-          } else if (diff >= 250) {
-            this.log.error(`Responded to ${subject} in ${diff} ms`);
-          }
+          logTime(this.log, start, `Responded to ${msg.subject}`);
           this.messaging.publish(msg.reply, {
             err: null,
             response,
