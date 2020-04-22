@@ -1,8 +1,4 @@
-import {
-  StoreTypes,
-  STORE_SCHEMA_VERSION,
-  ChallengeStatus,
-} from "@connext/types";
+import { StoreTypes, STORE_SCHEMA_VERSION, ChallengeStatus } from "@connext/types";
 import { toBNJson } from "@connext/utils";
 import {
   expect,
@@ -56,19 +52,22 @@ describe("ConnextStore", () => {
         const setup = await store.getSetupCommitment(channel.multisigAddress);
         expect(setup).to.containSubset(TEST_STORE_MINIMAL_TX);
 
-        const setState = await store.getSetStateCommitment(
+        const setState = await store.getSetStateCommitments(
           channel.freeBalanceAppInstance!.identityHash,
         );
-        expect(setState).to.containSubset(TEST_STORE_SET_STATE_COMMITMENT);
+        expect(setState.length).to.be.eq(1);
+        expect(setState[0]).to.containSubset(TEST_STORE_SET_STATE_COMMITMENT);
 
-        // edit channel
-        await store.createStateChannel(
-          { ...channel, monotonicNumProposedApps: 14 },
-          TEST_STORE_MINIMAL_TX,
-          TEST_STORE_SET_STATE_COMMITMENT,
-        );
-        const edited = await store.getStateChannel(channel.multisigAddress);
-        expect(edited).to.deep.eq({ ...channel, monotonicNumProposedApps: 14 });
+        // TODO: should we be able to edit channel without clearing? what
+        // should happen to the commitments?
+        // // edit channel
+        // await store.createStateChannel(
+        //   { ...channel, monotonicNumProposedApps: 14 },
+        //   TEST_STORE_MINIMAL_TX,
+        //   TEST_STORE_SET_STATE_COMMITMENT,
+        // );
+        // const edited = await store.getStateChannel(channel.multisigAddress);
+        // expect(edited).to.deep.eq({ ...channel, monotonicNumProposedApps: 14 });
         await store.clear();
       });
     });
@@ -116,44 +115,62 @@ describe("ConnextStore", () => {
     });
   });
 
-  describe("createAppInstance + updateAppInstance + getAppInstance", () => {
+  describe("createAppInstance + updateAppInstance + getAppInstance + getConditionalTransactionCommitment", () => {
     storeTypes.forEach(type => {
       it(`${type} - should work`, async () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const app = TEST_STORE_CHANNEL.appInstances[0][1];
+        const freeBalanceSetState0 = {
+          ...TEST_STORE_SET_STATE_COMMITMENT,
+          identityHash: channel.freeBalanceAppInstance!.identityHash,
+        };
+        const freeBalanceSetState1 = {
+          ...freeBalanceSetState0,
+          versionNumber: toBNJson(app.latestVersionNumber),
+        };
+        const appSetState = {
+          ...TEST_STORE_SET_STATE_COMMITMENT,
+          identityHash: app.identityHash,
+          versionNumber: toBNJson(app.latestVersionNumber),
+        };
+        
         const multisigAddress = channel.multisigAddress;
         await store.createStateChannel(
           channel,
           TEST_STORE_MINIMAL_TX,
-          TEST_STORE_SET_STATE_COMMITMENT,
+          freeBalanceSetState0,
         );
         const edited = { ...app, latestVersionNumber: 14 };
+        const editedSetState = {
+          ...appSetState,
+          versionNumber: toBNJson(edited.latestVersionNumber),
+        };
         await store.createAppInstance(
           multisigAddress,
           app,
           channel.freeBalanceAppInstance!,
-          TEST_STORE_SET_STATE_COMMITMENT,
+          freeBalanceSetState1,
           TEST_STORE_CONDITIONAL_COMMITMENT,
         );
         const retrieved = await store.getAppInstance(app.identityHash);
         expect(retrieved).to.deep.eq(app);
-        const freeBalance = await store.getSetStateCommitment(
+        const freeBalance = await store.getSetStateCommitments(
           channel.freeBalanceAppInstance!.identityHash,
         );
-        expect(freeBalance).to.containSubset(TEST_STORE_SET_STATE_COMMITMENT);
-        await store.updateAppInstance(multisigAddress, edited, {
-          ...TEST_STORE_SET_STATE_COMMITMENT,
-          versionNumber: 12,
+        expect(freeBalance.length).to.be.eq(1);
+        expect(freeBalance[0]).to.containSubset(freeBalanceSetState1);
+        const conditional = await store.getConditionalTransactionCommitment(app.identityHash);
+        expect(conditional).to.containSubset({
+          ...TEST_STORE_CONDITIONAL_COMMITMENT,
+          appIdentityHash: app.identityHash,
         });
+        await store.updateAppInstance(multisigAddress, edited, editedSetState);
         const editedRetrieved = await store.getAppInstance(app.identityHash);
         expect(editedRetrieved).to.deep.eq(edited);
-        const updatedState = await store.getSetStateCommitment(app.identityHash);
-        expect(updatedState).to.containSubset({
-          ...TEST_STORE_SET_STATE_COMMITMENT,
-          versionNumber: 12,
-        });
-
+        const updatedState = await store.getSetStateCommitments(app.identityHash);
+        expect(updatedState.length).to.be.eq(1);
+        expect(updatedState[0]).to.containSubset(editedSetState);
         const chan = await store.getStateChannel(multisigAddress);
         expect(chan.appInstances).to.deep.eq([[app.identityHash, edited]]);
         await store.clear();
@@ -167,36 +184,46 @@ describe("ConnextStore", () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const app = TEST_STORE_CHANNEL.appInstances[0][1];
+        const freeBalanceSetState0 = {
+          ...TEST_STORE_SET_STATE_COMMITMENT,
+          identityHash: channel.freeBalanceAppInstance!.identityHash,
+        };
+        const freeBalanceSetState1 = {
+          ...freeBalanceSetState0,
+          versionNumber: toBNJson(154),
+        };
+        const freeBalanceSetState2 = {
+          ...freeBalanceSetState0,
+          versionNumber: toBNJson(1136),
+        };
         const multisigAddress = channel.multisigAddress;
         await store.createStateChannel(
           channel,
           TEST_STORE_MINIMAL_TX,
-          TEST_STORE_SET_STATE_COMMITMENT,
+          freeBalanceSetState0,
         );
         await store.createAppInstance(
           multisigAddress,
           app,
           channel.freeBalanceAppInstance!,
-          TEST_STORE_SET_STATE_COMMITMENT,
+          freeBalanceSetState1,
           TEST_STORE_CONDITIONAL_COMMITMENT,
         );
         await store.removeAppInstance(
           multisigAddress,
           app.identityHash,
           channel.freeBalanceAppInstance!,
-          { ...TEST_STORE_SET_STATE_COMMITMENT, versionNumber: 1337 },
+          freeBalanceSetState2,
         );
         const retrieved = await store.getAppInstance(app.identityHash);
         expect(retrieved).to.be.undefined;
         const chan = await store.getStateChannel(multisigAddress);
         expect(chan.appInstances).to.deep.eq([]);
-        const freeBalance = await store.getSetStateCommitment(
+        const freeBalance = await store.getSetStateCommitments(
           channel.freeBalanceAppInstance!.identityHash,
         );
-        expect(freeBalance).to.containSubset({
-          ...TEST_STORE_SET_STATE_COMMITMENT,
-          versionNumber: 1337,
-        });
+        expect(freeBalance.length).to.be.eq(1);
+        expect(freeBalance[0]).to.containSubset(freeBalanceSetState2);
         await store.clear();
       });
     });
@@ -310,126 +337,6 @@ describe("ConnextStore", () => {
     });
   });
 
-  describe("getSetupCommitment + createSetupCommitment", () => {
-    storeTypes.forEach(type => {
-      it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
-        const setup = TEST_STORE_MINIMAL_TX;
-        const multisigAddress = TEST_STORE_ETH_ADDRESS;
-        expect(await store.getSetupCommitment(multisigAddress)).to.be.undefined;
-        await store.createSetupCommitment(multisigAddress, setup);
-        const retrieved = await store.getSetupCommitment(multisigAddress);
-        expect(retrieved).to.containSubset(setup);
-        await store.clear();
-      });
-    });
-  });
-
-  describe("getSetStateCommitments", () => {
-    storeTypes.forEach(type => {
-      it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
-        const setState = TEST_STORE_SET_STATE_COMMITMENT;
-        const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
-
-        const vals = await store.getSetStateCommitments(appIdentityHash);
-        expect(vals).to.containSubset([]);
-
-        await store.createSetStateCommitment(appIdentityHash, setState);
-        const retrieved = await store.getSetStateCommitments(appIdentityHash);
-        expect(retrieved.length).to.be.eq(1);
-        expect(retrieved[0]).to.containSubset(setState);
-        await store.clear();
-      });
-    });
-  });
-
-  describe("createLatestSetStateCommitment + updateLatestSetStateCommitment", () => {
-    storeTypes.forEach(type => {
-      it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
-        const setState = TEST_STORE_SET_STATE_COMMITMENT;
-        const edited = { ...TEST_STORE_SET_STATE_COMMITMENT, versionNumber: toBNJson(9) };
-        const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
-        await store.createSetStateCommitment(appIdentityHash, setState);
-        const retrieved = await store.getSetStateCommitments(appIdentityHash);
-        expect(retrieved.length).to.be.eq(1);
-        expect(retrieved[0]).to.containSubset(setState);
-        await store.updateSetStateCommitment(appIdentityHash, edited);
-        const editedRetrieved = await store.getSetStateCommitments(appIdentityHash);
-        expect(editedRetrieved.length).to.be.eq(1);
-        expect(editedRetrieved[0]).to.containSubset(edited);
-        await store.clear();
-      });
-    });
-  });
-
-  describe("getConditionalTransactionCommitment", () => {
-    storeTypes.forEach(type => {
-      it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
-        const conditional = TEST_STORE_CONDITIONAL_COMMITMENT;
-        const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
-        expect(await store.getConditionalTransactionCommitment(appIdentityHash)).to.be.undefined;
-        await store.createConditionalTransactionCommitment(appIdentityHash, conditional);
-        const retrieved = await store.getConditionalTransactionCommitment(appIdentityHash);
-        expect(retrieved).to.containSubset(conditional);
-        await store.clear();
-      });
-    });
-  });
-
-  describe("createConditionalTransactionCommitment + updateConditionalTransactionCommitment", () => {
-    storeTypes.forEach(type => {
-      it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
-        const conditional = TEST_STORE_CONDITIONAL_COMMITMENT;
-        const edited = { ...conditional, freeBalanceAppIdentityHash: "0xtesting" };
-        const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
-        await store.createConditionalTransactionCommitment(appIdentityHash, conditional);
-        const retrieved = await store.getConditionalTransactionCommitment(appIdentityHash);
-        expect(retrieved).to.containSubset(conditional);
-        await store.updateConditionalTransactionCommitment(appIdentityHash, edited);
-        const editedRetrieved = await store.getConditionalTransactionCommitment(appIdentityHash);
-        expect(editedRetrieved).to.containSubset(edited);
-        await store.clear();
-      });
-    });
-  });
-
-  describe("getWithdrawalCommitment", () => {
-    storeTypes.forEach(type => {
-      it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
-        const withdraw = TEST_STORE_MINIMAL_TX;
-        const multisigAddress = TEST_STORE_ETH_ADDRESS;
-        expect(await store.getWithdrawalCommitment(multisigAddress)).to.be.undefined;
-        await store.createWithdrawalCommitment(multisigAddress, withdraw);
-        const retrieved = await store.getWithdrawalCommitment(multisigAddress);
-        expect(retrieved).to.containSubset(withdraw);
-        await store.clear();
-      });
-    });
-  });
-
-  describe("createWithdrawalCommitment + updateWithdrawalCommitment", () => {
-    storeTypes.forEach(type => {
-      it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
-        const withdraw = TEST_STORE_MINIMAL_TX;
-        const edited = { ...TEST_STORE_MINIMAL_TX, value: 5 };
-        const multisigAddress = TEST_STORE_ETH_ADDRESS;
-        await store.createWithdrawalCommitment(multisigAddress, withdraw);
-        const retrieved = await store.getWithdrawalCommitment(multisigAddress);
-        expect(retrieved).to.containSubset(withdraw);
-        await store.updateWithdrawalCommitment(multisigAddress, edited);
-        const editedRetrieved = await store.getWithdrawalCommitment(multisigAddress);
-        expect(editedRetrieved).to.containSubset(edited);
-        await store.clear();
-      });
-    });
-  });
-
   describe("clear", () => {
     storeTypes.forEach(type => {
       it(`${type} - should work`, async () => {
@@ -520,18 +427,39 @@ describe("ConnextStore", () => {
   describe("getActiveChallenges", () => {
     storeTypes.forEach(type => {
       it(`${type} - should be able to retrieve active challenges for a channel`, async () => {
-        const channel = { ...TEST_STORE_CHANNEL };
-        const value = { ...TEST_STORE_APP_CHALLENGE };
         const store = await createConnextStore(type as StoreTypes, { fileDir });
-        await store.createStateChannel(channel);
+        const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
+        const challenge = { ...TEST_STORE_APP_CHALLENGE };
+        const app = TEST_STORE_CHANNEL.appInstances[0][1];
+        const freeBalanceSetState0 = {
+          ...TEST_STORE_SET_STATE_COMMITMENT,
+          identityHash: channel.freeBalanceAppInstance!.identityHash,
+        };
+        const freeBalanceSetState1 = {
+          ...freeBalanceSetState0,
+          versionNumber: toBNJson(app.latestVersionNumber),
+        };
+        const multisigAddress = channel.multisigAddress;
+        await store.createStateChannel(
+          channel,
+          TEST_STORE_MINIMAL_TX,
+          freeBalanceSetState0,
+        );
+        await store.createAppInstance(
+          multisigAddress,
+          app,
+          channel.freeBalanceAppInstance!,
+          freeBalanceSetState1,
+          TEST_STORE_CONDITIONAL_COMMITMENT,
+        );
 
         const empty = await store.getActiveChallenges(channel.multisigAddress);
         expect(empty.length).to.be.eq(0);
 
-        await store.createAppChallenge(value.appStateHash, value);
+        await store.createAppChallenge(challenge.appStateHash, challenge);
         const vals = await store.getActiveChallenges(channel.multisigAddress);
         expect(vals.length).to.be.eq(1);
-        expect(vals[0]).to.containSubset(value);
+        expect(vals[0]).to.containSubset(challenge);
         await store.clear();
       });
     });
