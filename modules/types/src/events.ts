@@ -8,6 +8,9 @@ import {
   CreatedHashLockTransferMeta,
   CreatedLinkedTransferMeta,
   CreatedSignedTransferMeta,
+  UnlockedLinkedTransferMeta,
+  UnlockedHashLockTransferMeta,
+  UnlockedSignedTransferMeta,
 } from "./transfers";
 import { enumify } from "./utils";
 import { ProtocolParams } from "./protocol";
@@ -37,28 +40,7 @@ type ConditionalTransferCreatedEventData<T extends ConditionalTransferTypes> = {
     ? CreatedHashLockTransferMeta
     : T extends SignedTransfer
     ? CreatedSignedTransferMeta
-    : undefined;
-};
-
-////////////////////////////////////////
-const CONDITIONAL_TRANSFER_RECEIVED_EVENT = "CONDITIONAL_TRANSFER_RECEIVED_EVENT";
-
-export type ConditionalTransferReceivedEventData<T extends ConditionalTransferTypes> = {
-  amount: BigNumber;
-  appIdentityHash: Bytes32;
-  assetId: Address;
-  paymentId?: Bytes32;
-  sender: PublicIdentifier;
-  recipient?: PublicIdentifier;
-  meta: any;
-  type: T;
-  transferMeta: T extends LinkedTransfer
-    ? CreatedLinkedTransferMeta
-    : T extends HashLockTransfer
-    ? CreatedHashLockTransferMeta
-    : T extends SignedTransfer
-    ? CreatedSignedTransferMeta
-    : undefined;
+    : {};
 };
 
 ////////////////////////////////////////
@@ -72,6 +54,13 @@ export type ConditionalTransferUnlockedEventData<T extends ConditionalTransferTy
   recipient?: PublicIdentifier;
   meta: any;
   type: T;
+  transferMeta: T extends LinkedTransfer
+    ? UnlockedLinkedTransferMeta
+    : T extends HashLockTransfer
+    ? UnlockedHashLockTransferMeta
+    : T extends SignedTransfer
+    ? UnlockedSignedTransferMeta
+    : {};
 };
 
 ////////////////////////////////////////
@@ -184,7 +173,6 @@ type WithdrawalStartedEventData = {
 // Exports
 export const EventNames = enumify({
   [CONDITIONAL_TRANSFER_CREATED_EVENT]: CONDITIONAL_TRANSFER_CREATED_EVENT,
-  [CONDITIONAL_TRANSFER_RECEIVED_EVENT]: CONDITIONAL_TRANSFER_RECEIVED_EVENT,
   [CONDITIONAL_TRANSFER_UNLOCKED_EVENT]: CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
   [CONDITIONAL_TRANSFER_FAILED_EVENT]: CONDITIONAL_TRANSFER_FAILED_EVENT,
   [CREATE_CHANNEL_EVENT]: CREATE_CHANNEL_EVENT,
@@ -209,9 +197,6 @@ export namespace EventPayloads {
   export type HashLockTransferCreated = ConditionalTransferCreatedEventData<HashLockTransfer>;
   export type LinkedTransferCreated = ConditionalTransferCreatedEventData<LinkedTransfer>;
   export type SignedTransferCreated = ConditionalTransferCreatedEventData<SignedTransfer>;
-  export type HashLockTransferReceived = ConditionalTransferReceivedEventData<HashLockTransfer>;
-  export type LinkedTransferReceived = ConditionalTransferReceivedEventData<LinkedTransfer>;
-  export type SignedTransferReceived = ConditionalTransferReceivedEventData<SignedTransfer>;
   export type HashLockTransferUnlocked = ConditionalTransferUnlockedEventData<HashLockTransfer>;
   export type LinkedTransferUnlocked = ConditionalTransferUnlockedEventData<LinkedTransfer>;
   export type SignedTransferUnlocked = ConditionalTransferUnlockedEventData<SignedTransfer>;
@@ -219,9 +204,6 @@ export namespace EventPayloads {
   export type LinkedTransferFailed = ConditionalTransferFailedEventData<LinkedTransfer>;
   export type SignedTransferFailed = ConditionalTransferFailedEventData<SignedTransfer>;
   export type ConditionalTransferCreated<T> = ConditionalTransferCreatedEventData<
-    HashLockTransfer | LinkedTransfer | SignedTransfer
-  >;
-  export type ConditionalTransferReceived<T> = ConditionalTransferReceivedEventData<
     HashLockTransfer | LinkedTransfer | SignedTransfer
   >;
   export type ConditionalTransferUnlocked<T> = ConditionalTransferUnlockedEventData<
@@ -246,6 +228,10 @@ export namespace EventPayloads {
   export type Uninstall = UninstallEventData;
   export type UpdateState = UpdateStateEventData;
   export type ProtocolMessage = ProtocolMessageData;
+
+  // TODO: chain listener events
+
+  // TODO: chain watcher events
 }
 
 export class ConnextEventEmitter extends EventEmitter<string | ChannelMethods | EventNames> {}

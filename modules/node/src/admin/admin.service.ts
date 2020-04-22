@@ -1,13 +1,9 @@
 import { getCreate2MultisigAddress, scanForCriticalAddresses } from "@connext/cf-core";
 import {
-  ConnextNodeStorePrefix,
   CriticalStateChannelAddresses,
   StateChannelJSON,
-  OutcomeType,
 } from "@connext/types";
-import { toBN, stringify } from "@connext/utils";
 import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
-import { HashZero, AddressZero, Zero } from "ethers/constants";
 
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -61,7 +57,7 @@ export class AdminService implements OnApplicationBootstrap {
 
   /** Get all channels */
   async getAllChannels(): Promise<Channel[]> {
-    return await this.channelRepository.findAll();
+    return this.channelRepository.findAll();
   }
 
   /** Get all transfers */
@@ -227,164 +223,5 @@ export class AdminService implements OnApplicationBootstrap {
     return output;
   }
 
-  /**
-   * Store Migration v0 --> v1: 3/20/2020
-   *
-   * Migrate from the key/value cf-core store to the v1 of the api driven store:
-   * https://github.com/ConnextProject/indra/blob/baad8edf906cb16e18c8fd5422b4f7e28fa816fb/modules/types/src/store.ts#L90
-   *
-   * Some ideally enforced database constraints were relaxed to allow the
-   * migrations to happen in prod via the admin function. A migration to restore
-   * these constraints will be needed.
-   */
-  async migrateChannelStore(): Promise<boolean> {
-    const prefix = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel`;
-    const oldChannelRecords = await this.cfCoreRepository.get(prefix);
-    const channelJSONs: StateChannelJSON[] = Object.values(oldChannelRecords);
-    this.log.log(`Found ${channelJSONs.length} old channel records`);
-    for (const channelJSON of channelJSONs) {
-      if (channelJSON.userIdentifiers.length === 3) {
-        // just ignore virtual channels
-        continue;
-      }
-      try {
-        this.log.info(`Found channel to migrate: ${channelJSON.multisigAddress}`);
-        // create blank setup commitment
-        await this.cfCoreStore.createSetupCommitment(channelJSON.multisigAddress, {
-          data: HashZero,
-          to: AddressZero,
-          value: Zero,
-        });
-
-        // check if channel exists
-        const channel = await this.channelRepository.findByMultisigAddress(
-          channelJSON.multisigAddress,
-        );
-        if (channel) {
-          this.log.log(
-            `Channel exists, removing first: ${channelJSON.multisigAddress}`,
-          );
-          await this.channelRepository.remove(channel);
-        } else {
-          this.log.log(`Channel does not exist, building new: ${channelJSON.multisigAddress}`);
-        }
-        // handle `timeout` --> `defaultTimeout` and
-        // `latestTimeout` --> `stateTimeout` cases
-        const getProperTimeouts = (obj: any) => {
-          const isUndefinedOrNull = (val: any) => val === undefined || val === null;
-          let stateTimeoutKey = undefined;
-          for (const k of ["stateTimeout", "latestTimeout", "timeout"]) {
-            if (!isUndefinedOrNull(stateTimeoutKey)) continue;
-            if (!isUndefinedOrNull(obj[k])) {
-              stateTimeoutKey = k;
-            }
-          }
-          if (isUndefinedOrNull(stateTimeoutKey)) {
-            throw new Error(`Could not determine state timeout key for ${stringify(obj, 2)}`);
-          }
-          const stateTimeout = toBN(obj[stateTimeoutKey]).toHexString();
-
-          const defaultTimeoutKey = !isUndefinedOrNull(obj.defaultTimeout)
-            ? "defaultTimeout"
-            : "timeout";
-          
-          if (isUndefinedOrNull(obj[defaultTimeoutKey])) {
-            throw new Error(`Could not determine default timeout key for ${stringify(obj, 2)}`);
-          }
-          const defaultTimeout = toBN(obj[defaultTimeoutKey]).toHexString();
-          return { stateTimeout, defaultTimeout };
-        };
-
-        await this.cfCoreStore.createStateChannel({ 
-          ...channelJSON, 
-          freeBalanceAppInstance: {
-            ...channelJSON.freeBalanceAppInstance,
-            ...getProperTimeouts(channelJSON.freeBalanceAppInstance),
-          }, 
-        });
-        for (const [, proposedApp] of channelJSON.proposedAppInstances || []) {
-          const proposal = {
-            ...proposedApp,
-            ...getProperTimeouts(proposedApp),
-          };
-          await this.cfCoreStore.createAppProposal(
-            channelJSON.multisigAddress,
-            proposal,
-            channelJSON.monotonicNumProposedApps,
-          );
-        }
-
-        for (const [, appInstance] of channelJSON.appInstances || []) {
-          const existing = await this.cfCoreStore.getAppInstance(appInstance.identityHash);
-          if (existing) {
-            await this.cfCoreStore.updateAppInstance(appInstance.identityHash, {
-              ...appInstance,
-              ...getProperTimeouts(appInstance),
-            });
-          } else {
-            const proposal = {
-              ...getProperTimeouts(appInstance),
-              abiEncodings: {
-                actionEncoding: appInstance.appInterface.actionEncoding,
-                stateEncoding: appInstance.appInterface.stateEncoding,
-              },
-              appDefinition: appInstance.appInterface.addr,
-              appSeqNo: appInstance.appSeqNo,
-              identityHash: appInstance.identityHash,
-              initialState: appInstance.latestState,
-              initiatorDeposit: "0",
-              initiatorDepositAssetId: AddressZero,
-              outcomeType: appInstance.outcomeType as OutcomeType,
-              initiatorIdentifier: channelJSON.userIdentifiers[0],
-              responderIdentifier: channelJSON.userIdentifiers[1],
-              responderDeposit: "0",
-              responderDepositAssetId: AddressZero,
-              meta: appInstance.meta,
-              multiAssetMultiPartyCoinTransferInterpreterParams: 
-                appInstance.multiAssetMultiPartyCoinTransferInterpreterParams as any,
-              singleAssetTwoPartyCoinTransferInterpreterParams: 
-                appInstance.singleAssetTwoPartyCoinTransferInterpreterParams as any,
-              twoPartyOutcomeInterpreterParams: 
-                appInstance.twoPartyOutcomeInterpreterParams as any,
-            };
-            await this.cfCoreStore.createAppProposal(
-              channelJSON.multisigAddress,
-              proposal,
-              channelJSON.monotonicNumProposedApps,
-            );
-            const app = {
-              ...appInstance,
-              ...getProperTimeouts(appInstance),
-            };
-            await this.cfCoreStore.createAppInstance(
-              channelJSON.multisigAddress,
-              app,
-              {
-                ...channelJSON.freeBalanceAppInstance,
-                ...getProperTimeouts(channelJSON.freeBalanceAppInstance),
-              },
-            );
-          }
-        }
-
-        this.log.log(`Migrated channel: ${channelJSON.multisigAddress}`);
-        // delete old channel record
-        const removed = await this.cfCoreRepository.delete({
-          path: `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${channelJSON.multisigAddress}`,
-        });
-        this.log.log(`Removed ${removed.affected} old records after migrating`);
-      } catch (e) {
-        this.log.error(
-          `Error migrating channel ${channelJSON.multisigAddress}: ${e.toString()} ${e.stack}`,
-        );
-      }
-    }
-    return true;
-  }
-
-  async onApplicationBootstrap() {
-    this.log.log(`onApplicationBootstrap migrating channel store.`);
-    await this.migrateChannelStore();
-    this.log.log(`onApplicationBootstrap completed migrating channel store.`);
-  }
+  async onApplicationBootstrap() {}
 }

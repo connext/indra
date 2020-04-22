@@ -1,5 +1,5 @@
 /* global before */
-import { AppChallengeBigNumber } from "@connext/types";
+import { AppChallenge } from "@connext/types";
 import { Wallet, Contract, ContractFactory } from "ethers";
 
 import {
@@ -44,7 +44,7 @@ describe("progressState", () => {
     resultingStateVersionNumber?: number,
     resultingStateTimeout?: number,
   ) => Promise<void>;
-  let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
+  let verifyChallenge: (expected: Partial<AppChallenge>) => Promise<void>;
   let isProgressable: () => Promise<boolean>;
   let progressStateAndVerify: (
     state: AppWithCounterState,

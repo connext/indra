@@ -26,13 +26,6 @@ export type AppInterface = {
   actionEncoding: ABIEncoding | undefined;
 };
 
-export type SignedAppChallengeUpdate = {
-  appStateHash: HexString;
-  versionNumber: number;
-  timeout: number;
-  signatures: string[];
-};
-
 export type AppABIEncodings = {
   stateEncoding: ABIEncoding;
   actionEncoding: ABIEncoding | undefined;
@@ -52,12 +45,9 @@ export type AppInstanceJson = {
   outcomeType: string;
   meta?: object;
   // Interpreter Params
-  twoPartyOutcomeInterpreterParams?:
-    TwoPartyFixedOutcomeInterpreterParamsJson
-  multiAssetMultiPartyCoinTransferInterpreterParams?:
-    MultiAssetMultiPartyCoinTransferInterpreterParamsJson
-  singleAssetTwoPartyCoinTransferInterpreterParams?:
-    SingleAssetTwoPartyCoinTransferInterpreterParamsJson
+  twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParamsJson;
+  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParamsJson;
+  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParamsJson;
 };
 
 export type AppInstanceProposal = {
@@ -77,12 +67,9 @@ export type AppInstanceProposal = {
   stateTimeout: HexString;
   meta?: object;
   // Interpreter Params
-  twoPartyOutcomeInterpreterParams?:
-    TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?:
-    MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?:
-    SingleAssetTwoPartyCoinTransferInterpreterParams;
+  twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
 };
 
 ////////////////////////////////////

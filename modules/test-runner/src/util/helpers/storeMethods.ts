@@ -20,8 +20,8 @@ import {
   NetworkContext,
   ConditionalTransactionCommitmentJSON,
 } from "@connext/types";
-import { createRandomBytesHexString, toBN } from "@connext/utils";
-import { BigNumber } from "ethers/utils";
+import { toBN } from "@connext/utils";
+import { BigNumber, hexlify, randomBytes } from "ethers/utils";
 import MockAsyncStorage from "mock-async-storage";
 import { v4 as uuid } from "uuid";
 
@@ -100,16 +100,19 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
 export const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
   to: TEST_STORE_ETH_ADDRESS,
   value: One,
-  data: createRandomBytesHexString(64),
+  data: hexlify(randomBytes(64)),
 };
 
 export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   appIdentity: {
-    channelNonce: TEST_STORE_APP_INSTANCE.appSeqNo.toString(),
-    participants: [TEST_STORE_APP_INSTANCE.initiatorIdentifier, TEST_STORE_APP_INSTANCE.responderIdentifier],
+    channelNonce: toBN(TEST_STORE_APP_INSTANCE.appSeqNo),
+    participants: [
+      TEST_STORE_APP_INSTANCE.initiatorIdentifier,
+      TEST_STORE_APP_INSTANCE.responderIdentifier,
+    ],
     multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
     appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
-    defaultTimeout: "35",
+    defaultTimeout: toBN(35),
   },
   appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
   appStateHash: "setStateAppStateHash",

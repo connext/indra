@@ -13,12 +13,11 @@ import {
 } from "@connext/types";
 import {
   getAddressFromAssetId,
-  invalid32ByteHexString,
-  invalidAddress,
-  invalidPublicIdentifier,
+  getBytes32Error,
+  getAddressError,
+  getPublicIdentifierError,
   stringify,
   toBN,
-  validate,
 } from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
 import { solidityKeccak256 } from "ethers/utils";
@@ -29,28 +28,30 @@ export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (
     params: PublicParams.LinkedTransfer,
   ): Promise<PublicResults.LinkedTransfer> => {
+    this.log.info(`linkedTransfer started: ${stringify(params)}`);
     const amount = toBN(params.amount);
     const { paymentId, preImage, meta, recipient } = params;
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
 
-    validate(
-      invalidAddress(assetId),
-      invalid32ByteHexString(paymentId),
-      invalid32ByteHexString(preImage),
+    this.throwIfAny(
+      getAddressError(assetId),
+      getBytes32Error(paymentId),
+      getBytes32Error(preImage),
     );
 
     const submittedMeta = { ...(meta || {}) } as any;
 
     if (recipient) {
-      validate(invalidPublicIdentifier(recipient));
+      this.throwIfAny(getPublicIdentifierError(recipient));
       // set recipient and encrypted pre-image on linked transfer
       const encryptedPreImage = await this.channelProvider.encrypt(preImage, recipient);
 
       // add encrypted preImage to meta so node can store it in the DB
       submittedMeta.encryptedPreImage = encryptedPreImage;
       submittedMeta.recipient = recipient;
+      submittedMeta.sender = this.connext.publicIdentifier;
     }
 
     const linkedHash = solidityKeccak256(
@@ -82,10 +83,10 @@ export class LinkedTransferController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = await this.connext.getAppRegistry({
+    } = (await this.connext.getAppRegistry({
       name: SimpleLinkedTransferAppName,
       chainId: network.chainId,
-    }) as DefaultApp;
+    })) as DefaultApp;
     const proposeInstallParams: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
@@ -103,7 +104,9 @@ export class LinkedTransferController extends AbstractController {
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: LINKED_TRANSFER_STATE_TIMEOUT,
     };
+    this.log.debug(`Installing linked transfer app`);
     const appIdentityHash = await this.proposeAndInstallLedgerApp(proposeInstallParams);
+    this.log.debug(`Installed: ${appIdentityHash}`);
 
     if (!appIdentityHash) {
       throw new Error(`App was not installed`);
@@ -120,9 +123,10 @@ export class LinkedTransferController extends AbstractController {
       transferMeta: {},
     } as EventPayloads.LinkedTransferCreated;
 
-    this.log.info(`Emitting event data: ${JSON.stringify(eventData)}`);
+    this.log.debug(`Emitting event data: ${JSON.stringify(eventData)}`);
 
     if (recipient) {
+      this.log.debug(`Sending transfer information to ${recipient}`);
       eventData.transferMeta.encryptedPreImage = submittedMeta.encryptedPreImage;
 
       // publish encrypted secret for receiver
@@ -135,6 +139,9 @@ export class LinkedTransferController extends AbstractController {
       await this.connext.node.messaging.flush();
     }
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
-    return { appIdentityHash, paymentId, preImage };
+
+    const result: PublicResults.LinkedTransfer = { appIdentityHash, paymentId, preImage };
+    this.log.info(`linkedTransfer for paymentId ${paymentId} complete: ${stringify(result)}`);
+    return result;
   };
 }

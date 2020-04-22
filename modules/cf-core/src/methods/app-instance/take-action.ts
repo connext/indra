@@ -9,7 +9,7 @@ import {
   UpdateStateMessage,
   PublicIdentifier,
 } from "@connext/types";
-import { getFirstElementInListNotEqualTo, toBN } from "@connext/utils";
+import { toBN } from "@connext/utils";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
@@ -87,21 +87,15 @@ export class TakeActionController extends NodeController {
     if (!app) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
-    const defaultTimeout = app.defaultTimeout;
-
-    const responderAddress = getFirstElementInListNotEqualTo(
-      publicIdentifier,
-      sc.userIdentifiers,
-    );
 
     await runTakeActionProtocol(
       appIdentityHash,
       store,
       protocolRunner,
       publicIdentifier,
-      responderAddress,
+      sc.userIdentifiers.find(id => id !== publicIdentifier)!,
       action,
-      stateTimeout || toBN(defaultTimeout),
+      stateTimeout || toBN(app.defaultTimeout),
     );
 
     const appInstance = await store.getAppInstance(appIdentityHash);

@@ -94,7 +94,7 @@ If you want to use custom contracts or a new network though, you'll have to depl
 For example: to deploy to Goerli testnet, you'll first need to retrieve the mnemonic for an account that has enough funds to pay the gas fees. Copy that mnemonic to your clipboard & then run:
 
 ```bash
-ETH_PROVIDER="https://goerli.infura.io/abc123" bash ops/deploy-contracts.sh
+bash ops/deploy-contracts.sh https://goerli.infura.io/abc123
 ```
 
 This will update the address-book to include new addresses for either the new contracts or new network you're deploying to.

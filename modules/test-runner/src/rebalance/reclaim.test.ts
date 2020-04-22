@@ -1,5 +1,5 @@
 import { EventNames, IConnextClient } from "@connext/types";
-import { createRandom32ByteHexString, toBN } from "@connext/utils";
+import { getRandomBytes32, toBN } from "@connext/utils";
 import { AddressZero, One, Two } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 import { before, describe } from "mocha";
@@ -64,7 +64,7 @@ describe("Reclaim", () => {
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
-      const paymentId = createRandom32ByteHexString();
+      const paymentId = getRandomBytes32();
       clientA.on(EventNames.UPDATE_STATE_EVENT, async data => {
         if (data.newState.data) {
           res();
@@ -124,7 +124,7 @@ describe("Reclaim", () => {
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
-      const paymentId = createRandom32ByteHexString();
+      const paymentId = getRandomBytes32();
       clientA.on(EventNames.UPDATE_STATE_EVENT, async data => {
         if (data.newState.data) {
           res();

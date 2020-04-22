@@ -1,8 +1,13 @@
 import { ConnextStore } from "@connext/store";
-import { ClientOptions, StoreTypes, IClientStore } from "@connext/types";
-import { getRandomPrivateKey, removeUndefinedFields } from "@connext/utils";
+import { ClientOptions, StoreTypes } from "@connext/types";
+import { getRandomPrivateKey } from "@connext/utils";
 
 const CONNEXT_DEFAULT_SIGNER_KEY = "CONNEXT_DEFAULT_SIGNER";
+
+const removeUndefinedFields = <T>(obj: T): T => {
+  Object.keys(obj).forEach(key => typeof obj[key] === "undefined" && delete obj[key]);
+  return obj;
+};
 
 const getGeneratedSigner = (): string => {
   if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
@@ -50,21 +55,13 @@ const getOverrideOptions = (_opts?: Partial<ClientOptions>): Partial<ClientOptio
   return opts;
 };
 
-export const getDefaultStore = (opts: Partial<ClientOptions>): IClientStore => {
-  const storeType = opts && opts.storeType ? opts.storeType : StoreTypes.LocalStorage;
-  const backupService = opts && opts.backupService ? opts.backupService : null;
-  return new ConnextStore(storeType, { backupService });
-};
-
 export const getDefaultOptions = (
   network: string,
   _opts?: Partial<ClientOptions>,
 ): ClientOptions => {
   const urlOptions = getUrlOptions(network);
   const opts = getOverrideOptions(_opts);
-  const store = opts
-    ? opts.store || getDefaultStore(opts)
-    : new ConnextStore(StoreTypes.LocalStorage);
+  const store = opts && opts.store ? opts.store : new ConnextStore(StoreTypes.LocalStorage);
   const signer =
     opts && opts.signer
       ? opts.signer

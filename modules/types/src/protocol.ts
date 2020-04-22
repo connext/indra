@@ -70,15 +70,6 @@ type UninstallProtocolParams = {
   blockNumberToUseIfNecessary?: number;
 };
 
-type UpdateProtocolParams = {
-  initiatorIdentifier: PublicIdentifier;
-  responderIdentifier: PublicIdentifier;
-  multisigAddress: Address;
-  appIdentityHash: Address;
-  newState: SolidityValueType;
-  stateTimeout: BigNumber;
-};
-
 ////////////////////////////////////////
 // exports
 
@@ -107,7 +98,6 @@ export const ProtocolNames = enumify({
   setup: "setup",
   takeAction: "takeAction",
   uninstall: "uninstall",
-  update: "update",
 });
 export type ProtocolNames = (typeof ProtocolNames)[keyof typeof ProtocolNames];
 export type ProtocolName = keyof typeof ProtocolNames;
@@ -118,7 +108,6 @@ export namespace ProtocolParams {
   export type Setup = SetupProtocolParams;
   export type TakeAction = TakeActionProtocolParams;
   export type Uninstall = UninstallProtocolParams;
-  export type Update = UpdateProtocolParams;
 }
 
 export type ProtocolParam =
@@ -126,5 +115,4 @@ export type ProtocolParam =
   | ProposeProtocolParams
   | SetupProtocolParams
   | TakeActionProtocolParams
-  | UninstallProtocolParams
-  | UpdateProtocolParams;
+  | UninstallProtocolParams;

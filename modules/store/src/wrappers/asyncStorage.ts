@@ -5,7 +5,7 @@ import {
   InitCallback,
   WrappedStorage,
 } from "@connext/types";
-import { safeJsonParse, safeJsonStringify } from "@connext/utils"; 
+import { safeJsonParse, safeJsonStringify } from "@connext/utils";
 
 import {
   DEFAULT_ASYNC_STORAGE_KEY,
@@ -13,7 +13,7 @@ import {
   DEFAULT_STORE_SEPARATOR,
   CHANNEL_KEY,
   COMMITMENT_KEY,
-} from "../helpers";
+} from "../constants";
 
 export class WrappedAsyncStorage implements WrappedStorage {
   private data: AsyncStorageData = {};

@@ -7,4 +7,3 @@ export { ProposeInstallAppInstanceController } from "./propose-install";
 export { RejectInstallController } from "./reject-install";
 export { TakeActionController } from "./take-action";
 export { UninstallController } from "./uninstall";
-export { UpdateStateController } from "./update-state";

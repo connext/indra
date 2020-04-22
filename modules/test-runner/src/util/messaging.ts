@@ -228,7 +228,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   // IMessagingService Methods
   async onReceive(subject: string, callback: (msg: Message) => void): Promise<void> {
     // return connection callback
-    return await this.connection.onReceive(subject, async (msg: Message) => {
+    return this.connection.onReceive(subject, async (msg: Message) => {
       this.emit(RECEIVED, { subject, data: msg } as MessagingEventData);
       // wait out delay
       await this.awaitDelay();
@@ -291,7 +291,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     if (!protocol || !this.protocolDefaults[protocol]) {
       // Could not find protocol corresponding to received message,
       // proceeding with sending
-      return await this.connection.send(to, msg);
+      return this.connection.send(to, msg);
     }
     // wait out delay
     await this.awaitDelay(true, protocol);
@@ -310,7 +310,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     this.protocolDefaults[protocol].sent += 1;
 
     // send message, if its a stale connection, retry
-    return await this.connection.send(to, msg);
+    return this.connection.send(to, msg);
   }
 
   private awaitDelay = async (isSend: boolean = false, protocol?: string): Promise<any> => {
@@ -319,12 +319,12 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       if (!this.count.delay) {
         return;
       }
-      return await delay(this.count.delay[key] || 0);
+      return delay(this.count.delay[key] || 0);
     }
     if (!this.protocolDefaults[protocol] || !this.protocolDefaults[protocol]["delay"]) {
       return;
     }
-    return await delay(this.protocolDefaults[protocol]!.delay![key] || 0);
+    return delay(this.protocolDefaults[protocol]!.delay![key] || 0);
   };
 
   ////////////////////////////////////////
@@ -342,13 +342,13 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
   async flush(): Promise<void> {
     this.emit(FLUSH, {} as MessagingEventData);
-    return await this.connection.flush();
+    return this.connection.flush();
   }
 
   async publish(subject: string, data: any): Promise<void> {
     // make sure that client is allowed to send message
     this.emit(PUBLISH, { data, subject } as MessagingEventData);
-    return await this.connection.publish(subject, data);
+    return this.connection.publish(subject, data);
   }
 
   async request(
@@ -362,15 +362,15 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     // make sure that client is allowed to send message
 
     this.emit(REQUEST, { data, subject } as MessagingEventData);
-    return await this.connection.request(subject, timeout, data);
+    return this.connection.request(subject, timeout, data);
   }
 
   async subscribe(subject: string, callback: (msg: Message) => void): Promise<void> {
-    return await this.connection.subscribe(subject, callback);
+    return this.connection.subscribe(subject, callback);
   }
 
   async unsubscribe(subject: string): Promise<void> {
-    return await this.connection.unsubscribe(subject);
+    return this.connection.unsubscribe(subject);
   }
 
   ////////////////////////////////////////

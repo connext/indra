@@ -38,6 +38,6 @@ export class MockBackupService implements IBackupServiceAPI {
   }
 
   public async backup(pair: StorePair): Promise<any> {
-    return await this.storage.set(`${this.prefix}${pair.path}`, pair.value);
+    return this.storage.set(`${this.prefix}${pair.path}`, pair.value);
   }
 }

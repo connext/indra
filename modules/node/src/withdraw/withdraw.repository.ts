@@ -6,11 +6,11 @@ import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.en
 @EntityRepository(Withdraw)
 export class WithdrawRepository extends Repository<Withdraw> {
   async findByAppIdentityHash(appIdentityHash: string): Promise<Withdraw | undefined> {
-    return await this.findOne({ where: { appIdentityHash } });
+    return this.findOne({ where: { appIdentityHash } });
   }
 
   async findAll(): Promise<Withdraw[]> {
-    return await this.find();
+    return this.find();
   }
 
   async addCounterpartySignatureAndFinalize(
@@ -19,7 +19,7 @@ export class WithdrawRepository extends Repository<Withdraw> {
   ): Promise<Withdraw> {
     withdraw.counterpartySignature = signature;
     withdraw.finalized = true;
-    return await this.save(withdraw);
+    return this.save(withdraw);
   }
 
   async addOnchainTransaction(
@@ -27,6 +27,6 @@ export class WithdrawRepository extends Repository<Withdraw> {
     onchainTransaction: OnchainTransaction,
   ): Promise<Withdraw> {
     withdraw.onchainTransaction = onchainTransaction;
-    return await this.save(withdraw);
+    return this.save(withdraw);
   }
 }

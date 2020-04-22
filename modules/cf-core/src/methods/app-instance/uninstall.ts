@@ -5,8 +5,9 @@ import {
   MethodResults,
   ProtocolNames,
   PublicIdentifier,
+  EventNames,
+  UninstallMessage,
 } from "@connext/types";
-import { getFirstElementInListNotEqualTo } from "@connext/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -89,20 +90,31 @@ export class UninstallController extends NodeController {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
-    const to = getFirstElementInListNotEqualTo(
-      publicIdentifier,
-      stateChannel.userIdentifiers,
-    );
-
     await uninstallAppInstanceFromChannel(
       store,
       protocolRunner,
       publicIdentifier,
-      to,
+      stateChannel.userIdentifiers.find(id => id !== publicIdentifier)!,
       appIdentityHash,
     );
 
     return { appIdentityHash };
+  }
+
+  protected async afterExecution(
+    requestHandler: RequestHandler,
+    params: MethodParams.TakeAction,
+  ): Promise<void> {
+    const { store, router, publicIdentifier } = requestHandler;
+    const { appIdentityHash } = params;
+
+    const msg = {
+      from: publicIdentifier,
+      type: EventNames.UNINSTALL_EVENT,
+      data: { appIdentityHash },
+    } as UninstallMessage;
+
+    await router.emit(msg.type, msg, `outgoing`);
   }
 }
 

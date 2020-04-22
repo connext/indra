@@ -24,7 +24,7 @@ describe("TicTacToeApp", () => {
   let ticTacToe: Contract;
 
   async function computeOutcome(state: SolidityValueType) {
-    return await ticTacToe.functions.computeOutcome(encodeState(state));
+    return ticTacToe.functions.computeOutcome(encodeState(state));
   }
 
   function encodeState(state: SolidityValueType) {
@@ -62,7 +62,7 @@ describe("TicTacToeApp", () => {
   }
 
   async function applyAction(state: SolidityValueType, action: SolidityValueType) {
-    return await ticTacToe.functions.applyAction(encodeState(state), encodeAction(action));
+    return ticTacToe.functions.applyAction(encodeState(state), encodeAction(action));
   }
 
   before(async () => {

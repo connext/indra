@@ -10,14 +10,14 @@ import { HashZero } from "ethers/constants";
 import { soliditySha256 } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
+import { stringify } from "@connext/utils";
 
 export class ResolveHashLockTransferController extends AbstractController {
   public resolveHashLockTransfer = async (
     params: PublicParams.ResolveHashLockTransfer,
   ): Promise<PublicResults.ResolveHashLockTransfer> => {
+    this.log.info(`resolveHashLockTransfer started: ${stringify(params)}`);
     const { preImage } = params;
-
-    this.log.info(`Resolving hash lock transfer with preImage ${preImage}`);
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
 
@@ -34,10 +34,9 @@ export class ResolveHashLockTransferController extends AbstractController {
 
     try {
       // node installs app, validation happens in listener
-      await this.connext.takeAction(
-        hashlockApp.identityHash, 
-        { preImage },
-      );
+      this.log.debug(`Taking action on transfer app ${hashlockApp.identityHash}`);
+      await this.connext.takeAction(hashlockApp.identityHash, { preImage });
+      this.log.debug(`Uninstalling hashlock transfer app ${hashlockApp.identityHash}`);
       await this.connext.uninstallApp(hashlockApp.identityHash);
     } catch (e) {
       this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
@@ -48,25 +47,17 @@ export class ResolveHashLockTransferController extends AbstractController {
       throw e;
     }
     const sender = hashlockApp.meta["sender"];
-    this.connext.emit(
-      EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
-      {
-        type: ConditionalTransferTypes.HashLockTransfer,
-        amount: amount,
-        assetId: assetId,
-        paymentId: HashZero,
-        sender,
-        recipient: this.connext.publicIdentifier,
-        meta: hashlockApp.meta,
-      } as EventPayloads.HashLockTransferCreated,
-    );
 
-    return {
+    const result: PublicResults.ResolveHashLockTransfer = {
       amount,
       appIdentityHash: hashlockApp.identityHash,
       assetId,
       sender,
       meta: hashlockApp.meta,
     };
+    this.log.info(
+      `resolveHashLockTransfer with lockhash ${lockHash} complete: ${stringify(result)}`,
+    );
+    return result;
   };
 }

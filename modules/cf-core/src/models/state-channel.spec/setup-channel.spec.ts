@@ -1,5 +1,5 @@
 import { AppInstanceProposal } from "@connext/types";
-import { createRandomAddress, getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
+import { getRandomAddress, getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
 import { Zero, AddressZero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 
@@ -11,7 +11,7 @@ import { AppInstance } from "../app-instance";
 import { StateChannel } from "../state-channel";
 
 describe("StateChannel::setupChannel", () => {
-  const multisigAddress = getAddress(createRandomAddress());
+  const multisigAddress = getAddress(getRandomAddress());
   const ids = getRandomPublicIdentifiers(2);
 
   let sc: StateChannel;

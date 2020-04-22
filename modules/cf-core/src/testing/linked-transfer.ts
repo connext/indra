@@ -1,5 +1,5 @@
 import { AppABIEncodings } from "@connext/types";
-import { createRandom32ByteHexString } from "@connext/utils";
+import { getRandomBytes32 } from "@connext/utils";
 import { Zero, AddressZero } from "ethers/constants";
 import { bigNumberify, BigNumberish, solidityKeccak256 } from "ethers/utils";
 
@@ -32,8 +32,8 @@ export function validAction(
   return {
     assetId,
     amount: bigNumberify(amount),
-    paymentId: createRandom32ByteHexString(),
-    preImage: createRandom32ByteHexString(),
+    paymentId: getRandomBytes32(),
+    preImage: getRandomBytes32(),
   };
 }
 

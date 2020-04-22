@@ -1,5 +1,5 @@
 import { MinimalTransaction, CommitmentTarget } from "@connext/types";
-import { createRandomAddress } from "@connext/utils";
+import { getRandomAddress } from "@connext/utils";
 import {
   bigNumberify,
   Interface,
@@ -41,7 +41,7 @@ describe("Set State Commitment", () => {
       proxyFactory: context.network.ProxyFactory,
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
-    getAddress(createRandomAddress()),
+    getAddress(getRandomAddress()),
     initiator.publicIdentifier,
     responder.publicIdentifier,
   );

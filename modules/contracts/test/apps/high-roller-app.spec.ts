@@ -78,7 +78,7 @@ describe("HighRollerApp", () => {
   let highRollerApp: Contract;
 
   async function computeStateTransition(state: SolidityValueType, action: SolidityValueType) {
-    return await highRollerApp.functions.applyAction(encodeState(state), encodeAction(action));
+    return highRollerApp.functions.applyAction(encodeState(state), encodeAction(action));
   }
 
   async function computeOutcome(state: SolidityValueType) {

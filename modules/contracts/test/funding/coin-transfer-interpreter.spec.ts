@@ -1,4 +1,4 @@
-import { createRandomAddress } from "@connext/utils";
+import { getRandomAddress } from "@connext/utils";
 import { Contract, Wallet, ContractFactory } from "ethers";
 import { AddressZero, One } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
@@ -40,7 +40,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     state: CoinTransfer[][],
     params: { limit: BigNumber[]; tokenAddresses: string[] },
   ) {
-    return await multiAssetMultiPartyCoinTransferInterpreter
+    return multiAssetMultiPartyCoinTransferInterpreter
       .functions
       .interpretOutcomeAndExecuteEffect(
         encodeOutcome(state),
@@ -82,7 +82,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute ETH coins only correctly to one person", async () => {
-    const to = createRandomAddress();
+    const to = getRandomAddress();
     const amount = One;
     const preAmountWithdrawn = await getTotalAmountWithdrawn(AddressZero);
 
@@ -96,10 +96,10 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute ETH coins only correctly two people", async () => {
-    const to1 = createRandomAddress();
+    const to1 = getRandomAddress();
     const amount1 = One;
 
-    const to2 = createRandomAddress();
+    const to2 = getRandomAddress();
     const amount2 = One;
     const preAmountWithdrawn = await getTotalAmountWithdrawn(AddressZero);
 
@@ -122,7 +122,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute ERC20 coins correctly for one person", async () => {
-    const to = createRandomAddress();
+    const to = getRandomAddress();
     const amount = One;
     const preAmountWithdrawn = await getTotalAmountWithdrawn(erc20.address);
 
@@ -136,10 +136,10 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute ERC20 coins only correctly two people", async () => {
-    const to1 = createRandomAddress();
+    const to1 = getRandomAddress();
     const amount1 = One;
 
-    const to2 = createRandomAddress();
+    const to2 = getRandomAddress();
     const amount2 = One;
 
     const preAmountWithdrawn = await getTotalAmountWithdrawn(erc20.address);
@@ -165,7 +165,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute both ETH and ERC20 coins to one person", async () => {
-    const to = createRandomAddress();
+    const to = getRandomAddress();
     const amount = One;
     const preAmountWithdrawnToken = await getTotalAmountWithdrawn(erc20.address);
     const preAmountWithdrawnEth = await getTotalAmountWithdrawn(AddressZero);
@@ -182,10 +182,10 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute a split of ETH and ERC20 coins to two people", async () => {
-    const to1 = createRandomAddress();
+    const to1 = getRandomAddress();
     const amount1 = One;
 
-    const to2 = createRandomAddress();
+    const to2 = getRandomAddress();
     const amount2 = One;
 
     const preAmountWithdrawnToken = await getTotalAmountWithdrawn(erc20.address);
@@ -206,10 +206,10 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute a mix of ETH and ERC20 coins to two people", async () => {
-    const to1 = createRandomAddress();
+    const to1 = getRandomAddress();
     const amount1 = One;
 
-    const to2 = createRandomAddress();
+    const to2 = getRandomAddress();
     const amount2 = One;
 
     const preAmountWithdrawnToken = await getTotalAmountWithdrawn(erc20.address);
@@ -247,10 +247,10 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute a mix of ETH and ERC20 coins to an unorderded list of people", async () => {
-    const to1 = createRandomAddress();
+    const to1 = getRandomAddress();
     const amount1 = One;
 
-    const to2 = createRandomAddress();
+    const to2 = getRandomAddress();
     const amount2 = One;
 
     const preAmountWithdrawnToken = await getTotalAmountWithdrawn(erc20.address);

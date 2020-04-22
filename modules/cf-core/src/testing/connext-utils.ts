@@ -78,7 +78,7 @@ export async function redeemLink(
   await takeAppAction(redeemer, appIdentityHash, action);
   const redeemerApp = await getAppInstance(redeemer, appIdentityHash);
   assertLinkRedemption(redeemerApp, action.amount);
-  return await uninstallApp(redeemer, funder, appIdentityHash);
+  return uninstallApp(redeemer, funder, appIdentityHash);
 }
 
 /**

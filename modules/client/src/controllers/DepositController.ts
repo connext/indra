@@ -2,6 +2,7 @@ import { DEFAULT_APP_TIMEOUT, DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
 import { MinimumViableMultisig } from "@connext/contracts";
 import {
   AppInstanceJson,
+  BigNumber,
   DefaultApp,
   DepositAppName,
   DepositAppState,
@@ -14,40 +15,39 @@ import {
 } from "@connext/types";
 import {
   getAddressFromAssetId,
-  invalidAddress,
+  getAddressError,
   notGreaterThan,
   notLessThanOrEqualTo,
   toBN,
-  validate,
 } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { AbstractController } from "./AbstractController";
 
 export class DepositController extends AbstractController {
   public deposit = async (params: PublicParams.Deposit): Promise<PublicResults.Deposit> => {
+    this.log.info(`deposit started: ${JSON.stringify(params)}`);
     const amount = toBN(params.amount);
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
-    validate(invalidAddress(assetId));
-    // NOTE: when the `walletDeposit` is not used, these parameters
-    // do not have to be validated
+    this.throwIfAny(getAddressError(assetId));
+    // NOTE: when the `walletDeposit` is not used, these parameters do not have to be validated
     const tokenAddress = getAddressFromAssetId(assetId);
+    this.log.info(`Depositing ${amount.toString()} of ${tokenAddress} into channel`);
     const startingBalance =
       tokenAddress === AddressZero
         ? await this.ethProvider.getBalance(this.connext.signerAddress)
         : await new Contract(tokenAddress, tokenAbi, this.ethProvider).functions.balanceOf(
             this.connext.signerAddress,
           );
-    validate(notLessThanOrEqualTo(amount, startingBalance), notGreaterThan(amount, Zero));
+    this.throwIfAny(notLessThanOrEqualTo(amount, startingBalance), notGreaterThan(amount, Zero));
     const { appIdentityHash } = await this.requestDepositRights({ assetId });
 
-    let ret;
-    let transactionHash;
+    let ret: PublicResults.RescindDepositRights;
+    let transactionHash: string;
     try {
       this.log.debug(`Starting deposit`);
       this.connext.emit(EventNames.DEPOSIT_STARTED_EVENT, {
@@ -55,13 +55,12 @@ export class DepositController extends AbstractController {
         assetId: tokenAddress,
         appIdentityHash,
       } as EventPayloads.DepositStarted);
-      const hash = await this.connext.channelProvider.walletDeposit({
+      transactionHash = await this.connext.channelProvider.walletDeposit({
         amount: amount.toString(),
         assetId: tokenAddress,
       });
-      this.log.debug(`Sent deposit transaction to chain: ${hash}`);
-      transactionHash = hash;
-      const tx = await this.ethProvider.getTransaction(hash);
+      this.log.info(`Sent deposit transaction to chain: ${transactionHash}`);
+      const tx = await this.ethProvider.getTransaction(transactionHash);
       await tx.wait();
     } catch (e) {
       this.connext.emit(EventNames.DEPOSIT_FAILED_EVENT, {
@@ -82,22 +81,25 @@ export class DepositController extends AbstractController {
       } as EventPayloads.DepositConfirmed);
     }
 
+    this.log.info(`deposit complete for assetId ${assetId}: ${JSON.stringify(ret)}`);
     return ret;
   };
 
   public requestDepositRights = async (
     params: PublicParams.RequestDepositRights,
   ): Promise<PublicResults.RequestDepositRights> => {
+    this.log.info(`requestDepositRights started: ${JSON.stringify(params)}`);
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
-    validate(invalidAddress(assetId));
+    this.throwIfAny(getAddressError(assetId));
     const tokenAddress = getAddressFromAssetId(assetId);
     const depositApp = await this.getDepositApp({ assetId: tokenAddress });
 
     if (!depositApp) {
       this.log.debug(`No deposit app installed for ${assetId}. Installing.`);
       const appIdentityHash = await this.proposeDepositInstall(assetId);
+      this.log.info(`Successfully obtained deposit rights for ${assetId}`);
       return {
         appIdentityHash,
         multisigAddress: this.connext.multisigAddress,
@@ -116,25 +118,30 @@ export class DepositController extends AbstractController {
     this.log.debug(
       `Found existing, unfinalized deposit app for ${assetId}, doing nothing. (deposit app: ${depositApp.identityHash})`,
     );
-    return {
+
+    const result: PublicResults.RequestDepositRights = {
       appIdentityHash: depositApp.identityHash,
       multisigAddress: this.connext.multisigAddress,
     };
+    this.log.info(`requestDepositRights for assetId ${assetId} complete: ${JSON.stringify(result)}`);
+    return result;
   };
 
   public rescindDepositRights = async (
     params: PublicParams.RescindDepositRights,
   ): Promise<PublicResults.RescindDepositRights> => {
+    this.log.info(`rescindDepositRights started: ${JSON.stringify(params)}`);
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
-    validate(invalidAddress(assetId));
+    this.throwIfAny(getAddressError(assetId));
     const tokenAddress = getAddressFromAssetId(assetId);
     // get the app instance
     const app = await this.getDepositApp({ assetId: tokenAddress });
     if (!app) {
       this.log.debug(`No deposit app found for assset: ${assetId}`);
       const freeBalance = await this.connext.getFreeBalance(tokenAddress);
+      this.log.info(`Successfully rescinded deposit rights for ${assetId}`);
       return { freeBalance };
     }
 
@@ -142,7 +149,9 @@ export class DepositController extends AbstractController {
     await this.connext.uninstallApp(app.identityHash);
     this.log.debug(`Uninstalled deposit app`);
     const freeBalance = await this.connext.getFreeBalance(tokenAddress);
-    return { freeBalance };
+    const result: PublicResults.RescindDepositRights = { freeBalance };
+    this.log.info(`rescindDepositRights for assetId ${assetId} complete ${JSON.stringify(result)}`);
+    return result;
   };
 
   public getDepositApp = async (
@@ -223,10 +232,10 @@ export class DepositController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = await this.connext.getAppRegistry({
+    } = (await this.connext.getAppRegistry({
       name: DepositAppName,
       chainId: network.chainId,
-    }) as DefaultApp;
+    })) as DefaultApp;
 
     const params: MethodParams.ProposeInstall = {
       abiEncodings: {
@@ -245,6 +254,6 @@ export class DepositController extends AbstractController {
       stateTimeout: DEPOSIT_STATE_TIMEOUT,
     };
 
-    return await this.proposeAndInstallLedgerApp(params);
+    return this.proposeAndInstallLedgerApp(params);
   };
 }

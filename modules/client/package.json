@@ -1,6 +1,6 @@
 {
   "name": "@connext/client",
-  "version": "6.0.3",
+  "version": "6.0.8",
   "description": "Client for Connext Network",
   "main": "dist/index.js",
   "files": [
@@ -17,20 +17,20 @@
   },
   "dependencies": {
     "axios": "0.19.2",
-    "@connext/apps": "6.0.3",
-    "@connext/cf-core": "6.0.3",
-    "@connext/channel-provider": "6.0.3",
-    "@connext/utils": "6.0.3",
+    "@connext/apps": "6.0.8",
+    "@connext/cf-core": "6.0.8",
+    "@connext/channel-provider": "6.0.8",
+    "@connext/utils": "6.0.8",
     "@connext/contracts": "2.0.2",
-    "@connext/messaging": "6.0.3",
-    "@connext/store": "6.0.3",
-    "@connext/types": "6.0.3",
+    "@connext/messaging": "6.0.8",
+    "@connext/store": "6.0.8",
+    "@connext/types": "6.0.8",
     "core-js": "3.6.4",
     "eventemitter3": "4.0.0",
     "ethers": "4.0.46",
     "human-standard-token-abi": "2.0.0",
     "regenerator-runtime": "0.13.3",
-    "ts-natsutil": "1.0.4",
+    "ts-natsutil": "1.0.6",
     "uuid": "3.4.0"
   },
   "devDependencies": {

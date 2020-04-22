@@ -1,4 +1,4 @@
-import { getDirectoryFiles, isDirectorySync } from "@connext/store";
+import { getDirectoryFiles, isDirectory } from "@connext/store";
 import { StoreTypes } from "@connext/types";
 import { v4 as uuid } from "uuid";
 
@@ -86,15 +86,19 @@ describe("KeyValueStorage", () => {
     await store.clear();
   });
 
-  it("happy case: FileStorage should create a store directory", async () => {
+  it("happy case: FileStorage should create a store directory after first request", async () => {
     const id = uuid();
-    expect(isDirectorySync(`${fileDir}/${id}`)).to.be.false;
+    const isDirectoryBefore = await isDirectory(`${fileDir}/${id}`);
+    expect(isDirectoryBefore).to.be.false;
     const store = createKeyValueStore(StoreTypes.File, {
       asyncStorageKey,
       fileDir: `${fileDir}/${id}`,
     });
 
-    expect(isDirectorySync(`${fileDir}/${id}`)).to.be.true;
+    await store.getSchemaVersion();
+
+    const isDirectoryAfter = await isDirectory(`${fileDir}/${id}`);
+    expect(isDirectoryAfter).to.be.true;
     await store.clear();
   });
 

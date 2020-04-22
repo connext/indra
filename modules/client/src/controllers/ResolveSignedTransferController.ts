@@ -13,14 +13,14 @@ import {
 import { BigNumber } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
+import { stringify } from "@connext/utils";
 
 export class ResolveSignedTransferController extends AbstractController {
   public resolveSignedTransfer = async (
     params: PublicParams.ResolveSignedTransfer,
   ): Promise<PublicResults.ResolveSignedTransfer> => {
+    this.log.info(`resolveSignedTransfer started: ${stringify(params)}`);
     const { paymentId, data, signature } = params;
-
-    this.log.info(`Resolving signed lock transfer with paymentId ${paymentId}`);
 
     let resolveRes: PublicResults.ResolveSignedTransfer;
     const installedApps = await this.connext.getAppInstances();
@@ -45,7 +45,7 @@ export class ResolveSignedTransferController extends AbstractController {
         sender = existing.meta["sender"];
         meta = existing.meta;
       } else {
-        this.log.info(`Did not find installed app, ask node to install it for us`);
+        this.log.debug(`Did not find installed app, ask node to install it for us`);
         resolveRes = await this.connext.node.resolveSignedTransfer(paymentId);
         appIdentityHash = resolveRes.appIdentityHash;
         amount = resolveRes.amount;
@@ -53,10 +53,12 @@ export class ResolveSignedTransferController extends AbstractController {
         sender = resolveRes.sender;
         meta = resolveRes.meta;
       }
+      this.log.debug(`Taking action on signed transfer app ${appIdentityHash}`);
       await this.connext.takeAction(appIdentityHash, {
         data,
         signature,
       } as SimpleSignedTransferAppAction);
+      this.log.debug(`Uninstalling signed transfer app ${appIdentityHash}`);
       await this.connext.uninstallApp(appIdentityHash);
     } catch (e) {
       this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
@@ -65,20 +67,8 @@ export class ResolveSignedTransferController extends AbstractController {
       } as EventPayloads.SignedTransferFailed);
       throw e;
     }
-
-    this.connext.emit(
-      EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
-      {
-        type: ConditionalTransferTypes.SignedTransfer,
-        amount,
-        assetId,
-        paymentId,
-        sender,
-        recipient: this.connext.publicIdentifier,
-        meta,
-      } as EventPayloads.SignedTransferUnlocked,
-    );
-
+    
+    this.log.info(`resolveSignedTransfer for paymentId ${paymentId} complete: ${stringify(resolveRes)}`);
     return resolveRes;
   };
 }

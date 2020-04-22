@@ -9,6 +9,9 @@ import {
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
   OutcomeType,
+  AppChallenge,
+  StateProgressedContractEvent,
+  ChallengeUpdatedContractEvent,
 } from "@connext/types";
 import { Zero, AddressZero } from "ethers/constants";
 import { getManager } from "typeorm";
@@ -30,7 +33,6 @@ import { SetStateCommitment } from "../setStateCommitment/setStateCommitment.ent
 import { Channel } from "../channel/channel.entity";
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
-import { stringify } from "@connext/utils";
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
@@ -82,9 +84,7 @@ export class CFCoreStore implements IStoreService {
     );
 
     const nodeIdentifier = this.configService.getPublicIdentifier();
-    const userIdentifier = stateChannel.userIdentifiers.find(
-      id => id !== nodeIdentifier,
-    );
+    const userIdentifier = stateChannel.userIdentifiers.find(id => id !== nodeIdentifier);
 
     const {
       multisigAddress,
@@ -183,10 +183,8 @@ export class CFCoreStore implements IStoreService {
     proposal.type = AppType.INSTANCE;
     // save user/node specific ids
     const nodeId = this.configService.getPublicIdentifier();
-    proposal.userIdentifier = [initiatorIdentifier, responderIdentifier]
-      .find(p => p !== nodeId);
-    proposal.nodeIdentifier = [initiatorIdentifier, responderIdentifier]
-      .find(p => p === nodeId);
+    proposal.userIdentifier = [initiatorIdentifier, responderIdentifier].find(p => p !== nodeId);
+    proposal.nodeIdentifier = [initiatorIdentifier, responderIdentifier].find(p => p === nodeId);
 
     proposal.meta = meta;
 
@@ -471,9 +469,9 @@ export class CFCoreStore implements IStoreService {
   ): Promise<void> {
     const app = await this.appInstanceRepository.findByIdentityHashOrThrow(appIdentityHash);
 
-    const existing = await this
-      .conditionalTransactionCommitmentRepository
-      .findByAppIdentityHash(appIdentityHash);
+    const existing = await this.conditionalTransactionCommitmentRepository.findByAppIdentityHash(
+      appIdentityHash,
+    );
 
     if (existing) {
       throw new Error(`Found existing conditional transaction commitment for ${appIdentityHash}`);
@@ -564,5 +562,77 @@ export class CFCoreStore implements IStoreService {
 
   restore(): Promise<void> {
     throw new Error("Method not implemented.");
+  }
+
+  ////// Watcher methods
+  async getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async createAppChallenge(
+    multisigAddress: string,
+    appChallenge: AppChallenge,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async updateAppChallenge(
+    multisigAddress: string,
+    appChallenge: AppChallenge,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  ///// Events
+  async getLatestProcessedBlock(): Promise<number> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async createLatestProcessedBlock(): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async updateLatestProcessedBlock(blockNumber: number): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async getStateProgressedEvent(
+    appIdentityHash: string,
+  ): Promise<StateProgressedContractEvent | undefined> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async createStateProgressedEvent(
+    multisigAddress: string,
+    appChallenge: StateProgressedContractEvent,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async updateStateProgressedEvent(
+    multisigAddress: string,
+    appChallenge: StateProgressedContractEvent,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async getChallengeUpdatedEvent(
+    appIdentityHash: string,
+  ): Promise<ChallengeUpdatedContractEvent | undefined> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async createChallengeUpdatedEvent(
+    multisigAddress: string,
+    event: ChallengeUpdatedContractEvent,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async updateChallengeUpdatedEvent(
+    multisigAddress: string,
+    appChallenge: ChallengeUpdatedContractEvent,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
   }
 }
