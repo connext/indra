@@ -3,7 +3,7 @@ import {
   IConnextClient,
   LinkedTransferStatus,
 } from "@connext/types";
-import { delay } from "@connext/utils";
+import { delay, stringify } from "@connext/utils";
 import * as lolex from "lolex";
 
 import {
@@ -202,7 +202,7 @@ describe("Async transfer offline tests", () => {
    * Ideally, the node takes action +  uninstalls these apps on `connect`,
    * and money is returned to the hubs channel (redeemed payment)
    */
-  it("sender installs, receiver installs, takesAction, then uninstalls. Node takes action with sender then tries to uninstall, but sender is offline then comes online later (sender offline for uninstall)", async () => {
+  it.skip("sender installs, receiver installs, takesAction, then uninstalls. Node takes action with sender then tries to uninstall, but sender is offline then comes online later (sender offline for uninstall)", async () => {
     const senderSigner = getRandomChannelSigner(env.ethProviderUrl);
     const receiverSigner = getRandomChannelSigner(env.ethProviderUrl);
     // create the sender client and receiver clients + fund
@@ -218,12 +218,12 @@ describe("Async transfer offline tests", () => {
     // disconnect messaging on take action event, ensuring transfer received
     const transferCompleteAndActionTaken = Promise.all([
       new Promise((resolve: Function) =>
-        receiverClient.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, () => {
+        receiverClient.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, data => {
           resolve();
         }),
       ),
       new Promise((resolve: Function) => {
-        senderClient.once(EventNames.UPDATE_STATE_EVENT, async () => {
+        senderClient.once(EventNames.UPDATE_STATE_EVENT, async (data) => {
           await senderClient.messaging.disconnect();
           resolve();
         });
