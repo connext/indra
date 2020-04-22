@@ -51,6 +51,7 @@ export class LinkedTransferController extends AbstractController {
       // add encrypted preImage to meta so node can store it in the DB
       submittedMeta.encryptedPreImage = encryptedPreImage;
       submittedMeta.recipient = recipient;
+      submittedMeta.sender = this.connext.publicIdentifier;
     }
 
     const linkedHash = solidityKeccak256(
