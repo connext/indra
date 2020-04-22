@@ -130,8 +130,7 @@ export interface IStoreService extends IWatcherStoreService {
 
 export interface IClientStore extends IStoreService {
   getUserWithdrawals(): Promise<WithdrawalMonitorObject[]>;
-  createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
-  updateUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
+  saveUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
   removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void>;
 }
 

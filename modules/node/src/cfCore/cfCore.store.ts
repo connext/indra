@@ -33,7 +33,6 @@ import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { SetStateCommitment } from "../setStateCommitment/setStateCommitment.entity";
 import { Channel } from "../channel/channel.entity";
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
-import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 
 @Injectable()

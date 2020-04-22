@@ -3,7 +3,15 @@ import { StoreTypes, ClientOptions } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, One } from "ethers/constants";
 
-import { createClient, expect, sendOnchainValue, env, fundChannel, ETH_AMOUNT_SM, createConnextStore } from "../util";
+import {
+  createClient,
+  expect,
+  sendOnchainValue,
+  env,
+  fundChannel,
+  ETH_AMOUNT_SM,
+  createConnextStore,
+} from "../util";
 import { hexlify, randomBytes } from "ethers/utils";
 
 describe("Client Connect", () => {
@@ -82,32 +90,36 @@ describe("Client Connect", () => {
     });
     expect(client.publicIdentifier).to.be.ok;
   });
-  
+
   it.skip("Client should attempt to wait for user withdrawal if there are withdraw commitments in store", async () => {
     const pk = Wallet.createRandom().privateKey;
-    const store: ConnextStore = await createConnextStore("Memory")
-    console.log(store)
-    console.log(await store.getUserWithdrawals())
-    store.createUserWithdrawal({
+    const store: ConnextStore = await createConnextStore("Memory");
+    console.log(store);
+    console.log(await store.getUserWithdrawals());
+    store.saveUserWithdrawal({
       tx: {
         to: Wallet.createRandom().address,
         value: 0,
-        data: hexlify(randomBytes(32))
+        data: hexlify(randomBytes(32)),
       },
       retry: 0,
-    })
+    });
     expect(await createClient({ signer: pk, store })).rejectedWith("Something");
-  })
+  });
 
   it("Client should not need to wait for user withdrawal after successful withdraw", async () => {
     const pk = Wallet.createRandom().privateKey;
-    const store: ConnextStore = await createConnextStore("Memory")
-    const client = await createClient({signer: pk, store})
-    await fundChannel(client, ETH_AMOUNT_SM)
-    await client.withdraw({amount: ETH_AMOUNT_SM, recipient: Wallet.createRandom().address, assetId: AddressZero});
-    await client.messaging.disconnect()
+    const store: ConnextStore = await createConnextStore("Memory");
+    const client = await createClient({ signer: pk, store });
+    await fundChannel(client, ETH_AMOUNT_SM);
+    await client.withdraw({
+      amount: ETH_AMOUNT_SM,
+      recipient: Wallet.createRandom().address,
+      assetId: AddressZero,
+    });
+    await client.messaging.disconnect();
 
     // now try to restart client (should succeed)
-    expect(await createClient({signer: pk, store})).to.be.ok;
-  })
+    expect(await createClient({ signer: pk, store })).to.be.ok;
+  });
 });
