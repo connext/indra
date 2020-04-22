@@ -1,5 +1,5 @@
 import { AppInstanceJson } from "@connext/types";
-import { toBN, toBNJson } from "@connext/utils";
+import { toBN, toBNJson, delay } from "@connext/utils";
 import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AddressZero } from "ethers/constants";
@@ -25,11 +25,15 @@ import {
   createConditionalTransactionCommitmentJSON,
   generateRandomSignature,
   createMinimalTransaction,
+  createStoredAppChallenge,
+  createStateProgressedEventPayload,
+  createChallengeUpdatedEventPayload,
 } from "../test/cfCore";
 import { ConfigService } from "../config/config.service";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
 import { CFCoreStore } from "./cfCore.store";
+import { ChallengeRepository, ProcessedBlockRepository } from "../challenge/challenge.repository";
 
 const createTestChannel = async (
   cfCoreStore: CFCoreStore,
@@ -97,10 +101,46 @@ const createTestChannelWithAppInstance = async (
   };
 };
 
+const createTestChallengeWithAppInstanceAndChannel = async (
+  cfCoreStore: CFCoreStore,
+  nodeIdentifier: string,
+  userIdentifierParam: string = generateRandomAddress(),
+  multisigAddressParam: string = generateRandomAddress(),
+) => {
+  const {
+    multisigAddress,
+    userIdentifier,
+    channelJson,
+    appInstance,
+    updatedFreeBalance,
+  } = await createTestChannelWithAppInstance(
+    cfCoreStore,
+    nodeIdentifier,
+    userIdentifierParam,
+    multisigAddressParam,
+  );
+
+  // add challenge
+  const challenge = createStoredAppChallenge({
+    identityHash: appInstance.identityHash,
+  });
+  await cfCoreStore.createAppChallenge(challenge.identityHash, challenge);
+
+  return {
+    challenge,
+    multisigAddress,
+    userIdentifier,
+    channelJson,
+    appInstance,
+    updatedFreeBalance,
+  };
+};
+
 describe("CFCoreStore", () => {
   let cfCoreStore: CFCoreStore;
   let configService: ConfigService;
   let channelRepository: ChannelRepository;
+  let challengeRepository: ChallengeRepository;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -117,6 +157,8 @@ describe("CFCoreStore", () => {
           SetStateCommitmentRepository,
           WithdrawCommitmentRepository,
           SetupCommitmentRepository,
+          ChallengeRepository,
+          ProcessedBlockRepository,
         ]),
       ],
     }).compile();
@@ -124,24 +166,21 @@ describe("CFCoreStore", () => {
     cfCoreStore = moduleRef.get<CFCoreStore>(CFCoreStore);
     configService = moduleRef.get<ConfigService>(ConfigService);
     channelRepository = moduleRef.get<ChannelRepository>(ChannelRepository);
+    challengeRepository = moduleRef.get<ChallengeRepository>(ChallengeRepository);
   });
 
   afterEach(async () => {
+    await getConnection().dropDatabase();
     await getConnection().close();
   });
 
   describe("Channel", () => {
     it("should create a state channel", async () => {
       const nodeIdentifier = configService.getPublicIdentifier();
-      const { multisigAddress, channelJson } = await createTestChannel(
-        cfCoreStore,
-        nodeIdentifier,
-      );
+      const { multisigAddress, channelJson } = await createTestChannel(cfCoreStore, nodeIdentifier);
 
       let channel = await cfCoreStore.getStateChannel(multisigAddress);
-      const userIdentifier = channelJson.userIdentifiers.find(
-        x => x !== nodeIdentifier,
-      );
+      const userIdentifier = channelJson.userIdentifiers.find(x => x !== nodeIdentifier);
       expect(channel).toMatchObject({
         ...channelJson,
         userIdentifiers: [nodeIdentifier, userIdentifier],
@@ -350,7 +389,7 @@ describe("CFCoreStore", () => {
       const retrieved = await cfCoreStore.getSetStateCommitments(
         setStateCommitment.appIdentityHash,
       );
-      expect(retrieved).toMatchObject(setStateCommitment);
+      expect(retrieved).toMatchObject([setStateCommitment]);
     });
 
     it("updates a set state commitment", async () => {
@@ -376,7 +415,7 @@ describe("CFCoreStore", () => {
       const retrieved = await cfCoreStore.getSetStateCommitments(
         setStateCommitment.appIdentityHash,
       );
-      expect(retrieved).toMatchObject(updated);
+      expect(retrieved).toMatchObject([updated]);
     });
   });
 
@@ -456,6 +495,83 @@ describe("CFCoreStore", () => {
       await cfCoreStore.updateWithdrawalCommitment(multisigAddress, updated);
       const retrieved = await cfCoreStore.getWithdrawalCommitment(multisigAddress);
       expect(retrieved).toMatchObject(updated);
+    });
+  });
+
+  describe.only("Challenges", () => {
+    it("creates a challenge", async () => {
+      const { appInstance, multisigAddress } = await createTestChannelWithAppInstance(
+        cfCoreStore,
+        configService.getPublicIdentifier(),
+      );
+      const challenge = createStoredAppChallenge({
+        identityHash: appInstance.identityHash,
+      });
+      await cfCoreStore.createAppChallenge(challenge.identityHash, challenge);
+      const retrieved = await cfCoreStore.getAppChallenge(challenge.identityHash);
+      expect(retrieved).toMatchObject(challenge);
+      const byChannel = await cfCoreStore.getActiveChallenges(multisigAddress);
+      expect(byChannel).toMatchObject([challenge]);
+    });
+
+    it("updates a challenge", async () => {
+      const { challenge } = await createTestChallengeWithAppInstanceAndChannel(
+        cfCoreStore,
+        configService.getPublicIdentifier(),
+      );
+      const updated = {
+        ...challenge,
+        versionNumber: toBN(5),
+      };
+      await cfCoreStore.updateAppChallenge(challenge.identityHash, updated);
+      const retrieved = await cfCoreStore.getAppChallenge(challenge.identityHash);
+      expect(retrieved).toMatchObject(updated);
+    });
+  });
+
+  describe("State Progressed Event", () => {
+    it("creates a state progressed event", async () => {
+      const { appInstance } = await createTestChallengeWithAppInstanceAndChannel(
+        cfCoreStore,
+        configService.getPublicIdentifier(),
+      );
+      const event = createStateProgressedEventPayload({
+        identityHash: appInstance.identityHash,
+      });
+      await cfCoreStore.createStateProgressedEvent(appInstance.identityHash, event);
+      const retrieved = await cfCoreStore.getStateProgressedEvents(appInstance.identityHash);
+      expect(retrieved).toMatchObject([event]);
+    });
+  });
+
+  describe.only("Challenge Updated Event", () => {
+    it("creates a challenge updated event", async () => {
+      const { appInstance } = await createTestChallengeWithAppInstanceAndChannel(
+        cfCoreStore,
+        configService.getPublicIdentifier(),
+      );
+      const event = createChallengeUpdatedEventPayload({
+        identityHash: appInstance.identityHash,
+      });
+
+      await cfCoreStore.createChallengeUpdatedEvent(appInstance.identityHash, event);
+      const retrieved = await cfCoreStore.getChallengeUpdatedEvents(appInstance.identityHash);
+      expect(retrieved).toMatchObject([event]);
+    });
+
+    it("will create a challenge if none exists", async () => {
+      const { appInstance } = await createTestChannelWithAppInstance(
+        cfCoreStore,
+        configService.getPublicIdentifier(),
+      );
+      const event = createChallengeUpdatedEventPayload({
+        identityHash: appInstance.identityHash,
+      });
+      await cfCoreStore.createChallengeUpdatedEvent(appInstance.identityHash, event);
+      const retrieved = await cfCoreStore.getChallengeUpdatedEvents(appInstance.identityHash);
+      expect(retrieved).toMatchObject([event]);
+      const challenge = await cfCoreStore.getAppChallenge(appInstance.identityHash);
+      expect(challenge).toMatchObject(event);
     });
   });
 });

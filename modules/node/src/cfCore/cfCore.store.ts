@@ -37,7 +37,11 @@ import { SetStateCommitment } from "../setStateCommitment/setStateCommitment.ent
 import { Channel } from "../channel/channel.entity";
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
-import { entityToStoredChallenge, ChallengeRepository, ProcessedBlockRepository } from "../challenge/challenge.repository";
+import {
+  entityToStoredChallenge,
+  ChallengeRepository,
+  ProcessedBlockRepository,
+} from "../challenge/challenge.repository";
 import { Challenge, ProcessedBlock } from "../challenge/challenge.entity";
 import {
   entityToStateProgressedEventPayload,
@@ -608,7 +612,7 @@ export class CFCoreStore implements IStoreService {
   ////// Watcher methods
   async getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined> {
     const challenge = await this.challengeRepository.findByIdentityHash(appIdentityHash);
-    return entityToStoredChallenge(challenge);
+    return challenge ? entityToStoredChallenge(challenge) : undefined;
   }
 
   async createAppChallenge(
@@ -623,35 +627,35 @@ export class CFCoreStore implements IStoreService {
     if (existing) {
       throw new Error(`Found existing app challenge for app ${appIdentityHash}`);
     }
-    await this.challengeRepository
-      .createQueryBuilder("challenge")
-      .insert()
-      .into(Challenge)
-      .values({
-        ...appChallenge,
-        app,
-        channel,
-      })
-      .execute();
+
+    const { appStateHash, versionNumber, finalizesAt, status } = appChallenge;
+
+    const challenge = new Challenge();
+    challenge.app = app;
+    challenge.channel = channel;
+    challenge.challengeUpdatedEvents = [];
+    challenge.stateProgressedEvents = [];
+    challenge.status = status;
+    challenge.appStateHash = appStateHash;
+    challenge.versionNumber = versionNumber;
+    challenge.finalizesAt = finalizesAt;
+    await this.challengeRepository.save(challenge);
   }
 
   async updateAppChallenge(
     appIdentityHash: string,
     appChallenge: StoredAppChallenge,
   ): Promise<void> {
-    const existing = await this.challengeRepository.findByIdentityHash(appIdentityHash);
+    const existing = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
     if (!existing) {
       throw new Error(`Could not find existing app challenge for app ${appIdentityHash}`);
     }
-
-    await this.challengeRepository
-      .createQueryBuilder("challenge")
-      .update(Challenge)
-      .set({
-        ...appChallenge,
-      })
-      .where("challenge.app.identityHash = :appIdentityHash", { appIdentityHash })
-      .execute();
+    const { appStateHash, versionNumber, finalizesAt, status } = appChallenge;
+    existing.status = status;
+    existing.appStateHash = appStateHash;
+    existing.versionNumber = versionNumber;
+    existing.finalizesAt = finalizesAt;
+    await this.challengeRepository.save(existing);
   }
 
   async getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
@@ -677,14 +681,16 @@ export class CFCoreStore implements IStoreService {
   async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
     const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
 
-    return challenge.stateProgressedEvents.map(entityToStateProgressedEventPayload);
+    return challenge.stateProgressedEvents.map(event =>
+      entityToStateProgressedEventPayload(event, challenge),
+    );
   }
 
   async createStateProgressedEvent(
     appIdentityHash: string,
     event: StateProgressedEventPayload,
   ): Promise<void> {
-    const { signature, action, timeout, turnTaker } = event;
+    const { signature, action, timeout, turnTaker, versionNumber } = event;
     // safe to throw here because challenges should never be created from a
     // `StateProgressed` event, must always go through the set state game
     const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
@@ -693,6 +699,7 @@ export class CFCoreStore implements IStoreService {
     entity.challenge = challenge;
     entity.signature = signature;
     entity.timeout = timeout;
+    entity.versionNumber = versionNumber;
     entity.turnTaker = turnTaker;
 
     await getManager().transaction(async transactionalEntityManager => {
@@ -714,7 +721,9 @@ export class CFCoreStore implements IStoreService {
   ): Promise<ChallengeUpdatedEventPayload[]> {
     const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
 
-    return challenge.challengeUpdatedEvents.map(entityToChallengeUpdatedPayload);
+    return challenge.challengeUpdatedEvents.map(event =>
+      entityToChallengeUpdatedPayload(event, challenge),
+    );
   }
 
   async createChallengeUpdatedEvent(
