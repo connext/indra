@@ -96,12 +96,8 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       isAppInitiator ? (mySignature as any) : undefined,
       isAppInitiator ? undefined : (mySignature as any),
     );
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateSetState,
-      setStateCommitment,
-      appIdentityHash,
-    ];
+
+    throw new Error(`Dont forget to save your single signed state -- you aint done`);
     // also save the app instance with a `latestAction`
     yield [
       PERSIST_APP_INSTANCE,

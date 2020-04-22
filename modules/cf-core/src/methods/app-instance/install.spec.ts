@@ -10,6 +10,7 @@ import {
   getRandomBytes32,
   getSignerAddressFromPublicIdentifier,
   nullLogger,
+  toBNJson,
 } from "@connext/utils";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
@@ -28,8 +29,6 @@ import { createAppInstanceProposalForTest } from "../../testing/utils";
 
 import { install } from "./install";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
-import { MemoryStoreServiceFactory } from "../../testing/services";
-import { ConnextStore } from "@connext/store";
 
 const NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES = EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT.reduce(
   (acc, contractName) => ({
@@ -131,12 +130,12 @@ describe("Can handle correct & incorrect installs", () => {
       },
       {
         appIdentity: {} as any,
-        stateTimeout: "0",
+        stateTimeout: toBNJson("0"),
         appIdentityHash,
         appStateHash: HashZero,
         challengeRegistryAddress: AddressZero,
         signatures: ["0x0", "0x0"],
-        versionNumber: 1,
+        versionNumber: toBNJson(1),
       },
     );
 
