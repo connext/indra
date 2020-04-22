@@ -13,6 +13,8 @@ import {
   WithdrawalMonitorObject,
   WrappedStorage,
   ChallengeStatus,
+  Address,
+  Bytes32,
 } from "@connext/types";
 import { stringify, toBN } from "@connext/utils";
 
@@ -146,7 +148,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     } catch (e) {
       await this.removeStateChannel(stateChannel.multisigAddress);
       await this.removeSetupCommitment(stateChannel.multisigAddress);
-      await this.removeSetStateCommitment(stateChannel.freeBalanceAppInstance.identityHash);
+      await this.removeSetStateCommitment(signedFreeBalanceUpdate);
       throw e;
     }
   }
@@ -180,9 +182,12 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
     // old data for revert
     const oldChannel = channel;
-    const oldFreeBalanceUpdate = await this.getSetStateCommitment(
+    const oldFreeBalanceUpdate = await this.getLatestSetStateCommitment(
       freeBalanceAppInstance.identityHash,
     );
+    if (!oldFreeBalanceUpdate) {
+      throw new Error(`Could not find previous free balance set state commitment to update`);
+    }
 
     // add app instance
     channel.appInstances.push([appInstance.identityHash, appInstance]);
@@ -205,10 +210,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     } catch (e) {
       console.error(`Caught error during createAppInstance, reverting store changes: ${e}`);
       await this.saveStateChannel(oldChannel);
-      await this.saveSetStateCommitment(
-        freeBalanceAppInstance.identityHash,
-        oldFreeBalanceUpdate,
-      );
+      await this.saveSetStateCommitment(freeBalanceAppInstance.identityHash, oldFreeBalanceUpdate);
       await this.removeConditionalTransactionCommitment(appInstance.identityHash);
     }
   }
@@ -228,7 +230,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const oldChannel = channel;
     const idx = channel.appInstances.findIndex(([app]) => app === appInstance.identityHash);
     channel.appInstances[idx] = [appInstance.identityHash, appInstance];
-    const oldCommitment = await this.getSetStateCommitment(appInstance.identityHash);
+    const oldCommitment = await this.getLatestSetStateCommitment(appInstance.identityHash);
+    if (!oldCommitment) {
+      throw new Error(`Could not find previous free balance set state commitment to update`);
+    }
     try {
       await Promise.all([
         this.saveStateChannel(channel),
@@ -259,9 +264,12 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const oldChannel = channel;
     const idx = channel.appInstances.findIndex(([app]) => app === appIdentityHash);
     channel.appInstances.splice(idx, 1);
-    const oldFreeBalanceUpdate = await this.getSetStateCommitment(
-      channel.freeBalanceAppInstance.identityHash,
+    const oldFreeBalanceUpdate = await this.getLatestSetStateCommitment(
+      freeBalanceAppInstance.identityHash,
     );
+    if (!oldFreeBalanceUpdate) {
+      throw new Error(`Could not find previous free balance set state commitment to update`);
+    }
 
     try {
       await Promise.all([
@@ -319,7 +327,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       ]);
     } catch (e) {
       await this.saveStateChannel(oldChannel);
-      await this.removeSetStateCommitment(appInstance.identityHash);
+      await this.removeSetStateCommitment(signedSetStateCommitment);
     }
   }
 
@@ -345,7 +353,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return channel.freeBalanceAppInstance;
   }
 
-  async updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+  async updateFreeBalance(
+    multisigAddress: string,
+    freeBalance: AppInstanceJson,
+  ): Promise<void> {
     const channel = await this.getStateChannel(multisigAddress);
     if (!channel) {
       throw new Error(`Cannot update free balance without channel: ${multisigAddress}`);
@@ -362,72 +373,15 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return item;
   }
 
-  private async saveSetupCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
-    const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
-    return this.setItem(setupCommitmentKey, commitment);
-  }
-
   async getSetStateCommitments(appIdentityHash: string): Promise<SetStateCommitmentJSON[]> {
     // get all stored challenges
-    const partial = this.getKey(
-      SET_STATE_COMMITMENT_KEY,
-      appIdentityHash,
-    );
+    const partial = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
     const keys = await this.getKeys();
     const relevant = keys.filter(key => key.includes(partial));
     const commitments = await Promise.all(
       relevant.map(key => this.getItem<SetStateCommitmentJSON>(key)),
     );
     return commitments.filter(x => !!x);
-  }
-
-  private async saveSetStateCommitment(
-    appIdentityHash: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> {
-    const setStateKey = this.getKey(
-      SET_STATE_COMMITMENT_KEY,
-      appIdentityHash,
-      toBN(commitment.versionNumber).toString(),
-    );
-    if ((await this.getItem(setStateKey))) {
-      throw new Error(`Found existing set state commitment for ${appIdentityHash} at ${toBN(commitment.versionNumber).toString()}`);
-    }
-
-    return this.setItem(setStateKey, commitment);
-  }
-
-  async updateSetStateCommitment(
-    appIdentityHash: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> {
-    const setStateKey = this.getKey(
-      SET_STATE_COMMITMENT_KEY,
-      appIdentityHash,
-      toBN(commitment.versionNumber).toString(),
-    );
-    if (!(await this.getItem(setStateKey))) {
-      throw new Error(`Cannot find set state commitment to update for ${appIdentityHash} at ${toBN(commitment.versionNumber).toString()}`);
-    }
-    return this.setItem(setStateKey, commitment);
-  }
-
-  async removeSetStateCommitment(
-    appIdentityHash: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> {
-    const setStateKey = this.getKey(
-      SET_STATE_COMMITMENT_KEY,
-      appIdentityHash,
-      toBN(commitment.versionNumber).toString(),
-    );
-    if (!(await this.getItem(setStateKey))) {
-      return;
-    }
-    return this.removeItem(setStateKey);
   }
 
   async getConditionalTransactionCommitment(
@@ -439,19 +393,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       return undefined;
     }
     return item;
-  }
-
-  async saveConditionalTransactionCommitment(
-    appIdentityHash: string,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void> {
-    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
-    return this.setItem(conditionalCommitmentKey, commitment);
-  }
-
-  private async removeConditionalTransactionCommitment(appIdentityHash: string): Promise<void> {
-    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
-    return this.removeItem(conditionalCommitmentKey);
   }
 
   async getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
@@ -637,6 +578,96 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   private async removeStateChannel(multisigAddress: string): Promise<void> {
     const channelKey = this.getKey(CHANNEL_KEY, multisigAddress);
     await this.removeItem(channelKey);
+  }
+
+  private async removeSetStateCommitment(commitment: SetStateCommitmentJSON): Promise<void> {
+    const setStateKey = this.getKey(
+      SET_STATE_COMMITMENT_KEY,
+      commitment.appIdentityHash,
+      toBN(commitment.versionNumber).toString(),
+    );
+    if (!(await this.getItem(setStateKey))) {
+      return;
+    }
+    return this.removeItem(setStateKey);
+  }
+
+  private async removeSetupCommitment(multisigAddress: Address): Promise<void> {
+    const setupKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
+    return this.removeItem(setupKey);
+  }
+
+  private async getLatestSetStateCommitment(
+    appIdentityHash: Bytes32,
+  ): Promise<SetStateCommitmentJSON | undefined> {
+    const appCommitments = await this.getSetStateCommitments(appIdentityHash);
+    if (appCommitments.length === 0) {
+      return undefined;
+    }
+    const sorted = appCommitments.sort(
+      (a, b) => toBN(b.versionNumber).toNumber() - toBN(a.versionNumber).toNumber(),
+    );
+    return sorted[0];
+  }
+
+  private async saveConditionalTransactionCommitment(
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
+    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
+    return this.setItem(conditionalCommitmentKey, commitment);
+  }
+
+  private async removeConditionalTransactionCommitment(appIdentityHash: string): Promise<void> {
+    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
+    return this.removeItem(conditionalCommitmentKey);
+  }
+
+  private async saveSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    const setStateKey = this.getKey(
+      SET_STATE_COMMITMENT_KEY,
+      appIdentityHash,
+      toBN(commitment.versionNumber).toString(),
+    );
+    if (await this.getItem(setStateKey)) {
+      throw new Error(
+        `Found existing set state commitment for ${appIdentityHash} at ${toBN(
+          commitment.versionNumber,
+        ).toString()}`,
+      );
+    }
+
+    return this.setItem(setStateKey, commitment);
+  }
+
+  async updateSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    const setStateKey = this.getKey(
+      SET_STATE_COMMITMENT_KEY,
+      appIdentityHash,
+      toBN(commitment.versionNumber).toString(),
+    );
+    if (!(await this.getItem(setStateKey))) {
+      throw new Error(
+        `Cannot find set state commitment to update for ${appIdentityHash} at ${toBN(
+          commitment.versionNumber,
+        ).toString()}`,
+      );
+    }
+    return this.setItem(setStateKey, commitment);
+  }
+
+  private async saveSetupCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> {
+    const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
+    return this.setItem(setupCommitmentKey, commitment);
   }
 
   private hasAppIdentityHash(
