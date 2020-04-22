@@ -14,7 +14,7 @@ import {
   WrappedStorage,
   ChallengeStatus,
 } from "@connext/types";
-import { stringify } from "@connext/utils";
+import { stringify, toBN } from "@connext/utils";
 
 import {
   CHANNEL_KEY,
@@ -317,10 +317,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const setStateKey = this.getKey(
       SET_STATE_COMMITMENT_KEY,
       appIdentityHash,
-      commitment.versionNumber.toString(),
+      toBN(commitment.versionNumber).toString(),
     );
     if ((await this.getItem(setStateKey))) {
-      throw new Error(`Found existing set state commitment for ${appIdentityHash} at ${commitment.versionNumber.toString()}`);
+      throw new Error(`Found existing set state commitment for ${appIdentityHash} at ${toBN(commitment.versionNumber).toString()}`);
     }
 
     return this.setItem(setStateKey, commitment);
@@ -333,10 +333,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const setStateKey = this.getKey(
       SET_STATE_COMMITMENT_KEY,
       appIdentityHash,
-      commitment.versionNumber.toString(),
+      toBN(commitment.versionNumber).toString(),
     );
     if (!(await this.getItem(setStateKey))) {
-      throw new Error(`Cannot find set state commitment to update for ${appIdentityHash} at ${commitment.versionNumber.toString()}`);
+      throw new Error(`Cannot find set state commitment to update for ${appIdentityHash} at ${toBN(commitment.versionNumber).toString()}`);
     }
     return this.setItem(setStateKey, commitment);
   }
@@ -348,7 +348,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const setStateKey = this.getKey(
       SET_STATE_COMMITMENT_KEY,
       appIdentityHash,
-      commitment.versionNumber.toString(),
+      toBN(commitment.versionNumber).toString(),
     );
     if (!(await this.getItem(setStateKey))) {
       return;
