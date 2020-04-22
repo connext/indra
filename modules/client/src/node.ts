@@ -11,14 +11,16 @@ import {
   ChannelMethods,
   NodeInitializationParameters,
   AsyncNodeInitializationParameters,
+  VerifyNonceDtoType,
+  Address,
 } from "@connext/types";
-import { bigNumberifyJson, delay, logTime, stringify } from "@connext/utils";
+import { bigNumberifyJson, delay, logTime, stringify, formatMessagingUrl } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { getAddress, Transaction } from "ethers/utils";
 import { v4 as uuid } from "uuid";
 
 import { createCFChannelProvider } from "./channelProvider";
-import { createMessagingService } from "./messaging";
+import { MessagingService } from "@connext/messaging";
 
 const sendFailed = "Failed to send message";
 
@@ -27,6 +29,23 @@ const sendFailed = "Failed to send message";
 // eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
 
 export class NodeApiClient implements INodeApiClient {
+  public static async getBearerToken(
+    nodeUrl: string,
+    userIdentifier: Address,
+    getSignature: (nonce: string) => Promise<string>,
+  ): Promise<string> {
+    const nonceResponse: AxiosResponse<string> = await axios.get(
+      `${nodeUrl}/auth/${userIdentifier}`,
+    );
+    const nonce = nonceResponse.data;
+    const sig = await getSignature(nonce);
+    const verifyResponse: AxiosResponse<string> = await axios.post(`${nodeUrl}/auth`, {
+      sig,
+      userIdentifier,
+    } as VerifyNonceDtoType);
+    return verifyResponse.data;
+  }
+
   public static async init(opts: AsyncNodeInitializationParameters) {
     let getSignature: (msg: string) => Promise<string>;
     let userIdentifier: string;
@@ -58,17 +77,18 @@ export class NodeApiClient implements INodeApiClient {
     }
 
     if (!providedMessaging) {
-      messaging = await createMessagingService(
-        logger,
-        nodeUrl,
-        userIdentifier,
-        getSignature,
-        messagingUrl,
+      messaging = new MessagingService(
+        {
+          messagingUrl: messagingUrl || formatMessagingUrl(nodeUrl),
+          logger,
+        },
+        "INDRA",
+        () => NodeApiClient.getBearerToken(nodeUrl, userIdentifier, getSignature),
       );
     } else {
       messaging = providedMessaging;
-      await messaging.connect();
     }
+    await messaging.connect();
 
     const node = new NodeApiClient({ ...opts, messaging });
     const config = await node.getConfig();
@@ -306,7 +326,9 @@ export class NodeApiClient implements INodeApiClient {
   private async send(subject: string, data?: any): Promise<any | undefined> {
     let error;
     for (let attempt = 1; attempt <= NATS_ATTEMPTS; attempt += 1) {
-      this.log[attempt >= 2 ? "info" : "debug"](`Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject}`);
+      this.log[attempt >= 2 ? "info" : "debug"](
+        `Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject}`,
+      );
       try {
         return await this.sendAttempt(subject, data);
       } catch (e) {
