@@ -27,6 +27,7 @@ import { createAppInstanceProposalForTest } from "../../testing/utils";
 import { install } from "./install";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 import { MemoryStoreServiceFactory } from "../../testing/services";
+import { ConnextStore } from "@connext/store";
 
 const NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES = EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT.reduce(
   (acc, contractName) => ({
@@ -73,8 +74,7 @@ describe("Can handle correct & incorrect installs", () => {
   it("fails to install without the appIdentityHash being in a channel", async () => {
     expect.hasAssertions();
 
-    const store = new MemoryStoreServiceFactory().createStoreService();
-    const mockedStore: IStoreService = mock(store);
+    const mockedStore: IStoreService = mock(ConnextStore);
 
     const appIdentityHash = getRandomBytes32();
     const appInstanceProposal = createAppInstanceProposalForTest(appIdentityHash);
@@ -94,8 +94,7 @@ describe("Can handle correct & incorrect installs", () => {
     const mockedProtocolRunner = mock(ProtocolRunner);
     const protocolRunner = instance(mockedProtocolRunner);
 
-    const memoryStore = new MemoryStoreServiceFactory().createStoreService();
-    const mockedStore: IStoreService = mock(memoryStore);
+    const mockedStore: IStoreService = mock(ConnextStore);
     const store = instance(mockedStore);
 
     const appIdentityHash = getRandomBytes32();
