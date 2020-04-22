@@ -1,14 +1,10 @@
+import { StoredAppChallenge, ChallengeStatus } from "@connext/types";
+import { Repository, EntityRepository, getRepository } from "typeorm";
 import { Challenge, ProcessedBlock } from "./challenge.entity";
-import { Repository, EntityRepository } from "typeorm";
-import { StoredAppChallenge } from "@connext/types";
+import { Channel } from "../channel/channel.entity";
 
-export const entityToStoredChallenge = (
-  item: Challenge | undefined,
-): StoredAppChallenge | undefined => {
-  if (!item) {
-    return undefined;
-  }
-  const { app, versionNumber, appStateHash, finalizesAt, status } = item;
+export const entityToStoredChallenge = (entity: Challenge): StoredAppChallenge => {
+  const { app, versionNumber, appStateHash, finalizesAt, status } = entity;
   return {
     identityHash: app.identityHash,
     versionNumber,
@@ -31,14 +27,8 @@ export class ProcessedBlockRepository extends Repository<ProcessedBlock> {
 export class ChallengeRepository extends Repository<Challenge> {
   findByIdentityHash(appIdentityHash: string): Promise<Challenge | undefined> {
     return this.createQueryBuilder("challenge")
-      .leftJoinAndSelect(
-        "challenge.stateProgressedEvents",
-        "state_progressed_event",
-      )
-      .leftJoinAndSelect(
-        "challenge.challengeUpdatedEvents",
-        "challenge_updated_event",
-      )
+      .leftJoinAndSelect("challenge.stateProgressedEvents", "state_progressed_event")
+      .leftJoinAndSelect("challenge.challengeUpdatedEvents", "challenge_updated_event")
       .leftJoinAndSelect(
         "challenge.app",
         "app_instance",
@@ -56,14 +46,28 @@ export class ChallengeRepository extends Repository<Challenge> {
     return challenge;
   }
 
-  findActiveChallengesByMultisig(multisigAddress: string): Promise<Challenge[]> {
+  async findActiveChallengesByMultisig(multisigAddress: string): Promise<Challenge[]> {
+    // TODO: make this one query
+
+    const channel = await getRepository(Channel)
+      .createQueryBuilder("channel")
+      .leftJoinAndSelect("channel.appInstances", "appInstance")
+      .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
+      .getOne();
+    const ids = channel.appInstances.map(app => app.id);
+
     return this.createQueryBuilder("challenge")
-      .leftJoinAndSelect(
-        "challenge.channel",
-        "channel",
-        "channel.multisigAddress = :multisigAddress",
-        { multisigAddress },
-      )
+      .leftJoinAndSelect("challenge.stateProgressedEvents", "state_progressed_event")
+      .leftJoinAndSelect("challenge.challengeUpdatedEvents", "challenge_updated_event")
+      .leftJoinAndSelect("challenge.app", "app_instance")
+      .where("challenge.status IN (:...statuses)", {
+        statuses: [
+          ChallengeStatus.EXPLICITLY_FINALIZED,
+          ChallengeStatus.IN_DISPUTE,
+          ChallengeStatus.IN_ONCHAIN_PROGRESSION,
+        ],
+      })
+      .where("challenge.app IN (:...ids)", { ids })
       .getMany();
   }
 }
