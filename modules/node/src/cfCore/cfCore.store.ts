@@ -186,8 +186,12 @@ export class CFCoreStore implements IStoreService {
     freeBalanceUpdateCommitment.challengeRegistryAddress =
       signedFreeBalanceUpdate.challengeRegistryAddress;
     freeBalanceUpdateCommitment.signatures = signedFreeBalanceUpdate.signatures;
-    freeBalanceUpdateCommitment.stateTimeout = signedFreeBalanceUpdate.stateTimeout;
-    freeBalanceUpdateCommitment.versionNumber = signedFreeBalanceUpdate.versionNumber;
+    freeBalanceUpdateCommitment.stateTimeout = toBN(
+      signedFreeBalanceUpdate.stateTimeout,
+    ).toString();
+    freeBalanceUpdateCommitment.versionNumber = toBN(
+      signedFreeBalanceUpdate.versionNumber,
+    ).toNumber();
 
     await getManager().transaction(async transactionalEntityManager => {
       await transactionalEntityManager.save(channel);
@@ -285,8 +289,8 @@ export class CFCoreStore implements IStoreService {
           appStateHash: signedFreeBalanceUpdate.appStateHash,
           challengeRegistryAddress: signedFreeBalanceUpdate.challengeRegistryAddress,
           signatures: signedFreeBalanceUpdate.signatures,
-          stateTimeout: signedFreeBalanceUpdate.stateTimeout,
-          versionNumber: signedFreeBalanceUpdate.versionNumber,
+          stateTimeout: toBN(signedFreeBalanceUpdate.stateTimeout).toString(),
+          versionNumber: toBN(signedFreeBalanceUpdate.versionNumber).toNumber(),
         })
         .where('"appId" = (' + subQuery.getQuery() + ")")
         .setParameters(subQuery.getParameters())
@@ -352,8 +356,8 @@ export class CFCoreStore implements IStoreService {
           appStateHash: signedSetStateCommitment.appStateHash,
           challengeRegistryAddress: signedSetStateCommitment.challengeRegistryAddress,
           signatures: signedSetStateCommitment.signatures,
-          stateTimeout: signedSetStateCommitment.stateTimeout,
-          versionNumber: signedSetStateCommitment.versionNumber,
+          stateTimeout: toBN(signedSetStateCommitment.stateTimeout).toString(),
+          versionNumber: toBN(signedSetStateCommitment.versionNumber).toNumber(),
         })
         .where('"appId" = (' + subQuery.getQuery() + ")")
         .setParameters(subQuery.getParameters())
@@ -414,8 +418,8 @@ export class CFCoreStore implements IStoreService {
           appStateHash: signedFreeBalanceUpdate.appStateHash,
           challengeRegistryAddress: signedFreeBalanceUpdate.challengeRegistryAddress,
           signatures: signedFreeBalanceUpdate.signatures,
-          stateTimeout: signedFreeBalanceUpdate.stateTimeout,
-          versionNumber: signedFreeBalanceUpdate.versionNumber,
+          stateTimeout: toBN(signedFreeBalanceUpdate.stateTimeout).toString(),
+          versionNumber: toBN(signedFreeBalanceUpdate.versionNumber).toNumber(),
         })
         .where('"appId" = (' + subQuery.getQuery() + ")")
         .setParameters(subQuery.getParameters())
@@ -463,8 +467,8 @@ export class CFCoreStore implements IStoreService {
     setStateCommitment.appStateHash = signedSetStateCommitment.appStateHash;
     setStateCommitment.challengeRegistryAddress = signedSetStateCommitment.challengeRegistryAddress;
     setStateCommitment.signatures = signedSetStateCommitment.signatures;
-    setStateCommitment.stateTimeout = signedSetStateCommitment.stateTimeout;
-    setStateCommitment.versionNumber = signedSetStateCommitment.versionNumber;
+    setStateCommitment.stateTimeout = toBN(signedSetStateCommitment.stateTimeout).toString();
+    setStateCommitment.versionNumber = toBN(signedSetStateCommitment.versionNumber).toNumber();
 
     // because the app instance has `cascade` set to true, saving
     // the channel will involve multiple queries and should be put
