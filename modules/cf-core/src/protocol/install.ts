@@ -23,12 +23,7 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
 import { getConditionalTransactionCommitment, getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
-import {
-  Context,
-  PersistAppType,
-  PersistCommitmentType,
-  ProtocolExecutionFlow,
-} from "../types";
+import { Context, PersistAppType, PersistCommitmentType, ProtocolExecutionFlow } from "../types";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
@@ -160,12 +155,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== responderSignerAddress;
     await conditionalTxCommitment.addSignatures(
-      isChannelInitiator 
-        ? mySignatureOnConditionalTransaction as any
+      isChannelInitiator
+        ? (mySignatureOnConditionalTransaction as any)
         : counterpartySignatureOnConditionalTransaction,
       isChannelInitiator
         ? counterpartySignatureOnConditionalTransaction
-        : mySignatureOnConditionalTransaction as any,
+        : (mySignatureOnConditionalTransaction as any),
     );
 
     // 12ms
@@ -193,12 +188,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // add signatures to commitment
     await freeBalanceUpdateData.addSignatures(
-      isChannelInitiator 
-        ? mySignatureOnFreeBalanceStateUpdate as any
+      isChannelInitiator
+        ? (mySignatureOnFreeBalanceStateUpdate as any)
         : counterpartySignatureOnFreeBalanceStateUpdate,
-      isChannelInitiator 
+      isChannelInitiator
         ? counterpartySignatureOnFreeBalanceStateUpdate
-        : mySignatureOnFreeBalanceStateUpdate as any,
+        : (mySignatureOnFreeBalanceStateUpdate as any),
     );
 
     // 10ms
@@ -238,7 +233,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         seq: UNASSIGNED_SEQ_NO,
       } as ProtocolMessageData,
     ];
-    
+
     // 335ms
     logTime(log, start, `Initiation finished`);
   },
@@ -338,12 +333,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // add signatures to commitment
     const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== initiatorSignerAddress;
     await conditionalTxCommitment.addSignatures(
-      isChannelInitiator 
-        ? mySignatureOnConditionalTransaction as any
+      isChannelInitiator
+        ? (mySignatureOnConditionalTransaction as any)
         : counterpartySignatureOnConditionalTransaction,
       isChannelInitiator
         ? counterpartySignatureOnConditionalTransaction
-        : mySignatureOnConditionalTransaction as any,
+        : (mySignatureOnConditionalTransaction as any),
     );
 
     // 12ms
@@ -387,12 +382,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // add signature
     await freeBalanceUpdateData.addSignatures(
-      isChannelInitiator 
-        ? mySignatureOnFreeBalanceStateUpdate as any
+      isChannelInitiator
+        ? (mySignatureOnFreeBalanceStateUpdate as any)
         : counterpartySignatureOnFreeBalanceStateUpdate,
-      isChannelInitiator 
+      isChannelInitiator
         ? counterpartySignatureOnFreeBalanceStateUpdate
-        : mySignatureOnFreeBalanceStateUpdate as any,
+        : (mySignatureOnFreeBalanceStateUpdate as any),
     );
 
     // 13ms
@@ -431,7 +426,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 0ms
     yield [IO_SEND, m4];
-    
+
     // 272ms
     logTime(log, start, `Response finished`);
   },
@@ -494,7 +489,7 @@ function computeStateChannelTransition(
     /* appInterface */ appInterface,
     /* appSeqNo */ appSeqNo,
     /* latestState */ initialState,
-    /* latestVersionNumber */ 0,
+    /* latestVersionNumber */ 1,
     /* stateTimeout */ stateTimeout.toHexString(),
     /* outcomeType */ outcomeType,
     /* multisig */ stateChannel.multisigAddress,
@@ -530,10 +525,7 @@ function computeStateChannelTransition(
     };
   }
 
-  return stateChannel.installApp(
-    appInstanceToBeInstalled,
-    tokenIndexedBalanceDecrement,
-  );
+  return stateChannel.installApp(appInstanceToBeInstalled, tokenIndexedBalanceDecrement);
 }
 
 /**
@@ -570,10 +562,8 @@ function computeInterpreterParameters(
   disableLimit: boolean,
 ): {
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?:
-    MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?:
-    SingleAssetTwoPartyCoinTransferInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
 } {
   const initiatorDepositAssetId = getAddressFromAssetId(initiatorAssetId);
   const responderDepositAssetId = getAddressFromAssetId(responderAssetId);
@@ -581,10 +571,7 @@ function computeInterpreterParameters(
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
       if (initiatorDepositAssetId !== responderDepositAssetId) {
         throw new Error(
-          TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(
-            initiatorDepositAssetId,
-            responderDepositAssetId,
-          ),
+          TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(initiatorDepositAssetId, responderDepositAssetId),
         );
       }
 
@@ -616,10 +603,7 @@ function computeInterpreterParameters(
     case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
       if (initiatorDepositAssetId !== responderDepositAssetId) {
         throw new Error(
-          TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(
-            initiatorDepositAssetId,
-            responderDepositAssetId,
-          ),
+          TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(initiatorDepositAssetId, responderDepositAssetId),
         );
       }
 

@@ -14,6 +14,7 @@ import {
   installApp,
   assertMessage,
 } from "../utils";
+import { toBN } from "@connext/utils";
 
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
@@ -68,7 +69,7 @@ describe("Node method follows spec - takeAction", () => {
             [Zero, Zero, Zero],
             [Zero, Zero, Zero],
           ],
-          versionNumber: One,
+          versionNumber: toBN(2),
           winner: Zero,
         };
 

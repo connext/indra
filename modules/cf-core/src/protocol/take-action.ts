@@ -143,10 +143,8 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // remove previous commitment
-    const jsonToRemove = (await store.getSetStateCommitments(appIdentityHash)).filter(
-      commitment => toBN(commitment.versionNumber).eq(
-        toBN(setStateCommitment.versionNumber).add(One),
-      ),
+    const jsonToRemove = (await store.getSetStateCommitments(appIdentityHash)).filter(commitment =>
+      toBN(commitment.versionNumber).eq(toBN(setStateCommitment.versionNumber).add(One)),
     )[0];
     if (jsonToRemove) {
       yield [
