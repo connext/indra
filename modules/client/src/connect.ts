@@ -42,7 +42,17 @@ export const connect = async (
     ? loggerService.newContext("ConnextConnect")
     : new ConsoleLogger("ConnextConnect", logLevel, providedLogger);
 
-  logger.info(`Called connect with ${stringify({ nodeUrl, ethProviderUrl, messagingUrl })}, and ${providedChannelProvider!! ? `provided channel provider` : `signer ${typeof opts.signer === "string" ? `using pk: ${opts.signer}` : `with id: ${opts.signer!.publicIdentifier}`}`}`);
+  logger.info(
+    `Called connect with ${stringify({ nodeUrl, ethProviderUrl, messagingUrl })}, and ${
+      providedChannelProvider!!
+        ? `provided channel provider`
+        : `signer ${
+            typeof opts.signer === "string"
+              ? `using pk: ${opts.signer}`
+              : `with id: ${opts.signer!.publicIdentifier}`
+          }`
+    }`,
+  );
   // setup ethProvider + network information
   logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
@@ -82,7 +92,9 @@ export const connect = async (
     }
 
     signer =
-      typeof opts.signer === "string" ? new ChannelSigner(opts.signer, ethProviderUrl) : opts.signer;
+      typeof opts.signer === "string"
+        ? new ChannelSigner(opts.signer, ethProviderUrl)
+        : opts.signer;
 
     store = store || new ConnextStore(StoreTypes.LocalStorage);
 
