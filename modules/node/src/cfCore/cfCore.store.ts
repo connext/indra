@@ -236,7 +236,6 @@ export class CFCoreStore implements IStoreService {
       default:
         throw new Error(`Unrecognized outcome type: ${OutcomeType[proposal.outcomeType]}`);
     }
-
     await getManager().transaction(async transactionalEntityManager => {
       await transactionalEntityManager.save(proposal);
       await transactionalEntityManager
@@ -257,13 +256,14 @@ export class CFCoreStore implements IStoreService {
         .select("id")
         .from(AppInstance, "app")
         .where("app.identityHash = :appIdentityHash", {
-          appIdentityHash: signedFreeBalanceUpdate.appIdentityHash,
+          appIdentityHash: freeBalanceAppInstance.identityHash,
         });
       await transactionalEntityManager
         .createQueryBuilder()
         .update(SetStateCommitment)
         .set({
-          appStateHash: signedFreeBalanceUpdate.appIdentityHash,
+          appIdentity: signedFreeBalanceUpdate.appIdentity,
+          appStateHash: signedFreeBalanceUpdate.appStateHash,
           challengeRegistryAddress: signedFreeBalanceUpdate.challengeRegistryAddress,
           signatures: signedFreeBalanceUpdate.signatures,
           stateTimeout: signedFreeBalanceUpdate.stateTimeout,
@@ -290,7 +290,11 @@ export class CFCoreStore implements IStoreService {
     });
   }
 
-  async updateAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
+  async updateAppInstance(
+    multisigAddress: string,
+    appJson: AppInstanceJson,
+    signedSetStateCommitment: SetStateCommitmentJSON,
+  ): Promise<void> {
     const { identityHash, latestState, stateTimeout, latestVersionNumber } = appJson;
     const app = await this.appInstanceRepository.findByIdentityHash(identityHash);
 
@@ -313,6 +317,28 @@ export class CFCoreStore implements IStoreService {
         })
         .where("identityHash = :identityHash", { identityHash })
         .execute();
+
+      const subQuery = transactionalEntityManager
+        .createQueryBuilder()
+        .select("id")
+        .from(AppInstance, "app")
+        .where("app.identityHash = :appIdentityHash", {
+          appIdentityHash: signedSetStateCommitment.appIdentityHash,
+        });
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(SetStateCommitment)
+        .set({
+          appIdentity: signedSetStateCommitment.appIdentity,
+          appStateHash: signedSetStateCommitment.appStateHash,
+          challengeRegistryAddress: signedSetStateCommitment.challengeRegistryAddress,
+          signatures: signedSetStateCommitment.signatures,
+          stateTimeout: signedSetStateCommitment.stateTimeout,
+          versionNumber: signedSetStateCommitment.versionNumber,
+        })
+        .where('"appId" = (' + subQuery.getQuery() + ")")
+        .setParameters(subQuery.getParameters())
+        .execute();
     });
   }
 
@@ -320,6 +346,7 @@ export class CFCoreStore implements IStoreService {
     multisigAddress: string,
     appIdentityHash: string,
     freeBalanceAppInstance: AppInstanceJson,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
     const app = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
     if (!app) {
@@ -352,6 +379,28 @@ export class CFCoreStore implements IStoreService {
         .relation(Channel, "appInstances")
         .of(channelId)
         .remove(app.id);
+
+      const subQuery = transactionalEntityManager
+        .createQueryBuilder()
+        .select("id")
+        .from(AppInstance, "app")
+        .where("app.identityHash = :appIdentityHash", {
+          appIdentityHash: freeBalanceAppInstance.identityHash,
+        });
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(SetStateCommitment)
+        .set({
+          appIdentity: signedFreeBalanceUpdate.appIdentity,
+          appStateHash: signedFreeBalanceUpdate.appStateHash,
+          challengeRegistryAddress: signedFreeBalanceUpdate.challengeRegistryAddress,
+          signatures: signedFreeBalanceUpdate.signatures,
+          stateTimeout: signedFreeBalanceUpdate.stateTimeout,
+          versionNumber: signedFreeBalanceUpdate.versionNumber,
+        })
+        .where('"appId" = (' + subQuery.getQuery() + ")")
+        .setParameters(subQuery.getParameters())
+        .execute();
     });
   }
 
@@ -453,34 +502,16 @@ export class CFCoreStore implements IStoreService {
     multisigAddress: string,
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void> {
-    await this.updateAppInstance(multisigAddress, freeBalanceAppInstance);
+    await this.updateAppInstance(multisigAddress, freeBalanceAppInstance, {} as any);
   }
 
   getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction> {
     return this.setupCommitmentRepository.getCommitment(multisigAddress);
   }
 
-  // deprecated
-  async createSetupCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {}
-
   getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined> {
     return this.setStateCommitmentRepository.getLatestSetStateCommitment(appIdentityHash);
   }
-
-  // deprecated
-  async createSetStateCommitment(
-    appIdentityHash: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> {}
-
-  // deprecated
-  async updateSetStateCommitment(
-    appIdentityHash: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> {}
 
   async getConditionalTransactionCommitment(
     appIdentityHash: string,
@@ -497,73 +528,8 @@ export class CFCoreStore implements IStoreService {
     );
   }
 
-  // deprecated
-  async createConditionalTransactionCommitment(
-    appIdentityHash: string,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void> {}
-
-  async updateConditionalTransactionCommitment(
-    appIdentityHash: string,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void> {
-    const { interpreterParams, signatures } = commitment;
-
-    const subQuery = this.appInstanceRepository
-      .createQueryBuilder("app")
-      .select("app.id")
-      .where("app.identityHash = :appIdentityHash", { appIdentityHash });
-
-    await this.conditionalTransactionCommitmentRepository
-      .createQueryBuilder("conditional_transaction_commitment")
-      .update(ConditionalTransactionCommitment)
-      .set({
-        interpreterParams,
-        signatures,
-      })
-      .where('conditional_transaction_commitment."appId" = (' + subQuery.getQuery() + ")")
-      .setParameters(subQuery.getParameters())
-      .execute();
-  }
-
   getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction> {
     return this.withdrawCommitmentRepository.getWithdrawalCommitmentTx(multisigAddress);
-  }
-
-  async createWithdrawalCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
-    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
-    const commitmentEnt = new WithdrawCommitment();
-    commitmentEnt.channel = channel;
-    commitmentEnt.to = commitment.to;
-    commitmentEnt.value = bigNumberify(commitment.value);
-    commitmentEnt.data = commitment.data;
-    await this.withdrawCommitmentRepository.save(commitmentEnt);
-  }
-
-  async updateWithdrawalCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
-    const { to, value, data } = commitment;
-    const subQuery = this.channelRepository
-      .createQueryBuilder("channel")
-      .select("channel.id")
-      .where("channel.multisigAddress = :multisigAddress", { multisigAddress });
-
-    await this.withdrawCommitmentRepository
-      .createQueryBuilder("withdraw_commitment")
-      .update(WithdrawCommitment)
-      .set({
-        to,
-        value: bigNumberify(value),
-        data,
-      })
-      .where('withdraw_commitment."channelId" = (' + subQuery.getQuery() + ")")
-      .setParameters(subQuery.getParameters())
-      .execute();
   }
 
   clear(): Promise<void> {
