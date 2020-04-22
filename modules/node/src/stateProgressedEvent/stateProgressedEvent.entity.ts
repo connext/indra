@@ -15,11 +15,12 @@ import { toBN } from "@connext/utils";
 
 export const entityToStateProgressedEventPayload = (
   item: StateProgressedEvent | undefined,
+  challenge: Challenge,
 ): StateProgressedEventPayload | undefined => {
   if (!item) {
     return undefined;
   }
-  const { challenge, action, versionNumber, timeout, turnTaker, signature } = item;
+  const { action, versionNumber, timeout, turnTaker, signature } = item;
   const encodedAction = defaultAbiCoder.encode([challenge.app.actionEncoding!], [action]);
   return {
     action: encodedAction,

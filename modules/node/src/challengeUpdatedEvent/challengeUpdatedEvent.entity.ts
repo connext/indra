@@ -15,11 +15,12 @@ import { IsKeccak256Hash } from "../validate";
 
 export const entityToChallengeUpdatedPayload = (
   item: ChallengeUpdatedEvent | undefined,
+  challenge: Challenge,
 ): ChallengeUpdatedEventPayload | undefined => {
   if (!item) {
     return undefined;
   }
-  const { challenge, appStateHash, versionNumber, finalizesAt, status } = item;
+  const { appStateHash, versionNumber, finalizesAt, status } = item;
   return {
     appStateHash,
     versionNumber,
