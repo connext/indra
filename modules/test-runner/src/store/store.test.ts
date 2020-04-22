@@ -1,4 +1,8 @@
-import { StoreTypes, STORE_SCHEMA_VERSION } from "@connext/types";
+import {
+  StoreTypes,
+  STORE_SCHEMA_VERSION,
+  ChallengeStatus,
+} from "@connext/types";
 import { toBNJson } from "@connext/utils";
 import {
   expect,
@@ -11,6 +15,9 @@ import {
   TEST_STORE_MINIMAL_TX,
   TEST_STORE_SET_STATE_COMMITMENT,
   TEST_STORE_CONDITIONAL_COMMITMENT,
+  TEST_STORE_APP_CHALLENGE,
+  TEST_STORE_STATE_PROGRESSED_EVENT,
+  TEST_STORE_CHALLENGE_UPDATED_EVENT,
 } from "../util";
 
 export const storeTypes = Object.keys(StoreTypes);
@@ -256,13 +263,16 @@ describe("ConnextStore", () => {
     });
   });
 
-  describe("getSetStateCommitment", () => {
+  describe("getSetStateCommitments", () => {
     storeTypes.forEach(type => {
       it(`${type} - should work`, async () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
         const setState = TEST_STORE_SET_STATE_COMMITMENT;
         const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
-        expect(await store.getSetStateCommitments(appIdentityHash)).to.be.eq([]);
+
+        const vals = await store.getSetStateCommitments(appIdentityHash);
+        expect(vals).to.containSubset([]);
+
         await store.createSetStateCommitment(appIdentityHash, setState);
         const retrieved = await store.getSetStateCommitments(appIdentityHash);
         expect(retrieved.length).to.be.eq(1);
@@ -385,6 +395,7 @@ describe("ConnextStore", () => {
 
         await expect(store.restore()).to.be.rejectedWith(`No backup provided, store cleared`);
         expect(await store.getStateChannel(multisigAddress)).to.containSubset(undefined);
+        await store.clear();
       });
 
       if (type === StoreTypes.Memory) {
@@ -403,6 +414,101 @@ describe("ConnextStore", () => {
         expect(retrieved).to.containSubset(TEST_STORE_CHANNEL);
         await store.restore();
         expect(await store.getStateChannel(multisigAddress)).to.containSubset(TEST_STORE_CHANNEL);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("getAppChallenge / createAppChallenge / updateAppChallenge", () => {
+    storeTypes.forEach(type => {
+      it(`${type} - should be able to create, get, and update app challenges`, async () => {
+        const value = { ...TEST_STORE_APP_CHALLENGE };
+        const edited = { ...value, status: ChallengeStatus.NO_CHALLENGE };
+        const store = await createConnextStore(type as StoreTypes, { fileDir });
+
+        const empty = await store.getAppChallenge(value.identityHash);
+        expect(empty).to.be.undefined;
+
+        await store.createAppChallenge(value.identityHash, value);
+        expect(await store.getAppChallenge(value.identityHash)).to.containSubset(value);
+
+        await expect(store.createAppChallenge(value.identityHash, value)).to.be.rejectedWith(
+          `Could not create challenge`,
+        );
+
+        await store.updateAppChallenge(value.identityHash, edited);
+        expect(await store.getAppChallenge(value.identityHash)).to.containSubset(edited);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("getActiveChallenges", () => {
+    storeTypes.forEach(type => {
+      it(`${type} - should be able to retrieve active challenges for a channel`, async () => {
+        const channel = { ...TEST_STORE_CHANNEL };
+        const value = { ...TEST_STORE_APP_CHALLENGE };
+        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        await store.createStateChannel(channel);
+
+        const empty = await store.getActiveChallenges(channel.multisigAddress);
+        expect(empty.length).to.be.eq(0);
+
+        await store.createAppChallenge(value.appStateHash, value);
+        const vals = await store.getActiveChallenges(channel.multisigAddress);
+        expect(vals.length).to.be.eq(1);
+        expect(vals[0]).to.containSubset(value);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("getLatestProcessedBlock / updateLatestProcessedBlock", () => {
+    storeTypes.forEach(type => {
+      it(`${type} - should be able to get/update latest processed blocks`, async () => {
+        const block = 200;
+        const store = await createConnextStore(type as StoreTypes, { fileDir });
+
+        expect(await store.getLatestProcessedBlock()).to.be.eq(0);
+        await store.updateLatestProcessedBlock(block);
+        expect(await store.getLatestProcessedBlock()).to.be.eq(block);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("getStateProgressedEvents / createStateProgressedEvent", () => {
+    storeTypes.forEach(type => {
+      it(`${type} - should be able to get/create state progressed events`, async () => {
+        const value = { ...TEST_STORE_STATE_PROGRESSED_EVENT };
+        const store = await createConnextStore(type as StoreTypes, { fileDir });
+
+        const empty = await store.getStateProgressedEvents(value.identityHash);
+        expect(empty).to.containSubset([]);
+
+        await store.createStateProgressedEvent(value.identityHash, value);
+        const vals = await store.getStateProgressedEvents(value.identityHash);
+        expect(vals.length).to.be.eq(1);
+        expect(vals[0]).to.containSubset(value);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("getChallengeUpdatedEvents / createChallengeUpdatedEvent", () => {
+    storeTypes.forEach(type => {
+      it(`${type} - should be able to get/create challenge updated events`, async () => {
+        const value = { ...TEST_STORE_CHALLENGE_UPDATED_EVENT };
+        const store = await createConnextStore(type as StoreTypes, { fileDir });
+
+        const empty = await store.getChallengeUpdatedEvents(value.identityHash);
+        expect(empty).to.containSubset([]);
+
+        await store.createChallengeUpdatedEvent(value.identityHash, value);
+        const vals = await store.getChallengeUpdatedEvents(value.identityHash);
+        expect(vals.length).to.be.eq(1);
+        expect(vals[0]).to.containSubset(value);
+        await store.clear();
       });
     });
   });

@@ -297,9 +297,17 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getSetStateCommitments(appIdentityHash: string): Promise<SetStateCommitmentJSON[]> {
-    const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
-    const item = await this.getItem<SetStateCommitmentJSON[]>(setStateKey);
-    return item;
+    // get all stored challenges
+    const partial = this.getKey(
+      SET_STATE_COMMITMENT_KEY,
+      appIdentityHash,
+    );
+    const keys = await this.getKeys();
+    const relevant = keys.filter(key => key.includes(partial));
+    const commitments = await Promise.all(
+      relevant.map(key => this.getItem<SetStateCommitmentJSON>(key)),
+    );
+    return commitments.filter(x => !!x);
   }
 
   async createSetStateCommitment(
@@ -311,9 +319,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       appIdentityHash,
       commitment.versionNumber.toString(),
     );
-    if (await this.getItem(setStateKey)) {
-      throw new Error(`Found existing set state commitment for ${appIdentityHash}`);
+    if ((await this.getItem(setStateKey))) {
+      throw new Error(`Found existing set state commitment for ${appIdentityHash} at ${commitment.versionNumber.toString()}`);
     }
+
     return this.setItem(setStateKey, commitment);
   }
 
@@ -327,7 +336,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       commitment.versionNumber.toString(),
     );
     if (!(await this.getItem(setStateKey))) {
-      throw new Error(`Cannot find set state commitment to update for ${appIdentityHash}`);
+      throw new Error(`Cannot find set state commitment to update for ${appIdentityHash} at ${commitment.versionNumber.toString()}`);
     }
     return this.setItem(setStateKey, commitment);
   }
@@ -483,7 +492,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
-    const channel = await this.getItem<StateChannelJSON>(multisigAddress);
+    const channel = await this.getStateChannel(multisigAddress);
     if (!channel) {
       throw new Error(`Could not find channel for multisig: ${multisigAddress}`);
     }
@@ -506,12 +515,13 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   ///// Events
   async getLatestProcessedBlock(): Promise<number> {
     const key = this.getKey(BLOCK_PROCESSED_KEY);
-    return (await this.getItem<number>(key)) || 0;
+    const item = await this.getItem<{ block: string }>(key);
+    return item ? parseInt(`${item.block}`) : 0;
   }
 
   updateLatestProcessedBlock(blockNumber: number): Promise<void> {
     const key = this.getKey(BLOCK_PROCESSED_KEY);
-    return this.setItem(key, blockNumber);
+    return this.setItem(key, { block: blockNumber });
   }
 
   async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
