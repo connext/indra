@@ -498,7 +498,7 @@ describe("CFCoreStore", () => {
     });
   });
 
-  describe.only("Challenges", () => {
+  describe("Challenges", () => {
     it("creates a challenge", async () => {
       const { appInstance, multisigAddress } = await createTestChannelWithAppInstance(
         cfCoreStore,
@@ -544,7 +544,7 @@ describe("CFCoreStore", () => {
     });
   });
 
-  describe.only("Challenge Updated Event", () => {
+  describe("Challenge Updated Event", () => {
     it("creates a challenge updated event", async () => {
       const { appInstance } = await createTestChallengeWithAppInstanceAndChannel(
         cfCoreStore,
