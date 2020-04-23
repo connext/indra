@@ -115,7 +115,7 @@ export interface IWatcher {
   //////// Public methods
   enable(): Promise<void>;
   disable(): Promise<void>;
-  initiate(appIdentityHash: string): Promise<void>;
+  initiate(appIdentityHash: string): Promise<TransactionResponse | undefined>;
   cancel(appIdentityHash: string, req: SignedCancelChallengeRequest): Promise<TransactionResponse>;
 }
 
@@ -152,8 +152,7 @@ export type StoredAppChallenge = AppChallenge & {
 export interface IWatcherStoreService {
   // Disputes
   getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined>;
-  createAppChallenge(appIdentityHash: string, appChallenge: StoredAppChallenge): Promise<void>;
-  updateAppChallenge(appIdentityHash: string, appChallenge: StoredAppChallenge): Promise<void>;
+  saveAppChallenge(event: ChallengeUpdatedEventPayload): Promise<void>;
   getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]>;
 
   // Events
@@ -172,11 +171,6 @@ export interface IWatcherStoreService {
   getChallengeUpdatedEvents(
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]>;
-
-  createChallengeUpdatedEvent(
-    appIdentityHash: string,
-    event: ChallengeUpdatedEventPayload,
-  ): Promise<void>;
 
   ////////////////////////////////////////
   //// Channel data
