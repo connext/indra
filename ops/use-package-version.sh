@@ -16,7 +16,7 @@ echo
 
 find modules/*/package.json package.json \
   -type f \
-  -exec sed -i -E 's|"'"$package"'": "[0-9.]+"|"'"$package"'": "'"$version"'"|g' {} \;
+  -exec sed -i -E 's|"'"$package"'": "[a-z0-9.-]+"|"'"$package"'": "'"$version"'"|g' {} \;
 
 echo "After:"
 grep -r '"'$package'": "' modules/*/package.json package.json
