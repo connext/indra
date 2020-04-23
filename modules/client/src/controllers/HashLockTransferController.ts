@@ -44,6 +44,7 @@ export class HashLockTransferController extends AbstractController {
     };
 
     submittedMeta.recipient = recipient;
+    submittedMeta.sender = this.connext.publicIdentifier;
 
     const network = await this.ethProvider.getNetwork();
     const {

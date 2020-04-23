@@ -35,28 +35,27 @@ export class ResolveLinkedTransferController extends AbstractController {
       resolveRes = await this.connext.node.resolveLinkedTransfer(paymentId);
       this.log.debug(`Installed linked transfer app ${resolveRes.appIdentityHash}. Taking action with preImage: ${preImage}`);
       await this.connext.takeAction(resolveRes.appIdentityHash, { preImage });
-      this.log.debug(`Successfully took action, uninstalling`);
       await this.connext.uninstallApp(resolveRes.appIdentityHash);
     } catch (e) {
       this.handleResolveErr(paymentId, e);
       throw e;
     }
 
-    this.connext.emit(
-      EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
-      {
-        type: ConditionalTransferTypes.LinkedTransfer,
-        amount: resolveRes.amount,
-        assetId: resolveRes.assetId,
-        paymentId,
-        sender: resolveRes.sender,
-        recipient: this.connext.publicIdentifier,
-        meta: resolveRes.meta,
-        transferMeta: {
-          preImage,
-        },
-      } as EventPayloads.LinkedTransferUnlocked,
-    );
+    // this.connext.emit(
+    //   EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+    //   {
+    //     type: ConditionalTransferTypes.LinkedTransfer,
+    //     amount: resolveRes.amount,
+    //     assetId: resolveRes.assetId,
+    //     paymentId,
+    //     sender: resolveRes.sender,
+    //     recipient: this.connext.publicIdentifier,
+    //     meta: resolveRes.meta,
+    //     transferMeta: {
+    //       preImage,
+    //     },
+    //   } as EventPayloads.LinkedTransferUnlocked,
+    // );
 
     this.log.info(`Successfully redeemed linked transfer with id: ${paymentId} using preimage: ${preImage}`);
     return resolveRes;

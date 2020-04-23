@@ -5,6 +5,8 @@ import {
   MethodResults,
   ProtocolNames,
   PublicIdentifier,
+  EventNames,
+  UninstallMessage,
 } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -97,6 +99,22 @@ export class UninstallController extends NodeController {
     );
 
     return { appIdentityHash };
+  }
+
+  protected async afterExecution(
+    requestHandler: RequestHandler,
+    params: MethodParams.TakeAction,
+  ): Promise<void> {
+    const { store, router, publicIdentifier } = requestHandler;
+    const { appIdentityHash } = params;
+
+    const msg = {
+      from: publicIdentifier,
+      type: EventNames.UNINSTALL_EVENT,
+      data: { appIdentityHash },
+    } as UninstallMessage;
+
+    await router.emit(msg.type, msg, `outgoing`);
   }
 }
 

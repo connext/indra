@@ -67,21 +67,7 @@ export class ResolveSignedTransferController extends AbstractController {
       } as EventPayloads.SignedTransferFailed);
       throw e;
     }
-
-    this.connext.emit(
-      EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
-      {
-        type: ConditionalTransferTypes.SignedTransfer,
-        amount,
-        assetId,
-        paymentId,
-        sender,
-        recipient: this.connext.publicIdentifier,
-        meta,
-        transferMeta: {},
-      } as EventPayloads.SignedTransferUnlocked,
-    );
-
+    
     this.log.info(`resolveSignedTransfer for paymentId ${paymentId} complete: ${stringify(resolveRes)}`);
     return resolveRes;
   };
