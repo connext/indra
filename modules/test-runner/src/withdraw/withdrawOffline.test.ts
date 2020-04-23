@@ -97,7 +97,7 @@ describe("Withdraw offline tests", () => {
     ).to.be.rejectedWith(`proposal took longer than 90 seconds`);
   });
 
-  it("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
+  it.skip("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
     await createAndFundChannel();
 
     await new Promise(resolve => {
@@ -127,9 +127,12 @@ describe("Withdraw offline tests", () => {
     expect(reconnected.multisigAddress).to.be.equal(client.multisigAddress);
     expect(reconnected.signerAddress).to.be.equal(client.signerAddress);
 
+    const startingBalance = await ethProvider.getBalance(client.multisigAddress);
     await new Promise((resolve: Function) => {
-      ethProvider.once(client.multisigAddress, async () => {
-        resolve();
+      ethProvider.on(client.multisigAddress, (balance: BigNumber) => {
+        if (!balance.eq(startingBalance)) {
+          resolve();
+        }
       });
     });
 
