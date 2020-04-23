@@ -15,7 +15,7 @@ export const env = {
   mnemonic: process.env.INDRA_ETH_MNEMONIC || "",
   nodeUrl: process.env.INDRA_NODE_URL || "",
   storeDir: process.env.STORE_DIR || "",
-  adminToken: process.env.INDRA_ADMIN_TOKEN || "foo",
+  adminToken: process.env.INDRA_ADMIN_TOKEN || "cxt1234",
   natsPrivateKey: process.env.INDRA_NATS_JWT_SIGNER_PRIVATE_KEY,
   natsPublicKey: process.env.INDRA_NATS_JWT_SIGNER_PUBLIC_KEY,
   nodePubId: Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC!).address,

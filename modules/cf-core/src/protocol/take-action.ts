@@ -13,7 +13,6 @@ import { getSetStateCommitment } from "../ethereum";
 import {
   Context,
   PersistAppType,
-  PersistCommitmentType,
   ProtocolExecutionFlow,
 } from "../types";
 
@@ -26,7 +25,6 @@ const {
   IO_SEND,
   IO_SEND_AND_WAIT,
   PERSIST_APP_INSTANCE,
-  PERSIST_COMMITMENT,
 } = Opcode;
 /**
  * @description This exchange is described at the following URL:
@@ -104,7 +102,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
           signature: mySignature,
         },
       } as ProtocolMessageData,
-    ];
+    ] as any;
 
     // 10ms
     await assertIsValidSignature(responderAddr, setStateCommitmentHash, counterpartySig);
@@ -121,20 +119,15 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
-      setStateCommitment,
-      appIdentityHash,
-    ];
-
-    yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.UpdateInstance,
       postProtocolStateChannel,
       appInstance,
+      setStateCommitment,
     ];
+
     logTime(log, start, `Finished Initiating`);
-  },
+  } as any,
 
   1 /* Responding */: async function*(context: Context) {
     const { store, message, network } = context;
@@ -208,17 +201,11 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
-      setStateCommitment,
-      appIdentityHash,
-    ];
-
-    yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.UpdateInstance,
       postProtocolStateChannel,
       appInstance,
+      setStateCommitment,
     ];
 
     // 0ms

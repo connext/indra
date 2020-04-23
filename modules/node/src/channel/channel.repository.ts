@@ -81,6 +81,7 @@ export class ChannelRepository extends Repository<Channel> {
   }
 
   async findByUserPublicIdentifier(userIdentifier: string): Promise<Channel | undefined> {
+    log.debug(`Retrieving channel for user ${userIdentifier}`);
     return this.createQueryBuilder("channel")
     .leftJoinAndSelect("channel.appInstances", "appInstance")
     .where(

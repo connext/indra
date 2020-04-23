@@ -11,11 +11,7 @@ import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment, getSetStateCommitment } from "../ethereum";
 import { StateChannel } from "../models";
-import {
-  Context,
-  PersistCommitmentType,
-  ProtocolExecutionFlow,
-} from "../types";
+import { Context, ProtocolExecutionFlow } from "../types";
 
 import { assertIsValidSignature } from "./utils";
 
@@ -25,10 +21,8 @@ const {
   OP_VALIDATE,
   IO_SEND,
   IO_SEND_AND_WAIT,
-  PERSIST_COMMITMENT,
   PERSIST_STATE_CHANNEL,
 } = Opcode;
-const { CreateSetup } = PersistCommitmentType;
 
 /**
  * @description This exchange is described at the following URL:
@@ -75,10 +69,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     // 32 ms
     const freeBalanceUpdateData = getSetStateCommitment(context, stateChannel.freeBalance);
-    const mySignatureOnFreeBalanceState = yield [
-      OP_SIGN,
-      freeBalanceUpdateData.hashToSign(),
-    ];
+    const mySignatureOnFreeBalanceState = yield [OP_SIGN, freeBalanceUpdateData.hashToSign()];
 
     // 201 ms (waits for responder to respond)
     substart = Date.now();
@@ -100,7 +91,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
           setStateSignature: mySignatureOnFreeBalanceState,
         },
       } as ProtocolMessageData,
-    ];
+    ] as any;
     logTime(log, substart, `Received responder's sigs`);
 
     // setup installs the free balance app, and on creation the state channel
@@ -121,33 +112,22 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `Verified responder's sigs`);
 
     // add sigs to commitments
-    await setupCommitment.addSignatures(
-      mySetupSignature as any,
-      responderSetupSignature,
-    );
+    await setupCommitment.addSignatures(mySetupSignature as any, responderSetupSignature);
 
     await freeBalanceUpdateData.addSignatures(
       mySignatureOnFreeBalanceState as any,
       responderSignatureOnFreeBalanceState,
     );
-    // 33 ms
-    yield [
-      PERSIST_COMMITMENT,
-      CreateSetup,
-      await setupCommitment.getSignedTransaction(),
-      stateChannel.multisigAddress,
-    ];
-    yield [PERSIST_STATE_CHANNEL, [stateChannel]];
 
     yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateSetState,
+      PERSIST_STATE_CHANNEL,
+      stateChannel,
+      await setupCommitment.getSignedTransaction(),
       freeBalanceUpdateData,
-      stateChannel.freeBalance.identityHash,
     ];
 
     logTime(log, start, `Initiation finished`);
-  },
+  } as any,
 
   1 /* Responding */: async function*(context: Context) {
     const { message, network } = context;
@@ -210,10 +190,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const mySetupSignature = yield [OP_SIGN, setupCommitment.hashToSign()];
     const mySignatureOnFreeBalanceState = yield [OP_SIGN, freeBalanceUpdateData.hashToSign()];
 
-    await setupCommitment.addSignatures(
-      initiatorSetupSignature,
-      mySetupSignature as any,
-    );
+    await setupCommitment.addSignatures(initiatorSetupSignature, mySetupSignature as any);
 
     await freeBalanceUpdateData.addSignatures(
       initiatorSignatureOnFreeBalanceState,
@@ -221,19 +198,10 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     yield [
-      PERSIST_COMMITMENT,
-      CreateSetup,
+      PERSIST_STATE_CHANNEL,
+      stateChannel,
       await setupCommitment.getSignedTransaction(),
-      stateChannel.multisigAddress,
-    ];
-
-    yield [PERSIST_STATE_CHANNEL, [stateChannel]];
-
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.CreateSetState,
       freeBalanceUpdateData,
-      stateChannel.freeBalance.identityHash,
     ];
 
     yield [

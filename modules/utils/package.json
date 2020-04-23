@@ -1,6 +1,6 @@
 {
   "name": "@connext/utils",
-  "version": "6.0.7",
+  "version": "6.0.9",
   "description": "Crypto module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -15,18 +15,18 @@
     "test": "./node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/types": "6.0.7",
+    "@connext/types": "6.0.9",
     "bs58check": "2.1.2",
-    "eccrypto-js": "4.5.3"
+    "eccrypto-js": "4.5.4"
   },
   "devDependencies": {
     "@babel/polyfill": "7.8.7",
-    "@types/jest": "25.1.4",
-    "@types/node": "13.9.1",
+    "@types/jest": "25.2.1",
+    "@types/node": "13.13.2",
     "eth-crypto": "1.5.2",
-    "ethers": "4.0.46",
-    "jest": "25.1.0",
-    "ts-jest": "25.2.1",
-    "typescript": "3.7.5"
+    "ethers": "4.0.47",
+    "jest": "25.4.0",
+    "ts-jest": "25.4.0",
+    "typescript": "3.8.3"
   }
 }

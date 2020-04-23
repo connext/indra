@@ -84,7 +84,6 @@ export class LinkedTransferService {
     }
     const amount = toBN(latestState.amount);
     const { assetId, linkedHash } = latestState;
-    const amountBN = bigNumberify(amount);
 
     // check if receiver app exists
     const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
@@ -92,9 +91,21 @@ export class LinkedTransferService {
       getSignerAddressFromPublicIdentifier(userIdentifier),
     );
     if (receiverApp) {
-      throw new Error(
-        `Found existing receiver app, refusing to install receiver app for paymentId ${paymentId}`,
+      // dont need to validate anything here
+      const returnRes: NodeResponses.ResolveLinkedTransfer = {
+        appIdentityHash: receiverApp.identityHash,
+        sender: senderApp.channel.userIdentifier,
+        meta: senderApp.meta,
+        paymentId,
+        amount,
+        assetId,
+      };
+      this.log.info(
+        `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId}} complete ${JSON.stringify(
+          returnRes,
+        )}`,
       );
+      return returnRes;
     }
 
     this.log.debug(`Found linked transfer in our database, attempting to install...`);
@@ -106,13 +117,13 @@ export class LinkedTransferService {
       receiverChannel.multisigAddress,
       assetId,
     );
-    if (freeBal[freeBalanceAddr].lt(amountBN)) {
+    if (freeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
       const depositReceipt = await this.channelService.rebalance(
         userIdentifier,
         assetId,
         RebalanceType.COLLATERALIZE,
-        amountBN,
+        amount,
       );
       if (!depositReceipt) {
         throw new Error(
@@ -121,20 +132,15 @@ export class LinkedTransferService {
       }
     } else {
       // request collateral normally without awaiting
-      this.channelService.rebalance(
-        userIdentifier,
-        assetId,
-        RebalanceType.COLLATERALIZE,
-        amountBN,
-      );
+      this.channelService.rebalance(userIdentifier, assetId, RebalanceType.COLLATERALIZE, amount);
     }
 
     const initialState: SimpleLinkedTransferAppState = {
-      amount: amountBN,
+      amount,
       assetId,
       coinTransfers: [
         {
-          amount: amountBN,
+          amount,
           to: freeBalanceAddr,
         },
         {

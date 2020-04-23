@@ -41,12 +41,12 @@ export type AllowedSwap = {
 
 export const PriceOracleTypes = enumify({
   UNISWAP: "UNISWAP",
+  HARDCODED: "HARDCODED",
 });
 export type PriceOracleTypes = (typeof PriceOracleTypes)[keyof typeof PriceOracleTypes];
-export type PriceOracleType = keyof typeof PriceOracleTypes;
 
 export type SwapRate = AllowedSwap & {
   rate: string; // DecString?
-  priceOracleType: PriceOracleType;
+  priceOracleType: PriceOracleTypes;
   blockNumber?: number;
 };

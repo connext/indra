@@ -4,13 +4,12 @@ set -e
 ########################################
 ## Setup Env
 
-export ETH_NETWORK=$ETH_NETWORK
+export CHAIN_ID=$CHAIN_ID
 
 # 60 sec/min * 30 min = 1800
 backup_frequency="1800"
-should_restore_backup="no"
 mkdir -p snapshots
-backup_file="snapshots/`ls snapshots | grep "$ETH_NETWORK" | sort -r | head -n 1`"
+backup_file="snapshots/`ls snapshots | grep "$CHAIN_ID" | sort -r | head -n 1`"
 
 ########################################
 ## Helper functions
@@ -52,37 +51,43 @@ trap cleanup SIGTERM
 
 log "Good morning"
 
+# Start temp database & wait until it wakes up
+log "Starting temp database for initialization & backup recovery.."
+unlock fast
+/docker-entrypoint.sh postgres &
+PID=$!
+while ! psql -U $POSTGRES_USER -d $POSTGRES_DB -c "select 1" > /dev/null 2>&1
+do log "Waiting for db to wake up.." && sleep 1
+done
+log "Good morning, Postgres!"
+
 # Is this a fresh database? Should we restore data from a snapshot?
 if [[ ! -f "/var/lib/postgresql/data/PG_VERSION" && -f "$backup_file" ]]
 then 
   log "Fresh postgres db started w backup present, we'll restore: $backup_file"
-  should_restore_backup="yes"
-
-  # Start temp database & wait until it wakes up
-  log "Starting temp database for backup recovery.."
-  unlock fast
-  /docker-entrypoint.sh postgres &
-  PID=$!
-  while ! psql -U $POSTGRES_USER -d $POSTGRES_DB -c "select 1" > /dev/null 2>&1
-  do log "Waiting for db to wake up.." && sleep 1
-  done
-  log "Good morning, Postgres!"
-
-  log "Restoring db snapshot from file $backup_file"
   psql --username=$POSTGRES_USER $POSTGRES_DB < $backup_file
   log "Done restoring db snapshot"
-
-  log "Stopping old database.."
-  kill $PID
-  unlock smart
-
-else log "Not restoring: Database exists or no snapshots found or in test mode"
+else
+  log "Not restoring: Database exists or no snapshots found or in test mode"
 fi
+
+log "Stopping old database.."
+kill $PID
+unlock smart
+
+# Now that we've initialized the db, we can inject our custom config file
+mkdir -p /var/lib/postgresql/data/pg_log
+cp -f postgresql.conf /var/lib/postgresql/data/postgresql.conf
+pwd
+echo "Local config:"
+cat postgresql.conf
+echo "Using config:"
+cat /var/lib/postgresql/data/postgresql.conf
 
 # Start backing up the db periodically
 log "===> Starting backer upper"
 while true
-do sleep $backup_frequency && bash backup.sh $ETH_NETWORK
+do sleep $backup_frequency && bash backup.sh $CHAIN_ID
 done &
 
 # Start database to serve requests from clients

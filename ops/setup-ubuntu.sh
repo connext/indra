@@ -143,6 +143,8 @@ fi
 DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
 apt-get autoremove -y
 
+git clone https://github.com/ConnextProject/indra.git
+
 echo
 echo "Done configuring server, rebooting now.."
 echo

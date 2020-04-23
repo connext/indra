@@ -1,7 +1,13 @@
 import { IConnextClient, StateChannelJSON, StateSchemaVersion } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
-import { createClient, ETH_AMOUNT_SM, expect } from "../util";
+import {
+  createClient,
+  ETH_AMOUNT_SM,
+  expect,
+  TEST_STORE_MINIMAL_TX,
+  TEST_STORE_SET_STATE_COMMITMENT,
+} from "../util";
 
 describe("Get State Channel", () => {
   let clientA: IConnextClient;
@@ -65,7 +71,11 @@ describe("Get State Channel", () => {
 
     (channel as any).multisigAddress = wrongAddress;
     expect(channel!.multisigAddress).to.be.eq(wrongAddress);
-    await clientA.store.createStateChannel(channel!);
+    await clientA.store.createStateChannel(
+      channel!,
+      TEST_STORE_MINIMAL_TX,
+      TEST_STORE_SET_STATE_COMMITMENT,
+    );
 
     // Expect to error in case we keep this test
     await expect(clientA.getStateChannel()).to.be.rejectedWith("");
@@ -81,7 +91,11 @@ describe("Get State Channel", () => {
 
     (channel as any).addresses.proxyFactory = null;
     expect(channel!.addresses.proxyFactory).to.not.be.ok;
-    await clientA.store.createStateChannel(channel!);
+    await clientA.store.createStateChannel(
+      channel!,
+      TEST_STORE_MINIMAL_TX,
+      TEST_STORE_SET_STATE_COMMITMENT,
+    );
 
     await expect(clientA.getStateChannel()).to.be.rejected;
   });
@@ -94,7 +108,11 @@ describe("Get State Channel", () => {
 
     (channel as any).freeBalanceAppInstance = null;
     expect(channel!.freeBalanceAppInstance).to.not.be.ok;
-    await clientA.store.createStateChannel(channel!);
+    await clientA.store.createStateChannel(
+      channel!,
+      TEST_STORE_MINIMAL_TX,
+      TEST_STORE_SET_STATE_COMMITMENT,
+    );
 
     await expect(clientA.getStateChannel()).to.be.rejected;
   });
