@@ -1,7 +1,4 @@
 import {
-  Address,
-  Bytes32,
-  ConditionalTransferTypes,
   EventNames,
   EventPayloads,
   PublicParams,
@@ -10,7 +7,6 @@ import {
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
 } from "@connext/types";
-import { BigNumber } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
 import { stringify } from "@connext/utils";
@@ -31,35 +27,26 @@ export class ResolveSignedTransferController extends AbstractController {
             .appDefinitionAddress &&
         (app.latestState as SimpleSignedTransferAppState).paymentId === paymentId,
     );
-    let appIdentityHash: Bytes32;
-    let amount: BigNumber;
-    let assetId: Address;
-    let sender: Address;
-    let meta: any;
     try {
       // node installs app, validation happens in listener
+      let resolveRes: PublicResults.ResolveSignedTransfer;
       if (existing) {
-        appIdentityHash = existing.identityHash;
-        amount = (existing.latestState as SimpleSignedTransferAppState).coinTransfers[0].amount;
-        assetId = existing.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
-        sender = existing.meta["sender"];
-        meta = existing.meta;
+        resolveRes.appIdentityHash = existing.identityHash;
+        resolveRes.amount = (existing.latestState as SimpleSignedTransferAppState).coinTransfers[0].amount;
+        resolveRes.assetId = existing.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
+        resolveRes.sender = existing.meta["sender"];
+        resolveRes.meta = existing.meta;
       } else {
         this.log.debug(`Did not find installed app, ask node to install it for us`);
         resolveRes = await this.connext.node.resolveSignedTransfer(paymentId);
-        appIdentityHash = resolveRes.appIdentityHash;
-        amount = resolveRes.amount;
-        assetId = resolveRes.assetId;
-        sender = resolveRes.sender;
-        meta = resolveRes.meta;
       }
-      this.log.debug(`Taking action on signed transfer app ${appIdentityHash}`);
-      await this.connext.takeAction(appIdentityHash, {
+      this.log.debug(`Taking action on signed transfer app ${resolveRes.appIdentityHash}`);
+      await this.connext.takeAction(resolveRes.appIdentityHash, {
         data,
         signature,
       } as SimpleSignedTransferAppAction);
-      this.log.debug(`Uninstalling signed transfer app ${appIdentityHash}`);
-      await this.connext.uninstallApp(appIdentityHash);
+      this.log.debug(`Uninstalling signed transfer app ${resolveRes.appIdentityHash}`);
+      await this.connext.uninstallApp(resolveRes.appIdentityHash);
     } catch (e) {
       this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
         error: e.stack || e.message,
@@ -67,8 +54,10 @@ export class ResolveSignedTransferController extends AbstractController {
       } as EventPayloads.SignedTransferFailed);
       throw e;
     }
-    
-    this.log.info(`resolveSignedTransfer for paymentId ${paymentId} complete: ${stringify(resolveRes)}`);
+
+    this.log.info(
+      `resolveSignedTransfer for paymentId ${paymentId} complete: ${stringify(resolveRes)}`,
+    );
     return resolveRes;
   };
 }

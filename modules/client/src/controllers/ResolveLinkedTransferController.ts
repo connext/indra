@@ -1,9 +1,10 @@
 import {
-  ConditionalTransferTypes,
   EventNames,
   EventPayloads,
   PublicParams,
   PublicResults,
+  SimpleLinkedTransferAppState,
+  SimpleLinkedTransferAppName,
 } from "@connext/types";
 
 import { AbstractController } from "./AbstractController";
@@ -29,11 +30,30 @@ export class ResolveLinkedTransferController extends AbstractController {
     this.log.info(`Resolving link transfer with params: ${stringify(params)}`);
 
     let resolveRes: PublicResults.ResolveLinkedTransfer;
+    const installed = await this.connext.getAppInstances();
+    const existing = installed.find(
+      app =>
+        (
+          app.appInterface.addr ===
+            this.connext.appRegistry.find(app => app.name === SimpleLinkedTransferAppName)
+              .appDefinitionAddress && (app.latestState as SimpleLinkedTransferAppState)
+        ).paymentId === paymentId,
+    );
     try {
       // node installs app, validation happens in listener
       this.log.debug(`Requesting node installs app`);
-      resolveRes = await this.connext.node.resolveLinkedTransfer(paymentId);
-      this.log.debug(`Installed linked transfer app ${resolveRes.appIdentityHash}. Taking action with preImage: ${preImage}`);
+      if (existing) {
+        resolveRes.appIdentityHash = existing.identityHash;
+        resolveRes.amount = (existing.latestState as SimpleLinkedTransferAppState).coinTransfers[0].amount;
+        resolveRes.assetId = existing.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
+        resolveRes.sender = existing.meta["sender"];
+        resolveRes.meta = existing.meta;
+      } else {
+        resolveRes = await this.connext.node.resolveLinkedTransfer(paymentId);
+      }
+      this.log.debug(
+        `Installed linked transfer app ${resolveRes.appIdentityHash}. Taking action with preImage: ${preImage}`,
+      );
       await this.connext.takeAction(resolveRes.appIdentityHash, { preImage });
       await this.connext.uninstallApp(resolveRes.appIdentityHash);
     } catch (e) {
@@ -41,23 +61,9 @@ export class ResolveLinkedTransferController extends AbstractController {
       throw e;
     }
 
-    // this.connext.emit(
-    //   EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
-    //   {
-    //     type: ConditionalTransferTypes.LinkedTransfer,
-    //     amount: resolveRes.amount,
-    //     assetId: resolveRes.assetId,
-    //     paymentId,
-    //     sender: resolveRes.sender,
-    //     recipient: this.connext.publicIdentifier,
-    //     meta: resolveRes.meta,
-    //     transferMeta: {
-    //       preImage,
-    //     },
-    //   } as EventPayloads.LinkedTransferUnlocked,
-    // );
-
-    this.log.info(`Successfully redeemed linked transfer with id: ${paymentId} using preimage: ${preImage}`);
+    this.log.info(
+      `Successfully redeemed linked transfer with id: ${paymentId} using preimage: ${preImage}`,
+    );
     return resolveRes;
   };
 }
