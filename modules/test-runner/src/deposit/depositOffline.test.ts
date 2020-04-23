@@ -69,7 +69,7 @@ const makeDepositCall = async (opts: {
  * point in the protocol.
  */
 
-describe("Deposit offline tests", () => {
+describe.skip("Deposit offline tests", () => {
   let clock: any;
   let client: IConnextClient;
 

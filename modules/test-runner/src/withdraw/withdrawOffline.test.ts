@@ -21,7 +21,7 @@ import {
   env,
 } from "../util";
 
-describe("Withdraw offline tests", () => {
+describe.skip("Withdraw offline tests", () => {
   let clock: any;
   let client: IConnextClient;
   let signer: IChannelSigner;
