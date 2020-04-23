@@ -29,7 +29,6 @@ export class ResolveLinkedTransferController extends AbstractController {
 
     this.log.info(`Resolving link transfer with params: ${stringify(params)}`);
 
-    let resolveRes: PublicResults.ResolveLinkedTransfer;
     const installed = await this.connext.getAppInstances();
     const existing = installed.find(
       app =>
@@ -39,15 +38,19 @@ export class ResolveLinkedTransferController extends AbstractController {
               .appDefinitionAddress && (app.latestState as SimpleLinkedTransferAppState)
         ).paymentId === paymentId,
     );
+    let resolveRes: PublicResults.ResolveLinkedTransfer;
     try {
       // node installs app, validation happens in listener
       this.log.debug(`Requesting node installs app`);
       if (existing) {
-        resolveRes.appIdentityHash = existing.identityHash;
-        resolveRes.amount = (existing.latestState as SimpleLinkedTransferAppState).coinTransfers[0].amount;
-        resolveRes.assetId = existing.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
-        resolveRes.sender = existing.meta["sender"];
-        resolveRes.meta = existing.meta;
+        resolveRes = {
+          paymentId,
+          appIdentityHash: existing.identityHash,
+          amount: (existing.latestState as SimpleLinkedTransferAppState).coinTransfers[0].amount,
+          assetId: existing.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+          sender: existing.meta["sender"],
+          meta: existing.meta,
+        };
       } else {
         resolveRes = await this.connext.node.resolveLinkedTransfer(paymentId);
       }

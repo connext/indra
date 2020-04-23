@@ -18,7 +18,6 @@ export class ResolveSignedTransferController extends AbstractController {
     this.log.info(`resolveSignedTransfer started: ${stringify(params)}`);
     const { paymentId, data, signature } = params;
 
-    let resolveRes: PublicResults.ResolveSignedTransfer;
     const installedApps = await this.connext.getAppInstances();
     const existing = installedApps.find(
       app =>
@@ -27,15 +26,17 @@ export class ResolveSignedTransferController extends AbstractController {
             .appDefinitionAddress &&
         (app.latestState as SimpleSignedTransferAppState).paymentId === paymentId,
     );
+    let resolveRes: PublicResults.ResolveSignedTransfer;
     try {
       // node installs app, validation happens in listener
-      let resolveRes: PublicResults.ResolveSignedTransfer;
       if (existing) {
-        resolveRes.appIdentityHash = existing.identityHash;
-        resolveRes.amount = (existing.latestState as SimpleSignedTransferAppState).coinTransfers[0].amount;
-        resolveRes.assetId = existing.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
-        resolveRes.sender = existing.meta["sender"];
-        resolveRes.meta = existing.meta;
+        resolveRes = {
+          appIdentityHash: existing.identityHash,
+          amount: (existing.latestState as SimpleSignedTransferAppState).coinTransfers[0].amount,
+          assetId: existing.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+          sender: existing.meta["sender"],
+          meta: existing.meta,
+        };
       } else {
         this.log.debug(`Did not find installed app, ask node to install it for us`);
         resolveRes = await this.connext.node.resolveSignedTransfer(paymentId);
