@@ -33,11 +33,10 @@ make start
 
 That's all! But beware: the first time `make start` is run, it will take a very long time (maybe 10 minutes, depends on your internet speed) but have no fear: downloads will be cached & most build steps won't ever need to be repeated again so subsequent `make start` runs will go much more quickly. Get this started asap & browse the rest of the README while the first `make start` runs.
 
-By default, Indra will launch using a local blockchain (ganache) but you can also run a local Indra stack against a public chain such as Rinkeby. To do so, build everything and then run the start-script directly with a custom `INDRA_ETH_PROVIDER` environment variable:
+By default, Indra will launch using a local blockchain (ganache) but you can also run a local Indra stack against a public chain such as Rinkeby. To do so, run `make start` with a custom `INDRA_ETH_PROVIDER` environment variable:
 
 ```bash
-make # build everything
-INDRA_ETH_PROVIDER="https://rinkeby.infura.io/abc123" bash ops/start-dev.sh
+INDRA_ETH_PROVIDER="https://rinkeby.infura.io/abc123" make start
 ```
 
 ### Interacting with your Local Node
@@ -113,9 +112,6 @@ bash ops/deploy.contracts.sh https://rinkeby.infura.io/abc123
 
 One exception: if you want to redeploy some contract(s), then delete their addresses from the address book & re-run the above deployment script.
 
-
-
-
 ## Deploy an Indra node to production
 
 Lets say you want to deploy an Indra payment node to `https://indra.example.com` (we'll call this url `$DOMAINNAME`)
@@ -137,10 +133,12 @@ If this is a fresh Ubuntu server from DigitalOcean or AWS then the above script 
  - give an additional ssh public key login access if provided (useful for CD/auto-deployment)
  - install docker & make & other dependencies
  - upgrade everything to the latest version
- - save your mnemonic in a docker secret called `indra_mnemonic
+ - save your mnemonic in a docker secret called `indra_mnemonic`
  - reboot
 
 Note: this script is idempotent aka you can run it over and over again w/out causing any problems. In fact, re-running it every month or so will help keep things up-to-date (you can skip inputting the mnemonic on subsequent runs).
+
+If you already have a server with docker & make installed, there's another helper script you can use to easily load your mnemonic: `bash ops/save-secret.sh`. Run this on your prod server & copy/paste in your mnemonic.
 
 For convenience sake, we recommend adding an entry to your ssh config to easily access this server. Add something that looks like the following to `$HOME/.ssh/config`:
 
@@ -166,27 +164,18 @@ If you're using a custom address book, upload it to your prod server:
 scp address-book.json new-indra:~/indra/
 ```
 
-We need to add a couple env vars before launching our indra node. `~/.bashrc` is a good place to add them as they'll be loaded automatically every time you login to the server.
+We need to add a couple env vars before launching our indra node. We'll be pulling from the public default prod-mode env vars & updating a couple as needed.
 
-Open `~/.bashrc` on your prod server in a text editor and add these required env vars:
+```bash
+cp prod.env .env
+```
+
+Open .env on your prod server in a text editor and ensure you've added correct values for two important env vars: `INDRA_DOMAINNAME` and `INDRA_ETH_PROVIDER`
 
 ```bash
 export INDRA_DOMAINNAME="$DOMAINNAME"
 export INDRA_ETH_PROVIDER="https://eth-rinkeby.alchemyapi.io/jsonrpc/abc123"
 ```
-
-Optionally, add any of the following env vars to enable extra features:
-
-```bash
-export INDRA_MODE="release" # "release": deploy latest release (more stable), "staging": run code at current commit (easier to hotfix)
-export INDRA_EMAIL="noreply@gmail.com" # To recieve alerts if https certs fail to auto-renew
-export INDRA_AWS_ACCESS_KEY_ID="" # creds to access AWS S3 storage, db will send perodic backups here if provided.
-export INDRA_AWS_SECRET_ACCESS_KEY="" # see above, both of these must be provided for remote db backups
-export INDRA_LOGDNA_KEY="abc123" # if provided, all node logs will be sent to LogDNA for further analysis
-export INDRA_ADMIN_TOKEN="cxt1234" # To control access to admin functions on the dashboard.
-```
-
-Once your env vars are setup, load them into your current session (`source ~/.bashrc`) and we're ready to roll.
 
 Login to your prod server then run the following to launch your Indra node:
 

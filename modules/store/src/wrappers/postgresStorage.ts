@@ -35,7 +35,7 @@ export class WrappedPostgresStorage implements WrappedStorage {
 
   async getItem<T>(key: string): Promise<T | undefined> {
     const item = await ConnextClientData.findByPk(`${this.prefix}${this.separator}${key}`);
-    return item && item.value;
+    return item && item.value as any;
   }
 
   async setItem(key: string, value: any): Promise<void> {

@@ -5,32 +5,61 @@ set -e
 docker swarm init 2> /dev/null || true
 
 ####################
-# External Env Vars
+# Load env vars
 
-INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
-INDRA_AWS_ACCESS_KEY_ID="${INDRA_AWS_ACCESS_KEY_ID:-}"
-INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-}"
-INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
-INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
-INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
-INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
-INDRA_MODE="${INDRA_MODE:-release}" # One of: release, staging, test-staging, or test-release
-INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-}" # pass this in through CI
-INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-}" # pass this in through CI
-INDRA_LOG_LEVEL="${LOG_LEVEL:-3}"
+function extractEnv {
+  grep "$1" "$2" | cut -d "=" -f 2 | tr -d '\n\r"' | sed 's/ *#.*//'
+}
 
-# load dev-mode hardcoded jwt keys if nothing provided by env vars
-if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" && -f .env ]]
-then echo "WARNING: Using hardcoded insecure dev-mode jwt keys" && source .env
+# First choice: use existing env vars (dotEnv not called)
+function dotEnv {
+  key="$1"
+  if [[ -f .env && -n "`extractEnv $key .env`" ]] # Second choice: load from custom secret env
+  then extractEnv $key .env
+  elif [[ -f prod.env && -n "`extractEnv $key prod.env`" ]] # Third choice: load from public defaults
+  then extractEnv $key prod.env
+  fi
+}
+
+export INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-`dotEnv INDRA_ADMIN_TOKEN`}"
+export INDRA_AWS_ACCESS_KEY_ID="${INDRA_AWS_ACCESS_KEY_ID:-`dotEnv INDRA_AWS_ACCESS_KEY_ID`}"
+export INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-`dotEnv INDRA_AWS_SECRET_ACCESS_KEY`}"
+export INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-`dotEnv INDRA_DOMAINNAME`}"
+export INDRA_EMAIL="${INDRA_EMAIL:-`dotEnv INDRA_EMAIL`}"
+export INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER:-`dotEnv INDRA_ETH_PROVIDER`}"
+export INDRA_LOG_LEVEL="${INDRA_LOG_LEVEL:-`dotEnv INDRA_LOG_LEVEL`}"
+export INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-`dotEnv INDRA_LOGDNA_KEY`}"
+export INDRA_MODE="${INDRA_MODE:-`dotEnv INDRA_MODE`}"
+INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PRIVATE_KEY`}"
+INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PUBLIC_KEY`}"
+
+# Generate custom, secure JWT signing keys if we don't have any yet
+if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" ]]
+then
+  echo "WARNING: Generating new nats jwt signing keys & saving them in .env"
+  echo "         You should back up .env to a safe location"
+  keyFile=/tmp/indra/id_rsa
+  mkdir -p /tmp/indra
+  ssh-keygen -t rsa -b 4096 -m PEM -f $keyFile -N ""
+  prvKey="`cat $keyFile | tr -d '\n\r'`"
+  pubKey="`ssh-keygen -f $keyFile.pub -e -m PKCS8 | tr -d '\n\r'`"
+  touch .env
+  sed -i '/INDRA_NATS_JWT_SIGNER_/d' .env
+  echo "INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=$pubKey" >> .env
+  echo "INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=$prvKey" >> .env
+  export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="$pubKey"
+  export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="$prvKey"
+  rm $keyFile $keyFile.pub
 fi
 
-# Make sure keys have proper newlines inserted
+# Ensure keys have proper newlines inserted
 # (bc GitHub Actions strips newlines from secrets)
-INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=`
+export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=`
   echo $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY | tr -d '\n\r' |\
   sed 's/-----BEGIN RSA PRIVATE KEY-----/\\\n-----BEGIN RSA PRIVATE KEY-----\\\n/' |\
   sed 's/-----END RSA PRIVATE KEY-----/\\\n-----END RSA PRIVATE KEY-----\\\n/'`
-INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
+
+export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
   echo $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY | tr -d '\n\r' |\
   sed 's/-----BEGIN PUBLIC KEY-----/\\\n-----BEGIN PUBLIC KEY-----\\\n/' | \
   sed 's/-----END PUBLIC KEY-----/\\\n-----END PUBLIC KEY-----\\\n/'`
@@ -242,12 +271,10 @@ services:
       INDRA_ETH_MNEMONIC_FILE: '/run/secrets/$eth_mnemonic_name'
       INDRA_ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
       INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
-      INDRA_NATS_CLUSTER_ID: abc123
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
       INDRA_NATS_SERVERS: 'nats://nats:$nats_port'
       INDRA_NATS_WS_ENDPOINT: 'wss://nats:$nats_ws_port'
-      INDRA_NATS_TOKEN: 'abc123'
       INDRA_PG_DATABASE: '$pg_db'
       INDRA_PG_HOST: '$pg_host'
       INDRA_PG_PASSWORD_FILE: '$pg_password_file'
@@ -275,6 +302,10 @@ services:
       POSTGRES_DB: '$project'
       POSTGRES_PASSWORD_FILE: '$pg_password_file'
       POSTGRES_USER: '$project'
+    logging:
+      driver: 'json-file'
+      options:
+          max-size: '100m'
     secrets:
       - '$db_secret'
     volumes:

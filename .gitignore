@@ -1,84 +1,50 @@
-# Cache
-.buidler
-.cache
-.config
-.jest.cache
-.node-gyp
-.npm
-.bot-store
-.test-store
-modules/*/.buidler
-modules/*/.cache
-modules/*/.config
-modules/*/.node-gyp
-modules/*/.npm
+# Build Output
+**/*.0x
+**/.flags
+**/build/**
+**/dist/**
+**/node_modules/**
 modules/*/package-lock.json
-modules/daicard/src/react-app-env.d.ts
-ops/database/snapshots
 
-# Compiled output
-build/
-dist/
-node_modules/
-.flags
-.makeflags
-modules/test-runner/*.0x/
-
-# Logs
-lerna-debug.log*
-npm-debug.log*
-package.json.lerna_backup
-yarn-debug.log*
-yarn-error.log*
-.deploy-indra.patch
-.state-before.json
-**/*.log
-
-# OS
-.bash_history
-.DS_Store
-
-# Tests
-.nyc_output
-coverage
-cypress/screenshots
-cypress/videos
-
-# IDEs and editors
-*.launch
-*.sublime-workspace
-*.sw[opq]
-.c9/
-.classpath
-.idea
-.project
-.settings/
-.vscode
-
-# Misc
-.rpt2_cache
-report.*
-
-# Git submodules
-modules/**/.git
-modules/**/.circleci
-.bridge-*
-
-# Local packages
-counterfactual
-walletconnect
-walletconnect-monorepo
-walletconnect
-
-# Regenerated files from tests
-bots.json
-links.json
-nohup.out
+# Cache
+**/.bot-store
+**/.buidler
+**/.cache
+**/.config
+**/.git
+**/.jest.cache
+**/.node-gyp
+**/.npm
+**/.rpt2_cache
+**/.test-store
+**/cache/**
 
 # Docs
 modules/client/docs
 
-# .env
-modules/**/.env
+# IDEs and editors
+**/*.launch
+**/*.sublime-workspace
+**/*.sw[opq]
+**/.c9/
+**/.classpath
+**/.idea
+**/.project
+**/.settings/
+**/.vscode
 
-modules/contracts/cache/
+# Logs
+**/*.*_backup
+**/*.log
+**/*.patch
+cypress/screenshots
+cypress/videos
+
+# OS
+**/.bash_history
+**/.DS_Store
+
+# Sensitive Data
+**/.env
+**/react-app-env.d.ts
+ops/database/snapshots

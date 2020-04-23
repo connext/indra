@@ -65,6 +65,7 @@ export class ChannelService {
     userIdentifier: string,
   ): Promise<NodeResponses.GetChannel | undefined> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userIdentifier);
+    this.log.debug(`Got channel for ${userIdentifier}: ${stringify(channel, true)}`);
     return !channel || !channel.id
       ? undefined
       : {

@@ -25,20 +25,20 @@
     "@connext/messaging": "6.0.8",
     "@connext/store": "6.0.8",
     "@connext/types": "6.0.8",
-    "core-js": "3.6.4",
+    "core-js": "3.6.5",
     "eventemitter3": "4.0.0",
-    "ethers": "4.0.46",
+    "ethers": "4.0.47",
     "human-standard-token-abi": "2.0.0",
-    "regenerator-runtime": "0.13.3",
+    "regenerator-runtime": "0.13.5",
     "ts-natsutil": "1.0.6",
-    "uuid": "3.4.0"
+    "uuid": "7.0.3"
   },
   "devDependencies": {
     "@babel/polyfill": "7.8.7",
-    "@types/jest": "25.1.4",
-    "@types/uuid": "3.4.7",
-    "jest": "25.1.0",
-    "ts-jest": "25.2.1",
-    "typescript": "3.7.5"
+    "@types/jest": "25.2.1",
+    "@types/uuid": "7.0.2",
+    "jest": "25.4.0",
+    "ts-jest": "25.4.0",
+    "typescript": "3.8.3"
   }
 }

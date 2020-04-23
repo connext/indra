@@ -15,17 +15,17 @@
   "dependencies": {
     "@connext/types": "6.0.8",
     "@connext/utils": "6.0.8",
-    "ethers": "4.0.46",
+    "ethers": "4.0.47",
     "localStorage": "1.0.4",
-    "pg": "8.0.0",
+    "pg": "8.0.3",
     "pg-hstore": "2.3.3",
-    "pisa-client": "0.1.4-connext-beta.1",
+    "pisa-client": "0.1.5",
     "sequelize": "5.21.5",
-    "uuid": "3.4.0"
+    "uuid": "7.0.3"
   },
   "devDependencies": {
     "@babel/polyfill": "7.8.7",
-    "@types/node": "13.11.0",
-    "typescript": "3.7.5"
+    "@types/node": "13.13.2",
+    "typescript": "3.8.3"
   }
 }

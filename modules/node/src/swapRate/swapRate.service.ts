@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { AllowedSwap, PriceOracleType, SwapRate } from "@connext/types";
+import { AllowedSwap, PriceOracleTypes, SwapRate } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { getMarketDetails, getTokenReserves } from "@uniswap/sdk";
 import { ethers } from "ethers";
@@ -41,7 +41,7 @@ export class SwapRateService implements OnModuleInit {
   async fetchSwapRate(
     from: string,
     to: string,
-    priceOracleType: PriceOracleType,
+    priceOracleType: PriceOracleTypes,
     blockNumber: number = 0,
   ): Promise<string | undefined> {
     if (!this.config.getAllowedSwaps().find((s: AllowedSwap) => s.from === from && s.to === to)) {
@@ -69,8 +69,11 @@ export class SwapRateService implements OnModuleInit {
       newRate = await Promise.race([
         new Promise(async (resolve, reject): Promise<void> => {
           switch (priceOracleType) {
-            case "UNISWAP":
+            case PriceOracleTypes.UNISWAP:
               resolve(await this.getUniswapRate(from, to));
+              break;
+            case PriceOracleTypes.HARDCODED:
+              resolve(await this.config.getDefaultSwapRate(from, to));
               break;
             default:
               throw new Error(`Price oracle not configured for swap ${from} -> ${to}`);

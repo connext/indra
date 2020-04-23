@@ -298,7 +298,7 @@ export class AppInstance {
 
     // ethers returns an array of [ <each value by index>, <each value by key> ]
     // so we need to recursively clean this response before returning
-    const keyify = (templateObj: object, dataObj: object, key?: string): object => {
+    const keyify = (templateObj: any, dataObj: any, key?: string): any => {
       let template = key ? templateObj[key] : templateObj;
       let data = key ? dataObj[key] : dataObj;
       let output;
@@ -323,7 +323,7 @@ export class AppInstance {
       return output;
     };
 
-    return bigNumberifyJson(keyify(this.state, computedNextState));
+    return bigNumberifyJson(keyify(this.state, computedNextState)) as any;
   }
 
   public encodeAction(action: SolidityValueType) {
