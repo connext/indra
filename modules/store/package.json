@@ -20,7 +20,7 @@
     "pg": "8.0.0",
     "pg-hstore": "2.3.3",
     "pisa-client": "0.1.4-connext-beta.1",
-    "sequelize": "5.21.6",
+    "sequelize": "5.21.7",
     "uuid": "7.0.3"
   },
   "devDependencies": {
