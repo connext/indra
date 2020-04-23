@@ -5,17 +5,20 @@ set -e
 docker swarm init 2> /dev/null || true
 
 ####################
-# Load external env vars & assert that required ones are available
+# Load env vars
 
-# First choice: use existing env var & don't even call dotEnv
+function extractEnv {
+  grep "$1" "$2" | cut -d "=" -f 2 | tr -d '\n\r"' | sed 's/ *#.*//'
+}
+
+# First choice: use existing env vars (dotEnv not called)
 function dotEnv {
   key="$1"
-  if [[ -f .env ]] # Second choice: load from custom secret env
-  then envFile=.env
-  elif [[ -f prod.env ]] # Third choice: load from public defaults
-  then envFile=prod.env
+  if [[ -f .env && -n "`extractEnv $key .env`" ]] # Second choice: load from custom secret env
+  then extractEnv $key .env
+  elif [[ -f prod.env && -n "`extractEnv $key prod.env`" ]] # Third choice: load from public defaults
+  then extractEnv $key prod.env
   fi
-  grep "$key" "$envFile" | cut -d "=" -f 2 | tr -d '"\n\r' | cut -d "#" -f 1
 }
 
 export INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-`dotEnv INDRA_ADMIN_TOKEN`}"
@@ -30,8 +33,20 @@ export INDRA_MODE="${INDRA_MODE:-`dotEnv INDRA_MODE`}"
 INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PRIVATE_KEY`}"
 INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PUBLIC_KEY`}"
 
-if [[ -z "`grep $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY dev.env`" ]]
-then echo "WARNING: Using hardcoded insecure dev-mode jwt keys"
+# Generate custom, secure JWT signing keys if we don't have any yet
+if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" ]]
+then
+  echo "WARNING: Generating new nats jwt signing keys & saving them in .env"
+  echo "         You should back up .env to a safe location"
+  keyFile=/tmp/indra/id_rsa
+  ssh-keygen -t rsa -b 4096 -m PEM -f $keyFile -N ""
+  prvKey="`cat $keyFile | tr -d '\n\r'`"
+  pubKey="`ssh-keygen -f $keyFile.pub -e -m PKCS8 | tr -d '\n\r'`"
+  echo "INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=$pubKey" >> .env
+  echo "INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=$prvKey" >> .env
+  export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="$pubKey"
+  export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="$prvKey"
+  rm $keyFile $keyFile.pub
 fi
 
 # Ensure keys have proper newlines inserted

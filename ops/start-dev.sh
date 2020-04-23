@@ -8,21 +8,21 @@ project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 
 docker swarm init 2> /dev/null || true
 
 ####################
-# Load external env vars & assert that required ones are available
+# Load env vars
 
-# First choice: use existing env var & don't even call dotEnv
-function dotEnv {
-  key="$1"
-  if [[ -f .env ]] # Second choice: load from custom secret env
-  then envFile=.env
-  elif [[ -f dev.env ]] # Third choice: load from public defaults
-  then envFile=dev.env
-  fi
-  grep "$key" "$envFile" | cut -d "=" -f 2 | tr -d "'"'"\n\r' | cut -d "#" -f 1
+function extractEnv {
+  grep "$1" "$2" | cut -d "=" -f 2 | tr -d '\n\r"' | sed 's/ *#.*//'
 }
 
-####################
-# External Env Vars
+# First choice: use existing env vars (dotEnv not called)
+function dotEnv {
+  key="$1"
+  if [[ -f .env && -n "`extractEnv $key .env`" ]] # Second choice: load from custom secret env
+  then extractEnv $key .env
+  elif [[ -f dev.env && -n "`extractEnv $key dev.env`" ]] # Third choice: load from public defaults
+  then extractEnv $key dev.env
+  fi
+}
 
 export INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-`dotEnv INDRA_ADMIN_TOKEN`}"
 export INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER:-`dotEnv INDRA_ETH_PROVIDER`}"
