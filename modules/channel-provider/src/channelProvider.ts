@@ -8,9 +8,6 @@ import {
   StateChannelJSON,
   WithdrawalMonitorObject,
   WalletDepositParams,
-  ConditionalTransactionCommitmentJSON,
-  SetStateCommitmentJSON,
-  MinimalTransaction,
 } from "@connext/types";
 
 export class ChannelProvider extends ConnextEventEmitter implements IChannelProvider {
@@ -73,15 +70,6 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
         break;
       case ChannelMethods.chan_walletDeposit:
         result = await this.walletDeposit(params);
-        break;
-      case ChannelMethods.chan_createSetupCommitment:
-        result = await this.createSetupCommitment(params.multisigAddress, params.commitment);
-        break;
-      case ChannelMethods.chan_createSetStateCommitment:
-        result = await this.createSetStateCommitment(params.appIdentityHash, params.commitment);
-        break;
-      case ChannelMethods.chan_createConditionalCommitment:
-        result = await this.createConditionalCommitment(params.appIdentityHash, params.commitment);
         break;
       case ChannelMethods.chan_getSchemaVersion:
         result = await this.getSchemaVersion();
@@ -191,36 +179,6 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   public setStateChannel = async (state: StateChannelJSON): Promise<void> => {
     return this._send(ChannelMethods.chan_setStateChannel, { state });
-  };
-
-  public createSetupCommitment = async (
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> => {
-    return this._send(ChannelMethods.chan_createSetupCommitment, {
-      multisigAddress,
-      commitment,
-    });
-  };
-
-  public createSetStateCommitment = async (
-    appIdentityHash: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> => {
-    return this._send(ChannelMethods.chan_createSetStateCommitment, {
-      appIdentityHash,
-      commitment,
-    });
-  };
-
-  public createConditionalCommitment = async (
-    appIdentityHash: string,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void> => {
-    return this._send(ChannelMethods.chan_createConditionalCommitment, {
-      appIdentityHash,
-      commitment,
-    });
   };
 
   public getSchemaVersion(): Promise<number> {

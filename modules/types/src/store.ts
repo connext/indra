@@ -81,19 +81,30 @@ export interface IStoreService extends IWatcherStoreService {
   updateSchemaVersion(version?: number): Promise<void>;
 
   ///// State channels
-  createStateChannel(stateChannel: StateChannelJSON): Promise<void>;
+  createStateChannel(
+    stateChannel: StateChannelJSON,
+    signedSetupCommitment: MinimalTransaction,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+  ): Promise<void>;
 
   ///// App instances
   createAppInstance(
     multisigAddress: Address,
     appInstance: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+    signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void>;
-  updateAppInstance(multisigAddress: Address, appInstance: AppInstanceJson): Promise<void>;
+  updateAppInstance(
+    multisigAddress: Address,
+    appInstance: AppInstanceJson,
+    signedSetStateCommitment: SetStateCommitmentJSON,
+  ): Promise<void>;
   removeAppInstance(
     multisigAddress: Address,
     appIdentityHash: Bytes32,
     freeBalanceAppInstance: AppInstanceJson,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void>;
 
   ///// App proposals
@@ -101,6 +112,7 @@ export interface IStoreService extends IWatcherStoreService {
     multisigAddress: Address,
     appProposal: AppInstanceProposal,
     numProposedApps: number,
+    signedSetStateCommitment: SetStateCommitmentJSON,
   ): Promise<void>;
   removeAppProposal(multisigAddress: Address, appIdentityHash: Bytes32): Promise<void>;
   // proposals dont need to be updated
@@ -111,43 +123,6 @@ export interface IStoreService extends IWatcherStoreService {
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void>;
 
-  ///// Setup commitment
-  createSetupCommitment(multisigAddress: Address, commitment: MinimalTransaction): Promise<void>;
-  // no update, only ever created once
-
-  ///// SetState commitment
-  createSetStateCommitment(
-    appIdentityHash: Bytes32,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void>;
-  updateSetStateCommitment(
-    appIdentityHash: Bytes32,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void>;
-  // no removal for disputes, only 1 per app thats
-  // always updated when app is updated
-
-  ///// Conditional tx commitment
-  createConditionalTransactionCommitment(
-    appIdentityHash: Bytes32,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void>;
-  updateConditionalTransactionCommitment(
-    appIdentityHash: Bytes32,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void>;
-  // no removal for disputes
-
-  ///// Withdrawal commitment
-  createWithdrawalCommitment(
-    multisigAddress: Address,
-    commitment: MinimalTransaction,
-  ): Promise<void>;
-  updateWithdrawalCommitment(
-    multisigAddress: Address,
-    commitment: MinimalTransaction,
-  ): Promise<void>;
-
   ///// Resetting methods
   clear(): Promise<void>;
   restore(): Promise<void>;
@@ -155,8 +130,7 @@ export interface IStoreService extends IWatcherStoreService {
 
 export interface IClientStore extends IStoreService {
   getUserWithdrawals(): Promise<WithdrawalMonitorObject[]>;
-  createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
-  updateUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
+  saveUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
   removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void>;
 }
 
