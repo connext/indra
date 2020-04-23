@@ -236,15 +236,22 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!oldCommitment) {
       throw new Error(`Could not find previous free balance set state commitment to update`);
     }
+    // remove old (n - 1) set state commitments IFF new commitment is double
+    // signed. otherwise, leave + create new commitment
+    const doubleSigned = signedSetStateCommitment.signatures.filter(x => !!x).length === 2;
     try {
+      if (doubleSigned) {
+        await this.removeSetStateCommitment(oldCommitment);
+      }
       await Promise.all([
         this.saveStateChannel(channel),
-        this.removeSetStateCommitment(oldCommitment),
         this.saveSetStateCommitment(appInstance.identityHash, signedSetStateCommitment),
       ]);
     } catch (e) {
       await this.removeSetStateCommitment(signedSetStateCommitment);
-      await this.saveSetStateCommitment(appInstance.identityHash, oldCommitment);
+      if (doubleSigned) {
+        await this.saveSetStateCommitment(appInstance.identityHash, oldCommitment);
+      }
       await this.saveStateChannel(oldChannel);
       throw e;
     }

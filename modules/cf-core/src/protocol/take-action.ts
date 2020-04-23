@@ -97,13 +97,13 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       isAppInitiator ? undefined : (mySignature as any),
     );
 
-    throw new Error(`Dont forget to save your single signed state -- you aint done`);
     // also save the app instance with a `latestAction`
     yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.UpdateInstance,
       preProtocolStateChannel,
       preAppInstance.setAction(action),
+      setStateCommitment,
     ];
 
     // 117ms
