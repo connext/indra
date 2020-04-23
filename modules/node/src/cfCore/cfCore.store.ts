@@ -12,6 +12,7 @@ import {
   StoredAppChallenge,
   StateProgressedEventPayload,
   ChallengeUpdatedEventPayload,
+  AppState,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { Zero, AddressZero } from "ethers/constants";
@@ -333,7 +334,7 @@ export class CFCoreStore implements IStoreService {
         .createQueryBuilder()
         .update(AppInstance)
         .set({
-          latestState: latestState as any,
+          latestState: latestState as AppState,
           stateTimeout,
           latestVersionNumber,
         })
