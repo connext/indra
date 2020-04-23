@@ -19,8 +19,8 @@ import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 const appStatusesToHashLockTransferStatus = (
   currentBlockNumber: number,
-  senderApp: AppInstance<"HashLockTransferApp">,
-  receiverApp?: AppInstance<"HashLockTransferApp">,
+  senderApp: AppInstance<typeof HashLockTransferAppName>,
+  receiverApp?: AppInstance<typeof HashLockTransferAppName>,
 ): HashLockTransferStatus | undefined => {
   if (!senderApp) {
     return undefined;
@@ -55,7 +55,7 @@ const appStatusesToHashLockTransferStatus = (
 
 export const normalizeHashLockTransferAppState = (
   app: AppInstance,
-): AppInstance<"HashLockTransferApp"> | undefined => {
+): AppInstance<typeof HashLockTransferAppName> | undefined => {
   return (
     app && {
       ...app,
