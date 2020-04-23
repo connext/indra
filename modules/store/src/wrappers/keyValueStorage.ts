@@ -420,7 +420,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
     const withdrawals = await this.getUserWithdrawals();
-    const existing = withdrawals.find(x => x === withdrawalObject);
+    const existing = withdrawals.find(x => JSON.stringify(x) !== JSON.stringify(withdrawalObject));
     if (existing) {
       throw new Error(
         `Found existing withdrawal commitment matching: ${stringify(withdrawalObject)}`,
@@ -433,9 +433,13 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async updateUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
     const withdrawals = await this.getUserWithdrawals();
-    const idx = withdrawals.findIndex(x => x === withdrawalObject);
+    const idx = withdrawals.findIndex(x => JSON.stringify(x) !== JSON.stringify(withdrawalObject));
     if (idx === -1) {
-      throw new Error(`Could not find withdrawal commitment to update`);
+      throw new Error(
+        `Could not find withdrawal commitment to update. Existing withdrawals: ${stringify(
+          withdrawals,
+        )}`,
+      );
     }
     withdrawals[idx] = withdrawalObject;
     return this.setItem(withdrawalKey, withdrawals);
@@ -444,7 +448,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
     const withdrawals = await this.getUserWithdrawals();
-    const updated = withdrawals.filter(x => x !== toRemove);
+    const updated = withdrawals.filter(x => JSON.stringify(x) !== JSON.stringify(toRemove));
     return this.setItem(withdrawalKey, updated);
   }
 
