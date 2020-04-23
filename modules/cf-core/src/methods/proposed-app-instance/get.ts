@@ -4,6 +4,7 @@ import { jsonRpcMethod } from "rpc-server";
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH } from "../../errors";
+import { bigNumberifyJson } from "@connext/utils";
 
 export class GetProposedAppInstanceController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_getProposedAppInstance)
@@ -15,6 +16,6 @@ export class GetProposedAppInstanceController extends NodeController {
     if (!appInstance) {
       throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(params.appIdentityHash));
     }
-    return { appInstance };
+    return { appInstance: bigNumberifyJson(appInstance) };
   }
 }
