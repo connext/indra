@@ -33,11 +33,10 @@ make start
 
 That's all! But beware: the first time `make start` is run, it will take a very long time (maybe 10 minutes, depends on your internet speed) but have no fear: downloads will be cached & most build steps won't ever need to be repeated again so subsequent `make start` runs will go much more quickly. Get this started asap & browse the rest of the README while the first `make start` runs.
 
-By default, Indra will launch using a local blockchain (ganache) but you can also run a local Indra stack against a public chain such as Rinkeby. To do so, build everything and then run the start-script directly with a custom `INDRA_ETH_PROVIDER` environment variable:
+By default, Indra will launch using a local blockchain (ganache) but you can also run a local Indra stack against a public chain such as Rinkeby. To do so, run `make start` with a custom `INDRA_ETH_PROVIDER` environment variable:
 
 ```bash
-make # build everything
-INDRA_ETH_PROVIDER="https://rinkeby.infura.io/abc123" bash ops/start-dev.sh
+INDRA_ETH_PROVIDER="https://rinkeby.infura.io/abc123" make start
 ```
 
 ### Interacting with your Local Node
