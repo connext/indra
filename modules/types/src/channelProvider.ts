@@ -1,7 +1,7 @@
 import { JsonRpcProvider } from "ethers/providers";
 
 import { INodeApiClient } from "./api";
-import { Address, Bytes32, DecString, PublicIdentifier, PublicKey, UrlString } from "./basic";
+import { Address, DecString, PublicIdentifier, PublicKey, UrlString } from "./basic";
 import { IChannelSigner } from "./crypto";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
@@ -10,9 +10,9 @@ import { WithdrawalMonitorObject, IClientStore } from "./store";
 import { StateChannelJSON } from "./state";
 import { enumify } from "./utils";
 import {
-  ConditionalTransactionCommitmentJSON,
-  SetStateCommitmentJSON,
   MinimalTransaction,
+  SetStateCommitmentJSON,
+  ConditionalTransactionCommitmentJSON,
 } from "./commitments";
 
 export const ChannelMethods = enumify({
@@ -113,7 +113,13 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // TRANSFER METHODS
-  setStateChannel(state: StateChannelJSON): Promise<void>;
+  setStateChannel(
+    channel: StateChannelJSON,
+    setupCommitment: MinimalTransaction,
+    setStateCommitments: [string, SetStateCommitmentJSON][], // [appId, json]
+    conditionalCommitments: [string, ConditionalTransactionCommitmentJSON][],
+    // [appId, json]
+  ): Promise<void>;
   getSchemaVersion(): Promise<number>;
   updateSchemaVersion(version?: number): Promise<void>;
 }

@@ -108,7 +108,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
     const channelKey = this.getKey(CHANNEL_KEY, multisigAddress);
     const item = await this.getItem<StateChannelJSON>(channelKey);
-    return item && properlyConvertChannelNullVals(item);
+    return item ? properlyConvertChannelNullVals(item) : undefined;
   }
 
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
@@ -176,7 +176,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       throw new Error(`Can't save app instance without channel`);
     }
-    if (this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
+    if (
+      this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances) &&
+      (await this.getConditionalTransactionCommitment(appInstance.identityHash))
+    ) {
       throw new Error(`App instance with hash ${appInstance.identityHash} already exists`);
     }
 

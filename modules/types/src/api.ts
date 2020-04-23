@@ -69,7 +69,7 @@ export interface INodeApiClient {
   resolveLinkedTransfer(paymentId: Bytes32): Promise<NodeResponses.ResolveLinkedTransfer>;
   resolveSignedTransfer(paymentId: Bytes32): Promise<NodeResponses.ResolveSignedTransfer>;
   recipientOnline(recipientAddress: Address): Promise<boolean>;
-  restoreState(userAddress: Address): Promise<any>;
+  restoreState(userAddress: Address): Promise<NodeResponses.ChannelRestore>;
   subscribeToSwapRates(from: Address, to: Address, callback: any): Promise<void>;
   unsubscribeFromSwapRates(from: Address, to: Address): Promise<void>;
 }
