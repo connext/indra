@@ -83,8 +83,6 @@ export enum Opcode {
   OP_SIGN,
   // Middleware hook to write the app instances to store.
   PERSIST_APP_INSTANCE,
-  // Called at the end of execution before the return value to store a commitment
-  PERSIST_COMMITMENT,
   // Middleware hook to write the state channel to store. Used to lock channel between protocols.
   PERSIST_STATE_CHANNEL,
   // Middleware hook to validate state transitions in protocol. Called before
