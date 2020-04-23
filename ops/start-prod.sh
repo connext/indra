@@ -39,6 +39,7 @@ then
   echo "WARNING: Generating new nats jwt signing keys & saving them in .env"
   echo "         You should back up .env to a safe location"
   keyFile=/tmp/indra/id_rsa
+  mkdir -p /tmp/indra
   ssh-keygen -t rsa -b 4096 -m PEM -f $keyFile -N ""
   prvKey="`cat $keyFile | tr -d '\n\r'`"
   pubKey="`ssh-keygen -f $keyFile.pub -e -m PKCS8 | tr -d '\n\r'`"
