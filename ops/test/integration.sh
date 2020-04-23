@@ -25,13 +25,13 @@ else
 
   exec docker run \
     --entrypoint="bash" \
+    --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
     --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
     --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
-    --env="INDRA_NODE_URL=$NODE_URL" \
     --env="INDRA_NATS_URL=$NATS_URL" \
-    --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
-    --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
+    --env="INDRA_NODE_URL=$NODE_URL" \
     --env="NODE_ENV=development" \
+    --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
     $interactive \
     --name="$name" \
     --mount="type=bind,source=`pwd`,target=/root" \
@@ -43,13 +43,13 @@ echo "Executing image $image"
 
 exec docker run \
   $watchOptions \
+  --env="INDRA_ADMIN_TOKEN=${INDRA_ADMIN_TOKEN}" \
   --env="INDRA_CLIENT_LOG_LEVEL=0" \
   --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
-  --env="INDRA_NODE_URL=https://172.17.0.1/api" \
   --env="INDRA_NATS_URL=$NATS_URL" \
-  --env="INDRA_ADMIN_TOKEN=${INDRA_ADMIN_TOKEN:-cxt1234}" \
-  --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
+  --env="INDRA_NODE_URL=https://172.17.0.1/api" \
   --env="NODE_ENV=production" \
+  --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
   $interactive \
   --name="$name" \
   --rm \
