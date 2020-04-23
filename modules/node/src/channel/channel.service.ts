@@ -166,11 +166,6 @@ export class ChannelService {
       throw new Error(`Invalid rebalancing type: ${rebalanceType}`);
     }
 
-    this.log.info(
-      `rebalance ${rebalanceType} for ${userPublicIdentifier} asset ${assetId} finished: ${JSON.stringify(
-        result,
-      )}`,
-    );
     return result;
   }
 
@@ -180,6 +175,14 @@ export class ChannelService {
     collateralNeeded: BigNumber,
     lowerBoundCollateral: BigNumber,
   ): Promise<TransactionReceipt | undefined> {
+    this.log.info(
+      `collateralizeIfNecessary started: ${stringify({
+        userId,
+        assetId,
+        collateralNeeded,
+        lowerBoundCollateral,
+      })}`,
+    );
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userId);
     if (channel.activeCollateralizations[assetId]) {
       this.log.warn(`Collateral request is in flight for ${assetId}, waiting for transaction`);
@@ -217,29 +220,27 @@ export class ChannelService {
       assetId,
     );
     if (nodeFreeBalance.gte(lowerBoundCollateral)) {
-      this.log.debug(
-        `User ${channel.userIdentifier} already has collateral of ${nodeFreeBalance} for asset ${assetId}`,
+      this.log.info(
+        `Collateral for user ${channel.userIdentifier} is within bounds, nothing to collateralize`,
       );
       return undefined;
     }
 
     const amountDeposit = collateralNeeded.sub(nodeFreeBalance);
-    this.log.warn(
+    this.log.info(
       `Collateralizing ${channel.userIdentifier} with ${amountDeposit}, token: ${assetId}`,
     );
 
     // set in flight so that it cant be double sent
-    this.log.debug(
-      `Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()} of ${assetId}`,
-    );
     await this.setCollateralizationInFlight(channel.multisigAddress, assetId);
     let receipt: TransactionReceipt | undefined = undefined;
     try {
       receipt = await this.depositService.deposit(channel, amountDeposit, assetId);
-      this.log.debug(
-        `Channel ${channel.multisigAddress} successfully collateralized: ${receipt.transactionHash}`,
+      this.log.info(
+        `Collateralization for ${channel.multisigAddress}, asset ${assetId} complete: ${stringify(
+          receipt,
+        )}`,
       );
-      this.log.debug(`Collateralization result: ${stringify(receipt)}`);
     } catch (e) {
       throw new Error(e.stack || e.message);
     } finally {
