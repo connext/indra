@@ -71,7 +71,7 @@ As you play with the Daicard, you can monitor the node's logs with `bash ops/log
 - `make reset`: Stops the app & removes all persistent data eg database data
 - `make dls`: Show all running services (groups of containers) plus list all running containers.
 - `bash ops/db.sh`: Opens a console attached to the running app's database. You can also run `bash ops/db.sh '\d+'` to run a single PostgreSQL query (eg `\d+` to list table details).
-- `bash ops/logs.sh node`: Monitor the node's logs.
+- `bash ops/logs.sh node`: Monitor the node's logs. You can also monitor logs for the database, webserver, ethprovider, etc.
 
 ### Running Tests
 
@@ -140,7 +140,7 @@ Note: this script is idempotent aka you can run it over and over again w/out cau
 
 If you already have a server with docker & make installed, there's another helper script you can use to easily load your mnemonic: `bash ops/save-secret.sh`. Run this on your prod server & copy/paste in your mnemonic.
 
-For convenience sake, we recommend adding an entry to your ssh config to easily access this server. Add something that looks like the following to `$HOME/.ssh/config`:
+For convenience's sake, we recommend adding an entry to your ssh config to easily access this server. Add something that looks like the following to `$HOME/.ssh/config`:
 
 ```bash
 Host new-indra
@@ -152,42 +152,33 @@ Host new-indra
 
 Now you can login to this server with just `ssh new-indra`. Once the server wakes up again after rebooting at the end of `ops/setup-ubuntu`, login to finish setup.
 
-First step: clone & the git repo on your prod server:
-
-```bash
-ssh new-indra git clone https://github.com/ConnextProject/indra.git
-```
-
-If you're using a custom address book, upload it to your prod server:
-
-```bash
-scp address-book.json new-indra:~/indra/
-```
-
 We need to add a couple env vars before launching our indra node. We'll be pulling from the public default prod-mode env vars & updating a couple as needed.
 
 ```bash
 cp prod.env .env
 ```
 
-Open .env on your prod server in a text editor and ensure you've added correct values for two important env vars: `INDRA_DOMAINNAME` and `INDRA_ETH_PROVIDER`
+Ensure you've added correct values for two important env vars: `INDRA_DOMAINNAME` and `INDRA_ETH_PROVIDER`.
+
+Upload the prod env vars to the indra server. If you're using a custom address book, upload that too:
 
 ```bash
-export INDRA_DOMAINNAME="$DOMAINNAME"
-export INDRA_ETH_PROVIDER="https://eth-rinkeby.alchemyapi.io/jsonrpc/abc123"
+scp .env new-indra:~/indra/
+scp address-book.json new-indra:~/indra/
 ```
 
 Login to your prod server then run the following to launch your Indra node:
 
 ```bash
 cd indra
+git checkout master # staging is the default branch. It's cutting edge but maybe buggy.
 make restart-prod
 ```
 
 The above will download & run docker images associated with the commit/release you have checked out. If you want to launch a specific version of indra, checkout that version's tag & restart:
 
 ```bash
-git checkout indra-4.1.0 && make restart-prod
+git checkout indra-6.0.8 && make restart-prod
 ```
 
 ## FAQ
@@ -208,7 +199,7 @@ Restarting: the debugger's most valuable tool.
 
 Some problems will be fixed by just restarting the app so try this first: `make restart`
 
-If this doesn't work, try resetting all persistent data (database + the ethprovider's chain data) and starting the app again: `make reset && npm start`. After doing this, you'll likely need to reset your MetaMask account to get your tx nonces synced up correctly.
+If this doesn't work, try resetting all persistent data (database + the ethprovider's chain data) and starting the app again: `make reset && make start`. After doing this, you'll likely need to reset your MetaMask account to get your tx nonces synced up correctly.
 
 If that still doesn't work either, try rebuilding everything with `make clean && make start`.
 
