@@ -42,6 +42,8 @@ then
   ssh-keygen -t rsa -b 4096 -m PEM -f $keyFile -N ""
   prvKey="`cat $keyFile | tr -d '\n\r'`"
   pubKey="`ssh-keygen -f $keyFile.pub -e -m PKCS8 | tr -d '\n\r'`"
+  touch .env
+  sed -i '/INDRA_NATS_JWT_SIGNER_/d' .env
   echo "INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=$pubKey" >> .env
   echo "INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=$prvKey" >> .env
   export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="$pubKey"
