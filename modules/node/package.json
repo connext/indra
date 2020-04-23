@@ -47,7 +47,7 @@
     "redlock": "4.1.0",
     "reflect-metadata": "0.1.13",
     "rxjs": "6.5.5",
-    "pg": "8.0.2",
+    "pg": "8.0.0",
     "ts-natsutil": "1.0.6",
     "typeorm": "0.2.24"
   },

@@ -17,7 +17,7 @@
     "@connext/utils": "6.0.8",
     "ethers": "4.0.47",
     "localStorage": "1.0.4",
-    "pg": "8.0.2",
+    "pg": "8.0.0",
     "pg-hstore": "2.3.3",
     "pisa-client": "0.1.4-connext-beta.1",
     "sequelize": "5.21.6",
