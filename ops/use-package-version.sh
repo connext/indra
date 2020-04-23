@@ -11,13 +11,13 @@ fi
 
 echo
 echo "Before:"
-grep -r '"'$package'"' modules/*/package.json
+grep -r '"'$package'": "' modules/*/package.json package.json
 echo
 
-find modules/*/package.json \
+find modules/*/package.json package.json \
   -type f \
   -exec sed -i -E 's|"'"$package"'": "[0-9.]+"|"'"$package"'": "'"$version"'"|g' {} \;
 
 echo "After:"
-grep -r '"'$package'"' modules/*/package.json
+grep -r '"'$package'": "' modules/*/package.json package.json
 echo
