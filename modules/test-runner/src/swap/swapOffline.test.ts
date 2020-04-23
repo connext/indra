@@ -95,7 +95,7 @@ const fundChannelAndSwap = async (opts: {
   await swapCb();
 };
 
-describe.skip("Swap offline", () => {
+describe("Swap offline", () => {
   beforeEach(async () => {
     clock = lolex.install({
       shouldAdvanceTime: true,

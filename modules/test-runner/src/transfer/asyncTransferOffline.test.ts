@@ -53,7 +53,7 @@ const verifyTransfer = async (
   expect(transfer.encryptedPreImage).to.be.ok;
 };
 
-describe.skip("Async transfer offline tests", () => {
+describe("Async transfer offline tests", () => {
   let clock: any;
   let senderClient: IConnextClient;
   let receiverClient: IConnextClient;
