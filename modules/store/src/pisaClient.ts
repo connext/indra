@@ -29,7 +29,7 @@ export class PisaClientBackupAPI implements IBackupServiceAPI {
     const id = keccak256(toUtf8Bytes(pair.path));
     const nonce = pair.value.freeBalanceAppInstance.latestVersionNumber;
     try {
-      await this.pisaClient.backUp(signer, address, data, blockNumber, id, nonce);
+      await this.pisaClient.backup(signer, address, data, blockNumber, id, nonce);
     } catch (e) {
       // If we get a 'nonce too low' error, we'll log & ignore bc sometimes expected. See:
       // see: https://github.com/counterfactual/monorepo/issues/2497

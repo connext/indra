@@ -253,12 +253,8 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getUserWithdrawals();
   }
 
-  createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
-    return this.internalStore.createUserWithdrawal(withdrawalObject);
-  }
-
-  updateUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
-    return this.internalStore.updateUserWithdrawal(withdrawalObject);
+  saveUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
+    return this.internalStore.saveUserWithdrawal(withdrawalObject);
   }
 
   removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void> {

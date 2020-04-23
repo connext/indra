@@ -106,7 +106,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         customData: { signature: mySignature },
         seq: 1,
       } as ProtocolMessageData,
-    ];
+    ] as any;
 
     checkpoint = Date.now();
     // 6ms
@@ -140,7 +140,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 204ms
     logTime(log, start, `Initiation finished`);
-  },
+  } as any,
 
   1 /* Responding */: async function*(context: Context) {
     const { message, store, network } = context;

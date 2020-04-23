@@ -91,7 +91,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
           setStateSignature: mySignatureOnFreeBalanceState,
         },
       } as ProtocolMessageData,
-    ];
+    ] as any;
     logTime(log, substart, `Received responder's sigs`);
 
     // setup installs the free balance app, and on creation the state channel
@@ -127,7 +127,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     logTime(log, start, `Initiation finished`);
-  },
+  } as any,
 
   1 /* Responding */: async function*(context: Context) {
     const { message, network } = context;

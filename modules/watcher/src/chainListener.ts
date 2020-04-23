@@ -107,7 +107,7 @@ export class ChainListener implements IChainListener {
     this.log.info(`Parsing ${progressedLogs.length} StateProgessed and ${updatedLogs.length} ChallengeUpdated event logs`);
 
     progressedLogs.concat(updatedLogs).forEach(log => {
-      const parsed = new Interface(ChallengeRegistry.abi).parseLog(log);
+      const parsed = new Interface(ChallengeRegistry.abi as any).parseLog(log);
       const { identityHash, versionNumber } = parsed.values;
       switch (parsed.name) {
         case ChallengeEvents.ChallengeUpdated: {

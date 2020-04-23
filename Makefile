@@ -40,7 +40,7 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 
 default: dev
 all: dev staging release
-dev: proxy node test-runner watcher
+dev: database proxy node test-runner
 staging: database ethprovider proxy node-staging test-runner-staging webserver
 release: database ethprovider proxy node-release test-runner-release webserver
 

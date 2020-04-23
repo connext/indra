@@ -142,7 +142,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         },
         seq: 1,
       } as ProtocolMessageData,
-    ];
+    ] as any;
 
     // 7ms
     // free balance addr signs conditional transactions
@@ -212,7 +212,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 335ms
     logTime(log, start, `Initiation finished`);
-  },
+  } as any,
 
   /**
    * Sequence 1 of the INSTALL_PROTOCOL requires the responder party
@@ -338,7 +338,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         },
         seq: UNASSIGNED_SEQ_NO,
       } as ProtocolMessageData,
-    ];
+    ] as any;
 
     // 7ms
     // always use signerAddress to sign updates
@@ -383,7 +383,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 272ms
     logTime(log, start, `Response finished`);
-  },
+  } as any,
 };
 
 /**
@@ -516,8 +516,10 @@ function computeInterpreterParameters(
   disableLimit: boolean,
 ): {
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?:
+    MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?:
+    SingleAssetTwoPartyCoinTransferInterpreterParams;
 } {
   const initiatorDepositAssetId = getAddressFromAssetId(initiatorAssetId);
   const responderDepositAssetId = getAddressFromAssetId(responderAssetId);

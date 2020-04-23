@@ -96,7 +96,7 @@ describe("Client Connect", () => {
     const store: ConnextStore = await createConnextStore("Memory");
     console.log(store);
     console.log(await store.getUserWithdrawals());
-    store.createUserWithdrawal({
+    store.saveUserWithdrawal({
       tx: {
         to: Wallet.createRandom().address,
         value: 0,

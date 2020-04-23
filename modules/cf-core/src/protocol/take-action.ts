@@ -121,7 +121,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
           signature: mySignature,
         },
       } as ProtocolMessageData,
-    ];
+    ] as any;
 
     // 10ms
     await assertIsValidSignature(responderAddr, setStateCommitmentHash, counterpartySig);
@@ -142,7 +142,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     logTime(log, start, `Finished Initiating`);
-  },
+  } as any,
 
   1 /* Responding */: async function*(context: Context) {
     const { store, message, network } = context;

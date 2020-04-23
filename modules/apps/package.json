@@ -22,10 +22,10 @@
     "@connext/contracts": "2.0.2",
     "@connext/utils": "6.0.8",
     "@connext/types": "6.0.8",
-    "ethers": "4.0.46",
-    "rollup": "1.31.1",
-    "@rollup/plugin-json": "4.0.2",
-    "rollup-plugin-typescript2": "0.26.0",
-    "typescript": "3.7.5"
+    "ethers": "4.0.47",
+    "rollup": "2.7.2",
+    "@rollup/plugin-json": "4.0.3",
+    "rollup-plugin-typescript2": "0.27.0",
+    "typescript": "3.8.3"
   }
 }

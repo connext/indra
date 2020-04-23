@@ -234,11 +234,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     if (remove) {
       return this.store.removeUserWithdrawal(value);
     }
-    const existing = await this.getUserWithdrawals();
-    if (existing.length === 0) {
-      return this.store.createUserWithdrawal(value);
-    }
-    return this.store.updateUserWithdrawal(value);
+    return this.store.saveUserWithdrawal(value);
   };
 
   private setStateChannel = async (
