@@ -7,31 +7,37 @@ project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
-localProvider="http://ethprovider:8545"
+####################
+# Load external env vars & assert that required ones are available
+
+# First choice: use existing env var & don't even call dotEnv
+function dotEnv {
+  key="$1"
+  if [[ -f .env ]] # Second choice: load from custom secret env
+  then envFile=.env
+  elif [[ -f dev.env ]] # Third choice: load from public defaults
+  then envFile=dev.env
+  fi
+  grep "$key" "$envFile" | cut -d "=" -f 2 | tr -d "'"'"\n\r' | cut -d "#" -f 1
+}
 
 ####################
 # External Env Vars
 
-INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER:-$localProvider}"
-INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-foo}"
-INDRA_UI="${INDRA_UI:-daicard}"
-INDRA_LOG_LEVEL="${LOG_LEVEL:-3}"
-
-INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-}" # pass this in through CI
-INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-}" # pass this in through CI
-
-# load dev-mode hardcoded jwt keys if nothing provided by env vars
-if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" && -f .env ]]
-then echo "WARNING: Using hardcoded insecure dev-mode jwt keys" && source .env
-fi
+export INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-`dotEnv INDRA_ADMIN_TOKEN`}"
+export INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER:-`dotEnv INDRA_ETH_PROVIDER`}"
+export INDRA_LOG_LEVEL="${INDRA_LOG_LEVEL:-`dotEnv INDRA_LOG_LEVEL`}"
+INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PRIVATE_KEY`}"
+INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PUBLIC_KEY`}"
 
 # Make sure keys have proper newlines inserted
 # (bc GitHub Actions strips newlines from secrets)
-INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=`
+export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=`
   echo $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY | tr -d '\n\r' |\
   sed 's/-----BEGIN RSA PRIVATE KEY-----/\\\n-----BEGIN RSA PRIVATE KEY-----\\\n/' |\
   sed 's/-----END RSA PRIVATE KEY-----/\\\n-----END RSA PRIVATE KEY-----\\\n/'`
-INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
+
+export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
   echo $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY | tr -d '\n\r' |\
   sed 's/-----BEGIN PUBLIC KEY-----/\\\n-----BEGIN PUBLIC KEY-----\\\n/' | \
   sed 's/-----END PUBLIC KEY-----/\\\n-----END PUBLIC KEY-----\\\n/'`
@@ -40,6 +46,7 @@ INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 # Internal Config
 # config & hard-coded stuff you might want to change
 
+ganacheProvider="http://ethprovider:8545"
 number_of_services=5 # NOTE: Gotta update this manually when adding/removing services :(
 
 nats_port=4222
@@ -55,7 +62,7 @@ else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' 
 fi
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
-if [[ "$INDRA_ETH_PROVIDER" == "$localProvider" ]]
+if [[ "$INDRA_ETH_PROVIDER" == "$ganacheProvider" ]]
 then chainId="$ganacheId"
 else
   echo "Fetching chainId from ${INDRA_ETH_PROVIDER}"
@@ -205,7 +212,6 @@ services:
       INDRA_ETH_MNEMONIC: '$eth_mnemonic'
       INDRA_ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
       INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
-      INDRA_NATS_CLUSTER_ID:
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
       INDRA_NATS_SERVERS: 'nats://nats:$nats_port'
