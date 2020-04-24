@@ -1,11 +1,10 @@
-import { ChallengeRegistry, AppWithAction } from "@connext/contracts";
+import { ChallengeRegistry } from "@connext/contracts";
 import {
   JsonRpcProvider,
   BigNumber,
   StateChannelJSON,
   StateSchemaVersion,
   CONVENTION_FOR_ETH_ASSET_ID,
-  NetworkContext,
   OutcomeType,
 } from "@connext/types";
 import {
@@ -14,6 +13,7 @@ import {
   ChannelSigner,
   toBN,
   bigNumberifyJson,
+  toBNJson,
 } from "@connext/utils";
 import { Wallet, Contract } from "ethers";
 import { One, Zero, HashZero } from "ethers/constants";
@@ -142,10 +142,7 @@ export const setupContext = async () => {
 
     const appJson = appInstance.toJson();
     const setState = await appInstance.getSetState(challengeRegistry.address);
-    const conditional = await appInstance.getConditional(
-      freeBalance.identityHash,
-      networkContext,
-    );
+    const conditional = await appInstance.getConditional(freeBalance.identityHash, networkContext);
     console.log(`created app commitments`);
 
     const channel: StateChannelJSON = {
@@ -198,13 +195,21 @@ export const setupContext = async () => {
       twoPartyOutcomeInterpreterParams: bigNumberifyJson(twoPartyOutcomeInterpreterParams),
     };
     console.log(`created app proposal`);
-    await store.createAppProposal(multisigAddress, proposal as any, appJson.appSeqNo, setState);
+    await store.createAppProposal(multisigAddress, proposal as any, appJson.appSeqNo, {
+      ...setState,
+      versionNumber: toBNJson(One),
+    });
     console.log(`saved proposal to db`);
     await store.createAppInstance(
       multisigAddress,
       appJson,
       freeBalance.toJson(),
-      freeBalanceSetState,
+      {
+        ...freeBalanceSetState,
+        versionNumber: toBNJson(toBN(freeBalanceSetState.versionNumber).sub(1)),
+      },
+      // latest free balance saved when channel created, use dummy values
+      // with increasing app numbers so they get deleted properly
       conditional,
     );
     console.log(`saved app instance to db`);
