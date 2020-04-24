@@ -464,11 +464,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     });
   }
 
-  async getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
-    const channel = await this.getStateChannel(multisigAddress);
-    if (!channel) {
-      throw new Error(`Could not find channel for multisig: ${multisigAddress}`);
-    }
+  async getActiveChallenges(): Promise<StoredAppChallenge[]> {
     // get all stored challenges
     const keys = await this.getKeys();
     const relevant = keys.filter((key) => key.includes(CHALLENGE_KEY));
@@ -476,12 +472,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       relevant.map((key) => this.getItem<StoredAppChallenge>(key)),
     );
     const inactiveStatuses = [ChallengeStatus.NO_CHALLENGE, ChallengeStatus.OUTCOME_SET];
-    const allActive = challenges.filter(
-      (challenge) => !!challenge && !inactiveStatuses.find((status) => status === challenge.status),
-    );
     // now find which ones are in the channel and in dispute
-    return allActive.filter((challenge) =>
-      this.hasAppIdentityHash(challenge.identityHash, channel.appInstances),
+    return challenges.filter(
+      (challenge) => !!challenge && !inactiveStatuses.find((status) => status === challenge.status),
     );
   }
 

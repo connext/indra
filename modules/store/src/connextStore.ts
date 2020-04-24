@@ -278,8 +278,8 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.saveAppChallenge(event);
   }
 
-  getActiveChallenges(multisigAddress: Address): Promise<StoredAppChallenge[]> {
-    return this.internalStore.getActiveChallenges(multisigAddress);
+  getActiveChallenges(): Promise<StoredAppChallenge[]> {
+    return this.internalStore.getActiveChallenges();
   }
 
   ///// Events
