@@ -274,8 +274,8 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getAppChallenge(appIdentityHash);
   }
 
-  saveAppChallenge(event: ChallengeUpdatedEventPayload): Promise<void> {
-    return this.internalStore.saveAppChallenge(event);
+  saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
+    return this.internalStore.saveAppChallenge(data);
   }
 
   getActiveChallenges(): Promise<StoredAppChallenge[]> {

@@ -451,18 +451,16 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.getItem<StoredAppChallenge>(challengeKey);
   }
 
-  async saveAppChallenge(event: ChallengeUpdatedEventPayload): Promise<void> {
-    // always create event first, if this fails then challenge has already
-    // been saved with that or higher version number
-    await this.createChallengeUpdatedEvent(event);
-    const challengeKey = this.getKey(CHALLENGE_KEY, event.identityHash);
+  async saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
+    const challengeKey = this.getKey(CHALLENGE_KEY, data.identityHash);
     const challengeRecord = await this.getItem<AppChallenge>(challengeKey);
-    if (challengeRecord && challengeRecord.versionNumber.gte(toBN(event.versionNumber))) {
+    if (challengeRecord && challengeRecord.versionNumber.gte(toBN(data.versionNumber))) {
       // do not update with stale challenge
       return;
     }
+    await this.saveChallengeUpdatedEvent(data as ChallengeUpdatedEventPayload);
     return this.setItem<StoredAppChallenge>(challengeKey, {
-      ...event,
+      ...(data as StoredAppChallenge),
     });
   }
 
@@ -479,7 +477,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     // now find which ones are in the channel and in dispute
     return challenges.filter(
       (challenge) =>
-        !!challenge && !inactiveStatuses.find((status) => status === challenge.status),
+        !!challenge && !inactiveStatuses.find((status) => status === (challenge.status as any)),
     );
   }
 
@@ -532,18 +530,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return events.filter((x) => !!x);
   }
 
-  private async createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
+  private async saveChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
     const key = this.getKey(
       CHALLENGE_UPDATED_EVENT_KEY,
       event.identityHash,
       event.versionNumber.toString(),
     );
     if (await this.getItem(key)) {
-      throw new Error(
-        `Found existing challenge updated event for app ${
-          event.identityHash
-        } at nonce ${event.versionNumber.toString()}`,
-      );
+      return;
     }
     return this.setItem(key, event);
   }
