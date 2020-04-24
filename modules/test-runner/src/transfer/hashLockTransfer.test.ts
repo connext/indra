@@ -215,7 +215,7 @@ describe("HashLock Transfers", () => {
       }),
     ]);
 
-    const retrievedTransfer = await clientB.getHashLockTransfer(lockHash);
+    const retrievedTransfer = await clientB.getHashLockTransfer(lockHash, transfer.assetId);
     expect(retrievedTransfer).to.deep.equal({
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
@@ -260,7 +260,7 @@ describe("HashLock Transfers", () => {
         assetId: transfer.assetId,
       });
     });
-    const retrievedTransfer = await clientB.getHashLockTransfer(lockHash);
+    const retrievedTransfer = await clientB.getHashLockTransfer(lockHash, transfer.assetId);
     expect(retrievedTransfer).to.deep.equal({
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
