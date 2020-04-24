@@ -238,7 +238,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     channel.appInstances[idx] = [appInstance.identityHash, appInstance];
     const oldCommitment = await this.getLatestSetStateCommitment(appInstance.identityHash);
     if (!oldCommitment) {
-      throw new Error(`Could not find previous set state commitment to update for ${appInstance.identityHash}`);
+      throw new Error(
+        `Could not find previous set state commitment to update for ${appInstance.identityHash}`,
+      );
     }
     // remove old (n - 1) set state commitments IFF new commitment is double
     // signed. otherwise, leave + create new commitment
@@ -467,14 +469,17 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async getActiveChallenges(): Promise<StoredAppChallenge[]> {
     // get all stored challenges
     const keys = await this.getKeys();
-    const relevant = keys.filter((key) => key.includes(CHALLENGE_KEY));
+    const relevant = keys.filter(
+      (key) => key.includes(CHALLENGE_KEY) && !key.includes(CHALLENGE_UPDATED_EVENT_KEY),
+    );
     const challenges = await Promise.all(
       relevant.map((key) => this.getItem<StoredAppChallenge>(key)),
     );
     const inactiveStatuses = [ChallengeStatus.NO_CHALLENGE, ChallengeStatus.OUTCOME_SET];
     // now find which ones are in the channel and in dispute
     return challenges.filter(
-      (challenge) => !!challenge && !inactiveStatuses.find((status) => status === challenge.status),
+      (challenge) =>
+        !!challenge && !inactiveStatuses.find((status) => status === challenge.status),
     );
   }
 
