@@ -6,6 +6,7 @@ import {
   NetworkContext,
   SignedCancelChallengeRequest,
   StateProgressedEventPayload,
+  ChallengeEvents,
 } from "./contracts";
 import { StateChannelJSON } from "./state";
 import { Address, Bytes32 } from "./basic";
@@ -16,7 +17,7 @@ import {
   SetStateCommitmentJSON,
 } from "./commitments";
 import { IChannelSigner } from "./crypto";
-import { JsonRpcProvider, TransactionReceipt, TransactionResponse } from "ethers/providers";
+import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import { ILoggerService, ILogger } from "./logger";
 
 ////////////////////////////////////////
@@ -36,10 +37,8 @@ export type WatcherInitOptions = {
 
 export const ChallengeInitiatedEvent = "ChallengeInitiatedEvent";
 export type ChallengeInitiatedEventData = {
-  transaction: TransactionReceipt;
-  challenge: AppChallenge;
+  transaction: TransactionResponse;
   appInstanceId: Bytes32;
-  multisigAddress: Address;
 };
 
 ////////////////////////////////////////
@@ -47,16 +46,15 @@ export const ChallengeInitiationFailedEvent = "ChallengeInitiationFailedEvent";
 export type ChallengeInitiationFailedEventData = {
   error: string;
   appInstanceId: Bytes32;
-  multisigAddress: Address;
 };
 
 ////////////////////////////////////////
-export const ChallengeUpdatedEvent = "ChallengeUpdatedEvent";
-export type ChallengeUpdatedEventData = ChallengeInitiatedEventData;
+export const ChallengeProgressedEvent = "ChallengeProgressedEvent";
+export type ChallengeProgressedEventData = ChallengeInitiatedEventData;
 
 ////////////////////////////////////////
-export const ChallengeUpdateFailedEvent = "ChallengeUpdateFailedEvent";
-export type ChallengeUpdateFailedEventData = ChallengeInitiationFailedEventData & {
+export const ChallengeProgressionFailedEvent = "ChallengeProgressionFailedEvent";
+export type ChallengeProgressionFailedEventData = ChallengeInitiationFailedEventData & {
   challenge: AppChallenge;
   params: any; // ProgressStateParams | SetStateParams | CancelChallengeParams
 };
@@ -70,23 +68,41 @@ export const ChallengeCancelledEvent = "ChallengeCancelledEvent";
 export type ChallengeCancelledEventData = ChallengeInitiatedEventData;
 
 ////////////////////////////////////////
+export const ChallengeCancellationFailedEvent = "ChallengeCancellationFailedEvent";
+export type ChallengeCancellationFailedEventData = ChallengeInitiationFailedEventData;
+
+////////////////////////////////////////
+/// From contracts
+export const ChallengeUpdatedEvent = "ChallengeUpdatedEvent";
+export type ChallengeUpdatedEventData = ChallengeEventData[typeof ChallengeEvents.ChallengeUpdated];
+
+export const StateProgressedEvent = "StateProgressedEvent";
+export type StateProgressedEventData = ChallengeEventData[typeof ChallengeEvents.StateProgressed];
+
+////////////////////////////////////////
 export const WatcherEvents = {
+  [ChallengeUpdatedEvent]: ChallengeUpdatedEvent,
+  [StateProgressedEvent]: StateProgressedEvent,
   [ChallengeInitiatedEvent]: ChallengeInitiatedEvent,
   [ChallengeInitiationFailedEvent]: ChallengeInitiationFailedEvent,
-  [ChallengeUpdatedEvent]: ChallengeUpdatedEvent,
-  [ChallengeUpdateFailedEvent]: ChallengeUpdateFailedEvent,
+  [ChallengeProgressedEvent]: ChallengeProgressedEvent,
+  [ChallengeProgressionFailedEvent]: ChallengeProgressionFailedEvent,
   [ChallengeCompletedEvent]: ChallengeCompletedEvent,
   [ChallengeCancelledEvent]: ChallengeCancelledEvent,
+  [ChallengeCancellationFailedEvent]: ChallengeCancellationFailedEvent,
 } as const;
 export type WatcherEvent = keyof typeof WatcherEvents;
 
 interface WatcherEventDataMap {
+  [ChallengeUpdatedEvent]: ChallengeUpdatedEventData;
+  [StateProgressedEvent]: StateProgressedEventData;
   [ChallengeInitiatedEvent]: ChallengeInitiatedEventData;
   [ChallengeInitiationFailedEvent]: ChallengeInitiationFailedEventData;
-  [ChallengeUpdatedEvent]: ChallengeUpdatedEventData;
-  [ChallengeUpdateFailedEvent]: ChallengeUpdateFailedEventData;
+  [ChallengeProgressedEvent]: ChallengeProgressedEventData;
+  [ChallengeProgressionFailedEvent]: ChallengeProgressionFailedEventData;
   [ChallengeCompletedEvent]: ChallengeCompletedEventData;
   [ChallengeCancelledEvent]: ChallengeCancelledEventData;
+  [ChallengeCancellationFailedEvent]: ChallengeCancellationFailedEventData
 }
 export type WatcherEventData = {
   [P in keyof WatcherEventDataMap]: WatcherEventDataMap[P];
