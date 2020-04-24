@@ -35,41 +35,51 @@ export type WatcherInitOptions = {
 ////////////////////////////////////////
 // Watcher Events
 
-export const ChallengeInitiatedEvent = "ChallengeInitiatedEvent";
-export type ChallengeInitiatedEventData = {
+type BaseChallengeTransactionCompletedEvent = {
   transaction: TransactionResponse;
   appInstanceId: Bytes32;
+  multisigAddress: Address;
 };
-
-////////////////////////////////////////
-export const ChallengeInitiationFailedEvent = "ChallengeInitiationFailedEvent";
-export type ChallengeInitiationFailedEventData = {
-  error: string;
+type BaseChallengeTransactionFailedEvent = {
   appInstanceId: Bytes32;
-};
+  error: string;
+  multisigAddress: Address;
+}
 
 ////////////////////////////////////////
 export const ChallengeProgressedEvent = "ChallengeProgressedEvent";
-export type ChallengeProgressedEventData = ChallengeInitiatedEventData;
+export type ChallengeProgressedEventData = BaseChallengeTransactionCompletedEvent;
 
 ////////////////////////////////////////
 export const ChallengeProgressionFailedEvent = "ChallengeProgressionFailedEvent";
-export type ChallengeProgressionFailedEventData = ChallengeInitiationFailedEventData & {
-  challenge: AppChallenge;
+export type ChallengeProgressionFailedEventData = BaseChallengeTransactionFailedEvent & {
+  challenge: StoredAppChallenge | undefined;
   params: any; // ProgressStateParams | SetStateParams | CancelChallengeParams
 };
 
 ////////////////////////////////////////
 export const ChallengeCompletedEvent = "ChallengeCompletedEvent";
-export type ChallengeCompletedEventData = ChallengeInitiatedEventData;
+export type ChallengeCompletedEventData = BaseChallengeTransactionCompletedEvent;
+
+////////////////////////////////////////
+export const ChallengeCompletionFailedEvent = "ChallengeCompletionFailedEvent";
+export type ChallengeCompletionFailedEventData = BaseChallengeTransactionFailedEvent;
+
+////////////////////////////////////////
+export const ChallengeOutcomeSetEvent = "ChallengeOutcomeSetEvent";
+export type ChallengeOutcomeSetEventData = BaseChallengeTransactionCompletedEvent;
+
+////////////////////////////////////////
+export const ChallengeOutcomeFailedEvent = "ChallengeOutcomeFailedEvent";
+export type ChallengeOutcomeFailedEventData = BaseChallengeTransactionFailedEvent;
 
 ////////////////////////////////////////
 export const ChallengeCancelledEvent = "ChallengeCancelledEvent";
-export type ChallengeCancelledEventData = ChallengeInitiatedEventData;
+export type ChallengeCancelledEventData = BaseChallengeTransactionCompletedEvent;
 
 ////////////////////////////////////////
 export const ChallengeCancellationFailedEvent = "ChallengeCancellationFailedEvent";
-export type ChallengeCancellationFailedEventData = ChallengeInitiationFailedEventData;
+export type ChallengeCancellationFailedEventData = BaseChallengeTransactionFailedEvent;
 
 ////////////////////////////////////////
 /// From contracts
@@ -83,11 +93,12 @@ export type StateProgressedEventData = ChallengeEventData[typeof ChallengeEvents
 export const WatcherEvents = {
   [ChallengeUpdatedEvent]: ChallengeUpdatedEvent,
   [StateProgressedEvent]: StateProgressedEvent,
-  [ChallengeInitiatedEvent]: ChallengeInitiatedEvent,
-  [ChallengeInitiationFailedEvent]: ChallengeInitiationFailedEvent,
   [ChallengeProgressedEvent]: ChallengeProgressedEvent,
   [ChallengeProgressionFailedEvent]: ChallengeProgressionFailedEvent,
+  [ChallengeOutcomeSetEvent]: ChallengeOutcomeSetEvent,
+  [ChallengeOutcomeFailedEvent]: ChallengeOutcomeFailedEvent,
   [ChallengeCompletedEvent]: ChallengeCompletedEvent,
+  [ChallengeCompletionFailedEvent]: ChallengeCompletionFailedEvent,
   [ChallengeCancelledEvent]: ChallengeCancelledEvent,
   [ChallengeCancellationFailedEvent]: ChallengeCancellationFailedEvent,
 } as const;
@@ -96,13 +107,14 @@ export type WatcherEvent = keyof typeof WatcherEvents;
 interface WatcherEventDataMap {
   [ChallengeUpdatedEvent]: ChallengeUpdatedEventData;
   [StateProgressedEvent]: StateProgressedEventData;
-  [ChallengeInitiatedEvent]: ChallengeInitiatedEventData;
-  [ChallengeInitiationFailedEvent]: ChallengeInitiationFailedEventData;
   [ChallengeProgressedEvent]: ChallengeProgressedEventData;
   [ChallengeProgressionFailedEvent]: ChallengeProgressionFailedEventData;
+  [ChallengeOutcomeFailedEvent]: ChallengeOutcomeFailedEventData;
+  [ChallengeOutcomeSetEvent]: ChallengeOutcomeSetEventData;
   [ChallengeCompletedEvent]: ChallengeCompletedEventData;
+  [ChallengeCompletionFailedEvent]: ChallengeCompletionFailedEventData;
   [ChallengeCancelledEvent]: ChallengeCancelledEventData;
-  [ChallengeCancellationFailedEvent]: ChallengeCancellationFailedEventData
+  [ChallengeCancellationFailedEvent]: ChallengeCancellationFailedEventData;
 }
 export type WatcherEventData = {
   [P in keyof WatcherEventDataMap]: WatcherEventDataMap[P];
@@ -110,7 +122,6 @@ export type WatcherEventData = {
 
 ////////////////////////////////////////
 // Listener Events
-
 
 ////////////////////////////////////////
 // Watcher interface
@@ -164,30 +175,26 @@ export interface IChainListener {
 
 export type StoredAppChallenge = AppChallenge & {
   identityHash: Bytes32;
-}
+};
 
 export interface IWatcherStoreService {
   // Disputes
   getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined>;
   saveAppChallenge(event: ChallengeUpdatedEventPayload): Promise<void>;
-  getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]>;
+  getActiveChallenges(): Promise<StoredAppChallenge[]>;
 
   // Events
   getLatestProcessedBlock(): Promise<number>;
   updateLatestProcessedBlock(blockNumber: number): Promise<void>;
 
-  getStateProgressedEvents(
-    appIdentityHash: string,
-  ): Promise<StateProgressedEventPayload[]>;
+  getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]>;
 
   createStateProgressedEvent(
     appIdentityHash: string,
     event: StateProgressedEventPayload,
   ): Promise<void>;
 
-  getChallengeUpdatedEvents(
-    appIdentityHash: string,
-  ): Promise<ChallengeUpdatedEventPayload[]>;
+  getChallengeUpdatedEvents(appIdentityHash: string): Promise<ChallengeUpdatedEventPayload[]>;
 
   ////////////////////////////////////////
   //// Channel data
