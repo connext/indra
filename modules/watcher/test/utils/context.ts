@@ -138,12 +138,10 @@ export const setupContext = async () => {
       [appInstance.identityHash],
     );
     const freeBalanceSetState = await freeBalance.getSetState(challengeRegistry.address);
-    console.log(`created free balance commitment`);
 
     const appJson = appInstance.toJson();
     const setState = await appInstance.getSetState(challengeRegistry.address);
     const conditional = await appInstance.getConditional(freeBalance.identityHash, networkContext);
-    console.log(`created app commitments`);
 
     const channel: StateChannelJSON = {
       schemaVersion: StateSchemaVersion,
@@ -158,7 +156,6 @@ export const setupContext = async () => {
       freeBalanceAppInstance: freeBalance.toJson(),
       monotonicNumProposedApps: 2,
     };
-    console.log(`created channel json`);
     await store.createStateChannel(
       channel,
       {
@@ -168,7 +165,6 @@ export const setupContext = async () => {
       },
       freeBalanceSetState,
     );
-    console.log(`saved channel to db`);
 
     // add the app + all commitments to the store
     const {
@@ -194,12 +190,10 @@ export const setupContext = async () => {
       responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
       twoPartyOutcomeInterpreterParams: bigNumberifyJson(twoPartyOutcomeInterpreterParams),
     };
-    console.log(`created app proposal`);
     await store.createAppProposal(multisigAddress, proposal as any, appJson.appSeqNo, {
       ...setState,
       versionNumber: toBNJson(One),
     });
-    console.log(`saved proposal to db`);
     await store.createAppInstance(
       multisigAddress,
       appJson,
@@ -212,7 +206,6 @@ export const setupContext = async () => {
       // with increasing app numbers so they get deleted properly
       conditional,
     );
-    console.log(`saved app instance to db`);
   };
 
   return {

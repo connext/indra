@@ -55,9 +55,7 @@ describe.only("Watcher.initiate", () => {
 
     // create + load store
     store = new ConnextStore(StoreTypes.Memory);
-    console.log(`trying to load store...`);
     await loadStore(store);
-    console.log(`loaded!`)
 
     watcher = await Watcher.init({
       context: { ChallengeRegistry: challengeRegistry.address } as NetworkContext,
