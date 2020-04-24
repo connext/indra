@@ -15,6 +15,28 @@ import {
 import { NetworkContext } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
+import { BigNumber, BigNumberish } from "ethers/utils";
+import { toBN } from "@connext/utils";
+import { expect } from "./assertions";
+
+export const moveToBlock = async (blockNumber: BigNumberish, provider: JsonRpcProvider) => {
+  const desired: BigNumber = toBN(blockNumber);
+  const current: BigNumber = toBN(await provider.getBlockNumber());
+  if (current.gt(desired)) {
+    throw new Error(
+      `Already at block ${current.toNumber()}, cannot rewind to ${blockNumber.toString()}`,
+    );
+  }
+  if (current.eq(desired)) {
+    return;
+  }
+  for (const _ of Array(desired.sub(current).toNumber())) {
+    await provider.send("evm_mine", []);
+  }
+  const final: BigNumber = toBN(await provider.getBlockNumber());
+  expect(final).to.be.eq(desired);
+};
+
 
 export type NetworkContextForTestSuite = NetworkContext & {
   provider: JsonRpcProvider;
