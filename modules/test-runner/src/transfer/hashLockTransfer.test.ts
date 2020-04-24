@@ -275,10 +275,8 @@ describe("HashLock Transfers", () => {
   it.only("can send two hashlock transfers with different assetIds and the same lock hash", async () => {
     const transferToken: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transferToken.amount, transferToken.assetId);
-    console.log("FUNDED TOKEN");
     const transferEth: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transferEth.amount, transferEth.assetId);
-    console.log("FUNDED ETH");
     const preImage = getRandomBytes32();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
     const lockHash = soliditySha256(["bytes32"], [preImage]);
@@ -297,7 +295,6 @@ describe("HashLock Transfers", () => {
         clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
       }),
     ]);
-    console.log("TRANSFER 1");
 
     await Promise.all([
       clientA.conditionalTransfer({
@@ -313,7 +310,6 @@ describe("HashLock Transfers", () => {
         clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
       }),
     ]);
-    console.log("TRANSFER 2");
 
     await clientB.resolveCondition({
       conditionType: ConditionalTransferTypes.HashLockTransfer,
@@ -327,9 +323,15 @@ describe("HashLock Transfers", () => {
       assetId: transferEth.assetId,
     } as PublicParams.ResolveHashLockTransfer);
 
-    // TODO: ASSERT BALANCES
+    const { [clientB.signerAddress]: freeBalanceToken } = await clientB.getFreeBalance(
+      transferToken.assetId,
+    );
+    const { [clientB.signerAddress]: freeBalanceEth } = await clientB.getFreeBalance(
+      transferEth.assetId,
+    );
 
-    expect(true).to.be.ok;
+    expect(freeBalanceToken).to.eq(transferToken.amount);
+    expect(freeBalanceEth).to.eq(transferEth.amount);
   });
 
   it("cannot resolve a hashlock transfer if pre image is wrong", async () => {
