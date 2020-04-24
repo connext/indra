@@ -455,7 +455,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     await this.createChallengeUpdatedEvent(event);
     const challengeKey = this.getKey(CHALLENGE_KEY, event.identityHash);
     const challengeRecord = await this.getItem<AppChallenge>(challengeKey);
-    if (challengeRecord.versionNumber.gte(toBN(event.versionNumber))) {
+    if (challengeRecord && challengeRecord.versionNumber.gte(toBN(event.versionNumber))) {
       // do not update with stale challenge
       return;
     }
