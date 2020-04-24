@@ -17,7 +17,7 @@ import {
   SetStateCommitmentJSON,
 } from "./commitments";
 import { IChannelSigner } from "./crypto";
-import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
+import { JsonRpcProvider, TransactionReceipt } from "ethers/providers";
 import { ILoggerService, ILogger } from "./logger";
 
 ////////////////////////////////////////
@@ -36,7 +36,7 @@ export type WatcherInitOptions = {
 // Watcher Events
 
 type BaseChallengeTransactionCompletedEvent = {
-  transaction: TransactionResponse;
+  transaction: TransactionReceipt;
   appInstanceId: Bytes32;
   multisigAddress: Address;
 };
@@ -44,6 +44,8 @@ type BaseChallengeTransactionFailedEvent = {
   appInstanceId: Bytes32;
   error: string;
   multisigAddress: Address;
+  challenge: StoredAppChallenge | undefined;
+  params: any; // ProgressStateParams | SetStateParams | CancelChallengeParams
 }
 
 ////////////////////////////////////////
@@ -52,10 +54,7 @@ export type ChallengeProgressedEventData = BaseChallengeTransactionCompletedEven
 
 ////////////////////////////////////////
 export const ChallengeProgressionFailedEvent = "ChallengeProgressionFailedEvent";
-export type ChallengeProgressionFailedEventData = BaseChallengeTransactionFailedEvent & {
-  challenge: StoredAppChallenge | undefined;
-  params: any; // ProgressStateParams | SetStateParams | CancelChallengeParams
-};
+export type ChallengeProgressionFailedEventData = BaseChallengeTransactionFailedEvent;
 
 ////////////////////////////////////////
 export const ChallengeCompletedEvent = "ChallengeCompletedEvent";
@@ -143,8 +142,8 @@ export interface IWatcher {
   //////// Public methods
   enable(): Promise<void>;
   disable(): Promise<void>;
-  initiate(appIdentityHash: string): Promise<TransactionResponse | undefined>;
-  cancel(appIdentityHash: string, req: SignedCancelChallengeRequest): Promise<TransactionResponse>;
+  initiate(appIdentityHash: string): Promise<TransactionReceipt | undefined>;
+  cancel(appIdentityHash: string, req: SignedCancelChallengeRequest): Promise<TransactionReceipt>;
 }
 
 ////////////////////////////////////////
@@ -172,15 +171,25 @@ export interface IChainListener {
 
 ////////////////////////////////////////
 // Storage
-
-export type StoredAppChallenge = AppChallenge & {
+// The status of a challenge in the ChallengeRegistry
+export enum StoredAppChallengeStatus {
+  NO_CHALLENGE = 0,
+  IN_DISPUTE = 1,
+  IN_ONCHAIN_PROGRESSION = 2,
+  EXPLICITLY_FINALIZED = 3,
+  OUTCOME_SET = 4,
+  CONDITIONAL_SENT = 5,
+  PENDING_TRANSITION = 6,
+}
+export type StoredAppChallenge = Omit<AppChallenge, "status"> & {
   identityHash: Bytes32;
+  status: StoredAppChallengeStatus;
 };
 
 export interface IWatcherStoreService {
   // Disputes
   getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined>;
-  saveAppChallenge(event: ChallengeUpdatedEventPayload): Promise<void>;
+  saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void>;
   getActiveChallenges(): Promise<StoredAppChallenge[]>;
 
   // Events
