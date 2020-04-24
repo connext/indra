@@ -23,6 +23,8 @@ import {
   StateProgressedEventPayload,
   ChallengeStatus,
   StoredAppChallenge,
+  SetStateCommitmentJSON,
+  WatcherEvents,
 } from "@connext/types";
 import {
   ConsoleLogger,
@@ -31,6 +33,7 @@ import {
   nullLogger,
   toBN,
   stringify,
+  bigNumberifyJson,
 } from "@connext/utils";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -118,7 +121,7 @@ export class Watcher implements IWatcher {
   // will begin an onchain dispute. emits a `DisputeInitiated` event if
   // the initiation was successful, otherwise emits a `DisputeFailed`
   // event
-  public initiate = async (appInstanceId: string): Promise<TransactionResponse | undefined> => {
+  public initiate = async (appInstanceId: string): Promise<TransactionResponse> => {
     this.log.info(`Initiating challenge of ${appInstanceId}`);
     const challenge = (await this.store.getAppChallenge(appInstanceId)) || {
       identityHash: appInstanceId,
@@ -127,12 +130,20 @@ export class Watcher implements IWatcher {
       finalizesAt: Zero,
       status: ChallengeStatus.NO_CHALLENGE,
     };
-    const tx = await this.respondToChallenge(challenge);
-    if (!tx) {
-      throw new Error(`Could not initiate challenge for ${appInstanceId}`);
+    const response = await this.respondToChallenge(challenge);
+    if (typeof response === "string") {
+      this.emit(WatcherEvents.ChallengeInitiationFailedEvent, {
+        error: response,
+        appInstanceId,
+      });
+      throw new Error(`Could not initiate challenge for ${appInstanceId}. ${response}`);
     }
-    this.log.info(`Challenge initiated with: ${tx.hash}`);
-    return tx;
+    this.log.info(`Challenge initiated with: ${response.hash}`);
+    this.emit(WatcherEvents.ChallengeInitiatedEvent, {
+      transaction: response as TransactionResponse,
+      appInstanceId,
+    });
+    return response;
   };
 
   public cancel = async (
@@ -145,9 +156,20 @@ export class Watcher implements IWatcher {
     if (!app || !channel) {
       throw new Error(`Could not find channel/app for app id: ${appInstanceId}`);
     }
-    const tx = await this.cancelChallenge(channel, app, req);
-    this.log.info(`Challenge cancelled with: ${tx.hash}`);
-    return tx;
+    const response = await this.cancelChallenge(channel, app, req);
+    if (typeof response === "string") {
+      this.emit(WatcherEvents.ChallengeCancellationFailedEvent, {
+        error: response,
+        appInstanceId,
+      });
+      throw new Error(`Could not cancel challenge for ${appInstanceId}. ${response}`);
+    }
+    this.log.info(`Challenge cancelled with: ${response.hash}`);
+    this.emit(WatcherEvents.ChallengeCancelledEvent, {
+      transaction: response as TransactionResponse,
+      appInstanceId,
+    });
+    return response;
   };
 
   // begins responding to events and starts all listeners
@@ -230,9 +252,10 @@ export class Watcher implements IWatcher {
   private catchupFrom = async (blockNumber: number): Promise<void> => {
     this.log.info(`Processing events from ${blockNumber}`);
     const latest = await this.store.getLatestProcessedBlock();
-    if (latest > blockNumber) {
-      this.log.debug(`Already processed events up to block ${latest}`);
-      return;
+    const current = await this.provider.getBlockNumber();
+    const starting = latest > blockNumber ? latest : blockNumber;
+    if (starting > current) {
+      throw new Error(`Cannot process future blocks (current: ${current}, starting: ${starting})`);
     }
 
     // ensure events will not be processed twice
@@ -244,11 +267,11 @@ export class Watcher implements IWatcher {
 
     // have listener process and emit all events from block --> now
     await this.registerListeners();
-    await this.listener.parseLogsFrom(blockNumber);
-    await this.store.updateLatestProcessedBlock(blockNumber);
-    this.log.info(
-      `Caught up to current ${await this.provider.getBlockNumber()} from ${blockNumber}`,
-    );
+    await this.listener.parseLogsFrom(starting);
+    await this.store.updateLatestProcessedBlock(current);
+    // cleanup any listeners
+    this.listener.removeAllListeners();
+    this.log.info(`Caught up to with events in blocks ${starting} - ${current} from ${latest}`);
   };
 
   // should check every block for challenges that should be advanced,
@@ -257,7 +280,13 @@ export class Watcher implements IWatcher {
     this.listener.on(
       ChallengeEvents.ChallengeUpdated,
       async (event: ChallengeUpdatedEventPayload) => {
-        await this.processChallengeUpdated(event);
+        const msg = await this.processChallengeUpdated(event);
+        // parrot listener event
+        this.emit(WatcherEvents.ChallengeUpdatedEvent, event);
+        // log msg if didnt send tx
+        if (typeof msg === "string") {
+          this.log.info(msg);
+        }
       },
     );
     this.listener.on(
@@ -265,6 +294,7 @@ export class Watcher implements IWatcher {
       async (event: StateProgressedEventPayload) => {
         // add events to store + process
         await this.processStateProgressed(event);
+        this.emit(WatcherEvents.StateProgressedEvent, event);
       },
     );
     // this.provider.on("block", async (blockNumber: number) => {
@@ -280,13 +310,15 @@ export class Watcher implements IWatcher {
     this.log.info(`Processing challenge updated event: ${stringify(event)}`);
     await this.store.saveAppChallenge(event);
     const challenge = await this.store.getAppChallenge(event.identityHash);
+    this.log.debug(`Saved challenge to store: ${stringify(challenge)}`);
     return this.respondToChallenge(challenge!);
   };
 
   private respondToChallenge = async (
-    challenge: StoredAppChallenge,
-  ): Promise<TransactionResponse | undefined> => {
-    this.log.info(`Respond to challenge called with: ${challenge}`);
+    challengeJson: StoredAppChallenge,
+  ): Promise<TransactionResponse | string> => {
+    this.log.info(`Respond to challenge called with: ${stringify(challengeJson)}`);
+    const challenge = bigNumberifyJson(challengeJson);
     const current = await this.provider.getBlockNumber();
     let tx;
     if (challenge.finalizesAt.lte(current) && !challenge.finalizesAt.isZero()) {
@@ -299,9 +331,6 @@ export class Watcher implements IWatcher {
       `Challenge timeout not elapsed or 0 (finalizesAt: ${challenge.finalizesAt.toString()}, current: ${current})`,
     );
     tx = await this.respondToChallengeDuringTimeout(challenge!);
-    this.log.info(
-      !!tx ? `Could not respond to challenge` : `Responded to challenge with tx: ${tx.hash}`,
-    );
     return tx;
   };
 
@@ -311,7 +340,7 @@ export class Watcher implements IWatcher {
   // should only be used to progress a challenge
   private respondToChallengeDuringTimeout = async (
     challenge: StoredAppChallenge,
-  ): Promise<TransactionResponse | undefined> => {
+  ): Promise<TransactionResponse | string> => {
     const { identityHash, finalizesAt, versionNumber, status } = challenge;
     if (status === ChallengeStatus.OUTCOME_SET || status === ChallengeStatus.EXPLICITLY_FINALIZED) {
       throw new Error(
@@ -320,22 +349,19 @@ export class Watcher implements IWatcher {
     }
     const current = await this.provider.getBlockNumber();
     if (finalizesAt.lte(current) && !finalizesAt.isZero()) {
-      this.log.info(
-        `Response period for challenge has elapsed (curr: ${current}, finalized: ${finalizesAt.toString()}). App: ${identityHash}`,
-      );
-      return undefined;
+      const msg = `Response period for challenge has elapsed (curr: ${current}, finalized: ${finalizesAt.toString()}). App: ${identityHash}`;
+      this.log.info(msg);
+      return msg;
     }
     const setStates = (await this.store.getSetStateCommitments(identityHash)).sort((a, b) =>
       toBN(b.versionNumber).sub(a.versionNumber._hex).toNumber(),
     );
-    const latest = { ...setStates[0] };
-    const prev = { ...setStates[1] };
+    const latest = setStates[0];
+    const prev = setStates[1];
     if (versionNumber.gte(latest.versionNumber._hex)) {
       // no actions available
-      this.log.info(
-        `Latest set-state commitment version number is the same as challenge version number, doing nothing`,
-      );
-      return undefined;
+      const msg = `Latest set-state commitment version number is the same as challenge version number, doing nothing`;
+      return msg;
     }
 
     const app = await this.store.getAppInstance(identityHash);
@@ -345,7 +371,7 @@ export class Watcher implements IWatcher {
     }
     const validAction = !!app.latestAction && latest.signatures.filter((x) => !!x).length === 1;
     const validPrev =
-      prev &&
+      !!prev &&
       prev.signatures.filter((x) => !!x).length === 2 &&
       toBN(prev.versionNumber._hex).eq(toBN(latest.versionNumber._hex).add(1));
 
@@ -357,7 +383,7 @@ export class Watcher implements IWatcher {
       disputeTx = await this.progressState(identityHash, channel.multisigAddress);
     } else {
       // otherwise, use set state
-      disputeTx = await this.setState(identityHash, toBN(latest.versionNumber));
+      disputeTx = await this.setState(latest);
     }
     return disputeTx;
   };
@@ -366,7 +392,7 @@ export class Watcher implements IWatcher {
   // disputes with an elapsed timeout
   private respondToChallengeAfterTimeout = async (
     challenge: StoredAppChallenge,
-  ): Promise<TransactionResponse | undefined> => {
+  ): Promise<TransactionResponse | string> => {
     const { identityHash, status } = challenge;
     if (status === ChallengeStatus.OUTCOME_SET || status === ChallengeStatus.NO_CHALLENGE) {
       throw new Error(
@@ -375,10 +401,9 @@ export class Watcher implements IWatcher {
     }
     const current = await this.provider.getBlockNumber();
     if (challenge.finalizesAt.gt(current)) {
-      this.log.info(
-        `Response period for challenge has not yet elapsed (curr: ${current}, finalized: ${challenge.finalizesAt.toString()}). App: ${identityHash}`,
-      );
-      return undefined;
+      const msg = `Response period for challenge has not yet elapsed (curr: ${current}, finalized: ${challenge.finalizesAt.toString()}). App: ${identityHash}`;
+      this.log.info(msg);
+      return msg;
     }
     const app = await this.store.getAppInstance(identityHash);
     const channel = await this.store.getStateChannelByAppIdentityHash(identityHash);
@@ -404,26 +429,27 @@ export class Watcher implements IWatcher {
     if (nextCommitment && validAction && validStatus) {
       return this.progressState(identityHash, channel.multisigAddress);
     }
-    this.log.info(`Could not advance dispute for app ${identityHash}`);
-    return undefined;
+    const msg = `Could not advance dispute for app ${identityHash}`;
+    this.log.info(msg);
+    return msg;
   };
 
   //////// Private contract methods
   private setState = async (
-    appIdentityHash: string,
-    versionNumber: BigNumber,
-  ): Promise<TransactionResponse> => {
-    this.log.info(`Calling 'setState' for ${appIdentityHash} at nonce ${versionNumber.toString()}`);
-    const jsons = await this.store.getSetStateCommitments(appIdentityHash);
-    const commitment = SetStateCommitment.fromJson(
-      jsons.filter((x) => toBN(x.versionNumber).eq(toBN(versionNumber)))[0],
+    setStateCommitment: SetStateCommitmentJSON,
+  ): Promise<TransactionResponse | string> => {
+    this.log.info(
+      `Calling 'setState' for ${
+        setStateCommitment.appIdentityHash
+      } at nonce ${setStateCommitment.versionNumber.toString()}`,
     );
+    const commitment = SetStateCommitment.fromJson(setStateCommitment);
     return this.sendContractTransaction(await commitment.getSignedTransaction());
   };
 
   private sendConditionalTransaction = async (
     appIdentityHash: string,
-  ): Promise<TransactionResponse> => {
+  ): Promise<TransactionResponse | string> => {
     this.log.info(`Sending conditional transaction for ${appIdentityHash}`);
     const commitmentJson = await this.store.getConditionalTransactionCommitment(appIdentityHash);
     if (!commitmentJson) {
@@ -436,7 +462,7 @@ export class Watcher implements IWatcher {
   private progressState = async (
     appIdentityHash: string,
     multisigAddress: string,
-  ): Promise<TransactionResponse> => {
+  ): Promise<TransactionResponse | string> => {
     this.log.info(`Calling 'progressState' for ${appIdentityHash}`);
     const jsons = await this.store.getSetStateCommitments(appIdentityHash);
     const commitments = jsons
@@ -465,7 +491,7 @@ export class Watcher implements IWatcher {
   private setAndProgressState = async (
     appIdentityHash: string,
     multisigAddress: string,
-  ): Promise<TransactionResponse> => {
+  ): Promise<TransactionResponse | string> => {
     this.log.info(`Calling 'setAndProgressState' for ${appIdentityHash}`);
     const jsons = await this.store.getSetStateCommitments(appIdentityHash);
     const commitments = jsons
@@ -493,7 +519,7 @@ export class Watcher implements IWatcher {
   private setOutcome = async (
     appIdentityHash: string,
     multisigAddress: string,
-  ): Promise<TransactionResponse> => {
+  ): Promise<TransactionResponse | string> => {
     this.log.info(`Calling 'setOutcome' for ${appIdentityHash}`);
     const challenge = await this.store.getAppChallenge(appIdentityHash);
     if (!challenge) {
@@ -524,7 +550,7 @@ export class Watcher implements IWatcher {
     channel: StateChannelJSON,
     app: AppInstanceJson,
     req: SignedCancelChallengeRequest,
-  ): Promise<TransactionResponse> => {
+  ): Promise<TransactionResponse | string> => {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
@@ -554,17 +580,23 @@ export class Watcher implements IWatcher {
   //////// Private helper functions
   private sendContractTransaction = async (
     transaction: MinimalTransaction,
-  ): Promise<TransactionResponse> => {
+  ): Promise<TransactionResponse | string> => {
     this.assertSignerCanSendTransactions();
 
     // TODO: add retry logic
-    const tx = await this.signer.sendTransaction({
-      ...transaction,
-      nonce: await this.provider.getTransactionCount(this.signer.address),
-    });
-    await tx.wait();
-    this.log.debug(`Successfully sent transaction ${tx.hash}`);
-    return tx;
+    try {
+      const tx = await this.signer.sendTransaction({
+        ...transaction,
+        nonce: await this.provider.getTransactionCount(this.signer.address),
+      });
+      await tx.wait();
+      this.log.debug(`Transaction sent: ${stringify(tx)}`);
+      this.log.info(`Successfully sent transaction ${tx.hash}`);
+      return tx;
+    } catch (e) {
+      this.log.error(`Failed to send transaction: ${e.stack || e.message}`);
+      return e.stack || e.message;
+    }
   };
 
   private assertSignerCanSendTransactions = (): void => {

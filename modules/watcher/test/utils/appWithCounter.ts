@@ -83,6 +83,10 @@ export class AppWithCounterClass {
     };
   }
 
+  get appStateHash(): string {
+    return stateToHash(AppWithCounterClass.encodeState(this.latestState));
+  }
+
   public static encodeState(state: AppWithCounterState) {
     return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
   }
@@ -119,26 +123,17 @@ export class AppWithCounterClass {
     const setState = new SetStateCommitment(
       challengeRegistryAddress,
       this.appIdentity,
-      stateToHash(AppWithCounterClass.encodeState(this.latestState)),
+      this.appStateHash,
       this.versionNumber,
       this.stateTimeout,
       this.identityHash,
     );
-    const digest = setState.hashToSign();
     const signatures = await Promise.all([
-      this.signerParticipants[0].signMessage(digest),
-      this.signerParticipants[1].signMessage(digest),
+      this.signerParticipants[0].signMessage(setState.hashToSign()),
+      this.signerParticipants[1].signMessage(setState.hashToSign()),
     ]);
     await setState.addSignatures(signatures[0], signatures[1]);
-    return {
-      appIdentity: this.appIdentity,
-      appIdentityHash: this.identityHash,
-      appStateHash: digest,
-      challengeRegistryAddress,
-      stateTimeout: toBNJson(this.stateTimeout),
-      versionNumber: toBNJson(this.versionNumber),
-      signatures,
-    };
+    return setState.toJson();
   }
 
   public async getConditional(

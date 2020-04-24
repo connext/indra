@@ -8,7 +8,7 @@ import {
   OutcomeType,
   SetStateCommitmentJSON,
 } from "@connext/types";
-import { ChannelSigner, getRandomAddress, toBN, toBNJson } from "@connext/utils";
+import { ChannelSigner, getRandomAddress, toBN } from "@connext/utils";
 import { One } from "ethers/constants";
 import { SetStateCommitment } from "@connext/contracts";
 import { stateToHash } from "./utils";
@@ -120,14 +120,7 @@ export class MiniFreeBalance {
       this.signerParticipants[1].signMessage(digest),
     ]);
     await setState.addSignatures(signatures[0], signatures[1]);
-    return {
-      appIdentity: this.appIdentity,
-      appIdentityHash: this.identityHash,
-      appStateHash: digest,
-      challengeRegistryAddress,
-      stateTimeout: toBNJson(this.stateTimeout),
-      versionNumber: toBNJson(this.versionNumber),
-      signatures,
-    };
+    
+    return setState.toJson();
   }
 }

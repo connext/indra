@@ -1,4 +1,4 @@
-import { ChallengeRegistry } from "@connext/contracts";
+import { ChallengeRegistry, SetStateCommitment } from "@connext/contracts";
 import {
   JsonRpcProvider,
   BigNumber,
@@ -190,10 +190,7 @@ export const setupContext = async () => {
       responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
       twoPartyOutcomeInterpreterParams: bigNumberifyJson(twoPartyOutcomeInterpreterParams),
     };
-    await store.createAppProposal(multisigAddress, proposal as any, appJson.appSeqNo, {
-      ...setState,
-      versionNumber: toBNJson(One),
-    });
+    await store.createAppProposal(multisigAddress, proposal as any, appJson.appSeqNo, setState);
     await store.createAppInstance(
       multisigAddress,
       appJson,
