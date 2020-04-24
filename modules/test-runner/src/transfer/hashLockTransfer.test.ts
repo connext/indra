@@ -362,6 +362,7 @@ describe("HashLock Transfers", () => {
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage: badPreImage,
+        assetId: transfer.assetId,
       } as PublicParams.ResolveHashLockTransfer),
     ).to.eventually.be.rejectedWith(/Hashlock app has not been installed/);
   });
@@ -395,6 +396,7 @@ describe("HashLock Transfers", () => {
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage,
+        assetId: transfer.assetId,
       } as PublicParams.ResolveHashLockTransfer),
     ).to.be.rejectedWith(/Cannot take action if timelock is expired/);
   });
@@ -450,6 +452,7 @@ describe("HashLock Transfers", () => {
         await clientB.resolveCondition({
           conditionType: ConditionalTransferTypes.HashLockTransfer,
           preImage,
+          assetId: transfer.assetId,
         } as PublicParams.ResolveHashLockTransfer);
       });
 
