@@ -26,10 +26,10 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
 
   async getHashLockTransferByLockHash(
     pubId: string,
-    data: { lockHash: string },
+    data: { lockHash: string, assetId: string },
   ): Promise<NodeResponses.GetHashLockTransfer> {
-    const { lockHash } = data;
-    if (!lockHash) {
+    const { lockHash, assetId } = data;
+    if (!lockHash || !assetId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
     this.log.info(`Got fetch hashlock request for: ${lockHash}`);
@@ -40,7 +40,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       senderApp,
       status,
       receiverApp,
-    } = await this.hashLockTransferService.findSenderAndReceiverAppsWithStatus(lockHash);
+    } = await this.hashLockTransferService.findSenderAndReceiverAppsWithStatus(lockHash, assetId);
     if (!senderApp) {
       return undefined;
     }
