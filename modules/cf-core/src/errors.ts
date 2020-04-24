@@ -1,5 +1,5 @@
 import { stringify } from "@connext/utils";
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "@ethersproject/bignumber";
 
 export const APP_ALREADY_UNINSTALLED = (appIdentityHash: string): string =>
   `Cannot uninstall app ${appIdentityHash}, it has already been uninstalled`;

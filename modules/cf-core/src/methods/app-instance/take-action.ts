@@ -11,7 +11,7 @@ import {
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { INVALID_ARGUMENT } from "ethers/errors";
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -36,9 +36,7 @@ export class TakeActionController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
   ): Promise<string[]> {
-    const app = await requestHandler.store.getAppInstance(
-      params.appIdentityHash,
-    );
+    const app = await requestHandler.store.getAppInstance(params.appIdentityHash);
     if (!app) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
@@ -93,7 +91,7 @@ export class TakeActionController extends NodeController {
       store,
       protocolRunner,
       publicIdentifier,
-      sc.userIdentifiers.find(id => id !== publicIdentifier)!,
+      sc.userIdentifiers.find((id) => id !== publicIdentifier)!,
       action,
       stateTimeout || toBN(app.defaultTimeout),
     );
@@ -138,9 +136,9 @@ async function runTakeActionProtocol(
   stateTimeout: BigNumber,
 ) {
   const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-    if (!stateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
-    }
+  if (!stateChannel) {
+    throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
+  }
 
   try {
     await protocolRunner.initiateProtocol(ProtocolNames.takeAction, {

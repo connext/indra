@@ -15,7 +15,7 @@
   "dependencies": {
     "@connext/types": "6.0.9",
     "@connext/utils": "6.0.9",
-    "ethers": "4.0.47",
+    "ethers": "5.0.0-beta.183",
     "localStorage": "1.0.4",
     "pg": "8.0.3",
     "pg-hstore": "2.3.3",
