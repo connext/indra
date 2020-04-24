@@ -48,7 +48,7 @@ describe("Watcher.init", () => {
   });
 });
 
-describe.only("Watcher.initiate", () => {
+describe("Watcher.initiate", () => {
   let provider: JsonRpcProvider;
   let store: ConnextStore;
   let identityHash: string;
