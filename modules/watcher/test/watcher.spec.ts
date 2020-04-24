@@ -10,10 +10,11 @@ import {
   ChallengeCompletedEventData,
   ChallengeOutcomeFailedEventData,
   ChallengeCompletionFailedEventData,
+  StoredAppChallengeStatus,
 } from "@connext/types";
 import { Wallet } from "ethers";
 
-import { setupContext, expect, moveToBlock } from "./utils";
+import { setupContext, expect } from "./utils";
 
 import { Watcher } from "../src";
 import { ChannelSigner, getRandomAddress, ColorfulLogger } from "@connext/utils";
@@ -52,7 +53,7 @@ describe("Watcher.initiate", () => {
   let provider: JsonRpcProvider;
   let store: ConnextStore;
   let identityHash: string;
-  // let multisigAddress: string;
+  let multisigAddress: string;
   let setState: SetStateCommitment;
 
   let watcher: Watcher;
@@ -60,7 +61,7 @@ describe("Watcher.initiate", () => {
   beforeEach(async () => {
     const context = await setupContext();
     provider = context["provider"];
-    // multisigAddress = context["multisigAddress"];
+    multisigAddress = context["multisigAddress"];
     const app = context["appInstance"];
     const networkContext = context["networkContext"];
     identityHash = app.identityHash;
@@ -81,7 +82,13 @@ describe("Watcher.initiate", () => {
     expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
   });
 
-  it("should be able to initiate + complete a dispute with a particular app instance using set state", async () => {
+  afterEach(async () => {
+    await watcher.disable();
+    await store.clear();
+  });
+
+  it.only("should be able to initiate + complete a dispute with a particular app instance using set state", async () => {
+    // start mining
     const empty = await store.getAppChallenge(identityHash);
     expect(empty).to.be.undefined;
     const [contractEvent, initiatedEvent, tx] = await Promise.all([
@@ -104,7 +111,7 @@ describe("Watcher.initiate", () => {
     // verify challenge
     const challenge = await store.getAppChallenge(identityHash);
     const finalizesAt = setState.stateTimeout.add(await provider.getBlockNumber());
-    const expectedEvent: ChallengeUpdatedEventPayload = {
+    const expectedEvent = {
       appStateHash: setState.appStateHash,
       identityHash,
       versionNumber: setState.versionNumber,
@@ -114,9 +121,9 @@ describe("Watcher.initiate", () => {
     expect(challenge).to.containSubset(expectedEvent);
 
     // verify stored contract event
-    const events = await store.getChallengeUpdatedEvents(identityHash);
-    expect(events.length).to.be.equal(1);
-    expect(events[0]).to.containSubset(expectedEvent);
+    const setStateEvents = await store.getChallengeUpdatedEvents(identityHash);
+    expect(setStateEvents.length).to.be.equal(1);
+    expect(setStateEvents[0]).to.containSubset(expectedEvent);
 
     // verify emitted events
     expect(contractEvent).to.containSubset(expectedEvent);
@@ -126,37 +133,62 @@ describe("Watcher.initiate", () => {
     });
 
     // wait for dispute completion
-    // should call: `setOutcome`, `conditional`
-    const disputeCompleted = Promise.all([
-      new Promise((resolve) =>
+    // first block mined should call: `setOutcome`
+    const [outcomeSetEvent, challengeUpdatedEvent] = await Promise.all([
+      new Promise((resolve, reject) => {
         watcher.once(
           WatcherEvents.ChallengeOutcomeSetEvent,
           async (data: ChallengeOutcomeSetEventData) => resolve(data),
-        ),
-      ),
-      new Promise((resolve) =>
-        watcher.once(
-          WatcherEvents.ChallengeCompletedEvent,
-          async (data: ChallengeCompletedEventData) => resolve(data),
-        ),
-      ),
-      new Promise((resolve, reject) =>
+        );
         watcher.once(
           WatcherEvents.ChallengeOutcomeFailedEvent,
           async (data: ChallengeOutcomeFailedEventData) => reject(data),
-        ),
+        );
+      }),
+      new Promise((resolve) =>
+        watcher.once(WatcherEvents.ChallengeUpdatedEvent, async (data) => resolve(data)),
       ),
-      new Promise((resolve, reject) =>
-        watcher.once(
-          WatcherEvents.ChallengeCompletionFailedEvent,
-          async (data: ChallengeCompletionFailedEventData) => reject(data),
-        ),
-      ),
+      provider.send("evm_mine", []),
     ]);
-    await moveToBlock(finalizesAt, provider);
-    const [outcomeSetEvent, challengeCompletedEvent] = await disputeCompleted;
 
-    expect(outcomeSetEvent).to.containSubset({ test: "hi" });
-    expect(challengeCompletedEvent).to.containSubset({ test: "hi2" });
+    const expected = {
+      ...expectedEvent,
+      status: StoredAppChallengeStatus.OUTCOME_SET,
+    };
+
+    // verify stored challenge
+    const setOutcomeEvents = await store.getChallengeUpdatedEvents(identityHash);
+    expect(setOutcomeEvents.length).to.be.equal(2);
+    expect(setOutcomeEvents[1]).to.containSubset(expected);
+
+    // verify emitted challenges
+    expect(challengeUpdatedEvent).to.containSubset({
+      ...expectedEvent,
+      status: StoredAppChallengeStatus.OUTCOME_SET,
+    });
+    const outcomeSet = await store.getAppChallenge(identityHash);
+    expect(outcomeSet).to.containSubset(expected);
+    expect(outcomeSetEvent).to.containSubset({
+      appInstanceId: identityHash,
+      multisigAddress,
+    });
+    expect(outcomeSetEvent.transaction).to.be.ok;
+
+    // second block mined should call: `conditional`
+
+    // const [disputeCompleted] = await Promise.all([
+    //   new Promise((resolve, reject) => {
+    //     watcher.once(
+    //       WatcherEvents.ChallengeCompletedEvent,
+    //       async (data: ChallengeCompletedEventData) => resolve(data),
+    //     );
+    //     watcher.once(
+    //       WatcherEvents.ChallengeCompletionFailedEvent,
+    //       async (data: ChallengeCompletionFailedEventData) => reject(data),
+    //     );
+    //   }),
+    //   provider.send("evm_mine", []),
+    // ]);
+    // expect(disputeCompleted).to.containSubset({ test: "hi" });
   });
 });

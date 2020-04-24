@@ -12,8 +12,8 @@ import {
   NetworkContext,
 } from "@connext/types";
 import { defaultAbiCoder, solidityPack, keccak256 } from "ethers/utils";
-import { ChannelSigner, toBNJson, getRandomAddress } from "@connext/utils";
-import { One, AddressZero, Zero } from "ethers/constants";
+import { ChannelSigner, toBNJson } from "@connext/utils";
+import { One, Zero } from "ethers/constants";
 import { stateToHash } from "./utils";
 import { ConditionalTransactionCommitment, SetStateCommitment } from "@connext/contracts";
 
@@ -31,7 +31,7 @@ export class AppWithCounterClass {
     public readonly tokenIndexedBalances = {
       [CONVENTION_FOR_ETH_ASSET_ID]: [One, Zero], // initiator, resp
     },
-    public readonly stateTimeout: BigNumber = One,
+    public readonly stateTimeout: BigNumber = Zero,
     public versionNumber: BigNumber = One,
     public latestState: AppWithCounterState = { counter: One },
     public latestAction: AppWithCounterAction | undefined = undefined,

@@ -59,7 +59,7 @@ export const setupContext = async () => {
     signers,
     multisigAddress,
     networkContext.AppWithAction,
-    One, // default timeout
+    Zero, // default timeout
     One, // channel nonce
   );
 

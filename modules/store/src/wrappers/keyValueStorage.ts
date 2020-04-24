@@ -12,10 +12,9 @@ import {
   STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
   WrappedStorage,
-  ChallengeStatus,
   Address,
   Bytes32,
-  AppChallenge,
+  StoredAppChallengeStatus,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 
@@ -453,15 +452,15 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
     const challengeKey = this.getKey(CHALLENGE_KEY, data.identityHash);
-    const challengeRecord = await this.getItem<AppChallenge>(challengeKey);
-    if (challengeRecord && challengeRecord.versionNumber.gte(toBN(data.versionNumber))) {
-      // do not update with stale challenge
-      return;
+    // check if its from event by status
+    if (
+      data.status !== StoredAppChallengeStatus.PENDING_TRANSITION &&
+      data.status !== StoredAppChallengeStatus.CONDITIONAL_SENT
+    ) {
+      // save event
+      await this.createChallengeUpdatedEvent(data as ChallengeUpdatedEventPayload);
     }
-    await this.saveChallengeUpdatedEvent(data as ChallengeUpdatedEventPayload);
-    return this.setItem<StoredAppChallenge>(challengeKey, {
-      ...(data as StoredAppChallenge),
-    });
+    return this.setItem<StoredAppChallenge>(challengeKey, data as StoredAppChallenge);
   }
 
   async getActiveChallenges(): Promise<StoredAppChallenge[]> {
@@ -473,12 +472,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const challenges = await Promise.all(
       relevant.map((key) => this.getItem<StoredAppChallenge>(key)),
     );
-    const inactiveStatuses = [ChallengeStatus.NO_CHALLENGE, ChallengeStatus.OUTCOME_SET];
     // now find which ones are in the channel and in dispute
-    return challenges.filter(
-      (challenge) =>
-        !!challenge && !inactiveStatuses.find((status) => status === (challenge.status as any)),
-    );
+    const activeStatus = (status: StoredAppChallengeStatus) =>
+      status !== StoredAppChallengeStatus.CONDITIONAL_SENT &&
+      status !== StoredAppChallengeStatus.NO_CHALLENGE;   
+    return challenges.filter((challenge) => !!challenge && activeStatus(challenge.status));
   }
 
   ///// Events
@@ -495,11 +493,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
     const key = this.getKey(STATE_PROGRESSED_EVENT_KEY, appIdentityHash);
-    const relevant = (await this.getKeys()).filter((k) => k.includes(key));
-    const events = await Promise.all(
-      relevant.map((k) => this.getItem<StateProgressedEventPayload>(k)),
-    );
-    return events.filter((x) => !!x);
+    const existing = await this.getItem<StateProgressedEventPayload[]>(key);
+    return existing || [];
   }
 
   async createStateProgressedEvent(
@@ -509,37 +504,23 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const key = this.getKey(
       STATE_PROGRESSED_EVENT_KEY,
       appIdentityHash,
-      event.versionNumber.toString(),
     );
-    if (await this.getItem(key)) {
-      throw new Error(
-        `Found existing state progressed event for app ${appIdentityHash} at nonce ${event.versionNumber.toString()}`,
-      );
-    }
-    return this.setItem(key, event);
+    const existing = await this.getStateProgressedEvents(key);
+    return this.setItem(key, existing.concat(event));
   }
 
   async getChallengeUpdatedEvents(
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]> {
     const key = this.getKey(CHALLENGE_UPDATED_EVENT_KEY, appIdentityHash);
-    const relevant = (await this.getKeys()).filter((k) => k.includes(key));
-    const events = await Promise.all(
-      relevant.map((k) => this.getItem<ChallengeUpdatedEventPayload>(k)),
-    );
-    return events.filter((x) => !!x);
+    const existing = await this.getItem<ChallengeUpdatedEventPayload[]>(key);
+    return existing || [];
   }
 
-  private async saveChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
-    const key = this.getKey(
-      CHALLENGE_UPDATED_EVENT_KEY,
-      event.identityHash,
-      event.versionNumber.toString(),
-    );
-    if (await this.getItem(key)) {
-      return;
-    }
-    return this.setItem(key, event);
+  private async createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
+    const key = this.getKey(CHALLENGE_UPDATED_EVENT_KEY, event.identityHash);
+    const existing = await this.getChallengeUpdatedEvents(event.identityHash);
+    return this.setItem(key, existing.concat(event));
   }
 
   ////// Helper methods
