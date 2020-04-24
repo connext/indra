@@ -28,6 +28,7 @@ export type WatcherInitOptions = {
   context: NetworkContext;
   store: IWatcherStoreService;
   logger?: ILoggerService | ILogger;
+  logLevel?: number;
 };
 
 ////////////////////////////////////////

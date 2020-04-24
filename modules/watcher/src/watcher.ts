@@ -76,13 +76,20 @@ export class Watcher implements IWatcher {
   // used to create a new watcher instance from the passed
   // in options (which are cast to the proper values)
   public static init = async (opts: WatcherInitOptions): Promise<Watcher> => {
-    const { logger, signer: providedSigner, provider: ethProvider, context, store } = opts;
+    const {
+      logger,
+      logLevel,
+      signer: providedSigner,
+      provider: ethProvider,
+      context,
+      store,
+    } = opts;
 
     const log =
       logger && typeof (logger as ILoggerService).newContext === "function"
         ? (logger as ILoggerService).newContext("WatcherInit")
         : logger
-        ? new ConsoleLogger("WatcherInit", undefined, logger)
+        ? new ConsoleLogger("WatcherInit", logLevel, logger)
         : nullLogger;
 
     log.debug(`Creating new Watcher`);
@@ -156,7 +163,7 @@ export class Watcher implements IWatcher {
     if (previous < current) {
       this.log.debug(`Processing missed events from blocks ${previous} - ${current}`);
       // register any missed events
-      await this.catchupTo(previous);
+      await this.catchupFrom(previous);
     }
 
     // register listener for any future events
@@ -220,10 +227,10 @@ export class Watcher implements IWatcher {
   //////// Private methods
   // will insert + respond to any events that have occurred from
   // the latest processed block to the provided block
-  private catchupTo = async (blockNumber: number): Promise<void> => {
+  private catchupFrom = async (blockNumber: number): Promise<void> => {
     this.log.info(`Processing events from ${blockNumber}`);
     const latest = await this.store.getLatestProcessedBlock();
-    if (latest >= blockNumber) {
+    if (latest > blockNumber) {
       this.log.debug(`Already processed events up to block ${latest}`);
       return;
     }
@@ -239,7 +246,9 @@ export class Watcher implements IWatcher {
     await this.registerListeners();
     await this.listener.parseLogsFrom(blockNumber);
     await this.store.updateLatestProcessedBlock(blockNumber);
-    this.log.info(`Caught up to ${blockNumber}`);
+    this.log.info(
+      `Caught up to current ${await this.provider.getBlockNumber()} from ${blockNumber}`,
+    );
   };
 
   // should check every block for challenges that should be advanced,
@@ -280,13 +289,19 @@ export class Watcher implements IWatcher {
     this.log.info(`Respond to challenge called with: ${challenge}`);
     const current = await this.provider.getBlockNumber();
     let tx;
-    if (challenge.finalizesAt.lte(current)) {
-      this.log.debug(`Challenge timeout elapsed`);
+    if (challenge.finalizesAt.lte(current) && !challenge.finalizesAt.isZero()) {
+      this.log.debug(
+        `Challenge timeout elapsed (finalizesAt: ${challenge.finalizesAt.toString()}, current: ${current})`,
+      );
       tx = await this.respondToChallengeAfterTimeout(challenge!);
     }
-    this.log.debug(`Challenge timeout not elapsed`);
+    this.log.debug(
+      `Challenge timeout not elapsed or 0 (finalizesAt: ${challenge.finalizesAt.toString()}, current: ${current})`,
+    );
     tx = await this.respondToChallengeDuringTimeout(challenge!);
-    this.log.info(!!tx ? `Could not respond to challenge` : `Responded to challenge with tx: ${tx.hash}`);
+    this.log.info(
+      !!tx ? `Could not respond to challenge` : `Responded to challenge with tx: ${tx.hash}`,
+    );
     return tx;
   };
 
@@ -317,7 +332,9 @@ export class Watcher implements IWatcher {
     const prev = { ...setStates[1] };
     if (versionNumber.gte(latest.versionNumber._hex)) {
       // no actions available
-      this.log.info(`Latest set-state commitment version number is the same as challenge version number, doing nothing`);
+      this.log.info(
+        `Latest set-state commitment version number is the same as challenge version number, doing nothing`,
+      );
       return undefined;
     }
 
