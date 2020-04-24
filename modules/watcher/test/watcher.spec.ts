@@ -2,15 +2,18 @@ import { ConnextStore } from "@connext/store";
 import {
   JsonRpcProvider,
   StoreTypes,
-  StoredAppChallenge,
   ChallengeStatus,
   WatcherEvents,
-  ChallengeInitiatedEventData,
+  ChallengeProgressedEventData,
   ChallengeUpdatedEventPayload,
+  ChallengeOutcomeSetEventData,
+  ChallengeCompletedEventData,
+  ChallengeOutcomeFailedEventData,
+  ChallengeCompletionFailedEventData,
 } from "@connext/types";
 import { Wallet } from "ethers";
 
-import { setupContext, expect } from "./utils";
+import { setupContext, expect, moveToBlock } from "./utils";
 
 import { Watcher } from "../src";
 import { ChannelSigner, getRandomAddress, ColorfulLogger } from "@connext/utils";
@@ -78,18 +81,22 @@ describe.only("Watcher.initiate", () => {
     expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
   });
 
-  it("should be able to initiate a dispute with a particular app instance using set state", async () => {
+  it("should be able to initiate + complete a dispute with a particular app instance using set state", async () => {
     const empty = await store.getAppChallenge(identityHash);
     expect(empty).to.be.undefined;
     const [contractEvent, initiatedEvent, tx] = await Promise.all([
-      new Promise(resolve => watcher.once(
-        WatcherEvents.ChallengeUpdatedEvent,
-        async (data: ChallengeUpdatedEventPayload) => resolve(data),
-      )),
-      new Promise(resolve => watcher.once(
-        WatcherEvents.ChallengeInitiatedEvent, 
-        async (data: ChallengeInitiatedEventData) => resolve(data),
-      )),
+      new Promise((resolve) =>
+        watcher.once(
+          WatcherEvents.ChallengeUpdatedEvent,
+          async (data: ChallengeUpdatedEventPayload) => resolve(data),
+        ),
+      ),
+      new Promise((resolve) =>
+        watcher.once(
+          WatcherEvents.ChallengeProgressedEvent,
+          async (data: ChallengeProgressedEventData) => resolve(data),
+        ),
+      ),
       watcher.initiate(identityHash),
     ]);
     expect(tx).to.be.ok;
@@ -117,5 +124,39 @@ describe.only("Watcher.initiate", () => {
       transaction: tx,
       appInstanceId: identityHash,
     });
+
+    // wait for dispute completion
+    // should call: `setOutcome`, `conditional`
+    const disputeCompleted = Promise.all([
+      new Promise((resolve) =>
+        watcher.once(
+          WatcherEvents.ChallengeOutcomeSetEvent,
+          async (data: ChallengeOutcomeSetEventData) => resolve(data),
+        ),
+      ),
+      new Promise((resolve) =>
+        watcher.once(
+          WatcherEvents.ChallengeCompletedEvent,
+          async (data: ChallengeCompletedEventData) => resolve(data),
+        ),
+      ),
+      new Promise((resolve, reject) =>
+        watcher.once(
+          WatcherEvents.ChallengeOutcomeFailedEvent,
+          async (data: ChallengeOutcomeFailedEventData) => reject(data),
+        ),
+      ),
+      new Promise((resolve, reject) =>
+        watcher.once(
+          WatcherEvents.ChallengeCompletionFailedEvent,
+          async (data: ChallengeCompletionFailedEventData) => reject(data),
+        ),
+      ),
+    ]);
+    await moveToBlock(finalizesAt, provider);
+    const [outcomeSetEvent, challengeCompletedEvent] = await disputeCompleted;
+
+    expect(outcomeSetEvent).to.containSubset({ test: "hi" });
+    expect(challengeCompletedEvent).to.containSubset({ test: "hi2" });
   });
 });
