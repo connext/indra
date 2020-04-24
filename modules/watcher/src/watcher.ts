@@ -4,7 +4,6 @@ import {
   SetStateCommitment,
 } from "@connext/contracts";
 import {
-  AppChallenge,
   AppIdentity,
   AppInstanceJson,
   ChallengeEvents,
@@ -38,7 +37,7 @@ import {
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 import { Contract } from "ethers";
-import { Interface, BigNumber, defaultAbiCoder } from "ethers/utils";
+import { Interface, defaultAbiCoder } from "ethers/utils";
 
 import { ChainListener } from "./chainListener";
 import { Zero, HashZero } from "ethers/constants";
@@ -132,17 +131,9 @@ export class Watcher implements IWatcher {
     };
     const response = await this.respondToChallenge(challenge);
     if (typeof response === "string") {
-      this.emit(WatcherEvents.ChallengeInitiationFailedEvent, {
-        error: response,
-        appInstanceId,
-      });
       throw new Error(`Could not initiate challenge for ${appInstanceId}. ${response}`);
     }
     this.log.info(`Challenge initiated with: ${response.hash}`);
-    this.emit(WatcherEvents.ChallengeInitiatedEvent, {
-      transaction: response as TransactionResponse,
-      appInstanceId,
-    });
     return response;
   };
 
@@ -158,17 +149,9 @@ export class Watcher implements IWatcher {
     }
     const response = await this.cancelChallenge(channel, app, req);
     if (typeof response === "string") {
-      this.emit(WatcherEvents.ChallengeCancellationFailedEvent, {
-        error: response,
-        appInstanceId,
-      });
       throw new Error(`Could not cancel challenge for ${appInstanceId}. ${response}`);
     }
     this.log.info(`Challenge cancelled with: ${response.hash}`);
-    this.emit(WatcherEvents.ChallengeCancelledEvent, {
-      transaction: response as TransactionResponse,
-      appInstanceId,
-    });
     return response;
   };
 
@@ -271,6 +254,7 @@ export class Watcher implements IWatcher {
     await this.store.updateLatestProcessedBlock(current);
     // cleanup any listeners
     this.listener.removeAllListeners();
+    this.provider.removeAllListeners();
     this.log.info(`Caught up to with events in blocks ${starting} - ${current} from ${latest}`);
   };
 
@@ -293,13 +277,38 @@ export class Watcher implements IWatcher {
       ChallengeEvents.StateProgressed,
       async (event: StateProgressedEventPayload) => {
         // add events to store + process
-        await this.processStateProgressed(event);
+        const msg = await this.processStateProgressed(event);
         this.emit(WatcherEvents.StateProgressedEvent, event);
+        // log msg if didnt send tx
+        if (typeof msg === "string") {
+          this.log.info(msg);
+        }
       },
     );
-    // this.provider.on("block", async (blockNumber: number) => {
-    //   await this.advanceDisputes();
-    // });
+    this.provider.on("block", async (blockNumber: number) => {
+      await this.advanceDisputes();
+    });
+  };
+
+  private advanceDisputes = async () => {
+    const active = await this.store.getActiveChallenges();
+    this.log.info(`Found ${active.length} disputes to advance`);
+    for (const challenge of active) {
+      this.log.debug(`Advancing ${challenge.identityHash} dispute`);
+      try {
+        const response = await this.respondToChallenge(challenge);
+        if (typeof response === "string") {
+          this.log.info(response);
+          continue;
+        }
+      } catch (e) {
+        this.log.warn(
+          `Failed to respond to challenge: ${e.stack || e.message}. Challenge: ${stringify(
+            challenge,
+          )}`,
+        );
+      }
+    }
   };
 
   private processStateProgressed = async (event: StateProgressedEventPayload) => {
@@ -394,12 +403,13 @@ export class Watcher implements IWatcher {
     challenge: StoredAppChallenge,
   ): Promise<TransactionResponse | string> => {
     const { identityHash, status } = challenge;
-    if (status === ChallengeStatus.OUTCOME_SET || status === ChallengeStatus.NO_CHALLENGE) {
+    if (status === ChallengeStatus.NO_CHALLENGE) {
       throw new Error(
         `Challenge is in the wrong status for response after timeout: ${stringify(challenge)}`,
       );
     }
     const current = await this.provider.getBlockNumber();
+
     if (challenge.finalizesAt.gt(current)) {
       const msg = `Response period for challenge has not yet elapsed (curr: ${current}, finalized: ${challenge.finalizesAt.toString()}). App: ${identityHash}`;
       this.log.info(msg);
@@ -410,9 +420,18 @@ export class Watcher implements IWatcher {
     if (!app || !channel) {
       throw new Error(`Could not find app or channel in store for app id: ${identityHash}`);
     }
+
+    if (status === ChallengeStatus.OUTCOME_SET) {
+      this.log.info(`Sending conditional transaction`);
+      return this.sendConditionalTransaction(identityHash);
+    }
     // if challenge is explicitly finalized, call set outcome
-    if (status === ChallengeStatus.EXPLICITLY_FINALIZED) {
-      return this.setOutcome(identityHash, channel?.multisigAddress);
+    if (status === ChallengeStatus.EXPLICITLY_FINALIZED || challenge.finalizesAt.eq(current)) {
+      const response = await this.setOutcome(identityHash, channel!.multisigAddress);
+      if (typeof response !== "string") {
+        this.log.info(`App outcome successfully set, submitting conditional tx`);
+        return this.sendConditionalTransaction(identityHash);
+      }
     }
     // if there is a valid action to play, and the challenge is leaving the
     // in dispute/onchain phase, call `progressState`
@@ -443,8 +462,30 @@ export class Watcher implements IWatcher {
         setStateCommitment.appIdentityHash
       } at nonce ${setStateCommitment.versionNumber.toString()}`,
     );
+    const channel = await this.store.getStateChannelByAppIdentityHash(
+      setStateCommitment.appIdentityHash,
+    );
+    if (!channel) {
+      throw new Error(`Could not find channel for app: ${setStateCommitment.appIdentityHash}`);
+    }
     const commitment = SetStateCommitment.fromJson(setStateCommitment);
-    return this.sendContractTransaction(await commitment.getSignedTransaction());
+    const response = await this.sendContractTransaction(await commitment.getSignedTransaction());
+    if (typeof response === "string") {
+      this.emit(WatcherEvents.ChallengeProgressionFailedEvent, {
+        appInstanceId: commitment.appIdentityHash,
+        error: response,
+        multisigAddress: channel.multisigAddress,
+        params: setStateCommitment,
+        challenge: await this.store.getAppChallenge(commitment.appIdentityHash),
+      });
+    } else {
+      this.emit(WatcherEvents.ChallengeProgressedEvent, {
+        appInstanceId: commitment.appIdentityHash,
+        transaction: response,
+        multisigAddress: channel.multisigAddress,
+      });
+    }
+    return response;
   };
 
   private sendConditionalTransaction = async (
@@ -456,7 +497,21 @@ export class Watcher implements IWatcher {
       throw new Error(`No conditional tx commitment exists for app ${appIdentityHash}`);
     }
     const commitment = ConditionalTransactionCommitment.fromJson(commitmentJson);
-    return this.sendContractTransaction(commitment.getTransactionDetails());
+    const response = await this.sendContractTransaction(commitment.getTransactionDetails());
+    if (typeof response === "string") {
+      this.emit(WatcherEvents.ChallengeCompletionFailedEvent, {
+        appInstanceId: appIdentityHash,
+        error: response,
+        multisigAddress: commitmentJson.multisigAddress,
+      });
+    } else {
+      this.emit(WatcherEvents.ChallengeCompletedEvent, {
+        appInstanceId: appIdentityHash,
+        transaction: response as TransactionResponse,
+        multisigAddress: commitmentJson.multisigAddress,
+      });
+    }
+    return response;
   };
 
   private progressState = async (
@@ -485,7 +540,23 @@ export class Watcher implements IWatcher {
         action,
       ]),
     };
-    return this.sendContractTransaction(tx);
+    const response = await this.sendContractTransaction(tx);
+    if (typeof response === "string") {
+      this.emit(WatcherEvents.ChallengeProgressionFailedEvent, {
+        appInstanceId: app.identityHash,
+        error: response,
+        multisigAddress,
+        params: { commitments, state, action },
+        challenge: await this.store.getAppChallenge(appIdentityHash),
+      });
+    } else {
+      this.emit(WatcherEvents.ChallengeProgressedEvent, {
+        appInstanceId: app.identityHash,
+        transaction: response,
+        multisigAddress,
+      });
+    }
+    return response;
   };
 
   private setAndProgressState = async (
@@ -513,7 +584,23 @@ export class Watcher implements IWatcher {
         action,
       ]),
     };
-    return this.sendContractTransaction(tx);
+    const response = await this.sendContractTransaction(tx);
+    if (typeof response === "string") {
+      this.emit(WatcherEvents.ChallengeProgressionFailedEvent, {
+        appInstanceId: app.identityHash,
+        error: response,
+        multisigAddress,
+        params: { commitments, state, action },
+        challenge: await this.store.getAppChallenge(appIdentityHash),
+      });
+    } else {
+      this.emit(WatcherEvents.ChallengeProgressedEvent, {
+        appInstanceId: app.identityHash,
+        transaction: response,
+        multisigAddress,
+      });
+    }
+    return response;
   };
 
   private setOutcome = async (
@@ -531,7 +618,7 @@ export class Watcher implements IWatcher {
     // from state transitions that result from the game being played out
     // onchain. currently the watcher service CANNOT do this because the
     // service does not have access to "update" store methods
-    if (!toBN(challenge.versionNumber).eq(toBN((app as any).versionNumber))) {
+    if (!toBN(challenge.versionNumber).eq(toBN(app.latestVersionNumber))) {
       throw new Error(`App is not up to date with onchain challenges, cannot setOutcome`);
     }
     const state = defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
@@ -543,7 +630,21 @@ export class Watcher implements IWatcher {
         state,
       ]),
     };
-    return this.sendContractTransaction(tx);
+    const response = await this.sendContractTransaction(tx);
+    if (typeof response === "string") {
+      this.emit(WatcherEvents.ChallengeOutcomeFailedEvent, {
+        appInstanceId: app.identityHash,
+        error: response,
+        multisigAddress,
+      });
+    } else {
+      this.emit(WatcherEvents.ChallengeOutcomeSetEvent, {
+        appInstanceId: app.identityHash,
+        transaction: response,
+        multisigAddress,
+      });
+    }
+    return response;
   };
 
   private cancelChallenge = async (
@@ -559,22 +660,21 @@ export class Watcher implements IWatcher {
         req,
       ]),
     };
-    return this.sendContractTransaction(tx);
-  };
-
-  private getChallenge = async (appInstanceId: string): Promise<AppChallenge> => {
-    const [
-      status,
-      appStateHash,
-      versionNumber,
-      finalizesAt,
-    ] = await this.challengeRegistry.functions.getAppChallenge(appInstanceId);
-    return {
-      status,
-      appStateHash,
-      versionNumber,
-      finalizesAt,
-    };
+    const response = await this.sendContractTransaction(tx);
+    if (typeof response === "string") {
+      this.emit(WatcherEvents.ChallengeCancellationFailedEvent, {
+        appInstanceId: app.identityHash,
+        error: response,
+        multisigAddress: channel.multisigAddress,
+      });
+    } else {
+      this.emit(WatcherEvents.ChallengeCancelledEvent, {
+        appInstanceId: app.identityHash,
+        transaction: response,
+        multisigAddress: channel.multisigAddress,
+      });
+    }
+    return response;
   };
 
   //////// Private helper functions
