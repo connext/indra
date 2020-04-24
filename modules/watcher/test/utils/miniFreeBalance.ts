@@ -8,13 +8,7 @@ import {
   OutcomeType,
   SetStateCommitmentJSON,
 } from "@connext/types";
-import {
-  ChannelSigner,
-  getRandomAddress,
-  toBN,
-  toBNJson,
-  deBigNumberifyJson,
-} from "@connext/utils";
+import { ChannelSigner, getRandomAddress, toBN, toBNJson } from "@connext/utils";
 import { One } from "ethers/constants";
 import { SetStateCommitment } from "@connext/contracts";
 import { stateToHash } from "./utils";
@@ -91,7 +85,6 @@ export class MiniFreeBalance {
   }
 
   public static encodeState(state: FreeBalanceStateJSON) {
-    console.log(`encoding state`, state);
     return defaultAbiCoder.encode([freeBalStateEncoding], [state]);
   }
 
