@@ -4,7 +4,7 @@ import {
   HashLockTransferAppState,
   HashLockTransferStatus,
 } from "@connext/types";
-import { bigNumberifyJson, getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { bigNumberifyJson, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
 
@@ -107,6 +107,13 @@ export class HashLockTransferService {
       throw new Error(
         `Cannot resolve hash lock transfer with expired timelock: ${timelock.toString()}, block: ${currBlock}`,
       );
+    }
+
+    const existing = await this.findReceiverAppByLockHash(appState.lockHash);
+    if (existing) {
+      const result = { appIdentityHash: existing.identityHash };
+      this.log.warn(`Found existing hashlock transfer app, returning: ${stringify(result)}`);
+      return result;
     }
 
     const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;

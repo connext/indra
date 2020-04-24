@@ -324,30 +324,7 @@ export class NodeApiClient implements INodeApiClient {
   // PRIVATE
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
-    let error;
-    for (let attempt = 1; attempt <= NATS_ATTEMPTS; attempt += 1) {
-      this.log[attempt >= 2 ? "info" : "debug"](
-        `Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject}`,
-      );
-      try {
-        return await this.sendAttempt(subject, data);
-      } catch (e) {
-        error = e;
-        if (e.message.startsWith(sendFailed)) {
-          this.log.warn(
-            `Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject} failed: ${e.message}`,
-          );
-          await this.messaging.disconnect();
-          await this.messaging.connect();
-          if (attempt + 1 <= NATS_ATTEMPTS) {
-            await delay(NATS_TIMEOUT); // Wait at least a NATS_TIMEOUT before retrying
-          }
-        } else {
-          throw new Error(e);
-        }
-      }
-    }
-    throw error;
+    return this.sendAttempt(subject, data);
   }
 
   private async sendAttempt(subject: string, data?: any): Promise<any | undefined> {
