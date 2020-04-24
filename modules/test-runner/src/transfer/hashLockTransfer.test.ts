@@ -272,7 +272,7 @@ describe("HashLock Transfers", () => {
     } as NodeResponses.GetHashLockTransfer);
   });
 
-  it.only("can send two hashlock transfers with different assetIds and the same lock hash", async () => {
+  it("can send two hashlock transfers with different assetIds and the same lock hash", async () => {
     const transferToken: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transferToken.amount, transferToken.assetId);
     const transferEth: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
