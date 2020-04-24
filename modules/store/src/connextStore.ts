@@ -274,12 +274,8 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getAppChallenge(appIdentityHash);
   }
 
-  createAppChallenge(appIdentityHash: Bytes32, appChallenge: StoredAppChallenge): Promise<void> {
-    return this.internalStore.createAppChallenge(appIdentityHash, appChallenge);
-  }
-
-  updateAppChallenge(appIdentityHash: Bytes32, appChallenge: StoredAppChallenge): Promise<void> {
-    return this.internalStore.updateAppChallenge(appIdentityHash, appChallenge);
+  saveAppChallenge(event: ChallengeUpdatedEventPayload): Promise<void> {
+    return this.internalStore.saveAppChallenge(event);
   }
 
   getActiveChallenges(multisigAddress: Address): Promise<StoredAppChallenge[]> {
@@ -308,12 +304,5 @@ export class ConnextStore implements IClientStore {
 
   getChallengeUpdatedEvents(appIdentityHash: Bytes32): Promise<ChallengeUpdatedEventPayload[]> {
     return this.internalStore.getChallengeUpdatedEvents(appIdentityHash);
-  }
-
-  createChallengeUpdatedEvent(
-    appIdentityHash: Bytes32,
-    event: ChallengeUpdatedEventPayload,
-  ): Promise<void> {
-    return this.internalStore.createChallengeUpdatedEvent(appIdentityHash, event);
   }
 }

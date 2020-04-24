@@ -15,6 +15,7 @@ import {
   ChallengeStatus,
   Address,
   Bytes32,
+  AppChallenge,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 
@@ -96,13 +97,13 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
-    const channelKeys = (await this.getKeys()).filter(key => key.includes(CHANNEL_KEY));
+    const channelKeys = (await this.getKeys()).filter((key) => key.includes(CHANNEL_KEY));
     const channels = [];
     for (const key of channelKeys) {
       const record = await this.getItem<StateChannelJSON>(key);
       channels.push(properlyConvertChannelNullVals(record));
     }
-    return channels.filter(x => !!x);
+    return channels.filter((x) => !!x);
   }
 
   async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
@@ -114,7 +115,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
     const channels = await this.getAllChannels();
     return channels.find(
-      channel => [...channel.userIdentifiers].sort().toString() === owners.sort().toString(),
+      (channel) => [...channel.userIdentifiers].sort().toString() === owners.sort().toString(),
     );
   }
 
@@ -122,7 +123,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appIdentityHash: string,
   ): Promise<StateChannelJSON | undefined> {
     const channels = await this.getAllChannels();
-    return channels.find(channel => {
+    return channels.find((channel) => {
       return (
         channel.proposedAppInstances.find(([app]) => app === appIdentityHash) ||
         channel.appInstances.find(([app]) => app === appIdentityHash) ||
@@ -237,11 +238,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     channel.appInstances[idx] = [appInstance.identityHash, appInstance];
     const oldCommitment = await this.getLatestSetStateCommitment(appInstance.identityHash);
     if (!oldCommitment) {
-      throw new Error(`Could not find previous free balance set state commitment to update`);
+      throw new Error(`Could not find previous set state commitment to update for ${appInstance.identityHash}`);
     }
     // remove old (n - 1) set state commitments IFF new commitment is double
     // signed. otherwise, leave + create new commitment
-    const doubleSigned = signedSetStateCommitment.signatures.filter(x => !!x).length === 2;
+    const doubleSigned = signedSetStateCommitment.signatures.filter((x) => !!x).length === 2;
     try {
       if (doubleSigned) {
         await this.removeSetStateCommitment(oldCommitment);
@@ -333,7 +334,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (
       this.hasAppIdentityHash(appInstance.identityHash, channel.proposedAppInstances) &&
       !!(await this.getLatestSetStateCommitment(appInstance.identityHash))
-      ) {
+    ) {
       throw new Error(`App proposal with hash ${appInstance.identityHash} already exists`);
     }
     // in case we need to roll back
@@ -394,11 +395,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     // get all stored challenges
     const partial = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
     const keys = await this.getKeys();
-    const relevant = keys.filter(key => key.includes(partial));
+    const relevant = keys.filter((key) => key.includes(partial));
     const commitments = await Promise.all(
-      relevant.map(key => this.getItem<SetStateCommitmentJSON>(key)),
+      relevant.map((key) => this.getItem<SetStateCommitmentJSON>(key)),
     );
-    return commitments.filter(x => !!x);
+    return commitments.filter((x) => !!x);
   }
 
   async getConditionalTransactionCommitment(
@@ -425,7 +426,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
     const withdrawals = await this.getUserWithdrawals();
     const idx = withdrawals.findIndex(
-      x => x.tx.data === withdrawalObject.tx.data && x.tx.to === withdrawalObject.tx.to,
+      (x) => x.tx.data === withdrawalObject.tx.data && x.tx.to === withdrawalObject.tx.to,
     );
     if (idx === -1) {
       return this.setItem(withdrawalKey, withdrawals.concat([withdrawalObject]));
@@ -438,7 +439,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
     const withdrawals = await this.getUserWithdrawals();
-    const updated = withdrawals.filter(x => JSON.stringify(x) !== JSON.stringify(toRemove));
+    const updated = withdrawals.filter((x) => JSON.stringify(x) !== JSON.stringify(toRemove));
     return this.setItem(withdrawalKey, updated);
   }
 
@@ -448,30 +449,19 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.getItem<StoredAppChallenge>(challengeKey);
   }
 
-  async createAppChallenge(
-    appIdentityHash: string,
-    appChallenge: StoredAppChallenge,
-  ): Promise<void> {
-    const challengeKey = this.getKey(CHALLENGE_KEY, appIdentityHash);
-    const existing = await this.getItem<StoredAppChallenge>(challengeKey);
-    if (existing) {
-      throw new Error(
-        `Could not create challenge, found existing challenge for app ${appIdentityHash}`,
-      );
+  async saveAppChallenge(event: ChallengeUpdatedEventPayload): Promise<void> {
+    // always create event first, if this fails then challenge has already
+    // been saved with that or higher version number
+    await this.createChallengeUpdatedEvent(event);
+    const challengeKey = this.getKey(CHALLENGE_KEY, event.identityHash);
+    const challengeRecord = await this.getItem<AppChallenge>(challengeKey);
+    if (challengeRecord.versionNumber.gte(toBN(event.versionNumber))) {
+      // do not update with stale challenge
+      return;
     }
-    return this.setItem(challengeKey, appChallenge);
-  }
-
-  async updateAppChallenge(
-    appIdentityHash: string,
-    appChallenge: StoredAppChallenge,
-  ): Promise<void> {
-    const challengeKey = this.getKey(CHALLENGE_KEY, appIdentityHash);
-    const existing = await this.getItem<StoredAppChallenge>(challengeKey);
-    if (!existing) {
-      throw new Error(`Could not find existing challenge for app ${appIdentityHash}`);
-    }
-    return this.setItem(challengeKey, appChallenge);
+    return this.setItem<StoredAppChallenge>(challengeKey, {
+      ...event,
+    });
   }
 
   async getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
@@ -481,16 +471,16 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     }
     // get all stored challenges
     const keys = await this.getKeys();
-    const relevant = keys.filter(key => key.includes(CHALLENGE_KEY));
+    const relevant = keys.filter((key) => key.includes(CHALLENGE_KEY));
     const challenges = await Promise.all(
-      relevant.map(key => this.getItem<StoredAppChallenge>(key)),
+      relevant.map((key) => this.getItem<StoredAppChallenge>(key)),
     );
     const inactiveStatuses = [ChallengeStatus.NO_CHALLENGE, ChallengeStatus.OUTCOME_SET];
     const allActive = challenges.filter(
-      challenge => !!challenge && !inactiveStatuses.find(status => status === challenge.status),
+      (challenge) => !!challenge && !inactiveStatuses.find((status) => status === challenge.status),
     );
     // now find which ones are in the channel and in dispute
-    return allActive.filter(challenge =>
+    return allActive.filter((challenge) =>
       this.hasAppIdentityHash(challenge.identityHash, channel.appInstances),
     );
   }
@@ -509,11 +499,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
     const key = this.getKey(STATE_PROGRESSED_EVENT_KEY, appIdentityHash);
-    const relevant = (await this.getKeys()).filter(k => k.includes(key));
+    const relevant = (await this.getKeys()).filter((k) => k.includes(key));
     const events = await Promise.all(
-      relevant.map(k => this.getItem<StateProgressedEventPayload>(k)),
+      relevant.map((k) => this.getItem<StateProgressedEventPayload>(k)),
     );
-    return events.filter(x => !!x);
+    return events.filter((x) => !!x);
   }
 
   async createStateProgressedEvent(
@@ -537,25 +527,24 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]> {
     const key = this.getKey(CHALLENGE_UPDATED_EVENT_KEY, appIdentityHash);
-    const relevant = (await this.getKeys()).filter(k => k.includes(key));
+    const relevant = (await this.getKeys()).filter((k) => k.includes(key));
     const events = await Promise.all(
-      relevant.map(k => this.getItem<ChallengeUpdatedEventPayload>(k)),
+      relevant.map((k) => this.getItem<ChallengeUpdatedEventPayload>(k)),
     );
-    return events.filter(x => !!x);
+    return events.filter((x) => !!x);
   }
 
-  async createChallengeUpdatedEvent(
-    appIdentityHash: string,
-    event: ChallengeUpdatedEventPayload,
-  ): Promise<void> {
+  private async createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
     const key = this.getKey(
       CHALLENGE_UPDATED_EVENT_KEY,
-      appIdentityHash,
+      event.identityHash,
       event.versionNumber.toString(),
     );
     if (await this.getItem(key)) {
       throw new Error(
-        `Found existing challenge updated event for app ${appIdentityHash} at nonce ${event.versionNumber.toString()}`,
+        `Found existing challenge updated event for app ${
+          event.identityHash
+        } at nonce ${event.versionNumber.toString()}`,
       );
     }
     return this.setItem(key, event);
