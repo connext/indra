@@ -523,8 +523,38 @@ export class Watcher implements IWatcher {
         return this.setOutcome(app, channel);
       }
       case StoredAppChallengeStatus.OUTCOME_SET: {
+        // check that free balance app has been disputed
+        const isFreeBalance = await this.isFreeBalanceApp(identityHash);
+        if (isFreeBalance) {
+          // const setup = await this.store.getSetupCommitment(channel.multisigAddress);
+          // if (!setup) {
+          //   throw new Error(
+          //     `Could not find setup transaction for channel ${channel.multisigAddress}`,
+          //   );
+          // }
+          // return await this.executeEffectOfFreeBalance(channel, setup);
+          const msg = `Not currently executing conditional transactions of free balance app`;
+          this.log.debug(msg);
+          return msg;
+        }
+        const conditional = await this.store.getConditionalTransactionCommitment(identityHash);
+        if (!conditional) {
+          const msg = `Cannot find conditional transaction for app: ${identityHash}, cannot finalize`;
+          this.log.debug(msg);
+          return msg;
+        }
+        const fbChallenge = await this.store.getAppChallenge(
+          conditional.freeBalanceAppIdentityHash,
+        );
+        if (!fbChallenge || fbChallenge.status !== StoredAppChallengeStatus.OUTCOME_SET) {
+          const msg = `Free balance challenge does not have outcome set, cannot send conditional transaction. Free balance challenge: ${stringify(
+            fbChallenge,
+          )}`;
+          this.log.debug(msg);
+          return msg;
+        }
         this.log.info(`Sending conditional transaction`);
-        return `tried to send conditional tx`; // this.sendConditionalTransaction(identityHash);
+        return this.executeEffectOfInterpretedApp(app, channel, conditional);
       }
       case StoredAppChallengeStatus.CONDITIONAL_SENT: {
         const msg = `Conditional transaction for challenge has already been sent. App: ${identityHash}`;
@@ -578,7 +608,44 @@ export class Watcher implements IWatcher {
     return response;
   };
 
-  private sendConditionalTransaction = async (
+  private executeEffectOfFreeBalance = async (
+    channel: StateChannelJSON,
+    setup: MinimalTransaction,
+  ): Promise<TransactionReceipt | string> => {
+    // make sure all ssociated apps has already tried to execute its effect
+    const appIds = channel.appInstances.map(([id]) => id);
+    for (const identityHash of appIds) {
+      const challenge = await this.getChallengeOrThrow(identityHash);
+      if (challenge.status !== StoredAppChallengeStatus.CONDITIONAL_SENT) {
+        const msg = `Make sure all apps have sent conditional transactions before sending free balance`;
+        return msg;
+      }
+    }
+    const challenge = await this.getChallengeOrThrow(channel.freeBalanceAppInstance!.identityHash);
+    const response = await this.sendContractTransaction(setup, challenge);
+    if (typeof response === "string") {
+      this.emit(WatcherEvents.ChallengeCompletionFailedEvent, {
+        appInstanceId: channel!.freeBalanceAppInstance!.identityHash,
+        error: response,
+        multisigAddress: channel.multisigAddress,
+        challenge,
+        params: { setup, channel },
+      });
+    } else {
+      this.emit(WatcherEvents.ChallengeCompletedEvent, {
+        appInstanceId: channel!.freeBalanceAppInstance!.identityHash,
+        transaction: response as TransactionReceipt,
+        multisigAddress: channel.multisigAddress,
+      });
+      await this.store.saveAppChallenge({
+        ...challenge,
+        status: StoredAppChallengeStatus.CONDITIONAL_SENT,
+      });
+    }
+    return response;
+  };
+
+  private executeEffectOfInterpretedApp = async (
     app: AppInstanceJson,
     channel: StateChannelJSON,
     conditional: ConditionalTransactionCommitmentJSON,
@@ -587,7 +654,7 @@ export class Watcher implements IWatcher {
     const challenge = await this.getChallengeOrThrow(app.identityHash);
     const commitment = ConditionalTransactionCommitment.fromJson(conditional);
     const response = await this.sendContractTransaction(
-      commitment.getTransactionDetails(),
+      await commitment.getSignedTransaction(),
       challenge,
     );
     if (typeof response === "string") {
@@ -603,6 +670,12 @@ export class Watcher implements IWatcher {
         appInstanceId: app.identityHash,
         transaction: response as TransactionReceipt,
         multisigAddress: channel.multisigAddress,
+      });
+      // update challenge of app and free balance
+      const appChallenge = await this.store.getAppChallenge(app.identityHash);
+      await this.store.saveAppChallenge({
+        ...appChallenge!,
+        status: StoredAppChallengeStatus.CONDITIONAL_SENT,
       });
     }
     return response;
@@ -841,5 +914,13 @@ export class Watcher implements IWatcher {
       throw new Error(`Could not find challenge for app ${identityHash}`);
     }
     return challenge;
+  };
+
+  private isFreeBalanceApp = async (identityHash: string): Promise<boolean> => {
+    const channel = await this.store.getStateChannelByAppIdentityHash(identityHash);
+    if (!channel || !channel.freeBalanceAppInstance) {
+      return false;
+    }
+    return channel.freeBalanceAppInstance.identityHash === identityHash;
   };
 }
