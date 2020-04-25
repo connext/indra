@@ -12,6 +12,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { HashLockTransferService } from "./hashLockTransfer.service";
+import { AddressZero } from "ethers/constants";
 
 export class HashLockTransferMessaging extends AbstractMessagingProvider {
   constructor(
@@ -26,10 +27,10 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
 
   async getHashLockTransferByLockHash(
     pubId: string,
-    data: { lockHash: string, assetId: string },
+    data: { lockHash: string; assetId: string },
   ): Promise<NodeResponses.GetHashLockTransfer> {
     const { lockHash, assetId } = data;
-    if (!lockHash || !assetId) {
+    if (!lockHash) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
     this.log.info(`Got fetch hashlock request for: ${lockHash}`);
@@ -40,7 +41,10 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       senderApp,
       status,
       receiverApp,
-    } = await this.hashLockTransferService.findSenderAndReceiverAppsWithStatus(lockHash, assetId);
+    } = await this.hashLockTransferService.findSenderAndReceiverAppsWithStatus(
+      lockHash,
+      assetId || AddressZero,
+    );
     if (!senderApp) {
       return undefined;
     }
