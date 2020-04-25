@@ -7,11 +7,13 @@ import {
   AppInstanceJson,
   OutcomeType,
   SetStateCommitmentJSON,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { ChannelSigner } from "@connext/utils";
 import { One, Zero } from "ethers/constants";
 import { SetStateCommitment } from "@connext/contracts";
 import { stateToHash } from "./utils";
+import { NetworkContextForTestSuite } from "./contracts";
 
 type FreeBalanceStateJSON = {
   tokenAddresses: string[];
@@ -32,7 +34,7 @@ export class MiniFreeBalance {
     private balancesIndexedByToken: {
       [tokenAddress: string]: CoinTransfer[];
     },
-    private readonly appDefinition: string,
+    private readonly networkContext: NetworkContextForTestSuite,
     public versionNumber: BigNumber = One,
     private activeApps: string[] = [],
   ) {}
@@ -50,6 +52,24 @@ export class MiniFreeBalance {
         ],
       ),
     );
+  }
+
+  get appDefinition(): string {
+    return this.networkContext.IdentityApp;
+  }
+
+  get ethDepositTotal(): BigNumber {
+    const token = this.balancesIndexedByToken[CONVENTION_FOR_ETH_ASSET_ID] || [];
+    let sum = Zero;
+    token.forEach(({ to, amount }) => sum.add(amount));
+    return sum;
+  }
+
+  get tokenDepositTotal(): BigNumber {
+    const token = this.balancesIndexedByToken[this.networkContext.Token] || [];
+    let sum = Zero;
+    token.forEach(({ to, amount }) => sum.add(amount));
+    return sum;
   }
 
   get participants(): Address[] {
@@ -120,7 +140,7 @@ export class MiniFreeBalance {
       this.signerParticipants[1].signMessage(digest),
     ]);
     await setState.addSignatures(signatures[0], signatures[1]);
-    
+
     return setState.toJson();
   }
 }
