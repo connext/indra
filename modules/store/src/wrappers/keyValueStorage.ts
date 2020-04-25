@@ -158,10 +158,12 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       return undefined;
     }
-    if (!this.hasAppIdentityHash(appIdentityHash, channel.appInstances)) {
-      return undefined;
-    }
-    const [, app] = channel.appInstances.find(([id]) => id === appIdentityHash);
+    const toSearch = !!channel.freeBalanceAppInstance
+      ? channel.appInstances.concat([
+          [channel.freeBalanceAppInstance.identityHash, channel.freeBalanceAppInstance],
+        ])
+      : channel.appInstances;
+    const [, app] = toSearch.find(([id]) => id === appIdentityHash);
     return app;
   }
 
@@ -475,7 +477,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     // now find which ones are in the channel and in dispute
     const activeStatus = (status: StoredAppChallengeStatus) =>
       status !== StoredAppChallengeStatus.CONDITIONAL_SENT &&
-      status !== StoredAppChallengeStatus.NO_CHALLENGE;   
+      status !== StoredAppChallengeStatus.NO_CHALLENGE;
     return challenges.filter((challenge) => !!challenge && activeStatus(challenge.status));
   }
 
@@ -501,10 +503,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appIdentityHash: string,
     event: StateProgressedEventPayload,
   ): Promise<void> {
-    const key = this.getKey(
-      STATE_PROGRESSED_EVENT_KEY,
-      appIdentityHash,
-    );
+    const key = this.getKey(STATE_PROGRESSED_EVENT_KEY, appIdentityHash);
     const existing = await this.getStateProgressedEvents(key);
     return this.setItem(key, existing.concat(event));
   }
