@@ -1,4 +1,4 @@
-import { ChallengeRegistry, SetStateCommitment } from "@connext/contracts";
+import { ChallengeRegistry } from "@connext/contracts";
 import {
   JsonRpcProvider,
   BigNumber,
@@ -63,6 +63,20 @@ export const setupContext = async () => {
     One, // channel nonce
   );
 
+  const freeBalance = new MiniFreeBalance(
+    signers,
+    multisigAddress,
+    {
+      [CONVENTION_FOR_ETH_ASSET_ID]: [
+        { to: signers[0].address, amount: Zero },
+        { to: signers[1].address, amount: Zero },
+      ],
+    },
+    networkContext.IdentityApp,
+    toBN(2),
+    [appInstance.identityHash],
+  );
+
   // contract helper functions
   const setAndProgressState = async (
     versionNumber: BigNumber,
@@ -125,19 +139,8 @@ export const setupContext = async () => {
 
   const loadStoreWithChannelAndApp = async (store: ConnextStore) => {
     // generate the app, free balance and channel
-    const freeBalance = new MiniFreeBalance(
-      signers,
-      multisigAddress,
-      {
-        [CONVENTION_FOR_ETH_ASSET_ID]: [
-          { to: signers[0].address, amount: Zero },
-          { to: signers[1].address, amount: Zero },
-        ],
-      },
-      toBN(2),
-      [appInstance.identityHash],
-    );
     const freeBalanceSetState = await freeBalance.getSetState(challengeRegistry.address);
+    console.log(`free balance set state`, freeBalanceSetState);
 
     const appJson = appInstance.toJson();
     const setState = await appInstance.getSetState(challengeRegistry.address);
@@ -163,7 +166,7 @@ export const setupContext = async () => {
         value: 0,
         data: HashZero,
       },
-      freeBalanceSetState,
+      { ...freeBalanceSetState, versionNumber: toBNJson(One) },
     );
 
     // add the app + all commitments to the store
@@ -195,10 +198,7 @@ export const setupContext = async () => {
       multisigAddress,
       appJson,
       freeBalance.toJson(),
-      {
-        ...freeBalanceSetState,
-        versionNumber: toBNJson(toBN(freeBalanceSetState.versionNumber).sub(1)),
-      },
+      freeBalanceSetState,
       // latest free balance saved when channel created, use dummy values
       // with increasing app numbers so they get deleted properly
       conditional,
@@ -214,6 +214,7 @@ export const setupContext = async () => {
     channelResponder,
     multisigAddress,
     appInstance,
+    freeBalance,
     networkContext,
     setAndProgressState,
     loadStoreWithChannelAndApp,

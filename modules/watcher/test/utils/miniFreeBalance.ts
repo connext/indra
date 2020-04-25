@@ -8,8 +8,8 @@ import {
   OutcomeType,
   SetStateCommitmentJSON,
 } from "@connext/types";
-import { ChannelSigner, getRandomAddress, toBN } from "@connext/utils";
-import { One } from "ethers/constants";
+import { ChannelSigner } from "@connext/utils";
+import { One, Zero } from "ethers/constants";
 import { SetStateCommitment } from "@connext/contracts";
 import { stateToHash } from "./utils";
 
@@ -23,9 +23,8 @@ const freeBalStateEncoding = `tuple(address[] tokenAddresses, tuple(address to, 
 
 export class MiniFreeBalance {
   private channelNonce = One;
-  private appDefinition = getRandomAddress();
-  private defaultTimeout = toBN(8640);
-  private stateTimeout = toBN(8640);
+  private defaultTimeout = Zero;
+  private stateTimeout = Zero;
 
   constructor(
     public readonly signerParticipants: ChannelSigner[],
@@ -33,6 +32,7 @@ export class MiniFreeBalance {
     private balancesIndexedByToken: {
       [tokenAddress: string]: CoinTransfer[];
     },
+    private readonly appDefinition: string,
     public versionNumber: BigNumber = One,
     private activeApps: string[] = [],
   ) {}

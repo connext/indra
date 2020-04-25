@@ -54,18 +54,29 @@ describe("Watcher.initiate", () => {
   let store: ConnextStore;
   let identityHash: string;
   let multisigAddress: string;
-  let setState: SetStateCommitment;
+  let freeBalanceIdentityHash: string;
+  let appSetState: SetStateCommitment;
+  let fbSetState: SetStateCommitment;
 
   let watcher: Watcher;
 
   beforeEach(async () => {
     const context = await setupContext();
+
+    // get all values needed from context
     provider = context["provider"];
     multisigAddress = context["multisigAddress"];
     const app = context["appInstance"];
+    const freeBalance = context["freeBalance"];
     const networkContext = context["networkContext"];
+    freeBalanceIdentityHash = freeBalance.identityHash;
     identityHash = app.identityHash;
-    setState = SetStateCommitment.fromJson(await app.getSetState(networkContext.ChallengeRegistry));
+    appSetState = SetStateCommitment.fromJson(
+      await app.getSetState(networkContext.ChallengeRegistry),
+    );
+    fbSetState = SetStateCommitment.fromJson(
+      await freeBalance.getSetState(networkContext.ChallengeRegistry),
+    );
     const loadStore = context["loadStoreWithChannelAndApp"];
 
     // create + load store
@@ -91,54 +102,135 @@ describe("Watcher.initiate", () => {
     // start mining
     const empty = await store.getAppChallenge(identityHash);
     expect(empty).to.be.undefined;
-    const [contractEvent, initiatedEvent, tx] = await Promise.all([
+    const [
+      contractEventFreeBalance,
+      contractEventApp,
+      initiatedEventFreeBalance,
+      initiatedEventApp,
+      result,
+    ] = await Promise.all([
       new Promise((resolve) =>
-        watcher.once(
+        watcher.on(
           WatcherEvents.ChallengeUpdatedEvent,
-          async (data: ChallengeUpdatedEventPayload) => resolve(data),
+          async (data: ChallengeUpdatedEventPayload) => {
+            if (data.identityHash === freeBalanceIdentityHash) {
+              resolve(data);
+            }
+          },
         ),
       ),
       new Promise((resolve) =>
-        watcher.once(
+        watcher.on(
+          WatcherEvents.ChallengeUpdatedEvent,
+          async (data: ChallengeUpdatedEventPayload) => {
+            if (data.identityHash === identityHash) {
+              resolve(data);
+            }
+          },
+        ),
+      ),
+      new Promise((resolve) =>
+        watcher.on(
           WatcherEvents.ChallengeProgressedEvent,
-          async (data: ChallengeProgressedEventData) => resolve(data),
+          async (data: ChallengeProgressedEventData) => {
+            if (data.appInstanceId === freeBalanceIdentityHash) {
+              resolve(data);
+            }
+          },
+        ),
+      ),
+      new Promise((resolve) =>
+        watcher.on(
+          WatcherEvents.ChallengeProgressedEvent,
+          async (data: ChallengeProgressedEventData) => {
+            if (data.appInstanceId === identityHash) {
+              resolve(data);
+            }
+          },
         ),
       ),
       watcher.initiate(identityHash),
     ]);
-    expect(tx).to.be.ok;
+    expect(result).to.be.ok;
 
-    // verify challenge
-    const challenge = await store.getAppChallenge(identityHash);
-    const finalizesAt = setState.stateTimeout.add(await provider.getBlockNumber());
-    const expectedEvent = {
-      appStateHash: setState.appStateHash,
-      identityHash,
-      versionNumber: setState.versionNumber,
-      status: ChallengeStatus.IN_DISPUTE,
-      finalizesAt,
+    // verify app + free balance challenge
+    const appFinalizesAt = appSetState.stateTimeout.add(await provider.getBlockNumber());
+    // fb is disputed first and automined, meaning that you should use
+    // provider block - 1
+    const fbFinalizesAt = fbSetState.stateTimeout.add(await provider.getBlockNumber()).sub(1);
+    const expected0 = {
+      [identityHash]: {
+        appStateHash: appSetState.appStateHash,
+        identityHash,
+        versionNumber: appSetState.versionNumber,
+        status: ChallengeStatus.IN_DISPUTE,
+        finalizesAt: appFinalizesAt,
+      },
+      [freeBalanceIdentityHash]: {
+        appStateHash: fbSetState.appStateHash,
+        identityHash: freeBalanceIdentityHash,
+        versionNumber: fbSetState.versionNumber,
+        status: ChallengeStatus.IN_DISPUTE,
+        finalizesAt: fbFinalizesAt,
+      },
     };
-    expect(challenge).to.containSubset(expectedEvent);
+    const contractEvents = {
+      [identityHash]: contractEventApp,
+      [freeBalanceIdentityHash]: contractEventFreeBalance,
+    };
+    const initiatedEvents = {
+      [identityHash]: initiatedEventApp,
+      [freeBalanceIdentityHash]: initiatedEventFreeBalance,
+    };
+    const transactions = {
+      [identityHash]: (result as any).appChallenge,
+      [freeBalanceIdentityHash]: (result as any).freeBalanceChallenge,
+    };
 
-    // verify stored contract event
-    const setStateEvents = await store.getChallengeUpdatedEvents(identityHash);
-    expect(setStateEvents.length).to.be.equal(1);
-    expect(setStateEvents[0]).to.containSubset(expectedEvent);
+    for (const appId of [identityHash, freeBalanceIdentityHash]) {
+      // verify stored challenge
+      const challenge = await store.getAppChallenge(appId);
+      expect(challenge).to.containSubset(expected0[appId]);
 
-    // verify emitted events
-    expect(contractEvent).to.containSubset(expectedEvent);
-    expect(initiatedEvent).to.containSubset({
-      transaction: tx,
-      appInstanceId: identityHash,
-    });
+      // verify stored contract event
+      const setStateEvents = await store.getChallengeUpdatedEvents(appId);
+      expect(setStateEvents.length).to.be.equal(1);
+      expect(setStateEvents[0]).to.containSubset(expected0[appId]);
 
-    // wait for dispute completion
+      // verify emitted events
+      expect(contractEvents[appId]).to.containSubset(expected0[appId]);
+      expect(initiatedEvents[appId]).to.containSubset({
+        transaction: transactions[appId],
+        appInstanceId: appId,
+      });
+    }
+
+    // wait for app dispute completion
     // first block mined should call: `setOutcome`
-    const [outcomeSetEvent, challengeUpdatedEvent] = await Promise.all([
-      new Promise((resolve, reject) => {
-        watcher.once(
+    const [
+      outcomeSetFbEvent,
+      outcomeSetAppEvent,
+      challengeUpdatedFbEvent,
+      challengeUpdatedAppEvent,
+    ] = await Promise.all([
+      new Promise((resolve) => {
+        watcher.on(
           WatcherEvents.ChallengeOutcomeSetEvent,
-          async (data: ChallengeOutcomeSetEventData) => resolve(data),
+          async (data: ChallengeOutcomeSetEventData) => {
+            if (data.appInstanceId === freeBalanceIdentityHash) {
+              resolve(data);
+            }
+          },
+        );
+      }),
+      new Promise((resolve, reject) => {
+        watcher.on(
+          WatcherEvents.ChallengeOutcomeSetEvent,
+          async (data: ChallengeOutcomeSetEventData) => {
+            if (data.appInstanceId === identityHash) {
+              resolve(data);
+            }
+          },
         );
         watcher.once(
           WatcherEvents.ChallengeOutcomeFailedEvent,
@@ -146,33 +238,59 @@ describe("Watcher.initiate", () => {
         );
       }),
       new Promise((resolve) =>
-        watcher.once(WatcherEvents.ChallengeUpdatedEvent, async (data) => resolve(data)),
+        watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data) => {
+          if (data.identityHash === freeBalanceIdentityHash) {
+            resolve(data);
+          }
+        }),
+      ),
+      new Promise((resolve) =>
+        watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data) => {
+          if (data.identityHash === identityHash) {
+            resolve(data);
+          }
+        }),
       ),
       provider.send("evm_mine", []),
     ]);
 
-    const expected = {
-      ...expectedEvent,
-      status: StoredAppChallengeStatus.OUTCOME_SET,
+    const expected1 = {
+      [identityHash]: {
+        ...expected0[identityHash],
+        status: StoredAppChallengeStatus.OUTCOME_SET,
+      },
+      [freeBalanceIdentityHash]: {
+        ...expected0[freeBalanceIdentityHash],
+        status: StoredAppChallengeStatus.OUTCOME_SET,
+      },
+    };
+    const outcomeSetEvents = {
+      [identityHash]: outcomeSetAppEvent,
+      [freeBalanceIdentityHash]: outcomeSetFbEvent,
+    };
+    const challengeUpdatedEvents = {
+      [identityHash]: challengeUpdatedAppEvent,
+      [freeBalanceIdentityHash]: challengeUpdatedFbEvent,
     };
 
-    // verify stored challenge
-    const setOutcomeEvents = await store.getChallengeUpdatedEvents(identityHash);
-    expect(setOutcomeEvents.length).to.be.equal(2);
-    expect(setOutcomeEvents[1]).to.containSubset(expected);
+    for (const appId of [identityHash, freeBalanceIdentityHash]) {
+      // verify stored events
+      const events = await store.getChallengeUpdatedEvents(appId);
+      expect(events.length).to.be.equal(2);
+      expect(events[1]).to.containSubset(expected1[appId]);
 
-    // verify emitted challenges
-    expect(challengeUpdatedEvent).to.containSubset({
-      ...expectedEvent,
-      status: StoredAppChallengeStatus.OUTCOME_SET,
-    });
-    const outcomeSet = await store.getAppChallenge(identityHash);
-    expect(outcomeSet).to.containSubset(expected);
-    expect(outcomeSetEvent).to.containSubset({
-      appInstanceId: identityHash,
-      multisigAddress,
-    });
-    expect(outcomeSetEvent.transaction).to.be.ok;
+      // verify stored challenges
+      const challenge = await store.getAppChallenge(appId);
+      expect(challenge).to.containSubset(expected1[appId]);
+
+      // verify emitted events
+      expect(outcomeSetEvents[appId]).to.containSubset({
+        appInstanceId: appId,
+        multisigAddress,
+      });
+      expect(outcomeSetEvents[appId].transaction).to.be.ok;
+      expect(challengeUpdatedEvents[appId]).to.containSubset(expected1[appId]);
+    }
 
     // second block mined should call: `conditional`
 
