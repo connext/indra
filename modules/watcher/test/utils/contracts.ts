@@ -4,6 +4,7 @@ import {
   AppWithAction,
   ChallengeRegistry,
   ConditionalTransactionDelegateTarget,
+  ERC20,
   IdentityApp,
   MinimumViableMultisig,
   MultiAssetMultiPartyCoinTransferInterpreter,
@@ -43,6 +44,7 @@ export type NetworkContextForTestSuite = NetworkContext & {
   WithdrawApp: string;
   DepositApp: string;
   AppWithAction: string;
+  Token: string;
 };
 
 export const deployTestArtifactsToChain = async (
@@ -63,6 +65,12 @@ export const deployTestArtifactsToChain = async (
   const identityApp = await new ContractFactory(
     IdentityApp.abi,
     IdentityApp.bytecode,
+    wallet,
+  ).deploy();
+
+  const token = await new ContractFactory(
+    ERC20.abi,
+    ERC20.bytecode,
     wallet,
   ).deploy();
 
@@ -134,5 +142,6 @@ export const deployTestArtifactsToChain = async (
     TimeLockedPassThrough: timeLockedPassThrough.address,
     TwoPartyFixedOutcomeInterpreter: twoPartyFixedOutcomeInterpreter.address,
     WithdrawApp: withdrawAppContract.address,
+    Token: token.address,
   };
 };
