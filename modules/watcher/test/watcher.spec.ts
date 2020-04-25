@@ -293,20 +293,57 @@ describe("Watcher.initiate", () => {
     }
 
     // second block mined should call: `conditional`
-
-    // const [disputeCompleted] = await Promise.all([
-    //   new Promise((resolve, reject) => {
-    //     watcher.once(
-    //       WatcherEvents.ChallengeCompletedEvent,
-    //       async (data: ChallengeCompletedEventData) => resolve(data),
-    //     );
-    //     watcher.once(
-    //       WatcherEvents.ChallengeCompletionFailedEvent,
-    //       async (data: ChallengeCompletionFailedEventData) => reject(data),
-    //     );
-    //   }),
-    //   provider.send("evm_mine", []),
-    // ]);
-    // expect(disputeCompleted).to.containSubset({ test: "hi" });
+    const [appDisputeCompleted, freeBalanceDisputeCompleted] = await Promise.all([
+      new Promise((resolve, reject) => {
+        watcher.on(
+          WatcherEvents.ChallengeCompletedEvent,
+          async (data: ChallengeCompletedEventData) => {
+            if (data.appInstanceId === identityHash) {
+              resolve(data);
+            }
+          },
+        );
+        watcher.once(
+          WatcherEvents.ChallengeCompletionFailedEvent,
+          async (data: ChallengeCompletionFailedEventData) => reject(data),
+        );
+      }),
+      new Promise((resolve) => {
+        watcher.on(
+          WatcherEvents.ChallengeCompletedEvent,
+          async (data: ChallengeCompletedEventData) => {
+            if (data.appInstanceId === freeBalanceIdentityHash) {
+              resolve(data);
+            }
+          },
+        );
+      }),
+      provider.send("evm_mine", []),
+    ]);
+    const expected2 = {
+      [identityHash]: {
+        ...expected0[identityHash],
+        status: StoredAppChallengeStatus.CONDITIONAL_SENT,
+      },
+      [freeBalanceIdentityHash]: {
+        ...expected0[freeBalanceIdentityHash],
+        status: StoredAppChallengeStatus.CONDITIONAL_SENT,
+      },
+    };
+    const completedEvents = {
+      [identityHash]: appDisputeCompleted,
+      [freeBalanceIdentityHash]: freeBalanceDisputeCompleted,
+    };
+    for (const appId of [identityHash, freeBalanceIdentityHash]) {
+      // verify stored challenge
+      const challenge = await store.getAppChallenge(appId);
+      expect(challenge).to.containSubset(expected2[freeBalanceIdentityHash]);
+      // verify emitted events
+      expect(completedEvents[identityHash]).to.containSubset({
+        appInstanceId: appId,
+        multisigAddress,
+      });
+    }
+    expect(appDisputeCompleted).to.containSubset({ test: "hi" });
   });
 });
