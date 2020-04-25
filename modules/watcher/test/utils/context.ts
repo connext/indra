@@ -1,4 +1,4 @@
-import { ChallengeRegistry } from "@connext/contracts";
+import { ChallengeRegistry, ERC20, ProxyFactory, MinimumViableMultisig } from "@connext/contracts";
 import {
   JsonRpcProvider,
   BigNumber,
@@ -17,7 +17,7 @@ import {
 } from "@connext/utils";
 import { Wallet, Contract } from "ethers";
 import { One, Zero, HashZero } from "ethers/constants";
-import { keccak256 } from "ethers/utils";
+import { keccak256, Interface } from "ethers/utils";
 
 import {
   AppWithCounterClass,
@@ -28,33 +28,46 @@ import {
 import { ConnextStore } from "@connext/store";
 import { MiniFreeBalance } from "./miniFreeBalance";
 import { deployTestArtifactsToChain } from "./contracts";
+import { CREATE_PROXY_AND_SETUP_GAS } from "./utils";
 
 /////////////////////////////
 // Context
 
 export const setupContext = async () => {
+  // setup constants
   const ethProvider = process.env.ETHPROVIDER_URL;
+  const provider = new JsonRpcProvider(ethProvider);
+
+  const wallet = Wallet.fromMnemonic(process.env.SUGAR_DADDY!).connect(provider);
+  const channelInitiator = Wallet.createRandom().connect(provider);
+  const channelResponder = Wallet.createRandom().connect(provider);
+  const signers = [
+    new ChannelSigner(channelInitiator.privateKey, ethProvider),
+    new ChannelSigner(channelResponder.privateKey, ethProvider),
+  ];
 
   // deploy contracts
-  const provider = new JsonRpcProvider(ethProvider);
-  const wallet = Wallet.fromMnemonic(process.env.SUGAR_DADDY!).connect(provider);
-
   const networkContext = await deployTestArtifactsToChain(wallet);
   const challengeRegistry = new Contract(
     networkContext.ChallengeRegistry,
     ChallengeRegistry.abi,
     wallet,
   );
+  // deploy  multisig
+  const proxyFactory = new Contract(networkContext.ProxyFactory, ProxyFactory.abi, wallet);
+  const multisigAddress: string = await new Promise(async (resolve) => {
+    proxyFactory.once("ProxyCreation", async (proxyAddress: string) => resolve(proxyAddress));
+    await proxyFactory.functions.createProxyWithNonce(
+      networkContext.MinimumViableMultisig,
+      new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+        [channelInitiator.address, channelResponder.address],
+      ]),
+      0,
+      { gasLimit: CREATE_PROXY_AND_SETUP_GAS },
+    );
+  });
 
-  // setup constants
-  const channelInitiator = Wallet.createRandom().connect(provider);
-  const channelResponder = Wallet.createRandom().connect(provider);
-  const multisigAddress = getRandomAddress();
-  const signers = [
-    new ChannelSigner(channelInitiator.privateKey, ethProvider),
-    new ChannelSigner(channelResponder.privateKey, ethProvider),
-  ];
-
+  // create objects
   const appInstance = new AppWithCounterClass(
     signers,
     multisigAddress,
@@ -72,12 +85,22 @@ export const setupContext = async () => {
         { to: signers[1].address, amount: Zero },
       ],
     },
-    networkContext.IdentityApp,
+    networkContext,
     toBN(2),
     [appInstance.identityHash],
   );
 
-  // contract helper functions
+  // fund multisig
+  await wallet.sendTransaction({
+    to: multisigAddress,
+    value: freeBalance.ethDepositTotal,
+  });
+  await new Contract(networkContext.Token, ERC20.abi, wallet).transfer(
+    multisigAddress,
+    freeBalance.tokenDepositTotal,
+  );
+
+  // contract helper function
   const setAndProgressState = async (
     versionNumber: BigNumber,
     state: AppWithCounterState,
@@ -137,10 +160,10 @@ export const setupContext = async () => {
     );
   };
 
+  // store helper function
   const loadStoreWithChannelAndApp = async (store: ConnextStore) => {
     // generate the app, free balance and channel
     const freeBalanceSetState = await freeBalance.getSetState(challengeRegistry.address);
-    console.log(`free balance set state`, freeBalanceSetState);
 
     const appJson = appInstance.toJson();
     const setState = await appInstance.getSetState(challengeRegistry.address);
