@@ -25,6 +25,7 @@ import {
   WatcherEvents,
   StoredAppChallengeStatus,
   ConditionalTransactionCommitmentJSON,
+  ChallengeInitiatedResponse,
 } from "@connext/types";
 import {
   ConsoleLogger,
@@ -121,21 +122,22 @@ export class Watcher implements IWatcher {
   // will begin an onchain dispute. emits a `DisputeInitiated` event if
   // the initiation was successful, otherwise emits a `DisputeFailed`
   // event
-  public initiate = async (appInstanceId: string): Promise<TransactionReceipt> => {
+  public initiate = async (appInstanceId: string): Promise<ChallengeInitiatedResponse> => {
     this.log.info(`Initiating challenge of ${appInstanceId}`);
-    const challenge = (await this.store.getAppChallenge(appInstanceId)) || {
-      identityHash: appInstanceId,
-      appStateHash: HashZero,
-      versionNumber: Zero,
-      finalizesAt: Zero,
-      status: StoredAppChallengeStatus.NO_CHALLENGE,
-    };
-    const response = await this.respondToChallenge(challenge);
-    if (typeof response === "string") {
-      throw new Error(`Could not initiate challenge for ${appInstanceId}. ${response}`);
+    const channel = await this.store.getStateChannelByAppIdentityHash(appInstanceId);
+    if (!channel || !channel.freeBalanceAppInstance) {
+      throw new Error(`Could not find channel with free balance for app ${appInstanceId}`);
     }
-    this.log.info(`Challenge initiated with: ${response.transactionHash}`);
-    return response;
+    const freeBalanceId = channel.freeBalanceAppInstance.identityHash;
+    this.log.info(`Initiating challenge for free balance ${freeBalanceId}`);
+    const freeBalanceRes = await this.startAppChallenge(freeBalanceId);
+    this.log.debug(`Dispute of free balance started, tx: ${freeBalanceRes.transactionHash}`);
+    const appRes = await this.startAppChallenge(appInstanceId);
+    this.log.debug(`Dispute of app started, tx: ${appRes.transactionHash}`);
+    return {
+      freeBalanceChallenge: freeBalanceRes,
+      appChallenge: appRes,
+    };
   };
 
   public cancel = async (
@@ -287,6 +289,23 @@ export class Watcher implements IWatcher {
   private removeListeners = () => {
     this.listener.removeAllListeners();
     this.provider.removeAllListeners();
+  };
+
+  private startAppChallenge = async (appInstanceId: string): Promise<TransactionReceipt> => {
+    this.log.debug(`Starting challenge for ${appInstanceId}`);
+    const challenge = (await this.store.getAppChallenge(appInstanceId)) || {
+      identityHash: appInstanceId,
+      appStateHash: HashZero,
+      versionNumber: Zero,
+      finalizesAt: Zero,
+      status: StoredAppChallengeStatus.NO_CHALLENGE,
+    };
+    const response = await this.respondToChallenge(challenge);
+    if (typeof response === "string") {
+      throw new Error(`Could not initiate challenge for ${appInstanceId}. ${response}`);
+    }
+    this.log.info(`Challenge initiated with: ${response.transactionHash}`);
+    return response;
   };
 
   private advanceDisputes = async () => {
@@ -535,6 +554,7 @@ export class Watcher implements IWatcher {
         setStateCommitment.versionNumber,
       ).toString()}`,
     );
+    this.log.debug(`Setting state with commitment: ${stringify(setStateCommitment)}`);
     const commitment = SetStateCommitment.fromJson(setStateCommitment);
     const response = await this.sendContractTransaction(
       await commitment.getSignedTransaction(),
