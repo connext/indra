@@ -125,6 +125,11 @@ export type WatcherEventData = {
 ////////////////////////////////////////
 // Watcher interface
 
+export type ChallengeInitiatedResponse = {
+  freeBalanceChallenge: TransactionReceipt;
+  appChallenge: TransactionReceipt;
+}
+
 export interface IWatcher {
   //////// Listener methods
   emit<T extends WatcherEvent>(event: T, data: WatcherEventData[T]): void;
@@ -142,7 +147,7 @@ export interface IWatcher {
   //////// Public methods
   enable(): Promise<void>;
   disable(): Promise<void>;
-  initiate(appIdentityHash: string): Promise<TransactionReceipt | undefined>;
+  initiate(appIdentityHash: string): Promise<ChallengeInitiatedResponse>;
   cancel(appIdentityHash: string, req: SignedCancelChallengeRequest): Promise<TransactionReceipt>;
 }
 
