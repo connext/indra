@@ -53,14 +53,6 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return this.channelService.create(pubId);
   }
 
-  // This *highly* experimental and shouldn't be used in the wild
-  async createNodeToNodeChannel(
-    pubId: string,
-    data: { nodeBPubId: string },
-  ): Promise<MethodResults.CreateChannel> {
-    return this.channelService.create(pubId);
-  }
-
   async requestCollateral(
     pubId: string,
     data: { assetId?: string },
@@ -132,10 +124,6 @@ class ChannelMessaging extends AbstractMessagingProvider {
     );
     await super.connectRequestReponse(
       "*.channel.create",
-      this.authService.parseIdentifier(this.createChannel.bind(this)),
-    );
-    await super.connectRequestReponse(
-      "*.channel.createNodeToNode",
       this.authService.parseIdentifier(this.createChannel.bind(this)),
     );
     await super.connectRequestReponse(
