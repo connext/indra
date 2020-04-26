@@ -9,6 +9,7 @@ import "./flows/transfer.test";
 import "./flows/multiclientTransfer.test";
 import "./getAppRegistry/getAppRegistry.test";
 import "./getStateChannel/getStateChannel.test";
+import "./multihop/experimentalMultihop.test"
 import "./rebalance/collateral.test";
 import "./rebalance/reclaim.test";
 import "./rebalance/profiles.test";
