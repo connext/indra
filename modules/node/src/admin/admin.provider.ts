@@ -9,6 +9,7 @@ import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { ChannelService } from "../channel/channel.service";
+import { ConfigService } from "../config/config.service";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { AdminService, RepairCriticalAddressesResponse } from "./admin.service";
@@ -20,6 +21,7 @@ class AdminMessaging extends AbstractMessagingProvider {
     messaging: MessagingService,
     private readonly adminService: AdminService,
     private readonly channelService: ChannelService,
+    private readonly configService: ConfigService,
   ) {
     super(log, messaging);
   }
@@ -94,52 +96,55 @@ class AdminMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
+    const publicIdentifier = this.configService.getPublicIdentifier()
     await super.connectRequestReponse(
-      "admin.get-no-free-balance",
+      `admin.${publicIdentifier}.get-no-free-balance`,
       this.getNoFreeBalance.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.get-state-channel-by-address",
+      `admin.${publicIdentifier}.get-state-channel-by-address`,
       this.getStateChannelByUserPublicIdentifier.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.get-state-channel-by-multisig",
+      `admin.${publicIdentifier}.get-state-channel-by-multisig`,
       this.getStateChannelByMultisig.bind(this),
     );
 
-    await super.connectRequestReponse("admin.get-all-channels", this.getAllChannels.bind(this));
+    await super.connectRequestReponse(
+      `admin.${publicIdentifier}.get-all-channels`,
+      this.getAllChannels.bind(this));
 
     await super.connectRequestReponse(
-      "admin.get-all-linked-transfers",
+      `admin.${publicIdentifier}.get-all-linked-transfers`,
       this.getAllLinkedTransfers.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.get-linked-transfer-by-payment-id",
+      `admin.${publicIdentifier}.get-linked-transfer-by-payment-id`,
       this.getLinkedTransferByPaymentId.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.get-channels-for-merging",
+      `admin.${publicIdentifier}.get-channels-for-merging`,
       this.getChannelsForMerging.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.repair-critical-addresses",
+      `admin.${publicIdentifier}.repair-critical-addresses`,
       this.repairCriticalStateChannelAddresses.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.*.channel.add-profile",
+      `admin.*.${publicIdentifier}.channel.add-profile`,
       this.addRebalanceProfile.bind(this),
     );
   }
 }
 
 export const adminProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, LoggerService, MessagingProviderId, AdminService, ChannelService],
+  inject: [AuthService, LoggerService, MessagingProviderId, AdminService, ChannelService, ConfigService],
   provide: AdminMessagingProviderId,
   useFactory: async (
     authService: AuthService,
@@ -147,8 +152,9 @@ export const adminProviderFactory: FactoryProvider<Promise<void>> = {
     messaging: MessagingService,
     adminService: AdminService,
     channelService: ChannelService,
+    configService: ConfigService,
   ): Promise<void> => {
-    const admin = new AdminMessaging(authService, log, messaging, adminService, channelService);
+    const admin = new AdminMessaging(authService, log, messaging, adminService, channelService, configService);
     await admin.setupSubscriptions();
   },
 };

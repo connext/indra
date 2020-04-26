@@ -180,7 +180,7 @@ export class NodeApiClient implements INodeApiClient {
     callback: (...args: any[]) => any,
     timeout: number,
   ): Promise<any> {
-    const lockValue = await this.send(`${this.userIdentifier}.lock.acquire.${lockName}`, {
+    const lockValue = await this.send(`${this.userIdentifier}.${this.nodeIdentifier}.lock.acquire.${lockName}`, {
       lockTTL: timeout,
     });
     this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
@@ -190,7 +190,7 @@ export class NodeApiClient implements INodeApiClient {
     } catch (e) {
       this.log.error(`Failed to execute callback while lock is held: ${e.stack || e.message}`);
     } finally {
-      await this.send(`${this.userIdentifier}.lock.release.${lockName}`, { lockValue });
+      await this.send(`${this.userIdentifier}.${this.nodeIdentifier}.lock.release.${lockName}`, { lockValue });
       this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);
     }
     return retVal;
@@ -211,27 +211,27 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async createChannel(): Promise<NodeResponses.CreateChannel> {
-    return this.send(`${this.userIdentifier}.channel.create`);
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.channel.create`);
   }
 
   public async getChannel(): Promise<NodeResponses.GetChannel> {
-    return this.send(`${this.userIdentifier}.channel.get`);
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.channel.get`);
   }
 
   public async getPendingAsyncTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers> {
-    return (await this.send(`${this.userIdentifier}.transfer.get-pending`)) || [];
+    return (await this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-pending`)) || [];
   }
 
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
-    return this.send(`${this.userIdentifier}.swap-rate.${from}.${to}`);
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.swap-rate.${from}.${to}`);
   }
 
   public async getTransferHistory(): Promise<NodeResponses.GetTransferHistory> {
-    return (await this.send(`${this.userIdentifier}.transfer.get-history`)) || [];
+    return (await this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-history`)) || [];
   }
 
   public async getHashLockTransfer(lockHash: string): Promise<NodeResponses.GetHashLockTransfer> {
-    return this.send(`${this.userIdentifier}.transfer.get-hashlock`, {
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-hashlock`, {
       lockHash,
     });
   }
@@ -240,7 +240,7 @@ export class NodeApiClient implements INodeApiClient {
   // which exceeds the timeout.....
   public async requestCollateral(assetId: string): Promise<NodeResponses.RequestCollateral | void> {
     try {
-      return this.send(`${this.userIdentifier}.channel.request-collateral`, {
+      return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.channel.request-collateral`, {
         assetId,
       });
     } catch (e) {
@@ -254,13 +254,13 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
-    return this.send(`${this.userIdentifier}.transfer.get-linked`, {
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-linked`, {
       paymentId,
     });
   }
 
   public async fetchSignedTransfer(paymentId: string): Promise<any> {
-    return this.send(`${this.userIdentifier}.transfer.get-signed`, {
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-signed`, {
       paymentId,
     });
   }
@@ -268,7 +268,7 @@ export class NodeApiClient implements INodeApiClient {
   public async resolveLinkedTransfer(
     paymentId: string,
   ): Promise<NodeResponses.ResolveLinkedTransfer> {
-    return this.send(`${this.userIdentifier}.transfer.install-linked`, {
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.install-linked`, {
       paymentId,
     });
   }
@@ -276,13 +276,13 @@ export class NodeApiClient implements INodeApiClient {
   public async resolveSignedTransfer(
     paymentId: string,
   ): Promise<NodeResponses.ResolveSignedTransfer> {
-    return this.send(`${this.userIdentifier}.transfer.install-signed`, {
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.install-signed`, {
       paymentId,
     });
   }
 
   public async getRebalanceProfile(assetId?: string): Promise<NodeResponses.GetRebalanceProfile> {
-    return this.send(`${this.userIdentifier}.channel.get-profile`, {
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.channel.get-profile`, {
       assetId: getAddress(assetId),
     });
   }
@@ -309,15 +309,15 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async restoreState(): Promise<NodeResponses.ChannelRestore> {
-    return this.send(`${this.userIdentifier}.channel.restore`);
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.channel.restore`);
   }
 
   public async getLatestWithdrawal(): Promise<Transaction> {
-    return this.send(`${this.userIdentifier}.channel.latestWithdrawal`);
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.channel.latestWithdrawal`);
   }
 
   public async clientCheckIn(): Promise<void> {
-    return this.send(`${this.userIdentifier}.client.check-in`);
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.client.check-in`);
   }
 
   ////////////////////////////////////////

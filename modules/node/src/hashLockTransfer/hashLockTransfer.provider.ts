@@ -8,6 +8,7 @@ import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { CFCoreService } from "../cfCore/cfCore.service";
+import { ConfigService } from "../config/config.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
@@ -16,6 +17,7 @@ import { HashLockTransferService } from "./hashLockTransfer.service";
 export class HashLockTransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
+    private readonly configService: ConfigService,
     log: LoggerService,
     messaging: MessagingService,
     private readonly hashLockTransferService: HashLockTransferService,
@@ -63,7 +65,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "*.transfer.get-hashlock",
+      `*.${this.configService.getPublicIdentifier()}.transfer.get-hashlock`,
       this.authService.parseIdentifier(this.getHashLockTransferByLockHash.bind(this)),
     );
   }
@@ -72,6 +74,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
 export const hashLockTransferProviderFactory: FactoryProvider<Promise<void>> = {
   inject: [
     AuthService,
+    ConfigService,
     LoggerService,
     MessagingProviderId,
     HashLockTransferService,
@@ -81,12 +84,14 @@ export const hashLockTransferProviderFactory: FactoryProvider<Promise<void>> = {
   provide: LinkedTransferProviderId,
   useFactory: async (
     authService: AuthService,
+    configService: ConfigService,
     logging: LoggerService,
     messaging: MessagingService,
     hashLockTransferService: HashLockTransferService,
   ): Promise<void> => {
     const transfer = new HashLockTransferMessaging(
       authService,
+      configService,
       logging,
       messaging,
       hashLockTransferService,

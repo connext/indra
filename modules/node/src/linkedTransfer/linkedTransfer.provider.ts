@@ -9,6 +9,7 @@ import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
 import { AuthService } from "../auth/auth.service";
+import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
@@ -18,6 +19,7 @@ import { LinkedTransferService } from "./linkedTransfer.service";
 export class LinkedTransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
+    private readonly configService: ConfigService,
     log: LoggerService,
     messaging: MessagingService,
     private readonly linkedTransferService: LinkedTransferService,
@@ -101,32 +103,35 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
+    const publicIdentifier = this.configService.getPublicIdentifier();
     await super.connectRequestReponse(
-      "*.transfer.get-linked",
+      `*.${publicIdentifier}.transfer.get-linked`,
       this.authService.parseIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
     );
     await super.connectRequestReponse(
-      "*.transfer.install-linked",
+      `*.${publicIdentifier}.transfer.install-linked`,
       this.authService.parseIdentifier(this.resolveLinkedTransfer.bind(this)),
     );
     await super.connectRequestReponse(
-      "*.transfer.get-pending",
+      `*.${publicIdentifier}.transfer.get-pending`,
       this.authService.parseIdentifier(this.getPendingTransfers.bind(this)),
     );
   }
 }
 
 export const linkedTransferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, LoggerService, MessagingProviderId, LinkedTransferService],
+  inject: [AuthService, ConfigService, LoggerService, MessagingProviderId, LinkedTransferService],
   provide: LinkedTransferProviderId,
   useFactory: async (
     authService: AuthService,
+    configService: ConfigService,
     logging: LoggerService,
     messaging: MessagingService,
     linkedTransferService: LinkedTransferService,
   ): Promise<void> => {
     const transfer = new LinkedTransferMessaging(
       authService,
+      configService,
       logging,
       messaging,
       linkedTransferService,

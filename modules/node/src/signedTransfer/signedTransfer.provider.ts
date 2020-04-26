@@ -5,6 +5,7 @@ import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
 import { AuthService } from "../auth/auth.service";
+import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
@@ -16,6 +17,7 @@ import { SignedTransferService } from "./signedTransfer.service";
 export class SignedTransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
+    private readonly configService: ConfigService,
     log: LoggerService,
     messaging: MessagingService,
     private readonly signedTransferService: SignedTransferService,
@@ -80,13 +82,14 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
+    const publicIdentifier = this.configService.getPublicIdentifier();
     await super.connectRequestReponse(
-      "*.transfer.install-signed",
+      `*.${publicIdentifier}.transfer.install-signed`,
       this.authService.parseIdentifier(this.resolveSignedTransfer.bind(this)),
     );
 
     await super.connectRequestReponse(
-      "*.transfer.get-signed",
+      `*.${publicIdentifier}.transfer.get-signed`,
       this.authService.parseIdentifier(this.getSignedTransferByPaymentId.bind(this)),
     );
   }
@@ -95,6 +98,7 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
 export const signedTransferProviderFactory: FactoryProvider<Promise<void>> = {
   inject: [
     AuthService,
+    ConfigService,
     LoggerService,
     MessagingProviderId,
     SignedTransferService,
@@ -104,12 +108,14 @@ export const signedTransferProviderFactory: FactoryProvider<Promise<void>> = {
   provide: LinkedTransferProviderId,
   useFactory: async (
     authService: AuthService,
+    configService: ConfigService,
     logging: LoggerService,
     messaging: MessagingService,
     SignedTransferService: SignedTransferService,
   ): Promise<void> => {
     const transfer = new SignedTransferMessaging(
       authService,
+      configService,
       logging,
       messaging,
       SignedTransferService,
