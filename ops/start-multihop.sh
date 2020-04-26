@@ -3,7 +3,6 @@ set -e
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="indra"
-project_2="indra_2"
 
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
@@ -181,7 +180,6 @@ function new_secret {
   fi
 }
 new_secret "${project}_database_dev" "$project"
-new_secret "${project_2}_database_dev" "$project_2"
 
 # Deploy with an attachable network so tests & the daicard can connect to individual components
 if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
@@ -200,8 +198,6 @@ networks:
 
 secrets:
   ${project}_database_dev:
-    external: true
-  ${project_2}_database_dev:
     external: true
 
 volumes:
