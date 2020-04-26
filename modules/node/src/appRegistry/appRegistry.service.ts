@@ -253,6 +253,24 @@ export class AppRegistryService implements OnModuleInit {
         }
         break;
       }
+      case HashLockTransferAppName: {
+        if (proposeInstallParams.meta["path"]) {
+          this.log.error('PERFORMING EXPERIMENTAL MULTIHOP: this is not yet safe to use in prod')
+          const appInstance = await this.cfCoreService.getAppInstance(appIdentityHash)
+          const path = proposeInstallParams.meta["path"]
+          // removes the first element of array
+          path.shift();
+          proposeInstallParams.meta["path"] = path
+          const ret = await this.hashlockTransferService.installHashLockTransferReceiverApp(
+            proposeInstallParams.meta["sender"],
+            path[0],
+            appInstance.latestState as HashLockTransferAppState,
+            appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+            proposeInstallParams.meta,
+          )
+          this.log.info(`installed multihop app with ${path[0]}, appIdentityHash: ${ret}`)
+        }    
+      }
       default:
         this.log.debug(`No post-install actions configured.`);
     }
