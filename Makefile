@@ -55,6 +55,9 @@ start-headless: dev
 start-daicard: dev
 	INDRA_UI=daicard bash ops/start-dev.sh
 
+start-multihop-headless: dev
+	INDRA_UI=headless bash ops/start-multihop.sh
+
 start-test: start-test-staging
 start-test-staging:
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test-staging bash ops/start-prod.sh
