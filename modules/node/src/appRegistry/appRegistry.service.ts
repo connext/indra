@@ -21,7 +21,7 @@ import {
   SimpleSignedTransferAppState,
   DepositAppName,
 } from "@connext/types";
-import { getAddressFromAssetId } from "@connext/utils";
+import { getAddressFromAssetId, stringify } from "@connext/utils";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
 import { bigNumberify } from "ethers/utils";
@@ -178,9 +178,20 @@ export class AppRegistryService implements OnModuleInit {
           this.cfCoreService.cfCore.publicIdentifier,
         );
 
-        // install for receiver or error
+        this.log.warn(`Meta Before: ${stringify(proposeInstallParams.meta)}`)
+        let recipient;
         // https://github.com/ConnextProject/indra/issues/942
-        const recipient = proposeInstallParams.meta["recipient"];
+        recipient = proposeInstallParams.meta["recipient"];
+        if (proposeInstallParams.meta["path"]) {
+          this.log.warn('PERFORMING EXPERIMENTAL MULTIHOP: this is not yet safe to use in prod')
+          const path = proposeInstallParams.meta["path"]
+          // removes the first element of array
+          path.shift();
+          proposeInstallParams.meta["path"] = path
+          recipient = path[0];
+        }
+        this.log.warn(`Meta after: ${stringify(proposeInstallParams.meta)}`)
+        // install for receiver or error
         await this.hashlockTransferService.installHashLockTransferReceiverApp(
           from,
           recipient,
@@ -252,24 +263,6 @@ export class AppRegistryService implements OnModuleInit {
             );
         }
         break;
-      }
-      case HashLockTransferAppName: {
-        if (proposeInstallParams.meta["path"]) {
-          this.log.error('PERFORMING EXPERIMENTAL MULTIHOP: this is not yet safe to use in prod')
-          const appInstance = await this.cfCoreService.getAppInstance(appIdentityHash)
-          const path = proposeInstallParams.meta["path"]
-          // removes the first element of array
-          path.shift();
-          proposeInstallParams.meta["path"] = path
-          const ret = await this.hashlockTransferService.installHashLockTransferReceiverApp(
-            proposeInstallParams.meta["sender"],
-            path[0],
-            appInstance.latestState as HashLockTransferAppState,
-            appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
-            proposeInstallParams.meta,
-          )
-          this.log.info(`installed multihop app with ${path[0]}, appIdentityHash: ${ret}`)
-        }    
       }
       default:
         this.log.debug(`No post-install actions configured.`);
