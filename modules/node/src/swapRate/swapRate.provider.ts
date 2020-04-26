@@ -11,10 +11,10 @@ import { SwapRateService } from "./swapRate.service";
 
 export class SwapRateMessaging extends AbstractMessagingProvider {
   constructor(
+    private readonly configService: ConfigService,
     log: LoggerService,
     messaging: MessagingService,
     private readonly swapRateService: SwapRateService,
-    private readonly configService: ConfigService,
   ) {
     super(log, messaging);
     this.log.setContext("SwapRateMessaging");
@@ -26,20 +26,22 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
-    await super.connectRequestReponse(`*.${this.configService.getPublicIdentifier()}.swap-rate.>`, this.getLatestSwapRate.bind(this));
+    const publicIdentifier = this.configService.getPublicIdentifier();
+    await super.connectRequestReponse(
+      `*.${publicIdentifier}.swap-rate.>`, this.getLatestSwapRate.bind(this));
   }
 }
 
 export const swapRateProviderFactory: FactoryProvider<Promise<MessagingService>> = {
-  inject: [LoggerService, MessagingProviderId, SwapRateService],
+  inject: [ConfigService, LoggerService, MessagingProviderId, SwapRateService],
   provide: SwapRateProviderId,
   useFactory: async (
+    configService: ConfigService,
     log: LoggerService,
     messaging: MessagingService,
     swapRateService: SwapRateService,
-    configService: ConfigService,
   ): Promise<MessagingService> => {
-    const swapRate = new SwapRateMessaging(log, messaging, swapRateService, configService);
+    const swapRate = new SwapRateMessaging(configService, log, messaging, swapRateService);
     await swapRate.setupSubscriptions();
     return messaging;
   },
