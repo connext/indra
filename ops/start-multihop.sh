@@ -204,6 +204,7 @@ volumes:
   certs:
   chain_dev:
   database_dev:
+  database_dev_2:
 
 services:
 
@@ -319,7 +320,7 @@ services:
     secrets:
       - '${project}_database_dev'
     volumes:
-      - 'database_dev:/var/lib/postgresql/data'
+      - 'database_dev_2:/var/lib/postgresql/data'
 
   nats:
     command: -D -V

@@ -108,6 +108,7 @@ reset: stop
 	docker container prune -f
 	docker volume rm `docker volume ls -q -f name=$(project)_database_test_*` 2> /dev/null || true
 	docker volume rm $(project)_database_dev 2> /dev/null || true
+	docker volume rm $(project)_database_dev_2 2> /dev/null || true
 	docker secret rm $(project)_database_dev 2> /dev/null || true
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 	rm -rf .flags/deployed-contracts
