@@ -5,8 +5,8 @@ import {
   HashLockTransferAppState,
   PublicParams,
   PublicResults,
+  HashLockTransferAppName,
 } from "@connext/types";
-import { HashZero } from "ethers/constants";
 import { soliditySha256 } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
@@ -17,20 +17,24 @@ export class ResolveHashLockTransferController extends AbstractController {
     params: PublicParams.ResolveHashLockTransfer,
   ): Promise<PublicResults.ResolveHashLockTransfer> => {
     this.log.info(`resolveHashLockTransfer started: ${stringify(params)}`);
-    const { preImage } = params;
+    const { preImage, assetId } = params;
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
 
     const installedApps = await this.connext.getAppInstances();
     const hashlockApp = installedApps.find(
-      app => (app.latestState as HashLockTransferAppState).lockHash === lockHash,
+      (app) =>
+        app.appInterface.addr ===
+          this.connext.appRegistry.find((app) => app.name === HashLockTransferAppName)
+            .appDefinitionAddress &&
+        (app.latestState as HashLockTransferAppState).lockHash === lockHash &&
+        app.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress === assetId,
     );
     if (!hashlockApp) {
       throw new Error(`Hashlock app has not been installed`);
     }
 
     const amount = (hashlockApp.latestState as HashLockTransferAppState).coinTransfers[0].amount;
-    const assetId = hashlockApp.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
 
     try {
       // node installs app, validation happens in listener

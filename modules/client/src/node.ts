@@ -230,9 +230,13 @@ export class NodeApiClient implements INodeApiClient {
     return (await this.send(`${this.userIdentifier}.transfer.get-history`)) || [];
   }
 
-  public async getHashLockTransfer(lockHash: string): Promise<NodeResponses.GetHashLockTransfer> {
+  public async getHashLockTransfer(
+    lockHash: string,
+    assetId: string,
+  ): Promise<NodeResponses.GetHashLockTransfer> {
     return this.send(`${this.userIdentifier}.transfer.get-hashlock`, {
       lockHash,
+      assetId,
     });
   }
 
