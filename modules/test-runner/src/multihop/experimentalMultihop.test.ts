@@ -1,6 +1,7 @@
 import { IConnextClient } from "@connext/types";
 import { createClient } from "../util";
 import { stringify } from "@connext/utils";
+import axios, { AxiosResponse } from "axios";
 
 describe.only("Experimental multihop tests", () => {
   let clientA: IConnextClient;
@@ -20,9 +21,9 @@ describe.only("Experimental multihop tests", () => {
 
   it("nodeA can create a channel with nodeB", async () => {
     console.log("here");
-    const ret = await clientA.messaging.request("*.channel.createNodeToNode", 90000, {
-      nodeBPubId: clientB.nodeIdentifier,
+    const verifyResponse = await axios.post(`${nodeBUrl}/admin/nodetonode`, {
+      userIdentifier: clientA.nodeIdentifier
     });
-    console.log(stringify(ret));
+    console.log(stringify(verifyResponse));
   });
 });
