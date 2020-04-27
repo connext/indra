@@ -8,8 +8,7 @@ import {
   SignatureString,
   UrlString,
 } from "@connext/types";
-import { Wallet } from "ethers";
-import { TransactionResponse, TransactionRequest, JsonRpcProvider } from "ethers/providers";
+import { Wallet, providers } from "ethers";
 
 import {
   decrypt,
@@ -28,16 +27,10 @@ export class ChannelSigner implements IChannelSigner {
   public address: Address;
   public publicIdentifier: PublicIdentifier;
   public publicKey: PublicKey;
-  public readonly provider?: JsonRpcProvider;
-
-  // NOTE: without this property, the Signer.isSigner
-  // function will not return true, even though this class
-  // extends / implements the signer interface. See:
-  // https://github.com/ethers-io/ethers.js/issues/779
-  private readonly _ethersType = "Signer";
+  public provider?: providers.Provider;
 
   constructor(private readonly privateKey: PrivateKey, ethProviderUrl?: UrlString) {
-    this.provider = !!ethProviderUrl ? new JsonRpcProvider(ethProviderUrl) : undefined;
+    this.provider = !!ethProviderUrl ? new providers.JsonRpcProvider(ethProviderUrl) : undefined;
     this.privateKey = privateKey;
     this.publicKey = getPublicKeyFromPrivateKey(privateKey);
     this.address = getAddressFromPublicKey(this.publicKey);
@@ -58,7 +51,11 @@ export class ChannelSigner implements IChannelSigner {
     return signChannelMessage(message, this.privateKey);
   }
 
-  public async sendTransaction(transaction: TransactionRequest): Promise<TransactionResponse> {
+  // -- Provider methods ---------------------------------------------------------------- //
+
+  public async sendTransaction(
+    transaction: providers.TransactionRequest,
+  ): Promise<providers.TransactionResponse> {
     if (!this.provider) {
       throw new Error(
         `ChannelSigner can't send transactions without being connected to a provider`,

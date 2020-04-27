@@ -1,5 +1,4 @@
-import { BigNumber, bigNumberify, commify, parseUnits, formatUnits } from "ethers/utils";
-import { EtherSymbol } from "ethers/constants";
+import { BigNumber, utils, constants } from "ethers";
 
 export class Currency {
   ////////////////////////////////////////
@@ -14,7 +13,7 @@ export class Currency {
   public typeToSymbol = {
     DAI: "$",
     DEI: "DEI ",
-    ETH: EtherSymbol,
+    ETH: constants.EtherSymbol,
     FIN: "FIN ",
     WEI: "WEI ",
   };
@@ -49,8 +48,8 @@ export class Currency {
     this.daiRate = typeof daiRate !== "undefined" ? daiRate : "1";
     this.daiRateGiven = !!daiRate;
     try {
-      this.wad = this.toWad(amount._hex ? bigNumberify(amount._hex) : amount);
-      this.ray = this.toRay(amount._hex ? bigNumberify(amount._hex) : amount);
+      this.wad = this.toWad(amount._hex ? BigNumber.from(amount._hex) : amount);
+      this.ray = this.toRay(amount._hex ? BigNumber.from(amount._hex) : amount);
     } catch (e) {
       throw new Error(`Invalid currency amount (${amount}): ${e}`);
     }
@@ -95,7 +94,7 @@ export class Currency {
   }
 
   public toBN() {
-    return bigNumberify(this._round(this.amount));
+    return BigNumber.from(this._round(this.amount));
   }
 
   public format(_options: any) {
@@ -113,7 +112,7 @@ export class Currency {
       : options.decimals < nDecimals
       ? amt.substring(0, amt.indexOf(".") + options.decimals + 1)
       : amt;
-    return `${symbol}${options.commas ? commify(amount) : amount}`;
+    return `${symbol}${options.commas ? utils.commify(amount) : amount}`;
   }
 
   public round(decimals: any) {
@@ -127,7 +126,7 @@ export class Currency {
     // Note: rounding n=1099.9 to nearest int is same as floor(n + 0.5)
     // roundUp plays same role as 0.5 in above example
     if (typeof decimals === "number" && decimals < nDecimals) {
-      const roundUp = bigNumberify(`5${"0".repeat(18 - decimals - 1)}`);
+      const roundUp = BigNumber.from(`5${"0".repeat(18 - decimals - 1)}`);
       const rounded = this.fromWad(this.wad.add(roundUp));
       return rounded.slice(0, amt.length - (nDecimals - decimals)).replace(/\.$/, "");
     }
@@ -140,10 +139,10 @@ export class Currency {
   public getRate = (currency: any) => {
     const exchangeRates = {
       DAI: this.toRay(this.daiRate),
-      DEI: this.toRay(parseUnits(this.daiRate, 18).toString()),
+      DEI: this.toRay(utils.parseUnits(this.daiRate, 18).toString()),
       ETH: this.toRay("1"),
-      FIN: this.toRay(parseUnits("1", 3).toString()),
-      WEI: this.toRay(parseUnits("1", 18).toString()),
+      FIN: this.toRay(utils.parseUnits("1", 3).toString()),
+      WEI: this.toRay(utils.parseUnits("1", 18).toString()),
     };
     if (
       (this.isEthType() && this.isEthType(currency)) ||
@@ -188,11 +187,11 @@ export class Currency {
 
   public _floor = (decStr: any) => decStr.substring(0, decStr.indexOf("."));
 
-  public toWad = (n: any) => parseUnits(n.toString(), 18);
+  public toWad = (n: any) => utils.parseUnits(n.toString(), 18);
 
   public toRay = (n: any) => this.toWad(this.toWad(n.toString()));
 
-  public fromWad = (n: any) => formatUnits(n.toString(), 18);
+  public fromWad = (n: any) => utils.formatUnits(n.toString(), 18);
 
   public fromRoundRay = (n: any) => this._round(this.fromRay(n));
 

@@ -1,13 +1,7 @@
 import { Address, AssetId, PublicKey, PublicIdentifier } from "@connext/types";
 import bs58check from "bs58check";
-import { getAddress } from "ethers/utils";
-import {
-  hexToBuffer,
-  bufferToHex,
-  compress,
-  decompress,
-  isCompressed,
-} from "eccrypto-js";
+import { utils } from "ethers";
+import { hexToBuffer, bufferToHex, compress, decompress, isCompressed } from "eccrypto-js";
 
 import { getAddressError } from "./hexStrings";
 import { getAddressFromPublicKey } from "./crypto";
@@ -24,15 +18,15 @@ export const getPublicIdentifierFromPublicKey = (publicKey: PublicKey): PublicId
 };
 
 export const getPublicKeyFromPublicIdentifier = (publicIdentifier: PublicIdentifier) =>
-  `0x${bufferToHex(decompress(bs58check.decode(
-    publicIdentifier.replace(INDRA_PUB_ID_PREFIX, ""),
-  )))}`;
+  `0x${bufferToHex(
+    decompress(bs58check.decode(publicIdentifier.replace(INDRA_PUB_ID_PREFIX, ""))),
+  )}`;
 
 export const getSignerAddressFromPublicIdentifier = (publicIdentifier: PublicIdentifier): Address =>
   getAddressFromPublicKey(getPublicKeyFromPublicIdentifier(publicIdentifier));
 
 // makes sure all addresses are normalized
-export const getAddressFromAssetId = (assetId: AssetId): Address => getAddress(assetId);
+export const getAddressFromAssetId = (assetId: AssetId): Address => utils.getAddress(assetId);
 
 ////////////////////////////////////////
 // Validators

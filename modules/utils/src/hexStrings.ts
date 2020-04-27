@@ -1,4 +1,4 @@
-import { hexDataLength, hexlify, isHexString, getAddress, randomBytes } from "ethers/utils";
+import { utils } from "ethers";
 
 ////////////////////////////////////////
 // Validators
@@ -10,11 +10,13 @@ export const getHexStringError = (value: any, length?: number): string | undefin
   if (!value.startsWith("0x")) {
     return `Invalid hex string: ${value} doesn't start with 0x`;
   }
-  if (!isHexString(value)) {
+  if (!utils.isHexString(value)) {
     return `Invalid hex string: ${value}`;
   }
-  if (length && hexDataLength(value) !== length) {
-    return `Invalid hex string of length ${length}: ${value} is ${hexDataLength(value)} bytes long`;
+  if (length && utils.hexDataLength(value) !== length) {
+    return `Invalid hex string of length ${length}: ${value} is ${utils.hexDataLength(
+      value,
+    )} bytes long`;
   }
   return undefined;
 };
@@ -24,7 +26,7 @@ export const getAddressError = (value: any): string | undefined => {
   try {
     const hexError = getHexStringError(value, 20);
     if (hexError) return hexError;
-    getAddress(value);
+    utils.getAddress(value);
     return undefined;
   } catch (e) {
     return e.message;
@@ -42,5 +44,5 @@ export const isValidBytes32 = (value: any): boolean => !getBytes32Error(value);
 ////////////////////////////////////////
 // Generators
 
-export const getRandomAddress = () => hexlify(randomBytes(20));
-export const getRandomBytes32 = () => hexlify(randomBytes(32));
+export const getRandomAddress = () => utils.hexlify(utils.randomBytes(20));
+export const getRandomBytes32 = () => utils.hexlify(utils.randomBytes(32));

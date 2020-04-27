@@ -1,4 +1,4 @@
-import { bigNumberify } from "ethers/utils";
+import { BigNumber } from "ethers";
 import { isBN, toBN } from "./bigNumbers";
 
 export const bigNumberifyJson = (json: any): object =>
@@ -19,7 +19,7 @@ export const stringify = (value: any, abrv: boolean = false): string =>
     value,
     (key: string, value: any): any =>
       value && value._hex
-        ? bigNumberify(value).toString()
+        ? BigNumber.from(value).toString()
         : abrv && value && typeof value === "string" && value.startsWith("indra")
         ? `${value.substring(0, 9)}..${value.substring(value.length - 4)}`
         : abrv && value && typeof value === "string" && value.startsWith("0x") && value.length > 12
@@ -28,7 +28,7 @@ export const stringify = (value: any, abrv: boolean = false): string =>
     2,
   );
 
-const nullify = (key: string, value: any) => typeof value === "undefined" ? null : value;
+const nullify = (key: string, value: any) => (typeof value === "undefined" ? null : value);
 
 export const safeJsonStringify = (value: any): string => {
   try {
@@ -47,4 +47,3 @@ export const safeJsonParse = (value: any): any => {
     return value;
   }
 };
-
