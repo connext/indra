@@ -11,14 +11,27 @@ import {
   ChallengeOutcomeFailedEventData,
   ChallengeCompletionFailedEventData,
   StoredAppChallengeStatus,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { Wallet } from "ethers";
 
-import { setupContext, expect } from "./utils";
+import {
+  setupContext,
+  expect,
+  NetworkContextForTestSuite,
+  MiniFreeBalance,
+  AppWithCounterClass,
+} from "./utils";
 
 import { Watcher } from "../src";
-import { ChannelSigner, getRandomAddress, ColorfulLogger } from "@connext/utils";
+import {
+  ChannelSigner,
+  getRandomAddress,
+  ColorfulLogger,
+} from "@connext/utils";
 import { SetStateCommitment } from "@connext/contracts";
+import { Zero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
 
 describe("Watcher.init", () => {
   let provider: JsonRpcProvider;
@@ -55,8 +68,12 @@ describe("Watcher.initiate", () => {
   let identityHash: string;
   let multisigAddress: string;
   let freeBalanceIdentityHash: string;
+  let freeBalance: MiniFreeBalance;
+  let app: AppWithCounterClass;
   let appSetState: SetStateCommitment;
   let fbSetState: SetStateCommitment;
+
+  let networkContext: NetworkContextForTestSuite;
 
   let watcher: Watcher;
 
@@ -66,9 +83,9 @@ describe("Watcher.initiate", () => {
     // get all values needed from context
     provider = context["provider"];
     multisigAddress = context["multisigAddress"];
-    const app = context["appInstance"];
-    const freeBalance = context["freeBalance"];
-    const networkContext = context["networkContext"];
+    app = context["appInstance"];
+    freeBalance = context["freeBalance"];
+    networkContext = context["networkContext"];
     freeBalanceIdentityHash = freeBalance.identityHash;
     identityHash = app.identityHash;
     appSetState = SetStateCommitment.fromJson(
@@ -293,7 +310,13 @@ describe("Watcher.initiate", () => {
     }
 
     // second block mined should call: `conditional`
-    const [appDisputeCompleted, freeBalanceDisputeCompleted] = await Promise.all([
+    const [
+      appDisputeCompleted,
+      freeBalanceDisputeCompleted,
+      appInitiatorBalance,
+      appResponderBalance,
+      multisigBalance,
+    ] = await Promise.all([
       new Promise((resolve, reject) => {
         watcher.on(
           WatcherEvents.ChallengeCompletedEvent,
@@ -318,6 +341,15 @@ describe("Watcher.initiate", () => {
           },
         );
       }),
+      new Promise((resolve) => {
+        provider.once(app.participants[0], (balance: BigNumber) => resolve(balance));
+      }),
+      new Promise((resolve) => {
+        provider.once(app.participants[1], (balance: BigNumber) => resolve(balance));
+      }),
+      new Promise((resolve) => {
+        provider.once(multisigAddress, (balance: BigNumber) => resolve(balance));
+      }),
       provider.send("evm_mine", []),
     ]);
     const expected2 = {
@@ -337,13 +369,23 @@ describe("Watcher.initiate", () => {
     for (const appId of [identityHash, freeBalanceIdentityHash]) {
       // verify stored challenge
       const challenge = await store.getAppChallenge(appId);
-      expect(challenge).to.containSubset(expected2[freeBalanceIdentityHash]);
+      expect(challenge).to.containSubset(expected2[appId]);
+
       // verify emitted events
-      expect(completedEvents[identityHash]).to.containSubset({
+      expect(completedEvents[appId]).to.containSubset({
         appInstanceId: appId,
         multisigAddress,
       });
     }
-    expect(appDisputeCompleted).to.containSubset({ test: "hi" });
+
+    // multisig is drained
+    expect(multisigBalance).to.be.eq(Zero);
+    // app participants received transfer
+    expect(appInitiatorBalance).to.be.eq(
+      app.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][0].amount,
+    );
+    expect(appResponderBalance).to.be.eq(
+      app.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][1].amount,
+    );
   });
 });

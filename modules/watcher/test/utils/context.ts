@@ -8,7 +8,6 @@ import {
   OutcomeType,
 } from "@connext/types";
 import {
-  getRandomAddress,
   computeAppChallengeHash,
   ChannelSigner,
   toBN,
@@ -29,6 +28,7 @@ import { ConnextStore } from "@connext/store";
 import { MiniFreeBalance } from "./miniFreeBalance";
 import { deployTestArtifactsToChain } from "./contracts";
 import { CREATE_PROXY_AND_SETUP_GAS } from "./utils";
+import { expect } from "./assertions";
 
 /////////////////////////////
 // Context
@@ -66,14 +66,28 @@ export const setupContext = async () => {
       { gasLimit: CREATE_PROXY_AND_SETUP_GAS },
     );
   });
+  // if it is successfully deployed, should be able to call amount withdraw
+  const withdrawn = await new Contract(
+    multisigAddress,
+    MinimumViableMultisig.abi,
+    wallet,
+  ).functions.totalAmountWithdrawn(CONVENTION_FOR_ETH_ASSET_ID);
+  expect(withdrawn).to.be.eq(Zero);
 
   // create objects
+  const appBalances = {
+    [CONVENTION_FOR_ETH_ASSET_ID]: [
+      { to: signers[0].address, amount: One },
+      { to: signers[1].address, amount: Zero },
+    ],
+  };
   const appInstance = new AppWithCounterClass(
     signers,
     multisigAddress,
     networkContext.AppWithAction,
     Zero, // default timeout
     One, // channel nonce
+    appBalances,
   );
 
   const freeBalance = new MiniFreeBalance(
@@ -93,14 +107,21 @@ export const setupContext = async () => {
   // fund multisig
   await wallet.sendTransaction({
     to: multisigAddress,
-    value: freeBalance.ethDepositTotal,
+    value: One,
   });
   await new Contract(networkContext.Token, ERC20.abi, wallet).transfer(
     multisigAddress,
-    freeBalance.tokenDepositTotal,
+    One,
   );
+  const ethBalance = await provider.getBalance(multisigAddress);
+  expect(ethBalance).to.be.eq(freeBalance.ethDepositTotal);
+  const tokenBalance = await new Contract(
+    networkContext.Token,
+    ERC20.abi,
+    wallet,
+  ).functions.balanceOf(multisigAddress);
+  expect(tokenBalance).to.be.eq(freeBalance.tokenDepositTotal);
 
-  // contract helper function
   const setAndProgressState = async (
     versionNumber: BigNumber,
     state: AppWithCounterState,
@@ -173,8 +194,8 @@ export const setupContext = async () => {
       schemaVersion: StateSchemaVersion,
       multisigAddress,
       addresses: {
-        proxyFactory: getRandomAddress(),
-        multisigMastercopy: getRandomAddress(),
+        proxyFactory: networkContext.ProxyFactory,
+        multisigMastercopy: networkContext.MinimumViableMultisig,
       },
       userIdentifiers: [signers[0].publicIdentifier, signers[1].publicIdentifier],
       proposedAppInstances: [],
@@ -210,9 +231,13 @@ export const setupContext = async () => {
       },
       outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
       appDefinition: appInterface.addr,
-      initiatorDeposit: appInstance.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][0].toString(),
+      initiatorDeposit: appInstance.tokenIndexedBalances[
+        CONVENTION_FOR_ETH_ASSET_ID
+      ][0].amount.toString(),
       initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
-      responderDeposit: appInstance.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][1].toString(),
+      responderDeposit: appInstance.tokenIndexedBalances[
+        CONVENTION_FOR_ETH_ASSET_ID
+      ][1].amount.toString(),
       responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
       twoPartyOutcomeInterpreterParams: bigNumberifyJson(twoPartyOutcomeInterpreterParams),
     };
