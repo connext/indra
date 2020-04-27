@@ -1,7 +1,6 @@
 import { IBackupServiceAPI, StorePair } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
-import { Wallet } from "ethers";
-import { arrayify, hexlify, keccak256, toUtf8Bytes, toUtf8String } from "ethers/utils";
+import { Wallet, utils } from "ethers";
 import { PisaClient as IPisaClient } from "pisa-client";
 
 export class PisaClientBackupAPI implements IBackupServiceAPI {
@@ -18,15 +17,15 @@ export class PisaClientBackupAPI implements IBackupServiceAPI {
     const address = this.getWalletAddress();
     const blockNumber = await this.getBlockNumber();
     const backupState = await this.pisaClient.restore(signer, address, blockNumber);
-    return backupState.map((b: any) => safeJsonParse(toUtf8String(arrayify(b.data))));
+    return backupState.map((b: any) => safeJsonParse(utils.toUtf8String(utils.arrayify(b.data))));
   }
 
   public async backup(pair: StorePair): Promise<void> {
     const signer = this.getWalletSigner();
     const address = this.getWalletAddress();
     const blockNumber = await this.getBlockNumber();
-    const data = hexlify(toUtf8Bytes(safeJsonStringify(pair)));
-    const id = keccak256(toUtf8Bytes(pair.path));
+    const data = utils.hexlify(utils.toUtf8Bytes(safeJsonStringify(pair)));
+    const id = utils.keccak256(utils.toUtf8Bytes(pair.path));
     const nonce = pair.value.freeBalanceAppInstance.latestVersionNumber;
     try {
       await this.pisaClient.backup(signer, address, data, blockNumber, id, nonce);
@@ -44,7 +43,7 @@ export class PisaClientBackupAPI implements IBackupServiceAPI {
   /// ////////////////////////////////////////////
   /// // WALLET METHODS
   private getWalletSigner(): (digest: any) => Promise<string> {
-    return (digest: any): Promise<string> => this.wallet.signMessage(arrayify(digest));
+    return (digest: any): Promise<string> => this.wallet.signMessage(utils.arrayify(digest));
   }
 
   private getWalletAddress(): string {
