@@ -10,6 +10,7 @@ import {
   SetStateCommitmentJSON,
   ConditionalTransactionCommitmentJSON,
   NetworkContext,
+  CoinTransfer,
 } from "@connext/types";
 import { defaultAbiCoder, solidityPack, keccak256 } from "ethers/utils";
 import { ChannelSigner, toBNJson } from "@connext/utils";
@@ -28,8 +29,13 @@ export class AppWithCounterClass {
     public readonly appDefinition: string,
     public readonly defaultTimeout: BigNumber,
     public readonly channelNonce: BigNumber,
-    public readonly tokenIndexedBalances = {
-      [CONVENTION_FOR_ETH_ASSET_ID]: [One, Zero], // initiator, resp
+    public readonly tokenIndexedBalances: {
+      [tokenAddress: string]: CoinTransfer[];
+    } = {
+      [CONVENTION_FOR_ETH_ASSET_ID]: [
+        { to: signerParticipants[0].address, amount: One },
+        { to: signerParticipants[1].address, amount: Zero },
+      ], // initiator, resp
     },
     public readonly stateTimeout: BigNumber = Zero,
     public versionNumber: BigNumber = One,
@@ -75,10 +81,10 @@ export class AppWithCounterClass {
   }
 
   get interpreterParams(): TwoPartyFixedOutcomeInterpreterParamsJson {
-    const amount = this.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][0];
+    const coinTransfer = this.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][0];
     return {
       playerAddrs: this.participants as [string, string],
-      amount: toBNJson(amount) as any,
+      amount: toBNJson(coinTransfer.amount) as any,
       tokenAddress: CONVENTION_FOR_ETH_ASSET_ID,
     };
   }
@@ -94,7 +100,7 @@ export class AppWithCounterClass {
   public static encodeInterpreterParams(
     interpreterParams: TwoPartyFixedOutcomeInterpreterParamsJson,
   ): string {
-    return defaultAbiCoder.encode(["uint256"], [interpreterParams.amount]);
+    return defaultAbiCoder.encode([`tuple(address[] playerAddrs, uint256 amount, address tokenAddress)`], [interpreterParams]);
   }
 
   public static encodeAction(action: AppWithCounterAction) {
