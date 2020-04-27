@@ -1,16 +1,17 @@
+import * as ethers from "ethers";
+
 import { Address, HexString, Bytes32 } from "../basic";
-import { BigNumber } from "ethers/utils";
 
 ////////////////////////////////////////
 // keep synced w contracts/adjudicator/libs/LibStateChannelApp.sol
 
 // A minimal structure that uniquely identifies a single instance of an App
 export type AppIdentity = {
-  channelNonce: BigNumber;
+  channelNonce: ethers.BigNumber;
   participants: Address[];
   multisigAddress: Address;
   appDefinition: Address;
-  defaultTimeout: BigNumber;
+  defaultTimeout: ethers.BigNumber;
 };
 
 // A structure representing the state of a CounterfactualApp instance from the POV of the blockchain
@@ -18,8 +19,8 @@ export type AppIdentity = {
 // appStateHash is the hash of a state specific to the CounterfactualApp (e.g. chess position)
 export type AppChallenge = {
   appStateHash: HexString;
-  versionNumber: BigNumber;
-  finalizesAt: BigNumber;
+  versionNumber: ethers.BigNumber;
+  finalizesAt: ethers.BigNumber;
   status: ChallengeStatus;
 };
 
@@ -41,13 +42,13 @@ export type SignedAppChallengeUpdate<T = string> = {
   timeout: number | T; // number for backwards compatability, TODO: remove
   signatures: string[];
 };
-export type SignedAppChallengeUpdateBigNumber = SignedAppChallengeUpdate<BigNumber>;
+export type SignedAppChallengeUpdateBigNumber = SignedAppChallengeUpdate<ethers.BigNumber>;
 
 export type SignedCancelChallengeRequest<T = string> = {
   versionNumber: T;
   signatures: string[];
 };
-export type SignedCancelChallengeRequestBigNumber = SignedCancelChallengeRequest<BigNumber>;
+export type SignedCancelChallengeRequestBigNumber = SignedCancelChallengeRequest<ethers.BigNumber>;
 
 // Emitted by MixinProgressState.sol when an action is played on
 // top of an onchain state so participants can derive new state
@@ -56,8 +57,8 @@ export const StateProgressed = "StateProgressed";
 export type StateProgressedContractEvent = {
   identityHash: string;
   action: string; // encoded
-  versionNumber: BigNumber;
-  timeout: BigNumber;
+  versionNumber: ethers.BigNumber;
+  timeout: ethers.BigNumber;
   turnTaker: Address; // eth addr
   signature: string; // of action taker
 };
@@ -69,8 +70,8 @@ export type ChallengeUpdatedContractEvent = {
   identityHash: Bytes32;
   status: ChallengeStatus;
   appStateHash: Bytes32; // latest app state
-  versionNumber: BigNumber;
-  finalizesAt: BigNumber;
+  versionNumber: ethers.BigNumber;
+  finalizesAt: ethers.BigNumber;
 };
 
 // events emitted by contracts

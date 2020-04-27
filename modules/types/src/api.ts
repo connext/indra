@@ -1,5 +1,6 @@
-import { AppRegistry } from "./app";
+import * as ethers from "ethers";
 
+import { AppRegistry } from "./app";
 import {
   Address,
   Bytes32,
@@ -14,11 +15,10 @@ import { IChannelSigner } from "./crypto";
 import { NodeResponses } from "./node";
 import { IMessagingService } from "./messaging";
 import { ILoggerService } from "./logger";
-import { JsonRpcProvider } from "ethers/providers";
 import { IClientStore } from "./store";
 
 export interface AsyncNodeInitializationParameters extends NodeInitializationParameters {
-  ethProvider: JsonRpcProvider;
+  ethProvider: ethers.providers.JsonRpcProvider;
   messaging: IMessagingService;
   messagingUrl?: string;
   store?: IClientStore;

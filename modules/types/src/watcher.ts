@@ -1,3 +1,5 @@
+import * as ethers from "ethers";
+
 import {
   AppChallenge,
   StateProgressedContractEvent,
@@ -15,14 +17,13 @@ import {
   SetStateCommitmentJSON,
 } from "./commitments";
 import { IChannelSigner } from "./crypto";
-import { JsonRpcProvider, TransactionReceipt } from "ethers/providers";
 import { ILoggerService } from "./logger";
 
 ////////////////////////////////////////
 // Watcher exxternal parameters
 export type WatcherInitOptions = {
   signer: IChannelSigner | string; // wallet or pk
-  provider: JsonRpcProvider | string;
+  provider: ethers.providers.JsonRpcProvider | string;
   context: NetworkContext;
   store: IWatcherStoreService;
   log?: ILoggerService;
@@ -32,7 +33,7 @@ export type WatcherInitOptions = {
 // Events
 export const ChallengeInitiatedEvent = "ChallengeInitiatedEvent";
 export type ChallengeInitiatedEventData = {
-  transaction: TransactionReceipt;
+  transaction: ethers.providers.TransactionReceipt;
   challenge: AppChallenge;
   appInstanceId: Bytes32;
   multisigAddress: Address;

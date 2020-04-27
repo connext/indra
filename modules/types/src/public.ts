@@ -1,5 +1,4 @@
-import { TransactionResponse } from "ethers/providers";
-import { BigNumberish } from "ethers/utils";
+import * as ethers from "ethers";
 
 import { Address, BigNumber, Bytes32, HexString, PublicIdentifier } from "./basic";
 import { ConditionalTransferTypes } from "./transfers";
@@ -9,7 +8,7 @@ import { MethodResults, MethodParams } from "./methods";
 // deposit
 
 type DepositParameters = {
-  amount: BigNumberish;
+  amount: ethers.BigNumberish;
   assetId?: Address; // if not provided, will default to 0x0 (Eth)
 };
 
@@ -38,8 +37,8 @@ type RescindDepositRightsResponse = MethodResults.RescindDepositRights;
 
 type HashLockTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.HashLockTransfer;
-  amount: BigNumberish;
-  timelock: BigNumberish;
+  amount: ethers.BigNumberish;
+  timelock: ethers.BigNumberish;
   lockHash: Bytes32;
   recipient: PublicIdentifier;
   assetId?: Address;
@@ -68,7 +67,7 @@ type ResolveHashLockTransferResponse = {
 
 type LinkedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.LinkedTransfer;
-  amount: BigNumberish;
+  amount: ethers.BigNumberish;
   assetId?: Address;
   paymentId: Bytes32;
   preImage: Bytes32;
@@ -86,7 +85,7 @@ type ResolveLinkedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.LinkedTransfer;
   paymentId: Bytes32;
   preImage: Bytes32;
-}
+};
 
 type ResolveLinkedTransferResponse = {
   appIdentityHash: Bytes32;
@@ -160,11 +159,11 @@ type ResolveConditionResponse =
 // swap
 
 type SwapParameters = {
-  amount: BigNumberish;
+  amount: ethers.BigNumberish;
   fromAssetId: Address;
   swapRate: string; // DecString?
   toAssetId: Address;
-}
+};
 
 type SwapResponse = {
   id: number;
@@ -173,20 +172,20 @@ type SwapResponse = {
   multisigAddress: Address;
   available: boolean;
   activeCollateralizations: { [assetId: string]: boolean };
-}
+};
 
 ////////////////////////////////////////
 // withdraw
 
 type WithdrawParameters = {
-  amount: BigNumberish;
+  amount: ethers.BigNumberish;
   assetId?: Address; // if not provided, will default to 0x0 (Eth)
   recipient?: Address; // if not provided, will default to signer addr
   nonce?: HexString; // generated internally, end user doesn't need to provide it
 };
 
 type WithdrawResponse = {
-  transaction: TransactionResponse;
+  transaction: ethers.providers.TransactionResponse;
 };
 
 ////////////////////////////////////////
@@ -221,7 +220,7 @@ export namespace PublicParams {
   export type Withdraw = WithdrawParameters;
 }
 
-export type PublicParam = 
+export type PublicParam =
   | CheckDepositRightsParameters
   | ConditionalTransferParameters
   | DepositParameters
@@ -256,7 +255,7 @@ export namespace PublicResults {
   export type Withdraw = WithdrawResponse;
 }
 
-export type PublicResult = 
+export type PublicResult =
   | CheckDepositRightsResponse
   | ConditionalTransferResponse
   | DepositResponse

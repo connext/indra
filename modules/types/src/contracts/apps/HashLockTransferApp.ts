@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers/utils";
+import * as ethers from "ethers";
 
 import { Bytes32 } from "../../basic";
 import { tidy } from "../../utils";
@@ -16,7 +16,7 @@ export type HashLockTransferAppState = {
   coinTransfers: CoinTransfer[];
   lockHash: Bytes32;
   preImage: Bytes32;
-  timelock: BigNumber;
+  timelock: ethers.BigNumber;
   finalized: boolean;
 };
 

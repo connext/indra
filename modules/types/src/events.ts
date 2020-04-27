@@ -1,4 +1,5 @@
 import EventEmitter from "eventemitter3";
+import * as ethers from "ethers";
 
 import { AppInstanceProposal } from "./app";
 import { Address, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
@@ -17,7 +18,6 @@ import { ProtocolParams } from "./protocol";
 import { ProtocolMessageData } from "./messaging";
 import { PublicParams } from "./public";
 import { MinimalTransaction } from "./commitments";
-import { TransactionResponse } from "ethers/providers";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
@@ -150,7 +150,7 @@ type UpdateStateEventData = {
 const WITHDRAWAL_CONFIRMED_EVENT = "WITHDRAWAL_CONFIRMED_EVENT";
 
 type WithdrawalConfirmedEventData = {
-  transaction: TransactionResponse;
+  transaction: ethers.providers.TransactionResponse;
 };
 
 ////////////////////////////////////////

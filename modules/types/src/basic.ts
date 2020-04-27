@@ -1,8 +1,17 @@
-import { BigNumber as ethersBN, BigNumberish, Interface, ParamType } from "ethers/utils";
+import * as ethers from "ethers";
 
-export { Contract } from "ethers";
-export { JsonRpcProvider, TransactionReceipt, TransactionResponse } from "ethers/providers";
-export { BigNumberish, Network, Transaction } from "ethers/utils";
+export const Contract = ethers.Contract;
+export type Contract = ethers.Contract;
+
+export type TransactionReceipt = ethers.providers.TransactionReceipt;
+export type TransactionResponse = ethers.providers.TransactionResponse;
+
+export const JsonRpcProvider = ethers.providers.JsonRpcProvider;
+export type JsonRpcProvider = ethers.providers.JsonRpcProvider;
+
+export type BigNumberish = ethers.BigNumberish;
+export type Network = ethers.providers.Network;
+export type Transaction = ethers.Transaction;
 
 // special strings
 // these function more as documentation for devs than checked types
@@ -18,8 +27,8 @@ export type PrivateKey = string; // aka Bytes32
 export type SignatureString = string; // aka HexString of length 132
 export type UrlString = string; // eg "<protocol>://<host>[:<port>]/<path>
 
-export type BigNumber = ethersBN;
-export const BigNumber = ethersBN;
+export type BigNumber = ethers.BigNumber;
+export const BigNumber = ethers.BigNumber;
 
 export type HexObject = { _hex: HexString };
 
@@ -32,9 +41,9 @@ export interface EthSignature {
 }
 
 // This is copied from the ethers definition of how an ABI is typed.
-export type ContractABI = Array<string | ParamType> | string | Interface;
+export type ContractABI = Array<string | ethers.utils.ParamType> | string | ethers.utils.Interface;
 
-export type SolidityPrimitiveType = string | BigNumberish | boolean;
+export type SolidityPrimitiveType = string | ethers.BigNumberish | boolean;
 
 type SolidityABIEncoderV2Struct = {
   [x: string]: SolidityValueType;
