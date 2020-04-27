@@ -180,9 +180,12 @@ export class NodeApiClient implements INodeApiClient {
     callback: (...args: any[]) => any,
     timeout: number,
   ): Promise<any> {
-    const lockValue = await this.send(`${this.userIdentifier}.${this.nodeIdentifier}.lock.acquire.${lockName}`, {
-      lockTTL: timeout,
-    });
+    const lockValue = await this.send(
+      `${this.userIdentifier}.${this.nodeIdentifier}.lock.acquire.${lockName}`,
+      {
+        lockTTL: timeout,
+      },
+    );
     this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
     try {
@@ -190,7 +193,9 @@ export class NodeApiClient implements INodeApiClient {
     } catch (e) {
       this.log.error(`Failed to execute callback while lock is held: ${e.stack || e.message}`);
     } finally {
-      await this.send(`${this.userIdentifier}.${this.nodeIdentifier}.lock.release.${lockName}`, { lockValue });
+      await this.send(`${this.userIdentifier}.${this.nodeIdentifier}.lock.release.${lockName}`, {
+        lockValue,
+      });
       this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);
     }
     return retVal;
@@ -219,7 +224,9 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async getPendingAsyncTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers> {
-    return (await this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-pending`)) || [];
+    return (
+      (await this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-pending`)) || []
+    );
   }
 
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
@@ -227,12 +234,18 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async getTransferHistory(): Promise<NodeResponses.GetTransferHistory> {
-    return (await this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-history`)) || [];
+    return (
+      (await this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-history`)) || []
+    );
   }
 
-  public async getHashLockTransfer(lockHash: string): Promise<NodeResponses.GetHashLockTransfer> {
+  public async getHashLockTransfer(
+    lockHash: string,
+    assetId: string,
+  ): Promise<NodeResponses.GetHashLockTransfer> {
     return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-hashlock`, {
       lockHash,
+      assetId,
     });
   }
 

@@ -86,7 +86,10 @@ export interface IConnextClient {
   isAvailable(): Promise<void>;
   getChannel(): Promise<NodeResponses.GetChannel>;
   getLinkedTransfer(paymentId: Bytes32): Promise<NodeResponses.GetLinkedTransfer>;
-  getHashLockTransfer(lockHash: Bytes32): Promise<NodeResponses.GetHashLockTransfer>;
+  getHashLockTransfer(
+    lockHash: Bytes32,
+    assetId?: Address,
+  ): Promise<NodeResponses.GetHashLockTransfer>;
   getSignedTransfer(lockHash: Bytes32): Promise<NodeResponses.GetSignedTransfer>;
   getAppRegistry(
     appDetails?:
