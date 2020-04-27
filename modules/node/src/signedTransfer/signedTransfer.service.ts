@@ -7,7 +7,7 @@ import {
   SimpleSignedTransferAppState,
   Address,
 } from "@connext/types";
-import { bigNumberifyJson, getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { bigNumberifyJson, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
 
@@ -68,7 +68,9 @@ export class SignedTransferService {
     this.log.info(
       `installSignedTransferReceiverApp for ${userIdentifier} paymentId ${paymentId} started`,
     );
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userIdentifier);
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      userIdentifier,
+    );
 
     // TODO: could there be more than 1? how to handle that case?
     let [senderAppBadType] = await this.signedTransferRepository.findSignedTransferAppsByPaymentId(
@@ -88,11 +90,24 @@ export class SignedTransferService {
     // sender amount
     const amount = senderApp.latestState.coinTransfers[0].amount;
 
+    const existing = await this.findReceiverAppByPaymentId(paymentId);
+    if (existing) {
+      const result: NodeResponses.ResolveSignedTransfer = {
+        appIdentityHash: existing.identityHash,
+        sender: senderChannel.userIdentifier,
+        meta: existing.meta,
+        amount,
+        assetId,
+      };
+      this.log.warn(`Found existing hashlock transfer app, returning: ${stringify(result)}`);
+      return result;
+    }
+
     const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
 
     const freeBal = await this.cfCoreService.getFreeBalance(
       userIdentifier,
-      channel.multisigAddress,
+      receiverChannel.multisigAddress,
       assetId,
     );
     if (freeBal[freeBalanceAddr].lt(amount)) {
@@ -131,7 +146,7 @@ export class SignedTransferService {
 
     const meta = { ...senderApp.meta, sender: senderChannel.userIdentifier };
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
-      channel,
+      receiverChannel,
       initialState,
       amount,
       assetId,

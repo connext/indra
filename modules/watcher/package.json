@@ -16,8 +16,8 @@
   },
   "dependencies": {
     "@connext/contracts": "2.0.2",
-    "@connext/types": "6.0.8",
-    "@connext/utils": "6.0.8",
+    "@connext/types": "6.1.2",
+    "@connext/utils": "6.1.2",
     "ethers": "4.0.47",
     "eventemitter3": "4.0.0"
   },

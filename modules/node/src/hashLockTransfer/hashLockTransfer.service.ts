@@ -3,8 +3,10 @@ import {
   HashLockTransferAppName,
   HashLockTransferAppState,
   HashLockTransferStatus,
+  Address,
+  Bytes32,
 } from "@connext/types";
-import { bigNumberifyJson, getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { bigNumberifyJson, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
 
@@ -15,7 +17,7 @@ import { LoggerService } from "../logger/logger.service";
 import { TIMEOUT_BUFFER } from "../constants";
 import { ConfigService } from "../config/config.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { HashlockTransferRepository } from "./hashlockTransfer.repository";
 
 const appStatusesToHashLockTransferStatus = (
   currentBlockNumber: number,
@@ -72,7 +74,7 @@ export class HashLockTransferService {
     private readonly configService: ConfigService,
     private readonly log: LoggerService,
     private readonly channelRepository: ChannelRepository,
-    private readonly appInstanceRepository: AppInstanceRepository,
+    private readonly hashlockTransferRepository: HashlockTransferRepository,
   ) {
     this.log.setContext("HashLockTransferService");
   }
@@ -85,9 +87,13 @@ export class HashLockTransferService {
     meta: any = {},
   ): Promise<{ appIdentityHash: string }> {
     this.log.info(
-      `installHashLockTransferReceiverApp from ${senderIdentifier} to ${receiverIdentifier} assetId ${appState} appState ${JSON.stringify(
+      `installHashLockTransferReceiverApp started: ${stringify({
+        senderIdentifier,
+        receiverIdentifier,
         appState,
-      )} meta ${JSON.stringify(meta)} started`,
+        assetId,
+        meta,
+      })}`,
     );
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       receiverIdentifier,
@@ -107,6 +113,13 @@ export class HashLockTransferService {
       throw new Error(
         `Cannot resolve hash lock transfer with expired timelock: ${timelock.toString()}, block: ${currBlock}`,
       );
+    }
+
+    const existing = await this.findReceiverAppByLockHashAndAssetId(appState.lockHash, assetId);
+    if (existing) {
+      const result = { appIdentityHash: existing.identityHash };
+      this.log.warn(`Found existing hashlock transfer app, returning: ${stringify(result)}`);
+      return result;
     }
 
     const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
@@ -184,11 +197,12 @@ export class HashLockTransferService {
   }
 
   async findSenderAndReceiverAppsWithStatus(
-    lockHash: string,
+    lockHash: Bytes32,
+    assetId: Address,
   ): Promise<{ senderApp: AppInstance; receiverApp: AppInstance; status: any } | undefined> {
     this.log.info(`findSenderAndReceiverAppsWithStatus ${lockHash} started`);
-    const senderApp = await this.findSenderAppByLockHash(lockHash);
-    const receiverApp = await this.findReceiverAppByLockHash(lockHash);
+    const senderApp = await this.findSenderAppByLockHashAndAssetId(lockHash, assetId);
+    const receiverApp = await this.findReceiverAppByLockHashAndAssetId(lockHash, assetId);
     const block = await this.configService.getEthProvider().getBlockNumber();
     const status = appStatusesToHashLockTransferStatus(block, senderApp, receiverApp);
     const result = { senderApp, receiverApp, status };
@@ -198,24 +212,34 @@ export class HashLockTransferService {
     return result;
   }
 
-  async findSenderAppByLockHash(lockHash: string): Promise<AppInstance> {
+  async findSenderAppByLockHashAndAssetId(
+    lockHash: Bytes32,
+    assetId: Address,
+  ): Promise<AppInstance> {
     this.log.info(`findSenderAppByLockHash ${lockHash} started`);
     // node receives from sender
-    const app = await this.appInstanceRepository.findHashLockTransferAppsByLockHashAndReceiver(
+    // eslint-disable-next-line max-len
+    const app = await this.hashlockTransferRepository.findHashLockTransferAppsByLockHashAssetIdAndReceiver(
       lockHash,
       this.cfCoreService.cfCore.signerAddress,
+      assetId,
     );
     const result = normalizeHashLockTransferAppState(app);
     this.log.info(`findSenderAppByLockHash ${lockHash} completed: ${JSON.stringify(result)}`);
     return result;
   }
 
-  async findReceiverAppByLockHash(lockHash: string): Promise<AppInstance> {
+  async findReceiverAppByLockHashAndAssetId(
+    lockHash: Bytes32,
+    assetId: Address,
+  ): Promise<AppInstance> {
     this.log.info(`findReceiverAppByLockHash ${lockHash} started`);
     // node sends to receiver
-    const app = await this.appInstanceRepository.findHashLockTransferAppsByLockHashAndSender(
+    // eslint-disable-next-line max-len
+    const app = await this.hashlockTransferRepository.findHashLockTransferAppByLockHashAssetIdAndSender(
       lockHash,
       this.cfCoreService.cfCore.signerAddress,
+      assetId,
     );
     const result = normalizeHashLockTransferAppState(app);
     this.log.info(`findReceiverAppByLockHash ${lockHash} completed: ${JSON.stringify(result)}`);
