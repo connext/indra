@@ -1,15 +1,16 @@
 import { BuidlerConfig } from "@nomiclabs/buidler/config";
 import { usePlugin } from "@nomiclabs/buidler/config";
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
+
+usePlugin("buidler-ethers-v5");
+usePlugin("@nomiclabs/buidler-waffle");
 
 // for deposit tests, you will need an account that
 // holds the maximum uint256 value
 
 // create accounts with the default balance of MAX_INT / 2
 // and use them to fund accounts in the test as needed
-const MAX_INT = new BigNumber(2).pow(256).sub(1);
-
-usePlugin("@nomiclabs/buidler-waffle");
+const MAX_INT = BigNumber.from(2).pow(256).sub(1);
 
 const config: BuidlerConfig = {
   paths: {

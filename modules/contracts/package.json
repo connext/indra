@@ -45,6 +45,7 @@
     "@types/mocha": "7.0.2",
     "@types/node": "13.13.2",
     "@types/sinon-chai": "3.2.4",
+    "buidler-ethers-v5": "0.2.0",
     "chai": "4.2.0",
     "ethers": "4.0.47",
     "ethereum-waffle": "2.4.1",
