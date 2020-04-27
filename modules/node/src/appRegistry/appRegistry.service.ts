@@ -178,19 +178,19 @@ export class AppRegistryService implements OnModuleInit {
           this.cfCoreService.cfCore.publicIdentifier,
         );
 
-        this.log.warn(`Meta Before: ${stringify(proposeInstallParams.meta)}`)
+        this.log.warn(`Meta Before: ${stringify(proposeInstallParams.meta)}`);
         let recipient;
         // https://github.com/ConnextProject/indra/issues/942
         recipient = proposeInstallParams.meta["recipient"];
         if (proposeInstallParams.meta["path"]) {
-          this.log.warn('PERFORMING EXPERIMENTAL MULTIHOP: this is not yet safe to use in prod')
-          const path = proposeInstallParams.meta["path"]
+          this.log.warn("PERFORMING EXPERIMENTAL MULTIHOP: this is not yet safe to use in prod");
+          const path: any[] = proposeInstallParams.meta["path"];
           // removes the first element of array
           path.shift();
-          proposeInstallParams.meta["path"] = path
+          proposeInstallParams.meta["path"] = path;
           recipient = path[0];
         }
-        this.log.warn(`Meta after: ${stringify(proposeInstallParams.meta)}`)
+        this.log.warn(`Meta after: ${stringify(proposeInstallParams.meta)}`);
         // install for receiver or error
         await this.hashlockTransferService.installHashLockTransferReceiverApp(
           from,
@@ -255,8 +255,10 @@ export class AppRegistryService implements OnModuleInit {
               (proposeInstallParams.initialState as SimpleSignedTransferAppState).paymentId,
             )
             // if receipient is not online, do not throw error, receipient can always unlock later
-            .then(response => this.log.info(`Installed recipient app: ${response.appIdentityHash}`))
-            .catch(e =>
+            .then((response) =>
+              this.log.info(`Installed recipient app: ${response.appIdentityHash}`),
+            )
+            .catch((e) =>
               this.log.error(
                 `Could not install receiver app, receiver was possibly offline? ${e.toString()}`,
               ),

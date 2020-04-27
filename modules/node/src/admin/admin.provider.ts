@@ -40,7 +40,9 @@ class AdminMessaging extends AbstractMessagingProvider {
    * This method will return the userAddress and the multisig address for all
    * channels that fit this description.
    */
-  async getNoFreeBalance(): Promise<{ multisigAddress: string; userAddress: string; error: any }[]> {
+  async getNoFreeBalance(): Promise<
+    { multisigAddress: string; userAddress: string; error: any }[]
+  > {
     return this.adminService.getNoFreeBalance();
   }
 
@@ -96,7 +98,7 @@ class AdminMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
-    const publicIdentifier = this.configService.getPublicIdentifier()
+    const publicIdentifier = this.configService.getPublicIdentifier();
     await super.connectRequestReponse(
       `admin.${publicIdentifier}.get-no-free-balance`,
       this.getNoFreeBalance.bind(this),
@@ -114,7 +116,8 @@ class AdminMessaging extends AbstractMessagingProvider {
 
     await super.connectRequestReponse(
       `admin.${publicIdentifier}.get-all-channels`,
-      this.getAllChannels.bind(this));
+      this.getAllChannels.bind(this),
+    );
 
     await super.connectRequestReponse(
       `admin.${publicIdentifier}.get-all-linked-transfers`,
@@ -144,7 +147,14 @@ class AdminMessaging extends AbstractMessagingProvider {
 }
 
 export const adminProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, LoggerService, MessagingProviderId, AdminService, ChannelService, ConfigService],
+  inject: [
+    AuthService,
+    LoggerService,
+    MessagingProviderId,
+    AdminService,
+    ChannelService,
+    ConfigService,
+  ],
   provide: AdminMessagingProviderId,
   useFactory: async (
     authService: AuthService,
@@ -154,7 +164,14 @@ export const adminProviderFactory: FactoryProvider<Promise<void>> = {
     channelService: ChannelService,
     configService: ConfigService,
   ): Promise<void> => {
-    const admin = new AdminMessaging(authService, log, messaging, adminService, channelService, configService);
+    const admin = new AdminMessaging(
+      authService,
+      log,
+      messaging,
+      adminService,
+      channelService,
+      configService,
+    );
     await admin.setupSubscriptions();
   },
 };

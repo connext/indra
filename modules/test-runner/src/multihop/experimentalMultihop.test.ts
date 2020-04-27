@@ -5,7 +5,7 @@ import { soliditySha256 } from "ethers/utils";
 import { providers } from "ethers";
 import { before } from "mocha";
 
-import { createClient, fundChannel, ETH_AMOUNT_MD, ETH_AMOUNT_SM, env } from "../util";
+import { createClient, fundChannel, ETH_AMOUNT_MD, ETH_AMOUNT_SM, env, expect } from "../util";
 
 describe.only("Experimental multihop tests", () => {
   let clientA: IConnextClient;
@@ -59,7 +59,13 @@ describe.only("Experimental multihop tests", () => {
     ]);
   });
 
-  it("clientA can transfer funds to clientC over both nodeA and nodeB", async () => {
+  it.only("clientA can transfer funds to clientC over both nodeA and nodeB", async () => {
+    const res = await axios.post(`${env.nodeUrl}/admin/nodetonode`, {
+      userIdentifier: clientC.nodeIdentifier,
+    });
+
+    console.log("res.data: ", res.data);
+    expect(res.data).to.be.ok;
     const preImage = getRandomBytes32();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
     const lockHash = soliditySha256(["bytes32"], [preImage]);
@@ -72,12 +78,11 @@ describe.only("Experimental multihop tests", () => {
         timelock,
         meta: {
           path: [clientA.nodeIdentifier, clientC.nodeIdentifier, clientC.publicIdentifier],
-          sender: clientA.publicIdentifier,
         },
         recipient: clientC.publicIdentifier,
       } as PublicParams.HashLockTransfer),
       new Promise((resolve) => {
-        clientB.on("CONDITIONAL_TRANSFER_CREATED_EVENT", resolve);
+        clientC.on("CONDITIONAL_TRANSFER_CREATED_EVENT", resolve);
       }),
     ]);
 

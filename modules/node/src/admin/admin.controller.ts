@@ -2,15 +2,16 @@ import { Controller, Post, Body } from "@nestjs/common";
 
 import { LoggerService } from "../logger/logger.service";
 import { ChannelService } from "../channel/channel.service";
+import { ChannelRepository } from "../channel/channel.repository";
 
 import { AdminService } from "./admin.service";
-import { stringify } from "@connext/utils";
 
 @Controller("admin")
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly channelService: ChannelService,
+    private readonly channelRepository: ChannelRepository,
     private readonly log: LoggerService,
   ) {
     this.log.setContext("AdminController");
@@ -18,17 +19,15 @@ export class AdminController {
 
   @Post("nodetonode")
   async getNonce(@Body() bodyParams: { userIdentifier: string }): Promise<string> {
-    let multisigAddress: string;
-    this.log.warn(`Creating node to node channel`)
-    try {
-      multisigAddress = (await this.channelService.create(bodyParams.userIdentifier)).multisigAddress;
-    } catch (e) {
-      this.log.error(e)
+    const { userIdentifier } = bodyParams;
+    const existing = await this.channelRepository.findByUserPublicIdentifier(userIdentifier);
+    if (existing) {
+      this.log.info(`Found existing node to node channel for ${userIdentifier}`);
+      return existing.multisigAddress;
+    } else {
+      this.log.info(`Creating node to node channel for ${userIdentifier}`);
+      const channel = await this.channelService.create(userIdentifier);
+      return channel.multisigAddress;
     }
-    if(!multisigAddress) {
-      multisigAddress = (await this.channelService.getStateChannel(bodyParams.userIdentifier)).multisigAddress;
-    }
-    this.log.warn(`Address: ${multisigAddress}`)
-    return multisigAddress;
   }
 }
