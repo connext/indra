@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, BadRequestException } from "@nestjs/common";
+import { Controller, Get, Options, Post, Body, Param, BadRequestException } from "@nestjs/common";
 
 import { LoggerService } from "../logger/logger.service";
 
@@ -14,6 +14,11 @@ export class AuthController {
   @Get(":userIdentifier")
   async getNonce(@Param("userIdentifier") userIdentifier: string): Promise<string> {
     return this.authService.getNonce(userIdentifier);
+  }
+
+  @Options("")
+  async noop(): Promise<void> {
+    return;
   }
 
   @Post("")

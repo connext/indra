@@ -79,3 +79,6 @@ jobs:
     - run: make build-report
     - run: sleep 15 && make dls
     - run: make test-integration
+    - name: Print logs
+      if: failure()
+      run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
