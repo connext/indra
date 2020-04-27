@@ -9,7 +9,7 @@ ETH_PROVIDER_URL=${ETH_PROVIDER_URL#*://}
 
 if [[ "$ETH_PROVIDER_PROTOCOL" == "ssl" ]]
 then export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}:443"
-else export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}:80"
+else export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}"
 fi
 
 if [[ "$ETH_PROVIDER_URL" == *"/"* ]]
