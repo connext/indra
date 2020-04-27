@@ -7,7 +7,7 @@ fi
 
 ETH_PROVIDER_URL=${ETH_PROVIDER_URL#*://}
 
-if [[ "$ETH_PROVIDER_PATH" == "ssl" ]]
+if [[ "$ETH_PROVIDER_PROTOCOL" == "ssl" ]]
 then export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}:443"
 else export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}"
 fi
@@ -43,8 +43,8 @@ loading_pid="$!"
 # Wait for downstream services to wake up
 # Define service hostnames & ports we depend on
 
-wait-for -t 60 $ETH_PROVIDER_HOST 2> /dev/null
 echo "waiting for $ETH_PROVIDER_HOST..."
+wait-for -t 60 $ETH_PROVIDER_HOST 2> /dev/null
 while ! curl -s $ETH_PROVIDER_HOST > /dev/null
 do sleep 2
 done
