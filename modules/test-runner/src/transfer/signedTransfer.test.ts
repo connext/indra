@@ -106,7 +106,7 @@ describe("Signed Transfers", () => {
 
     await Promise.all([
       new Promise(async (res) => {
-        clientA.on(EventNames.UNINSTALL_EVENT, async (data) => {
+        clientA.once(EventNames.UNINSTALL_EVENT, async (data) => {
           const {
             [clientA.signerAddress]: clientAPostReclaimBal,
             [clientA.nodeSignerAddress]: nodePostReclaimBal,
@@ -123,23 +123,25 @@ describe("Signed Transfers", () => {
         signature,
       } as PublicParams.ResolveSignedTransfer),
       new Promise(async (res) => {
-        clientA.on(
+        clientA.once(
           EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
-          async (data: EventPayloads.SignedTransferCreated) => {
-            console.log("data: ", data);
-            expect(data).to.deep.contain({
+          async (eventData: EventPayloads.SignedTransferCreated) => {
+            expect(eventData).to.deep.contain({
               amount: transfer.amount,
               assetId: transfer.assetId,
               type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
               paymentId,
               sender: clientA.publicIdentifier,
-              transferMeta: { signer: signerAddress },
+              transferMeta: {
+                data,
+                signature,
+              },
               meta: {
                 foo: "bar",
                 recipient: clientB.publicIdentifier,
                 sender: clientA.publicIdentifier,
               },
-            } as EventPayloads.SignedTransferCreated);
+            } as EventPayloads.SignedTransferUnlocked);
             res();
           },
         );
