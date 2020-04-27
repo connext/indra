@@ -51,6 +51,7 @@ type HashLockTransferResponse = {
 
 type ResolveHashLockTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.HashLockTransfer;
+  assetId: Address;
   preImage: Bytes32;
 };
 

@@ -59,7 +59,7 @@ export interface INodeApiClient {
   getChannel(): Promise<NodeResponses.GetChannel>;
   getLatestSwapRate(from: Address, to: Address): Promise<DecString>;
   getRebalanceProfile(assetId?: Address): Promise<NodeResponses.GetRebalanceProfile>;
-  getHashLockTransfer(lockHash: Bytes32): Promise<NodeResponses.GetHashLockTransfer>;
+  getHashLockTransfer(lockHash: Bytes32, assetId?: Address): Promise<NodeResponses.GetHashLockTransfer>;
   getPendingAsyncTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers>;
   getTransferHistory(userAddress?: Address): Promise<NodeResponses.GetTransferHistory>;
   getLatestWithdrawal(): Promise<Transaction>;

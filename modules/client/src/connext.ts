@@ -377,8 +377,9 @@ export class ConnextClient implements IConnextClient {
 
   public getHashLockTransfer = async (
     lockHash: string,
+    assetId: string = AddressZero,
   ): Promise<NodeResponses.GetHashLockTransfer> => {
-    return this.node.getHashLockTransfer(lockHash);
+    return this.node.getHashLockTransfer(lockHash, assetId);
   };
 
   public getUserWithdrawals = async (): Promise<WithdrawalMonitorObject[]> => {
