@@ -15,6 +15,7 @@ import {
   WithdrawAppState,
   AppInstanceJson,
 } from "@connext/types";
+import { SupportedApplications } from "@connext/apps";
 import { Injectable } from "@nestjs/common";
 import { soliditySha256 } from "ethers/utils";
 
@@ -24,7 +25,7 @@ import { WithdrawRepository } from "../withdraw/withdraw.repository";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
-import { SupportedApplications } from "@connext/apps";
+import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.service";
 
 @Injectable()
 export class AppActionsService {
@@ -33,6 +34,7 @@ export class AppActionsService {
     private readonly withdrawService: WithdrawService,
     private readonly cfCoreService: CFCoreService,
     private readonly signedTransferService: SignedTransferService,
+    private readonly hashlockTransferService: HashLockTransferService,
     private readonly withdrawRepository: WithdrawRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
   ) {
@@ -88,9 +90,7 @@ export class AppActionsService {
         break;
       }
     }
-    this.log.info(
-      `handleAppAction for app name ${appName} ${app.identityHash} complete`,
-    );
+    this.log.info(`handleAppAction for app name ${appName} ${app.identityHash} complete`);
   }
 
   private async handleSimpleLinkedTransferAppAction(
@@ -153,14 +153,11 @@ export class AppActionsService {
     from: string,
   ): Promise<void> {
     const lockHash = soliditySha256(["bytes32"], [action.preImage]);
-    const apps = await this.appInstanceRepository.findHashLockTransferAppsByLockHash(lockHash);
 
-    // find hashlock transfer app where node is receiver
-    // TODO: move to new store
-    const senderApp = apps.find(app => {
-      const state = app.latestState as HashLockTransferAppState;
-      return state.coinTransfers[1].to === this.cfCoreService.cfCore.signerAddress;
-    });
+    const senderApp = await this.hashlockTransferService.findSenderAppByLockHashAndAssetId(
+      lockHash,
+      appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+    );
     if (!senderApp) {
       throw new Error(
         `Action taken on HashLockTransferApp without corresponding sender app! ${appInstance.identityHash}`,
