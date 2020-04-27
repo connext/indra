@@ -98,9 +98,9 @@ jobs:
     # - name: Setup tmate session
     #   uses: mxschmitt/action-tmate@v2
     - run: TEST_MODE=staging make test-integration
-    - name: Print node logs
+    - name: Print logs
       if: failure()
-      run: docker service logs --tail 200 indra_node
+      run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
 
   test-backwards-compatibility:
     env:
@@ -113,9 +113,9 @@ jobs:
     - run: make start-test-staging
     - run: sleep 20 && make dls
     - run: make test-backwards-compatibility
-    - name: Print node logs
+    - name: Print logs
       if: failure()
-      run: docker service logs --tail 200 indra_node
+      run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
 
   test-daicard:
     runs-on: ubuntu-16.04
@@ -125,6 +125,6 @@ jobs:
     - run: make pull-commit
     - run: make start-test-staging
     - run: make test-daicard
-    - name: Print node logs
+    - name: Print logs
       if: failure()
-      run: docker service logs --tail 200 indra_node
+      run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
