@@ -484,11 +484,14 @@ export class ConnextListener extends ConnextEventEmitter {
       case SimpleLinkedTransferAppName: {
         const transferState = state as SimpleLinkedTransferAppState;
         const transferAction = action as SimpleLinkedTransferAppAction;
+        const transferAmount = transferState.coinTransfers[0].amount.isZero()
+          ? transferState.coinTransfers[1].amount
+          : transferState.coinTransfers[0].amount;
         await waitForUninstall();
         this.cleanupUninstallListener(boundResolve);
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.LinkedTransfer,
-          amount: transferState.coinTransfers[1].amount,
+          amount: transferAmount,
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
           paymentId: transferState.paymentId,
           sender: appInstance.meta ? appInstance.meta["sender"] : undefined, // https://github.com/ConnextProject/indra/issues/1054
@@ -503,11 +506,14 @@ export class ConnextListener extends ConnextEventEmitter {
       case HashLockTransferAppName: {
         const transferState = state as HashLockTransferAppState;
         const transferAction = action as HashLockTransferAppAction;
+        const transferAmount = transferState.coinTransfers[0].amount.isZero()
+          ? transferState.coinTransfers[1].amount
+          : transferState.coinTransfers[0].amount;
         await waitForUninstall();
         this.cleanupUninstallListener(boundResolve);
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.HashLockTransfer,
-          amount: transferState.coinTransfers[1].amount,
+          amount: transferAmount,
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
           paymentId: HashZero,
           sender: appInstance.meta ? appInstance.meta["sender"] : undefined, // https://github.com/ConnextProject/indra/issues/1054
@@ -522,11 +528,14 @@ export class ConnextListener extends ConnextEventEmitter {
       case SimpleSignedTransferAppName: {
         const transferState = state as SimpleSignedTransferAppState;
         const transferAction = action as SimpleSignedTransferAppAction;
+        const transferAmount = transferState.coinTransfers[0].amount.isZero()
+          ? transferState.coinTransfers[1].amount
+          : transferState.coinTransfers[0].amount;
         await waitForUninstall();
         this.cleanupUninstallListener(boundResolve);
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.SignedTransfer,
-          amount: transferState.coinTransfers[1].amount,
+          amount: transferAmount,
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
           paymentId: transferState.paymentId,
           sender: appInstance.meta ? appInstance.meta["sender"] : undefined, // https://github.com/ConnextProject/indra/issues/1054
