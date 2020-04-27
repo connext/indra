@@ -179,7 +179,7 @@ export class AppRegistryService implements OnModuleInit {
         );
 
         this.log.warn(`Meta Before: ${stringify(proposeInstallParams.meta)}`);
-        let recipient;
+        let recipient: string;
         // https://github.com/ConnextProject/indra/issues/942
         recipient = proposeInstallParams.meta["recipient"];
         if (proposeInstallParams.meta["path"]) {

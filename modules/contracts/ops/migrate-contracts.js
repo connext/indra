@@ -45,6 +45,7 @@ const { formatEther, parseEther } = eth.utils;
 const botMnemonics = [
   "humble sense shrug young vehicle assault destroy cook property average silent travel",
   "roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult",
+  "undo absent master cotton plastic bike input ordinary visual gorilla good sign ethics fun usage", // node_2 for multihop
 ];
 const ganacheId = 4447;
 const addressBookPath = "./address-book.json";

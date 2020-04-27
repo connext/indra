@@ -65,6 +65,7 @@ then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
 fi
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+eth_mnemonic_2="undo absent master cotton plastic bike input ordinary visual gorilla good sign ethics fun usage"
 
 if [[ "$INDRA_ETH_PROVIDER" == "$ganacheProvider" ]]
 then chainId="$ganacheId"
@@ -248,7 +249,7 @@ services:
       INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
       INDRA_ALLOWED_SWAPS: '$allowed_swaps'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
-      INDRA_ETH_MNEMONIC: 'undo absent master cotton plastic bike input ordinary visual gorilla good sign ethics fun usage'
+      INDRA_ETH_MNEMONIC: '$eth_mnemonic_2'
       INDRA_ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
       INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
@@ -260,13 +261,13 @@ services:
       INDRA_PG_PASSWORD_FILE: '$pg_password_file'
       INDRA_PG_PORT: '$pg_port'
       INDRA_PG_USERNAME: '$pg_user'
-      INDRA_PORT: '$node_port_2'
+      INDRA_PORT: '$node_port'
       INDRA_REDIS_URL: 'redis://redis:6379'
       NODE_ENV: 'development'
     networks:
       - '$project'
     ports:
-      - '$node_port_2:$node_port_2'
+      - '$node_port_2:$node_port'
     secrets:
       - '${project}_database_dev'
     volumes:
