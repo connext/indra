@@ -109,18 +109,9 @@ export const setupContext = async () => {
     to: multisigAddress,
     value: One,
   });
-  await new Contract(networkContext.Token, ERC20.abi, wallet).transfer(
-    multisigAddress,
-    One,
-  );
+
   const ethBalance = await provider.getBalance(multisigAddress);
-  expect(ethBalance).to.be.eq(freeBalance.ethDepositTotal);
-  const tokenBalance = await new Contract(
-    networkContext.Token,
-    ERC20.abi,
-    wallet,
-  ).functions.balanceOf(multisigAddress);
-  expect(tokenBalance).to.be.eq(freeBalance.tokenDepositTotal);
+  expect(ethBalance).to.be.eq(One);
 
   const setAndProgressState = async (
     versionNumber: BigNumber,
