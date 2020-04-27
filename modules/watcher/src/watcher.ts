@@ -526,16 +526,13 @@ export class Watcher implements IWatcher {
         // check that free balance app has been disputed
         const isFreeBalance = await this.isFreeBalanceApp(identityHash);
         if (isFreeBalance) {
-          // const setup = await this.store.getSetupCommitment(channel.multisigAddress);
-          // if (!setup) {
-          //   throw new Error(
-          //     `Could not find setup transaction for channel ${channel.multisigAddress}`,
-          //   );
-          // }
-          // return await this.executeEffectOfFreeBalance(channel, setup);
-          const msg = `Not currently executing conditional transactions of free balance app`;
-          this.log.debug(msg);
-          return msg;
+          const setup = await this.store.getSetupCommitment(channel.multisigAddress);
+          if (!setup) {
+            throw new Error(
+              `Could not find setup transaction for channel ${channel.multisigAddress}`,
+            );
+          }
+          return this.executeEffectOfFreeBalance(channel, setup);
         }
         const conditional = await this.store.getConditionalTransactionCommitment(identityHash);
         if (!conditional) {
