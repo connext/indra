@@ -12,7 +12,7 @@
   "scripts": {
     "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
-    "test": "mocha -r ts-node/register 'test/**/*.spec.{ts,tsx}' --exit --slow 1000 --timeout 5000 --bail"
+    "test": "mocha -r ts-node/register 'test/**/*.spec.{ts,tsx}' --exit --slow 1000 --timeout 15000 --bail"
   },
   "dependencies": {
     "@connext/contracts": "2.0.2",

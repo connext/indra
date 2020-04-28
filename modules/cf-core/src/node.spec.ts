@@ -1,4 +1,4 @@
-import { MemoryStorage as MemoryStoreService, ConnextStore } from "@connext/store";
+import { ConnextStore } from "@connext/store";
 import { getRandomChannelSigner } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 

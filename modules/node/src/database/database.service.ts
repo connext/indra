@@ -17,6 +17,9 @@ import { AppInstance } from "../appInstance/appInstance.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 import { Withdraw } from "../withdraw/withdraw.entity";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
+import { Challenge, ProcessedBlock } from "../challenge/challenge.entity";
+import { StateProgressedEvent } from "../stateProgressedEvent/stateProgressedEvent.entity";
+import { ChallengeUpdatedEvent } from "../challengeUpdatedEvent/challengeUpdatedEvent.entity";
 
 // Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
@@ -46,6 +49,8 @@ import { updateTimeouts1586212135729 } from "../../migrations/1586212135729-upda
 import { renameAppIdentityHash1586243580160 } from "../../migrations/1586243580160-renameAppIdentityHash";
 import { removeXpubsUpdate1586463333688 } from "../../migrations/1586463333688-remove-xpubs-update";
 import { renameIdentifiers1586509706761 } from "../../migrations/1586509706761-renameIdentifiers";
+import { addLatestAction1587492602160 } from "../../migrations/1587492602160-add-latest-action";
+import { initWatcherMethods1587505874044 } from "../../migrations/1587505874044-init-watcher-methods";
 
 export const entities = [
   AppInstance,
@@ -60,6 +65,10 @@ export const entities = [
   SetupCommitment,
   Withdraw,
   WithdrawCommitment,
+  Challenge,
+  ProcessedBlock,
+  StateProgressedEvent,
+  ChallengeUpdatedEvent,
 ];
 
 export const migrations = [
@@ -90,6 +99,8 @@ export const migrations = [
   renameAppIdentityHash1586243580160,
   removeXpubsUpdate1586463333688,
   renameIdentifiers1586509706761,
+  addLatestAction1587492602160,
+  initWatcherMethods1587505874044,
 ];
 
 @Injectable()

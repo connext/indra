@@ -19,8 +19,8 @@ import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 import { SignedTransferRepository } from "./signedTransfer.repository";
 
 const appStatusesToSignedTransferStatus = (
-  senderApp: AppInstance<SimpleSignedTransferAppState>,
-  receiverApp?: AppInstance<SimpleSignedTransferAppState>,
+  senderApp: AppInstance<"SimpleSignedTransferApp">,
+  receiverApp?: AppInstance<"SimpleSignedTransferApp">,
 ): SignedTransferStatus | undefined => {
   if (!senderApp) {
     return undefined;
@@ -40,7 +40,7 @@ const appStatusesToSignedTransferStatus = (
 
 export const normalizeSignedTransferAppState = (
   app: AppInstance,
-): AppInstance<SimpleSignedTransferAppState> | undefined => {
+): AppInstance<"SimpleSignedTransferApp"> | undefined => {
   return (
     app && {
       ...app,

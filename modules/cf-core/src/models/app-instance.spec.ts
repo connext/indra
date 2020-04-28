@@ -27,7 +27,9 @@ describe("AppInstance", () => {
       /* latestVersionNumber */ 999,
       /* stateTimeout */ toBN(Math.ceil(1000 * Math.random())).toHexString(),
       /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-      /* multisigAddress */ getAddress(getRandomAddress()),
+      /* multisigAddress */ getRandomAddress(),
+      /* meta */ undefined,
+      /* latestAction */ undefined,
       /* twoPartyOutcomeInterpreterParamsInternal */ {
         playerAddrs: [AddressZero, AddressZero],
         amount: Zero,

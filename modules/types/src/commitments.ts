@@ -1,4 +1,4 @@
-import { Address, BigNumberish, Bytes32, HexString } from "./basic";
+import { Address, BigNumberish, BigNumberJson, Bytes32, HexString } from "./basic";
 import { AppIdentity, MultisigOperation, NetworkContext } from "./contracts";
 import { enumify } from "./utils";
 
@@ -37,8 +37,8 @@ export type SetStateCommitmentJSON = {
   readonly appStateHash: HexString;
   readonly challengeRegistryAddress: Address;
   readonly signatures: string[];
-  readonly stateTimeout: HexString;
-  readonly versionNumber: number;
+  readonly stateTimeout: BigNumberJson;
+  readonly versionNumber: BigNumberJson;
 };
 
 export type ConditionalTransactionCommitmentJSON = {

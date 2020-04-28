@@ -41,7 +41,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
     const depositAmount = One;
 
     const initialState = {
-      versionNumber: 0,
+      versionNumber: 1,
       winner: 2, // Hard-coded winner for test
       board: [
         [0, 0, 0],

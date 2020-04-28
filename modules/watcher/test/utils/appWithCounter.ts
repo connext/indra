@@ -1,9 +1,9 @@
-/////////////////////////////
-
 import { AppIdentity, BigNumber } from "@connext/types";
 import { defaultAbiCoder, solidityPack, keccak256 } from "ethers/utils";
 
+/////////////////////////////
 //// Helper class
+
 export class AppWithCounterClass {
   get identityHash(): string {
     return keccak256(

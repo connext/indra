@@ -87,6 +87,25 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 6ms
     const mySignature = yield [OP_SIGN, setStateCommitmentHash];
 
+    // add singly signed set state commitment to store without overwriting
+    // or removing previous set state commitment to allow watcher service
+    // to dispute using the `progressState` or `setAndProgressState` paths
+    // using only items in the store
+    const isAppInitiator = appInstance.initiatorIdentifier !== responderIdentifier;
+    await setStateCommitment.addSignatures(
+      isAppInitiator ? (mySignature as any) : undefined,
+      isAppInitiator ? undefined : (mySignature as any),
+    );
+
+    // also save the app instance with a `latestAction`
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.UpdateInstance,
+      preProtocolStateChannel,
+      preAppInstance.setAction(action),
+      setStateCommitment,
+    ];
+
     // 117ms
     const {
       customData: { signature: counterpartySig },
@@ -108,16 +127,12 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     await assertIsValidSignature(responderAddr, setStateCommitmentHash, counterpartySig);
 
     // add signatures and write commitment to store
-    const isAppInitiator = appInstance.initiatorIdentifier !== responderIdentifier;
     await setStateCommitment.addSignatures(
-      isAppInitiator
-        ? mySignature as any
-        : counterpartySig,
-      isAppInitiator
-        ? counterpartySig
-        : mySignature as any,
+      isAppInitiator ? (mySignature as any) : counterpartySig,
+      isAppInitiator ? counterpartySig : (mySignature as any),
     );
 
+    // add sigs to most recent set state
     yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.UpdateInstance,
@@ -192,14 +207,12 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // add signatures and write commitment to store
     const isAppInitiator = appInstance.initiatorIdentifier !== initiatorIdentifier;
     await setStateCommitment.addSignatures(
-      isAppInitiator
-        ? mySignature as any
-        : counterpartySignature,
-      isAppInitiator
-        ? counterpartySignature
-        : mySignature as any,
+      isAppInitiator ? (mySignature as any) : counterpartySignature,
+      isAppInitiator ? counterpartySignature : (mySignature as any),
     );
 
+    // responder will not be able to call `progressState` or
+    // `setAndProgressState` so only save double signed commitment
     yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.UpdateInstance,

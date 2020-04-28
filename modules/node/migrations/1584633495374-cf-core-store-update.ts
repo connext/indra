@@ -29,7 +29,7 @@ export class cfCoreStoreUpdate1584633495374 implements MigrationInterface {
       undefined,
     );
     await queryRunner.query(
-      `CREATE TABLE "set_state_commitment" ("id" SERIAL NOT NULL, "appIdentity" json NOT NULL, "appStateHash" text NOT NULL, "challengeRegistryAddress" text NOT NULL, "signatures" json, "timeout" integer NOT NULL, "versionNumber" integer NOT NULL, "appId" integer, CONSTRAINT "REL_6eb316c0bb4a9307a8bb1ae77b" UNIQUE ("appId"), CONSTRAINT "PK_b64d8b0a8c30a8df8c63ad511f4" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "set_state_commitment" ("id" SERIAL NOT NULL, "appIdentity" json NOT NULL, "appStateHash" text NOT NULL, "challengeRegistryAddress" text NOT NULL, "signatures" json, "timeout" integer NOT NULL, "versionNumber" integer NOT NULL, "appId" integer, CONSTRAINT "PK_b64d8b0a8c30a8df8c63ad511f4" PRIMARY KEY ("id"))`,
       undefined,
     );
     await queryRunner.query(

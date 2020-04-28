@@ -25,6 +25,7 @@ import {
   StateChannelJSON,
   WalletDepositParams,
   WithdrawalMonitorObject,
+  ConditionalTransactionCommitmentJSON,
 } from "@connext/types";
 import {
   deBigNumberifyJson,
@@ -142,8 +143,9 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case ChannelMethods.chan_setStateChannel:
         result = await this.setStateChannel(
           params.state,
-          params.signedSetupCommitment,
-          params.signedFreeBalanceUpdate,
+          params.setupCommitment,
+          params.setStateCommitments,
+          params.conditionalCommitments,
         );
         break;
       case ChannelMethods.chan_walletDeposit:
@@ -237,11 +239,74 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   private setStateChannel = async (
     channel: StateChannelJSON,
-    signedSetupCommitment: MinimalTransaction,
-    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+    setupCommitment: MinimalTransaction,
+    setStateCommitments: [string, SetStateCommitmentJSON][], // [appId, json]
+    conditionalCommitments: [string, ConditionalTransactionCommitmentJSON][],
+    // [appId, json]
   ): Promise<void> => {
     await this.store.updateSchemaVersion();
-    return this.store.createStateChannel(channel, signedSetupCommitment, signedFreeBalanceUpdate);
+    // save the channel + setup commitment + latest free balance set state
+    const freeBalanceSetStates = setStateCommitments
+      .filter(([id, json]) => id === channel.freeBalanceAppInstance.identityHash)
+      .sort((a, b) =>
+        toBN(b[1].versionNumber)
+          .sub(toBN(a[1].versionNumber))
+          .toNumber(),
+      );
+
+    if (!freeBalanceSetStates[0]) {
+      throw new Error(
+        `Could not find latest free balance set state commitment: ${stringify(
+          freeBalanceSetStates,
+        )}`,
+      );
+    }
+    await this.store.createStateChannel(channel, setupCommitment, freeBalanceSetStates[0][1]);
+    // save all the app proposals + set states
+    const proposals = [...channel.proposedAppInstances]
+      .map(([id, json]) => json)
+      .sort((a, b) => a.appSeqNo - b.appSeqNo);
+    for (const proposal of proposals) {
+      const [_, setState] = setStateCommitments.find(
+        ([id, json]) => id === proposal.identityHash && toBN(json.versionNumber).eq(1),
+      );
+      if (!setState) {
+        throw new Error(
+          `Could not find set state commitment for proposal ${proposal.identityHash}`,
+        );
+      }
+      await this.store.createAppProposal(
+        channel.multisigAddress,
+        proposal,
+        proposal.appSeqNo,
+        setState,
+      );
+    }
+    // save all the app instances + conditionals
+    const appInstances = [...channel.appInstances]
+      .map(([id, json]) => json)
+      .sort((a, b) => a.appSeqNo - b.appSeqNo);
+    for (const app of appInstances) {
+      if (app.identityHash === channel.freeBalanceAppInstance.identityHash) {
+        continue;
+      }
+      const [_, conditional] = conditionalCommitments.find(([id, _]) => id === app.identityHash);
+      if (!conditional) {
+        throw new Error(`Could not find set state commitment for proposal ${app.identityHash}`);
+      }
+      await this.store.createAppInstance(
+        channel.multisigAddress,
+        app,
+        channel.freeBalanceAppInstance, // fb state saved on create
+        ({
+          appIdentityHash: channel.freeBalanceAppInstance.identityHash,
+          versionNumber: app.appSeqNo,
+        } as unknown) as SetStateCommitmentJSON,
+        // latest free balance saved when channel created, use dummy values
+        // with increasing app numbers so they get deleted properly
+        conditional,
+      );
+    }
   };
 
   private restoreState = async (): Promise<void> => {

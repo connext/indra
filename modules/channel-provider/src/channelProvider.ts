@@ -8,6 +8,9 @@ import {
   StateChannelJSON,
   WithdrawalMonitorObject,
   WalletDepositParams,
+  MinimalTransaction,
+  SetStateCommitmentJSON,
+  ConditionalTransactionCommitmentJSON,
 } from "@connext/types";
 
 export class ChannelProvider extends ConnextEventEmitter implements IChannelProvider {
@@ -66,7 +69,12 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
         result = await this.restoreState();
         break;
       case ChannelMethods.chan_setStateChannel:
-        result = await this.setStateChannel(params.state);
+        result = await this.setStateChannel(
+          params.state,
+          params.setupCommitment,
+          params.setStateCommitments,
+          params.conditionalCommitments,
+        );
         break;
       case ChannelMethods.chan_walletDeposit:
         result = await this.walletDeposit(params);
@@ -164,7 +172,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   };
 
   public setUserWithdrawal = async (
-    withdrawalObject: WithdrawalMonitorObject, 
+    withdrawalObject: WithdrawalMonitorObject,
     remove: boolean = false,
   ): Promise<void> => {
     return this._send(ChannelMethods.chan_setUserWithdrawal, {
@@ -177,8 +185,19 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     return this._send(ChannelMethods.chan_restoreState, {});
   };
 
-  public setStateChannel = async (state: StateChannelJSON): Promise<void> => {
-    return this._send(ChannelMethods.chan_setStateChannel, { state });
+  public setStateChannel = async (
+    state: StateChannelJSON,
+    setupCommitment: MinimalTransaction,
+    setStateCommitments: [string, SetStateCommitmentJSON][], // [appId, json]
+    conditionalCommitments: [string, ConditionalTransactionCommitmentJSON][],
+    // [appId, json]
+  ): Promise<void> => {
+    return this._send(ChannelMethods.chan_setStateChannel, {
+      state,
+      setupCommitment,
+      setStateCommitments,
+      conditionalCommitments,
+    });
   };
 
   public getSchemaVersion(): Promise<number> {

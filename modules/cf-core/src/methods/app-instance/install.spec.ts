@@ -1,4 +1,4 @@
-import { MemoryStorage as MemoryStoreService, ConnextStore, KeyValueStorage } from "@connext/store";
+import { ConnextStore } from "@connext/store";
 import {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext,
@@ -10,6 +10,7 @@ import {
   getRandomBytes32,
   getSignerAddressFromPublicIdentifier,
   nullLogger,
+  toBNJson,
 } from "@connext/utils";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
@@ -74,7 +75,7 @@ describe("Can handle correct & incorrect installs", () => {
   it("fails to install without the appIdentityHash being in a channel", async () => {
     expect.hasAssertions();
 
-    const mockedStore: IStoreService = mock(KeyValueStorage);
+    const mockedStore: IStoreService = mock(ConnextStore);
 
     const appIdentityHash = getRandomBytes32();
     const appInstanceProposal = createAppInstanceProposalForTest(appIdentityHash);
@@ -94,7 +95,7 @@ describe("Can handle correct & incorrect installs", () => {
     const mockedProtocolRunner = mock(ProtocolRunner);
     const protocolRunner = instance(mockedProtocolRunner);
 
-    const mockedStore: IStoreService = mock(KeyValueStorage);
+    const mockedStore: IStoreService = mock(ConnextStore);
     const store = instance(mockedStore);
 
     const appIdentityHash = getRandomBytes32();
@@ -129,12 +130,12 @@ describe("Can handle correct & incorrect installs", () => {
       },
       {
         appIdentity: {} as any,
-        stateTimeout: "0",
+        stateTimeout: toBNJson("0"),
         appIdentityHash,
         appStateHash: HashZero,
         challengeRegistryAddress: AddressZero,
         signatures: ["0x0", "0x0"],
-        versionNumber: 1,
+        versionNumber: toBNJson(1),
       },
     );
 
