@@ -95,16 +95,6 @@ export class AppInstance<T extends AppState = any> {
   @Column("text", { nullable: true })
   stateTimeout!: HexString;
 
-  // assigned a value on installation not proposal
-  @Column("text", { nullable: true })
-  @IsValidPublicIdentifier()
-  userIdentifier?: string;
-
-  // assigned a value on installation not proposal
-  @Column("text", { nullable: true })
-  @IsValidPublicIdentifier()
-  nodeIdentifier?: string;
-
   @Column("jsonb", { nullable: true })
   meta?: object;
 
