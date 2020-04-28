@@ -194,7 +194,6 @@ export const initiateDispute = async (
         },
       ),
     ),
-    networkContext.provider.send("evm_mine", []),
   ]) as unknown as OutcomeSetResults;
   const verifyOutcomeSet = async (results: OutcomeSetResults) => {
     const [
@@ -267,7 +266,6 @@ export const initiateDispute = async (
         },
       );
     }),
-    networkContext.provider.send("evm_mine", []),
   ]) as unknown as ChallengeCompleteResults;
   const verifyCompleted = async (res: ChallengeCompleteResults) => {
     const [appDisputeCompleted, freeBalanceDisputeCompleted] = res;
