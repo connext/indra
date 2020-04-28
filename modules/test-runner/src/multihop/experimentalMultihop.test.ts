@@ -5,7 +5,7 @@ import {
   PublicResults,
   EventNames,
 } from "@connext/types";
-import { stringify, getRandomBytes32, ConsoleLogger } from "@connext/utils";
+import { getRandomBytes32 } from "@connext/utils";
 import axios from "axios";
 import { soliditySha256 } from "ethers/utils";
 import { providers } from "ethers";
@@ -14,13 +14,12 @@ import { before } from "mocha";
 import { createClient, fundChannel, ETH_AMOUNT_MD, ETH_AMOUNT_SM, env, expect } from "../util";
 import { AddressZero } from "ethers/constants";
 
-describe.only("Experimental multihop tests", () => {
+describe.skip("Experimental multihop tests", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let clientC: IConnextClient;
   const nodeBUrl = "http://172.17.0.1:8081";
   const provider = new providers.JsonRpcProvider(env.ethProviderUrl);
-  const log = new ConsoleLogger("test", 4);
 
   before(async () => {
     clientA = await createClient();
@@ -47,7 +46,7 @@ describe.only("Experimental multihop tests", () => {
     console.log(`NodeToNode Multisig: ${nodeANodeBMultisig}`);
   });
 
-  it.skip("clientA can transfer funds to clientB over nodeA", async () => {
+  it("clientA can transfer funds to clientB over nodeA", async () => {
     const preImage = getRandomBytes32();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
     const lockHash = soliditySha256(["bytes32"], [preImage]);
