@@ -217,21 +217,6 @@ export class ConnextListener extends ConnextEventEmitter {
         );
       },
     );
-
-    this.channelProvider.on(
-      MethodNames.chan_install,
-      async (msg: any): Promise<void> => {
-        const {
-          result: {
-            result: { appInstance },
-          },
-        } = msg;
-        await this.connext.node.messaging.publish(
-          `${this.connext.nodeIdentifier}.${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstance.appIdentityHash}.install`,
-          appInstance,
-        );
-      },
-    );
   };
 
   private emitAndLog = (event: EventNames, data: any): void => {
@@ -368,7 +353,7 @@ export class ConnextListener extends ConnextEventEmitter {
     this.log.info(`handleAppProposal for app ${registryAppInfo.name} ${appIdentityHash} completed`);
     const { appInstance } = await this.connext.getAppInstance(appIdentityHash);
     await this.connext.node.messaging.publish(
-      `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
+      `${this.connext.nodeIdentifier}.${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
       stringify(appInstance),
     );
   };
