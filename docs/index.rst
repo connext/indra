@@ -34,37 +34,30 @@ Contents
     background/faq
     background/architecture
 
+
 .. toctree::
     :maxdepth: 2
-    :caption: Client
+    :caption: Client Documentation
 
     user/quickStart
-    user/walletIntegrations
+    user/clientInstantiation
+    user/fundingYourChannel
     user/advanced
     user/limitations
     user/clientAPI
-    user/storeModule
-    user/types
 
 .. toctree::
     :maxdepth: 2
-    :caption: Node
+    :caption: Node Documentation
 
-    nodeOperator/node
     nodeOperator/runNode
 
-.. toctree::
-    :maxdepth: 2
-    :caption: Protocol
-
-    protocol/introduction
-    protocol/diagram
-    protocol/api
 
 .. toctree::
     :maxdepth: 2
-    :caption: Contributing
+    :caption: Contributor Documentation
 
     contributor/CONTRIBUTING
-    contributor/workflow-protocols.md
-    README
+
+
+

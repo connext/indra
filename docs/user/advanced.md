@@ -80,65 +80,6 @@ In some cases, an application will want to control exactly how funds are transfe
 
 An example use case is requesting deposit rights, then sending funds to a user to onboard them without requiring them to purchase ETH for gas.
 
-### Usage Example
-
-Deposit rights can be requested by the client by using the method [`requestDepositRights`](../clientAPI/#requestDepositRights). Once the rights have been requested, transfers to the multisig are credited to the client's channel balance.
-
-While deposit rights are held by the client, the node will not be able to make deposits (i.e. to collateralize the channel). The recommended approach is to rescind the rights after the transfer is received. Deposit rights are rescinded by using the method [`rescindDepositRights`](../clientAPI/#rescindDepositRights).
-
-[`checkDepositRights`](../clientAPI/#checkDepositRights) is a convenience method to get the current state of the channel's deposit rights.
-
-```typescript
-// Transfer an ERC20 token manually
-// create Ethers.js contract abstraction
-const assetId = "0x..." // token address
-const tokenContract = new Contract(
-  assetId,
-  erc20Abi,
-  ethers.getDefaultProvider('homestead'), // mainnet
-);
-// request deposit rights
-await client.requestDepositRights({ assetId });
-
-// once rights are requested, it's safe to deposit
-// this step can be completed by an external service at that point
-const tx = await tokenContract.transfer(client.multisigAddress, parseEther("10"));
-
-// wait for tx to confirm
-await tx.wait();
-
-// now it's safe to rescind deposit rights
-await client.rescindDepositRights({ assetId });
-```
-
-## Using a Custom Logger
-
-## Logger overhaul
-
-The client accepts a `logger` option which must implement the ILogger interface:
-
-```
-interface ILogger {
-  debug(msg: string): void
-  info(msg: string): void
-  warn(msg: string): void
-  error(msg: string): void
-}
-```
-
-Notice that `console` satisfies this interface on it's own, so you could pass that in as-is:
-
-```
-import { connect } from "@connext/client";
-const client = await connect({ logger: console, ...otherOptions });
-```
-
-But this is the default behavior & is what you'll get if you omit the `logger` option entirely.
-
-This option is useful if you're using eg winston for more powerful logging or LogDNA to send logs to a remote service for further processing.
-
-Note that winston loggers also satisfy the ILogger interface by default so you can also pass those in as-is just like `console`.
-
 ## Creating a Custom Backup Service
 
 Backup services store channel states on behalf of the client in case their store compromised or otherwise unavailable (i.e. for clearing `localStorage` in a browser, using incognito mode, or seamless multidevice channel usage). If a backup service is not available, the client will still function properly in these scenarios, but will rely on a trusted restore from the node’s version of the channel state.
