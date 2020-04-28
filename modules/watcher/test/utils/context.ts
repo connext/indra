@@ -1,22 +1,18 @@
-import { ChallengeRegistry, ProxyFactory, MinimumViableMultisig } from "@connext/contracts";
+import { ChallengeRegistry, ProxyFactory, MinimumViableMultisig, ERC20 } from "@connext/contracts";
 import {
   JsonRpcProvider,
   BigNumber,
-  StateChannelJSON,
-  StateSchemaVersion,
   CONVENTION_FOR_ETH_ASSET_ID,
-  OutcomeType,
+  CoinTransfer,
 } from "@connext/types";
 import {
   computeAppChallengeHash,
   ChannelSigner,
   toBN,
-  bigNumberifyJson,
-  toBNJson,
   getRandomChannelSigner,
 } from "@connext/utils";
 import { Wallet, Contract } from "ethers";
-import { One, Zero, HashZero } from "ethers/constants";
+import { One, Zero } from "ethers/constants";
 import { keccak256, Interface } from "ethers/utils";
 
 import {
@@ -31,20 +27,26 @@ import { deployTestArtifactsToChain } from "./contracts";
 import { CREATE_PROXY_AND_SETUP_GAS } from "./utils";
 import { expect } from "./assertions";
 
+export type TokenIndexedBalance = { [tokenAddress: string]: CoinTransfer[] };
+
 /////////////////////////////
 // Context
 
-export const setupContext = async () => {
-  // setup constants
-  const ethProvider = process.env.ETHPROVIDER_URL;
-  const provider = new JsonRpcProvider(ethProvider);
+// setup constants
+const ethProvider = process.env.ETHPROVIDER_URL;
+const provider = new JsonRpcProvider(ethProvider);
 
-  const wallet = Wallet.fromMnemonic(process.env.SUGAR_DADDY!).connect(provider);
-  const signers = [
-    getRandomChannelSigner(ethProvider),
-    getRandomChannelSigner(ethProvider),
-  ];
+const wallet = Wallet.fromMnemonic(process.env.SUGAR_DADDY!).connect(provider);
+const signers = [getRandomChannelSigner(ethProvider), getRandomChannelSigner(ethProvider)];
 
+const appBalances: TokenIndexedBalance = {
+  [CONVENTION_FOR_ETH_ASSET_ID]: [
+    { to: signers[0].address, amount: One },
+    { to: signers[1].address, amount: Zero },
+  ],
+};
+
+export const setupContext = async (activeAppBalances: TokenIndexedBalance[] = [appBalances]) => {
   // deploy contracts
   const networkContext = await deployTestArtifactsToChain(wallet);
   const challengeRegistry = new Contract(
@@ -74,44 +76,70 @@ export const setupContext = async () => {
   expect(withdrawn).to.be.eq(Zero);
 
   // create objects
-  const appBalances = {
-    [CONVENTION_FOR_ETH_ASSET_ID]: [
-      { to: signers[0].address, amount: One },
-      { to: signers[1].address, amount: Zero },
-    ],
-  };
-  const appInstance = new AppWithCounterClass(
-    signers,
-    multisigAddress,
-    networkContext.AppWithAction,
-    Zero, // default timeout
-    One, // channel nonce
-    appBalances,
-  );
+  const activeApps = activeAppBalances.map((balance, idx) => {
+    return new AppWithCounterClass(
+      signers,
+      multisigAddress,
+      networkContext.AppWithAction,
+      Zero, // default timeout
+      toBN(idx).add(2), // channel nonce = idx + free-bal + 1
+      balance,
+    );
+  });
 
-  const freeBalance = new MiniFreeBalance(
+  const [freeBalance, channel] = MiniFreeBalance.channelFactory(
     signers,
     multisigAddress,
+    networkContext,
+    activeApps,
     {
       [CONVENTION_FOR_ETH_ASSET_ID]: [
         { to: signers[0].address, amount: Zero },
         { to: signers[1].address, amount: Zero },
       ],
+      [networkContext.Token]: [
+        { to: signers[0].address, amount: Zero },
+        { to: signers[1].address, amount: Zero },
+      ],
     },
-    networkContext,
-    toBN(2),
-    [appInstance.identityHash],
   );
 
-  // fund multisig
-  await wallet.sendTransaction({
-    to: multisigAddress,
-    value: One,
+  // fund multisig with eth
+  // gather all balance objects to reduce
+  const appBalances: { [assetId: string]: CoinTransfer[] }[] = activeApps
+    .map((app) => app.tokenIndexedBalances)
+    .concat(freeBalance.balances);
+
+  let channelBalances: { [assetId: string]: BigNumber } = {};
+  Object.keys(freeBalance.balances).forEach((assetId) => {
+    let assetTotal = Zero;
+    appBalances.forEach((tokenIndexed) => {
+      const appTotal = (tokenIndexed[assetId] || [{ to: "", amount: Zero }]).reduce(
+        (prev, curr) => {
+          return { to: "", amount: curr.amount.add(prev.amount) };
+        },
+      ).amount;
+      assetTotal = assetTotal.add(appTotal);
+    });
+    channelBalances[assetId] = assetTotal;
   });
 
-  const ethBalance = await provider.getBalance(multisigAddress);
-  expect(ethBalance).to.be.eq(One);
+  const token = new Contract(networkContext.Token, ERC20.abi, wallet);
+  await wallet.sendTransaction({
+    to: multisigAddress,
+    value: channelBalances[CONVENTION_FOR_ETH_ASSET_ID],
+  });
+  await token.transfer(multisigAddress, channelBalances[networkContext.Token]);
+  expect(await provider.getBalance(multisigAddress)).to.be.eq(
+    channelBalances[CONVENTION_FOR_ETH_ASSET_ID],
+  );
+  expect(await token.functions.balanceOf(multisigAddress)).to.be.eq(
+    channelBalances[networkContext.Token],
+  );
 
+  /////////////////////////////////////////
+  // contract helper function -- used for listener tests
+  // disputes activeApps[0] by default
   const setAndProgressState = async (
     versionNumber: BigNumber,
     state: AppWithCounterState,
@@ -121,7 +149,7 @@ export const setupContext = async () => {
   ) => {
     const stateHash = keccak256(AppWithCounterClass.encodeState(state));
     const stateDigest = computeAppChallengeHash(
-      appInstance.identityHash,
+      activeApps[0].identityHash,
       stateHash,
       versionNumber,
       timeout,
@@ -135,7 +163,7 @@ export const setupContext = async () => {
     const timeout2 = Zero;
     const resultingStateHash = keccak256(AppWithCounterClass.encodeState(resultingState));
     const resultingStateDigest = computeAppChallengeHash(
-      appInstance.identityHash,
+      activeApps[0].identityHash,
       resultingStateHash,
       One.add(versionNumber),
       timeout2,
@@ -156,14 +184,10 @@ export const setupContext = async () => {
       versionNumber: One.add(versionNumber),
       appStateHash: resultingStateHash,
       timeout: timeout2,
-      signatures: [
-        await turnTaker.signMessage(
-          resultingStateDigest,
-        ),
-      ],
+      signatures: [await turnTaker.signMessage(resultingStateDigest)],
     };
     return challengeRegistry.functions.setAndProgressState(
-      appInstance.appIdentity,
+      activeApps[0].appIdentity,
       req1,
       req2,
       AppWithCounterClass.encodeState(state),
@@ -172,75 +196,40 @@ export const setupContext = async () => {
   };
 
   // store helper function
-  const loadStoreWithChannelAndApp = async (store: ConnextStore) => {
-    // generate the app, free balance and channel
-    const freeBalanceSetState = await freeBalance.getSetState(challengeRegistry.address);
-
-    const appJson = appInstance.toJson();
-    const setState = await appInstance.getSetState(challengeRegistry.address);
-    const conditional = await appInstance.getConditional(freeBalance.identityHash, networkContext);
-
-    const channel: StateChannelJSON = {
-      schemaVersion: StateSchemaVersion,
-      multisigAddress,
-      addresses: {
-        proxyFactory: networkContext.ProxyFactory,
-        multisigMastercopy: networkContext.MinimumViableMultisig,
-      },
-      userIdentifiers: [signers[0].publicIdentifier, signers[1].publicIdentifier],
-      proposedAppInstances: [],
-      appInstances: [[appJson.identityHash, appJson]],
-      freeBalanceAppInstance: freeBalance.toJson(),
-      monotonicNumProposedApps: 2,
-    };
+  const loadStore = async (store: ConnextStore) => {
+    // create the channel
     await store.createStateChannel(
       channel,
-      {
-        to: multisigAddress,
-        value: 0,
-        data: HashZero,
-      },
-      { ...freeBalanceSetState, versionNumber: toBNJson(One) },
+      await freeBalance.getSetup(),
+      await freeBalance.getInitialSetState(),
     );
 
     // add the app + all commitments to the store
-    const {
-      appInterface,
-      latestState,
-      latestVersionNumber,
-      latestAction,
-      twoPartyOutcomeInterpreterParams,
-      ...proposalFields
-    } = appJson;
-    const proposal = {
-      ...proposalFields,
-      initialState: latestState,
-      abiEncodings: {
-        stateEncoding: appInterface.stateEncoding,
-        actionEncoding: appInterface.actionEncoding,
-      },
-      outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-      appDefinition: appInterface.addr,
-      initiatorDeposit: appInstance.tokenIndexedBalances[
-        CONVENTION_FOR_ETH_ASSET_ID
-      ][0].amount.toString(),
-      initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
-      responderDeposit: appInstance.tokenIndexedBalances[
-        CONVENTION_FOR_ETH_ASSET_ID
-      ][1].amount.toString(),
-      responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
-      twoPartyOutcomeInterpreterParams: bigNumberifyJson(twoPartyOutcomeInterpreterParams),
-    };
-    await store.createAppProposal(multisigAddress, proposal as any, appJson.appSeqNo, setState);
-    await store.createAppInstance(
-      multisigAddress,
-      appJson,
-      freeBalance.toJson(),
-      freeBalanceSetState,
-      // latest free balance saved when channel created, use dummy values
-      // with increasing app numbers so they get deleted properly
-      conditional,
-    );
+    for (const app of activeApps) {
+      await store.createAppProposal(
+        multisigAddress,
+        app.getProposal(),
+        app.toJson().appSeqNo,
+        await app.getInitialSetState(networkContext.ChallengeRegistry),
+      );
+
+      // no need to create intermediate free balance state, since
+      // it will always be overwritten with most recent in store
+
+      await store.createAppInstance(
+        multisigAddress,
+        app.toJson(),
+        freeBalance.toJson(),
+        await freeBalance.getSetState(),
+        await app.getConditional(freeBalance.identityHash, networkContext),
+      );
+
+      await store.updateAppInstance(
+        multisigAddress,
+        app.toJson(),
+        await app.getCurrentSetState(networkContext.ChallengeRegistry),
+      );
+    }
   };
 
   return {
@@ -250,10 +239,11 @@ export const setupContext = async () => {
     wallet,
     signers,
     multisigAddress,
-    appInstance,
+    activeApps,
     freeBalance,
     networkContext,
+    channelBalances,
     setAndProgressState,
-    loadStoreWithChannelAndApp,
+    loadStore,
   };
 };

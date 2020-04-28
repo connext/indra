@@ -12,9 +12,10 @@ import {
   NetworkContext,
   CoinTransfer,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
+  AppInstanceProposal,
 } from "@connext/types";
 import { defaultAbiCoder, solidityPack, keccak256 } from "ethers/utils";
-import { ChannelSigner, toBNJson } from "@connext/utils";
+import { ChannelSigner, toBNJson, bigNumberifyJson } from "@connext/utils";
 import { One, Zero } from "ethers/constants";
 import { stateToHash } from "./utils";
 import { ConditionalTransactionCommitment, SetStateCommitment } from "@connext/contracts";
@@ -134,7 +135,51 @@ export class AppWithCounterClass {
     };
   }
 
-  public async getSetState(challengeRegistryAddress: string): Promise<SetStateCommitmentJSON> {
+  public getProposal(): AppInstanceProposal {
+    return {
+      identityHash: this.identityHash,
+      initiatorIdentifier: this.signerParticipants[0].publicIdentifier,
+      responderIdentifier: this.signerParticipants[1].publicIdentifier,
+      appSeqNo: this.channelNonce.toNumber(),
+      defaultTimeout: this.defaultTimeout.toString(),
+      stateTimeout: this.stateTimeout.toString(),
+      abiEncodings: {
+        stateEncoding: this.appInterface.stateEncoding,
+        actionEncoding: this.appInterface.actionEncoding,
+      },
+      outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+      appDefinition: this.appInterface.addr,
+      initialState: { counter: Zero },
+      initiatorDeposit: this.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][0].amount.toString(),
+      initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
+      responderDeposit: this.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][1].amount.toString(),
+      responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
+      twoPartyOutcomeInterpreterParams: bigNumberifyJson(this.interpreterParams),
+    };
+  }
+
+  public async getInitialSetState(
+    challengeRegistryAddress: string,
+  ): Promise<SetStateCommitmentJSON> {
+    const setState = new SetStateCommitment(
+      challengeRegistryAddress,
+      this.appIdentity,
+      stateToHash(AppWithCounterClass.encodeState({ counter: Zero })),
+      One,
+      this.stateTimeout,
+      this.identityHash,
+    );
+    const signatures = await Promise.all([
+      this.signerParticipants[0].signMessage(setState.hashToSign()),
+      this.signerParticipants[1].signMessage(setState.hashToSign()),
+    ]);
+    await setState.addSignatures(signatures[0], signatures[1]);
+    return setState.toJson();
+  }
+
+  public async getCurrentSetState(
+    challengeRegistryAddress: string,
+  ): Promise<SetStateCommitmentJSON> {
     const setState = new SetStateCommitment(
       challengeRegistryAddress,
       this.appIdentity,

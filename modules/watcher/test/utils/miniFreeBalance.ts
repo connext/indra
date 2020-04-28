@@ -7,13 +7,18 @@ import {
   AppInstanceJson,
   OutcomeType,
   SetStateCommitmentJSON,
+  StateChannelJSON,
+  StateSchemaVersion,
   CONVENTION_FOR_ETH_ASSET_ID,
+  MinimalTransaction,
 } from "@connext/types";
-import { ChannelSigner } from "@connext/utils";
+import { ChannelSigner, toBN } from "@connext/utils";
 import { One, Zero } from "ethers/constants";
-import { SetStateCommitment } from "@connext/contracts";
+import { SetStateCommitment, SetupCommitment } from "@connext/contracts";
 import { stateToHash } from "./utils";
 import { NetworkContextForTestSuite } from "./contracts";
+import { AppWithCounterClass } from "./appWithCounter";
+import { TokenIndexedBalance } from "./context";
 
 type FreeBalanceStateJSON = {
   tokenAddresses: string[];
@@ -31,9 +36,7 @@ export class MiniFreeBalance {
   constructor(
     public readonly signerParticipants: ChannelSigner[],
     public readonly multisigAddress: string,
-    private balancesIndexedByToken: {
-      [tokenAddress: string]: CoinTransfer[];
-    },
+    private balancesIndexedByToken: TokenIndexedBalance,
     private readonly networkContext: NetworkContextForTestSuite,
     public versionNumber: BigNumber = One,
     private activeApps: string[] = [],
@@ -54,22 +57,12 @@ export class MiniFreeBalance {
     );
   }
 
+  get balances() {
+    return this.balancesIndexedByToken;
+  }
+
   get appDefinition(): string {
     return this.networkContext.IdentityApp;
-  }
-
-  get ethDepositTotal(): BigNumber {
-    const token = this.balancesIndexedByToken[CONVENTION_FOR_ETH_ASSET_ID] || [];
-    let sum = Zero;
-    token.forEach(({ to, amount }) => sum.add(amount));
-    return sum;
-  }
-
-  get tokenDepositTotal(): BigNumber {
-    const token = this.balancesIndexedByToken[this.networkContext.Token] || [];
-    let sum = Zero;
-    token.forEach(({ to, amount }) => sum.add(amount));
-    return sum;
   }
 
   get participants(): Address[] {
@@ -104,8 +97,56 @@ export class MiniFreeBalance {
     };
   }
 
+  get initialState(): FreeBalanceStateJSON {
+    return {
+      activeApps: [],
+      balances: Object.values(this.balancesIndexedByToken).map((balances) =>
+        balances.map(({ to }) => ({ to, amount: Zero })),
+      ),
+      tokenAddresses: Object.keys(this.balancesIndexedByToken),
+    };
+  }
+
   public static encodeState(state: FreeBalanceStateJSON) {
     return defaultAbiCoder.encode([freeBalStateEncoding], [state]);
+  }
+
+  public static channelFactory(
+    signers: ChannelSigner[],
+    multisigAddress: string,
+    networkContext: NetworkContextForTestSuite,
+    activeApps: AppWithCounterClass[],
+    remainingBalance: {
+      [tokenAddress: string]: CoinTransfer[];
+    },
+  ): [MiniFreeBalance, StateChannelJSON] {
+    const appIds = activeApps.map((app) => app.identityHash);
+    const channelNonce = toBN(activeApps.length).add(1);
+    const freeBalance = new MiniFreeBalance(
+      signers,
+      multisigAddress,
+      remainingBalance,
+      networkContext,
+      toBN(appIds.length + 1),
+      appIds,
+    );
+    const channel = {
+      schemaVersion: StateSchemaVersion,
+      multisigAddress,
+      addresses: {
+        proxyFactory: networkContext.ProxyFactory,
+        multisigMastercopy: networkContext.MinimumViableMultisig,
+      },
+      userIdentifiers: [signers[0].publicIdentifier, signers[1].publicIdentifier],
+      proposedAppInstances: [],
+      appInstances: activeApps.map((app) => [app.identityHash, app.toJson()]) as [
+        string,
+        AppInstanceJson,
+      ][],
+      freeBalanceAppInstance: freeBalance.toJson(),
+      monotonicNumProposedApps: channelNonce.toNumber(),
+    };
+    return [freeBalance, channel];
   }
 
   public toJson(): AppInstanceJson {
@@ -125,9 +166,44 @@ export class MiniFreeBalance {
     };
   }
 
-  public async getSetState(challengeRegistryAddress: string): Promise<SetStateCommitmentJSON> {
+  public async getSetup(): Promise<MinimalTransaction> {
+    const setup = new SetupCommitment(
+      this.networkContext,
+      this.multisigAddress,
+      this.participants,
+      this.appIdentity,
+    );
+    const signatures = await Promise.all([
+      this.signerParticipants[0].signMessage(setup.hashToSign()),
+      this.signerParticipants[1].signMessage(setup.hashToSign()),
+    ]);
+    await setup.addSignatures(signatures[0], signatures[1]);
+
+    return setup.getSignedTransaction();
+  }
+
+  public async getInitialSetState(): Promise<SetStateCommitmentJSON> {
     const setState = new SetStateCommitment(
-      challengeRegistryAddress,
+      this.networkContext.ChallengeRegistry,
+      this.appIdentity,
+      stateToHash(MiniFreeBalance.encodeState(this.initialState)),
+      One,
+      this.stateTimeout,
+      this.identityHash,
+    );
+    const signatures = await Promise.all([
+      this.signerParticipants[0].signMessage(setState.hashToSign()),
+      this.signerParticipants[1].signMessage(setState.hashToSign()),
+    ]);
+    await setState.addSignatures(signatures[0], signatures[1]);
+    return setState.toJson();
+  }
+
+  // defaults to getting current set state, but will add sigs on any
+  // passed in free balance state
+  public async getSetState(): Promise<SetStateCommitmentJSON> {
+    const setState = new SetStateCommitment(
+      this.networkContext.ChallengeRegistry,
       this.appIdentity,
       stateToHash(MiniFreeBalance.encodeState(this.latestState)),
       this.versionNumber,

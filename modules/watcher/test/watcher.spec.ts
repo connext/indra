@@ -12,6 +12,7 @@ import {
   ChallengeCompletionFailedEventData,
   StoredAppChallengeStatus,
   CONVENTION_FOR_ETH_ASSET_ID,
+  BigNumber,
 } from "@connext/types";
 import { Wallet, Contract } from "ethers";
 
@@ -24,8 +25,8 @@ import {
 } from "./utils";
 
 import { Watcher } from "../src";
-import { ChannelSigner, getRandomAddress, ColorfulLogger } from "@connext/utils";
-import { SetStateCommitment, MinimumViableMultisig } from "@connext/contracts";
+import { ChannelSigner, getRandomAddress, ColorfulLogger, bigNumberifyJson } from "@connext/utils";
+import { MinimumViableMultisig } from "@connext/contracts";
 import { Zero } from "ethers/constants";
 
 describe("Watcher.init", () => {
@@ -60,13 +61,10 @@ describe("Watcher.init", () => {
 describe("Watcher.initiate", () => {
   let provider: JsonRpcProvider;
   let store: ConnextStore;
-  let identityHash: string;
   let multisigAddress: string;
-  let freeBalanceIdentityHash: string;
+  let channelBalances: { [k: string]: BigNumber };
   let freeBalance: MiniFreeBalance;
   let app: AppWithCounterClass;
-  let appSetState: SetStateCommitment;
-  let fbSetState: SetStateCommitment;
 
   let networkContext: NetworkContextForTestSuite;
 
@@ -80,35 +78,12 @@ describe("Watcher.initiate", () => {
     provider = context["provider"];
     wallet = context["wallet"];
     multisigAddress = context["multisigAddress"];
-    app = context["appInstance"];
+    const activeApps = context["activeApps"];
+    app = activeApps[0];
     freeBalance = context["freeBalance"];
+    channelBalances = context["channelBalances"];
     networkContext = context["networkContext"];
-    freeBalanceIdentityHash = freeBalance.identityHash;
-    identityHash = app.identityHash;
-    appSetState = SetStateCommitment.fromJson(
-      await app.getSetState(networkContext.ChallengeRegistry),
-    );
-    fbSetState = SetStateCommitment.fromJson(
-      await freeBalance.getSetState(networkContext.ChallengeRegistry),
-    );
-    const loadStore = context["loadStoreWithChannelAndApp"];
-
-    // set initial balances
-    const multisigBalance = await provider.getBalance(multisigAddress);
-    const signerBalances = [
-      await provider.getBalance(freeBalance.participants[0]),
-      await provider.getBalance(freeBalance.participants[1]),
-    ];
-    const totalChannelEth = app.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID].reduce(
-      (prev, curr) => {
-        return { amount: curr.amount.add(prev.amount), to: multisigAddress };
-      },
-      { amount: freeBalance.ethDepositTotal, to: multisigAddress },
-    ).amount;
-    expect(multisigBalance).to.be.eq(totalChannelEth);
-    expect(signerBalances[0]).to.be.eq(Zero);
-    expect(signerBalances[1]).to.be.eq(Zero);
-    expect(app.participants.toString()).to.be.eq(freeBalance.participants.toString());
+    const loadStore = context["loadStore"];
 
     // create + load store
     store = new ConnextStore(StoreTypes.Memory);
@@ -131,7 +106,7 @@ describe("Watcher.initiate", () => {
 
   it.only("should be able to initiate + complete a dispute with a particular app instance using set state", async () => {
     // start mining
-    const empty = await store.getAppChallenge(identityHash);
+    const empty = await store.getAppChallenge(app.identityHash);
     expect(empty).to.be.undefined;
     const [
       contractEventFreeBalance,
@@ -144,7 +119,7 @@ describe("Watcher.initiate", () => {
         watcher.on(
           WatcherEvents.ChallengeUpdatedEvent,
           async (data: ChallengeUpdatedEventPayload) => {
-            if (data.identityHash === freeBalanceIdentityHash) {
+            if (data.identityHash === freeBalance.identityHash) {
               resolve(data);
             }
           },
@@ -154,7 +129,7 @@ describe("Watcher.initiate", () => {
         watcher.on(
           WatcherEvents.ChallengeUpdatedEvent,
           async (data: ChallengeUpdatedEventPayload) => {
-            if (data.identityHash === identityHash) {
+            if (data.identityHash === app.identityHash) {
               resolve(data);
             }
           },
@@ -164,7 +139,7 @@ describe("Watcher.initiate", () => {
         watcher.on(
           WatcherEvents.ChallengeProgressedEvent,
           async (data: ChallengeProgressedEventData) => {
-            if (data.appInstanceId === freeBalanceIdentityHash) {
+            if (data.appInstanceId === freeBalance.identityHash) {
               resolve(data);
             }
           },
@@ -174,51 +149,55 @@ describe("Watcher.initiate", () => {
         watcher.on(
           WatcherEvents.ChallengeProgressedEvent,
           async (data: ChallengeProgressedEventData) => {
-            if (data.appInstanceId === identityHash) {
+            if (data.appInstanceId === app.identityHash) {
               resolve(data);
             }
           },
         ),
       ),
-      watcher.initiate(identityHash),
+      watcher.initiate(app.identityHash),
     ]);
     expect(result).to.be.ok;
 
     // verify app + free balance challenge
+    const appSetState = bigNumberifyJson(
+      await app.getCurrentSetState(networkContext.ChallengeRegistry),
+    );
+    const fbSetState = bigNumberifyJson(await freeBalance.getSetState());
     const appFinalizesAt = appSetState.stateTimeout.add(await provider.getBlockNumber());
     // fb is disputed first and automined, meaning that you should use
     // provider block - 1
     const fbFinalizesAt = fbSetState.stateTimeout.add(await provider.getBlockNumber()).sub(1);
     const expected0 = {
-      [identityHash]: {
+      [app.identityHash]: {
         appStateHash: appSetState.appStateHash,
-        identityHash,
+        identityHash: app.identityHash,
         versionNumber: appSetState.versionNumber,
         status: ChallengeStatus.IN_DISPUTE,
         finalizesAt: appFinalizesAt,
       },
-      [freeBalanceIdentityHash]: {
+      [freeBalance.identityHash]: {
         appStateHash: fbSetState.appStateHash,
-        identityHash: freeBalanceIdentityHash,
+        identityHash: freeBalance.identityHash,
         versionNumber: fbSetState.versionNumber,
         status: ChallengeStatus.IN_DISPUTE,
         finalizesAt: fbFinalizesAt,
       },
     };
     const contractEvents = {
-      [identityHash]: contractEventApp,
-      [freeBalanceIdentityHash]: contractEventFreeBalance,
+      [app.identityHash]: contractEventApp,
+      [freeBalance.identityHash]: contractEventFreeBalance,
     };
     const initiatedEvents = {
-      [identityHash]: initiatedEventApp,
-      [freeBalanceIdentityHash]: initiatedEventFreeBalance,
+      [app.identityHash]: initiatedEventApp,
+      [freeBalance.identityHash]: initiatedEventFreeBalance,
     };
     const transactions = {
-      [identityHash]: (result as any).appChallenge,
-      [freeBalanceIdentityHash]: (result as any).freeBalanceChallenge,
+      [app.identityHash]: (result as any).appChallenge,
+      [freeBalance.identityHash]: (result as any).freeBalanceChallenge,
     };
 
-    for (const appId of [identityHash, freeBalanceIdentityHash]) {
+    for (const appId of [app.identityHash, freeBalance.identityHash]) {
       // verify stored challenge
       const challenge = await store.getAppChallenge(appId);
       expect(challenge).to.containSubset(expected0[appId]);
@@ -248,7 +227,7 @@ describe("Watcher.initiate", () => {
         watcher.on(
           WatcherEvents.ChallengeOutcomeSetEvent,
           async (data: ChallengeOutcomeSetEventData) => {
-            if (data.appInstanceId === freeBalanceIdentityHash) {
+            if (data.appInstanceId === freeBalance.identityHash) {
               resolve(data);
             }
           },
@@ -258,7 +237,7 @@ describe("Watcher.initiate", () => {
         watcher.on(
           WatcherEvents.ChallengeOutcomeSetEvent,
           async (data: ChallengeOutcomeSetEventData) => {
-            if (data.appInstanceId === identityHash) {
+            if (data.appInstanceId === app.identityHash) {
               resolve(data);
             }
           },
@@ -270,14 +249,14 @@ describe("Watcher.initiate", () => {
       }),
       new Promise((resolve) =>
         watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data) => {
-          if (data.identityHash === freeBalanceIdentityHash) {
+          if (data.identityHash === freeBalance.identityHash) {
             resolve(data);
           }
         }),
       ),
       new Promise((resolve) =>
         watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data) => {
-          if (data.identityHash === identityHash) {
+          if (data.identityHash === app.identityHash) {
             resolve(data);
           }
         }),
@@ -286,25 +265,25 @@ describe("Watcher.initiate", () => {
     ]);
 
     const expected1 = {
-      [identityHash]: {
-        ...expected0[identityHash],
+      [app.identityHash]: {
+        ...expected0[app.identityHash],
         status: StoredAppChallengeStatus.OUTCOME_SET,
       },
-      [freeBalanceIdentityHash]: {
-        ...expected0[freeBalanceIdentityHash],
+      [freeBalance.identityHash]: {
+        ...expected0[freeBalance.identityHash],
         status: StoredAppChallengeStatus.OUTCOME_SET,
       },
     };
     const outcomeSetEvents = {
-      [identityHash]: outcomeSetAppEvent,
-      [freeBalanceIdentityHash]: outcomeSetFbEvent,
+      [app.identityHash]: outcomeSetAppEvent,
+      [freeBalance.identityHash]: outcomeSetFbEvent,
     };
     const challengeUpdatedEvents = {
-      [identityHash]: challengeUpdatedAppEvent,
-      [freeBalanceIdentityHash]: challengeUpdatedFbEvent,
+      [app.identityHash]: challengeUpdatedAppEvent,
+      [freeBalance.identityHash]: challengeUpdatedFbEvent,
     };
 
-    for (const appId of [identityHash, freeBalanceIdentityHash]) {
+    for (const appId of [app.identityHash, freeBalance.identityHash]) {
       // verify stored events
       const events = await store.getChallengeUpdatedEvents(appId);
       expect(events.length).to.be.equal(2);
@@ -329,7 +308,7 @@ describe("Watcher.initiate", () => {
         watcher.on(
           WatcherEvents.ChallengeCompletedEvent,
           async (data: ChallengeCompletedEventData) => {
-            if (data.appInstanceId === identityHash) {
+            if (data.appInstanceId === app.identityHash) {
               resolve(data);
             }
           },
@@ -343,7 +322,7 @@ describe("Watcher.initiate", () => {
         watcher.on(
           WatcherEvents.ChallengeCompletedEvent,
           async (data: ChallengeCompletedEventData) => {
-            if (data.appInstanceId === freeBalanceIdentityHash) {
+            if (data.appInstanceId === freeBalance.identityHash) {
               resolve(data);
             }
           },
@@ -352,20 +331,20 @@ describe("Watcher.initiate", () => {
       provider.send("evm_mine", []),
     ]);
     const expected2 = {
-      [identityHash]: {
-        ...expected0[identityHash],
+      [app.identityHash]: {
+        ...expected0[app.identityHash],
         status: StoredAppChallengeStatus.CONDITIONAL_SENT,
       },
-      [freeBalanceIdentityHash]: {
-        ...expected0[freeBalanceIdentityHash],
+      [freeBalance.identityHash]: {
+        ...expected0[freeBalance.identityHash],
         status: StoredAppChallengeStatus.CONDITIONAL_SENT,
       },
     };
     const completedEvents = {
-      [identityHash]: appDisputeCompleted,
-      [freeBalanceIdentityHash]: freeBalanceDisputeCompleted,
+      [app.identityHash]: appDisputeCompleted,
+      [freeBalance.identityHash]: freeBalanceDisputeCompleted,
     };
-    for (const appId of [identityHash, freeBalanceIdentityHash]) {
+    for (const appId of [app.identityHash, freeBalance.identityHash]) {
       // verify stored challenge
       const challenge = await store.getAppChallenge(appId);
       expect(challenge).to.containSubset(expected2[appId]);
@@ -383,16 +362,10 @@ describe("Watcher.initiate", () => {
       MinimumViableMultisig.abi,
       wallet,
     ).functions.totalAmountWithdrawn(CONVENTION_FOR_ETH_ASSET_ID);
-    const totalChannelEth = app.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID].reduce(
-      (prev, curr) => {
-        return { amount: curr.amount.add(prev.amount), to: multisigAddress };
-      },
-      { amount: freeBalance.ethDepositTotal, to: multisigAddress },
-    ).amount;
-    expect(withdrawn).to.be.eq(totalChannelEth);
+    expect(withdrawn).to.be.eq(channelBalances[CONVENTION_FOR_ETH_ASSET_ID]);
     expect(await provider.getBalance(multisigAddress)).to.be.eq(Zero);
     expect((await provider.getBalance(freeBalance.participants[0])).toString()).to.be.eq(
-      totalChannelEth,
+      channelBalances[CONVENTION_FOR_ETH_ASSET_ID],
     );
     expect((await provider.getBalance(freeBalance.participants[1])).toString()).to.be.eq(Zero);
   });
