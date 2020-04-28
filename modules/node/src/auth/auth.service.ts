@@ -74,7 +74,7 @@ export class AuthService {
     // Try to get latest published OR move everything under address route.
     let permissions = {
       publish: {
-        allow: [`${userIdentifier}.>`, `${this.configService.getMessagingKey()}.>`],
+        allow: [`${this.configService.getPublicIdentifier()}.${userIdentifier}.>`, `${this.configService.getMessagingKey()}.>`],
       },
       subscribe: {
         allow: [`>`],
@@ -118,7 +118,7 @@ export class AuthService {
   parseIdentifier(callback: any): any {
     return async (subject: string, data: any): Promise<string> => {
       // Get & validate address from subject
-      const identifier = subject.split(".")[0]; // first item of subscription is id
+      const identifier = subject.split(".")[1]; // first item of subscription is id
       if (!identifier || !isValidPublicIdentifier(identifier)) {
         throw new Error(`Subject's first item isn't a valid identifier: ${identifier}`);
       }

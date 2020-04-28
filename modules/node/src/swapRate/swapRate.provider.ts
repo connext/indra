@@ -21,14 +21,14 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
   }
 
   async getLatestSwapRate(subject: string): Promise<string> {
-    const [, , from, to] = subject.split(".");
+    const [node, user, messageSubject, from, to] = subject.split(".");
     return this.swapRateService.getOrFetchRate(getAddress(from), getAddress(to));
   }
 
   async setupSubscriptions(): Promise<void> {
     const publicIdentifier = this.configService.getPublicIdentifier();
     await super.connectRequestReponse(
-      `*.${publicIdentifier}.swap-rate.>`, this.getLatestSwapRate.bind(this));
+      `${publicIdentifier}.*.swap-rate.>`, this.getLatestSwapRate.bind(this));
   }
 }
 

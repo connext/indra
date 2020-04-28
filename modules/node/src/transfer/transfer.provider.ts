@@ -37,12 +37,12 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.transfer.get-history`,
+      `${this.configService.getPublicIdentifier()}.*.transfer.get-history`,
       this.authService.parseIdentifier(this.getTransferHistory.bind(this)),
     );
 
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.client.check-in`,
+      `${this.configService.getPublicIdentifier()}.*.client.check-in`,
       this.authService.parseIdentifier(this.clientCheckIn.bind(this)),
     );
   }

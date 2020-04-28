@@ -131,7 +131,7 @@ export class LinkedTransferController extends AbstractController {
 
       // publish encrypted secret for receiver
       await this.connext.node.messaging.publish(
-        `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.transfer.linked.to.${recipient}`,
+        `${this.connext.nodeIdentifier}.${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.transfer.linked.to.${recipient}`,
         stringify(eventData),
       );
 

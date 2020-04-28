@@ -100,47 +100,47 @@ class AdminMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     const publicIdentifier = this.configService.getPublicIdentifier();
     await super.connectRequestReponse(
-      `admin.${publicIdentifier}.get-no-free-balance`,
+      `${publicIdentifier}.admin.get-no-free-balance`,
       this.getNoFreeBalance.bind(this),
     );
 
     await super.connectRequestReponse(
-      `admin.${publicIdentifier}.get-state-channel-by-address`,
+      `${publicIdentifier}.admin.get-state-channel-by-address`,
       this.getStateChannelByUserPublicIdentifier.bind(this),
     );
 
     await super.connectRequestReponse(
-      `admin.${publicIdentifier}.get-state-channel-by-multisig`,
+      `${publicIdentifier}.admin.get-state-channel-by-multisig`,
       this.getStateChannelByMultisig.bind(this),
     );
 
     await super.connectRequestReponse(
-      `admin.${publicIdentifier}.get-all-channels`,
+      `${publicIdentifier}.admin.get-all-channels`,
       this.getAllChannels.bind(this),
     );
 
     await super.connectRequestReponse(
-      `admin.${publicIdentifier}.get-all-linked-transfers`,
+      `${publicIdentifier}.admin.get-all-linked-transfers`,
       this.getAllLinkedTransfers.bind(this),
     );
 
     await super.connectRequestReponse(
-      `admin.${publicIdentifier}.get-linked-transfer-by-payment-id`,
+      `${publicIdentifier}.admin.get-linked-transfer-by-payment-id`,
       this.getLinkedTransferByPaymentId.bind(this),
     );
 
     await super.connectRequestReponse(
-      `admin.${publicIdentifier}.get-channels-for-merging`,
+      `${publicIdentifier}.admin.get-channels-for-merging`,
       this.getChannelsForMerging.bind(this),
     );
 
     await super.connectRequestReponse(
-      `admin.${publicIdentifier}.repair-critical-addresses`,
+      `${publicIdentifier}.admin.repair-critical-addresses`,
       this.repairCriticalStateChannelAddresses.bind(this),
     );
 
     await super.connectRequestReponse(
-      `admin.*.${publicIdentifier}.channel.add-profile`,
+      `${publicIdentifier}.admin.*.channel.add-profile`,
       this.addRebalanceProfile.bind(this),
     );
   }
