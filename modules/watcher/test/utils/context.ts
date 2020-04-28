@@ -1,4 +1,10 @@
-import { ChallengeRegistry, ProxyFactory, MinimumViableMultisig, ERC20 } from "@connext/contracts";
+import {
+  ChallengeRegistry,
+  ProxyFactory,
+  MinimumViableMultisig,
+  ERC20,
+  SetStateCommitment,
+} from "@connext/contracts";
 import {
   JsonRpcProvider,
   BigNumber,
@@ -6,14 +12,13 @@ import {
   CoinTransfer,
 } from "@connext/types";
 import {
-  computeAppChallengeHash,
   ChannelSigner,
   toBN,
   getRandomChannelSigner,
 } from "@connext/utils";
 import { Wallet, Contract } from "ethers";
 import { One, Zero } from "ethers/constants";
-import { keccak256, Interface } from "ethers/utils";
+import { Interface } from "ethers/utils";
 
 import {
   AppWithCounterClass,
@@ -24,13 +29,18 @@ import {
 import { ConnextStore } from "@connext/store";
 import { MiniFreeBalance } from "./miniFreeBalance";
 import { deployTestArtifactsToChain } from "./contracts";
-import { CREATE_PROXY_AND_SETUP_GAS } from "./utils";
+import { CREATE_PROXY_AND_SETUP_GAS, stateToHash } from "./utils";
 import { expect } from "./assertions";
 
 export type TokenIndexedBalance = { [tokenAddress: string]: CoinTransfer[] };
 
 /////////////////////////////
 // Context
+
+export type CreatedAppInstanceOpts = {
+  balances: TokenIndexedBalance;
+  defaultTimeout: BigNumber;
+}
 
 // setup constants
 const ethProvider = process.env.ETHPROVIDER_URL;
@@ -46,7 +56,12 @@ const appBalances: TokenIndexedBalance = {
   ],
 };
 
-export const setupContext = async (activeAppBalances: TokenIndexedBalance[] = [appBalances]) => {
+const defaultAppOpts = {
+  balances: appBalances,
+  defaultTimeout: Zero,
+};
+
+export const setupContext = async (provided: Partial<CreatedAppInstanceOpts>[] = []) => {
   // deploy contracts
   const networkContext = await deployTestArtifactsToChain(wallet);
   const challengeRegistry = new Contract(
@@ -76,14 +91,18 @@ export const setupContext = async (activeAppBalances: TokenIndexedBalance[] = [a
   expect(withdrawn).to.be.eq(Zero);
 
   // create objects
-  const activeApps = activeAppBalances.map((balance, idx) => {
+  const activeApps = provided.map((providedOpts, idx) => {
+    const { balances, defaultTimeout } = {
+      ...defaultAppOpts,
+      ...providedOpts,
+    };
     return new AppWithCounterClass(
       signers,
       multisigAddress,
       networkContext.AppWithAction,
-      Zero, // default timeout
+      defaultTimeout, // default timeout
       toBN(idx).add(2), // channel nonce = idx + free-bal + 1
-      balance,
+      balances,
     );
   });
 
@@ -141,56 +160,40 @@ export const setupContext = async (activeAppBalances: TokenIndexedBalance[] = [a
   // contract helper function -- used for listener tests
   // disputes activeApps[0] by default
   const setAndProgressState = async (
-    versionNumber: BigNumber,
-    state: AppWithCounterState,
     action: AppWithCounterAction,
-    timeout: BigNumber = Zero,
-    turnTaker: ChannelSigner = signers[1],
+    turnTaker: ChannelSigner = signers[0],
   ) => {
-    const stateHash = keccak256(AppWithCounterClass.encodeState(state));
-    const stateDigest = computeAppChallengeHash(
-      activeApps[0].identityHash,
-      stateHash,
-      versionNumber,
-      timeout,
+    const app = activeApps[0];
+    const setState0 = SetStateCommitment.fromJson(
+      await app.getCurrentSetState(networkContext.ChallengeRegistry),
     );
+
+    // get single signed state information
     const resultingState: AppWithCounterState = {
       counter:
         action.actionType === ActionType.ACCEPT_INCREMENT
-          ? state.counter
-          : state.counter.add(action.increment),
+          ? app.latestState.counter
+          : app.latestState.counter.add(action.increment),
     };
-    const timeout2 = Zero;
-    const resultingStateHash = keccak256(AppWithCounterClass.encodeState(resultingState));
-    const resultingStateDigest = computeAppChallengeHash(
-      activeApps[0].identityHash,
-      resultingStateHash,
-      One.add(versionNumber),
-      timeout2,
+    const setState1 = new SetStateCommitment(
+      networkContext.ChallengeRegistry,
+      app.appIdentity,
+      stateToHash(AppWithCounterClass.encodeState(resultingState)),
+      toBN(app.versionNumber).add(One),
+      Zero,
+      app.identityHash,
     );
-
-    const signatures = [
-      await signers[0].signMessage(stateDigest),
-      await signers[1].signMessage(stateDigest),
-    ];
-
-    const req1 = {
-      versionNumber,
-      appStateHash: stateHash,
-      timeout,
-      signatures,
-    };
-    const req2 = {
-      versionNumber: One.add(versionNumber),
-      appStateHash: resultingStateHash,
-      timeout: timeout2,
-      signatures: [await turnTaker.signMessage(resultingStateDigest)],
-    };
+    const turnTakerIdx = app.participants.findIndex((p) => p === turnTaker.address);
+    const sig = await turnTaker.signMessage(setState1.hashToSign());
+    await setState1.addSignatures(
+      turnTakerIdx === 0 ? sig : undefined,
+      turnTakerIdx === 0 ? undefined : sig,
+    );
     return challengeRegistry.functions.setAndProgressState(
-      activeApps[0].appIdentity,
-      req1,
-      req2,
-      AppWithCounterClass.encodeState(state),
+      app.appIdentity,
+      await setState0.getSignedAppChallengeUpdate(),
+      await setState1.getSignedAppChallengeUpdate(),
+      AppWithCounterClass.encodeState(app.latestState),
       AppWithCounterClass.encodeAction(action),
     );
   };
