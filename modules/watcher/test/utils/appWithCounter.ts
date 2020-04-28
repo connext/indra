@@ -20,6 +20,20 @@ import { One, Zero } from "ethers/constants";
 import { stateToHash } from "./utils";
 import { ConditionalTransactionCommitment, SetStateCommitment } from "@connext/contracts";
 
+export type AppWithCounterAction = {
+  actionType: ActionType;
+  increment: BigNumber;
+};
+
+export type AppWithCounterState = {
+  counter: BigNumber;
+};
+
+export enum ActionType {
+  SUBMIT_COUNTER_INCREMENT,
+  ACCEPT_INCREMENT,
+}
+
 /////////////////////////////
 //// Helper class
 
@@ -79,6 +93,18 @@ export class AppWithCounterClass {
       stateEncoding: `tuple(uint256 counter)`,
       actionEncoding: `tuple(uint8 actionType, uint256 increment)`,
       addr: this.appDefinition,
+    };
+  }
+
+  get nextState(): AppWithCounterState {
+    if (!this.latestAction) {
+      throw new Error(`No action to generate next state from`);
+    }
+    return {
+      counter:
+        this.latestAction.actionType === ActionType.ACCEPT_INCREMENT
+          ? this.latestState.counter
+          : this.latestState.counter.add(this.latestAction.increment),
     };
   }
 
@@ -177,6 +203,27 @@ export class AppWithCounterClass {
     return setState.toJson();
   }
 
+  public async getNextSetState(
+    challengeRegistryAddress: string,
+    turnTaker: ChannelSigner,
+  ): Promise<SetStateCommitmentJSON> {
+    const setState = new SetStateCommitment(
+      challengeRegistryAddress,
+      this.appIdentity,
+      stateToHash(AppWithCounterClass.encodeState(this.nextState)),
+      this.versionNumber.add(1),
+      this.stateTimeout,
+      this.identityHash,
+    );
+    const sig = await turnTaker.signMessage(setState.hashToSign());
+    const turnTakerIdx = this.participants.findIndex((p) => p === turnTaker.address);
+    await setState.addSignatures(
+      turnTakerIdx === 0 ? sig : undefined,
+      turnTakerIdx === 0 ? undefined : sig,
+    );
+    return setState.toJson();
+  }
+
   public async getCurrentSetState(
     challengeRegistryAddress: string,
   ): Promise<SetStateCommitmentJSON> {
@@ -219,16 +266,3 @@ export class AppWithCounterClass {
   }
 }
 
-export type AppWithCounterAction = {
-  actionType: ActionType;
-  increment: BigNumber;
-};
-
-export type AppWithCounterState = {
-  counter: BigNumber;
-};
-
-export enum ActionType {
-  SUBMIT_COUNTER_INCREMENT,
-  ACCEPT_INCREMENT,
-}
