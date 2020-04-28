@@ -13,6 +13,8 @@ import {
   StateProgressedEventPayload,
   ChallengeUpdatedEventPayload,
   AppState,
+  StoredAppChallengeStatus,
+  ChallengeStatus,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { Zero, AddressZero } from "ethers/constants";
@@ -81,7 +83,7 @@ export class CFCoreStore implements IStoreService {
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
     const allChannels = await this.channelRepository.find();
-    return allChannels.map(channel => convertChannelToJSON(channel));
+    return allChannels.map((channel) => convertChannelToJSON(channel));
   }
 
   getChannel(multisig: string): Promise<Channel> {
@@ -106,7 +108,7 @@ export class CFCoreStore implements IStoreService {
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
     const nodeIdentifier = this.configService.getPublicIdentifier();
-    const userIdentifier = stateChannel.userIdentifiers.find(id => id !== nodeIdentifier);
+    const userIdentifier = stateChannel.userIdentifiers.find((id) => id !== nodeIdentifier);
 
     const {
       multisigAddress,
@@ -123,7 +125,7 @@ export class CFCoreStore implements IStoreService {
     channel.monotonicNumProposedApps = monotonicNumProposedApps;
     const swaps = this.configService.getAllowedSwaps();
     let activeCollateralizations = {};
-    swaps.forEach(swap => {
+    swaps.forEach((swap) => {
       activeCollateralizations[swap.to] = false;
     });
     channel.activeCollateralizations = activeCollateralizations;
@@ -132,8 +134,8 @@ export class CFCoreStore implements IStoreService {
       freeBalanceAppInstance.initiatorIdentifier,
       freeBalanceAppInstance.responderIdentifier,
     ];
-    const userId = participants.find(p => p === userIdentifier);
-    const nodeId = participants.find(p => p === nodeIdentifier);
+    const userId = participants.find((p) => p === userIdentifier);
+    const nodeId = participants.find((p) => p === nodeIdentifier);
     const {
       identityHash,
       appInterface: { stateEncoding, actionEncoding, addr },
@@ -193,7 +195,7 @@ export class CFCoreStore implements IStoreService {
       signedFreeBalanceUpdate.versionNumber,
     ).toNumber();
 
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(channel);
       await transactionalEntityManager.save(freeBalanceUpdateCommitment);
     });
@@ -232,8 +234,8 @@ export class CFCoreStore implements IStoreService {
     proposal.type = AppType.INSTANCE;
     // save user/node specific ids
     const nodeId = this.configService.getPublicIdentifier();
-    proposal.userIdentifier = [initiatorIdentifier, responderIdentifier].find(p => p !== nodeId);
-    proposal.nodeIdentifier = [initiatorIdentifier, responderIdentifier].find(p => p === nodeId);
+    proposal.userIdentifier = [initiatorIdentifier, responderIdentifier].find((p) => p !== nodeId);
+    proposal.nodeIdentifier = [initiatorIdentifier, responderIdentifier].find((p) => p === nodeId);
 
     proposal.meta = meta;
 
@@ -259,7 +261,7 @@ export class CFCoreStore implements IStoreService {
       default:
         throw new Error(`Unrecognized outcome type: ${OutcomeType[proposal.outcomeType]}`);
     }
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(proposal);
       await transactionalEntityManager
         .createQueryBuilder()
@@ -329,7 +331,7 @@ export class CFCoreStore implements IStoreService {
       throw new Error(`App is not of correct type, type: ${app.type}`);
     }
 
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager
         .createQueryBuilder()
         .update(AppInstance)
@@ -383,7 +385,7 @@ export class CFCoreStore implements IStoreService {
     const channelId = app.channel.id;
     app.channel = null;
 
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(app);
       await transactionalEntityManager
         .createQueryBuilder()
@@ -473,7 +475,7 @@ export class CFCoreStore implements IStoreService {
     // because the app instance has `cascade` set to true, saving
     // the channel will involve multiple queries and should be put
     // within a transaction
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(app);
       await transactionalEntityManager.save(setStateCommitment);
 
@@ -507,7 +509,7 @@ export class CFCoreStore implements IStoreService {
 
     const channelId = app.channel.id;
     app.channel = undefined;
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(app);
       await transactionalEntityManager
         .createQueryBuilder()
@@ -542,9 +544,9 @@ export class CFCoreStore implements IStoreService {
   }
 
   async getSetStateCommitments(appIdentityHash: string): Promise<SetStateCommitmentJSON[]> {
-    return (await this.setStateCommitmentRepository.findByAppIdentityHash(appIdentityHash)).map(s =>
-      setStateToJson(s),
-    );
+    return (
+      await this.setStateCommitmentRepository.findByAppIdentityHash(appIdentityHash)
+    ).map((s) => setStateToJson(s));
   }
 
   async createSetStateCommitment(
@@ -651,51 +653,53 @@ export class CFCoreStore implements IStoreService {
     return challenge ? entityToStoredChallenge(challenge) : undefined;
   }
 
-  async createAppChallenge(
-    appIdentityHash: string,
-    appChallenge: StoredAppChallenge,
-  ): Promise<void> {
-    const app = await this.appInstanceRepository.findByIdentityHashOrThrow(appIdentityHash);
+  async saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
+    const { appStateHash, versionNumber, finalizesAt, status, identityHash } = data;
+    const app = await this.appInstanceRepository.findByIdentityHashOrThrow(identityHash);
 
-    const channel = await this.channelRepository.findByAppIdentityHashOrThrow(appIdentityHash);
+    const channel = await this.channelRepository.findByAppIdentityHashOrThrow(identityHash);
 
-    const existing = await this.challengeRepository.findByIdentityHash(appIdentityHash);
-    if (existing) {
-      throw new Error(`Found existing app challenge for app ${appIdentityHash}`);
+    let challenge = await this.challengeRepository.findByIdentityHash(identityHash);
+    if (!challenge) {
+      // create new challenge
+      challenge = new Challenge();
+      challenge.app = app;
+      challenge.channel = channel;
+      challenge.challengeUpdatedEvents = [];
+      challenge.stateProgressedEvents = [];
     }
 
-    const { appStateHash, versionNumber, finalizesAt, status } = appChallenge;
-
-    const challenge = new Challenge();
-    challenge.app = app;
-    challenge.channel = channel;
-    challenge.challengeUpdatedEvents = [];
-    challenge.stateProgressedEvents = [];
-    challenge.status = status;
+    challenge.status = status as StoredAppChallengeStatus;
     challenge.appStateHash = appStateHash;
     challenge.versionNumber = versionNumber;
     challenge.finalizesAt = finalizesAt;
-    await this.challengeRepository.save(challenge);
+
+    await getManager().transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager.save(challenge);
+
+      if (
+        status !== StoredAppChallengeStatus.PENDING_TRANSITION &&
+        status !== StoredAppChallengeStatus.CONDITIONAL_SENT
+      ) {
+        // insert event
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .insert()
+          .into(ChallengeUpdatedEvent)
+          .values({
+            status: status as ChallengeStatus,
+            appStateHash,
+            versionNumber,
+            finalizesAt,
+            challenge,
+          })
+          .execute();
+      }
+    });
   }
 
-  async updateAppChallenge(
-    appIdentityHash: string,
-    appChallenge: StoredAppChallenge,
-  ): Promise<void> {
-    const existing = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
-    if (!existing) {
-      throw new Error(`Could not find existing app challenge for app ${appIdentityHash}`);
-    }
-    const { appStateHash, versionNumber, finalizesAt, status } = appChallenge;
-    existing.status = status;
-    existing.appStateHash = appStateHash;
-    existing.versionNumber = versionNumber;
-    existing.finalizesAt = finalizesAt;
-    await this.challengeRepository.save(existing);
-  }
-
-  async getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
-    const active = await this.challengeRepository.findActiveChallengesByMultisig(multisigAddress);
+  async getActiveChallenges(): Promise<StoredAppChallenge[]> {
+    const active = await this.challengeRepository.findActiveChallenges();
     return active.map(entityToStoredChallenge);
   }
 
@@ -717,7 +721,7 @@ export class CFCoreStore implements IStoreService {
   async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
     const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
 
-    return challenge.stateProgressedEvents.map(event =>
+    return challenge.stateProgressedEvents.map((event) =>
       entityToStateProgressedEventPayload(event, challenge),
     );
   }
@@ -738,7 +742,7 @@ export class CFCoreStore implements IStoreService {
     entity.versionNumber = versionNumber;
     entity.turnTaker = turnTaker;
 
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(entity);
 
       // all contracts emit a `ChallengeUpdated` event, so update any
@@ -757,49 +761,8 @@ export class CFCoreStore implements IStoreService {
   ): Promise<ChallengeUpdatedEventPayload[]> {
     const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
 
-    return challenge.challengeUpdatedEvents.map(event =>
+    return challenge.challengeUpdatedEvents.map((event) =>
       entityToChallengeUpdatedPayload(event, challenge),
     );
-  }
-
-  async createChallengeUpdatedEvent(
-    appIdentityHash: string,
-    event: ChallengeUpdatedEventPayload,
-  ): Promise<void> {
-    const { appStateHash, versionNumber, finalizesAt, status } = event;
-    // safe to throw here because challenges should never be created from a
-    // `StateProgressed` event, must always go through the set state game
-    let challenge = await this.challengeRepository.findByIdentityHash(appIdentityHash);
-    if (!challenge) {
-      // could be catching event that creates a challenge
-      const storedChallenge: StoredAppChallenge = {
-        identityHash: appIdentityHash,
-        appStateHash,
-        versionNumber,
-        finalizesAt,
-        status,
-      };
-      await this.createAppChallenge(appIdentityHash, storedChallenge);
-      challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
-    }
-    const entity = new ChallengeUpdatedEvent();
-    entity.appStateHash = appStateHash;
-    entity.challenge = challenge;
-    entity.finalizesAt = finalizesAt;
-    entity.status = status;
-    entity.versionNumber = versionNumber;
-
-    await getManager().transaction(async transactionalEntityManager => {
-      await transactionalEntityManager.save(entity);
-
-      // all contracts emit a `ChallengeUpdated` event, so update any
-      // challenge fields using data from that event, not this one
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .relation(Challenge, "stateProgressedEvents")
-        .of(challenge.id)
-        .add(entity.id);
-    });
   }
 }
