@@ -53,8 +53,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Connext'
-copyright = '2019, Bo Henderson, Hunter Hillman, Rahul Sethuram, Layne Haber, Arjun Bhuptani'
-author = 'Bo Henderson, Hunter Hillman, Rahul Sethuram, Layne Haber, Arjun Bhuptani'
+copyright = '2019, Arjun Bhuptani, Bo Henderson, Hunter Hillman, Layne Haber, Rahul Sethuram'
+author = 'Arjun Bhuptani, Bo Henderson, Hunter Hillman, Layne Haber, Rahul Sethuram'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

@@ -1,3 +1,10 @@
+
+version: 6.1.2
+
+formats:
+  - htmlzip
+  - pdf
+
 python:
    version: 3.7
    install:
@@ -7,8 +14,4 @@ python:
 sphinx:
     builder: html
     configuration: docs/conf.py
-    fail_on_warning: false
-
-# Build PDF & ePub
-formats:
-  - htmlzip
+    fail_on_warning: true

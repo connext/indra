@@ -1,6 +1,7 @@
 # Build Output
 **/*.0x
 **/.flags
+**/_build/**
 **/build/**
 **/dist/**
 **/node_modules/**
@@ -15,6 +16,7 @@ modules/*/package-lock.json
 **/.jest.cache
 **/.node-gyp
 **/.npm
+**/.pyEnv
 **/.rpt2_cache
 **/.test-store
 **/cache/**

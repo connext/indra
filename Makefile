@@ -185,10 +185,31 @@ watch-node: node
 	bash ops/test/node.sh --watch
 
 ########################################
-# Begin Real Build Rules: Common Prerequisites
+# Begin Real Build Rules
 
 # All rules from here on should only depend on rules that come before it
 # ie first no dependencies, last no dependents
+
+########################################
+# Docs
+
+py-requirements: builder docs/requirements.txt
+	$(log_start)
+	$(docker_run) "[[ -d .pyEnv ]] || python3 -m virtualenv .pyEnv"
+	$(docker_run) "mkdir -p .cache/pip"
+	$(docker_run) "ls -l .cache"
+	$(docker_run) "id node"
+	$(docker_run) "source .pyEnv/bin/activate && su node -c \"python3 -m pip install --cache .cache/pip -r docs/requirements.txt\""
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+.PHONY: docs
+docs: py-requirements $(shell find ops/webserver $(find_options))
+	$(log_start)
+	$(docker_run) "source .pyEnv/bin/activate && cd docs && make html"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+########################################
+# Common Prerequisites
 
 builder: $(shell find ops/builder)
 	$(log_start)
