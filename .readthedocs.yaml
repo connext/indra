@@ -1,6 +1,5 @@
 formats:
   - htmlzip
-  - pdf
 
 python:
    version: 3.7
