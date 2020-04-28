@@ -178,7 +178,7 @@ export class Watcher implements IWatcher {
     // register listener for any future events
     this.log.debug(`Enabling listener`);
     await this.listener.enable();
-    await this.registerListeners();
+    this.registerListeners();
 
     this.enabled = true;
     this.log.info(`Watcher enabled`);
