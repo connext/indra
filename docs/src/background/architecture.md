@@ -1,6 +1,6 @@
 # v2.0 Architecture Overview
 
-![ ](../architecture.png)
+![ ](./architecture.png)
 
 ## Indra
 

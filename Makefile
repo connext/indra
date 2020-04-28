@@ -88,7 +88,7 @@ clean: stop
 	rm -rf node_modules/@connext modules/*/node_modules/@connext
 	rm -rf node_modules/@walletconnect modules/*/node_modules/@walletconnect
 	rm -rf modules/*/node_modules/*/.git
-	rm -rf modules/*/build modules/*/dist docs/_build
+	rm -rf modules/*/build modules/*/dist docs/build
 	rm -rf modules/*/.*cache* modules/*/node_modules/.cache modules/contracts/cache/*.json
 
 quick-reset:
@@ -217,7 +217,7 @@ py-requirements: builder docs/requirements.txt
 docs: documentation
 documentation: py-requirements $(shell find docs $(find_options))
 	$(log_start)
-	$(docker_run) "source .pyEnv/bin/activate && cd docs && rm -rf _build && make html"
+	$(docker_run) "source .pyEnv/bin/activate && cd docs && rm -rf build && sphinx-build -b html -d build/doctrees . build/html"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ########################################

@@ -43,6 +43,7 @@ Contents
     user/fundingYourChannel
     user/advanced
     user/limitations
+    user/walletIntegrations
     user/clientAPI
     user/storeModule
     user/types
@@ -67,4 +68,4 @@ Contents
 
     contributor/CONTRIBUTING
     contributor/workflow-protocols
-    README
+    contributor/meta
