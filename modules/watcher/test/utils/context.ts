@@ -162,37 +162,20 @@ export const setupContext = async (
     turnTaker: ChannelSigner = signers[0],
   ) => {
     const app = activeApps[0];
+    app.latestAction = action;
     const setState0 = SetStateCommitment.fromJson(
       await app.getCurrentSetState(networkContext.ChallengeRegistry),
     );
+    const setState1 = SetStateCommitment.fromJson(
+      await app.getNextSetState(networkContext.ChallengeRegistry, turnTaker),
+    );
 
-    // get single signed state information
-    const resultingState: AppWithCounterState = {
-      counter:
-        action.actionType === ActionType.ACCEPT_INCREMENT
-          ? app.latestState.counter
-          : app.latestState.counter.add(action.increment),
-    };
-    const setState1 = new SetStateCommitment(
-      networkContext.ChallengeRegistry,
-      app.appIdentity,
-      stateToHash(AppWithCounterClass.encodeState(resultingState)),
-      toBN(app.versionNumber).add(One),
-      Zero,
-      app.identityHash,
-    );
-    const turnTakerIdx = app.participants.findIndex((p) => p === turnTaker.address);
-    const sig = await turnTaker.signMessage(setState1.hashToSign());
-    await setState1.addSignatures(
-      turnTakerIdx === 0 ? sig : undefined,
-      turnTakerIdx === 0 ? undefined : sig,
-    );
     return challengeRegistry.functions.setAndProgressState(
       app.appIdentity,
       await setState0.getSignedAppChallengeUpdate(),
       await setState1.getSignedAppChallengeUpdate(),
       AppWithCounterClass.encodeState(app.latestState),
-      AppWithCounterClass.encodeAction(action),
+      AppWithCounterClass.encodeAction(app.latestAction),
     );
   };
 
