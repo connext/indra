@@ -28,7 +28,7 @@ Connext transactions can be made in any Ethereum ERC20 token.
 ### How does Connext compare to other state channels solutions?
 Connext is live on the Ethereum mainnet, is supported by a growing number of wallets/applications/stakeholders as the industry standard, and focuses largely on use cases related to conditional transfers.
 
-Connext is also very easy to use as compared to other solutions! Check out [Quick Start](../userDocumentation/quickStart.md) to learn more.
+Connext is also very easy to use as compared to other solutions! Check out [Quick Start](../user/quickStart.md) to learn more.
 
 ### How does Connext compare to Plasma/sidechains?
 Plasma is a framework for scaling Ethereum capacity by using hierarchical sidechains with mechanisms to ensure economic finality. Plasma helps Ethereum scale *out* (i.e. allowing for more parallel processing) rather than scaling *up* (i.e. allowing for more transactions per block). 
