@@ -13,7 +13,7 @@ import {
   StoredAppChallengeStatus,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { Wallet } from "ethers";
+import { Wallet, Contract } from "ethers";
 
 import {
   setupContext,
@@ -24,14 +24,9 @@ import {
 } from "./utils";
 
 import { Watcher } from "../src";
-import {
-  ChannelSigner,
-  getRandomAddress,
-  ColorfulLogger,
-} from "@connext/utils";
-import { SetStateCommitment } from "@connext/contracts";
+import { ChannelSigner, getRandomAddress, ColorfulLogger } from "@connext/utils";
+import { SetStateCommitment, MinimumViableMultisig } from "@connext/contracts";
 import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
 
 describe("Watcher.init", () => {
   let provider: JsonRpcProvider;
@@ -76,12 +71,14 @@ describe("Watcher.initiate", () => {
   let networkContext: NetworkContextForTestSuite;
 
   let watcher: Watcher;
+  let wallet: Wallet;
 
   beforeEach(async () => {
     const context = await setupContext();
 
     // get all values needed from context
     provider = context["provider"];
+    wallet = context["wallet"];
     multisigAddress = context["multisigAddress"];
     app = context["appInstance"];
     freeBalance = context["freeBalance"];
@@ -95,6 +92,23 @@ describe("Watcher.initiate", () => {
       await freeBalance.getSetState(networkContext.ChallengeRegistry),
     );
     const loadStore = context["loadStoreWithChannelAndApp"];
+
+    // set initial balances
+    const multisigBalance = await provider.getBalance(multisigAddress);
+    const signerBalances = [
+      await provider.getBalance(freeBalance.participants[0]),
+      await provider.getBalance(freeBalance.participants[1]),
+    ];
+    const totalChannelEth = app.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID].reduce(
+      (prev, curr) => {
+        return { amount: curr.amount.add(prev.amount), to: multisigAddress };
+      },
+      { amount: freeBalance.ethDepositTotal, to: multisigAddress },
+    ).amount;
+    expect(multisigBalance).to.be.eq(totalChannelEth);
+    expect(signerBalances[0]).to.be.eq(Zero);
+    expect(signerBalances[1]).to.be.eq(Zero);
+    expect(app.participants.toString()).to.be.eq(freeBalance.participants.toString());
 
     // create + load store
     store = new ConnextStore(StoreTypes.Memory);
@@ -310,13 +324,7 @@ describe("Watcher.initiate", () => {
     }
 
     // second block mined should call: `conditional`
-    const [
-      appDisputeCompleted,
-      freeBalanceDisputeCompleted,
-      appInitiatorBalance,
-      appResponderBalance,
-      multisigBalance,
-    ] = await Promise.all([
+    const [appDisputeCompleted, freeBalanceDisputeCompleted] = await Promise.all([
       new Promise((resolve, reject) => {
         watcher.on(
           WatcherEvents.ChallengeCompletedEvent,
@@ -340,15 +348,6 @@ describe("Watcher.initiate", () => {
             }
           },
         );
-      }),
-      new Promise((resolve) => {
-        provider.once(app.participants[0], (balance: BigNumber) => resolve(balance));
-      }),
-      new Promise((resolve) => {
-        provider.once(app.participants[1], (balance: BigNumber) => resolve(balance));
-      }),
-      new Promise((resolve) => {
-        provider.once(multisigAddress, (balance: BigNumber) => resolve(balance));
       }),
       provider.send("evm_mine", []),
     ]);
@@ -378,14 +377,23 @@ describe("Watcher.initiate", () => {
       });
     }
 
-    // multisig is drained
-    expect(multisigBalance).to.be.eq(Zero);
-    // app participants received transfer
-    expect(appInitiatorBalance).to.be.eq(
-      app.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][0].amount,
+    // verify final balances
+    const withdrawn = await new Contract(
+      multisigAddress,
+      MinimumViableMultisig.abi,
+      wallet,
+    ).functions.totalAmountWithdrawn(CONVENTION_FOR_ETH_ASSET_ID);
+    const totalChannelEth = app.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID].reduce(
+      (prev, curr) => {
+        return { amount: curr.amount.add(prev.amount), to: multisigAddress };
+      },
+      { amount: freeBalance.ethDepositTotal, to: multisigAddress },
+    ).amount;
+    expect(withdrawn).to.be.eq(totalChannelEth);
+    expect(await provider.getBalance(multisigAddress)).to.be.eq(Zero);
+    expect((await provider.getBalance(freeBalance.participants[0])).toString()).to.be.eq(
+      totalChannelEth,
     );
-    expect(appResponderBalance).to.be.eq(
-      app.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][1].amount,
-    );
+    expect((await provider.getBalance(freeBalance.participants[1])).toString()).to.be.eq(Zero);
   });
 });
