@@ -46,6 +46,7 @@ import { updateTimeouts1586212135729 } from "../../migrations/1586212135729-upda
 import { renameAppIdentityHash1586243580160 } from "../../migrations/1586243580160-renameAppIdentityHash";
 import { removeXpubsUpdate1586463333688 } from "../../migrations/1586463333688-remove-xpubs-update";
 import { renameIdentifiers1586509706761 } from "../../migrations/1586509706761-renameIdentifiers";
+import { multihop1588079325225 } from "../../migrations/1588079325225-multihop";
 
 export const entities = [
   AppInstance,
@@ -90,6 +91,7 @@ export const migrations = [
   renameAppIdentityHash1586243580160,
   removeXpubsUpdate1586463333688,
   renameIdentifiers1586509706761,
+  multihop1588079325225,
 ];
 
 @Injectable()

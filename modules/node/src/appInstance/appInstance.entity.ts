@@ -89,7 +89,7 @@ export class AppInstance<T extends AppState = any> {
   @IsEthAddress()
   responderDepositAssetId!: string;
 
-  @Column("text")
+  @Column("text", { default: "0x0" })
   defaultTimeout!: HexString;
 
   @Column("text", { nullable: true })
@@ -102,10 +102,7 @@ export class AppInstance<T extends AppState = any> {
   @Column("jsonb", { nullable: true })
   outcomeInterpreterParameters?: any;
 
-  @ManyToOne(
-    (type: any) => Channel,
-    (channel: Channel) => channel.appInstances,
-  )
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances)
   channel!: Channel;
 
   @CreateDateColumn()
