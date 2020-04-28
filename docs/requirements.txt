@@ -1,0 +1,5 @@
+sphinx_markdown_tables
+# sphinxcontrib-mermaid
+recommonmark
+sphinx >= 2.0
+sphinx_rtd_theme

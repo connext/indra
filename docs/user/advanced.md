@@ -111,6 +111,34 @@ await tx.wait();
 await client.rescindDepositRights({ assetId });
 ```
 
+## Using a Custom Logger
+
+## Logger overhaul
+
+The client accepts a `logger` option which must implement the ILogger interface:
+
+```
+interface ILogger {
+  debug(msg: string): void
+  info(msg: string): void
+  warn(msg: string): void
+  error(msg: string): void
+}
+```
+
+Notice that `console` satisfies this interface on it's own, so you could pass that in as-is:
+
+```
+import { connect } from "@connext/client";
+const client = await connect({ logger: console, ...otherOptions });
+```
+
+But this is the default behavior & is what you'll get if you omit the `logger` option entirely.
+
+This option is useful if you're using eg winston for more powerful logging or LogDNA to send logs to a remote service for further processing.
+
+Note that winston loggers also satisfy the ILogger interface by default so you can also pass those in as-is just like `console`.
+
 ## Creating a Custom Backup Service
 
 Backup services store channel states on behalf of the client in case their store compromised or otherwise unavailable (i.e. for clearing `localStorage` in a browser, using incognito mode, or seamless multidevice channel usage). If a backup service is not available, the client will still function properly in these scenarios, but will rely on a trusted restore from the node’s version of the channel state.
