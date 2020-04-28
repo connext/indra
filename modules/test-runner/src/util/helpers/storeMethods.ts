@@ -23,6 +23,7 @@ import {
   ChallengeStatus,
   StateProgressedEventPayload,
   ChallengeUpdatedEventPayload,
+  StoredAppChallengeStatus,
 } from "@connext/types";
 import { toBN, toBNJson, getRandomBytes32 } from "@connext/utils";
 import { BigNumber, hexlify, randomBytes } from "ethers/utils";
@@ -142,7 +143,7 @@ export const TEST_STORE_APP_CHALLENGE: StoredAppChallenge = {
   appStateHash: getRandomBytes32(),
   versionNumber: toBN(1),
   finalizesAt: toBN(3),
-  status: ChallengeStatus.IN_DISPUTE,
+  status: StoredAppChallengeStatus.IN_DISPUTE,
 };
 
 export const TEST_STORE_STATE_PROGRESSED_EVENT: StateProgressedEventPayload = {

@@ -1,4 +1,4 @@
-import { StoreTypes, STORE_SCHEMA_VERSION, ChallengeStatus } from "@connext/types";
+import { StoreTypes, STORE_SCHEMA_VERSION, ChallengeStatus, StoredAppChallengeStatus } from "@connext/types";
 import { toBNJson } from "@connext/utils";
 import {
   expect,
@@ -400,25 +400,28 @@ describe("ConnextStore", () => {
     });
   });
 
-  describe("getAppChallenge / createAppChallenge / updateAppChallenge", () => {
+  describe("getAppChallenge / saveAppChallenge / getChallengeUpdatedEvents", () => {
     storeTypes.forEach(type => {
       it(`${type} - should be able to create, get, and update app challenges`, async () => {
         const value = { ...TEST_STORE_APP_CHALLENGE };
-        const edited = { ...value, status: ChallengeStatus.NO_CHALLENGE };
+        const edited = { ...value, status: StoredAppChallengeStatus.OUTCOME_SET };
         const store = await createConnextStore(type as StoreTypes, { fileDir });
 
         const empty = await store.getAppChallenge(value.identityHash);
         expect(empty).to.be.undefined;
 
-        await store.createAppChallenge(value.identityHash, value);
+        await store.saveAppChallenge(value);
         expect(await store.getAppChallenge(value.identityHash)).to.containSubset(value);
+        const events0 = await store.getChallengeUpdatedEvents(value.identityHash);
+        expect(events0.length).to.be.eq(1);
+        expect(events0[0]).to.containSubset(value);
 
-        await expect(store.createAppChallenge(value.identityHash, value)).to.be.rejectedWith(
-          `Could not create challenge`,
-        );
-
-        await store.updateAppChallenge(value.identityHash, edited);
+        await store.saveAppChallenge(edited);
         expect(await store.getAppChallenge(value.identityHash)).to.containSubset(edited);
+        const events1 = await store.getChallengeUpdatedEvents(value.identityHash);
+        expect(events1.length).to.be.eq(2);
+        expect(events1[1]).to.containSubset(edited);
+
         await store.clear();
       });
     });
@@ -453,11 +456,11 @@ describe("ConnextStore", () => {
           TEST_STORE_CONDITIONAL_COMMITMENT,
         );
 
-        const empty = await store.getActiveChallenges(channel.multisigAddress);
+        const empty = await store.getActiveChallenges();
         expect(empty.length).to.be.eq(0);
 
-        await store.createAppChallenge(challenge.appStateHash, challenge);
-        const vals = await store.getActiveChallenges(channel.multisigAddress);
+        await store.saveAppChallenge(challenge);
+        const vals = await store.getActiveChallenges();
         expect(vals.length).to.be.eq(1);
         expect(vals[0]).to.containSubset(challenge);
         await store.clear();
@@ -497,7 +500,7 @@ describe("ConnextStore", () => {
     });
   });
 
-  describe("getChallengeUpdatedEvents / createChallengeUpdatedEvent", () => {
+  describe("getChallengeUpdatedEvents", () => {
     storeTypes.forEach(type => {
       it(`${type} - should be able to get/create challenge updated events`, async () => {
         const value = { ...TEST_STORE_CHALLENGE_UPDATED_EVENT };
@@ -506,7 +509,7 @@ describe("ConnextStore", () => {
         const empty = await store.getChallengeUpdatedEvents(value.identityHash);
         expect(empty).to.containSubset([]);
 
-        await store.createChallengeUpdatedEvent(value.identityHash, value);
+        await store.saveAppChallenge(value);
         const vals = await store.getChallengeUpdatedEvents(value.identityHash);
         expect(vals.length).to.be.eq(1);
         expect(vals[0]).to.containSubset(value);
