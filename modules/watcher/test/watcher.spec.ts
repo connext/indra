@@ -2,10 +2,9 @@ import { ConnextStore } from "@connext/store";
 import {
   JsonRpcProvider,
   StoreTypes,
-  CONVENTION_FOR_ETH_ASSET_ID,
   BigNumber,
 } from "@connext/types";
-import { Wallet, Contract } from "ethers";
+import { Wallet } from "ethers";
 
 import {
   setupContext,
@@ -13,12 +12,11 @@ import {
   NetworkContextForTestSuite,
   MiniFreeBalance,
   AppWithCounterClass,
+  verifyOnchainBalancesPostChallenge,
 } from "./utils";
 
 import { Watcher } from "../src";
 import { ChannelSigner, getRandomAddress, ColorfulLogger } from "@connext/utils";
-import { MinimumViableMultisig } from "@connext/contracts";
-import { Zero } from "ethers/constants";
 import { initiateDispute } from "./utils/initiateDispute";
 
 describe("Watcher.init", () => {
@@ -96,8 +94,8 @@ describe("Watcher.initiate", () => {
     await store.clear();
   });
 
-  it.only("should be able to initiate + complete a dispute with a particular app instance using set state", async () => {
-    const { outcomeSet, verifyOutcomeSet,  } = await initiateDispute(
+  it("should be able to initiate + complete a dispute with a particular app instance using set state", async () => {
+    const { outcomeSet, verifyOutcomeSet, completed, verifyCompleted } = await initiateDispute(
       app,
       freeBalance,
       watcher,
@@ -105,20 +103,23 @@ describe("Watcher.initiate", () => {
       networkContext,
     );
 
-    await verifyOutcomeSet(await outcomeSet);
-    // await verifyCompleted(await completed);
+    const [outcomeRes] = await Promise.all([
+      outcomeSet,
+      provider.send("evm_mine", []),
+    ]);
+    await verifyOutcomeSet(outcomeRes);
+    const [completedRes] = await Promise.all([
+      completed,
+      provider.send("evm_mine", []),
+    ]);
+    await verifyCompleted(completedRes);
 
     // verify final balances
-    const withdrawn = await new Contract(
+    await verifyOnchainBalancesPostChallenge(
       multisigAddress,
-      MinimumViableMultisig.abi,
+      freeBalance.participants,
+      channelBalances,
       wallet,
-    ).functions.totalAmountWithdrawn(CONVENTION_FOR_ETH_ASSET_ID);
-    expect(withdrawn).to.be.eq(channelBalances[CONVENTION_FOR_ETH_ASSET_ID]);
-    expect(await provider.getBalance(multisigAddress)).to.be.eq(Zero);
-    expect((await provider.getBalance(freeBalance.participants[0])).toString()).to.be.eq(
-      channelBalances[CONVENTION_FOR_ETH_ASSET_ID],
     );
-    expect((await provider.getBalance(freeBalance.participants[1])).toString()).to.be.eq(Zero);
   });
 });
