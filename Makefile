@@ -191,24 +191,6 @@ watch-node: node
 # ie first no dependencies, last no dependents
 
 ########################################
-# Docs
-
-py-requirements: builder docs/requirements.txt
-	$(log_start)
-	$(docker_run) "[[ -d .pyEnv ]] || python3 -m virtualenv .pyEnv"
-	$(docker_run) "mkdir -p .cache/pip"
-	$(docker_run) "ls -l .cache"
-	$(docker_run) "id node"
-	$(docker_run) "source .pyEnv/bin/activate && su node -c \"python3 -m pip install --cache .cache/pip -r docs/requirements.txt\""
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-.PHONY: docs
-docs: py-requirements $(shell find ops/webserver $(find_options))
-	$(log_start)
-	$(docker_run) "source .pyEnv/bin/activate && cd docs && make html"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-########################################
 # Common Prerequisites
 
 builder: $(shell find ops/builder)
@@ -221,6 +203,25 @@ node-modules: builder package.json $(shell ls modules/*/package.json)
 	$(docker_run) "lerna bootstrap --hoist --no-progress"
 	# rm below hack once this PR gets merged: https://github.com/EthWorks/Waffle/pull/205
 	$(docker_run) "sed -i 's|{ input }|{ input, maxBuffer: 1024 * 1024 * 4 }|' node_modules/@ethereum-waffle/compiler/dist/cjs/compileNative.js"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+py-requirements: builder docs/requirements.txt
+	$(log_start)
+	$(docker_run) "[[ -d .pyEnv ]] || python3 -m virtualenv .pyEnv"
+	$(docker_run) "mkdir -p .cache/pip"
+	$(docker_run) "ls -l .cache"
+	$(docker_run) "id node"
+	$(docker_run) "source .pyEnv/bin/activate && su node -c \"python3 -m pip install --cache .cache/pip -r docs/requirements.txt\""
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+########################################
+# Docs
+
+.PHONY: docs
+docs: documentation
+documentation: py-requirements $(shell find ops/webserver $(find_options))
+	$(log_start)
+	$(docker_run) "source .pyEnv/bin/activate && cd docs && make html"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ########################################
