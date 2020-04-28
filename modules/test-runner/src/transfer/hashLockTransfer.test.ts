@@ -209,10 +209,7 @@ describe("HashLock Transfers", () => {
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
-      new Promise((res) => {
-        const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
-        clientB.messaging.subscribe(subject, res);
-      }),
+      new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res)),
     ]);
 
     const retrievedTransfer = await clientB.getHashLockTransfer(lockHash, transfer.assetId);
@@ -351,10 +348,7 @@ describe("HashLock Transfers", () => {
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
-      new Promise((res) => {
-        const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
-        clientB.messaging.subscribe(subject, res);
-      }),
+      new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res)),
     ]);
 
     const badPreImage = getRandomBytes32();
@@ -384,10 +378,7 @@ describe("HashLock Transfers", () => {
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
-      new Promise((res) => {
-        const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
-        clientB.messaging.subscribe(subject, res);
-      }),
+      new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res)),
     ]);
 
     await new Promise((resolve) => provider.once("block", resolve));
@@ -438,10 +429,7 @@ describe("HashLock Transfers", () => {
           recipient: clientB.publicIdentifier,
         } as PublicParams.HashLockTransfer),
         // eslint-disable-next-line no-loop-func
-        new Promise((res) => {
-          const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
-          clientB.messaging.subscribe(subject, res);
-        }),
+        new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res)),
       ]);
 
       // eslint-disable-next-line no-loop-func

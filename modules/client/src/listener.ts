@@ -204,6 +204,21 @@ export class ConnextListener extends ConnextEventEmitter {
     });
 
     this.channelProvider.on(
+      MethodNames.chan_uninstall,
+      async (msg: any): Promise<void> => {
+        const {
+          result: {
+            result: { appInstance },
+          },
+        } = msg;
+        await this.connext.node.messaging.publish(
+          `${this.connext.nodeIdentifier}.${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstance.appIdentityHash}.uninstall`,
+          appInstance,
+        );
+      },
+    );
+
+    this.channelProvider.on(
       MethodNames.chan_install,
       async (msg: any): Promise<void> => {
         const {
@@ -212,7 +227,7 @@ export class ConnextListener extends ConnextEventEmitter {
           },
         } = msg;
         await this.connext.node.messaging.publish(
-          `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstance.appIdentityHash}.uninstall`,
+          `${this.connext.nodeIdentifier}.${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstance.appIdentityHash}.install`,
           appInstance,
         );
       },
@@ -227,7 +242,7 @@ export class ConnextListener extends ConnextEventEmitter {
   };
 
   private registerAvailabilitySubscription = async (): Promise<void> => {
-    const subject = `${this.connext.publicIdentifier}.online`;
+    const subject = `${this.connext.nodeIdentifier}.${this.connext.publicIdentifier}.online`;
     await this.connext.node.messaging.subscribe(
       subject,
       async (msg: any): Promise<any> => {

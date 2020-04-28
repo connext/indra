@@ -92,9 +92,9 @@ class AdminMessaging extends AbstractMessagingProvider {
   }
 
   async addRebalanceProfile(subject: string, data: { profile: RebalanceProfile }): Promise<void> {
-    const address = subject.split(".")[1];
+    const [node, namespace, publicIdentifier] = subject.split(".");
     const profile = bigNumberifyJson(data.profile) as RebalanceProfile;
-    await this.channelService.addRebalanceProfileToChannel(address, profile);
+    await this.channelService.addRebalanceProfileToChannel(publicIdentifier, profile);
   }
 
   async setupSubscriptions(): Promise<void> {

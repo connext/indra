@@ -1,4 +1,10 @@
-import { AppInstanceJson, IConnextClient, DepositAppState, DepositAppName, DefaultApp } from "@connext/types";
+import {
+  AppInstanceJson,
+  IConnextClient,
+  DepositAppState,
+  DepositAppName,
+  DefaultApp,
+} from "@connext/types";
 import { delay } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -7,7 +13,6 @@ import tokenAbi from "human-standard-token-abi";
 
 import { expect } from "../";
 import { ethProvider } from "../ethprovider";
-
 
 export const requestDepositRights = async (
   client: IConnextClient,
@@ -23,12 +28,10 @@ export const requestDepositRights = async (
         );
   // get coin balance app details
   const network = await ethProvider.getNetwork();
-  const {
-    appDefinitionAddress: appDefinition,
-  } = await client.getAppRegistry({
+  const { appDefinitionAddress: appDefinition } = (await client.getAppRegistry({
     name: DepositAppName,
     chainId: network.chainId,
-  }) as DefaultApp;
+  })) as DefaultApp;
   // install the app and get the state
   let depositApp: DepositAppState;
   if (clientIsRecipient) {
@@ -50,7 +53,7 @@ export const requestDepositRights = async (
       }),
       Promise.all([
         new Promise(async (resolve) => {
-          const subject = `${client.publicIdentifier}.channel.${client.multisigAddress}.app-instance.*.install`;
+          const subject = `${client.nodeIdentifier}.${client.publicIdentifier}.channel.${client.multisigAddress}.app-instance.*.install`;
           client.messaging.subscribe(subject, (msg: any) => {
             const data = JSON.parse(msg.data);
             resolve(data.latestState);
@@ -60,16 +63,14 @@ export const requestDepositRights = async (
       ]),
     ]);
     depositApp = latestState as DepositAppState;
-  };
+  }
   // verify the latest deposit state is correct
   expect(depositApp.multisigAddress).to.be.eq(client.multisigAddress);
   expect(depositApp.assetId).to.be.eq(assetId);
   expect(bigNumberify(depositApp.startingMultisigBalance).toString()).to.be.eq(
     multisigBalance.toString(),
   );
-  expect(bigNumberify(depositApp.startingTotalAmountWithdrawn).toString()).to.be.eq(
-    Zero,
-  );
+  expect(bigNumberify(depositApp.startingTotalAmountWithdrawn).toString()).to.be.eq(Zero);
   const transfers = depositApp.transfers;
   expect(transfers[0].amount).to.be.eq(Zero);
   expect(transfers[1].amount).to.be.eq(Zero);
