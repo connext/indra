@@ -29,16 +29,13 @@ Contents
 .. toctree::
     :maxdepth: 2
     :caption: Background
-
     background/introduction
     background/faq
     background/architecture
 
-
 .. toctree::
     :maxdepth: 2
     :caption: Client Documentation
-
     user/quickStart
     user/walletIntegrations
     user/advanced
@@ -48,15 +45,16 @@ Contents
 .. toctree::
     :maxdepth: 2
     :caption: Node Documentation
-
     nodeOperator/runNode
 
+.. toctree::
+    :maxdepth: 2
+    :caption: Protocol
+    protocol/introduction
+    protocol/diagram
+    protocol/api
 
 .. toctree::
     :maxdepth: 2
     :caption: Contributor Documentation
-
     contributor/CONTRIBUTING
-
-
-
