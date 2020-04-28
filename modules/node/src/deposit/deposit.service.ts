@@ -59,14 +59,14 @@ export class DepositService {
       );
     }
 
-    let appIdentityHash;
+    let appIdentityHash: string;
     if (!depositApp) {
       this.log.info(`Requesting deposit rights before depositing`);
       appIdentityHash = await this.requestDepositRights(channel, tokenAddress);
     }
     // deposit app for asset id with node as initiator is already installed
     // send deposit to chain
-    let receipt;
+    let receipt: TransactionReceipt;
     try {
       const tx = await this.sendDepositToChain(channel, amount, tokenAddress);
       receipt = await tx.wait();
