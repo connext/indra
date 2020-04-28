@@ -6,6 +6,8 @@
 *   [INodeApiClient](interfaces/inodeapiclient.html)
 *   [NodeInitializationParameters](interfaces/nodeinitializationparameters.html) -->
 
+# Types
+
 ## ClientOptions
 
 Object including the options to instantiate the connext client with.

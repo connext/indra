@@ -1,0 +1,6 @@
+pygments-lexer-solidity
+recommonmark
+sphinx >= 2.0
+sphinx_markdown_tables
+sphinx_rtd_theme
+sphinxcontrib-mermaid
