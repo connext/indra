@@ -88,7 +88,7 @@ clean: stop
 	rm -rf node_modules/@connext modules/*/node_modules/@connext
 	rm -rf node_modules/@walletconnect modules/*/node_modules/@walletconnect
 	rm -rf modules/*/node_modules/*/.git
-	rm -rf modules/*/build modules/*/dist
+	rm -rf modules/*/build modules/*/dist docs/_build
 	rm -rf modules/*/.*cache* modules/*/node_modules/.cache modules/contracts/cache/*.json
 
 quick-reset:
@@ -207,11 +207,7 @@ node-modules: builder package.json $(shell ls modules/*/package.json)
 
 py-requirements: builder docs/requirements.txt
 	$(log_start)
-	$(docker_run) "[[ -d .pyEnv ]] || python3 -m virtualenv .pyEnv"
-	$(docker_run) "mkdir -p .cache/pip"
-	$(docker_run) "ls -l .cache"
-	$(docker_run) "id node"
-	$(docker_run) "source .pyEnv/bin/activate && su node -c \"python3 -m pip install --cache .cache/pip -r docs/requirements.txt\""
+	$(docker_run) "bash ops/py-install.sh"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ########################################
@@ -219,9 +215,9 @@ py-requirements: builder docs/requirements.txt
 
 .PHONY: docs
 docs: documentation
-documentation: py-requirements $(shell find ops/webserver $(find_options))
+documentation: py-requirements $(shell find docs $(find_options))
 	$(log_start)
-	$(docker_run) "source .pyEnv/bin/activate && cd docs && make html"
+	$(docker_run) "source .pyEnv/bin/activate && cd docs && rm -rf _build && make html"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ########################################

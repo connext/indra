@@ -3,9 +3,9 @@
 ## How to get started
 
 If you're interested in:
-1. Integrating state channels into your dApp or wallet, see [Getting Started](../userDocumentation/quickStart.md)
-2. Running your own node, see [Running your own Node](../nodeDocumentation/runNode.md)
-3. Helping build Connext, see our [Contributor docs](../contributorDocumentation/CONTRIBUTING.md)
+1. Integrating state channels into your dApp or wallet, see [Getting Started](../user/quickStart.md)
+2. Running your own node, see [Running your own Node](../nodeOperator/runNode.md)
+3. Helping build Connext, see our [Contributor docs](../contributor/CONTRIBUTING.md)
 
 ## What is Connext?
 
@@ -39,7 +39,7 @@ If you're looking for more information, here are a few digestible resources on h
 
 V2.0 of Connext is *live* on the Ethereum mainnet.
 
-V2.0 features a single node system - currently hosted by Connext - over which transactions are routed. Any [Connext client](../userDocumentation/clientAPI.md) can connect to this node. In Connext, users' funds annd transactions are noncustodial - the node never holds your value *at all*. Because Connext is centralized, however, it is currently possible for the node to be shut down or transactions censored, which would mean that users would need to withdraw funds onto the base blockchain. For a detailed overview of the trust assumptions and limitations that exist at present, please read [System Limitations](../userDocumentation/limitations.md).
+V2.0 features a single node system - currently hosted by Connext - over which transactions are routed. Any [Connext client](../user/clientAPI.md) can connect to this node. In Connext, users' funds annd transactions are noncustodial - the node never holds your value *at all*. Because Connext is centralized, however, it is currently possible for the node to be shut down or transactions censored, which would mean that users would need to withdraw funds onto the base blockchain. For a detailed overview of the trust assumptions and limitations that exist at present, please read [System Limitations](../user/limitations.md).
 
 V2.x of Connext will feature routing state updates between nodes and the ability for anyone to connect their own node to the Connext Network. When V2.x is released, we intend to shut down the Connext-hosted node.
 

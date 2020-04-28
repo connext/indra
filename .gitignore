@@ -14,6 +14,7 @@ modules/*/package-lock.json
 **/.config
 **/.git
 **/.jest.cache
+**/.local
 **/.node-gyp
 **/.npm
 **/.pyEnv

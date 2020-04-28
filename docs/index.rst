@@ -29,6 +29,7 @@ Contents
 .. toctree::
     :maxdepth: 2
     :caption: Background
+
     background/introduction
     background/faq
     background/architecture
@@ -36,20 +37,27 @@ Contents
 .. toctree::
     :maxdepth: 2
     :caption: Client Documentation
+
     user/quickStart
     user/walletIntegrations
     user/advanced
     user/limitations
     user/clientAPI
+    user/daiCard
+    user/storeModule
+    user/types
 
 .. toctree::
     :maxdepth: 2
     :caption: Node Documentation
+
+    nodeOperator/node
     nodeOperator/runNode
 
 .. toctree::
     :maxdepth: 2
     :caption: Protocol
+
     protocol/introduction
     protocol/diagram
     protocol/api
@@ -57,4 +65,7 @@ Contents
 .. toctree::
     :maxdepth: 2
     :caption: Contributor Documentation
+
     contributor/CONTRIBUTING
+    contributor/workflow-protocols.md
+    README

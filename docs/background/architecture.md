@@ -6,7 +6,7 @@
 
 [Indra](https://github.com/ConnextProject/indra) is the core implementation monorepo for Connext. Indra contains ready-for-deployment code for core node services, client, the Dai Card (as a reference implementation), as well as scripts needed to deploy and operate a node in production. When deploying a node to production, the most recent docker images will be used.
 
-For detailed instructions on how to run the code contained within the repository see the [Running your own node](../nodeDocumentation/runNode.md) guide.
+For detailed instructions on how to run the code contained within the repository see the [Running your own node](../nodeOperator/runNode.md) guide.
 
 There are several modules contained within the indra repository:
 
@@ -27,7 +27,7 @@ Clients contain the following functionality:
 * Handling a dispute.
 * Generating/signing/sending and validating/receiving state updates over NATS. The Client takes in the address of the server that is being used to pass messages in the constructor.
 
-Further documentation on the client can be found [here](../userDocumentation/clientAPI.md).
+Further documentation on the client can be found [here](../user/clientAPI.md).
 
 ### Node
 
