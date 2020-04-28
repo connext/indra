@@ -136,21 +136,11 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve(undefined);
   }
 
-  async createAppChallenge(
-    appIdentityHash: string,
-    appChallenge: StoredAppChallenge,
-  ): Promise<void> {
+  async saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
     return Promise.resolve();
   }
 
-  async updateAppChallenge(
-    appIdentityHash: string,
-    appChallenge: StoredAppChallenge,
-  ): Promise<void> {
-    return Promise.resolve();
-  }
-
-  async getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
+  async getActiveChallenges(): Promise<StoredAppChallenge[]> {
     return Promise.resolve([]);
   }
 
@@ -178,13 +168,6 @@ export class MockStoreService implements IStoreService {
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]> {
     return Promise.resolve([]);
-  }
-
-  async createChallengeUpdatedEvent(
-    appIdentityHash: string,
-    event: ChallengeUpdatedEventPayload,
-  ): Promise<void> {
-    return Promise.resolve();
   }
 }
 
