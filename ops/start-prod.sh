@@ -55,12 +55,12 @@ fi
 # Ensure keys have proper newlines inserted
 # (bc GitHub Actions strips newlines from secrets)
 export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=`
-  echo $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY | tr -d '\n\r\t ' |\
+  echo $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY | tr -d '\n\r' |\
   sed 's/-----BEGIN RSA PRIVATE KEY-----/\\\n-----BEGIN RSA PRIVATE KEY-----\\\n/' |\
   sed 's/-----END RSA PRIVATE KEY-----/\\\n-----END RSA PRIVATE KEY-----\\\n/'`
 
 export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
-  echo $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY | tr -d '\n\r\t ' |\
+  echo $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY | tr -d '\n\r' |\
   sed 's/-----BEGIN PUBLIC KEY-----/\\\n-----BEGIN PUBLIC KEY-----\\\n/' | \
   sed 's/-----END PUBLIC KEY-----/\\\n-----END PUBLIC KEY-----\\\n/'`
 
