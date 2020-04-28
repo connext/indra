@@ -59,8 +59,8 @@ describe("StateChannel::setupChannel", () => {
       expect(fb).not.toBe(undefined);
     });
 
-    it("should have versionNumber 0 to start", () => {
-      expect(fb.versionNumber).toBe(0);
+    it("should have versionNumber 1 to start", () => {
+      expect(fb.versionNumber).toBe(1);
     });
 
     it("should have a default timeout defined by the hard-coded assumption", () => {
@@ -90,8 +90,8 @@ describe("StateChannel::setupChannel", () => {
       expect(fb.appInterface.actionEncoding).toBe(undefined);
     });
 
-    it("should have seqNo of 0 (b/c it is the first ever app)", () => {
-      expect(fb.appSeqNo).toBe(0);
+    it("should have seqNo of 1 (b/c it is the first ever app)", () => {
+      expect(fb.appSeqNo).toBe(1);
     });
 
     it("should set the participants as the userIdentifiers", () => {});

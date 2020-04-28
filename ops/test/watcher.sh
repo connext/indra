@@ -11,17 +11,21 @@ suffix="watcher_tester"
 
 network="${project}_$suffix"
 
+tester_host="${project}_$suffix"
 ethprovider_host="${project}_ethprovider_$suffix"
+
 ethprovider_port="8545"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 ethprovider_url="http://$ethprovider_host:$ethprovider_port"
 
 # Kill the dependency containers when this script exits
 function cleanup {
-  echo;echo "Tests finished, stopping test containers.."
-  docker container stop $ethprovider_host 2> /dev/null || true
+  echo "Removing $ethprovider_host & $tester_host containers"
+  docker container stop "$ethprovider_host" 2> /dev/null || true
+  docker container stop "$tester_host" 2> /dev/null || true
 }
-trap cleanup EXIT
+trap cleanup EXIT SIGINT SIGTERM
+cleanup
 
 docker network create --attachable $network 2> /dev/null || true
 
@@ -53,13 +57,13 @@ docker run \
     --networkId="4447" \
     --port="$ethprovider_port"
 
-exec docker run \
+docker run \
   --entrypoint="bash" \
   --env="ETHPROVIDER_URL=$ethprovider_url" \
   --env="SUGAR_DADDY=$eth_mnemonic" \
   --env="LOG_LEVEL=$LOG_LEVEL" \
   $interactive \
-  --name="${project}_test_watcher" \
+  --name="$tester_host" \
   --network="$network" \
   --rm \
   --volume="`pwd`:/root" \

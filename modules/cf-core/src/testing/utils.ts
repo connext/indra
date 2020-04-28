@@ -123,6 +123,7 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
       ? stateChannel.multisigAddress
       : getAddress(hexlify(randomBytes(20))),
     /* meta */ undefined,
+    /* latestAction */ undefined,
     /* twoPartyOutcomeInterpreterParams */ {
       playerAddrs: [AddressZero, AddressZero],
       amount: Zero,

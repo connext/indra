@@ -1,3 +1,4 @@
+import { toBN } from "@connext/utils";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -89,8 +90,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
         network.ChallengeRegistry,
         freeBalance.identity,
         keccak256(freeBalance.encodedLatestState),
-        freeBalance.versionNumber,
-        freeBalance.stateTimeout,
+        toBN(freeBalance.versionNumber),
+        toBN(freeBalance.stateTimeout),
       );
       const setStateCommitmentHash = setStateCommitment.hashToSign();
       setStateCommitment.signatures = [

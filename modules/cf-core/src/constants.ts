@@ -14,7 +14,7 @@ export const HARD_CODED_ASSUMPTIONS = {
   freeBalanceDefaultTimeout: 8640, // 24h
   freeBalanceInitialStateTimeout: 8640,
   // We assume the Free Balance is the first app ever installed
-  appSequenceNumberForFreeBalance: 0,
+  appSequenceNumberForFreeBalance: 1,
 };
 
 // 1 messaging timeout there, 1 messaging timeout back
