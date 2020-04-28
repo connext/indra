@@ -11,7 +11,7 @@ import {
   DefaultApp,
 } from "@connext/types";
 import { toBN, stringify } from "@connext/utils";
-import { HashZero, Zero } from "ethers/constants";
+import { HashZero, Zero, AddressZero } from "ethers/constants";
 
 import { AbstractController } from "./AbstractController";
 
@@ -22,8 +22,17 @@ export class HashLockTransferController extends AbstractController {
     this.log.info(`hashLockTransfer started: ${stringify(params)}`);
     // convert params + validate
     const amount = toBN(params.amount);
-    const timelock = toBN(params.timelock);
-    const { assetId, lockHash, meta, recipient } = params;
+    const assetId = params.assetId ? params.assetId : AddressZero;
+    // backwards compatibility for timelock
+    if(params.timelock) {
+      this.log.warn(`timelock is deprecated, use timelockDuration instead`)
+      params.timelockDuration = params.timelock;
+    }
+    // convert to block height
+    const timelockDuration = params.timelockDuration ? params.timelockDuration : 5000;
+    const timelock = toBN(timelockDuration).add(await this.connext.ethProvider.getBlockNumber());
+
+    const { lockHash, meta, recipient } = params;
     const submittedMeta = { ...(meta || {}) } as any;
 
     const initialState: HashLockTransferAppState = {
