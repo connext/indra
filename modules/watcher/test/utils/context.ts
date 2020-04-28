@@ -11,11 +11,7 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   CoinTransfer,
 } from "@connext/types";
-import {
-  ChannelSigner,
-  toBN,
-  getRandomChannelSigner,
-} from "@connext/utils";
+import { ChannelSigner, toBN, getRandomChannelSigner } from "@connext/utils";
 import { Wallet, Contract } from "ethers";
 import { One, Zero } from "ethers/constants";
 import { Interface } from "ethers/utils";
@@ -40,7 +36,7 @@ export type TokenIndexedBalance = { [tokenAddress: string]: CoinTransfer[] };
 export type CreatedAppInstanceOpts = {
   balances: TokenIndexedBalance;
   defaultTimeout: BigNumber;
-}
+};
 
 // setup constants
 const ethProvider = process.env.ETHPROVIDER_URL;
@@ -61,7 +57,10 @@ const defaultAppOpts = {
   defaultTimeout: Zero,
 };
 
-export const setupContext = async (provided: Partial<CreatedAppInstanceOpts>[] = []) => {
+export const setupContext = async (
+  // ensure one is actually created when no opts provided
+  provided: Partial<CreatedAppInstanceOpts>[] = [defaultAppOpts],
+) => {
   // deploy contracts
   const networkContext = await deployTestArtifactsToChain(wallet);
   const challengeRegistry = new Contract(
@@ -90,7 +89,7 @@ export const setupContext = async (provided: Partial<CreatedAppInstanceOpts>[] =
   ).functions.totalAmountWithdrawn(CONVENTION_FOR_ETH_ASSET_ID);
   expect(withdrawn).to.be.eq(Zero);
 
-  // create objects
+  // create objects from provided overrides
   const activeApps = provided.map((providedOpts, idx) => {
     const { balances, defaultTimeout } = {
       ...defaultAppOpts,
