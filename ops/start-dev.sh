@@ -14,7 +14,7 @@ docker swarm init 2> /dev/null || true
 INDRA_LOG_LEVEL="$LOG_LEVEL";
 
 function extractEnv {
-  grep "$1" "$2" | cut -d "=" -f 2 | tr -d '\n\r"' | sed 's/ *#.*//'
+  grep "$1" "$2" | cut -d "=" -f 2- | tr -d '\n\r"' | sed 's/ *#.*//'
 }
 
 # First choice: use existing env vars (dotEnv not called)

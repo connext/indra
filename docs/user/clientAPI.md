@@ -81,17 +81,6 @@ Generate a secret and allow receiver to asynchronously unlock payment without ne
 - conditionType = "LINKED_TRANSFER"
 - params = LinkedTransferParameters
 
-##### Linked Transfer To Recipient
-
-Generates a linked transfer which only the specified recipient can unlock. Useful for normal transfers where liveness is not guaranteed.
-
-- conditionType = "LINKED_TRANSFER_TO_RECIPIENT"
-- params = LinkedTransferToRecipientParameters
-
-##### More conditional types are under active development, [reach out](https://discord.gg/yKkzZZm) for specific requests!
-
-#### Example
-
 ```typescript
 // linked transfer
 const linkedParams: LinkedTransferParameters = {
@@ -105,6 +94,62 @@ const linkedParams: LinkedTransferParameters = {
 await conditionalTransfer(linkedParams);
 ```
 
+##### Linked Transfer To Recipient
+
+Generates a linked transfer which only the specified recipient can unlock. Useful for normal transfers where liveness is not guaranteed.
+
+- conditionType = "LINKED_TRANSFER_TO_RECIPIENT"
+- params = LinkedTransferToRecipientParameters
+
+```typescript
+// linked transfer
+const linkedParams: LinkedTransferToRecipientParameters = {
+  amount: parseEther("0.1").toString(),
+  assetId: "0x0000000000000000000000000000000000000000" // ETH
+  conditionType: "LINKED_TRANSFER",
+  paymentId: createPaymentId(), // bytes32 hex string
+  preImage: createPreImage(),// bytes32 hex string, shared secret
+  recipient: "xpub..." // recipient public identifier
+};
+
+await conditionalTransfer(linkedParams);
+```
+
+##### Fast Signed Transfer
+
+Creates a persistent transfer app that reduces latency for micropayment use cases. Each transfer must specify a `signer` Ethereum address who can resolve the transfer with a signature on the payload, which consists of the `paymentId` hashed with arbitrary data.
+
+```ts
+export type FastSignedTransferParameters<T = string> = {
+  conditionType: typeof FAST_SIGNED_TRANSFER;
+  recipient: string;
+  amount: T;
+  assetId?: string;
+  paymentId: string;
+  maxAllocation?: T; // max amount to allocate to this app. if not specified, it will use the full channel balance
+  signer: string;
+  meta?: object;
+};
+
+export type FastSignedTransferResponse = {
+  transferAppInstanceId: string; // app instance Id for installed application
+};
+
+// generate random payment ID
+const paymentId = hexlify(randomBytes(32));
+const { transferAppInstanceId } = (await client.conditionalTransfer({
+  amount: parseEther("0.01").toString(),
+  conditionType: FAST_SIGNED_TRANSFER,
+  paymentId: ,
+  recipient: "xpub...",
+  signer: "0xAAA0000000000000000000000000000000000000",
+  assetId: AddressZero,
+  meta: { foo: "bar" },
+} as FastSignedTransferParameters)) as FastSignedTransferResponse;
+```
+
+##### More conditional types are under active development, [reach out](https://discord.gg/yKkzZZm) for specific requests!
+
 ### resolveCondition
 
 Resolves a conditional transfer.
@@ -113,7 +158,9 @@ Resolves a conditional transfer.
 resolveCondition: (params: ResolveConditionParameters<string>) => Promise<ResolveConditionResponse>
 ```
 
-#### Example
+#### Condition Types
+
+##### Linked Transfer / Linked Transfer To Recipient
 
 ```typescript
 const resolveParams: ResolveLinkedTransferParameters = {
@@ -125,6 +172,39 @@ const resolveParams: ResolveLinkedTransferParameters = {
 };
 
 await resolveCondition(resolveParams);
+```
+
+##### Fast Signed Transfer
+
+```typescript
+export type ResolveFastSignedTransferParameters = {
+  conditionType: typeof FAST_SIGNED_TRANSFER;
+  paymentId: string;
+  data: string;
+  signature: string;
+};
+
+export type ResolveFastSignedTransferResponse<T = string> = {
+  appId: string;
+  sender: string;
+  paymentId: string;
+  amount: T;
+  assetId: string;
+  signer: string;
+  meta?: object;
+};
+
+// fast signed transfer has already been created 
+const withdrawerSigningKey = new SigningKey(signerWallet.privateKey);
+const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
+const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
+
+const res: ResolveFastSignedTransferResponse = await clientB.resolveCondition({
+  conditionType: FAST_SIGNED_TRANSFER,
+  paymentId,
+  signature,
+  data,
+} as ResolveFastSignedTransferParameters);
 ```
 
 ### requestDepositRights
@@ -242,7 +322,7 @@ await getPaymentProfile();
 ### getAppState
 
 ```typescript
-getAppState: (appIdentityHash: string) => Promise<CFCoreTypes.GetStateResult>
+getAppState: (appInstanceId: string) => Promise<CFCoreTypes.GetStateResult>
 ```
 
 #### Example
@@ -305,6 +385,7 @@ const params: CFCoreTypes.ProposeInstallVirtualParams = {
   initialState,
   initiatorDeposit: new BigNumber(1000), // wei units
   initiatorDepositTokenAddress: "0x0000...", // assetId, AddressZero for ethereum
+  intermediaryIdentifier: "xpub...", // xpub of intermediary node, returned from config endpoint
   outcomeType: appInfo.outcomeType, // CFCoreTypes.OutcomeType
   proposedToIdentifier: "0xabc...",
   responderDeposit: new BigNumber(0), // wei units
@@ -318,7 +399,7 @@ await proposeInstallApp(params);
 ### installApp
 
 ```typescript
-installApp: (appIdentityHash: string) => Promise<CFCoreTypes.InstallResult>
+installApp: (appInstanceId: string) => Promise<CFCoreTypes.InstallResult>
 ```
 
 #### Example
@@ -330,7 +411,7 @@ await installApp("0xabc...");
 ### rejectInstallApp
 
 ```typescript
-rejectInstallApp: (appIdentityHash: string) => Promise<CFCoreTypes.UninstallResult>
+rejectInstallApp: (appInstanceId: string) => Promise<CFCoreTypes.UninstallResult>
 ```
 
 #### Example
@@ -342,7 +423,7 @@ await rejectInstallApp("0xabc...");
 ### uninstallApp
 
 ```typescript
-uninstallApp: (appIdentityHash: string) => Promise<CFCoreTypes.UninstallResult>
+uninstallApp: (appInstanceId: string) => Promise<CFCoreTypes.UninstallResult>
 ```
 
 #### Example
@@ -354,7 +435,7 @@ await uninstallApp("0xabc...");
 ### installVirtualApp
 
 ```typescript
-installVirtualApp: (appIdentityHash: string) => Promise<CFCoreTypes.InstallVirtualResult>
+installVirtualApp: (appInstanceId: string) => Promise<CFCoreTypes.InstallVirtualResult>
 ```
 
 #### Example
@@ -366,7 +447,7 @@ await installVirtualApp("0xabc..");
 ### takeAction
 
 ```typescript
-takeAction: (appIdentityHash: string, action: CFCoreTypes.SolidityValueType) => Promise<CFCoreTypes.TakeActionResult>
+takeAction: (appInstanceId: string, action: CFCoreTypes.SolidityValueType) => Promise<CFCoreTypes.TakeActionResult>
 ```
 
 #### Example
@@ -382,7 +463,7 @@ await takeAction("0xabc...", action);
 ### updateState
 
 ```typescript
-updateState: (appIdentityHash: string, newState: CFCoreTypes.SolidityValueType) => Promise<CFCoreTypes.UpdateStateResult>
+updateState: (appInstanceId: string, newState: CFCoreTypes.SolidityValueType) => Promise<CFCoreTypes.UpdateStateResult>
 ```
 
 #### Example
@@ -394,7 +475,7 @@ await updateState("0xabc...", { preImage: createPreImage() });
 ### getProposedAppInstance
 
 ```typescript
-getProposedAppInstance: (appIdentityHash: string) => Promise<GetProposedAppInstanceResult | undefined>
+getProposedAppInstance: (appInstanceId: string) => Promise<GetProposedAppInstanceResult | undefined>
 ```
 
 #### Example

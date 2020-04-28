@@ -91,7 +91,7 @@ clean: stop
 	rm -rf node_modules/@connext modules/*/node_modules/@connext
 	rm -rf node_modules/@walletconnect modules/*/node_modules/@walletconnect
 	rm -rf modules/*/node_modules/*/.git
-	rm -rf modules/*/build modules/*/dist
+	rm -rf modules/*/build modules/*/dist docs/build
 	rm -rf modules/*/.*cache* modules/*/node_modules/.cache modules/contracts/cache/*.json
 
 quick-reset:
@@ -188,11 +188,17 @@ watch-ui: node-modules
 watch-node: node
 	bash ops/test/node.sh --watch
 
+test-docs: docs
+	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b linkcheck -d build/linkcheck . build/html"
+
 ########################################
-# Begin Real Build Rules: Common Prerequisites
+# Begin Real Build Rules
 
 # All rules from here on should only depend on rules that come before it
 # ie first no dependencies, last no dependents
+
+########################################
+# Common Prerequisites
 
 builder: $(shell find ops/builder)
 	$(log_start)
@@ -204,6 +210,22 @@ node-modules: builder package.json $(shell ls modules/*/package.json)
 	$(docker_run) "lerna bootstrap --hoist --no-progress"
 	# rm below hack once this PR gets merged: https://github.com/EthWorks/Waffle/pull/205
 	$(docker_run) "sed -i 's|{ input }|{ input, maxBuffer: 1024 * 1024 * 4 }|' node_modules/@ethereum-waffle/compiler/dist/cjs/compileNative.js"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+py-requirements: builder docs/requirements.txt
+	$(log_start)
+	$(docker_run) "bash ops/py-install.sh"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+########################################
+# Docs
+
+.PHONY: docs
+docs: documentation
+documentation: py-requirements $(shell find docs $(find_options))
+	$(log_start)
+	$(docker_run) "rm -rf docs/build"
+	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b html -d build/doctrees . build/html"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ########################################

@@ -1,0 +1,13 @@
+formats:
+  - htmlzip
+
+python:
+   version: 3.7
+   install:
+      - requirements: docs/requirements.txt
+        method: pip
+
+sphinx:
+    builder: html
+    configuration: docs/conf.py
+    fail_on_warning: true
