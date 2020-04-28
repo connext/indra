@@ -95,6 +95,10 @@ type GetPendingAsyncTransfersResponse = FetchedLinkedTransfer[];
 ////////////////////////////////////
 // exports
 
+export type FeatureFlags = {
+  multihop: boolean;
+};
+
 export namespace NodeResponses {
   export type GetConfig = GetConfigResponse;
   export type GetTransfer = GetTransferResponse;
@@ -105,9 +109,9 @@ export namespace NodeResponses {
   export type ResolveSignedTransfer = PublicResults.ResolveSignedTransfer;
   export type GetRebalanceProfile = GetRebalanceProfileResponse;
   export type GetHashLockTransfer = GetHashLockTransferResponse;
-  export type GetSignedTransfer = GetSignedTransferResponse
-  export type GetChannel = GetChannelResponse
-  export type CreateChannel = CreateChannelResponse
-  export type RequestCollateral = RequestCollateralResponse
-  export type ChannelRestore = ChannelRestoreResponse
+  export type GetSignedTransfer = GetSignedTransferResponse;
+  export type GetChannel = GetChannelResponse;
+  export type CreateChannel = CreateChannelResponse;
+  export type RequestCollateral = RequestCollateralResponse;
+  export type ChannelRestore = ChannelRestoreResponse;
 }

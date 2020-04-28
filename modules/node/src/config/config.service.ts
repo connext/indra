@@ -4,6 +4,7 @@ import {
   IChannelSigner,
   MessagingConfig,
   SwapRate,
+  FeatureFlags,
 } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
@@ -61,6 +62,10 @@ export class ConfigService implements OnModuleInit {
 
   getEthProvider(): JsonRpcProvider {
     return this.ethProvider;
+  }
+
+  getFeatureFlags(): FeatureFlags {
+    return JSON.parse(this.get(`INDRA_FEATURE_FLAGS`) || "{}");
   }
 
   async getEthNetwork(): Promise<EthNetwork> {

@@ -56,7 +56,7 @@ start-daicard: dev
 	INDRA_UI=daicard bash ops/start-dev.sh
 
 start-multihop-headless: dev
-	INDRA_UI=headless bash ops/start-multihop.sh
+	INDRA_UI=headless INDRA_FEATURE_FLAGS='{"multihop": true}' bash ops/start-multihop.sh
 
 start-test: start-test-staging
 start-test-staging:
