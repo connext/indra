@@ -36,7 +36,7 @@ import {
   stringify,
   bigNumberifyJson,
 } from "@connext/utils";
-import { JsonRpcProvider, TransactionReceipt } from "ethers/providers";
+import { JsonRpcProvider, TransactionReceipt, TransactionResponse } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 import { Contract } from "ethers";
 import { Interface, defaultAbiCoder } from "ethers/utils";
@@ -860,30 +860,45 @@ export class Watcher implements IWatcher {
   ): Promise<TransactionReceipt | string> => {
     this.assertSignerCanSendTransactions();
 
-    // TODO: add retry logic
-    let response;
-    try {
-      await this.store.saveAppChallenge({
-        ...challenge,
-        status: StoredAppChallengeStatus.PENDING_TRANSITION,
-      });
-      response = await this.signer.sendTransaction({
-        ...transaction,
-        nonce: await this.provider.getTransactionCount(this.signer.address),
-      });
-      const receipt = await response.wait();
-      this.log.debug(`Transaction sent: ${stringify(receipt)}`);
-      this.log.info(`Successfully sent transaction ${receipt.transactionHash}`);
-      return receipt;
-    } catch (e) {
-      // remove transition status
-      await this.store.saveAppChallenge(challenge);
-      this.log.error(`Failed to send transaction: ${e.stack || e.message}`);
-      const msg = `Error sending transaction: ${
-        e.stack || e.message
-      }, transaction response: ${stringify(response || {})}`;
-      return msg;
+    const KNOWN_ERRORS = ["the tx doesn't have the correct nonce"];
+    const MAX_RETRIES = 3;
+
+    let errors: { [k: number]: string } = [];
+    for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
+      this.log.debug(`Attempt ${attempt}/${MAX_RETRIES} to send transaction to ${transaction.to}`);
+      let response: TransactionResponse;
+      try {
+        await this.store.saveAppChallenge({
+          ...challenge,
+          status: StoredAppChallengeStatus.PENDING_TRANSITION,
+        });
+        response = await this.signer.sendTransaction({
+          ...transaction,
+          nonce: await this.provider.getTransactionCount(this.signer.address),
+        });
+        const receipt = await response.wait();
+        this.log.debug(`Transaction sent: ${stringify(receipt)}`);
+        this.log.info(`Successfully sent transaction ${receipt.transactionHash}`);
+        return receipt;
+      } catch (e) {
+        errors[attempt] = e.message;
+        const knownErr = KNOWN_ERRORS.find((err) => e.message.includes(err));
+        if (!knownErr) {
+          // unknown error, do not retry
+          await this.store.saveAppChallenge(challenge);
+          this.log.error(`Failed to send transaction: ${e.stack || e.message}`);
+          const msg = `Error sending transaction: ${e.stack || e.message}`;
+          return msg;
+        }
+        // known error, retry
+        this.log.warn(
+          `Sending transaction attempt ${attempt}/${MAX_RETRIES} failed: ${e.message}. Retrying.`,
+        );
+      }
     }
+    // remove transition status
+    await this.store.saveAppChallenge(challenge);
+    return `Failed to send transaction (errors indexed by attempt): ${stringify(errors)}`;
   };
 
   private assertSignerCanSendTransactions = (): void => {
