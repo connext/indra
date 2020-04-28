@@ -1,4 +1,4 @@
-import { ChallengeRegistry, ERC20, ProxyFactory, MinimumViableMultisig } from "@connext/contracts";
+import { ChallengeRegistry, ProxyFactory, MinimumViableMultisig } from "@connext/contracts";
 import {
   JsonRpcProvider,
   BigNumber,
@@ -13,6 +13,7 @@ import {
   toBN,
   bigNumberifyJson,
   toBNJson,
+  getRandomChannelSigner,
 } from "@connext/utils";
 import { Wallet, Contract } from "ethers";
 import { One, Zero, HashZero } from "ethers/constants";
@@ -39,11 +40,9 @@ export const setupContext = async () => {
   const provider = new JsonRpcProvider(ethProvider);
 
   const wallet = Wallet.fromMnemonic(process.env.SUGAR_DADDY!).connect(provider);
-  const channelInitiator = Wallet.createRandom().connect(provider);
-  const channelResponder = Wallet.createRandom().connect(provider);
   const signers = [
-    new ChannelSigner(channelInitiator.privateKey, ethProvider),
-    new ChannelSigner(channelResponder.privateKey, ethProvider),
+    getRandomChannelSigner(ethProvider),
+    getRandomChannelSigner(ethProvider),
   ];
 
   // deploy contracts
@@ -60,7 +59,7 @@ export const setupContext = async () => {
     await proxyFactory.functions.createProxyWithNonce(
       networkContext.MinimumViableMultisig,
       new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-        [channelInitiator.address, channelResponder.address],
+        [signers[0].address, signers[1].address],
       ]),
       0,
       { gasLimit: CREATE_PROXY_AND_SETUP_GAS },
@@ -118,7 +117,7 @@ export const setupContext = async () => {
     state: AppWithCounterState,
     action: AppWithCounterAction,
     timeout: BigNumber = Zero,
-    turnTaker: Wallet = channelResponder,
+    turnTaker: ChannelSigner = signers[1],
   ) => {
     const stateHash = keccak256(AppWithCounterClass.encodeState(state));
     const stateDigest = computeAppChallengeHash(
@@ -143,8 +142,8 @@ export const setupContext = async () => {
     );
 
     const signatures = [
-      await new ChannelSigner(channelInitiator.privateKey, ethProvider).signMessage(stateDigest),
-      await new ChannelSigner(channelResponder.privateKey, ethProvider).signMessage(stateDigest),
+      await signers[0].signMessage(stateDigest),
+      await signers[1].signMessage(stateDigest),
     ];
 
     const req1 = {
@@ -158,7 +157,7 @@ export const setupContext = async () => {
       appStateHash: resultingStateHash,
       timeout: timeout2,
       signatures: [
-        await new ChannelSigner(turnTaker.privateKey, ethProvider).signMessage(
+        await turnTaker.signMessage(
           resultingStateDigest,
         ),
       ],
@@ -249,8 +248,7 @@ export const setupContext = async () => {
     challengeRegistry,
     provider,
     wallet,
-    channelInitiator,
-    channelResponder,
+    signers,
     multisigAddress,
     appInstance,
     freeBalance,
