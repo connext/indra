@@ -184,6 +184,9 @@ watch-ui: node-modules
 watch-node: node
 	bash ops/test/node.sh --watch
 
+test-docs: docs
+	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b linkcheck -d build/linkcheck . build/html"
+
 ########################################
 # Begin Real Build Rules
 
@@ -217,7 +220,8 @@ py-requirements: builder docs/requirements.txt
 docs: documentation
 documentation: py-requirements $(shell find docs $(find_options))
 	$(log_start)
-	$(docker_run) "source .pyEnv/bin/activate && cd docs && rm -rf build && sphinx-build -b html -d build/doctrees . build/html"
+	$(docker_run) "rm -rf docs/build"
+	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b html -d build/doctrees . build/html"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ########################################
