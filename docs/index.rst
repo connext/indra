@@ -34,10 +34,9 @@ Contents
     background/faq
     background/architecture
 
-
 .. toctree::
     :maxdepth: 2
-    :caption: Client Documentation
+    :caption: Client
 
     user/quickStart
     user/clientInstantiation
@@ -45,19 +44,27 @@ Contents
     user/advanced
     user/limitations
     user/clientAPI
+    user/storeModule
+    user/types
 
 .. toctree::
     :maxdepth: 2
-    :caption: Node Documentation
+    :caption: Node
 
     nodeOperator/runNode
 
+.. toctree::
+    :maxdepth: 2
+    :caption: Protocol
+
+    protocol/introduction
+    protocol/api
+    protocol/diagram
 
 .. toctree::
     :maxdepth: 2
     :caption: Contributor Documentation
 
     contributor/CONTRIBUTING
-
-
-
+    contributor/workflow-protocols
+    README
