@@ -1,6 +1,6 @@
 # v2.0 Architecture Overview
 
-![ ](https://i.ibb.co/FX6SSP7/architecture.png)
+![ ](../architecture.png)
 
 ## Indra
 

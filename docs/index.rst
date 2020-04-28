@@ -36,7 +36,7 @@ Contents
 
 .. toctree::
     :maxdepth: 2
-    :caption: Client Documentation
+    :caption: Client
 
     user/quickStart
     user/walletIntegrations
@@ -48,7 +48,7 @@ Contents
 
 .. toctree::
     :maxdepth: 2
-    :caption: Node Documentation
+    :caption: Node
 
     nodeOperator/node
     nodeOperator/runNode
@@ -63,7 +63,7 @@ Contents
 
 .. toctree::
     :maxdepth: 2
-    :caption: Contributor Documentation
+    :caption: Contributing
 
     contributor/CONTRIBUTING
     contributor/workflow-protocols.md
