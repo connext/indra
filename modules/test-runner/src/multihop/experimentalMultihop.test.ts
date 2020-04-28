@@ -1,4 +1,10 @@
-import { IConnextClient, ConditionalTransferTypes, PublicParams } from "@connext/types";
+import {
+  IConnextClient,
+  ConditionalTransferTypes,
+  PublicParams,
+  PublicResults,
+  EventNames,
+} from "@connext/types";
 import { stringify, getRandomBytes32, ConsoleLogger } from "@connext/utils";
 import axios from "axios";
 import { soliditySha256 } from "ethers/utils";
@@ -6,6 +12,7 @@ import { providers } from "ethers";
 import { before } from "mocha";
 
 import { createClient, fundChannel, ETH_AMOUNT_MD, ETH_AMOUNT_SM, env, expect } from "../util";
+import { AddressZero } from "ethers/constants";
 
 describe.only("Experimental multihop tests", () => {
   let clientA: IConnextClient;
@@ -54,24 +61,24 @@ describe.only("Experimental multihop tests", () => {
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
       new Promise((resolve) => {
-        clientB.on("CONDITIONAL_TRANSFER_CREATED_EVENT", resolve);
+        clientB.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, resolve);
       }),
     ]);
   });
 
-  it.only("clientA can transfer funds to clientC over both nodeA and nodeB", async () => {
+  it("clientA can transfer funds to clientC over both nodeA and nodeB", async () => {
     const res = await axios.post(`${env.nodeUrl}/admin/nodetonode`, {
       userIdentifier: clientC.nodeIdentifier,
     });
 
-    console.log("res.data: ", res.data);
     expect(res.data).to.be.ok;
     const preImage = getRandomBytes32();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
     const lockHash = soliditySha256(["bytes32"], [preImage]);
 
-    const [transferInstallRet] = await Promise.all([
+    const [transferInstallRet] = await Promise.all<PublicResults.ConditionalTransfer>([
       clientA.conditionalTransfer({
+        assetId: AddressZero,
         amount: ETH_AMOUNT_SM.toString(),
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         lockHash,
@@ -81,11 +88,25 @@ describe.only("Experimental multihop tests", () => {
         },
         recipient: clientC.publicIdentifier,
       } as PublicParams.HashLockTransfer),
-      new Promise((resolve) => {
-        clientC.on("CONDITIONAL_TRANSFER_CREATED_EVENT", resolve);
-      }),
+      new Promise((resolve) => clientC.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, resolve)),
     ]);
 
-    console.log(stringify(transferInstallRet));
+    expect(transferInstallRet.appIdentityHash).to.be.ok;
+
+    await Promise.all([
+      clientC.resolveCondition({
+        assetId: AddressZero,
+        conditionType: ConditionalTransferTypes.HashLockTransfer,
+        preImage,
+      } as PublicParams.ResolveHashLockTransfer),
+      new Promise((resolve) =>
+        clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve),
+      ),
+    ]);
+
+    const { [clientC.signerAddress]: postTransferBalance } = await clientC.getFreeBalance(
+      AddressZero,
+    );
+    expect(postTransferBalance).to.eq(ETH_AMOUNT_SM);
   });
 });
