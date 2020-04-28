@@ -119,4 +119,4 @@ If you're building an application that uses Connext, check out DApp Integrations
 
 Further documentation on the client (types, method reference, etc) can be found [here](../user/clientAPI).
 
-A live mainnet implementation can be found [here](../user/daiCard).
+A live mainnet implementation can be found [here](https://daicard.io).

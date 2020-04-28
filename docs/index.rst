@@ -43,7 +43,6 @@ Contents
     user/advanced
     user/limitations
     user/clientAPI
-    user/daiCard
     user/storeModule
     user/types
 
