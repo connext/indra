@@ -208,12 +208,12 @@ export class ConnextListener extends ConnextEventEmitter {
       async (msg: any): Promise<void> => {
         const {
           result: {
-            result: { appInstance },
+            result: { appIdentityHash },
           },
         } = msg;
         await this.connext.node.messaging.publish(
-          `${this.connext.nodeIdentifier}.${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstance.appIdentityHash}.uninstall`,
-          appInstance,
+          `${this.connext.nodeIdentifier}.${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.uninstall`,
+          { appIdentityHash },
         );
       },
     );
