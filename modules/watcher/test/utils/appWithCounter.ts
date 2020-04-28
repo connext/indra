@@ -11,6 +11,7 @@ import {
   ConditionalTransactionCommitmentJSON,
   NetworkContext,
   CoinTransfer,
+  twoPartyFixedOutcomeInterpreterParamsEncoding,
 } from "@connext/types";
 import { defaultAbiCoder, solidityPack, keccak256 } from "ethers/utils";
 import { ChannelSigner, toBNJson } from "@connext/utils";
@@ -81,12 +82,26 @@ export class AppWithCounterClass {
   }
 
   get interpreterParams(): TwoPartyFixedOutcomeInterpreterParamsJson {
-    const coinTransfer = this.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][0];
+    const coinTransfers = this.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID];
     return {
-      playerAddrs: this.participants as [string, string],
-      amount: toBNJson(coinTransfer.amount) as any,
+      playerAddrs: coinTransfers.map(({ to }) => to) as [string, string],
+      amount: toBNJson(
+        coinTransfers.reduce(
+          (prev, curr) => {
+            return { amount: prev.amount.add(curr.amount), to: "" };
+          },
+          { to: "", amount: Zero },
+        ).amount,
+      ) as any,
       tokenAddress: CONVENTION_FOR_ETH_ASSET_ID,
     };
+  }
+
+  get encodedInterpreterParams() {
+    return defaultAbiCoder.encode(
+      [twoPartyFixedOutcomeInterpreterParamsEncoding],
+      [this.interpreterParams],
+    );
   }
 
   get appStateHash(): string {
@@ -95,12 +110,6 @@ export class AppWithCounterClass {
 
   public static encodeState(state: AppWithCounterState) {
     return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
-  }
-
-  public static encodeInterpreterParams(
-    interpreterParams: TwoPartyFixedOutcomeInterpreterParamsJson,
-  ): string {
-    return defaultAbiCoder.encode([`tuple(address[] playerAddrs, uint256 amount, address tokenAddress)`], [interpreterParams]);
   }
 
   public static encodeAction(action: AppWithCounterAction) {
@@ -153,7 +162,7 @@ export class AppWithCounterClass {
       this.identityHash,
       freeBalanceHash,
       networkContext.TwoPartyFixedOutcomeInterpreter, // interpreter address
-      AppWithCounterClass.encodeInterpreterParams(this.interpreterParams),
+      this.encodedInterpreterParams,
     );
     const digest = conditional.hashToSign();
     const signatures = await Promise.all([
