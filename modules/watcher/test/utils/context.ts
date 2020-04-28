@@ -29,16 +29,15 @@ import { CREATE_PROXY_AND_SETUP_GAS, stateToHash } from "./utils";
 import { expect } from "./assertions";
 
 export type TokenIndexedBalance = { [tokenAddress: string]: CoinTransfer[] };
-
-/////////////////////////////
-// Context
-
 export type CreatedAppInstanceOpts = {
   balances: TokenIndexedBalance;
   defaultTimeout: BigNumber;
 };
 
-// setup constants
+/////////////////////////////
+// Context
+
+// setup constants / defaults
 const ethProvider = process.env.ETHPROVIDER_URL;
 const provider = new JsonRpcProvider(ethProvider);
 
