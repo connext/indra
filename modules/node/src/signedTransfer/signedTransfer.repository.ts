@@ -2,15 +2,15 @@ import { EntityRepository, Repository } from "typeorm";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
-import { SimpleSignedTransferAppName, SimpleSignedTransferAppState } from "@connext/types";
+import { SimpleSignedTransferAppName } from "@connext/types";
 
 @EntityRepository(AppInstance)
 export class SignedTransferRepository extends Repository<
-  AppInstance<SimpleSignedTransferAppState>
+  AppInstance<typeof SimpleSignedTransferAppName>
 > {
   findSignedTransferAppsByPaymentId(
     paymentId: string,
-  ): Promise<AppInstance<SimpleSignedTransferAppState>[]> {
+  ): Promise<AppInstance<typeof SimpleSignedTransferAppName>[]> {
     return this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
         AppRegistry,
@@ -26,7 +26,7 @@ export class SignedTransferRepository extends Repository<
   findSignedTransferAppByPaymentIdAndSender(
     paymentId: string,
     senderSignerAddress: string,
-  ): Promise<AppInstance<SimpleSignedTransferAppState> | undefined> {
+  ): Promise<AppInstance<typeof SimpleSignedTransferAppName> | undefined> {
     return this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
         AppRegistry,
@@ -45,7 +45,7 @@ export class SignedTransferRepository extends Repository<
   findSignedTransferAppByPaymentIdAndReceiver(
     paymentId: string,
     receiverSignerAddress: string,
-  ): Promise<AppInstance<SimpleSignedTransferAppState> | undefined> {
+  ): Promise<AppInstance<typeof SimpleSignedTransferAppName> | undefined> {
     return this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
         AppRegistry,

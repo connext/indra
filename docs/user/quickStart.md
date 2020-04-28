@@ -2,11 +2,11 @@
 
 Like [web3.js](https://web3js.readthedocs.io/), the Connext client is a collection of libraries that allow you to interact with a local or remote Connext node.
 
-This quickstart will guide you through instantiating the Connext client with a mnemonic in a web environment to get basic Connext functionality (deposits, swaps, transfers, withdrawals) working as fast as possible. 
+This quickstart will guide you through instantiating the Connext client with a randomly generated private key in a web environment to get basic Connext functionality (deposits, swaps, transfers, withdrawals) working as fast as possible. 
 
-Instantiating with a mnemonic _should not_ be used in production environments - once you get through this guide, we recommend looking through the Dapp Integration or [Wallet Integrations](../userDocumentation/walletIntegrations) guides for better patterns.
+Instantiating with a private key _should not_ be used in production environments - once you get through this guide, we recommend looking through the Dapp Integration or [Wallet Integrations](../user/walletIntegrations) guides for better patterns.
 
-We will connect to the Rinkeby node hosted at `https://rinkeby.indra.connext.network/api/messaging` using the Connext client. If you don't have any Rinkeby ETH, we recommend you get some from a [faucet](https://faucet.rinkeby.io/) before continuing with this guide.
+We will connect to a testnet (Rinkeby) node hosted at `https://rinkeby.indra.connext.network/api/messaging` using the Connext client. If you don't have any Rinkeby ETH, we recommend you get some from a [faucet](https://faucet.rinkeby.io/) before continuing with this guide.
 
 ## Setting up a Channel
 
@@ -28,12 +28,13 @@ import * as connext from "@connext/client";
 
 const channel = await connext.connect("rinkeby")
 ```
+This will create a channel for you using a private key randomly generated from inside the client. 
 
 If you're using React, it can be helpful to set up your channel and save the instance to state in `componentDidMount` (or even better, in a [React hook](https://reactjs.org/docs/hooks-intro.html)).
 
 ## Depositing
 
-After instantiating and starting Connext, you can deposit into a channel with `channel.deposit`. Our hosted node accepts deposits in ETH and all ERC20 tokens. However, when depositing tokens, ensure the user has sufficient ETH remaining in their wallet to afford the gas of the deposit transaction. The address which the client uses to send funds to the channel can be found by calling `await channel.signerAddress()`.
+After instantiating and starting Connext, you can deposit into a channel with `channel.deposit` with any Eth or ERC20 token. The default `.deposit` method will attempt to deposit value from the channel's signer address, found using `await channel.signerAddress()`. Because of this, if you're trying to deposit a token, ensure that the user has sufficient Eth in their signer address to pay gas for the deposit transaction.
 
 ```javascript
 // Making a deposit in ETH
@@ -48,9 +49,11 @@ const payload: AssetAmount = {
 channel.deposit(payload);
 ```
 
+You can also deposit directly into the channel by bypassing the signer address with some additional work. For more info, see [Controlling Deposit Flow](https://docs.connext.network/en/latest/user/advanced.html#controlling-deposit-flow)
+
 ## Swaps
 
-Our hosted node collateralizes ETH and Dai and allows you to swap between them in-channel. Say hello to instant and free exchanges. Exchange rates are pulled from the [Dai medianizer](https://developer.makerdao.com/feeds/).
+Our hosted testnet node collateralizes test ETH and test Dai and allows you to swap between them in-channel. Say hello to instant and free exchanges. Exchange rates are pulled from the [Dai medianizer](https://developer.makerdao.com/feeds/).
 
 Make an in-channel swap:
 
@@ -70,7 +73,7 @@ await channel.swap(payload)
 
 ## Making a Transfer
 
-Making a transfer is simple! Just call `channel.transfer()`. Recipient is identified by the counterparty's xPub identifier, which you can find with `channel.publicIdentifier`.
+You can now instantly make a transfer to any other client connected to the testnet node. Making a transfer is simple! Just call `channel.transfer()`. Recipient is identified by the counterparty's public identifier, which you can find with `channel.publicIdentifier`.
 
 ```javascript
 // Transferring ETH
@@ -78,7 +81,7 @@ import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
 const payload: TransferParams = {
-  recipient: "xpub1abcdef", //counterparty's xPub
+  recipient: "indraZTSVFe...", // counterparty's public identifier
   meta: { value: "Metadata for transfer" }, // any arbitrary JSON data, or omit
   amount: parseEther("0.1").toString(), // in wei (ethers.js methods are very convenient for getting wei amounts)
   assetId: AddressZero // ETH
@@ -89,7 +92,7 @@ await channel.transfer(payload);
 
 ## Withdrawing
 
-Users can withdraw funds to any recipient address with `channel.withdraw()`. The specified `assetId` and `amount` must be part of the channel's free balance.
+Users can withdraw funds to any recipient address with `channel.withdraw()`. The specified `assetId` and `amount` must be part of the channel's balance.
 
 ```javascript
 // Withdrawing ETH
@@ -97,7 +100,7 @@ import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
 const payload: WithdrawParams = {
-  recipient: // defaults to signer xpub but can be changed to withdraw to any recipient
+  recipient: // defaults to signer address but can be changed to withdraw to any recipient
   amount: parseEther("0.1").toString() // in wei (ethers.js methods are very convenient for getting wei amounts)
   assetId: AddressZero
 }
@@ -111,12 +114,12 @@ If you are interested in using Connext in react native, check out a sample imple
 
 ## What's next?
 
-If you're integrating Connext into a wallet, check out [Wallet Integrations](../userDocumentation/walletIntegrations).
+If you're integrating Connext into a wallet, check out [Wallet Integrations](../user/walletIntegrations).
 
 If you're building an application that uses Connext, check out DApp Integrations (docs coming soon!).
 
 ## Additional Resources
 
-Further documentation on the client (types, method reference, etc) can be found [here](../userDocumentation/clientAPI).
+Further documentation on the client (types, method reference, etc) can be found [here](../user/clientAPI).
 
-A live mainnet implementation can be found [here](../userDocumentation/daiCard).
+A live mainnet implementation can be found [here](https://daicard.io).
