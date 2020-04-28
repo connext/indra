@@ -93,7 +93,7 @@ describe("Watcher.initiate", () => {
     await store.clear();
   });
 
-  it("should be able to initiate + complete a dispute with a particular app instance using set state", async () => {
+  it("should be able to initiate + complete a dispute with a double signed latest state", async () => {
     const { outcomeSet, verifyOutcomeSet, completed, verifyCompleted } = await initiateDispute(
       app,
       freeBalance,
@@ -121,4 +121,27 @@ describe("Watcher.initiate", () => {
       wallet,
     );
   });
+
+  it("should be able to initiate + complete a dispute with a single signed latest state", async () => {});
+});
+
+
+
+describe.skip("Watcher.cancel", () => {
+  it("should work if in onchain set state phase", async () => {});
+
+  it("should work if in onchain state progression phase", async () => {});
+
+  it("should fail if outcome is set", async () => {});
+});
+
+
+describe.skip("Watcher responses", () => {
+  it("should respond with `setState` if it has a higher nonced state", async () => {});
+
+  it("should respond with `setAndProgressState` if it has a higher nonced action", async () => {});
+
+  it("should respond with `progressState` if it has a higher nonced action and state is set", async () => {});
+
+  it("should fail if outcome is set", async () => {});
 });
