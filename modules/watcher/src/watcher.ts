@@ -130,13 +130,13 @@ export class Watcher implements IWatcher {
     }
     const freeBalanceId = channel.freeBalanceAppInstance.identityHash;
     this.log.info(`Initiating challenge for free balance ${freeBalanceId}`);
-    const freeBalanceRes = await this.startAppChallenge(freeBalanceId);
-    this.log.debug(`Dispute of free balance started, tx: ${freeBalanceRes.transactionHash}`);
-    const appRes = await this.startAppChallenge(appInstanceId);
-    this.log.debug(`Dispute of app started, tx: ${appRes.transactionHash}`);
+    const freeBalanceChallenge = await this.startAppChallenge(freeBalanceId);
+    this.log.debug(`Dispute of free balance started, tx: ${freeBalanceChallenge.transactionHash}`);
+    const appChallenge = await this.startAppChallenge(appInstanceId);
+    this.log.debug(`Dispute of app started, tx: ${appChallenge.transactionHash}`);
     return {
-      freeBalanceChallenge: freeBalanceRes,
-      appChallenge: appRes,
+      freeBalanceChallenge,
+      appChallenge,
     };
   };
 
@@ -733,8 +733,8 @@ export class Watcher implements IWatcher {
     sortedCommitments: SetStateCommitmentJSON[],
   ): Promise<TransactionReceipt | string> => {
     this.log.info(
-      `Calling 'setAndProgressState' for ${app.identityHash} at currrent nonce ${toBN(
-        challenge.versionNumber,
+      `Calling 'setAndProgressState' for ${app.identityHash} with expected final nonce of ${toBN(
+        sortedCommitments[0].versionNumber,
       ).toString()}`,
     );
     const [latest, prev] = sortedCommitments.map(SetStateCommitment.fromJson);
