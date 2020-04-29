@@ -40,7 +40,7 @@
     "class-validator": "0.12.1",
     "dotenv": "8.2.0",
     "eccrypto-js": "4.5.4",
-    "ethers": "5.0.0-beta.183",
+    "ethers": "5.0.0-beta.184",
     "human-standard-token-abi": "2.0.0",
     "ioredis": "4.16.3",
     "nats": "1.4.8",

@@ -18,7 +18,7 @@
     "@connext/contracts": "2.0.2",
     "@connext/types": "6.1.5",
     "@connext/utils": "6.1.5",
-    "ethers": "5.0.0-beta.183",
+    "ethers": "5.0.0-beta.184",
     "eventemitter3": "4.0.0"
   },
   "devDependencies": {

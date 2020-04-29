@@ -30,7 +30,7 @@
   "dependencies": {
     "@connext/utils": "6.1.5",
     "@connext/types": "6.1.5",
-    "ethers": "5.0.0-beta.183",
+    "ethers": "5.0.0-beta.184",
     "@openzeppelin/contracts": "2.5.0",
     "ganache-cli": "6.9.1",
     "solc": "0.5.11",
