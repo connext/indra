@@ -1,7 +1,7 @@
+import { utils } from "ethers";
+
 /////////////////////////////
 //// Helper functions
-
-import { utils } from "ethers";
 
 export const randomState = (numBytes: number = 64) => utils.hexlify(utils.randomBytes(numBytes));
 

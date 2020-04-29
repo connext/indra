@@ -24,12 +24,15 @@ export const getRandomChannelSigner = (ethProviderUrl?: UrlString) =>
   new ChannelSigner(getRandomPrivateKey(), ethProviderUrl);
 
 export class ChannelSigner extends Signer implements IChannelSigner {
+  public address: Address;
   public publicIdentifier: PublicIdentifier;
   public publicKey: PublicKey;
   public provider?: providers.Provider;
 
-  public readonly address: Address;
-  public readonly _isSigner = true;
+  // NOTE: without this property, the Signer.isSigner
+  // function will not return true, even though this class
+  // extends / implements the signer interface. See:
+  // https://github.com/ethers-io/ethers.js/issues/779
   private readonly _ethersType = "Signer";
 
   constructor(private readonly privateKey: PrivateKey, ethProviderUrl?: UrlString) {

@@ -13,11 +13,7 @@ describe("DolphinCoin (ERC20) can be created", () => {
 
   before(async () => {
     wallet = new Wallet((await provider.getWallets())[0].privateKey);
-    erc20 = await new ContractFactory(
-      DolphinCoin.abi as any,
-      DolphinCoin.bytecode,
-      wallet,
-    ).deploy();
+    erc20 = await new ContractFactory(DolphinCoin.abi, DolphinCoin.bytecode, wallet).deploy();
   });
 
   describe("Deployer has all of initial supply", () => {

@@ -14,6 +14,7 @@ import {
   installApp,
   assertMessage,
 } from "../utils";
+import { toBN, deBigNumberifyJson } from "@connext/utils";
 
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
@@ -64,11 +65,11 @@ describe("Node method follows spec - takeAction", () => {
 
         const expectedNewState = {
           board: [
-            [constants.One, constants.Zero, constants.Zero],
+            [constants.Two, constants.Zero, constants.Zero],
             [constants.Zero, constants.Zero, constants.Zero],
             [constants.Zero, constants.Zero, constants.Zero],
           ],
-          versionNumber: constants.One,
+          versionNumber: toBN(2),
           winner: constants.Zero,
         };
 
@@ -79,7 +80,7 @@ describe("Node method follows spec - takeAction", () => {
            */
           const { latestState: state } = await getAppInstance(nodeB, appIdentityHash);
 
-          expect(state).toEqual(expectedNewState);
+          expect(state).toEqual(deBigNumberifyJson(expectedNewState));
 
           done();
         });

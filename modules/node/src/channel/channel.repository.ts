@@ -99,6 +99,14 @@ export class ChannelRepository extends Repository<Channel> {
     });
   }
 
+  async findByAppIdentityHashOrThrow(appIdentityHash: string): Promise<Channel> {
+    const channel = await this.findByAppIdentityHash(appIdentityHash);
+    if (!channel) {
+      throw new Error(`Channel does not exist for app ${appIdentityHash}`);
+    }
+    return channel;
+  }
+
   async findByMultisigAddressOrThrow(multisigAddress: string): Promise<Channel> {
     const channel = await this.findByMultisigAddress(multisigAddress);
     if (!channel) {

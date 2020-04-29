@@ -102,27 +102,54 @@ describe("Signed Transfers", () => {
     const digest = utils.solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
     const signature = await signer.signMessage(digest);
 
-    await new Promise(async (res) => {
-      clientA.on(EventNames.UNINSTALL_EVENT, async (data) => {
-        const {
-          [clientA.signerAddress]: clientAPostReclaimBal,
-          [clientA.nodeSignerAddress]: nodePostReclaimBal,
-        } = await clientA.getFreeBalance(transfer.assetId);
-        expect(clientAPostReclaimBal).to.eq(0);
-        expect(nodePostReclaimBal).to.eq(transfer.amount);
-        res();
-      });
-      await clientB.resolveCondition({
+    await Promise.all([
+      new Promise(async (res) => {
+        clientA.once(EventNames.UNINSTALL_EVENT, async (data) => {
+          const {
+            [clientA.signerAddress]: clientAPostReclaimBal,
+            [clientA.nodeSignerAddress]: nodePostReclaimBal,
+          } = await clientA.getFreeBalance(transfer.assetId);
+          expect(clientAPostReclaimBal).to.eq(0);
+          expect(nodePostReclaimBal).to.eq(transfer.amount);
+          res();
+        });
+      }),
+      clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
         data,
         signature,
-      } as PublicParams.ResolveSignedTransfer);
-      const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
-        transfer.assetId,
-      );
-      expect(clientBPostTransferBal).to.eq(transfer.amount);
-    });
+      } as PublicParams.ResolveSignedTransfer),
+      new Promise(async (res) => {
+        clientA.once(
+          EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+          async (eventData: EventPayloads.SignedTransferCreated) => {
+            expect(eventData).to.deep.contain({
+              amount: transfer.amount,
+              assetId: transfer.assetId,
+              type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+              paymentId,
+              sender: clientA.publicIdentifier,
+              transferMeta: {
+                data,
+                signature,
+              },
+              meta: {
+                foo: "bar",
+                recipient: clientB.publicIdentifier,
+                sender: clientA.publicIdentifier,
+              },
+            } as EventPayloads.SignedTransferUnlocked);
+            res();
+          },
+        );
+      }),
+    ]);
+
+    const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
+      transfer.assetId,
+    );
+    expect(clientBPostTransferBal).to.eq(transfer.amount);
   });
 
   it("happy case: clientA signed transfers tokens to clientB through node", async () => {

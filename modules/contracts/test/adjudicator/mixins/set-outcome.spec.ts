@@ -43,12 +43,12 @@ describe("setOutcome", () => {
     await wallet.getTransactionCount();
 
     appRegistry = await new ContractFactory(
-      ChallengeRegistry.abi as any,
+      ChallengeRegistry.abi,
       ChallengeRegistry.bytecode,
       wallet,
     ).deploy();
     appDefinition = await new ContractFactory(
-      AppWithAction.abi as any,
+      AppWithAction.abi,
       AppWithAction.bytecode,
       wallet,
     ).deploy();

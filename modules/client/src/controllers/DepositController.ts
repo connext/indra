@@ -188,7 +188,7 @@ export class DepositController extends AbstractController {
     // generate initial totalAmountWithdrawn
     const multisig = new Contract(
       this.connext.multisigAddress,
-      MinimumViableMultisig.abi as any,
+      MinimumViableMultisig.abi,
       this.ethProvider,
     );
 

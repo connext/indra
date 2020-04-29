@@ -9,6 +9,11 @@ import { MethodNames } from "./methods";
 import { WithdrawalMonitorObject, IClientStore } from "./store";
 import { StateChannelJSON } from "./state";
 import { enumify } from "./utils";
+import {
+  MinimalTransaction,
+  SetStateCommitmentJSON,
+  ConditionalTransactionCommitmentJSON,
+} from "./commitments";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
@@ -108,7 +113,13 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // TRANSFER METHODS
-  setStateChannel(state: StateChannelJSON): Promise<void>;
+  setStateChannel(
+    channel: StateChannelJSON,
+    setupCommitment: MinimalTransaction,
+    setStateCommitments: [string, SetStateCommitmentJSON][], // [appId, json]
+    conditionalCommitments: [string, ConditionalTransactionCommitmentJSON][],
+    // [appId, json]
+  ): Promise<void>;
   getSchemaVersion(): Promise<number>;
   updateSchemaVersion(version?: number): Promise<void>;
 }

@@ -1,6 +1,5 @@
 import {
   HashLockTransferAppName,
-  HashLockTransferAppState,
   Address,
   Bytes32,
 } from "@connext/types";
@@ -11,7 +10,9 @@ import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 
 @EntityRepository(AppInstance)
-export class HashlockTransferRepository extends Repository<AppInstance<HashLockTransferAppState>> {
+export class HashlockTransferRepository extends Repository<
+  AppInstance<typeof HashLockTransferAppName>
+> {
   findHashLockTransferAppsByLockHashAndAssetId(
     lockHash: Bytes32,
     assetId: Address,

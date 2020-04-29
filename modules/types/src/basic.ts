@@ -30,7 +30,9 @@ export type UrlString = string; // eg "<protocol>://<host>[:<port>]/<path>
 export type BigNumber = ethers.BigNumber;
 export const BigNumber = ethers.BigNumber;
 
-export type HexObject = { _hex: HexString };
+// result of JSON.stringify(toBN(1))
+// bigNumberifyJson & deBigNumberifyJson convert values between BigNumber & BigNumberJson
+export type BigNumberJson = { _hex: HexString };
 
 export type StringMapping = { [key: string]: string };
 

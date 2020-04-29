@@ -1,9 +1,9 @@
-/////////////////////////////
-
 import { AppIdentity, BigNumber } from "@connext/types";
 import { utils } from "ethers";
 
+/////////////////////////////
 //// Helper class
+
 export class AppWithCounterClass {
   get identityHash(): string {
     return utils.keccak256(

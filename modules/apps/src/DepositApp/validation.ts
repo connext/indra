@@ -78,11 +78,11 @@ export const validateDepositApp = async (
   const startingMultisigBalance =
     initialState.assetId === CONVENTION_FOR_ETH_ASSET_ID
       ? await provider.getBalance(multisigAddress)
-      : await new Contract(initialState.assetId, ERC20.abi as any, provider).functions.balanceOf(
+      : await new Contract(initialState.assetId, ERC20.abi, provider).functions.balanceOf(
           multisigAddress,
         );
 
-  const multisig = new Contract(multisigAddress, MinimumViableMultisig.abi as any, provider);
+  const multisig = new Contract(multisigAddress, MinimumViableMultisig.abi, provider);
   let startingTotalAmountWithdrawn;
   try {
     startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(
@@ -121,7 +121,7 @@ export const uninstallDepositMiddleware = async (
   const currentMultisigBalance =
     latestState.assetId === CONVENTION_FOR_ETH_ASSET_ID
       ? await provider.getBalance(stateChannel.multisigAddress)
-      : await new Contract(latestState.assetId, ERC20.abi as any, provider).functions.balanceOf(
+      : await new Contract(latestState.assetId, ERC20.abi, provider).functions.balanceOf(
           stateChannel.multisigAddress,
         );
 

@@ -57,12 +57,12 @@ describe("progressState", () => {
     await wallet.getTransactionCount();
 
     appRegistry = await new ContractFactory(
-      ChallengeRegistry.abi as any,
+      ChallengeRegistry.abi,
       ChallengeRegistry.bytecode,
       wallet,
     ).deploy();
     appDefinition = await new ContractFactory(
-      AppWithAction.abi as any,
+      AppWithAction.abi,
       AppWithAction.bytecode,
       wallet,
     ).deploy();
@@ -161,7 +161,7 @@ describe("progressState", () => {
 
   it("progressState should fail if apply action fails", async () => {
     const failingApp = await new ContractFactory(
-      AppApplyActionFails.abi as any,
+      AppApplyActionFails.abi,
       AppApplyActionFails.bytecode,
       wallet,
     ).deploy();

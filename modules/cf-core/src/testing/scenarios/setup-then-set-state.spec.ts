@@ -1,3 +1,5 @@
+import { toBN } from "@connext/utils";
+
 import { Contract, Wallet, providers, utils, constants } from "ethers";
 
 import { SetStateCommitment, getSetupCommitment } from "../../ethereum";
@@ -86,8 +88,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
         network.ChallengeRegistry,
         freeBalance.identity,
         utils.keccak256(freeBalance.encodedLatestState),
-        freeBalance.versionNumber,
-        freeBalance.stateTimeout,
+        toBN(freeBalance.versionNumber),
+        toBN(freeBalance.stateTimeout),
       );
       const setStateCommitmentHash = setStateCommitment.hashToSign();
       setStateCommitment.signatures = [

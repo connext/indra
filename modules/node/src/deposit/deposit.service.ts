@@ -119,11 +119,7 @@ export class DepositService {
         data: "0x",
       };
     } else {
-      const token = new Contract(
-        tokenAddress,
-        ERC20.abi as any,
-        this.configService.getEthProvider(),
-      );
+      const token = new Contract(tokenAddress, ERC20.abi, this.configService.getEthProvider());
       tx = {
         to: tokenAddress,
         value: 0,
@@ -143,11 +139,7 @@ export class DepositService {
     const ethProvider = this.configService.getEthProvider();
 
     // generate initial totalAmountWithdrawn
-    const multisig = new Contract(
-      channel.multisigAddress,
-      MinimumViableMultisig.abi as any,
-      ethProvider,
-    );
+    const multisig = new Contract(channel.multisigAddress, MinimumViableMultisig.abi, ethProvider);
     let startingTotalAmountWithdrawn: BigNumber;
     try {
       startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(tokenAddress);
@@ -167,7 +159,7 @@ export class DepositService {
         ? await ethProvider.getBalance(channel.multisigAddress)
         : await new Contract(
             tokenAddress,
-            ERC20.abi as any,
+            ERC20.abi,
             this.configService.getSigner(),
           ).functions.balanceOf(channel.multisigAddress);
 

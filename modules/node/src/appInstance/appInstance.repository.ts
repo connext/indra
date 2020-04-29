@@ -62,6 +62,7 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
     multiAssetMultiPartyCoinTransferInterpreterParams,
     singleAssetTwoPartyCoinTransferInterpreterParams,
     twoPartyOutcomeInterpreterParams,
+    meta: app.meta,
   };
   return json;
 };
@@ -116,6 +117,7 @@ export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceP
     multiAssetMultiPartyCoinTransferInterpreterParams,
     singleAssetTwoPartyCoinTransferInterpreterParams,
     twoPartyOutcomeInterpreterParams,
+    meta: app.meta,
   };
 };
 

@@ -7,7 +7,7 @@ import {
   IConnextClient,
   StoreTypes,
 } from "@connext/types";
-import { getRandomChannelSigner, ChannelSigner } from "@connext/utils";
+import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
@@ -15,7 +15,6 @@ import tokenAbi from "human-standard-token-abi";
 import { ETH_AMOUNT_LG, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
 import { ethWallet } from "./ethprovider";
-import { Logger } from "./logger";
 import { MessageCounter, TestMessagingService } from "./messaging";
 
 export const createClient = async (
@@ -24,10 +23,10 @@ export const createClient = async (
 ): Promise<IConnextClient> => {
   const store = opts.store || new ConnextStore(StoreTypes.Memory);
   const wallet = Wallet.createRandom();
-  const log = new Logger("CreateClient", env.logLevel);
+  const log = new ColorfulLogger("CreateClient", env.logLevel);
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
-    loggerService: new Logger("Client", env.logLevel, true, opts.id),
+    loggerService: new ColorfulLogger("Client", env.logLevel, true, opts.id),
     signer: wallet.privateKey,
     nodeUrl: env.nodeUrl,
     store,
@@ -60,7 +59,7 @@ export const createRemoteClient = async (
   const clientOpts: ClientOptions = {
     channelProvider,
     ethProviderUrl: env.ethProviderUrl,
-    loggerService: new Logger("TestRunner", env.logLevel, true),
+    loggerService: new ColorfulLogger("TestRunner", env.logLevel, true),
   };
   const client = await connect(clientOpts);
   expect(client.signerAddress).to.be.ok;
@@ -77,7 +76,7 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
   let clientOpts: Partial<ClientOptions> = {
     ...opts,
     ...urlOptions,
-    loggerService: new Logger("TestRunner", env.logLevel, true),
+    loggerService: new ColorfulLogger("TestRunner", env.logLevel, true),
     store: new ConnextStore(StoreTypes.LocalStorage), // TODO: replace with polyfilled window.localStorage
   };
   if (network === "mainnet") {

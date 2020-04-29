@@ -1,54 +1,42 @@
 import {
   AppIdentity,
-  EthereumCommitment,
+  BigNumber,
   CommitmentTarget,
-  HexString,
+  EthereumCommitment,
   MinimalTransaction,
   SetStateCommitmentJSON,
   SignedAppChallengeUpdate,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
+import {
+  bigNumberifyJson,
+  deBigNumberifyJson,
+  recoverAddressFromChannelMessage,
+  appIdentityToHash,
+} from "@connext/utils";
 import { utils } from "ethers";
-import { recoverAddressFromChannelMessage } from "@connext/utils";
 
-import { ChallengeRegistry } from "../contracts";
-import { AppInstance } from "../models";
-import { Context } from "../types";
-import { appIdentityToHash } from "../utils";
-
+import * as ChallengeRegistry from "../build/ChallengeRegistry.json";
 const iface = new utils.Interface(ChallengeRegistry.abi);
-
-export const getSetStateCommitment = (context: Context, appInstance: AppInstance) =>
-  new SetStateCommitment(
-    context.network.ChallengeRegistry,
-    appInstance.identity,
-    appInstance.hashOfLatestState,
-    appInstance.versionNumber,
-    appInstance.stateTimeout,
-  );
 
 export class SetStateCommitment implements EthereumCommitment {
   constructor(
     public readonly challengeRegistryAddress: string,
     public readonly appIdentity: AppIdentity,
     public readonly appStateHash: string,
-    public readonly versionNumber: number, // app nonce
-    public readonly stateTimeout: HexString,
+    public readonly versionNumber: BigNumber,
+    public readonly stateTimeout: BigNumber,
     public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
     private initiatorSignature?: string,
     private responderSignature?: string,
   ) {}
 
   get signatures(): string[] {
-    if (!this.initiatorSignature && !this.responderSignature) {
-      return [];
-    }
     return [this.initiatorSignature!, this.responderSignature!];
   }
 
   public async addSignatures(
-    initiatorSignature: string,
-    responderSignature: string,
+    initiatorSignature: string | undefined,
+    responderSignature: string | undefined,
   ): Promise<void> {
     this.initiatorSignature = initiatorSignature;
     this.responderSignature = responderSignature;
@@ -66,7 +54,7 @@ export class SetStateCommitment implements EthereumCommitment {
         appIdentityToHash(this.appIdentity),
         this.appStateHash,
         this.versionNumber,
-        toBN(this.stateTimeout),
+        this.stateTimeout,
       ],
     );
   }
@@ -76,7 +64,7 @@ export class SetStateCommitment implements EthereumCommitment {
   }
 
   public async getSignedTransaction(): Promise<MinimalTransaction> {
-    this.assertSignatures();
+    await this.assertSignatures();
     return {
       to: this.challengeRegistryAddress,
       value: 0,
@@ -88,7 +76,7 @@ export class SetStateCommitment implements EthereumCommitment {
   }
 
   public toJson(): SetStateCommitmentJSON {
-    return {
+    return deBigNumberifyJson({
       appIdentityHash: this.appIdentityHash,
       appIdentity: this.appIdentity,
       appStateHash: this.appStateHash,
@@ -96,28 +84,29 @@ export class SetStateCommitment implements EthereumCommitment {
       signatures: this.signatures,
       stateTimeout: this.stateTimeout,
       versionNumber: this.versionNumber,
-    };
+    });
   }
 
   public static fromJson(json: SetStateCommitmentJSON) {
+    const bnJson = bigNumberifyJson(json);
     return new SetStateCommitment(
-      json.challengeRegistryAddress,
-      json.appIdentity,
-      json.appStateHash,
-      json.versionNumber,
-      json.stateTimeout,
-      json.appIdentityHash,
-      json.signatures[0],
-      json.signatures[1],
+      bnJson.challengeRegistryAddress,
+      bnJson.appIdentity,
+      bnJson.appStateHash,
+      bnJson.versionNumber,
+      bnJson.stateTimeout,
+      bnJson.appIdentityHash,
+      bnJson.signatures[0],
+      bnJson.signatures[1],
     );
   }
 
-  private async getSignedAppChallengeUpdate(): Promise<SignedAppChallengeUpdate> {
-    this.assertSignatures();
+  public async getSignedAppChallengeUpdate(): Promise<SignedAppChallengeUpdate> {
+    await this.assertSignatures();
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
-      timeout: toBN(this.stateTimeout).toNumber(), // this is a *state-specific* timeout (defaults to defaultTimeout)
+      timeout: this.stateTimeout, // this is a *state-specific* timeout (defaults to defaultTimeout)
       signatures: this.signatures,
     };
   }
@@ -127,13 +116,12 @@ export class SetStateCommitment implements EthereumCommitment {
       throw new Error(`No signatures detected`);
     }
 
-    if (this.signatures.length < 2) {
-      throw new Error(
-        `Incorrect number of signatures supplied. Expected at least 2, got ${this.signatures.length}`,
-      );
-    }
-
     for (const idx in this.signatures) {
+      if (!this.signatures[idx]) {
+        // set state commitments may be singly signed if they are going
+        // to be used in the `progressState` path
+        continue;
+      }
       const signer = await recoverAddressFromChannelMessage(
         this.hashToSign(),
         this.signatures[idx],

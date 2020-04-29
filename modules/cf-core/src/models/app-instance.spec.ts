@@ -24,6 +24,8 @@ describe("AppInstance", () => {
       /* stateTimeout */ toBN(Math.ceil(1000 * Math.random())).toHexString(),
       /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
       /* multisigAddress */ utils.getAddress(getRandomAddress()),
+      /* meta */ undefined,
+      /* latestAction */ undefined,
       /* twoPartyOutcomeInterpreterParamsInternal */ {
         playerAddrs: [constants.AddressZero, constants.AddressZero],
         amount: constants.Zero,

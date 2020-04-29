@@ -114,6 +114,7 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
       ? stateChannel.multisigAddress
       : utils.getAddress(utils.hexlify(utils.randomBytes(20))),
     /* meta */ undefined,
+    /* latestAction */ undefined,
     /* twoPartyOutcomeInterpreterParams */ {
       playerAddrs: [constants.AddressZero, constants.AddressZero],
       amount: constants.Zero,
@@ -411,9 +412,7 @@ export async function getMultisigBalance(
   const provider = global[`wallet`].provider;
   return tokenAddress === constants.AddressZero
     ? await provider.getBalance(multisigAddr)
-    : await new Contract(tokenAddress, ERC20.abi as any, provider).functions.balanceOf(
-        multisigAddr,
-      );
+    : await new Contract(tokenAddress, ERC20.abi, provider).functions.balanceOf(multisigAddr);
 }
 
 export async function getMultisigAmountWithdrawn(
@@ -421,7 +420,7 @@ export async function getMultisigAmountWithdrawn(
   tokenAddress: string = constants.AddressZero,
 ) {
   const provider = global[`wallet`].provider;
-  const multisig = new Contract(multisigAddr, MinimumViableMultisig.abi as any, provider);
+  const multisig = new Contract(multisigAddr, MinimumViableMultisig.abi, provider);
   try {
     return await multisig.functions.totalAmountWithdrawn(tokenAddress);
   } catch (e) {
@@ -499,7 +498,7 @@ export async function deposit(
           value: amount,
           to: multisigAddress,
         })
-      : await new Contract(getAddressFromAssetId(assetId), ERC20.abi as any, wallet).transfer(
+      : await new Contract(getAddressFromAssetId(assetId), ERC20.abi, wallet).transfer(
           multisigAddress,
           amount,
         );

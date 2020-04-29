@@ -2,35 +2,38 @@ import * as ethers from "ethers";
 
 import {
   AppChallenge,
-  StateProgressedContractEvent,
-  NetworkContext,
-  ChallengeUpdatedContractEvent,
   ChallengeEvent,
   ChallengeEventData,
+  ChallengeUpdatedEventPayload,
+  NetworkContext,
+  SignedCancelChallengeRequest,
+  StateProgressedEventPayload,
 } from "./contracts";
 import { StateChannelJSON } from "./state";
 import { Address, Bytes32 } from "./basic";
 import { AppInstanceJson, AppInstanceProposal } from "./app";
 import {
-  MinimalTransaction,
   ConditionalTransactionCommitmentJSON,
+  MinimalTransaction,
   SetStateCommitmentJSON,
 } from "./commitments";
 import { IChannelSigner } from "./crypto";
-import { ILoggerService } from "./logger";
+import { ILoggerService, ILogger } from "./logger";
 
 ////////////////////////////////////////
-// Watcher exxternal parameters
+// Watcher external parameters
+
 export type WatcherInitOptions = {
   signer: IChannelSigner | string; // wallet or pk
   provider: ethers.providers.JsonRpcProvider | string;
   context: NetworkContext;
   store: IWatcherStoreService;
-  log?: ILoggerService;
+  logger?: ILoggerService | ILogger;
 };
 
 ////////////////////////////////////////
-// Events
+// Watcher Events
+
 export const ChallengeInitiatedEvent = "ChallengeInitiatedEvent";
 export type ChallengeInitiatedEventData = {
   transaction: ethers.providers.TransactionReceipt;
@@ -89,6 +92,12 @@ export type WatcherEventData = {
   [P in keyof WatcherEventDataMap]: WatcherEventDataMap[P];
 };
 
+////////////////////////////////////////
+// Listener Events
+
+////////////////////////////////////////
+// Watcher interface
+
 export interface IWatcher {
   //////// Listener methods
   emit<T extends WatcherEvent>(event: T, data: WatcherEventData[T]): void;
@@ -107,7 +116,14 @@ export interface IWatcher {
   enable(): Promise<void>;
   disable(): Promise<void>;
   initiate(appIdentityHash: string): Promise<void>;
+  cancel(
+    appIdentityHash: string,
+    req: SignedCancelChallengeRequest,
+  ): Promise<ethers.providers.TransactionResponse>;
 }
+
+////////////////////////////////////////
+// Listener interface
 
 export interface IChainListener {
   //////// Listener methods
@@ -126,75 +142,70 @@ export interface IChainListener {
   //////// Public methods
   enable(): Promise<void>;
   disable(): Promise<void>;
+  parseLogsFrom(startingBlock: number): Promise<void>;
 }
 
 ////////////////////////////////////////
-///// Storage
-export interface IWatcherStoreService {
-  ///// Disputes
-  getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined>;
-  createAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void>;
-  updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void>;
+// Storage
 
-  ///// Events
+export type StoredAppChallenge = AppChallenge & {
+  identityHash: Bytes32;
+};
+
+export interface IWatcherStoreService {
+  // Disputes
+  getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined>;
+  createAppChallenge(appIdentityHash: string, appChallenge: StoredAppChallenge): Promise<void>;
+  updateAppChallenge(appIdentityHash: string, appChallenge: StoredAppChallenge): Promise<void>;
+  getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]>;
+
+  // Events
   getLatestProcessedBlock(): Promise<number>;
-  createLatestProcessedBlock(): Promise<void>;
   updateLatestProcessedBlock(blockNumber: number): Promise<void>;
 
-  getStateProgressedEvent(
-    appIdentityHash: string,
-  ): Promise<StateProgressedContractEvent | undefined>;
+  getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]>;
+
   createStateProgressedEvent(
-    multisigAddress: string,
-    event: StateProgressedContractEvent,
-  ): Promise<void>;
-  updateStateProgressedEvent(
-    multisigAddress: string,
-    event: StateProgressedContractEvent,
-  ): Promise<void>;
-
-  getChallengeUpdatedEvent(
     appIdentityHash: string,
-  ): Promise<ChallengeUpdatedContractEvent | undefined>;
-  createChallengeUpdatedEvent(
-    multisigAddress: string,
-    event: ChallengeUpdatedContractEvent,
-  ): Promise<void>;
-  updateChallengeUpdatedEvent(
-    multisigAddress: string,
-    event: ChallengeUpdatedContractEvent,
+    event: StateProgressedEventPayload,
   ): Promise<void>;
 
-  ///// Channel data /////
-  ///// Schema version
+  getChallengeUpdatedEvents(appIdentityHash: string): Promise<ChallengeUpdatedEventPayload[]>;
+
+  createChallengeUpdatedEvent(
+    appIdentityHash: string,
+    event: ChallengeUpdatedEventPayload,
+  ): Promise<void>;
+
+  ////////////////////////////////////////
+  //// Channel data
+
+  // Schema version
   getSchemaVersion(): Promise<number>;
 
-  ///// State channels
+  // State channels
   getAllChannels(): Promise<StateChannelJSON[]>;
   getStateChannel(multisigAddress: Address): Promise<StateChannelJSON | undefined>;
   getStateChannelByOwners(owners: Address[]): Promise<StateChannelJSON | undefined>;
   getStateChannelByAppIdentityHash(appIdentityHash: Bytes32): Promise<StateChannelJSON | undefined>;
 
-  ///// App instances
+  // App instances
   getAppInstance(appIdentityHash: Bytes32): Promise<AppInstanceJson | undefined>;
 
-  ///// App proposals
+  // App proposals
   getAppProposal(appIdentityHash: Bytes32): Promise<AppInstanceProposal | undefined>;
 
-  ///// Free balance
+  // Free balance
   getFreeBalance(multisigAddress: Address): Promise<AppInstanceJson | undefined>;
 
-  ///// Setup commitment
+  // Setup commitment
   getSetupCommitment(multisigAddress: Address): Promise<MinimalTransaction | undefined>;
 
-  ///// SetState commitment
-  getSetStateCommitment(appIdentityHash: Bytes32): Promise<SetStateCommitmentJSON | undefined>;
+  // SetState commitment
+  getSetStateCommitments(appIdentityHash: Bytes32): Promise<SetStateCommitmentJSON[]>;
 
-  ///// Conditional tx commitment
+  // Conditional tx commitment
   getConditionalTransactionCommitment(
     appIdentityHash: Bytes32,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined>;
-
-  ///// Withdrawal commitment
-  getWithdrawalCommitment(multisigAddress: Address): Promise<MinimalTransaction | undefined>;
 }

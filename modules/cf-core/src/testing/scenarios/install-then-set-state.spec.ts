@@ -107,7 +107,8 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         stateChannel.freeBalance.timeout, // Re-use ETH FreeBalance timeout
         OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
         stateChannel.multisigAddress,
-        undefined,
+        undefined, // meta
+        /* latestAction */ undefined,
         undefined,
         {
           // total limit of ETH and ERC20 token that can be transferred

@@ -40,11 +40,7 @@ describe("DepositApp", () => {
 
     depositApp = await new ContractFactory(DepositApp.abi, DepositApp.bytecode, wallet).deploy();
 
-    erc20 = await new ContractFactory(
-      DolphinCoin.abi as any,
-      DolphinCoin.bytecode,
-      wallet,
-    ).deploy();
+    erc20 = await new ContractFactory(DolphinCoin.abi, DolphinCoin.bytecode, wallet).deploy();
 
     proxy = await new ContractFactory(DelegateProxy.abi, DelegateProxy.bytecode, wallet).deploy();
   });

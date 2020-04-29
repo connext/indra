@@ -1,4 +1,4 @@
-import { Contract, Event, BigNumber, providers, utils } from "ethers";
+import { ChallengeRegistry } from "@connext/contracts";
 import {
   ILoggerService,
   NetworkContext,
@@ -8,11 +8,13 @@ import {
   ChallengeEventData,
   ChallengeStatus,
   Address,
-  ChallengeUpdated,
 } from "@connext/types";
-import { ChallengeRegistry } from "@connext/contracts";
 import { toBN } from "@connext/utils";
+import { Contract, Event, BigNumber, providers, utils } from "ethers";
 import EventEmitter from "eventemitter3";
+
+// While fetching historical data, we query this many blocks at a time
+const chunkSize = 30;
 
 /**
  * This class listens to events emitted by the connext contracts,
@@ -34,10 +36,13 @@ export class ChainListener implements IChainListener {
     loggerService: ILoggerService,
   ) {
     this.log = loggerService.newContext("ChainListener");
+    this.log.debug(
+      `Creating new ChainListener for ChallengeRegistry at ${this.context.ChallengeRegistry}`,
+    );
     this.emitter = new EventEmitter();
     this.challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
-      ChallengeRegistry.abi as any,
+      ChallengeRegistry.abi,
       this.provider,
     );
   }
@@ -61,7 +66,7 @@ export class ChainListener implements IChainListener {
   };
 
   // parses + emits any event logs from given block to current block
-  public parseLogs = async (startingBlock: number): Promise<void> => {
+  public parseLogsFrom = async (startingBlock: number): Promise<void> => {
     const currentBlock = await this.provider.getBlockNumber();
     if (startingBlock > currentBlock) {
       throw new Error(
@@ -69,26 +74,42 @@ export class ChainListener implements IChainListener {
       );
     }
 
-    // TODO: batching if curr - starting >>> 30
-    const updatedFilter = this.challengeRegistry.filters[ChallengeEvents[ChallengeUpdated]]();
-    const progressedFilter = this.challengeRegistry.filters[ChallengeEvents.StateProgressed]();
-    const updatedLogs = await this.provider.getLogs({
-      ...updatedFilter,
-      fromBlock: startingBlock,
-      toBlock: currentBlock,
-    });
-    const progressedLogs = await this.provider.getLogs({
-      ...progressedFilter,
-      fromBlock: startingBlock,
-      toBlock: currentBlock,
-    });
+    const nChunks = Math.ceil((currentBlock - startingBlock) / chunkSize);
+    this.log.info(`Fetching logs from block ${startingBlock} to ${currentBlock}`);
 
-    this.log.debug(
+    const updatedLogs = [] as providers.Log[];
+    const progressedLogs = [] as providers.Log[];
+    for (let index = 0; index <= nChunks; index++) {
+      const fromBlock = startingBlock + index * chunkSize;
+      const nextChunk = startingBlock + (index + 1) * chunkSize - 1;
+      const toBlock = nextChunk >= currentBlock ? currentBlock : nextChunk;
+
+      const newUpdatedLogs = await this.provider.getLogs({
+        ...this.challengeRegistry.filters[ChallengeEvents.ChallengeUpdated](),
+        fromBlock,
+        toBlock,
+      });
+      const newProgressedLogs = await this.provider.getLogs({
+        ...this.challengeRegistry.filters[ChallengeEvents.StateProgressed](),
+        fromBlock,
+        toBlock,
+      });
+
+      updatedLogs.push(...newUpdatedLogs);
+      progressedLogs.push(...newProgressedLogs);
+      this.log.info(
+        `Fetched ${progressedLogs.length} StateProgressed & ${newUpdatedLogs.length} ` +
+          `ChallengeUpdated logs from block ${fromBlock} to ${toBlock} (${index}/${nChunks})`,
+      );
+      if (toBlock === currentBlock) break;
+    }
+
+    this.log.info(
       `Parsing ${progressedLogs.length} StateProgessed and ${updatedLogs.length} ChallengeUpdated event logs`,
     );
 
     progressedLogs.concat(updatedLogs).forEach((log) => {
-      const parsed = new utils.Interface(ChallengeRegistry.abi as any).parseLog(log);
+      const parsed = new utils.Interface(ChallengeRegistry.abi).parseLog(log);
       const { identityHash, versionNumber } = parsed;
       switch (parsed.name) {
         case ChallengeEvents.ChallengeUpdated: {
@@ -147,10 +168,11 @@ export class ChainListener implements IChainListener {
 
   //////// Private methods
   // created listeners for the challenge registry
+
   private removeChallengeRegistryListeners = (): void => {
     const challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
-      ChallengeRegistry.abi as any,
+      ChallengeRegistry.abi,
       this.provider,
     );
 

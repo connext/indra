@@ -57,7 +57,8 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelock = ((await provider.getBlockNumber()) + 5000).toString();
+    const timelockDuration = (5000).toString();
+    const expiry = BigNumber.from(timelockDuration).add(await provider.getBlockNumber());
 
     const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
     // both sender + receiver apps installed, sender took action
@@ -66,7 +67,7 @@ describe("HashLock Transfers", () => {
         amount: transfer.amount.toString(),
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         lockHash,
-        timelock,
+        timelockDuration,
         assetId: transfer.assetId,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
@@ -84,7 +85,7 @@ describe("HashLock Transfers", () => {
             } as EventPayloads.HashLockTransferCreated);
             expect(eventPayload.transferMeta).to.deep.eq({
               lockHash,
-              timelock: BigNumber.from(timelock).sub(100),
+              timelock: expiry.sub(100),
             });
             res();
           },
@@ -125,7 +126,8 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelock = ((await provider.getBlockNumber()) + 5000).toString();
+    const timelockDuration = (5000).toString();
+    const expiry = BigNumber.from(timelockDuration).add(await provider.getBlockNumber());
 
     const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
     // both sender + receiver apps installed, sender took action
@@ -134,7 +136,7 @@ describe("HashLock Transfers", () => {
         amount: transfer.amount.toString(),
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         lockHash,
-        timelock,
+        timelockDuration,
         assetId: transfer.assetId,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
@@ -152,7 +154,7 @@ describe("HashLock Transfers", () => {
             } as EventPayloads.HashLockTransferCreated);
             expect(eventPayload.transferMeta).to.deep.eq({
               lockHash,
-              timelock: BigNumber.from(timelock).sub(100),
+              timelock: expiry.sub(100),
             });
             res();
           },
@@ -193,7 +195,7 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelock = ((await provider.getBlockNumber()) + 5000).toString();
+    const timelockDuration = (5000).toString();
 
     const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
     // both sender + receiver apps installed, sender took action
@@ -202,7 +204,7 @@ describe("HashLock Transfers", () => {
         amount: transfer.amount.toString(),
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         lockHash,
-        timelock,
+        timelockDuration,
         assetId: transfer.assetId,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
@@ -229,7 +231,7 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelock = ((await provider.getBlockNumber()) + 5000).toString();
+    const timelockDuration = (5000).toString();
 
     const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
     // both sender + receiver apps installed, sender took action
@@ -238,7 +240,7 @@ describe("HashLock Transfers", () => {
         amount: transfer.amount.toString(),
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         lockHash,
-        timelock,
+        timelockDuration,
         assetId: transfer.assetId,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
@@ -276,7 +278,7 @@ describe("HashLock Transfers", () => {
     const transferEth: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
     await fundChannel(clientA, transferEth.amount, transferEth.assetId);
     const preImage = getRandomBytes32();
-    const timelock = ((await provider.getBlockNumber()) + 5000).toString();
+    const timelockDuration = (5000).toString();
     const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
 
     await Promise.all([
@@ -284,7 +286,7 @@ describe("HashLock Transfers", () => {
         amount: transferToken.amount.toString(),
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         lockHash,
-        timelock,
+        timelockDuration,
         assetId: transferToken.assetId,
         meta: { foo: "bar" },
         recipient: clientB.publicIdentifier,
@@ -299,7 +301,7 @@ describe("HashLock Transfers", () => {
         amount: transferEth.amount.toString(),
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         lockHash,
-        timelock,
+        timelockDuration,
         assetId: transferEth.assetId,
         meta: { foo: "bar" },
         recipient: clientB.publicIdentifier,
@@ -336,7 +338,7 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelock = ((await provider.getBlockNumber()) + 5000).toString();
+    const timelockDuration = (5000).toString();
 
     const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
     await Promise.all([
@@ -344,7 +346,7 @@ describe("HashLock Transfers", () => {
         amount: transfer.amount.toString(),
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         lockHash,
-        timelock,
+        timelockDuration,
         assetId: transfer.assetId,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
@@ -369,7 +371,7 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelock = (await provider.getBlockNumber()) + 101;
+    const timelockDuration = 101;
 
     const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
     await Promise.all([
@@ -377,7 +379,7 @@ describe("HashLock Transfers", () => {
         amount: transfer.amount.toString(),
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         lockHash,
-        timelock,
+        timelockDuration,
         assetId: transfer.assetId,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
@@ -418,7 +420,7 @@ describe("HashLock Transfers", () => {
       } = await clientB.getFreeBalance(transfer.assetId);
 
       const preImage = getRandomBytes32();
-      const timelock = ((await provider.getBlockNumber()) + 5000).toString();
+      const timelockDuration = (5000).toString();
       const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
 
       // Start timer
@@ -430,7 +432,7 @@ describe("HashLock Transfers", () => {
           amount: transfer.amount.toString(),
           conditionType: ConditionalTransferTypes.HashLockTransfer,
           lockHash,
-          timelock,
+          timelockDuration,
           assetId: transfer.assetId,
           meta: { foo: "bar", sender: clientA.publicIdentifier },
           recipient: clientB.publicIdentifier,

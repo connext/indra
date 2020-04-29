@@ -1,10 +1,14 @@
-import * as ethers from "ethers";
-import { HexObject } from "@connext/types";
+import { BigNumberJson } from "@connext/types";
+import { BigNumber, BigNumberish } from "ethers";
 
-export const isBN = ethers.BigNumber.isBigNumber;
+export const isBN = BigNumber.isBigNumber;
 
-export const toBN = (n: ethers.BigNumberish | HexObject): ethers.BigNumber =>
-  ethers.BigNumber.from(n && (n as HexObject)._hex ? (n as HexObject)._hex : n.toString());
+export const toBN = (n: BigNumberish | BigNumberJson): BigNumber =>
+  BigNumber.from(n && (n as BigNumberJson)._hex ? (n as BigNumberJson)._hex : n.toString());
+
+export const toBNJson = (n: BigNumberish | BigNumberJson): BigNumberJson => ({
+  _hex: toBN(n).toHexString(),
+});
 
 export const getBigNumberError = (value: any): string | undefined =>
   isBN(value) ? undefined : `Value "${value}" is not a BigNumber`;

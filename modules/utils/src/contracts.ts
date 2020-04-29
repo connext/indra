@@ -1,5 +1,20 @@
 import { BigNumber, utils } from "ethers";
-import { CommitmentTarget } from "@connext/types";
+import { AppIdentity, CommitmentTarget } from "@connext/types";
+
+export const appIdentityToHash = (appIdentity: AppIdentity): string => {
+  return utils.keccak256(
+    utils.solidityPack(
+      ["address", "uint256", "bytes32", "address", "uint256"],
+      [
+        appIdentity.multisigAddress,
+        appIdentity.channelNonce,
+        utils.keccak256(utils.solidityPack(["address[]"], [appIdentity.participants])),
+        appIdentity.appDefinition,
+        appIdentity.defaultTimeout,
+      ],
+    ),
+  );
+};
 
 // TS version of MChallengeRegistryCore::computeCancelDisputeHash
 export const computeCancelDisputeHash = (identityHash: string, versionNumber: BigNumber) =>

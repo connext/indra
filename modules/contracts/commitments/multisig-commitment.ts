@@ -7,7 +7,7 @@ import {
 import { recoverAddressFromChannelMessage } from "@connext/utils";
 import { utils } from "ethers";
 
-import { MinimumViableMultisig } from "../contracts";
+import * as MinimumViableMultisig from "../build/MinimumViableMultisig.json";
 
 // A commitment to make MinimumViableMultisig perform a message call
 export abstract class MultisigCommitment implements EthereumCommitment {

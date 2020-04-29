@@ -1,15 +1,15 @@
 import { AssetId, CONVENTION_FOR_ETH_ASSET_ID, EventNames, IConnextClient } from "@connext/types";
-import { delay, getAddressFromAssetId } from "@connext/utils";
+import { ColorfulLogger, delay, getAddressFromAssetId } from "@connext/utils";
 import { BigNumber } from "ethers";
 
-import { env, expect, Logger } from "../";
+import { env, expect } from "../";
 
 export const fundChannel = async (
   client: IConnextClient,
   amount: BigNumber,
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ): Promise<void> => {
-  const log = new Logger("FundChannel", env.logLevel);
+  const log = new ColorfulLogger("FundChannel", env.logLevel);
   const tokenAddress = getAddressFromAssetId(assetId);
   const prevFreeBalance = await client.getFreeBalance(tokenAddress);
   await new Promise(async (resolve, reject) => {
@@ -44,7 +44,7 @@ export const requestCollateral = async (
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
   enforce: boolean = false,
 ): Promise<void> => {
-  const log = new Logger("RequestCollateral", env.logLevel);
+  const log = new ColorfulLogger("RequestCollateral", env.logLevel);
   const tokenAddress = getAddressFromAssetId(assetId);
   const preCollateralBal = await client.getFreeBalance(tokenAddress);
 

@@ -1,31 +1,33 @@
 import {
+  StoredAppChallenge,
   AppInstanceJson,
   AppInstanceProposal,
+  ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
   IBackupServiceAPI,
   IClientStore,
   MinimalTransaction,
   SetStateCommitmentJSON,
   StateChannelJSON,
+  StateProgressedEventPayload,
   STORE_SCHEMA_VERSION,
   StoreFactoryOptions,
   StoreTypes,
   WithdrawalMonitorObject,
   WrappedStorage,
-  ChallengeUpdatedContractEvent,
-  StateProgressedContractEvent,
-  AppChallenge,
+  Bytes32,
+  Address,
 } from "@connext/types";
 
 import {
+  DEFAULT_DATABASE_STORAGE_TABLE_NAME,
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
-  DEFAULT_DATABASE_STORAGE_TABLE_NAME,
 } from "./constants";
 import {
   FileStorage,
   KeyValueStorage,
-  MemoryStorage,
+  WrappedMemoryStorage,
   WrappedAsyncStorage,
   WrappedLocalStorage,
   WrappedPostgresStorage,
@@ -97,7 +99,9 @@ export class ConnextStore implements IClientStore {
       }
 
       case StoreTypes.Memory: {
-        this.internalStore = new KeyValueStorage(new MemoryStorage(this.prefix, this.separator));
+        this.internalStore = new KeyValueStorage(
+          new WrappedMemoryStorage(this.prefix, this.separator, this.backupService),
+        );
         break;
       }
 
@@ -128,7 +132,7 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getAllChannels();
   }
 
-  getStateChannel(multisigAddress: string): Promise<StateChannelJSON> {
+  getStateChannel(multisigAddress: Address): Promise<StateChannelJSON> {
     return this.internalStore.getStateChannel(multisigAddress);
   }
 
@@ -136,7 +140,7 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getStateChannelByOwners(owners);
   }
 
-  getStateChannelByAppIdentityHash(appIdentityHash: string): Promise<StateChannelJSON> {
+  getStateChannelByAppIdentityHash(appIdentityHash: Bytes32): Promise<StateChannelJSON> {
     return this.internalStore.getStateChannelByAppIdentityHash(appIdentityHash);
   }
 
@@ -152,12 +156,12 @@ export class ConnextStore implements IClientStore {
     );
   }
 
-  getAppInstance(appIdentityHash: string): Promise<AppInstanceJson> {
+  getAppInstance(appIdentityHash: Bytes32): Promise<AppInstanceJson> {
     return this.internalStore.getAppInstance(appIdentityHash);
   }
 
   createAppInstance(
-    multisigAddress: string,
+    multisigAddress: Address,
     appInstance: AppInstanceJson,
     freeBalance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
@@ -173,7 +177,7 @@ export class ConnextStore implements IClientStore {
   }
 
   updateAppInstance(
-    multisigAddress: string,
+    multisigAddress: Address,
     appInstance: AppInstanceJson,
     signedSetStateCommitment: SetStateCommitmentJSON,
   ): Promise<void> {
@@ -185,8 +189,8 @@ export class ConnextStore implements IClientStore {
   }
 
   removeAppInstance(
-    multisigAddress: string,
-    appIdentityHash: string,
+    multisigAddress: Address,
+    appIdentityHash: Bytes32,
     freeBalance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
@@ -198,12 +202,12 @@ export class ConnextStore implements IClientStore {
     );
   }
 
-  getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal | undefined> {
+  getAppProposal(appIdentityHash: Bytes32): Promise<AppInstanceProposal | undefined> {
     return this.internalStore.getAppProposal(appIdentityHash);
   }
 
   createAppProposal(
-    appIdentityHash: string,
+    appIdentityHash: Bytes32,
     proposal: AppInstanceProposal,
     numProposedApps: number,
     signedSetStateCommitment: SetStateCommitmentJSON,
@@ -216,7 +220,7 @@ export class ConnextStore implements IClientStore {
     );
   }
 
-  removeAppProposal(multisigAddress: string, appIdentityHash: string): Promise<void> {
+  removeAppProposal(multisigAddress: Address, appIdentityHash: Bytes32): Promise<void> {
     return this.internalStore.removeAppProposal(multisigAddress, appIdentityHash);
   }
 
@@ -225,28 +229,24 @@ export class ConnextStore implements IClientStore {
   }
 
   updateFreeBalance(
-    multisigAddress: string,
+    multisigAddress: Address,
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void> {
     return this.internalStore.updateFreeBalance(multisigAddress, freeBalanceAppInstance);
   }
 
-  getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
+  getSetupCommitment(multisigAddress: Address): Promise<MinimalTransaction | undefined> {
     return this.internalStore.getSetupCommitment(multisigAddress);
   }
 
-  getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON> {
-    return this.internalStore.getSetStateCommitment(appIdentityHash);
+  getSetStateCommitments(appIdentityHash: Bytes32): Promise<SetStateCommitmentJSON[]> {
+    return this.internalStore.getSetStateCommitments(appIdentityHash);
   }
 
   getConditionalTransactionCommitment(
-    appIdentityHash: string,
+    appIdentityHash: Bytes32,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
     return this.internalStore.getConditionalTransactionCommitment(appIdentityHash);
-  }
-
-  getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction> {
-    return this.internalStore.getWithdrawalCommitment(multisigAddress);
   }
 
   getUserWithdrawals(): Promise<WithdrawalMonitorObject[]> {
@@ -270,16 +270,20 @@ export class ConnextStore implements IClientStore {
   }
 
   ////// Watcher methods
-  getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined> {
+  getAppChallenge(appIdentityHash: Bytes32): Promise<StoredAppChallenge | undefined> {
     return this.internalStore.getAppChallenge(appIdentityHash);
   }
 
-  createAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
-    return this.internalStore.createAppChallenge(multisigAddress, appChallenge);
+  createAppChallenge(appIdentityHash: Bytes32, appChallenge: StoredAppChallenge): Promise<void> {
+    return this.internalStore.createAppChallenge(appIdentityHash, appChallenge);
   }
 
-  updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
-    return this.internalStore.updateAppChallenge(multisigAddress, appChallenge);
+  updateAppChallenge(appIdentityHash: Bytes32, appChallenge: StoredAppChallenge): Promise<void> {
+    return this.internalStore.updateAppChallenge(appIdentityHash, appChallenge);
+  }
+
+  getActiveChallenges(multisigAddress: Address): Promise<StoredAppChallenge[]> {
+    return this.internalStore.getActiveChallenges(multisigAddress);
   }
 
   ///// Events
@@ -287,51 +291,29 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getLatestProcessedBlock();
   }
 
-  createLatestProcessedBlock(): Promise<void> {
-    return this.internalStore.createLatestProcessedBlock();
-  }
-
   updateLatestProcessedBlock(blockNumber: number): Promise<void> {
     return this.internalStore.updateLatestProcessedBlock(blockNumber);
   }
 
-  getStateProgressedEvent(
-    appIdentityHash: string,
-  ): Promise<StateProgressedContractEvent | undefined> {
-    return this.internalStore.getStateProgressedEvent(appIdentityHash);
+  getStateProgressedEvents(appIdentityHash: Bytes32): Promise<StateProgressedEventPayload[]> {
+    return this.internalStore.getStateProgressedEvents(appIdentityHash);
   }
 
   createStateProgressedEvent(
-    multisigAddress: string,
-    event: StateProgressedContractEvent,
+    appIdentityHash: Bytes32,
+    event: StateProgressedEventPayload,
   ): Promise<void> {
-    return this.internalStore.createStateProgressedEvent(multisigAddress, event);
+    return this.internalStore.createStateProgressedEvent(appIdentityHash, event);
   }
 
-  updateStateProgressedEvent(
-    multisigAddress: string,
-    event: StateProgressedContractEvent,
-  ): Promise<void> {
-    return this.internalStore.updateStateProgressedEvent(multisigAddress, event);
-  }
-
-  getChallengeUpdatedEvent(
-    appIdentityHash: string,
-  ): Promise<ChallengeUpdatedContractEvent | undefined> {
-    return this.internalStore.getChallengeUpdatedEvent(appIdentityHash);
+  getChallengeUpdatedEvents(appIdentityHash: Bytes32): Promise<ChallengeUpdatedEventPayload[]> {
+    return this.internalStore.getChallengeUpdatedEvents(appIdentityHash);
   }
 
   createChallengeUpdatedEvent(
-    multisigAddress: string,
-    event: ChallengeUpdatedContractEvent,
+    appIdentityHash: Bytes32,
+    event: ChallengeUpdatedEventPayload,
   ): Promise<void> {
-    return this.internalStore.createChallengeUpdatedEvent(multisigAddress, event);
-  }
-
-  updateChallengeUpdatedEvent(
-    multisigAddress: string,
-    event: ChallengeUpdatedContractEvent,
-  ): Promise<void> {
-    return this.internalStore.updateChallengeUpdatedEvent(multisigAddress, event);
+    return this.internalStore.createChallengeUpdatedEvent(appIdentityHash, event);
   }
 }

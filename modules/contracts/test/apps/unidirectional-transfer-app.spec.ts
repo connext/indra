@@ -85,7 +85,7 @@ describe("UnidirectionalTransferApp", () => {
   before(async () => {
     const wallet = new Wallet((await provider.getWallets())[0].privateKey);
     unidirectionalTransferApp = await new ContractFactory(
-      UnidirectionalTransferApp.abi as any,
+      UnidirectionalTransferApp.abi,
       UnidirectionalTransferApp.bytecode,
       wallet,
     ).deploy();

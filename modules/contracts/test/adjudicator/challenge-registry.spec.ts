@@ -58,14 +58,14 @@ describe("ChallengeRegistry", () => {
     wallet = new Wallet((await provider.getWallets())[0].privateKey);
 
     appRegistry = await new ContractFactory(
-      ChallengeRegistry.abi as any,
+      ChallengeRegistry.abi,
       ChallengeRegistry.bytecode,
       wallet,
     ).deploy();
     appRegistry = await appRegistry.deployed();
 
     appDefinition = await new ContractFactory(
-      AppWithAction.abi as any,
+      AppWithAction.abi,
       AppWithAction.bytecode,
       wallet,
     ).deploy();

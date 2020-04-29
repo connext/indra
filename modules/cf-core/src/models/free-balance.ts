@@ -223,7 +223,7 @@ export function createFreeBalance(
     /* appInterface */ getFreeBalanceAppInterface(coinBucketAddress),
     /* appSeqNo */ HARD_CODED_ASSUMPTIONS.appSequenceNumberForFreeBalance,
     /* latestState */ serializeFreeBalanceState(initialState),
-    /* latestVersionNumber */ 0,
+    /* latestVersionNumber */ 1,
     /* latestTimeout */ toBN(HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout).toHexString(),
     /* outcomeType */ OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
     /* multisigAddr */ multisigAddress,

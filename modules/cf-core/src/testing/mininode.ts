@@ -52,7 +52,7 @@ export class MiniNode {
         await this.store.createStateChannel(
           stateChannel.toJson(),
           signedSetupCommitment,
-          signedFreeBalanceUpdate,
+          signedFreeBalanceUpdate.toJson(),
         );
       },
     );

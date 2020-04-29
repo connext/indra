@@ -3,15 +3,15 @@
 ## How to get started
 
 If you're interested in:
-1. Integrating state channels into your dApp or wallet, see [Getting Started](../userDocumentation/quickStart.md)
-2. Running your own node, see [Running your own Node](../nodeDocumentation/runNode.md)
-3. Helping build Connext, see our [Contributor docs](../contributorDocumentation/CONTRIBUTING.md)
+1. Integrating state channels into your dApp or wallet, see [Getting Started](../user/quickStart.md)
+2. Running your own node, see [Running your own Node](../nodeOperator/runNode.md)
+3. Helping build Connext, see our [Contributor docs](../contributor/CONTRIBUTING.md)
 
 ## What is Connext?
 
-Connext is an infrastructure layer on top of Ethereum that enables instant, high volume transfers and interactions between users. The goal of the Connext Network is to help Ethereum applications scale to large consumer bases by improving their usability and cost. Projects in the space are already using Connext to enable instant wallet to wallet transfers, monetize content with microtransactions, power marketplaces, and build games on the Ethereum mainnet!
+Connext is an infrastructure layer on top of Ethereum and any other EVM blockchains that enables instant, high volume, p2p transfers on and across chains. The goal of the Connext Network is to abstract away the complexities and cost of interacting with a given blockchain for p2p usecases. Projects in the space are already using Connext to enable instant wallet to wallet transfers, enable p2p micropayments, power marketplaces, and build games on the Ethereum mainnet!
 
-Connext does this using *state channels*. State channels enable users to batch up normal Ethereum transactions without needing to trust intermediaries. State channels do not require any external custodians or add any additional functionality to Ethereum, they simply allow existing Ethereum interactions to occur *more quickly* and at *lower cost* by putting more interactions into each block.
+Connext is built using *state channels*. State channels enable users to batch up normal Ethereum transactions without needing to trust intermediaries. State channels do not require any external custodians or add any additional functionality to Ethereum, they simply allow existing Ethereum interactions to occur *more quickly* and at *lower cost* by putting more interactions into each block.
 
 If you're unfamiliar with terms like smart contract and private key, please refer to a more general developer guide such as [this one, compiled by the Ethereum community](https://github.com/ethereum/wiki/wiki/Ethereum-Development-Tutorial), before continuing.
 
@@ -27,7 +27,7 @@ State channels allow many off-chain commitments to be aggregated into just a few
 
 4. Because there can be arbitrary conditionality to the settlement instructions, the above relationship can be extended to allow users to transact with more parties. For instance, if Alice wants to pay Charlie but only has a channel with Bob, Alice can pay Bob conditionally based on whether he pays Charlie. If the latter part of the transaction is not completed, then Alice's transaction to Bob will not occur either - this makes transactions *atomic* and *noncustodial*.
 
-5. This arbitrary conditionality also applies to the activities that Alice and Bob can do - anything from simple transfers of Ethereum tokens, to prediction markets, auctions 
+5. This arbitrary conditionality also applies to the activities that Alice and Bob can do - anything from simple transfers of Ethereum tokens, to prediction markets, auctions, and even chess games.
 
 If you're looking for more information, here are a few digestible resources on how they work:
 
@@ -37,9 +37,11 @@ If you're looking for more information, here are a few digestible resources on h
 
 ## Status
 
-V2.0 of Connext is *live* on the Ethereum mainnet.
+V2 of Connext is *live* on the Ethereum mainnet and on testnet on other EVM based blockchains.
 
-V2.0 features a single node system - currently hosted by Connext - over which transactions are routed. Any [Connext client](../userDocumentation/clientAPI.md) can connect to this node. In Connext, users' funds annd transactions are noncustodial - the node never holds your value *at all*. Because Connext is centralized, however, it is currently possible for the node to be shut down or transactions censored, which would mean that users would need to withdraw funds onto the base blockchain. For a detailed overview of the trust assumptions and limitations that exist at present, please read [System Limitations](../userDocumentation/limitations.md).
+V2 features a single node hub-and-spoke system over which transactions are routed. Anyone can run a Connext node as a service provider to connect users to each other. [Connext clients](../user/clientAPI.md) open channels to this node and can then make commitments to any other client connected to the same node. In Connext, users' funds annd transactions are entirely noncustodial - the node never holds your value *at all*.
 
-V2.x of Connext will feature routing state updates between nodes and the ability for anyone to connect their own node to the Connext Network. When V2.x is released, we intend to shut down the Connext-hosted node.
+Note that this iteration of Connext is not censorship resistant. It is currently possible for a node to block a user's commitments to other users, thereby stopping the user from making instant/offchain transfers. Even if this were to happen, users are *always* able to withdraw their funds to any account or wallet on the base blockchain. For a detailed overview of the trust assumptions and limitations that exist at present, please read [System Limitations](../user/limitations.md).
+
+The next major iteration of Connext will feature routing state updates between nodes, allowing clients to connect to many nodes concurrently, and the ability for anyone to connect their own node to the Connext Network.
 
