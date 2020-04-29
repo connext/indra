@@ -1,4 +1,4 @@
-import * as ethers from "ethers";
+import { providers } from "ethers";
 
 import { INodeApiClient } from "./api";
 import { Address, DecString, PublicIdentifier, PublicKey, UrlString } from "./basic";
@@ -41,7 +41,7 @@ export type ChannelProviderConfig = {
 };
 
 export interface CFChannelProviderOptions {
-  ethProvider: ethers.providers.JsonRpcProvider;
+  ethProvider: providers.JsonRpcProvider;
   signer: IChannelSigner;
   node: INodeApiClient;
   logger?: ILoggerService;

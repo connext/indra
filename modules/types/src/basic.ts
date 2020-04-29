@@ -1,16 +1,16 @@
-import * as ethers from "ethers";
+import { ethers, providers } from "ethers";
 
 export const Contract = ethers.Contract;
 export type Contract = ethers.Contract;
 
-export type TransactionReceipt = ethers.providers.TransactionReceipt;
-export type TransactionResponse = ethers.providers.TransactionResponse;
+export type TransactionReceipt = providers.TransactionReceipt;
+export type TransactionResponse = providers.TransactionResponse;
 
-export const JsonRpcProvider = ethers.providers.JsonRpcProvider;
-export type JsonRpcProvider = ethers.providers.JsonRpcProvider;
+export const JsonRpcProvider = providers.JsonRpcProvider;
+export type JsonRpcProvider = providers.JsonRpcProvider;
 
 export type BigNumberish = ethers.BigNumberish;
-export type Network = ethers.providers.Network;
+export type Network = providers.Network;
 export type Transaction = ethers.Transaction;
 
 // special strings

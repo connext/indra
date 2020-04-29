@@ -1,4 +1,4 @@
-import * as ethers from "ethers";
+import { providers } from "ethers";
 
 import { AppRegistry } from "./app";
 import {
@@ -18,7 +18,7 @@ import { ILoggerService } from "./logger";
 import { IClientStore } from "./store";
 
 export interface AsyncNodeInitializationParameters extends NodeInitializationParameters {
-  ethProvider: ethers.providers.JsonRpcProvider;
+  ethProvider: providers.JsonRpcProvider;
   messaging: IMessagingService;
   messagingUrl?: string;
   store?: IClientStore;
@@ -59,7 +59,10 @@ export interface INodeApiClient {
   getChannel(): Promise<NodeResponses.GetChannel>;
   getLatestSwapRate(from: Address, to: Address): Promise<DecString>;
   getRebalanceProfile(assetId?: Address): Promise<NodeResponses.GetRebalanceProfile>;
-  getHashLockTransfer(lockHash: Bytes32, assetId?: Address): Promise<NodeResponses.GetHashLockTransfer>;
+  getHashLockTransfer(
+    lockHash: Bytes32,
+    assetId?: Address,
+  ): Promise<NodeResponses.GetHashLockTransfer>;
   getPendingAsyncTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers>;
   getTransferHistory(userAddress?: Address): Promise<NodeResponses.GetTransferHistory>;
   getLatestWithdrawal(): Promise<Transaction>;

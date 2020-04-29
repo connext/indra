@@ -1,4 +1,4 @@
-import * as ethers from "ethers";
+import { providers } from "ethers";
 
 import {
   AppChallenge,
@@ -25,7 +25,7 @@ import { ILoggerService, ILogger } from "./logger";
 
 export type WatcherInitOptions = {
   signer: IChannelSigner | string; // wallet or pk
-  provider: ethers.providers.JsonRpcProvider | string;
+  provider: providers.JsonRpcProvider | string;
   context: NetworkContext;
   store: IWatcherStoreService;
   logger?: ILoggerService | ILogger;
@@ -36,7 +36,7 @@ export type WatcherInitOptions = {
 
 export const ChallengeInitiatedEvent = "ChallengeInitiatedEvent";
 export type ChallengeInitiatedEventData = {
-  transaction: ethers.providers.TransactionReceipt;
+  transaction: providers.TransactionReceipt;
   challenge: AppChallenge;
   appInstanceId: Bytes32;
   multisigAddress: Address;
@@ -119,7 +119,7 @@ export interface IWatcher {
   cancel(
     appIdentityHash: string,
     req: SignedCancelChallengeRequest,
-  ): Promise<ethers.providers.TransactionResponse>;
+  ): Promise<providers.TransactionResponse>;
 }
 
 ////////////////////////////////////////

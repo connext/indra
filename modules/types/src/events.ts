@@ -1,5 +1,5 @@
 import EventEmitter from "eventemitter3";
-import * as ethers from "ethers";
+import { providers } from "ethers";
 
 import { AppInstanceProposal } from "./app";
 import { Address, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
@@ -150,7 +150,7 @@ type UpdateStateEventData = {
 const WITHDRAWAL_CONFIRMED_EVENT = "WITHDRAWAL_CONFIRMED_EVENT";
 
 type WithdrawalConfirmedEventData = {
-  transaction: ethers.providers.TransactionResponse;
+  transaction: providers.TransactionResponse;
 };
 
 ////////////////////////////////////////
