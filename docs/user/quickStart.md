@@ -30,8 +30,6 @@ const channel = await connext.connect("rinkeby");
 
 This will create a channel for you using a private key randomly generated from inside the client.
 
-This will create a channel for you using a private key randomly generated from inside the client.
-
 If you're using React, it can be helpful to set up your channel and save the instance to state in `componentDidMount` (or even better, in a [React hook](https://reactjs.org/docs/hooks-intro.html)).
 
 ## Depositing
