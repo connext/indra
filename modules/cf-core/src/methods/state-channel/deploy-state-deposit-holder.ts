@@ -133,7 +133,7 @@ async function sendMultisigDeployTx(
     try {
       const tx: providers.TransactionResponse = await proxyFactory.functions.createProxyWithNonce(
         networkContext.MinimumViableMultisig,
-        iface.encodeFunctionData(iface.getFunction("setup"), [stateChannel.multisigOwners]),
+        iface.encodeFunctionData("setup", [stateChannel.multisigOwners]),
         // hash chainId plus nonce for x-chain replay protection
         utils.solidityKeccak256(["uint256", "uint256"], [(await provider.getNetwork()).chainId, 0]), // TODO: Increment nonce as needed
         {

@@ -26,7 +26,7 @@ export class WithdrawCommitment extends MultisigCommitment {
     return {
       to: this.networkContext.ConditionalTransactionDelegateTarget,
       value: 0,
-      data: iface.encodeFunctionData(iface.getFunction("withdrawWrapper"), [
+      data: iface.encodeFunctionData("withdrawWrapper", [
         this.recipient,
         this.assetId,
         this.amount,

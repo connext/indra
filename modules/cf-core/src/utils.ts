@@ -81,7 +81,7 @@ export const getCreate2MultisigAddress = async (
             [
               utils.keccak256(
                 // see encoding notes
-                iface.encodeFunctionData(iface.getFunction("setup"), [
+                iface.encodeFunctionData("setup", [
                   [
                     getSignerAddressFromPublicIdentifier(initiatorIdentifier),
                     getSignerAddressFromPublicIdentifier(responderIdentifier),

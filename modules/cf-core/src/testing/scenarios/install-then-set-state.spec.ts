@@ -248,7 +248,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
 
     await proxyFactory.functions.createProxyWithNonce(
       network.MinimumViableMultisig,
-      iface.encodeFunctionData(iface.getFunction("setup"), [signers.map((x) => x.address)]),
+      iface.encodeFunctionData("setup", [signers.map((x) => x.address)]),
       0,
       { gasLimit: CREATE_PROXY_AND_SETUP_GAS },
     );

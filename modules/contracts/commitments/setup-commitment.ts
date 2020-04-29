@@ -8,7 +8,7 @@ import { utils } from "ethers";
 import { appIdentityToHash } from "@connext/utils";
 
 import * as ConditionalTransactionDelegateTarget from "../build/ConditionalTransactionDelegateTarget.json";
-
+import { MultisigCommitment } from "./multisig-commitment";
 
 const iface = new utils.Interface(ConditionalTransactionDelegateTarget.abi);
 
@@ -24,7 +24,7 @@ export class SetupCommitment extends MultisigCommitment {
 
   public getTransactionDetails(): MultisigTransaction {
     return {
-      data: iface.encodeFunctionData(iface.getFunction("executeEffectOfFreeBalance"), [
+      data: iface.encodeFunctionData("executeEffectOfFreeBalance", [
         this.networkContext.ChallengeRegistry,
         appIdentityToHash(this.freeBalanceAppIdentity),
         this.networkContext.MultiAssetMultiPartyCoinTransferInterpreter,

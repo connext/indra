@@ -68,7 +68,7 @@ export class SetStateCommitment implements EthereumCommitment {
     return {
       to: this.challengeRegistryAddress,
       value: 0,
-      data: iface.encodeFunctionData(iface.getFunction("setState"), [
+      data: iface.encodeFunctionData("setState", [
         this.appIdentity,
         await this.getSignedAppChallengeUpdate(),
       ]),
