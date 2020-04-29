@@ -3,8 +3,10 @@ import {
   JsonRpcProvider,
   StoreTypes,
   BigNumber,
+  ChallengeEvents,
+  Address,
 } from "@connext/types";
-import { Wallet } from "ethers";
+import { Wallet, Contract } from "ethers";
 
 import {
   setupContext,
@@ -13,11 +15,15 @@ import {
   MiniFreeBalance,
   AppWithCounterClass,
   verifyOnchainBalancesPostChallenge,
+  AppWithCounterAction,
+  ActionType,
 } from "./utils";
 
 import { Watcher } from "../src";
 import { ChannelSigner, getRandomAddress, ColorfulLogger } from "@connext/utils";
 import { initiateDispute } from "./utils/initiateDispute";
+import { One } from "ethers/constants";
+import { ChallengeRegistry } from "@connext/contracts";
 
 describe("Watcher.init", () => {
   let provider: JsonRpcProvider;
@@ -102,15 +108,9 @@ describe("Watcher.initiate", () => {
       networkContext,
     );
 
-    const [outcomeRes] = await Promise.all([
-      outcomeSet,
-      provider.send("evm_mine", []),
-    ]);
+    const [outcomeRes] = await Promise.all([outcomeSet, provider.send("evm_mine", [])]);
     await verifyOutcomeSet(outcomeRes);
-    const [completedRes] = await Promise.all([
-      completed,
-      provider.send("evm_mine", []),
-    ]);
+    const [completedRes] = await Promise.all([completed, provider.send("evm_mine", [])]);
     await verifyCompleted(completedRes);
 
     // verify final balances
@@ -122,10 +122,75 @@ describe("Watcher.initiate", () => {
     );
   });
 
-  it("should be able to initiate + complete a dispute with a single signed latest state", async () => {});
+  it.only("should be able to initiate + complete a dispute with a single signed latest state", async () => {
+    // setup store with app with proper timeouts
+    const {
+      loadStore,
+      activeApps,
+      freeBalance,
+      channelBalances,
+      networkContext,
+      multisigAddress,
+    } = await setupContext([{ defaultTimeout: One }]);
+    // load store
+    await loadStore(store);
+    // update app with action
+    const app = activeApps[0];
+    const action: AppWithCounterAction = {
+      increment: One,
+      actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
+    };
+    app.latestAction = action;
+    await store.updateAppInstance(
+      multisigAddress,
+      app.toJson(),
+      await app.getNextSetState(networkContext.ChallengeRegistry, app.signerParticipants[0]),
+    );
+
+    // FIXME: Why does this do silly things
+    const challengeRegistry = new Contract(
+      networkContext.ChallengeRegistry,
+      ChallengeRegistry.abi,
+      wallet,
+    );
+    challengeRegistry.on(
+      ChallengeEvents.ChallengeUpdated,
+      (
+        identityHash: string,
+        action: string,
+        versionNumber: BigNumber,
+        timeout: BigNumber,
+        turnTaker: Address,
+        signature: string,
+        event: Event,
+      ) => {
+        console.log(`[test] CAUGHT CHALLENGE UPDATED`, identityHash);;
+      },
+    );
+
+    const { outcomeSet, verifyOutcomeSet, completed, verifyCompleted } = await initiateDispute(
+      app,
+      freeBalance,
+      watcher,
+      store,
+      networkContext,
+    );
+
+    const [outcomeRes] = await Promise.all([outcomeSet, provider.send("evm_mine", [])]);
+    await verifyOutcomeSet(outcomeRes);
+
+    const [completedRes] = await Promise.all([completed, provider.send("evm_mine", [])]);
+    await verifyCompleted(completedRes);
+
+    // verify final balances
+    await verifyOnchainBalancesPostChallenge(
+      multisigAddress,
+      freeBalance.participants,
+      channelBalances,
+      wallet,
+    );
+  });
 });
-
-
 
 describe.skip("Watcher.cancel", () => {
   it("should work if in onchain set state phase", async () => {});
@@ -134,7 +199,6 @@ describe.skip("Watcher.cancel", () => {
 
   it("should fail if outcome is set", async () => {});
 });
-
 
 describe.skip("Watcher responses", () => {
   it("should respond with `setState` if it has a higher nonced state", async () => {});

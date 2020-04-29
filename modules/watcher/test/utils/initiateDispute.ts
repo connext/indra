@@ -43,6 +43,9 @@ export const initiateDispute = async (
     initiatedEventApp,
     result,
   ] = await Promise.all([
+    // FIXME: in the `.only`d test (test 2 on initiate), the test wont resolve
+    // because this event is never emitted, instead the app dispute event
+    // seems to be emitted twice?
     new Promise((resolve) =>
       watcher.on(
         WatcherEvents.ChallengeUpdatedEvent,
