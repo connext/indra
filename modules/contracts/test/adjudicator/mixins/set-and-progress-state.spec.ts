@@ -1,13 +1,20 @@
 /* global before */
 import { Contract, Wallet, ContractFactory } from "ethers";
 
-import { expect, provider, snapshot, setupContext, AppWithCounterState, AppWithCounterAction, restore } from "../utils";
+import {
+  expect,
+  provider,
+  snapshot,
+  setupContext,
+  AppWithCounterState,
+  AppWithCounterAction,
+  restore,
+} from "../utils";
 
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 
 describe("setAndProgressState", () => {
-
   let appRegistry: Contract;
   let appDefinition: Contract;
   let wallet: Wallet;
@@ -22,7 +29,7 @@ describe("setAndProgressState", () => {
   let setAndProgressStateAndVerify: (...args: any) => Promise<any>;
 
   before(async () => {
-    wallet = (await provider.getWallets())[0];
+    wallet = new Wallet((await provider.getWallets())[0].privateKey);
     await wallet.getTransactionCount();
 
     appRegistry = await new ContractFactory(
@@ -59,6 +66,8 @@ describe("setAndProgressState", () => {
   });
 
   it("should fail if timeout is nonzero", async () => {
-    await expect(setAndProgressState(1, state0, action, 13)).to.be.revertedWith("progressState called on app not in a progressable state");
+    await expect(setAndProgressState(1, state0, action, 13)).to.be.revertedWith(
+      "progressState called on app not in a progressable state",
+    );
   });
 });

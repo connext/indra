@@ -16,7 +16,7 @@ import {
 import { toBN } from "@connext/utils";
 import { Zero, AddressZero } from "ethers/constants";
 import { getManager } from "typeorm";
-import { bigNumberify } from "ethers/utils";
+import { BigNumber.from } from "ethers/utils";
 
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
@@ -422,9 +422,9 @@ export class CFCoreStore implements IStoreService {
     app.stateEncoding = appProposal.abiEncodings.stateEncoding;
     app.appDefinition = appProposal.appDefinition;
     app.appSeqNo = appProposal.appSeqNo;
-    app.initiatorDeposit = bigNumberify(appProposal.initiatorDeposit);
+    app.initiatorDeposit = BigNumber.from(appProposal.initiatorDeposit);
     app.initiatorDepositAssetId = appProposal.initiatorDepositAssetId;
-    app.responderDeposit = bigNumberify(appProposal.responderDeposit);
+    app.responderDeposit = BigNumber.from(appProposal.responderDeposit);
     app.responderDepositAssetId = appProposal.responderDepositAssetId;
     app.defaultTimeout = appProposal.defaultTimeout;
     app.stateTimeout = appProposal.stateTimeout;

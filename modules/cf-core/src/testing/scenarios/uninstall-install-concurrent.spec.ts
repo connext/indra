@@ -1,6 +1,5 @@
 import { CONVENTION_FOR_ETH_ASSET_ID, InstallMessage, ProposeMessage } from "@connext/types";
-import { One } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { utils, constants } from "ethers";
 
 import { Node } from "../../node";
 
@@ -41,7 +40,7 @@ describe("Node method follows spec when happening concurrently - install / unins
         multisigAddress,
         nodeA,
         nodeB,
-        parseEther("2"), // We are depositing in 2 and use 1 for each concurrent app
+        utils.parseEther("2"), // We are depositing in 2 and use 1 for each concurrent app
       );
 
       installCall = makeProposeCall(
@@ -49,14 +48,14 @@ describe("Node method follows spec when happening concurrently - install / unins
         TicTacToeApp,
         multisigAddress,
         /* initialState */ undefined,
-        One,
+        constants.One,
         CONVENTION_FOR_ETH_ASSET_ID,
-        One,
+        constants.One,
         CONVENTION_FOR_ETH_ASSET_ID,
       );
 
       // install the first app
-      installedAppIdentityHash = await new Promise(async resolve => {
+      installedAppIdentityHash = await new Promise(async (resolve) => {
         nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
           makeInstallCall(nodeB, msg.data.appIdentityHash);
         });
@@ -70,7 +69,7 @@ describe("Node method follows spec when happening concurrently - install / unins
       });
     });
 
-    it("install app with ETH then uninstall and install apps simultaneously from the same node", async done => {
+    it("install app with ETH then uninstall and install apps simultaneously from the same node", async (done) => {
       let completedActions = 0;
 
       nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) =>
@@ -93,9 +92,9 @@ describe("Node method follows spec when happening concurrently - install / unins
         TicTacToeApp,
         multisigAddress,
         /* initialState */ undefined,
-        One,
+        constants.One,
         CONVENTION_FOR_ETH_ASSET_ID,
-        One,
+        constants.One,
         CONVENTION_FOR_ETH_ASSET_ID,
       );
 
@@ -103,7 +102,7 @@ describe("Node method follows spec when happening concurrently - install / unins
       nodeA.rpcRouter.dispatch(constructUninstallRpc(installedAppIdentityHash));
     });
 
-    it("install app with ETH then uninstall and install apps simultaneously from separate nodes", async done => {
+    it("install app with ETH then uninstall and install apps simultaneously from separate nodes", async (done) => {
       let completedActions = 0;
 
       nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) =>
@@ -126,9 +125,9 @@ describe("Node method follows spec when happening concurrently - install / unins
         TicTacToeApp,
         multisigAddress,
         /* initialState */ undefined,
-        One,
+        constants.One,
         CONVENTION_FOR_ETH_ASSET_ID,
-        One,
+        constants.One,
         CONVENTION_FOR_ETH_ASSET_ID,
       );
 

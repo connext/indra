@@ -10,7 +10,7 @@ import {
   ProtocolParam,
   ProtocolParams,
 } from "@connext/types";
-import { JsonRpcProvider } from "ethers/providers";
+import { providers } from "ethers";
 import { v4 as uuid } from "uuid";
 
 import { getProtocolFromName } from "../protocol";
@@ -30,7 +30,7 @@ export class ProtocolRunner {
 
   constructor(
     public readonly network: NetworkContext,
-    public readonly provider: JsonRpcProvider,
+    public readonly provider: providers.JsonRpcProvider,
     public readonly store: IStoreService,
     public readonly log: ILoggerService,
   ) {

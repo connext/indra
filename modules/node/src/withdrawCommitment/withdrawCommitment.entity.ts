@@ -9,7 +9,7 @@ export class WithdrawCommitment {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => new BigNumber(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
@@ -21,9 +21,6 @@ export class WithdrawCommitment {
   @Column("text")
   data!: string;
 
-  @ManyToOne(
-    (type: any) => Channel,
-    (channel: Channel) => channel.withdrawalCommitments,
-  )
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.withdrawalCommitments)
   channel!: Channel;
 }

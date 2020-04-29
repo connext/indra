@@ -1,8 +1,7 @@
 /* global before */
 import { AppChallenge, ChallengeStatus } from "@connext/types";
 import { ChannelSigner, toBN } from "@connext/utils";
-import { One } from "ethers/constants";
-import { Contract, Wallet, ContractFactory } from "ethers";
+import { Contract, Wallet, ContractFactory, constants } from "ethers";
 
 import {
   randomState,
@@ -37,7 +36,7 @@ describe("setState", () => {
   let verifyEmptyChallenge: () => Promise<void>;
 
   before(async () => {
-    wallet = (await provider.getWallets())[0];
+    wallet = new Wallet((await provider.getWallets())[0].privateKey);
     await wallet.getTransactionCount();
 
     appRegistry = await new ContractFactory(
@@ -139,12 +138,12 @@ describe("setState", () => {
       );
       await expect(
         appRegistry.functions.setState(appInstance.appIdentity, {
-          versionNumber: One,
+          versionNumber: constants.One,
           appStateHash: appStateToHash(state),
           timeout: ONCHAIN_CHALLENGE_TIMEOUT,
           signatures: await sortSignaturesBySignerAddress(thingToSign, [
-            await (new ChannelSigner(wallet.privateKey).signMessage(thingToSign)),
-            await (new ChannelSigner(bob.privateKey).signMessage(thingToSign)),
+            await new ChannelSigner(wallet.privateKey).signMessage(thingToSign),
+            await new ChannelSigner(bob.privateKey).signMessage(thingToSign),
           ]),
         }),
       ).to.be.revertedWith(`Invalid signature`);

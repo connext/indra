@@ -1,8 +1,5 @@
 import { MultiAssetMultiPartyCoinTransferInterpreterParams, OutcomeType } from "@connext/types";
-import { Contract, Wallet } from "ethers";
-import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
-import { Interface, parseEther } from "ethers/utils";
+import { Contract, Wallet, providers, constants, utils } from "ethers";
 
 import {
   getConditionalTransactionCommitment,
@@ -60,9 +57,9 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
     appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
   });
 
-  it("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async done => {
+  it("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async (done) => {
     const signers = getRandomChannelSigners(2);
-    const ids = signers.map(s => s.publicIdentifier);
+    const ids = signers.map((s) => s.publicIdentifier);
     const erc20TokenAddress = network.DolphinCoin;
     const proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
 
@@ -76,9 +73,9 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         1,
       ).setFreeBalance(
         FreeBalanceClass.createWithFundedTokenAmounts(
-          signers.map(key => key.address),
-          WeiPerEther,
-          [AddressZero, erc20TokenAddress],
+          signers.map((key) => key.address),
+          constants.WeiPerEther,
+          [constants.AddressZero, erc20TokenAddress],
         ),
       );
 
@@ -97,13 +94,13 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         [
           // ETH token index
           [
-            { to: signers[0].address, amount: WeiPerEther },
-            { to: signers[1].address, amount: Zero },
+            { to: signers[0].address, amount: constants.WeiPerEther },
+            { to: signers[1].address, amount: constants.Zero },
           ],
           // ERC20 token index
           [
-            { to: signers[0].address, amount: Zero },
-            { to: signers[1].address, amount: WeiPerEther },
+            { to: signers[0].address, amount: constants.Zero },
+            { to: signers[1].address, amount: constants.WeiPerEther },
           ],
         ],
         1,
@@ -114,21 +111,21 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         undefined,
         {
           // total limit of ETH and ERC20 token that can be transferred
-          limit: [WeiPerEther, WeiPerEther],
+          limit: [constants.WeiPerEther, constants.WeiPerEther],
           // The only assets being transferred are ETH and the ERC20 token
-          tokenAddresses: [AddressZero, erc20TokenAddress],
+          tokenAddresses: [constants.AddressZero, erc20TokenAddress],
         } as MultiAssetMultiPartyCoinTransferInterpreterParams,
         undefined,
       );
 
       stateChannel = stateChannel.installApp(identityAppInstance, {
-        [AddressZero]: {
-          [signers[0].address]: WeiPerEther,
-          [signers[1].address]: Zero,
+        [constants.AddressZero]: {
+          [signers[0].address]: constants.WeiPerEther,
+          [signers[1].address]: constants.Zero,
         },
         [erc20TokenAddress]: {
-          [signers[0].address]: Zero,
-          [signers[1].address]: WeiPerEther,
+          [signers[0].address]: constants.Zero,
+          [signers[1].address]: constants.WeiPerEther,
         },
       });
 
@@ -163,7 +160,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for (const _ of Array(identityAppInstance.timeout)) {
-        await (wallet.provider as JsonRpcProvider).send("evm_mine", []);
+        await (wallet.provider as providers.JsonRpcProvider).send("evm_mine", []);
       }
 
       await appRegistry.functions.setOutcome(
@@ -190,26 +187,31 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
 
       await wallet.sendTransaction({
         to: proxyAddress,
-        value: parseEther("2"),
+        value: utils.parseEther("2"),
       });
 
-      await transferERC20Tokens(proxyAddress, erc20TokenAddress, DolphinCoin.abi, parseEther("2"));
+      await transferERC20Tokens(
+        proxyAddress,
+        erc20TokenAddress,
+        new utils.Interface(DolphinCoin.abi),
+        utils.parseEther("2"),
+      );
 
       await wallet.sendTransaction({
         ...multisigDelegateCallTx,
         gasLimit: CONDITIONAL_TX_DELEGATECALL_GAS,
       });
 
-      expect(await wallet.provider.getBalance(proxyAddress)).toBeEq(WeiPerEther);
-      expect(await wallet.provider.getBalance(signers[0].address)).toBeEq(WeiPerEther);
-      expect(await wallet.provider.getBalance(signers[1].address)).toBeEq(Zero);
+      expect(await wallet.provider.getBalance(proxyAddress)).toBeEq(constants.WeiPerEther);
+      expect(await wallet.provider.getBalance(signers[0].address)).toBeEq(constants.WeiPerEther);
+      expect(await wallet.provider.getBalance(signers[1].address)).toBeEq(constants.Zero);
 
       const erc20Contract = new Contract(erc20TokenAddress, DolphinCoin.abi, wallet.provider);
 
-      expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(WeiPerEther);
-      expect(await erc20Contract.functions.balanceOf(signers[0].address)).toBeEq(Zero);
+      expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(constants.WeiPerEther);
+      expect(await erc20Contract.functions.balanceOf(signers[0].address)).toBeEq(constants.Zero);
       expect(await erc20Contract.functions.balanceOf(signers[1].address)).toBeEq(
-        WeiPerEther,
+        constants.WeiPerEther,
       );
 
       const freeBalanceConditionalTransaction = getSetupCommitment(context, stateChannel);
@@ -219,34 +221,33 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         await signers[1].signMessage(freeBalanceConditionalTransaction.hashToSign()),
       ];
 
-      const multisigDelegateCallTx2 =
-        await freeBalanceConditionalTransaction.getSignedTransaction();
+      const multisigDelegateCallTx2 = await freeBalanceConditionalTransaction.getSignedTransaction();
 
       await wallet.sendTransaction({
         ...multisigDelegateCallTx2,
         gasLimit: CONDITIONAL_TX_DELEGATECALL_GAS,
       });
 
-      expect(await wallet.provider.getBalance(proxyAddress)).toBeEq(Zero);
-      expect(await wallet.provider.getBalance(signers[0].address)).toBeEq(WeiPerEther);
-      expect(await wallet.provider.getBalance(signers[1].address)).toBeEq(WeiPerEther);
+      expect(await wallet.provider.getBalance(proxyAddress)).toBeEq(constants.Zero);
+      expect(await wallet.provider.getBalance(signers[0].address)).toBeEq(constants.WeiPerEther);
+      expect(await wallet.provider.getBalance(signers[1].address)).toBeEq(constants.WeiPerEther);
 
-      expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(Zero);
+      expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(constants.Zero);
       expect(await erc20Contract.functions.balanceOf(signers[0].address)).toBeEq(
-        WeiPerEther,
+        constants.WeiPerEther,
       );
       expect(await erc20Contract.functions.balanceOf(signers[1].address)).toBeEq(
-        WeiPerEther,
+        constants.WeiPerEther,
       );
 
       done();
     });
 
+    const iface = new utils.Interface(MinimumViableMultisig.abi);
+
     await proxyFactory.functions.createProxyWithNonce(
       network.MinimumViableMultisig,
-      new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-        signers.map(x => x.address),
-      ]),
+      iface.encodeFunctionData(iface.functions.setup, [signers.map((x) => x.address)]),
       0,
       { gasLimit: CREATE_PROXY_AND_SETUP_GAS },
     );

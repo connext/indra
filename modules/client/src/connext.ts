@@ -44,7 +44,7 @@ import {
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
+import { BigNumber, Network, Transaction } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import {
@@ -243,9 +243,9 @@ export class ConnextClient implements IConnextClient {
     }
     const { name, chainId, appDefinitionAddress } = appDetails as any;
     if (name) {
-      return registry.find(app => app.name === name && app.chainId === chainId);
+      return registry.find((app) => app.name === name && app.chainId === chainId);
     }
-    return registry.find(app => app.appDefinitionAddress === appDefinitionAddress);
+    return registry.find((app) => app.appDefinitionAddress === appDefinitionAddress);
   };
 
   public createChannel = async (): Promise<NodeResponses.CreateChannel> => {
@@ -386,7 +386,7 @@ export class ConnextClient implements IConnextClient {
     const values = await this.channelProvider.send(ChannelMethods.chan_getUserWithdrawal, {});
 
     // sanity check
-    values.forEach(val => {
+    values.forEach((val) => {
       const noRetry = typeof val.retry === "undefined" || val.retry === null;
       if (!val.tx || noRetry) {
         const msg = `Can not find tx or retry in retrieved user withdrawal ${stringify(val())}`;
@@ -535,8 +535,8 @@ export class ConnextClient implements IConnextClient {
         // but need the nodes free balance
         // address in the multisig
         const obj = {};
-        obj[this.nodeSignerAddress] = new BigNumber(0);
-        obj[this.signerAddress] = new BigNumber(0);
+        obj[this.nodeSignerAddress] = BigNumber.from(0);
+        obj[this.signerAddress] = BigNumber.from(0);
         return obj;
       }
       throw e;
@@ -680,7 +680,7 @@ export class ConnextClient implements IConnextClient {
     return (
       givenTransaction &&
       givenTransaction.to === expected.to &&
-      bigNumberify(givenTransaction.value).eq(expected.value) &&
+      BigNumber.from(givenTransaction.value).eq(expected.value) &&
       givenTransaction.data === expected.data
     );
   };

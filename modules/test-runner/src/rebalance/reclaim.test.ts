@@ -1,7 +1,7 @@
 import { EventNames, IConnextClient } from "@connext/types";
 import { getRandomBytes32, toBN } from "@connext/utils";
 import { AddressZero, One, Two } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import { BigNumber.from } from "ethers/utils";
 import { before, describe } from "mocha";
 import { Client } from "ts-nats";
 
@@ -47,7 +47,7 @@ describe("Reclaim", () => {
     // deposit client
     await fundChannel(
       clientA,
-      bigNumberify(REBALANCE_PROFILE.upperBoundReclaim).add(Two),
+      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(Two),
       AddressZero,
     );
     await clientB.requestCollateral(AddressZero);
@@ -57,7 +57,7 @@ describe("Reclaim", () => {
     await asyncTransferAsset(
       clientA,
       clientB,
-      bigNumberify(REBALANCE_PROFILE.upperBoundReclaim).add(One),
+      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(One),
       AddressZero,
       nats,
     );
@@ -82,12 +82,12 @@ describe("Reclaim", () => {
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
     expect(
       freeBalancePost[nodeSignerAddress].gte(
-        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
+        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim),
       ),
     ).to.be.true;
     expect(
       freeBalancePost[nodeSignerAddress].lte(
-        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
+        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
       ),
     ).to.be.true;
   });
@@ -107,7 +107,7 @@ describe("Reclaim", () => {
     // deposit client
     await fundChannel(
       clientA,
-      bigNumberify(REBALANCE_PROFILE.upperBoundReclaim).add(Two),
+      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(Two),
       tokenAddress,
     );
     await clientB.requestCollateral(AddressZero);
@@ -117,7 +117,7 @@ describe("Reclaim", () => {
     await asyncTransferAsset(
       clientA,
       clientB,
-      bigNumberify(REBALANCE_PROFILE.upperBoundReclaim).add(One),
+      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(One),
       tokenAddress,
       nats,
     );
@@ -142,12 +142,12 @@ describe("Reclaim", () => {
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
     expect(
       freeBalancePost[nodeSignerAddress].gte(
-        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
+        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim),
       ),
     ).to.be.true;
     expect(
       freeBalancePost[nodeSignerAddress].lte(
-        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
+        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
       ),
     ).to.be.true;
   });

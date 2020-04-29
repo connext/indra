@@ -1,22 +1,13 @@
 import { AppIdentity, ChallengeStatus, CommitmentTarget } from "@connext/types";
 import { toBN } from "@connext/utils";
-import {
-  BigNumberish,
-  defaultAbiCoder,
-  keccak256,
-  hexlify,
-  randomBytes,
-  solidityPack,
-  BigNumber,
-} from "ethers/utils";
+import { BigNumberish, BigNumber, constants, utils } from "ethers";
 
-import { Zero, HashZero } from "ethers/constants";
 export * from "./context";
 
 // include all top level utils
 export * from "../../utils";
 
-export const randomState = (numBytes: number = 64) => hexlify(randomBytes(numBytes));
+export const randomState = (numBytes: number = 64) => utils.hexlify(utils.randomBytes(numBytes));
 
 // App State With Action types for testing
 export type AppWithCounterState = {
@@ -40,28 +31,28 @@ export type AppWithCounterAction = {
 };
 
 export function encodeState(state: AppWithCounterState) {
-  return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
+  return utils.defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
 }
 
 export function encodeAction(action: AppWithCounterAction) {
-  return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
+  return utils.defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
 }
 
 export function encodeOutcome() {
-  return defaultAbiCoder.encode([`uint`], [TwoPartyFixedOutcome.SEND_TO_ADDR_ONE]);
+  return utils.defaultAbiCoder.encode([`uint`], [TwoPartyFixedOutcome.SEND_TO_ADDR_ONE]);
 }
 
 // TS version of MChallengeRegistryCore::computeCancelDisputeHash
 export const computeCancelDisputeHash = (identityHash: string, versionNumber: BigNumber) =>
-  keccak256(
-    solidityPack(
+  utils.keccak256(
+    utils.solidityPack(
       ["uint8", "bytes32", "uint256"],
       [CommitmentTarget.CANCEL_DISPUTE, identityHash, versionNumber],
     ),
   );
 
 // TS version of MChallengeRegistryCore::appStateToHash
-export const appStateToHash = (state: string) => keccak256(state);
+export const appStateToHash = (state: string) => utils.keccak256(state);
 
 // TS version of MChallengeRegistryCore::computeAppChallengeHash
 export const computeAppChallengeHash = (
@@ -70,8 +61,8 @@ export const computeAppChallengeHash = (
   versionNumber: BigNumberish,
   timeout: number,
 ) =>
-  keccak256(
-    solidityPack(
+  utils.keccak256(
+    utils.solidityPack(
       ["uint8", "bytes32", "bytes32", "uint256", "uint256"],
       [CommitmentTarget.SET_STATE, id, appStateHash, versionNumber, timeout],
     ),
@@ -79,13 +70,13 @@ export const computeAppChallengeHash = (
 
 export class AppWithCounterClass {
   get identityHash(): string {
-    return keccak256(
-      solidityPack(
+    return utils.keccak256(
+      utils.solidityPack(
         ["address", "uint256", "bytes32", "address", "uint256"],
         [
           this.multisigAddress,
           this.channelNonce,
-          keccak256(solidityPack(["address[]"], [this.participants])),
+          utils.keccak256(utils.solidityPack(["address[]"], [this.participants])),
           this.appDefinition,
           this.defaultTimeout,
         ],
@@ -113,8 +104,8 @@ export class AppWithCounterClass {
 }
 
 export const EMPTY_CHALLENGE = {
-  versionNumber: Zero,
-  appStateHash: HashZero,
+  versionNumber: constants.Zero,
+  appStateHash: constants.HashZero,
   status: ChallengeStatus.NO_CHALLENGE,
-  finalizesAt: Zero,
+  finalizesAt: constants.Zero,
 };

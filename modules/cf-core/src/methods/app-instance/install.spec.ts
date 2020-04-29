@@ -1,4 +1,4 @@
-import { MemoryStorage as MemoryStoreService, ConnextStore, KeyValueStorage } from "@connext/store";
+import { ConnextStore, KeyValueStorage } from "@connext/store";
 import {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext,
@@ -6,14 +6,8 @@ import {
   IStoreService,
   StoreTypes,
 } from "@connext/types";
-import {
-  getRandomBytes32,
-  getSignerAddressFromPublicIdentifier,
-  nullLogger,
-} from "@connext/utils";
-import { Wallet } from "ethers";
-import { AddressZero, HashZero, Zero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
+import { getRandomBytes32, getSignerAddressFromPublicIdentifier, nullLogger } from "@connext/utils";
+import { Wallet, providers, constants } from "ethers";
 import { anything, instance, mock, when } from "ts-mockito";
 
 import {
@@ -32,7 +26,7 @@ import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 const NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES = EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT.reduce(
   (acc, contractName) => ({
     ...acc,
-    [contractName]: AddressZero,
+    [contractName]: constants.AddressZero,
   }),
   {} as NetworkContext,
 );
@@ -46,7 +40,7 @@ describe("Can handle correct & incorrect installs", () => {
     store = new ConnextStore(StoreTypes.Memory);
     protocolRunner = new ProtocolRunner(
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
-      {} as JsonRpcProvider,
+      {} as providers.JsonRpcProvider,
       store,
       nullLogger,
     );
@@ -67,8 +61,8 @@ describe("Can handle correct & incorrect installs", () => {
 
   it("fails to install without the AppInstance being proposed first", async () => {
     await expect(
-      install(store, protocolRunner, { appIdentityHash: HashZero }, initiatorIdentifier),
-    ).rejects.toThrowError(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(HashZero));
+      install(store, protocolRunner, { appIdentityHash: constants.HashZero }, initiatorIdentifier),
+    ).rejects.toThrowError(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(constants.HashZero));
   });
 
   it("fails to install without the appIdentityHash being in a channel", async () => {
@@ -106,33 +100,33 @@ describe("Can handle correct & incorrect installs", () => {
     ];
 
     const stateChannel = StateChannel.setupChannel(
-      AddressZero,
-      { proxyFactory: AddressZero, multisigMastercopy: AddressZero },
+      constants.AddressZero,
+      { proxyFactory: constants.AddressZero, multisigMastercopy: constants.AddressZero },
       multisigAddress,
       publicIdentifiers[0],
       publicIdentifiers[1],
     );
 
-    expect(stateChannel.getFreeBalanceClass().getBalance(AddressZero, participants[0])).toEqual(
-      Zero,
-    );
-    expect(stateChannel.getFreeBalanceClass().getBalance(AddressZero, participants[1])).toEqual(
-      Zero,
-    );
+    expect(
+      stateChannel.getFreeBalanceClass().getBalance(constants.AddressZero, participants[0]),
+    ).toEqual(constants.Zero);
+    expect(
+      stateChannel.getFreeBalanceClass().getBalance(constants.AddressZero, participants[1]),
+    ).toEqual(constants.Zero);
 
     await store.createStateChannel(
       stateChannel.toJson(),
       {
         data: "0x",
         to: stateChannel.multisigAddress,
-        value: Zero,
+        value: constants.Zero,
       },
       {
         appIdentity: {} as any,
         stateTimeout: "0",
         appIdentityHash,
-        appStateHash: HashZero,
-        challengeRegistryAddress: AddressZero,
+        appStateHash: constants.HashZero,
+        challengeRegistryAddress: constants.AddressZero,
         signatures: ["0x0", "0x0"],
         versionNumber: 1,
       },

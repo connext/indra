@@ -4,7 +4,7 @@ import {
   MultisigTransaction,
   NetworkContext,
 } from "@connext/types";
-import { Interface } from "ethers/utils";
+import { utils } from "ethers";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { StateChannel } from "../models";
@@ -13,7 +13,7 @@ import { appIdentityToHash } from "../utils";
 
 import { MultisigCommitment } from "./multisig-commitment";
 
-const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
+const iface = new utils.Interface(ConditionalTransactionDelegateTarget.abi);
 
 export const getSetupCommitment = (context: Context, stateChannel: StateChannel): SetupCommitment =>
   new SetupCommitment(
@@ -35,7 +35,7 @@ export class SetupCommitment extends MultisigCommitment {
 
   public getTransactionDetails(): MultisigTransaction {
     return {
-      data: iface.functions.executeEffectOfFreeBalance.encode([
+      data: iface.encodeFunctionData(iface.functions.executeEffectOfFreeBalance, [
         this.networkContext.ChallengeRegistry,
         appIdentityToHash(this.freeBalanceAppIdentity),
         this.networkContext.MultiAssetMultiPartyCoinTransferInterpreter,

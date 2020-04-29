@@ -1,18 +1,12 @@
 import { ChannelSigner } from "@connext/utils";
 import { CONVENTION_FOR_ETH_ASSET_ID, ProposeMessage } from "@connext/types";
-import { One } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, providers, constants } from "ethers";
 
 import { Node } from "../../node";
 
 import { toBeLt } from "../bignumber-jest-matcher";
 import { NetworkContextForTestSuite } from "../contracts";
-import {
-  MemoryLockService,
-  MemoryMessagingService,
-  MemoryStoreServiceFactory,
-} from "../services";
+import { MemoryLockService, MemoryMessagingService, MemoryStoreServiceFactory } from "../services";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import {
   collateralizeChannel,
@@ -38,7 +32,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
     () => {
       beforeEach(async () => {
         const wallet = newWallet(global["wallet"]);
-        const provider = wallet.provider as JsonRpcProvider;
+        const provider = wallet.provider as providers.JsonRpcProvider;
         const messagingService = new MemoryMessagingService();
         const nodeConfig = { STORE_KEY_PREFIX: `test` };
 
@@ -70,7 +64,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         multisigAddress = await createChannel(nodeA, nodeB);
       });
 
-      it(`install app with ETH`, async done => {
+      it(`install app with ETH`, async (done) => {
         await collateralizeChannel(multisigAddress, nodeA, nodeB);
 
         let preInstallETHBalanceNodeA: BigNumber;
@@ -114,9 +108,9 @@ describe(`Uses a provided signing key generation function to sign channel state 
             (global[`network`] as NetworkContextForTestSuite).TicTacToeApp,
             multisigAddress,
             undefined,
-            One,
+            constants.One,
             CONVENTION_FOR_ETH_ASSET_ID,
-            One,
+            constants.One,
             CONVENTION_FOR_ETH_ASSET_ID,
           ),
         );

@@ -1,16 +1,23 @@
 /* global before */
 import { AppChallenge, ChallengeStatus } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { Contract, Wallet, ContractFactory } from "ethers";
+import { Contract, Wallet, ContractFactory, BigNumberish } from "ethers";
 
-import { provider, snapshot, setupContext, restore, expect, moveToBlock, AppWithCounterAction, ActionType } from "../utils";
+import {
+  provider,
+  snapshot,
+  setupContext,
+  restore,
+  expect,
+  moveToBlock,
+  AppWithCounterAction,
+  ActionType,
+} from "../utils";
 
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
-import { BigNumberish } from "ethers/utils";
 
 describe("LibStateChannelApp", () => {
-
   let appRegistry: Contract;
   let appDefinition: Contract;
 
@@ -34,7 +41,7 @@ describe("LibStateChannelApp", () => {
   let isCancellable: () => Promise<boolean>;
 
   before(async () => {
-    wallet = (await provider.getWallets())[0];
+    wallet = new Wallet((await provider.getWallets())[0].privateKey);
     await wallet.getTransactionCount();
 
     appRegistry = await new ContractFactory(
@@ -65,8 +72,8 @@ describe("LibStateChannelApp", () => {
     isDisputable = context["isDisputable"];
     setState = context["setStateAndVerify"];
     verifyChallenge = context["verifyChallenge"];
-    setAndProgressState = 
-      (versionNumber: number, action?: AppWithCounterAction) => context["setAndProgressStateAndVerify"](
+    setAndProgressState = (versionNumber: number, action?: AppWithCounterAction) =>
+      context["setAndProgressStateAndVerify"](
         versionNumber,
         context["state0"],
         action || context["action"],
@@ -122,7 +129,7 @@ describe("LibStateChannelApp", () => {
     it("should return true if challenge is in dispute, and the progress state period has not elapsed, but the set state period has", async () => {
       await setState(1);
 
-      await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+      await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
       expect(await isProgressable()).to.be.true;
     });
@@ -134,7 +141,7 @@ describe("LibStateChannelApp", () => {
         status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
       });
 
-      await moveToBlock(await provider.getBlockNumber() + 2);
+      await moveToBlock((await provider.getBlockNumber()) + 2);
 
       expect(await isProgressable()).to.be.true;
     });
@@ -142,7 +149,7 @@ describe("LibStateChannelApp", () => {
     it("should return false if progress state period has elapsed", async () => {
       await setAndProgressState(1);
 
-      await moveToBlock(await provider.getBlockNumber() + 100);
+      await moveToBlock((await provider.getBlockNumber()) + 100);
 
       expect(await isProgressable()).to.be.false;
     });
@@ -181,7 +188,7 @@ describe("LibStateChannelApp", () => {
 
     it("should return false if the progress state period has elapsed", async () => {
       await setAndProgressState(1);
-      await moveToBlock(await provider.getBlockNumber() + 100);
+      await moveToBlock((await provider.getBlockNumber()) + 100);
       expect(await isCancellable()).to.be.false;
     });
 
@@ -192,32 +199,20 @@ describe("LibStateChannelApp", () => {
 
   describe("verifySignatures", () => {
     it("should fail if signatures.length !== signers.length", async () => {
-      await expect(
-        verifySignatures(
-          undefined,
-          undefined,
-          [alice.address],
-        ),
-      ).to.be.revertedWith("Signers and signatures should be of equal length");
+      await expect(verifySignatures(undefined, undefined, [alice.address])).to.be.revertedWith(
+        "Signers and signatures should be of equal length",
+      );
     });
 
     it("should fail if the signers are not sorted", async () => {
       await expect(
-        verifySignatures(
-          undefined, 
-          undefined, 
-          [bob.address, alice.address],
-        ),
+        verifySignatures(undefined, undefined, [bob.address, alice.address]),
       ).to.be.revertedWith("Invalid signature");
     });
 
     it("should fail if the signer is invalid", async () => {
       await expect(
-        verifySignatures(
-          undefined, 
-          undefined, 
-          [wallet.address, bob.address],
-        ),
+        verifySignatures(undefined, undefined, [wallet.address, bob.address]),
       ).to.be.revertedWith("Invalid signature");
     });
 

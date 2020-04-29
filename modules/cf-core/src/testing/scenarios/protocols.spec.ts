@@ -1,7 +1,10 @@
-import { CONVENTION_FOR_ETH_ASSET_ID, OutcomeType, ProtocolNames, ProtocolParams } from "@connext/types";
-import { Contract, ContractFactory, Wallet } from "ethers";
-import { Zero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import {
+  CONVENTION_FOR_ETH_ASSET_ID,
+  OutcomeType,
+  ProtocolNames,
+  ProtocolParams,
+} from "@connext/types";
+import { Contract, ContractFactory, Wallet, BigNumber, constants } from "ethers";
 
 import { StateChannel } from "../../models";
 
@@ -39,8 +42,8 @@ describe("Three mininodes", () => {
     const proposalParams: ProtocolParams.Propose = {
       initiatorIdentifier: tr.mininodeA.publicIdentifier,
       responderIdentifier: tr.mininodeB.publicIdentifier,
-      defaultTimeout: bigNumberify(100),
-      stateTimeout: Zero,
+      defaultTimeout: BigNumber.from(100),
+      stateTimeout: constants.Zero,
       appDefinition: appWithAction.address,
       abiEncodings: {
         stateEncoding: "tuple(uint256 counter)",
@@ -49,8 +52,8 @@ describe("Three mininodes", () => {
       initialState: {
         counter: 0,
       },
-      initiatorDeposit: bigNumberify(0),
-      responderDeposit: bigNumberify(0),
+      initiatorDeposit: BigNumber.from(0),
+      responderDeposit: BigNumber.from(0),
       initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
       responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
       outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
@@ -73,8 +76,8 @@ describe("Three mininodes", () => {
       initiatorDepositAssetId: proposal.initiatorDepositAssetId,
       responderDepositAssetId: proposal.responderDepositAssetId,
       multisigAddress: tr.multisigAB,
-      initiatorBalanceDecrement: bigNumberify(0),
-      responderBalanceDecrement: bigNumberify(0),
+      initiatorBalanceDecrement: BigNumber.from(0),
+      responderBalanceDecrement: BigNumber.from(0),
       initialState: proposal.initialState,
       appInterface: {
         addr: proposal.appDefinition,
@@ -83,8 +86,8 @@ describe("Three mininodes", () => {
       },
       appInitiatorIdentifier: proposal.initiatorIdentifier,
       appResponderIdentifier: proposal.responderIdentifier,
-      defaultTimeout: bigNumberify(100),
-      stateTimeout: Zero,
+      defaultTimeout: BigNumber.from(100),
+      stateTimeout: constants.Zero,
       appSeqNo: proposal.appSeqNo,
       outcomeType: proposal.outcomeType,
       disableLimit: false,

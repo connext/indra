@@ -5,33 +5,27 @@ import {
   DepositAppState,
   DepositAppStateEncoding,
 } from "@connext/types";
-import { Wallet, ContractFactory, Contract } from "ethers";
-import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { Wallet, ContractFactory, Contract, BigNumber, utils, constants } from "ethers";
 
 import DepositApp from "../../build/DepositApp.json";
 import DelegateProxy from "../../build/DelegateProxy.json";
 import DolphinCoin from "../../build/DolphinCoin.json";
 
-import { Zero, AddressZero } from "ethers/constants";
+import { expect, provider } from "../utils";
 
-import { expect, provider, fund } from "../utils";
-const MAX_INT = new BigNumber(2).pow(256).sub(1);
+const MAX_INT = BigNumber.from(2).pow(256).sub(1);
 
 const decodeTransfers = (encodedTransfers: string): CoinTransfer[] =>
-  defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedTransfers)[0];
+  utils.defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedTransfers)[0];
 
-const encodeAppState = (
-  state: DepositAppState,
-  onlyCoinTransfers: boolean = false,
-): string => {
+const encodeAppState = (state: DepositAppState, onlyCoinTransfers: boolean = false): string => {
   if (!onlyCoinTransfers) {
-    return defaultAbiCoder.encode([DepositAppStateEncoding], [state]);
+    return utils.defaultAbiCoder.encode([DepositAppStateEncoding], [state]);
   }
-  return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.transfers]);
+  return utils.defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.transfers]);
 };
 
 describe("DepositApp", () => {
-
   let wallet: Wallet;
   let depositApp: Contract;
   let proxy: Contract;
@@ -42,13 +36,9 @@ describe("DepositApp", () => {
 
   before(async () => {
     // use max funded wallet, see builder.config.ts
-    wallet = (await provider.getWallets())[2];
+    wallet = new Wallet((await provider.getWallets())[0].privateKey);
 
-    depositApp = await new ContractFactory(
-      DepositApp.abi,
-      DepositApp.bytecode,
-      wallet,
-    ).deploy();
+    depositApp = await new ContractFactory(DepositApp.abi, DepositApp.bytecode, wallet).deploy();
 
     erc20 = await new ContractFactory(
       DolphinCoin.abi as any,
@@ -56,11 +46,7 @@ describe("DepositApp", () => {
       wallet,
     ).deploy();
 
-    proxy = await new ContractFactory(
-      DelegateProxy.abi,
-      DelegateProxy.bytecode,
-      wallet,
-    ).deploy();
+    proxy = await new ContractFactory(DelegateProxy.abi, DelegateProxy.bytecode, wallet).deploy();
   });
 
   const computeOutcome = async (state: DepositAppState): Promise<string> => {
@@ -71,23 +57,23 @@ describe("DepositApp", () => {
     return {
       transfers: [
         {
-          amount: Zero,
+          amount: constants.Zero,
           to: depositorWallet.address,
         },
         {
-          amount: Zero,
+          amount: constants.Zero,
           to: counterpartyWallet.address,
         },
       ],
       multisigAddress: proxy.address,
       assetId,
-      startingTotalAmountWithdrawn: await getTotalAmountWithdrawn(assetId), 
+      startingTotalAmountWithdrawn: await getTotalAmountWithdrawn(assetId),
       startingMultisigBalance: await getMultisigBalance(assetId),
     };
   };
 
   const getMultisigBalance = async (assetId: string): Promise<BigNumber> => {
-    return assetId === AddressZero
+    return assetId === constants.AddressZero
       ? await provider.getBalance(proxy.address)
       : await erc20.functions.balanceOf(proxy.address);
   };
@@ -98,10 +84,10 @@ describe("DepositApp", () => {
 
   const deposit = async (assetId: string, amount: BigNumber): Promise<void> => {
     const preDepositValue = await getMultisigBalance(assetId);
-    if (assetId === AddressZero) {
+    if (assetId === constants.AddressZero) {
       const tx = await wallet.sendTransaction({
-          value: amount,
-          to: proxy.address,
+        value: amount,
+        to: proxy.address,
       });
       expect(tx.hash).to.exist;
     } else {
@@ -117,11 +103,11 @@ describe("DepositApp", () => {
 
   const validateOutcomes = async (
     params: {
-      assetId: string,
-      outcome: string,
-      initialState: DepositAppState,
-      deposit: BigNumber,
-      withdrawal?: BigNumber,
+      assetId: string;
+      outcome: string;
+      initialState: DepositAppState;
+      deposit: BigNumber;
+      withdrawal?: BigNumber;
     }[],
   ): Promise<void> => {
     for (const param of params) {
@@ -134,47 +120,44 @@ describe("DepositApp", () => {
     outcome: string,
     initialState: DepositAppState,
     amountDeposited: BigNumber,
-    amountWithdrawn: BigNumber = Zero,
+    amountWithdrawn: BigNumber = constants.Zero,
   ): Promise<void> => {
     const decoded = decodeTransfers(outcome);
     expect(decoded[0].to).eq(initialState.transfers[0].to);
     expect(decoded[0].amount).eq(amountDeposited);
     expect(decoded[1].to).eq(initialState.transfers[1].to);
-    expect(decoded[1].amount).eq(Zero);
+    expect(decoded[1].amount).eq(constants.Zero);
     const multisigBalance = await getMultisigBalance(initialState.assetId);
     expect(multisigBalance).to.be.eq(
-      initialState.startingMultisigBalance
-        .add(amountDeposited)
-        .sub(amountWithdrawn),
-      );
+      initialState.startingMultisigBalance.add(amountDeposited).sub(amountWithdrawn),
+    );
   };
 
   it("Correctly calculates deposit amount for Eth", async () => {
-    const assetId = AddressZero;
-    const amount = new BigNumber(10000);
+    const assetId = constants.AddressZero;
+    const amount = BigNumber.from(10000);
     const initialState = await createInitialState(assetId);
 
     await deposit(assetId, amount);
 
     const outcome = await computeOutcome(initialState);
     await validateOutcome(outcome, initialState, amount);
-
   });
 
   it("Correctly calculates deposit amount for tokens", async () => {
     const assetId = erc20.address;
-    const amount = new BigNumber(10000);
+    const amount = BigNumber.from(10000);
     const initialState = await createInitialState(assetId);
 
     await deposit(assetId, amount);
-    
+
     const outcome = await computeOutcome(initialState);
     await validateOutcome(outcome, initialState, amount);
   });
 
   it("Correctly calculates deposit amount for Eth with eth withdraw", async () => {
-    const assetId = AddressZero;
-    const amount = new BigNumber(10000);
+    const assetId = constants.AddressZero;
+    const amount = BigNumber.from(10000);
     const initialState = await createInitialState(assetId);
 
     await deposit(assetId, amount);
@@ -186,7 +169,7 @@ describe("DepositApp", () => {
 
   it("Correctly calculates deposit amount for token with token withdraw", async () => {
     const assetId = erc20.address;
-    const amount = new BigNumber(10000);
+    const amount = BigNumber.from(10000);
     const initialState = await createInitialState(assetId);
 
     await deposit(assetId, amount);
@@ -197,8 +180,8 @@ describe("DepositApp", () => {
   });
 
   it("Correctly calculates deposit amount for Eth with token withdraw", async () => {
-    const assetId = AddressZero;
-    const amount = new BigNumber(10000);
+    const assetId = constants.AddressZero;
+    const amount = BigNumber.from(10000);
     const ethInitialState = await createInitialState(assetId);
     const tokenInitialState = await createInitialState(erc20.address);
 
@@ -225,7 +208,7 @@ describe("DepositApp", () => {
 
   it("Correctly calculates deposit amount for token with token withdraw > deposit (should underflow)", async () => {
     const assetId = erc20.address;
-    const amount = new BigNumber(10000);
+    const amount = BigNumber.from(10000);
     // setup multisig with some initial balance
     await deposit(assetId, amount);
 
@@ -238,8 +221,8 @@ describe("DepositApp", () => {
   });
 
   it("Correctly calculates deposit amount for token total withdraw overflow", async () => {
-    const assetId = AddressZero;
-    const amount = new BigNumber(10000);
+    const assetId = constants.AddressZero;
+    const amount = BigNumber.from(10000);
     // setup multisig with correct total withdraw
     await deposit(assetId, MAX_INT.div(4));
     await withdraw(assetId, MAX_INT.div(4));
@@ -262,8 +245,8 @@ describe("DepositApp", () => {
   });
 
   it("Correctly calculates deposit amount for token total withdraw overflow AND expression underflow", async () => {
-    const assetId = AddressZero;
-    const amount = new BigNumber(10000);
+    const assetId = constants.AddressZero;
+    const amount = BigNumber.from(10000);
     // setup multisig with correct total withdraw
     await deposit(assetId, MAX_INT.div(4));
     await withdraw(assetId, MAX_INT.div(4));

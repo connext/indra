@@ -1,14 +1,22 @@
 /* global before */
 import { Contract, Wallet, ContractFactory } from "ethers";
 
-import { setupContext, snapshot, provider, restore, AppWithCounterState, moveToBlock, expect, encodeState } from "../utils";
+import {
+  setupContext,
+  snapshot,
+  provider,
+  restore,
+  AppWithCounterState,
+  moveToBlock,
+  expect,
+  encodeState,
+} from "../utils";
 
 import AppWithAction from "../../../build/AppWithAction.json";
 import AppComputeOutcomeFails from "../../../build/AppComputeOutcomeFails.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 
 describe("setOutcome", () => {
-
   let appRegistry: Contract;
   let appDefinition: Contract;
   let wallet: Wallet;
@@ -22,12 +30,16 @@ describe("setOutcome", () => {
 
   // helpers
   let setOutcome: (finalState?: string) => Promise<void>;
-  let setAndProgressState: (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => Promise<void>;
+  let setAndProgressState: (
+    versionNumber: number,
+    state?: AppWithCounterState,
+    turnTaker?: Wallet,
+  ) => Promise<void>;
 
   let isFinalized: () => Promise<boolean>;
 
   before(async () => {
-    wallet = (await provider.getWallets())[0];
+    wallet = new Wallet((await provider.getWallets())[0].privateKey);
     await wallet.getTransactionCount();
 
     appRegistry = await new ContractFactory(
@@ -54,8 +66,12 @@ describe("setOutcome", () => {
     // helpers
     setOutcome = context["setOutcomeAndVerify"];
     isFinalized = context["isFinalized"];
-    setAndProgressState = 
-      (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => context["setAndProgressStateAndVerify"](
+    setAndProgressState = (
+      versionNumber: number,
+      state?: AppWithCounterState,
+      turnTaker?: Wallet,
+    ) =>
+      context["setAndProgressStateAndVerify"](
         versionNumber, // nonce
         state || state0, // state
         context["action"], // action
@@ -68,13 +84,12 @@ describe("setOutcome", () => {
     await restore(snapshotId);
   });
 
-
   it("works", async () => {
     await setAndProgressState(1);
 
     // must have passed:
     // appChallenge.finalizesAt
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
     expect(await isFinalized()).to.be.true;
 
@@ -86,18 +101,22 @@ describe("setOutcome", () => {
 
     // must have passed:
     // appChallenge.finalizesAt
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
     expect(await isFinalized()).to.be.true;
 
-    await expect(setOutcome(encodeState(state0))).to.be.revertedWith("setOutcome called with incorrect witness data of finalState");
+    await expect(setOutcome(encodeState(state0))).to.be.revertedWith(
+      "setOutcome called with incorrect witness data of finalState",
+    );
   });
 
   it("fails if not finalized", async () => {
     await setAndProgressState(1);
     expect(await isFinalized()).to.be.false;
 
-    await expect(setOutcome(encodeState(state0))).to.be.revertedWith("setOutcome can only be called after a challenge has been finalized");
+    await expect(setOutcome(encodeState(state0))).to.be.revertedWith(
+      "setOutcome can only be called after a challenge has been finalized",
+    );
   });
 
   it("fails if compute outcome fails", async () => {
@@ -118,10 +137,12 @@ describe("setOutcome", () => {
 
     // must have passed:
     // appChallenge.finalizesAt
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
     expect(await context["isFinalized"]()).to.be.true;
 
-    await expect(context["setOutcomeAndVerify"](encodeState(context["state1"]))).to.be.revertedWith("computeOutcome always fails for this app");
+    await expect(context["setOutcomeAndVerify"](encodeState(context["state1"]))).to.be.revertedWith(
+      "computeOutcome always fails for this app",
+    );
   });
 });

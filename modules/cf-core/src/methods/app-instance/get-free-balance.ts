@@ -1,13 +1,12 @@
 import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
-import { getAddress } from "ethers/utils";
+import { constants, utils } from "ethers";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
 import { StateChannel } from "../../models";
-import { AddressZero } from "ethers/constants";
 
 export class GetFreeBalanceStateController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_getFreeBalanceState)
@@ -22,8 +21,9 @@ export class GetFreeBalanceStateController extends NodeController {
 
     // NOTE: We default to ETH in case of undefined tokenAddress param
     // TODO: standardize on either address or assetId, not both
-    const tokenAddress = getAddress(
-      ((assetId && assetId.includes("@")) ? getAddressFromAssetId(assetId) : assetId) || AddressZero,
+    const tokenAddress = utils.getAddress(
+      (assetId && assetId.includes("@") ? getAddressFromAssetId(assetId) : assetId) ||
+        constants.AddressZero,
     );
     // console.log(`Parsed params ${JSON.stringify(params)} to address ${tokenAddress}`);
 
@@ -37,7 +37,6 @@ export class GetFreeBalanceStateController extends NodeController {
     }
     const stateChannel = StateChannel.fromJson(json);
 
-    return stateChannel.getFreeBalanceClass()
-      .withTokenAddress(tokenAddress);
+    return stateChannel.getFreeBalanceClass().withTokenAddress(tokenAddress);
   }
 }

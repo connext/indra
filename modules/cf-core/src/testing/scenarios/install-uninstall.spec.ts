@@ -1,5 +1,5 @@
 import { OutcomeType } from "@connext/types";
-import { Two, Zero, AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { toBeEq } from "../bignumber-jest-matcher";
 import { Participant, TestRunner } from "../test-runner";
@@ -26,27 +26,27 @@ async function runDirectInstallUninstallTest(
   if (testFundingType === TestFundingType.SPLIT) {
     await tr.installSplitDeposits(
       outcomeType,
-      AddressZero,
+      constants.AddressZero,
       TestRunner.TEST_TOKEN_ADDRESS,
     );
-    tr.assertFB(Participant.A, AddressZero, Zero);
-    tr.assertFB(Participant.B, TestRunner.TEST_TOKEN_ADDRESS, Zero);
+    tr.assertFB(Participant.A, constants.AddressZero, constants.Zero);
+    tr.assertFB(Participant.B, TestRunner.TEST_TOKEN_ADDRESS, constants.Zero);
 
     await tr.uninstall();
-    tr.assertFB(Participant.A, AddressZero, Two);
-    tr.assertFB(Participant.B, TestRunner.TEST_TOKEN_ADDRESS, Zero);
+    tr.assertFB(Participant.A, constants.AddressZero, constants.Two);
+    tr.assertFB(Participant.B, TestRunner.TEST_TOKEN_ADDRESS, constants.Zero);
   } else {
     const tokenAddress = {
-      [TestFundingType.ETH]: AddressZero,
+      [TestFundingType.ETH]: constants.AddressZero,
       [TestFundingType.ERC20]: TestRunner.TEST_TOKEN_ADDRESS,
     }[testFundingType];
 
     await tr.installEqualDeposits(outcomeType, tokenAddress);
-    tr.assertFB(Participant.A, tokenAddress, Zero);
-    tr.assertFB(Participant.B, tokenAddress, Zero);
+    tr.assertFB(Participant.A, tokenAddress, constants.Zero);
+    tr.assertFB(Participant.B, tokenAddress, constants.Zero);
     await tr.uninstall();
-    tr.assertFB(Participant.A, tokenAddress, Two);
-    tr.assertFB(Participant.B, tokenAddress, Zero);
+    tr.assertFB(Participant.A, tokenAddress, constants.Two);
+    tr.assertFB(Participant.B, tokenAddress, constants.Zero);
   }
 }
 

@@ -1,10 +1,7 @@
-import {
-  BigNumber,
-  CONVENTION_FOR_ETH_ASSET_ID,
-  DepositAppState,
-} from "@connext/types";
+import { BigNumber, CONVENTION_FOR_ETH_ASSET_ID, DepositAppState } from "@connext/types";
 import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { JsonRpcProvider } from "ethers/providers";
+import { providers, utils } from "ethers";
+
 import { Node } from "../../node";
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
@@ -26,7 +23,7 @@ describe(`Node method follows spec - install deposit app`, () => {
   let multisigAddress: string;
   let nodeA: Node;
   let nodeB: Node;
-  let provider: JsonRpcProvider;
+  let provider: providers.JsonRpcProvider;
 
   beforeEach(async () => {
     const context: SetupContext = await setup(global);
@@ -39,20 +36,12 @@ describe(`Node method follows spec - install deposit app`, () => {
 
   const runUnrolledDepositTest = async (
     assetId: string = CONVENTION_FOR_ETH_ASSET_ID,
-    depositAmt: BigNumber = new BigNumber(1000),
+    depositAmt: BigNumber = BigNumber.from(1000),
   ) => {
     // request rights
     const appIdentityHash = await requestDepositRights(nodeA, nodeB, multisigAddress, assetId);
-    const appsA = await getDepositApps(
-      nodeA, 
-      multisigAddress, 
-      [getAddressFromAssetId(assetId)],
-    );
-    const appsB = await getDepositApps(
-      nodeB, 
-      multisigAddress, 
-      [getAddressFromAssetId(assetId)],
-    );
+    const appsA = await getDepositApps(nodeA, multisigAddress, [getAddressFromAssetId(assetId)]);
+    const appsB = await getDepositApps(nodeB, multisigAddress, [getAddressFromAssetId(assetId)]);
     expect(appsA.length).toBe(appsB.length);
     expect(appsA.length).toBe(1);
     expect(appsA[0].identityHash).toBe(appIdentityHash);
@@ -61,12 +50,7 @@ describe(`Node method follows spec - install deposit app`, () => {
     expect(transfers[1].to).toBe(getSignerAddressFromPublicIdentifier(nodeB.publicIdentifier));
 
     // validate post-deposit free balance
-    const [preSendBalA, preSendBalB] = await getBalances(
-      nodeA,
-      nodeB,
-      multisigAddress,
-      assetId,
-    );
+    const [preSendBalA, preSendBalB] = await getBalances(nodeA, nodeB, multisigAddress, assetId);
     expect(preSendBalA).toBeEq(0);
     expect(preSendBalB).toBeEq(0);
 
@@ -83,37 +67,28 @@ describe(`Node method follows spec - install deposit app`, () => {
       : await transferERC20Tokens(
           multisigAddress,
           getAddressFromAssetId(assetId),
-          DolphinCoin.abi,
+          new utils.Interface(DolphinCoin.abi),
           depositAmt,
         );
     const multisigBalance = await getMultisigBalance(
-      multisigAddress, 
+      multisigAddress,
       getAddressFromAssetId(assetId),
     );
     expect(multisigBalance).toBeEq(preDepositMultisig.add(depositAmt));
 
     // rescind rights
     await rescindDepositRights(nodeA, nodeB, multisigAddress, assetId);
-    const postRescindA = await getDepositApps(
-      nodeA, 
-      multisigAddress, 
-      [getAddressFromAssetId(assetId)],
-    );
-    const postRescindB = await getDepositApps(
-      nodeA, 
-      multisigAddress, 
-      [getAddressFromAssetId(assetId)],
-    );
+    const postRescindA = await getDepositApps(nodeA, multisigAddress, [
+      getAddressFromAssetId(assetId),
+    ]);
+    const postRescindB = await getDepositApps(nodeA, multisigAddress, [
+      getAddressFromAssetId(assetId),
+    ]);
     expect(postRescindA.length).toBe(postRescindB.length);
     expect(postRescindA.length).toBe(0);
 
     // validate post-deposit free balance
-    const [postSendBalA, postSendBalB] = await getBalances(
-      nodeA,
-      nodeB,
-      multisigAddress,
-      assetId,
-    );
+    const [postSendBalA, postSendBalB] = await getBalances(nodeA, nodeB, multisigAddress, assetId);
     expect(postSendBalA).toBeEq(depositAmt);
     expect(postSendBalB).toBeEq(0);
   };
@@ -123,29 +98,20 @@ describe(`Node method follows spec - install deposit app`, () => {
   });
 
   it(`install app with tokens, sending tokens should increase free balance`, async () => {
-    const depositAmt = new BigNumber(1000);
+    const depositAmt = BigNumber.from(1000);
     const assetId = getAddressFromAssetId(global[`network`].DolphinCoin);
 
-    await runUnrolledDepositTest(assetId, depositAmt);;
+    await runUnrolledDepositTest(assetId, depositAmt);
   });
 
   it(`install app with both eth and tokens, sending eth and tokens should increase free balance`, async () => {
     const erc20AssetId = getAddressFromAssetId(global[`network`].DolphinCoin);
-    const depositAmtToken = new BigNumber(1000);
-    const depositAmtEth = new BigNumber(500);
+    const depositAmtToken = BigNumber.from(1000);
+    const depositAmtEth = BigNumber.from(500);
 
     // request deposit rights
-    await requestDepositRights(
-      nodeA,
-      nodeB,
-      multisigAddress,
-    );
-    await requestDepositRights(
-      nodeA,
-      nodeB,
-      multisigAddress,
-      erc20AssetId,
-    );
+    await requestDepositRights(nodeA, nodeB, multisigAddress);
+    await requestDepositRights(nodeA, nodeB, multisigAddress, erc20AssetId);
 
     // pre-deposit free balances
     const [preSendBalAToken, preSendBalBToken] = await getBalances(
@@ -169,8 +135,8 @@ describe(`Node method follows spec - install deposit app`, () => {
     // send onchain transactions
     await transferERC20Tokens(
       multisigAddress,
-      getAddressFromAssetId(erc20AssetId), 
-      DolphinCoin.abi, 
+      getAddressFromAssetId(erc20AssetId),
+      new utils.Interface(DolphinCoin.abi),
       depositAmtToken,
     );
     const tx = await provider.getSigner().sendTransaction({

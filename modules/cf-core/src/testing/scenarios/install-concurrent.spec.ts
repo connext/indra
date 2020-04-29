@@ -1,18 +1,12 @@
 import { CONVENTION_FOR_ETH_ASSET_ID, ProposeMessage } from "@connext/types";
-import { One } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { utils, constants } from "ethers";
 
 import { Node } from "../../node";
 
 import { toBeLt } from "../bignumber-jest-matcher";
 import { NetworkContextForTestSuite } from "../contracts";
 import { setup, SetupContext } from "../setup";
-import {
-  collateralizeChannel,
-  createChannel,
-  makeInstallCall,
-  makeProposeCall,
-} from "../utils";
+import { collateralizeChannel, createChannel, makeInstallCall, makeProposeCall } from "../utils";
 
 expect.extend({ toBeLt });
 
@@ -40,11 +34,11 @@ describe(`Node method follows spec - install`, () => {
           multisigAddress,
           nodeA,
           nodeB,
-          parseEther(`2`), // We are depositing in 2 and use 1 for each concurrent app
+          utils.parseEther(`2`), // We are depositing in 2 and use 1 for each concurrent app
         );
       });
 
-      it(`install app with ETH`, done => {
+      it(`install app with ETH`, (done) => {
         let completedInstalls = 0;
 
         nodeB.on(`PROPOSE_INSTALL_EVENT`, (msg: ProposeMessage) => {
@@ -63,9 +57,9 @@ describe(`Node method follows spec - install`, () => {
           TicTacToeApp,
           multisigAddress,
           /* initialState */ undefined,
-          One,
+          constants.One,
           CONVENTION_FOR_ETH_ASSET_ID,
-          One,
+          constants.One,
           CONVENTION_FOR_ETH_ASSET_ID,
         );
 

@@ -1,17 +1,10 @@
 import { Address, AppInstanceJson } from "@connext/types";
-import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify } from "ethers/utils";
+import { BigNumber, constants } from "ethers";
 
 import { Node } from "../node";
 
 import { NetworkContextForTestSuite } from "./contracts";
-import {
-  getAppInstance,
-  getApps,
-  installApp,
-  takeAppAction,
-  uninstallApp,
-} from "./utils";
+import { getAppInstance, getApps, installApp, takeAppAction, uninstallApp } from "./utils";
 
 type UnidirectionalLinkedTransferAppAction = {
   amount: BigNumber;
@@ -50,9 +43,9 @@ export async function installLink(
     multisigAddress,
     linkDef,
     state,
-    bigNumberify(action.amount),
+    BigNumber.from(action.amount),
     action.assetId,
-    Zero,
+    constants.Zero,
     action.assetId,
   );
   return res[0]; // appIdentityHash
@@ -61,7 +54,9 @@ export async function installLink(
 function assertLinkRedemption(app: AppInstanceJson, amount: BigNumber): void {
   expect((app.latestState as UnidirectionalLinkedTransferAppState).finalized).toEqual(true);
   expect((app.latestState as UnidirectionalLinkedTransferAppState).transfers[1][1]).toBeEq(amount);
-  expect((app.latestState as UnidirectionalLinkedTransferAppState).transfers[0][1]).toBeEq(Zero);
+  expect((app.latestState as UnidirectionalLinkedTransferAppState).transfers[0][1]).toBeEq(
+    constants.Zero,
+  );
 }
 
 /**
@@ -111,7 +106,7 @@ export async function installAndRedeemLink(
 
   const getMatchingHubApp = (apps: AppInstanceJson[]) => {
     return apps.find(
-      app =>
+      (app) =>
         app.appInterface.addr === linkDef &&
         hasAddressInTransfers(app, funder.signerAddress) &&
         (app.latestState as UnidirectionalLinkedTransferAppState).linkedHash === state.linkedHash,

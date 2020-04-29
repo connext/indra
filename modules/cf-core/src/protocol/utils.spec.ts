@@ -1,7 +1,6 @@
 import { IChannelSigner, EthereumCommitment } from "@connext/types";
 import { getRandomChannelSigner, recoverAddressFromChannelMessage } from "@connext/utils";
-import { HashZero } from "ethers/constants";
-import { hashMessage } from "ethers/utils";
+import { utils, constants } from "ethers";
 
 import { assertIsValidSignature } from "./utils";
 
@@ -15,7 +14,7 @@ describe("Signature Validator Helper", () => {
     signer = getRandomChannelSigner();
 
     commitment = {
-      hashToSign: () => hashMessage("test"),
+      hashToSign: () => utils.hashMessage("test"),
     } as EthereumCommitment;
     commitmentHash = commitment.hashToSign();
     signature = await signer.signMessage(commitmentHash);
@@ -41,7 +40,7 @@ describe("Signature Validator Helper", () => {
 
   it("throws if the signature is wrong", async () => {
     const rightHash = commitment.hashToSign();
-    const wrongHash = HashZero.replace("00", "11"); // 0x11000...
+    const wrongHash = constants.HashZero.replace("00", "11"); // 0x11000...
     const signature = await signer.signMessage(wrongHash);
     const wrongSigner = await recoverAddressFromChannelMessage(rightHash, signature);
     await expect(assertIsValidSignature(signer.address, commitmentHash, signature)).rejects.toThrow(

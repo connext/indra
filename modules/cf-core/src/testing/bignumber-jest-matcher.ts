@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish } from "ethers/utils";
+import { BigNumber, BigNumberish } from "ethers";
 
 declare global {
   namespace jest {

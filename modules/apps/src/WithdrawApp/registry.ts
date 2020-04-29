@@ -4,7 +4,7 @@ import {
   WithdrawAppActionEncoding,
   WithdrawAppName,
 } from "@connext/types";
-import { Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { AppRegistryInfo } from "../shared";
 
@@ -17,4 +17,4 @@ export const WithdrawAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const WITHDRAW_STATE_TIMEOUT = Zero;
+export const WITHDRAW_STATE_TIMEOUT = constants.Zero;

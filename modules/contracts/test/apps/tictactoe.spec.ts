@@ -1,7 +1,6 @@
 /* global before */
 import { SolidityValueType } from "@connext/types";
-import { Contract, ContractFactory } from "ethers";
-import { defaultAbiCoder } from "ethers/utils";
+import { Wallet, Contract, ContractFactory, utils } from "ethers";
 
 import TicTacToeApp from "../../build/TicTacToeApp.json";
 
@@ -14,7 +13,7 @@ type TicTacToeAppState = {
 };
 
 function decodeBytesToAppState(encodedAppState: string): TicTacToeAppState {
-  return defaultAbiCoder.decode(
+  return utils.defaultAbiCoder.decode(
     ["tuple(uint256 versionNumber, uint256 winner, uint256[3][3] board)"],
     encodedAppState,
   )[0];
@@ -28,7 +27,7 @@ describe("TicTacToeApp", () => {
   }
 
   function encodeState(state: SolidityValueType) {
-    return defaultAbiCoder.encode(
+    return utils.defaultAbiCoder.encode(
       [
         `
         tuple(
@@ -43,7 +42,7 @@ describe("TicTacToeApp", () => {
   }
 
   function encodeAction(state: SolidityValueType) {
-    return defaultAbiCoder.encode(
+    return utils.defaultAbiCoder.encode(
       [
         `
         tuple(
@@ -66,12 +65,8 @@ describe("TicTacToeApp", () => {
   }
 
   before(async () => {
-    const wallet = (await provider.getWallets())[0];
-    ticTacToe = await new ContractFactory(
-      TicTacToeApp.abi,
-      TicTacToeApp.bytecode,
-      wallet,
-    ).deploy();
+    const wallet = new Wallet((await provider.getWallets())[0].privateKey);
+    ticTacToe = await new ContractFactory(TicTacToeApp.abi, TicTacToeApp.bytecode, wallet).deploy();
   });
 
   describe("applyAction", () => {
@@ -346,7 +341,7 @@ describe("TicTacToeApp", () => {
 
       const ret = await computeOutcome(state);
 
-      expect(ret).to.eq(defaultAbiCoder.encode(["uint256"], [0]));
+      expect(ret).to.eq(utils.defaultAbiCoder.encode(["uint256"], [0]));
     });
   });
 });

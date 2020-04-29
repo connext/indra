@@ -1,21 +1,18 @@
 /* global before */
-import { Contract, Wallet, ContractFactory } from "ethers";
-import { bigNumberify } from "ethers/utils";
+import { Contract, Wallet, ContractFactory, BigNumber } from "ethers";
 
 import DolphinCoin from "../../build/DolphinCoin.json";
 
 import { expect, provider } from "../utils";
 
-const DOLPHINCOIN_SUPPLY = bigNumberify(10)
-  .pow(18)
-  .mul(10000);
+const DOLPHINCOIN_SUPPLY = BigNumber.from(10).pow(18).mul(10000);
 
 describe("DolphinCoin (ERC20) can be created", () => {
   let wallet: Wallet;
   let erc20: Contract;
 
   before(async () => {
-    wallet = (await provider.getWallets())[0];
+    wallet = new Wallet((await provider.getWallets())[0].privateKey);
     erc20 = await new ContractFactory(
       DolphinCoin.abi as any,
       DolphinCoin.bytecode,

@@ -16,8 +16,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   logTime,
 } from "@connext/utils";
-import { MaxUint256 } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, constants } from "ethers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
@@ -29,13 +28,7 @@ import { assertSufficientFundsWithinFreeBalance } from "../utils";
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
 const protocol = ProtocolNames.install;
-const {
-  OP_SIGN,
-  OP_VALIDATE,
-  IO_SEND,
-  IO_SEND_AND_WAIT,
-  PERSIST_APP_INSTANCE,
-} = Opcode;
+const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
 
 /**
  * @description This exchange is described at the following URL:
@@ -54,7 +47,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
    * @param {Context} context
    */
 
-  0 /* Initiating */: async function*(context: Context) {
+  0 /* Initiating */: async function* (context: Context) {
     const {
       store,
       message: { params, processID },
@@ -223,7 +216,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
    * @param {Context} context
    */
 
-  1 /* Responding */: async function*(context: Context) {
+  1 /* Responding */: async function* (context: Context) {
     const {
       store,
       message: {
@@ -515,10 +508,8 @@ function computeInterpreterParameters(
   disableLimit: boolean,
 ): {
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?:
-    MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?:
-    SingleAssetTwoPartyCoinTransferInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
 } {
   const initiatorDepositAssetId = getAddressFromAssetId(initiatorAssetId);
   const responderDepositAssetId = getAddressFromAssetId(responderAssetId);
@@ -565,7 +556,7 @@ function computeInterpreterParameters(
       return {
         singleAssetTwoPartyCoinTransferInterpreterParams: {
           limit: disableLimit
-            ? MaxUint256
+            ? constants.MaxUint256
             : initiatorBalanceDecrement.add(responderBalanceDecrement),
           tokenAddress: initiatorDepositAssetId,
         },

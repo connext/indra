@@ -27,7 +27,7 @@ export class OnchainTransaction {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => new BigNumber(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
@@ -35,7 +35,7 @@ export class OnchainTransaction {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => new BigNumber(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
@@ -43,7 +43,7 @@ export class OnchainTransaction {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => new BigNumber(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
@@ -77,10 +77,7 @@ export class OnchainTransaction {
   createdAt!: Date;
 
   // should this just be a ref to user pub id?
-  @ManyToOne(
-    (type: any) => Channel,
-    (channel: Channel) => channel.transactions,
-  )
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.transactions)
   channel!: Channel;
 }
 

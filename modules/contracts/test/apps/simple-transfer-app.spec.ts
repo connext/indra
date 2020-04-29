@@ -1,7 +1,5 @@
 /* global before */
-import { Contract, ContractFactory } from "ethers";
-import { Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { Wallet, Contract, ContractFactory, BigNumber, constants, utils } from "ethers";
 
 import SimpleTransferApp from "../../build/SimpleTransferApp.json";
 
@@ -30,14 +28,17 @@ function mkAddress(prefix: string = "0xa"): string {
 
 // FIXME: why does this have to use the multiAsset one?
 const decodeAppState = (encodedAppState: string): CoinTransfer[] =>
-  defaultAbiCoder.decode([multiAssetMultiPartyCoinTransferEncoding], encodedAppState)[0];
+  utils.defaultAbiCoder.decode([multiAssetMultiPartyCoinTransferEncoding], encodedAppState)[0];
 
 const encodeAppState = (
   state: SimpleTransferAppState,
   onlyCoinTransfers: boolean = false,
 ): string => {
-  if (!onlyCoinTransfers) return defaultAbiCoder.encode([transferAppStateEncoding], [state]);
-  return defaultAbiCoder.encode([multiAssetMultiPartyCoinTransferEncoding], [state.coinTransfers]);
+  if (!onlyCoinTransfers) return utils.defaultAbiCoder.encode([transferAppStateEncoding], [state]);
+  return utils.defaultAbiCoder.encode(
+    [multiAssetMultiPartyCoinTransferEncoding],
+    [state.coinTransfers],
+  );
 };
 
 describe("SimpleTransferApp", () => {
@@ -48,7 +49,7 @@ describe("SimpleTransferApp", () => {
   }
 
   before(async () => {
-    const wallet = (await provider.getWallets())[0];
+    const wallet = new Wallet((await provider.getWallets())[0].privateKey);
     simpleTransferApp = await new ContractFactory(
       SimpleTransferApp.abi,
       SimpleTransferApp.bytecode,
@@ -60,7 +61,7 @@ describe("SimpleTransferApp", () => {
     it("can compute outcome with update", async () => {
       const senderAddr = mkAddress("0xa");
       const receiverAddr = mkAddress("0xB");
-      const transferAmount = new BigNumber(10000);
+      const transferAmount = BigNumber.from(10000);
 
       const preState: SimpleTransferAppState = {
         coinTransfers: [
@@ -69,7 +70,7 @@ describe("SimpleTransferApp", () => {
             to: senderAddr,
           },
           {
-            amount: Zero,
+            amount: constants.Zero,
             to: receiverAddr,
           },
         ],
@@ -78,7 +79,7 @@ describe("SimpleTransferApp", () => {
       const state: SimpleTransferAppState = {
         coinTransfers: [
           {
-            amount: Zero,
+            amount: constants.Zero,
             to: senderAddr,
           },
           {

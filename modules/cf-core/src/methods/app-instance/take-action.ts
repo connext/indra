@@ -10,8 +10,7 @@ import {
   PublicIdentifier,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { INVALID_ARGUMENT } from "ethers/errors";
-import { BigNumber } from "";
+import { BigNumber, utils } from "ethers";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -63,7 +62,7 @@ export class TakeActionController extends NodeController {
     try {
       appInstance.encodeAction(action);
     } catch (e) {
-      if (e.code === INVALID_ARGUMENT) {
+      if (e.code === utils.Logger.errors.INVALID_ARGUMENT) {
         throw new Error(`${IMPROPERLY_FORMATTED_STRUCT}: ${e.message}`);
       }
       throw new Error(STATE_OBJECT_NOT_ENCODABLE);

@@ -1,6 +1,5 @@
 import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { AddressZero, Zero } from "ethers/constants";
-import { getAddress } from "ethers/utils";
+import { utils, constants } from "ethers";
 
 import { createAppInstanceForTest } from "../../testing/utils";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
@@ -10,7 +9,7 @@ import { AppInstance } from "../app-instance";
 import { StateChannel } from "../state-channel";
 
 const APP_STATE = {
-  foo: AddressZero,
+  foo: constants.AddressZero,
   bar: 42,
 };
 
@@ -22,7 +21,7 @@ describe("StateChannel::setState", () => {
   let testApp: AppInstance;
 
   beforeAll(() => {
-    const multisigAddress = getAddress(getRandomAddress());
+    const multisigAddress = utils.getAddress(getRandomAddress());
     const ids = getRandomPublicIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
@@ -39,9 +38,9 @@ describe("StateChannel::setState", () => {
     testApp = createAppInstanceForTest(sc1);
 
     sc1 = sc1.installApp(testApp, {
-      [AddressZero]: {
-        [getSignerAddressFromPublicIdentifier(ids[0])]: Zero,
-        [getSignerAddressFromPublicIdentifier(ids[1])]: Zero,
+      [constants.AddressZero]: {
+        [getSignerAddressFromPublicIdentifier(ids[0])]: constants.Zero,
+        [getSignerAddressFromPublicIdentifier(ids[1])]: constants.Zero,
       },
     });
 

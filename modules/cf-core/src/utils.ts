@@ -1,16 +1,6 @@
 import { AppIdentity, CriticalStateChannelAddresses, PublicIdentifier } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { Contract } from "ethers";
-import { Zero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
-import {
-  BigNumber,
-  getAddress,
-  Interface,
-  keccak256,
-  solidityKeccak256,
-  solidityPack,
-} from "ethers/utils";
+import { Contract, BigNumber, providers, utils, constants } from "ethers";
 import memoize from "memoizee";
 
 import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./errors";
@@ -18,13 +8,13 @@ import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from
 import { StateChannel } from "./models";
 
 export function appIdentityToHash(appIdentity: AppIdentity): string {
-  return keccak256(
-    solidityPack(
+  return utils.keccak256(
+    utils.solidityPack(
       ["address", "uint256", "bytes32", "address", "uint256"],
       [
         appIdentity.multisigAddress,
         appIdentity.channelNonce,
-        keccak256(solidityPack(["address[]"], [appIdentity.participants])),
+        utils.keccak256(utils.solidityPack(["address[]"], [appIdentity.participants])),
         appIdentity.appDefinition,
         appIdentity.defaultTimeout,
       ],
@@ -39,11 +29,10 @@ export function assertSufficientFundsWithinFreeBalance(
   depositAmount: BigNumber,
 ): void {
   const freeBalanceForToken =
-    channel.getFreeBalanceClass()
-      .getBalance(
-        tokenAddress, 
-        getSignerAddressFromPublicIdentifier(publicIdentifier),
-      ) || Zero;
+    channel
+      .getFreeBalanceClass()
+      .getBalance(tokenAddress, getSignerAddressFromPublicIdentifier(publicIdentifier)) ||
+    constants.Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {
     throw new Error(
@@ -83,7 +72,7 @@ export const getCreate2MultisigAddress = async (
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
   addresses: CriticalStateChannelAddresses,
-  ethProvider: JsonRpcProvider,
+  ethProvider: providers.JsonRpcProvider,
   legacyKeygen?: boolean,
   toxicBytecode?: string,
 ): Promise<string> => {
@@ -91,41 +80,42 @@ export const getCreate2MultisigAddress = async (
 
   const proxyBytecode = toxicBytecode || (await proxyFactory.functions.proxyCreationCode());
 
+  const iface = new utils.Interface(MinimumViableMultisig.abi);
+
   return memoizedGetAddress(
-    solidityKeccak256(
-      ["bytes1", "address", "uint256", "bytes32"],
-      [
-        "0xff",
-        addresses.proxyFactory,
-        solidityKeccak256(
-          ["bytes32", "uint256"],
-          [
-            keccak256(
-              // see encoding notes
-              new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-                [
-                  getSignerAddressFromPublicIdentifier(initiatorIdentifier),
-                  getSignerAddressFromPublicIdentifier(responderIdentifier),
-                ],
-              ]),
-            ),
-            // hash chainId + saltNonce to ensure multisig addresses are *always* unique
-            solidityKeccak256(
-              ["uint256", "uint256"],
-              [ethProvider.network.chainId, 0],
-            ),
-          ],
-        ),
-        solidityKeccak256(
-          ["bytes", "uint256"],
-          [`0x${proxyBytecode.replace(/^0x/, "")}`, addresses.multisigMastercopy],
-        ),
-      ],
-    ).slice(-40),
+    utils
+      .solidityKeccak256(
+        ["bytes1", "address", "uint256", "bytes32"],
+        [
+          "0xff",
+          addresses.proxyFactory,
+          utils.solidityKeccak256(
+            ["bytes32", "uint256"],
+            [
+              utils.keccak256(
+                // see encoding notes
+                iface.encodeFunctionData(iface.functions.setup, [
+                  [
+                    getSignerAddressFromPublicIdentifier(initiatorIdentifier),
+                    getSignerAddressFromPublicIdentifier(responderIdentifier),
+                  ],
+                ]),
+              ),
+              // hash chainId + saltNonce to ensure multisig addresses are *always* unique
+              utils.solidityKeccak256(["uint256", "uint256"], [ethProvider.network.chainId, 0]),
+            ],
+          ),
+          utils.solidityKeccak256(
+            ["bytes", "uint256"],
+            [`0x${proxyBytecode.replace(/^0x/, "")}`, addresses.multisigMastercopy],
+          ),
+        ],
+      )
+      .slice(-40),
   );
 };
 
-const memoizedGetAddress = memoize((params: string): string => getAddress(params), {
+const memoizedGetAddress = memoize((params: string): string => utils.getAddress(params), {
   max: 100,
   maxAge: 60 * 1000,
   primitive: true,
@@ -135,7 +125,7 @@ export const scanForCriticalAddresses = async (
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
   expectedMultisig: string,
-  ethProvider: JsonRpcProvider,
+  ethProvider: providers.JsonRpcProvider,
   moreAddressHistory?: {
     ProxyFactory: string[];
     MinimumViableMultisig: string[];

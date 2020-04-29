@@ -18,10 +18,10 @@ transfer: (TransferParams) =>  Promise<ChannelState>
 const payload: TransferParams = {
   recipient: "xpub123abc...", // channel.publicIdentifier of recipient
   amount: "1000", // in Wei
-  assetId: "0x0000000000000000000000000000000000000000" // represents ETH
-}
+  assetId: "0x0000000000000000000000000000000000000000", // represents ETH
+};
 
-await transfer(payload)
+await transfer(payload);
 ```
 
 ### deposit
@@ -38,7 +38,7 @@ deposit: (DepositParams) => Promise<ChannelState>
 // Making a deposit in ETH
 const payload: AssetAmount = {
   amount: "1000", // in Wei
-  assetId: "0x0000000000000000000000000000000000000000" // i.e. Eth
+  assetId: "0x0000000000000000000000000000000000000000", // i.e. Eth
 };
 
 await deposit(payload);
@@ -58,10 +58,10 @@ swap: (SwapParams) => Promise<ChannelState>
 const payload: SwapParams = {
   amount: "100", // in Wei
   fromAssetId: "0x0000000000000000000000000000000000000000", // ETH
-  toAssetId: "0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359" // Dai
-}
+  toAssetId: "0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359", // Dai
+};
 
-await swap(payload)
+await swap(payload);
 ```
 
 ### conditionalTransfer
@@ -139,7 +139,7 @@ requestDepositRights: (params: RequestDepositRightsParameters) => Promise<Reques
 
 ```typescript
 const requestParams: RequestDepositRightsParameters = {
-  assetId: "0x0000000000000000000000000000000000000000" // ETH
+  assetId: "0x0000000000000000000000000000000000000000", // ETH
 };
 
 await requestDepositRights(requestParams);
@@ -157,7 +157,7 @@ rescindDepositRights: (params: RescindDepositRightsParameters) => Promise<Rescin
 
 ```typescript
 const rescindParams: RescindDepositRightsParameters = {
-  assetId: "0x0000000000000000000000000000000000000000" // ETH
+  assetId: "0x0000000000000000000000000000000000000000", // ETH
 };
 
 await rescindDepositRights(rescindParams);
@@ -175,7 +175,7 @@ checkDepositRights: (params: CheckDepositRightsParameters) => Promise<CheckDepos
 
 ```typescript
 const checkParams: CheckDepositRightsParameters = {
-  assetId: "0x0000000000000000000000000000000000000000" // ETH
+  assetId: "0x0000000000000000000000000000000000000000", // ETH
 };
 
 const depositRights = await checkDepositRights(rescindParams);
@@ -286,11 +286,11 @@ proposeInstallApp: (params: CFCoreTypes.ProposeInstallParams) => Promise<CFCoreT
 const initialState = {
   coinTransfers: [
     {
-      amount: new BigNumber(1000),
+      amount: BigNumber.from(1000),
       to: "xpub....",
     },
     {
-      amount: new BigNumber(0),
+      amount: BigNumber.from(0),
       to: "xpub...",
     },
   ],
@@ -303,13 +303,13 @@ const params: CFCoreTypes.ProposeInstallVirtualParams = {
   },
   appDefinition: "0xdef..." // create2 address of app
   initialState,
-  initiatorDeposit: new BigNumber(1000), // wei units
+  initiatorDeposit: BigNumber.from(1000), // wei units
   initiatorDepositTokenAddress: "0x0000...", // assetId, AddressZero for ethereum
   outcomeType: appInfo.outcomeType, // CFCoreTypes.OutcomeType
   proposedToIdentifier: "0xabc...",
-  responderDeposit: new BigNumber(0), // wei units
+  responderDeposit: BigNumber.from(0), // wei units
   responderDepositTokenAddress: "0x0000...", // assetId, AddressZero for ethereum,
-  timeout: new BigNumber(0)
+  timeout: BigNumber.from(0)
 };
 
 await proposeInstallApp(params);
@@ -374,7 +374,7 @@ takeAction: (appIdentityHash: string, action: CFCoreTypes.SolidityValueType) => 
 ```typescript
 // action below is used in resolving linked transfers
 const action = {
-  preImage: "0xfec..."
+  preImage: "0xfec...",
 };
 await takeAction("0xabc...", action);
 ```

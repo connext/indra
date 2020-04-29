@@ -1,5 +1,4 @@
-import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, constants } from "ethers";
 
 import { CoinTransferMap, TokenIndexedCoinTransferMap } from "./free-balance";
 
@@ -22,7 +21,7 @@ export function flip(coinTransferMap: CoinTransferMap): CoinTransferMap {
   return Object.entries(coinTransferMap).reduce(
     (returnValueAccumulator, [to, amount]) => ({
       ...returnValueAccumulator,
-      [to]: Zero.sub(amount),
+      [to]: constants.Zero.sub(amount),
     }),
     {},
   );
@@ -41,7 +40,7 @@ export function merge(base: { [s: string]: BigNumber }, increments: { [s: string
   const s2 = new Set(Object.keys(increments));
 
   for (const key of new Set([...s1, ...s2])) {
-    ret[key] = (base[key] || Zero).add(increments[key] || Zero);
+    ret[key] = (base[key] || constants.Zero).add(increments[key] || constants.Zero);
   }
 
   return ret;

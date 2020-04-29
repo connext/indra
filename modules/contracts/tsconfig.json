@@ -12,7 +12,6 @@
     "./buidler.config.ts",
     "./index.ts",
     "./test/**/*.spec.ts",
-    "../../node_modules/buidler-ethers-v5/src/type-extensions.d.ts",
     "../../node_modules/@nomiclabs/buidler-ethers/src/type-extensions.d.ts",
     "../../node_modules/@nomiclabs/buidler-waffle/src/type-extensions.d.ts"
   ]

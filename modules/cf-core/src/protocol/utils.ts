@@ -9,8 +9,7 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
 } from "@connext/types";
 import { logTime, recoverAddressFromChannelMessage } from "@connext/utils";
-import { JsonRpcProvider } from "ethers/providers";
-import { BigNumber, defaultAbiCoder, getAddress } from "ethers/utils";
+import { BigNumber, providers, utils } from "ethers";
 
 import {
   AppInstance,
@@ -34,7 +33,7 @@ export async function assertIsValidSignature(
   }
   // recoverAddressFromChannelMessage: 83 ms, hashToSign: 7 ms
   const signer = await recoverAddressFromChannelMessage(commitmentHash, signature);
-  if (getAddress(expectedSigner).toLowerCase() !== signer.toLowerCase()) {
+  if (utils.getAddress(expectedSigner).toLowerCase() !== signer.toLowerCase()) {
     throw new Error(
       `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${commitmentHash}.`,
     );
@@ -60,7 +59,7 @@ export async function stateChannelClassFromStoreByMultisig(
  */
 export async function computeTokenIndexedFreeBalanceIncrements(
   appInstance: AppInstance,
-  provider: JsonRpcProvider,
+  provider: providers.JsonRpcProvider,
   encodedOutcomeOverride: string = "",
   blockNumberToUseIfNecessary?: number,
   log?: ILoggerService,
@@ -174,7 +173,9 @@ function handleSingleAssetTwoPartyCoinTransfer(
 }
 
 function decodeTwoPartyFixedOutcome(encodedOutcome: string): TwoPartyFixedOutcome {
-  const [twoPartyFixedOutcome] = defaultAbiCoder.decode(["uint256"], encodedOutcome) as [BigNumber];
+  const [twoPartyFixedOutcome] = utils.defaultAbiCoder.decode(["uint256"], encodedOutcome) as [
+    BigNumber,
+  ];
 
   return twoPartyFixedOutcome.toNumber();
 }
@@ -182,7 +183,7 @@ function decodeTwoPartyFixedOutcome(encodedOutcome: string): TwoPartyFixedOutcom
 function decodeSingleAssetTwoPartyCoinTransfer(
   encodedOutcome: string,
 ): [CoinTransfer, CoinTransfer] {
-  const [[[to1, amount1], [to2, amount2]]] = defaultAbiCoder.decode(
+  const [[[to1, amount1], [to2, amount2]]] = utils.defaultAbiCoder.decode(
     ["tuple(address to, uint256 amount)[2]"],
     encodedOutcome,
   );
@@ -194,12 +195,12 @@ function decodeSingleAssetTwoPartyCoinTransfer(
 }
 
 function decodeMultiAssetMultiPartyCoinTransfer(encodedOutcome: string): CoinTransfer[][] {
-  const [coinTransferListOfLists] = defaultAbiCoder.decode(
+  const [coinTransferListOfLists] = utils.defaultAbiCoder.decode(
     [multiAssetMultiPartyCoinTransferEncoding],
     encodedOutcome,
   );
 
-  return coinTransferListOfLists.map(coinTransferList =>
+  return coinTransferListOfLists.map((coinTransferList) =>
     coinTransferList.map(({ to, amount }) => ({ to, amount })),
   );
 }

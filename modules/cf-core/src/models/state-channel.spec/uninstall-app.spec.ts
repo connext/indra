@@ -1,6 +1,5 @@
 import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { Zero, AddressZero } from "ethers/constants";
-import { getAddress } from "ethers/utils";
+import { utils, constants } from "ethers";
 
 import { createAppInstanceForTest } from "../../testing/utils";
 import { generateRandomNetworkContext } from "../../testing/mocks";
@@ -18,7 +17,7 @@ describe("StateChannel::uninstallApp", () => {
   let testApp: AppInstance;
 
   beforeAll(() => {
-    const multisigAddress = getAddress(getRandomAddress());
+    const multisigAddress = utils.getAddress(getRandomAddress());
     const ids = getRandomPublicIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
@@ -35,16 +34,16 @@ describe("StateChannel::uninstallApp", () => {
     testApp = createAppInstanceForTest(sc1);
 
     sc1 = sc1.installApp(testApp, {
-      [AddressZero]: {
-        [getSignerAddressFromPublicIdentifier(ids[0])]: Zero,
-        [getSignerAddressFromPublicIdentifier(ids[1])]: Zero,
+      [constants.AddressZero]: {
+        [getSignerAddressFromPublicIdentifier(ids[0])]: constants.Zero,
+        [getSignerAddressFromPublicIdentifier(ids[1])]: constants.Zero,
       },
     });
 
     sc2 = sc1.uninstallApp(testApp, {
-      [AddressZero]: {
-        [getSignerAddressFromPublicIdentifier(ids[0])]: Zero,
-        [getSignerAddressFromPublicIdentifier(ids[1])]: Zero,
+      [constants.AddressZero]: {
+        [getSignerAddressFromPublicIdentifier(ids[0])]: constants.Zero,
+        [getSignerAddressFromPublicIdentifier(ids[1])]: constants.Zero,
       },
     });
   });
@@ -74,10 +73,8 @@ describe("StateChannel::uninstallApp", () => {
     });
 
     it("should have updated balances for Alice and Bob", () => {
-      for (const amount of Object.values(
-        fb.withTokenAddress(AddressZero) || {},
-      )) {
-        expect(amount).toEqual(Zero);
+      for (const amount of Object.values(fb.withTokenAddress(constants.AddressZero) || {})) {
+        expect(amount).toEqual(constants.Zero);
       }
     });
   });

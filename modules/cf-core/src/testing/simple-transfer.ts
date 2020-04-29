@@ -1,6 +1,5 @@
 import { AppABIEncodings } from "@connext/types";
-import { Zero } from "ethers/constants";
-import { bigNumberify, BigNumberish } from "ethers/utils";
+import { BigNumber, BigNumberish, constants } from "ethers";
 
 const singleAssetTwoPartyCoinTransferEncoding = `
 tuple(address to, uint256 amount)[2]
@@ -22,12 +21,12 @@ export function initialSimpleTransferState(
   return {
     coinTransfers: [
       {
-        amount: bigNumberify(amount),
+        amount: BigNumber.from(amount),
         to: senderAddr,
       },
       {
         to: receiverAddr,
-        amount: Zero,
+        amount: constants.Zero,
       },
     ],
   };

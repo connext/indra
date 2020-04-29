@@ -41,7 +41,7 @@ describe("cancelDispute", () => {
   let cancelDisputeAndVerify: (versionNumber: number, signatures?: string[]) => Promise<void>;
 
   before(async () => {
-    wallet = (await provider.getWallets())[0];
+    wallet = new Wallet((await provider.getWallets())[0].privateKey);
     await wallet.getTransactionCount();
 
     appRegistry = await new ContractFactory(
@@ -116,16 +116,11 @@ describe("cancelDispute", () => {
     expect(await isProgressable()).to.be.true;
 
     const digest = computeCancelDisputeHash(appInstance.identityHash, toBN(versionNumber));
-    const signatures = await sortSignaturesBySignerAddress(
-      digest,
-      [
-        await (new ChannelSigner(wallet.privateKey).signMessage(digest)),
-        await (new ChannelSigner(bob.privateKey).signMessage(digest)),
-      ],
-    );
-    await expect(cancelDispute(versionNumber, signatures)).to.be.revertedWith(
-      "Invalid signature",
-    );
+    const signatures = await sortSignaturesBySignerAddress(digest, [
+      await new ChannelSigner(wallet.privateKey).signMessage(digest),
+      await new ChannelSigner(bob.privateKey).signMessage(digest),
+    ]);
+    await expect(cancelDispute(versionNumber, signatures)).to.be.revertedWith("Invalid signature");
   });
 
   it("fails if wrong version number submitted", async () => {

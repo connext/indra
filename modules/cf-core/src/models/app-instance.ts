@@ -21,10 +21,7 @@ import {
   stringify,
   toBN,
 } from "@connext/utils";
-import { Contract } from "ethers";
-import { Zero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
-import { defaultAbiCoder, keccak256, BigNumber } from "ethers/utils";
+import { Contract, BigNumber, constants, utils, providers } from "ethers";
 import { Memoize } from "typescript-memoize";
 
 import { CounterfactualApp } from "../contracts";
@@ -67,12 +64,9 @@ export class AppInstance {
     public readonly outcomeType: OutcomeType,
     public readonly multisigAddress: string,
     public readonly meta?: object,
-    private readonly twoPartyOutcomeInterpreterParamsInternal?:
-      TwoPartyFixedOutcomeInterpreterParams,
-    private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?:
-      MultiAssetMultiPartyCoinTransferInterpreterParams,
-    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?:
-      SingleAssetTwoPartyCoinTransferInterpreterParams,
+    private readonly twoPartyOutcomeInterpreterParamsInternal?: TwoPartyFixedOutcomeInterpreterParams,
+    private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?: MultiAssetMultiPartyCoinTransferInterpreterParams,
+    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?: SingleAssetTwoPartyCoinTransferInterpreterParams,
   ) {}
 
   get twoPartyOutcomeInterpreterParams() {
@@ -113,18 +107,16 @@ export class AppInstance {
             deserialized.twoPartyOutcomeInterpreterParams,
           ) as TwoPartyFixedOutcomeInterpreterParams)
         : undefined,
-      singleAssetTwoPartyCoinTransferInterpreterParams:
-        deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
-          ? (bigNumberifyJson(
-              deserialized.singleAssetTwoPartyCoinTransferInterpreterParams,
-            ) as SingleAssetTwoPartyCoinTransferInterpreterParams)
-          : undefined,
-      multiAssetMultiPartyCoinTransferInterpreterParams:
-        deserialized.multiAssetMultiPartyCoinTransferInterpreterParams
-          ? (bigNumberifyJson(
-              deserialized.multiAssetMultiPartyCoinTransferInterpreterParams,
-            ) as MultiAssetMultiPartyCoinTransferInterpreterParams)
-          : undefined,
+      singleAssetTwoPartyCoinTransferInterpreterParams: deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
+        ? (bigNumberifyJson(
+            deserialized.singleAssetTwoPartyCoinTransferInterpreterParams,
+          ) as SingleAssetTwoPartyCoinTransferInterpreterParams)
+        : undefined,
+      multiAssetMultiPartyCoinTransferInterpreterParams: deserialized.multiAssetMultiPartyCoinTransferInterpreterParams
+        ? (bigNumberifyJson(
+            deserialized.multiAssetMultiPartyCoinTransferInterpreterParams,
+          ) as MultiAssetMultiPartyCoinTransferInterpreterParams)
+        : undefined,
     };
 
     return new AppInstance(
@@ -199,33 +191,33 @@ export class AppInstance {
 
   @Memoize()
   public get hashOfLatestState() {
-    return keccak256(this.encodedLatestState);
+    return utils.keccak256(this.encodedLatestState);
   }
 
   @Memoize()
   public get encodedLatestState() {
-    return defaultAbiCoder.encode([this.appInterface.stateEncoding], [this.latestState]);
+    return utils.defaultAbiCoder.encode([this.appInterface.stateEncoding], [this.latestState]);
   }
 
   @Memoize()
   public get encodedInterpreterParams() {
     switch (this.outcomeType) {
       case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
-        return defaultAbiCoder.encode(
+        return utils.defaultAbiCoder.encode(
           [singleAssetTwoPartyCoinTransferInterpreterParamsEncoding],
           [this.singleAssetTwoPartyCoinTransferInterpreterParams],
         );
       }
 
       case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
-        return defaultAbiCoder.encode(
+        return utils.defaultAbiCoder.encode(
           [multiAssetMultiPartyCoinTransferInterpreterParamsEncoding],
           [this.multiAssetMultiPartyCoinTransferInterpreterParams],
         );
       }
 
       case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
-        return defaultAbiCoder.encode(
+        return utils.defaultAbiCoder.encode(
           [twoPartyFixedOutcomeInterpreterParamsEncoding],
           [this.twoPartyOutcomeInterpreterParams],
         );
@@ -251,9 +243,9 @@ export class AppInstance {
     return this.stateTimeout;
   }
 
-  public setState(newState: SolidityValueType, stateTimeout: BigNumber = Zero) {
+  public setState(newState: SolidityValueType, stateTimeout: BigNumber = constants.Zero) {
     try {
-      defaultAbiCoder.encode([this.appInterface.stateEncoding], [newState]);
+      utils.defaultAbiCoder.encode([this.appInterface.stateEncoding], [newState]);
     } catch (e) {
       // TODO: Catch ethers.errors.INVALID_ARGUMENT specifically in catch {}
 
@@ -276,18 +268,20 @@ export class AppInstance {
 
   public async computeOutcome(
     state: SolidityValueType,
-    provider: JsonRpcProvider,
+    provider: providers.JsonRpcProvider,
   ): Promise<string> {
     return this.toEthersContract(provider).functions.computeOutcome(this.encodeState(state));
   }
 
-  public async computeOutcomeWithCurrentState(provider: JsonRpcProvider): Promise<string> {
+  public async computeOutcomeWithCurrentState(
+    provider: providers.JsonRpcProvider,
+  ): Promise<string> {
     return this.computeOutcome(this.state, provider);
   }
 
   public async computeStateTransition(
     action: SolidityValueType,
-    provider: JsonRpcProvider,
+    provider: providers.JsonRpcProvider,
   ): Promise<SolidityValueType> {
     const computedNextState = this.decodeAppState(
       await this.toEthersContract(provider).functions.applyAction(
@@ -327,18 +321,21 @@ export class AppInstance {
   }
 
   public encodeAction(action: SolidityValueType) {
-    return defaultAbiCoder.encode([this.appInterface.actionEncoding!], [action]);
+    return utils.defaultAbiCoder.encode([this.appInterface.actionEncoding!], [action]);
   }
 
   public encodeState(state: SolidityValueType) {
-    return defaultAbiCoder.encode([this.appInterface.stateEncoding], [state]);
+    return utils.defaultAbiCoder.encode([this.appInterface.stateEncoding], [state]);
   }
 
   public decodeAppState(encodedSolidityValueType: string): SolidityValueType {
-    return defaultAbiCoder.decode([this.appInterface.stateEncoding], encodedSolidityValueType)[0];
+    return utils.defaultAbiCoder.decode(
+      [this.appInterface.stateEncoding],
+      encodedSolidityValueType,
+    )[0];
   }
 
-  public toEthersContract(provider: JsonRpcProvider) {
+  public toEthersContract(provider: providers.JsonRpcProvider) {
     return new Contract(this.appInterface.addr, CounterfactualApp.abi, provider);
   }
 }

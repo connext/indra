@@ -1,5 +1,5 @@
 import { EventNames, EventPayloads, UpdateStateMessage } from "@connext/types";
-import { One, Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { Node } from "../../node";
 import { NO_APP_INSTANCE_FOR_TAKE_ACTION } from "../../errors";
@@ -58,18 +58,18 @@ describe("Node method follows spec - takeAction", () => {
         );
       });
 
-      it("can take action", async done => {
+      it("can take action", async (done) => {
         const multisigAddress = await createChannel(nodeA, nodeB);
         const [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
         const expectedNewState = {
           board: [
-            [One, Zero, Zero],
-            [Zero, Zero, Zero],
-            [Zero, Zero, Zero],
+            [constants.One, constants.Zero, constants.Zero],
+            [constants.Zero, constants.Zero, constants.Zero],
+            [constants.Zero, constants.Zero, constants.Zero],
           ],
-          versionNumber: One,
-          winner: Zero,
+          versionNumber: constants.One,
+          winner: constants.Zero,
         };
 
         nodeB.on(EventNames.UPDATE_STATE_EVENT, async (msg: UpdateStateMessage) => {
@@ -107,7 +107,7 @@ describe("Node method follows spec - takeAction", () => {
           },
         } = await nodeA.rpcRouter.dispatch(takeActionReq);
         // allow nodeA to confirm its messages
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
           nodeA.once(EventNames.UPDATE_STATE_EVENT, () => {
             setTimeout(resolve, 2000);
           });

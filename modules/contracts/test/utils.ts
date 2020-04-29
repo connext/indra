@@ -3,8 +3,7 @@ import { waffle as buidler } from "@nomiclabs/buidler";
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
 import { use } from "chai";
-import { BigNumber, BigNumberish, parseEther } from "ethers/utils";
-import { Wallet } from "ethers";
+import { BigNumber, BigNumberish, utils, Wallet } from "ethers";
 
 export function mkXpub(prefix: string = "xpub"): string {
   return prefix.padEnd(111, "0");
@@ -58,14 +57,14 @@ export const fund = async (amount: BigNumber, recipient: Wallet) => {
       continue;
     }
     const current = await provider.getBalance(recipient.address);
-    const diff = amount.sub(current);
+    const diff = amount.sub(current.toHexString());
     if (diff.lte(0)) {
       // account has max int, done
       return;
     }
     const funderBalance = await provider.getBalance(wallet.address);
     // leave 1 eth in account for gas or w.e
-    const fundAmount = funderBalance.sub(parseEther("1"));
+    const fundAmount = funderBalance.sub(utils.parseEther("1").toHexString());
     if (fundAmount.lte(0)) {
       // funder has insufficient funds, move on
       continue;
@@ -73,14 +72,14 @@ export const fund = async (amount: BigNumber, recipient: Wallet) => {
     // send transaction
     await wallet.sendTransaction({
       to: recipient.address,
-      value: fundAmount.gt(diff) ? diff : fundAmount,
+      value: fundAmount.gt(diff.toHexString()) ? diff.toHexString() : fundAmount.toHexString(),
     });
   }
   const final = await provider.getBalance(recipient.address);
-  if (final.lt(amount)) {
+  if (final.lt(amount.toHexString())) {
     throw new Error(
       `Insufficient funds after funding to max. Off by: ${final
-        .sub(amount)
+        .sub(amount.toHexString())
         .abs()
         .toString()}`,
     );
@@ -101,9 +100,12 @@ export async function sortSignaturesBySignerAddress(
 ): Promise<string[]> {
   return (
     await Promise.all(
-      signatures.map(async sig => ({ sig, addr: await recoverAddressFromChannelMessage(digest, sig) })),
+      signatures.map(async (sig) => ({
+        sig,
+        addr: await recoverAddressFromChannelMessage(digest, sig),
+      })),
     )
   )
     .sort((a, b) => sortByAddress(a.addr, b.addr))
-    .map(x => x.sig);
+    .map((x) => x.sig);
 }

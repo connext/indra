@@ -9,7 +9,7 @@ import {
 } from "@connext/types";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { Wallet } from "ethers";
-import { hexlify, bigNumberify } from "ethers/utils";
+import { hexlify, BigNumber.from } from "ethers/utils";
 import { randomBytes } from "crypto";
 
 export const generateRandomAddress = () => Wallet.createRandom().address;
@@ -31,7 +31,7 @@ export const createAppInstanceJson = (
     defaultTimeout: Zero.toHexString(),
     identityHash: generateRandomBytes32(),
     latestState: {},
-    stateTimeout: bigNumberify(1000).toHexString(),
+    stateTimeout: BigNumber.from(1000).toHexString(),
     latestVersionNumber: 0,
     multisigAddress: generateRandomAddress(),
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,

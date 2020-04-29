@@ -1,5 +1,4 @@
-import { HashZero, One } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
+import { constants, providers } from "ethers";
 
 import { Node } from "../../node";
 
@@ -12,7 +11,7 @@ expect.extend({ toBeEq });
 describe("Node method follows spec - deploy state deposit holder", () => {
   let nodeA: Node;
   let nodeB: Node;
-  let provider: JsonRpcProvider;
+  let provider: providers.JsonRpcProvider;
   let multisigAddress: string;
 
   beforeEach(async () => {
@@ -28,15 +27,15 @@ describe("Node method follows spec - deploy state deposit holder", () => {
     const deployTxHash = await deployStateDepositHolder(nodeA, multisigAddress);
 
     expect(deployTxHash).toBeDefined();
-    expect(deployTxHash !== HashZero).toBeTruthy();
+    expect(deployTxHash !== constants.HashZero).toBeTruthy();
   });
 
   it("can deposit when multisig has not been deployed", async () => {
     const startingMultisigBalance = await provider.getBalance(multisigAddress);
-    await deposit(nodeA, multisigAddress, One, nodeB);
+    await deposit(nodeA, multisigAddress, constants.One, nodeB);
 
     const postDepositMultisigBalance = await provider.getBalance(multisigAddress);
 
-    expect(postDepositMultisigBalance).toBeEq(startingMultisigBalance.add(One));
+    expect(postDepositMultisigBalance).toBeEq(startingMultisigBalance.add(constants.One));
   });
 });

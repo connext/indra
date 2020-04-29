@@ -8,7 +8,7 @@ import {
   SignedAppChallengeUpdate,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { Interface, keccak256, solidityPack } from "ethers/utils";
+import { utils } from "ethers";
 import { recoverAddressFromChannelMessage } from "@connext/utils";
 
 import { ChallengeRegistry } from "../contracts";
@@ -16,18 +16,16 @@ import { AppInstance } from "../models";
 import { Context } from "../types";
 import { appIdentityToHash } from "../utils";
 
-const iface = new Interface(ChallengeRegistry.abi);
+const iface = new utils.Interface(ChallengeRegistry.abi);
 
-export const getSetStateCommitment = (
-  context: Context,
-  appInstance: AppInstance,
-) => new SetStateCommitment(
-  context.network.ChallengeRegistry,
-  appInstance.identity,
-  appInstance.hashOfLatestState,
-  appInstance.versionNumber,
-  appInstance.stateTimeout,
-);
+export const getSetStateCommitment = (context: Context, appInstance: AppInstance) =>
+  new SetStateCommitment(
+    context.network.ChallengeRegistry,
+    appInstance.identity,
+    appInstance.hashOfLatestState,
+    appInstance.versionNumber,
+    appInstance.stateTimeout,
+  );
 
 export class SetStateCommitment implements EthereumCommitment {
   constructor(
@@ -61,7 +59,7 @@ export class SetStateCommitment implements EthereumCommitment {
   }
 
   public encode(): string {
-    return solidityPack(
+    return utils.solidityPack(
       ["uint8", "bytes32", "bytes32", "uint256", "uint256"],
       [
         CommitmentTarget.SET_STATE,
@@ -74,7 +72,7 @@ export class SetStateCommitment implements EthereumCommitment {
   }
 
   public hashToSign(): string {
-    return keccak256(this.encode());
+    return utils.keccak256(this.encode());
   }
 
   public async getSignedTransaction(): Promise<MinimalTransaction> {
@@ -82,7 +80,7 @@ export class SetStateCommitment implements EthereumCommitment {
     return {
       to: this.challengeRegistryAddress,
       value: 0,
-      data: iface.functions.setState.encode([
+      data: iface.encodeFunctionData(iface.functions.setState, [
         this.appIdentity,
         await this.getSignedAppChallengeUpdate(),
       ]),
@@ -136,9 +134,14 @@ export class SetStateCommitment implements EthereumCommitment {
     }
 
     for (const idx in this.signatures) {
-      const signer = await recoverAddressFromChannelMessage(this.hashToSign(), this.signatures[idx]);
+      const signer = await recoverAddressFromChannelMessage(
+        this.hashToSign(),
+        this.signatures[idx],
+      );
       if (signer !== this.appIdentity.participants[idx]) {
-        throw new Error(`Got ${signer} and expected ${this.appIdentity.participants[idx]} in set state commitment`);
+        throw new Error(
+          `Got ${signer} and expected ${this.appIdentity.participants[idx]} in set state commitment`,
+        );
       }
     }
   }

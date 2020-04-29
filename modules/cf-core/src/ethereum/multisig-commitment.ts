@@ -1,6 +1,11 @@
-import { CommitmentTarget, EthereumCommitment, MinimalTransaction, MultisigTransaction } from "@connext/types";
+import {
+  CommitmentTarget,
+  EthereumCommitment,
+  MinimalTransaction,
+  MultisigTransaction,
+} from "@connext/types";
 import { recoverAddressFromChannelMessage } from "@connext/utils";
-import { Interface, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
+import { utils } from "ethers";
 
 import { MinimumViableMultisig } from "../contracts";
 
@@ -22,10 +27,7 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     return [this.initiatorSignature!, this.responderSignature!];
   }
 
-  public async addSignatures(
-    signature1: string,
-    signature2: string,
-  ): Promise<void> {
+  public async addSignatures(signature1: string, signature2: string): Promise<void> {
     for (const sig of [signature1, signature2]) {
       const recovered = await recoverAddressFromChannelMessage(this.hashToSign(), sig);
       if (recovered === this.multisigOwners[0]) {
@@ -33,7 +35,9 @@ export abstract class MultisigCommitment implements EthereumCommitment {
       } else if (recovered === this.multisigOwners[1]) {
         this.responderSignature = sig;
       } else {
-        throw new Error(`Invalid signer detected. Got ${recovered}, expected one of: ${this.multisigOwners}`);
+        throw new Error(
+          `Invalid signer detected. Got ${recovered}, expected one of: ${this.multisigOwners}`,
+        );
       }
     }
   }
@@ -45,8 +49,9 @@ export abstract class MultisigCommitment implements EthereumCommitment {
   public async getSignedTransaction(): Promise<MinimalTransaction> {
     this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
+    const iface = new utils.Interface(MinimumViableMultisig.abi);
 
-    const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([
+    const txData = iface.encodeFunctionData(iface.functions.execTransaction, [
       multisigInput.to,
       multisigInput.value,
       multisigInput.data,
@@ -59,21 +64,21 @@ export abstract class MultisigCommitment implements EthereumCommitment {
 
   public encode(): string {
     const { to, value, data, operation } = this.getTransactionDetails();
-    return solidityPack(
+    return utils.solidityPack(
       ["uint8", "address", "address", "uint256", "bytes32", "uint8"],
       [
         CommitmentTarget.MULTISIG,
         this.multisigAddress,
         to,
         value,
-        solidityKeccak256(["bytes"], [data]),
+        utils.solidityKeccak256(["bytes"], [data]),
         operation,
       ],
     );
   }
 
   public hashToSign(): string {
-    return keccak256(this.encode());
+    return utils.keccak256(this.encode());
   }
 
   private async assertSignatures() {

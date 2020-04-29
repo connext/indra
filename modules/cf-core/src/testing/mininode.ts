@@ -8,7 +8,7 @@ import {
   MinimalTransaction,
 } from "@connext/types";
 import { getRandomChannelSigner, nullLogger } from "@connext/utils";
-import { JsonRpcProvider } from "ethers/providers";
+import { providers } from "ethers";
 
 import { ProtocolRunner } from "../machine";
 import { AppInstance, StateChannel } from "../models";
@@ -36,7 +36,7 @@ export class MiniNode {
 
   constructor(
     readonly networkContext: NetworkContext,
-    readonly provider: JsonRpcProvider,
+    readonly provider: providers.JsonRpcProvider,
     readonly store: IStoreService,
   ) {
     this.signer = getRandomChannelSigner();

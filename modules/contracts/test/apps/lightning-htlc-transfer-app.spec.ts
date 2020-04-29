@@ -7,14 +7,11 @@ import {
   singleAssetTwoPartyCoinTransferEncoding,
   SolidityValueType,
 } from "@connext/types";
-import { Contract, ContractFactory } from "ethers";
-import { Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, soliditySha256, bigNumberify } from "ethers/utils";
+import { Wallet, Contract, ContractFactory, BigNumber, utils, constants } from "ethers";
 
 import LightningHTLCTransferApp from "../../build/HashLockTransferApp.json";
 
 import { expect, provider } from "../utils";
-
 
 function mkAddress(prefix: string = "0xa"): string {
   return prefix.padEnd(42, "0");
@@ -25,26 +22,29 @@ function mkHash(prefix: string = "0xa"): string {
 }
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
-  defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
+  utils.defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
 
 const decodeAppState = (encodedAppState: string): HashLockTransferAppState =>
-  defaultAbiCoder.decode([HashLockTransferAppStateEncoding], encodedAppState)[0];
+  utils.defaultAbiCoder.decode([HashLockTransferAppStateEncoding], encodedAppState)[0];
 
 const encodeAppState = (
   state: HashLockTransferAppState,
   onlyCoinTransfers: boolean = false,
 ): string => {
   if (!onlyCoinTransfers)
-    return defaultAbiCoder.encode([HashLockTransferAppStateEncoding], [state]);
-  return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
+    return utils.defaultAbiCoder.encode([HashLockTransferAppStateEncoding], [state]);
+  return utils.defaultAbiCoder.encode(
+    [singleAssetTwoPartyCoinTransferEncoding],
+    [state.coinTransfers],
+  );
 };
 
 function encodeAppAction(state: SolidityValueType): string {
-  return defaultAbiCoder.encode([HashLockTransferAppActionEncoding], [state]);
+  return utils.defaultAbiCoder.encode([HashLockTransferAppActionEncoding], [state]);
 }
 
 function createLockHash(preImage: string): string {
-  return soliditySha256(["bytes32"], [preImage]);
+  return utils.soliditySha256(["bytes32"], [preImage]);
 }
 
 describe("LightningHTLCTransferApp", () => {
@@ -68,10 +68,7 @@ describe("LightningHTLCTransferApp", () => {
     );
   }
 
-  async function validateOutcome(
-    encodedTransfers: string,
-    postState: HashLockTransferAppState,
-  ) {
+  async function validateOutcome(encodedTransfers: string, postState: HashLockTransferAppState) {
     const decoded = decodeTransfers(encodedTransfers);
     expect(encodedTransfers).to.eq(encodeAppState(postState, true));
     expect(decoded[0].to).eq(postState.coinTransfers[0].to);
@@ -81,7 +78,7 @@ describe("LightningHTLCTransferApp", () => {
   }
 
   beforeEach(async () => {
-    const wallet = (await provider.getWallets())[0];
+    const wallet = new Wallet((await provider.getWallets())[0].privateKey);
     lightningHTLCTransferApp = await new ContractFactory(
       LightningHTLCTransferApp.abi,
       LightningHTLCTransferApp.bytecode,
@@ -90,10 +87,10 @@ describe("LightningHTLCTransferApp", () => {
 
     senderAddr = mkAddress("0xa");
     receiverAddr = mkAddress("0xB");
-    transferAmount = new BigNumber(10000);
+    transferAmount = BigNumber.from(10000);
     preImage = mkHash("0xb");
     lockHash = createLockHash(preImage);
-    timelock = bigNumberify(await provider.getBlockNumber()).add(100);
+    timelock = BigNumber.from(await provider.getBlockNumber()).add(100);
     preState = {
       coinTransfers: [
         {
@@ -101,7 +98,7 @@ describe("LightningHTLCTransferApp", () => {
           to: senderAddr,
         },
         {
-          amount: Zero,
+          amount: constants.Zero,
           to: receiverAddr,
         },
       ],
@@ -124,7 +121,7 @@ describe("LightningHTLCTransferApp", () => {
       const expectedPostState: HashLockTransferAppState = {
         coinTransfers: [
           {
-            amount: Zero,
+            amount: constants.Zero,
             to: senderAddr,
           },
           {
@@ -175,7 +172,7 @@ describe("LightningHTLCTransferApp", () => {
       const action: HashLockTransferAppAction = {
         preImage,
       };
-      preState.timelock = bigNumberify(await provider.getBlockNumber());
+      preState.timelock = BigNumber.from(await provider.getBlockNumber());
 
       await expect(applyAction(preState, action)).revertedWith(
         "Cannot take action if timelock is expired",
@@ -189,7 +186,7 @@ describe("LightningHTLCTransferApp", () => {
     });
 
     it("will refund payment that is not finalized with expired timelock", async () => {
-      preState.timelock = bigNumberify(await provider.getBlockNumber());
+      preState.timelock = BigNumber.from(await provider.getBlockNumber());
       let ret = await computeOutcome(preState);
 
       validateOutcome(ret, preState);

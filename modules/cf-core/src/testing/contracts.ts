@@ -20,11 +20,10 @@ import TimeLockedPassThrough from "@connext/contracts/build/TimeLockedPassThroug
 import TwoPartyFixedOutcomeApp from "@connext/contracts/build/TwoPartyFixedOutcomeApp.json";
 import TwoPartyFixedOutcomeInterpreter from "@connext/contracts/build/TwoPartyFixedOutcomeInterpreter.json";
 import { NetworkContext } from "@connext/types";
-import { ContractFactory, Wallet } from "ethers";
-import { JsonRpcProvider } from "ethers/providers";
+import { ContractFactory, Wallet, providers } from "ethers";
 
 export type NetworkContextForTestSuite = NetworkContext & {
-  provider: JsonRpcProvider;
+  provider: providers.JsonRpcProvider;
   TicTacToeApp: string;
   DolphinCoin: string;
   UnidirectionalTransferApp: string;
@@ -132,7 +131,7 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> =
   ).deploy();
 
   return {
-    provider: wallet.provider as JsonRpcProvider,
+    provider: wallet.provider as providers.JsonRpcProvider,
     ChallengeRegistry: challengeRegistry.address,
     ConditionalTransactionDelegateTarget: conditionalTransactionDelegateTarget.address,
     DolphinCoin: dolphinCoin.address,

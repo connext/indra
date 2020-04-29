@@ -1,8 +1,6 @@
 /* global before */
 import { SolidityValueType } from "@connext/types";
-import { Contract, ContractFactory } from "ethers";
-import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
+import { Wallet, Contract, ContractFactory, BigNumber, constants, utils } from "ethers";
 
 import SimpleLinkedTransferApp from "../../build/SimpleLinkedTransferApp.json";
 
@@ -54,21 +52,25 @@ function mkHash(prefix: string = "0xa"): string {
 }
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
-  defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
+  utils.defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
 
 const decodeAppState = (encodedAppState: string): SimpleLinkedTransferAppState =>
-  defaultAbiCoder.decode([linkedTransferAppStateEncoding], encodedAppState)[0];
+  utils.defaultAbiCoder.decode([linkedTransferAppStateEncoding], encodedAppState)[0];
 
 const encodeAppState = (
   state: SimpleLinkedTransferAppState,
   onlyCoinTransfers: boolean = false,
 ): string => {
-  if (!onlyCoinTransfers) return defaultAbiCoder.encode([linkedTransferAppStateEncoding], [state]);
-  return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
+  if (!onlyCoinTransfers)
+    return utils.defaultAbiCoder.encode([linkedTransferAppStateEncoding], [state]);
+  return utils.defaultAbiCoder.encode(
+    [singleAssetTwoPartyCoinTransferEncoding],
+    [state.coinTransfers],
+  );
 };
 
 function encodeAppAction(state: SolidityValueType): string {
-  return defaultAbiCoder.encode([linkedTransferAppActionEncoding], [state]);
+  return utils.defaultAbiCoder.encode([linkedTransferAppActionEncoding], [state]);
 }
 
 function createLinkedHash(
@@ -77,7 +79,7 @@ function createLinkedHash(
   paymentId: string,
   preImage: string,
 ): string {
-  return solidityKeccak256(
+  return utils.solidityKeccak256(
     ["uint256", "address", "bytes32", "bytes32"],
     [amount, assetId, paymentId, preImage],
   );
@@ -98,7 +100,7 @@ describe("SimpleLinkedTransferApp", () => {
   }
 
   before(async () => {
-    const wallet = (await provider.getWallets())[0];
+    const wallet = new Wallet((await provider.getWallets())[0].privateKey);
     simpleLinkedTransferApp = await new ContractFactory(
       SimpleLinkedTransferApp.abi,
       SimpleLinkedTransferApp.bytecode,
@@ -110,10 +112,10 @@ describe("SimpleLinkedTransferApp", () => {
     it("can redeem a payment with correct hash", async () => {
       const senderAddr = mkAddress("0xa");
       const receiverAddr = mkAddress("0xB");
-      const transferAmount = new BigNumber(10000);
+      const transferAmount = BigNumber.from(10000);
       const paymentId = mkHash("0xa");
       const preImage = mkHash("0xb");
-      const assetId = AddressZero;
+      const assetId = constants.AddressZero;
 
       const linkedHash = createLinkedHash(transferAmount, assetId, paymentId, preImage);
 
@@ -126,7 +128,7 @@ describe("SimpleLinkedTransferApp", () => {
             to: senderAddr,
           },
           {
-            amount: Zero,
+            amount: constants.Zero,
             to: receiverAddr,
           },
         ],
@@ -148,7 +150,7 @@ describe("SimpleLinkedTransferApp", () => {
         assetId,
         coinTransfers: [
           {
-            amount: Zero,
+            amount: constants.Zero,
             to: senderAddr,
           },
           {

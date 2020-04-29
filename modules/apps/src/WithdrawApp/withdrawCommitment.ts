@@ -1,9 +1,14 @@
 import { MultisigCommitment } from "@connext/cf-core";
 import { ConditionalTransactionDelegateTarget } from "@connext/contracts";
-import { MultisigTransaction, MultisigOperation, NetworkContext, ContractAddresses } from "@connext/types";
-import { BigNumberish, Interface } from "ethers/utils";
+import {
+  MultisigTransaction,
+  MultisigOperation,
+  NetworkContext,
+  ContractAddresses,
+} from "@connext/types";
+import { BigNumberish, utils } from "ethers";
 
-const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
+const iface = new utils.Interface(ConditionalTransactionDelegateTarget.abi);
 export class WithdrawCommitment extends MultisigCommitment {
   public constructor(
     public readonly networkContext: NetworkContext | ContractAddresses,
@@ -21,7 +26,7 @@ export class WithdrawCommitment extends MultisigCommitment {
     return {
       to: this.networkContext.ConditionalTransactionDelegateTarget,
       value: 0,
-      data: iface.functions.withdrawWrapper.encode([
+      data: iface.encodeFunctionData(iface.functions.withdrawWrapper, [
         this.recipient,
         this.assetId,
         this.amount,

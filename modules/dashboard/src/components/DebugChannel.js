@@ -9,7 +9,7 @@ import {
   styled,
 } from "@material-ui/core";
 import { Search as SearchIcon } from "@material-ui/icons";
-import { bigNumberify } from "ethers/utils";
+import { BigNumber.from } from "ethers/utils";
 import JSONTree from "react-json-tree";
 
 const RootGrid = styled(Grid)({
@@ -56,7 +56,7 @@ const DebugChannel = ({ classes, messaging }) => {
 
       let freeBalanceTotalHolder = [];
       res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
-        balance.amount.readable = bigNumberify(balance.amount._hex).toString();
+        balance.amount.readable = BigNumber.from(balance.amount._hex).toString();
         freeBalanceTotalHolder.push(balance.amount.readable);
       });
 
@@ -81,7 +81,7 @@ const DebugChannel = ({ classes, messaging }) => {
 
       let freeBalanceTotalHolder = [];
       res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
-        balance.amount.readable = bigNumberify(balance.amount._hex).toString();
+        balance.amount.readable = BigNumber.from(balance.amount._hex).toString();
         freeBalanceTotalHolder.push(balance.amount.readable);
       });
 

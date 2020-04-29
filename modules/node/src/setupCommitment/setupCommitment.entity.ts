@@ -11,7 +11,7 @@ export class SetupCommitment {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => new BigNumber(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
@@ -32,10 +32,7 @@ export class SetupCommitment {
   @IsEthAddress()
   multisigAddress!: string;
 
-  @OneToOne(
-    (type: any) => Channel,
-    (channel: Channel) => channel.setupCommitment,
-  )
+  @OneToOne((type: any) => Channel, (channel: Channel) => channel.setupCommitment)
   @JoinColumn()
   channel!: Channel;
 }

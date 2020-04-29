@@ -56,7 +56,7 @@ export class AppInstance<T extends AppState = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => new BigNumber(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
@@ -79,7 +79,7 @@ export class AppInstance<T extends AppState = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => new BigNumber(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
@@ -112,10 +112,7 @@ export class AppInstance<T extends AppState = any> {
   @Column("jsonb", { nullable: true })
   outcomeInterpreterParameters?: any;
 
-  @ManyToOne(
-    (type: any) => Channel,
-    (channel: Channel) => channel.appInstances,
-  )
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances)
   channel!: Channel;
 
   @CreateDateColumn()

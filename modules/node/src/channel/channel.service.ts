@@ -10,7 +10,7 @@ import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
 import { AddressZero, Zero } from "ethers/constants";
 import { TransactionReceipt } from "ethers/providers";
-import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
+import { BigNumber, getAddress, toUtf8Bytes, sha256, BigNumber.from } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -441,10 +441,10 @@ export class ChannelService {
     }
     const response: RebalancingTargetsResponse<BigNumber> = {
       assetId: rebalancingTargets.assetId,
-      lowerBoundCollateralize: bigNumberify(rebalancingTargets.lowerBoundCollateralize),
-      upperBoundCollateralize: bigNumberify(rebalancingTargets.upperBoundCollateralize),
-      lowerBoundReclaim: bigNumberify(rebalancingTargets.lowerBoundReclaim),
-      upperBoundReclaim: bigNumberify(rebalancingTargets.upperBoundReclaim),
+      lowerBoundCollateralize: BigNumber.from(rebalancingTargets.lowerBoundCollateralize),
+      upperBoundCollateralize: BigNumber.from(rebalancingTargets.upperBoundCollateralize),
+      lowerBoundReclaim: BigNumber.from(rebalancingTargets.lowerBoundReclaim),
+      upperBoundReclaim: BigNumber.from(rebalancingTargets.upperBoundReclaim),
     };
     this.log.info(
       `getDataFromRebalancingService for ${userPublicIdentifier} asset ${assetId} complete: ${JSON.stringify(

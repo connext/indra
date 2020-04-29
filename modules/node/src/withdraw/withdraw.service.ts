@@ -13,7 +13,7 @@ import {
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero, AddressZero } from "ethers/constants";
-import { bigNumberify, hexlify, randomBytes } from "ethers/utils";
+import { hexlify, randomBytes } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
@@ -245,7 +245,7 @@ export class WithdrawService {
 
     await this.saveWithdrawal(
       appIdentityHash,
-      bigNumberify(amount),
+      BigNumber.from(amount),
       assetId,
       initialState.transfers[0].to,
       initialState.data,

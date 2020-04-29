@@ -15,7 +15,7 @@ import {
   toBN,
 } from "@connext/utils";
 
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 
 import { HARD_CODED_ASSUMPTIONS } from "../constants";
 
@@ -50,10 +50,7 @@ export class StateChannel {
   ) {}
 
   public get multisigOwners() {
-    return this.getSigningKeysFor(
-      this.initiatorIdentifier,
-      this.responderIdentifier,
-    );
+    return this.getSigningKeysFor(this.initiatorIdentifier, this.responderIdentifier);
   }
 
   public get userIdentifiers(): string[] {
@@ -144,10 +141,7 @@ export class StateChannel {
     return this.appInstances.has(appIdentityHash);
   }
 
-  public getSigningKeysFor(
-    initiatorId: string, 
-    responderId: string, 
-  ): string[] {
+  public getSigningKeysFor(initiatorId: string, responderId: string): string[] {
     return [
       getSignerAddressFromPublicIdentifier(initiatorId),
       getSignerAddressFromPublicIdentifier(responderId),
@@ -167,7 +161,7 @@ export class StateChannel {
   }
 
   public getMultisigOwnerAddrOf(identifer: string): string {
-    if (!this.userIdentifiers.find(k => k === identifer)) {
+    if (!this.userIdentifiers.find((k) => k === identifer)) {
       throw new Error(
         `getMultisigOwnerAddrOf received invalid id not in multisigOwners: ${identifer}`,
       );
@@ -196,8 +190,8 @@ export class StateChannel {
   private build = (args: {
     multisigAddress?: string;
     addresses?: CriticalStateChannelAddresses;
-    initiatorIdentifier?: string,
-    responderIdentifier?: string,
+    initiatorIdentifier?: string;
+    responderIdentifier?: string;
     appInstances?: ReadonlyMap<string, AppInstance>;
     proposedAppInstances?: ReadonlyMap<string, AppInstanceProposal>;
     freeBalanceAppInstance?: AppInstance;
@@ -344,45 +338,35 @@ export class StateChannel {
     state: SolidityValueType,
     stateTimeout: BigNumber = toBN(appInstance.defaultTimeout),
   ) {
-
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 
-    appInstances.set(
-      appInstance.identityHash,
-      appInstance.setState(state, stateTimeout),
-    );
+    appInstances.set(appInstance.identityHash, appInstance.setState(state, stateTimeout));
 
     return this.build({
       appInstances,
     });
   }
 
-  public installApp(
-    appInstance: AppInstance,
-    tokenIndexedDecrements: TokenIndexedCoinTransferMap,
-  ) {
+  public installApp(appInstance: AppInstance, tokenIndexedDecrements: TokenIndexedCoinTransferMap) {
     // Verify appInstance has expected signingkeys
-    const proposal = 
-      this.proposedAppInstances.has(appInstance.identityHash) 
-        ? this.proposedAppInstances.get(appInstance.identityHash) 
-        : undefined;
-        
+    const proposal = this.proposedAppInstances.has(appInstance.identityHash)
+      ? this.proposedAppInstances.get(appInstance.identityHash)
+      : undefined;
+
     if (!!proposal) {
       const [initiator, responder] = this.getSigningKeysFor(
-        proposal.initiatorIdentifier, 
-        proposal.responderIdentifier, 
+        proposal.initiatorIdentifier,
+        proposal.responderIdentifier,
       );
-  
+
       if (
-        appInstance.initiatorIdentifier !== proposal.initiatorIdentifier 
-        || appInstance.responderIdentifier !== proposal.responderIdentifier
+        appInstance.initiatorIdentifier !== proposal.initiatorIdentifier ||
+        appInstance.responderIdentifier !== proposal.responderIdentifier
       ) {
         throw new Error(
-          `AppInstance passed to installApp has incorrect participants. Got ${
-            JSON.stringify(appInstance.identity.participants)
-          } but expected ${
-            JSON.stringify([initiator, responder])
-          }`,
+          `AppInstance passed to installApp has incorrect participants. Got ${JSON.stringify(
+            appInstance.identity.participants,
+          )} but expected ${JSON.stringify([initiator, responder])}`,
         );
       }
     }
@@ -503,6 +487,6 @@ export class StateChannel {
       );
     }
     const owners = stateChannel.userIdentifiers;
-    return owners.filter(owner => owner !== myIdentifier);
+    return owners.filter((owner) => owner !== myIdentifier);
   }
 }

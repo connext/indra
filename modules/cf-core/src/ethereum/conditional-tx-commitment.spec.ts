@@ -1,8 +1,7 @@
-import { ConnextStore } from "@connext/store";
-import { MultisigTransaction, StoreTypes } from "@connext/types";
+import { MultisigTransaction } from "@connext/types";
 import { getRandomAddress } from "@connext/utils";
-import { WeiPerEther, AddressZero } from "ethers/constants";
-import { getAddress, Interface, TransactionDescription } from "ethers/utils";
+import { utils, constants } from "ethers";
+import { TransactionDescription } from "@ethersproject/abi";
 
 import { generateRandomNetworkContext } from "../testing/mocks";
 import { createAppInstanceForTest } from "../testing/utils";
@@ -35,23 +34,21 @@ describe("ConditionalTransactionCommitment", () => {
       proxyFactory: context.network.ProxyFactory,
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
-    getAddress(getRandomAddress()),
+    utils.getAddress(getRandomAddress()),
     initiator.publicIdentifier,
     responder.publicIdentifier,
   );
 
-  expect(stateChannel.userIdentifiers[0]).toEqual(
-    initiator.publicIdentifier,
-  );
-  expect(stateChannel.userIdentifiers[1]).toEqual(
-    responder.publicIdentifier,
-  );
+  expect(stateChannel.userIdentifiers[0]).toEqual(initiator.publicIdentifier);
+  expect(stateChannel.userIdentifiers[1]).toEqual(responder.publicIdentifier);
 
   // Set the state to some test values
   stateChannel = stateChannel.setFreeBalance(
-    FreeBalanceClass.createWithFundedTokenAmounts(stateChannel.multisigOwners, WeiPerEther, [
-      AddressZero,
-    ]),
+    FreeBalanceClass.createWithFundedTokenAmounts(
+      stateChannel.multisigOwners,
+      constants.WeiPerEther,
+      [constants.AddressZero],
+    ),
   );
 
   const freeBalanceETH = stateChannel.freeBalance;
@@ -72,16 +69,18 @@ describe("ConditionalTransactionCommitment", () => {
   });
 
   describe("the calldata", () => {
-    let iface: Interface;
+    let iface: utils.Interface;
     let calldata: TransactionDescription;
 
     beforeAll(() => {
-      iface = new Interface(ConditionalTransactionDelegateTarget.abi);
+      iface = new utils.Interface(ConditionalTransactionDelegateTarget.abi);
       calldata = iface.parseTransaction({ data: tx.data });
     });
 
     it("should be directed at the executeEffectOfInterpretedAppOutcome method", () => {
-      expect(calldata.sighash).toBe(iface.functions.executeEffectOfInterpretedAppOutcome.sighash);
+      expect(calldata.sighash).toBe(
+        utils.Interface.getSighash(iface.functions.executeEffectOfInterpretedAppOutcome),
+      );
     });
 
     it("should have correctly constructed arguments", () => {

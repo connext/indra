@@ -1,6 +1,10 @@
 import { MethodParams, WithdrawAppState } from "@connext/types";
-import { bigNumberifyJson, getSignerAddressFromPublicIdentifier, recoverAddressFromChannelMessage } from "@connext/utils";
-import { HashZero, Zero } from "ethers/constants";
+import {
+  bigNumberifyJson,
+  getSignerAddressFromPublicIdentifier,
+  recoverAddressFromChannelMessage,
+} from "@connext/utils";
+import { constants } from "ethers";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 
@@ -29,7 +33,7 @@ export const validateWithdrawApp = async (
     throw new Error(`Cannot install a withdraw app with a finalized state. State: ${initialState}`);
   }
 
-  if (initialState.signatures[1] !== HashZero) {
+  if (initialState.signatures[1] !== constants.HashZero) {
     throw new Error(
       `Cannot install a withdraw app with a populated signatures[1] field. Signatures[1]: ${initialState.signatures[1]}`,
     );
@@ -44,13 +48,16 @@ export const validateWithdrawApp = async (
     );
   }
 
-  if (!initialState.transfers[1].amount.eq(Zero)) {
+  if (!initialState.transfers[1].amount.eq(constants.Zero)) {
     throw new Error(
       `Cannot install a withdraw app with nonzero recipient amount. ${initialState.transfers[1].amount.toString()}`,
     );
   }
 
-  let recovered = await recoverAddressFromChannelMessage(initialState.data, initialState.signatures[0]);
+  let recovered = await recoverAddressFromChannelMessage(
+    initialState.data,
+    initialState.signatures[0],
+  );
 
   if (recovered !== initialState.signers[0]) {
     throw new Error(

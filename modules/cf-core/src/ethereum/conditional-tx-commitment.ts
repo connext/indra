@@ -4,9 +4,8 @@ import {
   NetworkContext,
   OutcomeType,
 } from "@connext/types";
-  
-import { AddressZero } from "ethers/constants";
-import { Interface } from "ethers/utils";
+
+import { utils, constants } from "ethers";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { AppInstance, StateChannel } from "../models";
@@ -14,7 +13,7 @@ import { Context } from "../types";
 
 import { MultisigCommitment } from "./multisig-commitment";
 
-const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
+const iface = new utils.Interface(ConditionalTransactionDelegateTarget.abi);
 
 export const getConditionalTransactionCommitment = (
   context: Context,
@@ -33,7 +32,7 @@ export const getConditionalTransactionCommitment = (
       ? context.network.SingleAssetTwoPartyCoinTransferInterpreter
       : appInstance.outcomeType === OutcomeType.TWO_PARTY_FIXED_OUTCOME
       ? context.network.TwoPartyFixedOutcomeInterpreter
-      : AddressZero,
+      : constants.AddressZero,
     appInstance.encodedInterpreterParams,
   );
 
@@ -52,7 +51,7 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
     responderSignature?: string,
   ) {
     super(multisig, multisigOwners, initiatorSignature, responderSignature);
-    if (interpreterAddr === AddressZero) {
+    if (interpreterAddr === constants.AddressZero) {
       throw Error("The outcome type in this application logic contract is not supported yet.");
     }
   }
@@ -95,7 +94,7 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
     return {
       to: this.networkContext.ConditionalTransactionDelegateTarget,
       value: 0,
-      data: iface.functions.executeEffectOfInterpretedAppOutcome.encode([
+      data: iface.encodeFunctionData(iface.functions.executeEffectOfInterpretedAppOutcome, [
         this.networkContext.ChallengeRegistry,
         this.freeBalanceAppIdentityHash,
         this.appIdentityHash,

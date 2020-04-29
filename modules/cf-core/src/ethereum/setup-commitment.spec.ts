@@ -1,10 +1,7 @@
 import { MultisigTransaction } from "@connext/types";
 import { getRandomAddress, getRandomChannelSigner } from "@connext/utils";
-import {
-  getAddress,
-  Interface,
-  TransactionDescription,
-} from "ethers/utils";
+import { utils } from "ethers";
+import { TransactionDescription } from "@ethersproject/abi";
 
 import { generateRandomNetworkContext } from "../testing/mocks";
 
@@ -44,7 +41,7 @@ describe("SetupCommitment", () => {
       proxyFactory: context.network.ProxyFactory,
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
-    getAddress(getRandomAddress()),
+    utils.getAddress(getRandomAddress()),
     initiatorId,
     responderId,
   );
@@ -64,7 +61,7 @@ describe("SetupCommitment", () => {
   });
 
   describe("the calldata", () => {
-    const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
+    const iface = new utils.Interface(ConditionalTransactionDelegateTarget.abi);
     let desc: TransactionDescription;
 
     beforeAll(() => {
@@ -73,7 +70,9 @@ describe("SetupCommitment", () => {
     });
 
     it("should be to the executeEffectOfFreeBalance method", () => {
-      expect(desc.sighash).toBe(iface.functions.executeEffectOfFreeBalance.sighash);
+      expect(desc.sighash).toBe(
+        utils.Interface.getSighash(iface.functions.executeEffectOfFreeBalance),
+      );
     });
 
     it("should contain expected arguments", () => {

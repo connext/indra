@@ -5,7 +5,7 @@ import {
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { AddressZero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import { BigNumber.from } from "ethers/utils";
 
 import { expect, createClient, fundChannel } from "../util";
 
@@ -44,7 +44,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
     };
     const startTime = Date.now();
     await new Promise(async (res, rej) => {
-      await fundChannel(gateway, bigNumberify(100));
+      await fundChannel(gateway, BigNumber.from(100));
       gateway.on(
         EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
         async (data: EventPayloads.LinkedTransferUnlocked) => {

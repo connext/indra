@@ -4,7 +4,7 @@ import {
   SimpleSignedTransferAppStateEncoding,
   SimpleSignedTransferAppActionEncoding,
 } from "@connext/types";
-import { Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { AppRegistryInfo } from "../shared";
 
@@ -17,4 +17,4 @@ export const SimpleSignedTransferAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const SIGNED_TRANSFER_STATE_TIMEOUT = Zero;
+export const SIGNED_TRANSFER_STATE_TIMEOUT = constants.Zero;

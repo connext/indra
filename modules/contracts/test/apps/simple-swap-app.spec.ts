@@ -1,6 +1,5 @@
 /* global before */
-import { Contract, ContractFactory } from "ethers";
-import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { Wallet, Contract, ContractFactory, BigNumber, utils } from "ethers";
 
 import SimpleTwoPartySwapApp from "../../build/SimpleTwoPartySwapApp.json";
 
@@ -29,11 +28,14 @@ function mkAddress(prefix: string = "0xa"): string {
 
 // FIXME: why does this have to use the multiAsset one?
 const decodeAppState = (encodedAppState: string): CoinTransfer[][] =>
-  defaultAbiCoder.decode([multiAssetMultiPartyCoinTransferEncoding], encodedAppState)[0];
+  utils.defaultAbiCoder.decode([multiAssetMultiPartyCoinTransferEncoding], encodedAppState)[0];
 
 const encodeAppState = (state: SimpleSwapAppState, onlyCoinTransfers: boolean = false): string => {
-  if (!onlyCoinTransfers) return defaultAbiCoder.encode([swapAppStateEncoding], [state]);
-  return defaultAbiCoder.encode([multiAssetMultiPartyCoinTransferEncoding], [state.coinTransfers]);
+  if (!onlyCoinTransfers) return utils.defaultAbiCoder.encode([swapAppStateEncoding], [state]);
+  return utils.defaultAbiCoder.encode(
+    [multiAssetMultiPartyCoinTransferEncoding],
+    [state.coinTransfers],
+  );
 };
 
 describe("SimpleTwoPartySwapApp", () => {
@@ -44,7 +46,7 @@ describe("SimpleTwoPartySwapApp", () => {
   }
 
   before(async () => {
-    const wallet = (await provider.getWallets())[0];
+    const wallet = new Wallet((await provider.getWallets())[0].privateKey);
     simpleSwapApp = await new ContractFactory(
       SimpleTwoPartySwapApp.abi,
       SimpleTwoPartySwapApp.bytecode,
@@ -56,8 +58,8 @@ describe("SimpleTwoPartySwapApp", () => {
     it("can compute outcome with update", async () => {
       const senderAddr = mkAddress("0xa");
       const receiverAddr = mkAddress("0xB");
-      const tokenAmt = new BigNumber(10000);
-      const ethAmt = new BigNumber(500);
+      const tokenAmt = BigNumber.from(10000);
+      const ethAmt = BigNumber.from(500);
 
       const preState: SimpleSwapAppState = {
         coinTransfers: [

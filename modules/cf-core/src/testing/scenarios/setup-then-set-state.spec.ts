@@ -1,7 +1,4 @@
-import { Contract, Wallet } from "ethers";
-import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
-import { Interface, keccak256 } from "ethers/utils";
+import { Contract, Wallet, providers, utils, constants } from "ethers";
 
 import { SetStateCommitment, getSetupCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
@@ -36,7 +33,7 @@ const SETSTATE_COMMITMENT_GAS = 6e9;
  */
 describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
   let context: Context;
-  let provider: JsonRpcProvider;
+  let provider: providers.JsonRpcProvider;
   let wallet: Wallet;
   let network: NetworkContextForTestSuite;
   let appRegistry: Contract;
@@ -49,12 +46,12 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
     appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
   });
 
-  it("should distribute funds in ETH free balance when put on chain", async done => {
+  it("should distribute funds in ETH free balance when put on chain", async (done) => {
     const [initiator, responder] = getRandomChannelSigners(2);
 
     const proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
 
-    proxyFactory.once("ProxyCreation", async proxy => {
+    proxyFactory.once("ProxyCreation", async (proxy) => {
       // TODO: Test this separately
       expect(proxy).toBe(
         await getCreate2MultisigAddress(
@@ -77,9 +74,9 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
         1,
       ).setFreeBalance(
         FreeBalanceClass.createWithFundedTokenAmounts(
-          [initiator, responder].map<string>(key => key.address),
-          WeiPerEther,
-          [AddressZero],
+          [initiator, responder].map<string>((key) => key.address),
+          constants.WeiPerEther,
+          [constants.AddressZero],
         ),
       );
 
@@ -88,7 +85,7 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       const setStateCommitment = new SetStateCommitment(
         network.ChallengeRegistry,
         freeBalance.identity,
-        keccak256(freeBalance.encodedLatestState),
+        utils.keccak256(freeBalance.encodedLatestState),
         freeBalance.versionNumber,
         freeBalance.stateTimeout,
       );
@@ -122,26 +119,28 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
 
       const setupTx = await setupCommitment.getSignedTransaction();
 
-      await wallet.sendTransaction({ to: proxy, value: WeiPerEther.mul(2) });
+      await wallet.sendTransaction({ to: proxy, value: constants.WeiPerEther.mul(2) });
 
       await wallet.sendTransaction({
         ...setupTx,
         gasLimit: SETUP_COMMITMENT_GAS,
       });
 
-      expect(await provider.getBalance(proxy)).toBeEq(Zero);
+      expect(await provider.getBalance(proxy)).toBeEq(constants.Zero);
 
-      expect(await provider.getBalance(initiator.address)).toBeEq(WeiPerEther);
+      expect(await provider.getBalance(initiator.address)).toBeEq(constants.WeiPerEther);
 
-      expect(await provider.getBalance(responder.address)).toBeEq(WeiPerEther);
+      expect(await provider.getBalance(responder.address)).toBeEq(constants.WeiPerEther);
 
       done();
     });
 
+    const iface = new utils.Interface(MinimumViableMultisig.abi);
+
     await proxyFactory.functions.createProxyWithNonce(
       network.MinimumViableMultisig,
-      new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-        [initiator, responder].map(x => x.address),
+      iface.encodeFunctionData(iface.functions.setup, [
+        [initiator, responder].map((x) => x.address),
       ]),
       0,
       { gasLimit: CREATE_PROXY_AND_SETUP_GAS },

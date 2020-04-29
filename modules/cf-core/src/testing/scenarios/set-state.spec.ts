@@ -1,7 +1,6 @@
 import { NetworkContext } from "@connext/types";
 import { getRandomAddress } from "@connext/utils";
-import { Contract, Wallet } from "ethers";
-import { WeiPerEther, AddressZero } from "ethers/constants";
+import { Contract, Wallet, constants, utils } from "ethers";
 
 import { SetStateCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
@@ -9,7 +8,6 @@ import { FreeBalanceClass, StateChannel } from "../../models";
 import { ChallengeRegistry } from "../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { getRandomChannelSigners } from "../random-signing-keys";
-import { getAddress } from "ethers/utils";
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
@@ -31,7 +29,7 @@ beforeAll(async () => {
  * @summary Setup a StateChannel then set state on ETH Free Balance
  */
 describe("set state on free balance", () => {
-  it("should have the correct versionNumber", async done => {
+  it("should have the correct versionNumber", async (done) => {
     const [initiatorNode, responderNode] = getRandomChannelSigners(2);
     // State channel testing values
     let stateChannel = StateChannel.setupChannel(
@@ -40,7 +38,7 @@ describe("set state on free balance", () => {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
       },
-      getAddress(getRandomAddress()),
+      utils.getAddress(getRandomAddress()),
       initiatorNode.publicIdentifier,
       responderNode.publicIdentifier,
     );
@@ -50,9 +48,11 @@ describe("set state on free balance", () => {
 
     // Set the state to some test values
     stateChannel = stateChannel.setFreeBalance(
-      FreeBalanceClass.createWithFundedTokenAmounts(stateChannel.multisigOwners, WeiPerEther, [
-        AddressZero,
-      ]),
+      FreeBalanceClass.createWithFundedTokenAmounts(
+        stateChannel.multisigOwners,
+        constants.WeiPerEther,
+        [constants.AddressZero],
+      ),
     );
 
     const freeBalanceETH = stateChannel.freeBalance;

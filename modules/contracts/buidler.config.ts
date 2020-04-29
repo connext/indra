@@ -2,7 +2,6 @@ import { BuidlerConfig } from "@nomiclabs/buidler/config";
 import { usePlugin } from "@nomiclabs/buidler/config";
 import { BigNumber } from "ethers";
 
-usePlugin("buidler-ethers-v5");
 usePlugin("@nomiclabs/buidler-waffle");
 
 // for deposit tests, you will need an account that

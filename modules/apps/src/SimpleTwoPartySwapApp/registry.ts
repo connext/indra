@@ -1,9 +1,5 @@
-import {
-  OutcomeType,
-  SimpleSwapAppStateEncoding,
-  SimpleTwoPartySwapAppName,
-} from "@connext/types";
-import { Zero } from "ethers/constants";
+import { OutcomeType, SimpleSwapAppStateEncoding, SimpleTwoPartySwapAppName } from "@connext/types";
+import { constants } from "ethers";
 
 import { AppRegistryInfo } from "../shared";
 
@@ -15,4 +11,4 @@ export const SimpleTwoPartySwapAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const SWAP_STATE_TIMEOUT = Zero;
+export const SWAP_STATE_TIMEOUT = constants.Zero;

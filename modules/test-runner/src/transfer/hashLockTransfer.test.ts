@@ -11,7 +11,7 @@ import {
 import { getRandomBytes32 } from "@connext/utils";
 import { providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { soliditySha256, bigNumberify } from "ethers/utils";
+import { soliditySha256, BigNumber.from } from "ethers/utils";
 
 import {
   AssetOptions,
@@ -86,7 +86,7 @@ describe("HashLock Transfers", () => {
             } as EventPayloads.HashLockTransferCreated);
             expect(eventPayload.transferMeta).to.deep.eq({
               lockHash,
-              timelock: bigNumberify(timelock).sub(100),
+              timelock: BigNumber.from(timelock).sub(100),
             });
             res();
           },
@@ -154,7 +154,7 @@ describe("HashLock Transfers", () => {
             } as EventPayloads.HashLockTransferCreated);
             expect(eventPayload.transferMeta).to.deep.eq({
               lockHash,
-              timelock: bigNumberify(timelock).sub(100),
+              timelock: BigNumber.from(timelock).sub(100),
             });
             res();
           },

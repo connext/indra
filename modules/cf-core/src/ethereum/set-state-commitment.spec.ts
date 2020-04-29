@@ -1,13 +1,7 @@
 import { MinimalTransaction, CommitmentTarget } from "@connext/types";
 import { getRandomAddress } from "@connext/utils";
-import {
-  bigNumberify,
-  Interface,
-  keccak256,
-  solidityPack,
-  TransactionDescription,
-  getAddress,
-} from "ethers/utils";
+import { BigNumber, utils, constants } from "ethers";
+import { TransactionDescription } from "@ethersproject/abi";
 
 import { createAppInstanceForTest } from "../testing/utils";
 import { generateRandomNetworkContext } from "../testing/mocks";
@@ -18,7 +12,6 @@ import { appIdentityToHash } from "../utils";
 
 import { getSetStateCommitment, SetStateCommitment } from "./set-state-commitment";
 import { StateChannel, FreeBalanceClass } from "../models";
-import { WeiPerEther, AddressZero } from "ethers/constants";
 import { getRandomChannelSigners } from "../testing/random-signing-keys";
 
 /**
@@ -41,7 +34,7 @@ describe("Set State Commitment", () => {
       proxyFactory: context.network.ProxyFactory,
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
-    getAddress(getRandomAddress()),
+    utils.getAddress(getRandomAddress()),
     initiator.publicIdentifier,
     responder.publicIdentifier,
   );
@@ -51,9 +44,11 @@ describe("Set State Commitment", () => {
 
   // Set the state to some test values
   stateChannel = stateChannel.setFreeBalance(
-    FreeBalanceClass.createWithFundedTokenAmounts(stateChannel.multisigOwners, WeiPerEther, [
-      AddressZero,
-    ]),
+    FreeBalanceClass.createWithFundedTokenAmounts(
+      stateChannel.multisigOwners,
+      constants.WeiPerEther,
+      [constants.AddressZero],
+    ),
   );
 
   const appInstance = createAppInstanceForTest(stateChannel);
@@ -66,14 +61,8 @@ describe("Set State Commitment", () => {
 
   beforeAll(async () => {
     commitment = getSetStateCommitment(context, appInstance);
-    const [
-      initiatorSig,
-      responderSig,
-    ] = await signWithEphemeralKey(commitment.hashToSign());
-    await commitment.addSignatures(
-      initiatorSig,
-      responderSig,
-    );
+    const [initiatorSig, responderSig] = await signWithEphemeralKey(commitment.hashToSign());
+    await commitment.addSignatures(initiatorSig, responderSig);
     // TODO: (question) Should there be a way to retrieve the version
     //       of this transaction sent to the multisig vs sent
     //       directly to the app registry?
@@ -89,7 +78,7 @@ describe("Set State Commitment", () => {
   });
 
   describe("the calldata", () => {
-    const iface = new Interface(ChallengeRegistry.abi);
+    const iface = new utils.Interface(ChallengeRegistry.abi);
     let desc: TransactionDescription;
 
     beforeAll(() => {
@@ -98,25 +87,30 @@ describe("Set State Commitment", () => {
     });
 
     it("should be to the setState method", () => {
-      expect(desc.sighash).toBe(iface.functions.setState.sighash);
+      expect(desc.sighash).toBe(utils.Interface.getSighash(iface.functions.setState));
     });
 
     it("should contain expected AppIdentity argument", () => {
-      const [multisigAddress, channelNonce, participants, appDefinition, defaultTimeout] =
-        desc.args[0];
+      const [
+        multisigAddress,
+        channelNonce,
+        participants,
+        appDefinition,
+        defaultTimeout,
+      ] = desc.args[0];
 
-      expect(channelNonce).toEqual(bigNumberify(appInstance.identity.channelNonce));
+      expect(channelNonce).toEqual(BigNumber.from(appInstance.identity.channelNonce));
       expect(participants).toEqual(appInstance.identity.participants);
       expect(multisigAddress).toBe(appInstance.multisigAddress);
       expect(appDefinition).toBe(appInstance.identity.appDefinition);
-      expect(defaultTimeout).toEqual(bigNumberify(appInstance.identity.defaultTimeout));
+      expect(defaultTimeout).toEqual(BigNumber.from(appInstance.identity.defaultTimeout));
     });
 
     it("should contain expected SignedAppChallengeUpdate argument", () => {
       const [stateHash, versionNumber, timeout, []] = desc.args[1];
       expect(stateHash).toBe(appInstance.hashOfLatestState);
-      expect(versionNumber).toEqual(bigNumberify(appInstance.versionNumber));
-      expect(timeout).toEqual(bigNumberify(appInstance.timeout));
+      expect(versionNumber).toEqual(BigNumber.from(appInstance.versionNumber));
+      expect(timeout).toEqual(BigNumber.from(appInstance.timeout));
     });
   });
 
@@ -126,8 +120,8 @@ describe("Set State Commitment", () => {
     // Based on MChallengeRegistryCore::computeStateHash
     // TODO: Probably should be able to compute this from some helper
     //       function ... maybe an ChallengeRegistry class or something
-    const expectedHashToSign = keccak256(
-      solidityPack(
+    const expectedHashToSign = utils.keccak256(
+      utils.solidityPack(
         ["uint8", "bytes32", "bytes32", "uint256", "uint256"],
         [
           CommitmentTarget.SET_STATE,

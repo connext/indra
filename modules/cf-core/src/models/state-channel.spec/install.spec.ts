@@ -1,6 +1,5 @@
 import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
-import { getAddress } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import { createAppInstanceForTest } from "../../testing/utils";
 import { generateRandomNetworkContext } from "../../testing/mocks";
@@ -18,7 +17,7 @@ describe("StateChannel::uninstallApp", () => {
   let appIdentityHash: string;
 
   beforeAll(() => {
-    const multisigAddress = getAddress(getRandomAddress());
+    const multisigAddress = utils.getAddress(getRandomAddress());
     const ids = getRandomPublicIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
@@ -44,15 +43,15 @@ describe("StateChannel::uninstallApp", () => {
           getSignerAddressFromPublicIdentifier(ids[0]),
           getSignerAddressFromPublicIdentifier(ids[1]),
         ],
-        WeiPerEther,
-        [AddressZero],
+        constants.WeiPerEther,
+        [constants.AddressZero],
       ),
     );
 
     sc2 = sc1.installApp(appInstance, {
-      [AddressZero]: {
-        [getSignerAddressFromPublicIdentifier(ids[0])]: WeiPerEther,
-        [getSignerAddressFromPublicIdentifier(ids[1])]: WeiPerEther,
+      [constants.AddressZero]: {
+        [getSignerAddressFromPublicIdentifier(ids[0])]: constants.WeiPerEther,
+        [getSignerAddressFromPublicIdentifier(ids[1])]: constants.WeiPerEther,
       },
     });
   });
@@ -74,10 +73,8 @@ describe("StateChannel::uninstallApp", () => {
     });
 
     it("should have updated balances for Alice and Bob", () => {
-      for (const amount of Object.values(
-        fb.withTokenAddress(AddressZero) || {},
-      )) {
-        expect(amount).toEqual(Zero);
+      for (const amount of Object.values(fb.withTokenAddress(constants.AddressZero) || {})) {
+        expect(amount).toEqual(constants.Zero);
       }
     });
   });

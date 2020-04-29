@@ -1,17 +1,24 @@
 /* global before */
-import { Contract, Wallet, ContractFactory } from "ethers";
-import { One } from "ethers/constants";
+import { Contract, Wallet, ContractFactory, utils, constants } from "ethers";
 import { ChallengeStatus, AppChallenge } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { keccak256 } from "ethers/utils";
 
-import { expect, provider, restore, setupContext, snapshot, moveToBlock, encodeState, AppWithCounterState, AppWithCounterAction } from "../utils";
+import {
+  expect,
+  provider,
+  restore,
+  setupContext,
+  snapshot,
+  moveToBlock,
+  encodeState,
+  AppWithCounterState,
+  AppWithCounterAction,
+} from "../utils";
 
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 
 describe("MChallengeRegistryCore", () => {
-
   let appRegistry: Contract;
   let appDefinition: Contract;
 
@@ -34,7 +41,7 @@ describe("MChallengeRegistryCore", () => {
   let isFinalized: () => Promise<boolean>;
 
   before(async () => {
-    wallet = (await provider.getWallets())[0];
+    wallet = new Wallet((await provider.getWallets())[0].privateKey);
     await wallet.getTransactionCount();
 
     appRegistry = await new ContractFactory(
@@ -60,8 +67,12 @@ describe("MChallengeRegistryCore", () => {
     setState = context["setState"];
     isFinalized = context["isFinalized"];
     verifyChallenge = context["verifyChallenge"];
-    setAndProgressState = 
-      (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => context["setAndProgressState"](
+    setAndProgressState = (
+      versionNumber: number,
+      state?: AppWithCounterState,
+      turnTaker?: Wallet,
+    ) =>
+      context["setAndProgressState"](
         versionNumber, // nonce
         state || context["state0"], // state
         context["action"], // action
@@ -84,7 +95,7 @@ describe("MChallengeRegistryCore", () => {
       const resultingState = { counter: state.counter.add(action.increment) };
       await setAndProgressState(1, state, alice);
       await verifyChallenge({
-        appStateHash: keccak256(encodeState(resultingState)),
+        appStateHash: utils.keccak256(encodeState(resultingState)),
         versionNumber: toBN(2),
         status: ChallengeStatus.EXPLICITLY_FINALIZED,
       });
@@ -95,14 +106,17 @@ describe("MChallengeRegistryCore", () => {
     it("should return true if set state period elapsed", async () => {
       await setState(1);
       await verifyChallenge({
-        versionNumber: One,
+        versionNumber: constants.One,
         status: ChallengeStatus.IN_DISPUTE,
       });
 
       // must have passed:
       // appChallenge.finalizesAt.add(defaultTimeout))
       await moveToBlock(
-        await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + ONCHAIN_CHALLENGE_TIMEOUT + 2,
+        (await provider.getBlockNumber()) +
+          ONCHAIN_CHALLENGE_TIMEOUT +
+          ONCHAIN_CHALLENGE_TIMEOUT +
+          2,
       );
 
       expect(await isFinalized()).to.be.true;
@@ -117,7 +131,7 @@ describe("MChallengeRegistryCore", () => {
 
       // must have passed:
       // appChallenge.finalizesAt
-      await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+      await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
       expect(await isFinalized()).to.be.true;
     });
@@ -125,7 +139,7 @@ describe("MChallengeRegistryCore", () => {
     it("should return false if challenge is in set state period", async () => {
       await setState(1);
       await verifyChallenge({
-        versionNumber: One,
+        versionNumber: constants.One,
         status: ChallengeStatus.IN_DISPUTE,
       });
 

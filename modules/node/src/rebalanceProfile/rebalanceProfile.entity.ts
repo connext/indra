@@ -11,7 +11,7 @@ export class RebalanceProfile {
   @Column("text", {
     default: "0",
     transformer: {
-      from: (value: string): BigNumber => new BigNumber(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
@@ -20,7 +20,7 @@ export class RebalanceProfile {
   @Column("text", {
     default: "0",
     transformer: {
-      from: (value: string): BigNumber => new BigNumber(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
@@ -29,7 +29,7 @@ export class RebalanceProfile {
   @Column("text", {
     default: "0",
     transformer: {
-      from: (value: string): BigNumber => new BigNumber(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
@@ -38,7 +38,7 @@ export class RebalanceProfile {
   @Column("text", {
     default: "0",
     transformer: {
-      from: (value: string): BigNumber => new BigNumber(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
@@ -47,9 +47,6 @@ export class RebalanceProfile {
   @Column("text")
   assetId: string;
 
-  @ManyToMany(
-    (type: any) => Channel,
-    (channel: Channel) => channel.rebalanceProfiles,
-  )
+  @ManyToMany((type: any) => Channel, (channel: Channel) => channel.rebalanceProfiles)
   channels!: Channel[];
 }

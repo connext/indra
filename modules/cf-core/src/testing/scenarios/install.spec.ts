@@ -5,8 +5,7 @@ import {
   ProtocolParams,
 } from "@connext/types";
 import { delay, getAddressFromAssetId } from "@connext/utils";
-import { One } from "ethers/constants";
-import { BigNumber, isHexString } from "ethers/utils";
+import { BigNumber, utils, constants } from "ethers";
 
 import { Node } from "../../node";
 import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
@@ -50,10 +49,10 @@ describe("Node method follows spec - install", () => {
 
         multisigAddress = await createChannel(nodeA, nodeB);
         expect(multisigAddress).toBeDefined();
-        expect(isHexString(multisigAddress)).toBeTruthy();
+        expect(utils.isHexString(multisigAddress)).toBeTruthy();
       });
 
-      it("install app with ETH", async done => {
+      it("install app with ETH", async (done) => {
         await collateralizeChannel(multisigAddress, nodeA, nodeB);
 
         let preInstallETHBalanceNodeA: BigNumber;
@@ -125,22 +124,22 @@ describe("Node method follows spec - install", () => {
           TicTacToeApp,
           multisigAddress,
           undefined,
-          One,
+          constants.One,
           CONVENTION_FOR_ETH_ASSET_ID,
-          One,
+          constants.One,
           CONVENTION_FOR_ETH_ASSET_ID,
         );
         proposeInstallParams = params;
       });
 
-      it("install app with ERC20", async done => {
+      it("install app with ERC20", async (done) => {
         await transferERC20Tokens(await nodeA.signerAddress);
         await transferERC20Tokens(await nodeB.signerAddress);
 
         const erc20TokenAddress = (global["network"] as NetworkContextForTestSuite).DolphinCoin;
         const assetId = getAddressFromAssetId(erc20TokenAddress);
 
-        await collateralizeChannel(multisigAddress, nodeA, nodeB, One, assetId);
+        await collateralizeChannel(multisigAddress, nodeA, nodeB, constants.One, assetId);
 
         let preInstallERC20BalanceNodeA: BigNumber;
         let postInstallERC20BalanceNodeA: BigNumber;
@@ -189,9 +188,9 @@ describe("Node method follows spec - install", () => {
           TicTacToeApp,
           multisigAddress,
           undefined,
-          One,
+          constants.One,
           assetId,
-          One,
+          constants.One,
           assetId,
         );
         proposedParams = params;

@@ -1,11 +1,6 @@
-import {
-  CoinTransfer,
-  MethodParams,
-  DepositAppName,
-} from "@connext/types";
+import { CoinTransfer, MethodParams, DepositAppName } from "@connext/types";
 import { getAddressFromAssetId, stringify } from "@connext/utils";
-import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, constants } from "ethers";
 
 import { AppRegistryInfo } from "./registry";
 
@@ -81,25 +76,25 @@ export const unidirectionalCoinTransferValidation = (
     initiatorTransfer,
     responderTransfer,
   );
-  if (!responderDeposit.eq(Zero)) {
+  if (!responderDeposit.eq(constants.Zero)) {
     throw new Error(
       `Will not accept transfer install where responder deposit is != 0 ${responderDeposit.toString()}`,
     );
   }
 
-  if (initiatorDeposit.lte(Zero)) {
+  if (initiatorDeposit.lte(constants.Zero)) {
     throw new Error(
       `Will not accept transfer install where initiator deposit is <=0 ${initiatorDeposit.toString()}`,
     );
   }
 
-  if (initiatorTransfer.amount.lte(Zero)) {
+  if (initiatorTransfer.amount.lte(constants.Zero)) {
     throw new Error(
       `Cannot install a linked transfer app with a sender transfer of <= 0. Transfer amount: ${initiatorTransfer.amount.toString()}`,
     );
   }
 
-  if (!responderTransfer.amount.eq(Zero)) {
+  if (!responderTransfer.amount.eq(constants.Zero)) {
     throw new Error(
       `Cannot install a linked transfer app with a redeemer transfer of != 0. Transfer amount: ${responderTransfer.amount.toString()}`,
     );
@@ -120,10 +115,8 @@ export const commonAppProposalValidation = (
 
   appProposalMatchesRegistry(params, appRegistryInfo);
 
-  const initiatorDepositTokenAddress = 
-    getAddressFromAssetId(initiatorDepositAssetId);
-  const responderDepositTokenAddress = 
-    getAddressFromAssetId(responderDepositAssetId);
+  const initiatorDepositTokenAddress = getAddressFromAssetId(initiatorDepositAssetId);
+  const responderDepositTokenAddress = getAddressFromAssetId(responderDepositAssetId);
 
   if (!supportedTokenAddresses.includes(initiatorDepositTokenAddress)) {
     throw new Error(`Unsupported initiatorDepositTokenAddress: ${initiatorDepositTokenAddress}`);
@@ -136,11 +129,7 @@ export const commonAppProposalValidation = (
   // NOTE: may need to remove this condition if we start working
   // with games
   const isDeposit = appRegistryInfo.name === DepositAppName;
-  if (
-    responderDeposit.isZero() &&
-    initiatorDeposit.isZero() &&
-    !isDeposit
-  ) {
+  if (responderDeposit.isZero() && initiatorDeposit.isZero() && !isDeposit) {
     throw new Error(
       `Cannot install an app with zero valued deposits for both initiator and responder.`,
     );

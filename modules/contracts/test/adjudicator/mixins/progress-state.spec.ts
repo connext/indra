@@ -53,7 +53,7 @@ describe("progressState", () => {
   ) => Promise<void>;
 
   before(async () => {
-    wallet = (await provider.getWallets())[0];
+    wallet = new Wallet((await provider.getWallets())[0].privateKey);
     await wallet.getTransactionCount();
 
     appRegistry = await new ContractFactory(
@@ -196,5 +196,4 @@ describe("progressState", () => {
       "progressState: versionNumber of new state is not that of stored state plus 1",
     );
   });
-
 });

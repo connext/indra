@@ -1,6 +1,10 @@
-import { CONVENTION_FOR_ETH_ASSET_ID, EventNames, InstallMessage, ProposeMessage  } from "@connext/types";
-import { One } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import {
+  CONVENTION_FOR_ETH_ASSET_ID,
+  EventNames,
+  InstallMessage,
+  ProposeMessage,
+} from "@connext/types";
+import { utils, constants } from "ethers";
 
 import { Node } from "../../node";
 
@@ -36,14 +40,14 @@ describe("Node method follows spec - toke action", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
     });
 
-    it("can take actions on two different apps concurrently", async done => {
+    it("can take actions on two different apps concurrently", async (done) => {
       const appIdentityHashes: string[] = [];
 
       await collateralizeChannel(
         multisigAddress,
         nodeA,
         nodeB,
-        parseEther("2"), // We are depositing in 2 and use 1 for each concurrent app
+        utils.parseEther("2"), // We are depositing in 2 and use 1 for each concurrent app
       );
 
       nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
@@ -59,9 +63,9 @@ describe("Node method follows spec - toke action", () => {
         TicTacToeApp,
         multisigAddress,
         /* initialState */ undefined,
-        One,
+        constants.One,
         CONVENTION_FOR_ETH_ASSET_ID,
-        One,
+        constants.One,
         CONVENTION_FOR_ETH_ASSET_ID,
       );
 
@@ -69,7 +73,7 @@ describe("Node method follows spec - toke action", () => {
       nodeA.rpcRouter.dispatch(proposeRpc);
 
       while (appIdentityHashes.length !== 2) {
-        await new Promise(resolve => setTimeout(resolve, 20));
+        await new Promise((resolve) => setTimeout(resolve, 20));
       }
 
       let appsTakenActionOn = 0;

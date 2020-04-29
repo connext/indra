@@ -8,7 +8,7 @@ import {
 import { getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import { BigNumber.from } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";

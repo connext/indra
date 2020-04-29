@@ -9,35 +9,25 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, logTime, toBN } from "@connext/utils";
-import { defaultAbiCoder, keccak256 } from "ethers/utils";
+import { utils } from "ethers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import { AppInstance } from "../models";
-import {
-  Context,
-  PersistAppType,
-  ProtocolExecutionFlow,
-} from "../types";
+import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 import { appIdentityToHash } from "../utils";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
 const protocol = ProtocolNames.propose;
-const {
-  OP_SIGN,
-  OP_VALIDATE,
-  IO_SEND,
-  IO_SEND_AND_WAIT,
-  PERSIST_APP_INSTANCE,
-} = Opcode;
+const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
 
 /**
  * @description This exchange is described at the following URL:
  *
  */
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
-  0 /* Initiating */: async function*(context: Context) {
+  0 /* Initiating */: async function* (context: Context) {
     const { message, store } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
@@ -91,10 +81,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initiatorIdentifier,
       responderIdentifier,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
-      initiatorDepositAssetId: initiatorDepositAssetId 
-        || CONVENTION_FOR_ETH_ASSET_ID,
-      responderDepositAssetId: responderDepositAssetId 
-        || CONVENTION_FOR_ETH_ASSET_ID,
+      initiatorDepositAssetId: initiatorDepositAssetId || CONVENTION_FOR_ETH_ASSET_ID,
+      responderDepositAssetId: responderDepositAssetId || CONVENTION_FOR_ETH_ASSET_ID,
       meta,
     };
 
@@ -103,7 +91,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       protocol,
       {
         proposal: appInstanceProposal,
-        params, role: ProtocolRoles.initiator,
+        params,
+        role: ProtocolRoles.initiator,
       } as ProposeMiddlewareContext,
     ];
 
@@ -121,8 +110,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         multisigAddress: preProtocolStateChannel.multisigAddress,
         defaultTimeout: toBN(defaultTimeout),
       },
-      hashOfLatestState: keccak256(
-        defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
+      hashOfLatestState: utils.keccak256(
+        utils.defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
       ),
       versionNumber: 0,
       stateTimeout: stateTimeout.toHexString(),
@@ -132,10 +121,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     substart = Date.now();
     // 6ms
-    const initiatorSignatureOnInitialState = yield [
-      OP_SIGN,
-      setStateCommitment.hashToSign(),
-    ];
+    const initiatorSignatureOnInitialState = yield [OP_SIGN, setStateCommitment.hashToSign()];
     logTime(log, substart, `Signed initial state initiator propose`);
 
     const m1 = {
@@ -191,7 +177,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, start, `Initiation finished`);
   },
 
-  1 /* Responding */: async function*(context: Context) {
+  1 /* Responding */: async function* (context: Context) {
     const { message, store } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
@@ -250,10 +236,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
       meta,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
-      initiatorDepositAssetId: initiatorDepositAssetId
-        || CONVENTION_FOR_ETH_ASSET_ID,
-      responderDepositAssetId: responderDepositAssetId 
-        || CONVENTION_FOR_ETH_ASSET_ID,
+      initiatorDepositAssetId: initiatorDepositAssetId || CONVENTION_FOR_ETH_ASSET_ID,
+      responderDepositAssetId: responderDepositAssetId || CONVENTION_FOR_ETH_ASSET_ID,
     };
 
     yield [
@@ -261,7 +245,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       protocol,
       {
         proposal: appInstanceProposal,
-        params, role: ProtocolRoles.responder,
+        params,
+        role: ProtocolRoles.responder,
       } as ProposeMiddlewareContext,
     ];
 
@@ -276,8 +261,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         multisigAddress: preProtocolStateChannel.multisigAddress,
         defaultTimeout: toBN(defaultTimeout),
       },
-      hashOfLatestState: keccak256(
-        defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
+      hashOfLatestState: utils.keccak256(
+        utils.defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
       ),
       versionNumber: 0,
       stateTimeout: stateTimeout.toHexString(),
@@ -298,10 +283,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     substart = Date.now();
     // 12ms
-    const responderSignatureOnInitialState = yield [
-      OP_SIGN,
-      setStateCommitment.hashToSign(),
-    ];
+    const responderSignatureOnInitialState = yield [OP_SIGN, setStateCommitment.hashToSign()];
     logTime(log, substart, `Signed initial state responder propose`);
 
     // 0ms

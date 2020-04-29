@@ -1,8 +1,6 @@
 /* global before */
 import { SolidityValueType, TwoPartyFixedOutcome } from "@connext/types";
-import { Contract, ContractFactory } from "ethers";
-import { HashZero } from "ethers/constants";
-import { defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
+import { Wallet, Contract, ContractFactory, constants, utils } from "ethers";
 
 import HighRollerApp from "../../build/HighRollerApp.json";
 
@@ -11,7 +9,7 @@ import { expect, provider } from "../utils";
 /// Returns the commit hash that can be used to commit to chosenNumber
 /// using appSalt
 function computeCommitHash(appSalt: string, chosenNumber: number) {
-  return solidityKeccak256(["bytes32", "uint256"], [appSalt, chosenNumber]);
+  return utils.solidityKeccak256(["bytes32", "uint256"], [appSalt, chosenNumber]);
 }
 
 enum HighRollerStage {
@@ -63,15 +61,15 @@ const rlpActionEncoding = `
 `;
 
 function decodeBytesToAppState(encodedAppState: string): HighRollerAppState {
-  return defaultAbiCoder.decode([rlpAppStateEncoding], encodedAppState)[0];
+  return utils.defaultAbiCoder.decode([rlpAppStateEncoding], encodedAppState)[0];
 }
 
 function encodeState(state: SolidityValueType) {
-  return defaultAbiCoder.encode([rlpAppStateEncoding], [state]);
+  return utils.defaultAbiCoder.encode([rlpAppStateEncoding], [state]);
 }
 
 function encodeAction(state: SolidityValueType) {
-  return defaultAbiCoder.encode([rlpActionEncoding], [state]);
+  return utils.defaultAbiCoder.encode([rlpActionEncoding], [state]);
 }
 
 describe("HighRollerApp", () => {
@@ -82,7 +80,7 @@ describe("HighRollerApp", () => {
   }
 
   async function computeOutcome(state: SolidityValueType) {
-    const [decodedResult] = defaultAbiCoder.decode(
+    const [decodedResult] = utils.defaultAbiCoder.decode(
       ["uint256"],
       await highRollerApp.functions.computeOutcome(encodeState(state)),
     );
@@ -90,7 +88,7 @@ describe("HighRollerApp", () => {
   }
 
   before(async () => {
-    const wallet = (await provider.getWallets())[0];
+    const wallet = new Wallet((await provider.getWallets())[0].privateKey);
     highRollerApp = await new ContractFactory(
       HighRollerApp.abi,
       HighRollerApp.bytecode,
@@ -102,8 +100,8 @@ describe("HighRollerApp", () => {
     it("can commit to hash", async () => {
       const preState: HighRollerAppState = {
         stage: HighRollerStage.WAITING_FOR_P1_COMMITMENT,
-        salt: HashZero,
-        commitHash: HashZero,
+        salt: constants.HashZero,
+        commitHash: constants.HashZero,
         playerFirstNumber: 0,
         playerSecondNumber: 0,
         versionNumber: 0,
@@ -138,7 +136,7 @@ describe("HighRollerApp", () => {
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P1_COMMITTED_TO_HASH,
-        salt: HashZero,
+        salt: constants.HashZero,
         commitHash: hash,
         playerFirstNumber: 0,
         playerSecondNumber: 0,
@@ -148,7 +146,7 @@ describe("HighRollerApp", () => {
       const action: HighRollerAction = {
         actionType: HighRollerActionType.COMMIT_TO_NUM,
         number: 2,
-        actionHash: HashZero,
+        actionHash: constants.HashZero,
       };
 
       const ret = await computeStateTransition(preState, action);
@@ -169,7 +167,7 @@ describe("HighRollerApp", () => {
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P1_COMMITTED_TO_HASH,
-        salt: HashZero,
+        salt: constants.HashZero,
         commitHash: hash,
         playerFirstNumber: 0,
         playerSecondNumber: 0,
@@ -179,7 +177,7 @@ describe("HighRollerApp", () => {
       const action: HighRollerAction = {
         actionType: HighRollerActionType.COMMIT_TO_NUM,
         number: 0,
-        actionHash: HashZero,
+        actionHash: constants.HashZero,
       };
 
       await expect(computeStateTransition(preState, action)).to.be.revertedWith(
@@ -196,7 +194,7 @@ describe("HighRollerApp", () => {
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P2_COMMITTED_TO_NUM,
-        salt: HashZero,
+        salt: constants.HashZero,
         commitHash: hash,
         playerFirstNumber: 0,
         playerSecondNumber: 2,
@@ -228,7 +226,7 @@ describe("HighRollerApp", () => {
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P2_COMMITTED_TO_NUM,
-        salt: HashZero,
+        salt: constants.HashZero,
         commitHash: hash,
         playerFirstNumber: 0,
         playerSecondNumber: 2,

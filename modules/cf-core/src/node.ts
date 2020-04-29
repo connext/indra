@@ -21,17 +21,14 @@ import {
   PublicIdentifier,
 } from "@connext/types";
 import { delay, nullLogger } from "@connext/utils";
-import { JsonRpcProvider } from "ethers/providers";
+import { providers } from "ethers";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
 
 import { createRpcRouter } from "./methods";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
-import {
-  SetStateCommitment,
-  ConditionalTransactionCommitment,
-} from "./ethereum";
+import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 import { ProtocolRunner } from "./machine";
 import { StateChannel, AppInstance } from "./models";
 import ProcessQueue from "./process-queue";
@@ -70,7 +67,7 @@ export class Node {
     storeService: IStoreService,
     networkContext: NetworkContext,
     nodeConfig: NodeConfig,
-    provider: JsonRpcProvider,
+    provider: providers.JsonRpcProvider,
     signer: IChannelSigner,
     lockService?: ILockService,
     blocksNeededForConfirmation?: number,
@@ -96,7 +93,7 @@ export class Node {
     private readonly messagingService: IMessagingService,
     private readonly storeService: IStoreService,
     private readonly nodeConfig: NodeConfig,
-    private readonly provider: JsonRpcProvider,
+    private readonly provider: providers.JsonRpcProvider,
     public readonly networkContext: NetworkContext,
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
     public readonly log: ILoggerService = nullLogger,
@@ -136,7 +133,7 @@ export class Node {
       //   this.signer.privateKey,
       //   // Creating copy of the provider fixes a mysterious big, details:
       //   // https://github.com/ethers-io/ethers.js/issues/761
-      //   new JsonRpcProvider(this.provider.connection.url),
+      //   new providers.JsonRpcProvider(this.provider.connection.url),
       // ),
       this.blocksNeededForConfirmation!,
       new ProcessQueue(this.lockService),

@@ -4,7 +4,7 @@ import {
   HashLockTransferAppStateEncoding,
   HashLockTransferAppName,
 } from "@connext/types";
-import { Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { AppRegistryInfo } from "../shared";
 
@@ -17,4 +17,4 @@ export const HashLockTransferAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const HASHLOCK_TRANSFER_STATE_TIMEOUT = Zero;
+export const HASHLOCK_TRANSFER_STATE_TIMEOUT = constants.Zero;

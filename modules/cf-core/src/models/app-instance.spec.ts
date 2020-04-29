@@ -1,37 +1,33 @@
 import { OutcomeType } from "@connext/types";
 import { getRandomAddress, toBN } from "@connext/utils";
-import { AddressZero, Zero } from "ethers/constants";
-import { getAddress } from "ethers/utils";
+import { utils, constants } from "ethers";
 
 import { AppInstance } from "./app-instance";
 import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
 
 describe("AppInstance", () => {
   it("should be able to instantiate", () => {
-    const participants = [
-      getRandomPublicIdentifier(),
-      getRandomPublicIdentifier(),
-    ];
+    const participants = [getRandomPublicIdentifier(), getRandomPublicIdentifier()];
 
     const appInstance = new AppInstance(
       /* initiator */ participants[0],
       /* responder*/ participants[1],
       /* default timeout */ toBN(Math.ceil(Math.random() * 2e10)).toHexString(),
       /* appInterface */ {
-        addr: getAddress(getRandomAddress()),
+        addr: utils.getAddress(getRandomAddress()),
         stateEncoding: "tuple(address foo, uint256 bar)",
         actionEncoding: undefined,
       },
       /* appSeqNo */ Math.ceil(Math.random() * 2e10),
-      /* latestState */ { foo: getAddress(getRandomAddress()), bar: 0 },
+      /* latestState */ { foo: utils.getAddress(getRandomAddress()), bar: 0 },
       /* latestVersionNumber */ 999,
       /* stateTimeout */ toBN(Math.ceil(1000 * Math.random())).toHexString(),
       /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-      /* multisigAddress */ getAddress(getRandomAddress()),
+      /* multisigAddress */ utils.getAddress(getRandomAddress()),
       /* twoPartyOutcomeInterpreterParamsInternal */ {
-        playerAddrs: [AddressZero, AddressZero],
-        amount: Zero,
-        tokenAddress: AddressZero,
+        playerAddrs: [constants.AddressZero, constants.AddressZero],
+        amount: constants.Zero,
+        tokenAddress: constants.AddressZero,
       },
       /* multiAssetMultiPartyCoinTransferInterpreterParamsInternal */ undefined,
       /* singleAssetTwoPartyCoinTransferInterpreterParamsInternal */ undefined,

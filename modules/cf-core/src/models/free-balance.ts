@@ -1,7 +1,6 @@
 import { AppInterface, OutcomeType, PublicIdentifier } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
-import { Zero, AddressZero } from "ethers/constants";
-import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
+import { BigNumber, utils, constants } from "ethers";
 
 import { HARD_CODED_ASSUMPTIONS } from "../constants";
 
@@ -107,7 +106,7 @@ export class FreeBalanceClass {
       tokenAddresses.reduce(
         (balancesIndexedByToken, tokenAddress) => ({
           ...balancesIndexedByToken,
-          [tokenAddress]: addresses.map(to => ({ to, amount })),
+          [tokenAddress]: addresses.map((to) => ({ to, amount })),
         }),
         {} as { [tokenAddress: string]: CoinTransfer[] },
       ),
@@ -128,25 +127,21 @@ export class FreeBalanceClass {
         beneficiary
       ];
     } catch {
-      return Zero;
+      return constants.Zero;
     }
   }
 
   public withTokenAddress(tokenAddress: string): CoinTransferMap {
     let balances: CoinTransferMap = {};
-    balances = convertCoinTransfersToCoinTransfersMap(
-      this.balancesIndexedByToken[tokenAddress],
-    );
+    balances = convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress]);
     if (Object.keys(balances).length === 0) {
       // get addresses from default token mapping and
       // return 0 values
       const addresses = Object.keys(
-        convertCoinTransfersToCoinTransfersMap(
-          this.balancesIndexedByToken[AddressZero],
-        ),
+        convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[constants.AddressZero]),
       );
       for (const address of addresses) {
-        balances[address] = Zero;
+        balances[address] = constants.Zero;
       }
     }
     return balances;
@@ -180,7 +175,7 @@ export class FreeBalanceClass {
       const t2 = merge(t1, increments[tokenAddress]);
 
       for (const val of Object.values(t2)) {
-        if (val.lt(Zero)) {
+        if (val.lt(constants.Zero)) {
           throw new Error(
             `FreeBalanceClass::increment ended up with a negative balance when
             merging ${stringify(t1)} and ${stringify(increments[tokenAddress])}`,
@@ -214,9 +209,9 @@ export function createFreeBalance(
       // NOTE: Extremely important to understand that the default
       // addresses of the recipients are the "top level keys" as defined
       // as the 0th derived children of the addresss.
-      [AddressZero]: [
-        { to: initiator, amount: Zero },
-        { to: responder, amount: Zero },
+      [constants.AddressZero]: [
+        { to: initiator, amount: constants.Zero },
+        { to: responder, amount: constants.Zero },
       ],
     },
   };
@@ -241,9 +236,9 @@ function deserializeFreeBalanceState(freeBalanceStateJSON: FreeBalanceStateJSON)
     balancesIndexedByToken: (tokenAddresses || []).reduce(
       (acc, tokenAddress, idx) => ({
         ...acc,
-        [getAddress(tokenAddress)]: balances[idx].map(({ to, amount }) => ({
+        [utils.getAddress(tokenAddress)]: balances[idx].map(({ to, amount }) => ({
           to,
-          amount: bigNumberify(amount._hex),
+          amount: BigNumber.from(amount._hex),
         })),
       }),
       {},
@@ -259,7 +254,7 @@ function serializeFreeBalanceState(freeBalanceState: FreeBalanceState): FreeBala
   return {
     activeApps: Object.keys(freeBalanceState.activeAppsMap),
     tokenAddresses: Object.keys(freeBalanceState.balancesIndexedByToken),
-    balances: Object.values(freeBalanceState.balancesIndexedByToken).map(balances =>
+    balances: Object.values(freeBalanceState.balancesIndexedByToken).map((balances) =>
       balances.map(({ to, amount }) => ({
         to,
         amount: {

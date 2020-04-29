@@ -2,7 +2,7 @@ import { AppInstanceJson, IConnextClient, DepositAppState, DepositAppName, Defau
 import { delay } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import { BigNumber.from } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { expect } from "../";
@@ -64,10 +64,10 @@ export const requestDepositRights = async (
   // verify the latest deposit state is correct
   expect(depositApp.multisigAddress).to.be.eq(client.multisigAddress);
   expect(depositApp.assetId).to.be.eq(assetId);
-  expect(bigNumberify(depositApp.startingMultisigBalance).toString()).to.be.eq(
+  expect(BigNumber.from(depositApp.startingMultisigBalance).toString()).to.be.eq(
     multisigBalance.toString(),
   );
-  expect(bigNumberify(depositApp.startingTotalAmountWithdrawn).toString()).to.be.eq(
+  expect(BigNumber.from(depositApp.startingTotalAmountWithdrawn).toString()).to.be.eq(
     Zero,
   );
   const transfers = depositApp.transfers;
