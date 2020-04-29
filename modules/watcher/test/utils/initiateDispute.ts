@@ -14,8 +14,9 @@ import {
 import { expect } from ".";
 import { AppWithCounterClass } from "./appWithCounter";
 import { MiniFreeBalance } from "./miniFreeBalance";
-import { bigNumberifyJson } from "@connext/utils";
+import { bigNumberifyJson, toBN } from "@connext/utils";
 import { NetworkContextForTestSuite } from "./contracts";
+import { Zero } from "ethers/constants";
 
 export type OutcomeSetResults = [
   ChallengeOutcomeSetEventData,
@@ -32,7 +33,7 @@ export const initiateDispute = async (
   watcher: Watcher,
   store: IWatcherStoreService,
   networkContext: NetworkContextForTestSuite,
-  appChallengeUpdatedEvents: number = 1, // 1 for set state, 2 for set and progress
+  appSetStateEvents: number = 1, // 1 for set state, 2 for set and progress
 ) => {
   // before starting, verify empty store
   const empty = await store.getAppChallenge(app.identityHash);
@@ -65,7 +66,7 @@ export const initiateDispute = async (
           if (data.identityHash === app.identityHash) {
             appChallengeUpdatedEventsCaught += 1;
           }
-          if (appChallengeUpdatedEventsCaught === appChallengeUpdatedEvents) {
+          if (appChallengeUpdatedEventsCaught === appSetStateEvents) {
             resolve(data);
           }
         },
@@ -96,24 +97,37 @@ export const initiateDispute = async (
   expect(result).to.be.ok;
 
   // verify app + free balance challenge
+  const calledSetAndProgress = appSetStateEvents === 2;
+  const isStateTerminal = app.latestState.counter.gt(5);
+  // get expected app values
   const appSetState = bigNumberifyJson(
-    await app.getCurrentSetState(networkContext.ChallengeRegistry),
+    calledSetAndProgress
+      ? await app.getSingleSignedSetState(networkContext.ChallengeRegistry)
+      : await app.getDoubleSignedSetState(networkContext.ChallengeRegistry),
   );
+  const appFinalizesAt = toBN(await networkContext.provider.getBlockNumber())
+    .add(appSetState.stateTimeout)
+    .add(calledSetAndProgress ? app.defaultTimeout : Zero);
+  const appStatus = !calledSetAndProgress
+    ? ChallengeStatus.IN_DISPUTE
+    : isStateTerminal
+      ? ChallengeStatus.EXPLICITLY_FINALIZED
+      : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
+
+  // get expected free balance values
   const fbSetState = bigNumberifyJson(await freeBalance.getSetState());
-  const appFinalizesAt = appSetState.stateTimeout.add(
-    await networkContext.provider.getBlockNumber(),
-  );
   // fb is disputed first and automined, meaning that you should use
   // provider block - 1
   const fbFinalizesAt = fbSetState.stateTimeout
     .add(await networkContext.provider.getBlockNumber())
     .sub(1);
+
   const expected0 = {
     [app.identityHash]: {
       appStateHash: appSetState.appStateHash,
       identityHash: app.identityHash,
       versionNumber: appSetState.versionNumber,
-      status: ChallengeStatus.IN_DISPUTE,
+      status: appStatus,
       finalizesAt: appFinalizesAt,
     },
     [freeBalance.identityHash]: {
@@ -144,8 +158,14 @@ export const initiateDispute = async (
 
     // verify stored contract event
     const setStateEvents = await store.getChallengeUpdatedEvents(appId);
-    expect(setStateEvents.length).to.be.equal(1);
-    expect(setStateEvents[0]).to.containSubset(expected0[appId]);
+    if (appId === freeBalance.identityHash) {
+      // free balance always has one set state event
+      expect(setStateEvents.length).to.be.equal(1);
+      expect(setStateEvents[0]).to.containSubset(expected0[appId]);
+    } else {
+      expect(setStateEvents.length).to.be.equal(appSetStateEvents);
+      expect(setStateEvents[appSetStateEvents - 1]).to.containSubset(expected0[appId]);
+    }
 
     // verify emitted events
     expect(contractEvents[appId]).to.containSubset(expected0[appId]);
@@ -157,7 +177,7 @@ export const initiateDispute = async (
 
   // after first dispute, create and return other promises for other
   // dispute phases
-  const outcomeSet = Promise.all([
+  const outcomeSet = (Promise.all([
     new Promise((resolve) => {
       watcher.on(
         WatcherEvents.ChallengeOutcomeSetEvent,
@@ -202,7 +222,7 @@ export const initiateDispute = async (
         },
       ),
     ),
-  ]) as unknown as OutcomeSetResults;
+  ]) as unknown) as OutcomeSetResults;
   const verifyOutcomeSet = async (results: OutcomeSetResults) => {
     const [
       outcomeSetFbEvent,
@@ -232,8 +252,14 @@ export const initiateDispute = async (
     for (const appId of [app.identityHash, freeBalance.identityHash]) {
       // verify stored events
       const events = await store.getChallengeUpdatedEvents(appId);
-      expect(events.length).to.be.equal(2);
-      expect(events[1]).to.containSubset(expected1[appId]);
+      if (appId === freeBalance.identityHash) {
+        // free balance always has one set state event
+        expect(events.length).to.be.equal(2);
+        expect(events[1]).to.containSubset(expected1[appId]);
+      } else {
+        expect(events.length).to.be.equal(appSetStateEvents + 1);
+        expect(events[appSetStateEvents]).to.containSubset(expected1[appId]);
+      }
 
       // verify stored challenges
       const challenge = await store.getAppChallenge(appId);
@@ -249,7 +275,7 @@ export const initiateDispute = async (
     }
   };
 
-  const completed = Promise.all([
+  const completed = (Promise.all([
     new Promise((resolve, reject) => {
       watcher.on(
         WatcherEvents.ChallengeCompletedEvent,
@@ -274,7 +300,7 @@ export const initiateDispute = async (
         },
       );
     }),
-  ]) as unknown as ChallengeCompleteResults;
+  ]) as unknown) as ChallengeCompleteResults;
   const verifyCompleted = async (res: ChallengeCompleteResults) => {
     const [appDisputeCompleted, freeBalanceDisputeCompleted] = res;
     const expected2 = {

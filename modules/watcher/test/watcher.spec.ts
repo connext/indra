@@ -3,10 +3,10 @@ import {
   JsonRpcProvider,
   StoreTypes,
   BigNumber,
-  ChallengeEvents,
-  Address,
+  WatcherEvents,
+  StateProgressedEventData,
 } from "@connext/types";
-import { Wallet, Contract } from "ethers";
+import { Wallet } from "ethers";
 
 import {
   setupContext,
@@ -23,7 +23,6 @@ import { Watcher } from "../src";
 import { ChannelSigner, getRandomAddress, ColorfulLogger } from "@connext/utils";
 import { initiateDispute } from "./utils/initiateDispute";
 import { One } from "ethers/constants";
-import { ChallengeRegistry } from "@connext/contracts";
 
 describe("Watcher.init", () => {
   let provider: JsonRpcProvider;
@@ -61,6 +60,7 @@ describe("Watcher.initiate", () => {
   let channelBalances: { [k: string]: BigNumber };
   let freeBalance: MiniFreeBalance;
   let app: AppWithCounterClass;
+  let signers: ChannelSigner[];
 
   let networkContext: NetworkContextForTestSuite;
 
@@ -78,6 +78,7 @@ describe("Watcher.initiate", () => {
     freeBalance = context["freeBalance"];
     channelBalances = context["channelBalances"];
     networkContext = context["networkContext"];
+    signers = context["signers"];
     const loadStore = context["loadStore"];
 
     // create + load store
@@ -116,13 +117,13 @@ describe("Watcher.initiate", () => {
     // verify final balances
     await verifyOnchainBalancesPostChallenge(
       multisigAddress,
-      freeBalance.participants,
+      signers,
       channelBalances,
       wallet,
     );
   });
 
-  it.only("should be able to initiate + complete a dispute with a single signed latest state", async () => {
+  it("should be able to initiate + complete a dispute with a single signed latest state", async () => {
     // setup store with app with proper timeouts
     const {
       loadStore,
@@ -131,6 +132,7 @@ describe("Watcher.initiate", () => {
       channelBalances,
       networkContext,
       multisigAddress,
+      signers,
     } = await setupContext([{ defaultTimeout: One }]);
     // load store
     await loadStore(store);
@@ -141,40 +143,36 @@ describe("Watcher.initiate", () => {
       actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
     };
     app.latestAction = action;
-    await store.updateAppInstance(
-      multisigAddress,
-      app.toJson(),
-      await app.getNextSetState(networkContext.ChallengeRegistry, app.signerParticipants[0]),
-    );
-
-    // FIXME: Why does this do silly things
-    const challengeRegistry = new Contract(
-      networkContext.ChallengeRegistry,
-      ChallengeRegistry.abi,
-      wallet,
-    );
-    challengeRegistry.on(
-      ChallengeEvents.ChallengeUpdated,
-      (
-        identityHash: string,
-        action: string,
-        versionNumber: BigNumber,
-        timeout: BigNumber,
-        turnTaker: Address,
-        signature: string,
-        event: Event,
-      ) => {
-        console.log(`[test] CAUGHT CHALLENGE UPDATED`, identityHash);;
-      },
-    );
-
-    const { outcomeSet, verifyOutcomeSet, completed, verifyCompleted } = await initiateDispute(
-      app,
-      freeBalance,
-      watcher,
+    const setState1 = await app.getSingleSignedSetState(networkContext.ChallengeRegistry);
+    await store.updateAppInstance(multisigAddress, app.toJson(), setState1);
+    // reinstantiate watcher
+    watcher = await Watcher.init({
+      context: networkContext,
+      provider,
       store,
-      networkContext,
-    );
+      signer: wallet.privateKey,
+      logger: new ColorfulLogger("Watcher", 4, true, "A"),
+    });
+
+    const [initiateRes, contractEvent] = await Promise.all([
+      initiateDispute(app, freeBalance, watcher, store, networkContext, 2),
+      new Promise((resolve) =>
+        watcher.once(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
+          resolve(data),
+        ),
+      ),
+    ]);
+    // verify the contract event
+    const setState = await app.getSingleSignedSetState(networkContext.ChallengeRegistry);
+    expect(contractEvent).to.containSubset({
+      identityHash: app.identityHash,
+      action: AppWithCounterClass.encodeAction(app.latestAction),
+      versionNumber: setState.versionNumber,
+      timeout: setState.stateTimeout,
+      turnTaker: app.signerParticipants[0].address,
+      signature: setState.signatures.filter((x) => !!x)[0],
+    });
+    const { outcomeSet, verifyOutcomeSet, completed, verifyCompleted } = initiateRes as any;
 
     const [outcomeRes] = await Promise.all([outcomeSet, provider.send("evm_mine", [])]);
     await verifyOutcomeSet(outcomeRes);
@@ -185,7 +183,7 @@ describe("Watcher.initiate", () => {
     // verify final balances
     await verifyOnchainBalancesPostChallenge(
       multisigAddress,
-      freeBalance.participants,
+      signers,
       channelBalances,
       wallet,
     );

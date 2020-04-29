@@ -54,7 +54,7 @@ export class AppWithCounterClass {
       ], // initiator, resp
     },
     public readonly stateTimeout: BigNumber = Zero,
-    public versionNumber: BigNumber = One,
+    public latestVersionNumber: BigNumber = One,
     public latestState: AppWithCounterState = { counter: One },
     public latestAction: AppWithCounterAction | undefined = undefined,
   ) {}
@@ -98,14 +98,11 @@ export class AppWithCounterClass {
 
   get nextState(): AppWithCounterState {
     if (!this.latestAction) {
-      throw new Error(`No action to generate next state from`);
+      throw new Error(`Cannot generate next state without action`);
     }
-    return {
-      counter:
-        this.latestAction.actionType === ActionType.ACCEPT_INCREMENT
-          ? this.latestState.counter
-          : this.latestState.counter.add(this.latestAction.increment),
-    };
+    return this.latestAction.actionType === ActionType.ACCEPT_INCREMENT
+        ? { counter: this.latestState.counter }
+        : { counter: this.latestState.counter.add(this.latestAction.increment) };
   }
 
   get interpreterParams(): TwoPartyFixedOutcomeInterpreterParamsJson {
@@ -129,13 +126,6 @@ export class AppWithCounterClass {
       [twoPartyFixedOutcomeInterpreterParamsEncoding],
       [this.interpreterParams],
     );
-  }
-
-  get latestVersionNumber(): BigNumber {
-    if (this.latestAction) {
-      return this.versionNumber.add(1);
-    }
-    return this.versionNumber;
   }
 
   get appStateHash(): string {
@@ -210,20 +200,22 @@ export class AppWithCounterClass {
     return setState.toJson();
   }
 
-  public async getNextSetState(
+  public async getSingleSignedSetState(
     challengeRegistryAddress: string,
-    turnTaker: ChannelSigner,
   ): Promise<SetStateCommitmentJSON> {
+    if (!this.latestAction) {
+      throw new Error(`Cannot generate next set state commitment`);
+    }
+    const turnTakerIdx = this.latestState.counter.gt(Zero) ? 0 : 1;
     const setState = new SetStateCommitment(
       challengeRegistryAddress,
       this.appIdentity,
       stateToHash(AppWithCounterClass.encodeState(this.nextState)),
-      this.versionNumber.add(1),
+      this.latestVersionNumber.add(1),
       this.stateTimeout,
       this.identityHash,
     );
-    const sig = await turnTaker.signMessage(setState.hashToSign());
-    const turnTakerIdx = this.participants.findIndex((p) => p === turnTaker.address);
+    const sig = await this.signerParticipants[turnTakerIdx].signMessage(setState.hashToSign());
     await setState.addSignatures(
       turnTakerIdx === 0 ? sig : undefined,
       turnTakerIdx === 0 ? undefined : sig,
@@ -231,14 +223,14 @@ export class AppWithCounterClass {
     return setState.toJson();
   }
 
-  public async getCurrentSetState(
+  public async getDoubleSignedSetState(
     challengeRegistryAddress: string,
   ): Promise<SetStateCommitmentJSON> {
     const setState = new SetStateCommitment(
       challengeRegistryAddress,
       this.appIdentity,
       this.appStateHash,
-      this.versionNumber,
+      this.latestVersionNumber,
       this.stateTimeout,
       this.identityHash,
     );
@@ -272,4 +264,3 @@ export class AppWithCounterClass {
     return conditional.toJson();
   }
 }
-

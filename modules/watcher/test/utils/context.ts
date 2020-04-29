@@ -11,21 +11,19 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   CoinTransfer,
 } from "@connext/types";
-import { ChannelSigner, toBN, getRandomChannelSigner } from "@connext/utils";
+import { toBN, getRandomChannelSigner } from "@connext/utils";
 import { Wallet, Contract } from "ethers";
 import { One, Zero } from "ethers/constants";
 import { Interface } from "ethers/utils";
 
 import {
   AppWithCounterClass,
-  AppWithCounterState,
   AppWithCounterAction,
-  ActionType,
 } from "./appWithCounter";
 import { ConnextStore } from "@connext/store";
 import { MiniFreeBalance } from "./miniFreeBalance";
 import { deployTestArtifactsToChain } from "./contracts";
-import { CREATE_PROXY_AND_SETUP_GAS, stateToHash } from "./utils";
+import { CREATE_PROXY_AND_SETUP_GAS } from "./utils";
 import { expect } from "./assertions";
 
 export type TokenIndexedBalance = { [tokenAddress: string]: CoinTransfer[] };
@@ -37,29 +35,26 @@ export type CreatedAppInstanceOpts = {
 /////////////////////////////
 // Context
 
-// setup constants / defaults
-const ethProvider = process.env.ETHPROVIDER_URL;
-const provider = new JsonRpcProvider(ethProvider);
-
-const wallet = Wallet.fromMnemonic(process.env.SUGAR_DADDY!).connect(provider);
-const signers = [getRandomChannelSigner(ethProvider), getRandomChannelSigner(ethProvider)];
-
-const appBalances: TokenIndexedBalance = {
-  [CONVENTION_FOR_ETH_ASSET_ID]: [
-    { to: signers[0].address, amount: One },
-    { to: signers[1].address, amount: Zero },
-  ],
-};
-
-const defaultAppOpts = {
-  balances: appBalances,
-  defaultTimeout: Zero,
-};
-
 export const setupContext = async (
   // ensure one is actually created when no opts provided
-  provided: Partial<CreatedAppInstanceOpts>[] = [defaultAppOpts],
+  providedOpts?: Partial<CreatedAppInstanceOpts>[],
 ) => {
+  // setup constants / defaults
+  const ethProvider = process.env.ETHPROVIDER_URL;
+  const provider = new JsonRpcProvider(ethProvider);
+
+  const wallet = Wallet.fromMnemonic(process.env.SUGAR_DADDY!).connect(provider);
+  const signers = [getRandomChannelSigner(ethProvider), getRandomChannelSigner(ethProvider)];
+  const defaultAppOpts = {
+    balances: {
+      [CONVENTION_FOR_ETH_ASSET_ID]: [
+        { to: signers[0].address, amount: One },
+        { to: signers[1].address, amount: Zero },
+      ],
+    },
+    defaultTimeout: Zero,
+  };
+
   // deploy contracts
   const networkContext = await deployTestArtifactsToChain(wallet);
   const challengeRegistry = new Contract(
@@ -89,10 +84,10 @@ export const setupContext = async (
   expect(withdrawn).to.be.eq(Zero);
 
   // create objects from provided overrides
-  const activeApps = provided.map((providedOpts, idx) => {
+  const activeApps = (providedOpts || [defaultAppOpts]).map((provided, idx) => {
     const { balances, defaultTimeout } = {
       ...defaultAppOpts,
-      ...providedOpts,
+      ...provided,
     };
     return new AppWithCounterClass(
       signers,
@@ -159,15 +154,14 @@ export const setupContext = async (
   // disputes activeApps[0] by default
   const setAndProgressState = async (
     action: AppWithCounterAction,
-    turnTaker: ChannelSigner = signers[0],
   ) => {
     const app = activeApps[0];
-    app.latestAction = action;
     const setState0 = SetStateCommitment.fromJson(
-      await app.getCurrentSetState(networkContext.ChallengeRegistry),
+      await app.getDoubleSignedSetState(networkContext.ChallengeRegistry),
     );
+    app.latestAction = action;
     const setState1 = SetStateCommitment.fromJson(
-      await app.getNextSetState(networkContext.ChallengeRegistry, turnTaker),
+      await app.getSingleSignedSetState(networkContext.ChallengeRegistry),
     );
 
     return challengeRegistry.functions.setAndProgressState(
@@ -211,7 +205,7 @@ export const setupContext = async (
       await store.updateAppInstance(
         multisigAddress,
         app.toJson(),
-        await app.getCurrentSetState(networkContext.ChallengeRegistry),
+        await app.getDoubleSignedSetState(networkContext.ChallengeRegistry),
       );
     }
   };

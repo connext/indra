@@ -46,7 +46,7 @@ describe("ChainListener", () => {
       identityHash: appInstance.identityHash,
       status: ChallengeStatus.IN_DISPUTE,
       appStateHash: stateToHash(AppWithCounterClass.encodeState(appInstance.latestState)),
-      versionNumber: appInstance.versionNumber,
+      versionNumber: appInstance.latestVersionNumber,
     });
     // final state from "applyAction"
     const finalState = AppWithCounterClass.encodeState({
@@ -56,20 +56,20 @@ describe("ChainListener", () => {
       identityHash: appInstance.identityHash,
       status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
       appStateHash: stateToHash(finalState),
-      versionNumber: appInstance.versionNumber.add(1),
+      versionNumber: appInstance.latestVersionNumber.add(1),
     });
     // applied action
     const turnTaker = signers[0];
     const digest = computeAppChallengeHash(
       appInstance.identityHash,
       stateToHash(finalState),
-      appInstance.versionNumber.add(One),
+      appInstance.latestVersionNumber.add(One),
       Zero,
     );
     expect(progressed).to.containSubset({
       identityHash: appInstance.identityHash,
       action: AppWithCounterClass.encodeAction(action),
-      versionNumber: appInstance.versionNumber.add(One),
+      versionNumber: appInstance.latestVersionNumber.add(One),
       turnTaker: turnTaker.address,
       signature: await turnTaker.signMessage(digest),
     });
