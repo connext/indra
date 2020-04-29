@@ -29,6 +29,10 @@ import {
   toBN,
 } from "@connext/utils";
 import EventEmitter from "eventemitter3";
+import { Contract } from "ethers";
+import { Interface, BigNumber, defaultAbiCoder } from "ethers/utils";
+
+import { ChainListener } from "./chainListener";
 
 import { ChainListener } from "./chainListener";
 

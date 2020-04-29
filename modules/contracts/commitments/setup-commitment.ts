@@ -9,7 +9,6 @@ import { appIdentityToHash } from "@connext/utils";
 
 import * as ConditionalTransactionDelegateTarget from "../build/ConditionalTransactionDelegateTarget.json";
 
-import { MultisigCommitment } from "./multisig-commitment";
 
 const iface = new utils.Interface(ConditionalTransactionDelegateTarget.abi);
 
