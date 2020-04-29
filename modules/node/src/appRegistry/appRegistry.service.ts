@@ -7,6 +7,7 @@ import {
   validateHashLockTransferApp,
   validateSignedTransferApp,
   validateDepositApp,
+  generateValidationMiddleware,
 } from "@connext/apps";
 import {
   AppInstanceJson,
@@ -20,6 +21,14 @@ import {
   HashLockTransferAppState,
   SimpleSignedTransferAppState,
   DepositAppName,
+  Opcode,
+  UninstallMiddlewareContext,
+  ProtocolName,
+  MiddlewareContext,
+  ProtocolNames,
+  InstallMiddlewareContext,
+  DepositAppState,
+  ProtocolRoles,
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
@@ -37,6 +46,8 @@ import { Channel } from "../channel/channel.entity";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.service";
 import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
+import { CFCoreStore } from "../cfCore/cfCore.store";
+import { AppType } from "../appInstance/appInstance.entity";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -44,6 +55,7 @@ import { AppRegistryRepository } from "./appRegistry.repository";
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
   constructor(
+    private readonly cfCoreStore: CFCoreStore,
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
@@ -107,7 +119,13 @@ export class AppRegistryService implements OnModuleInit {
           );
         }
       }
-      // collateralized again in post-install tasks
+
+      if (registryAppInfo.name === HashLockTransferAppName) {
+        // install is done through middleware
+        this.log.info(`Hashlock transfer sender app is installed through middleware`);
+        return;
+      }
+      // collateralized in post-install tasks
       ({ appInstance } = await this.cfCoreService.installApp(appIdentityHash));
     } catch (e) {
       // reject if error
@@ -244,8 +262,10 @@ export class AppRegistryService implements OnModuleInit {
               (proposeInstallParams.initialState as SimpleSignedTransferAppState).paymentId,
             )
             // if receipient is not online, do not throw error, receipient can always unlock later
-            .then(response => this.log.info(`Installed recipient app: ${response.appIdentityHash}`))
-            .catch(e =>
+            .then((response) =>
+              this.log.info(`Installed recipient app: ${response.appIdentityHash}`),
+            )
+            .catch((e) =>
               this.log.error(
                 `Could not install receiver app, receiver was possibly offline? ${e.toString()}`,
               ),
@@ -266,6 +286,121 @@ export class AppRegistryService implements OnModuleInit {
       `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} completed`,
     );
   }
+
+  // APP SPECIFIC MIDDLEWARE
+  public generateMiddleware = async () => {
+    const contractAddresses = await this.configService.getContractAddresses();
+    const provider = this.configService.getEthProvider();
+    const defaultValidation = await generateValidationMiddleware({
+      ...contractAddresses,
+      provider: provider as any,
+    });
+
+    return async (protocol: ProtocolName, cxt: MiddlewareContext) => {
+      await defaultValidation(protocol, cxt);
+      switch (protocol) {
+        case ProtocolNames.setup:
+        case ProtocolNames.propose:
+        case ProtocolNames.takeAction: {
+          return;
+        }
+        case ProtocolNames.install: {
+          return await this.installMiddleware(cxt as InstallMiddlewareContext);
+        }
+        case ProtocolNames.uninstall: {
+          return await this.uninstallMiddleware(cxt as UninstallMiddlewareContext);
+        }
+        default: {
+          const unexpected: never = protocol;
+          throw new Error(`Unexpected case: ${unexpected}`);
+        }
+      }
+    };
+  };
+
+  private installMiddleware = async (cxt: InstallMiddlewareContext) => {
+    const { appInstance } = cxt;
+    const appDef = appInstance.appInterface.addr;
+
+    const contractAddresses = await this.configService.getContractAddresses();
+
+    switch (appDef) {
+      case contractAddresses.HashLockTransferApp: {
+        return await this.installHashLockTransferMiddleware(appInstance);
+      }
+      default: {
+        // middleware for app not configured
+        return;
+      }
+    }
+  };
+
+  private installHashLockTransferMiddleware = async (appInstance: AppInstanceJson) => {
+    const latestState = appInstance.latestState as HashLockTransferAppState;
+    const senderAddress = latestState.coinTransfers[0].to;
+
+    const nodeSignerAddress = await this.configService.getSignerAddress();
+
+    if (senderAddress !== nodeSignerAddress) {
+      // node is not sending funds, we dont need to do anything
+      return;
+    }
+
+    const existingSenderApp = await this.hashlockTransferService.findSenderAppByLockHashAndAssetId(
+      latestState.lockHash,
+      appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+    );
+
+    if (!existingSenderApp) {
+      throw new Error(`Sender app has not been proposed for lockhash ${latestState.lockHash}`);
+    }
+    if (existingSenderApp.type !== AppType.PROPOSAL) {
+      this.log.warn(
+        `Sender app already exists for lockhash ${latestState.lockHash}, will not install`,
+      );
+      return;
+    }
+
+    // install sender app
+    this.log.info(
+      `installHashLockTransferMiddleware: Install app ${existingSenderApp.identityHash} for user ${appInstance.initiatorIdentifier} started`,
+    );
+    const res = await this.cfCoreService.installApp(existingSenderApp.identityHash);
+    this.log.info(
+      `installHashLockTransferMiddleware: Install app ${res.appInstance.identityHash} for user ${
+        appInstance.initiatorIdentifier
+      } complete: ${JSON.stringify(res)}`,
+    );
+  };
+
+  private uninstallMiddleware = async (cxt: UninstallMiddlewareContext) => {
+    const { appInstance, role } = cxt;
+    const appDef = appInstance.appInterface.addr;
+
+    const contractAddresses = await this.configService.getContractAddresses();
+    const nodeSignerAddress = await this.configService.getSignerAddress();
+
+    switch (appDef) {
+      case contractAddresses.DepositApp: {
+        // do not respond to user requests to uninstall deposit
+        // apps if node is depositor and there is an active collateralization
+        const latestState = appInstance.latestState as DepositAppState;
+        if (latestState.transfers[0].to !== nodeSignerAddress || role === ProtocolRoles.initiator) {
+          return;
+        }
+
+        const channel = await this.cfCoreStore.getChannel(appInstance.multisigAddress);
+        if (channel.activeCollateralizations[latestState.assetId]) {
+          throw new Error(`Cannot uninstall deposit app with active collateralization`);
+        }
+        return;
+      }
+      default: {
+        // middleware for app not configured
+        return;
+      }
+    }
+  };
 
   async onModuleInit() {
     const ethNetwork = await this.configService.getEthNetwork();
@@ -290,6 +425,13 @@ export class AppRegistryService implements OnModuleInit {
       appRegistry.stateEncoding = app.stateEncoding;
       appRegistry.allowNodeInstall = app.allowNodeInstall;
       await this.appRegistryRepository.save(appRegistry);
+
+      this.log.info(`Injecting CF Core middleware`);
+      this.cfCoreService.cfCore.injectMiddleware(
+        Opcode.OP_VALIDATE,
+        await this.generateMiddleware(),
+      );
+      this.log.info(`Injected CF Core middleware`);
     }
   }
 }

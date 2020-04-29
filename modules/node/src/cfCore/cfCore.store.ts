@@ -81,7 +81,7 @@ export class CFCoreStore implements IStoreService {
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
     const allChannels = await this.channelRepository.find();
-    return allChannels.map(channel => convertChannelToJSON(channel));
+    return allChannels.map((channel) => convertChannelToJSON(channel));
   }
 
   getChannel(multisig: string): Promise<Channel> {
@@ -106,7 +106,7 @@ export class CFCoreStore implements IStoreService {
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
     const nodeIdentifier = this.configService.getPublicIdentifier();
-    const userIdentifier = stateChannel.userIdentifiers.find(id => id !== nodeIdentifier);
+    const userIdentifier = stateChannel.userIdentifiers.find((id) => id !== nodeIdentifier);
 
     const {
       multisigAddress,
@@ -123,7 +123,7 @@ export class CFCoreStore implements IStoreService {
     channel.monotonicNumProposedApps = monotonicNumProposedApps;
     const swaps = this.configService.getAllowedSwaps();
     let activeCollateralizations = {};
-    swaps.forEach(swap => {
+    swaps.forEach((swap) => {
       activeCollateralizations[swap.to] = false;
     });
     channel.activeCollateralizations = activeCollateralizations;
@@ -132,8 +132,8 @@ export class CFCoreStore implements IStoreService {
       freeBalanceAppInstance.initiatorIdentifier,
       freeBalanceAppInstance.responderIdentifier,
     ];
-    const userId = participants.find(p => p === userIdentifier);
-    const nodeId = participants.find(p => p === nodeIdentifier);
+    const userId = participants.find((p) => p === userIdentifier);
+    const nodeId = participants.find((p) => p === nodeIdentifier);
     const {
       identityHash,
       appInterface: { stateEncoding, actionEncoding, addr },
@@ -193,7 +193,7 @@ export class CFCoreStore implements IStoreService {
       signedFreeBalanceUpdate.versionNumber,
     ).toNumber();
 
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(channel);
       await transactionalEntityManager.save(freeBalanceUpdateCommitment);
     });
@@ -232,8 +232,8 @@ export class CFCoreStore implements IStoreService {
     proposal.type = AppType.INSTANCE;
     // save user/node specific ids
     const nodeId = this.configService.getPublicIdentifier();
-    proposal.userIdentifier = [initiatorIdentifier, responderIdentifier].find(p => p !== nodeId);
-    proposal.nodeIdentifier = [initiatorIdentifier, responderIdentifier].find(p => p === nodeId);
+    proposal.userIdentifier = [initiatorIdentifier, responderIdentifier].find((p) => p !== nodeId);
+    proposal.nodeIdentifier = [initiatorIdentifier, responderIdentifier].find((p) => p === nodeId);
 
     proposal.meta = meta;
 
@@ -249,17 +249,20 @@ export class CFCoreStore implements IStoreService {
         break;
 
       case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
-        proposal.outcomeInterpreterParameters = multiAssetMultiPartyCoinTransferInterpreterParams;
+        proposal.outcomeInterpreterParameters =
+          multiAssetMultiPartyCoinTransferInterpreterParams;
         break;
 
       case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
-        proposal.outcomeInterpreterParameters = singleAssetTwoPartyCoinTransferInterpreterParams;
+        proposal.outcomeInterpreterParameters =
+          singleAssetTwoPartyCoinTransferInterpreterParams;
         break;
 
       default:
-        throw new Error(`Unrecognized outcome type: ${OutcomeType[proposal.outcomeType]}`);
+        throw new Error(`Unrecognized outcome type: ${OutcomeType[outcomeType]}`);
     }
-    await getManager().transaction(async transactionalEntityManager => {
+
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(proposal);
       await transactionalEntityManager
         .createQueryBuilder()
@@ -329,7 +332,7 @@ export class CFCoreStore implements IStoreService {
       throw new Error(`App is not of correct type, type: ${app.type}`);
     }
 
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager
         .createQueryBuilder()
         .update(AppInstance)
@@ -383,7 +386,7 @@ export class CFCoreStore implements IStoreService {
     const channelId = app.channel.id;
     app.channel = null;
 
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(app);
       await transactionalEntityManager
         .createQueryBuilder()
@@ -473,7 +476,7 @@ export class CFCoreStore implements IStoreService {
     // because the app instance has `cascade` set to true, saving
     // the channel will involve multiple queries and should be put
     // within a transaction
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(app);
       await transactionalEntityManager.save(setStateCommitment);
 
@@ -507,7 +510,7 @@ export class CFCoreStore implements IStoreService {
 
     const channelId = app.channel.id;
     app.channel = undefined;
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(app);
       await transactionalEntityManager
         .createQueryBuilder()
@@ -542,9 +545,9 @@ export class CFCoreStore implements IStoreService {
   }
 
   async getSetStateCommitments(appIdentityHash: string): Promise<SetStateCommitmentJSON[]> {
-    return (await this.setStateCommitmentRepository.findByAppIdentityHash(appIdentityHash)).map(s =>
-      setStateToJson(s),
-    );
+    return (
+      await this.setStateCommitmentRepository.findByAppIdentityHash(appIdentityHash)
+    ).map((s) => setStateToJson(s));
   }
 
   async createSetStateCommitment(
@@ -717,7 +720,7 @@ export class CFCoreStore implements IStoreService {
   async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
     const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
 
-    return challenge.stateProgressedEvents.map(event =>
+    return challenge.stateProgressedEvents.map((event) =>
       entityToStateProgressedEventPayload(event, challenge),
     );
   }
@@ -738,7 +741,7 @@ export class CFCoreStore implements IStoreService {
     entity.versionNumber = versionNumber;
     entity.turnTaker = turnTaker;
 
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(entity);
 
       // all contracts emit a `ChallengeUpdated` event, so update any
@@ -757,7 +760,7 @@ export class CFCoreStore implements IStoreService {
   ): Promise<ChallengeUpdatedEventPayload[]> {
     const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
 
-    return challenge.challengeUpdatedEvents.map(event =>
+    return challenge.challengeUpdatedEvents.map((event) =>
       entityToChallengeUpdatedPayload(event, challenge),
     );
   }
@@ -789,7 +792,7 @@ export class CFCoreStore implements IStoreService {
     entity.status = status;
     entity.versionNumber = versionNumber;
 
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(entity);
 
       // all contracts emit a `ChallengeUpdated` event, so update any

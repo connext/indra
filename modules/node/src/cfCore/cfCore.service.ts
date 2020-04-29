@@ -381,7 +381,7 @@ export class CFCoreService {
       network.chainId,
     );
     const apps = await this.getAppInstances(multisigAddress);
-    return apps.filter(app => app.appInterface.addr === appRegistry.appDefinitionAddress);
+    return apps.filter((app) => app.appInterface.addr === appRegistry.appDefinitionAddress);
   }
 
   /**
