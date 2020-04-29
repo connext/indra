@@ -212,7 +212,6 @@ export class ChainListener implements IChainListener {
         versionNumber: BigNumber,
         finalizesAt: BigNumber,
       ) => {
-        console.log(`[chainListener] CAUGHT CHALLENGE UPDATED`, identityHash);
         this.emit(ChallengeEvents.ChallengeUpdated, {
           identityHash,
           status,
