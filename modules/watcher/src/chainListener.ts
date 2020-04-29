@@ -42,7 +42,7 @@ export class ChainListener implements IChainListener {
     this.emitter = new EventEmitter();
     this.challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
-      ChallengeRegistry.abi as any,
+      ChallengeRegistry.abi,
       this.provider,
     );
   }
