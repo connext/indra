@@ -1,5 +1,5 @@
 import { IConnextClient } from "@connext/types";
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { createClient, ethProvider, expect, getOnchainBalance, sendOnchainValue } from "../util";
 
@@ -12,8 +12,10 @@ describe("Deposit Rights", () => {
 
   it("happy case: client should request deposit rights and deposit ETH", async () => {
     client = await createClient();
-    await client.requestDepositRights({ assetId: AddressZero });
-    const { [client.signerAddress]: preDeposit } = await client.getFreeBalance(AddressZero);
+    await client.requestDepositRights({ assetId: constants.AddressZero });
+    const { [client.signerAddress]: preDeposit } = await client.getFreeBalance(
+      constants.AddressZero,
+    );
     expect(preDeposit).to.be.eq("0");
     const balance = await getOnchainBalance(client.multisigAddress);
     expect(balance).to.be.eq("0");
@@ -23,9 +25,9 @@ describe("Deposit Rights", () => {
           try {
             const balance = await getOnchainBalance(client.multisigAddress);
             expect(balance).to.be.eq("1");
-            await client.rescindDepositRights({ assetId: AddressZero });
+            await client.rescindDepositRights({ assetId: constants.AddressZero });
             const { [client.signerAddress]: postDeposit } = await client.getFreeBalance(
-              AddressZero,
+              constants.AddressZero,
             );
             expect(postDeposit).to.be.eq("1");
             res();

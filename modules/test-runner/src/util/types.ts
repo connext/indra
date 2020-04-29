@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 
 export interface ExistingBalancesAsyncTransfer {
   freeBalanceClientA: BigNumber;

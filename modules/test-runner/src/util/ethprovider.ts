@@ -1,12 +1,9 @@
-import { Contract, Wallet } from "ethers";
-import { AddressZero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
-import { BigNumber, BigNumberish } from "ethers/utils";
+import { Contract, Wallet, BigNumber, BigNumberish, providers, constants } from "ethers";
 import abi from "human-standard-token-abi";
 
 import { env } from "./env";
 
-export const ethProvider = new JsonRpcProvider(env.ethProviderUrl);
+export const ethProvider = new providers.JsonRpcProvider(env.ethProviderUrl);
 export const ethWallet = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
 
 /**
@@ -27,9 +24,9 @@ export const revertEVMSnapshot = async (snapshotId: string): Promise<void> => {
 export const sendOnchainValue = async (
   to: string,
   value: BigNumberish,
-  assetId: string = AddressZero,
+  assetId: string = constants.AddressZero,
 ): Promise<void> => {
-  if (assetId === AddressZero) {
+  if (assetId === constants.AddressZero) {
     await ethWallet.sendTransaction({ to, value });
   } else {
     const tokenContract = new Contract(assetId, abi, ethWallet);
@@ -39,10 +36,10 @@ export const sendOnchainValue = async (
 
 export const getOnchainBalance = async (
   address: string,
-  assetId: string = AddressZero,
+  assetId: string = constants.AddressZero,
 ): Promise<BigNumber> => {
   let result: BigNumber;
-  if (assetId === AddressZero) {
+  if (assetId === constants.AddressZero) {
     try {
       result = await ethProvider.getBalance(address);
     } catch (e) {

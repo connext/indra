@@ -1,7 +1,6 @@
 import { MinimumViableMultisig } from "@connext/contracts";
 import { IConnextClient, EventNames, BigNumberish } from "@connext/types";
-import { Wallet, Contract } from "ethers";
-import { AddressZero, Zero } from "ethers/constants";
+import { Wallet, Contract, constants } from "ethers";
 
 import {
   createClient,
@@ -30,15 +29,15 @@ describe("Withdrawal", () => {
   it("happy case: client successfully withdraws eth and node submits the tx", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     // withdraw
-    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
+    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, constants.AddressZero);
   });
 
   it.skip("happy case: client successfully withdraws same amount of eth twice", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     const recipient = Wallet.createRandom().address;
-    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, recipient);
-    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, recipient);
+    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, constants.AddressZero, recipient);
+    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, constants.AddressZero, recipient);
   });
 
   it("happy case: client successfully withdraws tokens and node submits the tx", async () => {
@@ -49,15 +48,15 @@ describe("Withdrawal", () => {
 
   it("client tries to withdraw more than it has in free balance", async () => {
     await fundChannel(client, ZERO_ZERO_ZERO_ONE_ETH);
-    await expect(withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero)).to.be.rejectedWith(
-      `Install failed.`,
-    );
+    await expect(
+      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, constants.AddressZero),
+    ).to.be.rejectedWith(`Install failed.`);
   });
 
   it("client tries to withdraw a negative amount", async () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     await expect(
-      withdrawFromChannel(client, NEGATIVE_ZERO_ZERO_ONE_ETH, AddressZero),
+      withdrawFromChannel(client, NEGATIVE_ZERO_ZERO_ONE_ETH, constants.AddressZero),
     ).to.be.rejectedWith(`invalid number value`);
   });
 
@@ -65,7 +64,7 @@ describe("Withdrawal", () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     const recipient = "0xabc";
     await expect(
-      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, recipient),
+      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, constants.AddressZero, recipient),
     ).to.be.rejectedWith(`invalid address`);
   });
 
@@ -90,7 +89,7 @@ describe("Withdrawal", () => {
     // withdraw (dont await first for concurrency). Note: don't withdraw
     // same assetId twice bc utils compare only initial / final balances
     await Promise.all([
-      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero),
+      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, constants.AddressZero),
       withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress),
     ]);
   });
@@ -104,8 +103,8 @@ describe("Withdrawal", () => {
     let eventsCaught = 0;
     client.once("DEPOSIT_CONFIRMED_EVENT", async () => {
       // make sure node free balance increases
-      const freeBalance = await client.getFreeBalance(AddressZero);
-      expect(freeBalance[client.nodeSignerAddress]).to.be.above(Zero);
+      const freeBalance = await client.getFreeBalance(constants.AddressZero);
+      expect(freeBalance[client.nodeSignerAddress]).to.be.above(constants.Zero);
       eventsCaught += 1;
       if (eventsCaught === 2) {
         done();
@@ -121,10 +120,10 @@ describe("Withdrawal", () => {
     });
 
     // simultaneously request collateral and withdraw
-    client.requestCollateral(AddressZero);
+    client.requestCollateral(constants.AddressZero);
     // use user-submitted to make sure that the event is properly
     // thrown
-    withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
+    withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, constants.AddressZero);
     // TODO: events for withdrawal commitments! issue 698
   });
 
@@ -134,7 +133,7 @@ describe("Withdrawal", () => {
       // give client eth rights
       await requestDepositRights(client);
       // try to withdraw
-      await withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, AddressZero);
+      await withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, constants.AddressZero);
     });
 
     it("client has active rights in tokens, withdrawing eth", async () => {
@@ -142,7 +141,7 @@ describe("Withdrawal", () => {
       // give client eth rights
       await requestDepositRights(client, tokenAddress);
       // try to withdraw
-      await withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, AddressZero);
+      await withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, constants.AddressZero);
     });
 
     it("client has active rights in tokens, withdrawing tokens", async () => {
@@ -156,7 +155,7 @@ describe("Withdrawal", () => {
     it("client has active rights in eth, withdrawing tokens", async () => {
       await fundChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
       // give client eth rights
-      await requestDepositRights(client, AddressZero);
+      await requestDepositRights(client, constants.AddressZero);
       // try to withdraw
       await withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, tokenAddress);
     });
@@ -165,7 +164,7 @@ describe("Withdrawal", () => {
   describe("totalWithdrawnAmount onchain increases when withdraw happens", () => {
     let multisigContract: Contract;
 
-    beforeEach(async() => {
+    beforeEach(async () => {
       await client.deployMultisig();
       multisigContract = new Contract(
         client.multisigAddress,
@@ -175,48 +174,56 @@ describe("Withdrawal", () => {
     });
 
     it("successfully updates eth after first withdraw", async () => {
-      const totalAmountWithdrawnBefore: BigNumberish =
-        await multisigContract.functions.totalAmountWithdrawn(AddressZero);
+      const totalAmountWithdrawnBefore: BigNumberish = await multisigContract.functions.totalAmountWithdrawn(
+        constants.AddressZero,
+      );
 
       await fundChannel(client, ZERO_ZERO_TWO_ETH);
-      await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
+      await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, constants.AddressZero);
 
-      const totalAmountWithdrawnAfter: BigNumberish =
-        await multisigContract.functions.totalAmountWithdrawn(AddressZero);
+      const totalAmountWithdrawnAfter: BigNumberish = await multisigContract.functions.totalAmountWithdrawn(
+        constants.AddressZero,
+      );
       expect(totalAmountWithdrawnAfter).to.be.eq(ZERO_ZERO_ONE_ETH.add(totalAmountWithdrawnBefore));
     });
 
     it("successfully updates token after first withdraw", async () => {
-      const totalAmountWithdrawnBefore: BigNumberish =
-        await multisigContract.functions.totalAmountWithdrawn(tokenAddress);
+      const totalAmountWithdrawnBefore: BigNumberish = await multisigContract.functions.totalAmountWithdrawn(
+        tokenAddress,
+      );
 
       await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
       await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
 
-      const totalAmountWithdrawnAfter: BigNumberish =
-        await multisigContract.functions.totalAmountWithdrawn(tokenAddress);
+      const totalAmountWithdrawnAfter: BigNumberish = await multisigContract.functions.totalAmountWithdrawn(
+        tokenAddress,
+      );
       expect(totalAmountWithdrawnAfter).to.be.eq(ZERO_ZERO_ONE_ETH.add(totalAmountWithdrawnBefore));
     });
 
     it.skip("successfully updates eth and token multiple times", async () => {
-      const totalAmountWithdrawnBeforeEth: BigNumberish =
-        await multisigContract.functions.totalAmountWithdrawn(AddressZero);
-      const totalAmountWithdrawnBeforeToken: BigNumberish =
-        await multisigContract.functions.totalAmountWithdrawn(tokenAddress);
+      const totalAmountWithdrawnBeforeEth: BigNumberish = await multisigContract.functions.totalAmountWithdrawn(
+        constants.AddressZero,
+      );
+      const totalAmountWithdrawnBeforeToken: BigNumberish = await multisigContract.functions.totalAmountWithdrawn(
+        tokenAddress,
+      );
 
       await fundChannel(client, ZERO_ZERO_TWO_ETH);
       await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
-      await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
-      await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
+      await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, constants.AddressZero);
+      await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, constants.AddressZero);
       await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
 
-      const totalAmountWithdrawnAfterEth: BigNumberish =
-        await multisigContract.functions.totalAmountWithdrawn(AddressZero);
+      const totalAmountWithdrawnAfterEth: BigNumberish = await multisigContract.functions.totalAmountWithdrawn(
+        constants.AddressZero,
+      );
       expect(totalAmountWithdrawnAfterEth).to.be.eq(
         ZERO_ZERO_TWO_ETH.add(totalAmountWithdrawnBeforeEth),
       );
-      const totalAmountWithdrawnAfterToken: BigNumberish =
-        await multisigContract.functions.totalAmountWithdrawn(tokenAddress);
+      const totalAmountWithdrawnAfterToken: BigNumberish = await multisigContract.functions.totalAmountWithdrawn(
+        tokenAddress,
+      );
       expect(totalAmountWithdrawnAfterToken).to.be.eq(
         ZERO_ZERO_ONE_ETH.add(totalAmountWithdrawnBeforeToken),
       );

@@ -1,7 +1,6 @@
 import { IConnextClient, BigNumberish, BigNumber, DepositAppState } from "@connext/types";
 import { delay, toBN } from "@connext/utils";
-import { Contract } from "ethers";
-import { AddressZero, Zero, One } from "ethers/constants";
+import { Contract, constants } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
 import {
@@ -25,7 +24,7 @@ describe("Deposits", () => {
     client: IConnextClient,
     expected: { node: BigNumberish; client: BigNumberish; assetId?: string },
   ): Promise<void> => {
-    const freeBalance = await client.getFreeBalance(expected.assetId || AddressZero);
+    const freeBalance = await client.getFreeBalance(expected.assetId || constants.AddressZero);
     expect(freeBalance[client.signerAddress]).to.equal(expected.client);
     // does not need to be equal, because node may be collateralizing
     expect(freeBalance[nodeSignerAddress]).to.be.at.least(expected.node);
@@ -43,7 +42,7 @@ describe("Deposits", () => {
     expected: { node: BigNumberish; client: BigNumberish; assetId?: string },
   ): Promise<void> => {
     const onchainBalance: BigNumber =
-      expected.assetId === AddressZero
+      expected.assetId === constants.AddressZero
         ? await ethProvider.getBalance(client.multisigAddress)
         : await new Contract(expected.assetId!, tokenAbi, ethProvider).functions.balanceOf(
             client.multisigAddress,
@@ -63,9 +62,9 @@ describe("Deposits", () => {
 
   it("happy case: client should deposit ETH", async () => {
     const expected = {
-      node: Zero.toString(),
+      node: constants.Zero.toString(),
       client: ONE,
-      assetId: AddressZero,
+      assetId: constants.AddressZero,
     };
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
     await assertOnchainBalance(client, expected);
@@ -75,8 +74,8 @@ describe("Deposits", () => {
 
   it("happy case: client should deposit tokens", async () => {
     const expected = {
-      node: Zero.toString(),
-      client: One.toString(),
+      node: constants.Zero.toString(),
+      client: constants.One.toString(),
       assetId: tokenAddress,
     };
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
@@ -91,9 +90,9 @@ describe("Deposits", () => {
   });
 
   it("client should not be able to deposit with negative amount", async () => {
-    await expect(client.deposit({ amount: NEGATIVE_ONE, assetId: AddressZero })).to.be.rejectedWith(
-      "Value (-1) is not greater than 0",
-    );
+    await expect(
+      client.deposit({ amount: NEGATIVE_ONE, assetId: constants.AddressZero }),
+    ).to.be.rejectedWith("Value (-1) is not greater than 0");
   });
 
   it("client should not be able to propose deposit with value it doesn't have", async () => {
@@ -107,7 +106,7 @@ describe("Deposits", () => {
 
   it("client has already requested deposit rights before calling deposit", async () => {
     const expected = {
-      node: Zero,
+      node: constants.Zero,
       client: ONE,
       assetId: tokenAddress,
     };
@@ -125,7 +124,7 @@ describe("Deposits", () => {
     // send a payment to a receiver client to
     // trigger collateral event
     const expected = {
-      node: Zero.toString(),
+      node: constants.Zero.toString(),
       client: TOKEN_AMOUNT.toString(),
       assetId: tokenAddress,
     };
@@ -140,7 +139,7 @@ describe("Deposits", () => {
     // for nodes proposed deposit app and install event will not be
     // emitted
     await new Promise(async (resolve, reject) => {
-      receiver.on("PROPOSE_INSTALL_EVENT", msg => {
+      receiver.on("PROPOSE_INSTALL_EVENT", (msg) => {
         if (msg.params.appDefinition === receiver.config.contractAddresses.DepositApp) {
           resolve();
         }
@@ -155,7 +154,7 @@ describe("Deposits", () => {
     const getDepositApps = async () => {
       const apps = await receiver.getAppInstances();
       return apps.filter(
-        app => app.appInterface.addr === client.config.contractAddresses.DepositApp,
+        (app) => app.appInterface.addr === client.config.contractAddresses.DepositApp,
       )[0];
     };
     while (!(await getDepositApps())) {
@@ -182,9 +181,9 @@ describe("Deposits", () => {
 
   it("client deposits eth, withdraws, then successfully deposits eth again", async () => {
     const expected = {
-      node: Zero,
+      node: constants.Zero,
       client: ONE,
-      assetId: AddressZero,
+      assetId: constants.AddressZero,
     };
     await client.deposit({ amount: TWO, assetId: expected.assetId });
     await client.withdraw({ amount: TWO, assetId: expected.assetId });
@@ -195,14 +194,14 @@ describe("Deposits", () => {
 
   it("client deposits eth, withdraws, then successfully deposits tokens", async () => {
     const ethExpected = {
-      client: Zero,
-      assetId: AddressZero,
-      node: Zero,
+      client: constants.Zero,
+      assetId: constants.AddressZero,
+      node: constants.Zero,
     };
     const tokenExpected = {
       client: ONE,
       assetId: tokenAddress,
-      node: Zero,
+      node: constants.Zero,
     };
     await client.deposit({ amount: TWO, assetId: ethExpected.assetId });
     await client.withdraw({ amount: TWO, assetId: ethExpected.assetId });

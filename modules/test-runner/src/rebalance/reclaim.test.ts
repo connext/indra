@@ -1,7 +1,6 @@
 import { EventNames, IConnextClient } from "@connext/types";
 import { getRandomBytes32, toBN } from "@connext/utils";
-import { AddressZero, One, Two } from "ethers/constants";
-import { BigNumber.from } from "ethers/utils";
+import { BigNumber, constants } from "ethers";
 import { before, describe } from "mocha";
 import { Client } from "ts-nats";
 
@@ -34,7 +33,7 @@ describe("Reclaim", () => {
 
   it("happy case: node should reclaim ETH with async transfer", async () => {
     const REBALANCE_PROFILE = {
-      assetId: AddressZero,
+      assetId: constants.AddressZero,
       lowerBoundCollateralize: toBN("5"),
       upperBoundCollateralize: toBN("10"),
       lowerBoundReclaim: toBN("20"),
@@ -47,47 +46,45 @@ describe("Reclaim", () => {
     // deposit client
     await fundChannel(
       clientA,
-      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(Two),
-      AddressZero,
+      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(constants.Two),
+      constants.AddressZero,
     );
-    await clientB.requestCollateral(AddressZero);
+    await clientB.requestCollateral(constants.AddressZero);
 
     // transfer to node to get node over upper bound reclaim
     // first transfer gets to upper bound
     await asyncTransferAsset(
       clientA,
       clientB,
-      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(One),
-      AddressZero,
+      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(constants.One),
+      constants.AddressZero,
       nats,
     );
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
-    await new Promise(async res => {
+    await new Promise(async (res) => {
       const paymentId = getRandomBytes32();
-      clientA.on(EventNames.UPDATE_STATE_EVENT, async data => {
+      clientA.on(EventNames.UPDATE_STATE_EVENT, async (data) => {
         if (data.newState.data) {
           res();
         }
       });
       await clientA.transfer({
-        amount: One.toString(),
-        assetId: AddressZero,
+        amount: constants.One.toString(),
+        assetId: constants.AddressZero,
         recipient: clientB.publicIdentifier,
         paymentId,
       });
     });
 
-    const freeBalancePost = await clientA.getFreeBalance(AddressZero);
+    const freeBalancePost = await clientA.getFreeBalance(constants.AddressZero);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
     expect(
-      freeBalancePost[nodeSignerAddress].gte(
-        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim),
-      ),
+      freeBalancePost[nodeSignerAddress].gte(BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim)),
     ).to.be.true;
     expect(
       freeBalancePost[nodeSignerAddress].lte(
-        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
+        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim).add(constants.One),
       ),
     ).to.be.true;
   });
@@ -107,31 +104,31 @@ describe("Reclaim", () => {
     // deposit client
     await fundChannel(
       clientA,
-      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(Two),
+      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(constants.Two),
       tokenAddress,
     );
-    await clientB.requestCollateral(AddressZero);
+    await clientB.requestCollateral(constants.AddressZero);
 
     // transfer to node to get node over upper bound reclaim
     // first transfer gets to upper bound
     await asyncTransferAsset(
       clientA,
       clientB,
-      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(One),
+      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(constants.One),
       tokenAddress,
       nats,
     );
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
-    await new Promise(async res => {
+    await new Promise(async (res) => {
       const paymentId = getRandomBytes32();
-      clientA.on(EventNames.UPDATE_STATE_EVENT, async data => {
+      clientA.on(EventNames.UPDATE_STATE_EVENT, async (data) => {
         if (data.newState.data) {
           res();
         }
       });
       await clientA.transfer({
-        amount: One.toString(),
+        amount: constants.One.toString(),
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
         paymentId,
@@ -141,13 +138,11 @@ describe("Reclaim", () => {
     const freeBalancePost = await clientA.getFreeBalance(tokenAddress);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
     expect(
-      freeBalancePost[nodeSignerAddress].gte(
-        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim),
-      ),
+      freeBalancePost[nodeSignerAddress].gte(BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim)),
     ).to.be.true;
     expect(
       freeBalancePost[nodeSignerAddress].lte(
-        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
+        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim).add(constants.One),
       ),
     ).to.be.true;
   });
@@ -155,5 +150,4 @@ describe("Reclaim", () => {
   it.skip("happy case: node should reclaim ETH after linked transfer", async () => {});
 
   it.skip("happy case: node should reclaim tokens after linked transfer", async () => {});
-
 });

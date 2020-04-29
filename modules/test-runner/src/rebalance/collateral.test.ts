@@ -1,5 +1,5 @@
 import { IConnextClient } from "@connext/types";
-import { AddressZero, Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import {
   createClient,
@@ -25,8 +25,8 @@ describe("Collateral", () => {
   });
 
   it("happy case: node should collateralize ETH", async () => {
-    await client.requestCollateral(AddressZero);
-    const freeBalance = await client.getFreeBalance(AddressZero);
+    await client.requestCollateral(constants.AddressZero);
+    const freeBalance = await client.getFreeBalance(constants.AddressZero);
     expect(freeBalance[client.signerAddress]).to.be.eq("0");
     expect(freeBalance[nodeSignerAddress]).to.be.eq(ETH_AMOUNT_MD);
 
@@ -42,7 +42,7 @@ describe("Collateral", () => {
   it("happy case: node should collateralize tokens", async () => {
     await client.requestCollateral(tokenAddress);
     const freeBalance = await client.getFreeBalance(tokenAddress);
-    expect(freeBalance[client.signerAddress]).to.be.eq(Zero);
+    expect(freeBalance[client.signerAddress]).to.be.eq(constants.Zero);
     expect(freeBalance[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
 
     const onchainTransactions = await getOnchainTransactionsForChannel(client.publicIdentifier);

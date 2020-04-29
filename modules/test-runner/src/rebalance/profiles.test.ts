@@ -1,6 +1,6 @@
 import { IConnextClient, RebalanceProfile } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 import { before } from "mocha";
 import { Client } from "ts-nats";
 
@@ -26,7 +26,7 @@ describe("Reclaim", () => {
 
   it("throws error if collateral targets are higher than reclaim", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
-      assetId: AddressZero,
+      assetId: constants.AddressZero,
       lowerBoundCollateralize: toBN("1"),
       upperBoundCollateralize: toBN("10"),
       lowerBoundReclaim: toBN("9"),
@@ -38,7 +38,7 @@ describe("Reclaim", () => {
 
   it("throws error if collateralize upper bound is lower than higher bound", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
-      assetId: AddressZero,
+      assetId: constants.AddressZero,
       lowerBoundCollateralize: toBN("10"),
       upperBoundCollateralize: toBN("1"),
       lowerBoundReclaim: toBN("9"),
@@ -50,7 +50,7 @@ describe("Reclaim", () => {
 
   it("throws error if reclaim upper bound is lower than higher bound", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
-      assetId: AddressZero,
+      assetId: constants.AddressZero,
       lowerBoundCollateralize: toBN("1"),
       upperBoundCollateralize: toBN("10"),
       lowerBoundReclaim: toBN("15"),

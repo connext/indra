@@ -6,9 +6,7 @@ import {
   DefaultApp,
 } from "@connext/types";
 import { delay } from "@connext/utils";
-import { Contract } from "ethers";
-import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber } from "ethers";
+import { Contract, BigNumber, constants } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
 import { expect } from "../";
@@ -16,12 +14,12 @@ import { ethProvider } from "../ethprovider";
 
 export const requestDepositRights = async (
   client: IConnextClient,
-  assetId: string = AddressZero,
+  assetId: string = constants.AddressZero,
   clientIsRecipient: boolean = true,
 ): Promise<void> => {
   // NOTE: will use instantaneous multisig balance as the assumed balance
   const multisigBalance =
-    assetId === AddressZero
+    assetId === constants.AddressZero
       ? await ethProvider.getBalance(client.multisigAddress)
       : await new Contract(assetId, tokenAbi, ethProvider).functions.balanceOf(
           client.multisigAddress,
@@ -70,10 +68,12 @@ export const requestDepositRights = async (
   expect(BigNumber.from(depositApp.startingMultisigBalance).toString()).to.be.eq(
     multisigBalance.toString(),
   );
-  expect(BigNumber.from(depositApp.startingTotalAmountWithdrawn).toString()).to.be.eq(Zero);
+  expect(BigNumber.from(depositApp.startingTotalAmountWithdrawn).toString()).to.be.eq(
+    constants.Zero,
+  );
   const transfers = depositApp.transfers;
-  expect(transfers[0].amount).to.be.eq(Zero);
-  expect(transfers[1].amount).to.be.eq(Zero);
+  expect(transfers[0].amount).to.be.eq(constants.Zero);
+  expect(transfers[1].amount).to.be.eq(constants.Zero);
   const clientIdx = clientIsRecipient ? 0 : 1;
   expect(transfers[clientIdx].to).to.be.eq(client.signerAddress);
   expect(transfers[clientIdx === 0 ? 1 : 0].to).to.be.eq(client.nodeSignerAddress);

@@ -1,10 +1,6 @@
-import {
-  EventNames,
-  IConnextClient,
-  CONVENTION_FOR_ETH_ASSET_ID,
-} from "@connext/types";
+import { EventNames, IConnextClient, CONVENTION_FOR_ETH_ASSET_ID } from "@connext/types";
 import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { AddressZero, One } from "ethers/constants";
+import { constants } from "ethers";
 
 import {
   AssetOptions,
@@ -30,7 +26,7 @@ describe("ChannelProvider", () => {
     client = await createClient({ id: "A" });
     remoteClient = await createRemoteClient(await createChannelProvider(client));
     nodeIdentifier = client.config.nodeIdentifier;
-    nodeSignerAddress = client.nodeSignerAddress;;
+    nodeSignerAddress = client.nodeSignerAddress;
     tokenAddress = client.config.contractAddresses.Token;
   });
 
@@ -62,18 +58,18 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // TRANSFER FLOW
-    const transfer: AssetOptions = { amount: One, assetId: tokenAddress };
+    const transfer: AssetOptions = { amount: constants.One, assetId: tokenAddress };
     const clientB = await createClient({ id: "B" });
     await clientB.requestCollateral(tokenAddress);
 
     const transferFinished = Promise.all([
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         await clientB.messaging.subscribe(
           `${client.nodeIdentifier}.channel.*.app-instance.*.uninstall`,
           resolve,
         );
       }),
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async () => {
           resolve();
         });
@@ -90,14 +86,14 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // WITHDRAW FLOW
-    const withdraw: AssetOptions = { amount: One, assetId: tokenAddress };
+    const withdraw: AssetOptions = { amount: constants.One, assetId: tokenAddress };
     await withdrawFromChannel(remoteClient, withdraw.amount, withdraw.assetId);
   });
 
   it("Remote client tries to call a function when client is offline", async () => {
     // close channelProvider connection
     remoteClient.channelProvider.close();
-    await expect(remoteClient.getFreeBalance(AddressZero)).to.be.rejectedWith(
+    await expect(remoteClient.getFreeBalance(constants.AddressZero)).to.be.rejectedWith(
       "RpcConnection: Timeout - JSON-RPC not responded within 30s",
     );
   });

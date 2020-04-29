@@ -1,6 +1,5 @@
 import { IConnextClient } from "@connext/types";
-import { AddressZero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, constants } from "ethers";
 import * as lolex from "lolex";
 
 import {
@@ -52,36 +51,32 @@ const fundChannelAndSwap = async (opts: {
 
   const input = {
     amount: inputAmount,
-    assetId: tokenToEth ? client.config.contractAddresses.Token : AddressZero,
+    assetId: tokenToEth ? client.config.contractAddresses.Token : constants.AddressZero,
   };
   const output = {
     amount: outputAmount,
-    assetId: tokenToEth ? AddressZero : client.config.contractAddresses.Token,
+    assetId: tokenToEth ? constants.AddressZero : client.config.contractAddresses.Token,
   };
   await fundChannel(client, input.amount, input.assetId);
   await requestCollateral(client, output.assetId);
   // swap call back
-  const swapCb = async () =>
-    await swapAsset(client, input, output, client.nodeSignerAddress);
+  const swapCb = async () => await swapAsset(client, input, output, client.nodeSignerAddress);
   // try to swap, first check if test must be fast forwarded
   if (fastForward) {
     // fast forward the clock for tests with delay
     // after swapping
-    (client.messaging as TestMessagingService)!.on(
-      fastForward,
-      async (msg: MessagingEventData) => {
-        // check if you should fast forward on specific protocol, or
-        // just on specfic subject
-        if (!protocol) {
-          clock.tick(89_000);
-          return;
-        }
-        if (getProtocolFromData(msg) === protocol) {
-          clock.tick(89_000);
-          return;
-        }
-      },
-    );
+    (client.messaging as TestMessagingService)!.on(fastForward, async (msg: MessagingEventData) => {
+      // check if you should fast forward on specific protocol, or
+      // just on specfic subject
+      if (!protocol) {
+        clock.tick(89_000);
+        return;
+      }
+      if (getProtocolFromData(msg) === protocol) {
+        clock.tick(89_000);
+        return;
+      }
+    });
     return;
   }
 

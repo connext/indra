@@ -1,5 +1,5 @@
 import { EventNames, IConnextClient, LinkedTransferStatus, Address } from "@connext/types";
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 import { Client } from "ts-nats";
 
 import { env } from "../env";
@@ -33,11 +33,11 @@ export async function asyncTransferAsset(
     Promise.all([
       Promise.race([
         new Promise((resolve: Function): void => {
-          clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, data => {
+          clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
             expect(data).to.deep.include({
               amount: transferAmount,
               sender: clientA.publicIdentifier,
-              recipient: clientB.publicIdentifier
+              recipient: clientB.publicIdentifier,
             });
             resolve();
           });
@@ -49,7 +49,7 @@ export async function asyncTransferAsset(
         }),
       ]),
       new Promise((resolve: Function): void => {
-        clientA.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, data => {
+        clientA.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
           // TODO: Sender/recipient are undefined here because https://github.com/ConnextProject/indra/issues/1054
           resolve();
         });

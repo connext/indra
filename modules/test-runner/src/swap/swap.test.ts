@@ -1,7 +1,6 @@
 import { IConnextClient, PublicParams } from "@connext/types";
 import { calculateExchange } from "@connext/utils";
-import { AddressZero, Zero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { utils, constants } from "ethers";
 
 import { expect, COLLATERAL_AMOUNT_TOKEN, ONE_ETH } from "../util";
 import {
@@ -34,7 +33,7 @@ describe("Swaps", () => {
   });
 
   it("happy case: client swaps eth for tokens successfully", async () => {
-    const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(client, input.amount, input.assetId);
     await client.requestCollateral(output.assetId);
@@ -43,14 +42,14 @@ describe("Swaps", () => {
 
   it("happy case: client swaps tokens for eth successfully", async () => {
     const input: AssetOptions = { amount: ONE_ETH, assetId: tokenAddress };
-    const output: AssetOptions = { amount: ETH_AMOUNT_MD, assetId: AddressZero };
+    const output: AssetOptions = { amount: ETH_AMOUNT_MD, assetId: constants.AddressZero };
     await fundChannel(client, input.amount, input.assetId);
     await client.requestCollateral(output.assetId);
     await swapAsset(client, input, output, nodeSignerAddress);
   });
 
   it("happy case: client tries to swap with insufficient collateral on node", async () => {
-    const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(client, input.amount, input.assetId);
     const expectedFreeBalanceNodeToken = COLLATERAL_AMOUNT_TOKEN.sub(
@@ -64,16 +63,16 @@ describe("Swaps", () => {
       input,
       output,
       nodeSignerAddress,
-      { freeBalanceNodeToken: Zero },
+      { freeBalanceNodeToken: constants.Zero },
       { freeBalanceNodeToken: expectedFreeBalanceNodeToken },
     );
   });
 
   it("client tries to swap with invalid from token address", async () => {
-    await fundChannel(client, ETH_AMOUNT_SM, AddressZero);
+    await fundChannel(client, ETH_AMOUNT_SM, constants.AddressZero);
     await client.requestCollateral(tokenAddress);
-    const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
-    const swapAmount = parseEther(ZERO_ZERO_ZERO_FIVE);
+    const swapRate = await client.getLatestSwapRate(constants.AddressZero, tokenAddress);
+    const swapAmount = utils.parseEther(ZERO_ZERO_ZERO_FIVE);
     const swapParams: PublicParams.Swap = {
       amount: swapAmount.toString(),
       fromAssetId: WRONG_ADDRESS,
@@ -84,13 +83,13 @@ describe("Swaps", () => {
   });
 
   it("client tries to swap with invalid to token address", async () => {
-    await fundChannel(client, ETH_AMOUNT_SM, AddressZero);
+    await fundChannel(client, ETH_AMOUNT_SM, constants.AddressZero);
     await client.requestCollateral(tokenAddress);
-    const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
-    const swapAmount = parseEther(ZERO_ZERO_ZERO_FIVE);
+    const swapRate = await client.getLatestSwapRate(constants.AddressZero, tokenAddress);
+    const swapAmount = utils.parseEther(ZERO_ZERO_ZERO_FIVE);
     const swapParams: PublicParams.Swap = {
       amount: swapAmount.toString(),
-      fromAssetId: AddressZero,
+      fromAssetId: constants.AddressZero,
       swapRate,
       toAssetId: WRONG_ADDRESS,
     };
@@ -98,13 +97,13 @@ describe("Swaps", () => {
   });
 
   it("client tries to swap with insufficient free balance for the user", async () => {
-    await fundChannel(client, ETH_AMOUNT_SM, AddressZero);
+    await fundChannel(client, ETH_AMOUNT_SM, constants.AddressZero);
     await client.requestCollateral(tokenAddress);
-    const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
-    const swapAmount = parseEther(ZERO_ZERO_TWO);
+    const swapRate = await client.getLatestSwapRate(constants.AddressZero, tokenAddress);
+    const swapAmount = utils.parseEther(ZERO_ZERO_TWO);
     const swapParams: PublicParams.Swap = {
       amount: swapAmount.toString(),
-      fromAssetId: AddressZero,
+      fromAssetId: constants.AddressZero,
       swapRate,
       toAssetId: tokenAddress,
     };
@@ -112,13 +111,13 @@ describe("Swaps", () => {
   });
 
   it("client tries to swap with negative swap rate", async () => {
-    await fundChannel(client, ETH_AMOUNT_SM, AddressZero);
+    await fundChannel(client, ETH_AMOUNT_SM, constants.AddressZero);
     await client.requestCollateral(tokenAddress);
-    const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
-    const swapAmount = parseEther(ZERO_ZERO_ZERO_FIVE);
+    const swapRate = await client.getLatestSwapRate(constants.AddressZero, tokenAddress);
+    const swapAmount = utils.parseEther(ZERO_ZERO_ZERO_FIVE);
     const swapParams: PublicParams.Swap = {
       amount: swapAmount.toString(),
-      fromAssetId: AddressZero,
+      fromAssetId: constants.AddressZero,
       swapRate: (-swapRate).toString(),
       toAssetId: tokenAddress,
     };
@@ -126,13 +125,13 @@ describe("Swaps", () => {
   });
 
   it("client tries to swap with negative user amount", async () => {
-    await fundChannel(client, ETH_AMOUNT_SM, AddressZero);
+    await fundChannel(client, ETH_AMOUNT_SM, constants.AddressZero);
     await client.requestCollateral(tokenAddress);
-    const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
-    const swapAmount = parseEther(ZERO_ZERO_ZERO_FIVE);
+    const swapRate = await client.getLatestSwapRate(constants.AddressZero, tokenAddress);
+    const swapAmount = utils.parseEther(ZERO_ZERO_ZERO_FIVE);
     const swapParams: PublicParams.Swap = {
       amount: swapAmount.mul(-1).toString(),
-      fromAssetId: AddressZero,
+      fromAssetId: constants.AddressZero,
       swapRate,
       toAssetId: tokenAddress,
     };
@@ -144,14 +143,14 @@ describe("Swaps", () => {
   // in CD (with the same instructions). See:
   // https://github.com/ConnextProject/indra/issues/807
   it.skip("client tries to swap with incorrect swap rate (node rejects)", async () => {
-    await fundChannel(client, ETH_AMOUNT_SM, AddressZero);
+    await fundChannel(client, ETH_AMOUNT_SM, constants.AddressZero);
     await client.requestCollateral(tokenAddress);
     // No collateral requested
     const swapRate = ONE;
-    const swapAmount = parseEther(ZERO_ZERO_ZERO_FIVE);
+    const swapAmount = utils.parseEther(ZERO_ZERO_ZERO_FIVE);
     const swapParams: PublicParams.Swap = {
       amount: swapAmount.toString(),
-      fromAssetId: AddressZero,
+      fromAssetId: constants.AddressZero,
       swapRate,
       toAssetId: tokenAddress,
     };

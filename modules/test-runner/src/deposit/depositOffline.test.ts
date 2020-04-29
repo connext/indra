@@ -17,8 +17,7 @@ import {
   ZERO_ZERO_ONE_ETH,
   env,
 } from "../util";
-import { AddressZero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, constants } from "ethers";
 import { getRandomChannelSigner } from "@connext/utils";
 
 const makeDepositCall = async (opts: {
@@ -31,7 +30,8 @@ const makeDepositCall = async (opts: {
   assetId?: string;
 }) => {
   const { client, clock, amount, assetId, failsWith, protocol, subjectToFastforward } = opts;
-  const defaultAmount = assetId && assetId !== AddressZero ? TOKEN_AMOUNT : ZERO_ZERO_ONE_ETH;
+  const defaultAmount =
+    assetId && assetId !== constants.AddressZero ? TOKEN_AMOUNT : ZERO_ZERO_ONE_ETH;
   if (!failsWith) {
     await fundChannel(client, amount || defaultAmount, assetId);
     return;
@@ -169,5 +169,4 @@ describe("Deposit offline tests", () => {
 
     await createClient({ signer });
   });
-
 });

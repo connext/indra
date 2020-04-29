@@ -1,10 +1,5 @@
-import {
-  IConnextClient,
-  EventPayloads,
-  EventNames,
-} from "@connext/types";
-import { AddressZero } from "ethers/constants";
-import { BigNumber.from } from "ethers/utils";
+import { IConnextClient, EventPayloads, EventNames } from "@connext/types";
+import { BigNumber, constants } from "ethers";
 import { Client } from "ts-nats";
 import { before } from "mocha";
 
@@ -47,13 +42,13 @@ describe("Full Flow: Transfer", () => {
   });
 
   it("User transfers ETH to multiple clients", async () => {
-    await fundChannel(clientA, ETH_AMOUNT_SM.mul(4), AddressZero);
-    await requestCollateral(clientB, AddressZero);
-    await requestCollateral(clientC, AddressZero);
-    await requestCollateral(clientD, AddressZero);
-    await asyncTransferAsset(clientA, clientB, ETH_AMOUNT_SM, AddressZero, nats);
-    await asyncTransferAsset(clientA, clientC, ETH_AMOUNT_SM, AddressZero, nats);
-    await asyncTransferAsset(clientA, clientD, ETH_AMOUNT_SM, AddressZero, nats);
+    await fundChannel(clientA, ETH_AMOUNT_SM.mul(4), constants.AddressZero);
+    await requestCollateral(clientB, constants.AddressZero);
+    await requestCollateral(clientC, constants.AddressZero);
+    await requestCollateral(clientD, constants.AddressZero);
+    await asyncTransferAsset(clientA, clientB, ETH_AMOUNT_SM, constants.AddressZero, nats);
+    await asyncTransferAsset(clientA, clientC, ETH_AMOUNT_SM, constants.AddressZero, nats);
+    await asyncTransferAsset(clientA, clientD, ETH_AMOUNT_SM, constants.AddressZero, nats);
   });
 
   it("User transfers tokens to multiple clients", async () => {
@@ -67,13 +62,13 @@ describe("Full Flow: Transfer", () => {
   });
 
   it("User receives multiple ETH transfers ", async () => {
-    await fundChannel(clientB, ETH_AMOUNT_SM, AddressZero);
-    await fundChannel(clientC, ETH_AMOUNT_SM, AddressZero);
-    await fundChannel(clientD, ETH_AMOUNT_SM, AddressZero);
-    await requestCollateral(clientA, AddressZero);
-    await asyncTransferAsset(clientB, clientA, ETH_AMOUNT_SM, AddressZero, nats);
-    await asyncTransferAsset(clientC, clientA, ETH_AMOUNT_SM, AddressZero, nats);
-    await asyncTransferAsset(clientD, clientA, ETH_AMOUNT_SM, AddressZero, nats);
+    await fundChannel(clientB, ETH_AMOUNT_SM, constants.AddressZero);
+    await fundChannel(clientC, ETH_AMOUNT_SM, constants.AddressZero);
+    await fundChannel(clientD, ETH_AMOUNT_SM, constants.AddressZero);
+    await requestCollateral(clientA, constants.AddressZero);
+    await asyncTransferAsset(clientB, clientA, ETH_AMOUNT_SM, constants.AddressZero, nats);
+    await asyncTransferAsset(clientC, clientA, ETH_AMOUNT_SM, constants.AddressZero, nats);
+    await asyncTransferAsset(clientD, clientA, ETH_AMOUNT_SM, constants.AddressZero, nats);
   });
 
   it("User receives multiple token transfers ", async () => {
@@ -92,7 +87,7 @@ describe("Full Flow: Transfer", () => {
       // seems there is a condition --> receiver sends resolve req.
       // while user has deposit in flight and node has insufficient
       // collateral. node will not allow the resolution of that payment
-      await requestCollateral(clientA, AddressZero, true);
+      await requestCollateral(clientA, constants.AddressZero, true);
       await fundChannel(clientB, BigNumber.from(5));
       await fundChannel(clientC, BigNumber.from(5));
       let transferCount = 0;
@@ -117,8 +112,16 @@ describe("Full Flow: Transfer", () => {
         rej(`Received transfer failed event on clientC`),
       );
       await Promise.all([
-        clientB.transfer({ amount: "1", assetId: AddressZero, recipient: clientA.publicIdentifier }),
-        clientC.transfer({ amount: "1", assetId: AddressZero, recipient: clientA.publicIdentifier }),
+        clientB.transfer({
+          amount: "1",
+          assetId: constants.AddressZero,
+          recipient: clientA.publicIdentifier,
+        }),
+        clientC.transfer({
+          amount: "1",
+          assetId: constants.AddressZero,
+          recipient: clientA.publicIdentifier,
+        }),
       ]);
     });
   });

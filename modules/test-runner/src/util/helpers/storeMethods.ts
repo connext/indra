@@ -21,12 +21,11 @@ import {
   ConditionalTransactionCommitmentJSON,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { BigNumber, hexlify, randomBytes } from "ethers/utils";
+import { BigNumber, utils, constants } from "ethers";
 import MockAsyncStorage from "mock-async-storage";
 import { v4 as uuid } from "uuid";
 
 import { expect, env } from "../";
-import { One, AddressZero } from "ethers/constants";
 
 export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
 
@@ -52,8 +51,8 @@ export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
   twoPartyOutcomeInterpreterParams: {
     amount: { _hex: "0x42" } as any,
-    playerAddrs: [AddressZero, AddressZero],
-    tokenAddress: AddressZero,
+    playerAddrs: [constants.AddressZero, constants.AddressZero],
+    tokenAddress: constants.AddressZero,
   },
 };
 
@@ -79,7 +78,7 @@ export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
   stateTimeout: "0x00",
   singleAssetTwoPartyCoinTransferInterpreterParams: {
     limit: { _hex: "0x1" } as any,
-    tokenAddress: AddressZero,
+    tokenAddress: constants.AddressZero,
   },
 };
 
@@ -99,8 +98,8 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
 
 export const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
   to: TEST_STORE_ETH_ADDRESS,
-  value: One,
-  data: hexlify(randomBytes(64)),
+  value: constants.One,
+  data: utils.hexlify(utils.randomBytes(64)),
 };
 
 export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {

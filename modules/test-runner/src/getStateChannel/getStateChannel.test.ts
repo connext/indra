@@ -1,5 +1,5 @@
 import { IConnextClient, StateChannelJSON, StateSchemaVersion } from "@connext/types";
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 
 import {
   createClient,
@@ -16,7 +16,7 @@ describe("Get State Channel", () => {
   beforeEach(async () => {
     clientA = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
-    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: constants.AddressZero });
     await clientA.requestCollateral(tokenAddress);
   });
 
@@ -44,7 +44,7 @@ describe("Get State Channel", () => {
   it("Store contains multiple state channels", async () => {
     // Client with same store and new signer
     const clientB = await createClient({ store: clientA.store });
-    await clientB.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
+    await clientB.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: constants.AddressZero });
     await clientB.requestCollateral(tokenAddress);
 
     // Now check both exist in the same store

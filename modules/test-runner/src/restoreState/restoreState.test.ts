@@ -1,7 +1,21 @@
-import { IConnextClient, IChannelSigner, EventNames, EventPayloads, StoreTypes } from "@connext/types";
-import { AddressZero, Zero } from "ethers/constants";
+import {
+  IConnextClient,
+  IChannelSigner,
+  EventNames,
+  EventPayloads,
+  StoreTypes,
+} from "@connext/types";
+import { constants } from "ethers";
 
-import { expect, TOKEN_AMOUNT, createClient, ETH_AMOUNT_SM, fundChannel, TOKEN_AMOUNT_SM, env } from "../util";
+import {
+  expect,
+  TOKEN_AMOUNT,
+  createClient,
+  ETH_AMOUNT_SM,
+  fundChannel,
+  TOKEN_AMOUNT_SM,
+  env,
+} from "../util";
 import { getRandomChannelSigner, stringify } from "@connext/utils";
 import { ConnextStore } from "@connext/store";
 
@@ -13,7 +27,10 @@ describe("Restore State", () => {
 
   beforeEach(async () => {
     signerA = getRandomChannelSigner(env.ethProviderUrl);
-    clientA = await createClient({ signer: signerA, store: new ConnextStore(StoreTypes.LocalStorage) });
+    clientA = await createClient({
+      signer: signerA,
+      store: new ConnextStore(StoreTypes.LocalStorage),
+    });
     tokenAddress = clientA.config.contractAddresses.Token;
     nodeSignerAddress = clientA.nodeSignerAddress;
   });
@@ -24,22 +41,22 @@ describe("Restore State", () => {
 
   it("happy case: client can delete its store and restore from a remote backup", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: constants.AddressZero });
     await clientA.requestCollateral(tokenAddress);
 
     // check balances pre
-    const freeBalanceEthPre = await clientA.getFreeBalance(AddressZero);
+    const freeBalanceEthPre = await clientA.getFreeBalance(constants.AddressZero);
     const freeBalanceTokenPre = await clientA.getFreeBalance(tokenAddress);
     expect(freeBalanceEthPre[clientA.signerAddress]).to.be.eq(ETH_AMOUNT_SM);
-    expect(freeBalanceEthPre[nodeSignerAddress]).to.be.eq(Zero);
-    expect(freeBalanceTokenPre[clientA.signerAddress]).to.be.eq(Zero);
+    expect(freeBalanceEthPre[nodeSignerAddress]).to.be.eq(constants.Zero);
+    expect(freeBalanceTokenPre[clientA.signerAddress]).to.be.eq(constants.Zero);
     expect(freeBalanceTokenPre[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
 
     // delete store
     clientA.store.clear();
 
     // check that getting balances will now error
-    await expect(clientA.getFreeBalance(AddressZero)).to.be.rejectedWith(
+    await expect(clientA.getFreeBalance(constants.AddressZero)).to.be.rejectedWith(
       "Call to getStateChannel failed when searching for multisig address",
     );
     await expect(clientA.getFreeBalance(tokenAddress)).to.be.rejectedWith(
@@ -49,11 +66,11 @@ describe("Restore State", () => {
     await clientA.restoreState();
 
     // check balances post
-    const freeBalanceEthPost = await clientA.getFreeBalance(AddressZero);
+    const freeBalanceEthPost = await clientA.getFreeBalance(constants.AddressZero);
     const freeBalanceTokenPost = await clientA.getFreeBalance(tokenAddress);
     expect(freeBalanceEthPost[clientA.signerAddress]).to.be.eq(ETH_AMOUNT_SM);
-    expect(freeBalanceEthPost[nodeSignerAddress]).to.be.eq(Zero);
-    expect(freeBalanceTokenPost[clientA.signerAddress]).to.be.eq(Zero);
+    expect(freeBalanceEthPost[nodeSignerAddress]).to.be.eq(constants.Zero);
+    expect(freeBalanceTokenPost[clientA.signerAddress]).to.be.eq(constants.Zero);
     expect(freeBalanceTokenPost[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
   });
 
@@ -79,7 +96,7 @@ describe("Restore State", () => {
           return reject();
         });
       }),
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         const result = await senderClient.transfer({
           amount: transferAmount,
           assetId,
@@ -96,12 +113,13 @@ describe("Restore State", () => {
     // bring clientA back online
     await new Promise(async (resolve, reject) => {
       clientA.on(
-        EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, 
+        EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT,
         (msg: EventPayloads.LinkedTransferFailed) => {
           return reject(`${clientA.publicIdentifier} failed to transfer: ${stringify(msg)}`);
-      });
-      clientA = await createClient({ 
-        signer: signerA, 
+        },
+      );
+      clientA = await createClient({
+        signer: signerA,
         store: new ConnextStore(StoreTypes.LocalStorage),
       });
       expect(clientA.signerAddress).to.be.eq(signerA.address);

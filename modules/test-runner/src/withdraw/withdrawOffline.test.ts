@@ -1,7 +1,6 @@
 import { EventNames, IConnextClient, IChannelSigner } from "@connext/types";
 import { ChannelSigner, delay, getRandomChannelSigner } from "@connext/utils";
-import { BigNumber } from "ethers/utils";
-import { AddressZero } from "ethers/constants";
+import { BigNumber, constants } from "ethers";
 import * as lolex from "lolex";
 import {
   ClientTestMessagingInputOpts,
@@ -29,13 +28,14 @@ describe("Withdraw offline tests", () => {
   const createAndFundChannel = async (
     messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
     amount: BigNumber = ETH_AMOUNT_SM,
-    assetId: string = AddressZero,
+    assetId: string = constants.AddressZero,
   ): Promise<IConnextClient> => {
     // make sure the signer is set
     messagingConfig.signer = messagingConfig.signer || getRandomChannelSigner(env.ethProviderUrl);
-    signer = typeof messagingConfig.signer === "string" 
-      ? new ChannelSigner(messagingConfig.signer, env.ethProviderUrl) 
-      : messagingConfig.signer;
+    signer =
+      typeof messagingConfig.signer === "string"
+        ? new ChannelSigner(messagingConfig.signer, env.ethProviderUrl)
+        : messagingConfig.signer;
     client = await createClientWithMessagingLimits({
       signer,
       ...messagingConfig,
@@ -72,7 +72,7 @@ describe("Withdraw offline tests", () => {
     });
 
     await expect(
-      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, constants.AddressZero),
     ).to.be.rejectedWith(`proposal took longer than 90 seconds`);
   });
 
@@ -93,14 +93,14 @@ describe("Withdraw offline tests", () => {
     });
 
     await expect(
-      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, constants.AddressZero),
     ).to.be.rejectedWith(`proposal took longer than 90 seconds`);
   });
 
   it.skip("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
     await createAndFundChannel();
 
-    await new Promise(resolve => {
+    await new Promise((resolve) => {
       client.once(EventNames.UPDATE_STATE_EVENT, async () => {
         // wait for the value to actually be written to the store,
         // takes longer than the `disconnect` call
@@ -109,7 +109,7 @@ describe("Withdraw offline tests", () => {
         clock.tick(89_000);
         resolve();
       });
-      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero);
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, constants.AddressZero);
     });
 
     const [val] = await client.store.getUserWithdrawals!();

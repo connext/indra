@@ -1,11 +1,6 @@
-import {
-  IConnextClient,
-  EventPayloads,
-  EventNames,
-} from "@connext/types";
+import { IConnextClient, EventPayloads, EventNames } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { AddressZero } from "ethers/constants";
-import { BigNumber.from } from "ethers/utils";
+import { BigNumber, constants } from "ethers";
 
 import { expect, createClient, fundChannel } from "../util";
 
@@ -27,7 +22,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
     await indexerB.messaging.disconnect();
   });
 
-  it("Clients transfer assets between themselves", async function() {
+  it("Clients transfer assets between themselves", async function () {
     // how long the ping-pong transfers should last in s
     const DURATION = 15_000;
     let gatewayTransfers = {
@@ -59,7 +54,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
           }
           await gateway.transfer({
             amount: toBN(data.amount),
-            assetId: AddressZero,
+            assetId: constants.AddressZero,
             recipient: data.sender,
           });
           if (data.sender === indexerA.publicIdentifier) {
@@ -78,7 +73,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
           indexerATransfers.received += 1;
           await indexerA.transfer({
             amount: toBN(data.amount),
-            assetId: AddressZero,
+            assetId: constants.AddressZero,
             recipient: data.sender,
           });
           expect(data.sender).to.be.equal(gateway.publicIdentifier);
@@ -92,7 +87,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
           indexerBTransfers.received += 1;
           await indexerB.transfer({
             amount: toBN(data.amount),
-            assetId: AddressZero,
+            assetId: constants.AddressZero,
             recipient: data.sender,
           });
           expect(data.sender).to.be.equal(gateway.publicIdentifier);
@@ -110,8 +105,16 @@ describe.skip("Full Flow: Multi-client transfer", () => {
       rejectIfFailed(indexerB);
       rejectIfFailed(gateway);
 
-      await gateway.transfer({ amount: toBN("1"), recipient: indexerA.publicIdentifier, assetId: AddressZero });
-      await gateway.transfer({ amount: toBN("1"), recipient: indexerB.publicIdentifier, assetId: AddressZero });
+      await gateway.transfer({
+        amount: toBN("1"),
+        recipient: indexerA.publicIdentifier,
+        assetId: constants.AddressZero,
+      });
+      await gateway.transfer({
+        amount: toBN("1"),
+        recipient: indexerB.publicIdentifier,
+        assetId: constants.AddressZero,
+      });
     });
     expect(gatewayTransfers.received).to.be.gt(0);
     expect(gatewayTransfers.sent).to.be.gt(0);
