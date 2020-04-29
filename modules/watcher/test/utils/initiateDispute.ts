@@ -32,13 +32,15 @@ export const initiateDispute = async (
   watcher: Watcher,
   store: IWatcherStoreService,
   networkContext: NetworkContextForTestSuite,
+  appChallengeUpdatedEvents: number = 1, // 1 for set state, 2 for set and progress
 ) => {
   // before starting, verify empty store
   const empty = await store.getAppChallenge(app.identityHash);
   expect(empty).to.be.undefined;
+  let appChallengeUpdatedEventsCaught = 0;
   const [
     contractEventFreeBalance,
-    contractEventApp,
+    finalContractEventApp,
     initiatedEventFreeBalance,
     initiatedEventApp,
     result,
@@ -61,6 +63,9 @@ export const initiateDispute = async (
         WatcherEvents.ChallengeUpdatedEvent,
         async (data: ChallengeUpdatedEventPayload) => {
           if (data.identityHash === app.identityHash) {
+            appChallengeUpdatedEventsCaught += 1;
+          }
+          if (appChallengeUpdatedEventsCaught === appChallengeUpdatedEvents) {
             resolve(data);
           }
         },
@@ -120,7 +125,7 @@ export const initiateDispute = async (
     },
   };
   const contractEvents = {
-    [app.identityHash]: contractEventApp,
+    [app.identityHash]: finalContractEventApp,
     [freeBalance.identityHash]: contractEventFreeBalance,
   };
   const initiatedEvents = {
