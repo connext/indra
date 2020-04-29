@@ -11,7 +11,7 @@ import {
   DefaultApp,
 } from "@connext/types";
 import { toBN, stringify } from "@connext/utils";
-import { Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
@@ -34,7 +34,7 @@ export class SignedTransferController extends AbstractController {
           to: this.connext.signerAddress,
         },
         {
-          amount: Zero,
+          amount: constants.Zero,
           to: this.connext.nodeSignerAddress,
         },
       ],
@@ -65,7 +65,7 @@ export class SignedTransferController extends AbstractController {
       meta: submittedMeta,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
-      responderDeposit: Zero,
+      responderDeposit: constants.Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: SIGNED_TRANSFER_STATE_TIMEOUT,

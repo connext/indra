@@ -41,10 +41,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   stringify,
 } from "@connext/utils";
-import { Contract, providers } from "ethers";
-import { AddressZero } from "ethers/constants";
-import { TransactionResponse } from "ethers/providers";
-import { BigNumber, Network, Transaction } from "ethers/utils";
+import { Contract, BigNumber, Transaction, providers, constants } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
 import {
@@ -71,7 +68,7 @@ export class ConnextClient implements IConnextClient {
   public log: ILoggerService;
   public messaging: IMessagingService;
   public multisigAddress: Address;
-  public network: Network;
+  public network: providers.Network;
   public node: INodeApiClient;
   public nodeIdentifier: string;
   public nodeSignerAddress: string;
@@ -377,7 +374,7 @@ export class ConnextClient implements IConnextClient {
 
   public getHashLockTransfer = async (
     lockHash: string,
-    assetId: string = AddressZero,
+    assetId: string = constants.AddressZero,
   ): Promise<NodeResponses.GetHashLockTransfer> => {
     return this.node.getHashLockTransfer(lockHash, assetId);
   };
@@ -401,11 +398,11 @@ export class ConnextClient implements IConnextClient {
   // this function should be called when the user knows a withdrawal should
   // be submitted. if there is no withdrawal expected, this promise will last
   // for the duration of the timeout
-  public watchForUserWithdrawal = async (): Promise<TransactionResponse[]> => {
+  public watchForUserWithdrawal = async (): Promise<providers.TransactionResponse[]> => {
     // poll for withdrawal tx submitted to multisig matching tx data
     const maxBlocks = 15;
     const startingBlock = await this.ethProvider.getBlockNumber();
-    const transactions: TransactionResponse[] = [];
+    const transactions: providers.TransactionResponse[] = [];
 
     try {
       await new Promise((resolve: any, reject: any): any => {
@@ -516,7 +513,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   public getFreeBalance = async (
-    assetId: AssetId | Address = AddressZero,
+    assetId: AssetId | Address = constants.AddressZero,
   ): Promise<MethodResults.GetFreeBalanceState> => {
     if (typeof assetId !== "string") {
       throw new Error(`Asset id must be a string: ${stringify(assetId)}`);
@@ -797,7 +794,7 @@ export class ConnextClient implements IConnextClient {
       // there is still an active deposit, setup a listener to
       // rescind deposit rights when deposit is sent to multisig
       const currentMultisigBalance =
-        assetId === AddressZero
+        assetId === constants.AddressZero
           ? await this.ethProvider.getBalance(this.multisigAddress)
           : await new Contract(assetId, tokenAbi, this.ethProvider).functions.balanceOf(
               this.multisigAddress,
@@ -817,7 +814,7 @@ export class ConnextClient implements IConnextClient {
 
       // there is still an active deposit, setup a listener to
       // rescind deposit rights when deposit is sent to multisig
-      if (assetId === AddressZero) {
+      if (assetId === constants.AddressZero) {
         this.ethProvider.on(this.multisigAddress, async (balance: BigNumber) => {
           if (balance.gt(latestState.startingMultisigBalance)) {
             await this.rescindDepositRights({ assetId, appIdentityHash });
@@ -878,7 +875,7 @@ export class ConnextClient implements IConnextClient {
 
   private checkForUserWithdrawals = async (
     inBlock: number,
-  ): Promise<[WithdrawalMonitorObject, TransactionResponse][]> => {
+  ): Promise<[WithdrawalMonitorObject, providers.TransactionResponse][]> => {
     const vals = await this.getUserWithdrawals();
     if (vals.length === 0) {
       this.log.error("No transaction found in store.");
@@ -887,7 +884,7 @@ export class ConnextClient implements IConnextClient {
 
     const getTransactionResponse = async (
       tx: MinimalTransaction,
-    ): Promise<TransactionResponse | undefined> => {
+    ): Promise<providers.TransactionResponse | undefined> => {
       // get the transaction hash that we should be looking for from
       // the contract method
       const txsTo = await this.ethProvider.getTransactionCount(tx.to, inBlock);

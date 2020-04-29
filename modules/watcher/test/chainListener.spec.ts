@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { Contract, Wallet } from "ethers";
+import { Contract, Wallet, constants } from "ethers";
 import {
   JsonRpcProvider,
   ChallengeUpdatedContractEvent,
@@ -11,7 +11,6 @@ import { stateToHash, setupContext, AppWithCounterClass, ActionType } from "./ut
 import { nullLogger, toBN, ChannelSigner, computeAppChallengeHash } from "@connext/utils";
 import { ChainListener } from "../src";
 import { beforeEach } from "mocha";
-import { Zero, One } from "ethers/constants";
 
 describe("ChainListener", () => {
   let challengeRegistry: Contract;
@@ -23,13 +22,13 @@ describe("ChainListener", () => {
 
   const versionNumber = toBN(3);
   const state = {
-    counter: Zero,
+    counter: constants.Zero,
   };
   const action = {
     actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
     increment: toBN(1),
   };
-  const timeout = Zero;
+  const timeout = constants.Zero;
 
   const verifySetAndProgressEvents = async (
     states: ChallengeUpdatedContractEvent[],
@@ -59,13 +58,13 @@ describe("ChainListener", () => {
     const digest = computeAppChallengeHash(
       appInstance.identityHash,
       stateToHash(finalState),
-      versionNumber.add(One),
-      Zero,
+      versionNumber.add(constants.One),
+      constants.Zero,
     );
     expect(progressed).to.containSubset({
       identityHash: appInstance.identityHash,
       action: AppWithCounterClass.encodeAction(action),
-      versionNumber: versionNumber.add(One),
+      versionNumber: versionNumber.add(constants.One),
       turnTaker: turnTaker.address,
       signature: await turnTaker.signMessage(digest),
     });
@@ -96,7 +95,7 @@ describe("ChainListener", () => {
     let statesUpdated: ChallengeUpdatedContractEvent[] = [];
     // trigger `ChallengeUpdated` event
     const [states, progressed, tx] = await Promise.all([
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         chainListener.on("ChallengeUpdated", async (data: ChallengeUpdatedContractEvent) => {
           statesUpdated.push(data);
           if (statesUpdated.length >= 2) {
@@ -106,7 +105,7 @@ describe("ChainListener", () => {
           }
         });
       }),
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         chainListener.once("StateProgressed", async (data: StateProgressedContractEvent) => {
           return resolve(data);
         });
@@ -136,7 +135,7 @@ describe("ChainListener", () => {
 
     const versionNumber = toBN(3);
     const state = {
-      counter: Zero,
+      counter: constants.Zero,
     };
     const action = {
       actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
@@ -171,7 +170,7 @@ describe("ChainListener", () => {
     expect(tx).to.be.ok;
 
     // wait for block number to increase
-    await new Promise(resolve =>
+    await new Promise((resolve) =>
       provider.on("block", (block: number) => {
         if (startingBlock < block) {
           return resolve();
@@ -183,7 +182,7 @@ describe("ChainListener", () => {
     // parse logs
     let statesUpdated: ChallengeUpdatedContractEvent[] = [];
     const [states, progressed] = await Promise.all([
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         chainListener.on("ChallengeUpdated", async (data: ChallengeUpdatedContractEvent) => {
           statesUpdated.push(data);
           if (statesUpdated.length >= 2) {
@@ -193,7 +192,7 @@ describe("ChainListener", () => {
           }
         });
       }),
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         chainListener.once("StateProgressed", async (data: StateProgressedContractEvent) => {
           return resolve(data);
         });

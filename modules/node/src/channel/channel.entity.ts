@@ -10,7 +10,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
@@ -46,14 +46,12 @@ export class Channel {
   @Column("boolean", { default: false })
   available!: boolean;
 
-  @Column("json", { default: { [AddressZero]: false } })
+  @Column("json", { default: { [constants.AddressZero]: false } })
   activeCollateralizations!: Collateralizations;
 
-  @OneToMany(
-    (type: any) => AppInstance,
-    (appInstance: AppInstance) => appInstance.channel,
-    { cascade: true },
-  )
+  @OneToMany((type: any) => AppInstance, (appInstance: AppInstance) => appInstance.channel, {
+    cascade: true,
+  })
   appInstances!: AppInstance[];
 
   @Column("integer", { nullable: true })
@@ -65,24 +63,16 @@ export class Channel {
   )
   withdrawalCommitments!: WithdrawCommitment[];
 
-  @OneToOne(
-    (type: any) => SetupCommitment,
-    (commitment: SetupCommitment) => commitment.channel,
-    { cascade: true },
-  )
+  @OneToOne((type: any) => SetupCommitment, (commitment: SetupCommitment) => commitment.channel, {
+    cascade: true,
+  })
   setupCommitment!: SetupCommitment;
 
-  @ManyToMany(
-    (type: any) => RebalanceProfile,
-    (profile: RebalanceProfile) => profile.channels,
-  )
+  @ManyToMany((type: any) => RebalanceProfile, (profile: RebalanceProfile) => profile.channels)
   @JoinTable()
   rebalanceProfiles!: RebalanceProfile[];
 
-  @OneToMany(
-    (type: any) => OnchainTransaction,
-    (tx: OnchainTransaction) => tx.channel,
-  )
+  @OneToMany((type: any) => OnchainTransaction, (tx: OnchainTransaction) => tx.channel)
   transactions!: OnchainTransaction[];
 
   @CreateDateColumn()

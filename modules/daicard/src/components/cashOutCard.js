@@ -1,7 +1,7 @@
 import { inverse } from "@connext/utils";
 import { Button, CircularProgress, Grid, Typography, withStyles } from "@material-ui/core";
 import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
-import { AddressZero, Zero } from "ethers/constants";
+import { constants } from "ethers";
 import React, { useState } from "react";
 
 import EthIcon from "../assets/Eth.svg";
@@ -9,7 +9,7 @@ import DaiIcon from "../assets/dai.svg";
 
 import { useAddress, AddressInput } from "./input";
 
-const style = withStyles(theme => ({
+const style = withStyles((theme) => ({
   icon: {
     width: "40px",
     height: "40px",
@@ -50,7 +50,7 @@ export const CashoutCard = style(
       const value = recipient.value;
       if (!channel || !value) return;
       const total = balance.channel.total;
-      if (total.wad.lte(Zero)) return;
+      if (total.wad.lte(constants.Zero)) return;
       // Put lock on actions, no more autoswaps until we're done withdrawing
       machine.send("START_WITHDRAW");
       setWithdrawing(true);
@@ -70,24 +70,24 @@ export const CashoutCard = style(
       const value = recipient.value;
       if (!channel || !value) return;
       const total = balance.channel.total;
-      if (total.wad.lte(Zero)) return;
+      if (total.wad.lte(constants.Zero)) return;
       // Put lock on actions, no more autoswaps until we're done withdrawing
       machine.send("START_WITHDRAW");
       setWithdrawing(true);
       console.log(`Withdrawing ${total.toETH().format()} to: ${value}`);
       // swap all in-channel tokens for eth
-      if (balance.channel.token.wad.gt(Zero)) {
+      if (balance.channel.token.wad.gt(constants.Zero)) {
         await channel.swap({
           amount: balance.channel.token.wad,
           fromAssetId: token.address,
           swapRate: inverse(swapRate),
-          toAssetId: AddressZero,
+          toAssetId: constants.AddressZero,
         });
         await refreshBalances();
       }
       const result = await channel.withdraw({
         amount: balance.channel.ether.wad.toString(),
-        assetId: AddressZero,
+        assetId: constants.AddressZero,
         recipient: value,
       });
       console.log(`Cashout result: ${JSON.stringify(result)}`);

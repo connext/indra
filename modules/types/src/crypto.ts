@@ -1,8 +1,8 @@
-import { providers } from "ethers";
+import { providers, Signer } from "ethers";
 
 import { Address, PublicKey, PublicIdentifier } from "./basic";
 
-export interface IChannelSigner {
+export interface IChannelSigner extends Signer {
   address: Address;
   publicKey: PublicKey;
   publicIdentifier: PublicIdentifier;

@@ -18,8 +18,7 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
-import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, constants } from "ethers";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
@@ -78,8 +77,8 @@ export class CFCoreService {
         // NOTE: can return free balance obj with 0s,
         // but need the free balance address in the multisig
         const obj = {};
-        obj[this.cfCore.signerAddress] = Zero;
-        obj[getSignerAddressFromPublicIdentifier(userPubId)] = Zero;
+        obj[this.cfCore.signerAddress] = constants.Zero;
+        obj[getSignerAddressFromPublicIdentifier(userPubId)] = constants.Zero;
         return obj;
       }
       this.log.error(e.message, e.stack);
@@ -177,7 +176,7 @@ export class CFCoreService {
     responderDepositAssetId: AssetId,
     app: string,
     meta: object = {},
-    stateTimeout: BigNumber = Zero,
+    stateTimeout: BigNumber = constants.Zero,
   ): Promise<MethodResults.ProposeInstall | undefined> {
     let boundReject: (reason?: any) => void;
     let boundResolve: (reason?: any) => void;
@@ -381,7 +380,7 @@ export class CFCoreService {
       network.chainId,
     );
     const apps = await this.getAppInstances(multisigAddress);
-    return apps.filter(app => app.appInterface.addr === appRegistry.appDefinitionAddress);
+    return apps.filter((app) => app.appInterface.addr === appRegistry.appDefinitionAddress);
   }
 
   /**

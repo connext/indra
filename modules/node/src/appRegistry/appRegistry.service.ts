@@ -24,7 +24,7 @@ import {
 import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
-import { BigNumber.from } from "ethers/utils";
+import { BigNumber } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -244,8 +244,10 @@ export class AppRegistryService implements OnModuleInit {
               (proposeInstallParams.initialState as SimpleSignedTransferAppState).paymentId,
             )
             // if receipient is not online, do not throw error, receipient can always unlock later
-            .then(response => this.log.info(`Installed recipient app: ${response.appIdentityHash}`))
-            .catch(e =>
+            .then((response) =>
+              this.log.info(`Installed recipient app: ${response.appIdentityHash}`),
+            )
+            .catch((e) =>
               this.log.error(
                 `Could not install receiver app, receiver was possibly offline? ${e.toString()}`,
               ),

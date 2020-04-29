@@ -1,5 +1,5 @@
 import { AppState, HexString, OutcomeType } from "@connext/types";
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 import {
   Entity,
   PrimaryGeneratedColumn,

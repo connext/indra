@@ -12,7 +12,7 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { Zero, AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
@@ -48,7 +48,7 @@ export class DepositService {
       (await this.configService.getEthNetwork()).chainId,
     );
     const depositApp = channel.appInstances.filter(
-      app =>
+      (app) =>
         app.appDefinition === depositRegistry.appDefinitionAddress &&
         app.latestState.assetId === tokenAddress,
     )[0];
@@ -80,7 +80,7 @@ export class DepositService {
 
   async requestDepositRights(
     channel: Channel,
-    tokenAddress: string = AddressZero,
+    tokenAddress: string = constants.AddressZero,
   ): Promise<string | undefined> {
     const appIdentityHash = await this.proposeDepositInstall(channel, tokenAddress);
     if (!appIdentityHash) {
@@ -112,7 +112,7 @@ export class DepositService {
     // derive the proper minimal transaction for the
     // onchain transaction service
     let tx: MinimalTransaction;
-    if (tokenAddress === AddressZero) {
+    if (tokenAddress === constants.AddressZero) {
       tx = {
         to: channel.multisigAddress,
         value: amount,
@@ -127,7 +127,10 @@ export class DepositService {
       tx = {
         to: tokenAddress,
         value: 0,
-        data: token.interface.functions.transfer.encode([channel.multisigAddress, amount]),
+        data: token.interface.encodeFunctionData(token.interface.functions.transfer, [
+          channel.multisigAddress,
+          amount,
+        ]),
       };
     }
     return this.onchainTransactionService.sendDeposit(channel, tx);
@@ -135,7 +138,7 @@ export class DepositService {
 
   private async proposeDepositInstall(
     channel: Channel,
-    tokenAddress: string = AddressZero,
+    tokenAddress: string = constants.AddressZero,
   ): Promise<string | undefined> {
     const ethProvider = this.configService.getEthProvider();
 
@@ -155,12 +158,12 @@ export class DepositService {
       }
       // multisig is deployed on withdrawal, if not
       // deployed withdrawal amount is 0
-      startingTotalAmountWithdrawn = Zero;
+      startingTotalAmountWithdrawn = constants.Zero;
     }
 
     // generate starting multisig balance
     const startingMultisigBalance =
-      tokenAddress === AddressZero
+      tokenAddress === constants.AddressZero
         ? await ethProvider.getBalance(channel.multisigAddress)
         : await new Contract(
             tokenAddress,
@@ -171,11 +174,11 @@ export class DepositService {
     const initialState: DepositAppState = {
       transfers: [
         {
-          amount: Zero,
+          amount: constants.Zero,
           to: await this.configService.getSignerAddress(),
         },
         {
-          amount: Zero,
+          amount: constants.Zero,
           to: getSignerAddressFromPublicIdentifier(channel.userIdentifier),
         },
       ],
@@ -188,9 +191,9 @@ export class DepositService {
     const res = await this.cfCoreService.proposeAndWaitForInstallApp(
       channel,
       initialState,
-      Zero,
+      constants.Zero,
       tokenAddress,
-      Zero,
+      constants.Zero,
       tokenAddress,
       DepositAppName,
       { reason: "Node deposit" }, // meta

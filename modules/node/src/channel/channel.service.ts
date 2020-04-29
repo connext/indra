@@ -8,9 +8,7 @@ import {
 import { getSignerAddressFromPublicIdentifier, maxBN, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
-import { AddressZero, Zero } from "ethers/constants";
-import { TransactionReceipt } from "ethers/providers";
-import { BigNumber, getAddress, toUtf8Bytes, sha256, BigNumber.from } from "ethers/utils";
+import { BigNumber, providers, utils, constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -98,14 +96,14 @@ export class ChannelService {
 
   async rebalance(
     userPublicIdentifier: string,
-    assetId: string = AddressZero,
+    assetId: string = constants.AddressZero,
     rebalanceType: RebalanceType,
-    minimumRequiredCollateral: BigNumber = Zero,
-  ): Promise<TransactionReceipt | undefined> {
+    minimumRequiredCollateral: BigNumber = constants.Zero,
+  ): Promise<providers.TransactionReceipt | undefined> {
     this.log.info(
       `rebalance ${rebalanceType} for ${userPublicIdentifier} asset ${assetId}, minimumRequiredCollateral ${minimumRequiredCollateral.toString()} started`,
     );
-    const normalizedAssetId = getAddress(assetId);
+    const normalizedAssetId = utils.getAddress(assetId);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userPublicIdentifier,
     );
@@ -148,7 +146,7 @@ export class ChannelService {
     ) {
       throw new Error(`Rebalancing targets not properly configured: ${rebalancingTargets}`);
     }
-    let result: TransactionReceipt;
+    let result: providers.TransactionReceipt;
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // if minimum amount is larger, override upper bound
       const collateralNeeded: BigNumber = maxBN([
@@ -175,7 +173,7 @@ export class ChannelService {
     assetId: string,
     collateralNeeded: BigNumber,
     lowerBoundCollateral: BigNumber,
-  ): Promise<TransactionReceipt | undefined> {
+  ): Promise<providers.TransactionReceipt | undefined> {
     this.log.info(
       `collateralizeIfNecessary started: ${stringify({
         userId,
@@ -190,7 +188,7 @@ export class ChannelService {
       const ethProvider = this.configService.getEthProvider();
       const startingBlock = await ethProvider.getBlockNumber();
       // register listener
-      const depositReceipt: TransactionReceipt = await new Promise(async resolve => {
+      const depositReceipt: providers.TransactionReceipt = await new Promise(async (resolve) => {
         const BLOCKS_TO_WAIT = 3;
         ethProvider.on("block", async (blockNumber: number) => {
           if (blockNumber - startingBlock > BLOCKS_TO_WAIT) {
@@ -234,7 +232,7 @@ export class ChannelService {
 
     // set in flight so that it cant be double sent
     await this.setCollateralizationInFlight(channel.multisigAddress, assetId);
-    let receipt: TransactionReceipt | undefined = undefined;
+    let receipt: providers.TransactionReceipt | undefined = undefined;
     try {
       receipt = await this.depositService.deposit(channel, amountDeposit, assetId);
       this.log.info(
@@ -354,7 +352,7 @@ export class ChannelService {
     }
 
     const rebalanceProfile = new RebalanceProfile();
-    rebalanceProfile.assetId = getAddress(assetId);
+    rebalanceProfile.assetId = utils.getAddress(assetId);
     rebalanceProfile.lowerBoundCollateralize = lowerBoundCollateralize;
     rebalanceProfile.upperBoundCollateralize = upperBoundCollateralize;
     rebalanceProfile.lowerBoundReclaim = lowerBoundReclaim;
@@ -423,7 +421,7 @@ export class ChannelService {
       return undefined;
     }
 
-    const hashedPublicIdentifier = sha256(toUtf8Bytes(userPublicIdentifier));
+    const hashedPublicIdentifier = utils.sha256(utils.toUtf8Bytes(userPublicIdentifier));
     const {
       data: rebalancingTargets,
       status,
@@ -456,7 +454,7 @@ export class ChannelService {
 
   async getRebalanceProfileForChannelAndAsset(
     userIdentifier: string,
-    assetId: string = AddressZero,
+    assetId: string = constants.AddressZero,
   ): Promise<RebalanceProfile | undefined> {
     // try to get rebalance profile configured
     let profile = await this.channelRepository.getRebalanceProfileForChannelAndAsset(

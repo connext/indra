@@ -8,7 +8,7 @@ import {
 } from "@connext/types";
 import { bigNumberifyJson, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { HashZero, Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -35,8 +35,8 @@ const appStatusesToHashLockTransferStatus = (
   if (!receiverApp) {
     return isSenderExpired ? HashLockTransferStatus.EXPIRED : HashLockTransferStatus.PENDING;
   } else if (
-    senderApp.latestState.preImage !== HashZero ||
-    receiverApp.latestState.preImage !== HashZero
+    senderApp.latestState.preImage !== constants.HashZero ||
+    receiverApp.latestState.preImage !== constants.HashZero
   ) {
     // iff sender uninstalled, payment is unlocked
     return HashLockTransferStatus.COMPLETED;
@@ -102,7 +102,7 @@ export class HashLockTransferService {
     // sender amount
     const amount = appState.coinTransfers[0].amount;
     const timelock = appState.timelock.sub(TIMEOUT_BUFFER);
-    if (timelock.lte(Zero)) {
+    if (timelock.lte(constants.Zero)) {
       throw new Error(
         `Cannot resolve hash lock transfer with 0 or negative timelock: ${timelock.toString()}`,
       );
@@ -159,12 +159,12 @@ export class HashLockTransferService {
           to: freeBalanceAddr,
         },
         {
-          amount: Zero,
+          amount: constants.Zero,
           to: getSignerAddressFromPublicIdentifier(receiverIdentifier),
         },
       ],
       lockHash: appState.lockHash,
-      preImage: HashZero,
+      preImage: constants.HashZero,
       timelock,
       finalized: false,
     };
@@ -174,7 +174,7 @@ export class HashLockTransferService {
       initialState,
       amount,
       assetId,
-      Zero,
+      constants.Zero,
       assetId,
       HashLockTransferAppName,
       { ...meta, sender: senderIdentifier },

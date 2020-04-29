@@ -11,7 +11,7 @@ import {
   DefaultApp,
 } from "@connext/types";
 import { toBN, stringify } from "@connext/utils";
-import { HashZero, Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
@@ -33,13 +33,13 @@ export class HashLockTransferController extends AbstractController {
           to: this.connext.signerAddress,
         },
         {
-          amount: Zero,
+          amount: constants.Zero,
           to: this.connext.nodeSignerAddress,
         },
       ],
       timelock,
       lockHash,
-      preImage: HashZero,
+      preImage: constants.HashZero,
       finalized: false,
     };
 
@@ -68,7 +68,7 @@ export class HashLockTransferController extends AbstractController {
       meta: submittedMeta,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
-      responderDeposit: Zero,
+      responderDeposit: constants.Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: HASHLOCK_TRANSFER_STATE_TIMEOUT,
@@ -87,7 +87,7 @@ export class HashLockTransferController extends AbstractController {
       assetId,
       sender: this.connext.publicIdentifier,
       meta: submittedMeta,
-      paymentId: HashZero,
+      paymentId: constants.HashZero,
       transferMeta: {
         timelock,
         lockHash,

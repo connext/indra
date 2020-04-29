@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 import { Channel } from "../channel/channel.entity";
 
 @Entity()

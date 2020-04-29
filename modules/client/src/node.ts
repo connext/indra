@@ -4,7 +4,6 @@ import {
   ILoggerService,
   IMessagingService,
   INodeApiClient,
-  NATS_ATTEMPTS,
   NATS_TIMEOUT,
   NodeResponses,
   StringMapping,
@@ -14,9 +13,9 @@ import {
   VerifyNonceDtoType,
   Address,
 } from "@connext/types";
-import { bigNumberifyJson, delay, logTime, stringify, formatMessagingUrl } from "@connext/utils";
+import { bigNumberifyJson, logTime, stringify, formatMessagingUrl } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
-import { getAddress, Transaction } from "ethers/utils";
+import { Transaction, utils } from "ethers";
 import { v4 as uuid } from "uuid";
 
 import { createCFChannelProvider } from "./channelProvider";
@@ -287,7 +286,7 @@ export class NodeApiClient implements INodeApiClient {
 
   public async getRebalanceProfile(assetId?: string): Promise<NodeResponses.GetRebalanceProfile> {
     return this.send(`${this.userIdentifier}.channel.get-profile`, {
-      assetId: getAddress(assetId),
+      assetId: utils.getAddress(assetId),
     });
   }
 

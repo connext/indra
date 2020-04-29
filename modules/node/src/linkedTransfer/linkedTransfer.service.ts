@@ -7,8 +7,7 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { HashZero, Zero } from "ethers/constants";
-import { BigNumber.from } from "ethers/utils";
+import { constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -79,7 +78,7 @@ export class LinkedTransferService {
     }
 
     const latestState = senderApp.latestState as SimpleLinkedTransferAppState;
-    if (latestState.preImage !== HashZero) {
+    if (latestState.preImage !== constants.HashZero) {
       throw new Error(`Sender app has action, refusing to redeem`);
     }
     const amount = toBN(latestState.amount);
@@ -144,13 +143,13 @@ export class LinkedTransferService {
           to: freeBalanceAddr,
         },
         {
-          amount: Zero,
+          amount: constants.Zero,
           to: getSignerAddressFromPublicIdentifier(userIdentifier),
         },
       ],
       linkedHash,
       paymentId,
-      preImage: HashZero,
+      preImage: constants.HashZero,
     };
 
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
@@ -158,7 +157,7 @@ export class LinkedTransferService {
       initialState,
       amount,
       assetId,
-      Zero,
+      constants.Zero,
       assetId,
       SimpleLinkedTransferAppName,
       senderApp.meta,
@@ -210,7 +209,7 @@ export class LinkedTransferService {
 
   // reclaimable transfer:
   // sender app is installed with meta containing recipient information
-  // preImage is HashZero
+  // preImage is constants.HashZero
   // receiver app has never been installed
   //
   // eg:
@@ -227,7 +226,7 @@ export class LinkedTransferService {
     const existingReceiverApps = (
       await Promise.all(
         transfersFromNodeToUser.map(
-          async transfer =>
+          async (transfer) =>
             await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
               transfer.latestState["paymentId"],
               this.cfCoreService.cfCore.signerAddress,
@@ -236,10 +235,12 @@ export class LinkedTransferService {
       )
     )
       // remove nulls
-      .filter(transfer => !!transfer);
-    const alreadyRedeemedPaymentIds = existingReceiverApps.map(app => app.latestState["paymentId"]);
+      .filter((transfer) => !!transfer);
+    const alreadyRedeemedPaymentIds = existingReceiverApps.map(
+      (app) => app.latestState["paymentId"],
+    );
     const redeemableTransfers = transfersFromNodeToUser.filter(
-      transfer => !alreadyRedeemedPaymentIds.includes(transfer.latestState["paymentId"]),
+      (transfer) => !alreadyRedeemedPaymentIds.includes(transfer.latestState["paymentId"]),
     );
     this.log.info(
       `getLinkedTransfersForReceiverUnlock for ${userIdentifier} complete: ${JSON.stringify(
@@ -251,7 +252,7 @@ export class LinkedTransferService {
 
   // unlockable transfer:
   // sender app is installed with node as recipient
-  // preImage is HashZero
+  // preImage is constants.HashZero
   // receiver app with same paymentId is uninstalled
   // preImage on receiver app is used to unlock sender transfer
   //
@@ -267,7 +268,7 @@ export class LinkedTransferService {
       this.cfCoreService.cfCore.signerAddress,
     );
     const receiverRedeemed = await Promise.all(
-      transfersFromUserToNode.map(async transfer =>
+      transfersFromUserToNode.map(async (transfer) =>
         this.appInstanceRepository.findRedeemedLinkedTransferAppByPaymentIdFromNode(
           transfer.latestState["paymentId"],
           this.cfCoreService.cfCore.signerAddress,
@@ -283,7 +284,7 @@ export class LinkedTransferService {
       if (receiverApp) {
         this.log.log(`Found transfer to unlock, paymentId ${senderApp.latestState["paymentId"]}`);
         const preImage: string = senderApp.latestState["preImage"];
-        if (preImage === HashZero) {
+        if (preImage === constants.HashZero) {
           // no action has been taken, but is not uninstalled
           await this.cfCoreService.takeAction(senderApp.identityHash, {
             preImage,

@@ -17,7 +17,7 @@ import {
 } from "@connext/types";
 import { SupportedApplications } from "@connext/apps";
 import { Injectable } from "@nestjs/common";
-import { soliditySha256 } from "ethers/utils";
+import { utils } from "ethers";
 
 import { LoggerService } from "../logger/logger.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -152,7 +152,7 @@ export class AppActionsService {
     action: HashLockTransferAppAction,
     from: string,
   ): Promise<void> {
-    const lockHash = soliditySha256(["bytes32"], [action.preImage]);
+    const lockHash = utils.soliditySha256(["bytes32"], [action.preImage]);
 
     const senderApp = await this.hashlockTransferService.findSenderAppByLockHashAndAssetId(
       lockHash,

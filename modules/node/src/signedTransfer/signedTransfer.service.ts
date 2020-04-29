@@ -9,7 +9,7 @@ import {
 } from "@connext/types";
 import { bigNumberifyJson, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -135,7 +135,7 @@ export class SignedTransferService {
           to: freeBalanceAddr,
         },
         {
-          amount: Zero,
+          amount: constants.Zero,
           to: getSignerAddressFromPublicIdentifier(userIdentifier),
         },
       ],
@@ -150,7 +150,7 @@ export class SignedTransferService {
       initialState,
       amount,
       assetId,
-      Zero,
+      constants.Zero,
       assetId,
       SimpleSignedTransferAppName,
       meta,

@@ -1,8 +1,7 @@
 import { DefaultApp, MethodResults, OutcomeType } from "@connext/types";
 import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { One, AddressZero, Zero } from "ethers/constants";
-import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
+import { BigNumber, providers, constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { mkHash, mkAddress } from "../test/utils";
@@ -13,7 +12,6 @@ import { ChannelRepository } from "./channel.repository";
 import { ConfigService } from "../config/config.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { BigNumber } from "ethers/utils";
 
 class MockCFCoreService {
   cfCore = {
@@ -23,7 +21,7 @@ class MockCFCoreService {
   async deposit(): Promise<MethodResults.Deposit> {
     return {
       freeBalance: {
-        [AddressZero]: One,
+        [constants.AddressZero]: constants.One,
       },
     };
   }
@@ -33,7 +31,7 @@ class MockChannelRepository extends ChannelRepository {
   async findByMultisigAddress(): Promise<Channel | undefined> {
     const channel = new Channel();
     channel.available = true;
-    channel.activeCollateralizations = { [AddressZero]: false };
+    channel.activeCollateralizations = { [constants.AddressZero]: false };
     channel.multisigAddress = mkAddress("0xAAA");
     channel.nodeIdentifier = mkAddress("addressAAA");
     channel.userIdentifier = mkAddress("addressBBB");
@@ -49,7 +47,7 @@ class MockOnchainTransactionRepository extends OnchainTransactionRepository {
 }
 
 class MockEthProvider {
-  async getTransaction(): Promise<TransactionResponse> {
+  async getTransaction(): Promise<providers.TransactionResponse> {
     return {
       blockHash: mkHash(),
       blockNumber: 1,
@@ -57,8 +55,8 @@ class MockEthProvider {
       confirmations: 10,
       data: "0x",
       from: mkAddress("0xabc"),
-      gasLimit: One,
-      gasPrice: One,
+      gasLimit: constants.One,
+      gasPrice: constants.One,
       hash: mkHash("0xbbb"),
       nonce: 1,
       r: "foo",
@@ -66,17 +64,17 @@ class MockEthProvider {
       timestamp: 111,
       to: mkAddress("0xdef"),
       v: 1,
-      value: Zero,
+      value: constants.Zero,
     } as any;
   }
 
   async getBalance(): Promise<BigNumber> {
-    return One;
+    return constants.One;
   }
 }
 
 class MockConfigService {
-  getEthProvider(): JsonRpcProvider {
+  getEthProvider(): providers.JsonRpcProvider {
     return new MockEthProvider() as any;
   }
 
@@ -113,6 +111,11 @@ describe.skip("Channel Service", () => {
   });
 
   it("should add deposits to the onchain transaction table", async () => {
-    await channelService.rebalance(mkAddress("0xAddress"), AddressZero, RebalanceType.COLLATERALIZE, One);
+    await channelService.rebalance(
+      mkAddress("0xAddress"),
+      constants.AddressZero,
+      RebalanceType.COLLATERALIZE,
+      constants.One,
+    );
   });
 });

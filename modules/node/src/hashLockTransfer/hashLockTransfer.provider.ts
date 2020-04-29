@@ -12,7 +12,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { HashLockTransferService } from "./hashLockTransfer.service";
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 
 export class HashLockTransferMessaging extends AbstractMessagingProvider {
   constructor(
@@ -43,7 +43,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       receiverApp,
     } = await this.hashLockTransferService.findSenderAndReceiverAppsWithStatus(
       lockHash,
-      assetId || AddressZero,
+      assetId || constants.AddressZero,
     );
     if (!senderApp) {
       return undefined;

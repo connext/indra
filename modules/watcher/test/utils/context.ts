@@ -2,8 +2,7 @@ import { ChallengeRegistry, AppWithAction } from "@connext/contracts";
 import { JsonRpcProvider, BigNumber } from "@connext/types";
 import { getRandomAddress, computeAppChallengeHash, ChannelSigner } from "@connext/utils";
 import { Wallet, ContractFactory } from "ethers";
-import { One, Zero } from "ethers/constants";
-import { keccak256 } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import {
   AppWithCounterClass,
@@ -39,13 +38,13 @@ export const setupContext = async () => {
     [channelInitiator.address, channelResponder.address],
     multisigAddress,
     onchainApp.address,
-    One, // default timeout
-    One, // channel nonce
+    constants.One, // default timeout
+    constants.One, // channel nonce
   );
 
   // contract helper functions
   const setState = async (versionNumber: BigNumber, timeout: BigNumber, appState: string) => {
-    const stateHash = keccak256(appState);
+    const stateHash = utils.keccak256(appState);
     const digest = computeAppChallengeHash(
       appInstance.identityHash,
       stateHash,
@@ -69,10 +68,10 @@ export const setupContext = async () => {
     versionNumber: BigNumber,
     state: AppWithCounterState,
     action: AppWithCounterAction,
-    timeout: BigNumber = Zero,
+    timeout: BigNumber = constants.Zero,
     turnTaker: Wallet = channelResponder,
   ) => {
-    const stateHash = keccak256(AppWithCounterClass.encodeState(state));
+    const stateHash = utils.keccak256(AppWithCounterClass.encodeState(state));
     const stateDigest = computeAppChallengeHash(
       appInstance.identityHash,
       stateHash,
@@ -85,12 +84,12 @@ export const setupContext = async () => {
           ? state.counter
           : state.counter.add(action.increment),
     };
-    const timeout2 = Zero;
-    const resultingStateHash = keccak256(AppWithCounterClass.encodeState(resultingState));
+    const timeout2 = constants.Zero;
+    const resultingStateHash = utils.keccak256(AppWithCounterClass.encodeState(resultingState));
     const resultingStateDigest = computeAppChallengeHash(
       appInstance.identityHash,
       resultingStateHash,
-      One.add(versionNumber),
+      constants.One.add(versionNumber),
       timeout2,
     );
 
@@ -106,7 +105,7 @@ export const setupContext = async () => {
       signatures,
     };
     const req2 = {
-      versionNumber: One.add(versionNumber),
+      versionNumber: constants.One.add(versionNumber),
       appStateHash: resultingStateHash,
       timeout: timeout2,
       signatures: [

@@ -18,14 +18,13 @@ import {
   SaveAlt as ReceiveIcon,
 } from "@material-ui/icons";
 import { useMachine } from "@xstate/react";
-import { AddressZero } from "ethers/constants";
-import { formatEther } from "ethers/utils";
+import { constants } from "ethers";
 import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
 
 import { redeemMachine } from "../state";
 
-const style = withStyles(theme => ({
+const style = withStyles((theme) => ({
   icon: {
     width: "40px",
     height: "40px",
@@ -48,7 +47,7 @@ export const RedeemCard = style(({ channel, classes, history, location, token })
   const [secret, setSecret] = useState("");
   const [link, setLink] = useState({
     amount: Currency.DAI("0"),
-    assetId: AddressZero,
+    assetId: constants.AddressZero,
     status: "UNKNOWN",
   });
   const [message, setMessage] = useState("");

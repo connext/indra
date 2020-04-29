@@ -1,7 +1,6 @@
 import {
   AppInstanceJson,
   AppInstanceProposal,
-  HashLockTransferAppName,
   OutcomeType,
   SimpleLinkedTransferAppName,
 } from "@connext/types";
@@ -12,7 +11,7 @@ import { Channel } from "../channel/channel.entity";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 
 import { AppInstance, AppType } from "./appInstance.entity";
-import { HashZero } from "ethers/constants";
+import { constants } from "ethers";
 
 export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
   if (!app) {
@@ -280,8 +279,8 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       )
       // meta for transfer recipient
       .andWhere(`app_instance."meta"::JSONB @> '{"recipient":"${recipientIdentifier}"}'`)
-      // preImage is HashZero
-      .andWhere(`app_instance."latestState"::JSONB @> '{"preImage": "${HashZero}"}'`)
+      // preImage is constants.HashZero
+      .andWhere(`app_instance."latestState"::JSONB @> '{"preImage": "${constants.HashZero}"}'`)
       .getMany();
     return res;
   }
@@ -307,8 +306,8 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeSignerAddress}"'`,
       )
-      // preimage can be HashZero or empty, if its HashZero, then the
-      // node should takeAction + uninstall. if its not HashZero, then
+      // preimage can be constants.HashZero or empty, if its constants.HashZero, then the
+      // node should takeAction + uninstall. if its not constants.HashZero, then
       // the node should just uninstall. If the node has completed the
       // transfer, then the type would be AppType.UNINSTALLED
       .getMany();

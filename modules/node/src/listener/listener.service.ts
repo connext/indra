@@ -16,7 +16,7 @@ import {
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -181,7 +181,7 @@ export default class ListenerService implements OnModuleInit {
       MethodNames.chan_uninstall as any,
       async (data: any) => {
         // TODO: GET CHANNEL MULTISIG
-        const uninstallSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${AddressZero}.app-instance.${data.result.result.appIdentityHash}.uninstall`;
+        const uninstallSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${constants.AddressZero}.app-instance.${data.result.result.appIdentityHash}.uninstall`;
         await this.messagingService.publish(uninstallSubject, data.result.result);
       },
     );

@@ -1,18 +1,18 @@
 /////////////////////////////
 
 import { AppIdentity, BigNumber } from "@connext/types";
-import { defaultAbiCoder, solidityPack, keccak256 } from "ethers/utils";
+import { utils } from "ethers";
 
 //// Helper class
 export class AppWithCounterClass {
   get identityHash(): string {
-    return keccak256(
-      solidityPack(
+    return utils.keccak256(
+      utils.solidityPack(
         ["address", "uint256", "bytes32", "address", "uint256"],
         [
           this.multisigAddress,
           this.channelNonce,
-          keccak256(solidityPack(["address[]"], [this.participants])),
+          utils.keccak256(utils.solidityPack(["address[]"], [this.participants])),
           this.appDefinition,
           this.defaultTimeout,
         ],
@@ -31,11 +31,11 @@ export class AppWithCounterClass {
   }
 
   public static encodeState(state: AppWithCounterState) {
-    return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
+    return utils.defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
   }
 
   public static encodeAction(action: AppWithCounterAction) {
-    return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
+    return utils.defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
   }
 
   constructor(
@@ -51,7 +51,6 @@ export type AppWithCounterAction = {
   actionType: ActionType;
   increment: BigNumber;
 };
-
 
 export type AppWithCounterState = {
   counter: BigNumber;

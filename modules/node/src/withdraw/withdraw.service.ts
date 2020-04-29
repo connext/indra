@@ -12,8 +12,7 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { HashZero, Zero, AddressZero } from "ethers/constants";
-import { hexlify, randomBytes } from "ethers/utils";
+import { utils, constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
@@ -47,7 +46,7 @@ export class WithdrawService {
   async withdraw(
     channel: Channel,
     amount: BigNumber,
-    assetId: string = AddressZero,
+    assetId: string = constants.AddressZero,
   ): Promise<void> {
     if (!channel) {
       throw new Error(`No channel exists for multisigAddress ${channel.multisigAddress}`);
@@ -142,7 +141,7 @@ export class WithdrawService {
     this.log.info(`Deploy multisig tx: ${deployTx}`);
 
     const wallet = this.configService.getSigner();
-    if (deployTx !== HashZero) {
+    if (deployTx !== constants.HashZero) {
       this.log.info(`Waiting for deployment transaction...`);
       wallet.provider.waitForTransaction(deployTx);
       this.log.info(`Deployment transaction complete!`);
@@ -197,7 +196,7 @@ export class WithdrawService {
     channel: Channel,
   ): Promise<void> {
     this.log.debug(`Creating proposal for node withdraw`);
-    const nonce = hexlify(randomBytes(32));
+    const nonce = utils.hexlify(utils.randomBytes(32));
 
     const commitment = await this.cfCoreService.createWithdrawCommitment(
       {
@@ -215,12 +214,12 @@ export class WithdrawService {
 
     const transfers: CoinTransfer[] = [
       { amount, to: this.cfCoreService.cfCore.signerAddress },
-      { amount: Zero, to: getSignerAddressFromPublicIdentifier(channel.userIdentifier) },
+      { amount: constants.Zero, to: getSignerAddressFromPublicIdentifier(channel.userIdentifier) },
     ];
 
     const initialState: WithdrawAppState = {
       transfers: [transfers[0], transfers[1]],
-      signatures: [withdrawerSignatureOnCommitment, HashZero],
+      signatures: [withdrawerSignatureOnCommitment, constants.HashZero],
       signers: [
         this.cfCoreService.cfCore.signerAddress,
         getSignerAddressFromPublicIdentifier(channel.userIdentifier),
@@ -236,7 +235,7 @@ export class WithdrawService {
       initialState,
       amount,
       assetId,
-      Zero,
+      constants.Zero,
       assetId,
       WithdrawAppName,
       { reason: "Node withdrawal" },

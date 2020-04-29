@@ -15,7 +15,7 @@ import {
 } from "@material-ui/core";
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
 import { useMachine } from "@xstate/react";
-import { Zero } from "ethers/constants";
+import { constants } from "ethers";
 import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
 
@@ -26,7 +26,7 @@ import { usePublicIdentifier, PublicIdentifierInput } from "./input";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
 
-const style = withStyles(theme => ({
+const style = withStyles((theme) => ({
   modalContent: {
     margin: "0% 4% 4% 4%",
     padding: "0px",
@@ -45,7 +45,7 @@ const style = withStyles(theme => ({
   },
 }));
 
-const formatAmountString = amount => {
+const formatAmountString = (amount) => {
   const [whole, part] = amount.split(".");
   return `${whole || "0"}.${part ? part.padEnd(2, "0") : "00"}`;
 };
@@ -60,7 +60,7 @@ export const SendCard = style(
     // need to extract token balance so it can be used as a dependency for the hook properly
     const tokenBalance = balance.channel.token.wad;
     const updateAmountHandler = useCallback(
-      rawValue => {
+      (rawValue) => {
         let value = null;
         let error = null;
         if (!rawValue) {
@@ -76,7 +76,7 @@ export const SendCard = style(
         if (!error && value && value.wad.gt(tokenBalance)) {
           error = `Invalid amount: must be less than your balance`;
         }
-        if (!error && value && value.wad.lte(Zero)) {
+        if (!error && value && value.wad.lte(constants.Zero)) {
           error = "Invalid amount: must be greater than 0";
         }
         setAmount({
@@ -114,7 +114,7 @@ export const SendCard = style(
           });
           break;
         } catch (e) {
-          await new Promise(res => setTimeout(res, 5000));
+          await new Promise((res) => setTimeout(res, 5000));
         }
       }
       if (!transferRes) {
@@ -227,7 +227,7 @@ export const SendCard = style(
             id="outlined-number"
             label="Amount"
             margin="normal"
-            onChange={evt => updateAmountHandler(evt.target.value)}
+            onChange={(evt) => updateAmountHandler(evt.target.value)}
             style={{ width: "100%" }}
             type="number"
             value={amount.display}

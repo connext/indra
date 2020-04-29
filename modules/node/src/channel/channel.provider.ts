@@ -1,10 +1,7 @@
-import {
-  MethodResults,
-  NodeResponses,
-} from "@connext/types";
+import { MethodResults, NodeResponses } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { getAddress } from "ethers/utils";
+import { utils } from "ethers";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
@@ -16,9 +13,18 @@ import { OnchainTransactionRepository } from "../onchainTransactions/onchainTran
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
-import { setStateToJson, SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
-import { convertConditionalCommitmentToJson, ConditionalTransactionCommitmentRepository } from "../conditionalCommitment/conditionalCommitment.repository";
-import { convertSetupEntityToMinimalTransaction, SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
+import {
+  setStateToJson,
+  SetStateCommitmentRepository,
+} from "../setStateCommitment/setStateCommitment.repository";
+import {
+  convertConditionalCommitmentToJson,
+  ConditionalTransactionCommitmentRepository,
+} from "../conditionalCommitment/conditionalCommitment.repository";
+import {
+  convertSetupEntityToMinimalTransaction,
+  SetupCommitmentRepository,
+} from "../setupCommitment/setupCommitment.repository";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
@@ -34,8 +40,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly setupCommitmentRepository: SetupCommitmentRepository,
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
-    private readonly conditionalTransactionCommitmentRepository:
-      ConditionalTransactionCommitmentRepository,
+    private readonly conditionalTransactionCommitmentRepository: ConditionalTransactionCommitmentRepository,
   ) {
     super(log, messaging);
   }
@@ -55,7 +60,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     // do not allow clients to specify an amount to collateralize with
     return (await (this.channelService.rebalance(
       pubId,
-      getAddress(data.assetId),
+      utils.getAddress(data.assetId),
       RebalanceType.COLLATERALIZE,
     ) as unknown)) as MethodResults.Deposit;
   }
@@ -85,28 +90,30 @@ class ChannelMessaging extends AbstractMessagingProvider {
       throw new Error(`No channel found for user: ${pubId}`);
     }
     // get setup commitment
-    const setupCommitment = await this.setupCommitmentRepository
-      .findByMultisigAddress(channel.multisigAddress);
+    const setupCommitment = await this.setupCommitmentRepository.findByMultisigAddress(
+      channel.multisigAddress,
+    );
     if (!setupCommitment) {
       throw new Error(`Found channel, but no setup commitment. This should not happen.`);
     }
     // get active app set state commitments
-    const setStateCommitments = await this.setStateCommitmentRepository
-      .findAllActiveCommitmentsByMultisig(channel.multisigAddress);
-    
+    const setStateCommitments = await this.setStateCommitmentRepository.findAllActiveCommitmentsByMultisig(
+      channel.multisigAddress,
+    );
+
     // get active app conditional transaction commitments
-    const conditionalCommitments = await this
-      .conditionalTransactionCommitmentRepository
-      .findAllActiveCommitmentsByMultisig(channel.multisigAddress);
+    const conditionalCommitments = await this.conditionalTransactionCommitmentRepository.findAllActiveCommitmentsByMultisig(
+      channel.multisigAddress,
+    );
     const network = await this.configService.getContractAddresses();
     return {
       channel,
-      setupCommitment: 
-        convertSetupEntityToMinimalTransaction(setupCommitment), 
-      setStateCommitments:
-        setStateCommitments.map(s => [s.app.identityHash, setStateToJson(s)]),
-      conditionalCommitments: conditionalCommitments
-        .map(c => [c.app.identityHash, convertConditionalCommitmentToJson(c, network)]),
+      setupCommitment: convertSetupEntityToMinimalTransaction(setupCommitment),
+      setStateCommitments: setStateCommitments.map((s) => [s.app.identityHash, setStateToJson(s)]),
+      conditionalCommitments: conditionalCommitments.map((c) => [
+        c.app.identityHash,
+        convertConditionalCommitmentToJson(c, network),
+      ]),
     };
   }
 

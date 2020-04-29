@@ -1,8 +1,8 @@
 /////////////////////////////
 //// Helper functions
 
-import { hexlify, keccak256, randomBytes } from "ethers/utils";
+import { utils } from "ethers";
 
-export const randomState = (numBytes: number = 64) => hexlify(randomBytes(numBytes));
+export const randomState = (numBytes: number = 64) => utils.hexlify(utils.randomBytes(numBytes));
 
-export const stateToHash = (state: string) => keccak256(state);
+export const stateToHash = (state: string) => utils.keccak256(state);

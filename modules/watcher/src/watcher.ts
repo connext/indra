@@ -1,4 +1,4 @@
-import { JsonRpcProvider } from "ethers/providers";
+import { providers } from "ethers";
 import {
   NetworkContext,
   ILoggerService,
@@ -26,7 +26,7 @@ export class Watcher implements IWatcher {
 
   constructor(
     private readonly signer: IChannelSigner,
-    private readonly provider: JsonRpcProvider,
+    private readonly provider: providers.JsonRpcProvider,
     private readonly context: NetworkContext,
     private readonly store: IWatcherStoreService,
     private readonly listener: ChainListener,

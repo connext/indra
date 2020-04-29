@@ -10,13 +10,13 @@ import {
   NodeResponses,
   IMessagingService,
 } from "@connext/types";
-import { JsonRpcProvider } from "ethers/providers";
+import { providers } from "ethers";
 
 export type InternalClientOptions = {
   appRegistry: AppRegistry;
   channelProvider: IChannelProvider;
   config: NodeResponses.GetConfig;
-  ethProvider: JsonRpcProvider;
+  ethProvider: providers.JsonRpcProvider;
   logger: ILoggerService;
   messaging: IMessagingService;
   network: Network;

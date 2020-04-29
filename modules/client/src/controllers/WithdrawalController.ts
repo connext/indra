@@ -18,9 +18,7 @@ import {
   stringify,
   toBN,
 } from "@connext/utils";
-import { AddressZero, Zero, HashZero } from "ethers/constants";
-import { TransactionResponse } from "ethers/providers";
-import { getAddress, hexlify, randomBytes } from "ethers/utils";
+import { providers, utils, constants } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
@@ -29,21 +27,21 @@ export class WithdrawalController extends AbstractController {
     this.log.info(`withdraw started: ${stringify(params)}`);
     // Set defaults
     if (!params.assetId) {
-      params.assetId = AddressZero;
+      params.assetId = constants.AddressZero;
     }
-    params.assetId = getAddress(params.assetId);
+    params.assetId = utils.getAddress(params.assetId);
 
     if (!params.recipient) {
       params.recipient = this.connext.signerAddress;
     }
-    params.recipient = getAddress(params.recipient);
+    params.recipient = utils.getAddress(params.recipient);
 
     if (!params.nonce) {
-      params.nonce = hexlify(randomBytes(32));
+      params.nonce = utils.hexlify(utils.randomBytes(32));
     }
 
     const { assetId, recipient } = params;
-    let transaction: TransactionResponse | undefined;
+    let transaction: providers.TransactionResponse | undefined;
 
     this.throwIfAny(getAddressError(recipient), getAddressError(assetId));
 
@@ -108,8 +106,9 @@ export class WithdrawalController extends AbstractController {
     this.log.debug(`Signing withdrawal commitment: ${hash}`);
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment =
-      await this.connext.channelProvider.signMessage(hash);
+    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
+      hash,
+    );
     this.log.debug(`Taking action on ${appInstance.identityHash}`);
     await this.connext.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
@@ -159,9 +158,9 @@ export class WithdrawalController extends AbstractController {
     const initialState: WithdrawAppState = {
       transfers: [
         { amount: amount, to: recipient },
-        { amount: Zero, to: this.connext.nodeSignerAddress },
+        { amount: constants.Zero, to: this.connext.nodeSignerAddress },
       ],
-      signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
+      signatures: [withdrawerSignatureOnWithdrawCommitment, constants.HashZero],
       signers: [this.connext.signerAddress, this.connext.nodeSignerAddress],
       data: withdrawCommitmentHash,
       nonce,
@@ -178,7 +177,7 @@ export class WithdrawalController extends AbstractController {
       initiatorDepositAssetId: assetId,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
-      responderDeposit: Zero,
+      responderDeposit: constants.Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: WITHDRAW_STATE_TIMEOUT,
@@ -201,7 +200,9 @@ export class WithdrawalController extends AbstractController {
     return;
   }
 
-  public async removeWithdrawCommitmentFromStore(transaction: TransactionResponse): Promise<void> {
+  public async removeWithdrawCommitmentFromStore(
+    transaction: providers.TransactionResponse,
+  ): Promise<void> {
     const minTx: MinimalTransaction = {
       to: transaction.to,
       value: transaction.value,

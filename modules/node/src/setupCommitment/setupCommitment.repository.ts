@@ -1,5 +1,5 @@
 import { MinimalTransaction } from "@connext/types";
-import { BigNumber.from } from "ethers/utils";
+import { BigNumber } from "ethers";
 import { EntityRepository, Repository } from "typeorm";
 
 import { SetupCommitment } from "./setupCommitment.entity";

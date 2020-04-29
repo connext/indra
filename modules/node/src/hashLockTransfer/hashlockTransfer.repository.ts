@@ -4,7 +4,7 @@ import {
   Address,
   Bytes32,
 } from "@connext/types";
-import { HashZero } from "ethers/constants";
+import { constants } from "ethers";
 import { EntityRepository, Repository } from "typeorm";
 
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
@@ -154,7 +154,7 @@ export class HashlockTransferRepository extends Repository<AppInstance<HashLockT
         // node should takeAction + uninstall. if its not HashZero, then
         // the node should just uninstall. If the node has completed the
         // transfer, then the type would be AppType.UNINSTALLED
-        .andWhere(`app_instance."latestState"::JSONB @> '{"lockHash": "${HashZero}"}'`)
+        .andWhere(`app_instance."latestState"::JSONB @> '{"lockHash": "${constants.HashZero}"}'`)
         // and timeout hasnt passed
         .andWhere(`app_instance."latestState"->>"timeout"::NUMERIC > ${currentBlock}`)
         .getMany()

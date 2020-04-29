@@ -1,4 +1,4 @@
-import { JsonRpcProvider } from "ethers/providers";
+import { Contract, Event, BigNumber, providers, utils } from "ethers";
 import {
   ILoggerService,
   NetworkContext,
@@ -12,9 +12,7 @@ import {
 } from "@connext/types";
 import { ChallengeRegistry } from "@connext/contracts";
 import { toBN } from "@connext/utils";
-import { Contract, Event } from "ethers";
 import EventEmitter from "eventemitter3";
-import { BigNumber, Interface } from "ethers/utils";
 
 /**
  * This class listens to events emitted by the connext contracts,
@@ -31,7 +29,7 @@ export class ChainListener implements IChainListener {
   private challengeRegistry: Contract;
 
   constructor(
-    private readonly provider: JsonRpcProvider,
+    private readonly provider: providers.JsonRpcProvider,
     private readonly context: NetworkContext,
     loggerService: ILoggerService,
   ) {
@@ -85,11 +83,13 @@ export class ChainListener implements IChainListener {
       toBlock: currentBlock,
     });
 
-    this.log.debug(`Parsing ${progressedLogs.length} StateProgessed and ${updatedLogs.length} ChallengeUpdated event logs`);
+    this.log.debug(
+      `Parsing ${progressedLogs.length} StateProgessed and ${updatedLogs.length} ChallengeUpdated event logs`,
+    );
 
-    progressedLogs.concat(updatedLogs).forEach(log => {
-      const parsed = new Interface(ChallengeRegistry.abi as any).parseLog(log);
-      const { identityHash, versionNumber } = parsed.values;
+    progressedLogs.concat(updatedLogs).forEach((log) => {
+      const parsed = new utils.Interface(ChallengeRegistry.abi as any).parseLog(log);
+      const { identityHash, versionNumber } = parsed;
       switch (parsed.name) {
         case ChallengeEvents.ChallengeUpdated: {
           const { appStateHash, finalizesAt, status } = parsed.values;

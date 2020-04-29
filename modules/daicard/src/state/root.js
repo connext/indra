@@ -1,4 +1,4 @@
-import { HashZero } from "ethers/constants";
+import { constants } from "ethers";
 import { Machine, assign } from "xstate";
 
 const notifyStates = (prefix, initial = "idle") => ({
@@ -48,7 +48,7 @@ export const rootMachine = Machine(
     strict: true,
     initial: "idle",
     context: {
-      txHash: HashZero,
+      txHash: constants.HashZero,
     },
     states: {
       idle: {
@@ -92,7 +92,7 @@ export const rootMachine = Machine(
   },
   {
     actions: {
-      setTxHash: assign({ txHash: (context, event) => event.txHash || HashZero }),
+      setTxHash: assign({ txHash: (context, event) => event.txHash || constants.HashZero }),
     },
   },
 );

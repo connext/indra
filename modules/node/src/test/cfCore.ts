@@ -7,16 +7,13 @@ import {
   ConditionalTransactionCommitmentJSON,
   MinimalTransaction,
 } from "@connext/types";
-import { AddressZero, HashZero, Zero } from "ethers/constants";
-import { Wallet } from "ethers";
-import { hexlify, BigNumber.from } from "ethers/utils";
-import { randomBytes } from "crypto";
+import { Wallet, BigNumber, utils, constants } from "ethers";
 
 export const generateRandomAddress = () => Wallet.createRandom().address;
 
-export const generateRandomBytes32 = () => hexlify(randomBytes(32));
+export const generateRandomBytes32 = () => utils.hexlify(utils.randomBytes(32));
 
-export const generateRandomSignature = () => hexlify(randomBytes(65));
+export const generateRandomSignature = () => utils.hexlify(utils.randomBytes(65));
 
 export const createAppInstanceJson = (
   overrides: Partial<AppInstanceJson> = {},
@@ -24,11 +21,11 @@ export const createAppInstanceJson = (
   return {
     appInterface: {
       actionEncoding: null,
-      addr: AddressZero,
+      addr: constants.AddressZero,
       stateEncoding: "",
     },
     appSeqNo: 0,
-    defaultTimeout: Zero.toHexString(),
+    defaultTimeout: constants.Zero.toHexString(),
     identityHash: generateRandomBytes32(),
     latestState: {},
     stateTimeout: BigNumber.from(1000).toHexString(),
@@ -48,7 +45,7 @@ export const createAppInstanceProposal = (
   overrides: Partial<AppInstanceProposal> = {},
 ): AppInstanceProposal => {
   return {
-    appDefinition: AddressZero,
+    appDefinition: constants.AddressZero,
     appSeqNo: 0,
     identityHash: generateRandomBytes32(),
     abiEncodings: {
@@ -57,11 +54,11 @@ export const createAppInstanceProposal = (
     },
     initialState: {},
     initiatorDeposit: "0x00",
-    initiatorDepositAssetId: AddressZero,
+    initiatorDepositAssetId: constants.AddressZero,
     initiatorIdentifier: generateRandomAddress(),
     responderIdentifier: generateRandomAddress(),
     responderDeposit: "0x00",
-    responderDepositAssetId: AddressZero,
+    responderDepositAssetId: constants.AddressZero,
     defaultTimeout: "0x00",
     stateTimeout: "0x00",
     multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
@@ -106,17 +103,17 @@ export const createSetStateCommitmentJSON = (
 ): SetStateCommitmentJSON => {
   return {
     appIdentity: {
-      channelNonce: Zero,
+      channelNonce: constants.Zero,
       participants: [generateRandomAddress(), generateRandomAddress()],
       multisigAddress: generateRandomAddress(),
-      appDefinition: AddressZero,
-      defaultTimeout: Zero,
+      appDefinition: constants.AddressZero,
+      defaultTimeout: constants.Zero,
     },
     appIdentityHash: generateRandomBytes32(),
     appStateHash: generateRandomBytes32(),
-    challengeRegistryAddress: AddressZero,
+    challengeRegistryAddress: constants.AddressZero,
     signatures: [generateRandomSignature(), generateRandomSignature()],
-    stateTimeout: Zero.toHexString(),
+    stateTimeout: constants.Zero.toHexString(),
     versionNumber: 0,
     ...overrides,
   };
@@ -128,7 +125,7 @@ export const createConditionalTransactionCommitmentJSON = (
   return {
     appIdentityHash: generateRandomBytes32(),
     freeBalanceAppIdentityHash: generateRandomBytes32(),
-    interpreterAddr: AddressZero,
+    interpreterAddr: constants.AddressZero,
     interpreterParams: "",
     multisigAddress: generateRandomAddress(),
     multisigOwners: [generateRandomAddress(), generateRandomAddress()],
@@ -142,9 +139,9 @@ export const createMinimalTransaction = (
   overrides: Partial<MinimalTransaction> = {},
 ): MinimalTransaction => {
   return {
-    data: HashZero,
-    to: AddressZero,
-    value: Zero,
+    data: constants.HashZero,
+    to: constants.AddressZero,
+    value: constants.Zero,
     ...overrides,
   };
 };

@@ -7,7 +7,7 @@ import {
   PublicResults,
   HashLockTransferAppName,
 } from "@connext/types";
-import { soliditySha256 } from "ethers/utils";
+import { utils } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 import { stringify } from "@connext/utils";
@@ -19,7 +19,7 @@ export class ResolveHashLockTransferController extends AbstractController {
     this.log.info(`resolveHashLockTransfer started: ${stringify(params)}`);
     const { preImage, assetId } = params;
 
-    const lockHash = soliditySha256(["bytes32"], [preImage]);
+    const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
 
     const installedApps = await this.connext.getAppInstances();
     const hashlockApp = installedApps.find(

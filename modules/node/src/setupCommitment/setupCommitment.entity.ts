@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from "typeorm";
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 
 import { Channel } from "../channel/channel.entity";
 import { IsBytes32, IsEthAddress } from "../validate";
