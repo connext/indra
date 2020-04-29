@@ -735,7 +735,7 @@ export class Watcher implements IWatcher {
         challenge.versionNumber,
       ).toString()}`,
     );
-    const commitments = sortedCommitments.map(SetStateCommitment.fromJson);
+    const [latest, prev] = sortedCommitments.map(SetStateCommitment.fromJson);
 
     const action = defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]);
     const state = defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
@@ -744,8 +744,8 @@ export class Watcher implements IWatcher {
       value: 0,
       data: new Interface(ChallengeRegistry.abi as any).functions.setAndProgressState.encode([
         this.getAppIdentity(app, channel.multisigAddress),
-        await commitments[0].getSignedAppChallengeUpdate(),
-        await commitments[1].getSignedAppChallengeUpdate(),
+        await prev.getSignedAppChallengeUpdate(),
+        await latest.getSignedAppChallengeUpdate(),
         state,
         action,
       ]),
@@ -757,7 +757,7 @@ export class Watcher implements IWatcher {
         error: response,
         multisigAddress: channel.multisigAddress,
         challenge,
-        params: { commitments, app, channel },
+        params: { commitments: sortedCommitments, app, channel },
       });
     } else {
       this.emit(WatcherEvents.ChallengeProgressedEvent, {

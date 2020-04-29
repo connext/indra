@@ -131,6 +131,13 @@ export class AppWithCounterClass {
     );
   }
 
+  get latestVersionNumber(): BigNumber {
+    if (this.latestAction) {
+      return this.versionNumber.add(1);
+    }
+    return this.versionNumber;
+  }
+
   get appStateHash(): string {
     return stateToHash(AppWithCounterClass.encodeState(this.latestState));
   }
@@ -153,7 +160,7 @@ export class AppWithCounterClass {
       appInterface: this.appInterface,
       appSeqNo: this.channelNonce.toNumber(),
       latestState: this.latestState,
-      latestVersionNumber: this.versionNumber.toNumber(),
+      latestVersionNumber: this.latestVersionNumber.toNumber(),
       stateTimeout: this.stateTimeout.toString(),
       outcomeType: this.outcomeType,
       latestAction: this.latestAction,
