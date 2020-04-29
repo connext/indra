@@ -27,7 +27,7 @@ describe("Node method follows spec - uninstall", () => {
   describe("Node A and B install TTT, then uninstall it", () => {
     it("sends proposal with non-null initial state", async done => {
       const initialState = {
-        versionNumber: 0,
+        versionNumber: 1,
         winner: 1, // Hard-coded winner for test
         board: [
           [0, 0, 0],

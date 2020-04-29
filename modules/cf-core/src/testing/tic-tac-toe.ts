@@ -32,7 +32,7 @@ export const validAction = {
 
 export function initialEmptyTTTState() {
   return {
-    versionNumber: 0,
+    versionNumber: 1,
     winner: 0,
     board: [
       [0, 0, 0],

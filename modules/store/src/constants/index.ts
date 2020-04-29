@@ -22,3 +22,7 @@ export const PROPOSED_APP_KEY = "proposed";
 export const FREE_BALANCE_KEY = "freebalance";
 export const SETUP_COMMITMENT_KEY = "setup_commitment";
 export const STORE_SCHEMA_VERSION_KEY = "version";
+export const CHALLENGE_KEY = "challenge";
+export const BLOCK_PROCESSED_KEY = "block_processed";
+export const STATE_PROGRESSED_EVENT_KEY = "state_progressed_event";
+export const CHALLENGE_UPDATED_EVENT_KEY = "challenge_updated_event";

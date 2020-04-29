@@ -1,9 +1,4 @@
-import {
-  HashLockTransferAppName,
-  HashLockTransferAppState,
-  Address,
-  Bytes32,
-} from "@connext/types";
+import { HashLockTransferAppName, Address, Bytes32 } from "@connext/types";
 import { HashZero } from "ethers/constants";
 import { EntityRepository, Repository } from "typeorm";
 
@@ -11,7 +6,9 @@ import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 
 @EntityRepository(AppInstance)
-export class HashlockTransferRepository extends Repository<AppInstance<HashLockTransferAppState>> {
+export class HashlockTransferRepository extends Repository<
+  AppInstance<typeof HashLockTransferAppName>
+> {
   findHashLockTransferAppsByLockHashAndAssetId(
     lockHash: Bytes32,
     assetId: Address,
@@ -100,9 +97,7 @@ export class HashlockTransferRepository extends Repository<AppInstance<HashLockT
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`,
       )
-      .andWhere(
-        `app_instance."outcomeInterpreterParameters"::JSONB @> '{ "tokenAddress": "${assetId}" }'`,
-      )
+      .andWhere(`app_instance."initiatorDepositAssetId" = :assetId`, { assetId })
       .getOne();
   }
 
@@ -111,7 +106,7 @@ export class HashlockTransferRepository extends Repository<AppInstance<HashLockT
     receiverSignerAddress: Address,
     assetId: Address,
   ): Promise<AppInstance | undefined> {
-    return this.createQueryBuilder("app_instance")
+    const query = this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
         AppRegistry,
         "app_registry",
@@ -123,10 +118,8 @@ export class HashlockTransferRepository extends Repository<AppInstance<HashLockT
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`,
       )
-      .andWhere(
-        `app_instance."outcomeInterpreterParameters"::JSONB @> '{ "tokenAddress": "${assetId}" }'`,
-      )
-      .getOne();
+      .andWhere(`app_instance."initiatorDepositAssetId" = :assetId`, { assetId });
+    return query.getOne();
   }
 
   findActiveHashLockTransferAppsToRecipient(

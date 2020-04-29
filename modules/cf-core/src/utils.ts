@@ -1,4 +1,4 @@
-import { AppIdentity, CriticalStateChannelAddresses, PublicIdentifier } from "@connext/types";
+import { CriticalStateChannelAddresses, PublicIdentifier } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
@@ -9,7 +9,6 @@ import {
   Interface,
   keccak256,
   solidityKeccak256,
-  solidityPack,
 } from "ethers/utils";
 import memoize from "memoizee";
 
@@ -17,20 +16,7 @@ import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./errors";
 import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from "./contracts";
 import { StateChannel } from "./models";
 
-export function appIdentityToHash(appIdentity: AppIdentity): string {
-  return keccak256(
-    solidityPack(
-      ["address", "uint256", "bytes32", "address", "uint256"],
-      [
-        appIdentity.multisigAddress,
-        appIdentity.channelNonce,
-        keccak256(solidityPack(["address[]"], [appIdentity.participants])),
-        appIdentity.appDefinition,
-        appIdentity.defaultTimeout,
-      ],
-    ),
-  );
-}
+export { appIdentityToHash } from "@connext/utils";
 
 export function assertSufficientFundsWithinFreeBalance(
   channel: StateChannel,

@@ -1,8 +1,13 @@
-import { CommitmentTarget, EthereumCommitment, MinimalTransaction, MultisigTransaction } from "@connext/types";
+import {
+  CommitmentTarget,
+  EthereumCommitment,
+  MinimalTransaction,
+  MultisigTransaction,
+} from "@connext/types";
 import { recoverAddressFromChannelMessage } from "@connext/utils";
 import { Interface, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
 
-import { MinimumViableMultisig } from "../contracts";
+import * as MinimumViableMultisig from "../build/MinimumViableMultisig.json";
 
 // A commitment to make MinimumViableMultisig perform a message call
 export abstract class MultisigCommitment implements EthereumCommitment {
@@ -22,10 +27,7 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     return [this.initiatorSignature!, this.responderSignature!];
   }
 
-  public async addSignatures(
-    signature1: string,
-    signature2: string,
-  ): Promise<void> {
+  public async addSignatures(signature1: string, signature2: string): Promise<void> {
     for (const sig of [signature1, signature2]) {
       const recovered = await recoverAddressFromChannelMessage(this.hashToSign(), sig);
       if (recovered === this.multisigOwners[0]) {
@@ -33,7 +35,9 @@ export abstract class MultisigCommitment implements EthereumCommitment {
       } else if (recovered === this.multisigOwners[1]) {
         this.responderSignature = sig;
       } else {
-        throw new Error(`Invalid signer detected. Got ${recovered}, expected one of: ${this.multisigOwners}`);
+        throw new Error(
+          `Invalid signer detected. Got ${recovered}, expected one of: ${this.multisigOwners}`,
+        );
       }
     }
   }
@@ -46,7 +50,7 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
 
-    const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([
+    const txData = new Interface(MinimumViableMultisig.abi as any).functions.execTransaction.encode([
       multisigInput.to,
       multisigInput.value,
       multisigInput.data,

@@ -67,6 +67,7 @@ export class AppInstance {
     public readonly outcomeType: OutcomeType,
     public readonly multisigAddress: string,
     public readonly meta?: object,
+    public readonly latestAction: any = undefined,
     private readonly twoPartyOutcomeInterpreterParamsInternal?:
       TwoPartyFixedOutcomeInterpreterParams,
     private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?:
@@ -139,6 +140,7 @@ export class AppInstance {
       deserialized.outcomeType as any, // OutcomeType is enum, so gives attitude
       deserialized.multisigAddress,
       deserialized.meta,
+      deserialized.latestAction || undefined,
       interpreterParams.twoPartyOutcomeInterpreterParams,
       interpreterParams.multiAssetMultiPartyCoinTransferInterpreterParams,
       interpreterParams.singleAssetTwoPartyCoinTransferInterpreterParams,
@@ -270,7 +272,34 @@ export class AppInstance {
       ...this.toJson(),
       latestState: newState,
       latestVersionNumber: this.versionNumber + 1,
+      latestAction: undefined, 
+      // any time you set app state, you should remove
+      // any existing actions from previous states
       stateTimeout: stateTimeout.toHexString(),
+    });
+  }
+
+  public setAction(action: SolidityValueType) {
+    if (!this.appInterface.actionEncoding) {
+      throw new Error(`Cannot set an action without providing an encoding`);
+    }
+    try {
+      defaultAbiCoder.encode([this.appInterface.actionEncoding], [action]);
+    } catch (e) {
+      // TODO: Catch ethers.errors.INVALID_ARGUMENT specifically in catch {}
+
+      throw new Error(
+        `Attempted to setAction on an app with an invalid state object.
+          - appIdentityHash = ${this.identityHash}
+          - action = ${stringify(action)}
+          - encodingExpected = ${this.appInterface.stateEncoding}
+          Error: ${e.message}`,
+      );
+    }
+
+    return AppInstance.fromJson({
+      ...this.toJson(),
+      latestAction: action,
     });
   }
 

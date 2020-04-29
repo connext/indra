@@ -1,14 +1,14 @@
 import { bigNumberify } from "ethers/utils";
 import { isBN, toBN } from "./bigNumbers";
 
-export const bigNumberifyJson = (json: any): object =>
+export const bigNumberifyJson = (json: any): any =>
   typeof json === "string"
     ? json
     : JSON.parse(JSON.stringify(json), (key: string, value: any): any =>
         value && value["_hex"] ? toBN(value._hex) : value,
       );
 
-export const deBigNumberifyJson = (json: object) =>
+export const deBigNumberifyJson = (json: any): any =>
   JSON.parse(JSON.stringify(json), (key: string, val: any) =>
     val && isBN(val) ? val.toHexString() : val,
   );

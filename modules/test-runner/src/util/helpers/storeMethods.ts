@@ -19,8 +19,12 @@ import {
   SetStateCommitmentJSON,
   NetworkContext,
   ConditionalTransactionCommitmentJSON,
+  StoredAppChallenge,
+  ChallengeStatus,
+  StateProgressedEventPayload,
+  ChallengeUpdatedEventPayload,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
+import { toBN, toBNJson, getRandomBytes32 } from "@connext/utils";
 import { BigNumber, hexlify, randomBytes } from "ethers/utils";
 import MockAsyncStorage from "mock-async-storage";
 import { v4 as uuid } from "uuid";
@@ -117,8 +121,8 @@ export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
   appStateHash: "setStateAppStateHash",
   challengeRegistryAddress: TEST_STORE_ETH_ADDRESS,
-  stateTimeout: toBN(17).toHexString(),
-  versionNumber: 23,
+  stateTimeout: toBNJson(17),
+  versionNumber: toBNJson(23),
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
 
@@ -131,6 +135,31 @@ export const TEST_STORE_CONDITIONAL_COMMITMENT: ConditionalTransactionCommitment
   multisigOwners: TEST_STORE_CHANNEL.userIdentifiers,
   networkContext: {} as NetworkContext,
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
+};
+
+export const TEST_STORE_APP_CHALLENGE: StoredAppChallenge = {
+  identityHash: TEST_STORE_APP_INSTANCE.identityHash,
+  appStateHash: getRandomBytes32(),
+  versionNumber: toBN(1),
+  finalizesAt: toBN(3),
+  status: ChallengeStatus.IN_DISPUTE,
+};
+
+export const TEST_STORE_STATE_PROGRESSED_EVENT: StateProgressedEventPayload = {
+  identityHash: TEST_STORE_APP_INSTANCE.identityHash,
+  action: getRandomBytes32(),
+  versionNumber: toBN(1),
+  timeout: toBN(3),
+  turnTaker: TEST_STORE_CHANNEL.userIdentifiers[0],
+  signature: getRandomBytes32(),
+};
+
+export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = {
+  identityHash: TEST_STORE_APP_INSTANCE.identityHash,
+  appStateHash: getRandomBytes32(),
+  versionNumber: toBN(1),
+  finalizesAt: toBN(3),
+  status: ChallengeStatus.IN_DISPUTE,
 };
 
 export function createKeyValueStore(type: StoreTypes, opts: StoreFactoryOptions = {}) {

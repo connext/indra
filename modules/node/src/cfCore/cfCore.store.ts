@@ -9,17 +9,21 @@ import {
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
   OutcomeType,
-  AppChallenge,
-  StateProgressedContractEvent,
-  ChallengeUpdatedContractEvent,
+  StoredAppChallenge,
+  StateProgressedEventPayload,
+  ChallengeUpdatedEventPayload,
+  AppState,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { Zero, AddressZero } from "ethers/constants";
 import { getManager } from "typeorm";
-import { bigNumberify } from "ethers/utils";
+import { bigNumberify, defaultAbiCoder } from "ethers/utils";
 
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
+import {
+  SetStateCommitmentRepository,
+  setStateToJson,
+} from "../setStateCommitment/setStateCommitment.repository";
 import { WithdrawCommitmentRepository } from "../withdrawCommitment/withdrawCommitment.repository";
 import { ConfigService } from "../config/config.service";
 // eslint-disable-next-line max-len
@@ -33,6 +37,20 @@ import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { SetStateCommitment } from "../setStateCommitment/setStateCommitment.entity";
 import { Channel } from "../channel/channel.entity";
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
+import {
+  entityToStoredChallenge,
+  ChallengeRepository,
+  ProcessedBlockRepository,
+} from "../challenge/challenge.repository";
+import { Challenge, ProcessedBlock } from "../challenge/challenge.entity";
+import {
+  entityToStateProgressedEventPayload,
+  StateProgressedEvent,
+} from "../stateProgressedEvent/stateProgressedEvent.entity";
+import {
+  entityToChallengeUpdatedPayload,
+  ChallengeUpdatedEvent,
+} from "../challengeUpdatedEvent/challengeUpdatedEvent.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 
 @Injectable()
@@ -47,6 +65,8 @@ export class CFCoreStore implements IStoreService {
     private readonly withdrawCommitmentRepository: WithdrawCommitmentRepository,
     private readonly configService: ConfigService,
     private readonly setupCommitmentRepository: SetupCommitmentRepository,
+    private readonly challengeRepository: ChallengeRepository,
+    private readonly processedBlockRepository: ProcessedBlockRepository,
   ) {}
 
   getSchemaVersion(): Promise<number> {
@@ -61,7 +81,7 @@ export class CFCoreStore implements IStoreService {
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
     const allChannels = await this.channelRepository.find();
-    return allChannels.map(channel => convertChannelToJSON(channel));
+    return allChannels.map((channel) => convertChannelToJSON(channel));
   }
 
   getChannel(multisig: string): Promise<Channel> {
@@ -86,7 +106,7 @@ export class CFCoreStore implements IStoreService {
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
     const nodeIdentifier = this.configService.getPublicIdentifier();
-    const userIdentifier = stateChannel.userIdentifiers.find(id => id !== nodeIdentifier);
+    const userIdentifier = stateChannel.userIdentifiers.find((id) => id !== nodeIdentifier);
 
     const {
       multisigAddress,
@@ -103,7 +123,7 @@ export class CFCoreStore implements IStoreService {
     channel.monotonicNumProposedApps = monotonicNumProposedApps;
     const swaps = this.configService.getAllowedSwaps();
     let activeCollateralizations = {};
-    swaps.forEach(swap => {
+    swaps.forEach((swap) => {
       activeCollateralizations[swap.to] = false;
     });
     channel.activeCollateralizations = activeCollateralizations;
@@ -112,8 +132,8 @@ export class CFCoreStore implements IStoreService {
       freeBalanceAppInstance.initiatorIdentifier,
       freeBalanceAppInstance.responderIdentifier,
     ];
-    const userId = participants.find(p => p === userIdentifier);
-    const nodeId = participants.find(p => p === nodeIdentifier);
+    const userId = participants.find((p) => p === userIdentifier);
+    const nodeId = participants.find((p) => p === nodeIdentifier);
     const {
       identityHash,
       appInterface: { stateEncoding, actionEncoding, addr },
@@ -166,10 +186,14 @@ export class CFCoreStore implements IStoreService {
     freeBalanceUpdateCommitment.challengeRegistryAddress =
       signedFreeBalanceUpdate.challengeRegistryAddress;
     freeBalanceUpdateCommitment.signatures = signedFreeBalanceUpdate.signatures;
-    freeBalanceUpdateCommitment.stateTimeout = signedFreeBalanceUpdate.stateTimeout;
-    freeBalanceUpdateCommitment.versionNumber = signedFreeBalanceUpdate.versionNumber;
+    freeBalanceUpdateCommitment.stateTimeout = toBN(
+      signedFreeBalanceUpdate.stateTimeout,
+    ).toString();
+    freeBalanceUpdateCommitment.versionNumber = toBN(
+      signedFreeBalanceUpdate.versionNumber,
+    ).toNumber();
 
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(channel);
       await transactionalEntityManager.save(freeBalanceUpdateCommitment);
     });
@@ -208,8 +232,8 @@ export class CFCoreStore implements IStoreService {
     proposal.type = AppType.INSTANCE;
     // save user/node specific ids
     const nodeId = this.configService.getPublicIdentifier();
-    proposal.userIdentifier = [initiatorIdentifier, responderIdentifier].find(p => p !== nodeId);
-    proposal.nodeIdentifier = [initiatorIdentifier, responderIdentifier].find(p => p === nodeId);
+    proposal.userIdentifier = [initiatorIdentifier, responderIdentifier].find((p) => p !== nodeId);
+    proposal.nodeIdentifier = [initiatorIdentifier, responderIdentifier].find((p) => p === nodeId);
 
     proposal.meta = meta;
 
@@ -225,17 +249,20 @@ export class CFCoreStore implements IStoreService {
         break;
 
       case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
-        proposal.outcomeInterpreterParameters = multiAssetMultiPartyCoinTransferInterpreterParams;
+        proposal.outcomeInterpreterParameters =
+          multiAssetMultiPartyCoinTransferInterpreterParams;
         break;
 
       case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
-        proposal.outcomeInterpreterParameters = singleAssetTwoPartyCoinTransferInterpreterParams;
+        proposal.outcomeInterpreterParameters =
+          singleAssetTwoPartyCoinTransferInterpreterParams;
         break;
 
       default:
-        throw new Error(`Unrecognized outcome type: ${OutcomeType[proposal.outcomeType]}`);
+        throw new Error(`Unrecognized outcome type: ${OutcomeType[outcomeType]}`);
     }
-    await getManager().transaction(async transactionalEntityManager => {
+
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(proposal);
       await transactionalEntityManager
         .createQueryBuilder()
@@ -265,8 +292,8 @@ export class CFCoreStore implements IStoreService {
           appStateHash: signedFreeBalanceUpdate.appStateHash,
           challengeRegistryAddress: signedFreeBalanceUpdate.challengeRegistryAddress,
           signatures: signedFreeBalanceUpdate.signatures,
-          stateTimeout: signedFreeBalanceUpdate.stateTimeout,
-          versionNumber: signedFreeBalanceUpdate.versionNumber,
+          stateTimeout: toBN(signedFreeBalanceUpdate.stateTimeout).toString(),
+          versionNumber: toBN(signedFreeBalanceUpdate.versionNumber).toNumber(),
         })
         .where('"appId" = (' + subQuery.getQuery() + ")")
         .setParameters(subQuery.getParameters())
@@ -305,12 +332,12 @@ export class CFCoreStore implements IStoreService {
       throw new Error(`App is not of correct type, type: ${app.type}`);
     }
 
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager
         .createQueryBuilder()
         .update(AppInstance)
         .set({
-          latestState: latestState as any,
+          latestState: latestState as AppState,
           stateTimeout,
           latestVersionNumber,
         })
@@ -332,8 +359,8 @@ export class CFCoreStore implements IStoreService {
           appStateHash: signedSetStateCommitment.appStateHash,
           challengeRegistryAddress: signedSetStateCommitment.challengeRegistryAddress,
           signatures: signedSetStateCommitment.signatures,
-          stateTimeout: signedSetStateCommitment.stateTimeout,
-          versionNumber: signedSetStateCommitment.versionNumber,
+          stateTimeout: toBN(signedSetStateCommitment.stateTimeout).toString(),
+          versionNumber: toBN(signedSetStateCommitment.versionNumber).toNumber(),
         })
         .where('"appId" = (' + subQuery.getQuery() + ")")
         .setParameters(subQuery.getParameters())
@@ -359,7 +386,7 @@ export class CFCoreStore implements IStoreService {
     const channelId = app.channel.id;
     app.channel = null;
 
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(app);
       await transactionalEntityManager
         .createQueryBuilder()
@@ -394,8 +421,8 @@ export class CFCoreStore implements IStoreService {
           appStateHash: signedFreeBalanceUpdate.appStateHash,
           challengeRegistryAddress: signedFreeBalanceUpdate.challengeRegistryAddress,
           signatures: signedFreeBalanceUpdate.signatures,
-          stateTimeout: signedFreeBalanceUpdate.stateTimeout,
-          versionNumber: signedFreeBalanceUpdate.versionNumber,
+          stateTimeout: toBN(signedFreeBalanceUpdate.stateTimeout).toString(),
+          versionNumber: toBN(signedFreeBalanceUpdate.versionNumber).toNumber(),
         })
         .where('"appId" = (' + subQuery.getQuery() + ")")
         .setParameters(subQuery.getParameters())
@@ -443,13 +470,13 @@ export class CFCoreStore implements IStoreService {
     setStateCommitment.appStateHash = signedSetStateCommitment.appStateHash;
     setStateCommitment.challengeRegistryAddress = signedSetStateCommitment.challengeRegistryAddress;
     setStateCommitment.signatures = signedSetStateCommitment.signatures;
-    setStateCommitment.stateTimeout = signedSetStateCommitment.stateTimeout;
-    setStateCommitment.versionNumber = signedSetStateCommitment.versionNumber;
+    setStateCommitment.stateTimeout = toBN(signedSetStateCommitment.stateTimeout).toString();
+    setStateCommitment.versionNumber = toBN(signedSetStateCommitment.versionNumber).toNumber();
 
     // because the app instance has `cascade` set to true, saving
     // the channel will involve multiple queries and should be put
     // within a transaction
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(app);
       await transactionalEntityManager.save(setStateCommitment);
 
@@ -483,7 +510,7 @@ export class CFCoreStore implements IStoreService {
 
     const channelId = app.channel.id;
     app.channel = undefined;
-    await getManager().transaction(async transactionalEntityManager => {
+    await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(app);
       await transactionalEntityManager
         .createQueryBuilder()
@@ -508,6 +535,92 @@ export class CFCoreStore implements IStoreService {
     return this.setupCommitmentRepository.getCommitment(multisigAddress);
   }
 
+  async createSetupCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> {
+    // there may not be a channel at the time the setup commitment is
+    // created, so add the multisig address
+    await this.setupCommitmentRepository.createCommitment(multisigAddress, commitment);
+  }
+
+  async getSetStateCommitments(appIdentityHash: string): Promise<SetStateCommitmentJSON[]> {
+    return (
+      await this.setStateCommitmentRepository.findByAppIdentityHash(appIdentityHash)
+    ).map((s) => setStateToJson(s));
+  }
+
+  async createSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    const app = await this.appInstanceRepository.findByIdentityHashOrThrow(appIdentityHash);
+    const entity = new SetStateCommitment();
+    entity.app = app;
+    entity.appIdentity = commitment.appIdentity;
+    entity.appStateHash = commitment.appStateHash;
+    entity.challengeRegistryAddress = commitment.challengeRegistryAddress;
+    entity.signatures = commitment.signatures;
+    entity.stateTimeout = toBN(commitment.stateTimeout).toHexString();
+    entity.versionNumber = toBN(commitment.versionNumber).toNumber();
+    await this.setStateCommitmentRepository.save(entity);
+  }
+
+  async updateSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    const {
+      appStateHash,
+      challengeRegistryAddress,
+      signatures,
+      stateTimeout,
+      versionNumber,
+    } = commitment;
+
+    const subQuery = this.appInstanceRepository
+      .createQueryBuilder("app")
+      .select("app.id")
+      .where("app.identityHash = :appIdentityHash", { appIdentityHash });
+
+    await this.setStateCommitmentRepository
+      .createQueryBuilder("set_state_commitment")
+      .update(SetStateCommitment)
+      .set({
+        appStateHash,
+        challengeRegistryAddress,
+        signatures,
+        stateTimeout: toBN(stateTimeout).toHexString(),
+        versionNumber: toBN(versionNumber).toNumber(),
+      })
+      .where('set_state_commitment."appId" = (' + subQuery.getQuery() + ")")
+      .setParameters(subQuery.getParameters())
+      .execute();
+  }
+
+  async removeSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    const versionNumber = toBN(commitment.versionNumber).toNumber();
+
+    const subQuery = this.appInstanceRepository
+      .createQueryBuilder("app")
+      .select("app.id")
+      .where("app.identityHash = :appIdentityHash", { appIdentityHash });
+
+    await this.setStateCommitmentRepository
+      .createQueryBuilder("set_state_commitment")
+      .delete()
+      .from(SetStateCommitment)
+      .where("set_state_commitment.versionNumber = :versionNumber", {
+        versionNumber,
+      })
+      .andWhere('set_state_commitment."appId" = (' + subQuery.getQuery() + ")")
+      .setParameters(subQuery.getParameters())
+      .execute();
+  }
+
   getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined> {
     return this.setStateCommitmentRepository.getLatestSetStateCommitment(appIdentityHash);
   }
@@ -527,10 +640,6 @@ export class CFCoreStore implements IStoreService {
     );
   }
 
-  getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction> {
-    return this.withdrawCommitmentRepository.getWithdrawalCommitmentTx(multisigAddress);
-  }
-
   clear(): Promise<void> {
     throw new Error("Method not implemented.");
   }
@@ -540,68 +649,160 @@ export class CFCoreStore implements IStoreService {
   }
 
   ////// Watcher methods
-  async getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined> {
-    throw new Error("Disputes not implememented");
+  async getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined> {
+    const challenge = await this.challengeRepository.findByIdentityHash(appIdentityHash);
+    return challenge ? entityToStoredChallenge(challenge) : undefined;
   }
 
-  async createAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
-    throw new Error("Disputes not implememented");
+  async createAppChallenge(
+    appIdentityHash: string,
+    appChallenge: StoredAppChallenge,
+  ): Promise<void> {
+    const app = await this.appInstanceRepository.findByIdentityHashOrThrow(appIdentityHash);
+
+    const channel = await this.channelRepository.findByAppIdentityHashOrThrow(appIdentityHash);
+
+    const existing = await this.challengeRepository.findByIdentityHash(appIdentityHash);
+    if (existing) {
+      throw new Error(`Found existing app challenge for app ${appIdentityHash}`);
+    }
+
+    const { appStateHash, versionNumber, finalizesAt, status } = appChallenge;
+
+    const challenge = new Challenge();
+    challenge.app = app;
+    challenge.channel = channel;
+    challenge.challengeUpdatedEvents = [];
+    challenge.stateProgressedEvents = [];
+    challenge.status = status;
+    challenge.appStateHash = appStateHash;
+    challenge.versionNumber = versionNumber;
+    challenge.finalizesAt = finalizesAt;
+    await this.challengeRepository.save(challenge);
   }
 
-  async updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
-    throw new Error("Disputes not implememented");
+  async updateAppChallenge(
+    appIdentityHash: string,
+    appChallenge: StoredAppChallenge,
+  ): Promise<void> {
+    const existing = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
+    if (!existing) {
+      throw new Error(`Could not find existing app challenge for app ${appIdentityHash}`);
+    }
+    const { appStateHash, versionNumber, finalizesAt, status } = appChallenge;
+    existing.status = status;
+    existing.appStateHash = appStateHash;
+    existing.versionNumber = versionNumber;
+    existing.finalizesAt = finalizesAt;
+    await this.challengeRepository.save(existing);
+  }
+
+  async getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
+    const active = await this.challengeRepository.findActiveChallengesByMultisig(multisigAddress);
+    return active.map(entityToStoredChallenge);
   }
 
   ///// Events
   async getLatestProcessedBlock(): Promise<number> {
-    throw new Error("Disputes not implememented");
-  }
-
-  async createLatestProcessedBlock(): Promise<void> {
-    throw new Error("Disputes not implememented");
+    const latest = await this.processedBlockRepository.findLatestProcessedBlock();
+    if (!latest) {
+      return 0;
+    }
+    return latest.blockNumber;
   }
 
   async updateLatestProcessedBlock(blockNumber: number): Promise<void> {
-    throw new Error("Disputes not implememented");
+    const entity = new ProcessedBlock();
+    entity.blockNumber = blockNumber;
+    await this.processedBlockRepository.save(entity);
   }
 
-  async getStateProgressedEvent(
-    appIdentityHash: string,
-  ): Promise<StateProgressedContractEvent | undefined> {
-    throw new Error("Disputes not implememented");
+  async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
+    const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
+
+    return challenge.stateProgressedEvents.map((event) =>
+      entityToStateProgressedEventPayload(event, challenge),
+    );
   }
 
   async createStateProgressedEvent(
-    multisigAddress: string,
-    appChallenge: StateProgressedContractEvent,
-  ): Promise<void> {
-    throw new Error("Disputes not implememented");
-  }
-
-  async updateStateProgressedEvent(
-    multisigAddress: string,
-    appChallenge: StateProgressedContractEvent,
-  ): Promise<void> {
-    throw new Error("Disputes not implememented");
-  }
-
-  async getChallengeUpdatedEvent(
     appIdentityHash: string,
-  ): Promise<ChallengeUpdatedContractEvent | undefined> {
-    throw new Error("Disputes not implememented");
+    event: StateProgressedEventPayload,
+  ): Promise<void> {
+    const { signature, action, timeout, turnTaker, versionNumber } = event;
+    // safe to throw here because challenges should never be created from a
+    // `StateProgressed` event, must always go through the set state game
+    const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
+    const entity = new StateProgressedEvent();
+    entity.action = defaultAbiCoder.decode([challenge.app.actionEncoding!], action);
+    entity.challenge = challenge;
+    entity.signature = signature;
+    entity.timeout = timeout;
+    entity.versionNumber = versionNumber;
+    entity.turnTaker = turnTaker;
+
+    await getManager().transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager.save(entity);
+
+      // all contracts emit a `ChallengeUpdated` event, so update any
+      // challenge fields using data from that event, not this one
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .relation(Challenge, "stateProgressedEvents")
+        .of(challenge.id)
+        .add(entity.id);
+    });
+  }
+
+  async getChallengeUpdatedEvents(
+    appIdentityHash: string,
+  ): Promise<ChallengeUpdatedEventPayload[]> {
+    const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
+
+    return challenge.challengeUpdatedEvents.map((event) =>
+      entityToChallengeUpdatedPayload(event, challenge),
+    );
   }
 
   async createChallengeUpdatedEvent(
-    multisigAddress: string,
-    event: ChallengeUpdatedContractEvent,
+    appIdentityHash: string,
+    event: ChallengeUpdatedEventPayload,
   ): Promise<void> {
-    throw new Error("Disputes not implememented");
-  }
+    const { appStateHash, versionNumber, finalizesAt, status } = event;
+    // safe to throw here because challenges should never be created from a
+    // `StateProgressed` event, must always go through the set state game
+    let challenge = await this.challengeRepository.findByIdentityHash(appIdentityHash);
+    if (!challenge) {
+      // could be catching event that creates a challenge
+      const storedChallenge: StoredAppChallenge = {
+        identityHash: appIdentityHash,
+        appStateHash,
+        versionNumber,
+        finalizesAt,
+        status,
+      };
+      await this.createAppChallenge(appIdentityHash, storedChallenge);
+      challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
+    }
+    const entity = new ChallengeUpdatedEvent();
+    entity.appStateHash = appStateHash;
+    entity.challenge = challenge;
+    entity.finalizesAt = finalizesAt;
+    entity.status = status;
+    entity.versionNumber = versionNumber;
 
-  async updateChallengeUpdatedEvent(
-    multisigAddress: string,
-    appChallenge: ChallengeUpdatedContractEvent,
-  ): Promise<void> {
-    throw new Error("Disputes not implememented");
+    await getManager().transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager.save(entity);
+
+      // all contracts emit a `ChallengeUpdated` event, so update any
+      // challenge fields using data from that event, not this one
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .relation(Challenge, "stateProgressedEvents")
+        .of(challenge.id)
+        .add(entity.id);
+    });
   }
 }

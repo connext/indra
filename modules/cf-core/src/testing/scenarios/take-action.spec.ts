@@ -1,5 +1,5 @@
 import { EventNames, EventPayloads, UpdateStateMessage } from "@connext/types";
-import { One, Zero } from "ethers/constants";
+import { Zero, Two } from "ethers/constants";
 
 import { Node } from "../../node";
 import { NO_APP_INSTANCE_FOR_TAKE_ACTION } from "../../errors";
@@ -14,6 +14,7 @@ import {
   installApp,
   assertMessage,
 } from "../utils";
+import { toBN, deBigNumberifyJson } from "@connext/utils";
 
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
@@ -64,11 +65,11 @@ describe("Node method follows spec - takeAction", () => {
 
         const expectedNewState = {
           board: [
-            [One, Zero, Zero],
+            [Two, Zero, Zero],
             [Zero, Zero, Zero],
             [Zero, Zero, Zero],
           ],
-          versionNumber: One,
+          versionNumber: toBN(2),
           winner: Zero,
         };
 
@@ -79,7 +80,7 @@ describe("Node method follows spec - takeAction", () => {
            */
           const { latestState: state } = await getAppInstance(nodeB, appIdentityHash);
 
-          expect(state).toEqual(expectedNewState);
+          expect(state).toEqual(deBigNumberifyJson(expectedNewState));
 
           done();
         });

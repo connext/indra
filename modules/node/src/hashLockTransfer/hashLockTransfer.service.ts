@@ -21,8 +21,8 @@ import { HashlockTransferRepository } from "./hashlockTransfer.repository";
 
 const appStatusesToHashLockTransferStatus = (
   currentBlockNumber: number,
-  senderApp: AppInstance<HashLockTransferAppState>,
-  receiverApp?: AppInstance<HashLockTransferAppState>,
+  senderApp: AppInstance<"HashLockTransferApp">,
+  receiverApp?: AppInstance<"HashLockTransferApp">,
 ): HashLockTransferStatus | undefined => {
   if (!senderApp) {
     return undefined;
@@ -53,17 +53,6 @@ const appStatusesToHashLockTransferStatus = (
   } else {
     throw new Error(`Cound not determine hash lock transfer status`);
   }
-};
-
-export const normalizeHashLockTransferAppState = (
-  app: AppInstance,
-): AppInstance<HashLockTransferAppState> | undefined => {
-  return (
-    app && {
-      ...app,
-      latestState: app.latestState as HashLockTransferAppState,
-    }
-  );
 };
 
 @Injectable()
@@ -189,7 +178,7 @@ export class HashLockTransferService {
       appIdentityHash: receiverAppInstallRes.appIdentityHash,
     };
     this.log.info(
-      `installHashLockTransferReceiverApp from ${senderIdentifier} to ${receiverIdentifier} assetId ${appState} completed: ${JSON.stringify(
+      `installHashLockTransferReceiverApp from ${senderIdentifier} to ${receiverIdentifier} assetId ${assetId} completed: ${JSON.stringify(
         response,
       )}`,
     );
@@ -215,7 +204,7 @@ export class HashLockTransferService {
   async findSenderAppByLockHashAndAssetId(
     lockHash: Bytes32,
     assetId: Address,
-  ): Promise<AppInstance> {
+  ): Promise<AppInstance<"HashLockTransferApp">> {
     this.log.info(`findSenderAppByLockHash ${lockHash} started`);
     // node receives from sender
     // eslint-disable-next-line max-len
@@ -224,15 +213,14 @@ export class HashLockTransferService {
       this.cfCoreService.cfCore.signerAddress,
       assetId,
     );
-    const result = normalizeHashLockTransferAppState(app);
-    this.log.info(`findSenderAppByLockHash ${lockHash} completed: ${JSON.stringify(result)}`);
-    return result;
+    this.log.info(`findSenderAppByLockHash ${lockHash} completed: ${JSON.stringify(app)}`);
+    return app;
   }
 
   async findReceiverAppByLockHashAndAssetId(
     lockHash: Bytes32,
     assetId: Address,
-  ): Promise<AppInstance> {
+  ): Promise<AppInstance<"HashLockTransferApp">> {
     this.log.info(`findReceiverAppByLockHash ${lockHash} started`);
     // node sends to receiver
     // eslint-disable-next-line max-len
@@ -241,8 +229,7 @@ export class HashLockTransferService {
       this.cfCoreService.cfCore.signerAddress,
       assetId,
     );
-    const result = normalizeHashLockTransferAppState(app);
-    this.log.info(`findReceiverAppByLockHash ${lockHash} completed: ${JSON.stringify(result)}`);
-    return result;
+    this.log.info(`findReceiverAppByLockHash ${lockHash} completed: ${JSON.stringify(app)}`);
+    return app;
   }
 }

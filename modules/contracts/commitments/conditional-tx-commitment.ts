@@ -2,40 +2,16 @@ import {
   ConditionalTransactionCommitmentJSON,
   MultisigOperation,
   NetworkContext,
-  OutcomeType,
 } from "@connext/types";
-  
+
 import { AddressZero } from "ethers/constants";
 import { Interface } from "ethers/utils";
 
-import { ConditionalTransactionDelegateTarget } from "../contracts";
-import { AppInstance, StateChannel } from "../models";
-import { Context } from "../types";
+import * as ConditionalTransactionDelegateTarget from "../build/ConditionalTransactionDelegateTarget.json";
 
 import { MultisigCommitment } from "./multisig-commitment";
 
-const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
-
-export const getConditionalTransactionCommitment = (
-  context: Context,
-  stateChannel: StateChannel,
-  appInstance: AppInstance,
-): ConditionalTransactionCommitment =>
-  new ConditionalTransactionCommitment(
-    context.network,
-    stateChannel.multisigAddress,
-    stateChannel.multisigOwners,
-    appInstance.identityHash,
-    stateChannel.freeBalance.identityHash,
-    appInstance.outcomeType === OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER
-      ? context.network.MultiAssetMultiPartyCoinTransferInterpreter
-      : appInstance.outcomeType === OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER
-      ? context.network.SingleAssetTwoPartyCoinTransferInterpreter
-      : appInstance.outcomeType === OutcomeType.TWO_PARTY_FIXED_OUTCOME
-      ? context.network.TwoPartyFixedOutcomeInterpreter
-      : AddressZero,
-    appInstance.encodedInterpreterParams,
-  );
+const iface = new Interface(ConditionalTransactionDelegateTarget.abi as any);
 
 // class to represent an unsigned multisignature wallet transaction
 // to the ConditionalTransactionDelegateTarget contract.

@@ -6,8 +6,13 @@ import {
   SetStateCommitmentJSON,
   ConditionalTransactionCommitmentJSON,
   MinimalTransaction,
+  StoredAppChallenge,
+  ChallengeStatus,
+  StateProgressedEventPayload,
+  ChallengeUpdatedEventPayload,
 } from "@connext/types";
-import { AddressZero, HashZero, Zero } from "ethers/constants";
+import { deBigNumberifyJson, getRandomBytes32, getRandomAddress } from "@connext/utils";
+import { AddressZero, HashZero, Zero, One } from "ethers/constants";
 import { Wallet } from "ethers";
 import { hexlify, bigNumberify } from "ethers/utils";
 import { randomBytes } from "crypto";
@@ -104,7 +109,7 @@ export const createStateChannelJSON = (
 export const createSetStateCommitmentJSON = (
   overrides: Partial<SetStateCommitmentJSON> = {},
 ): SetStateCommitmentJSON => {
-  return {
+  return deBigNumberifyJson({
     appIdentity: {
       channelNonce: Zero,
       participants: [generateRandomAddress(), generateRandomAddress()],
@@ -116,10 +121,10 @@ export const createSetStateCommitmentJSON = (
     appStateHash: generateRandomBytes32(),
     challengeRegistryAddress: AddressZero,
     signatures: [generateRandomSignature(), generateRandomSignature()],
-    stateTimeout: Zero.toHexString(),
-    versionNumber: 0,
+    stateTimeout: Zero,
+    versionNumber: Zero,
     ...overrides,
-  };
+  });
 };
 
 export const createConditionalTransactionCommitmentJSON = (
@@ -145,6 +150,46 @@ export const createMinimalTransaction = (
     data: HashZero,
     to: AddressZero,
     value: Zero,
+    ...overrides,
+  };
+};
+
+export const createStoredAppChallenge = (
+  overrides: Partial<StoredAppChallenge> = {},
+): StoredAppChallenge => {
+  return {
+    identityHash: getRandomBytes32(),
+    appStateHash: getRandomBytes32(),
+    versionNumber: One,
+    finalizesAt: Zero,
+    status: ChallengeStatus.IN_DISPUTE,
+    ...overrides,
+  };
+};
+
+export const createStateProgressedEventPayload = (
+  overrides: Partial<StateProgressedEventPayload> = {},
+): StateProgressedEventPayload => {
+  return {
+    identityHash: getRandomBytes32(),
+    action:"0x",
+    versionNumber: One,
+    timeout: Zero,
+    turnTaker: getRandomAddress(),
+    signature: getRandomAddress(),
+    ...overrides,
+  };
+};
+
+export const createChallengeUpdatedEventPayload = (
+  overrides: Partial<ChallengeUpdatedEventPayload> = {},
+): ChallengeUpdatedEventPayload => {
+  return {
+    identityHash: getRandomBytes32(),
+    appStateHash: getRandomBytes32(),
+    versionNumber: One,
+    finalizesAt: Zero,
+    status: ChallengeStatus.IN_DISPUTE,
     ...overrides,
   };
 };

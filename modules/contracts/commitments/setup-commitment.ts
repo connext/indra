@@ -5,23 +5,14 @@ import {
   NetworkContext,
 } from "@connext/types";
 import { Interface } from "ethers/utils";
+import { appIdentityToHash } from "@connext/utils";
 
-import { ConditionalTransactionDelegateTarget } from "../contracts";
-import { StateChannel } from "../models";
-import { Context } from "../types";
-import { appIdentityToHash } from "../utils";
+import * as ConditionalTransactionDelegateTarget from "../build/ConditionalTransactionDelegateTarget.json";
+
 
 import { MultisigCommitment } from "./multisig-commitment";
 
-const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
-
-export const getSetupCommitment = (context: Context, stateChannel: StateChannel): SetupCommitment =>
-  new SetupCommitment(
-    context.network,
-    stateChannel.multisigAddress,
-    stateChannel.multisigOwners,
-    stateChannel.freeBalance.identity,
-  );
+const iface = new Interface(ConditionalTransactionDelegateTarget.abi as any);
 
 export class SetupCommitment extends MultisigCommitment {
   public constructor(
