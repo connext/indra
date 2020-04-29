@@ -296,10 +296,9 @@ export class ConnextStore implements IClientStore {
   }
 
   createStateProgressedEvent(
-    appIdentityHash: Bytes32,
     event: StateProgressedEventPayload,
   ): Promise<void> {
-    return this.internalStore.createStateProgressedEvent(appIdentityHash, event);
+    return this.internalStore.createStateProgressedEvent(event);
   }
 
   getChallengeUpdatedEvents(appIdentityHash: Bytes32): Promise<ChallengeUpdatedEventPayload[]> {

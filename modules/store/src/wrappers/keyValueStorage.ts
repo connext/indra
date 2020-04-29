@@ -500,10 +500,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async createStateProgressedEvent(
-    appIdentityHash: string,
     event: StateProgressedEventPayload,
   ): Promise<void> {
-    const key = this.getKey(STATE_PROGRESSED_EVENT_KEY, appIdentityHash);
+    const key = this.getKey(STATE_PROGRESSED_EVENT_KEY, event.identityHash);
     const existing = await this.getStateProgressedEvents(key);
     return this.setItem(key, existing.concat(event));
   }

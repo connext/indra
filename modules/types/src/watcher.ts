@@ -204,7 +204,6 @@ export interface IWatcherStoreService {
   getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]>;
 
   createStateProgressedEvent(
-    appIdentityHash: string,
     event: StateProgressedEventPayload,
   ): Promise<void>;
 
