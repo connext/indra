@@ -85,7 +85,7 @@
 //     });
 
 //     it("should be to the setState method", () => {
-//       expect(desc.sighash).toBe(iface.functions.setState.sighash);
+//       expect(desc.sighash).toBe(iface.getSighash(iface.getFunctio("setState")));
 //     });
 
 //     it("should contain expected AppIdentity argument", () => {

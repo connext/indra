@@ -70,7 +70,7 @@
 //     });
 
 //     it("should be to the executeEffectOfFreeBalance method", () => {
-//       expect(desc.sighash).toBe(iface.functions.executeEffectOfFreeBalance.sighash);
+//       expect(desc.sighash).toBe(iface.getSighash(iface.getFunction("executeEffectOfFreeBalance")));
 //     });
 
 //     it("should contain expected arguments", () => {

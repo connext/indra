@@ -267,7 +267,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: iface.encodeFunctionData(iface.functions.progressState, [
+      data: iface.encodeFunctionData(iface.getFunction("progressState"), [
         this.getAppIdentity(app, multisigAddress),
         await commitments[0].getSignedAppChallengeUpdate(),
         await commitments[1].getSignedAppChallengeUpdate(),
@@ -298,7 +298,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: iface.encodeFunctionData(iface.functions.setAndProgressState, [
+      data: iface.encodeFunctionData(iface.getFunction("setAndProgressState"), [
         this.getAppIdentity(app, multisigAddress),
         await commitments[0].getSignedAppChallengeUpdate(),
         await commitments[1].getSignedAppChallengeUpdate(),
@@ -331,7 +331,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: iface.encodeFunctionData(iface.functions.setOutcome, [
+      data: iface.encodeFunctionData(iface.getFunction("setOutcome"), [
         this.getAppIdentity(app, multisigAddress),
         state,
       ]),
@@ -348,7 +348,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: iface.encodeFunctionData(iface.functions.cancelChallenge, [
+      data: iface.encodeFunctionData(iface.getFunction("cancelChallenge"), [
         this.getAppIdentity(app, channel.multisigAddress),
         req,
       ]),

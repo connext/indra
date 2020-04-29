@@ -90,7 +90,7 @@
 //     });
 
 //     it("should be directed at the executeEffectOfInterpretedAppOutcome method", () => {
-//       expect(calldata.sighash).toBe(iface.functions.executeEffectOfInterpretedAppOutcome.sighash);
+//       expect(calldata.sighash).toBe(iface.getSighash(iface.getFunction("executeEffectOfInterpretedAppOutcome")));
 //     });
 
 //     it("should have correctly constructed arguments", () => {

@@ -141,7 +141,7 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
 
     await proxyFactory.functions.createProxyWithNonce(
       network.MinimumViableMultisig,
-      iface.encodeFunctionData(iface.functions.setup, [
+      iface.encodeFunctionData(iface.getFunction("setup"), [
         [initiator, responder].map((x) => x.address),
       ]),
       0,

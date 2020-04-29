@@ -25,7 +25,7 @@ export class SetupCommitment extends MultisigCommitment {
 
   public getTransactionDetails(): MultisigTransaction {
     return {
-      data: iface.encodeFunctionData(iface.functions.executeEffectOfFreeBalance, [
+      data: iface.encodeFunctionData(iface.getFunction("executeEffectOfFreeBalance"), [
         this.networkContext.ChallengeRegistry,
         appIdentityToHash(this.freeBalanceAppIdentity),
         this.networkContext.MultiAssetMultiPartyCoinTransferInterpreter,
