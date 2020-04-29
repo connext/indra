@@ -13,6 +13,7 @@
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
+    "@connext/contracts": "2.0.2",
     "@connext/types": "6.1.5",
     "@connext/utils": "6.1.5",
     "ethers": "4.0.47",
