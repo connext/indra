@@ -332,7 +332,9 @@ export class Watcher implements IWatcher {
   };
 
   private processStateProgressed = async (event: StateProgressedEventPayload) => {
-    throw new Error("Method not implemented");
+    this.log.info(`Processing state progressed event: ${stringify(event)}`);
+    await this.store.createStateProgressedEvent(event);
+    this.log.debug(`Saved event to store`);
   };
 
   private processChallengeUpdated = async (event: ChallengeUpdatedEventPayload) => {
