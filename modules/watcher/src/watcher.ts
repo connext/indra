@@ -2,6 +2,7 @@ import {
   ChallengeRegistry,
   ConditionalTransactionCommitment,
   SetStateCommitment,
+  CounterfactualApp,
 } from "@connext/contracts";
 import {
   AppIdentity,
@@ -39,7 +40,7 @@ import {
 import { JsonRpcProvider, TransactionReceipt, TransactionResponse } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 import { Contract } from "ethers";
-import { Interface, defaultAbiCoder } from "ethers/utils";
+import { Interface, defaultAbiCoder, BigNumber } from "ethers/utils";
 
 import { ChainListener } from "./chainListener";
 import { Zero, HashZero } from "ethers/constants";
@@ -334,7 +335,10 @@ export class Watcher implements IWatcher {
   private processStateProgressed = async (event: StateProgressedEventPayload) => {
     this.log.info(`Processing state progressed event: ${stringify(event)}`);
     await this.store.createStateProgressedEvent(event);
-    this.log.debug(`Saved event to store`);
+    this.log.debug(`Saved event to store, adding action to app`);
+    await this.store.addOnchainAction(event.identityHash, this.provider);
+    const app = await this.store.getAppInstance(event.identityHash);
+    this.log.debug(`Action added, updated app: ${stringify(app)}`);
   };
 
   private processChallengeUpdated = async (event: ChallengeUpdatedEventPayload) => {
@@ -782,20 +786,41 @@ export class Watcher implements IWatcher {
       ).toString()}`,
     );
 
-    // FIXME: assumes that the `app` in the store will be updated
-    // from state transitions that result from the game being played out
-    // onchain. currently the watcher service CANNOT do this because the
-    // service does not have access to "update" store methods
+    // NOTE: The `addOnchainAction` store method does not have the ability to
+    // sign any commitments or new states. Instead, the app / set-state
+    // commitment will have emitted action / sigs added to it. The channel
+    // participants are expected to subscribe to events and update their own
+    // apps and commitments if desired. Log a warning if values are out of
+    // sync, and proceed to set outcome
     if (!toBN(challenge.versionNumber).eq(toBN(app.latestVersionNumber))) {
-      throw new Error(`App is not up to date with onchain challenges, cannot setOutcome`);
+      this.log.warn(
+        `Stored app is not up to date with onchain challenges, calling set outcome regardless since state is finalized onchain`,
+      );
+      this.log.debug(`Stored app: ${stringify(app)}`);
     }
-    const state = defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
+
+    // derive final state from action on app
+    const encodedState = defaultAbiCoder.encode(
+      [app.appInterface.stateEncoding],
+      [app.latestState],
+    );
+    const encodedFinalState = !!app.latestAction
+      ? await new Contract(
+          app.appInterface.addr,
+          CounterfactualApp.abi,
+          this.provider,
+        ).functions.applyAction(
+          encodedState,
+          defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]),
+        )
+      : encodedState;
+
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
       data: new Interface(ChallengeRegistry.abi).functions.setOutcome.encode([
         this.getAppIdentity(app, channel.multisigAddress),
-        state,
+        encodedFinalState,
       ]),
     };
     const response = await this.sendContractTransaction(tx, challenge);
