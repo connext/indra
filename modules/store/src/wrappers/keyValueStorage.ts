@@ -1,3 +1,4 @@
+import { ChallengeRegistry } from "@connext/contracts";
 import {
   StoredAppChallenge,
   AppInstanceJson,
@@ -15,8 +16,11 @@ import {
   Address,
   Bytes32,
   StoredAppChallengeStatus,
+  JsonRpcProvider,
+  Contract,
+  ChallengeEvents,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
+import { toBN, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import {
   CHANNEL_KEY,
@@ -30,6 +34,7 @@ import {
   STATE_PROGRESSED_EVENT_KEY,
   CHALLENGE_UPDATED_EVENT_KEY,
 } from "../constants";
+import { defaultAbiCoder } from "ethers/utils";
 
 function properlyConvertChannelNullVals(json: any): StateChannelJSON {
   return {
@@ -499,9 +504,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return existing || [];
   }
 
-  async createStateProgressedEvent(
-    event: StateProgressedEventPayload,
-  ): Promise<void> {
+  async createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void> {
     const key = this.getKey(STATE_PROGRESSED_EVENT_KEY, event.identityHash);
     const existing = await this.getStateProgressedEvents(key);
     return this.setItem(key, existing.concat(event));
@@ -519,6 +522,94 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const key = this.getKey(CHALLENGE_UPDATED_EVENT_KEY, event.identityHash);
     const existing = await this.getChallengeUpdatedEvents(event.identityHash);
     return this.setItem(key, existing.concat(event));
+  }
+
+  async addOnchainAction(
+    appIdentityHash: Bytes32,
+    provider: JsonRpcProvider,
+  ): Promise<void> {
+    // fetch existing data
+    const channel = await this.getStateChannelByAppIdentityHash(appIdentityHash);
+    const ourApp = await this.getAppInstance(appIdentityHash);
+    const ourLatestSetState = await this.getLatestSetStateCommitment(appIdentityHash);
+    if (!channel || !ourApp || !ourLatestSetState) {
+      throw new Error(`No record of channel or app associated with ${appIdentityHash}`);
+    }
+
+    // fetch onchain data
+    const registry = new Contract(
+      ourLatestSetState.challengeRegistryAddress,
+      ChallengeRegistry.abi,
+      provider,
+    );
+    const onchainChallenge = await registry.functions.getAppChallenge(appIdentityHash);
+    if (onchainChallenge.versionNumber.eq(ourLatestSetState.versionNumber)) {
+      return;
+    }
+    // only need state progressed events because challenge should contain
+    // all relevant information from challenge updated events
+    const fromBlock = (await provider.getBlockNumber()) - 8640; // last 24h
+    const rawProgressedLogs = await provider.getLogs({
+      // TODO: filter state progressed by appID
+      ...registry.filters[ChallengeEvents.StateProgressed](),
+      fromBlock: fromBlock < 0 ? 0 : fromBlock,
+    });
+    const onchainProgressedLogs = rawProgressedLogs.map((log) => {
+      const {
+        identityHash,
+        action,
+        versionNumber,
+        timeout,
+        turnTaker,
+        signature,
+      } = registry.interface.parseLog(log).values;
+      return { identityHash, action, versionNumber, timeout, turnTaker, signature };
+    });
+
+    // get the expected final state from the onchain data
+    const {
+      action: encodedAction,
+      versionNumber,
+      timeout,
+      turnTaker,
+      signature,
+    } = onchainProgressedLogs.sort((a, b) => b.versionNumber.sub(a.versionNumber).toNumber())[0];
+
+    // ensure action from event can be applied on top of our app
+    if (!versionNumber.eq(ourApp.latestVersionNumber + 1)) {
+      throw new Error(
+        `Action cannot be applied directly onto our record of app. Record has nonce of ${
+          ourApp.latestVersionNumber
+        }, and action results in nonce ${versionNumber.toString()}`,
+      );
+    }
+    // generate set state commitment + update app instance
+    // we CANNOT generate any signatures here, and instead will save the
+    // app as a single signed update. (i.e. as in the take-action protocol
+    // for the initiator). This means there will NOT be an app instance
+    // saved at the same nonce as the most recent single signed set-state
+    // commitment
+    const appSigners = [ourApp.initiatorIdentifier, ourApp.responderIdentifier].map(
+      getSignerAddressFromPublicIdentifier,
+    );
+    const turnTakerIdx = appSigners.findIndex((signer) => signer === turnTaker);
+    const setStateJson = {
+      ...ourLatestSetState,
+      versionNumber: onchainChallenge.versionNumber,
+      appStateHash: onchainChallenge.appStateHash,
+      signatures: turnTakerIdx === 0 ? [signature, undefined] : [undefined, signature],
+      stateTimeout: timeout,
+    };
+    const updatedApp = {
+      ...ourApp,
+      latestAction: defaultAbiCoder.decode([ourApp.appInterface.actionEncoding], encodedAction),
+    };
+    await this.updateAppInstance(channel.multisigAddress, updatedApp, setStateJson);
+
+    // update the challenge
+    const challengeKey = this.getKey(CHALLENGE_KEY, appIdentityHash);
+    // TODO: sync challenge events?
+    return this.setItem(challengeKey, onchainChallenge);
   }
 
   ////// Helper methods

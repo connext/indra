@@ -17,6 +17,7 @@ import {
   WrappedStorage,
   Bytes32,
   Address,
+  JsonRpcProvider,
 } from "@connext/types";
 
 import {
@@ -295,13 +296,21 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getStateProgressedEvents(appIdentityHash);
   }
 
-  createStateProgressedEvent(
-    event: StateProgressedEventPayload,
-  ): Promise<void> {
+  createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void> {
     return this.internalStore.createStateProgressedEvent(event);
   }
 
   getChallengeUpdatedEvents(appIdentityHash: Bytes32): Promise<ChallengeUpdatedEventPayload[]> {
     return this.internalStore.getChallengeUpdatedEvents(appIdentityHash);
+  }
+
+  addOnchainAction(
+    appIdentityHash: Bytes32,
+    provider: JsonRpcProvider,
+  ): Promise<void> {
+    return this.internalStore.addOnchainAction(
+      appIdentityHash,
+      provider,
+    );
   }
 }

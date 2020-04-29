@@ -46,7 +46,7 @@ type BaseChallengeTransactionFailedEvent = {
   multisigAddress: Address;
   challenge: StoredAppChallenge | undefined;
   params: any; // ProgressStateParams | SetStateParams | CancelChallengeParams
-}
+};
 
 ////////////////////////////////////////
 export const ChallengeProgressedEvent = "ChallengeProgressedEvent";
@@ -128,7 +128,7 @@ export type WatcherEventData = {
 export type ChallengeInitiatedResponse = {
   freeBalanceChallenge: TransactionReceipt;
   appChallenge: TransactionReceipt;
-}
+};
 
 export interface IWatcher {
   //////// Listener methods
@@ -193,7 +193,7 @@ export type StoredAppChallenge = Omit<AppChallenge, "status"> & {
 
 export interface IWatcherStoreService {
   // Disputes
-  getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined>;
+  getAppChallenge(appIdentityHash: Bytes32): Promise<StoredAppChallenge | undefined>;
   saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void>;
   getActiveChallenges(): Promise<StoredAppChallenge[]>;
 
@@ -201,13 +201,16 @@ export interface IWatcherStoreService {
   getLatestProcessedBlock(): Promise<number>;
   updateLatestProcessedBlock(blockNumber: number): Promise<void>;
 
-  getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]>;
+  getStateProgressedEvents(appIdentityHash: Bytes32): Promise<StateProgressedEventPayload[]>;
 
-  createStateProgressedEvent(
-    event: StateProgressedEventPayload,
+  createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void>;
+
+  getChallengeUpdatedEvents(appIdentityHash: Bytes32): Promise<ChallengeUpdatedEventPayload[]>;
+
+  addOnchainAction(
+    appIdentityHash: Bytes32,
+    provider: JsonRpcProvider,
   ): Promise<void>;
-
-  getChallengeUpdatedEvents(appIdentityHash: string): Promise<ChallengeUpdatedEventPayload[]>;
 
   ////////////////////////////////////////
   //// Channel data
