@@ -99,24 +99,26 @@ export class AppRegistryService implements OnModuleInit {
 
       await this.runPreInstallValidation(registryAppInfo, proposeInstallParams, from);
 
-      // check if we need to collateralize
-      const freeBal = await this.cfCoreService.getFreeBalance(
-        from,
-        installerChannel.multisigAddress,
-        proposeInstallParams.responderDepositAssetId,
-      );
-      const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
-      if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
-        const depositReceipt = await this.channelService.rebalance(
+      // check if we need to collateralize, only for swap app
+      if (registryAppInfo.name === SimpleTwoPartySwapAppName) {
+        const freeBal = await this.cfCoreService.getFreeBalance(
           from,
-          getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
-          RebalanceType.COLLATERALIZE,
-          responderDepositBigNumber,
+          installerChannel.multisigAddress,
+          proposeInstallParams.responderDepositAssetId,
         );
-        if (!depositReceipt) {
-          throw new Error(
-            `Could not obtain sufficient collateral to install app for channel ${installerChannel.multisigAddress}.`,
+        const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
+        if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
+          const depositReceipt = await this.channelService.rebalance(
+            from,
+            getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
+            RebalanceType.COLLATERALIZE,
+            responderDepositBigNumber,
           );
+          if (!depositReceipt) {
+            throw new Error(
+              `Could not obtain sufficient collateral to install app for channel ${installerChannel.multisigAddress}.`,
+            );
+          }
         }
       }
 
@@ -127,18 +129,16 @@ export class AppRegistryService implements OnModuleInit {
       }
       // collateralized in post-install tasks
       ({ appInstance } = await this.cfCoreService.installApp(appIdentityHash));
+      // any tasks that need to happen after install, i.e. DB writes
+      await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams, from);
+      const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstance.identityHash}.install`;
+      await this.messagingService.publish(installSubject, appInstance);
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.stack || e.message}`);
       await this.cfCoreService.rejectInstallApp(appIdentityHash);
       return;
     }
-
-    // any tasks that need to happen after install, i.e. DB writes
-    await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams, from);
-
-    const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstance.identityHash}.install`;
-    await this.messagingService.publish(installSubject, appInstance);
   }
 
   private async runPreInstallValidation(
@@ -363,11 +363,11 @@ export class AppRegistryService implements OnModuleInit {
 
     // install sender app
     this.log.info(
-      `installHashLockTransferMiddleware: Install app ${existingSenderApp.identityHash} for user ${appInstance.initiatorIdentifier} started`,
+      `installHashLockTransferMiddleware: Install sender app ${existingSenderApp.identityHash} for user ${appInstance.initiatorIdentifier} started`,
     );
     const res = await this.cfCoreService.installApp(existingSenderApp.identityHash);
     this.log.info(
-      `installHashLockTransferMiddleware: Install app ${res.appInstance.identityHash} for user ${
+      `installHashLockTransferMiddleware: Install sender app ${res.appInstance.identityHash} for user ${
         appInstance.initiatorIdentifier
       } complete: ${JSON.stringify(res)}`,
     );
