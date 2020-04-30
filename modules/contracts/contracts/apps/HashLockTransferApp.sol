@@ -7,7 +7,7 @@ import "../funding/libs/LibOutcome.sol";
 
 /// @title Lightning HTLC Transfer App
 /// @notice This contract allows users to claim a payment locked in
-///         the application if they provide a preImage and timelock
+///         the application if they provide a preImage and expiry
 ///         that corresponds to a lightning htlc
 contract HashLockTransferApp is CounterfactualApp {
 
@@ -19,7 +19,7 @@ contract HashLockTransferApp is CounterfactualApp {
         LibOutcome.CoinTransfer[2] coinTransfers;
         bytes32 lockHash;
         bytes32 preImage;
-        uint256 timelock;
+        uint256 expiry;
         bool finalized;
     }
 
@@ -40,7 +40,7 @@ contract HashLockTransferApp is CounterfactualApp {
         bytes32 generatedHash = sha256(abi.encode(action.preImage));
 
         require(!state.finalized, "Cannot take action on finalized state");
-        require(block.number < state.timelock, "Cannot take action if timelock is expired");
+        require(block.number < state.expiry, "Cannot take action if expiry is expired");
         require(state.lockHash == generatedHash, "Hash generated from preimage does not match hash in state");
 
         state.coinTransfers[1].amount = state.coinTransfers[0].amount;
@@ -58,9 +58,9 @@ contract HashLockTransferApp is CounterfactualApp {
     {
         AppState memory state = abi.decode(encodedState, (AppState));
 
-        // If payment hasn't been unlocked, require that the timelock is expired
+        // If payment hasn't been unlocked, require that the expiry is expired
         if (!state.finalized) {
-            require(block.number >= state.timelock, "Cannot revert payment if timelock is unexpired");
+            require(block.number >= state.expiry, "Cannot revert payment if expiry is unexpired");
         }
 
         return abi.encode(state.coinTransfers);
