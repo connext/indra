@@ -399,7 +399,7 @@ describe("HashLock Transfers", () => {
         preImage,
         assetId: transfer.assetId,
       } as PublicParams.ResolveHashLockTransfer),
-    ).to.be.rejectedWith(/Cannot take action if timelock is expired/);
+    ).to.be.rejectedWith(/Cannot take action if expiry is expired/);
   });
 
   it("cannot install receiver app without sender app installed", async () => {
