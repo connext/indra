@@ -10,6 +10,7 @@ import {
   StoredAppChallenge,
   StateProgressedEventPayload,
   ChallengeUpdatedEventPayload,
+  JsonRpcProvider,
 } from "@connext/types";
 
 export class MockStoreService implements IStoreService {
@@ -158,8 +159,14 @@ export class MockStoreService implements IStoreService {
   }
 
   async createStateProgressedEvent(
-    appIdentityHash: string,
     event: StateProgressedEventPayload,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+
+  addOnchainAction(
+    appIdentityHash: string,
+    provider: JsonRpcProvider,
   ): Promise<void> {
     return Promise.resolve();
   }
