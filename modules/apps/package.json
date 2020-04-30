@@ -18,7 +18,7 @@
     "clean": "rm -rf ./dist"
   },
   "devDependencies": {
-    "@connext/contracts": "2.0.3",
+    "@connext/contracts": "2.0.5",
     "@connext/utils": "6.2.1",
     "@connext/types": "6.2.1",
     "ethers": "4.0.47",

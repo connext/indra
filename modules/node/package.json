@@ -24,7 +24,7 @@
   "dependencies": {
     "@connext/apps": "6.2.1",
     "@connext/cf-core": "6.2.1",
-    "@connext/contracts": "2.0.3",
+    "@connext/contracts": "2.0.5",
     "@connext/utils": "6.2.1",
     "@connext/messaging": "6.2.1",
     "@connext/store": "6.2.1",
