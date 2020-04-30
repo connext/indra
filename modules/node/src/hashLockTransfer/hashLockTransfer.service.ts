@@ -28,9 +28,9 @@ const appStatusesToHashLockTransferStatus = (
     return undefined;
   }
   const latestState = bigNumberifyJson(senderApp.latestState) as HashLockTransferAppState;
-  const { timelock: senderTimelock } = latestState;
-  const isSenderExpired = senderTimelock.lt(currentBlockNumber);
-  const isReceiverExpired = !receiverApp ? false : latestState.timelock.lt(currentBlockNumber);
+  const { expiry: senderExpiry } = latestState;
+  const isSenderExpired = senderExpiry.lt(currentBlockNumber);
+  const isReceiverExpired = !receiverApp ? false : latestState.expiry.lt(currentBlockNumber);
   // pending iff no receiver app + not expired
   if (!receiverApp) {
     return isSenderExpired ? HashLockTransferStatus.EXPIRED : HashLockTransferStatus.PENDING;
@@ -90,17 +90,17 @@ export class HashLockTransferService {
 
     // sender amount
     const amount = appState.coinTransfers[0].amount;
-    const timelock = appState.timelock.sub(TIMEOUT_BUFFER);
-    if (timelock.lte(Zero)) {
+    const expiry = appState.expiry.sub(TIMEOUT_BUFFER);
+    if (expiry.lte(Zero)) {
       throw new Error(
-        `Cannot resolve hash lock transfer with 0 or negative timelock: ${timelock.toString()}`,
+        `Cannot resolve hash lock transfer with 0 or negative expiry: ${expiry.toString()}`,
       );
     }
     const provider = this.configService.getEthProvider();
     const currBlock = await provider.getBlockNumber();
-    if (timelock.lt(currBlock)) {
+    if (expiry.lt(currBlock)) {
       throw new Error(
-        `Cannot resolve hash lock transfer with expired timelock: ${timelock.toString()}, block: ${currBlock}`,
+        `Cannot resolve hash lock transfer with expired expiry: ${expiry.toString()}, block: ${currBlock}`,
       );
     }
 
@@ -154,7 +154,7 @@ export class HashLockTransferService {
       ],
       lockHash: appState.lockHash,
       preImage: HashZero,
-      timelock,
+      expiry,
       finalized: false,
     };
 

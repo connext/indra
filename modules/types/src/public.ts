@@ -39,7 +39,6 @@ type RescindDepositRightsResponse = MethodResults.RescindDepositRights;
 type HashLockTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.HashLockTransfer;
   amount: BigNumberish;
-  timelockDuration?: BigNumberish;
   timelock?: BigNumberish;
   lockHash: Bytes32;
   recipient: PublicIdentifier;
