@@ -54,7 +54,7 @@ describe("LightningHTLCTransferApp", () => {
   let transferAmount: BigNumber;
   let preImage: string;
   let lockHash: string;
-  let timelock: BigNumber;
+  let expiry: BigNumber;
   let preState: HashLockTransferAppState;
 
   async function computeOutcome(state: HashLockTransferAppState): Promise<string> {
@@ -90,7 +90,7 @@ describe("LightningHTLCTransferApp", () => {
     transferAmount = BigNumber.from(10000);
     preImage = mkHash("0xb");
     lockHash = createLockHash(preImage);
-    timelock = BigNumber.from(await provider.getBlockNumber()).add(100);
+    expiry = BigNumber.from(await provider.getBlockNumber()).add(100);
     preState = {
       coinTransfers: [
         {
@@ -103,14 +103,14 @@ describe("LightningHTLCTransferApp", () => {
         },
       ],
       lockHash,
-      timelock,
+      expiry,
       preImage: mkHash("0x0"),
       finalized: false,
     };
   });
 
   describe("update state", () => {
-    it("will redeem a payment with correct hash within timelock", async () => {
+    it("will redeem a payment with correct hash within expiry", async () => {
       const action: HashLockTransferAppAction = {
         preImage,
       };
@@ -131,7 +131,7 @@ describe("LightningHTLCTransferApp", () => {
         ],
         lockHash,
         preImage,
-        timelock,
+        expiry,
         finalized: true,
       };
 
@@ -172,21 +172,21 @@ describe("LightningHTLCTransferApp", () => {
       const action: HashLockTransferAppAction = {
         preImage,
       };
-      preState.timelock = BigNumber.from(await provider.getBlockNumber());
+      preState.expiry = BigNumber.from(await provider.getBlockNumber());
 
       await expect(applyAction(preState, action)).revertedWith(
-        "Cannot take action if timelock is expired",
+        "Cannot take action if expiry is expired",
       );
     });
 
-    it("will revert outcome that is not finalized with unexpired timelock", async () => {
+    it("will revert outcome that is not finalized with unexpired expiry", async () => {
       await expect(computeOutcome(preState)).revertedWith(
-        "Cannot revert payment if timelock is unexpired",
+        "Cannot revert payment if expiry is unexpired",
       );
     });
 
-    it("will refund payment that is not finalized with expired timelock", async () => {
-      preState.timelock = BigNumber.from(await provider.getBlockNumber());
+    it("will refund payment that is not finalized with expired expiry", async () => {
+      preState.expiry = BigNumber.from(await provider.getBlockNumber());
       let ret = await computeOutcome(preState);
 
       validateOutcome(ret, preState);

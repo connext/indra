@@ -1,5 +1,4 @@
-import { MultisigCommitment } from "@connext/cf-core";
-import { ConditionalTransactionDelegateTarget } from "@connext/contracts";
+import { MultisigCommitment, ConditionalTransactionDelegateTarget } from "@connext/contracts";
 import {
   MultisigTransaction,
   MultisigOperation,

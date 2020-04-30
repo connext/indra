@@ -1,8 +1,4 @@
-import {
-  HashLockTransferAppName,
-  Address,
-  Bytes32,
-} from "@connext/types";
+import { HashLockTransferAppName, Address, Bytes32 } from "@connext/types";
 import { constants } from "ethers";
 import { EntityRepository, Repository } from "typeorm";
 
@@ -101,9 +97,7 @@ export class HashlockTransferRepository extends Repository<
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`,
       )
-      .andWhere(
-        `app_instance."outcomeInterpreterParameters"::JSONB @> '{ "tokenAddress": "${assetId}" }'`,
-      )
+      .andWhere(`app_instance."initiatorDepositAssetId" = :assetId`, { assetId })
       .getOne();
   }
 
@@ -112,7 +106,7 @@ export class HashlockTransferRepository extends Repository<
     receiverSignerAddress: Address,
     assetId: Address,
   ): Promise<AppInstance | undefined> {
-    return this.createQueryBuilder("app_instance")
+    const query = this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
         AppRegistry,
         "app_registry",
@@ -124,10 +118,8 @@ export class HashlockTransferRepository extends Repository<
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`,
       )
-      .andWhere(
-        `app_instance."outcomeInterpreterParameters"::JSONB @> '{ "tokenAddress": "${assetId}" }'`,
-      )
-      .getOne();
+      .andWhere(`app_instance."initiatorDepositAssetId" = :assetId`, { assetId });
+    return query.getOne();
   }
 
   findActiveHashLockTransferAppsToRecipient(

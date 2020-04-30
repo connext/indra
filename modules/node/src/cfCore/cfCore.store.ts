@@ -256,7 +256,7 @@ export class CFCoreStore implements IStoreService {
         break;
 
       default:
-        throw new Error(`Unrecognized outcome type: ${OutcomeType[proposal.outcomeType]}`);
+        throw new Error(`Unrecognized outcome type: ${OutcomeType[outcomeType]}`);
     }
     await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(proposal);

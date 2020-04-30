@@ -57,23 +57,14 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelockDuration = (5000).toString();
-    const expiry = BigNumber.from(timelockDuration).add(await provider.getBlockNumber());
+    const timelock = (5000).toString();
+    const expiry = BigNumber.from(timelock).add(await provider.getBlockNumber());
 
     const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
-    // both sender + receiver apps installed, sender took action
+
     await Promise.all([
-      clientA.conditionalTransfer({
-        amount: transfer.amount.toString(),
-        conditionType: ConditionalTransferTypes.HashLockTransfer,
-        lockHash,
-        timelockDuration,
-        assetId: transfer.assetId,
-        meta: { foo: "bar", sender: clientA.publicIdentifier },
-        recipient: clientB.publicIdentifier,
-      } as PublicParams.HashLockTransfer),
-      new Promise((res) => {
-        clientB.on(
+      new Promise(async (res) => {
+        clientA.once(
           EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
           (eventPayload: EventPayloads.HashLockTransferCreated) => {
             expect(eventPayload).to.deep.contain({
@@ -84,13 +75,43 @@ describe("HashLock Transfers", () => {
               recipient: clientB.publicIdentifier,
             } as EventPayloads.HashLockTransferCreated);
             expect(eventPayload.transferMeta).to.deep.eq({
+              timelock,
               lockHash,
-              timelock: expiry.sub(100),
+              expiry,
             });
             res();
           },
         );
+        await clientA.conditionalTransfer({
+          amount: transfer.amount.toString(),
+          conditionType: ConditionalTransferTypes.HashLockTransfer,
+          lockHash,
+          timelock,
+          assetId: transfer.assetId,
+          meta: { foo: "bar", sender: clientA.publicIdentifier },
+          recipient: clientB.publicIdentifier,
+        } as PublicParams.HashLockTransfer);
       }),
+      new Promise((res) =>
+        clientB.once(
+          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
+          (eventPayload: EventPayloads.HashLockTransferCreated) => {
+            expect(eventPayload).to.deep.contain({
+              amount: transfer.amount,
+              assetId: transfer.assetId,
+              type: ConditionalTransferTypes.HashLockTransfer,
+              paymentId: lockHash,
+              recipient: clientB.publicIdentifier,
+            } as EventPayloads.HashLockTransferCreated);
+            expect(eventPayload.transferMeta).to.deep.eq({
+              timelock,
+              lockHash,
+              expiry: expiry.sub(100),
+            });
+            res();
+          },
+        ),
+      ),
     ]);
 
     const {
@@ -100,67 +121,71 @@ describe("HashLock Transfers", () => {
     expect(clientAPostTransferBal).to.eq(0);
     expect(nodePostTransferBal).to.eq(0);
 
-    await new Promise(async (res) => {
-      clientA.on(EventNames.UNINSTALL_EVENT, async (data) => {
-        const {
-          [clientA.signerAddress]: clientAPostReclaimBal,
-          [clientA.nodeSignerAddress]: nodePostReclaimBal,
-        } = await clientA.getFreeBalance(transfer.assetId);
-        expect(clientAPostReclaimBal).to.eq(0);
-        expect(nodePostReclaimBal).to.eq(transfer.amount);
-        res();
-      });
-      await clientB.resolveCondition({
-        conditionType: ConditionalTransferTypes.HashLockTransfer,
-        preImage,
-        assetId: transfer.assetId,
-      } as PublicParams.ResolveHashLockTransfer);
-      const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
-        transfer.assetId,
-      );
-      expect(clientBPostTransferBal).to.eq(transfer.amount);
-    });
+    clientB.resolveCondition({
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      preImage,
+      assetId: transfer.assetId,
+    } as PublicParams.ResolveHashLockTransfer);
+    await Promise.all([
+      new Promise(async (res) => {
+        clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
+          const {
+            [clientA.signerAddress]: clientAPostReclaimBal,
+            [clientA.nodeSignerAddress]: nodePostReclaimBal,
+          } = await clientA.getFreeBalance(transfer.assetId);
+          expect(clientAPostReclaimBal).to.eq(0);
+          expect(nodePostReclaimBal).to.eq(transfer.amount);
+          res();
+        });
+      }),
+      new Promise(async (res) => {
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, res);
+      }),
+    ]);
+    const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
+      transfer.assetId,
+    );
+    expect(clientBPostTransferBal).to.eq(transfer.amount);
   });
 
   it("happy case: client A hashlock transfers tokens to client B through node", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelockDuration = (5000).toString();
-    const expiry = BigNumber.from(timelockDuration).add(await provider.getBlockNumber());
+    const timelock = (5000).toString();
+    const expiry = BigNumber.from(timelock).add(await provider.getBlockNumber());
 
     const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
     // both sender + receiver apps installed, sender took action
-    await Promise.all([
-      clientA.conditionalTransfer({
-        amount: transfer.amount.toString(),
-        conditionType: ConditionalTransferTypes.HashLockTransfer,
-        lockHash,
-        timelockDuration,
-        assetId: transfer.assetId,
-        meta: { foo: "bar", sender: clientA.publicIdentifier },
-        recipient: clientB.publicIdentifier,
-      } as PublicParams.HashLockTransfer),
-      new Promise((res) => {
-        clientB.on(
-          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-          (eventPayload: EventPayloads.HashLockTransferCreated) => {
-            expect(eventPayload).to.deep.contain({
-              amount: transfer.amount,
-              assetId: transfer.assetId,
-              type: ConditionalTransferTypes.HashLockTransfer,
-              paymentId: lockHash,
-              recipient: clientB.publicIdentifier,
-            } as EventPayloads.HashLockTransferCreated);
-            expect(eventPayload.transferMeta).to.deep.eq({
-              lockHash,
-              timelock: expiry.sub(100),
-            });
-            res();
-          },
-        );
-      }),
-    ]);
+    clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
+      recipient: clientB.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+    await new Promise((res) => {
+      clientB.on(
+        EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
+        (eventPayload: EventPayloads.HashLockTransferCreated) => {
+          expect(eventPayload).to.deep.contain({
+            amount: transfer.amount,
+            assetId: transfer.assetId,
+            type: ConditionalTransferTypes.HashLockTransfer,
+            paymentId: lockHash,
+            recipient: clientB.publicIdentifier,
+          } as EventPayloads.HashLockTransferCreated);
+          expect(eventPayload.transferMeta).to.deep.eq({
+            timelock,
+            lockHash,
+            expiry: expiry.sub(100),
+          });
+          res();
+        },
+      );
+    });
 
     const {
       [clientA.signerAddress]: clientAPostTransferBal,
@@ -195,25 +220,20 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelockDuration = (5000).toString();
+    const timelock = (5000).toString();
 
     const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
     // both sender + receiver apps installed, sender took action
-    await Promise.all([
-      clientA.conditionalTransfer({
-        amount: transfer.amount.toString(),
-        conditionType: ConditionalTransferTypes.HashLockTransfer,
-        lockHash,
-        timelockDuration,
-        assetId: transfer.assetId,
-        meta: { foo: "bar", sender: clientA.publicIdentifier },
-        recipient: clientB.publicIdentifier,
-      } as PublicParams.HashLockTransfer),
-      new Promise((res) => {
-        const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
-        clientB.messaging.subscribe(subject, res);
-      }),
-    ]);
+    clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
+      recipient: clientB.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+    await new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res));
 
     const retrievedTransfer = await clientB.getHashLockTransfer(lockHash, transfer.assetId);
     expect(retrievedTransfer).to.deep.equal({
@@ -223,7 +243,7 @@ describe("HashLock Transfers", () => {
       senderIdentifier: clientA.publicIdentifier,
       receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.PENDING,
-      meta: { foo: "bar", sender: clientA.publicIdentifier },
+      meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
     } as NodeResponses.GetHashLockTransfer);
   });
 
@@ -231,24 +251,20 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelockDuration = (5000).toString();
+    const timelock = (5000).toString();
 
     const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
     // both sender + receiver apps installed, sender took action
-    await Promise.all([
-      clientA.conditionalTransfer({
-        amount: transfer.amount.toString(),
-        conditionType: ConditionalTransferTypes.HashLockTransfer,
-        lockHash,
-        timelockDuration,
-        assetId: transfer.assetId,
-        meta: { foo: "bar", sender: clientA.publicIdentifier },
-        recipient: clientB.publicIdentifier,
-      } as PublicParams.HashLockTransfer),
-      new Promise((res) => {
-        clientA.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
-      }),
-    ]);
+    clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
+      recipient: clientB.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+    await new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res));
 
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
@@ -268,7 +284,7 @@ describe("HashLock Transfers", () => {
       senderIdentifier: clientA.publicIdentifier,
       receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.COMPLETED,
-      meta: { foo: "bar", sender: clientA.publicIdentifier },
+      meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
     } as NodeResponses.GetHashLockTransfer);
   });
 
@@ -278,38 +294,30 @@ describe("HashLock Transfers", () => {
     const transferEth: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
     await fundChannel(clientA, transferEth.amount, transferEth.assetId);
     const preImage = getRandomBytes32();
-    const timelockDuration = (5000).toString();
+    const timelock = (5000).toString();
     const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
 
-    await Promise.all([
-      clientA.conditionalTransfer({
-        amount: transferToken.amount.toString(),
-        conditionType: ConditionalTransferTypes.HashLockTransfer,
-        lockHash,
-        timelockDuration,
-        assetId: transferToken.assetId,
-        meta: { foo: "bar" },
-        recipient: clientB.publicIdentifier,
-      } as PublicParams.HashLockTransfer),
-      new Promise((res) => {
-        clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
-      }),
-    ]);
+    clientA.conditionalTransfer({
+      amount: transferToken.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transferToken.assetId,
+      meta: { foo: "bar" },
+      recipient: clientB.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+    await new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res));
 
-    await Promise.all([
-      clientA.conditionalTransfer({
-        amount: transferEth.amount.toString(),
-        conditionType: ConditionalTransferTypes.HashLockTransfer,
-        lockHash,
-        timelockDuration,
-        assetId: transferEth.assetId,
-        meta: { foo: "bar" },
-        recipient: clientB.publicIdentifier,
-      } as PublicParams.HashLockTransfer),
-      new Promise((res) => {
-        clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
-      }),
-    ]);
+    clientA.conditionalTransfer({
+      amount: transferEth.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transferEth.assetId,
+      meta: { foo: "bar" },
+      recipient: clientB.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+    await new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res));
 
     await clientB.resolveCondition({
       conditionType: ConditionalTransferTypes.HashLockTransfer,
@@ -338,24 +346,20 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelockDuration = (5000).toString();
+    const timelock = (5000).toString();
 
     const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
-    await Promise.all([
-      clientA.conditionalTransfer({
-        amount: transfer.amount.toString(),
-        conditionType: ConditionalTransferTypes.HashLockTransfer,
-        lockHash,
-        timelockDuration,
-        assetId: transfer.assetId,
-        meta: { foo: "bar", sender: clientA.publicIdentifier },
-        recipient: clientB.publicIdentifier,
-      } as PublicParams.HashLockTransfer),
-      new Promise((res) => {
-        const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
-        clientB.messaging.subscribe(subject, res);
-      }),
-    ]);
+
+    clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
+      recipient: clientB.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+    await new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res));
 
     const badPreImage = getRandomBytes32();
     await expect(
@@ -371,24 +375,19 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelockDuration = 101;
+    const timelock = 101;
 
     const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
-    await Promise.all([
-      clientA.conditionalTransfer({
-        amount: transfer.amount.toString(),
-        conditionType: ConditionalTransferTypes.HashLockTransfer,
-        lockHash,
-        timelockDuration,
-        assetId: transfer.assetId,
-        meta: { foo: "bar", sender: clientA.publicIdentifier },
-        recipient: clientB.publicIdentifier,
-      } as PublicParams.HashLockTransfer),
-      new Promise((res) => {
-        const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
-        clientB.messaging.subscribe(subject, res);
-      }),
-    ]);
+    clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
+      recipient: clientB.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+    await new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res));
 
     await new Promise((resolve) => provider.once("block", resolve));
 
@@ -398,7 +397,41 @@ describe("HashLock Transfers", () => {
         preImage,
         assetId: transfer.assetId,
       } as PublicParams.ResolveHashLockTransfer),
-    ).to.be.rejectedWith(/Cannot take action if timelock is expired/);
+    ).to.be.rejectedWith(/Cannot take action if expiry is expired/);
+  });
+
+  it("cannot install receiver app without sender app installed", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+
+    const preImage = getRandomBytes32();
+    const timelock = (5000).toString();
+
+    const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
+
+    clientA
+      .conditionalTransfer({
+        amount: transfer.amount.toString(),
+        conditionType: ConditionalTransferTypes.HashLockTransfer,
+        lockHash,
+        timelock,
+        assetId: transfer.assetId,
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
+        recipient: clientB.publicIdentifier,
+      } as PublicParams.HashLockTransfer)
+      .catch((e) => {
+        console.log("Expected this error: ", e);
+      });
+
+    await expect(
+      new Promise((res, rej) => {
+        // should not see this event, wait 10 seconds to make sure it doesnt happen
+        // TODO: change to rej
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, () => {
+          rej("Should not get this event!");
+        });
+        setTimeout(res, 10_000);
+      }),
+    ).to.be.fulfilled;
   });
 
   it("Experimental: Average latency of 5 signed transfers with Eth", async () => {
@@ -420,29 +453,23 @@ describe("HashLock Transfers", () => {
       } = await clientB.getFreeBalance(transfer.assetId);
 
       const preImage = getRandomBytes32();
-      const timelockDuration = (5000).toString();
+      const timelock = (5000).toString();
       const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
 
       // Start timer
       const start = Date.now();
 
       // both sender + receiver apps installed, sender took action
-      await Promise.all([
-        clientA.conditionalTransfer({
-          amount: transfer.amount.toString(),
-          conditionType: ConditionalTransferTypes.HashLockTransfer,
-          lockHash,
-          timelockDuration,
-          assetId: transfer.assetId,
-          meta: { foo: "bar", sender: clientA.publicIdentifier },
-          recipient: clientB.publicIdentifier,
-        } as PublicParams.HashLockTransfer),
-        // eslint-disable-next-line no-loop-func
-        new Promise((res) => {
-          const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
-          clientB.messaging.subscribe(subject, res);
-        }),
-      ]);
+      clientA.conditionalTransfer({
+        amount: transfer.amount.toString(),
+        conditionType: ConditionalTransferTypes.HashLockTransfer,
+        lockHash,
+        timelock,
+        assetId: transfer.assetId,
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
+        recipient: clientB.publicIdentifier,
+      } as PublicParams.HashLockTransfer);
+      await new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res));
 
       // eslint-disable-next-line no-loop-func
       await new Promise(async (res) => {
