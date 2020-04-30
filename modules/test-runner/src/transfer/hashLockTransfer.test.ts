@@ -24,7 +24,7 @@ import {
   requestCollateral,
 } from "../util";
 
-describe.only("HashLock Transfers", () => {
+describe("HashLock Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
