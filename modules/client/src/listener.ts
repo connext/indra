@@ -406,6 +406,7 @@ export class ConnextListener extends ConnextEventEmitter {
           transferMeta: {
             lockHash: initalState.lockHash,
             expiry: initalState.expiry,
+            timelock: meta["timelock"],
           } as CreatedHashLockTransferMeta,
           type: ConditionalTransferTypes[ConditionalTransferTypes.HashLockTransfer],
           paymentId: initalState.lockHash,

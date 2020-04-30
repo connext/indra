@@ -50,6 +50,7 @@ export class HashLockTransferController extends AbstractController {
 
     submittedMeta.recipient = recipient;
     submittedMeta.sender = this.connext.publicIdentifier;
+    submittedMeta.timelock = timelock;
 
     const network = await this.ethProvider.getNetwork();
     const {

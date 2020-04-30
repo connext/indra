@@ -77,6 +77,7 @@ describe.only("HashLock Transfers", () => {
               recipient: clientB.publicIdentifier,
             } as EventPayloads.HashLockTransferCreated);
             expect(eventPayload.transferMeta).to.deep.eq({
+              timelock,
               lockHash,
               expiry,
             });
@@ -105,6 +106,7 @@ describe.only("HashLock Transfers", () => {
               recipient: clientB.publicIdentifier,
             } as EventPayloads.HashLockTransferCreated);
             expect(eventPayload.transferMeta).to.deep.eq({
+              timelock,
               lockHash,
               expiry: expiry.sub(100),
             });
@@ -173,6 +175,7 @@ describe.only("HashLock Transfers", () => {
             recipient: clientB.publicIdentifier,
           } as EventPayloads.HashLockTransferCreated);
           expect(eventPayload.transferMeta).to.deep.eq({
+            timelock,
             lockHash,
             expiry: expiry.sub(100),
           });
