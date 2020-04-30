@@ -22,13 +22,13 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/apps": "6.2.2",
-    "@connext/cf-core": "6.2.2",
+    "@connext/apps": "6.3.0",
+    "@connext/cf-core": "6.3.0",
     "@connext/contracts": "2.0.5",
-    "@connext/utils": "6.2.2",
-    "@connext/messaging": "6.2.2",
-    "@connext/store": "6.2.2",
-    "@connext/types": "6.2.2",
+    "@connext/utils": "6.3.0",
+    "@connext/messaging": "6.3.0",
+    "@connext/store": "6.3.0",
+    "@connext/types": "6.3.0",
     "@nestjs/common": "7.0.8",
     "@nestjs/core": "7.0.8",
     "@nestjs/microservices": "7.0.8",
@@ -52,7 +52,7 @@
     "typeorm": "0.2.24"
   },
   "devDependencies": {
-    "@connext/client": "6.2.2",
+    "@connext/client": "6.3.0",
     "@nestjs/testing": "7.0.8",
     "@types/express": "4.17.6",
     "@types/jest": "25.2.1",
