@@ -10,7 +10,8 @@ export const bigNumberifyJson = (json: any): any =>
 
 export const deBigNumberifyJson = (json: any): any =>
   JSON.parse(JSON.stringify(json), (key: string, val: any) =>
-    val && isBN(val) ? val.toHexString() : val,
+    // TODO: added check for toHexString temporarily
+    val && isBN(val) && val.toHexString ? val.toHexString() : val,
   );
 
 // Give abrv = true to abbreviate hex strings and addresss to look like "0x6FEC..kuQk"
