@@ -1,118 +1,69 @@
-import { DefaultApp, MethodResults, OutcomeType } from "@connext/types";
-import { Test } from "@nestjs/testing";
-import { getRepositoryToken } from "@nestjs/typeorm";
-import { One, AddressZero, Zero } from "ethers/constants";
-import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
+import { Test, TestingModule } from "@nestjs/testing";
+import { connect } from "@connext/client";
+import { One, AddressZero } from "ethers/constants";
+import { IConnextClient, StoreTypes } from "@connext/types";
+import { ConnextStore } from "@connext/store";
+import { Wallet } from "ethers";
+import { HttpModule, INestApplication } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { CFCoreService } from "../cfCore/cfCore.service";
-import { mkHash, mkAddress } from "../test/utils";
-
-import { Channel } from "./channel.entity";
-import { ChannelService, RebalanceType } from "./channel.service";
-import { ChannelRepository } from "./channel.repository";
-import { ConfigService } from "../config/config.service";
-import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
+import { mkAddress } from "../test/utils";
+import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
+import { AuthModule } from "../auth/auth.module";
+import { AppModule } from "../app.module";
+import { CFCoreModule } from "../cfCore/cfCore.module";
+import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
+import { LoggerModule } from "../logger/logger.module";
+import { MessagingModule } from "../messaging/messaging.module";
+import { WithdrawModule } from "../withdraw/withdraw.module";
+import { DepositModule } from "../deposit/deposit.module";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { BigNumber } from "ethers/utils";
+import { RebalanceProfileRepository } from "../rebalanceProfile/rebalanceProfile.repository";
+import { ConfigModule } from "../config/config.module";
+import { ConfigService } from "../config/config.service";
+import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
+import { SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
+import { ConditionalTransactionCommitmentRepository } from "../conditionalCommitment/conditionalCommitment.repository";
 
-class MockCFCoreService {
-  cfCore = {
-    signerAddress: mkAddress("0xabcdef"),
-  };
+import { ChannelService } from "./channel.service";
+import { ChannelRepository } from "./channel.repository";
+import { AuthController } from "../auth/auth.controller";
 
-  async deposit(): Promise<MethodResults.Deposit> {
-    return {
-      freeBalance: {
-        [AddressZero]: One,
-      },
-    };
-  }
-}
-
-class MockChannelRepository extends ChannelRepository {
-  async findByMultisigAddress(): Promise<Channel | undefined> {
-    const channel = new Channel();
-    channel.available = true;
-    channel.activeCollateralizations = { [AddressZero]: false };
-    channel.multisigAddress = mkAddress("0xAAA");
-    channel.nodeIdentifier = mkAddress("addressAAA");
-    channel.userIdentifier = mkAddress("addressBBB");
-    channel.id = 1;
-    return channel;
-  }
-}
-
-class MockOnchainTransactionRepository extends OnchainTransactionRepository {
-  async addCollateralization(): Promise<void> {
-    return;
-  }
-}
-
-class MockEthProvider {
-  async getTransaction(): Promise<TransactionResponse> {
-    return {
-      blockHash: mkHash(),
-      blockNumber: 1,
-      chainId: 1337,
-      confirmations: 10,
-      data: "0x",
-      from: mkAddress("0xabc"),
-      gasLimit: One,
-      gasPrice: One,
-      hash: mkHash("0xbbb"),
-      nonce: 1,
-      r: "foo",
-      s: "bar",
-      timestamp: 111,
-      to: mkAddress("0xdef"),
-      v: 1,
-      value: Zero,
-    } as any;
-  }
-
-  async getBalance(): Promise<BigNumber> {
-    return One;
-  }
-}
-
-class MockConfigService {
-  getEthProvider(): JsonRpcProvider {
-    return new MockEthProvider() as any;
-  }
-
-  async getDefaultAppByName(): Promise<DefaultApp> {
-    return {
-      actionEncoding: "",
-      allowNodeInstall: true,
-      appDefinitionAddress: mkAddress("0xa"),
-      chainId: 1337,
-      name: "SimpleLinkedTransferApp",
-      outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-      stateEncoding: "",
-    };
-  }
-}
-
-describe.skip("Channel Service", () => {
+describe("Channel Service", () => {
+  let app: INestApplication;
   let channelService: ChannelService;
+  let configService: ConfigService;
+  let client: IConnextClient;
 
   beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
-      providers: [
-        ChannelService,
-        { provide: ConfigService, useClass: MockConfigService },
-        { provide: CFCoreService, useClass: MockCFCoreService },
-        { provide: getRepositoryToken(Channel), useClass: MockChannelRepository },
-        {
-          provide: getRepositoryToken(OnchainTransaction),
-          useClass: MockOnchainTransactionRepository,
-        },
-      ],
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
     }).compile();
-    channelService = moduleRef.get<ChannelService>(ChannelService);
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+    channelService = moduleFixture.get<ChannelService>(ChannelService);
+    configService = moduleFixture.get<ConfigService>(ConfigService);
+    await app.listen(configService.getPort());
+
+    const nodeUrl = await app.getUrl();
+
+    const store = new ConnextStore(StoreTypes.Memory);
+    const wallet = Wallet.createRandom();
+    client = await connect("localhost", {
+      store,
+      signer: wallet.privateKey,
+      ethProviderUrl: configService.getEthRpcUrl(),
+      messagingUrl: configService.getMessagingConfig().messagingUrl[0],
+      nodeUrl,
+      logLevel: 1,
+    });
+    console.log("client.signerAddress: ", client.signerAddress);
+    console.log("client.publicIdentifier: ", client.publicIdentifier);
+    expect(client.signerAddress).toBeTruthy();
   });
 
   it("should add deposits to the onchain transaction table", async () => {
-    await channelService.rebalance(mkAddress("0xAddress"), AddressZero, RebalanceType.COLLATERALIZE, One);
+    expect(true).toBeTruthy();
   });
 });

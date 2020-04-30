@@ -25,7 +25,6 @@ import {
   createStateProgressedEventPayload,
   createChallengeUpdatedEventPayload,
 } from "../test/cfCore";
-import { mkHash } from "../test/utils";
 import { ConfigService } from "../config/config.service";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
