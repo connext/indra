@@ -366,10 +366,12 @@ export class AppRegistryService implements OnModuleInit {
       `installHashLockTransferMiddleware: Install sender app ${existingSenderApp.identityHash} for user ${appInstance.initiatorIdentifier} started`,
     );
     const res = await this.cfCoreService.installApp(existingSenderApp.identityHash);
+    const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${existingSenderApp.channel.multisigAddress}.app-instance.${existingSenderApp.identityHash}.install`;
+    await this.messagingService.publish(installSubject, appInstance);
     this.log.info(
-      `installHashLockTransferMiddleware: Install sender app ${res.appInstance.identityHash} for user ${
-        appInstance.initiatorIdentifier
-      } complete: ${JSON.stringify(res)}`,
+      `installHashLockTransferMiddleware: Install sender app ${
+        res.appInstance.identityHash
+      } for user ${appInstance.initiatorIdentifier} complete: ${JSON.stringify(res)}`,
     );
   };
 

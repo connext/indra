@@ -96,7 +96,8 @@ export class HashLockTransferController extends AbstractController {
       assetId,
       sender: this.connext.publicIdentifier,
       meta: submittedMeta,
-      paymentId: HashZero,
+      paymentId: lockHash,
+      recipient,
       transferMeta: {
         timelock,
         lockHash,
