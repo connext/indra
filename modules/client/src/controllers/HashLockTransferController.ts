@@ -24,13 +24,9 @@ export class HashLockTransferController extends AbstractController {
     const amount = toBN(params.amount);
     const assetId = params.assetId ? params.assetId : AddressZero;
     // backwards compatibility for timelock
-    if(params.timelock) {
-      this.log.warn(`timelock is deprecated, use timelockDuration instead`)
-      params.timelockDuration = params.timelock;
-    }
     // convert to block height
-    const timelockDuration = params.timelockDuration ? params.timelockDuration : 5000;
-    const timelock = toBN(timelockDuration).add(await this.connext.ethProvider.getBlockNumber());
+    const timelock = params.timelock ? params.timelock : 5000;
+    const expiry = toBN(timelock).add(await this.connext.ethProvider.getBlockNumber());
 
     const { lockHash, meta, recipient } = params;
     const submittedMeta = { ...(meta || {}) } as any;
@@ -46,7 +42,7 @@ export class HashLockTransferController extends AbstractController {
           to: this.connext.nodeSignerAddress,
         },
       ],
-      timelock,
+      expiry,
       lockHash,
       preImage: HashZero,
       finalized: false,
@@ -54,6 +50,7 @@ export class HashLockTransferController extends AbstractController {
 
     submittedMeta.recipient = recipient;
     submittedMeta.sender = this.connext.publicIdentifier;
+    submittedMeta.timelock = timelock;
 
     const network = await this.ethProvider.getNetwork();
     const {
@@ -99,6 +96,7 @@ export class HashLockTransferController extends AbstractController {
       paymentId: lockHash,
       recipient,
       transferMeta: {
+        expiry,
         timelock,
         lockHash,
       },
