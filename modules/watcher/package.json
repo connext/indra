@@ -15,7 +15,7 @@
     "test": "mocha -r ts-node/register 'test/**/*.spec.{ts,tsx}' --exit --slow 1000 --timeout 15000 --bail"
   },
   "dependencies": {
-    "@connext/contracts": "2.0.5",
+    "@connext/contracts": "2.0.6",
     "@connext/types": "6.3.0",
     "@connext/utils": "6.3.0",
     "ethers": "4.0.47",

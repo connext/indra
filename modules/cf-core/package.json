@@ -18,7 +18,7 @@
     "test:coverage": "jest --runInBand --detectOpenHandles --bail --coverage"
   },
   "dependencies": {
-    "@connext/contracts": "2.0.5",
+    "@connext/contracts": "2.0.6",
     "@connext/utils": "6.3.0",
     "@connext/types": "6.3.0",
     "ethers": "4.0.47",
