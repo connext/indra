@@ -128,17 +128,22 @@ describe("HashLock Transfers", () => {
       preImage,
       assetId: transfer.assetId,
     } as PublicParams.ResolveHashLockTransfer);
-    await new Promise(async (res) => {
-      clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
-        const {
-          [clientA.signerAddress]: clientAPostReclaimBal,
-          [clientA.nodeSignerAddress]: nodePostReclaimBal,
-        } = await clientA.getFreeBalance(transfer.assetId);
-        expect(clientAPostReclaimBal).to.eq(0);
-        expect(nodePostReclaimBal).to.eq(transfer.amount);
-        res();
-      });
-    });
+    await Promise.all([
+      new Promise(async (res) => {
+        clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
+          const {
+            [clientA.signerAddress]: clientAPostReclaimBal,
+            [clientA.nodeSignerAddress]: nodePostReclaimBal,
+          } = await clientA.getFreeBalance(transfer.assetId);
+          expect(clientAPostReclaimBal).to.eq(0);
+          expect(nodePostReclaimBal).to.eq(transfer.amount);
+          res();
+        });
+      }),
+      new Promise(async (res) => {
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, res);
+      }),
+    ]);
     const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
       transfer.assetId,
     );
