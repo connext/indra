@@ -1,6 +1,6 @@
 import { Node as CFCore } from "@connext/cf-core";
 import { MessagingService } from "@connext/messaging";
-import { ConnextNodeStorePrefix, Opcode, ContractAddresses } from "@connext/types";
+import { ConnextNodeStorePrefix } from "@connext/types";
 import { Provider } from "@nestjs/common";
 
 import { ConfigService } from "../config/config.service";
@@ -9,7 +9,6 @@ import { LockService } from "../lock/lock.service";
 import { LoggerService } from "../logger/logger.service";
 
 import { CFCoreStore } from "./cfCore.store";
-import { generateMiddleware } from "./middleware";
 
 export const cfCoreProviderFactory: Provider = {
   inject: [ConfigService, LockService, LoggerService, MessagingProviderId, CFCoreStore],
@@ -40,18 +39,6 @@ export const cfCoreProviderFactory: Provider = {
       { acquireLock: lockService.lockedOperation.bind(lockService) },
       undefined,
       log.newContext("CFCore"),
-    );
-    // inject any default middlewares
-    cfCore.injectMiddleware(
-      Opcode.OP_VALIDATE,
-      await generateMiddleware(
-        signerAddress,
-        {
-          ...contractAddresses,
-          provider,
-        } as ContractAddresses,
-        store,
-      ),
     );
     const balance = (await provider.getBalance(signerAddress)).toString();
     log.info(

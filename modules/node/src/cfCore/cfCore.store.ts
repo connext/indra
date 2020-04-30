@@ -251,15 +251,17 @@ export class CFCoreStore implements IStoreService {
         break;
 
       case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
-        proposal.outcomeInterpreterParameters = multiAssetMultiPartyCoinTransferInterpreterParams;
+        proposal.outcomeInterpreterParameters =
+          multiAssetMultiPartyCoinTransferInterpreterParams;
         break;
 
       case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
-        proposal.outcomeInterpreterParameters = singleAssetTwoPartyCoinTransferInterpreterParams;
+        proposal.outcomeInterpreterParameters =
+          singleAssetTwoPartyCoinTransferInterpreterParams;
         break;
 
       default:
-        throw new Error(`Unrecognized outcome type: ${OutcomeType[proposal.outcomeType]}`);
+        throw new Error(`Unrecognized outcome type: ${OutcomeType[outcomeType]}`);
     }
     await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(proposal);

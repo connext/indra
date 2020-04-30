@@ -55,17 +55,6 @@ const appStatusesToHashLockTransferStatus = (
   }
 };
 
-export const normalizeHashLockTransferAppState = (
-  app: AppInstance,
-): AppInstance<typeof HashLockTransferAppName> | undefined => {
-  return (
-    app && {
-      ...app,
-      latestState: app.latestState as HashLockTransferAppState,
-    }
-  );
-};
-
 @Injectable()
 export class HashLockTransferService {
   constructor(
@@ -189,7 +178,7 @@ export class HashLockTransferService {
       appIdentityHash: receiverAppInstallRes.appIdentityHash,
     };
     this.log.info(
-      `installHashLockTransferReceiverApp from ${senderIdentifier} to ${receiverIdentifier} assetId ${appState} completed: ${JSON.stringify(
+      `installHashLockTransferReceiverApp from ${senderIdentifier} to ${receiverIdentifier} assetId ${assetId} completed: ${JSON.stringify(
         response,
       )}`,
     );
@@ -215,7 +204,7 @@ export class HashLockTransferService {
   async findSenderAppByLockHashAndAssetId(
     lockHash: Bytes32,
     assetId: Address,
-  ): Promise<AppInstance> {
+  ): Promise<AppInstance<"HashLockTransferApp">> {
     this.log.info(`findSenderAppByLockHash ${lockHash} started`);
     // node receives from sender
     // eslint-disable-next-line max-len
@@ -224,15 +213,14 @@ export class HashLockTransferService {
       this.cfCoreService.cfCore.signerAddress,
       assetId,
     );
-    const result = normalizeHashLockTransferAppState(app);
-    this.log.info(`findSenderAppByLockHash ${lockHash} completed: ${JSON.stringify(result)}`);
-    return result;
+    this.log.info(`findSenderAppByLockHash ${lockHash} completed: ${JSON.stringify(app)}`);
+    return app;
   }
 
   async findReceiverAppByLockHashAndAssetId(
     lockHash: Bytes32,
     assetId: Address,
-  ): Promise<AppInstance> {
+  ): Promise<AppInstance<"HashLockTransferApp">> {
     this.log.info(`findReceiverAppByLockHash ${lockHash} started`);
     // node sends to receiver
     // eslint-disable-next-line max-len
@@ -241,8 +229,7 @@ export class HashLockTransferService {
       this.cfCoreService.cfCore.signerAddress,
       assetId,
     );
-    const result = normalizeHashLockTransferAppState(app);
-    this.log.info(`findReceiverAppByLockHash ${lockHash} completed: ${JSON.stringify(result)}`);
-    return result;
+    this.log.info(`findReceiverAppByLockHash ${lockHash} completed: ${JSON.stringify(app)}`);
+    return app;
   }
 }

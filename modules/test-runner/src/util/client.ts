@@ -18,7 +18,7 @@ import { ethWallet } from "./ethprovider";
 import { MessageCounter, TestMessagingService } from "./messaging";
 
 export const createClient = async (
-  opts: Partial<ClientOptions | any> = {},
+  opts: Partial<ClientOptions & { id: string }> = {},
   fund: boolean = true,
 ): Promise<IConnextClient> => {
   const store = opts.store || new ConnextStore(StoreTypes.Memory);
