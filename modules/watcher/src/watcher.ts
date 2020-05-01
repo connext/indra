@@ -312,16 +312,21 @@ export class Watcher implements IWatcher {
     const active = (await this.store.getActiveChallenges()).filter(
       (c) => c.status !== StoredAppChallengeStatus.PENDING_TRANSITION,
     );
-    this.log.info(`Found ${active.length} active challenges`);
+    this.log.info(`Found ${active.length} active challenges: ${stringify(active)}`);
     for (const challenge of active) {
+      await this.updateChallengeStatus(StoredAppChallengeStatus.PENDING_TRANSITION, challenge);
       this.log.debug(`Advancing ${challenge.identityHash} dispute`);
       try {
         const response = await this.respondToChallenge(challenge);
         if (typeof response === "string") {
           this.log.info(response);
+          // something went wrong, remove pending status
+          await this.updateChallengeStatus(challenge.status, challenge);
           continue;
         }
       } catch (e) {
+        // something went wrong, remove pending status
+        await this.updateChallengeStatus(challenge.status, challenge);
         this.log.warn(
           `Failed to respond to challenge: ${e.stack || e.message}. Challenge: ${stringify(
             challenge,
@@ -894,10 +899,6 @@ export class Watcher implements IWatcher {
       this.log.debug(`Attempt ${attempt}/${MAX_RETRIES} to send transaction to ${transaction.to}`);
       let response: TransactionResponse;
       try {
-        await this.store.saveAppChallenge({
-          ...challenge,
-          status: StoredAppChallengeStatus.PENDING_TRANSITION,
-        });
         response = await this.signer.sendTransaction({
           ...transaction,
           nonce: await this.provider.getTransactionCount(this.signer.address),
@@ -911,7 +912,6 @@ export class Watcher implements IWatcher {
         const knownErr = KNOWN_ERRORS.find((err) => e.message.includes(err));
         if (!knownErr) {
           // unknown error, do not retry
-          await this.store.saveAppChallenge(challenge);
           this.log.error(`Failed to send transaction: ${e.stack || e.message}`);
           const msg = `Error sending transaction: ${e.stack || e.message}`;
           return msg;
@@ -922,8 +922,6 @@ export class Watcher implements IWatcher {
         );
       }
     }
-    // remove transition status
-    await this.store.saveAppChallenge(challenge);
     return `Failed to send transaction (errors indexed by attempt): ${stringify(errors)}`;
   };
 
@@ -952,6 +950,17 @@ export class Watcher implements IWatcher {
       throw new Error(`Could not find challenge for app ${identityHash}`);
     }
     return challenge;
+  };
+
+  private updateChallengeStatus = async (
+    status: StoredAppChallengeStatus,
+    challenge: StoredAppChallenge,
+  ) => {
+    this.log.debug(`transitioning challenge status from ${challenge.status} to ${status}`);
+    return this.store.saveAppChallenge({
+      ...challenge,
+      status,
+    });
   };
 
   private isFreeBalanceApp = async (identityHash: string): Promise<boolean> => {
