@@ -150,10 +150,11 @@ export const setupContext = async (
   );
 
   /////////////////////////////////////////
-  // contract helper function -- used for listener tests
-  // disputes activeApps[0] by default
-  const setAndProgressState = async (action: AppWithCounterAction) => {
-    const app = activeApps[0];
+  // contract helper functions
+  const setAndProgressState = async (
+    action: AppWithCounterAction,
+    app: AppWithCounterClass = activeApps[0],
+  ) => {
     const setState0 = SetStateCommitment.fromJson(
       await app.getDoubleSignedSetState(networkContext.ChallengeRegistry),
     );
@@ -171,7 +172,42 @@ export const setupContext = async (
     );
   };
 
-  // store helper function
+  const setState = async (
+    app: AppWithCounterClass = activeApps[0],
+  ) => {
+    const setState = SetStateCommitment.fromJson(
+      await app.getDoubleSignedSetState(networkContext.ChallengeRegistry),
+    );
+    return challengeRegistry.functions.setState(
+      app.appIdentity,
+      await setState.getSignedAppChallengeUpdate(),
+    );
+  };
+
+  const progressState = async (
+    app: AppWithCounterClass = activeApps[0],
+  ) => {
+    expect(app.latestAction).to.be.ok;
+    const setState = SetStateCommitment.fromJson(
+      await app.getSingleSignedSetState(networkContext.ChallengeRegistry),
+    );
+    return challengeRegistry.functions.progressState(
+      app.appIdentity,
+      await setState.getSignedAppChallengeUpdate(),
+      AppWithCounterClass.encodeState(app.latestState),
+      AppWithCounterClass.encodeAction(app.latestAction),
+    );
+  };
+
+  const cancelChallenge = async (app: AppWithCounterClass = activeApps[0]) => {
+    return challengeRegistry.functions.cancelDispute(
+      app.appIdentity,
+      await app.getCancelDisputeRequest(),
+    );
+  };
+
+  /////////////////////////////////////////
+  // store helper functions
   const loadStore = async (store: ConnextStore) => {
     // create the channel
     await store.createStateChannel(
@@ -240,6 +276,9 @@ export const setupContext = async (
     networkContext,
     channelBalances,
     setAndProgressState,
+    setState,
+    progressState,
+    cancelChallenge,
     loadStore,
     addActionToAppInStore,
   };
