@@ -145,11 +145,10 @@ export class Watcher implements IWatcher {
     appInstanceId: string,
     req: SignedCancelChallengeRequest,
   ): Promise<TransactionReceipt> => {
-    this.log.info(`Cancelling challenge for ${appInstanceId}`);
+    this.log.info(`Cancelling challenge for ${appInstanceId} at ${req.versionNumber.toString()}`);
     const channel = await this.store.getStateChannelByAppIdentityHash(appInstanceId);
     const app = await this.store.getAppInstance(appInstanceId);
-    const challenge = await this.store.getAppChallenge(appInstanceId);
-    if (!app || !channel || !challenge) {
+    if (!app || !channel) {
       throw new Error(`Could not find channel/app for app id: ${appInstanceId}`);
     }
     const response = await this.cancelChallenge(app, channel, req);
@@ -856,7 +855,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(this.context.ChallengeRegistry).functions.cancelChallenge.encode([
+      data: new Interface(ChallengeRegistry.abi).functions.cancelDispute.encode([
         this.getAppIdentity(app, channel.multisigAddress),
         req,
       ]),

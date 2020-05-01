@@ -195,7 +195,7 @@ export const setupContext = async (
       app.appIdentity,
       await setState.getSignedAppChallengeUpdate(),
       AppWithCounterClass.encodeState(app.latestState),
-      AppWithCounterClass.encodeAction(app.latestAction),
+      AppWithCounterClass.encodeAction(app.latestAction!),
     );
   };
 

@@ -16,7 +16,12 @@ import {
   SignedCancelChallengeRequest,
 } from "@connext/types";
 import { defaultAbiCoder, solidityPack, keccak256 } from "ethers/utils";
-import { ChannelSigner, toBNJson, bigNumberifyJson, computeCancelDisputeHash } from "@connext/utils";
+import {
+  ChannelSigner,
+  toBNJson,
+  bigNumberifyJson,
+  computeCancelDisputeHash,
+} from "@connext/utils";
 import { One, Zero } from "ethers/constants";
 import { stateToHash } from "./utils";
 import { ConditionalTransactionCommitment, SetStateCommitment } from "@connext/contracts";
@@ -201,15 +206,17 @@ export class AppWithCounterClass {
     return setState.toJson();
   }
 
-  public async getCancelDisputeRequest(): Promise<SignedCancelChallengeRequest> {
-    const digest = computeCancelDisputeHash(this.identityHash, this.latestVersionNumber);
+  public async getCancelDisputeRequest(
+    versionNumber: BigNumber = this.latestVersionNumber,
+  ): Promise<SignedCancelChallengeRequest> {
+    const digest = computeCancelDisputeHash(this.identityHash, versionNumber);
     const signatures = await Promise.all([
       this.signerParticipants[0].signMessage(digest),
       this.signerParticipants[1].signMessage(digest),
     ]);
     return {
       signatures,
-      versionNumber: this.latestVersionNumber,
+      versionNumber,
     };
   }
 
