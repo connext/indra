@@ -491,7 +491,7 @@ describe("ConnextStore", () => {
         const empty = await store.getStateProgressedEvents(value.identityHash);
         expect(empty).to.containSubset([]);
 
-        await store.createStateProgressedEvent(value.identityHash, value);
+        await store.createStateProgressedEvent(value);
         const vals = await store.getStateProgressedEvents(value.identityHash);
         expect(vals.length).to.be.eq(1);
         expect(vals[0]).to.containSubset(value);
