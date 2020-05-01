@@ -40,7 +40,7 @@ import {
 import { JsonRpcProvider, TransactionReceipt, TransactionResponse } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 import { Contract } from "ethers";
-import { Interface, defaultAbiCoder, BigNumber } from "ethers/utils";
+import { Interface, defaultAbiCoder } from "ethers/utils";
 
 import { ChainListener } from "./chainListener";
 import { Zero, HashZero } from "ethers/constants";
@@ -356,7 +356,7 @@ export class Watcher implements IWatcher {
     challengeJson: StoredAppChallenge,
   ): Promise<TransactionReceipt | string> => {
     this.log.info(`Respond to challenge called with: ${stringify(challengeJson)}`);
-    const challenge = bigNumberifyJson(challengeJson);
+    const challenge = bigNumberifyJson(challengeJson) as StoredAppChallenge;
     const current = await this.provider.getBlockNumber();
     let tx;
     if (challenge.finalizesAt.lte(current) && !challenge.finalizesAt.isZero()) {
@@ -397,7 +397,9 @@ export class Watcher implements IWatcher {
     // make sure that challenge is up to date with our commitments
     if (versionNumber.gte(latest.versionNumber._hex)) {
       // no actions available
-      const msg = `Latest set-state commitment version number is the same as challenge version number, doing nothing`;
+      const msg = `Latest set-state commitment version number ${toBN(
+        latest.versionNumber,
+      ).toString()} is the same as challenge version number ${versionNumber.toString()}, doing nothing`;
       return msg;
     }
 
