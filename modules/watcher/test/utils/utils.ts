@@ -7,6 +7,8 @@ export const randomState = (numBytes: number = 64) => hexlify(randomBytes(numByt
 
 export const stateToHash = (state: string) => keccak256(state);
 
+export const nullify = (key: string, value: any) => typeof value === "undefined" ? null : value;
+
 /////////////////////////////
 //// Constants
 
