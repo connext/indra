@@ -8,11 +8,17 @@ import {
   ChallengeUpdatedEventData,
   StoredAppChallengeStatus,
   StoredAppChallenge,
+  SetStateCommitmentJSON,
+  JsonRpcProvider,
+  ChallengeProgressedEventData,
+  Bytes32,
+  Address,
+  TransactionResponse,
 } from "@connext/types";
 import { expect } from "chai";
 import { Zero, HashZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
-import { ChannelSigner } from "@connext/utils";
+import { ChannelSigner, toBN } from "@connext/utils";
 import { AppWithCounterClass } from "./appWithCounter";
 import { NetworkContextForTestSuite } from "./contracts";
 
@@ -62,6 +68,21 @@ export const verifyStateProgressedEvent = async (
   });
 };
 
+export const verifyChallengeUpdatedEvent = async (
+  setState: SetStateCommitmentJSON,
+  event: ChallengeUpdatedEventData,
+  provider: JsonRpcProvider,
+) => {
+  const current = await provider.getBlockNumber();
+  expect(event).to.containSubset({
+    identityHash: setState.appIdentityHash,
+    appStateHash: setState.appStateHash,
+    versionNumber: toBN(setState.versionNumber),
+    status: StoredAppChallengeStatus.IN_DISPUTE,
+    finalizesAt: toBN(setState.stateTimeout).add(current),
+  });
+};
+
 export const verifyCancelChallenge = (
   app: AppWithCounterClass,
   contractEvent: ChallengeUpdatedEventData,
@@ -76,4 +97,22 @@ export const verifyCancelChallenge = (
   };
   expect(challenge).to.containSubset(expectedChallenge);
   expect(contractEvent).to.containSubset(expectedChallenge);
+};
+
+export const verifyChallengeProgressedEvent = (
+  appInstanceId: Bytes32,
+  multisigAddress: Address,
+  event: ChallengeProgressedEventData,
+  transaction?: TransactionResponse,
+) => {
+  const expected = {
+    appInstanceId,
+    multisigAddress,
+  };
+  if (transaction) {
+    expected["transaction"] = transaction;
+  } else {
+    expect(event.transaction).to.be.ok;
+  }
+  expect(event).to.containSubset(expected);
 };
