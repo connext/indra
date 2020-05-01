@@ -11,6 +11,9 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   CoinTransfer,
   StoreTypes,
+  SetStateCommitmentJSON,
+  ChallengeEvents,
+  ChallengeStatus,
 } from "@connext/types";
 import { toBN, getRandomChannelSigner } from "@connext/utils";
 import { Wallet, Contract } from "ethers";
@@ -22,7 +25,7 @@ import { ConnextStore } from "@connext/store";
 import { MiniFreeBalance } from "./miniFreeBalance";
 import { deployTestArtifactsToChain } from "./contracts";
 import { CREATE_PROXY_AND_SETUP_GAS } from "./utils";
-import { expect } from "./assertions";
+import { expect, verifyChallengeUpdatedEvent } from "./assertions";
 
 export type TokenIndexedBalance = { [tokenAddress: string]: CoinTransfer[] };
 export type CreatedAppInstanceOpts = {
@@ -175,20 +178,47 @@ export const setupContext = async (
   };
 
   const setState = async (
-    app: AppWithCounterClass = activeApps[0],
-  ) => {
-    const setState = SetStateCommitment.fromJson(
-      await app.getDoubleSignedSetState(networkContext.ChallengeRegistry),
-    );
-    return challengeRegistry.functions.setState(
-      app.appIdentity,
-      await setState.getSignedAppChallengeUpdate(),
-    );
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> => {
+    const setState = SetStateCommitment.fromJson(commitment);
+    const [event, tx] = await Promise.all([
+      new Promise((resolve) => {
+        challengeRegistry.on(ChallengeEvents.ChallengeUpdated, (
+          identityHash: string,
+          status: ChallengeStatus,
+          appStateHash: string,
+          versionNumber: BigNumber,
+          finalizesAt: BigNumber,
+        ) => {
+          const converted = {
+            identityHash,
+            status,
+            appStateHash,
+            versionNumber: toBN(versionNumber),
+            finalizesAt: toBN(finalizesAt),
+          };
+          resolve(converted);
+        });
+      }),
+      new Promise(async (resolve, reject) => {
+        try {
+          const tx = await challengeRegistry.functions.setState(
+            setState.appIdentity,
+            await setState.getSignedAppChallengeUpdate(),
+          );
+          const response = await tx.wait();
+          resolve(response);
+        } catch (e) {
+          reject(e.message);
+        }
+      }),
+      provider.send("evm_mine", []),
+    ]);
+    expect(tx.transactionHash).to.be.ok;
+    await verifyChallengeUpdatedEvent(setState.toJson(), event as any, provider);
   };
 
-  const progressState = async (
-    app: AppWithCounterClass = activeApps[0],
-  ) => {
+  const progressState = async (app: AppWithCounterClass = activeApps[0]) => {
     expect(app.latestAction).to.be.ok;
     const setState = SetStateCommitment.fromJson(
       await app.getSingleSignedSetState(networkContext.ChallengeRegistry),
