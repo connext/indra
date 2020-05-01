@@ -76,7 +76,7 @@ describe("ChainListener", () => {
   };
 
   beforeEach(async () => {
-    const context = await setupContext([{ defaultTimeout: timeout }]);
+    const context = await setupContext(false, [{ defaultTimeout: timeout }]);
     challengeRegistry = context["challengeRegistry"];
     provider = context["provider"];
     setAndProgressState = context["setAndProgressState"];

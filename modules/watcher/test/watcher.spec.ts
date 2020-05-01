@@ -15,8 +15,6 @@ import {
   MiniFreeBalance,
   AppWithCounterClass,
   verifyOnchainBalancesPostChallenge,
-  AppWithCounterAction,
-  ActionType,
 } from "./utils";
 
 import { Watcher } from "../src";
@@ -33,23 +31,23 @@ describe("Watcher.init", () => {
   });
 
   it("should be able to instantiate with a private key", async () => {
-    const guard = await Watcher.init({
+    const watcher = await Watcher.init({
       signer: Wallet.createRandom().privateKey,
       provider: provider.connection.url,
       store: new ConnextStore(StoreTypes.Memory),
       context: { ChallengeRegistry: getRandomAddress() } as any,
     });
-    expect(guard).to.be.instanceOf(Watcher);
+    expect(watcher).to.be.instanceOf(Watcher);
   });
 
   it("should be able to instantiate with a ChannelSigner", async () => {
-    const guard = await Watcher.init({
+    const watcher = await Watcher.init({
       signer: new ChannelSigner(Wallet.createRandom().privateKey, provider.connection.url),
       provider: provider,
       store: new ConnextStore(StoreTypes.Memory),
       context: { ChallengeRegistry: getRandomAddress() } as any,
     });
-    expect(guard).to.be.instanceOf(Watcher);
+    expect(watcher).to.be.instanceOf(Watcher);
   });
 });
 
@@ -79,12 +77,9 @@ describe("Watcher.initiate", () => {
     channelBalances = context["channelBalances"];
     networkContext = context["networkContext"];
     signers = context["signers"];
-    const loadStore = context["loadStore"];
+    store = context["store"];
 
-    // create + load store
-    store = new ConnextStore(StoreTypes.Memory);
-    await loadStore(store);
-
+    // create watcher
     watcher = await Watcher.init({
       context: networkContext,
       provider,
@@ -126,25 +121,17 @@ describe("Watcher.initiate", () => {
   it("should be able to initiate + complete a dispute with a single signed latest state", async () => {
     // setup store with app with proper timeouts
     const {
-      loadStore,
       activeApps,
       freeBalance,
       channelBalances,
       networkContext,
       multisigAddress,
       signers,
-    } = await setupContext([{ defaultTimeout: One }]);
-    // load store
-    await loadStore(store);
+      store,
+      addActionToAppInStore,
+    } = await setupContext(true, [{ defaultTimeout: One }]);
     // update app with action
-    const app = activeApps[0];
-    const action: AppWithCounterAction = {
-      increment: One,
-      actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
-    };
-    app.latestAction = action;
-    const setState1 = await app.getSingleSignedSetState(networkContext.ChallengeRegistry);
-    await store.updateAppInstance(multisigAddress, app.toJson(), setState1);
+    await addActionToAppInStore(store, activeApps[0]);
     // reinstantiate watcher
     watcher = await Watcher.init({
       context: networkContext,
@@ -155,7 +142,7 @@ describe("Watcher.initiate", () => {
     });
 
     const [initiateRes, contractEvent] = await Promise.all([
-      initiateDispute(app, freeBalance, watcher, store, networkContext, 2),
+      initiateDispute(activeApps[0], freeBalance, watcher, store, networkContext, 2),
       new Promise((resolve) =>
         watcher.once(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
           resolve(data),
@@ -163,13 +150,13 @@ describe("Watcher.initiate", () => {
       ),
     ]);
     // verify the contract event
-    const setState = await app.getSingleSignedSetState(networkContext.ChallengeRegistry);
+    const setState = await activeApps[0].getSingleSignedSetState(networkContext.ChallengeRegistry);
     expect(contractEvent).to.containSubset({
-      identityHash: app.identityHash,
-      action: AppWithCounterClass.encodeAction(app.latestAction),
+      identityHash: activeApps[0].identityHash,
+      action: AppWithCounterClass.encodeAction(activeApps[0].latestAction!),
       versionNumber: setState.versionNumber,
       timeout: setState.stateTimeout,
-      turnTaker: app.signerParticipants[0].address,
+      turnTaker: activeApps[0].signerParticipants[0].address,
       signature: setState.signatures.filter((x) => !!x)[0],
     });
     const { outcomeSet, verifyOutcomeSet, completed, verifyCompleted } = initiateRes as any;

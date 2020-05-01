@@ -10,16 +10,14 @@ import {
   BigNumber,
   CONVENTION_FOR_ETH_ASSET_ID,
   CoinTransfer,
+  StoreTypes,
 } from "@connext/types";
 import { toBN, getRandomChannelSigner } from "@connext/utils";
 import { Wallet, Contract } from "ethers";
 import { One, Zero } from "ethers/constants";
 import { Interface } from "ethers/utils";
 
-import {
-  AppWithCounterClass,
-  AppWithCounterAction,
-} from "./appWithCounter";
+import { AppWithCounterClass, AppWithCounterAction, ActionType } from "./appWithCounter";
 import { ConnextStore } from "@connext/store";
 import { MiniFreeBalance } from "./miniFreeBalance";
 import { deployTestArtifactsToChain } from "./contracts";
@@ -36,6 +34,7 @@ export type CreatedAppInstanceOpts = {
 // Context
 
 export const setupContext = async (
+  shouldLoadStore: boolean = true,
   // ensure one is actually created when no opts provided
   providedOpts?: Partial<CreatedAppInstanceOpts>[],
 ) => {
@@ -54,6 +53,7 @@ export const setupContext = async (
     },
     defaultTimeout: Zero,
   };
+  const store = new ConnextStore(StoreTypes.Memory);
 
   // deploy contracts
   const networkContext = await deployTestArtifactsToChain(wallet);
@@ -152,9 +152,7 @@ export const setupContext = async (
   /////////////////////////////////////////
   // contract helper function -- used for listener tests
   // disputes activeApps[0] by default
-  const setAndProgressState = async (
-    action: AppWithCounterAction,
-  ) => {
+  const setAndProgressState = async (action: AppWithCounterAction) => {
     const app = activeApps[0];
     const setState0 = SetStateCommitment.fromJson(
       await app.getDoubleSignedSetState(networkContext.ChallengeRegistry),
@@ -210,12 +208,32 @@ export const setupContext = async (
     }
   };
 
+  if (shouldLoadStore) {
+    await loadStore(store);
+  }
+
+  const addActionToAppInStore = async (
+    store: ConnextStore,
+    appPriorToAction: AppWithCounterClass,
+    action: AppWithCounterAction = {
+      increment: One,
+      actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
+    },
+  ) => {
+    appPriorToAction.latestAction = action;
+    const setState1 = await appPriorToAction.getSingleSignedSetState(
+      networkContext.ChallengeRegistry,
+    );
+    await store.updateAppInstance(multisigAddress, appPriorToAction.toJson(), setState1);
+  };
+
   return {
     ethProvider,
     challengeRegistry,
     provider,
     wallet,
     signers,
+    store,
     multisigAddress,
     activeApps,
     freeBalance,
@@ -223,5 +241,6 @@ export const setupContext = async (
     channelBalances,
     setAndProgressState,
     loadStore,
+    addActionToAppInStore,
   };
 };
