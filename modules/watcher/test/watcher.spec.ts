@@ -87,7 +87,7 @@ describe("Watcher.initiate", () => {
       provider,
       store,
       signer: context["wallet"].privateKey,
-      logger: new ColorfulLogger("Watcher", 5, true, "A"),
+      // logger: new ColorfulLogger("Watcher", 5, true, ""),
     });
     expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
   });
@@ -135,7 +135,7 @@ describe("Watcher.initiate", () => {
       provider,
       store,
       signer: wallet.privateKey,
-      logger: new ColorfulLogger("Watcher", 4, true, "A"),
+      // logger: new ColorfulLogger("Watcher", 5, true, ""),
     });
 
     const [initiateRes, contractEvent] = await Promise.all([
@@ -190,7 +190,7 @@ describe("Watcher.cancel", () => {
       provider,
       store,
       signer: context["wallet"].privateKey,
-      // logger: new ColorfulLogger("Watcher", 5, true, "A"),
+      // logger: new ColorfulLogger("Watcher", 5, true, ""),
     });
     expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
   });
@@ -217,13 +217,7 @@ describe("Watcher.cancel", () => {
   });
 
   it("should fail if in onchain set state phase", async () => {
-    const {
-      activeApps,
-      networkContext,
-      store,
-      freeBalance,
-      wallet,
-    } = await setupContext();
+    const { activeApps, networkContext, store, freeBalance, wallet } = await setupContext();
     const app = activeApps[0];
     // create watcher
     watcher = await Watcher.init({
@@ -231,15 +225,8 @@ describe("Watcher.cancel", () => {
       provider,
       store,
       signer: wallet.privateKey,
-      // logger: new ColorfulLogger("Watcher", 5, true, "A"),
     });
-    await initiateDispute(
-      app,
-      freeBalance,
-      watcher,
-      store,
-      networkContext,
-    );
+    await initiateDispute(app, freeBalance, watcher, store, networkContext);
 
     // cancel the challenge with failure flag
     await cancelDispute(app, watcher, store, `revert`);
@@ -259,10 +246,7 @@ describe("Watcher.cancel", () => {
 
     // wait for outcome
     const { outcomeSet, verifyOutcomeSet } = initiateRes as any;
-    const [outcomeRes] = await Promise.all([
-      outcomeSet,
-      provider.send("evm_mine", []),
-    ]);
+    const [outcomeRes] = await Promise.all([outcomeSet, provider.send("evm_mine", [])]);
     await verifyOutcomeSet(outcomeRes);
 
     // cancel the challenge with failure flag
