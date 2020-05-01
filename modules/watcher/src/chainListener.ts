@@ -109,11 +109,16 @@ export class ChainListener implements IChainListener {
     );
 
     progressedLogs.concat(updatedLogs).forEach((log) => {
-      const parsed = new utils.Interface(ChallengeRegistry.abi).parseLog(log);
-      const { identityHash, versionNumber } = parsed;
-      switch (parsed.name) {
+      const iface = new utils.Interface(ChallengeRegistry.abi);
+      const { name, args, eventFragment } = iface.parseLog(log);
+      const { identityHash, versionNumber } = args;
+      switch (name) {
         case ChallengeEvents.ChallengeUpdated: {
-          const { appStateHash, finalizesAt, status } = parsed.values;
+          const { appStateHash, finalizesAt, status } = iface.decodeEventLog(
+            eventFragment,
+            log.data,
+            log.topics,
+          );
           this.emit(ChallengeEvents.ChallengeUpdated, {
             identityHash,
             status,
@@ -124,7 +129,7 @@ export class ChainListener implements IChainListener {
           break;
         }
         case ChallengeEvents.StateProgressed: {
-          const { action, timeout, turnTaker, signature } = parsed.values;
+          const { action, timeout, turnTaker, signature } = args;
           this.emit(ChallengeEvents.StateProgressed, {
             identityHash,
             action,
@@ -136,7 +141,7 @@ export class ChainListener implements IChainListener {
           break;
         }
         default: {
-          throw new Error(`Unrecognized event name from parsed logs: ${parsed.name}`);
+          throw new Error(`Unrecognized event name from parsed logs: ${name}`);
         }
       }
     });
