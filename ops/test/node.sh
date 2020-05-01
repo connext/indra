@@ -13,6 +13,7 @@ else
   suffix="node_tester"
   command='jest --config ops/jest.config.json '"$@"
 fi
+echo $command
 
 function extractEnv {
   grep "$1" "$2" | cut -d "=" -f 2- | tr -d '\n\r"' | sed 's/ *#.*//'
@@ -49,10 +50,11 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 # config & hard-coded stuff you might want to change
 admin_token="cxt1234"
 
-log_level="3" # set to 0 for no logs or to 5 for all the logs
+log_level="1" # set to 0 for no logs or to 5 for all the logs
 network="${project}_$suffix"
 
 eth_network="ganache"
+ganacheId="4447"
 
 ethprovider_host="${project}_ethprovider_$suffix"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
@@ -63,7 +65,7 @@ fi
 eth_rpc_url="http://$ethprovider_host:8545"
 
 # get supported addresses
-token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.address' | tr -d '"'`"
+token_address="`echo $eth_contract_addresses | jq '.["'"$ganacheId"'"].Token.address' | tr -d '"'`"
 allowed_swaps='[{"from":"'"$token_address"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"UNISWAP"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address"'","priceOracleType":"UNISWAP"}]'
 
 postgres_db="${project}_$suffix"
@@ -102,6 +104,7 @@ fi
 
 ########################################
 # Start dependencies
+cwd="`pwd`"
 
 echo "Node tester activated!";echo;
 
@@ -111,17 +114,9 @@ docker run \
   --name="$ethprovider_host" \
   --network="$network" \
   --rm \
-  --tmpfs="/data" \
-  ${project}_builder -c '
-    echo "Eth Provider container launched";echo
-
-    function finish {
-      echo && echo "Node tester container exiting.." && exit
-    }
-    trap finish SIGTERM SIGINT
-
-    bash modules/contracts/ops/entry.sh start
-  '
+  --mount="type=bind,source=$cwd,target=/root" \
+  --mount="type=volume,source=${project}_chain_dev,target=/data" \
+  ${project}_builder -c "cd modules/contracts && bash ops/entry.sh start"
 
 echo "Starting $postgres_host.."
 docker run \
