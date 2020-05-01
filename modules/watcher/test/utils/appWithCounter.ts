@@ -13,9 +13,10 @@ import {
   CoinTransfer,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   AppInstanceProposal,
+  SignedCancelChallengeRequest,
 } from "@connext/types";
 import { defaultAbiCoder, solidityPack, keccak256 } from "ethers/utils";
-import { ChannelSigner, toBNJson, bigNumberifyJson } from "@connext/utils";
+import { ChannelSigner, toBNJson, bigNumberifyJson, computeCancelDisputeHash } from "@connext/utils";
 import { One, Zero } from "ethers/constants";
 import { stateToHash } from "./utils";
 import { ConditionalTransactionCommitment, SetStateCommitment } from "@connext/contracts";
@@ -101,8 +102,8 @@ export class AppWithCounterClass {
       throw new Error(`Cannot generate next state without action`);
     }
     return this.latestAction.actionType === ActionType.ACCEPT_INCREMENT
-        ? { counter: this.latestState.counter }
-        : { counter: this.latestState.counter.add(this.latestAction.increment) };
+      ? { counter: this.latestState.counter }
+      : { counter: this.latestState.counter.add(this.latestAction.increment) };
   }
 
   get interpreterParams(): TwoPartyFixedOutcomeInterpreterParamsJson {
@@ -198,6 +199,18 @@ export class AppWithCounterClass {
     ]);
     await setState.addSignatures(signatures[0], signatures[1]);
     return setState.toJson();
+  }
+
+  public async getCancelDisputeRequest(): Promise<SignedCancelChallengeRequest> {
+    const digest = computeCancelDisputeHash(this.identityHash, this.latestVersionNumber);
+    const signatures = await Promise.all([
+      this.signerParticipants[0].signMessage(digest),
+      this.signerParticipants[1].signMessage(digest),
+    ]);
+    return {
+      signatures,
+      versionNumber: this.latestVersionNumber,
+    };
   }
 
   public async getSingleSignedSetState(
