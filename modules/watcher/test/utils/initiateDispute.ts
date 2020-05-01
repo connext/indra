@@ -17,6 +17,7 @@ import { MiniFreeBalance } from "./miniFreeBalance";
 import { bigNumberifyJson, toBN } from "@connext/utils";
 import { NetworkContextForTestSuite } from "./contracts";
 import { Zero } from "ethers/constants";
+import { verifyChallengeProgressedEvent } from "./assertions";
 
 export type OutcomeSetResults = [
   ChallengeOutcomeSetEventData,
@@ -46,9 +47,6 @@ export const initiateDispute = async (
     initiatedEventApp,
     result,
   ] = await Promise.all([
-    // FIXME: in the `.only`d test (test 2 on initiate), the test wont resolve
-    // because this event is never emitted, instead the app dispute event
-    // seems to be emitted twice?
     new Promise((resolve) =>
       watcher.on(
         WatcherEvents.ChallengeUpdatedEvent,
@@ -111,8 +109,8 @@ export const initiateDispute = async (
   const appStatus = !calledSetAndProgress
     ? ChallengeStatus.IN_DISPUTE
     : isStateTerminal
-      ? ChallengeStatus.EXPLICITLY_FINALIZED
-      : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
+    ? ChallengeStatus.EXPLICITLY_FINALIZED
+    : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
 
   // get expected free balance values
   const fbSetState = bigNumberifyJson(await freeBalance.getSetState());
@@ -168,11 +166,13 @@ export const initiateDispute = async (
     }
 
     // verify emitted events
+    verifyChallengeProgressedEvent(
+      appId,
+      freeBalance.multisigAddress,
+      initiatedEvents[appId] as any,
+      transactions[appId],
+    );
     expect(contractEvents[appId]).to.containSubset(expected0[appId]);
-    expect(initiatedEvents[appId]).to.containSubset({
-      transaction: transactions[appId],
-      appInstanceId: appId,
-    });
   }
 
   // after first dispute, create and return other promises for other
