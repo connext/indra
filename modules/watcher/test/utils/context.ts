@@ -43,6 +43,7 @@ export const setupContext = async (
   const provider = new JsonRpcProvider(ethProvider);
 
   const wallet = Wallet.fromMnemonic(process.env.SUGAR_DADDY!).connect(provider);
+  await wallet.getTransactionCount();
   const signers = [getRandomChannelSigner(ethProvider), getRandomChannelSigner(ethProvider)];
   const defaultAppOpts = {
     balances: {
@@ -57,6 +58,7 @@ export const setupContext = async (
 
   // deploy contracts
   const networkContext = await deployTestArtifactsToChain(wallet);
+  await wallet.getTransactionCount();
   const challengeRegistry = new Contract(
     networkContext.ChallengeRegistry,
     ChallengeRegistry.abi,
