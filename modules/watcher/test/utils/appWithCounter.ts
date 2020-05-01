@@ -21,6 +21,7 @@ import {
   toBNJson,
   bigNumberifyJson,
   computeCancelDisputeHash,
+  toBN,
 } from "@connext/utils";
 import { One, Zero } from "ethers/constants";
 import { stateToHash } from "./utils";
@@ -60,7 +61,7 @@ export class AppWithCounterClass {
       ], // initiator, resp
     },
     public readonly stateTimeout: BigNumber = Zero,
-    public latestVersionNumber: BigNumber = One,
+    public latestVersionNumber: BigNumber = toBN(2),
     public latestState: AppWithCounterState = { counter: One },
     public latestAction: AppWithCounterAction | undefined = undefined,
   ) {}
@@ -189,13 +190,14 @@ export class AppWithCounterClass {
 
   public async getInitialSetState(
     challengeRegistryAddress: string,
+    stateTimeout: BigNumber = this.stateTimeout,
   ): Promise<SetStateCommitmentJSON> {
     const setState = new SetStateCommitment(
       challengeRegistryAddress,
       this.appIdentity,
       stateToHash(AppWithCounterClass.encodeState({ counter: Zero })),
       One,
-      this.stateTimeout,
+      stateTimeout,
       this.identityHash,
     );
     const signatures = await Promise.all([
