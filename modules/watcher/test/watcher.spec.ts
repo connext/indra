@@ -5,6 +5,10 @@ import {
   BigNumber,
   WatcherEvents,
   StateProgressedEventData,
+  SetStateCommitmentJSON,
+  ChallengeUpdatedEventData,
+  ChallengeProgressedEventData,
+  ChallengeProgressionFailedEventData,
 } from "@connext/types";
 import { Wallet } from "ethers";
 
@@ -16,6 +20,8 @@ import {
   AppWithCounterClass,
   verifyOnchainBalancesPostChallenge,
   verifyStateProgressedEvent,
+  verifyChallengeUpdatedEvent,
+  verifyChallengeProgressedEvent,
 } from "./utils";
 
 import { Watcher } from "../src";
@@ -254,8 +260,76 @@ describe("Watcher.cancel", () => {
   });
 });
 
-describe.skip("Watcher responses", () => {
-  it("should respond with `setState` if it has a higher nonced state", async () => {});
+describe.only("Watcher responses", () => {
+  let provider: JsonRpcProvider;
+  let store: ConnextStore;
+  let watcher: Watcher;
+  let app: AppWithCounterClass;
+  let freeBalance: MiniFreeBalance;
+  let networkContext: NetworkContextForTestSuite;
+
+  let setState: (commitment: SetStateCommitmentJSON) => Promise<void>;
+
+  beforeEach(async () => {
+    const context = await setupContext(true, [{ defaultTimeout: One }]);
+
+    // get all values needed from context
+    provider = context["provider"];
+    store = context["store"];
+    app = context["activeApps"][0];
+    freeBalance = context["freeBalance"];
+    networkContext = context["networkContext"];
+
+    setState = context["setState"];
+
+    // create watcher
+    watcher = await Watcher.init({
+      context: networkContext,
+      provider,
+      store,
+      signer: context["wallet"].privateKey,
+      logger: new ColorfulLogger("Watcher", 5, true, ""),
+    });
+    expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
+  });
+
+  afterEach(async () => {
+    await watcher.disable();
+    await store.clear();
+  });
+
+  it("should respond with `setState` if it has a higher nonced state", async () => {
+    const setState0 = await app.getInitialSetState(networkContext.ChallengeRegistry, toBN(3));
+    await setState(setState0);
+    const [appWatcherEvent, appContractEvent] = await Promise.all([
+      new Promise((resolve, reject) => {
+        watcher.on(
+          WatcherEvents.ChallengeProgressedEvent,
+          async (data: ChallengeProgressedEventData) => resolve(data),
+        );
+        watcher.on(
+          WatcherEvents.ChallengeProgressionFailedEvent,
+          async (data: ChallengeProgressionFailedEventData) => reject(data),
+        );
+      }),
+      new Promise((resolve) => {
+        watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventData) =>
+          resolve(data),
+        );
+      }),
+      provider.send("evm_mine", []),
+    ]);
+    await verifyChallengeUpdatedEvent(
+      await app.getDoubleSignedSetState(networkContext.ChallengeRegistry),
+      appContractEvent as any,
+      provider,
+    );
+    verifyChallengeProgressedEvent(
+      app.identityHash,
+      freeBalance.multisigAddress,
+      appWatcherEvent as any,
+    );
+  });
 
   it("should respond with `setAndProgressState` if it has a higher nonced action", async () => {});
 
