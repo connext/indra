@@ -69,18 +69,30 @@ export const verifyStateProgressedEvent = async (
 };
 
 export const verifyChallengeUpdatedEvent = async (
+  app: AppWithCounterClass,
   setState: SetStateCommitmentJSON,
   event: ChallengeUpdatedEventData,
   provider: JsonRpcProvider,
 ) => {
   const current = await provider.getBlockNumber();
-  expect(event).to.containSubset({
-    identityHash: setState.appIdentityHash,
-    appStateHash: setState.appStateHash,
-    versionNumber: toBN(setState.versionNumber),
-    status: StoredAppChallengeStatus.IN_DISPUTE,
-    finalizesAt: toBN(setState.stateTimeout).add(current),
-  });
+  const isSingleSigned = setState.signatures.filter(x => !!x).length === 1;
+  if (isSingleSigned) {
+    expect(event).to.containSubset({
+      identityHash: app.identityHash,
+      appStateHash: setState.appStateHash,
+      versionNumber: toBN(setState.versionNumber),
+      status: StoredAppChallengeStatus.IN_ONCHAIN_PROGRESSION,
+      finalizesAt: toBN(app.defaultTimeout).add(current),
+    });
+  } else {
+    expect(event).to.containSubset({
+      identityHash: setState.appIdentityHash,
+      appStateHash: setState.appStateHash,
+      versionNumber: toBN(setState.versionNumber),
+      status: StoredAppChallengeStatus.IN_DISPUTE,
+      finalizesAt: toBN(setState.stateTimeout).add(current),
+    });
+  }
 };
 
 export const verifyCancelChallenge = (
