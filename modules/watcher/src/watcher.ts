@@ -497,31 +497,26 @@ export class Watcher implements IWatcher {
         );
       }
       case StoredAppChallengeStatus.IN_DISPUTE: {
-        // check if there is a valid action to play
-        const next = (await this.store.getSetStateCommitments(identityHash)).find((c) =>
-          toBN(c.versionNumber).eq(challenge.versionNumber.add(1)),
-        );
-        const prev = (await this.store.getSetStateCommitments(identityHash)).find((c) =>
-          toBN(c.versionNumber).eq(challenge.versionNumber),
-        );
-        if (!prev) {
-          throw new Error(`Could not find commitment for ${challenge.versionNumber.toString()}`);
+        // check if you can set the outcome or play an action
+        const progressable = challenge.finalizesAt.add(app.defaultTimeout);
+        if (progressable.lt(current)) {
+          const msg = `State not yet progressable (current: ${current}, progressable: ${progressable.toString()})`;
+          this.log.info(msg);
+          return msg;
         }
-        const validCommitment = !!next && next.signatures.filter((x) => !!x).length === 1;
-        if (validCommitment && !!app.latestAction) {
+        // check if there is a valid action to play
+        if (await this.canPlayAction(app, challenge)) {
           this.log.info(
             `Onchain state set, progressing to nonce ${challenge.versionNumber.add(1).toString()}`,
           );
-          return this.progressState(app, channel, [prev, next!]);
+          const next = (await this.store.getSetStateCommitments(identityHash)).find((c) =>
+            toBN(c.versionNumber).eq(challenge.versionNumber.add(1)),
+          );
+          const prev = (await this.store.getSetStateCommitments(identityHash)).find((c) =>
+            toBN(c.versionNumber).eq(challenge.versionNumber),
+          );
+          return this.progressState(app, channel, [next!, prev!]);
         } else {
-          // check if you can set outcome
-          if (challenge.finalizesAt.add(app.defaultTimeout).gt(current)) {
-            const msg = `No action found, cannot yet call set outcome (current: ${current}, outcome settable: ${challenge.finalizesAt.add(
-              app.defaultTimeout,
-            )})`;
-            this.log.info(msg);
-            return msg;
-          }
           this.log.info(`Onchain state finalized, no actions to progress, setting outcome`);
           return this.setOutcome(app, channel);
         }
@@ -701,7 +696,7 @@ export class Watcher implements IWatcher {
         challenge.versionNumber,
       ).toString()}`,
     );
-    const commitments = sortedCommitments.map(SetStateCommitment.fromJson);
+    const [latest] = sortedCommitments.map(SetStateCommitment.fromJson);
 
     const action = defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]);
     const state = defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
@@ -711,8 +706,7 @@ export class Watcher implements IWatcher {
       value: 0,
       data: new Interface(ChallengeRegistry.abi as any).functions.progressState.encode([
         this.getAppIdentity(app, channel.multisigAddress),
-        await commitments[0].getSignedAppChallengeUpdate(),
-        await commitments[1].getSignedAppChallengeUpdate(),
+        await latest.getSignedAppChallengeUpdate(),
         state,
         action,
       ]),
@@ -724,7 +718,7 @@ export class Watcher implements IWatcher {
         error: response,
         multisigAddress: channel.multisigAddress,
         challenge,
-        params: { commitments, app, channel },
+        params: { commitments: sortedCommitments, app, channel },
       });
     } else {
       this.emit(WatcherEvents.ChallengeProgressedEvent, {
@@ -954,11 +948,29 @@ export class Watcher implements IWatcher {
     return challenge;
   };
 
+  private canPlayAction = async (
+    app: AppInstanceJson,
+    challenge: StoredAppChallenge,
+  ): Promise<boolean> => {
+    const { identityHash, versionNumber } = challenge;
+    const next = (await this.store.getSetStateCommitments(identityHash)).find((c) =>
+      toBN(c.versionNumber).eq(versionNumber.add(1)),
+    );
+    const prev = (await this.store.getSetStateCommitments(identityHash)).find((c) =>
+      toBN(c.versionNumber).eq(versionNumber),
+    );
+    if (!prev || !next) {
+      return false;
+    }
+    const validCommitment = next.signatures.filter((x) => !!x).length === 1;
+    return !!validCommitment && !!app.latestAction;
+  };
+
   private updateChallengeStatus = async (
     status: StoredAppChallengeStatus,
     challenge: StoredAppChallenge,
   ) => {
-    this.log.debug(`transitioning challenge status from ${challenge.status} to ${status}`);
+    this.log.debug(`Transitioning challenge status from ${challenge.status} to ${status}`);
     return this.store.saveAppChallenge({
       ...challenge,
       status,
