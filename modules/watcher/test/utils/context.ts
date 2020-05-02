@@ -178,6 +178,7 @@ export const setupContext = async (
   };
 
   const setState = async (
+    app: AppWithCounterClass,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> => {
     const setState = SetStateCommitment.fromJson(commitment);
@@ -215,7 +216,7 @@ export const setupContext = async (
       provider.send("evm_mine", []),
     ]);
     expect(tx.transactionHash).to.be.ok;
-    await verifyChallengeUpdatedEvent(setState.toJson(), event as any, provider);
+    await verifyChallengeUpdatedEvent(app, setState.toJson(), event as any, provider);
   };
 
   const progressState = async (app: AppWithCounterClass = activeApps[0]) => {
@@ -287,12 +288,13 @@ export const setupContext = async (
       increment: One,
       actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
     },
-  ) => {
+  ): Promise<AppWithCounterClass> => {
     appPriorToAction.latestAction = action;
     const setState1 = await appPriorToAction.getSingleSignedSetState(
       networkContext.ChallengeRegistry,
     );
     await store.updateAppInstance(multisigAddress, appPriorToAction.toJson(), setState1);
+    return appPriorToAction;
   };
 
   return {
