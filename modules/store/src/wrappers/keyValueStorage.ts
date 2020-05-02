@@ -146,9 +146,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         ),
       ]);
     } catch (e) {
+      await this.removeStateChannel(stateChannel.multisigAddress);
       await this.removeSetStateCommitment(signedFreeBalanceUpdate);
       await this.removeSetupCommitment(stateChannel.multisigAddress);
-      await this.removeStateChannel(stateChannel.multisigAddress);
       throw e;
     }
   }
@@ -212,10 +212,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         ),
       ]);
     } catch (e) {
+      await this.saveStateChannel(oldChannel);
       await this.removeConditionalTransactionCommitment(appInstance.identityHash);
       await this.removeSetStateCommitment(signedFreeBalanceUpdate);
       await this.saveSetStateCommitment(freeBalanceAppInstance.identityHash, oldFreeBalanceUpdate);
-      await this.saveStateChannel(oldChannel);
       throw e;
     }
   }
@@ -251,11 +251,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         this.saveSetStateCommitment(appInstance.identityHash, signedSetStateCommitment),
       ]);
     } catch (e) {
+      await this.saveStateChannel(oldChannel);
       await this.removeSetStateCommitment(signedSetStateCommitment);
       if (doubleSigned) {
         await this.saveSetStateCommitment(appInstance.identityHash, oldCommitment);
       }
-      await this.saveStateChannel(oldChannel);
       throw e;
     }
     return;
@@ -298,12 +298,12 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         ),
       ]);
     } catch (e) {
+      await this.saveStateChannel(oldChannel);
       await this.removeSetStateCommitment(signedFreeBalanceUpdate);
       await this.saveSetStateCommitment(
         channel.freeBalanceAppInstance.identityHash,
         oldFreeBalanceUpdate,
       );
-      await this.saveStateChannel(oldChannel);
       throw e;
     }
   }
@@ -345,8 +345,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         this.saveSetStateCommitment(appInstance.identityHash, signedSetStateCommitment),
       ]);
     } catch (e) {
-      await this.removeSetStateCommitment(signedSetStateCommitment);
       await this.saveStateChannel(oldChannel);
+      await this.removeSetStateCommitment(signedSetStateCommitment);
       throw e;
     }
   }
