@@ -22,6 +22,7 @@ import {
   verifyStateProgressedEvent,
   verifyChallengeUpdatedEvent,
   verifyChallengeProgressedEvent,
+  AppWithCounterAction,
 } from "./utils";
 
 import { Watcher } from "../src";
@@ -260,7 +261,7 @@ describe("Watcher.cancel", () => {
   });
 });
 
-describe.only("Watcher responses", () => {
+describe("Watcher responses", () => {
   let provider: JsonRpcProvider;
   let store: ConnextStore;
   let watcher: Watcher;
@@ -268,10 +269,15 @@ describe.only("Watcher responses", () => {
   let freeBalance: MiniFreeBalance;
   let networkContext: NetworkContextForTestSuite;
 
-  let setState: (commitment: SetStateCommitmentJSON) => Promise<void>;
+  let setState: (app: AppWithCounterClass, commitment: SetStateCommitmentJSON) => Promise<void>;
+  let addActionToAppInStore: (
+    store: ConnextStore,
+    appPriorToAction: AppWithCounterClass,
+    action?: AppWithCounterAction,
+  ) => Promise<AppWithCounterClass>;
 
   beforeEach(async () => {
-    const context = await setupContext(true, [{ defaultTimeout: One }]);
+    const context = await setupContext(true, [{ defaultTimeout: toBN(3) }]);
 
     // get all values needed from context
     provider = context["provider"];
@@ -281,6 +287,7 @@ describe.only("Watcher responses", () => {
     networkContext = context["networkContext"];
 
     setState = context["setState"];
+    addActionToAppInStore = context["addActionToAppInStore"];
 
     // create watcher
     watcher = await Watcher.init({
@@ -300,7 +307,7 @@ describe.only("Watcher responses", () => {
 
   it("should respond with `setState` if it has a higher nonced state", async () => {
     const setState0 = await app.getInitialSetState(networkContext.ChallengeRegistry, toBN(3));
-    await setState(setState0);
+    await setState(app, setState0);
     const [appWatcherEvent, appContractEvent] = await Promise.all([
       new Promise((resolve, reject) => {
         watcher.on(
@@ -320,6 +327,7 @@ describe.only("Watcher responses", () => {
       provider.send("evm_mine", []),
     ]);
     await verifyChallengeUpdatedEvent(
+      app,
       await app.getDoubleSignedSetState(networkContext.ChallengeRegistry),
       appContractEvent as any,
       provider,
@@ -330,10 +338,96 @@ describe.only("Watcher responses", () => {
       appWatcherEvent as any,
     );
   });
+  it("should respond with `setAndProgressState` if it has a higher nonced action", async () => {
+    // add action to store
+    app = await addActionToAppInStore(store, app);
 
-  it("should respond with `setAndProgressState` if it has a higher nonced action", async () => {});
+    // set initial state
+    const setState0 = await app.getInitialSetState(networkContext.ChallengeRegistry, toBN(3));
+    await setState(app, setState0);
 
-  it("should respond with `progressState` if it has a higher nonced action and state is set", async () => {});
+    let setStateEvents = 0;
+    const [appWatcherEvent, appSetStateEvent, appProgressStateEvent] = await Promise.all([
+      new Promise((resolve, reject) => {
+        watcher.on(
+          WatcherEvents.ChallengeProgressedEvent,
+          async (data: ChallengeProgressedEventData) => resolve(data),
+        );
+        watcher.on(
+          WatcherEvents.ChallengeProgressionFailedEvent,
+          async (data: ChallengeProgressionFailedEventData) => reject(data),
+        );
+      }),
+      new Promise((resolve) => {
+        watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventData) => {
+          setStateEvents += 1;
+          if (setStateEvents === 2) {
+            resolve(data);
+          }
+        });
+      }),
+      new Promise((resolve) => {
+        watcher.on(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
+          resolve(data),
+        );
+      }),
+      provider.send("evm_mine", []),
+    ]);
+    await verifyChallengeUpdatedEvent(
+      app,
+      await app.getSingleSignedSetState(networkContext.ChallengeRegistry),
+      appSetStateEvent as any,
+      provider,
+    );
+    await verifyStateProgressedEvent(app, appProgressStateEvent as any, networkContext);
+    verifyChallengeProgressedEvent(
+      app.identityHash,
+      freeBalance.multisigAddress,
+      appWatcherEvent as any,
+    );
+  });
 
-  it("should fail if outcome is set", async () => {});
+  it("should respond with `progressState` if it has a higher nonced action and state is set", async () => {
+    // add action to store
+    app = await addActionToAppInStore(store, app);
+
+    // set state with previous state
+    const setState1 = await app.getDoubleSignedSetState(networkContext.ChallengeRegistry);
+    await setState(app, setState1);
+    const [appWatcherEvent, appSetStateEvent, appActionEvent] = await Promise.all([
+      new Promise((resolve, reject) => {
+        watcher.on(
+          WatcherEvents.ChallengeProgressedEvent,
+          async (data: ChallengeProgressedEventData) => resolve(data),
+        );
+        watcher.on(
+          WatcherEvents.ChallengeProgressionFailedEvent,
+          async (data: ChallengeProgressionFailedEventData) => reject(data),
+        );
+      }),
+      new Promise((resolve) => {
+        watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventData) =>
+          resolve(data),
+        );
+      }),
+      new Promise((resolve) => {
+        watcher.on(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
+          resolve(data),
+        );
+      }),
+      provider.send("evm_mine", []),
+    ]);
+    await verifyChallengeUpdatedEvent(
+      app,
+      await app.getSingleSignedSetState(networkContext.ChallengeRegistry),
+      appSetStateEvent as any,
+      provider,
+    );
+    await verifyStateProgressedEvent(app, appActionEvent as any, networkContext);
+    verifyChallengeProgressedEvent(
+      app.identityHash,
+      freeBalance.multisigAddress,
+      appWatcherEvent as any,
+    );
+  });
 });
