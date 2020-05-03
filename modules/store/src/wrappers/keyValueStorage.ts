@@ -52,7 +52,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   ) {}
 
   async getSchemaVersion(): Promise<number> {
-    const version = await this.storage.getItem<{ version: number }>(STORE_SCHEMA_VERSION_KEY);
+    const version = await this.getItem<{ version: number }>(STORE_SCHEMA_VERSION_KEY);
     return version?.version || 0;
   }
 
@@ -60,15 +60,17 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (STORE_SCHEMA_VERSION < version) {
       throw new Error(`Unrecognized store version: ${version}`);
     }
-    return this.storage.setItem<{ version: number }>(STORE_SCHEMA_VERSION_KEY, { version });
+    return this.setItem<{ version: number }>(STORE_SCHEMA_VERSION_KEY, { version });
   }
 
-  getKeys(): Promise<string[]> {
-    return this.storage.getKeys();
+  async getKeys(): Promise<string[]> {
+    const store = await this.getStore();
+    return Object.keys(store);
   }
 
-  private async getStore<T = any>(): Promise<T> {
-    return this.storage.getItem<T>(STORE_KEY);
+  private async getStore(): Promise<any> {
+    const store = await this.storage.getItem(STORE_KEY);
+    return store || {};
   }
 
   private async saveStore(store: any): Promise<any> {
@@ -162,22 +164,16 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
     const store = await this.getStore();
-    try {
-      const updatedStore = this.setSetStateCommitment(
-        this.setSetupCommitment(
-          this.setStateChannel(store, stateChannel),
-          stateChannel.multisigAddress,
-          signedSetupCommitment,
-        ),
-        stateChannel.freeBalanceAppInstance.identityHash,
-        signedFreeBalanceUpdate,
-      );
-      return this.saveStore(updatedStore);
-    } catch (e) {
-      await this.saveStore(store);
-      this.log.error(`Error in createStateChannel: ${e.stack || e.message}`);
-    }
-    throw new Error(`Error during createStateChannel, reverted to ${JSON.stringify(store)}`);
+    const updatedStore = this.setSetStateCommitment(
+      this.setSetupCommitment(
+        this.setStateChannel(store, stateChannel),
+        stateChannel.multisigAddress,
+        signedSetupCommitment,
+      ),
+      stateChannel.freeBalanceAppInstance.identityHash,
+      signedFreeBalanceUpdate,
+    );
+    return this.saveStore(updatedStore);
   }
 
   async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
@@ -536,6 +532,25 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   ////// Helper methods
+  async updateSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    const setStateKey = this.getKey(
+      SET_STATE_COMMITMENT_KEY,
+      appIdentityHash,
+      toBN(commitment.versionNumber).toString(),
+    );
+    if (!(await this.getItem(setStateKey))) {
+      throw new Error(
+        `Cannot find set state commitment to update for ${appIdentityHash} at ${toBN(
+          commitment.versionNumber,
+        ).toString()}`,
+      );
+    }
+    return this.setItem(setStateKey, commitment);
+  }
+
   private setStateChannel(store: any, stateChannel: StateChannelJSON): Promise<any> {
     const channelKey = this.getKey(CHANNEL_KEY, stateChannel.multisigAddress);
     store[channelKey] = {
@@ -562,7 +577,17 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return sorted[0];
   }
 
-  private async setConditionalTransactionCommitment(
+  private setSetupCommitment(
+    store: any,
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): any {
+    const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
+    store[setupCommitmentKey] = commitment;
+    return store;
+  }
+
+  private setConditionalTransactionCommitment(
     store: any,
     appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
@@ -572,46 +597,17 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return store;
   }
 
-  private async setSetStateCommitment(
+  private setSetStateCommitment(
     store: any,
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
-  ): Promise<any> {
+  ): any {
     const setStateKey = this.getKey(
       SET_STATE_COMMITMENT_KEY,
       appIdentityHash,
       toBN(commitment.versionNumber).toString(),
     );
     store[setStateKey] = commitment;
-    return store;
-  }
-
-  async updateSetStateCommitment(
-    appIdentityHash: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> {
-    const setStateKey = this.getKey(
-      SET_STATE_COMMITMENT_KEY,
-      appIdentityHash,
-      toBN(commitment.versionNumber).toString(),
-    );
-    if (!(await this.getItem(setStateKey))) {
-      throw new Error(
-        `Cannot find set state commitment to update for ${appIdentityHash} at ${toBN(
-          commitment.versionNumber,
-        ).toString()}`,
-      );
-    }
-    return this.setItem(setStateKey, commitment);
-  }
-
-  private async setSetupCommitment(
-    store: any,
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<any> {
-    const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
-    store[setupCommitmentKey] = commitment;
     return store;
   }
 
