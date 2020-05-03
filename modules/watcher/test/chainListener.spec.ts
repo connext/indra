@@ -115,15 +115,7 @@ describe("ChainListener", () => {
           return resolve(data);
         });
       }),
-      new Promise(async (resolve, reject) => {
-        try {
-          const tx = await setAndProgressState(action);
-          await tx.wait();
-          return resolve(tx);
-        } catch (e) {
-          return reject(e.stack || e.message);
-        }
-      }),
+      setAndProgressState(action),
     ]);
     ////// verification
     // tx
@@ -156,7 +148,6 @@ describe("ChainListener", () => {
 
     // submit transaction
     const tx = await setAndProgressState(action);
-    await tx.wait();
     expect(tx).to.be.ok;
     expect(emitted).to.be.eq(0);
   });
@@ -169,7 +160,6 @@ describe("ChainListener", () => {
     log.debug(`parsing past logs staring from block: ${startingBlock}`);
     const tx = await setAndProgressState(action);
     expect(tx).to.be.ok;
-    await tx.wait();
 
     // wait for block number to increase
     await new Promise(resolve =>
