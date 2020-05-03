@@ -590,10 +590,10 @@
       "txHash": "0xa570e5c54728d7ff50df93af7becaca3227ec6e9927597f649a2d3385c5024a5"
     },
     "HashLockTransferApp": {
-      "address": "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF",
-      "creationCodeHash": "0x950652d66dab8b9b7f3a738e69078f0069b93df478cef6d6c31532a885ea22a6",
-      "runtimeCodeHash": "0xacd03edbf4911d9d768d597db7e01447a06b9ee0fb4022a5e17d1972b4d9b42f",
-      "txHash": "0x804356a613e931203f4bfa666289dcf6bf8bdf854efdf28be097feefce1f6a08"
+      "address": "0xF08dF3eFDD854FEDE77Ed3b2E515090EEe765154",
+      "creationCodeHash": "0xd794d4c8feaf0847e55e44ec6720cd642c4cb4555d7b7649b292cdc916efb3c3",
+      "runtimeCodeHash": "0x3c9a739aece9eedbae62d6978f4a52a7e606dd912873e13ca35caeab22fbf3ff",
+      "txHash": "0x52df51db9f5df1de497109ebd1cd586e76fd6432e41f5cc92e87c71b5944928b"
     },
     "WithdrawApp": {
       "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b",
