@@ -631,14 +631,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       appIdentityHash,
       toBN(commitment.versionNumber).toString(),
     );
-    if (await this.getItem(setStateKey)) {
-      throw new Error(
-        `Found existing set state commitment for ${appIdentityHash} at ${toBN(
-          commitment.versionNumber,
-        ).toString()}`,
-      );
-    }
-
     return this.setItem(setStateKey, commitment);
   }
 
