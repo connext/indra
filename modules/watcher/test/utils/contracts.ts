@@ -32,10 +32,17 @@ export const moveToBlock = async (blockNumber: BigNumberish, provider: JsonRpcPr
     return;
   }
   for (const _ of Array(desired.sub(current).toNumber())) {
-    await provider.send("evm_mine", []);
+    await mineBlock(provider);
   }
   const final: BigNumber = toBN(await provider.getBlockNumber());
   expect(final).to.be.eq(desired);
+};
+
+export const mineBlock = (provider: JsonRpcProvider) => {
+  return new Promise(async resolve => {
+    provider.once("block", () => resolve());
+    await provider.send("evm_mine", []);
+  });
 };
 
 
