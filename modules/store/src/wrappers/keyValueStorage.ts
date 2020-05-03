@@ -214,7 +214,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       );
       channel.proposedAppInstances.splice(idx, 1);
     }
-    const updatedStore = this.setConditionalTransactionCommitment(
+    const oldFreeBalanceUpdate = this.getLatestSetStateCommitment(
+      store,
+      freeBalanceAppInstance.identityHash,
+    );
+    let updatedStore = this.setConditionalTransactionCommitment(
       this.setSetStateCommitment(
         this.setStateChannel(store, channel),
         freeBalanceAppInstance.identityHash,
@@ -223,6 +227,13 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       appInstance.identityHash,
       signedConditionalTxCommitment,
     );
+    if (oldFreeBalanceUpdate) {
+      updatedStore = this.unsetSetStateCommitment(
+        store,
+        freeBalanceAppInstance.identityHash,
+        toBN(oldFreeBalanceUpdate.versionNumber).toString(),
+      );
+    }
     return this.saveStore(updatedStore);
   }
 
@@ -242,11 +253,20 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const idx = channel.appInstances.findIndex(([app]) => app === appInstance.identityHash);
     channel.appInstances[idx] = [appInstance.identityHash, appInstance];
 
-    const updatedStore = this.setSetStateCommitment(
+    const oldCommitment = this.getLatestSetStateCommitment(store, appInstance.identityHash);
+
+    let updatedStore = this.setSetStateCommitment(
       this.setStateChannel(store, channel),
       appInstance.identityHash,
       signedSetStateCommitment,
     );
+    if (oldCommitment) {
+      updatedStore = this.unsetSetStateCommitment(
+        store,
+        appInstance.identityHash,
+        toBN(oldCommitment.versionNumber).toString(),
+      );
+    }
     return this.saveStore(updatedStore);
   }
 
@@ -303,7 +323,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     }
     if (
       this.hasAppIdentityHash(appInstance.identityHash, channel.proposedAppInstances) &&
-      !!(await this.getLatestSetStateCommitment(appInstance.identityHash))
+      !!this.getLatestSetStateCommitment(store, appInstance.identityHash)
     ) {
       throw new Error(`App proposal with hash ${appInstance.identityHash} already exists`);
     }
@@ -564,10 +584,15 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return store;
   }
 
-  private async getLatestSetStateCommitment(
+  private getLatestSetStateCommitment(
+    store: any,
     appIdentityHash: Bytes32,
-  ): Promise<SetStateCommitmentJSON | undefined> {
-    const appCommitments = await this.getSetStateCommitments(appIdentityHash);
+  ): SetStateCommitmentJSON {
+    const partial = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
+    const keys = Object.keys(store);
+    const relevant = keys.filter((key) => key.includes(partial));
+    const appCommitments = relevant.map((key) => store[key]);
+
     if (appCommitments.length === 0) {
       return undefined;
     }
@@ -608,6 +633,16 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       toBN(commitment.versionNumber).toString(),
     );
     store[setStateKey] = commitment;
+    return store;
+  }
+
+  private unsetSetStateCommitment(store: any, appIdentityHash: string, versionNumber: string): any {
+    const setStateKey = this.getKey(
+      SET_STATE_COMMITMENT_KEY,
+      appIdentityHash,
+      versionNumber,
+    );
+    delete store[setStateKey];
     return store;
   }
 
