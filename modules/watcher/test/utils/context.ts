@@ -23,7 +23,7 @@ import { Interface } from "ethers/utils";
 import { AppWithCounterClass, AppWithCounterAction, ActionType } from "./appWithCounter";
 import { ConnextStore } from "@connext/store";
 import { MiniFreeBalance } from "./miniFreeBalance";
-import { deployTestArtifactsToChain } from "./contracts";
+import { deployTestArtifactsToChain, mineBlock } from "./contracts";
 import { CREATE_PROXY_AND_SETUP_GAS } from "./utils";
 import { expect, verifyChallengeUpdatedEvent } from "./assertions";
 
@@ -46,7 +46,6 @@ export const setupContext = async (
   const provider = new JsonRpcProvider(ethProvider);
 
   const wallet = Wallet.fromMnemonic(process.env.SUGAR_DADDY!).connect(provider);
-  await wallet.getTransactionCount();
   const signers = [getRandomChannelSigner(ethProvider), getRandomChannelSigner(ethProvider)];
   const defaultAppOpts = {
     balances: {
@@ -60,6 +59,7 @@ export const setupContext = async (
   const store = new ConnextStore(StoreTypes.Memory);
 
   // deploy contracts
+  await wallet.getTransactionCount();
   const networkContext = await deployTestArtifactsToChain(wallet);
   await wallet.getTransactionCount();
   const challengeRegistry = new Contract(
@@ -141,12 +141,14 @@ export const setupContext = async (
     channelBalances[assetId] = assetTotal;
   });
 
-  const token = new Contract(networkContext.Token, ERC20.abi, wallet);
-  await wallet.sendTransaction({
+ const token = new Contract(networkContext.Token, ERC20.abi, wallet);
+  const tx = await wallet.sendTransaction({
     to: multisigAddress,
     value: channelBalances[CONVENTION_FOR_ETH_ASSET_ID],
   });
-  await token.transfer(multisigAddress, channelBalances[networkContext.Token]);
+  await tx.wait();
+  const tx2 = await token.transfer(multisigAddress, channelBalances[networkContext.Token]);
+  await tx2.wait();
   expect(await provider.getBalance(multisigAddress)).to.be.eq(
     channelBalances[CONVENTION_FOR_ETH_ASSET_ID],
   );
@@ -168,13 +170,15 @@ export const setupContext = async (
       await app.getSingleSignedSetState(networkContext.ChallengeRegistry),
     );
 
-    return challengeRegistry.functions.setAndProgressState(
+    await wallet.getTransactionCount();
+    const tx = await challengeRegistry.functions.setAndProgressState(
       app.appIdentity,
       await setState0.getSignedAppChallengeUpdate(),
       await setState1.getSignedAppChallengeUpdate(),
       AppWithCounterClass.encodeState(app.latestState),
       AppWithCounterClass.encodeAction(app.latestAction),
     );
+    return tx.wait();
   };
 
   const setState = async (
@@ -213,9 +217,9 @@ export const setupContext = async (
           reject(e.message);
         }
       }),
-      provider.send("evm_mine", []),
+      mineBlock(provider),
     ]);
-    expect(tx.transactionHash).to.be.ok;
+    expect((tx as any).transactionHash).to.be.ok;
     await verifyChallengeUpdatedEvent(app, setState.toJson(), event as any, provider);
   };
 
@@ -224,19 +228,21 @@ export const setupContext = async (
     const setState = SetStateCommitment.fromJson(
       await app.getSingleSignedSetState(networkContext.ChallengeRegistry),
     );
-    return challengeRegistry.functions.progressState(
+    const tx = await challengeRegistry.functions.progressState(
       app.appIdentity,
       await setState.getSignedAppChallengeUpdate(),
       AppWithCounterClass.encodeState(app.latestState),
       AppWithCounterClass.encodeAction(app.latestAction!),
     );
+    return tx.wait();
   };
 
   const cancelChallenge = async (app: AppWithCounterClass = activeApps[0]) => {
-    return challengeRegistry.functions.cancelDispute(
+    const tx = await challengeRegistry.functions.cancelDispute(
       app.appIdentity,
       await app.getCancelDisputeRequest(),
     );
+    return tx.wait();
   };
 
   /////////////////////////////////////////
