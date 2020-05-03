@@ -358,10 +358,6 @@ describe("ConnextStore", () => {
 
   describe("restore", async () => {
     storeTypes.forEach(type => {
-      if (type === StoreTypes.Memory) {
-        return;
-      }
-
       it(`${type} - should restore empty state when not provided with a backup service`, async () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
         await store.updateSchemaVersion();
