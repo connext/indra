@@ -229,7 +229,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     );
     if (oldFreeBalanceUpdate) {
       updatedStore = this.unsetSetStateCommitment(
-        store,
+        updatedStore,
         freeBalanceAppInstance.identityHash,
         toBN(oldFreeBalanceUpdate.versionNumber).toString(),
       );
@@ -262,7 +262,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     );
     if (oldCommitment) {
       updatedStore = this.unsetSetStateCommitment(
-        store,
+        updatedStore,
         appInstance.identityHash,
         toBN(oldCommitment.versionNumber).toString(),
       );
@@ -287,7 +287,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     }
     const idx = channel.appInstances.findIndex(([app]) => app === appIdentityHash);
     channel.appInstances.splice(idx, 1);
-    const updatedStore = this.setSetStateCommitment(
+    const oldFreeBalanceUpdate = this.getLatestSetStateCommitment(
+      store,
+      freeBalanceAppInstance.identityHash,
+    );
+    let updatedStore = this.setSetStateCommitment(
       this.setStateChannel(store, {
         ...channel,
         freeBalanceAppInstance,
@@ -295,6 +299,13 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       channel.freeBalanceAppInstance.identityHash,
       signedFreeBalanceUpdate,
     );
+    if (oldFreeBalanceUpdate) {
+      updatedStore = this.unsetSetStateCommitment(
+        updatedStore,
+        freeBalanceAppInstance.identityHash,
+        toBN(oldFreeBalanceUpdate.versionNumber).toString(),
+      );
+    }
     return this.saveStore(updatedStore);
   }
 
