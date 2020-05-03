@@ -23,11 +23,12 @@ import {
   verifyChallengeUpdatedEvent,
   verifyChallengeProgressedEvent,
   AppWithCounterAction,
+  mineBlock,
 } from "./utils";
 
 import { Watcher } from "../src";
 import { ChannelSigner, getRandomAddress, ColorfulLogger, toBN } from "@connext/utils";
-import { initiateDispute } from "./utils/initiateDispute";
+import { initiateDispute, OutcomeSetResults } from "./utils/initiateDispute";
 import { One } from "ethers/constants";
 import { cancelDispute } from "./utils/cancelDispute";
 
@@ -113,10 +114,10 @@ describe("Watcher.initiate", () => {
       networkContext,
     );
 
-    const [outcomeRes] = await Promise.all([outcomeSet, provider.send("evm_mine", [])]);
-    await verifyOutcomeSet(outcomeRes);
-    const [completedRes] = await Promise.all([completed, provider.send("evm_mine", [])]);
-    await verifyCompleted(completedRes);
+    const [outcomeRes] = await Promise.all([outcomeSet, mineBlock(provider)]);
+    await verifyOutcomeSet(outcomeRes as OutcomeSetResults);
+    const [completedRes] = await Promise.all([completed, mineBlock(provider)]);
+    await verifyCompleted(completedRes as any);
 
     // verify final balances
     await verifyOnchainBalancesPostChallenge(multisigAddress, signers, channelBalances, wallet);
@@ -158,10 +159,10 @@ describe("Watcher.initiate", () => {
 
     const { outcomeSet, verifyOutcomeSet, completed, verifyCompleted } = initiateRes as any;
 
-    const [outcomeRes] = await Promise.all([outcomeSet, provider.send("evm_mine", [])]);
+    const [outcomeRes] = await Promise.all([outcomeSet, mineBlock(provider)]);
     await verifyOutcomeSet(outcomeRes);
 
-    const [completedRes] = await Promise.all([completed, provider.send("evm_mine", [])]);
+    const [completedRes] = await Promise.all([completed, mineBlock(provider)]);
     await verifyCompleted(completedRes);
 
     // verify final balances
@@ -252,8 +253,10 @@ describe("Watcher.cancel", () => {
     await verifyStateProgressedEvent(app, stateProgressedEvent as any, networkContext);
 
     // wait for outcome
+    await mineBlock(provider);
+
     const { outcomeSet, verifyOutcomeSet } = initiateRes as any;
-    const [outcomeRes] = await Promise.all([outcomeSet, provider.send("evm_mine", [])]);
+    const [outcomeRes] = await Promise.all([outcomeSet, mineBlock(provider)]);
     await verifyOutcomeSet(outcomeRes);
 
     // cancel the challenge with failure flag
@@ -295,7 +298,7 @@ describe("Watcher responses", () => {
       provider,
       store,
       signer: context["wallet"].privateKey,
-      logger: new ColorfulLogger("Watcher", 5, true, ""),
+      // logger: new ColorfulLogger("Watcher", 5, true, ""),
     });
     expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
   });
@@ -324,7 +327,7 @@ describe("Watcher responses", () => {
           resolve(data),
         );
       }),
-      provider.send("evm_mine", []),
+      mineBlock(provider),
     ]);
     await verifyChallengeUpdatedEvent(
       app,
@@ -371,7 +374,7 @@ describe("Watcher responses", () => {
           resolve(data),
         );
       }),
-      provider.send("evm_mine", []),
+      mineBlock(provider),
     ]);
     await verifyChallengeUpdatedEvent(
       app,
@@ -415,7 +418,7 @@ describe("Watcher responses", () => {
           resolve(data),
         );
       }),
-      provider.send("evm_mine", []),
+      mineBlock(provider),
     ]);
     await verifyChallengeUpdatedEvent(
       app,
