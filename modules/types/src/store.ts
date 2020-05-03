@@ -46,8 +46,6 @@ export interface WrappedStorage {
   removeItem(key: string): Promise<void>;
   getKeys(): Promise<string[]>;
   getEntries(): Promise<[string, any][]>;
-  clear(): Promise<void>;
-  restore(): Promise<void>;
   // generates a key for related subject strings
   getKey(...args: string[]): string;
 }

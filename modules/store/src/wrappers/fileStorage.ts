@@ -90,21 +90,6 @@ export class FileStorage implements WrappedStorage {
     return entries;
   }
 
-  async clear(): Promise<void> {
-    const keys = await this.getKeys();
-    await Promise.all(keys.map(key => this.removeItem(key)));
-  }
-
-  async restore(): Promise<void> {
-    await this.clear();
-    if (!this.backupService) {
-      throw new Error(`No backup provided, store cleared`);
-    }
-    // otherwise set the item
-    const pairs = await this.backupService.restore();
-    await Promise.all(pairs.map(pair => this.setItem(pair.path, pair.value)));
-  }
-
   getKey(...args: string[]): string {
     let str = "";
     args.forEach(arg => {

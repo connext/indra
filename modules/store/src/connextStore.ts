@@ -50,6 +50,7 @@ export class ConnextStore implements IClientStore {
       case StoreTypes.LocalStorage: {
         this.internalStore = new KeyValueStorage(
           new WrappedLocalStorage(this.prefix, this.separator, this.backupService),
+          this.backupService,
         );
         break;
       }
@@ -66,6 +67,7 @@ export class ConnextStore implements IClientStore {
             opts.asyncStorageKey,
             this.backupService,
           ),
+          this.backupService,
         );
         break;
       }
@@ -81,6 +83,7 @@ export class ConnextStore implements IClientStore {
               opts.postgresConnectionUri,
               this.backupService,
             ),
+          this.backupService,
         );
         break;
       }
@@ -94,6 +97,7 @@ export class ConnextStore implements IClientStore {
             opts.fileDir,
             this.backupService,
           ),
+          this.backupService,
         );
         break;
       }
@@ -101,6 +105,7 @@ export class ConnextStore implements IClientStore {
       case StoreTypes.Memory: {
         this.internalStore = new KeyValueStorage(
           new WrappedMemoryStorage(this.prefix, this.separator, this.backupService),
+          this.backupService,
         );
         break;
       }

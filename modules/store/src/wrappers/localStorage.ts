@@ -54,22 +54,6 @@ export class WrappedLocalStorage implements WrappedStorage {
       ]);
   }
 
-  async clear(): Promise<void> {
-    const keys = await this.getKeys();
-    keys.forEach(key => this.removeItem(key));
-  }
-
-  // NOTE: the backup service should store only the key without prefix.
-  // see the `setItem` implementation
-  async restore(): Promise<void> {
-    await this.clear();
-    if (!this.backupService) {
-      throw new Error(`No backup provided, store cleared`);
-    }
-    const pairs = await this.backupService.restore();
-    await Promise.all(pairs.map(pair => this.setItem(pair.path, pair.value)));
-  }
-
   getKey(...args: string[]) {
     return args.join(this.separator);
   }

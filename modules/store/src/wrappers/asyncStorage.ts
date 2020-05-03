@@ -107,20 +107,6 @@ export class WrappedAsyncStorage implements WrappedStorage {
       .map(([name, _]) => [name.replace(`${this.prefix}${this.separator}`, ""), _]);
   }
 
-  async clear(): Promise<void> {
-    this.data = {};
-    await this.asyncStorage.removeItem(this.asyncStorageKey);
-  }
-
-  async restore(): Promise<void> {
-    await this.clear();
-    if (!this.backupService) {
-      throw new Error(`No backup provided, store cleared`);
-    }
-    const pairs = await this.backupService.restore();
-    await Promise.all(pairs.map(pair => this.setItem(pair.path, pair.value)));
-  }
-
   getKey(...args: string[]): string {
     let str = "";
     args.forEach(arg => {

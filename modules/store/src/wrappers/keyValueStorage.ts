@@ -14,6 +14,7 @@ import {
   WrappedStorage,
   ChallengeStatus,
   Bytes32,
+  IBackupServiceAPI,
 } from "@connext/types";
 import { toBN, ColorfulLogger } from "@connext/utils";
 
@@ -48,6 +49,7 @@ const STORE_KEY = "STORE";
 export class KeyValueStorage implements WrappedStorage, IClientStore {
   constructor(
     private readonly storage: WrappedStorage,
+    private readonly backupService?: IBackupServiceAPI,
     private readonly log: ColorfulLogger = new ColorfulLogger("KeyValueStorage"),
   ) {}
 
@@ -74,6 +76,13 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   private async saveStore(store: any): Promise<any> {
+    if (this.backupService) {
+      try {
+        await this.backupService.backup({ path: STORE_KEY, value: store });
+      } catch (e) {
+        console.info(`Could not save ${STORE_KEY} to backup service. Error: ${e.stack || e.message}`);
+      }
+    }
     return this.storage.setItem(STORE_KEY, store);
   }
 
@@ -104,11 +113,17 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   clear(): Promise<void> {
-    return this.storage.clear();
+    return this.storage.setItem(STORE_KEY, {});
   }
 
-  restore(): Promise<void> {
-    return this.storage.restore();
+  async restore(): Promise<void> {
+    await this.clear();
+    if (!this.backupService) {
+      throw new Error(`No backup provided, store cleared`);
+    }
+    const pairs = await this.backupService.restore();
+    const store = pairs.find(pair => pair.path === STORE_KEY).value;
+    return this.saveStore(store);
   }
 
   getKey(...args: string[]): string {
