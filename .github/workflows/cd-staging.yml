@@ -86,8 +86,6 @@ jobs:
         CMD: 'echo Successfully connected to $STAGING_DOMAINNAME: `hostname`;'
 
   test-integration:
-    env:
-      INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
     runs-on: ubuntu-latest
     needs: [build]
     steps:
@@ -101,8 +99,6 @@ jobs:
       run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
 
   test-backwards-compatibility:
-    env:
-      INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
     runs-on: ubuntu-latest
     needs: [build]
     steps:
@@ -129,9 +125,6 @@ jobs:
 
   deploy-staging:
     env:
-      INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: ${{ secrets.INDRA_NATS_JWT_SIGNER_PRIVATE_KEY_RINKEBY }}
-      INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: ${{ secrets.INDRA_NATS_JWT_SIGNER_PUBLIC_KEY_RINKEBY }}
-      RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
       STAGING_DOMAINNAME: staging.indra.connext.network
     needs: [test-cf, test-contracts, test-utils, test-daicard, test-integration, test-node, test-ssh]
     runs-on: ubuntu-latest
@@ -146,10 +139,7 @@ jobs:
           git checkout --force staging;
           git reset --hard $GITHUB_SHA;
           export INDRA_DOMAINNAME="$STAGING_DOMAINNAME";
-          export INDRA_ETH_PROVIDER="$RINKEBY_ETH_PROVIDER";
           export INDRA_MODE="staging";
-          export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY";
-          export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY";
           make restart-prod;
           docker container prune -f;
           docker image ls -q | xargs docker image rm || true;
