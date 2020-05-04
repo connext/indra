@@ -386,19 +386,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return channel.freeBalanceAppInstance;
   }
 
-  async updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
-    const store = await this.getStore();
-    const channel = this.getStateChannelFromStore(store, multisigAddress);
-    if (!channel) {
-      throw new Error(`Cannot update free balance without channel: ${multisigAddress}`);
-    }
-    const updatedStore = this.setStateChannel(store, {
-      ...channel,
-      freeBalanceAppInstance: freeBalance,
-    });
-    return this.saveStore(updatedStore);
-  }
-
   async getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
     const item = await this.getItem<MinimalTransaction>(setupCommitmentKey);

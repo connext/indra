@@ -115,12 +115,6 @@ export interface IStoreService extends IWatcherStoreService {
   removeAppProposal(multisigAddress: Address, appIdentityHash: Bytes32): Promise<void>;
   // proposals dont need to be updated
 
-  ///// Free balance
-  updateFreeBalance(
-    multisigAddress: Address,
-    freeBalanceAppInstance: AppInstanceJson,
-  ): Promise<void>;
-
   ///// Resetting methods
   clear(): Promise<void>;
   restore(): Promise<void>;
