@@ -33,6 +33,13 @@ jobs:
     - run: make watcher
     - run: make test-watcher
 
+  test-node:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make node
+    - run: make test-node
+
   test-contracts:
     runs-on: ubuntu-latest
     steps:
