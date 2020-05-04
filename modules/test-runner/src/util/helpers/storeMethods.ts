@@ -199,7 +199,6 @@ export async function createConnextStore(
       undefined,
       undefined,
       `postgres://${env.dbConfig.user}:${env.dbConfig.password}@${env.dbConfig.host}:${env.dbConfig.port}/${env.dbConfig.database}`,
-      opts.backupService,
     );
     opts.storage = wrappedStore;
     await wrappedStore.sequelize.authenticate();

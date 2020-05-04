@@ -62,9 +62,6 @@ export class MockStoreService implements IStoreService {
   createFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
     return Promise.resolve();
   }
-  updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
-    return Promise.resolve();
-  }
   getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     return Promise.resolve(undefined);
   }
