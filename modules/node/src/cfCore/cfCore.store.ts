@@ -52,11 +52,13 @@ import {
   ChallengeUpdatedEvent,
 } from "../challengeUpdatedEvent/challengeUpdatedEvent.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
+import { LoggerService } from "../logger/logger.service";
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
   private schemaVersion: number = STORE_SCHEMA_VERSION;
   constructor(
+    private readonly log: LoggerService,
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
     // eslint-disable-next-line max-len
@@ -67,7 +69,9 @@ export class CFCoreStore implements IStoreService {
     private readonly setupCommitmentRepository: SetupCommitmentRepository,
     private readonly challengeRepository: ChallengeRepository,
     private readonly processedBlockRepository: ProcessedBlockRepository,
-  ) {}
+  ) {
+    log.setContext("CFCoreStore");
+  }
 
   getSchemaVersion(): Promise<number> {
     return Promise.resolve(this.schemaVersion);
@@ -114,14 +118,12 @@ export class CFCoreStore implements IStoreService {
       freeBalanceAppInstance,
       monotonicNumProposedApps,
     } = stateChannel;
-    let channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
-    if (!channel) {
-      channel = new Channel();
-    }
+
+    const channel = new Channel();
+    channel.multisigAddress = multisigAddress;
     channel.schemaVersion = this.schemaVersion;
     channel.userIdentifier = userIdentifier;
     channel.nodeIdentifier = nodeIdentifier;
-    channel.multisigAddress = multisigAddress;
     channel.addresses = addresses;
     channel.monotonicNumProposedApps = monotonicNumProposedApps;
     const swaps = this.configService.getAllowedSwaps();
@@ -174,7 +176,12 @@ export class CFCoreStore implements IStoreService {
 
     channel.appInstances = [freeBalanceApp];
 
-    const setupCommitment = new SetupCommitment();
+    let setupCommitment = await this.setupCommitmentRepository.findByMultisigAddress(
+      stateChannel.multisigAddress,
+    );
+    if (!setupCommitment) {
+      setupCommitment = new SetupCommitment();
+    }
     setupCommitment.data = signedSetupCommitment.data;
     setupCommitment.to = signedSetupCommitment.to;
     setupCommitment.value = toBN(signedSetupCommitment.value);
@@ -182,7 +189,13 @@ export class CFCoreStore implements IStoreService {
 
     channel.setupCommitment = setupCommitment;
 
-    const freeBalanceUpdateCommitment = new SetStateCommitment();
+    let freeBalanceUpdateCommitment = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
+      freeBalanceApp.identityHash,
+      toBN(signedFreeBalanceUpdate.versionNumber),
+    );
+    if (!freeBalanceUpdateCommitment) {
+      freeBalanceUpdateCommitment = new SetStateCommitment();
+    }
     freeBalanceUpdateCommitment.app = freeBalanceApp;
     freeBalanceUpdateCommitment.appIdentity = signedFreeBalanceUpdate.appIdentity;
     freeBalanceUpdateCommitment.appStateHash = signedFreeBalanceUpdate.appStateHash;
@@ -227,9 +240,6 @@ export class CFCoreStore implements IStoreService {
       singleAssetTwoPartyCoinTransferInterpreterParams,
     } = appJson;
     const proposal = await this.appInstanceRepository.findByIdentityHashOrThrow(identityHash);
-    if (proposal.type !== AppType.PROPOSAL) {
-      throw new Error(`Application already exists: ${appJson.identityHash}`);
-    }
 
     // upgrade proposal to instance
     proposal.type = AppType.INSTANCE;
@@ -252,18 +262,20 @@ export class CFCoreStore implements IStoreService {
         break;
 
       case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
-        proposal.outcomeInterpreterParameters =
-          multiAssetMultiPartyCoinTransferInterpreterParams;
+        proposal.outcomeInterpreterParameters = multiAssetMultiPartyCoinTransferInterpreterParams;
         break;
 
       case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
-        proposal.outcomeInterpreterParameters =
-          singleAssetTwoPartyCoinTransferInterpreterParams;
+        proposal.outcomeInterpreterParameters = singleAssetTwoPartyCoinTransferInterpreterParams;
         break;
 
       default:
         throw new Error(`Unrecognized outcome type: ${OutcomeType[outcomeType]}`);
     }
+
+    const existingConditionalTx = await this.conditionalTransactionCommitmentRepository.findByAppIdentityHash(
+      appJson.identityHash,
+    );
 
     await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(proposal);
@@ -280,13 +292,6 @@ export class CFCoreStore implements IStoreService {
         })
         .execute();
 
-      const subQuery = transactionalEntityManager
-        .createQueryBuilder()
-        .select("id")
-        .from(AppInstance, "app")
-        .where("app.identityHash = :appIdentityHash", {
-          appIdentityHash: freeBalanceAppInstance.identityHash,
-        });
       await transactionalEntityManager
         .createQueryBuilder()
         .update(SetStateCommitment)
@@ -298,24 +303,45 @@ export class CFCoreStore implements IStoreService {
           stateTimeout: toBN(signedFreeBalanceUpdate.stateTimeout).toString(),
           versionNumber: toBN(signedFreeBalanceUpdate.versionNumber).toNumber(),
         })
-        .where('"appId" = (' + subQuery.getQuery() + ")")
-        .setParameters(subQuery.getParameters())
-        .execute();
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .insert()
-        .into(ConditionalTransactionCommitment)
-        .values({
-          freeBalanceAppIdentityHash: signedConditionalTxCommitment.freeBalanceAppIdentityHash,
-          multisigAddress: signedConditionalTxCommitment.multisigAddress,
-          multisigOwners: signedConditionalTxCommitment.multisigOwners,
-          interpreterAddr: signedConditionalTxCommitment.interpreterAddr,
-          interpreterParams: signedConditionalTxCommitment.interpreterParams,
-          signatures: signedConditionalTxCommitment.signatures,
-          app: proposal,
+        .where('"appIdentityHash" = :appIdentityHash', {
+          appIdentityHash: freeBalanceAppInstance.identityHash,
         })
         .execute();
+
+      // idempotence
+      if (existingConditionalTx) {
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .update(ConditionalTransactionCommitment)
+          .set({
+            freeBalanceAppIdentityHash: signedConditionalTxCommitment.freeBalanceAppIdentityHash,
+            multisigAddress: signedConditionalTxCommitment.multisigAddress,
+            multisigOwners: signedConditionalTxCommitment.multisigOwners,
+            interpreterAddr: signedConditionalTxCommitment.interpreterAddr,
+            interpreterParams: signedConditionalTxCommitment.interpreterParams,
+            signatures: signedConditionalTxCommitment.signatures,
+            app: proposal,
+          })
+          .where('"appIdentityHash" = :appIdentityHash', {
+            appIdentityHash: signedConditionalTxCommitment.freeBalanceAppIdentityHash,
+          })
+          .execute();
+      } else {
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .insert()
+          .into(ConditionalTransactionCommitment)
+          .values({
+            freeBalanceAppIdentityHash: signedConditionalTxCommitment.freeBalanceAppIdentityHash,
+            multisigAddress: signedConditionalTxCommitment.multisigAddress,
+            multisigOwners: signedConditionalTxCommitment.multisigOwners,
+            interpreterAddr: signedConditionalTxCommitment.interpreterAddr,
+            interpreterParams: signedConditionalTxCommitment.interpreterParams,
+            signatures: signedConditionalTxCommitment.signatures,
+            app: proposal,
+          })
+          .execute();
+      }
     });
   }
 
@@ -347,13 +373,6 @@ export class CFCoreStore implements IStoreService {
         .where("identityHash = :identityHash", { identityHash })
         .execute();
 
-      const subQuery = transactionalEntityManager
-        .createQueryBuilder()
-        .select("id")
-        .from(AppInstance, "app")
-        .where("app.identityHash = :appIdentityHash", {
-          appIdentityHash: signedSetStateCommitment.appIdentityHash,
-        });
       await transactionalEntityManager
         .createQueryBuilder()
         .update(SetStateCommitment)
@@ -365,8 +384,9 @@ export class CFCoreStore implements IStoreService {
           stateTimeout: toBN(signedSetStateCommitment.stateTimeout).toString(),
           versionNumber: toBN(signedSetStateCommitment.versionNumber).toNumber(),
         })
-        .where('"appId" = (' + subQuery.getQuery() + ")")
-        .setParameters(subQuery.getParameters())
+        .where('"appIdentityHash" = :appIdentityHash', {
+          appIdentityHash: signedSetStateCommitment.appIdentityHash,
+        })
         .execute();
     });
   }
@@ -378,18 +398,17 @@ export class CFCoreStore implements IStoreService {
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
     const app = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
-    if (!app) {
-      throw new Error(`No app found when trying to remove. AppId: ${appIdentityHash}`);
+    if (app) {
+      app.type = AppType.UNINSTALLED;
+      app.channel = null;
+    } else {
+      this.log.warn(`Could not find app instance to remove`);
     }
-    if (app.type !== AppType.INSTANCE) {
-      throw new Error(`App is not of correct type`);
-    }
-    app.type = AppType.UNINSTALLED;
-
-    app.channel = null;
 
     await getManager().transaction(async (transactionalEntityManager) => {
-      await transactionalEntityManager.save(app);
+      if (app) {
+        await transactionalEntityManager.save(app);
+      }
       await transactionalEntityManager
         .createQueryBuilder()
         .update(AppInstance)
@@ -408,13 +427,6 @@ export class CFCoreStore implements IStoreService {
         .of(multisigAddress)
         .remove(app.identityHash);
 
-      const subQuery = transactionalEntityManager
-        .createQueryBuilder()
-        .select("id")
-        .from(AppInstance, "app")
-        .where("app.identityHash = :appIdentityHash", {
-          appIdentityHash: freeBalanceAppInstance.identityHash,
-        });
       await transactionalEntityManager
         .createQueryBuilder()
         .update(SetStateCommitment)
@@ -426,8 +438,9 @@ export class CFCoreStore implements IStoreService {
           stateTimeout: toBN(signedFreeBalanceUpdate.stateTimeout).toString(),
           versionNumber: toBN(signedFreeBalanceUpdate.versionNumber).toNumber(),
         })
-        .where('"appId" = (' + subQuery.getQuery() + ")")
-        .setParameters(subQuery.getParameters())
+        .where('"appIdentityHash" = :appIdentityHash', {
+          appIdentityHash: freeBalanceAppInstance.identityHash,
+        })
         .execute();
     });
   }
@@ -466,7 +479,13 @@ export class CFCoreStore implements IStoreService {
     app.latestVersionNumber = 0;
     app.channel = channel;
 
-    const setStateCommitment = new SetStateCommitment();
+    let setStateCommitment = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
+      appProposal.identityHash,
+      toBN(signedSetStateCommitment.versionNumber),
+    );
+    if (!setStateCommitment) {
+      setStateCommitment = new SetStateCommitment();
+    }
     setStateCommitment.app = app;
     setStateCommitment.appIdentity = signedSetStateCommitment.appIdentity;
     setStateCommitment.appStateHash = signedSetStateCommitment.appStateHash;
