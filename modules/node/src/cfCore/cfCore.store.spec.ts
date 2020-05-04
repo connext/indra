@@ -24,7 +24,6 @@ import {
   createMinimalTransaction,
   createStoredAppChallenge,
   createStateProgressedEventPayload,
-  createChallengeUpdatedEventPayload,
   generateRandomIdentifier,
 } from "../test/cfCore";
 import { ConfigService } from "../config/config.service";
@@ -146,7 +145,7 @@ const createTestChallengeWithAppInstanceAndChannel = async (
   const challenge = createStoredAppChallenge({
     identityHash: appInstance.identityHash,
   });
-  await cfCoreStore.createAppChallenge(challenge.identityHash, challenge);
+  await cfCoreStore.saveAppChallenge(challenge);
 
   return {
     challenge,
@@ -464,18 +463,21 @@ describe("CFCoreStore", () => {
 
   describe("Challenges", () => {
     it("creates a challenge", async () => {
-      const { appInstance, multisigAddress } = await createTestChannelWithAppInstance(
+      const { appInstance } = await createTestChannelWithAppInstance(
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
       const challenge = createStoredAppChallenge({
         identityHash: appInstance.identityHash,
       });
-      await cfCoreStore.createAppChallenge(challenge.identityHash, challenge);
+      await cfCoreStore.saveAppChallenge(challenge);
       const retrieved = await cfCoreStore.getAppChallenge(challenge.identityHash);
       expect(retrieved).toMatchObject(challenge);
-      const byChannel = await cfCoreStore.getActiveChallenges(multisigAddress);
+      const byChannel = await cfCoreStore.getActiveChallenges();
       expect(byChannel).toMatchObject([challenge]);
+      // events
+      const events = await cfCoreStore.getChallengeUpdatedEvents(appInstance.identityHash);
+      expect(events).toMatchObject([challenge]);
     });
 
     it("updates a challenge", async () => {
@@ -487,9 +489,15 @@ describe("CFCoreStore", () => {
         ...challenge,
         versionNumber: toBN(5),
       };
-      await cfCoreStore.updateAppChallenge(challenge.identityHash, updated);
+      await cfCoreStore.saveAppChallenge(updated);
       const retrieved = await cfCoreStore.getAppChallenge(challenge.identityHash);
       expect(retrieved).toMatchObject(updated);
+      // events
+      const events = await cfCoreStore.getChallengeUpdatedEvents(challenge.identityHash);
+      expect(events.sort((a, b) => b.versionNumber.sub(a.versionNumber).toNumber())).toMatchObject([
+        challenge,
+        updated,
+      ]);
     });
   });
 
@@ -502,40 +510,9 @@ describe("CFCoreStore", () => {
       const event = createStateProgressedEventPayload({
         identityHash: appInstance.identityHash,
       });
-      await cfCoreStore.createStateProgressedEvent(appInstance.identityHash, event);
+      await cfCoreStore.createStateProgressedEvent(event);
       const retrieved = await cfCoreStore.getStateProgressedEvents(appInstance.identityHash);
       expect(retrieved).toMatchObject([event]);
-    });
-  });
-
-  describe("Challenge Updated Event", () => {
-    it("creates a challenge updated event", async () => {
-      const { appInstance } = await createTestChallengeWithAppInstanceAndChannel(
-        cfCoreStore,
-        configService.getPublicIdentifier(),
-      );
-      const event = createChallengeUpdatedEventPayload({
-        identityHash: appInstance.identityHash,
-      });
-
-      await cfCoreStore.createChallengeUpdatedEvent(appInstance.identityHash, event);
-      const retrieved = await cfCoreStore.getChallengeUpdatedEvents(appInstance.identityHash);
-      expect(retrieved).toMatchObject([event]);
-    });
-
-    it("will create a challenge if none exists", async () => {
-      const { appInstance } = await createTestChannelWithAppInstance(
-        cfCoreStore,
-        configService.getPublicIdentifier(),
-      );
-      const event = createChallengeUpdatedEventPayload({
-        identityHash: appInstance.identityHash,
-      });
-      await cfCoreStore.createChallengeUpdatedEvent(appInstance.identityHash, event);
-      const retrieved = await cfCoreStore.getChallengeUpdatedEvents(appInstance.identityHash);
-      expect(retrieved).toMatchObject([event]);
-      const challenge = await cfCoreStore.getAppChallenge(appInstance.identityHash);
-      expect(challenge).toMatchObject(event);
     });
   });
 });
