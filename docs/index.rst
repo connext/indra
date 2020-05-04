@@ -28,39 +28,39 @@ Contents
 
 .. toctree::
     :maxdepth: 2
+    :caption: Quick Start
+
+    quickstart/introduction
+    quickstart/basics
+    quickstart/clientInstantiation
+    quickstart/fundingYourChannel
+    quickstart/advanced
+    quickstart/walletIntegrations
+
+.. toctree::
+    :maxdepth: 2
     :caption: Background
 
-    background/introduction
-    background/faq
     background/architecture
+    background/limitations
+    background/faq
+    background/protocol
+    background/protocol-diagrams
 
 .. toctree::
     :maxdepth: 2
-    :caption: Client
+    :caption: Guides
 
-    user/quickStart
-    user/clientInstantiation
-    user/fundingYourChannel
-    user/advanced
-    user/limitations
-    user/walletIntegrations
-    user/clientAPI
-    user/storeModule
-    user/types
+    guides/how-to-deploy-indra
 
 .. toctree::
     :maxdepth: 2
-    :caption: Node
+    :caption: API Reference
 
-    nodeOperator/runNode
-
-.. toctree::
-    :maxdepth: 2
-    :caption: Protocol
-
-    protocol/introduction
-    protocol/api
-    protocol/diagram
+    reference/cf-core
+    reference/client
+    reference/store
+    reference/types
 
 .. toctree::
     :maxdepth: 2

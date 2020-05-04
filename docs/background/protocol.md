@@ -18,7 +18,7 @@ Some specific examples of this include:
 - storing state commitments (delegating to an arbitrary, possibly non-local service implementing a desired interface)
 - implementing a custom Write-Ahead-Log to tweak performance/security properties
 
-We have [some diagrams](./diagram.md) explaining the Node's architecture and control flow.
+We have [some diagrams](./protocol-diagrams.md) explaining the Node's architecture and control flow.
 
 ## Node Address and Signing Keys
 
