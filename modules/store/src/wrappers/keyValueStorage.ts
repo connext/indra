@@ -235,7 +235,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     );
     let updatedStore = this.setConditionalTransactionCommitment(
       this.setSetStateCommitment(
-        this.setStateChannel(store, channel),
+        this.setStateChannel(store, { ...channel, freeBalanceAppInstance }),
         freeBalanceAppInstance.identityHash,
         signedFreeBalanceUpdate,
       ),
