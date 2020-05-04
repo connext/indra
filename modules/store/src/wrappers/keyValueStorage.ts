@@ -233,7 +233,15 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       store,
       freeBalanceAppInstance.identityHash,
     );
-    let updatedStore = this.setConditionalTransactionCommitment(
+    let updatedStore = store;
+    if (oldFreeBalanceUpdate) {
+      updatedStore = this.unsetSetStateCommitment(
+        updatedStore,
+        freeBalanceAppInstance.identityHash,
+        toBN(oldFreeBalanceUpdate.versionNumber).toString(),
+      );
+    }
+    updatedStore = this.setConditionalTransactionCommitment(
       this.setSetStateCommitment(
         this.setStateChannel(store, { ...channel, freeBalanceAppInstance }),
         freeBalanceAppInstance.identityHash,
@@ -242,13 +250,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       appInstance.identityHash,
       signedConditionalTxCommitment,
     );
-    if (oldFreeBalanceUpdate) {
-      updatedStore = this.unsetSetStateCommitment(
-        updatedStore,
-        freeBalanceAppInstance.identityHash,
-        toBN(oldFreeBalanceUpdate.versionNumber).toString(),
-      );
-    }
     return this.saveStore(updatedStore);
   }
 
@@ -270,11 +271,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
     const oldCommitment = this.getLatestSetStateCommitment(store, appInstance.identityHash);
 
-    let updatedStore = this.setSetStateCommitment(
-      this.setStateChannel(store, channel),
-      appInstance.identityHash,
-      signedSetStateCommitment,
-    );
+    let updatedStore = store;
     if (oldCommitment) {
       updatedStore = this.unsetSetStateCommitment(
         updatedStore,
@@ -282,6 +279,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         toBN(oldCommitment.versionNumber).toString(),
       );
     }
+    updatedStore = this.setSetStateCommitment(
+      this.setStateChannel(store, channel),
+      appInstance.identityHash,
+      signedSetStateCommitment,
+    );
     return this.saveStore(updatedStore);
   }
 
@@ -306,14 +308,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       store,
       freeBalanceAppInstance.identityHash,
     );
-    let updatedStore = this.setSetStateCommitment(
-      this.setStateChannel(store, {
-        ...channel,
-        freeBalanceAppInstance,
-      }),
-      channel.freeBalanceAppInstance.identityHash,
-      signedFreeBalanceUpdate,
-    );
+    let updatedStore = store;
     if (oldFreeBalanceUpdate) {
       updatedStore = this.unsetSetStateCommitment(
         updatedStore,
@@ -321,6 +316,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         toBN(oldFreeBalanceUpdate.versionNumber).toString(),
       );
     }
+    updatedStore = this.setSetStateCommitment(
+      this.setStateChannel(store, {
+        ...channel,
+        freeBalanceAppInstance,
+      }),
+      channel.freeBalanceAppInstance.identityHash,
+      signedFreeBalanceUpdate,
+    );
     return this.saveStore(updatedStore);
   }
 
@@ -348,12 +351,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       throw new Error(`Can't save app proposal without channel`);
     }
     if (
-      this.hasAppIdentityHash(appInstance.identityHash, channel.proposedAppInstances) &&
-      !!this.getLatestSetStateCommitment(store, appInstance.identityHash)
+      this.hasAppIdentityHash(appInstance.identityHash, channel.proposedAppInstances)
     ) {
-      throw new Error(`App proposal with hash ${appInstance.identityHash} already exists`);
+      this.log.warn(
+        `appInstance.identityHash ${appInstance.identityHash} already exists, will not add appInstance to ${multisigAddress}`,
+      );
+    } else {
+      channel.proposedAppInstances.push([appInstance.identityHash, appInstance]);
     }
-    channel.proposedAppInstances.push([appInstance.identityHash, appInstance]);
     const updatedStore = this.setSetStateCommitment(
       this.setStateChannel(store, { ...channel, monotonicNumProposedApps }),
       appInstance.identityHash,
@@ -457,12 +462,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appChallenge: StoredAppChallenge,
   ): Promise<void> {
     const challengeKey = this.getKey(CHALLENGE_KEY, appIdentityHash);
-    const existing = await this.getItem<StoredAppChallenge>(challengeKey);
-    if (existing) {
-      throw new Error(
-        `Could not create challenge, found existing challenge for app ${appIdentityHash}`,
-      );
-    }
     return this.setItem(challengeKey, appChallenge);
   }
 
@@ -471,10 +470,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appChallenge: StoredAppChallenge,
   ): Promise<void> {
     const challengeKey = this.getKey(CHALLENGE_KEY, appIdentityHash);
-    const existing = await this.getItem<StoredAppChallenge>(challengeKey);
-    if (!existing) {
-      throw new Error(`Could not find existing challenge for app ${appIdentityHash}`);
-    }
     return this.setItem(challengeKey, appChallenge);
   }
 
