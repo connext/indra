@@ -493,10 +493,13 @@ describe("CFCoreStore", () => {
       const retrieved = await cfCoreStore.getAppChallenge(challenge.identityHash);
       expect(retrieved).toMatchObject(updated);
       // events
-      const events = await cfCoreStore.getChallengeUpdatedEvents(challenge.identityHash);
-      expect(events.sort((a, b) => b.versionNumber.sub(a.versionNumber).toNumber())).toMatchObject([
-        challenge,
+      const sortedEvents = (
+        await cfCoreStore.getChallengeUpdatedEvents(challenge.identityHash)
+      ).sort((a, b) => b.versionNumber.sub(a.versionNumber).toNumber());
+      expect(sortedEvents.length).toBe(2);
+      expect(sortedEvents).toMatchObject([
         updated,
+        challenge,
       ]);
     });
   });
