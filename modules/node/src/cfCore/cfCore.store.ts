@@ -114,7 +114,10 @@ export class CFCoreStore implements IStoreService {
       freeBalanceAppInstance,
       monotonicNumProposedApps,
     } = stateChannel;
-    const channel = new Channel();
+    let channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      channel = new Channel();
+    }
     channel.schemaVersion = this.schemaVersion;
     channel.userIdentifier = userIdentifier;
     channel.nodeIdentifier = nodeIdentifier;
@@ -383,7 +386,6 @@ export class CFCoreStore implements IStoreService {
     }
     app.type = AppType.UNINSTALLED;
 
-    const channelId = app.channel.id;
     app.channel = null;
 
     await getManager().transaction(async (transactionalEntityManager) => {
@@ -403,8 +405,8 @@ export class CFCoreStore implements IStoreService {
       await transactionalEntityManager
         .createQueryBuilder()
         .relation(Channel, "appInstances")
-        .of(channelId)
-        .remove(app.id);
+        .of(multisigAddress)
+        .remove(app.identityHash);
 
       const subQuery = transactionalEntityManager
         .createQueryBuilder()
@@ -492,8 +494,8 @@ export class CFCoreStore implements IStoreService {
       await transactionalEntityManager
         .createQueryBuilder()
         .relation(Channel, "appInstances")
-        .of(channel.id)
-        .add(app.id);
+        .of(multisigAddress)
+        .add(app.identityHash);
     });
   }
 
@@ -508,15 +510,14 @@ export class CFCoreStore implements IStoreService {
     }
     app.type = AppType.REJECTED;
 
-    const channelId = app.channel.id;
     app.channel = undefined;
     await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(app);
       await transactionalEntityManager
         .createQueryBuilder()
         .relation(Channel, "appInstances")
-        .of(channelId)
-        .remove(app.id);
+        .of(multisigAddress)
+        .remove(app.identityHash);
     });
   }
 
