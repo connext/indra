@@ -14,8 +14,6 @@ import {
   DEFAULT_FILE_STORAGE_DIR,
   DEFAULT_FILE_STORAGE_EXT,
   DEFAULT_STORE_PREFIX,
-  CHANNEL_KEY,
-  COMMITMENT_KEY,
 } from "../constants";
 
 export class FileStorage implements WrappedStorage {
@@ -24,7 +22,6 @@ export class FileStorage implements WrappedStorage {
     private readonly separator: string = "-",
     private readonly fileExt: string = DEFAULT_FILE_STORAGE_EXT,
     private readonly fileDir: string = DEFAULT_FILE_STORAGE_DIR,
-    private readonly backupService?: IBackupServiceAPI,
   ) {
     if (this.separator === "/") {
       throw new Error(`Invalid file separator provided: ${this.separator}`);
@@ -56,14 +53,6 @@ export class FileStorage implements WrappedStorage {
   }
 
   async setItem<T>(key: string, value: T): Promise<void> {
-    const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
-    if (this.backupService && shouldBackup) {
-      try {
-        await this.backupService.backup({ path: key, value: value });
-      } catch (e) {
-        console.info(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
-      }
-    }
     const filePath = await this.getFilePath(key);
     return fsWrite(filePath, safeJsonStringify(value));
   }

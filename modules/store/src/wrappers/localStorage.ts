@@ -1,11 +1,9 @@
-import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
+import { WrappedStorage } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
 
 import {
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
-  CHANNEL_KEY,
-  COMMITMENT_KEY,
 } from "../constants";
 
 // @ts-ignore
@@ -16,7 +14,6 @@ export class WrappedLocalStorage implements WrappedStorage {
   constructor(
     private readonly prefix: string = DEFAULT_STORE_PREFIX,
     private readonly separator: string = DEFAULT_STORE_SEPARATOR,
-    private readonly backupService?: IBackupServiceAPI,
   ) {}
 
   async getItem<T>(key: string): Promise<T | undefined> {
@@ -25,14 +22,6 @@ export class WrappedLocalStorage implements WrappedStorage {
   }
 
   async setItem<T>(key: string, value: T): Promise<void> {
-    const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
-    if (this.backupService && shouldBackup) {
-      try {
-        await this.backupService.backup({ path: key, value });
-      } catch (e) {
-        console.info(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
-      }
-    }
     this.localStorage.setItem(`${this.prefix}${this.separator}${key}`, safeJsonStringify(value));
   }
 

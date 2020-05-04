@@ -29,6 +29,7 @@ import {
   BLOCK_PROCESSED_KEY,
   STATE_PROGRESSED_EVENT_KEY,
   CHALLENGE_UPDATED_EVENT_KEY,
+  STORE_KEY,
 } from "../constants";
 
 function properlyConvertChannelNullVals(json: any): StateChannelJSON {
@@ -45,7 +46,6 @@ function properlyConvertChannelNullVals(json: any): StateChannelJSON {
  * This class wraps a general key value storage service to become an `IStoreService`
  */
 
-const STORE_KEY = "STORE";
 export class KeyValueStorage implements WrappedStorage, IClientStore {
   constructor(
     private readonly storage: WrappedStorage,
