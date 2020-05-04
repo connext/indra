@@ -2,11 +2,11 @@ import { AppActions, AppStates, AppName, HexString, OutcomeType } from "@connext
 import { BigNumber } from "ethers/utils";
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
   ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
+  PrimaryColumn,
 } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
@@ -22,8 +22,9 @@ export enum AppType {
 
 @Entity()
 export class AppInstance<T extends AppName = any> {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryColumn("text")
+  @IsKeccak256Hash()
+  identityHash!: string;
 
   @Column({ type: "enum", enum: AppType })
   type!: AppType;
@@ -40,10 +41,6 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("integer")
   appSeqNo!: number;
-
-  @Column("text", { unique: true })
-  @IsKeccak256Hash()
-  identityHash!: string;
 
   @Column("jsonb")
   initialState!: AppStates[T];

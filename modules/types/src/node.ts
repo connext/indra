@@ -53,7 +53,6 @@ type GetConfigResponse = {
 };
 
 type GetChannelResponse = {
-  id: number;
   nodeIdentifier: PublicIdentifier;
   userIdentifier: PublicIdentifier;
   multisigAddress: Address;

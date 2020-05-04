@@ -7,8 +7,8 @@ import {
   ManyToMany,
   OneToMany,
   OneToOne,
-  PrimaryGeneratedColumn,
   UpdateDateColumn,
+  PrimaryColumn,
 } from "typeorm";
 import { AddressZero } from "ethers/constants";
 
@@ -21,8 +21,9 @@ import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 
 @Entity()
 export class Channel {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryColumn("text")
+  @IsEthAddress()
+  multisigAddress!: string;
 
   @Column("integer", { default: 0 })
   schemaVersion!: number;
@@ -38,10 +39,6 @@ export class Channel {
   @Column("text")
   @IsValidPublicIdentifier()
   nodeIdentifier!: string;
-
-  @Column("text", { unique: true })
-  @IsEthAddress()
-  multisigAddress!: string;
 
   @Column("boolean", { default: false })
   available!: boolean;
