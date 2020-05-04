@@ -13,6 +13,8 @@ export const EMPTY_STRINGIFIED_DATA = "{}";
 
 export const ASYNC_STORAGE_TEST_KEY = "__is_async_storage_test";
 
+export const STORE_KEY = "STORE";
+
 export const CHANNEL_KEY = "channel";
 export const SET_STATE_COMMITMENT_KEY = "setstate_commitment";
 export const CONDITIONAL_COMMITMENT_KEY = "conditional_commitment";

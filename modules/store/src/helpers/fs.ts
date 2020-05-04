@@ -59,15 +59,9 @@ export function fsStat(path: string): Promise<fs.Stats> {
   });
 }
 
-export function fsMkDir(path: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    fs.mkdir(path, err => {
-      if (err) {
-        return reject(err);
-      }
-      resolve();
-    });
-  });
+export function fsMkDir(path: string): void {
+  const createPathRes = fs.mkdirSync(path, { recursive: true });
+  console.log('createPathRes: ', createPathRes);
 }
 
 export function sanitizeExt(ext: string): string {
@@ -117,7 +111,7 @@ export async function isDirectory(path: string): Promise<boolean> {
 
 export async function createDirectory(path: string): Promise<void> {
   if (!(await fsExists(path))) {
-    return fsMkDir(path);
+    fsMkDir(path);
   }
   return;
 }
