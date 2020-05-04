@@ -1,4 +1,4 @@
-## Store Module
+# @connext/store
 
 Channels move state storage completely offchain to the end user's device. This means that the security of a user's state is tied to a user's funds. We recommend to use our helper store module to manage the state channel store, which is compatible with both browser and react-native environments.
 

@@ -1,4 +1,4 @@
-# Client Method Reference
+# @connext/client
 
 All methods return promises.
 

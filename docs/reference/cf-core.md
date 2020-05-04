@@ -1,4 +1,4 @@
-# Node API
+# @connext/cf-core
 
 The Node exposes a JSON-RPC compliant API. This can be consumed by making RPC calls and by registering event listeners.
 
