@@ -538,10 +538,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     provider: JsonRpcProvider,
   ): Promise<void> {
     // fetch existing data
+    const store = await this.getStore();
     const channel = await this.getStateChannelByAppIdentityHash(appIdentityHash);
-    const ourApp = await this.getAppInstance(appIdentityHash);
-    const ourLatestSetState = await this.getLatestSetStateCommitment(appIdentityHash);
-    if (!channel || !ourApp || !ourLatestSetState) {
+    if (!channel) {
+      throw new Error(`Could not find channel for app ${appIdentityHash}`);
+    };
+    const [_, ourApp] = channel.appInstances.find(([id]) => id === appIdentityHash);
+    const ourLatestSetState = await this.getLatestSetStateCommitment(store, appIdentityHash);
+    if (!ourApp || !ourLatestSetState) {
       throw new Error(`No record of channel or app associated with ${appIdentityHash}`);
     }
 
