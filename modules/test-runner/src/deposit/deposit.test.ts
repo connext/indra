@@ -1,4 +1,4 @@
-import { IConnextClient, BigNumberish, BigNumber, DepositAppState } from "@connext/types";
+import { IConnextClient, BigNumberish, BigNumber, DepositAppState, StoreTypes } from "@connext/types";
 import { delay, toBN } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero, One } from "ethers/constants";
@@ -12,6 +12,8 @@ import {
   WRONG_ADDRESS,
   TOKEN_AMOUNT_SM,
   TOKEN_AMOUNT,
+  createConnextStore,
+  env,
 } from "../util";
 import { createClient } from "../util/client";
 import { getOnchainBalance, ethProvider } from "../util/ethprovider";
@@ -52,7 +54,8 @@ describe("Deposits", () => {
   };
 
   beforeEach(async () => {
-    client = await createClient();
+    const store = await createConnextStore(StoreTypes.File, { fileDir: env.storeDir });
+    client = await createClient({ store });
     tokenAddress = client.config.contractAddresses.Token;
     nodeSignerAddress = client.nodeSignerAddress;
   });
