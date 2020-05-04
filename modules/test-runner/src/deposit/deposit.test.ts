@@ -54,8 +54,7 @@ describe("Deposits", () => {
   };
 
   beforeEach(async () => {
-    const store = await createConnextStore(StoreTypes.File, { fileDir: env.storeDir });
-    client = await createClient({ store });
+    client = await createClient();
     tokenAddress = client.config.contractAddresses.Token;
     nodeSignerAddress = client.nodeSignerAddress;
   });
