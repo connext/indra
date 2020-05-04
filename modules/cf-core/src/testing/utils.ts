@@ -1,3 +1,4 @@
+import { ERC20, MinimumViableMultisig } from "@connext/contracts";
 import {
   Address,
   AppABIEncodings,
@@ -39,15 +40,17 @@ import { JsonRpcResponse, Rpc } from "rpc-server";
 
 import { Node } from "../node";
 import { AppInstance, StateChannel } from "../models";
+import { CONTRACT_NOT_DEPLOYED } from "../errors";
+import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
 
 import { DolphinCoin, NetworkContextForTestSuite } from "./contracts";
 import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
 import { initialSimpleTransferState, simpleTransferAbiEncodings } from "./simple-transfer";
 import { initialEmptyTTTState, tttAbiEncodings } from "./tic-tac-toe";
 import { initialTransferState, transferAbiEncodings } from "./unidirectional-transfer";
-import { ERC20, MinimumViableMultisig } from "@connext/contracts";
-import { CONTRACT_NOT_DEPLOYED } from "../errors";
-import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
+import { toBeEq } from "./bignumber-jest-matcher";
+
+expect.extend({ toBeEq });
 
 interface AppContext {
   appDefinition: string;
@@ -97,14 +100,8 @@ export function createAppInstanceProposalForTest(appIdentityHash: string): AppIn
 
 export function createAppInstanceForTest(stateChannel?: StateChannel) {
   const [initiator, responder] = stateChannel
-    ? [
-      stateChannel!.userIdentifiers[0], 
-      stateChannel!.userIdentifiers[1],
-    ]
-    : [
-        getRandomPublicIdentifier(),
-        getRandomPublicIdentifier(),
-      ];
+    ? [stateChannel!.userIdentifiers[0], stateChannel!.userIdentifiers[1]]
+    : [getRandomPublicIdentifier(), getRandomPublicIdentifier()];
   return new AppInstance(
     /* initiator */ initiator,
     /* responder */ responder,
@@ -169,9 +166,10 @@ export async function rescindDepositRights(
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ) {
   const apps = await getInstalledAppInstances(node, multisigAddress);
-  const depositApp = apps.filter(app => 
-    app.appInterface.addr === global[`network`][`DepositApp`] &&
-    (app.latestState as DepositAppState).assetId === getAddressFromAssetId(assetId),
+  const depositApp = apps.filter(
+    (app) =>
+      app.appInterface.addr === global[`network`][`DepositApp`] &&
+      (app.latestState as DepositAppState).assetId === getAddressFromAssetId(assetId),
   )[0];
   if (!depositApp) {
     // no apps to uninstall, return
@@ -190,13 +188,13 @@ export async function getDepositApps(
   if (apps.length === 0) {
     return [];
   }
-  const depositApps = apps.filter(app => 
-    app.appInterface.addr === global[`network`][`DepositApp`],
+  const depositApps = apps.filter(
+    (app) => app.appInterface.addr === global[`network`][`DepositApp`],
   );
   if (tokenAddresses.length === 0) {
     return depositApps;
   }
-  return depositApps.filter(app =>
+  return depositApps.filter((app) =>
     tokenAddresses.includes((app.latestState as DepositAppState).assetId),
   );
 }
@@ -217,9 +215,9 @@ export function assertMessage(
 ): void {
   // ensure keys exist, shouldExist is array of
   // keys, ie. data.appIdentityHash
-  shouldExist.forEach(key => {
+  shouldExist.forEach((key) => {
     let subset = { ...msg };
-    key.split(`.`).forEach(k => {
+    key.split(`.`).forEach((k) => {
       expect(subset[k]).toBeDefined();
       subset = subset[k];
     });
@@ -233,12 +231,7 @@ export function assertProposeMessage(
   msg: ProposeMessage,
   params: ProtocolParams.Propose,
 ) {
-  const {
-    multisigAddress,
-    initiatorIdentifier,
-    responderIdentifier,
-    ...emittedParams
-  } = params;
+  const { multisigAddress, initiatorIdentifier, responderIdentifier, ...emittedParams } = params;
   assertMessage(
     msg,
     {
@@ -341,7 +334,7 @@ export async function getAppInstanceProposal(
   multisigAddress: string,
 ): Promise<AppInstanceProposal> {
   const proposals = await getProposedAppInstances(node, multisigAddress);
-  const candidates = proposals.filter(proposal => proposal.identityHash === appIdentityHash);
+  const candidates = proposals.filter((proposal) => proposal.identityHash === appIdentityHash);
 
   if (candidates.length === 0) {
     throw new Error(`Could not find proposal`);
@@ -425,8 +418,9 @@ export async function getMultisigBalance(
   const provider = global[`wallet`].provider;
   return tokenAddress === AddressZero
     ? await provider.getBalance(multisigAddr)
-    : await new Contract(tokenAddress, ERC20.abi as any, provider)
-        .functions.balanceOf(multisigAddr);
+    : await new Contract(tokenAddress, ERC20.abi as any, provider).functions.balanceOf(
+        multisigAddr,
+      );
 }
 
 export async function getMultisigAmountWithdrawn(
@@ -506,13 +500,16 @@ export async function deposit(
   await requestDepositRights(node, responderNode, multisigAddress, assetId);
   const wallet = global["wallet"] as Wallet;
   // send a deposit to the multisig
-  const tx = getAddressFromAssetId(assetId) === AddressZero
-    ? await wallet.sendTransaction({
-        value: amount,
-        to: multisigAddress,
-      })
-    : await new Contract(getAddressFromAssetId(assetId), ERC20.abi as any, wallet)
-        .transfer(multisigAddress, amount);
+  const tx =
+    getAddressFromAssetId(assetId) === AddressZero
+      ? await wallet.sendTransaction({
+          value: amount,
+          to: multisigAddress,
+        })
+      : await new Contract(getAddressFromAssetId(assetId), ERC20.abi as any, wallet).transfer(
+          multisigAddress,
+          amount,
+        );
   expect(tx.hash).toBeDefined();
   // rescind rights
   await rescindDepositRights(node, responderNode, multisigAddress, assetId);
@@ -674,12 +671,9 @@ export async function collateralizeChannel(
 }
 
 export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
-  const sortedOwners = [
-    nodeA.signerAddress,
-    nodeB.signerAddress,
-  ];
+  const sortedOwners = [nodeA.signerAddress, nodeB.signerAddress];
   const [multisigAddress]: any = await Promise.all([
-    new Promise(async resolve => {
+    new Promise(async (resolve) => {
       nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
         assertMessage(
           msg,
@@ -696,7 +690,7 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
         resolve(msg.data.multisigAddress);
       });
     }),
-    new Promise(resolve => {
+    new Promise((resolve) => {
       nodeA.once(EventNames.CREATE_CHANNEL_EVENT, (msg: CreateChannelMessage) => {
         assertMessage(
           msg,
@@ -713,10 +707,7 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
         resolve(msg.data.multisigAddress);
       });
     }),
-    getMultisigCreationAddress(nodeA, [
-      nodeA.publicIdentifier,
-      nodeB.publicIdentifier,
-    ]),
+    getMultisigCreationAddress(nodeA, [nodeA.publicIdentifier, nodeB.publicIdentifier]),
   ]);
   expect(multisigAddress).toBeDefined();
   expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
@@ -755,7 +746,32 @@ export async function installApp(
 
   const proposedParams = installationProposalRpc.parameters as ProtocolParams.Propose;
 
-  const appIdentityHash: string = await new Promise(async resolve => {
+  // generate expected post install balances
+  const singleAsset = initiatorDepositAssetId === responderDepositAssetId;
+  const preInstallInitiatorAsset = await getFreeBalanceState(
+    nodeA,
+    multisigAddress,
+    initiatorDepositAssetId,
+  );
+  const preInstallResponderAsset = await getFreeBalanceState(
+    nodeA,
+    multisigAddress,
+    responderDepositAssetId,
+  );
+  const expectedInitiatorAsset = {
+    [nodeA.signerAddress]: preInstallInitiatorAsset[nodeA.signerAddress].sub(initiatorDeposit),
+    [nodeB.signerAddress]: preInstallInitiatorAsset[nodeB.signerAddress].sub(
+      singleAsset ? responderDeposit : Zero,
+    ),
+  };
+  const expectedResponderAsset = {
+    [nodeA.signerAddress]: preInstallResponderAsset[nodeA.signerAddress].sub(
+      singleAsset ? initiatorDeposit : Zero,
+    ),
+    [nodeB.signerAddress]: preInstallResponderAsset[nodeB.signerAddress].sub(responderDeposit),
+  };
+
+  const appIdentityHash: string = await new Promise(async (resolve) => {
     nodeB.once(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
       // assert message
       assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
@@ -780,7 +796,7 @@ export async function installApp(
   // send nodeB install call
   await Promise.all([
     nodeB.rpcRouter.dispatch(constructInstallRpc(appIdentityHash)),
-    new Promise(async resolve => {
+    new Promise(async (resolve) => {
       nodeA.on(EventNames.INSTALL_EVENT, async (msg: InstallMessage) => {
         if (msg.data.params.appIdentityHash === appIdentityHash) {
           // assert message
@@ -793,6 +809,24 @@ export async function installApp(
       });
     }),
   ]);
+
+  const postInstallInitiatorAsset = await getFreeBalanceState(
+    nodeA,
+    multisigAddress,
+    initiatorDepositAssetId,
+  );
+  const postInstallResponderAsset = await getFreeBalanceState(
+    nodeA,
+    multisigAddress,
+    responderDepositAssetId,
+  );
+  Object.entries(postInstallInitiatorAsset).forEach(([addr, balance]) => {
+    expect(balance).toBeEq(expectedInitiatorAsset[addr]);
+  });
+  Object.entries(postInstallResponderAsset).forEach(([addr, balance]) => {
+    expect(balance).toBeEq(expectedResponderAsset[addr]);
+  });
+
   return [appIdentityHash, proposedParams];
 }
 
@@ -924,9 +958,7 @@ export function getAppContext(
   };
   const checkForInitialState = () => {
     if (!initialState) {
-      throw new Error(
-        `Must have initial state to generate app context`,
-      );
+      throw new Error(`Must have initial state to generate app context`);
     }
   };
 
@@ -998,7 +1030,7 @@ export async function uninstallApp(
 ): Promise<string> {
   await Promise.all([
     node.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash)),
-    new Promise(resolve => {
+    new Promise((resolve) => {
       counterparty.once(EventNames.UNINSTALL_EVENT, (msg: UninstallMessage) => {
         expect(msg.data.appIdentityHash).toBe(appIdentityHash);
         resolve(appIdentityHash);
@@ -1019,19 +1051,11 @@ export async function getBalances(
   multisigAddress: string,
   assetId: AssetId,
 ): Promise<[BigNumber, BigNumber]> {
-  let tokenFreeBalanceState = await getFreeBalanceState(
-    nodeA, 
-    multisigAddress, 
-    assetId,
-  );
+  let tokenFreeBalanceState = await getFreeBalanceState(nodeA, multisigAddress, assetId);
 
   const tokenBalanceNodeA = tokenFreeBalanceState[nodeA.signerAddress];
 
-  tokenFreeBalanceState = await getFreeBalanceState(
-    nodeB,
-    multisigAddress,
-    assetId,
-  );
+  tokenFreeBalanceState = await getFreeBalanceState(nodeB, multisigAddress, assetId);
 
   const tokenBalanceNodeB = tokenFreeBalanceState[nodeB.signerAddress];
 

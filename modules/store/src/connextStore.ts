@@ -50,7 +50,8 @@ export class ConnextStore implements IClientStore {
     switch (storageType) {
       case StoreTypes.LocalStorage: {
         this.internalStore = new KeyValueStorage(
-          new WrappedLocalStorage(this.prefix, this.separator, this.backupService),
+          new WrappedLocalStorage(this.prefix, this.separator),
+          this.backupService,
         );
         break;
       }
@@ -65,8 +66,8 @@ export class ConnextStore implements IClientStore {
             this.prefix,
             this.separator,
             opts.asyncStorageKey,
-            this.backupService,
           ),
+          this.backupService,
         );
         break;
       }
@@ -80,8 +81,8 @@ export class ConnextStore implements IClientStore {
               DEFAULT_DATABASE_STORAGE_TABLE_NAME,
               opts.sequelize,
               opts.postgresConnectionUri,
-              this.backupService,
             ),
+          this.backupService,
         );
         break;
       }
@@ -93,15 +94,16 @@ export class ConnextStore implements IClientStore {
             this.separator === DEFAULT_STORE_SEPARATOR ? "-" : this.separator,
             opts.fileExt,
             opts.fileDir,
-            this.backupService,
           ),
+          this.backupService,
         );
         break;
       }
 
       case StoreTypes.Memory: {
         this.internalStore = new KeyValueStorage(
-          new WrappedMemoryStorage(this.prefix, this.separator, this.backupService),
+          new WrappedMemoryStorage(this.prefix, this.separator),
+          this.backupService,
         );
         break;
       }
@@ -227,13 +229,6 @@ export class ConnextStore implements IClientStore {
 
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {
     return this.internalStore.getFreeBalance(multisigAddress);
-  }
-
-  updateFreeBalance(
-    multisigAddress: Address,
-    freeBalanceAppInstance: AppInstanceJson,
-  ): Promise<void> {
-    return this.internalStore.updateFreeBalance(multisigAddress, freeBalanceAppInstance);
   }
 
   getSetupCommitment(multisigAddress: Address): Promise<MinimalTransaction | undefined> {

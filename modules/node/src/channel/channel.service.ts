@@ -66,10 +66,9 @@ export class ChannelService {
   ): Promise<NodeResponses.GetChannel | undefined> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userIdentifier);
     this.log.debug(`Got channel for ${userIdentifier}: ${stringify(channel, true)}`);
-    return !channel || !channel.id
+    return !channel || !channel.multisigAddress
       ? undefined
       : {
-          id: channel.id,
           available: channel.available,
           activeCollateralizations: channel.activeCollateralizations,
           multisigAddress: channel.multisigAddress,
