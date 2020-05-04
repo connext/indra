@@ -29,10 +29,10 @@ export class MockBackupService implements IBackupServiceAPI {
     }
     const statesToRestore: StorePair[] = [];
     for (const key of keys) {
-      const value = await this.storage.get(key);
+      const value = this.storage.get(key);
       const path = key.split(this.prefix)[1];
       statesToRestore.push({ path, value });
-      await this.storage.set(path, value);
+      this.storage.set(path, value);
     }
     return statesToRestore;
   }

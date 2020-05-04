@@ -1,12 +1,10 @@
-import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
+import { WrappedStorage } from "@connext/types";
 import { Sequelize, Op } from "sequelize";
 
 import { ConnextClientData, ConnextClientDataInitParams } from "../helpers";
 import {
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
-  CHANNEL_KEY,
-  COMMITMENT_KEY,
   DEFAULT_DATABASE_STORAGE_TABLE_NAME,
 } from "../constants";
 
@@ -18,7 +16,6 @@ export class WrappedPostgresStorage implements WrappedStorage {
     private readonly tableName: string = DEFAULT_DATABASE_STORAGE_TABLE_NAME,
     sequelize?: Sequelize,
     private readonly connectionUri?: string,
-    private readonly backupService?: IBackupServiceAPI,
   ) {
     if (sequelize) {
       this.sequelize = sequelize;
@@ -39,14 +36,6 @@ export class WrappedPostgresStorage implements WrappedStorage {
   }
 
   async setItem(key: string, value: any): Promise<void> {
-    const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
-    if (this.backupService && shouldBackup) {
-      try {
-        await this.backupService.backup({ path: key, value });
-      } catch (e) {
-        console.warn(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
-      }
-    }
     await ConnextClientData.upsert({
       key: `${this.prefix}${this.separator}${key}`,
       value,
@@ -98,17 +87,6 @@ export class WrappedPostgresStorage implements WrappedStorage {
 
   async syncModels(force: boolean = false): Promise<void> {
     await this.sequelize.sync({ force });
-  }
-
-  // NOTE: the backup service should store only the key without prefix.
-  // see the `setItem` implementation
-  async restore(): Promise<void> {
-    await this.clear();
-    if (!this.backupService) {
-      throw new Error(`No backup provided, store cleared`);
-    }
-    const pairs = await this.backupService.restore();
-    await Promise.all(pairs.map(pair => this.setItem(pair.path, pair.value)));
   }
 
   getKey(...args: string[]): string {

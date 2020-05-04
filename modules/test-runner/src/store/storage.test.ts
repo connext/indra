@@ -1,4 +1,10 @@
-import { getDirectoryFiles, isDirectory } from "@connext/store";
+import {
+  getDirectoryFiles,
+  isDirectory,
+  DEFAULT_STORE_PREFIX,
+  STORE_KEY,
+  DEFAULT_FILE_STORAGE_EXT,
+} from "@connext/store";
 import { StoreTypes } from "@connext/types";
 import { v4 as uuid } from "uuid";
 
@@ -102,7 +108,7 @@ describe("KeyValueStorage", () => {
     await store.clear();
   });
 
-  it("happy case: FileStorage should create a file per key inside directory", async () => {
+  it("happy case: FileStorage should create a single file for all keys inside directory", async () => {
     const store = createKeyValueStore(StoreTypes.File, { asyncStorageKey, fileDir });
 
     const key1 = uuid();
@@ -111,12 +117,12 @@ describe("KeyValueStorage", () => {
     await Promise.all([store.setItem(key2, testValue), store.setItem(key1, testValue)]);
 
     const files = await getDirectoryFiles(fileDir);
+    const storeFileName = `${DEFAULT_STORE_PREFIX}-${STORE_KEY}${DEFAULT_FILE_STORAGE_EXT}`;
     const verifyFile = (fileName: string): void => {
       const fileArr = files.filter((file: string) => file.includes(fileName));
       expect(fileArr.length).to.equal(1);
     };
-    verifyFile(key1);
-    verifyFile(key2);
+    verifyFile(storeFileName);
     await store.clear();
   });
 
@@ -144,8 +150,13 @@ describe("KeyValueStorage", () => {
     const key = uuid();
     await Promise.all([storeA.setItem(key, testValue), storeB.setItem(key, testValue)]);
 
+    const storeAFileName = `somethingDifferent-${STORE_KEY}${DEFAULT_FILE_STORAGE_EXT}`;
+    const storeBFileName = `${DEFAULT_STORE_PREFIX}-${STORE_KEY}${DEFAULT_FILE_STORAGE_EXT}`;
+
     const files = await getDirectoryFiles(fileDir);
-    const filteredFiles = files.filter((file: string) => file.includes(key));
+    const filteredFiles = files.filter(
+      (file: string) => file.includes(storeAFileName) || file.includes(storeBFileName),
+    );
     expect(filteredFiles.length).to.equal(2);
     const file1 = filteredFiles[0].toLowerCase();
     const file2 = filteredFiles[1].toLowerCase();
