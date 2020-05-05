@@ -99,7 +99,17 @@ export class ConnextStore implements IClientStore {
 
       case StoreTypes.Memory: {
         this.internalStore = new KeyValueStorage(
-          new WrappedMemoryStorage(this.prefix, this.separator),
+          new WrappedSequelizeStorage(
+            this.prefix,
+            this.separator,
+            storeDefaults.DATABASE_TABLE_NAME,
+            undefined,
+            undefined,
+            "sqlite",
+            storeDefaults.SQLITE_MEMORY_STORE_STRING,
+          ),
+          this.backupService,
+          logger,
         );
         break;
       }
