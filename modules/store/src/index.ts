@@ -47,7 +47,7 @@ export {
   WrappedAsyncStorage,
   WrappedLocalStorage,
   WrappedMemoryStorage,
-  WrappedPostgresStorage,
+  WrappedSequelizeStorage as WrappedPostgresStorage,
 } from "./wrappers";
 export { ConnextStore } from "./connextStore";
 export { PisaClientBackupAPI } from "./pisaClient";

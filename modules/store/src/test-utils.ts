@@ -29,7 +29,7 @@ import {
   KeyValueStorage,
   WrappedAsyncStorage,
   WrappedLocalStorage,
-  WrappedPostgresStorage,
+  WrappedSequelizeStorage,
 } from "./wrappers";
 
 use(require("chai-as-promised"));
@@ -219,7 +219,7 @@ export const createConnextStore = async (
   opts.logger = new ColorfulLogger("ConnextStore", env.logLevel, true);
   if (type === StoreTypes.Postgres) {
     opts.logger = new ColorfulLogger("PostgresStore", env.logLevel, true);
-    const wrappedStore = new WrappedPostgresStorage(
+    const wrappedStore = new WrappedSequelizeStorage(
       "test",
       "/",
       undefined,

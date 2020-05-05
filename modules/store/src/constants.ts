@@ -2,6 +2,9 @@ export const storeDefaults = {
   DATABASE_TABLE_NAME: "connext_client_data",
   PREFIX: "INDRA_CLIENT_CF_CORE",
   SEPARATOR: "/",
+  DATABASE_NAME: "indra",
+  DATABASE_USERNAME: "indra",
+  DATABASE_PASSWORD: "indra",
 };
 
 export const storeKeys = {

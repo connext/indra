@@ -20,12 +20,10 @@ import { nullLogger } from "@connext/utils";
 
 import { storeDefaults } from "./constants";
 import {
-  FileStorage,
   KeyValueStorage,
-  WrappedMemoryStorage,
   WrappedAsyncStorage,
   WrappedLocalStorage,
-  WrappedPostgresStorage,
+  WrappedSequelizeStorage,
 } from "./wrappers";
 import { StoreTypes, WrappedStorage } from "./types";
 
@@ -72,8 +70,8 @@ export class ConnextStore implements IClientStore {
 
       case StoreTypes.Postgres: {
         this.internalStore = new KeyValueStorage(
-          (opts.storage as WrappedPostgresStorage) ||
-            new WrappedPostgresStorage(
+          (opts.storage as WrappedSequelizeStorage) ||
+            new WrappedSequelizeStorage(
               this.prefix,
               this.separator,
               storeDefaults.DATABASE_TABLE_NAME,
@@ -88,11 +86,14 @@ export class ConnextStore implements IClientStore {
 
       case StoreTypes.File: {
         this.internalStore = new KeyValueStorage(
-          new FileStorage(
+          new WrappedSequelizeStorage(
             this.prefix,
-            this.separator === storeDefaults.SEPARATOR ? "-" : this.separator,
-            opts.fileExt,
-            opts.fileDir,
+            this.separator,
+            storeDefaults.DATABASE_TABLE_NAME,
+            undefined,
+            undefined,
+            "sqlite",
+            `${opts.fileDir}/connext-store.sqlite`,
           ),
           this.backupService,
           logger,
@@ -102,7 +103,15 @@ export class ConnextStore implements IClientStore {
 
       case StoreTypes.Memory: {
         this.internalStore = new KeyValueStorage(
-          new WrappedMemoryStorage(this.prefix, this.separator),
+          new WrappedSequelizeStorage(
+            this.prefix,
+            this.separator,
+            storeDefaults.DATABASE_TABLE_NAME,
+            undefined,
+            undefined,
+            "sqlite",
+            ":memory",
+          ),
           this.backupService,
           logger,
         );

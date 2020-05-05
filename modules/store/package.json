@@ -22,6 +22,7 @@
     "pg-hstore": "2.3.3",
     "pisa-client": "0.1.5",
     "sequelize": "5.21.5",
+    "sqlite3": "^4.2.0",
     "uuid": "7.0.3",
     "write-file-atomic": "3.0.3"
   },

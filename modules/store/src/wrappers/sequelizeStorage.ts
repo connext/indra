@@ -10,17 +10,28 @@ class ConnextClientData extends Model {
   public readonly updatedAt!: Date;
 }
 
-const ConnextClientDataInitParams = {
-  key: {
-    type: new DataTypes.STRING(1024),
-    primaryKey: true,
-  },
-  value: {
-    type: DataTypes.JSONB,
-  },
+type SupportedDialects = "postgres" | "sqlite";
+
+const getConnextClientDataInitParams = (dialect: SupportedDialects) => {
+  let valueDataType = DataTypes.JSON;
+  if (dialect === "postgres") {
+    valueDataType = DataTypes.JSONB;
+  } else if (dialect === "sqlite") {
+  } else {
+    throw new Error(`Unsupported database dialect: ${dialect}`);
+  }
+  return {
+    key: {
+      type: new DataTypes.STRING(1024),
+      primaryKey: true,
+    },
+    value: {
+      type: valueDataType,
+    },
+  };
 };
 
-export class WrappedPostgresStorage implements WrappedStorage {
+export class WrappedSequelizeStorage implements WrappedStorage {
   public sequelize: Sequelize;
   constructor(
     private readonly prefix: string = storeDefaults.PREFIX,
@@ -28,26 +39,35 @@ export class WrappedPostgresStorage implements WrappedStorage {
     private readonly tableName: string = storeDefaults.DATABASE_TABLE_NAME,
     sequelize?: Sequelize,
     private readonly connectionUri?: string,
+    private readonly dialect: SupportedDialects = "sqlite",
+    private readonly sqliteStorage: string = ":memory",
+    private readonly database: string = storeDefaults.DATABASE_NAME,
+    private readonly username: string = storeDefaults.DATABASE_USERNAME,
+    private readonly password: string = storeDefaults.DATABASE_PASSWORD,
+    private readonly sync: boolean = true,
   ) {
     if (sequelize) {
       this.sequelize = sequelize;
     } else if (this.connectionUri) {
-      this.sequelize = new Sequelize(this.connectionUri, {
-        dialect: "postgres",
-        logging: false,
-      });
+      this.sequelize = new Sequelize(this.connectionUri);
     } else {
-      throw new Error(`Either sequelize instance or Postgres connection URI must be specified`);
+      this.sequelize = new Sequelize(this.database, this.username, this.password, {
+        dialect: this.dialect,
+        storage: this.sqliteStorage,
+      });
     }
-    ConnextClientData.init(ConnextClientDataInitParams, {
-      sequelize: this.sequelize,
-      tableName: this.tableName,
-    });
+    ConnextClientData.init(
+      getConnextClientDataInitParams(this.sequelize.getDialect() as SupportedDialects),
+      {
+        sequelize: this.sequelize,
+        tableName: this.tableName,
+      },
+    );
   }
 
   async getItem<T>(key: string): Promise<T | undefined> {
     const item = await ConnextClientData.findByPk(`${this.prefix}${this.separator}${key}`);
-    return item && item.value as any;
+    return item && (item.value as any);
   }
 
   async setItem(key: string, value: any): Promise<void> {
@@ -74,7 +94,7 @@ export class WrappedPostgresStorage implements WrappedStorage {
 
   async getEntries(): Promise<[string, any][]> {
     const relevantItems = await this.getRelevantItems();
-    return relevantItems.map(item => [
+    return relevantItems.map((item) => [
       item.key.replace(`${this.prefix}${this.separator}`, ""),
       item.value,
     ]);
