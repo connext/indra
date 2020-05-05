@@ -1,14 +1,8 @@
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
+import fs from "fs";
+import path from "path";
 import writeFileAtomic from "write-file-atomic";
 
-import {
-  createDirectory,
-  fsUnlink,
-  getDirectoryFiles,
-  pathJoin,
-  safeFsRead,
-  sanitizeExt,
-} from "../helpers";
 import { storeDefaults } from "../constants";
 import { WrappedStorage } from "../types";
 
@@ -22,7 +16,7 @@ export class FileStorage implements WrappedStorage {
     if (this.separator === "/") {
       throw new Error(`Invalid file separator provided: ${this.separator}`);
     }
-    this.fileExt = fileExt ? sanitizeExt(fileExt) : this.fileExt;
+    this.fileExt = fileExt || this.fileExt;
     if (!this.fileExt.trim()) {
       throw new Error(`Provided fileExt (${this.fileExt}) is invalid`);
     }
@@ -33,19 +27,27 @@ export class FileStorage implements WrappedStorage {
   }
 
   async checkFileDir(): Promise<void> {
-    return createDirectory(this.fileDir);
+    fs.mkdirSync(this.fileDir, { recursive: true });
   }
 
   async getFilePath(key: string): Promise<string> {
     await this.checkFileDir();
     const fileName = `${this.prefix}${this.separator}${key}${this.fileSuffix}`;
-    return pathJoin(this.fileDir, fileName);
+    return path.join(this.fileDir, fileName);
   }
 
   async getItem<T>(key: string): Promise<T | undefined> {
     const filePath = await this.getFilePath(key);
-    const item = await safeFsRead(filePath);
-    return safeJsonParse(item);
+    try {
+      fs.accessSync(filePath, fs.constants.F_OK | fs.constants.W_OK);
+    } catch (err) {
+      if (err.code === "ENOENT") {
+        return undefined;
+      } else {
+        throw err;
+      }
+    }
+    return safeJsonParse(fs.readFileSync(filePath));
   }
 
   async setItem<T>(key: string, value: T): Promise<void> {
@@ -55,12 +57,14 @@ export class FileStorage implements WrappedStorage {
 
   async removeItem(key: string): Promise<void> {
     const filePath = await this.getFilePath(key);
-    return fsUnlink(filePath);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
   }
 
   async getKeys(): Promise<string[]> {
     await this.checkFileDir();
-    const relevantKeys = (await getDirectoryFiles(this.fileDir))
+    const relevantKeys = fs.readdirSync(this.fileDir)
       .filter((file: string) => file.includes(this.fileSuffix) && file.includes(this.prefix))
       .map((file: string) => file.replace(this.fileSuffix, ""));
     return relevantKeys.map((key) => key.split(`${this.prefix}${this.separator}`)[1]);

@@ -1,10 +1,10 @@
 import {
-  getDirectoryFiles,
-  isDirectory,
   storeDefaults,
   storeKeys,
 } from "@connext/store";
 import { StoreTypes } from "@connext/types";
+import { isDirectory } from "@connext/utils";
+import fs from "fs";
 import { v4 as uuid } from "uuid";
 
 import {
@@ -17,6 +17,7 @@ import {
   TEST_STORE_PAIR,
   createArray,
 } from "../util";
+
 import { storeTypes } from "./store.test";
 
 describe("KeyValueStorage", () => {
@@ -115,7 +116,7 @@ describe("KeyValueStorage", () => {
     expect(key1).to.not.equal(key2);
     await Promise.all([store.setItem(key2, testValue), store.setItem(key1, testValue)]);
 
-    const files = await getDirectoryFiles(fileDir);
+    const files = await fs.readdirSync(fileDir);
     const verifyFile = (fileName: string): void => {
       const fileArr = files.filter((file: string) => file.includes(fileName));
       expect(fileArr.length).to.equal(1);
@@ -151,7 +152,7 @@ describe("KeyValueStorage", () => {
     const storeAFileName = `somethingDifferent-${storeKeys.STORE}.json`;
     const storeBFileName = `${storeDefaults.PREFIX}-${storeKeys.STORE}.json`;
 
-    const files = await getDirectoryFiles(fileDir);
+    const files = await fs.readdirSync(fileDir);
     const filteredFiles = files.filter(
       (file: string) => file.includes(storeAFileName) || file.includes(storeBFileName),
     );

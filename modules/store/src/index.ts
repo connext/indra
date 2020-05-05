@@ -8,5 +8,4 @@ export {
   WrappedMemoryStorage,
   WrappedPostgresStorage,
 } from "./wrappers";
-export { getDirectoryFiles, isDirectory } from "./helpers";
 export { storeDefaults, storeKeys, storePaths } from "./constants";
