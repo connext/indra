@@ -427,13 +427,10 @@ export class AppRegistryService implements OnModuleInit {
       appRegistry.stateEncoding = app.stateEncoding;
       appRegistry.allowNodeInstall = app.allowNodeInstall;
       await this.appRegistryRepository.save(appRegistry);
-
-      this.log.info(`Injecting CF Core middleware`);
-      this.cfCoreService.cfCore.injectMiddleware(
-        Opcode.OP_VALIDATE,
-        await this.generateMiddleware(),
-      );
-      this.log.info(`Injected CF Core middleware`);
     }
+
+    this.log.info(`Injecting CF Core middleware`);
+    this.cfCoreService.cfCore.injectMiddleware(Opcode.OP_VALIDATE, await this.generateMiddleware());
+    this.log.info(`Injected CF Core middleware`);
   }
 }

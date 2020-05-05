@@ -93,8 +93,7 @@ export class ChannelRepository extends Repository<Channel> {
       .leftJoin("channel.appInstances", "appInstance")
       .where("appInstance.identityHash = :appIdentityHash", { appIdentityHash })
       .getOne();
-    return this.findOne({
-      where: { id: channel.id },
+    return this.findOne(channel.multisigAddress, {
       relations: ["appInstances"],
     });
   }

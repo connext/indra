@@ -1,4 +1,4 @@
-import { IConnextClient, BigNumberish, BigNumber, DepositAppState } from "@connext/types";
+import { IConnextClient, BigNumberish, BigNumber, DepositAppState, StoreTypes } from "@connext/types";
 import { delay, toBN } from "@connext/utils";
 import { Contract, constants } from "ethers";
 import tokenAbi from "human-standard-token-abi";
@@ -11,6 +11,8 @@ import {
   WRONG_ADDRESS,
   TOKEN_AMOUNT_SM,
   TOKEN_AMOUNT,
+  createConnextStore,
+  env,
 } from "../util";
 import { createClient } from "../util/client";
 import { getOnchainBalance, ethProvider } from "../util/ethprovider";

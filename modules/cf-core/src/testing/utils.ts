@@ -1,3 +1,4 @@
+import { ERC20, MinimumViableMultisig } from "@connext/contracts";
 import {
   Address,
   AppABIEncodings,
@@ -36,15 +37,17 @@ import { JsonRpcResponse, Rpc } from "rpc-server";
 
 import { Node } from "../node";
 import { AppInstance, StateChannel } from "../models";
+import { CONTRACT_NOT_DEPLOYED } from "../errors";
+import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
 
 import { DolphinCoin, NetworkContextForTestSuite } from "./contracts";
 import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
 import { initialSimpleTransferState, simpleTransferAbiEncodings } from "./simple-transfer";
 import { initialEmptyTTTState, tttAbiEncodings } from "./tic-tac-toe";
 import { initialTransferState, transferAbiEncodings } from "./unidirectional-transfer";
-import { ERC20, MinimumViableMultisig } from "@connext/contracts";
-import { CONTRACT_NOT_DEPLOYED } from "../errors";
-import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
+import { toBeEq } from "./bignumber-jest-matcher";
+
+expect.extend({ toBeEq });
 
 interface AppContext {
   appDefinition: string;
@@ -412,7 +415,9 @@ export async function getMultisigBalance(
   const provider = global[`wallet`].provider;
   return tokenAddress === constants.AddressZero
     ? await provider.getBalance(multisigAddr)
-    : await new Contract(tokenAddress, ERC20.abi, provider).functions.balanceOf(multisigAddr);
+    : await new Contract(tokenAddress, ERC20.abi as any, provider).functions.balanceOf(
+        multisigAddr,
+      );
 }
 
 export async function getMultisigAmountWithdrawn(
@@ -498,7 +503,7 @@ export async function deposit(
           value: amount,
           to: multisigAddress,
         })
-      : await new Contract(getAddressFromAssetId(assetId), ERC20.abi, wallet).transfer(
+      : await new Contract(getAddressFromAssetId(assetId), ERC20.abi as any, wallet).transfer(
           multisigAddress,
           amount,
         );
@@ -738,6 +743,31 @@ export async function installApp(
 
   const proposedParams = installationProposalRpc.parameters as ProtocolParams.Propose;
 
+  // generate expected post install balances
+  const singleAsset = initiatorDepositAssetId === responderDepositAssetId;
+  const preInstallInitiatorAsset = await getFreeBalanceState(
+    nodeA,
+    multisigAddress,
+    initiatorDepositAssetId,
+  );
+  const preInstallResponderAsset = await getFreeBalanceState(
+    nodeA,
+    multisigAddress,
+    responderDepositAssetId,
+  );
+  const expectedInitiatorAsset = {
+    [nodeA.signerAddress]: preInstallInitiatorAsset[nodeA.signerAddress].sub(initiatorDeposit),
+    [nodeB.signerAddress]: preInstallInitiatorAsset[nodeB.signerAddress].sub(
+      singleAsset ? responderDeposit : constants.Zero,
+    ),
+  };
+  const expectedResponderAsset = {
+    [nodeA.signerAddress]: preInstallResponderAsset[nodeA.signerAddress].sub(
+      singleAsset ? initiatorDeposit : constants.Zero,
+    ),
+    [nodeB.signerAddress]: preInstallResponderAsset[nodeB.signerAddress].sub(responderDeposit),
+  };
+
   const appIdentityHash: string = await new Promise(async (resolve) => {
     nodeB.once(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
       // assert message
@@ -776,6 +806,24 @@ export async function installApp(
       });
     }),
   ]);
+
+  const postInstallInitiatorAsset = await getFreeBalanceState(
+    nodeA,
+    multisigAddress,
+    initiatorDepositAssetId,
+  );
+  const postInstallResponderAsset = await getFreeBalanceState(
+    nodeA,
+    multisigAddress,
+    responderDepositAssetId,
+  );
+  Object.entries(postInstallInitiatorAsset).forEach(([addr, balance]) => {
+    expect(balance).toBeEq(expectedInitiatorAsset[addr]);
+  });
+  Object.entries(postInstallResponderAsset).forEach(([addr, balance]) => {
+    expect(balance).toBeEq(expectedResponderAsset[addr]);
+  });
+
   return [appIdentityHash, proposedParams];
 }
 

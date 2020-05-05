@@ -57,7 +57,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
       await transactionalEntityManager
         .createQueryBuilder()
         .relation(Channel, "transactions")
-        .of(channel.id)
+        .of(channel.multisigAddress)
         .add((identifiers[0] as OnchainTransaction).id);
     });
   }
@@ -78,7 +78,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
       await transactionalEntityManager
         .createQueryBuilder()
         .relation(Channel, "transactions")
-        .of(channel.id)
+        .of(channel.multisigAddress)
         .add((identifiers[0] as OnchainTransaction).id);
     });
   }
@@ -99,7 +99,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
       await transactionalEntityManager
         .createQueryBuilder()
         .relation(Channel, "transactions")
-        .of(channel.id)
+        .of(channel.multisigAddress)
         .add((identifiers[0] as OnchainTransaction).id);
     });
   }

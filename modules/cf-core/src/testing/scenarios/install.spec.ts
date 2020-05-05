@@ -11,7 +11,7 @@ import { Node } from "../../node";
 import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
 
 import { NetworkContextForTestSuite } from "../contracts";
-import { toBeLt } from "../bignumber-jest-matcher";
+import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
 
 import { setup, SetupContext } from "../setup";
 import {
@@ -29,7 +29,7 @@ import {
   transferERC20Tokens,
 } from "../utils";
 
-expect.extend({ toBeLt });
+expect.extend({ toBeLt, toBeEq });
 
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
@@ -54,6 +54,7 @@ describe("Node method follows spec - install", () => {
 
       it("install app with ETH", async (done) => {
         await collateralizeChannel(multisigAddress, nodeA, nodeB);
+        const appDeposit = constants.One;
 
         let preInstallETHBalanceNodeA: BigNumber;
         let postInstallETHBalanceNodeA: BigNumber;
@@ -64,7 +65,7 @@ describe("Node method follows spec - install", () => {
 
         nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
           // Delay because propose event fires before params are set
-          await delay(2000);
+          await delay(1500);
           [preInstallETHBalanceNodeA, preInstallETHBalanceNodeB] = await getBalances(
             nodeA,
             nodeB,
@@ -72,20 +73,8 @@ describe("Node method follows spec - install", () => {
             CONVENTION_FOR_ETH_ASSET_ID,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
-          makeInstallCall(nodeB, msg.data.appIdentityHash);
+          await makeInstallCall(nodeB, msg.data.appIdentityHash);
         });
-
-        // FIXME: still no symmetric events -- nodeB will never emit an
-        // `INSTALL` event
-        // let installEvents = 0;
-        // nodeB.once("INSTALL_EVENT", async () => {
-        //   const proposedAppsB = await getProposedAppInstances(nodeB);
-        //   expect(proposedAppsB.length).toEqual(0);
-        //   installEvents += 1;
-        //   if (installEvents === 2) {
-        //     done();
-        //   }
-        // });
 
         nodeA.on("INSTALL_EVENT", async (msg: InstallMessage) => {
           const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
@@ -103,20 +92,14 @@ describe("Node method follows spec - install", () => {
             CONVENTION_FOR_ETH_ASSET_ID,
           );
 
-          expect(postInstallETHBalanceNodeA).toBeLt(preInstallETHBalanceNodeA);
+          expect(postInstallETHBalanceNodeA).toBeEq(preInstallETHBalanceNodeA.sub(appDeposit));
 
-          expect(postInstallETHBalanceNodeB).toBeLt(preInstallETHBalanceNodeB);
+          expect(postInstallETHBalanceNodeB).toBeEq(preInstallETHBalanceNodeB.sub(appDeposit));
 
           // assert install message
           assertInstallMessage(nodeB.publicIdentifier, msg, appInstanceNodeA.identityHash);
 
           done();
-
-          // FIXME: add the below when there are symmetric events
-          // installEvents += 1;
-          // if (installEvents === 2) {
-          //   done();
-          // }
         });
         const { params } = await makeAndSendProposeCall(
           nodeA,
@@ -124,9 +107,9 @@ describe("Node method follows spec - install", () => {
           TicTacToeApp,
           multisigAddress,
           undefined,
-          constants.One,
+          appDeposit,
           CONVENTION_FOR_ETH_ASSET_ID,
-          constants.One,
+          appDeposit,
           CONVENTION_FOR_ETH_ASSET_ID,
         );
         proposeInstallParams = params;

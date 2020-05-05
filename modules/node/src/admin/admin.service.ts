@@ -1,8 +1,5 @@
 import { getCreate2MultisigAddress, scanForCriticalAddresses } from "@connext/cf-core";
-import {
-  CriticalStateChannelAddresses,
-  StateChannelJSON,
-} from "@connext/types";
+import { CriticalStateChannelAddresses, StateChannelJSON } from "@connext/types";
 import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
 
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
@@ -41,12 +38,8 @@ export class AdminService implements OnApplicationBootstrap {
   ///// GENERAL PURPOSE ADMIN FNS
 
   /**  Get channels by address */
-  async getStateChannelByUserPublicIdentifier(
-    userIdentifier: string,
-  ): Promise<StateChannelJSON> {
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      userIdentifier,
-    );
+  async getStateChannelByUserPublicIdentifier(userIdentifier: string): Promise<StateChannelJSON> {
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userIdentifier);
     return convertChannelToJSON(channel);
   }
 
@@ -89,19 +82,20 @@ export class AdminService implements OnApplicationBootstrap {
    * This method will return the userAddress and the multisig address for all
    * channels that fit this description.
    */
-  async getNoFreeBalance(): Promise<{ multisigAddress: string; userAddress: string; error: any }[]> {
+  async getNoFreeBalance(): Promise<
+    { multisigAddress: string; userAddress: string; error: any }[]
+  > {
     // get all available channels, meaning theyre deployed
     const channels = await this.channelService.findAll();
     const corrupted = [];
     for (const channel of channels) {
       // try to get the free balance of eth
-      const { id, multisigAddress, userIdentifier: userAddress } = channel;
+      const { multisigAddress, userIdentifier: userAddress } = channel;
       try {
         await this.cfCoreService.getFreeBalance(userAddress, multisigAddress);
       } catch (error) {
         corrupted.push({
           error: error.message,
-          id,
           multisigAddress,
           userAddress,
         });
@@ -128,7 +122,6 @@ export class AdminService implements OnApplicationBootstrap {
       );
       const currPrefix = await this.cfCoreService.getChannelRecord(chan.multisigAddress);
       const mergeInfo = {
-        channelId: chan.id,
         records: { oldPrefix, currPrefix },
         userAddress: chan.userIdentifier,
       };
@@ -146,7 +139,7 @@ export class AdminService implements OnApplicationBootstrap {
    */
   async repairCriticalStateChannelAddresses(): Promise<RepairCriticalAddressesResponse> {
     const states = await Promise.all(
-      (await this.getAllChannels()).map(channel =>
+      (await this.getAllChannels()).map((channel) =>
         this.cfCoreStore.getStateChannel(channel.multisigAddress),
       ),
     );
@@ -215,7 +208,7 @@ export class AdminService implements OnApplicationBootstrap {
       await this.channelRepository.save(channel);
       // Move this channel from broken to fixed
       output.fixed.push(brokenMultisig);
-      output.broken = output.broken.filter(multisig => multisig === brokenMultisig);
+      output.broken = output.broken.filter((multisig) => multisig === brokenMultisig);
     }
     if (output.broken.length > 0) {
       this.log.warn(`${output.broken.length} channels could not be repaired`);
