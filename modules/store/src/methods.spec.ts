@@ -223,7 +223,10 @@ describe("ConnextStore", () => {
           const retrieved = await store.getAppInstance(app.identityHash);
           expect(retrieved).to.be.undefined;
           const chan = await store.getStateChannel(multisigAddress);
-          expect(chan.appInstances).to.deep.eq([]);
+          expect(chan).to.deep.eq({
+            ...channel,
+            proposedAppInstances: [],
+          });
           const freeBalance = await store.getSetStateCommitments(
             channel.freeBalanceAppInstance!.identityHash,
           );
