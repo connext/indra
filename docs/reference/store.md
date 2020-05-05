@@ -1,13 +1,20 @@
 
 # @connext/store
 
-**Exports:**
+**Exported Types:**
+ - [`IAsyncStorage`](#iasyncstorage)
+ - [`IBackupService`](#ibackupservice)
+ - [`IStoreService`](#istoreservice)
+
+**Exported Classes:**
  - [`PisaBackupService`](#pisabackupservice)
+
+**Exported Functions:**
  - [`getAsyncStore`](#getasyncstore)
- - [`getFileStore`](#getFileStore)
- - [`getLocalStore`](#getLocalStore)
- - [`getMemoryStore`](#getMemoryStore)
- - [`getPostgresStore`](#getPostgresStore)
+ - [`getFileStore`](#getfilestore)
+ - [`getLocalStore`](#getlocalstore)
+ - [`getMemoryStore`](#getmemorystore)
+ - [`getPostgresStore`](#getpostgresstore)
 
 
 
