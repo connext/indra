@@ -16,13 +16,7 @@ import { Context, ProtocolExecutionFlow } from "../types";
 import { assertIsValidSignature } from "./utils";
 
 const protocol = ProtocolNames.setup;
-const {
-  OP_SIGN,
-  OP_VALIDATE,
-  IO_SEND,
-  IO_SEND_AND_WAIT,
-  PERSIST_STATE_CHANNEL,
-} = Opcode;
+const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
 
 /**
  * @description This exchange is described at the following URL:
@@ -30,7 +24,7 @@ const {
  * specs.counterfactual.com/04-setup-protocol
  */
 export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
-  0 /* Initiating */: async function*(context: Context) {
+  0 /* Initiating */: async function* (context: Context) {
     const { message, network } = context;
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
@@ -74,9 +68,11 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // 201 ms (waits for responder to respond)
     substart = Date.now();
     const {
-      customData: {
-        setupSignature: responderSetupSignature,
-        setStateSignature: responderSignatureOnFreeBalanceState,
+      data: {
+        customData: {
+          setupSignature: responderSetupSignature,
+          setStateSignature: responderSignatureOnFreeBalanceState,
+        },
       },
     } = yield [
       IO_SEND_AND_WAIT,
@@ -129,7 +125,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, start, `Initiation finished`);
   } as any,
 
-  1 /* Responding */: async function*(context: Context) {
+  1 /* Responding */: async function* (context: Context) {
     const { message, network } = context;
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
@@ -216,7 +212,9 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
           setStateSignature: mySignatureOnFreeBalanceState,
         },
       } as ProtocolMessageData,
+      stateChannel,
     ];
+
     logTime(log, start, `Response finished`);
   },
 };

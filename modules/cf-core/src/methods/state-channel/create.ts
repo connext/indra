@@ -14,6 +14,7 @@ import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { getCreate2MultisigAddress } from "../../utils";
 import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
+import { StateChannel } from "../../models";
 
 /**
  * This instantiates a StateChannel object to encapsulate the "channel"

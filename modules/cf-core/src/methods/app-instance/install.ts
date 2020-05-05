@@ -89,7 +89,7 @@ export async function install(
 
   const isSame = initiatorIdentifier === proposal.initiatorIdentifier;
 
-  await protocolRunner.initiateProtocol(ProtocolNames.install, {
+  const ret = await protocolRunner.initiateProtocol(ProtocolNames.install, {
     appInitiatorIdentifier: proposal.initiatorIdentifier,
     appInterface: { ...proposal.abiEncodings, addr: proposal.appDefinition },
     appResponderIdentifier: proposal.responderIdentifier,

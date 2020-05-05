@@ -29,13 +29,7 @@ import { assertSufficientFundsWithinFreeBalance } from "../utils";
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
 const protocol = ProtocolNames.install;
-const {
-  OP_SIGN,
-  OP_VALIDATE,
-  IO_SEND,
-  IO_SEND_AND_WAIT,
-  PERSIST_APP_INSTANCE,
-} = Opcode;
+const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
 
 /**
  * @description This exchange is described at the following URL:
@@ -54,7 +48,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
    * @param {Context} context
    */
 
-  0 /* Initiating */: async function*(context: Context) {
+  0 /* Initiating */: async function* (context: Context) {
     const {
       store,
       message: { params, processID },
@@ -126,9 +120,11 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 124ms
     const {
-      customData: {
-        signature: counterpartySignatureOnConditionalTransaction,
-        signature2: counterpartySignatureOnFreeBalanceStateUpdate,
+      data: {
+        customData: {
+          signature: counterpartySignatureOnConditionalTransaction,
+          signature2: counterpartySignatureOnFreeBalanceStateUpdate,
+        },
       },
     } = yield [
       IO_SEND_AND_WAIT,
@@ -208,6 +204,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         },
         seq: UNASSIGNED_SEQ_NO,
       } as ProtocolMessageData,
+      stateChannelAfter,
     ];
 
     // 335ms
@@ -223,7 +220,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
    * @param {Context} context
    */
 
-  1 /* Responding */: async function*(context: Context) {
+  1 /* Responding */: async function* (context: Context) {
     const {
       store,
       message: {
@@ -325,7 +322,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 154ms
     const {
-      customData: { signature: counterpartySignatureOnFreeBalanceStateUpdate },
+      data: {
+        customData: { signature: counterpartySignatureOnFreeBalanceStateUpdate },
+      },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -379,7 +378,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } as ProtocolMessageData;
 
     // 0ms
-    yield [IO_SEND, m4];
+    yield [IO_SEND, m4, stateChannelAfter];
 
     // 272ms
     logTime(log, start, `Response finished`);
@@ -516,10 +515,8 @@ function computeInterpreterParameters(
   disableLimit: boolean,
 ): {
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?:
-    MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?:
-    SingleAssetTwoPartyCoinTransferInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
 } {
   const initiatorDepositAssetId = getAddressFromAssetId(initiatorAssetId);
   const responderDepositAssetId = getAddressFromAssetId(responderAssetId);

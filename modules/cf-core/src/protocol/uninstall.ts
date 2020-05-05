@@ -13,11 +13,7 @@ import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel } from "../models";
-import {
-  Context,
-  PersistAppType,
-  ProtocolExecutionFlow,
-} from "../types";
+import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
 import {
   assertIsValidSignature,
@@ -25,22 +21,15 @@ import {
   stateChannelClassFromStoreByMultisig,
 } from "./utils";
 
-
 const protocol = ProtocolNames.uninstall;
-const {
-  OP_SIGN,
-  OP_VALIDATE,
-  IO_SEND,
-  IO_SEND_AND_WAIT,
-  PERSIST_APP_INSTANCE,
-} = Opcode;
+const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
 /**
  * @description This exchange is described at the following URL:
  *
  * specs.counterfactual.com/06-uninstall-protocol#messages
  */
 export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
-  0 /* Initiating */: async function*(context: Context) {
+  0 /* Initiating */: async function* (context: Context) {
     const { message, store, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
@@ -95,7 +84,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 94ms
     const {
-      customData: { signature: counterpartySignature },
+      data: {
+        customData: { signature: counterpartySignature },
+      },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -117,16 +108,11 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
     logTime(log, checkpoint, `Asserted valid signature in initiating uninstall`);
 
-    const isInitiator = postProtocolStateChannel
-      .multisigOwners[0] !== responderFreeBalanceKey;
+    const isInitiator = postProtocolStateChannel.multisigOwners[0] !== responderFreeBalanceKey;
     // use channel initiator bc free balance app
     await uninstallCommitment.addSignatures(
-      isInitiator 
-        ? mySignature as any
-        : counterpartySignature,
-      isInitiator
-        ? counterpartySignature
-        : mySignature as any,
+      isInitiator ? (mySignature as any) : counterpartySignature,
+      isInitiator ? counterpartySignature : (mySignature as any),
     );
 
     // 24ms
@@ -142,7 +128,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, start, `Initiation finished`);
   } as any,
 
-  1 /* Responding */: async function*(context: Context) {
+  1 /* Responding */: async function* (context: Context) {
     const { message, store, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
@@ -206,16 +192,11 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const mySignature = yield [OP_SIGN, uninstallCommitmentHash];
     logTime(log, checkpoint, `Signed commitment in responding uninstall`);
 
-    const isInitiator = postProtocolStateChannel
-      .multisigOwners[0] !== initiatorFreeBalanceKey;
+    const isInitiator = postProtocolStateChannel.multisigOwners[0] !== initiatorFreeBalanceKey;
     // use channel initiator bc free balance app
     await uninstallCommitment.addSignatures(
-      isInitiator 
-        ? mySignature
-        : counterpartySignature as any,
-      isInitiator
-        ? counterpartySignature
-        : mySignature as any,
+      isInitiator ? mySignature : (counterpartySignature as any),
+      isInitiator ? counterpartySignature : (mySignature as any),
     );
 
     // 59ms
@@ -226,7 +207,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       appToUninstall,
       uninstallCommitment,
     ];
-
+    
     // 0ms
     yield [
       IO_SEND,
@@ -239,6 +220,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
           signature: mySignature,
         },
       } as ProtocolMessageData,
+      postProtocolStateChannel,
     ];
 
     // 100ms
