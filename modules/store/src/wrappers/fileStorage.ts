@@ -1,5 +1,6 @@
 import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
+import writeFileAtomic from "write-file-atomic";
 
 import {
   createDirectory,
@@ -54,7 +55,7 @@ export class FileStorage implements WrappedStorage {
 
   async setItem<T>(key: string, value: T): Promise<void> {
     const filePath = await this.getFilePath(key);
-    return fsWrite(filePath, safeJsonStringify(value));
+    return writeFileAtomic(filePath, safeJsonStringify(value));
   }
 
   async removeItem(key: string): Promise<void> {
@@ -67,7 +68,7 @@ export class FileStorage implements WrappedStorage {
     const relevantKeys = (await getDirectoryFiles(this.fileDir))
       .filter((file: string) => file.includes(this.fileSuffix) && file.includes(this.prefix))
       .map((file: string) => file.replace(this.fileSuffix, ""));
-    return relevantKeys.map(key => key.split(`${this.prefix}${this.separator}`)[1]);
+    return relevantKeys.map((key) => key.split(`${this.prefix}${this.separator}`)[1]);
   }
 
   async getEntries(): Promise<[string, any][]> {
@@ -81,7 +82,7 @@ export class FileStorage implements WrappedStorage {
 
   getKey(...args: string[]): string {
     let str = "";
-    args.forEach(arg => {
+    args.forEach((arg) => {
       // dont add separator to last one
       str = str.concat(arg, args.indexOf(arg) === args.length - 1 ? "" : this.separator);
     });
