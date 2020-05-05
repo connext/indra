@@ -409,9 +409,13 @@ export class Watcher implements IWatcher {
         if (canPlayAction) {
           this.log.debug(`Calling set and progress state for challenge`);
           return this.setAndProgressState(app, channel, challenge, [latest, prev]);
-        } else {
+        } else if (latest.signatures.filter((x) => !!x).length === 2) {
           this.log.debug(`Calling set state for challenge`);
           return this.setState(app, channel, challenge, latest);
+        } else {
+          const msg = `No double signed set state commitment found with higher nonce then ${versionNumber.toString()}, doing nothing`;
+          this.log.debug(msg);
+          return msg;
         }
       }
       case StoredAppChallengeStatus.IN_DISPUTE: {
