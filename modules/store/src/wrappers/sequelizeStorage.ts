@@ -1,4 +1,6 @@
 import { DataTypes, Model, Op, Sequelize } from "sequelize";
+import { mkdirSync } from "fs";
+import { dirname } from "path";
 
 import { storeDefaults } from "../constants";
 import { WrappedStorage } from "../types";
@@ -40,20 +42,24 @@ export class WrappedSequelizeStorage implements WrappedStorage {
     sequelize?: Sequelize,
     private readonly connectionUri?: string,
     private readonly dialect: SupportedDialects = "sqlite",
-    private readonly sqliteStorage: string = ":memory",
+    private readonly sqliteStorage: string = storeDefaults.SQLITE_MEMORY_STORE_STRING,
     private readonly database: string = storeDefaults.DATABASE_NAME,
     private readonly username: string = storeDefaults.DATABASE_USERNAME,
     private readonly password: string = storeDefaults.DATABASE_PASSWORD,
-    private readonly sync: boolean = true,
   ) {
     if (sequelize) {
       this.sequelize = sequelize;
     } else if (this.connectionUri) {
-      this.sequelize = new Sequelize(this.connectionUri);
+      this.sequelize = new Sequelize(this.connectionUri, { logging: false });
     } else {
+      if (this.sqliteStorage !== storeDefaults.SQLITE_MEMORY_STORE_STRING) {
+        const dir = dirname(this.sqliteStorage);
+        mkdirSync(dir, { recursive: true });
+      }
       this.sequelize = new Sequelize(this.database, this.username, this.password, {
         dialect: this.dialect,
         storage: this.sqliteStorage,
+        logging: false,
       });
     }
     ConnextClientData.init(
@@ -118,6 +124,10 @@ export class WrappedSequelizeStorage implements WrappedStorage {
         },
       },
     });
+  }
+
+  async init(): Promise<void> {
+    return this.syncModels(false);
   }
 
   async syncModels(force: boolean = false): Promise<void> {

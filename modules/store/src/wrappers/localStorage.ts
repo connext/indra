@@ -12,6 +12,10 @@ export class WrappedLocalStorage implements WrappedStorage {
     private readonly separator: string = storeDefaults.SEPARATOR,
   ) {}
 
+  init(): Promise<void> {
+    return Promise.resolve();
+  }
+
   async getItem<T>(key: string): Promise<T | undefined> {
     const item = this.localStorage.getItem(`${this.prefix}${this.separator}${key}`);
     return safeJsonParse(item);

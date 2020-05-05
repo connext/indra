@@ -28,7 +28,7 @@ import {
 import { StoreTypes, WrappedStorage } from "./types";
 
 export class ConnextStore implements IClientStore {
-  public internalStore: IClientStore;
+  public internalStore: KeyValueStorage;
 
   private prefix: string = storeDefaults.PREFIX;
   private separator: string = storeDefaults.SEPARATOR;
@@ -93,7 +93,7 @@ export class ConnextStore implements IClientStore {
             undefined,
             undefined,
             "sqlite",
-            `${opts.fileDir}/connext-store.sqlite`,
+            `${opts.fileDir}/${storeDefaults.SQLITE_STORE_NAME}`,
           ),
           this.backupService,
           logger,
@@ -110,7 +110,7 @@ export class ConnextStore implements IClientStore {
             undefined,
             undefined,
             "sqlite",
-            ":memory",
+            storeDefaults.SQLITE_MEMORY_STORE_STRING,
           ),
           this.backupService,
           logger,
@@ -127,6 +127,10 @@ export class ConnextStore implements IClientStore {
         this.internalStore = new KeyValueStorage(opts.storage as WrappedStorage);
       }
     }
+  }
+
+  init(): Promise<void> {
+    return this.internalStore.init();
   }
 
   getSchemaVersion(): Promise<number> {

@@ -131,4 +131,5 @@ export interface IClientStore extends IStoreService {
   getUserWithdrawals(): Promise<WithdrawalMonitorObject[]>;
   saveUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
   removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void>;
+  init(): Promise<void>;
 }

@@ -179,34 +179,13 @@ export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = 
 ////////////////////////////////////////
 // Helper Methods
 
-export const createKeyValueStore = (type: StoreTypes, opts: StoreFactoryOptions = {}) => {
-  switch (type) {
-    case StoreTypes.AsyncStorage:
-      return new KeyValueStorage(
-        new WrappedAsyncStorage(
-          new MockAsyncStorage(),
-          opts.prefix,
-          opts.separator,
-          opts.asyncStorageKey,
-        ),
-        null,
-        new ColorfulLogger("AsyncStore", env.logLevel, true),
-      );
-    case StoreTypes.LocalStorage:
-      return new KeyValueStorage(
-        new WrappedLocalStorage(opts.prefix, opts.separator),
-        null,
-        new ColorfulLogger("LocalStore", env.logLevel, true),
-      );
-    case StoreTypes.File:
-      return new KeyValueStorage(
-        new FileStorage(opts.prefix, opts.separator, opts.fileExt, opts.fileDir),
-        null,
-        new ColorfulLogger("FileStore", env.logLevel, true),
-      );
-    default:
-      throw new Error(`Unable to create KeyValueStore from type: ${type}`);
-  }
+export const createKeyValueStore = async (
+  type: StoreTypes,
+  opts: StoreFactoryOptions = {},
+): Promise<KeyValueStorage> => {
+  const cStore = await createConnextStore(type, opts);
+  await cStore.internalStore.init();
+  return cStore.internalStore;
 };
 
 export const createConnextStore = async (
@@ -216,28 +195,17 @@ export const createConnextStore = async (
   if (!Object.values(StoreTypes).includes(type)) {
     throw new Error(`Unrecognized type: ${type}`);
   }
-  opts.logger = new ColorfulLogger("ConnextStore", env.logLevel, true);
+  opts.logger = new ColorfulLogger(`ConnextStore_${type}`, env.logLevel, true);
   if (type === StoreTypes.Postgres) {
-    opts.logger = new ColorfulLogger("PostgresStore", env.logLevel, true);
-    const wrappedStore = new WrappedSequelizeStorage(
-      "test",
-      "/",
-      undefined,
-      undefined,
-      `postgres://${env.user}:${env.password}@${env.host}:${env.port}/${env.database}`,
-    );
-    opts.storage = wrappedStore;
-    await wrappedStore.sequelize.authenticate();
-    await wrappedStore.syncModels(true);
-  }
-  if (type === StoreTypes.AsyncStorage) {
+    opts.postgresConnectionUri = `postgres://${env.user}:${env.password}@${env.host}:${env.port}/${env.database}`;
+  } else if (type === StoreTypes.AsyncStorage) {
     opts.storage = new MockAsyncStorage();
-    opts.logger = new ColorfulLogger("AsyncStore", env.logLevel, true);
   }
-  const store = new ConnextStore(type, opts);
-  expect(store).to.be.instanceOf(ConnextStore);
-  await store.clear();
-  return store;
+  const cStore = new ConnextStore(type, opts);
+  await cStore.internalStore.init();
+  expect(cStore).to.be.instanceOf(ConnextStore);
+  await cStore.clear();
+  return cStore;
 };
 
 export const setAndGet = async (
@@ -257,10 +225,12 @@ export const setAndGetMultiple = async (
   store: KeyValueStorage,
   length: number = 10,
 ): Promise<void> => {
-  const pairs = Array(length).fill(0).map(() => {
-    const id = uuid();
-    return { path: `path-${id}`, value: `value-${id}` };
-  });
+  const pairs = Array(length)
+    .fill(0)
+    .map(() => {
+      const id = uuid();
+      return { path: `path-${id}`, value: `value-${id}` };
+    });
 
   expect(pairs.length).to.equal(length);
   for (const pair of pairs) {
