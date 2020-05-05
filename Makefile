@@ -155,22 +155,28 @@ test-cf: cf-core
 	bash ops/test/cf.sh
 
 test-contracts: contracts utils
-	bash ops/test/contracts.sh
-
-test-utils: utils
-	bash ops/test/utils.sh
-
-test-watcher: watcher
-	bash ops/test/watcher.sh
+	bash ops/test/unit.sh contracts
 
 test-daicard:
 	bash ops/test/ui.sh daicard
+
+test-docs: docs
+	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b linkcheck -d build/linkcheck . build/html"
 
 test-integration:
 	bash ops/test/integration.sh
 
 test-node: node
 	bash ops/test/node.sh --runInBand --forceExit
+
+test-store: store
+	bash ops/test/store.sh
+
+test-utils: utils
+	bash ops/test/unit.sh utils
+
+test-watcher: watcher
+	bash ops/test/watcher.sh
 
 watch-cf: cf-core
 	bash ops/test/cf.sh --watch
@@ -183,9 +189,6 @@ watch-ui: node-modules
 
 watch-node: node
 	bash ops/test/node.sh --watch
-
-test-docs: docs
-	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b linkcheck -d build/linkcheck . build/html"
 
 ########################################
 # Begin Real Build Rules

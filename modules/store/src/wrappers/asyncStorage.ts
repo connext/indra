@@ -1,17 +1,12 @@
 import {
   AsyncStorageData,
   IAsyncStorage,
-  IBackupServiceAPI,
   InitCallback,
-  WrappedStorage,
 } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
 
-import {
-  DEFAULT_ASYNC_STORAGE_KEY,
-  DEFAULT_STORE_PREFIX,
-  DEFAULT_STORE_SEPARATOR,
-} from "../constants";
+import { storeDefaults, storeKeys } from "../constants";
+import { WrappedStorage } from "../types";
 
 export class WrappedAsyncStorage implements WrappedStorage {
   private data: AsyncStorageData = {};
@@ -20,9 +15,9 @@ export class WrappedAsyncStorage implements WrappedStorage {
 
   constructor(
     private readonly asyncStorage: IAsyncStorage,
-    private readonly prefix: string = DEFAULT_STORE_PREFIX,
-    private readonly separator: string = DEFAULT_STORE_SEPARATOR,
-    private readonly asyncStorageKey: string = DEFAULT_ASYNC_STORAGE_KEY,
+    private readonly prefix: string = storeDefaults.PREFIX,
+    private readonly separator: string = storeDefaults.SEPARATOR,
+    private readonly asyncStorageKey: string = storeKeys.DEFAULT_ASYNC_STORAGE,
   ) {
     this.loadData();
   }
