@@ -1,10 +1,7 @@
 import { WrappedStorage } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
 
-import {
-  DEFAULT_STORE_PREFIX,
-  DEFAULT_STORE_SEPARATOR,
-} from "../constants";
+import { storeDefaults } from "../constants";
 
 // @ts-ignore
 const getLocalStorage = () => global.localStorage || require("localStorage");
@@ -12,8 +9,8 @@ export class WrappedLocalStorage implements WrappedStorage {
   private localStorage: Storage = getLocalStorage();
 
   constructor(
-    private readonly prefix: string = DEFAULT_STORE_PREFIX,
-    private readonly separator: string = DEFAULT_STORE_SEPARATOR,
+    private readonly prefix: string = storeDefaults.PREFIX,
+    private readonly separator: string = storeDefaults.SEPARATOR,
   ) {}
 
   async getItem<T>(key: string): Promise<T | undefined> {

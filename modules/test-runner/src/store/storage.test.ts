@@ -1,9 +1,8 @@
 import {
   getDirectoryFiles,
   isDirectory,
-  DEFAULT_STORE_PREFIX,
-  STORE_KEY,
-  DEFAULT_FILE_STORAGE_EXT,
+  storeDefaults,
+  storeKeys,
 } from "@connext/store";
 import { StoreTypes } from "@connext/types";
 import { v4 as uuid } from "uuid";
@@ -121,7 +120,7 @@ describe("KeyValueStorage", () => {
       const fileArr = files.filter((file: string) => file.includes(fileName));
       expect(fileArr.length).to.equal(1);
     };
-    verifyFile(`${DEFAULT_STORE_PREFIX}-${STORE_KEY}${DEFAULT_FILE_STORAGE_EXT}`);
+    verifyFile(`${storeDefaults.PREFIX}-${storeKeys.STORE}.json`);
     await store.clear();
   });
 
@@ -149,8 +148,8 @@ describe("KeyValueStorage", () => {
     const key = uuid();
     await Promise.all([storeA.setItem(key, testValue), storeB.setItem(key, testValue)]);
 
-    const storeAFileName = `somethingDifferent-${STORE_KEY}${DEFAULT_FILE_STORAGE_EXT}`;
-    const storeBFileName = `${DEFAULT_STORE_PREFIX}-${STORE_KEY}${DEFAULT_FILE_STORAGE_EXT}`;
+    const storeAFileName = `somethingDifferent-${storeKeys.STORE}.json`;
+    const storeBFileName = `${storeDefaults.PREFIX}-${storeKeys.STORE}.json`;
 
     const files = await getDirectoryFiles(fileDir);
     const filteredFiles = files.filter(

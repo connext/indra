@@ -1,11 +1,7 @@
 import { WrappedStorage } from "@connext/types";
 import { DataTypes, Model, Op, Sequelize } from "sequelize";
 
-import {
-  DEFAULT_STORE_PREFIX,
-  DEFAULT_STORE_SEPARATOR,
-  DEFAULT_DATABASE_STORAGE_TABLE_NAME,
-} from "../constants";
+import { storeDefaults } from "../constants";
 
 class ConnextClientData extends Model {
   public key!: string;
@@ -27,9 +23,9 @@ const ConnextClientDataInitParams = {
 export class WrappedPostgresStorage implements WrappedStorage {
   public sequelize: Sequelize;
   constructor(
-    private readonly prefix: string = DEFAULT_STORE_PREFIX,
-    private readonly separator: string = DEFAULT_STORE_SEPARATOR,
-    private readonly tableName: string = DEFAULT_DATABASE_STORAGE_TABLE_NAME,
+    private readonly prefix: string = storeDefaults.PREFIX,
+    private readonly separator: string = storeDefaults.SEPARATOR,
+    private readonly tableName: string = storeDefaults.DATABASE_TABLE_NAME,
     sequelize?: Sequelize,
     private readonly connectionUri?: string,
   ) {

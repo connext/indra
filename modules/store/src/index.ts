@@ -13,8 +13,7 @@ export {
   isDirectory,
 } from "./helpers";
 export {
-  DEFAULT_FILE_STORAGE_EXT,
-  DEFAULT_STORE_PREFIX,
-  PATH_PROPOSED_APP_IDENTITY_HASH,
-  STORE_KEY,
+  storeDefaults,
+  storeKeys,
+  storePaths,
 } from "./constants";

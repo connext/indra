@@ -1,4 +1,4 @@
-import { PATH_PROPOSED_APP_IDENTITY_HASH } from "@connext/store";
+import { storePaths } from "@connext/store";
 import { EntityRepository, Like, Repository } from "typeorm";
 
 import { CFCoreRecord } from "./cfCore.entity";
@@ -21,7 +21,7 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
     // are nested under the respective keywords, hence the 'like' keyword
     // Action item: this hack won't be needed when a more robust schema around
     // node records is implemented
-    if (path.endsWith("channel") || path.endsWith(PATH_PROPOSED_APP_IDENTITY_HASH)) {
+    if (path.endsWith(storePaths.CHANNEL) || path.endsWith(storePaths.PROPOSED_APP_IDENTITY_HASH)) {
       res = await this.createQueryBuilder("node_records")
         .where("node_records.path like :path", { path: `%${path}%` })
         .getMany();

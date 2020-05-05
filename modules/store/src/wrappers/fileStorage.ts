@@ -10,23 +10,19 @@ import {
   safeFsRead,
   sanitizeExt,
 } from "../helpers";
-import {
-  DEFAULT_FILE_STORAGE_DIR,
-  DEFAULT_FILE_STORAGE_EXT,
-  DEFAULT_STORE_PREFIX,
-} from "../constants";
+import { storeDefaults } from "../constants";
 
 export class FileStorage implements WrappedStorage {
   constructor(
-    private readonly prefix: string = DEFAULT_STORE_PREFIX,
+    private readonly prefix: string = storeDefaults.PREFIX,
     private readonly separator: string = "-",
-    private readonly fileExt: string = DEFAULT_FILE_STORAGE_EXT,
-    private readonly fileDir: string = DEFAULT_FILE_STORAGE_DIR,
+    private readonly fileExt: string = ".json",
+    private readonly fileDir: string = "./connext-store",
   ) {
     if (this.separator === "/") {
       throw new Error(`Invalid file separator provided: ${this.separator}`);
     }
-    this.fileExt = fileExt ? sanitizeExt(fileExt) : DEFAULT_FILE_STORAGE_EXT;
+    this.fileExt = fileExt ? sanitizeExt(fileExt) : this.fileExt;
     if (!this.fileExt.trim()) {
       throw new Error(`Provided fileExt (${this.fileExt}) is invalid`);
     }
