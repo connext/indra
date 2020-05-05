@@ -112,7 +112,7 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
   userIdentifiers: ["address1", "address2"],
   proposedAppInstances: [[TEST_STORE_PROPOSAL.identityHash, TEST_STORE_PROPOSAL]],
   appInstances: [[TEST_STORE_APP_INSTANCE.identityHash, TEST_STORE_APP_INSTANCE]],
-  freeBalanceAppInstance: TEST_STORE_APP_INSTANCE,
+  freeBalanceAppInstance: { ...TEST_STORE_APP_INSTANCE, identityHash: `identityHashFreeDBalance` },
   monotonicNumProposedApps: 2,
 };
 
@@ -258,10 +258,12 @@ export const setAndGetMultiple = async (
   store: KeyValueStorage,
   length: number = 10,
 ): Promise<void> => {
-  const pairs = Array(length).fill(0).map(() => {
-    const id = uuid();
-    return { path: `path-${id}`, value: `value-${id}` };
-  });
+  const pairs = Array(length)
+    .fill(0)
+    .map(() => {
+      const id = uuid();
+      return { path: `path-${id}`, value: `value-${id}` };
+    });
 
   expect(pairs.length).to.equal(length);
   for (const pair of pairs) {
