@@ -8,7 +8,6 @@ import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { formatEther } from "ethers/utils";
 import interval from "interval-promise";
-import { PisaClient } from "pisa-client";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import { interpret } from "xstate";
@@ -212,14 +211,7 @@ class App extends React.Component {
       const pisaUrl = urls.pisaUrl(network.chainId);
       if (pisaUrl) {
         console.log(`Using external state backup service: ${pisaUrl}`);
-        const backupService = new PisaBackupService({
-          wallet,
-          pisaClient: new PisaClient(
-            pisaUrl,
-            "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
-          ),
-        });
-        store = getLocalStore(backupService);
+        store = getLocalStore(new PisaBackupService({ pisaUrl, wallet }));
       } else {
         store = getLocalStore();
       }

@@ -41,7 +41,7 @@ export const getPostgresStore = (
   );
 
 ////////////////////////////////////////
-// TODO: the following @connext/store interface is depreciated
+// TODO: the following @connext/store interface is depreciated & undocumented
 // remove the following exports during next breaking release
 
 export { ConnextStore } from "./connextStore";
