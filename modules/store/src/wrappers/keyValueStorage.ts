@@ -3,7 +3,6 @@ import {
   AppInstanceJson,
   AppInstanceProposal,
   Bytes32,
-  ChallengeStatus,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
   IBackupServiceAPI,
@@ -16,11 +15,16 @@ import {
   STORE_SCHEMA_VERSION,
   StoredAppChallenge,
   WithdrawalMonitorObject,
+  Contract,
+  ChallengeEvents,
+  JsonRpcProvider,
+  StoredAppChallengeStatus,
 } from "@connext/types";
-import { toBN, nullLogger } from "@connext/utils";
+import { toBN, nullLogger, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { storeKeys } from "../constants";
 import { WrappedStorage } from "../types";
+import { defaultAbiCoder } from "ethers/utils";
 
 const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
   return {
@@ -449,7 +453,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
-    const challengeKey = this.getKey(CHALLENGE_KEY, data.identityHash);
+    const challengeKey = this.getKey(storeKeys.CHALLENGE, data.identityHash);
     // check if its from event by status
     if (
       data.status !== StoredAppChallengeStatus.PENDING_TRANSITION &&
@@ -465,7 +469,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     // get all stored challenges
     const keys = await this.getKeys();
     const relevant = keys.filter(
-      (key) => key.includes(CHALLENGE_KEY) && !key.includes(CHALLENGE_UPDATED_EVENT_KEY),
+      (key) => key.includes(storeKeys.CHALLENGE) && !key.includes(storeKeys.CHALLENGE_UPDATED_EVENT),
     );
     const challenges = await Promise.all(
       relevant.map((key) => this.getItem<StoredAppChallenge>(key)),
@@ -490,13 +494,13 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
-    const key = this.getKey(STATE_PROGRESSED_EVENT_KEY, appIdentityHash);
+    const key = this.getKey(storeKeys.STATE_PROGRESSED_EVENT, appIdentityHash);
     const existing = await this.getItem<StateProgressedEventPayload[]>(key);
     return existing || [];
   }
 
   async createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void> {
-    const key = this.getKey(STATE_PROGRESSED_EVENT_KEY, event.identityHash);
+    const key = this.getKey(storeKeys.STATE_PROGRESSED_EVENT, event.identityHash);
     const existing = await this.getStateProgressedEvents(key);
     return this.setItem(key, existing.concat(event));
   }
@@ -504,13 +508,13 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async getChallengeUpdatedEvents(
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]> {
-    const key = this.getKey(CHALLENGE_UPDATED_EVENT_KEY, appIdentityHash);
+    const key = this.getKey(storeKeys.CHALLENGE_UPDATED_EVENT, appIdentityHash);
     const existing = await this.getItem<ChallengeUpdatedEventPayload[]>(key);
     return existing || [];
   }
 
   private async createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
-    const key = this.getKey(CHALLENGE_UPDATED_EVENT_KEY, event.identityHash);
+    const key = this.getKey(storeKeys.CHALLENGE_UPDATED_EVENT, event.identityHash);
     const existing = await this.getChallengeUpdatedEvents(event.identityHash);
     return this.setItem(key, existing.concat(event));
   }
@@ -602,7 +606,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     await this.updateAppInstance(channel.multisigAddress, updatedApp, setStateJson);
 
     // update the challenge
-    const challengeKey = this.getKey(CHALLENGE_KEY, appIdentityHash);
+    const challengeKey = this.getKey(storeKeys.CHALLENGE, appIdentityHash);
     // TODO: sync challenge events?
     return this.setItem(challengeKey, onchainChallenge);
   }
