@@ -126,9 +126,6 @@ export async function install(
         : proposal.initiatorIdentifier,
     stateTimeout: toBN(proposal.stateTimeout),
   } as ProtocolParams.Install);
-  
-  stateChannel.removeProposal(appIdentityHash);
-  await store.removeAppProposal(stateChannel.multisigAddress, proposal.identityHash);
 
   return proposal;
 }

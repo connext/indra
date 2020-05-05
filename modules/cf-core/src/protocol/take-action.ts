@@ -10,22 +10,12 @@ import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import {
-  Context,
-  PersistAppType,
-  ProtocolExecutionFlow,
-} from "../types";
+import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
 const protocol = ProtocolNames.takeAction;
-const {
-  OP_SIGN,
-  OP_VALIDATE,
-  IO_SEND,
-  IO_SEND_AND_WAIT,
-  PERSIST_APP_INSTANCE,
-} = Opcode;
+const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
 /**
  * @description This exchange is described at the following URL:
  *
@@ -33,7 +23,7 @@ const {
  *
  */
 export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
-  0 /* Initiating */: async function*(context: Context) {
+  0 /* Initiating */: async function* (context: Context) {
     const { store, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
@@ -108,7 +98,9 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
 
     // 117ms
     const {
-      customData: { signature: counterpartySig },
+      data: {
+        customData: { signature: counterpartySig },
+      },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -144,7 +136,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, start, `Finished Initiating`);
   } as any,
 
-  1 /* Responding */: async function*(context: Context) {
+  1 /* Responding */: async function* (context: Context) {
     const { store, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
@@ -233,6 +225,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
           signature: mySignature,
         },
       } as ProtocolMessageData,
+      postProtocolStateChannel,
     ];
 
     // 149ms

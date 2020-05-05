@@ -30,7 +30,7 @@ import {
 import { StoreTypes, WrappedStorage } from "./types";
 
 export class ConnextStore implements IClientStore {
-  private internalStore: IClientStore;
+  public internalStore: IClientStore;
 
   private prefix: string = storeDefaults.PREFIX;
   private separator: string = storeDefaults.SEPARATOR;
