@@ -24,6 +24,7 @@ import {
   WrappedAsyncStorage,
   WrappedLocalStorage,
   WrappedSequelizeStorage,
+  WrappedMemoryStorage,
 } from "./wrappers";
 import { StoreTypes, WrappedStorage } from "./types";
 
@@ -56,12 +57,7 @@ export class ConnextStore implements IClientStore {
           throw new Error(`Must pass in a reference to an 'IAsyncStorage' interface`);
         }
         this.internalStore = new KeyValueStorage(
-          new WrappedAsyncStorage(
-            opts.storage,
-            this.prefix,
-            this.separator,
-            opts.asyncStorageKey,
-          ),
+          new WrappedAsyncStorage(opts.storage, this.prefix, this.separator, opts.asyncStorageKey),
           this.backupService,
           logger,
         );
@@ -103,17 +99,7 @@ export class ConnextStore implements IClientStore {
 
       case StoreTypes.Memory: {
         this.internalStore = new KeyValueStorage(
-          new WrappedSequelizeStorage(
-            this.prefix,
-            this.separator,
-            storeDefaults.DATABASE_TABLE_NAME,
-            undefined,
-            undefined,
-            "sqlite",
-            storeDefaults.SQLITE_MEMORY_STORE_STRING,
-          ),
-          this.backupService,
-          logger,
+          new WrappedMemoryStorage(this.prefix, this.separator),
         );
         break;
       }
