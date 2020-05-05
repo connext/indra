@@ -1,8 +1,7 @@
-import { ConnextStore } from "@connext/store";
-import { StoreTypes } from "@connext/types";
+import { getMemoryStore } from "@connext/store";
 
 export class MemoryStoreServiceFactory {
   createStoreService() {
-    return new ConnextStore(StoreTypes.Memory);
+    return getMemoryStore();
   }
 }

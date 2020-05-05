@@ -1,29 +1,24 @@
-import {
-  getDirectoryFiles,
-  isDirectory,
-  DEFAULT_STORE_PREFIX,
-  STORE_KEY,
-  DEFAULT_FILE_STORAGE_EXT,
-} from "@connext/store";
-import { StoreTypes } from "@connext/types";
+import { isDirectory } from "@connext/utils";
+import { expect } from "chai";
+import fs from "fs";
 import { v4 as uuid } from "uuid";
 
+import { storeDefaults, storeKeys } from "./constants";
 import {
-  env,
-  expect,
   setAndGet,
   setAndGetMultiple,
   testAsyncStorageKey,
   createKeyValueStore,
   TEST_STORE_PAIR,
-  createArray,
-} from "../util";
-import { storeTypes } from "./store.test";
+} from "./test-utils";
+import { StoreTypes } from "./types";
+
+const storeTypes = Object.values(StoreTypes);
 
 describe("KeyValueStorage", () => {
   const length = 10;
   const asyncStorageKey = "TEST_CONNEXT_STORE";
-  const fileDir = env.storeDir;
+  const fileDir = "./.test-store";
   const testValue = "something";
 
   describe("happy case: instantiate", () => {
@@ -66,9 +61,7 @@ describe("KeyValueStorage", () => {
   it("happy case: localStorage should include multiple keys", async () => {
     const store = createKeyValueStore(StoreTypes.LocalStorage);
     const preInsert = await store.getEntries();
-
     await setAndGetMultiple(store, length);
-
     expect((await store.getEntries()).length).to.equal(preInsert.length + length);
     await store.clear();
   });
@@ -116,12 +109,12 @@ describe("KeyValueStorage", () => {
     expect(key1).to.not.equal(key2);
     await Promise.all([store.setItem(key2, testValue), store.setItem(key1, testValue)]);
 
-    const files = await getDirectoryFiles(fileDir);
+    const files = await fs.readdirSync(fileDir);
     const verifyFile = (fileName: string): void => {
       const fileArr = files.filter((file: string) => file.includes(fileName));
       expect(fileArr.length).to.equal(1);
     };
-    verifyFile(`${DEFAULT_STORE_PREFIX}-${STORE_KEY}${DEFAULT_FILE_STORAGE_EXT}`);
+    verifyFile(`${storeDefaults.PREFIX}-${storeKeys.STORE}.json`);
     await store.clear();
   });
 
@@ -149,10 +142,10 @@ describe("KeyValueStorage", () => {
     const key = uuid();
     await Promise.all([storeA.setItem(key, testValue), storeB.setItem(key, testValue)]);
 
-    const storeAFileName = `somethingDifferent-${STORE_KEY}${DEFAULT_FILE_STORAGE_EXT}`;
-    const storeBFileName = `${DEFAULT_STORE_PREFIX}-${STORE_KEY}${DEFAULT_FILE_STORAGE_EXT}`;
+    const storeAFileName = `somethingDifferent-${storeKeys.STORE}.json`;
+    const storeBFileName = `${storeDefaults.PREFIX}-${storeKeys.STORE}.json`;
 
-    const files = await getDirectoryFiles(fileDir);
+    const files = await fs.readdirSync(fileDir);
     const filteredFiles = files.filter(
       (file: string) => file.includes(storeAFileName) || file.includes(storeBFileName),
     );
@@ -172,7 +165,7 @@ describe("KeyValueStorage", () => {
       }
       it(`${type} should work`, async () => {
         const store = createKeyValueStore(type as StoreTypes, { fileDir });
-        await Promise.all(createArray(5).map(() => setAndGet(store)));
+        await Promise.all(Array(5).fill(0).map(() => setAndGet(store)));
       });
     }
   });

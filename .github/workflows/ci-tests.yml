@@ -20,6 +20,13 @@ jobs:
     - run: make cf-core
     - run: make test-cf
 
+  test-store:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make store
+    - run: make test-store
+
   test-watcher:
     runs-on: ubuntu-latest
     steps:
@@ -32,6 +39,19 @@ jobs:
         restore-keys: npm-
     - run: make watcher
     - run: make test-watcher
+
+  test-node:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: .npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    - run: make node
+    - run: make test-node
 
   test-contracts:
     runs-on: ubuntu-latest
@@ -60,10 +80,6 @@ jobs:
     - run: make test-utils
 
   test-integration:
-    env:
-      INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
-      INDRA_NATS_JWT_SIGNER_PRIVKEY: ${{ secrets.INDRA_NATS_JWT_SIGNER_PRIVKEY }}
-      INDRA_NATS_JWT_SIGNER_PUBKEY: ${{ secrets.INDRA_NATS_JWT_SIGNER_PUBKEY }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -81,4 +97,4 @@ jobs:
     - run: make test-integration
     - name: Print logs
       if: failure()
-      run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
+      run: docker service logs --tail 200 indra_node

@@ -1,20 +1,54 @@
-export { ConnextStore } from "./connextStore";
-export { PisaClientBackupAPI } from "./pisaClient";
+import { IAsyncStorage, IClientStore } from "@connext/types";
+
+import { ConnextStore } from "./connextStore";
+import { PisaClientBackupAPI } from "./pisaClient";
+import { StoreTypes } from "./types";
+import { WrappedAsyncStorage } from "./wrappers";
+
+export const getAsyncStore = (
+  storage: IAsyncStorage,
+  backupService?: PisaClientBackupAPI,
+): IClientStore =>
+  new ConnextStore(
+    StoreTypes.AsyncStorage,
+    { storage: new WrappedAsyncStorage(storage) },
+  );
+
+export const getFileStore = (
+  directory: string,
+  backupService?: PisaClientBackupAPI,
+): IClientStore =>
+  new ConnextStore(StoreTypes.File, { backupService });
+
+export const getLocalStore = (backupService?: PisaClientBackupAPI): IClientStore =>
+  new ConnextStore(StoreTypes.LocalStorage, { backupService });
+
+export const getMemoryStore = (): IClientStore =>
+  new ConnextStore(StoreTypes.Memory);
+
+export const getPostgresStore = (
+  connectionUri: string,
+  backupService?: PisaClientBackupAPI,
+): IClientStore =>
+  new ConnextStore(
+    StoreTypes.Postgres,
+    { postgresConnectionUri: connectionUri, backupService },
+  );
+
+////////////////////////////////////////
+// TODO: the following @connext/store interface is depreciated
+// remove the following exports during next breaking release
+
+export { StoreTypes } from "./types";
+
 export {
-  WrappedAsyncStorage,
   FileStorage,
   KeyValueStorage,
+  WrappedAsyncStorage,
   WrappedLocalStorage,
   WrappedMemoryStorage,
   WrappedPostgresStorage,
 } from "./wrappers";
-export {
-  getDirectoryFiles,
-  isDirectory,
-} from "./helpers";
-export {
-  DEFAULT_FILE_STORAGE_EXT,
-  DEFAULT_STORE_PREFIX,
-  PATH_PROPOSED_APP_IDENTITY_HASH,
-  STORE_KEY,
-} from "./constants";
+export { ConnextStore } from "./connextStore";
+export { PisaClientBackupAPI } from "./pisaClient";
+export { storeDefaults, storeKeys, storePaths } from "./constants";

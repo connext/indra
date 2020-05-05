@@ -54,7 +54,7 @@ export class ChallengeRepository extends Repository<Challenge> {
       .leftJoinAndSelect("channel.appInstances", "appInstance")
       .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
       .getOne();
-    const ids = channel.appInstances.map(app => app.id);
+    const ids = channel.appInstances.map(app => app.identityHash);
 
     return this.createQueryBuilder("challenge")
       .leftJoinAndSelect("challenge.stateProgressedEvents", "state_progressed_event")

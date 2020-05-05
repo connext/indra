@@ -12,18 +12,13 @@ import {
   StateProgressedEventPayload,
   STORE_SCHEMA_VERSION,
   StoreFactoryOptions,
-  StoreTypes,
   WithdrawalMonitorObject,
-  WrappedStorage,
   Bytes32,
   Address,
 } from "@connext/types";
+import { nullLogger } from "@connext/utils";
 
-import {
-  DEFAULT_DATABASE_STORAGE_TABLE_NAME,
-  DEFAULT_STORE_PREFIX,
-  DEFAULT_STORE_SEPARATOR,
-} from "./constants";
+import { storeDefaults } from "./constants";
 import {
   FileStorage,
   KeyValueStorage,
@@ -32,18 +27,20 @@ import {
   WrappedLocalStorage,
   WrappedPostgresStorage,
 } from "./wrappers";
+import { StoreTypes, WrappedStorage } from "./types";
 
 export class ConnextStore implements IClientStore {
   private internalStore: IClientStore;
 
-  private prefix: string = DEFAULT_STORE_PREFIX;
-  private separator: string = DEFAULT_STORE_SEPARATOR;
+  private prefix: string = storeDefaults.PREFIX;
+  private separator: string = storeDefaults.SEPARATOR;
   private backupService: IBackupServiceAPI | null = null;
 
   constructor(storageType: StoreTypes, opts: StoreFactoryOptions = {}) {
-    this.prefix = opts.prefix || DEFAULT_STORE_PREFIX;
-    this.separator = opts.separator || DEFAULT_STORE_SEPARATOR;
+    this.prefix = opts.prefix || storeDefaults.PREFIX;
+    this.separator = opts.separator || storeDefaults.SEPARATOR;
     this.backupService = opts.backupService || null;
+    const logger = opts.logger || nullLogger;
 
     // set internal storage
     switch (storageType) {
@@ -51,6 +48,7 @@ export class ConnextStore implements IClientStore {
         this.internalStore = new KeyValueStorage(
           new WrappedLocalStorage(this.prefix, this.separator),
           this.backupService,
+          logger,
         );
         break;
       }
@@ -67,6 +65,7 @@ export class ConnextStore implements IClientStore {
             opts.asyncStorageKey,
           ),
           this.backupService,
+          logger,
         );
         break;
       }
@@ -77,11 +76,12 @@ export class ConnextStore implements IClientStore {
             new WrappedPostgresStorage(
               this.prefix,
               this.separator,
-              DEFAULT_DATABASE_STORAGE_TABLE_NAME,
+              storeDefaults.DATABASE_TABLE_NAME,
               opts.sequelize,
               opts.postgresConnectionUri,
             ),
           this.backupService,
+          logger,
         );
         break;
       }
@@ -90,11 +90,12 @@ export class ConnextStore implements IClientStore {
         this.internalStore = new KeyValueStorage(
           new FileStorage(
             this.prefix,
-            this.separator === DEFAULT_STORE_SEPARATOR ? "-" : this.separator,
+            this.separator === storeDefaults.SEPARATOR ? "-" : this.separator,
             opts.fileExt,
             opts.fileDir,
           ),
           this.backupService,
+          logger,
         );
         break;
       }
@@ -103,6 +104,7 @@ export class ConnextStore implements IClientStore {
         this.internalStore = new KeyValueStorage(
           new WrappedMemoryStorage(this.prefix, this.separator),
           this.backupService,
+          logger,
         );
         break;
       }
