@@ -14,6 +14,7 @@ import {
   StoredAppChallenge,
   StoreFactoryOptions,
   StorePair,
+  StoredAppChallengeStatus,
 } from "@connext/types";
 import { ColorfulLogger, toBN, toBNJson, getRandomBytes32 } from "@connext/utils";
 import { expect, use } from "chai";
