@@ -271,14 +271,11 @@ export class CFCoreStore implements IStoreService {
       default:
         throw new Error(`Unrecognized outcome type: ${OutcomeType[outcomeType]}`);
     }
-<<<<<<< HEAD
-=======
 
     const existingConditionalTx = await this.conditionalTransactionCommitmentRepository.findByAppIdentityHash(
       appJson.identityHash,
     );
 
->>>>>>> 83ffbb6b768e0d77edb506d29db6432c8e2b6b61
     await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(proposal);
       await transactionalEntityManager

@@ -167,13 +167,13 @@ export class TestRunner {
       });
       await mininode.store.createStateChannel(
         updatedSc.toJson(),
-        { to: updatedSc.multisigAddress, value: 0, data: HashZero } as MinimalTransaction,
+        { to: updatedSc.multisigAddress, value: 0, data: constants.HashZero } as MinimalTransaction,
         {
           appIdentity: updatedSc.freeBalance.identity,
           appIdentityHash: updatedSc.freeBalance.identityHash,
           appStasteHash: updatedSc.freeBalance.hashOfLatestState,
           challengeRegistryAddress: getRandomAddress(),
-          signatures: [HashZero, HashZero],
+          signatures: [constants.HashZero, constants.HashZero],
           versionNumber: toBNJson(updatedSc.freeBalance.latestVersionNumber),
         } as any,
       );
