@@ -85,7 +85,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderBalanceDecrement,
     );
 
-    const stateChannelAfter = computeStateChannelTransition(
+    let stateChannelAfter = computeStateChannelTransition(
       stateChannelBefore,
       params as ProtocolParams.Install,
     );
@@ -182,6 +182,8 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         ? counterpartySignatureOnFreeBalanceStateUpdate
         : (mySignatureOnFreeBalanceStateUpdate as any),
     );
+
+    stateChannelAfter = stateChannelAfter.removeProposal(newAppInstance.identityHash);
 
     yield [
       PERSIST_APP_INSTANCE,

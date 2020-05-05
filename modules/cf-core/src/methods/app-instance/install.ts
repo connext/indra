@@ -89,7 +89,7 @@ export async function install(
 
   const isSame = initiatorIdentifier === proposal.initiatorIdentifier;
 
-  const ret = await protocolRunner.initiateProtocol(ProtocolNames.install, {
+  await protocolRunner.initiateProtocol(ProtocolNames.install, {
     appInitiatorIdentifier: proposal.initiatorIdentifier,
     appInterface: { ...proposal.abiEncodings, addr: proposal.appDefinition },
     appResponderIdentifier: proposal.responderIdentifier,
@@ -126,9 +126,6 @@ export async function install(
         : proposal.initiatorIdentifier,
     stateTimeout: toBN(proposal.stateTimeout),
   } as ProtocolParams.Install);
-  
-  stateChannel.removeProposal(appIdentityHash);
-  await store.removeAppProposal(stateChannel.multisigAddress, proposal.identityHash);
 
   return proposal;
 }
