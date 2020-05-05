@@ -18,9 +18,6 @@ const getConnextClientDataInitParams = (dialect: SupportedDialects) => {
   let valueDataType = DataTypes.JSON;
   if (dialect === "postgres") {
     valueDataType = DataTypes.JSONB;
-  } else if (dialect === "sqlite") {
-  } else {
-    throw new Error(`Unsupported database dialect: ${dialect}`);
   }
   return {
     key: {
@@ -41,26 +38,20 @@ export class WrappedSequelizeStorage implements WrappedStorage {
     private readonly tableName: string = storeDefaults.DATABASE_TABLE_NAME,
     sequelize?: Sequelize,
     private readonly connectionUri?: string,
-    private readonly dialect: SupportedDialects = "sqlite",
-    private readonly sqliteStorage: string = storeDefaults.SQLITE_MEMORY_STORE_STRING,
-    private readonly database: string = storeDefaults.DATABASE_NAME,
-    private readonly username: string = storeDefaults.DATABASE_USERNAME,
-    private readonly password: string = storeDefaults.DATABASE_PASSWORD,
   ) {
     if (sequelize) {
       this.sequelize = sequelize;
     } else if (this.connectionUri) {
+      if (this.connectionUri.startsWith("sqlite:")) {
+        const dbPath = this.connectionUri.split("sqlite:").pop();
+        if (dbPath !== storeDefaults.SQLITE_MEMORY_STORE_STRING) {
+          const dir = dirname(dbPath);
+          mkdirSync(dir, { recursive: true });
+        }
+      }
       this.sequelize = new Sequelize(this.connectionUri, { logging: false });
     } else {
-      if (this.sqliteStorage !== storeDefaults.SQLITE_MEMORY_STORE_STRING) {
-        const dir = dirname(this.sqliteStorage);
-        mkdirSync(dir, { recursive: true });
-      }
-      this.sequelize = new Sequelize(this.database, this.username, this.password, {
-        dialect: this.dialect,
-        storage: this.sqliteStorage,
-        logging: false,
-      });
+      throw new Error(`Must specify sequelize instance or connectionUri`);
     }
     ConnextClientData.init(
       getConnextClientDataInitParams(this.sequelize.getDialect() as SupportedDialects),
@@ -127,7 +118,7 @@ export class WrappedSequelizeStorage implements WrappedStorage {
   }
 
   async init(): Promise<void> {
-    return this.syncModels(false);
+    await this.syncModels(false);
   }
 
   async syncModels(force: boolean = false): Promise<void> {

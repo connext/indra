@@ -18,7 +18,7 @@ export const getFileStore = (
   directory: string,
   backupService?: PisaClientBackupAPI,
 ): IClientStore =>
-  new ConnextStore(StoreTypes.File, { backupService });
+  new ConnextStore(StoreTypes.File, { backupService, fileDir: directory });
 
 export const getLocalStore = (backupService?: PisaClientBackupAPI): IClientStore =>
   new ConnextStore(StoreTypes.LocalStorage, { backupService });

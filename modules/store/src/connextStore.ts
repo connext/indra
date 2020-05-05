@@ -87,9 +87,7 @@ export class ConnextStore implements IClientStore {
             this.separator,
             storeDefaults.DATABASE_TABLE_NAME,
             undefined,
-            undefined,
-            "sqlite",
-            `${opts.fileDir}/${storeDefaults.SQLITE_STORE_NAME}`,
+            `sqlite:${opts.fileDir}/${storeDefaults.SQLITE_STORE_NAME}`,
           ),
           this.backupService,
           logger,
@@ -100,16 +98,13 @@ export class ConnextStore implements IClientStore {
       case StoreTypes.Memory: {
         this.internalStore = new KeyValueStorage(
           // TODO: DEBUG THIS
-          new WrappedMemoryStorage(this.prefix, this.separator),
-          // new WrappedSequelizeStorage(
-          //   this.prefix,
-          //   this.separator,
-          //   storeDefaults.DATABASE_TABLE_NAME,
-          //   undefined,
-          //   undefined,
-          //   "sqlite",
-          //   storeDefaults.SQLITE_MEMORY_STORE_STRING,
-          // ),
+          new WrappedSequelizeStorage(
+            this.prefix,
+            this.separator,
+            storeDefaults.DATABASE_TABLE_NAME,
+            undefined,
+            `sqlite:${storeDefaults.SQLITE_MEMORY_STORE_STRING}`,
+          ),
           this.backupService,
           logger,
         );
