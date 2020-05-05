@@ -169,6 +169,9 @@ test-integration:
 test-node: node
 	bash ops/test/node.sh --runInBand --forceExit
 
+test-store: store
+	bash ops/test/store.sh
+
 test-utils: utils
 	bash ops/test/unit.sh utils
 

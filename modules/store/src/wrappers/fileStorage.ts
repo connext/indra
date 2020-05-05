@@ -41,17 +41,24 @@ export class FileStorage implements WrappedStorage {
     try {
       fs.accessSync(filePath, fs.constants.F_OK | fs.constants.W_OK);
     } catch (err) {
+      console.warn(`Error getting ${key}: ${err.message}`);
       if (err.code === "ENOENT") {
+        console.warn(`File doesn't exist, returning undefined`);
         return undefined;
       } else {
+        console.error(`Idk what went wrong, throwing..`);
         throw err;
       }
     }
-    return safeJsonParse(fs.readFileSync(filePath));
+    console.info(`File exists, reading contents from ${filePath}`);
+    const data = fs.readFileSync(filePath, "utf-8");
+    console.info(`Read data from file: ${data}`);
+    return safeJsonParse(data);
   }
 
   async setItem<T>(key: string, value: T): Promise<void> {
     const filePath = await this.getFilePath(key);
+    console.info(`Writing data to ${filePath}`);
     return writeFileAtomic(filePath, safeJsonStringify(value));
   }
 
