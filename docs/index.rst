@@ -34,8 +34,9 @@ Contents
     quickstart/basics
     quickstart/clientInstantiation
     quickstart/fundingYourChannel
-    quickstart/advanced
     quickstart/walletIntegrations
+    quickstart/store
+    quickstart/advanced
 
 .. toctree::
     :maxdepth: 2
