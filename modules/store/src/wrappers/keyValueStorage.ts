@@ -15,12 +15,12 @@ import {
   STORE_SCHEMA_VERSION,
   StoredAppChallenge,
   WithdrawalMonitorObject,
+  StoredAppChallengeStatus,
+  JsonRpcProvider,
   Contract,
   ChallengeEvents,
-  JsonRpcProvider,
-  StoredAppChallengeStatus,
 } from "@connext/types";
-import { toBN, nullLogger, getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
 import { storeKeys } from "../constants";
 import { WrappedStorage } from "../types";
@@ -73,7 +73,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       try {
         await this.backupService.backup({ path: storeKeys.STORE, value: store });
       } catch (e) {
-        this.log.warn(`Could not save ${storeKeys.STORE} to backup service. Error: ${e.stack || e.message}`);
+        this.log.warn(
+          `Could not save ${storeKeys.STORE} to backup service. Error: ${e.stack || e.message}`,
+        );
       }
     }
     return this.storage.setItem(storeKeys.STORE, store);
@@ -115,7 +117,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       throw new Error(`No backup provided, store cleared`);
     }
     const pairs = await this.backupService.restore();
-    const store = pairs.find(pair => pair.path === storeKeys.STORE).value;
+    const store = pairs.find((pair) => pair.path === storeKeys.STORE).value;
     return this.saveStore(store);
   }
 
@@ -194,8 +196,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
           [channel.freeBalanceAppInstance.identityHash, channel.freeBalanceAppInstance],
         ])
       : channel.appInstances;
+    if (!this.hasAppIdentityHash(appIdentityHash, toSearch)) {
+      return undefined;
+    }
     const [, app] = toSearch.find(([id]) => id === appIdentityHash);
-    return app;
+    return app!;
   }
 
   async createAppInstance(
@@ -216,6 +221,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       );
     } else {
       // add app instance
+      this.log.debug(`Adding app instance ${appInstance.identityHash} to channel`);
       channel.appInstances.push([appInstance.identityHash, appInstance]);
 
       // remove proposal
@@ -223,6 +229,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         ([app]) => app === appInstance.identityHash,
       );
       channel.proposedAppInstances.splice(idx, 1);
+      this.log.debug(`Removed from proposals`);
     }
     const oldFreeBalanceUpdate = this.getLatestSetStateCommitment(
       store,
@@ -230,12 +237,20 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     );
     let updatedStore = store;
     if (oldFreeBalanceUpdate) {
+      this.log.debug(
+        `Removing stale free balance update at nonce ${toBN(
+          oldFreeBalanceUpdate.versionNumber,
+        ).toString()}`,
+      );
       updatedStore = this.unsetSetStateCommitment(
         updatedStore,
         freeBalanceAppInstance.identityHash,
         toBN(oldFreeBalanceUpdate.versionNumber).toString(),
       );
     }
+    this.log.debug(
+      `Adding conditional transaction, new free balance state, and revised channel to store`,
+    );
     updatedStore = this.setConditionalTransactionCommitment(
       this.setSetStateCommitment(
         this.setStateChannel(store, { ...channel, freeBalanceAppInstance }),
@@ -263,17 +278,24 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     }
     const idx = channel.appInstances.findIndex(([app]) => app === appInstance.identityHash);
     channel.appInstances[idx] = [appInstance.identityHash, appInstance];
+    this.log.debug(`Updated existing app instance`);
 
     const oldCommitment = this.getLatestSetStateCommitment(store, appInstance.identityHash);
 
     let updatedStore = store;
     if (oldCommitment) {
+      this.log.debug(
+        `Removing stale commitment at ${toBN(oldCommitment.versionNumber).toString()}`,
+      );
       updatedStore = this.unsetSetStateCommitment(
         updatedStore,
         appInstance.identityHash,
         toBN(oldCommitment.versionNumber).toString(),
       );
     }
+    this.log.debug(
+      `Updating channel with new app instance at nonce ${appInstance.latestVersionNumber}`,
+    );
     updatedStore = this.setSetStateCommitment(
       this.setStateChannel(store, channel),
       appInstance.identityHash,
@@ -291,26 +313,38 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const store = await this.getStore();
     const channel = this.getStateChannelFromStore(store, multisigAddress);
     if (!channel) {
+      this.log.debug(`No channel found in store with multisig: ${multisigAddress}, doing nothing`);
       return;
     }
     if (!this.hasAppIdentityHash(appIdentityHash, channel.appInstances)) {
       // does not exist
+      this.log.debug(
+        `No app with hash ${appIdentityHash} found in channel with multisig ${multisigAddress}`,
+      );
       return;
     }
     const idx = channel.appInstances.findIndex(([app]) => app === appIdentityHash);
+    const presplice = channel.appInstances.length;
     channel.appInstances.splice(idx, 1);
+    this.log.debug(`Removed app instance from channel (prev length: ${presplice}, curr: ${channel.appInstances.length})`);
     const oldFreeBalanceUpdate = this.getLatestSetStateCommitment(
       store,
       freeBalanceAppInstance.identityHash,
     );
     let updatedStore = store;
     if (oldFreeBalanceUpdate) {
+      this.log.debug(
+        `Unsetting free balance set state commitment at nonce ${toBN(
+          oldFreeBalanceUpdate.versionNumber,
+        ).toString()}`,
+      );
       updatedStore = this.unsetSetStateCommitment(
         updatedStore,
         freeBalanceAppInstance.identityHash,
         toBN(oldFreeBalanceUpdate.versionNumber).toString(),
       );
     }
+    this.log.debug(`Updating channel with new free balance updates without app instance`);
     updatedStore = this.setSetStateCommitment(
       this.setStateChannel(store, {
         ...channel,
@@ -319,6 +353,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       channel.freeBalanceAppInstance.identityHash,
       signedFreeBalanceUpdate,
     );
+    this.log.debug(`Saved updated store for channel nonce ${channel.monotonicNumProposedApps}`);
     return this.saveStore(updatedStore);
   }
 
@@ -345,15 +380,15 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       throw new Error(`Can't save app proposal without channel`);
     }
-    if (
-      this.hasAppIdentityHash(appInstance.identityHash, channel.proposedAppInstances)
-    ) {
+    if (this.hasAppIdentityHash(appInstance.identityHash, channel.proposedAppInstances)) {
       this.log.warn(
         `appInstance.identityHash ${appInstance.identityHash} already exists, will not add appInstance to ${multisigAddress}`,
       );
     } else {
+      this.log.debug(`Adding proposal ${appInstance.identityHash} to store`);
       channel.proposedAppInstances.push([appInstance.identityHash, appInstance]);
     }
+    this.log.debug(`Adding set state commitment to store, and updating channel`);
     const updatedStore = this.setSetStateCommitment(
       this.setStateChannel(store, { ...channel, monotonicNumProposedApps }),
       appInstance.identityHash,
@@ -366,14 +401,17 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const store = await this.getStore();
     const channel = this.getStateChannelFromStore(store, multisigAddress);
     if (!channel) {
+      this.log.debug(`Could not find channel at ${multisigAddress}, doing nothing`);
       return;
     }
     if (!this.hasAppIdentityHash(appIdentityHash, channel.proposedAppInstances)) {
+      this.log.debug(`Could not find proposal with ${appIdentityHash} in channel, doing nothing`);
       return;
     }
+    this.log.debug(`Removing proposal for ${appIdentityHash}`);
     const idx = channel.proposedAppInstances.findIndex(([app]) => app === appIdentityHash);
     channel.proposedAppInstances.splice(idx, 1);
-
+    // TODO: remove set state commitment
     const updatedStore = this.setStateChannel(store, channel);
     return this.saveStore(updatedStore);
   }
@@ -453,32 +491,37 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
-    const challengeKey = this.getKey(storeKeys.CHALLENGE, data.identityHash);
-    // check if its from event by status
+    const { identityHash, status } = data;
+    // add event based on status
     if (
-      data.status !== StoredAppChallengeStatus.PENDING_TRANSITION &&
-      data.status !== StoredAppChallengeStatus.CONDITIONAL_SENT
+      status !== StoredAppChallengeStatus.CONDITIONAL_SENT &&
+      status !== StoredAppChallengeStatus.PENDING_TRANSITION
     ) {
-      // save event
+      this.log.debug(`Creating new challenge updated event for challenge ${identityHash}`);
       await this.createChallengeUpdatedEvent(data as ChallengeUpdatedEventPayload);
     }
-    return this.setItem<StoredAppChallenge>(challengeKey, data as StoredAppChallenge);
+    const challengeKey = this.getKey(storeKeys.CHALLENGE, identityHash);
+    return this.setItem(challengeKey, data);
   }
 
   async getActiveChallenges(): Promise<StoredAppChallenge[]> {
     // get all stored challenges
+    const store = await this.getStore();
     const keys = await this.getKeys();
-    const relevant = keys.filter(
-      (key) => key.includes(storeKeys.CHALLENGE) && !key.includes(storeKeys.CHALLENGE_UPDATED_EVENT),
+    const challengeKeys = keys.filter(
+      (key) =>
+        key.includes(storeKeys.CHALLENGE) && !key.includes(storeKeys.CHALLENGE_UPDATED_EVENT),
     );
-    const challenges = await Promise.all(
-      relevant.map((key) => this.getItem<StoredAppChallenge>(key)),
-    );
-    // now find which ones are in the channel and in dispute
-    const activeStatus = (status: StoredAppChallengeStatus) =>
-      status !== StoredAppChallengeStatus.CONDITIONAL_SENT &&
-      status !== StoredAppChallengeStatus.NO_CHALLENGE;
-    return challenges.filter((challenge) => !!challenge && activeStatus(challenge.status));
+    const inactiveStatuses = [
+      StoredAppChallengeStatus.NO_CHALLENGE,
+      StoredAppChallengeStatus.CONDITIONAL_SENT,
+    ];
+    return challengeKeys
+      .map((key) => store[key])
+      .filter(
+        (challenge) =>
+          !!challenge && !inactiveStatuses.find((status) => status === challenge.status),
+      );
   }
 
   ///// Events
@@ -519,16 +562,13 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.setItem(key, existing.concat(event));
   }
 
-  async addOnchainAction(
-    appIdentityHash: Bytes32,
-    provider: JsonRpcProvider,
-  ): Promise<void> {
+  async addOnchainAction(appIdentityHash: Bytes32, provider: JsonRpcProvider): Promise<void> {
     // fetch existing data
     const store = await this.getStore();
     const channel = await this.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!channel) {
       throw new Error(`Could not find channel for app ${appIdentityHash}`);
-    };
+    }
     const [_, ourApp] = channel.appInstances.find(([id]) => id === appIdentityHash);
     const ourLatestSetState = await this.getLatestSetStateCommitment(store, appIdentityHash);
     if (!ourApp || !ourLatestSetState) {
@@ -631,7 +671,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.setItem(setStateKey, commitment);
   }
 
-  private setStateChannel(store: any, stateChannel: StateChannelJSON): Promise<any> {
+  private setStateChannel(store: any, stateChannel: StateChannelJSON): any {
     const channelKey = this.getKey(storeKeys.CHANNEL, stateChannel.multisigAddress);
     store[channelKey] = {
       ...stateChannel,
@@ -697,11 +737,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   private unsetSetStateCommitment(store: any, appIdentityHash: string, versionNumber: string): any {
-    const setStateKey = this.getKey(
-      storeKeys.SET_STATE_COMMITMENT,
-      appIdentityHash,
-      versionNumber,
-    );
+    const setStateKey = this.getKey(storeKeys.SET_STATE_COMMITMENT, appIdentityHash, versionNumber);
     delete store[setStateKey];
     return store;
   }
