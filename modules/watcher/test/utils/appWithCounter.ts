@@ -9,7 +9,6 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   SetStateCommitmentJSON,
   ConditionalTransactionCommitmentJSON,
-  NetworkContext,
   CoinTransfer,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   AppInstanceProposal,
@@ -26,6 +25,7 @@ import {
 import { One, Zero } from "ethers/constants";
 import { stateToHash } from "./utils";
 import { ConditionalTransactionCommitment, SetStateCommitment } from "@connext/contracts";
+import { NetworkContextForTestSuite } from "./contracts";
 
 export type AppWithCounterAction = {
   actionType: ActionType;
@@ -266,10 +266,11 @@ export class AppWithCounterClass {
 
   public async getConditional(
     freeBalanceHash: string,
-    networkContext: NetworkContext,
+    networkContext: NetworkContextForTestSuite,
   ): Promise<ConditionalTransactionCommitmentJSON> {
+    const { provider, ...withoutProvider } = networkContext;
     const conditional = new ConditionalTransactionCommitment(
-      networkContext,
+      withoutProvider as any,
       this.multisigAddress,
       this.participants,
       this.identityHash,
