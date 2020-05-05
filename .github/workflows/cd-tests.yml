@@ -39,6 +39,13 @@ jobs:
     - run: make cf-core
     - run: make test-cf
 
+  test-store:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make store
+    - run: make test-store
+
   test-watcher:
     runs-on: ubuntu-latest
     steps:
