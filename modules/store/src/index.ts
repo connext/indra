@@ -31,3 +31,21 @@ export const getPostgresStore = (
     StoreTypes.Postgres,
     { postgresConnectionUri: connectionUri },
   );
+
+////////////////////////////////////////
+// TODO: the following @connext/store interface is depreciated
+// remove the following exports during next breaking release
+
+export { StoreTypes } from "./types";
+
+export {
+  FileStorage,
+  KeyValueStorage,
+  WrappedAsyncStorage,
+  WrappedLocalStorage,
+  WrappedMemoryStorage,
+  WrappedPostgresStorage,
+} from "./wrappers";
+export { ConnextStore } from "./connextStore";
+export { PisaClientBackupAPI } from "./pisaClient";
+export { storeDefaults, storeKeys, storePaths } from "./constants";
