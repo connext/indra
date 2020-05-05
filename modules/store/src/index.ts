@@ -7,29 +7,32 @@ import { WrappedAsyncStorage } from "./wrappers";
 
 export const getAsyncStore = (
   storage: IAsyncStorage,
-  backupApi?: PisaClientBackupAPI,
+  backupService?: PisaClientBackupAPI,
 ): IClientStore =>
   new ConnextStore(
     StoreTypes.AsyncStorage,
     { storage: new WrappedAsyncStorage(storage) },
   );
 
-export const getFileStore = (directory: string, backupApi?: PisaClientBackupAPI): IClientStore =>
-  new ConnextStore(StoreTypes.File);
+export const getFileStore = (
+  directory: string,
+  backupService?: PisaClientBackupAPI,
+): IClientStore =>
+  new ConnextStore(StoreTypes.File, { backupService });
 
-export const getLocalStore = (backupApi?: PisaClientBackupAPI): IClientStore =>
-  new ConnextStore(StoreTypes.LocalStorage);
+export const getLocalStore = (backupService?: PisaClientBackupAPI): IClientStore =>
+  new ConnextStore(StoreTypes.LocalStorage, { backupService });
 
-export const getMemoryStore = (backupApi?: PisaClientBackupAPI): IClientStore =>
+export const getMemoryStore = (): IClientStore =>
   new ConnextStore(StoreTypes.Memory);
 
 export const getPostgresStore = (
   connectionUri: string,
-  backupApi?: PisaClientBackupAPI,
+  backupService?: PisaClientBackupAPI,
 ): IClientStore =>
   new ConnextStore(
     StoreTypes.Postgres,
-    { postgresConnectionUri: connectionUri },
+    { postgresConnectionUri: connectionUri, backupService },
   );
 
 ////////////////////////////////////////
