@@ -1,7 +1,4 @@
-import {
-  storeDefaults,
-  storeKeys,
-} from "@connext/store";
+import { storeDefaults, storeKeys } from "@connext/store";
 import { StoreTypes } from "@connext/types";
 import { isDirectory } from "@connext/utils";
 import fs from "fs";

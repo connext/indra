@@ -1,5 +1,5 @@
-import { ConnextStore } from "@connext/store";
-import { OutcomeType, ProtocolNames, ProtocolParams, StoreTypes, MinimalTransaction, SetStateCommitmentJSON } from "@connext/types";
+import { getMemoryStore } from "@connext/store";
+import { OutcomeType, ProtocolNames, ProtocolParams, MinimalTransaction } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, getRandomAddress, toBNJson } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero, HashZero, AddressZero } from "ethers/constants";
@@ -50,9 +50,9 @@ export class TestRunner {
 
     this.defaultTimeout = bigNumberify(100);
 
-    this.mininodeA = new MiniNode(network, this.provider, new ConnextStore(StoreTypes.Memory));
-    this.mininodeB = new MiniNode(network, this.provider, new ConnextStore(StoreTypes.Memory));
-    this.mininodeC = new MiniNode(network, this.provider, new ConnextStore(StoreTypes.Memory));
+    this.mininodeA = new MiniNode(network, this.provider, getMemoryStore());
+    this.mininodeB = new MiniNode(network, this.provider, getMemoryStore());
+    this.mininodeC = new MiniNode(network, this.provider, getMemoryStore());
 
     this.multisigAB = await getCreate2MultisigAddress(
       this.mininodeA.publicIdentifier,

@@ -1,12 +1,13 @@
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
+import * as localStorage from "localStorage";
 
 import { storeDefaults } from "../constants";
 import { WrappedStorage } from "../types";
 
-// @ts-ignore
-const getLocalStorage = () => global.localStorage || require("localStorage");
 export class WrappedLocalStorage implements WrappedStorage {
-  private localStorage: Storage = getLocalStorage();
+
+  // @ts-ignore
+  private localStorage: Storage = localStorage;
 
   constructor(
     private readonly prefix: string = storeDefaults.PREFIX,

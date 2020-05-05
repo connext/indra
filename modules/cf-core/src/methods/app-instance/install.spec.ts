@@ -1,10 +1,9 @@
-import { ConnextStore } from "@connext/store";
+import { ConnextStore, getMemoryStore } from "@connext/store";
 import {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext,
   ProtocolNames,
   IStoreService,
-  StoreTypes,
 } from "@connext/types";
 import {
   getRandomBytes32,
@@ -44,7 +43,7 @@ describe("Can handle correct & incorrect installs", () => {
   let initiatorIdentifier: string;
 
   beforeAll(() => {
-    store = new ConnextStore(StoreTypes.Memory);
+    store = getMemoryStore();
     protocolRunner = new ProtocolRunner(
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
       {} as JsonRpcProvider,
