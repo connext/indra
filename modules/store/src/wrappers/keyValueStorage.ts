@@ -20,7 +20,7 @@ import {
   Contract,
   ChallengeEvents,
 } from "@connext/types";
-import { toBN, nullLogger, getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
 import { storeKeys } from "../constants";
 import { WrappedStorage } from "../types";
@@ -673,10 +673,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (commitments.length === 0) {
       return undefined;
     }
-    const sorted = commitments.sort(
+    const [latest] = commitments.sort(
       (a, b) => toBN(b.versionNumber).sub(toBN(a.versionNumber)).toNumber(),
     );
-    return sorted[0];
+    return latest;
   }
 
   private setSetupCommitment(
@@ -719,10 +719,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   private unsetSetStateCommitment(store: any, appIdentityHash: string, versionNumber: string): any {
     const setStateKey = this.getKey(storeKeys.SET_STATE_COMMITMENT, appIdentityHash);
     const existing = [...(store[setStateKey] || [])];
-    const idx = existing.findIndex((commitment) =>
-      toBN(commitment.versionNumber).eq(versionNumber),
+    // find commitment equal to or below version number
+    const remaining = existing.filter((commitment) =>
+      toBN(commitment.versionNumber ).gt(versionNumber),
     );
-    store[setStateKey] = existing.splice(idx, 1);
+    store[setStateKey] = remaining;
     return store;
   }
 
