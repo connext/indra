@@ -23,7 +23,7 @@ ClientOptions = {
   ethProviderUrl: string;
   nodeUrl?: string; // node's HTTP endpoint
   signer?: string | IChannelSigner;
-  store?: IClientStore;
+  store?: IStoreService;
   storeType?: StoreTypes;
   backupService?: IBackupServiceAPI;
   channelProvider?: IChannelProvider;

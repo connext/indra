@@ -9,11 +9,14 @@
  - [`getMemoryStore`](#getMemoryStore)
  - [`getPostgresStore`](#getPostgresStore)
 
+
+
 ## Types
 
-### `IAsyncStorage`
 
-A React Native app's AsyncStorage. For example, what you get from importing `@react-native-community/async-storage`.
+### IAsyncStorage
+
+The interface for React Native's AsyncStorage. For example, what you get from importing `@react-native-community/async-storage`.
 
 ```
 interface IAsyncStorage {
@@ -23,7 +26,8 @@ interface IAsyncStorage {
 }
 ```
 
-### `IBackupService`
+
+### IBackupService
 
 The interface implemented by backup services such as Pisa which provide a remote location for storing channel commitments (required for on-chain disputes). If an `IBackupService` is given to a store then it will send all generated commitments to that service for safe keeping or to enable it to act as a watchtower on your behalf.
 
@@ -34,13 +38,17 @@ interface IBackupService {
 }
 ```
 
-### `IStoreService`
 
-Contains all the read/write methods that the core protocol needs to interact with your off-chain state. It's relatively complicated, you can see the type definition at `indra/modules/types/src/store.ts` but you shouldn't ever need to deal w this type directly, that's what the methods exported by this lib are for. :wink:
+### IStoreService
+
+The interface containing all the read/write methods that the core protocol needs to interact with your off-chain state. It's relatively complicated, you can see the type definition at `indra/modules/types/src/store.ts` but you shouldn't ever need to deal w this type directly, that's what the functions exported by this lib are for. 😉
+
+
 
 ## Classes
 
-### `PisaBackupService`
+
+### PisaBackupService
 
 An `IBackupService` configured to work with Pisa's state backup service.
 
@@ -50,17 +58,21 @@ class PisaBackupService implements IBackupService {
 }
 ```
 
-### Constructor Params
+#### Constructor Params
+
 1. `pisaUrl`: The URL that points to our Pisa backup service endpoint.
 2. `wallet`: an ethers `Wallet`, used to authenticate with Pisa.
 
-### `getAsyncStore`
+
+
+## Functions
+
+
+### getAsyncStore
 
 ```
 getAsyncStore(storage: IAsyncStorage, backupService?: IBackupService): IStoreService;
 ```
-
-Returns an `IStoreService` configured to save data in React Native's Async Storage.
 
 #### Params
 
@@ -69,15 +81,14 @@ Returns an `IStoreService` configured to save data in React Native's Async Stora
 
 #### Returns
 
-[`IStoreService`](#istoreservice)
+An [`IStoreService`](#istoreservice) configured to save data in React Native's Async Storage.
 
-### `getFileStore`
+
+### getFileStore
 
 ```
 getFileStore(fileDir: string, backupService?: IBackupService): IStoreService;
 ```
-
-Returns an `IStoreService` configured to save data to a collection of files in `fileDir`.
 
 #### Params
 
@@ -86,47 +97,44 @@ Returns an `IStoreService` configured to save data to a collection of files in `
 
 #### Returns
 
-[`IStoreService`](#istoreservice)
+An [`IStoreService`](#istoreservice) configured to save data to a collection of files in `fileDir`.
 
-### `getLocalStore`
+
+### getLocalStore
 
 ```
 getLocalStore(backupService?: IBackupService): IStoreService;
 ```
 
-Returns an `IStoreService` configured to save data to a browser's `localStorage`.
-
 #### Params
 
 1. `backupService`: [`IBackupService`](#ibackupservice) (optional)
 
 #### Returns
 
-[`IStoreService`](#istoreservice)
+An [`IStoreService`](#istoreservice) configured to save data to a browser's `localStorage`.
 
-### `getMemoryStore`
+
+### getMemoryStore
 
 ```
 getMemoryStore(backupService?: IBackupService): IStoreService;
 ```
 
-Returns an `IStoreService` configured to not save data & keep everything in memory. Good for testing, not good for managing real channel data.
-
 #### Params
 
 1. `backupService`: [`IBackupService`](#ibackupservice) (optional)
 
 #### Returns
 
-[`IStoreService`](#istoreservice)
+Returns an [`IStoreService`](#istoreservice) configured to not save data & keep everything in memory. Good for testing, not good for managing real channel data.
 
-### `getPostgresStore`
+
+### getPostgresStore
 
 ```
 getPostgresgStore(connectionUri: string, backupService?: IBackupService): IStoreService;
 ```
-
-Returns an `IStoreService` configured to save data to a postgres database.
 
 #### Params
 
@@ -135,4 +143,4 @@ Returns an `IStoreService` configured to save data to a postgres database.
 
 #### Returns
 
-[`IStoreService`](#istoreservice)
+Returns an [`IStoreService`](#istoreservice) configured to save data to a postgres database.
