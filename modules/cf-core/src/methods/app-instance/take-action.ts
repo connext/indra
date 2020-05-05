@@ -85,7 +85,7 @@ export class TakeActionController extends NodeController {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
 
-    await runTakeActionProtocol(
+    const { channel } = await runTakeActionProtocol(
       appIdentityHash,
       store,
       protocolRunner,
@@ -95,12 +95,12 @@ export class TakeActionController extends NodeController {
       stateTimeout || toBN(app.defaultTimeout),
     );
 
-    const appInstance = await store.getAppInstance(appIdentityHash);
+    const appInstance = channel.getAppInstance(appIdentityHash);
     if (!appInstance) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
 
-    return { newState: AppInstance.fromJson(appInstance).state };
+    return { newState: appInstance.state };
   }
 
   protected async afterExecution(
@@ -140,7 +140,7 @@ async function runTakeActionProtocol(
   }
 
   try {
-    await protocolRunner.initiateProtocol(ProtocolNames.takeAction, {
+    return await protocolRunner.initiateProtocol(ProtocolNames.takeAction, {
       initiatorIdentifier,
       responderIdentifier,
       appIdentityHash,
@@ -155,6 +155,4 @@ async function runTakeActionProtocol(
     }
     throw new Error(`Couldn't run TakeAction protocol: ${e.message}`);
   }
-
-  return {};
 }

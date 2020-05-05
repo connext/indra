@@ -1,5 +1,5 @@
-import { ConnextStore } from "@connext/store";
-import { ConditionalTransferTypes, IConnextClient, StoreTypes } from "@connext/types";
+import { getLocalStore } from "@connext/store";
+import { ConditionalTransferTypes, IConnextClient } from "@connext/types";
 import { ChannelSigner, getRandomBytes32 } from "@connext/utils";
 import { ContractFactory, Wallet, constants } from "ethers";
 import tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
@@ -53,8 +53,7 @@ describe("Async Transfers", () => {
   });
 
   it("happy case: client A transfers eth to client B through node with localstorage", async () => {
-    const localStore = new ConnextStore(StoreTypes.LocalStorage);
-    const localStorageClient = await createClient({ store: localStore });
+    const localStorageClient = await createClient({ store: getLocalStore() });
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
     await fundChannel(localStorageClient, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);

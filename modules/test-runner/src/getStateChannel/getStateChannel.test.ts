@@ -1,13 +1,68 @@
-import { IConnextClient, StateChannelJSON, StateSchemaVersion } from "@connext/types";
-import { constants } from "ethers";
-
 import {
-  createClient,
-  ETH_AMOUNT_SM,
-  expect,
-  TEST_STORE_MINIMAL_TX,
-  TEST_STORE_SET_STATE_COMMITMENT,
-} from "../util";
+  AppInstanceJson,
+  IConnextClient,
+  MinimalTransaction,
+  OutcomeType,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
+  StateSchemaVersion,
+} from "@connext/types";
+import { toBN, toBNJson } from "@connext/utils";
+import { utils, constants } from "ethers";
+
+import { createClient, ETH_AMOUNT_SM, expect } from "../util";
+
+const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
+
+const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
+  to: TEST_STORE_ETH_ADDRESS,
+  value: constants.One,
+  data: utils.hexlify(utils.randomBytes(64)),
+};
+
+const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
+  identityHash: "identityHashApp",
+  multisigAddress: TEST_STORE_ETH_ADDRESS,
+  initiatorIdentifier: "sender",
+  responderIdentifier: "receiver",
+  defaultTimeout: "0x00",
+  appInterface: {
+    addr: TEST_STORE_ETH_ADDRESS,
+    actionEncoding: `action encoding`,
+    stateEncoding: `state encoding`,
+  },
+  appSeqNo: 1,
+  latestVersionNumber: 2,
+  stateTimeout: "0x01",
+  latestState: {
+    counter: 4,
+  },
+  outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+  twoPartyOutcomeInterpreterParams: {
+    amount: { _hex: "0x42" } as any,
+    playerAddrs: [constants.AddressZero, constants.AddressZero],
+    tokenAddress: constants.AddressZero,
+  },
+};
+
+const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
+  appIdentity: {
+    channelNonce: toBN(TEST_STORE_APP_INSTANCE.appSeqNo),
+    participants: [
+      TEST_STORE_APP_INSTANCE.initiatorIdentifier,
+      TEST_STORE_APP_INSTANCE.responderIdentifier,
+    ],
+    multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
+    appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
+    defaultTimeout: toBN(35),
+  },
+  appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
+  appStateHash: "setStateAppStateHash",
+  challengeRegistryAddress: TEST_STORE_ETH_ADDRESS,
+  stateTimeout: toBNJson(17),
+  versionNumber: toBNJson(23),
+  signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
+};
 
 describe("Get State Channel", () => {
   let clientA: IConnextClient;

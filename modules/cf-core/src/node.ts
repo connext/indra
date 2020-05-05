@@ -181,24 +181,8 @@ export class Node {
       return this.signer.signMessage(commitmentHash);
     });
 
-    protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessageData]) => {
-      const [data] = args;
-
-      await this.messagingService.send(data.to, {
-        data,
-        from: this.publicIdentifier,
-        type: EventNames.PROTOCOL_MESSAGE_EVENT,
-      } as ProtocolMessage);
-    });
-
-    protocolRunner.register(Opcode.IO_SEND_AND_WAIT, async (args: [ProtocolMessageData]) => {
-      const [data] = args;
-
-      const deferral = new Deferred<ProtocolMessage>();
-
-      this.ioSendDeferrals.set(data.processID, deferral);
-
-      const counterpartyResponse = deferral.promise;
+    protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessageData, StateChannel]) => {
+      const [data, channel] = args;
 
       await this.messagingService.send(data.to, {
         data,
@@ -206,23 +190,44 @@ export class Node {
         type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as ProtocolMessage);
 
-      // 90 seconds is the default lock acquiring time time
-      const msg = await Promise.race([counterpartyResponse, delay(IO_SEND_AND_WAIT_TIMEOUT)]);
-
-      if (!msg || !("data" in (msg as ProtocolMessage))) {
-        throw new Error(
-          `IO_SEND_AND_WAIT timed out after 90s waiting for counterparty reply in ${data.protocol}`,
-        );
-      }
-
-      // Removes the deferral from the list of pending defferals after
-      // its promise has been resolved and the necessary callback (above)
-      // has been called. Note that, as is, only one defferal can be open
-      // per counterparty at the moment.
-      this.ioSendDeferrals.delete(data.processID);
-
-      return (msg as ProtocolMessage).data;
+      return { channel };
     });
+
+    protocolRunner.register(
+      Opcode.IO_SEND_AND_WAIT,
+      async (args: [ProtocolMessageData, StateChannel]) => {
+        const [data, channel] = args;
+
+        const deferral = new Deferred<ProtocolMessage>();
+
+        this.ioSendDeferrals.set(data.processID, deferral);
+
+        const counterpartyResponse = deferral.promise;
+
+        await this.messagingService.send(data.to, {
+          data,
+          from: this.publicIdentifier,
+          type: EventNames.PROTOCOL_MESSAGE_EVENT,
+        } as ProtocolMessage);
+
+        // 90 seconds is the default lock acquiring time time
+        const msg = await Promise.race([counterpartyResponse, delay(IO_SEND_AND_WAIT_TIMEOUT)]);
+
+        if (!msg || !("data" in (msg as ProtocolMessage))) {
+          throw new Error(
+            `IO_SEND_AND_WAIT timed out after 90s waiting for counterparty reply in ${data.protocol}`,
+          );
+        }
+
+        // Removes the deferral from the list of pending defferals after
+        // its promise has been resolved and the necessary callback (above)
+        // has been called. Note that, as is, only one defferal can be open
+        // per counterparty at the moment.
+        this.ioSendDeferrals.delete(data.processID);
+
+        return { data: (msg as ProtocolMessage).data, channel };
+      },
+    );
 
     protocolRunner.register(
       Opcode.PERSIST_STATE_CHANNEL,
@@ -234,6 +239,7 @@ export class Node {
           signedFreeBalanceUpdate.toJson(),
         );
         await this.storeService.updateSchemaVersion(STORE_SCHEMA_VERSION);
+        return { channel: stateChannel };
       },
     );
 
@@ -310,9 +316,12 @@ export class Node {
           }
 
           default: {
-            throw new Error(`Unrecognized app persistence call: ${type}`);
+            const c: never = type;
+            throw new Error(`Unrecognized app persistence call: ${c}`);
           }
         }
+
+        return { channel: postProtocolChannel };
       },
     );
 

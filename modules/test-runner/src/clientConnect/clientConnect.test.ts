@@ -1,5 +1,5 @@
-import { ConnextStore } from "@connext/store";
-import { StoreTypes, ClientOptions } from "@connext/types";
+import { getMemoryStore } from "@connext/store";
+import { ClientOptions } from "@connext/types";
 import { Wallet } from "ethers";
 import { utils, constants } from "ethers";
 
@@ -10,7 +10,6 @@ import {
   env,
   fundChannel,
   ETH_AMOUNT_SM,
-  createConnextStore,
 } from "../util";
 
 describe("Client Connect", () => {
@@ -54,7 +53,7 @@ describe("Client Connect", () => {
 
   it("Client should wait for transfers and rescind deposit rights if it's offline", async () => {
     const pk = Wallet.createRandom().privateKey;
-    const store = new ConnextStore(StoreTypes.Memory);
+    const store = getMemoryStore();
     let client = await createClient({ signer: pk, store } as Partial<ClientOptions>);
     await client.requestDepositRights({ assetId: constants.AddressZero });
     await client.requestDepositRights({ assetId: client.config.contractAddresses.Token });
@@ -96,8 +95,7 @@ describe("Client Connect", () => {
 
   it.skip("Client should attempt to wait for user withdrawal if there are withdraw commitments in store", async () => {
     const pk = Wallet.createRandom().privateKey;
-    const store: ConnextStore = await createConnextStore("Memory");
-    console.log(store);
+    const store= getMemoryStore();
     console.log(await store.getUserWithdrawals());
     store.saveUserWithdrawal({
       tx: {
@@ -112,7 +110,7 @@ describe("Client Connect", () => {
 
   it("Client should not need to wait for user withdrawal after successful withdraw", async () => {
     const pk = Wallet.createRandom().privateKey;
-    const store: ConnextStore = await createConnextStore("Memory");
+    const store= getMemoryStore();
     const client = await createClient({ signer: pk, store });
     await fundChannel(client, ETH_AMOUNT_SM);
     await client.withdraw({

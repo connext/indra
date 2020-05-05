@@ -84,7 +84,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 94ms
     const {
-      customData: { signature: counterpartySignature },
+      data: {
+        customData: { signature: counterpartySignature },
+      },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -205,7 +207,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       appToUninstall,
       uninstallCommitment,
     ];
-
+    
     // 0ms
     yield [
       IO_SEND,
@@ -218,6 +220,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
           signature: mySignature,
         },
       } as ProtocolMessageData,
+      postProtocolStateChannel,
     ];
 
     // 100ms

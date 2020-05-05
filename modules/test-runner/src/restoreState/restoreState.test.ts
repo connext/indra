@@ -1,10 +1,6 @@
-import {
-  IConnextClient,
-  IChannelSigner,
-  EventNames,
-  EventPayloads,
-  StoreTypes,
-} from "@connext/types";
+import { getLocalStore } from "@connext/store";
+import { IConnextClient, IChannelSigner, EventNames, EventPayloads } from "@connext/types";
+import { getRandomChannelSigner, stringify } from "@connext/utils";
 import { constants } from "ethers";
 
 import {
@@ -16,8 +12,6 @@ import {
   TOKEN_AMOUNT_SM,
   env,
 } from "../util";
-import { getRandomChannelSigner, stringify } from "@connext/utils";
-import { ConnextStore } from "@connext/store";
 
 describe("Restore State", () => {
   let clientA: IConnextClient;
@@ -27,10 +21,7 @@ describe("Restore State", () => {
 
   beforeEach(async () => {
     signerA = getRandomChannelSigner(env.ethProviderUrl);
-    clientA = await createClient({
-      signer: signerA,
-      store: new ConnextStore(StoreTypes.LocalStorage),
-    });
+    clientA = await createClient({ signer: signerA, store: getLocalStore() });
     tokenAddress = clientA.config.contractAddresses.Token;
     nodeSignerAddress = clientA.nodeSignerAddress;
   });
@@ -120,7 +111,7 @@ describe("Restore State", () => {
       );
       clientA = await createClient({
         signer: signerA,
-        store: new ConnextStore(StoreTypes.LocalStorage),
+        store: getLocalStore(),
       });
       expect(clientA.signerAddress).to.be.eq(signerA.address);
       expect(clientA.publicIdentifier).to.be.eq(signerA.publicIdentifier);

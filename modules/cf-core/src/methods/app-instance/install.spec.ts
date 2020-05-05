@@ -1,10 +1,8 @@
-import { ConnextStore } from "@connext/store";
+import { getMemoryStore } from "@connext/store";
 import {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext,
-  ProtocolNames,
   IStoreService,
-  StoreTypes,
 } from "@connext/types";
 import {
   getRandomBytes32,
@@ -13,11 +11,10 @@ import {
   toBNJson,
 } from "@connext/utils";
 import { Wallet, providers, constants } from "ethers";
-import { anything, instance, mock, when } from "ts-mockito";
+import { instance, mock } from "ts-mockito";
 
 import {
   NO_APP_IDENTITY_HASH_TO_INSTALL,
-  NO_MULTISIG_FOR_APP_IDENTITY_HASH,
   NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
@@ -42,7 +39,7 @@ describe("Can handle correct & incorrect installs", () => {
   let initiatorIdentifier: string;
 
   beforeAll(() => {
-    store = new ConnextStore(StoreTypes.Memory);
+    store = getMemoryStore();
     protocolRunner = new ProtocolRunner(
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
       {} as providers.JsonRpcProvider,
@@ -70,31 +67,9 @@ describe("Can handle correct & incorrect installs", () => {
     ).rejects.toThrowError(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(constants.HashZero));
   });
 
-  it("fails to install without the appIdentityHash being in a channel", async () => {
-    expect.hasAssertions();
-
-    const mockedStore: IStoreService = mock(ConnextStore);
-
-    const appIdentityHash = getRandomBytes32();
-    const appInstanceProposal = createAppInstanceProposalForTest(appIdentityHash);
-
-    when(mockedStore.getAppProposal(appIdentityHash)).thenResolve(appInstanceProposal);
-
-    when(mockedStore.getStateChannelByAppIdentityHash(appIdentityHash)).thenThrow(
-      Error(NO_MULTISIG_FOR_APP_IDENTITY_HASH),
-    );
-
-    await expect(
-      install(instance(mockedStore), protocolRunner, { appIdentityHash }, initiatorIdentifier),
-    ).rejects.toThrowError(NO_MULTISIG_FOR_APP_IDENTITY_HASH);
-  });
-
   it("succeeds to install a proposed AppInstance", async () => {
     const mockedProtocolRunner = mock(ProtocolRunner);
     const protocolRunner = instance(mockedProtocolRunner);
-
-    const mockedStore: IStoreService = mock(ConnextStore);
-    const store = instance(mockedStore);
 
     const appIdentityHash = getRandomBytes32();
     const multisigAddress = Wallet.createRandom().address;
@@ -119,6 +94,16 @@ describe("Can handle correct & incorrect installs", () => {
       stateChannel.getFreeBalanceClass().getBalance(constants.AddressZero, participants[1]),
     ).toEqual(constants.Zero);
 
+    const commitment = {
+      appIdentity: {} as any,
+      stateTimeout: toBNJson("0"),
+      appIdentityHash,
+      appStateHash: constants.HashZero,
+      challengeRegistryAddress: constants.AddressZero,
+      signatures: ["0x0", "0x0"],
+      versionNumber: toBNJson(1),
+    };
+
     await store.createStateChannel(
       stateChannel.toJson(),
       {
@@ -126,19 +111,16 @@ describe("Can handle correct & incorrect installs", () => {
         to: stateChannel.multisigAddress,
         value: constants.Zero,
       },
-      {
-        appIdentity: {} as any,
-        stateTimeout: toBNJson("0"),
-        appIdentityHash,
-        appStateHash: constants.HashZero,
-        challengeRegistryAddress: constants.AddressZero,
-        signatures: ["0x0", "0x0"],
-        versionNumber: toBNJson(1),
-      },
+      commitment,
     );
 
     const appInstanceProposal = createAppInstanceProposalForTest(appIdentityHash);
 
+    appInstanceProposal.abiEncodings.actionEncoding = null as any; // TODO: why?
+
+    await store.createAppProposal(stateChannel.multisigAddress, appInstanceProposal, 0, commitment);
+
+    /*
     when(mockedStore.getAppProposal(appIdentityHash)).thenResolve(appInstanceProposal);
 
     when(mockedStore.getStateChannelByAppIdentityHash(appIdentityHash)).thenResolve(
@@ -149,6 +131,7 @@ describe("Can handle correct & incorrect installs", () => {
     // and just returns a basic <string, StateChannel> map with the
     // expected multisigAddress in it.
     when(mockedProtocolRunner.initiateProtocol(ProtocolNames.install, anything())).thenResolve();
+*/
 
     // The AppInstanceProposal that's returned is the one that was installed, which
     // is the same one as the one that was proposed

@@ -84,7 +84,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderBalanceDecrement,
     );
 
-    const stateChannelAfter = computeStateChannelTransition(
+    let stateChannelAfter = computeStateChannelTransition(
       stateChannelBefore,
       params as ProtocolParams.Install,
     );
@@ -119,9 +119,11 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 124ms
     const {
-      customData: {
-        signature: counterpartySignatureOnConditionalTransaction,
-        signature2: counterpartySignatureOnFreeBalanceStateUpdate,
+      data: {
+        customData: {
+          signature: counterpartySignatureOnConditionalTransaction,
+          signature2: counterpartySignatureOnFreeBalanceStateUpdate,
+        },
       },
     } = yield [
       IO_SEND_AND_WAIT,
@@ -180,6 +182,8 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         : (mySignatureOnFreeBalanceStateUpdate as any),
     );
 
+    stateChannelAfter = stateChannelAfter.removeProposal(newAppInstance.identityHash);
+
     yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.CreateInstance,
@@ -201,6 +205,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         },
         seq: UNASSIGNED_SEQ_NO,
       } as ProtocolMessageData,
+      stateChannelAfter,
     ];
 
     // 335ms
@@ -318,7 +323,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 154ms
     const {
-      customData: { signature: counterpartySignatureOnFreeBalanceStateUpdate },
+      data: {
+        customData: { signature: counterpartySignatureOnFreeBalanceStateUpdate },
+      },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -372,7 +379,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } as ProtocolMessageData;
 
     // 0ms
-    yield [IO_SEND, m4];
+    yield [IO_SEND, m4, stateChannelAfter];
 
     // 272ms
     logTime(log, start, `Response finished`);

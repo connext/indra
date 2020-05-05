@@ -1,6 +1,6 @@
 import * as connext from "@connext/client";
-import { ConnextStore, PisaClientBackupAPI } from "@connext/store";
-import { ConnextClientStorePrefix, EventNames, StoreTypes } from "@connext/types";
+import { getLocalStore, PisaClientBackupAPI } from "@connext/store";
+import { ConnextClientStorePrefix, EventNames } from "@connext/types";
 import { Currency, minBN, toBN, tokenToWei, weiToToken } from "@connext/utils";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
@@ -217,9 +217,9 @@ class App extends React.Component {
             "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
           ),
         });
-        store = new ConnextStore(StoreTypes.LocalStorage, { backupService });
+        store = getLocalStore(backupService);
       } else {
-        store = new ConnextStore(StoreTypes.LocalStorage);
+        store = getLocalStore();
       }
 
       // If store has double prefixes, flush and restore

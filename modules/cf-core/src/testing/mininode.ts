@@ -54,6 +54,7 @@ export class MiniNode {
           signedSetupCommitment,
           signedFreeBalanceUpdate.toJson(),
         );
+        return { channel: stateChannel };
       },
     );
     this.protocolRunner.register(
@@ -132,6 +133,8 @@ export class MiniNode {
             throw new Error(`Unrecognized app persistence call: ${type}`);
           }
         }
+
+        return { channel: postProtocolChannel };
       },
     );
   }

@@ -143,8 +143,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
 
     const {
-      customData: { signature: responderSignatureOnInitialState },
-    } = m2! as ProtocolMessageData;
+      data: {
+        customData: { signature: responderSignatureOnInitialState },
+      },
+    } = m2!;
 
     substart = Date.now();
     await assertIsValidSignature(

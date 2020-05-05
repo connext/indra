@@ -1,7 +1,7 @@
 import { Address, AssetId, PublicKey, PublicIdentifier } from "@connext/types";
 import bs58check from "bs58check";
 import { utils } from "ethers";
-import { hexToBuffer, bufferToHex, compress, decompress, isCompressed } from "eccrypto-js";
+import { hexToBuffer, bufferToHex, compress, decompress } from "eccrypto-js";
 
 import { getAddressError } from "./hexStrings";
 import { getAddressFromPublicKey } from "./crypto";
@@ -13,8 +13,7 @@ export const INDRA_PUB_ID_PREFIX = "indra";
 
 export const getPublicIdentifierFromPublicKey = (publicKey: PublicKey): PublicIdentifier => {
   const buf = hexToBuffer(publicKey);
-  // TODO: compress util should return same result even if already compressed
-  return INDRA_PUB_ID_PREFIX + bs58check.encode(isCompressed(buf) ? buf : compress(buf));
+  return INDRA_PUB_ID_PREFIX + bs58check.encode(compress(buf));
 };
 
 export const getPublicKeyFromPublicIdentifier = (publicIdentifier: PublicIdentifier) =>
