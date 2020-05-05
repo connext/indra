@@ -1,13 +1,18 @@
-import { IAsyncStorage, IClientStore } from "@connext/types";
+import { IAsyncStorage, IBackupServiceAPI, IClientStore } from "@connext/types";
 
 import { ConnextStore } from "./connextStore";
-import { PisaClientBackupAPI } from "./pisaClient";
 import { StoreTypes } from "./types";
 import { WrappedAsyncStorage } from "./wrappers";
 
+////////////////////////////////////////
+// @connext/store exports
+// keep synced with indra/docs/reference/store
+
+export { PisaBackupService } from "./pisaClient";
+
 export const getAsyncStore = (
   storage: IAsyncStorage,
-  backupService?: PisaClientBackupAPI,
+  backupService?: IBackupServiceAPI,
 ): IClientStore =>
   new ConnextStore(
     StoreTypes.AsyncStorage,
@@ -15,12 +20,12 @@ export const getAsyncStore = (
   );
 
 export const getFileStore = (
-  directory: string,
-  backupService?: PisaClientBackupAPI,
+  fileDir: string,
+  backupService?: IBackupServiceAPI,
 ): IClientStore =>
-  new ConnextStore(StoreTypes.File, { backupService });
+  new ConnextStore(StoreTypes.File, { backupService, fileDir });
 
-export const getLocalStore = (backupService?: PisaClientBackupAPI): IClientStore =>
+export const getLocalStore = (backupService?: IBackupServiceAPI): IClientStore =>
   new ConnextStore(StoreTypes.LocalStorage, { backupService });
 
 export const getMemoryStore = (): IClientStore =>
@@ -28,7 +33,7 @@ export const getMemoryStore = (): IClientStore =>
 
 export const getPostgresStore = (
   connectionUri: string,
-  backupService?: PisaClientBackupAPI,
+  backupService?: IBackupServiceAPI,
 ): IClientStore =>
   new ConnextStore(
     StoreTypes.Postgres,
@@ -39,8 +44,10 @@ export const getPostgresStore = (
 // TODO: the following @connext/store interface is depreciated
 // remove the following exports during next breaking release
 
+export { ConnextStore } from "./connextStore";
+export { storeDefaults, storeKeys, storePaths } from "./constants";
+export { PisaBackupService as PisaClientBackupAPI } from "./pisaClient";
 export { StoreTypes } from "./types";
-
 export {
   FileStorage,
   KeyValueStorage,
@@ -49,6 +56,3 @@ export {
   WrappedMemoryStorage,
   WrappedPostgresStorage,
 } from "./wrappers";
-export { ConnextStore } from "./connextStore";
-export { PisaClientBackupAPI } from "./pisaClient";
-export { storeDefaults, storeKeys, storePaths } from "./constants";

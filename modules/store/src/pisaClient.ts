@@ -4,7 +4,7 @@ import { Wallet } from "ethers";
 import { arrayify, hexlify, keccak256, toUtf8Bytes, toUtf8String } from "ethers/utils";
 import { PisaClient as IPisaClient } from "pisa-client";
 
-export class PisaClientBackupAPI implements IBackupServiceAPI {
+export class PisaBackupService implements IBackupServiceAPI {
   private pisaClient: IPisaClient;
   private wallet: Wallet;
 
