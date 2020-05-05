@@ -51,6 +51,7 @@ docker run \
   --env="INDRA_PG_PASSWORD=$postgres_password" \
   --env="INDRA_PG_PORT=$postgres_port" \
   --env="INDRA_PG_USERNAME=$postgres_user" \
+  --env="LOG_LEVEL=$LOG_LEVEL" \
   $interactive \
   --name="${project}_test_store" \
   --network="$network" \

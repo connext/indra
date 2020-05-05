@@ -1,21 +1,22 @@
 import {
-  StoredAppChallenge,
   AppInstanceJson,
   AppInstanceProposal,
+  Bytes32,
+  ChallengeStatus,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
+  IBackupServiceAPI,
   IClientStore,
+  ILoggerService,
   MinimalTransaction,
   SetStateCommitmentJSON,
   StateChannelJSON,
   StateProgressedEventPayload,
   STORE_SCHEMA_VERSION,
+  StoredAppChallenge,
   WithdrawalMonitorObject,
-  ChallengeStatus,
-  Bytes32,
-  IBackupServiceAPI,
 } from "@connext/types";
-import { toBN, ColorfulLogger } from "@connext/utils";
+import { toBN, nullLogger } from "@connext/utils";
 
 import { storeKeys } from "../constants";
 import { WrappedStorage } from "../types";
@@ -38,7 +39,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   constructor(
     private readonly storage: WrappedStorage,
     private readonly backupService?: IBackupServiceAPI,
-    private readonly log: ColorfulLogger = new ColorfulLogger("KeyValueStorage"),
+    private readonly log: ILoggerService = nullLogger,
   ) {}
 
   async getSchemaVersion(): Promise<number> {
@@ -54,8 +55,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getKeys(): Promise<string[]> {
-    const store = await this.getStore();
-    return Object.keys(store);
+    return Object.keys(await this.getStore());
   }
 
   private async getStore(): Promise<any> {
@@ -68,7 +68,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       try {
         await this.backupService.backup({ path: storeKeys.STORE, value: store });
       } catch (e) {
-        console.info(`Could not save ${storeKeys.STORE} to backup service. Error: ${e.stack || e.message}`);
+        this.log.warn(`Could not save ${storeKeys.STORE} to backup service. Error: ${e.stack || e.message}`);
       }
     }
     return this.storage.setItem(storeKeys.STORE, store);

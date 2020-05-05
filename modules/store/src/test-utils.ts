@@ -16,7 +16,7 @@ import {
   StorePair,
   StoreTypes,
 } from "@connext/types";
-import { toBN, toBNJson, getRandomBytes32 } from "@connext/utils";
+import { ColorfulLogger, toBN, toBNJson, getRandomBytes32 } from "@connext/utils";
 import { expect, use } from "chai";
 import { One, AddressZero } from "ethers/constants";
 import { BigNumber, hexlify, randomBytes } from "ethers/utils";
@@ -37,15 +37,14 @@ use(require("chai-subset"));
 
 export { expect } from "chai";
 
-const dbConfig = {
+const env = {
   database: process.env.INDRA_PG_DATABASE || "",
   host: process.env.INDRA_PG_HOST || "",
   password: process.env.INDRA_PG_PASSWORD || "",
   port: parseInt(process.env.INDRA_PG_PORT || "", 10),
   user: process.env.INDRA_PG_USERNAME || "",
+  logLevel: parseInt(process.env.LOG_LEVEL || "0", 10),
 };
-
-console.log(`Using db config: ${JSON.stringify(dbConfig, null, 2)}`);
 
 export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
 
@@ -177,7 +176,10 @@ export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = 
   status: ChallengeStatus.IN_DISPUTE,
 };
 
-export function createKeyValueStore(type: StoreTypes, opts: StoreFactoryOptions = {}) {
+////////////////////////////////////////
+// Helper Methods
+
+export const createKeyValueStore = (type: StoreTypes, opts: StoreFactoryOptions = {}) => {
   switch (type) {
     case StoreTypes.AsyncStorage:
       return new KeyValueStorage(
@@ -187,66 +189,61 @@ export function createKeyValueStore(type: StoreTypes, opts: StoreFactoryOptions 
           opts.separator,
           opts.asyncStorageKey,
         ),
+        null,
+        new ColorfulLogger("AsyncStore", env.logLevel, true),
       );
     case StoreTypes.LocalStorage:
-      return new KeyValueStorage(new WrappedLocalStorage(opts.prefix, opts.separator));
+      return new KeyValueStorage(
+        new WrappedLocalStorage(opts.prefix, opts.separator),
+        null,
+        new ColorfulLogger("LocalStore", env.logLevel, true),
+      );
     case StoreTypes.File:
       return new KeyValueStorage(
         new FileStorage(opts.prefix, opts.separator, opts.fileExt, opts.fileDir),
+        null,
+        new ColorfulLogger("FileStore", env.logLevel, true),
       );
     default:
       throw new Error(`Unable to create KeyValueStore from type: ${type}`);
   }
-}
+};
 
-export async function createConnextStore(
+export const createConnextStore = async (
   type: StoreTypes,
   opts: StoreFactoryOptions = {},
-): Promise<ConnextStore> {
+): Promise<ConnextStore> => {
   if (!Object.values(StoreTypes).includes(type)) {
     throw new Error(`Unrecognized type: ${type}`);
   }
-
+  opts.logger = new ColorfulLogger("ConnextStore", env.logLevel, true);
   if (type === StoreTypes.Postgres) {
+    opts.logger = new ColorfulLogger("PostgresStore", env.logLevel, true);
     const wrappedStore = new WrappedPostgresStorage(
       "test",
       "/",
       undefined,
       undefined,
-      `postgres://${dbConfig.user}:${dbConfig.password}@${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`,
+      `postgres://${env.user}:${env.password}@${env.host}:${env.port}/${env.database}`,
     );
     opts.storage = wrappedStore;
     await wrappedStore.sequelize.authenticate();
     await wrappedStore.syncModels(true);
   }
-
   if (type === StoreTypes.AsyncStorage) {
     opts.storage = new MockAsyncStorage();
+    opts.logger = new ColorfulLogger("AsyncStore", env.logLevel, true);
   }
-
   const store = new ConnextStore(type, opts);
   expect(store).to.be.instanceOf(ConnextStore);
-
   await store.clear();
-
   return store;
-}
+};
 
-export function createArray(length: number = 10): string[] {
-  return Array(length).fill("");
-}
-
-export function generateStorePairs(length: number = 10): StorePair[] {
-  return createArray(length).map(() => {
-    const id = uuid();
-    return { path: `path-${id}`, value: `value-${id}` };
-  });
-}
-
-export async function setAndGet(
+export const setAndGet = async (
   store: KeyValueStorage,
   pair: StorePair = TEST_STORE_PAIR,
-): Promise<void> {
+): Promise<void> => {
   await store.setItem(pair.path, pair.value);
   const value = await store.getItem(pair.path);
   if (typeof pair.value === "object" && !BigNumber.isBigNumber(pair.value)) {
@@ -254,27 +251,31 @@ export async function setAndGet(
     return;
   }
   expect(value).to.be.equal(pair.value);
-}
+};
 
-export async function setAndGetMultiple(
+export const setAndGetMultiple = async (
   store: KeyValueStorage,
   length: number = 10,
-): Promise<void> {
-  const pairs = generateStorePairs(length);
+): Promise<void> => {
+  const pairs = Array(length).fill(0).map(() => {
+    const id = uuid();
+    return { path: `path-${id}`, value: `value-${id}` };
+  });
+
   expect(pairs.length).to.equal(length);
   for (const pair of pairs) {
     await setAndGet(store, pair);
   }
-}
+};
 
-export async function testAsyncStorageKey(
+export const testAsyncStorageKey = async (
   storage: KeyValueStorage,
   asyncStorageKey: string,
-): Promise<void> {
+): Promise<void> => {
   const keys = await storage.getKeys();
   expect(keys.length).to.equal(1);
   expect(keys[0]).to.equal(asyncStorageKey);
-}
+};
 
 /**
  * Class simply holds all the states in memory that would otherwise get

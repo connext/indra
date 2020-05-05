@@ -32,7 +32,10 @@ export class WrappedPostgresStorage implements WrappedStorage {
     if (sequelize) {
       this.sequelize = sequelize;
     } else if (this.connectionUri) {
-      this.sequelize = new Sequelize(this.connectionUri);
+      this.sequelize = new Sequelize(this.connectionUri, {
+        dialect: "postgres",
+        logging: false,
+      });
     } else {
       throw new Error(`Either sequelize instance or Postgres connection URI must be specified`);
     }

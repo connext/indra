@@ -1,6 +1,5 @@
 import { Sequelize } from "sequelize";
 
-import { StateChannelJSON } from "./state";
 import { AppInstanceJson, AppInstanceProposal } from "./app";
 import { Address, Bytes32 } from "./basic";
 import {
@@ -8,6 +7,8 @@ import {
   MinimalTransaction,
   SetStateCommitmentJSON,
 } from "./commitments";
+import { ILoggerService } from "./logger";
+import { StateChannelJSON } from "./state";
 import { enumify } from "./utils";
 import { IWatcherStoreService } from "./watcher";
 
@@ -48,6 +49,7 @@ export interface FileStorageOptions {
 
 // TODO: Remove
 export interface StoreFactoryOptions extends FileStorageOptions {
+  logger?: ILoggerService,
   storage?: IAsyncStorage | any;
   prefix?: string;
   separator?: string;

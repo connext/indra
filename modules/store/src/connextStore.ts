@@ -40,6 +40,7 @@ export class ConnextStore implements IClientStore {
     this.prefix = opts.prefix || storeDefaults.PREFIX;
     this.separator = opts.separator || storeDefaults.SEPARATOR;
     this.backupService = opts.backupService || null;
+    const log = opts.logger || null;
 
     // set internal storage
     switch (storageType) {
@@ -47,6 +48,7 @@ export class ConnextStore implements IClientStore {
         this.internalStore = new KeyValueStorage(
           new WrappedLocalStorage(this.prefix, this.separator),
           this.backupService,
+          log,
         );
         break;
       }
@@ -63,6 +65,7 @@ export class ConnextStore implements IClientStore {
             opts.asyncStorageKey,
           ),
           this.backupService,
+          log,
         );
         break;
       }
@@ -78,6 +81,7 @@ export class ConnextStore implements IClientStore {
               opts.postgresConnectionUri,
             ),
           this.backupService,
+          log,
         );
         break;
       }
@@ -91,6 +95,7 @@ export class ConnextStore implements IClientStore {
             opts.fileDir,
           ),
           this.backupService,
+          log,
         );
         break;
       }
@@ -99,6 +104,7 @@ export class ConnextStore implements IClientStore {
         this.internalStore = new KeyValueStorage(
           new WrappedMemoryStorage(this.prefix, this.separator),
           this.backupService,
+          log,
         );
         break;
       }

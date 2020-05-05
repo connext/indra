@@ -12,7 +12,6 @@ import {
   testAsyncStorageKey,
   createKeyValueStore,
   TEST_STORE_PAIR,
-  createArray,
 } from "./test-utils";
 
 const storeTypes = Object.values(StoreTypes);
@@ -63,9 +62,7 @@ describe("KeyValueStorage", () => {
   it("happy case: localStorage should include multiple keys", async () => {
     const store = createKeyValueStore(StoreTypes.LocalStorage);
     const preInsert = await store.getEntries();
-
     await setAndGetMultiple(store, length);
-
     expect((await store.getEntries()).length).to.equal(preInsert.length + length);
     await store.clear();
   });
@@ -169,7 +166,7 @@ describe("KeyValueStorage", () => {
       }
       it(`${type} should work`, async () => {
         const store = createKeyValueStore(type as StoreTypes, { fileDir });
-        await Promise.all(createArray(5).map(() => setAndGet(store)));
+        await Promise.all(Array(5).fill(0).map(() => setAndGet(store)));
       });
     }
   });
