@@ -20,7 +20,7 @@ import {
   Contract,
   ChallengeEvents,
 } from "@connext/types";
-import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import { toBN, nullLogger, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { storeKeys } from "../constants";
 import { WrappedStorage } from "../types";
@@ -283,7 +283,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const oldCommitment = this.getLatestSetStateCommitment(store, appInstance.identityHash);
 
     let updatedStore = store;
-    if (oldCommitment) {
+    if (oldCommitment && signedSetStateCommitment.signatures.filter((x) => !!x).length === 2) {
       this.log.debug(
         `Removing stale commitment at ${toBN(oldCommitment.versionNumber).toString()}`,
       );
@@ -326,7 +326,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const idx = channel.appInstances.findIndex(([app]) => app === appIdentityHash);
     const presplice = channel.appInstances.length;
     channel.appInstances.splice(idx, 1);
-    this.log.debug(`Removed app instance from channel (prev length: ${presplice}, curr: ${channel.appInstances.length})`);
+    this.log.debug(
+      `Removed app instance from channel (prev length: ${presplice}, curr: ${channel.appInstances.length})`,
+    );
     const oldFreeBalanceUpdate = this.getLatestSetStateCommitment(
       store,
       freeBalanceAppInstance.identityHash,
@@ -435,12 +437,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getSetStateCommitments(appIdentityHash: string): Promise<SetStateCommitmentJSON[]> {
     // get all stored challenges
-    const partial = this.getKey(storeKeys.SET_STATE_COMMITMENT, appIdentityHash);
-    const keys = await this.getKeys();
-    const relevant = keys.filter((key) => key.includes(partial));
-
+    const key = this.getKey(storeKeys.SET_STATE_COMMITMENT, appIdentityHash);
     const store = await this.getStore();
-    return relevant.map((key) => store[key]);
+    return store[key];
   }
 
   async getConditionalTransactionCommitment(
@@ -652,25 +651,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   ////// Helper methods
-  async updateSetStateCommitment(
-    appIdentityHash: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> {
-    const setStateKey = this.getKey(
-      storeKeys.SET_STATE_COMMITMENT,
-      appIdentityHash,
-      toBN(commitment.versionNumber).toString(),
-    );
-    if (!(await this.getItem(setStateKey))) {
-      throw new Error(
-        `Cannot find set state commitment to update for ${appIdentityHash} at ${toBN(
-          commitment.versionNumber,
-        ).toString()}`,
-      );
-    }
-    return this.setItem(setStateKey, commitment);
-  }
-
   private setStateChannel(store: any, stateChannel: StateChannelJSON): any {
     const channelKey = this.getKey(storeKeys.CHANNEL, stateChannel.multisigAddress);
     store[channelKey] = {
@@ -688,16 +668,13 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     store: any,
     appIdentityHash: Bytes32,
   ): SetStateCommitmentJSON {
-    const partial = this.getKey(storeKeys.SET_STATE_COMMITMENT, appIdentityHash);
-    const keys = Object.keys(store);
-    const relevant = keys.filter((key) => key.includes(partial));
-    const appCommitments = relevant.map((key) => store[key]);
-
-    if (appCommitments.length === 0) {
+    const setStateKey = this.getKey(storeKeys.SET_STATE_COMMITMENT, appIdentityHash);
+    const commitments = [...(store[setStateKey] || [])];
+    if (commitments.length === 0) {
       return undefined;
     }
-    const sorted = appCommitments.sort(
-      (a, b) => toBN(b.versionNumber).toNumber() - toBN(a.versionNumber).toNumber(),
+    const sorted = commitments.sort(
+      (a, b) => toBN(b.versionNumber).sub(toBN(a.versionNumber)).toNumber(),
     );
     return sorted[0];
   }
@@ -727,18 +704,25 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): any {
-    const setStateKey = this.getKey(
-      storeKeys.SET_STATE_COMMITMENT,
-      appIdentityHash,
-      toBN(commitment.versionNumber).toString(),
+    const setStateKey = this.getKey(storeKeys.SET_STATE_COMMITMENT, appIdentityHash);
+    const existing = [...(store[setStateKey] || [])];
+    const idx = existing.findIndex((c) =>
+      toBN(c.versionNumber).eq(toBN(commitment.versionNumber)),
     );
-    store[setStateKey] = commitment;
+    idx === -1
+      ? existing.push(commitment)
+      : existing[idx] = commitment;
+    store[setStateKey] = existing;
     return store;
   }
 
   private unsetSetStateCommitment(store: any, appIdentityHash: string, versionNumber: string): any {
-    const setStateKey = this.getKey(storeKeys.SET_STATE_COMMITMENT, appIdentityHash, versionNumber);
-    delete store[setStateKey];
+    const setStateKey = this.getKey(storeKeys.SET_STATE_COMMITMENT, appIdentityHash);
+    const existing = [...(store[setStateKey] || [])];
+    const idx = existing.findIndex((commitment) =>
+      toBN(commitment.versionNumber).eq(versionNumber),
+    );
+    store[setStateKey] = existing.splice(idx, 1);
     return store;
   }
 
