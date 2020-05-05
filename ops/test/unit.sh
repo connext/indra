@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
+unit=$1
+shift;
+args=$@
+
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
@@ -13,22 +17,22 @@ fi
 exec docker run \
   --entrypoint="bash" \
   $interactive \
-  --name="${project}_test_client" \
+  --name="${project}_test_$unit" \
   --rm \
   --volume="`pwd`:/root" \
-  ${project}_builder -c '
+  ${project}_builder -c "
     set -e
-    echo "Client tester container launched!"
+    echo 'Test-$unit container launched!'
     
-    cd modules/client
+    cd modules/$unit
 
     export PATH=./node_modules/.bin:$PATH
 
     function finish {
-      echo && echo "Client tester container exiting.." && exit
+      echo && echo 'Test-$unit container exiting..' && exit
     }
     trap finish SIGTERM SIGINT
 
-    echo "Launching tests!";echo
-    npm run test
-  '
+    echo 'Launching $unit tests!';echo
+    npm run test $args
+  "
