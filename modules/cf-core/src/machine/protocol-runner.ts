@@ -17,6 +17,7 @@ import { getProtocolFromName } from "../protocol";
 import { Context } from "../types";
 
 import { MiddlewareContainer } from "./middleware";
+import { StateChannel } from "../models";
 
 function firstRecipientFromProtocolName(protocolName: ProtocolName) {
   if (Object.values(ProtocolNames).includes(protocolName)) {
@@ -80,7 +81,7 @@ export class ProtocolRunner {
   private async runProtocol(
     instruction: (context: Context) => AsyncIterableIterator<any>,
     message: ProtocolMessageData,
-  ): Promise<void> {
+  ): Promise<{ channel: StateChannel, data: any }> {
     const context: Context = {
       log: this.log,
       message,
@@ -98,5 +99,6 @@ export class ProtocolRunner {
       const [opcode, ...args] = ret.value;
       lastMiddlewareRet = await this.middlewares.run(opcode, args);
     }
+    return lastMiddlewareRet;
   }
 }
