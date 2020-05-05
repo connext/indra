@@ -5,7 +5,7 @@ import {
   ChallengeStatus,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
-  IBackupServiceAPI,
+  IBackupService,
   IClientStore,
   ILoggerService,
   MinimalTransaction,
@@ -38,7 +38,7 @@ const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
 export class KeyValueStorage implements WrappedStorage, IClientStore {
   constructor(
     private readonly storage: WrappedStorage,
-    private readonly backupService?: IBackupServiceAPI,
+    private readonly backupService?: IBackupService,
     private readonly log: ILoggerService = nullLogger,
   ) {}
 

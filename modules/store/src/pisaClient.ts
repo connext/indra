@@ -1,10 +1,10 @@
-import { IBackupServiceAPI, StorePair } from "@connext/types";
+import { IBackupService, StorePair } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
 import { Wallet } from "ethers";
 import { arrayify, hexlify, keccak256, toUtf8Bytes, toUtf8String } from "ethers/utils";
 import { PisaClient as IPisaClient } from "pisa-client";
 
-export class PisaBackupService implements IBackupServiceAPI {
+export class PisaBackupService implements IBackupService {
   private pisaClient: IPisaClient;
   private wallet: Wallet;
 

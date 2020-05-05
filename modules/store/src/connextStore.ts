@@ -4,7 +4,7 @@ import {
   AppInstanceProposal,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
-  IBackupServiceAPI,
+  IBackupService,
   IClientStore,
   MinimalTransaction,
   SetStateCommitmentJSON,
@@ -34,7 +34,7 @@ export class ConnextStore implements IClientStore {
 
   private prefix: string = storeDefaults.PREFIX;
   private separator: string = storeDefaults.SEPARATOR;
-  private backupService: IBackupServiceAPI | null = null;
+  private backupService: IBackupService | null = null;
 
   constructor(storageType: StoreTypes, opts: StoreFactoryOptions = {}) {
     this.prefix = opts.prefix || storeDefaults.PREFIX;

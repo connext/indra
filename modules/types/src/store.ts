@@ -57,10 +57,10 @@ export interface StoreFactoryOptions extends FileStorageOptions {
   asyncStorageKey?: string;
   postgresConnectionUri?: string;
   sequelize?: Sequelize;
-  backupService?: IBackupServiceAPI;
+  backupService?: IBackupService;
 }
 
-export interface IBackupServiceAPI {
+export interface IBackupService {
   restore(): Promise<StorePair[]>;
   backup(pair: StorePair): Promise<void>;
 }
