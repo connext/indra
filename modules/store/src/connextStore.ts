@@ -12,11 +12,11 @@ import {
   StateProgressedEventPayload,
   STORE_SCHEMA_VERSION,
   StoreFactoryOptions,
-  StoreTypes,
   WithdrawalMonitorObject,
   Bytes32,
   Address,
 } from "@connext/types";
+import { nullLogger } from "@connext/utils";
 
 import { storeDefaults } from "./constants";
 import {
@@ -27,7 +27,7 @@ import {
   WrappedLocalStorage,
   WrappedPostgresStorage,
 } from "./wrappers";
-import { WrappedStorage } from "./types";
+import { StoreTypes, WrappedStorage } from "./types";
 
 export class ConnextStore implements IClientStore {
   private internalStore: IClientStore;
@@ -40,7 +40,7 @@ export class ConnextStore implements IClientStore {
     this.prefix = opts.prefix || storeDefaults.PREFIX;
     this.separator = opts.separator || storeDefaults.SEPARATOR;
     this.backupService = opts.backupService || null;
-    const log = opts.logger || null;
+    const logger = opts.logger || nullLogger;
 
     // set internal storage
     switch (storageType) {
@@ -48,7 +48,7 @@ export class ConnextStore implements IClientStore {
         this.internalStore = new KeyValueStorage(
           new WrappedLocalStorage(this.prefix, this.separator),
           this.backupService,
-          log,
+          logger,
         );
         break;
       }
@@ -65,7 +65,7 @@ export class ConnextStore implements IClientStore {
             opts.asyncStorageKey,
           ),
           this.backupService,
-          log,
+          logger,
         );
         break;
       }
@@ -81,7 +81,7 @@ export class ConnextStore implements IClientStore {
               opts.postgresConnectionUri,
             ),
           this.backupService,
-          log,
+          logger,
         );
         break;
       }
@@ -95,7 +95,7 @@ export class ConnextStore implements IClientStore {
             opts.fileDir,
           ),
           this.backupService,
-          log,
+          logger,
         );
         break;
       }
@@ -104,7 +104,7 @@ export class ConnextStore implements IClientStore {
         this.internalStore = new KeyValueStorage(
           new WrappedMemoryStorage(this.prefix, this.separator),
           this.backupService,
-          log,
+          logger,
         );
         break;
       }

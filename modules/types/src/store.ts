@@ -15,15 +15,6 @@ import { IWatcherStoreService } from "./watcher";
 export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
 export const ConnextClientStorePrefix = "INDRA_CLIENT_CF_CORE";
 
-export const StoreTypes = enumify({
-  AsyncStorage: "AsyncStorage",
-  File: "File",
-  LocalStorage: "LocalStorage",
-  Postgres: "Postgres",
-  Memory: "Memory",
-});
-export type StoreTypes = typeof StoreTypes[keyof typeof StoreTypes];
-
 export type StorePair = {
   path: string;
   value: any;

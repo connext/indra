@@ -1,11 +1,9 @@
-import { StoreTypes } from "@connext/types";
 import { isDirectory } from "@connext/utils";
 import { expect } from "chai";
 import fs from "fs";
 import { v4 as uuid } from "uuid";
 
 import { storeDefaults, storeKeys } from "./constants";
-
 import {
   setAndGet,
   setAndGetMultiple,
@@ -13,6 +11,7 @@ import {
   createKeyValueStore,
   TEST_STORE_PAIR,
 } from "./test-utils";
+import { StoreTypes } from "./types";
 
 const storeTypes = Object.values(StoreTypes);
 

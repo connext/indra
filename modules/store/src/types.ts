@@ -1,3 +1,14 @@
+import { enumify } from "@connext/types";
+
+export const StoreTypes = enumify({
+  AsyncStorage: "AsyncStorage",
+  File: "File",
+  LocalStorage: "LocalStorage",
+  Postgres: "Postgres",
+  Memory: "Memory",
+});
+export type StoreTypes = typeof StoreTypes[keyof typeof StoreTypes];
+
 export interface WrappedStorage {
   getItem<T = any>(key: string): Promise<T | undefined>;
   setItem<T = any>(key: string, value: T): Promise<void>;

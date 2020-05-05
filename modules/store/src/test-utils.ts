@@ -14,7 +14,6 @@ import {
   StoredAppChallenge,
   StoreFactoryOptions,
   StorePair,
-  StoreTypes,
 } from "@connext/types";
 import { ColorfulLogger, toBN, toBNJson, getRandomBytes32 } from "@connext/utils";
 import { expect, use } from "chai";
@@ -24,6 +23,7 @@ import MockAsyncStorage from "mock-async-storage";
 import { v4 as uuid } from "uuid";
 
 import { ConnextStore } from "./connextStore";
+import { StoreTypes } from "./types";
 import {
   FileStorage,
   KeyValueStorage,

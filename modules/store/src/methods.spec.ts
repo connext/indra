@@ -1,4 +1,4 @@
-import { StoreTypes, STORE_SCHEMA_VERSION, ChallengeStatus } from "@connext/types";
+import { STORE_SCHEMA_VERSION, ChallengeStatus } from "@connext/types";
 import { toBNJson } from "@connext/utils";
 
 import {
@@ -14,6 +14,7 @@ import {
   TEST_STORE_STATE_PROGRESSED_EVENT,
   TEST_STORE_CHALLENGE_UPDATED_EVENT,
 } from "./test-utils";
+import { StoreTypes } from "./types";
 
 export const storeTypes = Object.keys(StoreTypes);
 
