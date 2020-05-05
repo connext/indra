@@ -34,7 +34,7 @@ import {
 } from "./wrappers";
 
 export class ConnextStore implements IClientStore {
-  private internalStore: IClientStore;
+  public internalStore: IClientStore;
 
   private prefix: string = DEFAULT_STORE_PREFIX;
   private separator: string = DEFAULT_STORE_SEPARATOR;
