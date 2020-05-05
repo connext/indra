@@ -46,8 +46,6 @@ export interface WrappedStorage {
   removeItem(key: string): Promise<void>;
   getKeys(): Promise<string[]>;
   getEntries(): Promise<[string, any][]>;
-  clear(): Promise<void>;
-  restore(): Promise<void>;
   // generates a key for related subject strings
   getKey(...args: string[]): string;
 }
@@ -116,12 +114,6 @@ export interface IStoreService extends IWatcherStoreService {
   ): Promise<void>;
   removeAppProposal(multisigAddress: Address, appIdentityHash: Bytes32): Promise<void>;
   // proposals dont need to be updated
-
-  ///// Free balance
-  updateFreeBalance(
-    multisigAddress: Address,
-    freeBalanceAppInstance: AppInstanceJson,
-  ): Promise<void>;
 
   ///// Resetting methods
   clear(): Promise<void>;

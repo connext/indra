@@ -56,7 +56,6 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
     latestVersionNumber: app.latestVersionNumber,
     multisigAddress: channel.multisigAddress,
     outcomeType: app.outcomeType,
-    // TODO: should we add initatior/responder to the app instance table?
     initiatorIdentifier: app.initiatorIdentifier,
     responderIdentifier: app.responderIdentifier,
     multiAssetMultiPartyCoinTransferInterpreterParams,

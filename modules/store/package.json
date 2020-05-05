@@ -1,6 +1,6 @@
 {
   "name": "@connext/store",
-  "version": "6.1.5",
+  "version": "6.3.7",
   "description": "Store module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -13,15 +13,16 @@
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
-    "@connext/types": "6.1.5",
-    "@connext/utils": "6.1.5",
+    "@connext/types": "6.3.7",
+    "@connext/utils": "6.3.7",
     "ethers": "4.0.47",
     "localStorage": "1.0.4",
     "pg": "8.0.3",
     "pg-hstore": "2.3.3",
     "pisa-client": "0.1.5",
     "sequelize": "5.21.5",
-    "uuid": "7.0.3"
+    "uuid": "7.0.3",
+    "write-file-atomic": "3.0.3"
   },
   "devDependencies": {
     "@babel/polyfill": "7.8.7",

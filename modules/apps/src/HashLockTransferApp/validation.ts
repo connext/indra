@@ -22,9 +22,9 @@ export const validateHashLockTransferApp = (
     return transfer.to === responderSignerAddress;
   })[0];
 
-  if (initialState.timelock.lt(blockNumber)) {
+  if (initialState.expiry.lt(blockNumber)) {
     throw new Error(
-      `Cannot install an app with an expired timelock. Timelock in state: ${initialState.timelock}. Current block: ${blockNumber}`,
+      `Cannot install an app with an expired expiry. Expiry in state: ${initialState.expiry}. Current block: ${blockNumber}`,
     );
   }
 

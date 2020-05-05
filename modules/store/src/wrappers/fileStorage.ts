@@ -1,5 +1,6 @@
 import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
+import writeFileAtomic from "write-file-atomic";
 
 import {
   createDirectory,
@@ -14,8 +15,6 @@ import {
   DEFAULT_FILE_STORAGE_DIR,
   DEFAULT_FILE_STORAGE_EXT,
   DEFAULT_STORE_PREFIX,
-  CHANNEL_KEY,
-  COMMITMENT_KEY,
 } from "../constants";
 
 export class FileStorage implements WrappedStorage {
@@ -24,7 +23,6 @@ export class FileStorage implements WrappedStorage {
     private readonly separator: string = "-",
     private readonly fileExt: string = DEFAULT_FILE_STORAGE_EXT,
     private readonly fileDir: string = DEFAULT_FILE_STORAGE_DIR,
-    private readonly backupService?: IBackupServiceAPI,
   ) {
     if (this.separator === "/") {
       throw new Error(`Invalid file separator provided: ${this.separator}`);
@@ -56,16 +54,8 @@ export class FileStorage implements WrappedStorage {
   }
 
   async setItem<T>(key: string, value: T): Promise<void> {
-    const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
-    if (this.backupService && shouldBackup) {
-      try {
-        await this.backupService.backup({ path: key, value: value });
-      } catch (e) {
-        console.info(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
-      }
-    }
     const filePath = await this.getFilePath(key);
-    return fsWrite(filePath, safeJsonStringify(value));
+    return writeFileAtomic(filePath, safeJsonStringify(value));
   }
 
   async removeItem(key: string): Promise<void> {
@@ -78,7 +68,7 @@ export class FileStorage implements WrappedStorage {
     const relevantKeys = (await getDirectoryFiles(this.fileDir))
       .filter((file: string) => file.includes(this.fileSuffix) && file.includes(this.prefix))
       .map((file: string) => file.replace(this.fileSuffix, ""));
-    return relevantKeys.map(key => key.split(`${this.prefix}${this.separator}`)[1]);
+    return relevantKeys.map((key) => key.split(`${this.prefix}${this.separator}`)[1]);
   }
 
   async getEntries(): Promise<[string, any][]> {
@@ -90,24 +80,9 @@ export class FileStorage implements WrappedStorage {
     return entries;
   }
 
-  async clear(): Promise<void> {
-    const keys = await this.getKeys();
-    await Promise.all(keys.map(key => this.removeItem(key)));
-  }
-
-  async restore(): Promise<void> {
-    await this.clear();
-    if (!this.backupService) {
-      throw new Error(`No backup provided, store cleared`);
-    }
-    // otherwise set the item
-    const pairs = await this.backupService.restore();
-    await Promise.all(pairs.map(pair => this.setItem(pair.path, pair.value)));
-  }
-
   getKey(...args: string[]): string {
     let str = "";
-    args.forEach(arg => {
+    args.forEach((arg) => {
       // dont add separator to last one
       str = str.concat(arg, args.indexOf(arg) === args.length - 1 ? "" : this.separator);
     });

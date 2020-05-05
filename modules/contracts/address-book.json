@@ -207,10 +207,10 @@
       "txHash": "0xaa1465e5b1a8e79e398813bf533a0e4fb51995ca1140cee999ae97bfbdfd4d44"
     },
     "HashLockTransferApp": {
-      "address": "0x2E05a742A2839e28D734744107c9Ab901cD329d3",
-      "creationCodeHash": "0x950652d66dab8b9b7f3a738e69078f0069b93df478cef6d6c31532a885ea22a6",
-      "runtimeCodeHash": "0xacd03edbf4911d9d768d597db7e01447a06b9ee0fb4022a5e17d1972b4d9b42f",
-      "txHash": "0x232c335b35e089d95e2f1000e56ecf338a170528df6f095402457526b0e27b94"
+      "address": "0x1FB2F2C0168ED33B8DbdC5eE9dA8bC66463CfDD5",
+      "creationCodeHash": "0xd794d4c8feaf0847e55e44ec6720cd642c4cb4555d7b7649b292cdc916efb3c3",
+      "runtimeCodeHash": "0x3c9a739aece9eedbae62d6978f4a52a7e606dd912873e13ca35caeab22fbf3ff",
+      "txHash": "0x3ca49ec439f33840840e0d3c577836438916aea4e185935c23608fe79a1e04de"
     },
     "WithdrawApp": {
       "address": "0xdd8B7A18af0A15CBebEa7482232d4329Fa8070Db",
@@ -316,10 +316,10 @@
       "txHash": "0x6f896ea7d21a1787b4c58f34716968a100330f05d122f03acf9f8686d928e5e2"
     },
     "HashLockTransferApp": {
-      "address": "0xBa1dE13Af7676D229Ed0bFc5A9EeFBe596f64325",
-      "creationCodeHash": "0x950652d66dab8b9b7f3a738e69078f0069b93df478cef6d6c31532a885ea22a6",
-      "runtimeCodeHash": "0xacd03edbf4911d9d768d597db7e01447a06b9ee0fb4022a5e17d1972b4d9b42f",
-      "txHash": "0xcad278efd1b865e0aadff6fe4b136eab0700baa8c66af3d52d872210c6fdbb5b"
+      "address": "0xaC840E474B845721203096585c9ae7bF319e27E6",
+      "creationCodeHash": "0xd794d4c8feaf0847e55e44ec6720cd642c4cb4555d7b7649b292cdc916efb3c3",
+      "runtimeCodeHash": "0x3c9a739aece9eedbae62d6978f4a52a7e606dd912873e13ca35caeab22fbf3ff",
+      "txHash": "0xace7ce9b9b2aaa5e71e95439ea35afa156e97a72b91c600d0063bbddcce59619"
     },
     "IdentityApp": {
       "address": "0xFac009232F311FbD842ACA45c07806ABE9dc1D93",
@@ -591,9 +591,9 @@
     },
     "HashLockTransferApp": {
       "address": "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF",
-      "creationCodeHash": "0x950652d66dab8b9b7f3a738e69078f0069b93df478cef6d6c31532a885ea22a6",
-      "runtimeCodeHash": "0xacd03edbf4911d9d768d597db7e01447a06b9ee0fb4022a5e17d1972b4d9b42f",
-      "txHash": "0x804356a613e931203f4bfa666289dcf6bf8bdf854efdf28be097feefce1f6a08"
+      "creationCodeHash": "0xd794d4c8feaf0847e55e44ec6720cd642c4cb4555d7b7649b292cdc916efb3c3",
+      "runtimeCodeHash": "0x3c9a739aece9eedbae62d6978f4a52a7e606dd912873e13ca35caeab22fbf3ff",
+      "txHash": "0x413a96d47e889d320833ab08094208add187a9136f0fd66fc0ebbd01d340d3dc"
     },
     "WithdrawApp": {
       "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b",

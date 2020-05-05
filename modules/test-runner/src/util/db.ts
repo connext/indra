@@ -39,8 +39,8 @@ export const getOnchainTransactionsForChannel = async (
 ): Promise<any[]> => {
   const { rows: onchainTransactions } = await dbClient.query(SQL`
       SELECT * FROM onchain_transaction 
-      WHERE "channelId" = (
-        SELECT id FROM channel
+      WHERE "channelMultisigAddress" = (
+        SELECT "multisigAddress" FROM channel
         WHERE "userIdentifier" = ${userIdentifier}
       )
     `);
