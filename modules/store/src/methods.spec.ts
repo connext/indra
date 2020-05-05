@@ -1,10 +1,10 @@
-import { StoreTypes, STORE_SCHEMA_VERSION, ChallengeStatus, StoredAppChallengeStatus } from "@connext/types";
+import { STORE_SCHEMA_VERSION, ChallengeStatus } from "@connext/types";
 import { toBNJson } from "@connext/utils";
+
 import {
   expect,
   MockBackupService,
   createConnextStore,
-  env,
   TEST_STORE_ETH_ADDRESS,
   TEST_STORE_CHANNEL,
   TEST_STORE_MINIMAL_TX,
@@ -13,12 +13,13 @@ import {
   TEST_STORE_APP_CHALLENGE,
   TEST_STORE_STATE_PROGRESSED_EVENT,
   TEST_STORE_CHALLENGE_UPDATED_EVENT,
-} from "../util";
+} from "./test-utils";
+import { StoreTypes } from "./types";
 
 export const storeTypes = Object.keys(StoreTypes);
 
 describe("ConnextStore", () => {
-  const fileDir = env.storeDir;
+  const fileDir = "./.test-store";
 
   describe("getSchemaVersion", () => {
     storeTypes.forEach((type) => {

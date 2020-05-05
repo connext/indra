@@ -1,5 +1,5 @@
-import { ConnextStore } from "@connext/store";
-import { ClientOptions, StoreTypes } from "@connext/types";
+import { getLocalStore } from "@connext/store";
+import { ClientOptions } from "@connext/types";
 import { getRandomPrivateKey } from "@connext/utils";
 
 const CONNEXT_DEFAULT_SIGNER_KEY = "CONNEXT_DEFAULT_SIGNER";
@@ -61,7 +61,7 @@ export const getDefaultOptions = (
 ): ClientOptions => {
   const urlOptions = getUrlOptions(network);
   const opts = getOverrideOptions(_opts);
-  const store = opts && opts.store ? opts.store : new ConnextStore(StoreTypes.LocalStorage);
+  const store = opts && opts.store ? opts.store : getLocalStore();
   const signer =
     opts && opts.signer
       ? opts.signer

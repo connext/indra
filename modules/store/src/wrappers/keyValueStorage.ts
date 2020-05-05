@@ -1,45 +1,28 @@
 import { ChallengeRegistry } from "@connext/contracts";
 import {
-  StoredAppChallenge,
   AppInstanceJson,
   AppInstanceProposal,
+  Bytes32,
+  ChallengeStatus,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
-  IClientStore,
   IBackupServiceAPI,
+  IClientStore,
+  ILoggerService,
   MinimalTransaction,
   SetStateCommitmentJSON,
   StateChannelJSON,
   StateProgressedEventPayload,
   STORE_SCHEMA_VERSION,
+  StoredAppChallenge,
   WithdrawalMonitorObject,
-  WrappedStorage,
-  Address,
-  Bytes32,
-  StoredAppChallengeStatus,
-  JsonRpcProvider,
-  ChallengeStatus,
-  Contract,
-  ChallengeEvents,
 } from "@connext/types";
-import { toBN, getSignerAddressFromPublicIdentifier, ColorfulLogger } from "@connext/utils";
+import { toBN, nullLogger } from "@connext/utils";
 
-import {
-  CHANNEL_KEY,
-  CONDITIONAL_COMMITMENT_KEY,
-  SET_STATE_COMMITMENT_KEY,
-  SETUP_COMMITMENT_KEY,
-  WITHDRAWAL_COMMITMENT_KEY,
-  STORE_SCHEMA_VERSION_KEY,
-  CHALLENGE_KEY,
-  BLOCK_PROCESSED_KEY,
-  STATE_PROGRESSED_EVENT_KEY,
-  CHALLENGE_UPDATED_EVENT_KEY,
-  STORE_KEY,
-} from "../constants";
-import { defaultAbiCoder } from "ethers/utils";
+import { storeKeys } from "../constants";
+import { WrappedStorage } from "../types";
 
-function properlyConvertChannelNullVals(json: any): StateChannelJSON {
+const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
   return {
     ...json,
     proposedAppInstances:
@@ -47,7 +30,7 @@ function properlyConvertChannelNullVals(json: any): StateChannelJSON {
       json.proposedAppInstances.map(([id, proposal]) => [id, proposal]),
     appInstances: json.appInstances && json.appInstances.map(([id, app]) => [id, app]),
   };
-}
+};
 
 /**
  * This class wraps a general key value storage service to become an `IStoreService`
@@ -57,11 +40,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   constructor(
     private readonly storage: WrappedStorage,
     private readonly backupService?: IBackupServiceAPI,
-    private readonly log: ColorfulLogger = new ColorfulLogger("KeyValueStorage"),
+    private readonly log: ILoggerService = nullLogger,
   ) {}
 
   async getSchemaVersion(): Promise<number> {
-    const version = await this.getItem<{ version: number }>(STORE_SCHEMA_VERSION_KEY);
+    const version = await this.getItem<{ version: number }>(storeKeys.STORE_SCHEMA_VERSION);
     return version?.version || 0;
   }
 
@@ -69,28 +52,27 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (STORE_SCHEMA_VERSION < version) {
       throw new Error(`Unrecognized store version: ${version}`);
     }
-    return this.setItem<{ version: number }>(STORE_SCHEMA_VERSION_KEY, { version });
+    return this.setItem<{ version: number }>(storeKeys.STORE_SCHEMA_VERSION, { version });
   }
 
   async getKeys(): Promise<string[]> {
-    const store = await this.getStore();
-    return Object.keys(store);
+    return Object.keys(await this.getStore());
   }
 
   private async getStore(): Promise<any> {
-    const store = await this.storage.getItem(STORE_KEY);
+    const store = await this.storage.getItem(storeKeys.STORE);
     return store || {};
   }
 
   private async saveStore(store: any): Promise<any> {
     if (this.backupService) {
       try {
-        await this.backupService.backup({ path: STORE_KEY, value: store });
+        await this.backupService.backup({ path: storeKeys.STORE, value: store });
       } catch (e) {
-        console.info(`Could not save ${STORE_KEY} to backup service. Error: ${e.stack || e.message}`);
+        this.log.warn(`Could not save ${storeKeys.STORE} to backup service. Error: ${e.stack || e.message}`);
       }
     }
-    return this.storage.setItem(STORE_KEY, store);
+    return this.storage.setItem(storeKeys.STORE, store);
   }
 
   async getItem<T>(key: string): Promise<T | undefined> {
@@ -120,7 +102,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   clear(): Promise<void> {
-    return this.storage.setItem(STORE_KEY, {});
+    return this.storage.setItem(storeKeys.STORE, {});
   }
 
   async restore(): Promise<void> {
@@ -129,7 +111,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       throw new Error(`No backup provided, store cleared`);
     }
     const pairs = await this.backupService.restore();
-    const store = pairs.find(pair => pair.path === STORE_KEY).value;
+    const store = pairs.find(pair => pair.path === storeKeys.STORE).value;
     return this.saveStore(store);
   }
 
@@ -138,7 +120,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
-    const channelKeys = (await this.getKeys()).filter((key) => key.includes(CHANNEL_KEY));
+    const channelKeys = (await this.getKeys()).filter((key) => key.includes(storeKeys.CHANNEL));
     const store = await this.getStore();
     return channelKeys
       .map((key) => (store[key] ? properlyConvertChannelNullVals(store[key]) : undefined))
@@ -146,7 +128,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
-    const channelKey = this.getKey(CHANNEL_KEY, multisigAddress);
+    const channelKey = this.getKey(storeKeys.CHANNEL, multisigAddress);
     const item = await this.getItem<StateChannelJSON>(channelKey);
     return item ? properlyConvertChannelNullVals(item) : undefined;
   }
@@ -155,7 +137,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     store: any,
     multisigAddress: string,
   ): StateChannelJSON | undefined {
-    const channelKey = this.getKey(CHANNEL_KEY, multisigAddress);
+    const channelKey = this.getKey(storeKeys.CHANNEL, multisigAddress);
     const item = store[channelKey];
     return item ? properlyConvertChannelNullVals(item) : undefined;
   }
@@ -401,7 +383,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
-    const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
+    const setupCommitmentKey = this.getKey(storeKeys.SETUP_COMMITMENT, multisigAddress);
     const item = await this.getItem<MinimalTransaction>(setupCommitmentKey);
     if (!item) {
       return undefined;
@@ -411,7 +393,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getSetStateCommitments(appIdentityHash: string): Promise<SetStateCommitmentJSON[]> {
     // get all stored challenges
-    const partial = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
+    const partial = this.getKey(storeKeys.SET_STATE_COMMITMENT, appIdentityHash);
     const keys = await this.getKeys();
     const relevant = keys.filter((key) => key.includes(partial));
 
@@ -422,7 +404,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async getConditionalTransactionCommitment(
     appIdentityHash: string,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
-    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
+    const conditionalCommitmentKey = this.getKey(storeKeys.CONDITIONAL_COMMITMENT, appIdentityHash);
     const item = await this.getItem<ConditionalTransactionCommitmentJSON>(conditionalCommitmentKey);
     if (!item) {
       return undefined;
@@ -431,7 +413,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getUserWithdrawals(): Promise<WithdrawalMonitorObject[]> {
-    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
+    const withdrawalKey = this.getKey(storeKeys.WITHDRAWAL_COMMITMENT, `monitor`);
     const item = await this.getItem<WithdrawalMonitorObject[]>(withdrawalKey);
     if (!item) {
       return [];
@@ -440,7 +422,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async saveUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
-    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
+    const withdrawalKey = this.getKey(storeKeys.WITHDRAWAL_COMMITMENT, `monitor`);
     const withdrawals = await this.getUserWithdrawals();
     const idx = withdrawals.findIndex(
       (x) => x.tx.data === withdrawalObject.tx.data && x.tx.to === withdrawalObject.tx.to,
@@ -454,7 +436,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void> {
-    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
+    const withdrawalKey = this.getKey(storeKeys.WITHDRAWAL_COMMITMENT, `monitor`);
     const withdrawals = await this.getUserWithdrawals();
     const updated = withdrawals.filter((x) => JSON.stringify(x) !== JSON.stringify(toRemove));
     return this.setItem(withdrawalKey, updated);
@@ -462,7 +444,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   ////// Watcher methods
   getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined> {
-    const challengeKey = this.getKey(CHALLENGE_KEY, appIdentityHash);
+    const challengeKey = this.getKey(storeKeys.CHALLENGE, appIdentityHash);
     return this.getItem<StoredAppChallenge>(challengeKey);
   }
 
@@ -497,13 +479,13 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   ///// Events
   async getLatestProcessedBlock(): Promise<number> {
-    const key = this.getKey(BLOCK_PROCESSED_KEY);
+    const key = this.getKey(storeKeys.BLOCK_PROCESSED);
     const item = await this.getItem<{ block: string }>(key);
     return item ? parseInt(`${item.block}`) : 0;
   }
 
   updateLatestProcessedBlock(blockNumber: number): Promise<void> {
-    const key = this.getKey(BLOCK_PROCESSED_KEY);
+    const key = this.getKey(storeKeys.BLOCK_PROCESSED);
     return this.setItem(key, { block: blockNumber });
   }
 
@@ -631,7 +613,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
     const setStateKey = this.getKey(
-      SET_STATE_COMMITMENT_KEY,
+      storeKeys.SET_STATE_COMMITMENT,
       appIdentityHash,
       toBN(commitment.versionNumber).toString(),
     );
@@ -646,7 +628,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   private setStateChannel(store: any, stateChannel: StateChannelJSON): Promise<any> {
-    const channelKey = this.getKey(CHANNEL_KEY, stateChannel.multisigAddress);
+    const channelKey = this.getKey(storeKeys.CHANNEL, stateChannel.multisigAddress);
     store[channelKey] = {
       ...stateChannel,
       proposedAppInstances: stateChannel.proposedAppInstances.map(([id, proposal]) => [
@@ -662,7 +644,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     store: any,
     appIdentityHash: Bytes32,
   ): SetStateCommitmentJSON {
-    const partial = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
+    const partial = this.getKey(storeKeys.SET_STATE_COMMITMENT, appIdentityHash);
     const keys = Object.keys(store);
     const relevant = keys.filter((key) => key.includes(partial));
     const appCommitments = relevant.map((key) => store[key]);
@@ -681,7 +663,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     multisigAddress: string,
     commitment: MinimalTransaction,
   ): any {
-    const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
+    const setupCommitmentKey = this.getKey(storeKeys.SETUP_COMMITMENT, multisigAddress);
     store[setupCommitmentKey] = commitment;
     return store;
   }
@@ -691,7 +673,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<any> {
-    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
+    const conditionalCommitmentKey = this.getKey(storeKeys.CONDITIONAL_COMMITMENT, appIdentityHash);
     store[conditionalCommitmentKey] = commitment;
     return store;
   }
@@ -702,7 +684,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     commitment: SetStateCommitmentJSON,
   ): any {
     const setStateKey = this.getKey(
-      SET_STATE_COMMITMENT_KEY,
+      storeKeys.SET_STATE_COMMITMENT,
       appIdentityHash,
       toBN(commitment.versionNumber).toString(),
     );
@@ -712,7 +694,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   private unsetSetStateCommitment(store: any, appIdentityHash: string, versionNumber: string): any {
     const setStateKey = this.getKey(
-      SET_STATE_COMMITMENT_KEY,
+      storeKeys.SET_STATE_COMMITMENT,
       appIdentityHash,
       versionNumber,
     );
