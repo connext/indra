@@ -52,7 +52,7 @@ export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" 
 export const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
 
 export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
-  identityHash: "identityHashApp",
+  identityHash: getRandomBytes32(),
   multisigAddress: TEST_STORE_ETH_ADDRESS,
   initiatorIdentifier: "sender",
   responderIdentifier: "receiver",
@@ -83,7 +83,7 @@ export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
   },
   appDefinition: TEST_STORE_ETH_ADDRESS,
   appSeqNo: 1,
-  identityHash: "identityHashProposal",
+  identityHash: getRandomBytes32(),
   initialState: {
     counter: 4,
   },
@@ -112,7 +112,7 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
   userIdentifiers: ["address1", "address2"],
   proposedAppInstances: [[TEST_STORE_PROPOSAL.identityHash, TEST_STORE_PROPOSAL]],
   appInstances: [[TEST_STORE_APP_INSTANCE.identityHash, TEST_STORE_APP_INSTANCE]],
-  freeBalanceAppInstance: { ...TEST_STORE_APP_INSTANCE, identityHash: `identityHashFreeDBalance` },
+  freeBalanceAppInstance: { ...TEST_STORE_APP_INSTANCE, identityHash: getRandomBytes32() },
   monotonicNumProposedApps: 2,
 };
 

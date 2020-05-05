@@ -1,4 +1,4 @@
-import { STORE_SCHEMA_VERSION, StoredAppChallengeStatus, StateChannelJSON } from "@connext/types";
+import { STORE_SCHEMA_VERSION, StoredAppChallengeStatus, StateChannelJSON, SetStateCommitmentJSON } from "@connext/types";
 import { toBNJson } from "@connext/utils";
 
 import {
@@ -117,15 +117,15 @@ describe("ConnextStore", () => {
         const app = TEST_STORE_CHANNEL.appInstances[0][1];
         const freeBalanceSetState0 = {
           ...TEST_STORE_SET_STATE_COMMITMENT,
-          identityHash: channel.freeBalanceAppInstance!.identityHash,
+          appIdentityHash: channel.freeBalanceAppInstance!.identityHash,
         };
         const freeBalanceSetState1 = {
           ...freeBalanceSetState0,
-          versionNumber: toBNJson(app.latestVersionNumber),
+          versionNumber: toBNJson(3),
         };
-        const appSetState = {
+        const appSetState: SetStateCommitmentJSON = {
           ...TEST_STORE_SET_STATE_COMMITMENT,
-          identityHash: app.identityHash,
+          appIdentityHash: app.identityHash,
           versionNumber: toBNJson(app.latestVersionNumber),
         };
 
@@ -188,7 +188,7 @@ describe("ConnextStore", () => {
         };
         const freeBalanceSetState0 = {
           ...TEST_STORE_SET_STATE_COMMITMENT,
-          identityHash: channel.freeBalanceAppInstance!.identityHash,
+          appIdentityHash: channel.freeBalanceAppInstance!.identityHash,
         };
         const freeBalanceSetState1 = {
           ...freeBalanceSetState0,
@@ -418,7 +418,7 @@ describe("ConnextStore", () => {
         const app = TEST_STORE_CHANNEL.appInstances[0][1];
         const freeBalanceSetState0 = {
           ...TEST_STORE_SET_STATE_COMMITMENT,
-          identityHash: channel.freeBalanceAppInstance!.identityHash,
+          appIdentityHash: channel.freeBalanceAppInstance!.identityHash,
         };
         const freeBalanceSetState1 = {
           ...freeBalanceSetState0,
