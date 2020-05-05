@@ -1,7 +1,7 @@
-import { WrappedStorage } from "@connext/types";
 import { DataTypes, Model, Op, Sequelize } from "sequelize";
 
 import { storeDefaults } from "../constants";
+import { WrappedStorage } from "../types";
 
 class ConnextClientData extends Model {
   public key!: string;

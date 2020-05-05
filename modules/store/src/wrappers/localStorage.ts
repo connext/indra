@@ -1,7 +1,7 @@
-import { WrappedStorage } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
 
 import { storeDefaults } from "../constants";
+import { WrappedStorage } from "../types";
 
 // @ts-ignore
 const getLocalStorage = () => global.localStorage || require("localStorage");

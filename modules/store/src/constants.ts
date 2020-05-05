@@ -1,3 +1,9 @@
+export const storeDefaults = {
+  DATABASE_TABLE_NAME: "connext_client_data",
+  PREFIX: "INDRA_CLIENT_CF_CORE",
+  SEPARATOR: "/",
+};
+
 export const storeKeys = {
   BLOCK_PROCESSED: "block_processed",
   CHALLENGE: "challenge",
@@ -20,10 +26,3 @@ export const storePaths = {
   CHANNEL: "channel",
   PROPOSED_APP_IDENTITY_HASH: "appIdentityHashToProposedAppInstance",
 };
-
-export const storeDefaults = {
-  DATABASE_TABLE_NAME: "connext_client_data",
-  PREFIX: "INDRA_CLIENT_CF_CORE",
-  SEPARATOR: "/",
-};
-

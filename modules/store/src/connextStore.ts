@@ -14,7 +14,6 @@ import {
   StoreFactoryOptions,
   StoreTypes,
   WithdrawalMonitorObject,
-  WrappedStorage,
   Bytes32,
   Address,
 } from "@connext/types";
@@ -28,6 +27,7 @@ import {
   WrappedLocalStorage,
   WrappedPostgresStorage,
 } from "./wrappers";
+import { WrappedStorage } from "./types";
 
 export class ConnextStore implements IClientStore {
   private internalStore: IClientStore;

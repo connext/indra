@@ -1,16 +1,15 @@
 import {
   ConnextStore,
-  KeyValueStorage,
-  WrappedLocalStorage,
   FileStorage,
+  KeyValueStorage,
   WrappedAsyncStorage,
+  WrappedLocalStorage,
   WrappedPostgresStorage,
 } from "@connext/store";
 import {
   StoreFactoryOptions,
   StorePair,
   StoreTypes,
-  WrappedStorage,
   AppInstanceProposal,
   StateChannelJSON,
   AppInstanceJson,
@@ -253,7 +252,7 @@ export async function setAndGetMultiple(
 }
 
 export async function testAsyncStorageKey(
-  storage: WrappedStorage,
+  storage: KeyValueStorage,
   asyncStorageKey: string,
 ): Promise<void> {
   const keys = await storage.getKeys();

@@ -40,23 +40,15 @@ export interface IAsyncStorage {
   removeItem(key: string): Promise<void>;
 }
 
-export interface WrappedStorage {
-  getItem<T = any>(key: string): Promise<T | undefined>;
-  setItem<T = any>(key: string, value: T): Promise<void>;
-  removeItem(key: string): Promise<void>;
-  getKeys(): Promise<string[]>;
-  getEntries(): Promise<[string, any][]>;
-  // generates a key for related subject strings
-  getKey(...args: string[]): string;
-}
-
+// TODO: Remove
 export interface FileStorageOptions {
   fileExt?: string;
   fileDir?: string;
 }
 
+// TODO: Remove
 export interface StoreFactoryOptions extends FileStorageOptions {
-  storage?: IAsyncStorage | WrappedStorage;
+  storage?: IAsyncStorage | any;
   prefix?: string;
   separator?: string;
   asyncStorageKey?: string;
@@ -68,6 +60,16 @@ export interface StoreFactoryOptions extends FileStorageOptions {
 export interface IBackupServiceAPI {
   restore(): Promise<StorePair[]>;
   backup(pair: StorePair): Promise<void>;
+}
+
+// Used to monitor node submitted withdrawals on behalf of user
+export type WithdrawalMonitorObject = {
+  retry: number;
+  tx: MinimalTransaction;
+};
+
+export interface ChannelsMap {
+  [multisigAddress: string]: any;
 }
 
 export const STORE_SCHEMA_VERSION = 1;
@@ -124,14 +126,4 @@ export interface IClientStore extends IStoreService {
   getUserWithdrawals(): Promise<WithdrawalMonitorObject[]>;
   saveUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
   removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void>;
-}
-
-// Used to monitor node submitted withdrawals on behalf of user
-export type WithdrawalMonitorObject = {
-  retry: number;
-  tx: MinimalTransaction;
-};
-
-export interface ChannelsMap {
-  [multisigAddress: string]: any;
 }

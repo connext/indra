@@ -11,7 +11,6 @@ import {
   StateProgressedEventPayload,
   STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
-  WrappedStorage,
   ChallengeStatus,
   Bytes32,
   IBackupServiceAPI,
@@ -19,6 +18,7 @@ import {
 import { toBN, ColorfulLogger } from "@connext/utils";
 
 import { storeKeys } from "../constants";
+import { WrappedStorage } from "../types";
 
 const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
   return {
