@@ -5,7 +5,7 @@ import {
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
   IBackupService,
-  IClientStore,
+  IStoreService,
   MinimalTransaction,
   SetStateCommitmentJSON,
   StateChannelJSON,
@@ -29,8 +29,8 @@ import {
 } from "./wrappers";
 import { StoreTypes, WrappedStorage } from "./types";
 
-export class ConnextStore implements IClientStore {
-  public internalStore: IClientStore;
+export class ConnextStore implements IStoreService {
+  public internalStore: IStoreService;
 
   private prefix: string = storeDefaults.PREFIX;
   private separator: string = storeDefaults.SEPARATOR;

@@ -77,12 +77,17 @@ export interface ChannelsMap {
 
 export const STORE_SCHEMA_VERSION = 1;
 
-// TODO: merge IWatcherStoreService & IStoreService
+// TODO: merge IWatcherStoreService & IStoreService?
 // IWatcherStoreService contains all event/challenge storage methods
 // in addition to all the getters for the setters defined below
 export interface IStoreService extends IWatcherStoreService {
   ///// Schema version
   updateSchemaVersion(version?: number): Promise<void>;
+
+  ///// Client Store Methods
+  getUserWithdrawals(): Promise<WithdrawalMonitorObject[]>;
+  saveUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
+  removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void>;
 
   ///// State channels
   createStateChannel(
@@ -124,11 +129,4 @@ export interface IStoreService extends IWatcherStoreService {
   ///// Resetting methods
   clear(): Promise<void>;
   restore(): Promise<void>;
-}
-
-// TODO: merge with IStoreService
-export interface IClientStore extends IStoreService {
-  getUserWithdrawals(): Promise<WithdrawalMonitorObject[]>;
-  saveUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
-  removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void>;
 }

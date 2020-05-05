@@ -1,4 +1,4 @@
-import { IAsyncStorage, IBackupService, IClientStore } from "@connext/types";
+import { IAsyncStorage, IBackupService, IStoreService } from "@connext/types";
 
 import { ConnextStore } from "./connextStore";
 import { StoreTypes } from "./types";
@@ -13,7 +13,7 @@ export { PisaBackupService } from "./pisaClient";
 export const getAsyncStore = (
   storage: IAsyncStorage,
   backupService?: IBackupService,
-): IClientStore =>
+): IStoreService =>
   new ConnextStore(
     StoreTypes.AsyncStorage,
     { storage: new WrappedAsyncStorage(storage) },
@@ -22,19 +22,19 @@ export const getAsyncStore = (
 export const getFileStore = (
   fileDir: string,
   backupService?: IBackupService,
-): IClientStore =>
+): IStoreService =>
   new ConnextStore(StoreTypes.File, { backupService, fileDir });
 
-export const getLocalStore = (backupService?: IBackupService): IClientStore =>
+export const getLocalStore = (backupService?: IBackupService): IStoreService =>
   new ConnextStore(StoreTypes.LocalStorage, { backupService });
 
-export const getMemoryStore = (): IClientStore =>
+export const getMemoryStore = (): IStoreService =>
   new ConnextStore(StoreTypes.Memory);
 
 export const getPostgresStore = (
   connectionUri: string,
   backupService?: IBackupService,
-): IClientStore =>
+): IStoreService =>
   new ConnextStore(
     StoreTypes.Postgres,
     { postgresConnectionUri: connectionUri, backupService },

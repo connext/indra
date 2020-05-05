@@ -9,7 +9,7 @@ import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import { NodeResponses } from "./node";
 import { MethodResults, MethodParams, MethodName } from "./methods";
-import { IClientStore } from "./store";
+import { IStoreService } from "./store";
 import { PublicParams, PublicResults } from "./public";
 
 /////////////////////////////////
@@ -19,7 +19,7 @@ export interface ClientOptions {
   channelProvider?: IChannelProvider;
   ethProviderUrl: string;
   signer?: string | IChannelSigner;
-  store?: IClientStore;
+  store?: IStoreService;
   logger?: ILogger;
   loggerService?: ILoggerService;
   logLevel?: number;
@@ -44,7 +44,7 @@ export interface IConnextClient {
 
   // Expose some internal machineary for easier debugging
   messaging: IMessagingService;
-  store: IClientStore;
+  store: IStoreService;
 
   ////////////////////////////////////////
   // Methods
