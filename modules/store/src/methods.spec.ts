@@ -1,4 +1,4 @@
-import { STORE_SCHEMA_VERSION, StoredAppChallengeStatus } from "@connext/types";
+import { STORE_SCHEMA_VERSION, StoredAppChallengeStatus, StateChannelJSON } from "@connext/types";
 import { toBNJson } from "@connext/utils";
 
 import {
@@ -181,7 +181,11 @@ describe("ConnextStore", () => {
       it(`${type} - should work`, async () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
         const app = TEST_STORE_CHANNEL.appInstances[0][1];
-        const channel = { ...TEST_STORE_CHANNEL, proposedAppInstances: [] };
+        const channel = {
+          ...TEST_STORE_CHANNEL,
+          proposedAppInstances: [[app.identityHash, app]],
+          appInstances: [],
+        };
         const freeBalanceSetState0 = {
           ...TEST_STORE_SET_STATE_COMMITMENT,
           identityHash: channel.freeBalanceAppInstance!.identityHash,
@@ -195,7 +199,11 @@ describe("ConnextStore", () => {
           versionNumber: toBNJson(1136),
         };
         const multisigAddress = channel.multisigAddress;
-        await store.createStateChannel(channel, TEST_STORE_MINIMAL_TX, freeBalanceSetState0);
+        await store.createStateChannel(
+          channel as StateChannelJSON,
+          TEST_STORE_MINIMAL_TX,
+          freeBalanceSetState0,
+        );
         await store.createAppInstance(
           multisigAddress,
           app,
@@ -372,7 +380,7 @@ describe("ConnextStore", () => {
   });
 
   describe("getAppChallenge / saveAppChallenge / getChallengeUpdatedEvents", () => {
-    storeTypes.forEach(type => {
+    storeTypes.forEach((type) => {
       it(`${type} - should be able to create, get, and update app challenges`, async () => {
         const value = { ...TEST_STORE_APP_CHALLENGE };
         const edited = { ...value, status: StoredAppChallengeStatus.OUTCOME_SET };
