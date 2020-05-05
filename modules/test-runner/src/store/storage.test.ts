@@ -117,12 +117,11 @@ describe("KeyValueStorage", () => {
     await Promise.all([store.setItem(key2, testValue), store.setItem(key1, testValue)]);
 
     const files = await getDirectoryFiles(fileDir);
-    const storeFileName = `${DEFAULT_STORE_PREFIX}-${STORE_KEY}${DEFAULT_FILE_STORAGE_EXT}`;
     const verifyFile = (fileName: string): void => {
       const fileArr = files.filter((file: string) => file.includes(fileName));
       expect(fileArr.length).to.equal(1);
     };
-    verifyFile(storeFileName);
+    verifyFile(`${DEFAULT_STORE_PREFIX}-${STORE_KEY}${DEFAULT_FILE_STORAGE_EXT}`);
     await store.clear();
   });
 
