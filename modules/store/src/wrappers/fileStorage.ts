@@ -1,15 +1,14 @@
-import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
+import { WrappedStorage } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
 import writeFileAtomic from "write-file-atomic";
 
 import {
   createDirectory,
   fsUnlink,
-  fsWrite,
   getDirectoryFiles,
+  pathJoin,
   safeFsRead,
   sanitizeExt,
-  pathJoin,
 } from "../helpers";
 import {
   DEFAULT_FILE_STORAGE_DIR,

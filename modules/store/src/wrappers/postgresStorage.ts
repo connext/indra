@@ -1,12 +1,28 @@
 import { WrappedStorage } from "@connext/types";
-import { Sequelize, Op } from "sequelize";
+import { DataTypes, Model, Op, Sequelize } from "sequelize";
 
-import { ConnextClientData, ConnextClientDataInitParams } from "../helpers";
 import {
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
   DEFAULT_DATABASE_STORAGE_TABLE_NAME,
 } from "../constants";
+
+class ConnextClientData extends Model {
+  public key!: string;
+  public value!: JSON;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+}
+
+const ConnextClientDataInitParams = {
+  key: {
+    type: new DataTypes.STRING(1024),
+    primaryKey: true,
+  },
+  value: {
+    type: DataTypes.JSONB,
+  },
+};
 
 export class WrappedPostgresStorage implements WrappedStorage {
   public sequelize: Sequelize;
