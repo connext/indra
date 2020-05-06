@@ -12,8 +12,8 @@ import {
 import { getAddressError } from "./hexStrings";
 import { getPublicIdentifierError } from "./identifiers";
 
-const encryptMessageSM = "123456789012345";
-const encryptMessageLG = "1234567890123456";
+const encryptMessageSM = "123456789012345"; // equal or shorter than 15 chars
+const encryptMessageLG = "1234567890123456"; // longer than 15 chars
 
 const channelMessage = "0x75374933b4a3276b2ef2f95edc6b847187ca14324b513888a73afe9bed316c16";
 
