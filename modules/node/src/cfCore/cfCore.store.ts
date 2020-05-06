@@ -72,6 +72,10 @@ export class CFCoreStore implements IStoreService {
     log.setContext("CFCoreStore");
   }
 
+  init(): Promise<void> {
+    return Promise.resolve();
+  }
+
   getSchemaVersion(): Promise<number> {
     return Promise.resolve(this.schemaVersion);
   }

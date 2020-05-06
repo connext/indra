@@ -22,6 +22,10 @@ export class FileStorage implements WrappedStorage {
     }
   }
 
+  init(): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
   get fileSuffix(): string {
     return `${this.fileExt}`;
   }

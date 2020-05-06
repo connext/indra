@@ -48,8 +48,11 @@ export class TestRunner {
     this.defaultTimeout = BigNumber.from(100);
 
     this.mininodeA = new MiniNode(network, this.provider, getMemoryStore());
+    await this.mininodeA.store.init();
     this.mininodeB = new MiniNode(network, this.provider, getMemoryStore());
+    await this.mininodeB.store.init();
     this.mininodeC = new MiniNode(network, this.provider, getMemoryStore());
+    await this.mininodeC.store.init();
 
     this.multisigAB = await getCreate2MultisigAddress(
       this.mininodeA.publicIdentifier,

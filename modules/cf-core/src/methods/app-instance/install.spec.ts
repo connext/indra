@@ -38,8 +38,9 @@ describe("Can handle correct & incorrect installs", () => {
   let protocolRunner: ProtocolRunner;
   let initiatorIdentifier: string;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     store = getMemoryStore();
+    await store.init();
     protocolRunner = new ProtocolRunner(
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
       {} as providers.JsonRpcProvider,

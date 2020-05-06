@@ -39,6 +39,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         const lockService = new MemoryLockService();
 
         const storeServiceA = new MemoryStoreServiceFactory().createStoreService();
+        await storeServiceA.init();
 
         nodeA = await Node.create(
           messagingService,
@@ -51,6 +52,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         );
 
         const storeServiceB = new MemoryStoreServiceFactory().createStoreService();
+        await storeServiceB.init();
         nodeB = await Node.create(
           messagingService,
           storeServiceB,
