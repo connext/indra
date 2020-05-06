@@ -52,6 +52,18 @@ describe("KeyValueStorage", () => {
     }
   });
 
+  it("happy case: memory storage should be able to support multiple stores", async () => {
+    const store1 = await createKeyValueStore(StoreTypes.Memory);
+    await store1.setItem("test", "store1");
+    const store2 = await createKeyValueStore(StoreTypes.Memory);
+    await store2.setItem("test", "store2");
+    const item1 = await store1.getItem("test");
+    const item2 = await store2.getItem("test");
+    expect(item1).to.eq("store1");
+    expect(item2).to.eq("store2");
+    await store1.clear();
+  });
+
   it("happy case: localStorage should include multiple keys", async () => {
     const store = await createKeyValueStore(StoreTypes.LocalStorage);
     const preInsert = await store.getEntries();
