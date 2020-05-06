@@ -1,6 +1,5 @@
 import { Sequelize } from "sequelize";
 
-import { StateChannelJSON } from "./state";
 import { AppInstanceJson, AppInstanceProposal } from "./app";
 import { Address, Bytes32 } from "./basic";
 import {
@@ -8,12 +7,15 @@ import {
   MinimalTransaction,
   SetStateCommitmentJSON,
 } from "./commitments";
+import { ILoggerService } from "./logger";
+import { StateChannelJSON } from "./state";
 import { enumify } from "./utils";
 import { IWatcherStoreService } from "./watcher";
 
 export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
 export const ConnextClientStorePrefix = "INDRA_CLIENT_CF_CORE";
 
+// TODO: remove StoreTypes during next breaking release
 export const StoreTypes = enumify({
   AsyncStorage: "AsyncStorage",
   File: "File",
@@ -40,23 +42,16 @@ export interface IAsyncStorage {
   removeItem(key: string): Promise<void>;
 }
 
-export interface WrappedStorage {
-  getItem<T = any>(key: string): Promise<T | undefined>;
-  setItem<T = any>(key: string, value: T): Promise<void>;
-  removeItem(key: string): Promise<void>;
-  getKeys(): Promise<string[]>;
-  getEntries(): Promise<[string, any][]>;
-  // generates a key for related subject strings
-  getKey(...args: string[]): string;
-}
-
+// TODO: Remove
 export interface FileStorageOptions {
   fileExt?: string;
   fileDir?: string;
 }
 
+// TODO: Remove
 export interface StoreFactoryOptions extends FileStorageOptions {
-  storage?: IAsyncStorage | WrappedStorage;
+  logger?: ILoggerService,
+  storage?: IAsyncStorage | any;
   prefix?: string;
   separator?: string;
   asyncStorageKey?: string;
@@ -70,8 +65,19 @@ export interface IBackupServiceAPI {
   backup(pair: StorePair): Promise<void>;
 }
 
+// Used to monitor node submitted withdrawals on behalf of user
+export type WithdrawalMonitorObject = {
+  retry: number;
+  tx: MinimalTransaction;
+};
+
+export interface ChannelsMap {
+  [multisigAddress: string]: any;
+}
+
 export const STORE_SCHEMA_VERSION = 1;
 
+// TODO: merge IWatcherStoreService & IStoreService
 // IWatcherStoreService contains all event/challenge storage methods
 // in addition to all the getters for the setters defined below
 export interface IStoreService extends IWatcherStoreService {
@@ -118,20 +124,13 @@ export interface IStoreService extends IWatcherStoreService {
   ///// Resetting methods
   clear(): Promise<void>;
   restore(): Promise<void>;
+
+  init(): Promise<void>;
 }
 
+// TODO: merge with IStoreService
 export interface IClientStore extends IStoreService {
   getUserWithdrawals(): Promise<WithdrawalMonitorObject[]>;
   saveUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
   removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void>;
-}
-
-// Used to monitor node submitted withdrawals on behalf of user
-export type WithdrawalMonitorObject = {
-  retry: number;
-  tx: MinimalTransaction;
-};
-
-export interface ChannelsMap {
-  [multisigAddress: string]: any;
 }

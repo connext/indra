@@ -1,6 +1,6 @@
 {
   "name": "@connext/store",
-  "version": "6.3.6",
+  "version": "6.3.8",
   "description": "Store module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -10,22 +10,34 @@
   ],
   "scripts": {
     "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
-    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
+    "test": "ts-mocha --bail --check-leaks --exit src/**/*.spec.ts"
   },
   "dependencies": {
-    "@connext/types": "6.3.6",
-    "@connext/utils": "6.3.6",
+    "@connext/types": "6.3.8",
+    "@connext/utils": "6.3.8",
     "ethers": "4.0.47",
     "localStorage": "1.0.4",
     "pg": "8.0.3",
     "pg-hstore": "2.3.3",
     "pisa-client": "0.1.5",
     "sequelize": "5.21.5",
-    "uuid": "7.0.3"
+    "sqlite3": "^4.2.0",
+    "uuid": "7.0.3",
+    "write-file-atomic": "3.0.3"
   },
   "devDependencies": {
     "@babel/polyfill": "7.8.7",
+    "@types/chai": "4.2.11",
+    "@types/chai-as-promised": "7.1.2",
+    "@types/chai-subset": "1.3.3",
+    "@types/mocha": "7.0.2",
     "@types/node": "13.13.2",
+    "chai": "4.2.0",
+    "chai-as-promised": "7.1.1",
+    "chai-subset": "1.6.0",
+    "mocha": "7.1.1",
+    "ts-mocha": "7.0.0",
     "typescript": "3.8.3"
   }
 }

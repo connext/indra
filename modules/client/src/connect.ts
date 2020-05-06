@@ -1,3 +1,4 @@
+import { getLocalStore } from "@connext/store";
 import {
   ClientOptions,
   IChannelProvider,
@@ -7,7 +8,6 @@ import {
   StateSchemaVersion,
   STORE_SCHEMA_VERSION,
   IChannelSigner,
-  StoreTypes,
 } from "@connext/types";
 import { ChannelSigner, ConsoleLogger, delayAndThrow, logTime, stringify } from "@connext/utils";
 
@@ -17,7 +17,6 @@ import tokenAbi from "human-standard-token-abi";
 import { ConnextClient } from "./connext";
 import { getDefaultOptions } from "./default";
 import { NodeApiClient } from "./node";
-import { ConnextStore } from "@connext/store";
 
 export const connect = async (
   clientOptions: string | ClientOptions,
@@ -37,6 +36,9 @@ export const connect = async (
     logLevel,
   } = opts;
   let { store, messaging, nodeUrl, messagingUrl } = opts;
+  if (store) {
+    await store.init();
+  }
 
   const logger = loggerService
     ? loggerService.newContext("ConnextConnect")
@@ -96,7 +98,7 @@ export const connect = async (
         ? new ChannelSigner(opts.signer, ethProviderUrl)
         : opts.signer;
 
-    store = store || new ConnextStore(StoreTypes.LocalStorage);
+    store = store || getLocalStore();
 
     node = await NodeApiClient.init({
       store,

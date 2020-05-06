@@ -20,6 +20,13 @@ jobs:
     - run: make cf-core
     - run: make test-cf
 
+  test-store:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make store
+    - run: make test-store
+
   test-watcher:
     runs-on: ubuntu-latest
     steps:
@@ -90,4 +97,4 @@ jobs:
     - run: make test-integration
     - name: Print logs
       if: failure()
-      run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
+      run: docker service logs --tail 200 indra_node
