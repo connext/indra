@@ -1,16 +1,9 @@
-import { DataTypes, Model, Op, Sequelize } from "sequelize";
+import { DataTypes, Op, Sequelize } from "sequelize";
 import { mkdirSync } from "fs";
 import { dirname } from "path";
 
 import { storeDefaults } from "../constants";
 import { WrappedStorage } from "../types";
-
-class ConnextClientData extends Model {
-  public key!: string;
-  public value!: JSON;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
-}
 
 type SupportedDialects = "postgres" | "sqlite";
 
@@ -32,6 +25,8 @@ const getConnextClientDataInitParams = (dialect: SupportedDialects) => {
 
 export class WrappedSequelizeStorage implements WrappedStorage {
   public sequelize: Sequelize;
+  private ConnextClientData: any;
+
   constructor(
     private readonly prefix: string = storeDefaults.PREFIX,
     private readonly separator: string = storeDefaults.SEPARATOR,
@@ -53,29 +48,27 @@ export class WrappedSequelizeStorage implements WrappedStorage {
     } else {
       throw new Error(`Must specify sequelize instance or connectionUri`);
     }
-    ConnextClientData.init(
+
+    this.ConnextClientData = this.sequelize.define(
+      this.tableName,
       getConnextClientDataInitParams(this.sequelize.getDialect() as SupportedDialects),
-      {
-        sequelize: this.sequelize,
-        tableName: this.tableName,
-      },
     );
   }
 
   async getItem<T>(key: string): Promise<T | undefined> {
-    const item = await ConnextClientData.findByPk(`${this.prefix}${this.separator}${key}`);
+    const item = await this.ConnextClientData.findByPk(`${this.prefix}${this.separator}${key}`);
     return item && (item.value as any);
   }
 
   async setItem(key: string, value: any): Promise<void> {
-    await ConnextClientData.upsert({
+    await this.ConnextClientData.upsert({
       key: `${this.prefix}${this.separator}${key}`,
       value,
     });
   }
 
   async removeItem(key: string): Promise<void> {
-    await ConnextClientData.destroy({
+    await this.ConnextClientData.destroy({
       where: {
         key: `${this.prefix}${this.separator}${key}`,
       },
@@ -85,7 +78,7 @@ export class WrappedSequelizeStorage implements WrappedStorage {
   async getKeys(): Promise<string[]> {
     const relevantItems = await this.getRelevantItems();
     return relevantItems.map(
-      (item: ConnextClientData) => item.key.split(`${this.prefix}${this.separator}`)[1],
+      (item: any) => item.key.split(`${this.prefix}${this.separator}`)[1],
     );
   }
 
@@ -97,8 +90,8 @@ export class WrappedSequelizeStorage implements WrappedStorage {
     ]);
   }
 
-  private async getRelevantItems(): Promise<ConnextClientData[]> {
-    return ConnextClientData.findAll({
+  private async getRelevantItems(): Promise<any[]> {
+    return this.ConnextClientData.findAll({
       where: {
         key: {
           [Op.startsWith]: `${this.prefix}${this.separator}`,
@@ -108,7 +101,7 @@ export class WrappedSequelizeStorage implements WrappedStorage {
   }
 
   async clear(): Promise<void> {
-    await ConnextClientData.destroy({
+    await this.ConnextClientData.destroy({
       where: {
         key: {
           [Op.startsWith]: `${this.prefix}${this.separator}`,
