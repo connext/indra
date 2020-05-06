@@ -10,10 +10,10 @@ import {
   BigNumber,
   CONVENTION_FOR_ETH_ASSET_ID,
   CoinTransfer,
-  StoreTypes,
   SetStateCommitmentJSON,
   ChallengeEvents,
   ChallengeStatus,
+  IClientStore,
 } from "@connext/types";
 import { toBN, getRandomChannelSigner } from "@connext/utils";
 import { Wallet, Contract } from "ethers";
@@ -21,7 +21,7 @@ import { One, Zero } from "ethers/constants";
 import { Interface } from "ethers/utils";
 
 import { AppWithCounterClass, AppWithCounterAction, ActionType } from "./appWithCounter";
-import { ConnextStore } from "@connext/store";
+import { getMemoryStore } from "@connext/store";
 import { MiniFreeBalance } from "./miniFreeBalance";
 import { deployTestArtifactsToChain, mineBlock } from "./contracts";
 import { CREATE_PROXY_AND_SETUP_GAS } from "./utils";
@@ -35,6 +35,12 @@ export type CreatedAppInstanceOpts = {
 
 /////////////////////////////
 // Context
+
+export const getAndInitStore = async (): Promise<IClientStore> => {
+  const store = getMemoryStore();
+  await store.init();
+  return store;
+};
 
 export const setupContext = async (
   shouldLoadStore: boolean = true,
@@ -56,7 +62,7 @@ export const setupContext = async (
     },
     defaultTimeout: Zero,
   };
-  const store = new ConnextStore(StoreTypes.Memory);
+  const store = await getAndInitStore();
 
   // deploy contracts
   await wallet.getTransactionCount();
@@ -247,7 +253,7 @@ export const setupContext = async (
 
   /////////////////////////////////////////
   // store helper functions
-  const loadStore = async (store: ConnextStore) => {
+  const loadStore = async (store: IClientStore) => {
     // create the channel
     await store.createStateChannel(
       channel,
@@ -288,7 +294,7 @@ export const setupContext = async (
   }
 
   const addActionToAppInStore = async (
-    store: ConnextStore,
+    store: IClientStore,
     appPriorToAction: AppWithCounterClass,
     action: AppWithCounterAction = {
       increment: One,

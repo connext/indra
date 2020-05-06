@@ -1,7 +1,5 @@
-import { ConnextStore } from "@connext/store";
 import {
   JsonRpcProvider,
-  StoreTypes,
   BigNumber,
   WatcherEvents,
   StateProgressedEventData,
@@ -9,6 +7,7 @@ import {
   ChallengeUpdatedEventData,
   ChallengeProgressedEventData,
   ChallengeProgressionFailedEventData,
+  IClientStore,
 } from "@connext/types";
 import { Wallet } from "ethers";
 
@@ -24,6 +23,7 @@ import {
   verifyChallengeProgressedEvent,
   AppWithCounterAction,
   mineBlock,
+  getAndInitStore,
 } from "./utils";
 
 import { Watcher } from "../src";
@@ -44,7 +44,7 @@ describe("Watcher.init", () => {
     const watcher = await Watcher.init({
       signer: Wallet.createRandom().privateKey,
       provider: provider.connection.url,
-      store: new ConnextStore(StoreTypes.Memory),
+      store: await getAndInitStore(),
       context: { ChallengeRegistry: getRandomAddress() } as any,
     });
     expect(watcher).to.be.instanceOf(Watcher);
@@ -54,7 +54,7 @@ describe("Watcher.init", () => {
     const watcher = await Watcher.init({
       signer: new ChannelSigner(Wallet.createRandom().privateKey, provider.connection.url),
       provider: provider,
-      store: new ConnextStore(StoreTypes.Memory),
+      store: await getAndInitStore(),
       context: { ChallengeRegistry: getRandomAddress() } as any,
     });
     expect(watcher).to.be.instanceOf(Watcher);
@@ -63,7 +63,7 @@ describe("Watcher.init", () => {
 
 describe("Watcher.initiate", () => {
   let provider: JsonRpcProvider;
-  let store: ConnextStore;
+  let store: IClientStore;
   let multisigAddress: string;
   let channelBalances: { [k: string]: BigNumber };
   let freeBalance: MiniFreeBalance;
@@ -172,7 +172,7 @@ describe("Watcher.initiate", () => {
 
 describe("Watcher.cancel", () => {
   let provider: JsonRpcProvider;
-  let store: ConnextStore;
+  let store: IClientStore;
   let watcher: Watcher;
   let app: AppWithCounterClass;
   let freeBalance: MiniFreeBalance;
@@ -266,7 +266,7 @@ describe("Watcher.cancel", () => {
 
 describe("Watcher responses", () => {
   let provider: JsonRpcProvider;
-  let store: ConnextStore;
+  let store: IClientStore;
   let watcher: Watcher;
   let app: AppWithCounterClass;
   let freeBalance: MiniFreeBalance;
@@ -274,7 +274,7 @@ describe("Watcher responses", () => {
 
   let setState: (app: AppWithCounterClass, commitment: SetStateCommitmentJSON) => Promise<void>;
   let addActionToAppInStore: (
-    store: ConnextStore,
+    store: IClientStore,
     appPriorToAction: AppWithCounterClass,
     action?: AppWithCounterAction,
   ) => Promise<AppWithCounterClass>;
