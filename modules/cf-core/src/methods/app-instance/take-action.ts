@@ -36,9 +36,7 @@ export class TakeActionController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
   ): Promise<string[]> {
-    const app = await requestHandler.store.getAppInstance(
-      params.appIdentityHash,
-    );
+    const app = await requestHandler.store.getAppInstance(params.appIdentityHash);
     if (!app) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
@@ -88,22 +86,22 @@ export class TakeActionController extends NodeController {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
 
-    await runTakeActionProtocol(
+    const { channel } = await runTakeActionProtocol(
       appIdentityHash,
       store,
       protocolRunner,
       publicIdentifier,
-      sc.userIdentifiers.find(id => id !== publicIdentifier)!,
+      sc.userIdentifiers.find((id) => id !== publicIdentifier)!,
       action,
       stateTimeout || toBN(app.defaultTimeout),
     );
 
-    const appInstance = await store.getAppInstance(appIdentityHash);
+    const appInstance = channel.getAppInstance(appIdentityHash);
     if (!appInstance) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
 
-    return { newState: AppInstance.fromJson(appInstance).state };
+    return { newState: appInstance.state };
   }
 
   protected async afterExecution(
@@ -138,12 +136,12 @@ async function runTakeActionProtocol(
   stateTimeout: BigNumber,
 ) {
   const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-    if (!stateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
-    }
+  if (!stateChannel) {
+    throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
+  }
 
   try {
-    await protocolRunner.initiateProtocol(ProtocolNames.takeAction, {
+    return await protocolRunner.initiateProtocol(ProtocolNames.takeAction, {
       initiatorIdentifier,
       responderIdentifier,
       appIdentityHash,
@@ -158,6 +156,4 @@ async function runTakeActionProtocol(
     }
     throw new Error(`Couldn't run TakeAction protocol: ${e.message}`);
   }
-
-  return {};
 }

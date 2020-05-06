@@ -3,6 +3,7 @@ import { Opcode } from "@connext/types";
 import { Deferred } from "../deferred";
 
 import { MiniNode } from "./mininode";
+import { StateChannel } from "../models";
 
 export class MessageRouter {
   // mapping from a mininode's address to the mininode
@@ -25,12 +26,13 @@ export class MessageRouter {
     for (const node of nodes) {
       this.nodesMap.set(node.publicIdentifier, node);
 
-      node.protocolRunner.register(Opcode.IO_SEND, (args: [any]) => {
-        const [message] = args;
+      node.protocolRunner.register(Opcode.IO_SEND, (args: [any, StateChannel]) => {
+        const [message, channel] = args;
         this.appendToPendingPromisesIfNotNull(this.routeMessage(message));
+        return { channel };
       });
-      node.protocolRunner.register(Opcode.IO_SEND_AND_WAIT, async (args: [any]) => {
-        const [message] = args;
+      node.protocolRunner.register(Opcode.IO_SEND_AND_WAIT, async (args: [any, StateChannel]) => {
+        const [message, channel] = args;
         message.fromAddress = node.publicIdentifier;
 
         this.deferrals.set(node.publicIdentifier, new Deferred());
@@ -38,7 +40,7 @@ export class MessageRouter {
         const ret = await this.deferrals.get(node.publicIdentifier)!.promise;
         this.deferrals.delete(node.publicIdentifier);
 
-        return ret;
+        return { data: ret, channel };
       });
     }
   }

@@ -7,9 +7,7 @@ import {
 } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
-import {
-  NULL_INITIAL_STATE_FOR_PROPOSAL, NO_STATE_CHANNEL_FOR_OWNERS,
-} from "../../errors";
+import { NULL_INITIAL_STATE_FOR_PROPOSAL, NO_STATE_CHANNEL_FOR_OWNERS } from "../../errors";
 import { RequestHandler } from "../../request-handler";
 
 import { NodeController } from "../controller";
@@ -34,10 +32,9 @@ export class ProposeInstallAppInstanceController extends NodeController {
 
     const json = await store.getStateChannelByOwners([publicIdentifier, responderIdentifier]);
     if (!json) {
-      throw new Error(NO_STATE_CHANNEL_FOR_OWNERS([
-        publicIdentifier,
-        responderIdentifier,
-      ].toString()));
+      throw new Error(
+        NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, responderIdentifier].toString()),
+      );
     }
 
     return [json.multisigAddress];
@@ -58,11 +55,9 @@ export class ProposeInstallAppInstanceController extends NodeController {
       responderDepositAssetId: responderDepositAssetIdParam,
     } = params;
 
-    const initiatorDepositAssetId =
-      initiatorDepositAssetIdParam || CONVENTION_FOR_ETH_ASSET_ID;
+    const initiatorDepositAssetId = initiatorDepositAssetIdParam || CONVENTION_FOR_ETH_ASSET_ID;
 
-    const responderDepositAssetId =
-      responderDepositAssetIdParam || CONVENTION_FOR_ETH_ASSET_ID;
+    const responderDepositAssetId = responderDepositAssetIdParam || CONVENTION_FOR_ETH_ASSET_ID;
 
     params.initiatorDepositAssetId = initiatorDepositAssetId;
     params.responderDepositAssetId = responderDepositAssetId;
@@ -78,27 +73,24 @@ export class ProposeInstallAppInstanceController extends NodeController {
 
     const json = await store.getStateChannelByOwners([publicIdentifier, responderIdentifier]);
     if (!json) {
-      throw new Error(NO_STATE_CHANNEL_FOR_OWNERS([
-        publicIdentifier,
-        responderIdentifier,
-      ].toString()));
+      throw new Error(
+        NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, responderIdentifier].toString()),
+      );
     }
 
-    await protocolRunner.initiateProtocol(ProtocolNames.propose, {
-      ...params,
-      stateTimeout: stateTimeout || defaultTimeout,
-      multisigAddress: json.multisigAddress,
-      initiatorIdentifier: publicIdentifier,
-      responderIdentifier: responderIdentifier,
-    });
-
-    const updated = await store.getStateChannel(json.multisigAddress);
+    const { channel: updated }: { channel: StateChannel } = await protocolRunner.initiateProtocol(
+      ProtocolNames.propose,
+      {
+        ...params,
+        stateTimeout: stateTimeout || defaultTimeout,
+        multisigAddress: json.multisigAddress,
+        initiatorIdentifier: publicIdentifier,
+        responderIdentifier: responderIdentifier,
+      },
+    );
 
     return {
-      appIdentityHash: StateChannel
-        .fromJson(updated!)
-        .mostRecentlyProposedAppInstance()
-        .identityHash,
+      appIdentityHash: updated.mostRecentlyProposedAppInstance().identityHash,
     };
   }
 }
