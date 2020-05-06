@@ -35,9 +35,14 @@ export async function handleReceivedProtocolMessage(
 
   if (seq === UNASSIGNED_SEQ_NO) return;
 
+  await requestHandler.addChannelToRequestHandler(params!);
+
   const {
     channel: postProtocolStateChannel,
-  }: { channel: StateChannel } = await protocolRunner.runProtocolWithMessage(data);
+  }: { channel: StateChannel } = await protocolRunner.runProtocolWithMessage(
+    data,
+    requestHandler.channel!,
+  );
 
   const outgoingEventData = await getOutgoingEventDataFromProtocol(
     protocol,

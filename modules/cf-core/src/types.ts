@@ -9,6 +9,7 @@ import {
   Opcode,
   ProtocolMessageData,
 } from "@connext/types";
+import { StateChannel } from "./models";
 
 export const PersistAppType = enumify({
   CreateProposal: "CreateProposal",
@@ -43,6 +44,7 @@ export interface Context {
   log: ILoggerService;
   message: ProtocolMessageData;
   network: NetworkContext;
+  preProtocolChannel: StateChannel;
 }
 
 ////////////////////////////////////////

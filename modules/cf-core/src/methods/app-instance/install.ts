@@ -45,6 +45,16 @@ export class InstallAppInstanceController extends NodeController {
     return [sc.multisigAddress];
   }
 
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: MethodParams.Install,
+  ): Promise<void> {
+    await requestHandler.addChannelToRequestHandler(params);
+    if (!requestHandler.channel) {
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(params.appIdentityHash));
+    }
+  }
+
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.Install,

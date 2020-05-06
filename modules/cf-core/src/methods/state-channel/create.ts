@@ -4,6 +4,9 @@ import {
   MethodNames,
   MethodParams,
   MethodResults,
+  ProtocolNames,
+  ProtocolParam,
+  ProtocolParams,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
@@ -29,6 +32,12 @@ import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
 export class CreateChannelController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_create)
   public executeMethod = super.executeMethod;
+
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: MethodParams.CreateChannel,
+  ): Promise<void> {
+  }
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,

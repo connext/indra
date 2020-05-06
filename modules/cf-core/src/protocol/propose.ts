@@ -28,7 +28,7 @@ const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } 
  */
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
-    const { message, store } = context;
+    const { message, store, preProtocolChannel: preProtocolStateChannel } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
@@ -45,18 +45,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initiatorDepositAssetId,
       initiatorIdentifier,
       meta,
-      multisigAddress,
       outcomeType,
       responderDeposit,
       responderDepositAssetId,
       responderIdentifier,
       stateTimeout,
     } = params as ProtocolParams.Propose;
-
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
-      multisigAddress,
-      store,
-    );
 
     // 7ms
     const appInstanceProposal: AppInstanceProposal = {
@@ -180,7 +174,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Responding */: async function* (context: Context) {
-    const { message, store } = context;
+    const { message, store, preProtocolChannel: preProtocolStateChannel } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
@@ -197,7 +191,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initiatorDepositAssetId,
       initiatorIdentifier,
       meta,
-      multisigAddress,
       outcomeType,
       responderDeposit,
       responderDepositAssetId,
@@ -208,11 +201,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const {
       customData: { signature: initiatorSignatureOnInitialState },
     } = message;
-
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
-      multisigAddress,
-      store,
-    );
 
     // 16ms
     const appInstanceProposal: AppInstanceProposal = {

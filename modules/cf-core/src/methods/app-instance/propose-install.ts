@@ -4,6 +4,7 @@ import {
   MethodResults,
   ProtocolNames,
   CONVENTION_FOR_ETH_ASSET_ID,
+  ProtocolParams,
 } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -27,27 +28,25 @@ export class ProposeInstallAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
   ): Promise<string[]> {
-    const { publicIdentifier, store } = requestHandler;
-    const { responderIdentifier } = params;
-
-    const json = await store.getStateChannelByOwners([publicIdentifier, responderIdentifier]);
-    if (!json) {
-      throw new Error(
-        NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, responderIdentifier].toString()),
-      );
-    }
-
-    return [json.multisigAddress];
+    return [requestHandler.channel!.multisigAddress];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
   ): Promise<void> {
-    const { initialState } = params;
+    const { initialState, responderIdentifier } = params;
+    const { publicIdentifier } = requestHandler;
 
     if (!initialState) {
       throw new Error(NULL_INITIAL_STATE_FOR_PROPOSAL);
+    }
+
+    await requestHandler.addChannelToRequestHandler(params);
+    if (!requestHandler.channel) {
+      throw new Error(
+        NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, responderIdentifier].toString()),
+      );
     }
 
     const {
@@ -67,26 +66,20 @@ export class ProposeInstallAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
   ): Promise<MethodResults.ProposeInstall> {
-    const { protocolRunner, publicIdentifier, store } = requestHandler;
+    const { protocolRunner, publicIdentifier, channel } = requestHandler;
 
     const { responderIdentifier, stateTimeout, defaultTimeout } = params;
-
-    const json = await store.getStateChannelByOwners([publicIdentifier, responderIdentifier]);
-    if (!json) {
-      throw new Error(
-        NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, responderIdentifier].toString()),
-      );
-    }
 
     const { channel: updated }: { channel: StateChannel } = await protocolRunner.initiateProtocol(
       ProtocolNames.propose,
       {
         ...params,
         stateTimeout: stateTimeout || defaultTimeout,
-        multisigAddress: json.multisigAddress,
+        multisigAddress: channel!.multisigAddress,
         initiatorIdentifier: publicIdentifier,
         responderIdentifier: responderIdentifier,
       },
+      channel!,
     );
 
     return {
