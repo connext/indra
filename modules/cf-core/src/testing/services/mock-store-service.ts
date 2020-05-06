@@ -13,6 +13,10 @@ import {
 } from "@connext/types";
 
 export class MockStoreService implements IStoreService {
+  init(): Promise<void> {
+    return Promise.resolve();
+  }
+
   getSchemaVersion(): Promise<number> {
     return Promise.resolve(STORE_SCHEMA_VERSION);
   }
