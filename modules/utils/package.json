@@ -17,7 +17,7 @@
   "dependencies": {
     "@connext/types": "6.3.8",
     "bs58check": "2.1.2",
-    "eccrypto-js": "5.1.1"
+    "eccrypto-js": "5.2.0"
   },
   "devDependencies": {
     "@babel/polyfill": "7.8.7",
