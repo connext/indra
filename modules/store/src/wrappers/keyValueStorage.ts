@@ -47,6 +47,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     private readonly log: ILoggerService = nullLogger,
   ) {}
 
+  init(): Promise<void> {
+    return this.storage.init();
+  }
+
   async getSchemaVersion(): Promise<number> {
     const version = await this.getItem<{ version: number }>(storeKeys.STORE_SCHEMA_VERSION);
     return version?.version || 0;

@@ -51,6 +51,7 @@ export async function setup(
   const channelSignerA = new ChannelSigner(prvKeyA, ethUrl);
 
   const storeServiceA = storeServiceFactory.createStoreService();
+  await storeServiceA.init();
   const nodeA = await Node.create(
     messagingService,
     storeServiceA,
@@ -70,6 +71,7 @@ export async function setup(
 
   const channelSignerB = new ChannelSigner(prvKeyB, ethUrl);
   const storeServiceB = storeServiceFactory.createStoreService();
+  await storeServiceB.init();
   const nodeB = await Node.create(
     messagingService,
     storeServiceB,
@@ -90,6 +92,7 @@ export async function setup(
   if (nodeCPresent) {
     const channelSignerC = new ChannelSigner(C_PRIVATE_KEY, ethUrl);
     const storeServiceC = storeServiceFactory.createStoreService();
+    await storeServiceC.init();
     nodeC = await Node.create(
       messagingService,
       storeServiceC,

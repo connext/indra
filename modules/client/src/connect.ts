@@ -36,6 +36,9 @@ export const connect = async (
     logLevel,
   } = opts;
   let { store, messaging, nodeUrl, messagingUrl } = opts;
+  if (store) {
+    await store.init();
+  }
 
   const logger = loggerService
     ? loggerService.newContext("ConnextConnect")

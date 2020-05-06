@@ -22,6 +22,10 @@ export class WrappedAsyncStorage implements WrappedStorage {
     this.loadData();
   }
 
+  init(): Promise<void> {
+    return Promise.resolve();
+  }
+
   loadData(): Promise<AsyncStorageData> {
     return new Promise(
       async (resolve, reject): Promise<void> => {
