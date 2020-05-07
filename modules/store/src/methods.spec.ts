@@ -1,5 +1,5 @@
 import { STORE_SCHEMA_VERSION, ChallengeStatus } from "@connext/types";
-import { toBNJson } from "@connext/utils";
+import { toBN, toBNJson } from "@connext/utils";
 
 import {
   expect,
@@ -384,8 +384,8 @@ describe("ConnextStore", () => {
 
         // can be called multiple times in a row and preserve the data
         for (let i = 0; i < 3; i++) {
-        await store.createAppChallenge(value.identityHash, value);
-        expect(await store.getAppChallenge(value.identityHash)).to.containSubset(value);
+          await store.createAppChallenge(value.identityHash, value);
+          expect(await store.getAppChallenge(value.identityHash)).to.containSubset(value);
         }
 
         await store.updateAppChallenge(value.identityHash, edited);
@@ -477,6 +477,23 @@ describe("ConnextStore", () => {
         const vals = await store.getChallengeUpdatedEvents(value.identityHash);
         expect(vals.length).to.be.eq(1);
         expect(vals[0]).to.containSubset(value);
+        await store.clear();
+      });
+
+      it.only(`${type} - should be able to process multiple events simultaneously`, async () => {
+        const events = [
+          { ...TEST_STORE_STATE_PROGRESSED_EVENT },
+          { ...TEST_STORE_STATE_PROGRESSED_EVENT, versionNumber: toBN(135) },
+        ];
+        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        await Promise.all(
+          events.map((event) => store.createStateProgressedEvent(event.identityHash, event)),
+        );
+        const retrieved = await store.getStateProgressedEvents(events[0].identityHash);
+        expect(retrieved.length).to.be.eq(2);
+        expect(
+          retrieved.sort((a, b) => toBN(b.versionNumber).sub(toBN(a.versionNumber)).toNumber()),
+        ).to.be.deep.eq(events);
         await store.clear();
       });
     });
