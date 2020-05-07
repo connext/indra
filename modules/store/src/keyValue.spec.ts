@@ -3,15 +3,17 @@ import { expect } from "chai";
 import fs from "fs";
 import { v4 as uuid } from "uuid";
 
-import { storeDefaults, storeKeys } from "./constants";
+import { storeDefaults } from "./constants";
 import {
   setAndGet,
   setAndGetMultiple,
   testAsyncStorageKey,
   createKeyValueStore,
   TEST_STORE_PAIR,
+  postgresConnectionUri,
 } from "./test-utils";
 import { StoreTypes } from "./types";
+import { Sequelize } from "sequelize";
 
 const storeTypes = Object.values(StoreTypes);
 
@@ -56,6 +58,19 @@ describe("KeyValueStorage", () => {
     const store1 = await createKeyValueStore(StoreTypes.Memory);
     await store1.setItem("test", "store1");
     const store2 = await createKeyValueStore(StoreTypes.Memory);
+    await store2.setItem("test", "store2");
+    const item1 = await store1.getItem("test");
+    const item2 = await store2.getItem("test");
+    expect(item1).to.eq("store1");
+    expect(item2).to.eq("store2");
+    await store1.clear();
+  });
+
+  it("happy case: postgres storage should be able to create multiple stores with different prefixes", async () => {
+    const sharedSequelize = new Sequelize(postgresConnectionUri, { logging: false });
+    const store1 = await createKeyValueStore(StoreTypes.Postgres, { sequelize: sharedSequelize, prefix: "store1" });
+    await store1.setItem("test", "store1");
+    const store2 = await createKeyValueStore(StoreTypes.Postgres, { sequelize: sharedSequelize, prefix: "store2" });
     await store2.setItem("test", "store2");
     const item1 = await store1.getItem("test");
     const item2 = await store2.getItem("test");
