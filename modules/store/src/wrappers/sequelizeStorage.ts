@@ -28,25 +28,22 @@ export class WrappedSequelizeStorage implements WrappedStorage {
   private ConnextClientData: any;
 
   constructor(
+    _sequelize: string | Sequelize,
     private readonly prefix: string = storeDefaults.PREFIX,
     private readonly separator: string = storeDefaults.SEPARATOR,
     private readonly tableName: string = storeDefaults.DATABASE_TABLE_NAME,
-    sequelize?: Sequelize,
-    private readonly connectionUri?: string,
   ) {
-    if (sequelize) {
-      this.sequelize = sequelize;
-    } else if (this.connectionUri) {
-      if (this.connectionUri.startsWith("sqlite:")) {
-        const dbPath = this.connectionUri.split("sqlite:").pop();
+    if (typeof _sequelize === "string") {
+      if ((_sequelize as string).startsWith("sqlite:")) {
+        const dbPath = (_sequelize as string).split("sqlite:").pop();
         if (dbPath !== storeDefaults.SQLITE_MEMORY_STORE_STRING) {
           const dir = dirname(dbPath);
           mkdirSync(dir, { recursive: true });
         }
       }
-      this.sequelize = new Sequelize(this.connectionUri, { logging: false });
+      this.sequelize = new Sequelize((_sequelize as string), { logging: false });
     } else {
-      throw new Error(`Must specify sequelize instance or connectionUri`);
+      this.sequelize = _sequelize as Sequelize;
     }
 
     this.ConnextClientData = this.sequelize.define(
