@@ -119,7 +119,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         if (key === storeKeys.STORE) {
           return this.storage.setItem(key, {});
         }
-        return this.storage.setItem(key, {});
+        return this.storage.removeItem(key);
       }));
     });
   }
