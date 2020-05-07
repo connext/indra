@@ -39,6 +39,7 @@ export type CreatedAppInstanceOpts = {
 export const getAndInitStore = async (): Promise<IClientStore> => {
   const store = getMemoryStore();
   await store.init();
+  await store.clear();
   return store;
 };
 
