@@ -304,12 +304,6 @@ await withdraw(payload)
 
 ## Generalized State Methods
 
-Many of these functions rely on types from the `Node` object within the `@counterfactual/types` package, which is imported as:
-
-```typescript
-import { Node as CFCoreTypes } from "@counterfactual/types";
-```
-
 ### getPaymentProfile
 
 ```typescript
@@ -325,7 +319,7 @@ await getPaymentProfile();
 ### getAppState
 
 ```typescript
-getAppState: (appInstanceId: string) => Promise<CFCoreTypes.GetStateResult>
+getAppState: (appInstanceId: string) => Promise<GetStateResult>
 ```
 
 #### Example
@@ -337,7 +331,7 @@ await getAppState("0xabc...");
 ### getFreeBalance
 
 ```typescript
-getFreeBalance: (assetId: string) => Promise<CFCoreTypes.GetFreeBalanceStateResult>
+getFreeBalance: (assetId: string) => Promise<GetFreeBalanceStateResult>
 ```
 
 #### Example
@@ -350,16 +344,10 @@ await getFreeBalance("0x0000000000000000000000000000000000000000");
 
 ## Low Level Channel API (mapped to CF node)
 
-These methods are used primarily for custom counterfactual applications. Many of these functions rely on types from the `Node` object within the `@counterfactual/types` package, which is imported as:
-
-```typescript
-import { Node as CFCoreTypes } from "@counterfactual/types";
-```
-
 ### proposeInstallApp
 
 ```typescript
-proposeInstallApp: (params: CFCoreTypes.ProposeInstallParams) => Promise<CFCoreTypes.ProposeInstallResult>
+proposeInstallApp: (params: ProposeInstallParams) => Promise<ProposeInstallResult>
 ```
 
 #### Example
@@ -379,7 +367,7 @@ const initialState = {
   ],
 };
 
-const params: CFCoreTypes.ProposeInstallVirtualParams = {
+const params: ProposeInstallVirtualParams = {
   abiEncodings: { // encodings matching .sol file of app
     actionEncoding: "",
     stateEncoding: ""
@@ -389,7 +377,7 @@ const params: CFCoreTypes.ProposeInstallVirtualParams = {
   initiatorDeposit: new BigNumber(1000), // wei units
   initiatorDepositTokenAddress: "0x0000...", // assetId, AddressZero for ethereum
   intermediaryIdentifier: "xpub...", // xpub of intermediary node, returned from config endpoint
-  outcomeType: appInfo.outcomeType, // CFCoreTypes.OutcomeType
+  outcomeType: appInfo.outcomeType, // OutcomeType
   proposedToIdentifier: "0xabc...",
   responderDeposit: new BigNumber(0), // wei units
   responderDepositTokenAddress: "0x0000...", // assetId, AddressZero for ethereum,
@@ -402,7 +390,7 @@ await proposeInstallApp(params);
 ### installApp
 
 ```typescript
-installApp: (appInstanceId: string) => Promise<CFCoreTypes.InstallResult>
+installApp: (appInstanceId: string) => Promise<InstallResult>
 ```
 
 #### Example
@@ -414,7 +402,7 @@ await installApp("0xabc...");
 ### rejectInstallApp
 
 ```typescript
-rejectInstallApp: (appInstanceId: string) => Promise<CFCoreTypes.UninstallResult>
+rejectInstallApp: (appInstanceId: string) => Promise<UninstallResult>
 ```
 
 #### Example
@@ -426,7 +414,7 @@ await rejectInstallApp("0xabc...");
 ### uninstallApp
 
 ```typescript
-uninstallApp: (appInstanceId: string) => Promise<CFCoreTypes.UninstallResult>
+uninstallApp: (appInstanceId: string) => Promise<UninstallResult>
 ```
 
 #### Example
@@ -438,7 +426,7 @@ await uninstallApp("0xabc...");
 ### installVirtualApp
 
 ```typescript
-installVirtualApp: (appInstanceId: string) => Promise<CFCoreTypes.InstallVirtualResult>
+installVirtualApp: (appInstanceId: string) => Promise<InstallVirtualResult>
 ```
 
 #### Example
@@ -450,7 +438,7 @@ await installVirtualApp("0xabc..");
 ### takeAction
 
 ```typescript
-takeAction: (appInstanceId: string, action: CFCoreTypes.SolidityValueType) => Promise<CFCoreTypes.TakeActionResult>
+takeAction: (appInstanceId: string, action: SolidityValueType) => Promise<TakeActionResult>
 ```
 
 #### Example
@@ -466,7 +454,7 @@ await takeAction("0xabc...", action);
 ### updateState
 
 ```typescript
-updateState: (appInstanceId: string, newState: CFCoreTypes.SolidityValueType) => Promise<CFCoreTypes.UpdateStateResult>
+updateState: (appInstanceId: string, newState: SolidityValueType) => Promise<UpdateStateResult>
 ```
 
 #### Example

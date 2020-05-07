@@ -1,4 +1,5 @@
-# Indra Architecture Overview
+
+# Indra Architecture
 
 ![ ](./architecture.png)
 

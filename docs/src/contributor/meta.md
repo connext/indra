@@ -1,31 +1,15 @@
-# Connext Documentation
+# Documentation Documentation
 
-Documentation can be found [here](https://connext.readthedocs.io/en/latest/)
+If you find a mistake in our documentation, we'd be thrilled to receive a pull-request from you with the fix.
 
-## Set Up Local Docs Viewer
+To get started, fork Indra & browse the files in `indra/docs/src`.
 
-Install dependencies:
+You can build our docs with the following command:
 
-- `pip install sphinx`
-- `pip install recommonmark`
-- `pip install sphinx_markdown_tables`
-- `pip install sphinx_rtd_theme`
+```
+make docs
+```
 
-Build HTML:
-- `make singlehtml`
+Once the docs are build, you can view them locally by opening docs/build/html/index.html in a web browser. Refresh the page to display changes after re-building.
 
-Serve locally:
-- `npm i -g serve` (If not already installed)
-- `serve _build/singlehtml`
-
-## Editing the Docs
-
-Edit the existing markdown documents directly, and regenerate the build folder using `make singlehtml`.
-
-The Table of Contents is defined by `index.rst` in the root.
-
-To deploy edits, simply commit to master and check your edits at the [live docs](https://connext.readthedocs.io/en/latest/)
-
-## Readthedocs
-
-These docs are made with readthedocs and sphinx, see the getting started guide [here](https://docs.readthedocs.io/en/stable/intro/getting-started-with-sphinx.html#external-resources).
+If the docs look good locally, push changes to your fork & submit a PR to our repo. Thanks!

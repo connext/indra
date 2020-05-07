@@ -1,5 +1,5 @@
 
-# Intro to the Counterfactual Protocol
+# Counterfactual Protocol
 
 The Node contains a TypeScript implementation of the [Counterfactual protocol](https://specs.counterfactual.com). It is responsible for executing the protocols and producing correctly constructed signed commitments that correspond to state transitions of the users' state channels.
 
