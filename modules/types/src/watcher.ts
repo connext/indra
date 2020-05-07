@@ -202,10 +202,10 @@ export interface IWatcherStoreService {
   updateLatestProcessedBlock(blockNumber: number): Promise<void>;
 
   getStateProgressedEvents(appIdentityHash: Bytes32): Promise<StateProgressedEventPayload[]>;
-
   createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void>;
 
   getChallengeUpdatedEvents(appIdentityHash: Bytes32): Promise<ChallengeUpdatedEventPayload[]>;
+  createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void>;
 
   addOnchainAction(
     appIdentityHash: Bytes32,
