@@ -5,9 +5,9 @@ import { JsonRpcProvider } from "ethers/providers";
 import { CFCore } from "./cfCore";
 import { memoryMessagingService } from "./testing/services";
 
-describe("Node", () => {
+describe("CFCore", () => {
   it("is defined", () => {
-    expect(Node).toBeDefined();
+    expect(CFCore).toBeDefined();
   });
 
   it("can be created", async () => {
