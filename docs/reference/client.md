@@ -1,8 +1,11 @@
+
 # @connext/client
 
 All methods return promises.
 
-## Core Channel Management Methods
+
+
+## Management Methods
 
 ### transfer
 

@@ -1,8 +1,8 @@
 # The Basics of using a Connext Client
 
-Like [web3.js](https://web3js.readthedocs.io/), the Connext client is a collection of libraries that allow you to interact with a local or remote Connext node.
+Like [web3.js](https://web3js.readthedocs.io/) or [ethers](https://docs.ethers.io), the Connext client is a collection of libraries that allow you to interact with a local or remote Connext node.
 
-This quickstart will guide you through instantiating the Connext client with a randomly generated private key in a web environment to get basic Connext functionality (deposits, swaps, transfers, withdrawals) working as fast as possible. 
+This quickstart will guide you through instantiating the Connext client with a randomly generated private key in a web environment to get basic Connext functionality (deposits, swaps, transfers, withdrawals) working as quickly as possible. 
 
 Instantiating with a private key _should not_ be used in production environments - once you get through this guide, we recommend looking through the Dapp Integration or [Wallet Integrations](../quickstart/walletIntegrations) guides for better patterns.
 

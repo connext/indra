@@ -70,6 +70,24 @@ class PisaBackupService implements IBackupService {
 1. `pisaUrl`: The URL that points to our Pisa backup service endpoint.
 2. `wallet`: an ethers `Wallet`, used to authenticate with Pisa.
 
+#### Example Usage
+
+```
+import { PisaBackupService, getLocalStore } from "@connext/store";
+import { connect } from "@connext/client";
+import { Wallet } from "ethers";
+
+const pisaUrl = "https://example.com";
+const wallet = Wallet.createRandom();
+
+const channel = connect({
+  store: getLocalStore({ backupService: new PisaBackupService(pisaUrl, wallet) }),
+});
+
+channel.deposit({ ... });
+channel.transfer({ ... });
+channel.withdraw({ ... });
+```
 
 
 ## Functions

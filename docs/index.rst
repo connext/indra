@@ -35,7 +35,6 @@ Contents
     quickstart/clientInstantiation
     quickstart/fundingYourChannel
     quickstart/walletIntegrations
-    quickstart/store
     quickstart/advanced
 
 .. toctree::
@@ -53,6 +52,7 @@ Contents
     :caption: Guides
 
     guides/how-to-deploy-indra
+    guides/how-to-integrate-browser
 
 .. toctree::
     :maxdepth: 2
@@ -62,6 +62,7 @@ Contents
     reference/client
     reference/store
     reference/types
+    reference/utils
 
 .. toctree::
     :maxdepth: 2
