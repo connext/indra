@@ -378,6 +378,7 @@ describe("ConnextStore", () => {
         const value = { ...TEST_STORE_APP_CHALLENGE };
         const edited = { ...value, status: ChallengeStatus.NO_CHALLENGE };
         const store = await createConnextStore(type as StoreTypes, { fileDir });
+        await store.clear();
 
         const empty = await store.getAppChallenge(value.identityHash);
         expect(empty).to.be.undefined;
@@ -399,31 +400,17 @@ describe("ConnextStore", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should be able to retrieve active challenges for a channel`, async () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
+        await store.clear();
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
-        const challenge = { ...TEST_STORE_APP_CHALLENGE };
-        const app = TEST_STORE_CHANNEL.appInstances[0][1];
-        const freeBalanceSetState0 = {
-          ...TEST_STORE_SET_STATE_COMMITMENT,
-          identityHash: channel.freeBalanceAppInstance!.identityHash,
+        const challenge = {
+          ...TEST_STORE_APP_CHALLENGE,
+          status: ChallengeStatus.IN_DISPUTE,
         };
-        const freeBalanceSetState1 = {
-          ...freeBalanceSetState0,
-          versionNumber: toBNJson(app.latestVersionNumber),
-        };
-        const multisigAddress = channel.multisigAddress;
-        await store.createStateChannel(channel, TEST_STORE_MINIMAL_TX, freeBalanceSetState0);
-        await store.createAppInstance(
-          multisigAddress,
-          app,
-          channel.freeBalanceAppInstance!,
-          freeBalanceSetState1,
-          TEST_STORE_CONDITIONAL_COMMITMENT,
-        );
 
         const empty = await store.getActiveChallenges(channel.multisigAddress);
         expect(empty.length).to.be.eq(0);
 
-        await store.createAppChallenge(challenge.appStateHash, challenge);
+        await store.createAppChallenge(challenge.identityHash, challenge);
         const vals = await store.getActiveChallenges(channel.multisigAddress);
         expect(vals.length).to.be.eq(1);
         expect(vals[0]).to.containSubset(challenge);
