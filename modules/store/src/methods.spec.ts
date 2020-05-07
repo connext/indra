@@ -480,12 +480,15 @@ describe("ConnextStore", () => {
         await store.clear();
       });
 
-      it.only(`${type} - should be able to process multiple events simultaneously`, async () => {
+      it(`${type} - should be able to process multiple events simultaneously`, async () => {
         const events = [
           { ...TEST_STORE_STATE_PROGRESSED_EVENT },
           { ...TEST_STORE_STATE_PROGRESSED_EVENT, versionNumber: toBN(135) },
         ];
         const store = await createConnextStore(type as StoreTypes, { fileDir });
+        await store.clear();
+        const empty = await store.getStateProgressedEvents(events[0].identityHash);
+        expect(empty).to.be.deep.eq([]);
         await Promise.all(
           events.map((event) => store.createStateProgressedEvent(event.identityHash, event)),
         );
@@ -495,6 +498,7 @@ describe("ConnextStore", () => {
           toBN(a.versionNumber).sub(toBN(b.versionNumber)).toNumber(),
         );
         sorted.forEach((val, idx) => expect(val).to.containSubset(events[idx]));
+        await store.clear();
       });
     });
   });
