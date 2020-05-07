@@ -61,7 +61,7 @@ describe("Watcher.init", () => {
   });
 });
 
-describe("Watcher.initiate", () => {
+describe.only("Watcher.initiate", () => {
   let provider: JsonRpcProvider;
   let store: IClientStore;
   let multisigAddress: string;
@@ -123,7 +123,7 @@ describe("Watcher.initiate", () => {
     await verifyOnchainBalancesPostChallenge(multisigAddress, signers, channelBalances, wallet);
   });
 
-  it("should be able to initiate + complete a dispute with a single signed latest state", async () => {
+  it.only("should be able to initiate + complete a dispute with a single signed latest state", async () => {
     // setup store with app with proper timeouts
     const {
       activeApps,
@@ -143,7 +143,7 @@ describe("Watcher.initiate", () => {
       provider,
       store,
       signer: wallet.privateKey,
-      // logger: new ColorfulLogger("Watcher", 5, true, ""),
+      logger: new ColorfulLogger("Watcher", 5, true, ""),
     });
 
     const [initiateRes, contractEvent] = await Promise.all([

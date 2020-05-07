@@ -490,9 +490,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   ////// Watcher methods
-  getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined> {
+  async getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined> {
     const challengeKey = this.getKey(storeKeys.CHALLENGE, appIdentityHash);
-    return this.getItem<StoredAppChallenge>(challengeKey);
+    const appChallenge = await this.storage.getItem<StoredAppChallenge>(challengeKey);
+    return appChallenge || undefined;
   }
 
   async saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
@@ -506,13 +507,12 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       await this.createChallengeUpdatedEvent(data as ChallengeUpdatedEventPayload);
     }
     const challengeKey = this.getKey(storeKeys.CHALLENGE, identityHash);
-    return this.setItem(challengeKey, data);
+    return this.storage.setItem(challengeKey, data);
   }
 
   async getActiveChallenges(): Promise<StoredAppChallenge[]> {
     // get all stored challenges
-    const store = await this.getStore();
-    const keys = await this.getKeys();
+    const keys = await this.storage.getKeys();
     const challengeKeys = keys.filter(
       (key) =>
         key.includes(storeKeys.CHALLENGE) && !key.includes(storeKeys.CHALLENGE_UPDATED_EVENT),
@@ -521,8 +521,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       StoredAppChallengeStatus.NO_CHALLENGE,
       StoredAppChallengeStatus.CONDITIONAL_SENT,
     ];
-    return challengeKeys
-      .map((key) => store[key])
+    const challenges = await Promise.all(challengeKeys
+      .map((key) => this.storage.getItem(key)));
+    return challenges
       .filter(
         (challenge) =>
           !!challenge && !inactiveStatuses.find((status) => status === challenge.status),
@@ -532,39 +533,39 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   ///// Events
   async getLatestProcessedBlock(): Promise<number> {
     const key = this.getKey(storeKeys.BLOCK_PROCESSED);
-    const item = await this.getItem<{ block: string }>(key);
+    const item = await this.storage.getItem<{ block: string }>(key);
     return item ? parseInt(`${item.block}`) : 0;
   }
 
   updateLatestProcessedBlock(blockNumber: number): Promise<void> {
     const key = this.getKey(storeKeys.BLOCK_PROCESSED);
-    return this.setItem(key, { block: blockNumber });
+    return this.storage.setItem(key, { block: blockNumber });
   }
 
   async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
     const key = this.getKey(storeKeys.STATE_PROGRESSED_EVENT, appIdentityHash);
-    const existing = await this.getItem<StateProgressedEventPayload[]>(key);
+    const existing = await this.storage.getItem<StateProgressedEventPayload[]>(key);
     return existing || [];
   }
 
   async createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void> {
     const key = this.getKey(storeKeys.STATE_PROGRESSED_EVENT, event.identityHash);
     const existing = await this.getStateProgressedEvents(key);
-    return this.setItem(key, existing.concat(event));
+    return this.storage.setItem(key, existing.concat(event));
   }
 
   async getChallengeUpdatedEvents(
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]> {
     const key = this.getKey(storeKeys.CHALLENGE_UPDATED_EVENT, appIdentityHash);
-    const existing = await this.getItem<ChallengeUpdatedEventPayload[]>(key);
+    const existing = await this.storage.getItem<ChallengeUpdatedEventPayload[]>(key);
     return existing || [];
   }
 
   private async createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
     const key = this.getKey(storeKeys.CHALLENGE_UPDATED_EVENT, event.identityHash);
     const existing = await this.getChallengeUpdatedEvents(event.identityHash);
-    return this.setItem(key, existing.concat(event));
+    return this.storage.setItem(key, existing.concat(event));
   }
 
   async addOnchainAction(appIdentityHash: Bytes32, provider: JsonRpcProvider): Promise<void> {
@@ -575,7 +576,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       throw new Error(`Could not find channel for app ${appIdentityHash}`);
     }
     const [_, ourApp] = channel.appInstances.find(([id]) => id === appIdentityHash);
-    const ourLatestSetState = await this.getLatestSetStateCommitment(store, appIdentityHash);
+    const ourLatestSetState = this.getLatestSetStateCommitment(store, appIdentityHash);
     if (!ourApp || !ourLatestSetState) {
       throw new Error(`No record of channel or app associated with ${appIdentityHash}`);
     }
