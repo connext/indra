@@ -1,5 +1,5 @@
 import { STORE_SCHEMA_VERSION, StoredAppChallengeStatus, StateChannelJSON, SetStateCommitmentJSON } from "@connext/types";
-import { toBN, toBNJson } from "@connext/utils";
+import { toBNJson } from "@connext/utils";
 
 import {
   expect,
@@ -12,6 +12,7 @@ import {
   TEST_STORE_CONDITIONAL_COMMITMENT,
   TEST_STORE_APP_CHALLENGE,
   TEST_STORE_STATE_PROGRESSED_EVENT,
+  TEST_STORE_CHALLENGE_UPDATED_EVENT,
 } from "./test-utils";
 import { StoreTypes } from "./types";
 
@@ -382,11 +383,10 @@ describe("ConnextStore", () => {
     });
   });
 
-  describe("getAppChallenge / saveAppChallenge / getChallengeUpdatedEvents", () => {
+  describe("getAppChallenge / saveAppChallenge", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should be able to create, get, and update app challenges`, async () => {
         const value = { ...TEST_STORE_APP_CHALLENGE };
-        const edited = { ...value, status: StoredAppChallengeStatus.OUTCOME_SET };
         const store = await createConnextStore(type as StoreTypes, { fileDir });
         await store.clear();
 
@@ -398,11 +398,6 @@ describe("ConnextStore", () => {
           await store.saveAppChallenge(value);
           expect(await store.getAppChallenge(value.identityHash)).to.containSubset(value);
         }
-
-        const events1 = await store.getChallengeUpdatedEvents(value.identityHash);
-        expect(events1.length).to.be.eq(2);
-        expect(events1[1]).to.containSubset(edited);
-
         await store.clear();
       });
     });
@@ -455,6 +450,24 @@ describe("ConnextStore", () => {
 
         await store.createStateProgressedEvent(value);
         const vals = await store.getStateProgressedEvents(value.identityHash);
+        expect(vals.length).to.be.eq(1);
+        expect(vals[0]).to.containSubset(value);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("getChallengeUpdatedEvents / createChallengeUpdatedEvent", () => {
+    storeTypes.forEach((type) => {
+      it(`${type} - should be able to get/create state progressed events`, async () => {
+        const value = { ...TEST_STORE_CHALLENGE_UPDATED_EVENT };
+        const store = await createConnextStore(type as StoreTypes, { fileDir });
+
+        const empty = await store.getChallengeUpdatedEvents(value.identityHash);
+        expect(empty).to.containSubset([]);
+
+        await store.createChallengeUpdatedEvent(value);
+        const vals = await store.getChallengeUpdatedEvents(value.identityHash);
         expect(vals.length).to.be.eq(1);
         expect(vals[0]).to.containSubset(value);
         await store.clear();

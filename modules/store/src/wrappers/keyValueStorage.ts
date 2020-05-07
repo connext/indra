@@ -510,16 +510,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
     return this.execute(async () => {
-      const { identityHash, status } = data;
-      // add event based on status
-      if (
-        status !== StoredAppChallengeStatus.CONDITIONAL_SENT &&
-        status !== StoredAppChallengeStatus.PENDING_TRANSITION
-      ) {
-        this.log.debug(`Creating new challenge updated event for challenge ${identityHash}`);
-        await this.createChallengeUpdatedEvent(data as ChallengeUpdatedEventPayload);
-      }
+      const { identityHash } = data;
       const challengeKey = this.getKey(storeKeys.CHALLENGE, identityHash);
+      this.log.debug(`Updating challenge for ${identityHash}`);
       return this.storage.setItem(challengeKey, data);
     });
   }
@@ -579,8 +572,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         );
         return;
       }
-      const updated = existing.concat(event);
-      return this.storage.setItem(key, updated);
+      this.log.debug(`Adding state progressed event: ${stringify(event)}`);
+      return this.storage.setItem(key, existing.concat(event));
     });
   }
 
@@ -592,7 +585,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return existing || [];
   }
 
-  private async createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
+  async createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
     return this.execute(async () => {
       const key = this.getKey(storeKeys.CHALLENGE_UPDATED_EVENT, event.identityHash);
       const existing = await this.getChallengeUpdatedEvents(event.identityHash);
@@ -601,6 +594,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         this.log.debug(`Found existing identical challenge created event, doing nothing.`);
         return;
       }
+      this.log.debug(`Adding challenge updated event: ${stringify(event)}`);
       return this.storage.setItem(key, existing.concat(event));
     });
   }
@@ -782,6 +776,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   /**
    * NOTE: this relies on all `instruction`s being idempotent in case
    * the same instruction is added to the `deferred` array simultaneously.
+   * 
+   * Additionally, if you call a function within `execute` that also calls
+   * `execute` you will have an infinite loop.
    */
   private execute = async (instruction: () => Promise<any>) => {
     this.deferred.push(instruction);

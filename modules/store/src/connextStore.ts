@@ -301,6 +301,10 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getChallengeUpdatedEvents(appIdentityHash);
   }
 
+  createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
+    return this.internalStore.createChallengeUpdatedEvent(event);
+  }
+
   addOnchainAction(
     appIdentityHash: Bytes32,
     provider: JsonRpcProvider,
