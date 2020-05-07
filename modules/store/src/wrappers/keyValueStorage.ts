@@ -500,12 +500,12 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
-    const key = this.getKey(storeKeys.STATE_PROGRESSED_EVENT, appIdentityHash);
-    const relevant = (await this.getKeys()).filter((k) => k.includes(key));
-
-    const store = await this.getStore();
-    const events = relevant.map((k) => store[k]);
-    return events.filter((x) => !!x);
+    const key = this.getKey(
+      storeKeys.STATE_PROGRESSED_EVENT,
+      appIdentityHash,
+    );
+    const events = await this.storage.getItem(key);
+    return events || [];
   }
 
   async createStateProgressedEvent(
@@ -515,25 +515,17 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const key = this.getKey(
       storeKeys.STATE_PROGRESSED_EVENT,
       appIdentityHash,
-      event.versionNumber.toString(),
     );
-    if (await this.getItem(key)) {
-      throw new Error(
-        `Found existing state progressed event for app ${appIdentityHash} at nonce ${event.versionNumber.toString()}`,
-      );
-    }
-    return this.setItem(key, event);
+    const existing = await this.getStateProgressedEvents(appIdentityHash);
+    return this.storage.setItem(key, existing.concat(event));
   }
 
   async getChallengeUpdatedEvents(
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]> {
     const key = this.getKey(storeKeys.CHALLENGE_UPDATED_EVENT, appIdentityHash);
-    const relevant = (await this.getKeys()).filter((k) => k.includes(key));
-    const events = await Promise.all(
-      relevant.map((k) => this.getItem<ChallengeUpdatedEventPayload>(k)),
-    );
-    return events.filter((x) => !!x);
+    const events = await this.storage.getItem(key);
+    return events || [];
   }
 
   async createChallengeUpdatedEvent(
@@ -543,14 +535,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const key = this.getKey(
       storeKeys.CHALLENGE_UPDATED_EVENT,
       appIdentityHash,
-      event.versionNumber.toString(),
     );
-    if (await this.getItem(key)) {
-      throw new Error(
-        `Found existing challenge updated event for app ${appIdentityHash} at nonce ${event.versionNumber.toString()}`,
-      );
-    }
-    return this.setItem(key, event);
+    const existing = await this.getChallengeUpdatedEvents(appIdentityHash);
+    return this.storage.setItem(key, existing.concat(event));
   }
 
   ////// Helper methods
