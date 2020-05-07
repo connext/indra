@@ -1,5 +1,5 @@
 import { STORE_SCHEMA_VERSION, StoredAppChallengeStatus, StateChannelJSON, SetStateCommitmentJSON } from "@connext/types";
-import { toBNJson } from "@connext/utils";
+import { toBN, toBNJson } from "@connext/utils";
 
 import {
   expect,
@@ -388,18 +388,17 @@ describe("ConnextStore", () => {
         const value = { ...TEST_STORE_APP_CHALLENGE };
         const edited = { ...value, status: StoredAppChallengeStatus.OUTCOME_SET };
         const store = await createConnextStore(type as StoreTypes, { fileDir });
+        await store.clear();
 
         const empty = await store.getAppChallenge(value.identityHash);
         expect(empty).to.be.undefined;
 
-        await store.saveAppChallenge(value);
-        expect(await store.getAppChallenge(value.identityHash)).to.containSubset(value);
-        const events0 = await store.getChallengeUpdatedEvents(value.identityHash);
-        expect(events0.length).to.be.eq(1);
-        expect(events0[0]).to.containSubset(value);
+        // can be called multiple times in a row and preserve the data
+        for (let i = 0; i < 3; i++) {
+          await store.saveAppChallenge(value);
+          expect(await store.getAppChallenge(value.identityHash)).to.containSubset(value);
+        }
 
-        await store.saveAppChallenge(edited);
-        expect(await store.getAppChallenge(value.identityHash)).to.containSubset(edited);
         const events1 = await store.getChallengeUpdatedEvents(value.identityHash);
         expect(events1.length).to.be.eq(2);
         expect(events1[1]).to.containSubset(edited);
@@ -413,26 +412,11 @@ describe("ConnextStore", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should be able to retrieve active challenges for a channel`, async () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
-        const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
-        const challenge = { ...TEST_STORE_APP_CHALLENGE };
-        const app = TEST_STORE_CHANNEL.appInstances[0][1];
-        const freeBalanceSetState0 = {
-          ...TEST_STORE_SET_STATE_COMMITMENT,
-          appIdentityHash: channel.freeBalanceAppInstance!.identityHash,
+        await store.clear();
+        const challenge = {
+          ...TEST_STORE_APP_CHALLENGE,
+          status: StoredAppChallengeStatus.IN_DISPUTE,
         };
-        const freeBalanceSetState1 = {
-          ...freeBalanceSetState0,
-          versionNumber: toBNJson(app.latestVersionNumber),
-        };
-        const multisigAddress = channel.multisigAddress;
-        await store.createStateChannel(channel, TEST_STORE_MINIMAL_TX, freeBalanceSetState0);
-        await store.createAppInstance(
-          multisigAddress,
-          app,
-          channel.freeBalanceAppInstance!,
-          freeBalanceSetState1,
-          TEST_STORE_CONDITIONAL_COMMITMENT,
-        );
 
         const empty = await store.getActiveChallenges();
         expect(empty.length).to.be.eq(0);

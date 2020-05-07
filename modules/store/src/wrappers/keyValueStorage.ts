@@ -21,6 +21,7 @@ import {
   ChallengeEvents,
 } from "@connext/types";
 import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import pSeries from "p-series";
 
 import { storeKeys } from "../constants";
 import { WrappedStorage } from "../types";
@@ -41,6 +42,7 @@ const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
  */
 
 export class KeyValueStorage implements WrappedStorage, IClientStore {
+  private deferred: (() => Promise<any>)[] = [];
   constructor(
     private readonly storage: WrappedStorage,
     private readonly backupService?: IBackupServiceAPI,
@@ -74,17 +76,19 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   private async saveStore(store: any): Promise<any> {
-    const storeKey = this.getKey(storeKeys.STORE);
-    if (this.backupService) {
-      try {
-        await this.backupService.backup({ path: storeKey, value: store });
-      } catch (e) {
-        this.log.warn(
-          `Could not save ${storeKeys.STORE} to backup service. Error: ${e.stack || e.message}`,
-        );
+    return this.execute(async () => {
+      const storeKey = this.getKey(storeKeys.STORE);
+      if (this.backupService) {
+        try {
+          await this.backupService.backup({ path: storeKey, value: store });
+        } catch (e) {
+          this.log.warn(
+            `Could not save ${storeKey} to backup service. Error: ${e.stack || e.message}`,
+          );
+        }
       }
-    }
-    return this.storage.setItem(storeKey, store);
+      return this.storage.setItem(storeKey, store);
+    });
   }
 
   async getItem<T>(key: string): Promise<T | undefined> {
@@ -114,7 +118,15 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   clear(): Promise<void> {
-    return this.storage.setItem(storeKeys.STORE, {});
+    return this.execute(async () => {
+      const keys = await this.storage.getKeys();
+      await Promise.all(keys.map((key) => {
+        if (key === storeKeys.STORE) {
+          return this.storage.setItem(key, {});
+        }
+        return this.storage.removeItem(key);
+      }));
+    });
   }
 
   async restore(): Promise<void> {
@@ -497,17 +509,19 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
-    const { identityHash, status } = data;
-    // add event based on status
-    if (
-      status !== StoredAppChallengeStatus.CONDITIONAL_SENT &&
-      status !== StoredAppChallengeStatus.PENDING_TRANSITION
-    ) {
-      this.log.debug(`Creating new challenge updated event for challenge ${identityHash}`);
-      await this.createChallengeUpdatedEvent(data as ChallengeUpdatedEventPayload);
-    }
-    const challengeKey = this.getKey(storeKeys.CHALLENGE, identityHash);
-    return this.storage.setItem(challengeKey, data);
+    return this.execute(async () => {
+      const { identityHash, status } = data;
+      // add event based on status
+      if (
+        status !== StoredAppChallengeStatus.CONDITIONAL_SENT &&
+        status !== StoredAppChallengeStatus.PENDING_TRANSITION
+      ) {
+        this.log.debug(`Creating new challenge updated event for challenge ${identityHash}`);
+        await this.createChallengeUpdatedEvent(data as ChallengeUpdatedEventPayload);
+      }
+      const challengeKey = this.getKey(storeKeys.CHALLENGE, identityHash);
+      return this.storage.setItem(challengeKey, data);
+    });
   }
 
   async getActiveChallenges(): Promise<StoredAppChallenge[]> {
@@ -538,8 +552,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   updateLatestProcessedBlock(blockNumber: number): Promise<void> {
-    const key = this.getKey(storeKeys.BLOCK_PROCESSED);
-    return this.storage.setItem(key, { block: blockNumber });
+    return this.execute(() => {
+      const key = this.getKey(storeKeys.BLOCK_PROCESSED);
+      return this.storage.setItem(key, { block: blockNumber });
+    });
   }
 
   async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
@@ -549,9 +565,23 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void> {
-    const key = this.getKey(storeKeys.STATE_PROGRESSED_EVENT, event.identityHash);
-    const existing = await this.getStateProgressedEvents(key);
-    return this.storage.setItem(key, existing.concat(event));
+    return this.execute(async () => {
+      const key = this.getKey(storeKeys.STATE_PROGRESSED_EVENT, event.identityHash);
+      const existing = await this.getStateProgressedEvents(event.identityHash);
+      // will always have a unique version number since this does not
+      // change status
+      const idx = existing.findIndex((stored) =>
+        toBN(stored.versionNumber).eq(event.versionNumber),
+      );
+      if (idx !== -1) {
+        this.log.debug(
+          `Found existing state progressed event for nonce ${event.versionNumber.toString()}, doing nothing.`,
+        );
+        return;
+      }
+      const updated = existing.concat(event);
+      return this.storage.setItem(key, updated);
+    });
   }
 
   async getChallengeUpdatedEvents(
@@ -563,9 +593,16 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   private async createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
-    const key = this.getKey(storeKeys.CHALLENGE_UPDATED_EVENT, event.identityHash);
-    const existing = await this.getChallengeUpdatedEvents(event.identityHash);
-    return this.storage.setItem(key, existing.concat(event));
+    return this.execute(async () => {
+      const key = this.getKey(storeKeys.CHALLENGE_UPDATED_EVENT, event.identityHash);
+      const existing = await this.getChallengeUpdatedEvents(event.identityHash);
+      const idx = existing.findIndex((stored) => stringify(stored) === stringify(event));
+      if (idx !== -1) {
+        this.log.debug(`Found existing identical challenge created event, doing nothing.`);
+        return;
+      }
+      return this.storage.setItem(key, existing.concat(event));
+    });
   }
 
   async addOnchainAction(appIdentityHash: Bytes32, provider: JsonRpcProvider): Promise<void> {
@@ -741,6 +778,17 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const existsIndex = toSearch.findIndex(([idHash, app]) => idHash === hash);
     return existsIndex >= 0;
   }
+
+  /**
+   * NOTE: this relies on all `instruction`s being idempotent in case
+   * the same instruction is added to the `deferred` array simultaneously.
+   */
+  private execute = async (instruction: () => Promise<any>) => {
+    this.deferred.push(instruction);
+    const results = await pSeries(this.deferred);
+    this.deferred = [];
+    return results.pop();
+  };
 }
 
 export default KeyValueStorage;
