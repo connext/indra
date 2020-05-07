@@ -17,7 +17,7 @@ import { AppInstance } from "../models";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 import { appIdentityToHash } from "../utils";
 
-import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
+import { assertIsValidSignature } from "./utils";
 
 const protocol = ProtocolNames.propose;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
@@ -28,7 +28,7 @@ const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } 
  */
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
-    const { message, store, preProtocolChannel: preProtocolStateChannel } = context;
+    const { message, preProtocolStateChannel } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
@@ -64,17 +64,17 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       stateTimeout: stateTimeout.toHexString(),
       identityHash: appIdentityToHash({
         appDefinition,
-        channelNonce: toBN(preProtocolStateChannel.numProposedApps + 1),
-        participants: preProtocolStateChannel.getSigningKeysFor(
+        channelNonce: toBN(preProtocolStateChannel!.numProposedApps + 1),
+        participants: preProtocolStateChannel!.getSigningKeysFor(
           initiatorIdentifier,
           responderIdentifier,
         ),
-        multisigAddress: preProtocolStateChannel.multisigAddress,
+        multisigAddress: preProtocolStateChannel!.multisigAddress,
         defaultTimeout,
       }),
       initiatorIdentifier,
       responderIdentifier,
-      appSeqNo: preProtocolStateChannel.numProposedApps + 1,
+      appSeqNo: preProtocolStateChannel!.numProposedApps + 1,
       initiatorDepositAssetId: initiatorDepositAssetId || CONVENTION_FOR_ETH_ASSET_ID,
       responderDepositAssetId: responderDepositAssetId || CONVENTION_FOR_ETH_ASSET_ID,
       meta,
@@ -91,17 +91,17 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 0 ms
-    const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
+    const postProtocolStateChannel = preProtocolStateChannel!.addProposal(appInstanceProposal);
 
     const proposedAppInstance = {
       identity: {
         appDefinition,
-        channelNonce: toBN(preProtocolStateChannel.numProposedApps + 1),
-        participants: preProtocolStateChannel.getSigningKeysFor(
+        channelNonce: toBN(preProtocolStateChannel!.numProposedApps + 1),
+        participants: preProtocolStateChannel!.getSigningKeysFor(
           initiatorIdentifier,
           responderIdentifier,
         ),
-        multisigAddress: preProtocolStateChannel.multisigAddress,
+        multisigAddress: preProtocolStateChannel!.multisigAddress,
         defaultTimeout: toBN(defaultTimeout),
       },
       hashOfLatestState: keccak256(
@@ -174,7 +174,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Responding */: async function* (context: Context) {
-    const { message, store, preProtocolChannel: preProtocolStateChannel } = context;
+    const { message, preProtocolStateChannel } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
@@ -210,12 +210,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       outcomeType,
       identityHash: appIdentityToHash({
         appDefinition,
-        channelNonce: toBN(preProtocolStateChannel.numProposedApps + 1),
-        participants: preProtocolStateChannel.getSigningKeysFor(
+        channelNonce: toBN(preProtocolStateChannel!.numProposedApps + 1),
+        participants: preProtocolStateChannel!.getSigningKeysFor(
           initiatorIdentifier,
           responderIdentifier,
         ),
-        multisigAddress: preProtocolStateChannel.multisigAddress,
+        multisigAddress: preProtocolStateChannel!.multisigAddress,
         defaultTimeout: toBN(defaultTimeout),
       }),
       defaultTimeout: defaultTimeout.toHexString(),
@@ -225,7 +225,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initiatorIdentifier,
       responderIdentifier,
       meta,
-      appSeqNo: preProtocolStateChannel.numProposedApps + 1,
+      appSeqNo: preProtocolStateChannel!.numProposedApps + 1,
       initiatorDepositAssetId: initiatorDepositAssetId || CONVENTION_FOR_ETH_ASSET_ID,
       responderDepositAssetId: responderDepositAssetId || CONVENTION_FOR_ETH_ASSET_ID,
     };
@@ -243,12 +243,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const proposedAppInstance = {
       identity: {
         appDefinition,
-        channelNonce: toBN(preProtocolStateChannel.numProposedApps + 1),
-        participants: preProtocolStateChannel.getSigningKeysFor(
+        channelNonce: toBN(preProtocolStateChannel!.numProposedApps + 1),
+        participants: preProtocolStateChannel!.getSigningKeysFor(
           initiatorIdentifier,
           responderIdentifier,
         ),
-        multisigAddress: preProtocolStateChannel.multisigAddress,
+        multisigAddress: preProtocolStateChannel!.multisigAddress,
         defaultTimeout: toBN(defaultTimeout),
       },
       hashOfLatestState: keccak256(
@@ -261,7 +261,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
 
     // 0ms
-    const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
+    const postProtocolStateChannel = preProtocolStateChannel!.addProposal(appInstanceProposal);
 
     substart = Date.now();
     await assertIsValidSignature(

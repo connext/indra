@@ -46,19 +46,22 @@ export class ProtocolRunner {
   /// Starts executing a protocol in response to a message received. This
   /// function should not be called with messages that are waited for by
   /// `IO_SEND_AND_WAIT`
-  public async runProtocolWithMessage(msg: ProtocolMessageData, preProtocolChannel: StateChannel) {
+  public async runProtocolWithMessage(
+    msg: ProtocolMessageData,
+    preProtocolStateChannel?: StateChannel,
+  ) {
     const protocol = getProtocolFromName(msg.protocol);
     const step = protocol[msg.seq];
     if (typeof step === "undefined") {
       throw new Error(`Received invalid seq ${msg.seq} for protocol ${msg.protocol}`);
     }
-    return this.runProtocol(step, msg, preProtocolChannel);
+    return this.runProtocol(step, msg, preProtocolStateChannel);
   }
 
   public async initiateProtocol(
     protocolName: ProtocolName,
     params: ProtocolParam,
-    preProtocolChannel: StateChannel,
+    preProtocolStateChannel?: StateChannel,
   ) {
     return this.runProtocol(
       getProtocolFromName(protocolName)[0],
@@ -70,7 +73,7 @@ export class ProtocolRunner {
         to: params[firstRecipientFromProtocolName(protocolName)],
         customData: {},
       },
-      preProtocolChannel,
+      preProtocolStateChannel,
     );
   }
 
@@ -91,18 +94,16 @@ export class ProtocolRunner {
   }
 
   private async runProtocol(
-    instruction: (
-      context: Context,
-    ) => AsyncIterableIterator<any>,
+    instruction: (context: Context) => AsyncIterableIterator<any>,
     message: ProtocolMessageData,
-    preProtocolChannel: StateChannel,
+    preProtocolStateChannel?: StateChannel,
   ): Promise<{ channel: StateChannel; data: any }> {
     const context: Context = {
       log: this.log,
       message,
       store: this.store,
       network: this.network,
-      preProtocolChannel,
+      preProtocolStateChannel,
     };
 
     let lastMiddlewareRet: any = undefined;

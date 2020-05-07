@@ -44,7 +44,7 @@ export interface Context {
   log: ILoggerService;
   message: ProtocolMessageData;
   network: NetworkContext;
-  preProtocolChannel: StateChannel;
+  preProtocolStateChannel?: StateChannel;
 }
 
 ////////////////////////////////////////

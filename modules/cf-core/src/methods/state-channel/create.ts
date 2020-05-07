@@ -4,9 +4,6 @@ import {
   MethodNames,
   MethodParams,
   MethodResults,
-  ProtocolNames,
-  ProtocolParam,
-  ProtocolParams,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 

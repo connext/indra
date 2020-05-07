@@ -90,6 +90,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async setItem<T>(key: string, value: T): Promise<void> {
     const store = await this.getStore();
     store[key] = value;
+    console.log('****** setItem: ', JSON.stringify(store), Date.now());
     return this.saveStore(store);
   }
 
@@ -124,7 +125,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
     const channelKeys = (await this.getKeys()).filter((key) => key.includes(storeKeys.CHANNEL));
+    console.log('******* getAllChannels channelKeys: ', channelKeys, Date.now());
+    console.trace();
     const store = await this.getStore();
+    console.log('store: ', store);
     return channelKeys
       .map((key) => (store[key] ? properlyConvertChannelNullVals(store[key]) : undefined))
       .filter((channel) => !!channel);
@@ -147,6 +151,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
     const channels = await this.getAllChannels();
+    console.log('******* getStateChannelByOwners channels: ', channels);
     return channels.find(
       (channel) => [...channel.userIdentifiers].sort().toString() === owners.sort().toString(),
     );
@@ -170,6 +175,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     signedSetupCommitment: MinimalTransaction,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
+    console.log("******** createStateChannel");
     const store = await this.getStore();
     const updatedStore = this.setSetStateCommitment(
       this.setSetupCommitment(

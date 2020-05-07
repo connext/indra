@@ -176,10 +176,10 @@ export class RequestHandler {
         params.initiatorIdentifier!,
         params.responderIdentifier!,
       ]);
-      this._channel = json && StateChannel.fromJson(json);
     } else {
       return;
     }
     this._channel = json && StateChannel.fromJson(json);
+    console.log('this._channel: ', this._channel);
   }
 }
