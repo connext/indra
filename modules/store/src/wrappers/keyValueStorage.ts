@@ -36,6 +36,7 @@ const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
  */
 
 export class KeyValueStorage implements WrappedStorage, IClientStore {
+  private deferred: (() => Promise<any>)[] = [];
   constructor(
     private readonly storage: WrappedStorage,
     private readonly backupService?: IBackupServiceAPI,
@@ -512,12 +513,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appIdentityHash: string,
     event: StateProgressedEventPayload,
   ): Promise<void> {
-    const key = this.getKey(
-      storeKeys.STATE_PROGRESSED_EVENT,
-      appIdentityHash,
-    );
-    const existing = await this.getStateProgressedEvents(appIdentityHash);
-    return this.storage.setItem(key, existing.concat(event));
+    return this.execute(async () => {
+      const key = this.getKey(
+        storeKeys.STATE_PROGRESSED_EVENT,
+        appIdentityHash,
+      );
+      const existing = await this.getStateProgressedEvents(appIdentityHash);
+      return this.storage.setItem(key, existing.concat(event));
+    });
   }
 
   async getChallengeUpdatedEvents(
@@ -641,6 +644,16 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   ) {
     const existsIndex = toSearch.findIndex(([idHash, app]) => idHash === hash);
     return existsIndex >= 0;
+  }
+
+  private execute = async (instruction: () => Promise<any>) => {
+    this.deferred.push(instruction);
+    const results = [];
+    for (const _ of Array(this.deferred.length)) {
+      const first = this.deferred.shift();
+      results.push(await first());
+    }
+    return results.pop();
   }
 }
 
