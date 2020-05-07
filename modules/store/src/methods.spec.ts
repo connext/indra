@@ -491,10 +491,10 @@ describe("ConnextStore", () => {
         );
         const retrieved = await store.getStateProgressedEvents(events[0].identityHash);
         expect(retrieved.length).to.be.eq(2);
-        expect(
-          retrieved.sort((a, b) => toBN(b.versionNumber).sub(toBN(a.versionNumber)).toNumber()),
-        ).to.be.deep.eq(events);
-        await store.clear();
+        const sorted = retrieved.sort((a, b) =>
+          toBN(a.versionNumber).sub(toBN(b.versionNumber)).toNumber(),
+        );
+        sorted.forEach((val, idx) => expect(val).to.containSubset(events[idx]));
       });
     });
   });
