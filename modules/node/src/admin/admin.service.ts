@@ -1,5 +1,4 @@
-import { getCreate2MultisigAddress, scanForCriticalAddresses } from "@connext/cf-core";
-import { CriticalStateChannelAddresses, StateChannelJSON } from "@connext/types";
+import { StateChannelJSON } from "@connext/types";
 import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
 
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
@@ -128,92 +127,6 @@ export class AdminService implements OnApplicationBootstrap {
       toMerge.push(mergeInfo);
     }
     return toMerge;
-  }
-
-  /**
-   * January 21, 2020
-   *
-   * Retrieves all the state channels with missing or invalid critical addresses
-   * Finds the critical addresses needed to deploy each broken state deposit holder
-   * Add these critical addresses to the channel's state
-   */
-  async repairCriticalStateChannelAddresses(): Promise<RepairCriticalAddressesResponse> {
-    const states = await Promise.all(
-      (await this.getAllChannels()).map((channel) =>
-        this.cfCoreStore.getStateChannel(channel.multisigAddress),
-      ),
-    );
-    const output: RepairCriticalAddressesResponse = { fixed: [], broken: [] };
-    this.log.info(`Scanning ${states.length} channels to see if any need to be repaired..`);
-    // First loop: Identify all channels that need to be repaired
-    for (const state of states) {
-      if (
-        !state.addresses ||
-        !state.addresses.proxyFactory ||
-        !state.addresses.multisigMastercopy ||
-        state.multisigAddress !==
-          (await getCreate2MultisigAddress(
-            state.userIdentifiers[0],
-            state.userIdentifiers[1],
-            state.addresses,
-            this.configService.getEthProvider(),
-          ))
-      ) {
-        output.broken.push(state.multisigAddress);
-      }
-    }
-    if (output.broken.length === 0) {
-      this.log.info("No channels need to be repaired, great!");
-      return output;
-    }
-    this.log.info(`Preparing to repair ${output.broken.length} channels`);
-    // Make a copy of broken multisigs so we can edit the output while looping through it
-    const brokenMultisigs = JSON.parse(JSON.stringify(output.broken));
-    // Second loop: attempt to repair broken channels
-    for (const brokenMultisig of brokenMultisigs) {
-      const state = await this.cfCoreStore.getStateChannel(brokenMultisig);
-      this.log.info(`Searching for critical addresses needed to fix channel ${brokenMultisig}..`);
-      const criticalAddresses = await scanForCriticalAddresses(
-        state.userIdentifiers[0],
-        state.userIdentifiers[1],
-        state.multisigAddress,
-        this.configService.getEthProvider(),
-      );
-      if (!criticalAddresses) {
-        this.log.warn(
-          `Could not find critical addresses that would fix channel ${state.multisigAddress}`,
-        );
-        continue;
-      }
-      if (criticalAddresses.toxicBytecode) {
-        this.log.warn(
-          `Channel ${state.multisigAddress} was created with toxic bytecode, it is unrepairable`,
-        );
-      } else if (criticalAddresses.legacyKeygen) {
-        this.log.warn(
-          `Channel ${state.multisigAddress} was created with legacyKeygen, it needs to be repaired manually`,
-        );
-      }
-      this.log.info(`Found critical addresses that fit, repairing channel: ${brokenMultisig}`);
-      const channel = await this.channelRepository.findByMultisigAddress(state.multisigAddress);
-      if (!channel) {
-        this.log.warn(`Channel ${state.multisigAddress} could not be found, returning`);
-        continue;
-      }
-      channel.addresses = {
-        proxyFactory: criticalAddresses.proxyFactory,
-        multisigMastercopy: criticalAddresses.multisigAddress,
-      } as CriticalStateChannelAddresses;
-      // @ts-ignore TS2589: Type instantiation is excessively deep and possibly infinite.
-      await this.channelRepository.save(channel);
-      // Move this channel from broken to fixed
-      output.fixed.push(brokenMultisig);
-      output.broken = output.broken.filter((multisig) => multisig === brokenMultisig);
-    }
-    if (output.broken.length > 0) {
-      this.log.warn(`${output.broken.length} channels could not be repaired`);
-    }
-    return output;
   }
 
   async onApplicationBootstrap() {}

@@ -1,4 +1,4 @@
-import { Node as CFCore } from "@connext/cf-core";
+import { CFCore } from "@connext/cf-core";
 import { MessagingService } from "@connext/messaging";
 import { ConnextNodeStorePrefix } from "@connext/types";
 import { Provider } from "@nestjs/common";

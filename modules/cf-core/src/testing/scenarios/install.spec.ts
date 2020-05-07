@@ -8,7 +8,7 @@ import { delay, getAddressFromAssetId } from "@connext/utils";
 import { One } from "ethers/constants";
 import { BigNumber, isHexString } from "ethers/utils";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
 
 import { NetworkContextForTestSuite } from "../contracts";
@@ -36,8 +36,8 @@ const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 describe("Node method follows spec - install", () => {
   let multisigAddress: string;
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   describe(
     "Node A gets app install proposal, sends to node B, B approves it, installs it, " +

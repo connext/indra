@@ -6,15 +6,15 @@ import {
   SetupMiddlewareContext,
   ValidationMiddleware,
 } from "@connext/types";
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 import { getCreate2MultisigAddress } from "../../utils";
 
 import { SetupContext, setup } from "../setup";
 import { createChannel } from "../utils";
 
 describe("injected validation middleware", () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   let multisigAddress: string;
 

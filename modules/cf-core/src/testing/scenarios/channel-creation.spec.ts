@@ -1,7 +1,7 @@
 import { CreateChannelMessage, EventNames } from "@connext/types";
 import { isHexString } from "ethers/utils";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { setup, SetupContext } from "../setup";
 import {
@@ -13,9 +13,9 @@ import {
 } from "../utils";
 
 describe("Node can create multisig, other owners get notified", () => {
-  let nodeA: Node;
-  let nodeB: Node;
-  let nodeC: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
+  let nodeC: CFCore;
 
   beforeAll(async () => {
     const context: SetupContext = await setup(global, true);

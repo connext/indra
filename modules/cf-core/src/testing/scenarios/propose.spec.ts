@@ -1,7 +1,7 @@
 import { ProposeMessage, MethodParams } from "@connext/types";
 import { deBigNumberifyJson } from "@connext/utils";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { toBeLt } from "../bignumber-jest-matcher";
 import { NetworkContextForTestSuite } from "../contracts";
@@ -20,8 +20,8 @@ expect.extend({ toBeLt });
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 async function assertEqualProposedApps(
-  nodeA: Node,
-  nodeB: Node,
+  nodeA: CFCore,
+  nodeB: CFCore,
   multisigAddress: string,
   expectedAppIds: string[],
 ): Promise<void> {
@@ -40,8 +40,8 @@ async function assertEqualProposedApps(
 
 describe("Node method follows spec - propose install", () => {
   let multisigAddress: string;
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   describe("NodeA initiates proposal, nodeB approves, found in both stores", () => {
     beforeEach(async () => {

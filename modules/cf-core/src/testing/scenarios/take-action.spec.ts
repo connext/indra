@@ -1,7 +1,7 @@
 import { EventNames, EventPayloads, UpdateStateMessage } from "@connext/types";
 import { Zero, Two } from "ethers/constants";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 import { NO_APP_INSTANCE_FOR_TAKE_ACTION } from "../../errors";
 
 import { NetworkContextForTestSuite } from "../contracts";
@@ -20,8 +20,8 @@ const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 // NOTE: no initiator events
 function confirmMessages(
-  initiator: Node,
-  responder: Node,
+  initiator: CFCore,
+  responder: CFCore,
   expectedData: EventPayloads.UpdateState,
 ) {
   const expected = {
@@ -38,8 +38,8 @@ function confirmMessages(
 }
 
 describe("Node method follows spec - takeAction", () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   beforeAll(async () => {
     const context: SetupContext = await setup(global);

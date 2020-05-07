@@ -1,12 +1,12 @@
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 import { CANNOT_UNINSTALL_FREE_BALANCE } from "../../errors";
 
 import { setup, SetupContext } from "../setup";
 import { constructUninstallRpc, createChannel, constructGetStateChannelRpc } from "../utils";
 
 describe("Confirms that a FreeBalance cannot be uninstalled", () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   beforeAll(async () => {
     const context: SetupContext = await setup(global);

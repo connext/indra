@@ -2,7 +2,7 @@ import { CONVENTION_FOR_ETH_ASSET_ID, EventNames, InstallMessage, ProposeMessage
 import { One } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { toBeLt } from "../bignumber-jest-matcher";
 import { NetworkContextForTestSuite } from "../contracts";
@@ -24,8 +24,8 @@ const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 describe("Node method follows spec - toke action", () => {
   let multisigAddress: string;
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   describe("Should be able to successfully take action on apps concurrently", () => {
     beforeEach(async () => {

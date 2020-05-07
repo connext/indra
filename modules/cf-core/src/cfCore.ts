@@ -37,14 +37,12 @@ import RpcRouter from "./rpc-router";
 import { MethodRequest, MethodResponse, PersistAppType } from "./types";
 
 export interface NodeConfig {
-  // The prefix for any keys used in the store by this Node depends on the
-  // execution environment.
   STORE_KEY_PREFIX: string;
 }
 
 const REASONABLE_NUM_BLOCKS_TO_WAIT = 1;
 
-export class Node {
+export class CFCore {
   private readonly incoming: EventEmitter;
   private readonly outgoing: EventEmitter;
 
@@ -55,9 +53,9 @@ export class Node {
   /**
    * These properties don't have initializers in the constructor, since they must be initialized
    * asynchronously. This is done via the `asynchronouslySetupUsingRemoteServices` function.
-   * Since we have a private constructor and only allow instances of the Node to be created
+   * Since we have a private constructor and only allow instances of CFCore to be created
    * via `create` which immediately calls `asynchronouslySetupUsingRemoteServices`, these are
-   * always non-null when the Node is being used.
+   * always non-null when CFCore is being used.
    */
   protected requestHandler!: RequestHandler;
   public rpcRouter!: RpcRouter;
@@ -72,8 +70,8 @@ export class Node {
     lockService?: ILockService,
     blocksNeededForConfirmation?: number,
     logger?: ILoggerService,
-  ): Promise<Node> {
-    const node = new Node(
+  ): Promise<CFCore> {
+    const node = new CFCore(
       signer,
       messagingService,
       storeService,
@@ -99,7 +97,7 @@ export class Node {
     public readonly log: ILoggerService = nullLogger,
     private readonly lockService?: ILockService,
   ) {
-    this.log = log.newContext("CF-Node");
+    this.log = log.newContext("CFCore");
     this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
@@ -116,8 +114,8 @@ export class Node {
     return this.signer.publicIdentifier;
   }
 
-  private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
-    this.log.info(`Node signer address: ${await this.signer.getAddress()}`);
+  private async asynchronouslySetupUsingRemoteServices(): Promise<CFCore> {
+    this.log.info(`CFCore signer address: ${await this.signer.getAddress()}`);
     this.requestHandler = new RequestHandler(
       this.publicIdentifier,
       this.incoming,
@@ -329,8 +327,8 @@ export class Node {
   }
 
   /**
-   * This is the entrypoint to listening for messages from other Nodes.
-   * Delegates setting up a listener to the Node's outgoing EventEmitter.
+   * This is the entrypoint to listening for messages from other CFCores.
+   * Delegates setting up a listener to CFCore's outgoing EventEmitter.
    * @param event
    * @param callback
    */
@@ -339,7 +337,7 @@ export class Node {
   }
 
   /**
-   * Stops listening for a given message from other Nodes. If no callback is passed,
+   * Stops listening for a given message from other CFCores. If no callback is passed,
    * all callbacks are removed.
    *
    * @param event
@@ -350,8 +348,8 @@ export class Node {
   }
 
   /**
-   * This is the entrypoint to listening for messages from other Nodes.
-   * Delegates setting up a listener to the Node's outgoing EventEmitter.
+   * This is the entrypoint to listening for messages from other CFCores.
+   * Delegates setting up a listener to CFCore's outgoing EventEmitter.
    * It'll run the callback *only* once.
    *
    * @param event
@@ -362,7 +360,7 @@ export class Node {
   }
 
   /**
-   * Delegates emitting events to the Node's incoming EventEmitter.
+   * Delegates emitting events to CFCore's incoming EventEmitter.
    * @param event
    * @param req
    */
@@ -371,7 +369,7 @@ export class Node {
   }
 
   /**
-   * Makes a direct call to the Node for a specific method.
+   * Makes a direct call to CFCore for a specific method.
    * @param method
    * @param req
    */
@@ -380,10 +378,10 @@ export class Node {
   }
 
   /**
-   * When a Node is first instantiated, it establishes a connection
+   * When CFCore is first instantiated, it establishes a connection
    * with the messaging service. When it receives a message, it emits
    * the message to its registered subscribers, usually external
-   * subscribed (i.e. consumers of the Node).
+   * subscribed (i.e. consumers of CFCore).
    */
   private registerMessagingConnection() {
     this.messagingService.onReceive(this.publicIdentifier, async (msg: Message) => {
@@ -393,7 +391,7 @@ export class Node {
   }
 
   /**
-   * Messages received by the Node fit into one of three categories:
+   * Messages received by CFCore fit into one of three categories:
    *
    * (a) A Message which is _not_ a ProtocolMessage;
    *     this is a standard received message which is handled by a named
@@ -430,7 +428,7 @@ export class Node {
     const key = msg.data.processID;
 
     if (!this.ioSendDeferrals.has(key)) {
-      throw new Error("Node received message intended for machine but no handler was present");
+      throw new Error("CFCore received message intended for machine but no handler was present");
     }
 
     const promise = this.ioSendDeferrals.get(key)!;

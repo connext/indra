@@ -1,6 +1,6 @@
 import { generateValidationMiddleware } from "@connext/apps";
 import { ChannelProvider } from "@connext/channel-provider";
-import { Node as CFCore } from "@connext/cf-core";
+import { CFCore } from "@connext/cf-core";
 import {
   CFChannelProviderOptions,
   ChannelMethods,

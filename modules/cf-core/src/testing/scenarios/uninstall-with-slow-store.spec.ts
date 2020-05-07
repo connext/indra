@@ -1,7 +1,7 @@
 import { UninstallMessage } from "@connext/types";
 import { delay } from "@connext/utils";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { NetworkContextForTestSuite } from "../contracts";
 import { SetupContext, setup } from "../setup";
@@ -15,8 +15,8 @@ import {
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 describe("Node method follows spec - uninstall", () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   beforeAll(async () => {
     const context: SetupContext = await setup(global);

@@ -2,7 +2,7 @@ import { getMemoryStore } from "@connext/store";
 import { getRandomChannelSigner } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 
-import { Node } from "./node";
+import { CFCore } from "./cfCore";
 import { memoryMessagingService } from "./testing/services";
 
 describe("Node", () => {
@@ -12,7 +12,7 @@ describe("Node", () => {
 
   it("can be created", async () => {
     const provider = new JsonRpcProvider(global["network"].provider.connection.url);
-    const node = await Node.create(
+    const node = await CFCore.create(
       memoryMessagingService,
       getMemoryStore(),
       global["network"],

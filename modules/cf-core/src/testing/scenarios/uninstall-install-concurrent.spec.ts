@@ -2,7 +2,7 @@ import { CONVENTION_FOR_ETH_ASSET_ID, InstallMessage, ProposeMessage } from "@co
 import { One } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../bignumber-jest-matcher";
@@ -24,8 +24,8 @@ const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 describe("Node method follows spec when happening concurrently - install / uninstall", () => {
   let multisigAddress: string;
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
   let installedAppIdentityHash: string;
   let installCall;
 

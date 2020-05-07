@@ -2,7 +2,7 @@ import { Address, AppInstanceJson } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
-import { Node } from "../node";
+import { CFCore } from "../cfCore";
 
 import { NetworkContextForTestSuite } from "./contracts";
 import {
@@ -36,8 +36,8 @@ type CoinTransfer = {
 const { UnidirectionalLinkedTransferApp } = global["network"] as NetworkContextForTestSuite;
 
 export async function installLink(
-  funder: Node,
-  redeemer: Node,
+  funder: CFCore,
+  redeemer: CFCore,
   multisigAddress: string,
   state: UnidirectionalLinkedTransferAppState,
   action: UnidirectionalLinkedTransferAppAction,
@@ -69,8 +69,8 @@ function assertLinkRedemption(app: AppInstanceJson, amount: BigNumber): void {
  * and uninstalls the app
  */
 export async function redeemLink(
-  redeemer: Node,
-  funder: Node,
+  redeemer: CFCore,
+  funder: CFCore,
   appIdentityHash: string,
   action: UnidirectionalLinkedTransferAppAction,
 ): Promise<string> {
@@ -89,9 +89,9 @@ export async function redeemLink(
  * 4. Intermediary takes action on matched app to reclaim funds
  */
 export async function installAndRedeemLink(
-  funder: Node,
-  intermediary: Node,
-  redeemer: Node,
+  funder: CFCore,
+  intermediary: CFCore,
+  redeemer: CFCore,
   multisigAddressFunderIntermediary: string,
   multisigAddressIntermediaryRedeemer: string,
   stateAndAction: { action: any; state: any },
