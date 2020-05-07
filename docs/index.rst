@@ -34,7 +34,6 @@ Contents
     quickstart/basics
     quickstart/clientInstantiation
     quickstart/fundingYourChannel
-    quickstart/walletIntegrations
     quickstart/advanced
 
 .. toctree::
@@ -51,8 +50,10 @@ Contents
     :maxdepth: 2
     :caption: Guides
 
-    guides/how-to-deploy-indra
-    guides/how-to-integrate-browser
+    how-to/deploy-indra
+    how-to/integrate-browser
+    how-to/integrate-react-native
+    how-to/integrate-node
 
 .. toctree::
     :maxdepth: 2

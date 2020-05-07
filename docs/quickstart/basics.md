@@ -4,7 +4,7 @@ Like [web3.js](https://web3js.readthedocs.io/) or [ethers](https://docs.ethers.i
 
 This quickstart will guide you through instantiating the Connext client with a randomly generated private key in a web environment to get basic Connext functionality (deposits, swaps, transfers, withdrawals) working as quickly as possible. 
 
-Instantiating with a private key _should not_ be used in production environments - once you get through this guide, we recommend looking through the Dapp Integration or [Wallet Integrations](../quickstart/walletIntegrations) guides for better patterns.
+Instantiating with a private key _should not_ be used in production environments - once you get through this guide, we recommend looking through the [React Native Integration](../how-to/integrate-react-native) guide for better patterns.
 
 We will connect to a testnet (Rinkeby) node hosted at `https://rinkeby.indra.connext.network/api/messaging` using the Connext client. If you don't have any Rinkeby ETH, we recommend you get some from a [faucet](https://faucet.rinkeby.io/) before continuing with this guide.
 
@@ -114,7 +114,7 @@ If you are interested in using Connext in react native, check out a sample imple
 
 ## What's next?
 
-If you're integrating Connext into a wallet, check out [Wallet Integrations](../quickstart/walletIntegrations).
+If you're integrating Connext into a native wallet, check out the [React Native Integration Guide](../how-to/integrate-react-native.md).
 
 If you're building an application that uses Connext, check out DApp Integrations (docs coming soon!).
 
