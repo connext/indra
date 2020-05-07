@@ -109,8 +109,8 @@ export const initiateDispute = async (
   const appStatus = !calledSetAndProgress
     ? ChallengeStatus.IN_DISPUTE
     : isStateTerminal
-    ? ChallengeStatus.EXPLICITLY_FINALIZED
-    : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
+      ? ChallengeStatus.EXPLICITLY_FINALIZED
+      : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
 
   // get expected free balance values
   const fbSetState = bigNumberifyJson(await freeBalance.getSetState());
