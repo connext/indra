@@ -33,6 +33,8 @@ export type CreatedAppInstanceOpts = {
   defaultTimeout: BigNumber;
 };
 
+const MAX_FUNDING_RETRIES = 3;
+
 /////////////////////////////
 // Context
 
@@ -148,20 +150,34 @@ export const setupContext = async (
     channelBalances[assetId] = assetTotal;
   });
 
- const token = new Contract(networkContext.Token, ERC20.abi, wallet);
-  const tx = await wallet.sendTransaction({
-    to: multisigAddress,
-    value: channelBalances[CONVENTION_FOR_ETH_ASSET_ID],
-  });
-  await tx.wait();
-  const tx2 = await token.transfer(multisigAddress, channelBalances[networkContext.Token]);
-  await tx2.wait();
-  expect(await provider.getBalance(multisigAddress)).to.be.eq(
-    channelBalances[CONVENTION_FOR_ETH_ASSET_ID],
-  );
-  expect(await token.functions.balanceOf(multisigAddress)).to.be.eq(
-    channelBalances[networkContext.Token],
-  );
+  const token = new Contract(networkContext.Token, ERC20.abi, wallet);
+  for (let i = 0; i < MAX_FUNDING_RETRIES; i++) {
+    try {
+      const tx = await wallet.sendTransaction({
+        to: multisigAddress,
+        value: channelBalances[CONVENTION_FOR_ETH_ASSET_ID],
+      });
+      await tx.wait();
+      expect(await provider.getBalance(multisigAddress)).to.be.eq(
+        channelBalances[CONVENTION_FOR_ETH_ASSET_ID],
+      );
+      break;
+    } catch (e) {
+      console.log(`Failed to fund ETH attempt ${i}/${MAX_FUNDING_RETRIES}..`);
+    }
+  }
+  for (let i = 0; i < MAX_FUNDING_RETRIES; i++) {
+    try {
+      const tx = await token.transfer(multisigAddress, channelBalances[networkContext.Token]);
+      await tx.wait();
+      expect(await token.functions.balanceOf(multisigAddress)).to.be.eq(
+        channelBalances[networkContext.Token],
+      );
+      break;
+    } catch (e) {
+      console.log(`Failed to fund tokens attempt ${i}/${MAX_FUNDING_RETRIES}..`);
+    }
+  }
 
   /////////////////////////////////////////
   // contract helper functions
@@ -195,22 +211,25 @@ export const setupContext = async (
     const setState = SetStateCommitment.fromJson(commitment);
     const [event, tx] = await Promise.all([
       new Promise((resolve) => {
-        challengeRegistry.on(ChallengeEvents.ChallengeUpdated, (
-          identityHash: string,
-          status: ChallengeStatus,
-          appStateHash: string,
-          versionNumber: BigNumber,
-          finalizesAt: BigNumber,
-        ) => {
-          const converted = {
-            identityHash,
-            status,
-            appStateHash,
-            versionNumber: toBN(versionNumber),
-            finalizesAt: toBN(finalizesAt),
-          };
-          resolve(converted);
-        });
+        challengeRegistry.on(
+          ChallengeEvents.ChallengeUpdated,
+          (
+            identityHash: string,
+            status: ChallengeStatus,
+            appStateHash: string,
+            versionNumber: BigNumber,
+            finalizesAt: BigNumber,
+          ) => {
+            const converted = {
+              identityHash,
+              status,
+              appStateHash,
+              versionNumber: toBN(versionNumber),
+              finalizesAt: toBN(finalizesAt),
+            };
+            resolve(converted);
+          },
+        );
       }),
       new Promise(async (resolve, reject) => {
         try {
