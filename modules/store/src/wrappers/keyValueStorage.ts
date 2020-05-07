@@ -512,7 +512,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.execute(async () => {
       const { identityHash } = data;
       const challengeKey = this.getKey(storeKeys.CHALLENGE, identityHash);
-      this.log.debug(`Updating challenge for ${identityHash}`);
+      this.log.debug(`Updating challenge for ${identityHash} with ${stringify(data)}`);
       return this.storage.setItem(challengeKey, data);
     });
   }
