@@ -349,6 +349,7 @@ export class Watcher implements IWatcher {
 
   private processChallengeUpdated = async (event: ChallengeUpdatedEventPayload) => {
     this.log.info(`Processing challenge updated event: ${stringify(event)}`);
+    await this.store.createChallengeUpdatedEvent(event);
     await this.store.saveAppChallenge(event);
     const challenge = await this.store.getAppChallenge(event.identityHash);
     this.log.debug(`Saved challenge to store: ${stringify(challenge)}`);
