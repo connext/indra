@@ -25,13 +25,7 @@ import { v4 as uuid } from "uuid";
 
 import { ConnextStore } from "./connextStore";
 import { StoreTypes } from "./types";
-import {
-  FileStorage,
-  KeyValueStorage,
-  WrappedAsyncStorage,
-  WrappedLocalStorage,
-  WrappedSequelizeStorage,
-} from "./wrappers";
+import { KeyValueStorage } from "./wrappers";
 
 use(require("chai-as-promised"));
 use(require("chai-subset"));
@@ -180,6 +174,8 @@ export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = 
 ////////////////////////////////////////
 // Helper Methods
 
+export const postgresConnectionUri = `postgres://${env.user}:${env.password}@${env.host}:${env.port}/${env.database}`;
+
 export const createKeyValueStore = async (
   type: StoreTypes,
   opts: StoreFactoryOptions = {},
@@ -198,7 +194,9 @@ export const createConnextStore = async (
   }
   opts.logger = new ColorfulLogger(`ConnextStore_${type}`, env.logLevel, true);
   if (type === StoreTypes.Postgres) {
-    opts.postgresConnectionUri = `postgres://${env.user}:${env.password}@${env.host}:${env.port}/${env.database}`;
+    opts.sequelize =
+      opts.sequelize ||
+      postgresConnectionUri;
   } else if (type === StoreTypes.AsyncStorage) {
     opts.storage = new MockAsyncStorage();
   }

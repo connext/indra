@@ -67,22 +67,24 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return Object.keys(await this.getStore());
   }
 
-  private async getStore(): Promise<any> {
-    const store = await this.storage.getItem(storeKeys.STORE);
+  async getStore(): Promise<any> {
+    const storeKey = this.getKey(storeKeys.STORE);
+    const store = await this.storage.getItem(storeKey);
     return store || {};
   }
 
   private async saveStore(store: any): Promise<any> {
+    const storeKey = this.getKey(storeKeys.STORE);
     if (this.backupService) {
       try {
-        await this.backupService.backup({ path: storeKeys.STORE, value: store });
+        await this.backupService.backup({ path: storeKey, value: store });
       } catch (e) {
         this.log.warn(
           `Could not save ${storeKeys.STORE} to backup service. Error: ${e.stack || e.message}`,
         );
       }
     }
-    return this.storage.setItem(storeKeys.STORE, store);
+    return this.storage.setItem(storeKey, store);
   }
 
   async getItem<T>(key: string): Promise<T | undefined> {

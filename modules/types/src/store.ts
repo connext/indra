@@ -48,15 +48,18 @@ export interface FileStorageOptions {
   fileDir?: string;
 }
 
+export interface SequelizeStorageOptions {
+  sequelize?: Sequelize | string;
+  dbTableName?: string;
+}
+
 // TODO: Remove
-export interface StoreFactoryOptions extends FileStorageOptions {
-  logger?: ILoggerService,
+export interface StoreFactoryOptions extends FileStorageOptions, SequelizeStorageOptions {
+  logger?: ILoggerService;
   storage?: IAsyncStorage | any;
   prefix?: string;
   separator?: string;
   asyncStorageKey?: string;
-  postgresConnectionUri?: string;
-  sequelize?: Sequelize;
   backupService?: IBackupServiceAPI;
 }
 
