@@ -113,7 +113,15 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   clear(): Promise<void> {
-    return this.execute(() => this.storage.setItem(storeKeys.STORE, {}));
+    return this.execute(async () => {
+      const keys = await this.storage.getKeys();
+      await Promise.all(keys.map((key) => {
+        if (key === storeKeys.STORE) {
+          return this.storage.setItem(key, {});
+        }
+        return this.storage.setItem(key, {});
+      }));
+    });
   }
 
   async restore(): Promise<void> {
@@ -450,9 +458,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   ////// Watcher methods
-  getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined> {
+  async getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined> {
     const challengeKey = this.getKey(storeKeys.CHALLENGE, appIdentityHash);
-    return this.storage.getItem<StoredAppChallenge>(challengeKey);
+    return (await this.storage.getItem<StoredAppChallenge>(challengeKey)) || undefined;
   }
 
   async createAppChallenge(
@@ -476,22 +484,17 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
-    const channel = await this.getStateChannel(multisigAddress);
-    if (!channel) {
-      throw new Error(`Could not find channel for multisig: ${multisigAddress}`);
-    }
     // get all stored challenges
-    const keys = await this.getKeys();
-    const relevant = keys.filter((key) => key.includes(storeKeys.CHALLENGE));
-    const store = await this.getStore();
-    const challenges = relevant.map((key) => store[key]);
-    const inactiveStatuses = [ChallengeStatus.NO_CHALLENGE, ChallengeStatus.OUTCOME_SET];
-    const allActive = challenges.filter(
-      (challenge) => !!challenge && !inactiveStatuses.find((status) => status === challenge.status),
+    const keys = await this.storage.getKeys();
+    const relevant = keys.filter(
+      (key) =>
+        key.includes(storeKeys.CHALLENGE) && !key.includes(storeKeys.CHALLENGE_UPDATED_EVENT),
     );
-    // now find which ones are in the channel and in dispute
-    return allActive.filter((challenge) =>
-      this.hasAppIdentityHash(challenge.identityHash, channel.appInstances),
+    const challenges = await Promise.all(relevant.map((key) => this.storage.getItem(key)));
+    const inactiveStatuses = [ChallengeStatus.NO_CHALLENGE, ChallengeStatus.OUTCOME_SET];
+    // now find which ones are in dispute
+    return challenges.filter(
+      (challenge) => !!challenge && !inactiveStatuses.find((status) => status === challenge.status),
     );
   }
 
@@ -555,9 +558,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       const existing = await this.getChallengeUpdatedEvents(appIdentityHash);
       const idx = existing.findIndex((stored) => stringify(stored) === stringify(event));
       if (idx !== -1) {
-        this.log.debug(
-          `Found existing identical challenge created event, doing nothing.`,
-        );
+        this.log.debug(`Found existing identical challenge created event, doing nothing.`);
         return;
       }
       return this.storage.setItem(key, existing.concat(event));
@@ -669,7 +670,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
    */
   private execute = async (instruction: () => Promise<any>) => {
     this.deferred.push(instruction);
-    console.log(`this.deferred.length: ${this.deferred.length}`);
     const results = await pSeries(this.deferred);
     this.deferred = [];
     return results.pop();
