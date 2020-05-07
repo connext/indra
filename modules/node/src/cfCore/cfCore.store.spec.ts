@@ -25,6 +25,7 @@ import {
   createStoredAppChallenge,
   createStateProgressedEventPayload,
   generateRandomIdentifier,
+  createChallengeUpdatedEventPayload,
 } from "../test/cfCore";
 import { ConfigService } from "../config/config.service";
 
@@ -475,9 +476,6 @@ describe("CFCoreStore", () => {
       expect(retrieved).toMatchObject(challenge);
       const byChannel = await cfCoreStore.getActiveChallenges();
       expect(byChannel).toMatchObject([challenge]);
-      // events
-      const events = await cfCoreStore.getChallengeUpdatedEvents(appInstance.identityHash);
-      expect(events).toMatchObject([challenge]);
     });
 
     it("updates a challenge", async () => {
@@ -492,15 +490,6 @@ describe("CFCoreStore", () => {
       await cfCoreStore.saveAppChallenge(updated);
       const retrieved = await cfCoreStore.getAppChallenge(challenge.identityHash);
       expect(retrieved).toMatchObject(updated);
-      // events
-      const sortedEvents = (
-        await cfCoreStore.getChallengeUpdatedEvents(challenge.identityHash)
-      ).sort((a, b) => b.versionNumber.sub(a.versionNumber).toNumber());
-      expect(sortedEvents.length).toBe(2);
-      expect(sortedEvents).toMatchObject([
-        updated,
-        challenge,
-      ]);
     });
   });
 
@@ -515,6 +504,21 @@ describe("CFCoreStore", () => {
       });
       await cfCoreStore.createStateProgressedEvent(event);
       const retrieved = await cfCoreStore.getStateProgressedEvents(appInstance.identityHash);
+      expect(retrieved).toMatchObject([event]);
+    });
+  });
+
+  describe("Challenge updated Event", () => {
+    it("creates a challenge updated event", async () => {
+      const { appInstance } = await createTestChallengeWithAppInstanceAndChannel(
+        cfCoreStore,
+        configService.getPublicIdentifier(),
+      );
+      const event = createChallengeUpdatedEventPayload({
+        identityHash: appInstance.identityHash,
+      });
+      await cfCoreStore.createChallengeUpdatedEvent(event);
+      const retrieved = await cfCoreStore.getChallengeUpdatedEvents(appInstance.identityHash);
       expect(retrieved).toMatchObject([event]);
     });
   });
