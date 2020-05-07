@@ -55,5 +55,5 @@ export {
   WrappedAsyncStorage,
   WrappedLocalStorage,
   WrappedMemoryStorage,
-  WrappedPostgresStorage,
+  WrappedSequelizeStorage as WrappedPostgresStorage,
 } from "./wrappers";

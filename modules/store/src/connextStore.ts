@@ -20,17 +20,15 @@ import { nullLogger } from "@connext/utils";
 
 import { storeDefaults } from "./constants";
 import {
-  FileStorage,
   KeyValueStorage,
-  WrappedMemoryStorage,
   WrappedAsyncStorage,
   WrappedLocalStorage,
-  WrappedPostgresStorage,
+  WrappedSequelizeStorage,
 } from "./wrappers";
 import { StoreTypes, WrappedStorage } from "./types";
 
 export class ConnextStore implements IStoreService {
-  public internalStore: IStoreService;
+  public internalStore: KeyValueStorage;
 
   private prefix: string = storeDefaults.PREFIX;
   private separator: string = storeDefaults.SEPARATOR;
@@ -58,12 +56,7 @@ export class ConnextStore implements IStoreService {
           throw new Error(`Must pass in a reference to an 'IAsyncStorage' interface`);
         }
         this.internalStore = new KeyValueStorage(
-          new WrappedAsyncStorage(
-            opts.storage,
-            this.prefix,
-            this.separator,
-            opts.asyncStorageKey,
-          ),
+          new WrappedAsyncStorage(opts.storage, this.prefix, this.separator, opts.asyncStorageKey),
           this.backupService,
           logger,
         );
@@ -72,8 +65,8 @@ export class ConnextStore implements IStoreService {
 
       case StoreTypes.Postgres: {
         this.internalStore = new KeyValueStorage(
-          (opts.storage as WrappedPostgresStorage) ||
-            new WrappedPostgresStorage(
+          (opts.storage as WrappedSequelizeStorage) ||
+            new WrappedSequelizeStorage(
               this.prefix,
               this.separator,
               storeDefaults.DATABASE_TABLE_NAME,
@@ -88,11 +81,12 @@ export class ConnextStore implements IStoreService {
 
       case StoreTypes.File: {
         this.internalStore = new KeyValueStorage(
-          new FileStorage(
+          new WrappedSequelizeStorage(
             this.prefix,
-            this.separator === storeDefaults.SEPARATOR ? "-" : this.separator,
-            opts.fileExt,
-            opts.fileDir,
+            this.separator,
+            storeDefaults.DATABASE_TABLE_NAME,
+            undefined,
+            `sqlite:${opts.fileDir}/${storeDefaults.SQLITE_STORE_NAME}`,
           ),
           this.backupService,
           logger,
@@ -102,7 +96,14 @@ export class ConnextStore implements IStoreService {
 
       case StoreTypes.Memory: {
         this.internalStore = new KeyValueStorage(
-          new WrappedMemoryStorage(this.prefix, this.separator),
+          // TODO: DEBUG THIS
+          new WrappedSequelizeStorage(
+            this.prefix,
+            this.separator,
+            storeDefaults.DATABASE_TABLE_NAME,
+            undefined,
+            `sqlite:${storeDefaults.SQLITE_MEMORY_STORE_STRING}`,
+          ),
           this.backupService,
           logger,
         );
@@ -118,6 +119,10 @@ export class ConnextStore implements IStoreService {
         this.internalStore = new KeyValueStorage(opts.storage as WrappedStorage);
       }
     }
+  }
+
+  init(): Promise<void> {
+    return this.internalStore.init();
   }
 
   getSchemaVersion(): Promise<number> {
