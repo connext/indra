@@ -155,11 +155,11 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve();
   }
 
-  async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
+  getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
     return Promise.resolve([]);
   }
 
-  async createStateProgressedEvent(
+  createStateProgressedEvent(
     event: StateProgressedEventPayload,
   ): Promise<void> {
     return Promise.resolve();
@@ -176,6 +176,12 @@ export class MockStoreService implements IStoreService {
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]> {
     return Promise.resolve([]);
+  }
+
+  createChallengeUpdatedEvent(
+    event: ChallengeUpdatedEventPayload,
+  ): Promise<void> {
+    return Promise.resolve();
   }
 }
 

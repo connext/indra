@@ -700,25 +700,6 @@ export class CFCoreStore implements IStoreService {
 
     await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(challenge);
-
-      if (
-        status !== StoredAppChallengeStatus.PENDING_TRANSITION &&
-        status !== StoredAppChallengeStatus.CONDITIONAL_SENT
-      ) {
-        // insert event
-        await transactionalEntityManager
-          .createQueryBuilder()
-          .insert()
-          .into(ChallengeUpdatedEvent)
-          .values({
-            status: status as ChallengeStatus,
-            appStateHash,
-            versionNumber,
-            finalizesAt,
-            challenge,
-          })
-          .execute();
-      }
     });
   }
 
@@ -914,6 +895,26 @@ export class CFCoreStore implements IStoreService {
         .relation(Challenge, "stateProgressedEvents")
         .of(challenge.id)
         .add(entity.id);
+    });
+  }
+
+  async createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
+    const { versionNumber, identityHash, status, appStateHash, finalizesAt } = event;
+    const challenge = await this.challengeRepository.findByIdentityHashOrThrow(identityHash);
+    await getManager().transaction(async (transactionalEntityManager) => {
+      // insert event
+      await transactionalEntityManager
+      .createQueryBuilder()
+      .insert()
+      .into(ChallengeUpdatedEvent)
+      .values({
+        status: status as ChallengeStatus,
+        appStateHash,
+        versionNumber,
+        finalizesAt,
+        challenge,
+      })
+      .execute();
     });
   }
 
