@@ -1,10 +1,11 @@
-# Additional Considerations
+
+# Limitations & Assumptions
 
 There are a few considerations to be aware of as an implementer.
 
 ## Availability
 
-The wallet must acknowledge every state update by cosigning that state. This means in order to update your channel, the user must be online. We've built several different conditional transfer types to help accomodate user availability constraints. 
+The wallet must acknowledge every state update by cosigning that state. This means in order to update your channel, the user must be online. We've built several different conditional transfer types to help accommodate user availability constraints. 
 
 
 ## Default Conditional Transfers and UX Impacts
@@ -13,7 +14,7 @@ The wallet must acknowledge every state update by cosigning that state. This mea
 
 Link transfers let you to create a preloaded link that can be redeemed for a given amount of funds. When you create a link, the amount of the link is deducted from your channel balance and the funds are locked by the node pending the receipt of a secret. Next, a link is generated with that secret. It cannot be regenerated, so don't lose it or you'll lose those funds! This link (and only this link) can be used to unlock those funds.
 
-Link payments are a useful tool for onboarding new users and/or creating prepaid accounts.
+Link payments are a useful tool for on-boarding new users and/or creating prepaid accounts.
 
 
 ## Autocollateralization

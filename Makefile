@@ -224,7 +224,7 @@ docs: documentation
 documentation: py-requirements $(shell find docs $(find_options))
 	$(log_start)
 	$(docker_run) "rm -rf docs/build"
-	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b html -d build/doctrees . build/html"
+	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b html -d build/doctrees ./src build/html"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ########################################

@@ -1,5 +1,5 @@
 
-# How To Support State Channels On A NodeJS Server
+# How To Integrate With a NodeJS Server
 
 To get started, install the required connext package.
 

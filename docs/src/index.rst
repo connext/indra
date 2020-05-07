@@ -41,10 +41,10 @@ Contents
     :caption: Background
 
     background/architecture
-    background/limitations
-    background/faq
     background/protocol
     background/protocol-diagrams
+    background/limitations
+    background/faq
 
 .. toctree::
     :maxdepth: 2

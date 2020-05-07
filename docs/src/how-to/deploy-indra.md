@@ -1,5 +1,5 @@
 
-# How To Deploy an Indra Node To Production
+# How To Deploy an Indra Node
 
 Lets say you want to deploy an Indra payment node to `https://indra.example.com` (we'll call this url `$DOMAINNAME`)
 

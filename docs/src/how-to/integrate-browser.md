@@ -1,5 +1,5 @@
 
-# How To Support State Channels In A Browser App
+# How To Integrate With a Browser App
 
 The connext client `@connext/client` has built-in defaults that make it easy to use in a web browser. By default, the client will store it's state in localStorage (Look for keys prefixed with `INDRA_CLIENT_CF_CORE`).
 
