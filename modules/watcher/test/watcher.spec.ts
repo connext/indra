@@ -61,7 +61,7 @@ describe("Watcher.init", () => {
   });
 });
 
-describe.only("Watcher.initiate", () => {
+describe("Watcher.initiate", () => {
   let provider: JsonRpcProvider;
   let store: IClientStore;
   let multisigAddress: string;
@@ -123,7 +123,7 @@ describe.only("Watcher.initiate", () => {
     await verifyOnchainBalancesPostChallenge(multisigAddress, signers, channelBalances, wallet);
   });
 
-  it.only("should be able to initiate + complete a dispute with a single signed latest state", async () => {
+  it("should be able to initiate + complete a dispute with a single signed latest state", async () => {
     // setup store with app with proper timeouts
     const {
       activeApps,
@@ -143,7 +143,7 @@ describe.only("Watcher.initiate", () => {
       provider,
       store,
       signer: wallet.privateKey,
-      logger: new ColorfulLogger("Watcher", 5, true, ""),
+      // logger: new ColorfulLogger("Watcher", 5, true, ""),
     });
 
     const [initiateRes, contractEvent] = await Promise.all([
@@ -310,6 +310,7 @@ describe("Watcher responses", () => {
 
   it("should respond with `setState` if it has a higher nonced state", async () => {
     const setState0 = await app.getInitialSetState(networkContext.ChallengeRegistry, toBN(3));
+    const expected = await app.getDoubleSignedSetState(networkContext.ChallengeRegistry);
     await setState(app, setState0);
     const [appWatcherEvent, appContractEvent] = await Promise.all([
       new Promise((resolve, reject) => {
@@ -323,18 +324,15 @@ describe("Watcher responses", () => {
         );
       }),
       new Promise((resolve) => {
-        watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventData) =>
-          resolve(data),
-        );
+        watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventData) => {
+          if (data.versionNumber.eq(toBN(expected.versionNumber))) {
+            resolve(data);
+          }
+        });
       }),
       mineBlock(provider),
     ]);
-    await verifyChallengeUpdatedEvent(
-      app,
-      await app.getDoubleSignedSetState(networkContext.ChallengeRegistry),
-      appContractEvent as any,
-      provider,
-    );
+    await verifyChallengeUpdatedEvent(app, expected, appContractEvent as any, provider);
     verifyChallengeProgressedEvent(
       app.identityHash,
       freeBalance.multisigAddress,
@@ -347,9 +345,9 @@ describe("Watcher responses", () => {
 
     // set initial state
     const setState0 = await app.getInitialSetState(networkContext.ChallengeRegistry, toBN(3));
+    const expected = await app.getSingleSignedSetState(networkContext.ChallengeRegistry);
     await setState(app, setState0);
 
-    let setStateEvents = 0;
     const [appWatcherEvent, appSetStateEvent, appProgressStateEvent] = await Promise.all([
       new Promise((resolve, reject) => {
         watcher.on(
@@ -363,8 +361,7 @@ describe("Watcher responses", () => {
       }),
       new Promise((resolve) => {
         watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventData) => {
-          setStateEvents += 1;
-          if (setStateEvents === 2) {
+          if (data.versionNumber.eq(toBN(expected.versionNumber))) {
             resolve(data);
           }
         });
@@ -376,12 +373,7 @@ describe("Watcher responses", () => {
       }),
       mineBlock(provider),
     ]);
-    await verifyChallengeUpdatedEvent(
-      app,
-      await app.getSingleSignedSetState(networkContext.ChallengeRegistry),
-      appSetStateEvent as any,
-      provider,
-    );
+    await verifyChallengeUpdatedEvent(app, expected, appSetStateEvent as any, provider);
     await verifyStateProgressedEvent(app, appProgressStateEvent as any, networkContext);
     verifyChallengeProgressedEvent(
       app.identityHash,
@@ -396,6 +388,7 @@ describe("Watcher responses", () => {
 
     // set state with previous state
     const setState1 = await app.getDoubleSignedSetState(networkContext.ChallengeRegistry);
+    const expected = await app.getSingleSignedSetState(networkContext.ChallengeRegistry);
     await setState(app, setState1);
     const [appWatcherEvent, appSetStateEvent, appActionEvent] = await Promise.all([
       new Promise((resolve, reject) => {
@@ -409,9 +402,11 @@ describe("Watcher responses", () => {
         );
       }),
       new Promise((resolve) => {
-        watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventData) =>
-          resolve(data),
-        );
+        watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventData) => {
+          if (data.versionNumber.eq(toBN(expected.versionNumber))) {
+            resolve(data);
+          }
+        });
       }),
       new Promise((resolve) => {
         watcher.on(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
@@ -420,12 +415,7 @@ describe("Watcher responses", () => {
       }),
       mineBlock(provider),
     ]);
-    await verifyChallengeUpdatedEvent(
-      app,
-      await app.getSingleSignedSetState(networkContext.ChallengeRegistry),
-      appSetStateEvent as any,
-      provider,
-    );
+    await verifyChallengeUpdatedEvent(app, expected, appSetStateEvent as any, provider);
     await verifyStateProgressedEvent(app, appActionEvent as any, networkContext);
     verifyChallengeProgressedEvent(
       app.identityHash,
