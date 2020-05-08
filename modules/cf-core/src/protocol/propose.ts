@@ -8,7 +8,7 @@ import {
   ProtocolRoles,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime, toBN } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime, toBN, stringify } from "@connext/utils";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -153,6 +153,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       getSignerAddressFromPublicIdentifier(responderIdentifier),
       setStateCommitment.hashToSign(),
       responderSignatureOnInitialState,
+      `Failed to validate responders signature on initial set state commitment in the propose protocol. Our commitment: ${stringify(
+        setStateCommitment.toJson(),
+      )}`,
     );
     logTime(log, substart, `Asserted valid signture initiator propose`);
 
@@ -280,6 +283,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       getSignerAddressFromPublicIdentifier(initiatorIdentifier),
       setStateCommitment.hashToSign(),
       initiatorSignatureOnInitialState,
+      `Failed to validate initiator's signature on initial set state commitment in the propose protocol. Our commitment: ${stringify(
+        setStateCommitment.toJson(),
+      )}`,
     );
     logTime(log, substart, `asserted valid signature responder propose`);
 

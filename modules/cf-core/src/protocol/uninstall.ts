@@ -8,7 +8,7 @@ import {
   UninstallMiddlewareContext,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
-import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
@@ -105,6 +105,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderFreeBalanceKey,
       uninstallCommitmentHash,
       counterpartySignature,
+      `Failed to validate responder's signature on free balance commitment in the uninstall protocol. Our commitment: ${stringify(
+        uninstallCommitment.toJson(),
+      )}`,
     );
     logTime(log, checkpoint, `Asserted valid signature in initiating uninstall`);
 
@@ -184,6 +187,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorFreeBalanceKey,
       uninstallCommitmentHash,
       counterpartySignature,
+      `Failed to validate initiator's signature on free balance commitment in the uninstall protocol. Our commitment: ${stringify(
+        uninstallCommitment.toJson(),
+      )}`,
     );
     logTime(log, checkpoint, `Asserted valid signature in responding uninstall`);
     checkpoint = Date.now();

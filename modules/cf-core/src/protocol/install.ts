@@ -15,6 +15,7 @@ import {
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
   logTime,
+  stringify,
 } from "@connext/utils";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -146,6 +147,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderSignerAddress,
       conditionalTxCommitmentHash,
       counterpartySignatureOnConditionalTransaction,
+      `Failed to validate responders signature on conditional transaction commitment in the install protocol. Our commitment: ${stringify(
+        conditionalTxCommitment.toJson(),
+      )}`,
     );
 
     const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== responderSignerAddress;
@@ -167,6 +171,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderSignerAddress,
       freeBalanceUpdateDataHash,
       counterpartySignatureOnFreeBalanceStateUpdate,
+      `Failed to validate responders signature on free balance update in the install protocol. Our commitment: ${stringify(
+        freeBalanceUpdateData.toJson(),
+      )}`,
     );
 
     // 12ms
@@ -301,6 +308,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorSignerAddress,
       conditionalTxCommitmentHash,
       counterpartySignatureOnConditionalTransaction,
+      `Failed to validate initiators signature on conditional transaction commitment in the install protocol. Our commitment: ${stringify(
+        conditionalTxCommitment.toJson(),
+      )}`,
     );
 
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
@@ -347,6 +357,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorSignerAddress,
       freeBalanceUpdateDataHash,
       counterpartySignatureOnFreeBalanceStateUpdate,
+      `Failed to validate initiators signature on free balance update in the install protocol. Our commitment: ${stringify(
+        freeBalanceUpdateData.toJson(),
+      )}`,
     );
 
     // add signature

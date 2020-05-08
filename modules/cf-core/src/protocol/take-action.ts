@@ -6,7 +6,7 @@ import {
   ProtocolRoles,
   TakeActionMiddlewareContext,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
@@ -116,7 +116,14 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     ] as any;
 
     // 10ms
-    await assertIsValidSignature(responderAddr, setStateCommitmentHash, counterpartySig);
+    await assertIsValidSignature(
+      responderAddr,
+      setStateCommitmentHash,
+      counterpartySig,
+      `Failed to validate responder's signature on initial set state commitment in the take-action protocol. Our commitment: ${stringify(
+        setStateCommitment.toJson(),
+      )}`,
+    );
 
     // add signatures and write commitment to store
     await setStateCommitment.addSignatures(
@@ -191,7 +198,14 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     // 9ms
-    await assertIsValidSignature(initiatorAddr, setStateCommitmentHash, counterpartySignature);
+    await assertIsValidSignature(
+      initiatorAddr,
+      setStateCommitmentHash,
+      counterpartySignature,
+      `Failed to validate initiator's signature on initial set state commitment in the take-action protocol. Our commitment: ${stringify(
+        setStateCommitment.toJson(),
+      )}`,
+    );
 
     // 7ms
     const mySignature = yield [OP_SIGN, setStateCommitmentHash];
