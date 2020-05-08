@@ -18,6 +18,7 @@
     "@connext/utils": "6.3.9",
     "ethers": "4.0.47",
     "localStorage": "1.0.4",
+    "p-series": "2.1.0",
     "pg": "8.0.3",
     "pg-hstore": "2.3.3",
     "pisa-client": "0.1.5",
