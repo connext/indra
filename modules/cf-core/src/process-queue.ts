@@ -1,12 +1,12 @@
 import { ILockService } from "@connext/types";
-import Queue, { Task } from "p-queue";
+import Queue from "p-queue";
 
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { addToManyQueues } from "./methods";
 
 class QueueWithLockingServiceConnection extends Queue {
   constructor(
-    private readonly lockName,
+    private readonly lockName: string,
     private readonly lockingService: ILockService,
     ...args: any[]
   ) {
@@ -14,7 +14,7 @@ class QueueWithLockingServiceConnection extends Queue {
   }
 
   // timeout should be 3 * IO_SEND_AND_WAIT to account
-  async add(task: Task<any>) {
+  async add(task: any) {
     return super.add(() =>
       this.lockingService.acquireLock(this.lockName, task, IO_SEND_AND_WAIT_TIMEOUT * 3),
     );
@@ -29,7 +29,7 @@ export default class ProcessQueue {
 
   constructor(private readonly lockingService?: ILockService) {}
 
-  addTask(lockNames: string[], task: Task<any>) {
+  addTask(lockNames: string[], task: any) {
     return addToManyQueues(lockNames.map(this.getOrCreateLockQueue.bind(this)), task);
   }
 
