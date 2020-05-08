@@ -3,7 +3,7 @@ import Queue from "p-queue";
 import { addToManyQueues } from "./queued-execution";
 
 describe("p-queue", () => {
-  it("should be possible to mimic onEmpty via inspection of _queue", async () => {
+  it.skip("should be possible to mimic onEmpty via inspection of _queue", async () => {
     const q = new Queue({ concurrency: 1 });
     q.add(() => new Promise(r => setTimeout(() => r("abc"), 250)));
     const p = Promise.all(q["queue"]["_queue"]);
