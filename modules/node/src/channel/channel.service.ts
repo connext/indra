@@ -95,44 +95,56 @@ export class ChannelService {
     return createResult;
   }
 
+  async getRebalancingTargets(
+    userPublicIdentifier: string,
+    assetId: string = AddressZero,
+  ) {
+    this.log.debug(`Getting rebalancing targets for user: ${userPublicIdentifier}, assetId: ${assetId}`);
+    let targets;
+    // option 1: rebalancing service, option 2: rebalance profile, option 3: default
+    targets = await this.getDataFromRebalancingService(
+      userPublicIdentifier,
+      assetId,
+    );
+
+    if (!targets) {
+      this.log.debug(`Unable to get rebalancing targets from service, falling back to profile`);
+      targets = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
+        userPublicIdentifier,
+        assetId,
+      );
+    }
+
+    if (!targets) {
+      this.log.debug(`No profile for this channel and asset, falling back to default profile`); 
+      targets = await this.configService.getDefaultRebalanceProfile(assetId);
+    }
+
+    if (!targets) {
+      throw new Error(
+        `Node is not configured to rebalance asset ${assetId} for user ${userPublicIdentifier}`,
+      );
+    }
+    this.log.debug(`Rebalancing target: ${stringify(targets)}`)
+    return targets;
+  }
+
   async rebalance(
     userPublicIdentifier: string,
     assetId: string = AddressZero,
-    rebalanceType: RebalanceType,
-    minimumRequiredCollateral: BigNumber = Zero,
   ): Promise<TransactionReceipt | undefined> {
     this.log.info(
-      `rebalance ${rebalanceType} for ${userPublicIdentifier} asset ${assetId}, minimumRequiredCollateral ${minimumRequiredCollateral.toString()} started`,
+      `rebalance for ${userPublicIdentifier} asset ${assetId} started`,
     );
     const normalizedAssetId = getAddress(assetId);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userPublicIdentifier,
     );
 
-    // option 1: rebalancing service, option 2: rebalance profile, option 3: default
-    let rebalancingTargets = await this.getDataFromRebalancingService(
+    const rebalancingTargets = await this.getRebalancingTargets(
       userPublicIdentifier,
-      assetId,
-    );
-    if (!rebalancingTargets) {
-      this.log.debug(`Unable to get rebalancing targets from service, falling back to profile`);
-      rebalancingTargets = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
-        userPublicIdentifier,
-        normalizedAssetId,
-      );
-      if (!rebalancingTargets) {
-        rebalancingTargets = await this.configService.getDefaultRebalanceProfile(assetId);
-        if (rebalancingTargets) {
-          this.log.debug(`Rebalancing with default profile: ${stringify(rebalancingTargets)}`);
-        }
-      }
-    }
-
-    if (!rebalancingTargets) {
-      throw new Error(
-        `Node is not configured to rebalance asset ${assetId} for user ${userPublicIdentifier}`,
-      );
-    }
+      normalizedAssetId
+    )
 
     const {
       lowerBoundCollateralize,
