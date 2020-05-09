@@ -44,6 +44,7 @@ import { SwapRateService } from "../swapRate/swapRate.service";
 import { LoggerService } from "../logger/logger.service";
 import { Channel } from "../channel/channel.entity";
 import { WithdrawService } from "../withdraw/withdraw.service";
+import { DepositService } from "../deposit/deposit.service";
 import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.service";
 import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
 import { CFCoreStore } from "../cfCore/cfCore.store";
@@ -65,6 +66,7 @@ export class AppRegistryService implements OnModuleInit {
     private readonly swapRateService: SwapRateService,
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly withdrawService: WithdrawService,
+    private readonly depositService: DepositService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
@@ -108,12 +110,8 @@ export class AppRegistryService implements OnModuleInit {
         );
         const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
         if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
-          const depositReceipt = await this.channelService.rebalance(
-            from,
-            getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
-            RebalanceType.COLLATERALIZE,
-            responderDepositBigNumber,
-          );
+          const amount = responderDepositBigNumber.sub(freeBal[this.cfCoreService.cfCore.signerAddress])
+          const depositReceipt = await this.depositService.deposit(installerChannel, amount, proposeInstallParams.responderDepositAssetId)
           if (!depositReceipt) {
             throw new Error(
               `Could not obtain sufficient collateral to install app for channel ${installerChannel.multisigAddress}.`,
@@ -121,16 +119,9 @@ export class AppRegistryService implements OnModuleInit {
           }
         }
       }
-
-      if (registryAppInfo.name === HashLockTransferAppName) {
-        // install is done through middleware
-        this.log.info(`Hashlock transfer sender app is installed through middleware`);
-        return;
-      }
-      // collateralized in post-install tasks
       ({ appInstance } = await this.cfCoreService.installApp(appIdentityHash));
       // any tasks that need to happen after install, i.e. DB writes
-      await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams, from);
+      await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams, from, installerChannel);
       const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstance.identityHash}.install`;
       await this.messagingService.publish(installSubject, appInstance);
     } catch (e) {
@@ -230,6 +221,7 @@ export class AppRegistryService implements OnModuleInit {
     appIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
+    channel: Channel,
   ): Promise<void> {
     this.log.info(
       `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} started`,
@@ -278,9 +270,8 @@ export class AppRegistryService implements OnModuleInit {
     }
     // rebalance at the end without blocking
     this.channelService.rebalance(
-      from,
+      channel,
       getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
-      RebalanceType.RECLAIM,
     );
     this.log.info(
       `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} completed`,
