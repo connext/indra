@@ -130,19 +130,16 @@ export class ChannelService {
   }
 
   async rebalance(
-    userPublicIdentifier: string,
+    channel: Channel,
     assetId: string = AddressZero,
-  ): Promise<TransactionReceipt | undefined> {
+  ): Promise<void> {
     this.log.info(
-      `rebalance for ${userPublicIdentifier} asset ${assetId} started`,
+      `rebalance for ${channel.userIdentifier} asset ${assetId} started`,
     );
     const normalizedAssetId = getAddress(assetId);
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      userPublicIdentifier,
-    );
 
     const rebalancingTargets = await this.getRebalancingTargets(
-      userPublicIdentifier,
+      channel.userIdentifier,
       normalizedAssetId
     )
 
@@ -159,26 +156,33 @@ export class ChannelService {
     ) {
       throw new Error(`Rebalancing targets not properly configured: ${rebalancingTargets}`);
     }
-    let result: TransactionReceipt;
-    if (rebalanceType === RebalanceType.COLLATERALIZE) {
-      // if minimum amount is larger, override upper bound
-      const collateralNeeded: BigNumber = maxBN([
-        upperBoundCollateralize,
-        minimumRequiredCollateral,
-      ]);
-      result = await this.collateralizeIfNecessary(
-        channel.userIdentifier,
-        assetId,
-        collateralNeeded,
-        lowerBoundCollateralize,
-      );
-    } else if (rebalanceType === RebalanceType.RECLAIM) {
-      await this.reclaimIfNecessary(channel, assetId, upperBoundReclaim, lowerBoundReclaim);
+
+    const {
+      [this.cfCoreService.cfCore.signerAddress]: nodeFreeBalance,
+    } = await this.cfCoreService.getFreeBalance(
+      channel.userIdentifier,
+      channel.multisigAddress,
+      normalizedAssetId,
+    );
+
+    // If free balance is too low, collateralize up to upper bound
+    if ( nodeFreeBalance < lowerBoundCollateralize ) {
+      const amount = upperBoundCollateralize.sub(nodeFreeBalance)
+      await this.depositService.deposit(channel, amount, normalizedAssetId)
     } else {
-      throw new Error(`Invalid rebalancing type: ${rebalanceType}`);
+      this.log.debug(`Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${lowerBoundCollateralize}`)
     }
 
-    return result;
+    // If free balance is too high, reclaim down to lower bound
+    if ( nodeFreeBalance > upperBoundReclaim ) {
+      const amount = nodeFreeBalance.sub(lowerBoundReclaim)
+      await this.withdrawService.withdraw(channel, amount, normalizedAssetId)
+    } else {
+      this.log.debug(`Free balance ${nodeFreeBalance} is less than or equal to `)
+    }
+
+    this.log.info(`rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`)
+    return;
   }
 
   private async collateralizeIfNecessary(
