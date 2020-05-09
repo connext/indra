@@ -9,7 +9,6 @@ import { getSignerAddressFromPublicIdentifier, maxBN, stringify } from "@connext
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
 import { AddressZero, Zero } from "ethers/constants";
-import { TransactionReceipt } from "ethers/providers";
 import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -21,6 +20,7 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
+import { TransactionReceipt } from "ethers/providers";
 
 type RebalancingTargetsResponse<T = string> = {
   assetId: string;
@@ -98,7 +98,7 @@ export class ChannelService {
   async rebalance(
     channel: Channel,
     assetId: string = AddressZero,
-  ): Promise<void> {
+  ): Promise<TransactionReceipt | undefined> {
     this.log.info(
       `rebalance for ${channel.userIdentifier} asset ${assetId} started`,
     );
@@ -131,10 +131,11 @@ export class ChannelService {
       normalizedAssetId,
     );
 
+    let receipt;
     // If free balance is too low, collateralize up to upper bound
     if ( nodeFreeBalance < lowerBoundCollateralize ) {
       const amount = upperBoundCollateralize.sub(nodeFreeBalance)
-      await this.depositService.deposit(channel, amount, normalizedAssetId)
+      receipt = await this.depositService.deposit(channel, amount, normalizedAssetId)
     } else {
       this.log.debug(`Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${lowerBoundCollateralize}`)
     }
@@ -147,7 +148,7 @@ export class ChannelService {
       this.log.debug(`Free balance ${nodeFreeBalance} is less than or equal to `)
     }
     this.log.info(`rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`)
-    return;
+    return receipt as TransactionReceipt | undefined;
   }
 
   async getRebalancingTargets(

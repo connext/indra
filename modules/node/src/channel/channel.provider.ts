@@ -22,6 +22,7 @@ import { convertSetupEntityToMinimalTransaction, SetupCommitmentRepository } fro
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
+import { TransactionReceipt } from "ethers/providers";
 
 class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
@@ -49,15 +50,12 @@ class ChannelMessaging extends AbstractMessagingProvider {
   }
 
   async requestCollateral(
-    pubId: string,
+    userPublicIdentifier: string,
     data: { assetId?: string },
-  ): Promise<MethodResults.Deposit> {
+  ): Promise<TransactionReceipt | undefined> {
     // do not allow clients to specify an amount to collateralize with
-    return (await (this.channelService.rebalance(
-      pubId,
-      getAddress(data.assetId),
-      RebalanceType.COLLATERALIZE,
-    ) as unknown)) as MethodResults.Deposit;
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPublicIdentifier)
+    return this.channelService.rebalance(channel, getAddress(data.assetId))
   }
 
   async addRebalanceProfile(pubId: string, data: { profile: RebalanceProfile }): Promise<void> {
