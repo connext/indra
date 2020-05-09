@@ -179,7 +179,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       appInstanceProposal,
       setStateCommitment,
     ];
-    logTime(log, substart, `[${processID}] Persisted app instance`);
+    logTime(log, substart, `[${processID}] Persisted app instance ${appInstanceProposal.identityHash}`);
     substart = Date.now();
 
     // Total 298ms
@@ -301,6 +301,23 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const responderSignatureOnInitialState = yield [OP_SIGN, setStateCommitment.hashToSign()];
     logTime(log, substart, `[${processID}] Signed initial state responder propose`);
 
+    await setStateCommitment.addSignatures(
+      initiatorSignatureOnInitialState,
+      responderSignatureOnInitialState as any,
+    );
+
+    substart = Date.now();
+    // 98ms
+    // will also save the app array into the state channel
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.CreateProposal,
+      postProtocolStateChannel,
+      appInstanceProposal,
+      setStateCommitment,
+    ];
+    logTime(log, substart, `[${processID}] Persisted app instance ${appInstanceProposal.identityHash}`);
+
     // 0ms
     yield [
       IO_SEND,
@@ -313,25 +330,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
           signature: responderSignatureOnInitialState,
         },
       } as ProtocolMessageData,
-    ];
-
-    await setStateCommitment.addSignatures(
-      initiatorSignatureOnInitialState,
-      responderSignatureOnInitialState as any,
-    );
-
-    substart = Date.now();
-
-    // 98ms
-    // will also save the app array into the state channel
-    yield [
-      PERSIST_APP_INSTANCE,
-      PersistAppType.CreateProposal,
       postProtocolStateChannel,
-      appInstanceProposal,
-      setStateCommitment,
     ];
-    logTime(log, substart, `[${processID}] Persisted app instance`);
+
     substart = Date.now();
     logTime(log, start, `[${processID}] Response finished`);
   },
