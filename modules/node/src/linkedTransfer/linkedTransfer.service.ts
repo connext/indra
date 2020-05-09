@@ -12,7 +12,8 @@ import { bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelService, RebalanceType } from "../channel/channel.service";
+import { DepositService } from "../deposit/deposit.service";
+import { ChannelService } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
@@ -52,6 +53,7 @@ export class LinkedTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
+    private readonly depositService: DepositService,
     private readonly log: LoggerService,
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
@@ -117,22 +119,19 @@ export class LinkedTransferService {
       receiverChannel.multisigAddress,
       assetId,
     );
+    
     if (freeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
-      const depositReceipt = await this.channelService.rebalance(
-        userIdentifier,
-        assetId,
-        RebalanceType.COLLATERALIZE,
-        amount,
-      );
+      const depositReceipt = await this.depositService.deposit(
+        receiverChannel, 
+        amount.sub(freeBal[freeBalanceAddr]), 
+        assetId
+      )
       if (!depositReceipt) {
         throw new Error(
-          `Could not obtain sufficient collateral for receiver channel when resolving linked payment ${paymentId}`,
+          `Could not deposit sufficient collateral to resolve linked transfer for reciever: ${userIdentifier}`,
         );
       }
-    } else {
-      // request collateral normally without awaiting
-      this.channelService.rebalance(userIdentifier, assetId, RebalanceType.COLLATERALIZE, amount);
     }
 
     const initialState: SimpleLinkedTransferAppState = {
@@ -177,11 +176,19 @@ export class LinkedTransferService {
       amount,
       assetId,
     };
+
+    // kick off a rebalance before finishing
+    this.channelService.rebalance(
+      receiverChannel,
+      assetId
+    );
+
     this.log.info(
       `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId}} complete ${JSON.stringify(
         returnRes,
       )}`,
     );
+
     return returnRes;
   }
 

@@ -10,10 +10,10 @@ import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { DepositService } from "../deposit/deposit.service";
 
 import { LinkedTransferService } from "./linkedTransfer.service";
 import { linkedTransferProviderFactory } from "./linkedTransfer.provider";
-
 @Module({
   controllers: [],
   exports: [LinkedTransferService],
@@ -21,6 +21,7 @@ import { linkedTransferProviderFactory } from "./linkedTransfer.provider";
     AuthModule,
     CFCoreModule,
     ChannelModule,
+    DepositService,
     ConfigModule,
     LoggerModule,
     MessagingModule,
