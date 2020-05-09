@@ -1,22 +1,17 @@
 import {
   IConnextClient,
-  StoreTypes,
   CONVENTION_FOR_ETH_ASSET_ID,
   EventNames,
-  PublicResults,
-  ConditionalTransferTypes,
 } from "@connext/types";
-import { ConnextStore } from "@connext/store";
+import { getPostgresStore } from "@connext/store";
 import { toBN, stringify } from "@connext/utils";
 import { Sequelize } from "sequelize";
 
 import { createClient, fundChannel, ETH_AMOUNT_MD, expect, env } from "../util";
 
-// NOTE: this fn is used instead of the 'asyncTransferAsset' helper because
-// it will be used more than once, and the 'asyncTransferAsset' is too restrictive in its
-// assertions for remaining app instances after a transfer is complete. Additionally,
-// these tests will emphasize the event data payload correctness instead of the transfer
-// storage/history correctness.
+// NOTE: only groups correct number of promises associated with a payment together.
+// there is no validation done to ensure the events correspond to the payments, or
+// to ensure that the event payloads are correct.
 const performTransfer = async (params: any) => {
   const { ASSET, TRANSFER_AMT, sender, recipient } = params;
   const TRANSFER_PARAMS = {
@@ -26,73 +21,29 @@ const performTransfer = async (params: any) => {
   };
 
   // send transfers from sender to recipient
-  const [
-    transferRes,
-    transferCreatedEvent,
-    unlockedSenderEvent,
-    unlockedReceiverEvent,
-  ] = await Promise.all([
+  const [preImage] = await Promise.all([
     new Promise(async (resolve, reject) => {
+      sender.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, () => reject());
       try {
-        console.log("trying to transfer with params:", TRANSFER_PARAMS);
         const res = await sender.transfer(TRANSFER_PARAMS);
-        console.log("transferred from sender");
-        return resolve(res);
+        return resolve(res.preImage);
       } catch (e) {
         return reject(e.message);
       }
     }),
     new Promise((resolve, reject) => {
-      sender.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, (data) => {
-        console.log("sender got created event");
+      recipient.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
         return resolve(data);
       });
-
-      sender.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, () => reject());
+      recipient.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, () => reject());
     }),
     new Promise((resolve) => {
       sender.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
-        console.log("sender got unlocked event (should be reclaimed)");
-        return resolve(data);
-      });
-    }),
-    new Promise((resolve) => {
-      recipient.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
-        console.log("receiver got unlocked event (should be redeemed)");
         return resolve(data);
       });
     }),
   ]);
-
-  // verify sender response is properly constructed
-  const { appIdentityHash, paymentId, preImage } = transferRes as PublicResults.LinkedTransfer;
-  expect(appIdentityHash).to.ok;
-  expect(paymentId).to.ok;
-  expect(preImage).to.ok;
-
-  // construct expected events
-  const createdEvent = {
-    type: ConditionalTransferTypes.LinkedTransfer,
-    amount: TRANSFER_AMT,
-    paymentId,
-    assetId: ASSET,
-    sender: sender.publicIdentifier,
-    recipient: recipient.publicIdentifier,
-    meta: {
-      sender: sender.publicIdentifier,
-      recipient: recipient.publicIdentifier,
-    },
-  };
-  const unlockedExpected = {
-    ...createdEvent,
-    transferMeta: { preImage },
-  };
-  console.log("transferCreatedEvent", stringify(transferCreatedEvent));
-  console.log("unlockedReceiverEvent", stringify(unlockedReceiverEvent));
-  console.log("unlockedSenderEvent", stringify(unlockedSenderEvent));
-  expect(transferCreatedEvent).to.containSubset(createdEvent);
-  expect(unlockedReceiverEvent).to.containSubset(unlockedExpected);
-  expect(unlockedSenderEvent).to.containSubset(unlockedExpected);
+  return preImage;
 };
 
 describe("Full Flow: Multichannel stores (clients share single sequelize instance)", () => {
@@ -100,29 +51,22 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
   let recipient: IConnextClient;
 
   beforeEach(async () => {
-    const {
-      host,
-      port,
-      user: username,
-      password,
-      database,
-    } = env.dbConfig;
-    const sequelizeConfig = {
+    const { host, port, user: username, password, database } = env.dbConfig;
+    const sequelize = new Sequelize({
       host,
       port,
       username,
       password,
       database,
       dialect: "postgres",
-    };
-    console.log("******* creating sequelize connection with config:", stringify(sequelizeConfig));
-    const sequelize = new Sequelize(sequelizeConfig as any);
+      logging: false,
+    });
     // create stores with different prefixes
-    const storeA = new ConnextStore(StoreTypes.Memory, { sequelize });
-    const storeB = new ConnextStore(StoreTypes.Memory, { sequelize, prefix: `recipient` });
+    const senderStore = getPostgresStore(sequelize, "sender");
+    const recipientStore = getPostgresStore(sequelize, "recipient");
     // create clients with shared store
-    sender = await createClient({ store: storeA });
-    recipient = await createClient({ store: storeB });
+    sender = await createClient({ store: senderStore, id: "S" });
+    recipient = await createClient({ store: recipientStore, id: "R" });
   });
 
   afterEach(async () => {
@@ -167,7 +111,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     const DEPOSIT_AMT = ETH_AMOUNT_MD;
     const ASSET = CONVENTION_FOR_ETH_ASSET_ID;
     const TRANSFER_AMT = toBN(100);
-    const MIN_TRANSFERS = 5;
+    const MIN_TRANSFERS = 15;
     const TRANSFER_INTERVAL = 500; // ms between consecutive transfer calls
 
     await fundChannel(sender, DEPOSIT_AMT, ASSET);
@@ -175,24 +119,38 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     const initialSenderFb = await sender.getFreeBalance(ASSET);
     const initialRecipientFb = await recipient.getFreeBalance(ASSET);
 
-    let successfulTransfers = 0;
+    let receivedTransfers = 0;
+    let intervals = 0;
     let pollerError;
 
     // call transfers on interval
+    let sentTransfers = 0;
+    sender.on(
+      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
+      () => {
+        sentTransfers += 1;
+        console.log(`**** sent transfer ${sentTransfers}/${MIN_TRANSFERS}!`);
+      },
+    );
     const interval = setInterval(async () => {
+      intervals += 1;
+      if (intervals > MIN_TRANSFERS) {
+        clearInterval(interval);
+        return;
+      }
       let error: any = undefined;
       try {
-        await performTransfer({
+        const preImage = await performTransfer({
           sender,
           recipient,
           ASSET,
           TRANSFER_AMT,
         });
+        console.log(`[${intervals}/${MIN_TRANSFERS}] preImage: ${preImage}`);
       } catch (e) {
         error = e;
       }
       if (error) {
-        console.log(`**** got error with transfer ${successfulTransfers}/${MIN_TRANSFERS}, trying to clear interval`);
         clearInterval(interval);
         pollerError = error.stack || error.message;
         throw new Error(pollerError);
@@ -203,11 +161,10 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     // will also periodically check if a poller error has been set and reject
     await new Promise((resolve, reject) => {
       // setup listeners (increment on reclaim)
-      recipient.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, () => {
-        successfulTransfers += 1;
-        console.log(`**** got transfer ${successfulTransfers}/${MIN_TRANSFERS}!`);
-        if (successfulTransfers >= MIN_TRANSFERS) {
-          clearInterval(interval);
+      recipient.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
+        receivedTransfers += 1;
+        console.log(`**** got transfer ${receivedTransfers}/${MIN_TRANSFERS}! Preimage: ${stringify(data.transferMeta)}`);
+        if (receivedTransfers >= MIN_TRANSFERS) {
           resolve();
         }
       });
@@ -222,17 +179,16 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       }, 250);
     });
 
-    expect(successfulTransfers).to.be.eq(MIN_TRANSFERS);
-
+    expect(receivedTransfers).to.be.eq(MIN_TRANSFERS);
     const finalSenderFb = await sender.getFreeBalance(ASSET);
     const finalRecipientFb = await recipient.getFreeBalance(ASSET);
     console.log("asserting final sender free balance");
     expect(finalSenderFb[sender.signerAddress]).to.be.eq(
-      initialSenderFb[sender.signerAddress].sub(TRANSFER_AMT.mul(successfulTransfers)),
+      initialSenderFb[sender.signerAddress].sub(TRANSFER_AMT.mul(receivedTransfers)),
     );
     console.log("asserting final recipient free balance");
     expect(finalRecipientFb[recipient.signerAddress]).to.be.eq(
-      initialRecipientFb[recipient.signerAddress].add(TRANSFER_AMT.mul(successfulTransfers)),
+      initialRecipientFb[recipient.signerAddress].add(TRANSFER_AMT.mul(receivedTransfers)),
     );
   });
 });

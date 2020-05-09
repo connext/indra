@@ -33,9 +33,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const { message, store, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
-    log.info(`Initiation started`);
-
     const { params, processID } = message;
+    log.info(`[${processID}] Initiation started`);
+
     const {
       responderIdentifier,
       appIdentityHash,
@@ -80,7 +80,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     let checkpoint = Date.now();
     // 4ms
     const mySignature = yield [OP_SIGN, uninstallCommitmentHash];
-    logTime(log, checkpoint, `Signed uninstall commitment initiator`);
+    logTime(log, checkpoint, `[${processID}] Signed uninstall commitment initiator`);
 
     // 94ms
     const {
@@ -109,7 +109,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         uninstallCommitment.toJson(),
       )}`,
     );
-    logTime(log, checkpoint, `Asserted valid signature in initiating uninstall`);
+    logTime(log, checkpoint, `[${processID}] Asserted valid signature in initiating uninstall`);
 
     const isInitiator = postProtocolStateChannel.multisigOwners[0] !== responderFreeBalanceKey;
     // use channel initiator bc free balance app
@@ -128,16 +128,16 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 204ms
-    logTime(log, start, `Initiation finished`);
+    logTime(log, start, `[${processID}] Initiation finished`);
   } as any,
 
   1 /* Responding */: async function* (context: Context) {
     const { message, store, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
-    log.info(`Response started`);
-
     const { params, processID } = message;
+    log.info(`[${processID}] Response started`);
+
     const {
       initiatorIdentifier,
       appIdentityHash,
@@ -191,12 +191,12 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         uninstallCommitment.toJson(),
       )}`,
     );
-    logTime(log, checkpoint, `Asserted valid signature in responding uninstall`);
+    logTime(log, checkpoint, `[${processID}] Asserted valid signature in responding uninstall`);
     checkpoint = Date.now();
 
     // 10ms
     const mySignature = yield [OP_SIGN, uninstallCommitmentHash];
-    logTime(log, checkpoint, `Signed commitment in responding uninstall`);
+    logTime(log, checkpoint, `[${processID}] Signed commitment in responding uninstall`);
 
     const isInitiator = postProtocolStateChannel.multisigOwners[0] !== initiatorFreeBalanceKey;
     // use channel initiator bc free balance app
@@ -230,7 +230,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 100ms
-    logTime(log, start, `Response finished`);
+    logTime(log, start, `[${processID}] Response finished`);
   },
 };
 

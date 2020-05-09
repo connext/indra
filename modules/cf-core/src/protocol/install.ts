@@ -56,7 +56,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
-    log.info(`Initiation started`);
+    log.info(`[${processID}] Initiation started`);
 
     const {
       initiatorBalanceDecrement,
@@ -143,12 +143,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 7ms
     // free balance addr signs conditional transactions
+    const { networkContext, ...toLog } = conditionalTxCommitment.toJson();
     await assertIsValidSignature(
       responderSignerAddress,
       conditionalTxCommitmentHash,
       counterpartySignatureOnConditionalTransaction,
       `Failed to validate responders signature on conditional transaction commitment in the install protocol. Our commitment: ${stringify(
-        conditionalTxCommitment.toJson(),
+        { ...toLog },
       )}`,
     );
 
@@ -240,7 +241,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
-    log.info(`Response started`);
+    log.info(`[${processID}] Response started`);
 
     // Aliasing `signature` to this variable name for code clarity
     const counterpartySignatureOnConditionalTransaction = signature;
@@ -304,12 +305,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 7ms
     // multisig owner always signs conditional tx
+    const { networkContext, ...toLog } = conditionalTxCommitment.toJson();
     await assertIsValidSignature(
       initiatorSignerAddress,
       conditionalTxCommitmentHash,
       counterpartySignatureOnConditionalTransaction,
       `Failed to validate initiators signature on conditional transaction commitment in the install protocol. Our commitment: ${stringify(
-        conditionalTxCommitment.toJson(),
+        toLog,
       )}`,
     );
 
@@ -396,7 +398,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     yield [IO_SEND, m4, stateChannelAfter];
 
     // 272ms
-    logTime(log, start, `Response finished`);
+    logTime(log, start, `[${processID}] Response finished`);
   } as any,
 };
 

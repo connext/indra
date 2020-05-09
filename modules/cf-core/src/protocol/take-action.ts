@@ -27,9 +27,9 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const { store, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
-    log.info(`Initiation started`);
-
     const { processID, params } = message;
+    log.info(`[${processID}] Initiation started`);
+
 
     const {
       appIdentityHash,
@@ -63,7 +63,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       await preAppInstance.computeStateTransition(action, network.provider),
       stateTimeout,
     );
-    logTime(log, substart, `SetState called in takeAction initiating`);
+    logTime(log, substart, `[${processID}] SetState called in takeAction initiating`);
 
     // 0ms
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
@@ -140,20 +140,20 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       setStateCommitment,
     ];
 
-    logTime(log, start, `Finished Initiating`);
+    logTime(log, start, `[${processID}] Finished Initiating`);
   } as any,
 
   1 /* Responding */: async function* (context: Context) {
     const { store, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
-    log.debug(`Response started for takeAction`);
-
     const {
       processID,
       params,
       customData: { signature: counterpartySignature },
     } = message;
+
+    log.debug(`[${processID}] Response started for takeAction`);
 
     const {
       appIdentityHash,
@@ -243,6 +243,6 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 149ms
-    logTime(log, start, `Finished responding to takeAction`);
+    logTime(log, start, `[${processID}] Finished responding to takeAction`);
   },
 };

@@ -32,9 +32,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
-    log.info(`Initiation started`);
-
     const { processID, params } = message;
+    log.info(`[${processID}] Initiation started`);
+
 
     const {
       abiEncodings,
@@ -52,6 +52,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
       stateTimeout,
     } = params as ProtocolParams.Propose;
+    if (initialState["linkedHash"]) {
+      log.info(`[${processID}] Initiating proposal of app with linkedHash: ${initialState["linkedHash"]}`);
+    }
 
     const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
       multisigAddress,
@@ -118,11 +121,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     };
 
     const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
+    log.info(`[${processID}] initiator post propose nonce ${postProtocolStateChannel.numProposedApps}, pre propose nonce ${preProtocolStateChannel.numProposedApps}`);
 
     substart = Date.now();
     // 6ms
     const initiatorSignatureOnInitialState = yield [OP_SIGN, setStateCommitment.hashToSign()];
-    logTime(log, substart, `Signed initial state initiator propose`);
+    logTime(log, substart, `[${processID}] Signed initial state initiator propose`);
 
     const m1 = {
       protocol,
@@ -139,7 +143,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     // 200ms
     const m2 = yield [IO_SEND_AND_WAIT, m1];
-    logTime(log, substart, `Received responder's m2`);
+    logTime(log, substart, `[${processID}] Received responder's m2`);
     substart = Date.now();
 
     const {
@@ -155,9 +159,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnInitialState,
       `Failed to validate responders signature on initial set state commitment in the propose protocol. Our commitment: ${stringify(
         setStateCommitment.toJson(),
-      )}`,
+      )}. Initial state: ${stringify(initialState)}`,
     );
-    logTime(log, substart, `Asserted valid signture initiator propose`);
+    logTime(log, substart, `[${processID}] Asserted valid signture initiator propose`);
 
     // add signatures to commitment and save
     await setStateCommitment.addSignatures(
@@ -175,21 +179,20 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       appInstanceProposal,
       setStateCommitment,
     ];
-    logTime(log, substart, `Persisted app instance`);
+    logTime(log, substart, `[${processID}] Persisted app instance`);
     substart = Date.now();
 
     // Total 298ms
-    logTime(log, start, `Initiation finished`);
+    logTime(log, start, `[${processID}] Initiation finished`);
   },
 
   1 /* Responding */: async function* (context: Context) {
     const { message, store } = context;
+    const { params, processID } = message;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
-    log.info(`Response started`);
-
-    const { params, processID } = message;
+    log.info(`[${processID}] Response started`);
 
     const {
       abiEncodings,
@@ -207,6 +210,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
       stateTimeout,
     } = params as ProtocolParams.Propose;
+    if (initialState["linkedHash"]) {
+      log.info(`[${processID}] Responding to proposal of app with linkedHash: ${initialState["linkedHash"]}`);
+    }
 
     const {
       customData: { signature: initiatorSignatureOnInitialState },
@@ -279,20 +285,21 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
 
     substart = Date.now();
+    console.log(`[${processID}] responder post propose nonce ${postProtocolStateChannel.numProposedApps}, pre propose nonce ${preProtocolStateChannel.numProposedApps}`);
     await assertIsValidSignature(
       getSignerAddressFromPublicIdentifier(initiatorIdentifier),
       setStateCommitment.hashToSign(),
       initiatorSignatureOnInitialState,
-      `Failed to validate initiator's signature on initial set state commitment in the propose protocol. Our commitment: ${stringify(
+      `Failed to validate initiator's signature on initial set state commitment in the propose protocol. Process: ${processID}. Our commitment: ${stringify(
         setStateCommitment.toJson(),
-      )}`,
+      )}. Initial state: ${stringify(initialState)}`,
     );
-    logTime(log, substart, `asserted valid signature responder propose`);
+    logTime(log, substart, `[${processID}] Asserted valid signature responder propose`);
 
     substart = Date.now();
     // 12ms
     const responderSignatureOnInitialState = yield [OP_SIGN, setStateCommitment.hashToSign()];
-    logTime(log, substart, `Signed initial state responder propose`);
+    logTime(log, substart, `[${processID}] Signed initial state responder propose`);
 
     // 0ms
     yield [
@@ -324,8 +331,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       appInstanceProposal,
       setStateCommitment,
     ];
-    logTime(log, substart, `Persisted app instance`);
+    logTime(log, substart, `[${processID}] Persisted app instance`);
     substart = Date.now();
-    logTime(log, start, `Response finished`);
+    logTime(log, start, `[${processID}] Response finished`);
   },
 };
