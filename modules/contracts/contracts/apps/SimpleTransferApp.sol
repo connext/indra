@@ -16,6 +16,14 @@ contract SimpleTransferApp is CounterfactualApp {
         LibOutcome.CoinTransfer[2] coinTransfers;
     }
 
+    function init(bytes calldata encodedState)
+        external
+        view
+        returns(bool)
+    {
+        return true;
+    }
+
     function computeOutcome(bytes calldata encodedState)
         external
         view

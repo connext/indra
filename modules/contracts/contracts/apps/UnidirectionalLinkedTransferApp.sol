@@ -9,6 +9,7 @@ import "../funding/libs/LibOutcome.sol";
 /// @title Unidirectional Linked Transfer App
 /// @notice This contract allows users to claim a payment locked in
 ///         the application if they provide the correct preImage
+/// @notice !!!!!THIS contract is DEPRECATED. Use simpleLinkedTransferApp instead
 contract UnidirectionalLinkedTransferApp is CounterfactualApp {
 
     using SafeMath for uint256;

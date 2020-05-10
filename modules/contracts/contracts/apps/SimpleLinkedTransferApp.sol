@@ -36,6 +36,14 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
         bytes32 preImage;
     }
 
+    function init(bytes calldata encodedState)
+        external
+        view
+        returns(bool)
+    {
+        return true;
+    }
+
     function applyAction(
         bytes calldata encodedState,
         bytes calldata encodedAction

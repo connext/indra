@@ -21,6 +21,14 @@ contract NimApp is CounterfactualApp {
         uint256[3] pileHeights;
     }
 
+    function init(bytes calldata encodedState)
+        external
+        view
+        returns(bool)
+    {
+        return true;
+    }
+
     function isStateTerminal(bytes calldata encodedState)
         external
         view

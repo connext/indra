@@ -27,6 +27,14 @@ contract SimpleSignedTransferApp is CounterfactualApp {
         bytes signature;
     }
 
+    function init(bytes calldata encodedState)
+        external
+        view
+        returns(bool)
+    {
+        return true;
+    }
+
     function applyAction(
         bytes calldata encodedState,
         bytes calldata encodedAction

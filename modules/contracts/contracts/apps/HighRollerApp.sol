@@ -47,6 +47,14 @@ contract HighRollerApp is CounterfactualApp {
         bytes32 actionHash;
     }
 
+    function init(bytes calldata encodedState)
+        external
+        view
+        returns(bool)
+    {
+        return true;
+    }
+
     function isStateTerminal(bytes calldata encodedState)
         external
         view

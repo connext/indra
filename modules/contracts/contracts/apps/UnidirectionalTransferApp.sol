@@ -9,6 +9,7 @@ import "../funding/libs/LibOutcome.sol";
 /// @title Unidirectional Transfer App
 /// @notice This contract allows unidirectional coin transfers using the
 ///         takeAction paradigm.
+/// @notice !!!!!THIS contract is DEPRECATED. Use simpleLinkedTransferApp instead
 contract UnidirectionalTransferApp is CounterfactualApp {
 
     using SafeMath for uint256;
