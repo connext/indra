@@ -15,6 +15,7 @@ import {
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
   logTime,
+  stringify,
 } from "@connext/utils";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -55,7 +56,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
-    log.info(`Initiation started`);
+    let substart = start;
+    log.info(`[${processID}] Initiation started`);
+    log.debug(`[${processID}] Protocol initiated with parameters ${stringify(params)}`);
 
     const {
       initiatorBalanceDecrement,
@@ -103,6 +106,8 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.initiator,
       } as InstallMiddlewareContext,
     ];
+    logTime(log, substart, `[${processID}] Validated app instance`);
+    substart = Date.now();
 
     const conditionalTxCommitment = getConditionalTransactionCommitment(
       context,
@@ -142,11 +147,17 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 7ms
     // free balance addr signs conditional transactions
+    const { networkContext, ...toLog } = conditionalTxCommitment.toJson();
     await assertIsValidSignature(
       responderSignerAddress,
       conditionalTxCommitmentHash,
       counterpartySignatureOnConditionalTransaction,
+      `Failed to validate responders signature on conditional transaction commitment in the install protocol. Our commitment: ${stringify(
+        { ...toLog },
+      )}`,
     );
+    logTime(log, substart, `[${processID}] Verified responder's conditional sig`);
+    substart = Date.now();
 
     const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== responderSignerAddress;
     await conditionalTxCommitment.addSignatures(
@@ -167,7 +178,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderSignerAddress,
       freeBalanceUpdateDataHash,
       counterpartySignatureOnFreeBalanceStateUpdate,
+      `Failed to validate responders signature on free balance update in the install protocol. Our commitment: ${stringify(
+        freeBalanceUpdateData.toJson(),
+      )}`,
     );
+    logTime(log, substart, `[${processID}] Verified responder's sig on free balance update`);
+    substart = Date.now();
 
     // 12ms
     // always use free balance key to sign free balance update
@@ -210,7 +226,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 335ms
-    logTime(log, start, `Initiation finished`);
+    logTime(log, start, `[${processID}] Initiation finished`);
   } as any,
 
   /**
@@ -233,7 +249,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
-    log.info(`Response started`);
+    let substart = start;
+    log.info(`[${processID}] Response started`);
+    log.debug(`[${processID}] Protocol response started with parameters ${stringify(params)}`);
 
     // Aliasing `signature` to this variable name for code clarity
     const counterpartySignatureOnConditionalTransaction = signature;
@@ -287,6 +305,8 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.responder,
       } as InstallMiddlewareContext,
     ];
+    logTime(log, substart, `[${processID}] Validated app instance`);
+    substart = Date.now();
 
     const conditionalTxCommitment = getConditionalTransactionCommitment(
       context,
@@ -297,11 +317,17 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 7ms
     // multisig owner always signs conditional tx
+    const { networkContext, ...toLog } = conditionalTxCommitment.toJson();
     await assertIsValidSignature(
       initiatorSignerAddress,
       conditionalTxCommitmentHash,
       counterpartySignatureOnConditionalTransaction,
+      `Failed to validate initiators signature on conditional transaction commitment in the install protocol. Our commitment: ${stringify(
+        toLog,
+      )}`,
     );
+    logTime(log, substart, `[${processID}] Verified initiator's conditional sig`);
+    substart = Date.now();
 
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
 
@@ -347,7 +373,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorSignerAddress,
       freeBalanceUpdateDataHash,
       counterpartySignatureOnFreeBalanceStateUpdate,
+      `Failed to validate initiators signature on free balance update in the install protocol. Our commitment: ${stringify(
+        freeBalanceUpdateData.toJson(),
+      )}`,
     );
+    logTime(log, substart, `[${processID}] Verified initiator's sig on free balance update`);
+    substart = Date.now();
 
     // add signature
     await freeBalanceUpdateData.addSignatures(
@@ -368,6 +399,8 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceUpdateData,
       conditionalTxCommitment,
     ];
+    logTime(log, substart, `[${processID}] Persisted app ${newAppInstance.identityHash}`);
+    substart = Date.now();
 
     const m4 = {
       processID,
@@ -383,7 +416,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     yield [IO_SEND, m4, stateChannelAfter];
 
     // 272ms
-    logTime(log, start, `Response finished`);
+    logTime(log, start, `[${processID}] Response finished`);
   } as any,
 };
 
