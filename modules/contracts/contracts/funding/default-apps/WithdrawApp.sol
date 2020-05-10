@@ -51,6 +51,30 @@ contract WithdrawApp is CounterfactualApp {
         return state.signers[1];
     }
 
+    function init(
+        bytes calldata encodedState
+    )
+        external
+        view
+        returns(bool)
+    {
+        AppState memory state = abi.decode(encodedState, (AppState));
+
+        require(state.transfers[0].amount != 0, "cannot install withdraw app with zero initiator amount");
+        require(state.transfers[1].amount == 0, "cannot install withdraw app with nonzero responder amount");
+
+        require(!state.finalized, "cannot install withdraw app with finalized state");
+        bytes memory signature = state.signatures[1];
+        require(
+            signature[0] == 0,
+            "cannot install withdraw app with a populated signatures[1] field"
+        );
+        require(
+            state.signers[0] == state.data.verifyChannelMessage(state.signatures[0]),
+            "cannot install withdraw app with invalid withdrawer signature"
+        );
+    }
+
 /// Assume that the initial state contains data, signers[], and signatures[0]
 /// The action, then, must be called by the withdrawal counterparty who submits
 /// their own signature on the withdrawal commitment data payload.

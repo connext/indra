@@ -31,7 +31,7 @@ const encodeAppState = (
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.transfers]);
 };
 
-describe.only("DepositApp", () => {
+describe("DepositApp", () => {
 
   let wallet: Wallet;
   let depositApp: Contract;

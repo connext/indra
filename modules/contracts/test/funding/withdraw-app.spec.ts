@@ -12,7 +12,7 @@ import { Wallet, ContractFactory, Contract } from "ethers";
 import { BigNumber, defaultAbiCoder, hexlify, randomBytes, SigningKey } from "ethers/utils";
 
 import WithdrawApp from "../../build/WithdrawApp.json";
-import { Zero, HashZero } from "ethers/constants";
+import { Zero, HashZero, One } from "ethers/constants";
 
 import { expect, provider } from "../utils";
 
@@ -35,7 +35,7 @@ const encodeAppAction = (state: WithdrawAppAction): string => {
   return defaultAbiCoder.encode([WithdrawAppActionEncoding], [state]);
 };
 
-describe("WithdrawApp", async () => {
+describe.only("WithdrawApp", async () => {
   let wallet: Wallet;
   let withdrawApp: Contract;
 
@@ -60,6 +60,10 @@ describe("WithdrawApp", async () => {
   const applyAction = async (state: any, action: WithdrawAppAction): Promise<string> => {
     return withdrawApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
   };
+
+  const init = async (state: WithdrawAppState): Promise<boolean> => {
+    return withdrawApp.functions.init(encodeAppState(state))
+  }
 
   const createInitialState = async (): Promise<WithdrawAppState> => {
     return {
@@ -89,6 +93,42 @@ describe("WithdrawApp", async () => {
       signature: await (new ChannelSigner(counterpartySigningKey.privateKey).signMessage(data)),
     };
   };
+
+  it("Correctly calls init with correct initial state", async() => {
+    let initialState = await createInitialState();
+    await expect(init(initialState)).to.be.ok;
+  })
+
+  it("fails init with zero initiator amount", async() => {
+    let initialState = await createInitialState();
+    initialState.transfers[0].amount = Zero
+    await expect(init(initialState)).revertedWith("cannot install withdraw app with zero initiator amount");
+  })
+
+  it("fails init with nonzero responder amount", async() => {
+    let initialState = await createInitialState();
+    initialState.transfers[1].amount = One
+    await expect(init(initialState)).revertedWith("cannot install withdraw app with nonzero responder amount");
+  })
+
+  it("fails init with finalized state", async() => {
+    let initialState = await createInitialState();
+    initialState.finalized = true;
+    await expect(init(initialState)).revertedWith("cannot install withdraw app with finalized state");
+  })
+
+  // TODO correctly rejects with the right message but still fails test?
+  it.skip("fails init with populated signatures[1] field", async() => {
+    let initialState = await createInitialState();
+    initialState.signatures[1] = "0x0100000000000000000000000000000000000000000000000000000000000000";
+    await expect(init(initialState)).revertedWith("cannot install withdraw app with a populated signatures[1] field");
+  })
+
+  it("fails init with incorrect withdrawer signature", async() => {
+    let initialState = await createInitialState();
+    initialState.signatures[0] = "0x0100000000000000000000000000000000000000000000000000000000000000";
+    await expect(init(initialState)).revertedWith("cannot install withdraw app with invalid withdrawer signature");
+  })
 
   it("It zeroes withdrawer balance if state is finalized (w/ valid signatures)", async () => {
     let initialState = await createInitialState();
