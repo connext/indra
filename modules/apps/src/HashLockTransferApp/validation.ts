@@ -22,11 +22,11 @@ export const validateHashLockTransferApp = (
     return transfer.to === responderSignerAddress;
   })[0];
 
-  if (initialState.expiry.lt(blockNumber)) {
-    throw new Error(
-      `Cannot install an app with an expired expiry. Expiry in state: ${initialState.expiry}. Current block: ${blockNumber}`,
-    );
-  }
+  // if (initialState.expiry.lt(blockNumber)) {
+  //   throw new Error(
+  //     `Cannot install an app with an expired expiry. Expiry in state: ${initialState.expiry}. Current block: ${blockNumber}`,
+  //   );
+  // }
 
   unidirectionalCoinTransferValidation(
     initiatorDeposit,
