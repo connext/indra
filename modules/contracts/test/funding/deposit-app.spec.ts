@@ -12,9 +12,10 @@ import DepositApp from "../../build/DepositApp.json";
 import DelegateProxy from "../../build/DelegateProxy.json";
 import DolphinCoin from "../../build/DolphinCoin.json";
 
-import { Zero, AddressZero } from "ethers/constants";
+import { Zero, AddressZero, One } from "ethers/constants";
 
 import { expect, provider, fund } from "../utils";
+import { stringify } from "@connext/utils";
 const MAX_INT = new BigNumber(2).pow(256).sub(1);
 
 const decodeTransfers = (encodedTransfers: string): CoinTransfer[] =>
@@ -30,7 +31,7 @@ const encodeAppState = (
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.transfers]);
 };
 
-describe("DepositApp", () => {
+describe.only("DepositApp", () => {
 
   let wallet: Wallet;
   let depositApp: Contract;
@@ -62,6 +63,10 @@ describe("DepositApp", () => {
       wallet,
     ).deploy();
   });
+
+  const init = async (state: DepositAppState): Promise<string> => {
+    return depositApp.functions.init(encodeAppState(state));
+  }
 
   const computeOutcome = async (state: DepositAppState): Promise<string> => {
     return depositApp.functions.computeOutcome(encodeAppState(state));
@@ -148,6 +153,72 @@ describe("DepositApp", () => {
         .sub(amountWithdrawn),
       );
   };
+
+  it("successfully calls init (eth)", async () => {
+    const assetId = AddressZero
+    let initialState = await createInitialState(assetId);
+
+    await expect(init(initialState)).to.be.ok;
+  })
+
+  it("successfully calls init (erc20)", async () => {
+    const assetId = erc20.address
+    let initialState = await createInitialState(assetId);
+
+    await expect(init(initialState)).to.be.ok;
+  })
+
+  it("fails calling init with nonzero initiator amount", async () => {
+    const assetId = AddressZero;
+    let initialState = await createInitialState(assetId);
+    initialState.transfers[0].amount = new BigNumber(10);
+
+    await expect(init(initialState)).revertedWith("Cannot install deposit app with nonzero amount for initiator")
+  })
+
+  it("fails calling init with nonzero responder amount", async () => {
+    const assetId = AddressZero;
+    let initialState = await createInitialState(assetId);
+    initialState.transfers[1].amount = new BigNumber(10);
+
+    await expect(init(initialState)).revertedWith("Cannot install deposit app with nonzero amount for responder")
+  })
+
+  it("fails calling init with incorrect startingTotalAmountWithdrawn (eth)", async () => {
+    const assetId = AddressZero;
+    const startingTotalAmountWithdrawn = getTotalAmountWithdrawn(assetId);
+    let initialState = await createInitialState(assetId);
+    initialState.startingTotalAmountWithdrawn = (await startingTotalAmountWithdrawn).add(One)
+
+    await expect(init(initialState)).revertedWith("Cannot install deposit app with incorrect startingTotalAmountWithdrawn")
+  })
+
+  it("fails calling init with incorrect startingTotalAmountWithdrawn (erc20)", async () => {
+    const assetId = erc20.address;
+    const startingTotalAmountWithdrawn = getTotalAmountWithdrawn(assetId);
+    let initialState = await createInitialState(assetId);
+    initialState.startingTotalAmountWithdrawn = (await startingTotalAmountWithdrawn).add(One)
+
+    await expect(init(initialState)).revertedWith("Cannot install deposit app with incorrect startingTotalAmountWithdrawn")
+  })
+
+  it("fails calling init with incorrect startingMultisigBalance (eth)", async () => {
+    const assetId = AddressZero;
+    const startingMultisigBalance = getMultisigBalance(assetId);
+    let initialState = await createInitialState(assetId);
+    initialState.startingMultisigBalance = (await startingMultisigBalance).add(One)
+
+    await expect(init(initialState)).revertedWith("Cannot install deposit app with incorrect startingMultisigBalance")
+  })
+
+  it("fails calling init with incorrect startingMultisigBalance (erc20)", async () => {
+    const assetId = erc20.address;
+    const startingMultisigBalance = getMultisigBalance(assetId);
+    let initialState = await createInitialState(assetId);
+    initialState.startingMultisigBalance = (await startingMultisigBalance).add(One)
+
+    await expect(init(initialState)).revertedWith("Cannot install deposit app with incorrect startingMultisigBalance")
+  })
 
   it("Correctly calculates deposit amount for Eth", async () => {
     const assetId = AddressZero;

@@ -20,6 +20,14 @@ contract CounterfactualApp {
         revert("The getTurnTaker method has no implementation for this App");
     }
 
+    function init(bytes calldata)
+        external
+        view
+        returns (bool)
+    {
+        revert("The init method has no implementation for this App");
+    }
+
     function applyAction(bytes calldata, bytes calldata)
         external
         view

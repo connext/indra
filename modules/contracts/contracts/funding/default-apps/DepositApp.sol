@@ -24,6 +24,44 @@ contract DepositApp is CounterfactualApp {
         uint256 startingMultisigBalance;
     }
 
+    function init(bytes calldata encodedState)
+        external
+        view
+        returns (bool)
+    {
+        AppState memory state = abi.decode(encodedState, (AppState));
+
+        require(state.transfers[0].amount == 0, "Cannot install deposit app with nonzero amount for initiator");
+        require(state.transfers[1].amount == 0, "Cannot install deposit app with nonzero amount for responder");
+
+        uint256 startingTotalAmountWithdrawn;
+        uint256 startingMultisigBalance;
+
+        if (isDeployed(state.multisigAddress)) {
+            startingTotalAmountWithdrawn = MinimumViableMultisig(state.multisigAddress).totalAmountWithdrawn(state.assetId);
+        } else {
+            startingTotalAmountWithdrawn = 0;
+        }
+
+        if (state.assetId == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
+            startingMultisigBalance = state.multisigAddress.balance;
+        } else {
+            startingMultisigBalance = ERC20(state.assetId).balanceOf(state.multisigAddress);
+        }
+
+        require(
+            state.startingTotalAmountWithdrawn == startingTotalAmountWithdrawn,
+            "Cannot install deposit app with incorrect startingTotalAmountWithdrawn"
+        );
+
+        require(
+            state.startingMultisigBalance == startingMultisigBalance,
+            "Cannot install deposit app with incorrect startingMultisigBalance"
+        );
+
+        return true;
+    }
+
     function computeOutcome(bytes calldata encodedState)
         external
         view
