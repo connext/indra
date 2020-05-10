@@ -29,8 +29,8 @@ import {
 @Injectable()
 export class DepositService {
   constructor(
-    private readonly cfCoreService: CFCoreService,
     private readonly configService: ConfigService,
+    private readonly cfCoreService: CFCoreService,
     private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
     private readonly appRegistryRepository: AppRegistryRepository,

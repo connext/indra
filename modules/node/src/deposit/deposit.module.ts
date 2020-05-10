@@ -7,6 +7,7 @@ import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { OnchainTransactionModule } from "../onchainTransactions/onchainTransaction.module";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
+import { ChannelRepository } from "../channel/channel.repository";
 
 import { DepositService } from "./deposit.service";
 
@@ -14,13 +15,13 @@ import { DepositService } from "./deposit.service";
     controllers: [],
     exports: [DepositService],
     imports: [
-      CFCoreModule,
       ConfigModule,
+      CFCoreModule,
       OnchainTransactionModule,
       LoggerModule,
       TypeOrmModule.forFeature([
-        OnchainTransactionRepository,
         AppRegistryRepository,
+        ChannelRepository,
       ]),
     ],
     providers: [DepositService],
