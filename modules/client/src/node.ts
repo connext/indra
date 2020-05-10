@@ -4,7 +4,6 @@ import {
   ILoggerService,
   IMessagingService,
   INodeApiClient,
-  NATS_ATTEMPTS,
   NATS_TIMEOUT,
   NodeResponses,
   StringMapping,
@@ -14,7 +13,7 @@ import {
   VerifyNonceDtoType,
   Address,
 } from "@connext/types";
-import { bigNumberifyJson, delay, logTime, stringify, formatMessagingUrl } from "@connext/utils";
+import { bigNumberifyJson, logTime, stringify, formatMessagingUrl } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { getAddress, Transaction } from "ethers/utils";
 import { v4 as uuid } from "uuid";
@@ -183,7 +182,7 @@ export class NodeApiClient implements INodeApiClient {
     const lockValue = await this.send(`${this.userIdentifier}.lock.acquire.${lockName}`, {
       lockTTL: timeout,
     });
-    this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
+    this.log.info(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
     try {
       retVal = await callback();

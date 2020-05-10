@@ -1,10 +1,10 @@
-import { StoreTypes, STORE_SCHEMA_VERSION, ChallengeStatus } from "@connext/types";
-import { toBNJson } from "@connext/utils";
+import { STORE_SCHEMA_VERSION, ChallengeStatus } from "@connext/types";
+import { toBN, toBNJson } from "@connext/utils";
+
 import {
   expect,
   MockBackupService,
   createConnextStore,
-  env,
   TEST_STORE_ETH_ADDRESS,
   TEST_STORE_CHANNEL,
   TEST_STORE_MINIMAL_TX,
@@ -13,12 +13,13 @@ import {
   TEST_STORE_APP_CHALLENGE,
   TEST_STORE_STATE_PROGRESSED_EVENT,
   TEST_STORE_CHALLENGE_UPDATED_EVENT,
-} from "../util";
+} from "./test-utils";
+import { StoreTypes } from "./types";
 
 export const storeTypes = Object.keys(StoreTypes);
 
 describe("ConnextStore", () => {
-  const fileDir = env.storeDir;
+  const fileDir = "./.test-store";
 
   describe("getSchemaVersion", () => {
     storeTypes.forEach((type) => {
@@ -377,14 +378,15 @@ describe("ConnextStore", () => {
         const value = { ...TEST_STORE_APP_CHALLENGE };
         const edited = { ...value, status: ChallengeStatus.NO_CHALLENGE };
         const store = await createConnextStore(type as StoreTypes, { fileDir });
+        await store.clear();
 
         const empty = await store.getAppChallenge(value.identityHash);
         expect(empty).to.be.undefined;
 
         // can be called multiple times in a row and preserve the data
         for (let i = 0; i < 3; i++) {
-        await store.createAppChallenge(value.identityHash, value);
-        expect(await store.getAppChallenge(value.identityHash)).to.containSubset(value);
+          await store.createAppChallenge(value.identityHash, value);
+          expect(await store.getAppChallenge(value.identityHash)).to.containSubset(value);
         }
 
         await store.updateAppChallenge(value.identityHash, edited);
@@ -398,31 +400,17 @@ describe("ConnextStore", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should be able to retrieve active challenges for a channel`, async () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
+        await store.clear();
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
-        const challenge = { ...TEST_STORE_APP_CHALLENGE };
-        const app = TEST_STORE_CHANNEL.appInstances[0][1];
-        const freeBalanceSetState0 = {
-          ...TEST_STORE_SET_STATE_COMMITMENT,
-          identityHash: channel.freeBalanceAppInstance!.identityHash,
+        const challenge = {
+          ...TEST_STORE_APP_CHALLENGE,
+          status: ChallengeStatus.IN_DISPUTE,
         };
-        const freeBalanceSetState1 = {
-          ...freeBalanceSetState0,
-          versionNumber: toBNJson(app.latestVersionNumber),
-        };
-        const multisigAddress = channel.multisigAddress;
-        await store.createStateChannel(channel, TEST_STORE_MINIMAL_TX, freeBalanceSetState0);
-        await store.createAppInstance(
-          multisigAddress,
-          app,
-          channel.freeBalanceAppInstance!,
-          freeBalanceSetState1,
-          TEST_STORE_CONDITIONAL_COMMITMENT,
-        );
 
         const empty = await store.getActiveChallenges(channel.multisigAddress);
         expect(empty.length).to.be.eq(0);
 
-        await store.createAppChallenge(challenge.appStateHash, challenge);
+        await store.createAppChallenge(challenge.identityHash, challenge);
         const vals = await store.getActiveChallenges(channel.multisigAddress);
         expect(vals.length).to.be.eq(1);
         expect(vals[0]).to.containSubset(challenge);
@@ -476,6 +464,27 @@ describe("ConnextStore", () => {
         const vals = await store.getChallengeUpdatedEvents(value.identityHash);
         expect(vals.length).to.be.eq(1);
         expect(vals[0]).to.containSubset(value);
+        await store.clear();
+      });
+
+      it(`${type} - should be able to process multiple events simultaneously`, async () => {
+        const events = [
+          { ...TEST_STORE_STATE_PROGRESSED_EVENT },
+          { ...TEST_STORE_STATE_PROGRESSED_EVENT, versionNumber: toBN(135) },
+        ];
+        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        await store.clear();
+        const empty = await store.getStateProgressedEvents(events[0].identityHash);
+        expect(empty).to.be.deep.eq([]);
+        await Promise.all(
+          events.map((event) => store.createStateProgressedEvent(event.identityHash, event)),
+        );
+        const retrieved = await store.getStateProgressedEvents(events[0].identityHash);
+        expect(retrieved.length).to.be.eq(2);
+        const sorted = retrieved.sort((a, b) =>
+          toBN(a.versionNumber).sub(toBN(b.versionNumber)).toNumber(),
+        );
+        sorted.forEach((val, idx) => expect(val).to.containSubset(events[idx]));
         await store.clear();
       });
     });

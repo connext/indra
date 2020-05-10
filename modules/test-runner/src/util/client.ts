@@ -1,11 +1,10 @@
 import { connect } from "@connext/client";
-import { ConnextStore } from "@connext/store";
+import { getLocalStore, getMemoryStore } from "@connext/store";
 import {
   ClientOptions,
   IChannelProvider,
   IChannelSigner,
   IConnextClient,
-  StoreTypes,
 } from "@connext/types";
 import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
 import { expect } from "chai";
@@ -21,12 +20,12 @@ export const createClient = async (
   opts: Partial<ClientOptions & { id: string }> = {},
   fund: boolean = true,
 ): Promise<IConnextClient> => {
-  const store = opts.store || new ConnextStore(StoreTypes.Memory);
+  const store = opts.store || getMemoryStore();
   const wallet = Wallet.createRandom();
   const log = new ColorfulLogger("CreateClient", env.logLevel);
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
-    loggerService: new ColorfulLogger("Client", env.logLevel, true, opts.id),
+    loggerService: new ColorfulLogger("Client", 3, true, opts.id),
     signer: wallet.privateKey,
     nodeUrl: env.nodeUrl,
     store,
@@ -77,7 +76,7 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
     ...opts,
     ...urlOptions,
     loggerService: new ColorfulLogger("TestRunner", env.logLevel, true),
-    store: new ConnextStore(StoreTypes.LocalStorage), // TODO: replace with polyfilled window.localStorage
+    store: getLocalStore(), // TODO: replace with polyfilled window.localStorage
   };
   if (network === "mainnet") {
     clientOpts = {

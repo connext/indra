@@ -1,38 +1,32 @@
-import {
-  getDirectoryFiles,
-  isDirectory,
-  DEFAULT_STORE_PREFIX,
-  STORE_KEY,
-  DEFAULT_FILE_STORAGE_EXT,
-} from "@connext/store";
-import { StoreTypes } from "@connext/types";
+import { isDirectory } from "@connext/utils";
+import { expect } from "chai";
+import fs from "fs";
 import { v4 as uuid } from "uuid";
 
+import { storeDefaults } from "./constants";
 import {
-  env,
-  expect,
   setAndGet,
   setAndGetMultiple,
   testAsyncStorageKey,
   createKeyValueStore,
   TEST_STORE_PAIR,
-  createArray,
-} from "../util";
-import { storeTypes } from "./store.test";
+  postgresConnectionUri,
+} from "./test-utils";
+import { StoreTypes } from "./types";
+import { Sequelize } from "sequelize";
+
+const storeTypes = Object.values(StoreTypes);
 
 describe("KeyValueStorage", () => {
   const length = 10;
   const asyncStorageKey = "TEST_CONNEXT_STORE";
-  const fileDir = env.storeDir;
+  const fileDir = "./.test-store";
   const testValue = "something";
 
   describe("happy case: instantiate", () => {
     for (const type of storeTypes) {
-      if (type === StoreTypes.Memory || type === StoreTypes.Postgres) {
-        continue;
-      }
       it(`should work for ${type}`, async () => {
-        const store = createKeyValueStore(type as StoreTypes, { fileDir });
+        const store = await createKeyValueStore(type as StoreTypes, { fileDir });
         await setAndGet(store);
 
         // test + validate entries
@@ -50,11 +44,8 @@ describe("KeyValueStorage", () => {
 
   describe("happy case: should be able to remove an item", async () => {
     for (const type of storeTypes) {
-      if (type === StoreTypes.Memory || type === StoreTypes.Postgres) {
-        continue;
-      }
       it(`should work for ${type}`, async () => {
-        const store = createKeyValueStore(type as StoreTypes, { fileDir });
+        const store = await createKeyValueStore(type as StoreTypes, { fileDir });
         await setAndGet(store, TEST_STORE_PAIR);
         await store.removeItem(TEST_STORE_PAIR.path);
         const val = await store.getItem(TEST_STORE_PAIR.path);
@@ -63,19 +54,42 @@ describe("KeyValueStorage", () => {
     }
   });
 
+  it("happy case: memory storage should be able to support multiple stores", async () => {
+    const store1 = await createKeyValueStore(StoreTypes.Memory);
+    await store1.setItem("test", "store1");
+    const store2 = await createKeyValueStore(StoreTypes.Memory);
+    await store2.setItem("test", "store2");
+    const item1 = await store1.getItem("test");
+    const item2 = await store2.getItem("test");
+    expect(item1).to.eq("store1");
+    expect(item2).to.eq("store2");
+    await store1.clear();
+  });
+
+  it("happy case: postgres storage should be able to create multiple stores with different prefixes", async () => {
+    const sharedSequelize = new Sequelize(postgresConnectionUri, { logging: false });
+    const store1 = await createKeyValueStore(StoreTypes.Postgres, { sequelize: sharedSequelize, prefix: "store1" });
+    await store1.setItem("test", "store1");
+    const store2 = await createKeyValueStore(StoreTypes.Postgres, { sequelize: sharedSequelize, prefix: "store2" });
+    await store2.setItem("test", "store2");
+    const item1 = await store1.getItem("test");
+    const item2 = await store2.getItem("test");
+    expect(item1).to.eq("store1");
+    expect(item2).to.eq("store2");
+    await store1.clear();
+  });
+
   it("happy case: localStorage should include multiple keys", async () => {
-    const store = createKeyValueStore(StoreTypes.LocalStorage);
+    const store = await createKeyValueStore(StoreTypes.LocalStorage);
     const preInsert = await store.getEntries();
-
     await setAndGetMultiple(store, length);
-
     expect((await store.getEntries()).length).to.equal(preInsert.length + length);
     await store.clear();
   });
 
   // TODO: fix test
   it.skip("happy case: AsyncStorage should include a single key matching asyncStorageKey", async () => {
-    const store = createKeyValueStore(StoreTypes.AsyncStorage, { asyncStorageKey });
+    const store = await createKeyValueStore(StoreTypes.AsyncStorage, { asyncStorageKey });
 
     await setAndGetMultiple(store, length);
 
@@ -86,7 +100,7 @@ describe("KeyValueStorage", () => {
   // TODO: ask pedro about the spirit of this test, and if it still needs to
   // be included/if its still relevant
   it.skip("happy case: FileStorage should include a single key matching asyncStorageKey", async () => {
-    const store = createKeyValueStore(StoreTypes.File, { asyncStorageKey, fileDir });
+    const store = await createKeyValueStore(StoreTypes.File, { asyncStorageKey, fileDir });
     await setAndGetMultiple(store, length);
     await testAsyncStorageKey(store, asyncStorageKey);
     await store.clear();
@@ -96,7 +110,7 @@ describe("KeyValueStorage", () => {
     const id = uuid();
     const isDirectoryBefore = await isDirectory(`${fileDir}/${id}`);
     expect(isDirectoryBefore).to.be.false;
-    const store = createKeyValueStore(StoreTypes.File, {
+    const store = await createKeyValueStore(StoreTypes.File, {
       asyncStorageKey,
       fileDir: `${fileDir}/${id}`,
     });
@@ -109,58 +123,48 @@ describe("KeyValueStorage", () => {
   });
 
   it("happy case: FileStorage should create a single file for all keys inside directory", async () => {
-    const store = createKeyValueStore(StoreTypes.File, { asyncStorageKey, fileDir });
+    const store = await createKeyValueStore(StoreTypes.File, { asyncStorageKey, fileDir });
 
     const key1 = uuid();
     const key2 = uuid();
     expect(key1).to.not.equal(key2);
     await Promise.all([store.setItem(key2, testValue), store.setItem(key1, testValue)]);
 
-    const files = await getDirectoryFiles(fileDir);
-    const storeFileName = `${DEFAULT_STORE_PREFIX}-${STORE_KEY}${DEFAULT_FILE_STORAGE_EXT}`;
+    const files = fs.readdirSync(fileDir);
     const verifyFile = (fileName: string): void => {
       const fileArr = files.filter((file: string) => file.includes(fileName));
       expect(fileArr.length).to.equal(1);
     };
-    verifyFile(storeFileName);
+    verifyFile(storeDefaults.SQLITE_STORE_NAME);
     await store.clear();
   });
 
-  /**
-   * TODO: resolve the questions with this test.
-   *
-   * Previously, the `prefix` in storeA was not included, and the test passed.
-   * This is because there was a `this.uuid` property in the `FileStorage` class
-   * that appended unique ids to the end of a file.
-   *
-   * However, that means if a client is using file storage, and comes back
-   * online, a new uuid would be generated and they would not be able to access
-   * previous store entries.
-   *
-   * Adding a unique prefix to each store fixed the test
-   */
-  it("happy case: FileStorage should create a files with unique name", async () => {
-    const storeA = createKeyValueStore(StoreTypes.File, {
+  it("happy case: FileStorage should create dirs with unique name", async () => {
+    const fileDirA = `${fileDir}/somethingdifferent1`;
+    const fileDirB = `${fileDir}/somethingdifferent2`;
+    const storeA = await createKeyValueStore(StoreTypes.File, {
       asyncStorageKey,
-      fileDir,
-      prefix: "somethingDifferent",
+      fileDir: fileDirA,
     });
-    const storeB = createKeyValueStore(StoreTypes.File, { asyncStorageKey, fileDir });
+    const storeB = await createKeyValueStore(StoreTypes.File, {
+      asyncStorageKey,
+      fileDir: fileDirB,
+    });
 
     const key = uuid();
     await Promise.all([storeA.setItem(key, testValue), storeB.setItem(key, testValue)]);
 
-    const storeAFileName = `somethingDifferent-${STORE_KEY}${DEFAULT_FILE_STORAGE_EXT}`;
-    const storeBFileName = `${DEFAULT_STORE_PREFIX}-${STORE_KEY}${DEFAULT_FILE_STORAGE_EXT}`;
+    const filesA = fs.readdirSync(fileDir);
+    const filesB = fs.readdirSync(fileDir);
 
-    const files = await getDirectoryFiles(fileDir);
-    const filteredFiles = files.filter(
-      (file: string) => file.includes(storeAFileName) || file.includes(storeBFileName),
-    );
-    expect(filteredFiles.length).to.equal(2);
-    const file1 = filteredFiles[0].toLowerCase();
-    const file2 = filteredFiles[1].toLowerCase();
-    expect(file1 === file2).to.be.false;
+    const verifyFile = (fileDir: string[]): void => {
+      const fileArr = fileDir.filter((file: string) =>
+        file.includes(storeDefaults.SQLITE_STORE_NAME),
+      );
+      expect(fileArr.length).to.equal(1);
+    };
+    verifyFile(filesA);
+    verifyFile(filesB);
 
     await storeA.clear();
     await storeB.clear();
@@ -168,24 +172,22 @@ describe("KeyValueStorage", () => {
 
   describe("happy case: set & get the same path consecutively", async () => {
     for (const type of storeTypes) {
-      if (type === StoreTypes.Memory || type === StoreTypes.Postgres) {
-        continue;
-      }
       it(`${type} should work`, async () => {
-        const store = createKeyValueStore(type as StoreTypes, { fileDir });
-        await Promise.all(createArray(5).map(() => setAndGet(store)));
+        const store = await createKeyValueStore(type as StoreTypes, { fileDir });
+        await Promise.all(
+          Array(5)
+            .fill(0)
+            .map(() => setAndGet(store)),
+        );
       });
     }
   });
 
   describe("happy case: should join strings correctly", () => {
     for (const type of storeTypes) {
-      if (type === StoreTypes.Memory || type === StoreTypes.Postgres) {
-        continue;
-      }
       it(`${type} should work`, async () => {
-        const store = createKeyValueStore(type as StoreTypes, { fileDir });
-        const expected = `expected${type === StoreTypes.File ? "-" : "/"}string`;
+        const store = await createKeyValueStore(type as StoreTypes, { fileDir });
+        const expected = `expected/string`;
         expect(store.getKey("expected", "string")).to.be.equal(expected);
       });
     }

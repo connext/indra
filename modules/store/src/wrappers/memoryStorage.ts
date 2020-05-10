@@ -1,14 +1,19 @@
-import { WrappedStorage } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
-import { DEFAULT_STORE_PREFIX, DEFAULT_STORE_SEPARATOR } from "../constants";
+
+import { storeDefaults } from "../constants";
+import { WrappedStorage } from "../types";
 
 export class WrappedMemoryStorage implements WrappedStorage {
   private storage: Map<string, string> = new Map();
 
   constructor(
-    private readonly prefix: string = DEFAULT_STORE_PREFIX,
-    private readonly separator: string = DEFAULT_STORE_SEPARATOR,
+    private readonly prefix: string = storeDefaults.PREFIX,
+    private readonly separator: string = storeDefaults.SEPARATOR,
   ) {}
+
+  init(): Promise<void> {
+    return Promise.resolve();
+  }
 
   async getItem<T>(key: string): Promise<T | undefined> {
     const path = `${this.prefix}${this.separator}${key}`;
