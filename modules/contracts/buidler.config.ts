@@ -19,7 +19,6 @@ const config: BuidlerConfig = {
   },
   solc: {
     version: "0.6.7", // Note that this only has the version number
-    evmVersion: "constantinople",
   },
   defaultNetwork: "buidlerevm",
   networks: {
