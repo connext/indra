@@ -32,6 +32,14 @@ contract HashLockTransferApp is CounterfactualApp {
         view
         returns(bool)
     {
+        AppState memory state = abi.decode(encodedState, (AppState));
+
+        require(state.coinTransfers[0].amount != 0, "cannot install hashlock transfer with 0 initiator balance");
+        require(state.coinTransfers[1].amount == 0, "cannot install hashlock transfer with nonzero responder balance");
+        require(state.preImage[0] == 0, "cannot install a hashlock transfer with populated preimage");
+        require(state.expiry > block.number, "cannot install a hashlock transfer that is already expired");
+        require(!state.finalized, "cannot install a hashlock transfer that is already finalized");
+
         return true;
     }
 

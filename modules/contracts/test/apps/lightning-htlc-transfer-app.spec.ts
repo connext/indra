@@ -8,8 +8,8 @@ import {
   SolidityValueType,
 } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
-import { Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, soliditySha256, bigNumberify } from "ethers/utils";
+import { Zero, One } from "ethers/constants";
+import { BigNumber, defaultAbiCoder, soliditySha256, bigNumberify, formatBytes32String } from "ethers/utils";
 
 import LightningHTLCTransferApp from "../../build/HashLockTransferApp.json";
 
@@ -49,23 +49,21 @@ function createLockHash(preImage: string): string {
 
 describe("LightningHTLCTransferApp", () => {
   let lightningHTLCTransferApp: Contract;
-  let senderAddr: string;
-  let receiverAddr: string;
-  let transferAmount: BigNumber;
   let preImage: string;
-  let lockHash: string;
-  let expiry: BigNumber;
-  let preState: HashLockTransferAppState;
 
   async function computeOutcome(state: HashLockTransferAppState): Promise<string> {
-    return lightningHTLCTransferApp.functions.computeOutcome(encodeAppState(state));
+    return await lightningHTLCTransferApp.functions.computeOutcome(encodeAppState(state));
   }
 
   async function applyAction(state: any, action: SolidityValueType): Promise<string> {
-    return lightningHTLCTransferApp.functions.applyAction(
+    return await lightningHTLCTransferApp.functions.applyAction(
       encodeAppState(state),
       encodeAppAction(action),
     );
+  }
+
+  async function init(state: HashLockTransferAppState): Promise<string> {
+    return await lightningHTLCTransferApp.functions.init(encodeAppState(state));
   }
 
   async function validateOutcome(
@@ -80,29 +78,19 @@ describe("LightningHTLCTransferApp", () => {
     expect(decoded[1].amount.toString()).eq(postState.coinTransfers[1].amount.toString());
   }
 
-  beforeEach(async () => {
-    const wallet = (await provider.getWallets())[0];
-    lightningHTLCTransferApp = await new ContractFactory(
-      LightningHTLCTransferApp.abi,
-      LightningHTLCTransferApp.bytecode,
-      wallet,
-    ).deploy();
-
-    senderAddr = mkAddress("0xa");
-    receiverAddr = mkAddress("0xB");
-    transferAmount = new BigNumber(10000);
+  async function getInitialState() {
     preImage = mkHash("0xb");
-    lockHash = createLockHash(preImage);
-    expiry = bigNumberify(await provider.getBlockNumber()).add(100);
-    preState = {
+    const lockHash = createLockHash(preImage);
+    const expiry = bigNumberify(await provider.getBlockNumber()).add(10000);
+    const preState = {
       coinTransfers: [
         {
-          amount: transferAmount,
-          to: senderAddr,
+          amount: new BigNumber(10000),
+          to: mkAddress("0xa"),
         },
         {
           amount: Zero,
-          to: receiverAddr,
+          to: mkAddress("0xB"),
         },
       ],
       lockHash,
@@ -110,89 +98,137 @@ describe("LightningHTLCTransferApp", () => {
       preImage: mkHash("0x0"),
       finalized: false,
     };
+    return preState;
+  }
+
+  beforeEach(async () => {
+    const wallet = (await provider.getWallets())[0];
+    lightningHTLCTransferApp = await new ContractFactory(
+      LightningHTLCTransferApp.abi,
+      LightningHTLCTransferApp.bytecode,
+      wallet,
+    ).deploy();
   });
 
-  describe("update state", () => {
-    it("will redeem a payment with correct hash within expiry", async () => {
-      const action: HashLockTransferAppAction = {
-        preImage,
-      };
+  it("will pass init with correct state", async() => {
+    let preState = await getInitialState();
+    const ret = await init(preState)
+    expect(ret).to.be.ok
+  })
 
-      let ret = await applyAction(preState, action);
-      const afterActionState = decodeAppState(ret);
+  it("will fail init with zero initiator balance", async() => {
+    let preState = await getInitialState();
+    preState.coinTransfers[0].amount = Zero;
+    await expect(init(preState)).to.be.revertedWith("cannot install hashlock transfer with 0 initiator balance")
+  })
 
-      const expectedPostState: HashLockTransferAppState = {
-        coinTransfers: [
-          {
-            amount: Zero,
-            to: senderAddr,
-          },
-          {
-            amount: transferAmount,
-            to: receiverAddr,
-          },
-        ],
-        lockHash,
-        preImage,
-        expiry,
-        finalized: true,
-      };
+  it("will fail init with nonzero responder balance", async() => {
+    let preState = await getInitialState();
+    preState.coinTransfers[1].amount = One;
+    await expect(init(preState)).to.be.revertedWith("cannot install hashlock transfer with nonzero responder balance")
+  })
 
-      expect(afterActionState.finalized).to.eq(expectedPostState.finalized);
-      expect(afterActionState.coinTransfers[0].amount).to.eq(
-        expectedPostState.coinTransfers[0].amount,
-      );
-      expect(afterActionState.coinTransfers[1].amount).to.eq(
-        expectedPostState.coinTransfers[1].amount,
-      );
+  it("will fail init with populated preimage", async() => {
+    let preState = await getInitialState();
+    preState.preImage = mkHash("0x1");
+    await expect(init(preState)).to.be.revertedWith("cannot install a hashlock transfer with populated preimage")
+  })
 
-      ret = await computeOutcome(afterActionState);
-      validateOutcome(ret, expectedPostState);
-    });
+  it("will fail init with expired timelock", async() => {
+    let preState = await getInitialState();
+    preState.expiry = bigNumberify(await provider.getBlockNumber())
+    await expect(init(preState)).to.be.revertedWith("cannot install a hashlock transfer that is already expired")
+  })
 
-    it("will revert action with incorrect hash", async () => {
-      const action: HashLockTransferAppAction = {
-        preImage: mkHash("0xc"), // incorrect hash
-      };
+  it("will fail init with finalized state", async() => {
+    let preState = await getInitialState();
+    preState.finalized = true;
+    await expect(init(preState)).to.be.revertedWith("cannot install a hashlock transfer that is already finalized")
+  })
 
-      await expect(applyAction(preState, action)).revertedWith(
-        "Hash generated from preimage does not match hash in state",
-      );
-    });
+  it("will redeem a payment with correct hash within expiry", async () => {
+    let preState = await getInitialState();
+    const action: HashLockTransferAppAction = {
+      preImage,
+    };
 
-    it("will revert action if already finalized", async () => {
-      const action: HashLockTransferAppAction = {
-        preImage,
-      };
-      preState.finalized = true;
+    let ret = await applyAction(preState, action);
+    const afterActionState = decodeAppState(ret);
 
-      await expect(applyAction(preState, action)).revertedWith(
-        "Cannot take action on finalized state",
-      );
-    });
+    const expectedPostState: HashLockTransferAppState = {
+      ...preState,
+      coinTransfers: [
+        {
+          ...preState.coinTransfers[0],
+          amount: Zero,
+        },
+        {
+          ...preState.coinTransfers[1],
+          amount: preState.coinTransfers[0].amount
+        }
+      ],
+      finalized: true,
+    };
 
-    it("will revert action if timeout has expired", async () => {
-      const action: HashLockTransferAppAction = {
-        preImage,
-      };
-      preState.expiry = bigNumberify(await provider.getBlockNumber());
+    expect(afterActionState.finalized).to.eq(expectedPostState.finalized);
+    expect(afterActionState.coinTransfers[0].amount).to.eq(
+      expectedPostState.coinTransfers[0].amount,
+    );
+    expect(afterActionState.coinTransfers[1].amount).to.eq(
+      expectedPostState.coinTransfers[1].amount,
+    );
 
-      await expect(applyAction(preState, action)).revertedWith(
-        "Cannot take action if expiry is expired",
-      );
-    });
+    ret = await computeOutcome(afterActionState);
+    validateOutcome(ret, expectedPostState);
+  });
 
-    it("will revert outcome that is not finalized with unexpired expiry", async () => {
-      await expect(computeOutcome(preState)).revertedWith(
-        "Cannot revert payment if expiry is unexpired",
-      );
-    });
+  it("will revert action with incorrect hash", async () => {
+    let preState = await getInitialState();
+    const action: HashLockTransferAppAction = {
+      preImage: mkHash("0xc"), // incorrect hash
+    };
 
-    it("will refund payment that is not finalized with expired expiry", async () => {
-      preState.expiry = bigNumberify(await provider.getBlockNumber());
-      let ret = await computeOutcome(preState);
+    await expect(applyAction(preState, action)).revertedWith(
+      "Hash generated from preimage does not match hash in state",
+    );
+  });
 
-      validateOutcome(ret, preState);
-    });
+  it("will revert action if already finalized", async () => {
+    let preState = await getInitialState();
+    const action: HashLockTransferAppAction = {
+      preImage,
+    };
+    preState.finalized = true;
+
+    await expect(applyAction(preState, action)).revertedWith(
+      "Cannot take action on finalized state",
+    );
+  });
+
+  it("will revert action if timeout has expired", async () => {
+    let preState = await getInitialState();
+    const action: HashLockTransferAppAction = {
+      preImage,
+    };
+    preState.expiry = bigNumberify(await provider.getBlockNumber());
+
+    await expect(applyAction(preState, action)).revertedWith(
+      "Cannot take action if expiry is expired",
+    );
+  });
+
+  it("will revert outcome that is not finalized with unexpired expiry", async () => {
+    let preState = await getInitialState();
+    await expect(computeOutcome(preState)).revertedWith(
+      "Cannot revert payment if expiry is unexpired",
+    );
+  });
+
+  it("will refund payment that is not finalized with expired expiry", async () => {
+    let preState = await getInitialState();
+    preState.expiry = bigNumberify(await provider.getBlockNumber());
+    let ret = await computeOutcome(preState);
+
+    validateOutcome(ret, preState);
   });
 });
