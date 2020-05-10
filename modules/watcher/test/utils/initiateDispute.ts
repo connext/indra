@@ -100,7 +100,6 @@ export const initiateDispute = async (
 
   // verify app + free balance challenge
   const calledSetAndProgress = appChallengeUpdatedEventsCaught > 1;
-  console.log(`**** calledSetAndProgress`, calledSetAndProgress);
   const isStateTerminal = app.latestState.counter.gt(5);
   // get expected app values
   const appSetState = bigNumberifyJson(
