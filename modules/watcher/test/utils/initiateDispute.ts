@@ -201,7 +201,7 @@ export const initiateDispute = async (
     // verify action event
     expect(stateProgressedEventApp).to.containSubset({
       identityHash: app.identityHash,
-      action: AppWithCounterClass.encodeAction(app.latestAction!),      
+      action: AppWithCounterClass.encodeAction(app.latestAction!),
     });
   }
 
@@ -292,7 +292,11 @@ export const initiateDispute = async (
       } else {
         expect(events.length).to.be.at.least(appChallengeUpdatedEventsCaught);
         expect(
-          events.sort((a, b) => a.versionNumber.sub(b.versionNumber).toNumber()).pop(),
+          events.find(
+            (event) =>
+              toBN(event.versionNumber).eq(appSetState.versionNumber) &&
+              event.status === ChallengeStatus.OUTCOME_SET,
+          ),
         ).to.containSubset(expected1[appId]);
       }
 
