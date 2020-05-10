@@ -10,6 +10,7 @@ import {
   ChallengeOutcomeFailedEventData,
   ChallengeOutcomeSetEventData,
   StoredAppChallengeStatus,
+  StateProgressedEventData,
 } from "@connext/types";
 import { expect } from ".";
 import { AppWithCounterClass } from "./appWithCounter";
@@ -60,6 +61,7 @@ export const initiateDispute = async (
     initiatedEventFreeBalance,
     initiatedEventApp,
     result,
+    stateProgressedEventApp,
   ] = await Promise.all([
     new Promise((resolve) =>
       watcher.on(
@@ -105,6 +107,15 @@ export const initiateDispute = async (
       ),
     ),
     watcher.initiate(app.identityHash),
+    new Promise((resolve) => {
+      if (shouldCallSetAndProgress) {
+        watcher.on(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
+          resolve(data),
+        );
+      } else {
+        resolve(undefined);
+      }
+    }),
   ]);
   expect(result).to.be.ok;
 
@@ -184,6 +195,14 @@ export const initiateDispute = async (
       transactions[appId],
     );
     expect(contractEvents[appId]).to.containSubset(expected0[appId]);
+  }
+
+  if (stateProgressedEventApp) {
+    // verify action event
+    expect(stateProgressedEventApp).to.containSubset({
+      identityHash: app.identityHash,
+      action: AppWithCounterClass.encodeAction(app.latestAction!),      
+    });
   }
 
   // after first dispute, create and return other promises for other
@@ -272,7 +291,9 @@ export const initiateDispute = async (
         expect(events.pop()).to.containSubset(expected1[appId]);
       } else {
         expect(events.length).to.be.at.least(appChallengeUpdatedEventsCaught);
-        expect(events.pop()).to.containSubset(expected1[appId]);
+        expect(
+          events.sort((a, b) => a.versionNumber.sub(b.versionNumber).toNumber()).pop(),
+        ).to.containSubset(expected1[appId]);
       }
 
       // verify stored challenges
