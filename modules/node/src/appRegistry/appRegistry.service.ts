@@ -280,15 +280,16 @@ export class AppRegistryService implements OnModuleInit {
       default:
         this.log.debug(`No post-install actions configured.`);
     }
-    if (registryAppInfo.name !== DepositAppName) {
-      // rebalance at the end without blocking
-      this.channelService.rebalance(
-        channel,
-        getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
-      );
-    }
+    // TODO: collateralizng here is breaking things...
+    // rebalance at the end without blocking
+    // this.channelService.rebalance(
+    //   channel,
+    //   getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
+    // ).catch(e => {
+    //   this.log.error(`Caught error rebalancing channel ${channel.multisigAddress}: ${e.stack || e.message}`);
+    // });
     this.log.info(
-      `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} completed`,
+      `runPostInstallTasks for app ${registryAppInfo.name} ${appIdentityHash} completed`,
     );
   }
 
