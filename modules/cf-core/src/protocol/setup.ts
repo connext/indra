@@ -6,7 +6,7 @@ import {
   ProtocolRoles,
   SetupMiddlewareContext,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment, getSetStateCommitment } from "../ethereum";
@@ -29,9 +29,9 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
     let substart;
-    log.info(`Initiation started`);
-
     const { processID, params } = message;
+    log.info(`[${processID}] Initiation started`);
+    log.debug(`[${processID}] Protocol initiated with parameters ${stringify(params)}`);
 
     const {
       multisigAddress,
@@ -88,7 +88,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessageData,
     ] as any;
-    logTime(log, substart, `Received responder's sigs`);
+    logTime(log, substart, `[${processID}] Received responder's sigs`);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
@@ -105,7 +105,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceUpdateData.hashToSign(),
       responderSignatureOnFreeBalanceState,
     );
-    logTime(log, substart, `Verified responder's sigs`);
+    logTime(log, substart, `[${processID}] Verified responder's sigs`);
 
     // add sigs to commitments
     await setupCommitment.addSignatures(mySetupSignature as any, responderSetupSignature);
@@ -122,7 +122,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceUpdateData,
     ];
 
-    logTime(log, start, `Initiation finished`);
+    logTime(log, start, `[${processID}] Initiation finished`);
   } as any,
 
   1 /* Responding */: async function* (context: Context) {
@@ -130,8 +130,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
     let substart;
-    log.info(`Response started`);
-
     const {
       processID,
       params,
@@ -140,6 +138,8 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         setStateSignature: initiatorSignatureOnFreeBalanceState,
       },
     } = message;
+    log.info(`[${processID}] Response started`);
+    log.debug(`[${processID}] Protocol response started with parameters ${stringify(params)}`);
 
     const {
       multisigAddress,
@@ -180,7 +180,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceUpdateData.hashToSign(),
       initiatorSignatureOnFreeBalanceState,
     );
-    logTime(log, substart, `Verified initator's sig`);
+    logTime(log, substart, `[${processID}] Verified initator's sig`);
 
     // 49 ms
     const mySetupSignature = yield [OP_SIGN, setupCommitment.hashToSign()];
@@ -215,6 +215,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel,
     ];
 
-    logTime(log, start, `Response finished`);
+    logTime(log, start, `[${processID}] Response finished`);
   },
 };
