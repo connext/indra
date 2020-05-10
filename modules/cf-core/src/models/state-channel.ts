@@ -26,7 +26,7 @@ import { flipTokenIndexedBalances } from "./utils";
 const ERRORS = {
   APPS_NOT_EMPTY: (size: number) => `Expected the appInstances list to be empty but size ${size}`,
   APP_DOES_NOT_EXIST: (identityHash: string) =>
-    `Attempted to edit an appInstance that does not exist: identity hash = ${identityHash}`,
+    `Attempted to retrieve an appInstance that does not exist: identity hash = ${identityHash}`,
   FREE_BALANCE_MISSING: "Cannot find ETH Free Balance App in StateChannel",
   FREE_BALANCE_IDX_CORRUPT: (idx: string) => `Index ${idx} used to find ETH Free Balance is broken`,
   INSUFFICIENT_FUNDS: "Attempted to install an appInstance without sufficient funds",

@@ -73,7 +73,7 @@ export class OnchainTransactionService {
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
         }
-        this.log.debug(`Success! Tx hash: ${tx.hash}`);
+        this.log.info(`Success sending transaction! Tx hash: ${tx.hash}`);
         return tx;
       } catch (e) {
         errors[attempt] = e.message;

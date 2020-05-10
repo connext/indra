@@ -99,15 +99,13 @@ export class ChannelService {
     channel: Channel,
     assetId: string = AddressZero,
   ): Promise<TransactionReceipt | undefined> {
-    this.log.info(
-      `rebalance for ${channel.userIdentifier} asset ${assetId} started`,
-    );
+    this.log.info(`rebalance for ${channel.userIdentifier} asset ${assetId} started`);
     const normalizedAssetId = getAddress(assetId);
 
     const rebalancingTargets = await this.getRebalancingTargets(
       channel.userIdentifier,
-      normalizedAssetId
-    )
+      normalizedAssetId,
+    );
 
     const {
       lowerBoundCollateralize,
@@ -131,37 +129,35 @@ export class ChannelService {
       normalizedAssetId,
     );
 
-    let receipt;
+    let receipt: TransactionReceipt;
     // If free balance is too low, collateralize up to upper bound
-    if ( nodeFreeBalance < lowerBoundCollateralize ) {
-      const amount = upperBoundCollateralize.sub(nodeFreeBalance)
-      receipt = await this.depositService.deposit(channel, amount, normalizedAssetId)
+    if (nodeFreeBalance < lowerBoundCollateralize) {
+      const amount = upperBoundCollateralize.sub(nodeFreeBalance);
+      receipt = await this.depositService.deposit(channel, amount, normalizedAssetId);
     } else {
-      this.log.debug(`Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${lowerBoundCollateralize}`)
+      this.log.debug(
+        `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${lowerBoundCollateralize}`,
+      );
     }
 
     // If free balance is too high, reclaim down to lower bound
-    if ( nodeFreeBalance > upperBoundReclaim ) {
-      const amount = nodeFreeBalance.sub(lowerBoundReclaim)
-      await this.withdrawService.withdraw(channel, amount, normalizedAssetId)
+    if (nodeFreeBalance > upperBoundReclaim) {
+      const amount = nodeFreeBalance.sub(lowerBoundReclaim);
+      await this.withdrawService.withdraw(channel, amount, normalizedAssetId);
     } else {
-      this.log.debug(`Free balance ${nodeFreeBalance} is less than or equal to `)
+      this.log.debug(`Free balance ${nodeFreeBalance} is less than or equal to `);
     }
-    this.log.info(`rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`)
+    this.log.info(`rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`);
     return receipt as TransactionReceipt | undefined;
   }
 
-  async getRebalancingTargets(
-    userPublicIdentifier: string,
-    assetId: string = AddressZero,
-  ) {
-    this.log.debug(`Getting rebalancing targets for user: ${userPublicIdentifier}, assetId: ${assetId}`);
+  async getRebalancingTargets(userPublicIdentifier: string, assetId: string = AddressZero) {
+    this.log.debug(
+      `Getting rebalancing targets for user: ${userPublicIdentifier}, assetId: ${assetId}`,
+    );
     let targets;
     // option 1: rebalancing service, option 2: rebalance profile, option 3: default
-    targets = await this.getDataFromRebalancingService(
-      userPublicIdentifier,
-      assetId,
-    );
+    targets = await this.getDataFromRebalancingService(userPublicIdentifier, assetId);
 
     if (!targets) {
       this.log.debug(`Unable to get rebalancing targets from service, falling back to profile`);
@@ -172,7 +168,7 @@ export class ChannelService {
     }
 
     if (!targets) {
-      this.log.debug(`No profile for this channel and asset, falling back to default profile`); 
+      this.log.debug(`No profile for this channel and asset, falling back to default profile`);
       targets = await this.configService.getDefaultRebalanceProfile(assetId);
     }
 
@@ -181,7 +177,7 @@ export class ChannelService {
         `Node is not configured to rebalance asset ${assetId} for user ${userPublicIdentifier}`,
       );
     }
-    this.log.debug(`Rebalancing target: ${stringify(targets)}`)
+    this.log.debug(`Rebalancing target: ${stringify(targets)}`);
     return targets;
   }
 

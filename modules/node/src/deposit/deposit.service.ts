@@ -25,6 +25,7 @@ import {
   OnchainTransaction,
   TransactionReason,
 } from "../onchainTransactions/onchainTransaction.entity";
+import { AppInstance } from "src/appInstance/appInstance.entity";
 
 @Injectable()
 export class DepositService {
@@ -40,17 +41,20 @@ export class DepositService {
   }
 
   async deposit(channel: Channel, amount: BigNumber, assetId: string): Promise<TransactionReceipt> {
+    this.log.info(
+      `Deposit started: ${JSON.stringify({ channel: channel.multisigAddress, amount, assetId })}`,
+    );
     // don't allow deposit if user's balance refund app is installed
     const depositRegistry = await this.appRegistryRepository.findByNameAndNetwork(
       DepositAppName,
       (await this.configService.getEthNetwork()).chainId,
     );
-    const depositApp = channel.appInstances.filter(
+    const depositApp: AppInstance<"DepositApp"> = channel.appInstances.find(
       (app) =>
         app.appDefinition === depositRegistry.appDefinitionAddress &&
         app.latestState.assetId === assetId,
-    )[0];
-    this.log.debug(`Found deposit app: ${stringify(depositApp)}`);
+    );
+    this.log.debug(`Found existing deposit app: ${stringify(depositApp)}`);
     if (depositApp && depositApp.latestState.transfers[0].to === channel.userIdentifier) {
       throw new Error(
         `Cannot deposit, user has deposit app installed for asset ${assetId}, app: ${depositApp.identityHash}`,
@@ -65,23 +69,26 @@ export class DepositService {
 
     await this.channelRepository.setInflightCollateralization(channel, assetId, false);
 
-    let appIdentityHash;
+    let appIdentityHash: string;
     if (!depositApp) {
-      this.log.info(`Requesting deposit rights before depositing`);
+      this.log.debug(`Requesting deposit rights before depositing`);
       appIdentityHash = await this.requestDepositRights(channel, assetId);
+    } else {
+      appIdentityHash = depositApp.identityHash;
     }
     // deposit app for asset id with node as initiator is already installed
     // send deposit to chain
-    let receipt;
+    let receipt: TransactionReceipt;
     try {
       const tx = await this.sendDepositToChain(channel, amount, assetId);
       receipt = await tx.wait();
     } catch (e) {
       throw e;
     } finally {
-      await this.rescindDepositRights(appIdentityHash || depositApp.identityHash);
+      await this.rescindDepositRights(appIdentityHash);
     }
     await this.channelRepository.setInflightCollateralization(channel, assetId, true);
+    this.log.info(`Deposit complete: ${JSON.stringify(receipt)}`);
     return receipt;
   }
 
