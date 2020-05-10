@@ -35,7 +35,7 @@ const encodeAppAction = (state: WithdrawAppAction): string => {
   return defaultAbiCoder.encode([WithdrawAppActionEncoding], [state]);
 };
 
-describe.only("WithdrawApp", async () => {
+describe("WithdrawApp", async () => {
   let wallet: Wallet;
   let withdrawApp: Contract;
 

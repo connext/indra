@@ -61,6 +61,13 @@ describe("Withdrawal", () => {
     ).to.be.rejectedWith(`invalid number value`);
   });
 
+  it("client tries to withdraw zero", async () => {
+    await fundChannel(client, ZERO_ZERO_ONE_ETH);
+    await expect(
+      withdrawFromChannel(client, Zero, AddressZero),  
+    ).to.be.rejectedWith(`cannot install withdraw app with zero initiator amount`)
+  })
+
   it("client tries to withdraw to an invalid recipient address", async () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     const recipient = "0xabc";
