@@ -4,7 +4,7 @@ import {
   EventNames,
 } from "@connext/types";
 import { getPostgresStore } from "@connext/store";
-import { toBN, stringify } from "@connext/utils";
+import { toBN } from "@connext/utils";
 import { Sequelize } from "sequelize";
 
 import { createClient, fundChannel, ETH_AMOUNT_MD, expect, env } from "../util";
@@ -72,9 +72,9 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
   afterEach(async () => {
     await sender.messaging.disconnect();
     await recipient.messaging.disconnect();
-    // // clear stores
-    // await sender.store.clear();
-    // await recipient.store.clear();
+    // clear stores
+    await sender.store.clear();
+    await recipient.store.clear();
   });
 
   it("should work when clients share the same sequelize instance with a different prefix (1 payment sent)", async () => {
@@ -106,12 +106,12 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     );
   });
 
-  it.only("should work when clients share the same sequelize instance with a different prefix (many payments sent)", async () => {
+  it("should work when clients share the same sequelize instance with a different prefix (many payments sent)", async () => {
     // establish tests constants
     const DEPOSIT_AMT = ETH_AMOUNT_MD;
     const ASSET = CONVENTION_FOR_ETH_ASSET_ID;
     const TRANSFER_AMT = toBN(100);
-    const MIN_TRANSFERS = 15;
+    const MIN_TRANSFERS = 25;
     const TRANSFER_INTERVAL = 500; // ms between consecutive transfer calls
 
     await fundChannel(sender, DEPOSIT_AMT, ASSET);
@@ -129,7 +129,6 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
       () => {
         sentTransfers += 1;
-        console.log(`**** sent transfer ${sentTransfers}/${MIN_TRANSFERS}!`);
       },
     );
     const interval = setInterval(async () => {
@@ -161,9 +160,8 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     // will also periodically check if a poller error has been set and reject
     await new Promise((resolve, reject) => {
       // setup listeners (increment on reclaim)
-      recipient.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
+      recipient.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, () => {
         receivedTransfers += 1;
-        console.log(`**** got transfer ${receivedTransfers}/${MIN_TRANSFERS}! Preimage: ${stringify(data.transferMeta)}`);
         if (receivedTransfers >= MIN_TRANSFERS) {
           resolve();
         }
@@ -182,11 +180,9 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     expect(receivedTransfers).to.be.eq(MIN_TRANSFERS);
     const finalSenderFb = await sender.getFreeBalance(ASSET);
     const finalRecipientFb = await recipient.getFreeBalance(ASSET);
-    console.log("asserting final sender free balance");
     expect(finalSenderFb[sender.signerAddress]).to.be.eq(
       initialSenderFb[sender.signerAddress].sub(TRANSFER_AMT.mul(receivedTransfers)),
     );
-    console.log("asserting final recipient free balance");
     expect(finalRecipientFb[recipient.signerAddress]).to.be.eq(
       initialRecipientFb[recipient.signerAddress].add(TRANSFER_AMT.mul(receivedTransfers)),
     );
