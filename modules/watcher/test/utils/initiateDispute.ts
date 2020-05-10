@@ -18,6 +18,7 @@ import { bigNumberifyJson, toBN } from "@connext/utils";
 import { NetworkContextForTestSuite } from "./contracts";
 import { Zero } from "ethers/constants";
 import { verifyChallengeProgressedEvent } from "./assertions";
+import { BigNumber } from "ethers/utils";
 
 export type OutcomeSetResults = [
   ChallengeOutcomeSetEventData,
@@ -34,7 +35,7 @@ export const initiateDispute = async (
   watcher: Watcher,
   store: IWatcherStoreService,
   networkContext: NetworkContextForTestSuite,
-  appSetStateEvents: number = 1, // 1 for set state, 2 for set and progress
+  appSetStateFinalNonce?: BigNumber, // 1 for set state, 2 for set and progress
 ) => {
   // before starting, verify empty store
   const empty = await store.getAppChallenge(app.identityHash);
@@ -63,9 +64,12 @@ export const initiateDispute = async (
         async (data: ChallengeUpdatedEventPayload) => {
           if (data.identityHash === app.identityHash) {
             appChallengeUpdatedEventsCaught += 1;
-          }
-          if (appChallengeUpdatedEventsCaught === appSetStateEvents) {
-            resolve(data);
+            // resolve if needed
+            if (!appSetStateFinalNonce) {
+              resolve(data);
+            } else if (data.versionNumber.eq(appSetStateFinalNonce)) {
+              resolve(data);
+            }
           }
         },
       ),
@@ -95,7 +99,8 @@ export const initiateDispute = async (
   expect(result).to.be.ok;
 
   // verify app + free balance challenge
-  const calledSetAndProgress = appSetStateEvents === 2;
+  const calledSetAndProgress = appChallengeUpdatedEventsCaught > 1;
+  console.log(`**** calledSetAndProgress`, calledSetAndProgress);
   const isStateTerminal = app.latestState.counter.gt(5);
   // get expected app values
   const appSetState = bigNumberifyJson(
@@ -109,8 +114,8 @@ export const initiateDispute = async (
   const appStatus = !calledSetAndProgress
     ? ChallengeStatus.IN_DISPUTE
     : isStateTerminal
-      ? ChallengeStatus.EXPLICITLY_FINALIZED
-      : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
+    ? ChallengeStatus.EXPLICITLY_FINALIZED
+    : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
 
   // get expected free balance values
   const fbSetState = bigNumberifyJson(await freeBalance.getSetState());
@@ -161,8 +166,11 @@ export const initiateDispute = async (
       expect(setStateEvents.length).to.be.equal(1);
       expect(setStateEvents[0]).to.containSubset(expected0[appId]);
     } else {
-      expect(setStateEvents.length).to.be.equal(appSetStateEvents);
-      expect(setStateEvents[appSetStateEvents - 1]).to.containSubset(expected0[appId]);
+      expect(setStateEvents.length).to.be.equal(appChallengeUpdatedEventsCaught);
+      const final = setStateEvents.find((event) =>
+        toBN(event.versionNumber).eq(appSetState.versionNumber),
+      );
+      expect(final).to.containSubset(expected0[appId]);
     }
 
     // verify emitted events
@@ -216,7 +224,10 @@ export const initiateDispute = async (
       watcher.on(
         WatcherEvents.ChallengeUpdatedEvent,
         async (data: ChallengeUpdatedEventPayload) => {
-          if (data.identityHash === app.identityHash) {
+          if (
+            data.identityHash === app.identityHash &&
+            data.status === ChallengeStatus.OUTCOME_SET
+          ) {
             resolve(data);
           }
         },
@@ -255,10 +266,12 @@ export const initiateDispute = async (
       if (appId === freeBalance.identityHash) {
         // free balance always has one set state event
         expect(events.length).to.be.equal(2);
-        expect(events[1]).to.containSubset(expected1[appId]);
+        expect(events.pop()).to.containSubset(expected1[appId]);
       } else {
-        expect(events.length).to.be.equal(appSetStateEvents + 1);
-        expect(events[appSetStateEvents]).to.containSubset(expected1[appId]);
+        // use "at least" comparison because listeners on watcher are not
+        // removed from creating dispute to setting outcome
+        expect(events.length).to.be.at.least(appChallengeUpdatedEventsCaught);
+        expect(events.pop()).to.containSubset(expected1[appId]);
       }
 
       // verify stored challenges
