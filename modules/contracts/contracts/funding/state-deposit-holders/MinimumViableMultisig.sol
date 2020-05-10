@@ -27,10 +27,7 @@ contract MinimumViableMultisig is MultisigData, LibCommitment {
         DelegateCall
     }
 
-    function ()
-        external
-        payable
-    {}
+    receive() external payable { }
 
     /// @notice Contract constructor
     /// @param owners An array of unique addresses representing the multisig owners

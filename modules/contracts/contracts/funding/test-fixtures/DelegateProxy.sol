@@ -3,7 +3,7 @@ pragma solidity 0.6.7;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract DelegateProxy {
-    function () external payable { }
+    receive() external payable { }
 
     mapping(address => uint256) public totalAmountWithdrawn;
     address constant CONVENTION_FOR_ETH_TOKEN_ADDRESS = address(0x0);
