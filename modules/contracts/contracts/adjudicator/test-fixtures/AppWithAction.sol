@@ -72,6 +72,14 @@ contract AppWithAction is CounterfactualApp {
         return abi.encode(state);
     }
 
+    function init(bytes calldata encodedState)
+        external
+        view
+        returns (bool)
+    {
+        return true;
+    }
+
     function isStateTerminal(bytes calldata encodedState)
         external
         view

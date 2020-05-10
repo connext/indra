@@ -10,6 +10,14 @@ import "./AppWithAction.sol";
  */
 contract AppComputeOutcomeFails is AppWithAction {
 
+    function init(bytes calldata)
+        external
+        view
+        returns (bool)
+    {
+        return true;
+    }
+
     function computeOutcome(bytes calldata)
         external
         view

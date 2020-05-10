@@ -10,6 +10,16 @@ import "./AppWithAction.sol";
  */
 contract AppApplyActionFails is AppWithAction {
 
+    function init(
+        bytes calldata encodedState
+    )
+        external
+        view
+        returns (bool)
+    {
+        return true;
+    }
+
     function applyAction(
         bytes calldata encodedState,
         bytes calldata encodedAction
