@@ -134,6 +134,12 @@ describe("LightningHTLCTransferApp", () => {
     await expect(init(preState)).to.be.revertedWith("cannot install a hashlock transfer with populated preimage")
   })
 
+  it("will fail init with unpopulated lockHash", async() => {
+    let preState = await getInitialState();
+    preState.lockHash = mkHash("0x0");
+    await expect(init(preState)).to.be.revertedWith("cannot install a linked transfer with unpopulated lockHash")
+  })
+
   it("will fail init with expired timelock", async() => {
     let preState = await getInitialState();
     preState.expiry = bigNumberify(await provider.getBlockNumber())

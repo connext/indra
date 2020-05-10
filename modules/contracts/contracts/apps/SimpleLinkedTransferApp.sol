@@ -41,6 +41,15 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
         view
         returns(bool)
     {
+        AppState memory state = abi.decode(encodedState, (AppState));
+
+        require(state.coinTransfers[0].amount != 0, "cannot install linked transfer with 0 initiator balance");
+        require(state.coinTransfers[1].amount == 0, "cannot install linked transfer with nonzero responder balance");
+        require(state.coinTransfers[0].amount == state.amount, "cannot install linked transfer with different amounts");
+        require(state.preImage[0] == 0, "cannot install a linked transfer with populated preimage");
+        require(state.paymentId[0] != 0, "cannot install a linked transfer with unpopulated paymentId");
+        require(state.linkedHash[0] != 0, "cannot install a linked transfer with unpopulated linkedHash");
+
         return true;
     }
 
