@@ -29,6 +29,7 @@ import { AppActionsService } from "./appActions.service";
     CFCoreModule,
     ChannelModule,
     ConfigModule,
+    DepositModule,
     HashLockTransferModule,
     LinkedTransferModule,
     LoggerModule,
@@ -44,7 +45,6 @@ import { AppActionsService } from "./appActions.service";
       WithdrawRepository,
     ]),
     WithdrawModule,
-    DepositModule,
   ],
   providers: [AppRegistryService, AppActionsService],
 })

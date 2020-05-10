@@ -10,7 +10,7 @@ import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { DepositService } from "../deposit/deposit.service";
+import { DepositModule } from "../deposit/deposit.module";
 
 import { LinkedTransferService } from "./linkedTransfer.service";
 import { linkedTransferProviderFactory } from "./linkedTransfer.provider";
@@ -21,7 +21,7 @@ import { linkedTransferProviderFactory } from "./linkedTransfer.provider";
     AuthModule,
     CFCoreModule,
     ChannelModule,
-    DepositService,
+    DepositModule,
     ConfigModule,
     LoggerModule,
     MessagingModule,

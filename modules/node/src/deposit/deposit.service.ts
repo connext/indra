@@ -16,11 +16,11 @@ import { Zero, AddressZero } from "ethers/constants";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
-import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ChannelRepository } from "../channel/channel.repository";
+import { ConfigService } from "../config/config.service";
 import {
   OnchainTransaction,
   TransactionReason,
@@ -34,23 +34,19 @@ export class DepositService {
     private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
     private readonly appRegistryRepository: AppRegistryRepository,
-    private readonly channelRepository: ChannelRepository
+    private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("DepositService");
   }
 
-  async deposit(
-    channel: Channel,
-    amount: BigNumber,
-    assetId: string,
-  ): Promise<TransactionReceipt> {
+  async deposit(channel: Channel, amount: BigNumber, assetId: string): Promise<TransactionReceipt> {
     // don't allow deposit if user's balance refund app is installed
     const depositRegistry = await this.appRegistryRepository.findByNameAndNetwork(
       DepositAppName,
       (await this.configService.getEthNetwork()).chainId,
     );
     const depositApp = channel.appInstances.filter(
-      app =>
+      (app) =>
         app.appDefinition === depositRegistry.appDefinitionAddress &&
         app.latestState.assetId === assetId,
     )[0];
@@ -115,14 +111,12 @@ export class DepositService {
     return tx;
   }
 
-  private async waitForActiveDeposit(
-    userId: string,
-  ): Promise<TransactionReceipt> {
-    this.log.info(`Collateralization in flight for user ${userId}, waiting`)
+  private async waitForActiveDeposit(userId: string): Promise<TransactionReceipt> {
+    this.log.info(`Collateralization in flight for user ${userId}, waiting`);
     const ethProvider = this.configService.getEthProvider();
     const startingBlock = await ethProvider.getBlockNumber();
     // register listener
-    const depositReceipt: TransactionReceipt = await new Promise(async resolve => {
+    const depositReceipt: TransactionReceipt = await new Promise(async (resolve) => {
       const BLOCKS_TO_WAIT = 5;
       ethProvider.on("block", async (blockNumber: number) => {
         if (blockNumber - startingBlock > BLOCKS_TO_WAIT) {
@@ -142,7 +136,9 @@ export class DepositService {
         }
       });
     });
-    this.log.info(`Done waiting for collateralization in flight. DepositReceipt: ${depositReceipt}`)
+    this.log.info(
+      `Done waiting for collateralization in flight. DepositReceipt: ${depositReceipt}`,
+    );
     return depositReceipt;
   }
 

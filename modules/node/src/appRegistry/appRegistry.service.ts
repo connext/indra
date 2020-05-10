@@ -37,7 +37,7 @@ import { bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelService, RebalanceType } from "../channel/channel.service";
+import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { MessagingProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
@@ -110,8 +110,14 @@ export class AppRegistryService implements OnModuleInit {
         );
         const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
         if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
-          const amount = responderDepositBigNumber.sub(freeBal[this.cfCoreService.cfCore.signerAddress])
-          const depositReceipt = await this.depositService.deposit(installerChannel, amount, proposeInstallParams.responderDepositAssetId)
+          const amount = responderDepositBigNumber.sub(
+            freeBal[this.cfCoreService.cfCore.signerAddress],
+          );
+          const depositReceipt = await this.depositService.deposit(
+            installerChannel,
+            amount,
+            proposeInstallParams.responderDepositAssetId,
+          );
           if (!depositReceipt) {
             throw new Error(
               `Could not obtain sufficient collateral to install app for channel ${installerChannel.multisigAddress}.`,
@@ -121,7 +127,13 @@ export class AppRegistryService implements OnModuleInit {
       }
       ({ appInstance } = await this.cfCoreService.installApp(appIdentityHash));
       // any tasks that need to happen after install, i.e. DB writes
-      await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams, from, installerChannel);
+      await this.runPostInstallTasks(
+        registryAppInfo,
+        appIdentityHash,
+        proposeInstallParams,
+        from,
+        installerChannel,
+      );
       const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstance.identityHash}.install`;
       await this.messagingService.publish(installSubject, appInstance);
     } catch (e) {
