@@ -20,7 +20,7 @@ contract Proxy {
     }
 
     /// @dev Fallback function forwards all transactions and returns all received return data.
-    function ()
+    fallback()
         external
         payable
     {
