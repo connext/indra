@@ -8,7 +8,6 @@ import {
 import { getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -119,14 +118,14 @@ export class LinkedTransferService {
       receiverChannel.multisigAddress,
       assetId,
     );
-    
+
     if (freeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
       const depositReceipt = await this.depositService.deposit(
-        receiverChannel, 
-        amount.sub(freeBal[freeBalanceAddr]), 
-        assetId
-      )
+        receiverChannel,
+        amount.sub(freeBal[freeBalanceAddr]),
+        assetId,
+      );
       if (!depositReceipt) {
         throw new Error(
           `Could not deposit sufficient collateral to resolve linked transfer for reciever: ${userIdentifier}`,
@@ -178,10 +177,7 @@ export class LinkedTransferService {
     };
 
     // kick off a rebalance before finishing
-    this.channelService.rebalance(
-      receiverChannel,
-      assetId
-    );
+    this.channelService.rebalance(receiverChannel, assetId);
 
     this.log.info(
       `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId}} complete ${JSON.stringify(
@@ -234,7 +230,7 @@ export class LinkedTransferService {
     const existingReceiverApps = (
       await Promise.all(
         transfersFromNodeToUser.map(
-          async transfer =>
+          async (transfer) =>
             await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
               transfer.latestState["paymentId"],
               this.cfCoreService.cfCore.signerAddress,
@@ -243,10 +239,12 @@ export class LinkedTransferService {
       )
     )
       // remove nulls
-      .filter(transfer => !!transfer);
-    const alreadyRedeemedPaymentIds = existingReceiverApps.map(app => app.latestState["paymentId"]);
+      .filter((transfer) => !!transfer);
+    const alreadyRedeemedPaymentIds = existingReceiverApps.map(
+      (app) => app.latestState["paymentId"],
+    );
     const redeemableTransfers = transfersFromNodeToUser.filter(
-      transfer => !alreadyRedeemedPaymentIds.includes(transfer.latestState["paymentId"]),
+      (transfer) => !alreadyRedeemedPaymentIds.includes(transfer.latestState["paymentId"]),
     );
     this.log.info(
       `getLinkedTransfersForReceiverUnlock for ${userIdentifier} complete: ${JSON.stringify(
@@ -274,7 +272,7 @@ export class LinkedTransferService {
       this.cfCoreService.cfCore.signerAddress,
     );
     const receiverRedeemed = await Promise.all(
-      transfersFromUserToNode.map(async transfer =>
+      transfersFromUserToNode.map(async (transfer) =>
         this.appInstanceRepository.findRedeemedLinkedTransferAppByPaymentIdFromNode(
           transfer.latestState["paymentId"],
           this.cfCoreService.cfCore.signerAddress,
