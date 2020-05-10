@@ -783,14 +783,14 @@ export async function installApp(
         installationProposalRpc.parameters,
         await getAppInstanceProposal(nodeB, appIdentityHash, multisigAddress),
       );
-      confirmProposedAppInstance(
-        installationProposalRpc.parameters,
-        await getAppInstanceProposal(nodeA, appIdentityHash, multisigAddress),
-      );
       resolve(msg.data.appIdentityHash);
     });
 
     await nodeA.rpcRouter.dispatch(installationProposalRpc);
+    confirmProposedAppInstance(
+      installationProposalRpc.parameters,
+      await getAppInstanceProposal(nodeA, appIdentityHash, multisigAddress),
+    );
   });
 
   // send nodeB install call
