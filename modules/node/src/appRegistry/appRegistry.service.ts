@@ -280,11 +280,13 @@ export class AppRegistryService implements OnModuleInit {
       default:
         this.log.debug(`No post-install actions configured.`);
     }
-    // rebalance at the end without blocking
-    this.channelService.rebalance(
-      channel,
-      getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
-    );
+    if (registryAppInfo.name !== DepositAppName) {
+      // rebalance at the end without blocking
+      this.channelService.rebalance(
+        channel,
+        getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
+      );
+    }
     this.log.info(
       `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} completed`,
     );
