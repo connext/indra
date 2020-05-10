@@ -32,7 +32,7 @@ export const validateSimpleLinkedTransferApp = (
     responderTransfer,
   );
 
-  if (!initialState.amount.eq(initiatorDeposit)) {
-    throw new Error(`Payment amount bust be the same as initiator deposit ${stringify(params)}`);
-  }
+  // if (!initialState.amount.eq(initiatorDeposit)) {
+  //   throw new Error(`Payment amount bust be the same as initiator deposit ${stringify(params)}`);
+  // }
 };
