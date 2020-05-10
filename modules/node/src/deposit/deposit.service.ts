@@ -64,18 +64,17 @@ export class DepositService {
     // don't allow deposit if an active deposit is in process
     if (channel.activeCollateralizations[assetId]) {
       this.log.warn(`Collateral request is in flight for ${assetId}, waiting for transaction`);
-      await this.waitForActiveDeposit(channel.userIdentifier);
+      const waited = await this.waitForActiveDeposit(channel.userIdentifier);
+      if (!waited) {
+        throw new Error(`Attempted to wait for ongoing transaction, but it took longer than 5 blocks, retry later.`);
+      }
     }
 
-    await this.channelRepository.setInflightCollateralization(channel, assetId, false);
+    await this.channelRepository.setInflightCollateralization(channel, assetId, true);
 
-    let appIdentityHash: string;
-    if (!depositApp) {
-      this.log.debug(`Requesting deposit rights before depositing`);
-      appIdentityHash = await this.requestDepositRights(channel, assetId);
-    } else {
-      appIdentityHash = depositApp.identityHash;
-    }
+    this.log.info(`Requesting deposit rights before depositing`);
+    const appIdentityHash = await this.requestDepositRights(channel, assetId);
+    this.log.info(`Requested deposit rights`);
     // deposit app for asset id with node as initiator is already installed
     // send deposit to chain
     let receipt: TransactionReceipt;
@@ -87,7 +86,7 @@ export class DepositService {
     } finally {
       await this.rescindDepositRights(appIdentityHash);
     }
-    await this.channelRepository.setInflightCollateralization(channel, assetId, true);
+    await this.channelRepository.setInflightCollateralization(channel, assetId, false);
     this.log.info(`Deposit complete: ${JSON.stringify(receipt)}`);
     return receipt;
   }
