@@ -25,6 +25,7 @@ contract DepositApp is CounterfactualApp {
     }
 
     function computeOutcome(bytes calldata encodedState)
+        override
         external
         view
         returns (bytes memory)

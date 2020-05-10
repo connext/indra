@@ -25,6 +25,7 @@ contract SingleAssetTwoPartyCoinTransferInterpreter is MultisigTransfer, Interpr
         bytes calldata encodedOutput,
         bytes calldata encodedParams
     )
+        override
         external
     {
         Params memory params = abi.decode(encodedParams, (Params));

@@ -22,6 +22,7 @@ contract NimApp is CounterfactualApp {
     }
 
     function isStateTerminal(bytes calldata encodedState)
+        override
         external
         view
         returns (bool)
@@ -35,6 +36,7 @@ contract NimApp is CounterfactualApp {
         bytes calldata encodedState,
         address[] calldata participants
     )
+        override
         external
         view
         returns (address)
@@ -46,6 +48,7 @@ contract NimApp is CounterfactualApp {
     function applyAction(
         bytes calldata encodedState, bytes calldata encodedAction
     )
+        override
         external
         view
         returns (bytes memory)
@@ -67,6 +70,7 @@ contract NimApp is CounterfactualApp {
     }
 
     function computeOutcome(bytes calldata encodedState)
+        override
         external
         view
         returns (bytes memory)

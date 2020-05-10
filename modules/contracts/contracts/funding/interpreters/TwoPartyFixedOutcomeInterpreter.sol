@@ -23,6 +23,7 @@ contract TwoPartyFixedOutcomeInterpreter is MultisigTransfer, Interpreter {
         bytes calldata encodedOutcome,
         bytes calldata encodedParams
     )
+        override
         external
     {
         LibOutcome.TwoPartyFixedOutcome outcome = abi.decode(

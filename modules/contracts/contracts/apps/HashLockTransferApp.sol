@@ -31,6 +31,7 @@ contract HashLockTransferApp is CounterfactualApp {
         bytes calldata encodedState,
         bytes calldata encodedAction
     )
+        override
         external
         view
         returns (bytes memory)
@@ -52,6 +53,7 @@ contract HashLockTransferApp is CounterfactualApp {
     }
 
     function computeOutcome(bytes calldata encodedState)
+        override
         external
         view
         returns (bytes memory)
@@ -70,6 +72,7 @@ contract HashLockTransferApp is CounterfactualApp {
         bytes calldata encodedState,
         address[] calldata participants
     )
+        override
         external
         view
         returns (address)
@@ -78,6 +81,7 @@ contract HashLockTransferApp is CounterfactualApp {
     }
 
     function isStateTerminal(bytes calldata encodedState)
+        override
         external
         view
         returns (bool)

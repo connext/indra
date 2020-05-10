@@ -7,6 +7,7 @@ import "./IdentityApp.sol";
 contract FinalizedApp is IdentityApp {
 
     function isStateTerminal(bytes calldata)
+        override
         external
         view
         returns (bool)

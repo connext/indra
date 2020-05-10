@@ -35,6 +35,7 @@ contract AppWithAction is CounterfactualApp {
         bytes calldata encodedState,
         address[] calldata participants
     )
+        override
         external
         view
         returns (address)
@@ -44,6 +45,8 @@ contract AppWithAction is CounterfactualApp {
     }
 
     function computeOutcome(bytes calldata)
+        override
+        virtual
         external
         view
         returns (bytes memory)
@@ -55,6 +58,8 @@ contract AppWithAction is CounterfactualApp {
         bytes calldata encodedState,
         bytes calldata encodedAction
     )
+        override
+        virtual
         external
         view
         returns (bytes memory ret)
@@ -73,6 +78,7 @@ contract AppWithAction is CounterfactualApp {
     }
 
     function isStateTerminal(bytes calldata encodedState)
+        override
         external
         view
         returns (bool)

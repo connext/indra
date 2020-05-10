@@ -24,6 +24,7 @@ contract MultiAssetMultiPartyCoinTransferInterpreter is MultisigTransfer, Interp
         bytes calldata encodedOutcome,
         bytes calldata encodedParams
     )
+        override
         external
     {
         MultiAssetMultiPartyCoinTransferInterpreterParams memory params = abi.decode(

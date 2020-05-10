@@ -40,6 +40,7 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
         bytes calldata encodedState,
         bytes calldata encodedAction
     )
+        override
         external
         view
         returns (bytes memory)
@@ -53,6 +54,7 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
     }
 
     function computeOutcome(bytes calldata encodedState)
+        override
         external
         view
         returns (bytes memory)

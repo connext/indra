@@ -51,6 +51,7 @@ contract TicTacToeApp is CounterfactualApp {
     }
 
     function isStateTerminal(bytes calldata encodedState)
+        override
         external
         view
         returns (bool)
@@ -64,6 +65,7 @@ contract TicTacToeApp is CounterfactualApp {
         bytes calldata encodedState,
         address[] calldata participants
     )
+        override
         external
         view
         returns (address)
@@ -75,6 +77,7 @@ contract TicTacToeApp is CounterfactualApp {
     function applyAction(
         bytes calldata encodedState, bytes calldata encodedAction
     )
+        override
         external
         view
         returns (bytes memory)
@@ -120,6 +123,7 @@ contract TicTacToeApp is CounterfactualApp {
     }
 
     function computeOutcome(bytes calldata encodedState)
+      override
       external
       view
       returns (bytes memory)

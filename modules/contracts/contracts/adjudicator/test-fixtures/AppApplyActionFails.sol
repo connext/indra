@@ -14,6 +14,7 @@ contract AppApplyActionFails is AppWithAction {
         bytes calldata encodedState,
         bytes calldata encodedAction
     )
+        override
         external
         view
         returns (bytes memory ret)

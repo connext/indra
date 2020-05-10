@@ -48,6 +48,7 @@ contract HighRollerApp is CounterfactualApp {
     }
 
     function isStateTerminal(bytes calldata encodedState)
+        override
         external
         view
         returns (bool)
@@ -64,6 +65,7 @@ contract HighRollerApp is CounterfactualApp {
         bytes calldata encodedState,
         address[] calldata participants
     )
+        override
         external
         view
         returns (address)
@@ -76,6 +78,7 @@ contract HighRollerApp is CounterfactualApp {
         bytes calldata encodedState,
         bytes calldata encodedAction
     )
+        override
         external
         view
         returns (bytes memory)
@@ -146,6 +149,7 @@ contract HighRollerApp is CounterfactualApp {
     }
 
     function computeOutcome(bytes calldata encodedState)
+        override
         external
         view
         returns (bytes memory)

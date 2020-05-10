@@ -11,6 +11,7 @@ import "./AppWithAction.sol";
 contract AppComputeOutcomeFails is AppWithAction {
 
     function computeOutcome(bytes calldata)
+        override
         external
         view
         returns (bytes memory)

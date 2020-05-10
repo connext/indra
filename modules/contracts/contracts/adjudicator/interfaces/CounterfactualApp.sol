@@ -5,6 +5,7 @@ pragma experimental "ABIEncoderV2";
 contract CounterfactualApp {
 
     function isStateTerminal(bytes calldata)
+        virtual
         external
         view
         returns (bool)
@@ -13,6 +14,7 @@ contract CounterfactualApp {
     }
 
     function getTurnTaker(bytes calldata, address[] calldata)
+        virtual
         external
         view
         returns (address)
@@ -21,6 +23,7 @@ contract CounterfactualApp {
     }
 
     function applyAction(bytes calldata, bytes calldata)
+        virtual
         external
         view
         returns (bytes memory)
@@ -29,6 +32,7 @@ contract CounterfactualApp {
     }
 
     function computeOutcome(bytes calldata)
+        virtual
         external
         view
         returns (bytes memory)
