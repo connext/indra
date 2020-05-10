@@ -34,6 +34,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     let substart = start;
     const { processID, params } = message;
     log.info(`[${processID}] Initiation started`);
+    log.debug(`[${processID}] Protocol initiated with parameters ${stringify(params)}`);
 
 
     const {
@@ -52,10 +53,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
       stateTimeout,
     } = params as ProtocolParams.Propose;
-    if (initialState["linkedHash"]) {
-      log.info(`[${processID}] Initiating proposal of app with linkedHash: ${initialState["linkedHash"]}`);
-    }
-
     const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
       multisigAddress,
       store,
@@ -98,6 +95,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.initiator,
       } as ProposeMiddlewareContext,
     ];
+    logTime(log, substart, `[${processID}] Validated proposal`);
+    substart = Date.now();
 
     // 0 ms
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
@@ -121,7 +120,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     };
 
     const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
-    log.info(`[${processID}] initiator post propose nonce ${postProtocolStateChannel.numProposedApps}, pre propose nonce ${preProtocolStateChannel.numProposedApps}`);
 
     substart = Date.now();
     // 6ms
@@ -193,6 +191,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const start = Date.now();
     let substart = start;
     log.info(`[${processID}] Response started`);
+    log.debug(`[${processID}] Protocol response started with parameters ${stringify(params)}`);
 
     const {
       abiEncodings,
@@ -210,9 +209,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
       stateTimeout,
     } = params as ProtocolParams.Propose;
-    if (initialState["linkedHash"]) {
-      log.info(`[${processID}] Responding to proposal of app with linkedHash: ${initialState["linkedHash"]}`);
-    }
 
     const {
       customData: { signature: initiatorSignatureOnInitialState },
@@ -260,6 +256,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.responder,
       } as ProposeMiddlewareContext,
     ];
+    logTime(log, substart, `[${processID}] Validated proposal`);
+    substart = Date.now();
 
     const proposedAppInstance = {
       identity: {
@@ -285,7 +283,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
 
     substart = Date.now();
-    console.log(`[${processID}] responder post propose nonce ${postProtocolStateChannel.numProposedApps}, pre propose nonce ${preProtocolStateChannel.numProposedApps}`);
     await assertIsValidSignature(
       getSignerAddressFromPublicIdentifier(initiatorIdentifier),
       setStateCommitment.hashToSign(),

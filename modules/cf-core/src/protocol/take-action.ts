@@ -27,9 +27,10 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const { store, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
+    let substart = start;
     const { processID, params } = message;
     log.info(`[${processID}] Initiation started`);
-
+    log.debug(`[${processID}] Protocol initiated with params: ${stringify(params)}`);
 
     const {
       appIdentityHash,
@@ -55,15 +56,17 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.initiator,
       } as TakeActionMiddlewareContext,
     ];
+    logTime(log, substart, `[${processID}] Validated action`);
+    substart = Date.now();
 
     // 40ms
-    let substart = Date.now();
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
       await preAppInstance.computeStateTransition(action, network.provider),
       stateTimeout,
     );
-    logTime(log, substart, `[${processID}] SetState called in takeAction initiating`);
+    logTime(log, substart, `[${processID}] Updated channel with new app state`);
+    substart = Date.now();
 
     // 0ms
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
@@ -124,6 +127,8 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         setStateCommitment.toJson(),
       )}`,
     );
+    logTime(log, substart, `[${processID}] Verified responders signature`);
+    substart = Date.now();
 
     // add signatures and write commitment to store
     await setStateCommitment.addSignatures(
@@ -147,13 +152,15 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const { store, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
+    let substart = start;
     const {
       processID,
       params,
       customData: { signature: counterpartySignature },
     } = message;
 
-    log.debug(`[${processID}] Response started for takeAction`);
+    log.info(`[${processID}] Response started`);
+    log.debug(`[${processID}] Protocol response started with parameters ${stringify(params)}`);
 
     const {
       appIdentityHash,
@@ -180,6 +187,8 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.responder,
       } as TakeActionMiddlewareContext,
     ];
+    logTime(log, substart, `[${processID}] Validated action`);
+    substart = Date.now();
 
     // 48ms
     const postProtocolStateChannel = preProtocolStateChannel.setState(
@@ -206,6 +215,8 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         setStateCommitment.toJson(),
       )}`,
     );
+    logTime(log, substart, `[${processID}] Verified initiators signature`);
+    substart = Date.now();
 
     // 7ms
     const mySignature = yield [OP_SIGN, setStateCommitmentHash];
@@ -243,6 +254,6 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 149ms
-    logTime(log, start, `[${processID}] Finished responding to takeAction`);
+    logTime(log, start, `[${processID}] Finished responding`);
   },
 };

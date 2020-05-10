@@ -33,8 +33,10 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const { message, store, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
+    let substart = start;
     const { params, processID } = message;
     log.info(`[${processID}] Initiation started`);
+    log.debug(`[${processID}] Protocol initiated with params ${stringify(params)}`);
 
     const {
       responderIdentifier,
@@ -58,6 +60,8 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         stateChannel: preProtocolStateChannel.toJson(),
       } as UninstallMiddlewareContext,
     ];
+    logTime(log, substart, `[${processID}] Validated uninstall request`);
+    substart = Date.now();
 
     // 47ms
     const postProtocolStateChannel = await computeStateTransition(
@@ -77,10 +81,10 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
     const uninstallCommitmentHash = uninstallCommitment.hashToSign();
 
-    let checkpoint = Date.now();
     // 4ms
     const mySignature = yield [OP_SIGN, uninstallCommitmentHash];
-    logTime(log, checkpoint, `[${processID}] Signed uninstall commitment initiator`);
+    logTime(log, substart, `[${processID}] Signed uninstall commitment initiator`);
+    substart = Date.now();
 
     // 94ms
     const {
@@ -99,7 +103,6 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessageData,
     ] as any;
 
-    checkpoint = Date.now();
     // 6ms
     await assertIsValidSignature(
       responderFreeBalanceKey,
@@ -109,7 +112,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         uninstallCommitment.toJson(),
       )}`,
     );
-    logTime(log, checkpoint, `[${processID}] Asserted valid signature in initiating uninstall`);
+    logTime(log, substart, `[${processID}] Verified responder's sig`);
 
     const isInitiator = postProtocolStateChannel.multisigOwners[0] !== responderFreeBalanceKey;
     // use channel initiator bc free balance app
@@ -135,8 +138,10 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const { message, store, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
+    let substart = start;
     const { params, processID } = message;
     log.info(`[${processID}] Response started`);
+    log.debug(`[${processID}] Protocol response started with params ${stringify(params)}`);
 
     const {
       initiatorIdentifier,
@@ -160,6 +165,8 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         stateChannel: preProtocolStateChannel.toJson(),
       } as UninstallMiddlewareContext,
     ];
+    logTime(log, substart, `[${processID}] Validated uninstall request`);
+    substart = Date.now();
 
     // 40ms
     const postProtocolStateChannel = await computeStateTransition(
@@ -181,7 +188,6 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const counterpartySignature = context.message.customData.signature;
     const uninstallCommitmentHash = uninstallCommitment.hashToSign();
 
-    let checkpoint = Date.now();
     // 15ms
     await assertIsValidSignature(
       initiatorFreeBalanceKey,
@@ -191,12 +197,12 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         uninstallCommitment.toJson(),
       )}`,
     );
-    logTime(log, checkpoint, `[${processID}] Asserted valid signature in responding uninstall`);
-    checkpoint = Date.now();
+    logTime(log, substart, `[${processID}] Asserted valid signature in responding uninstall`);
+    substart = Date.now();
 
     // 10ms
     const mySignature = yield [OP_SIGN, uninstallCommitmentHash];
-    logTime(log, checkpoint, `[${processID}] Signed commitment in responding uninstall`);
+    logTime(log, substart, `[${processID}] Signed commitment in responding uninstall`);
 
     const isInitiator = postProtocolStateChannel.multisigOwners[0] !== initiatorFreeBalanceKey;
     // use channel initiator bc free balance app
@@ -213,7 +219,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       appToUninstall,
       uninstallCommitment,
     ];
-    
+
     // 0ms
     yield [
       IO_SEND,
