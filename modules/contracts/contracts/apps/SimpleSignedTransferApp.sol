@@ -32,6 +32,13 @@ contract SimpleSignedTransferApp is CounterfactualApp {
         view
         returns(bool)
     {
+        AppState memory state = abi.decode(encodedState, (AppState));
+
+        require(state.coinTransfers[0].amount != 0, "cannot install signed transfer with 0 initiator balance");
+        require(state.coinTransfers[1].amount == 0, "cannot install signed transfer with nonzero responder balance");
+        require(state.signer != address(0x0), "cannot install a signed transfer with unpopulated signer");
+        require(state.paymentId[0] != 0, "cannot install a signed transfer with unpopulated paymentId");
+        require(!state.finalized, "cannot install a signed transfer that is already finalized");
         return true;
     }
 

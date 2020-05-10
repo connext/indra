@@ -83,7 +83,7 @@ function createLinkedHash(
   );
 }
 
-describe.only("SimpleLinkedTransferApp", () => {
+describe("SimpleLinkedTransferApp", () => {
   let simpleLinkedTransferApp: Contract;
 
   async function computeOutcome(state: SimpleLinkedTransferAppState): Promise<string> {
