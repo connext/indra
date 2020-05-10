@@ -34,7 +34,7 @@
     "@nestjs/microservices": "7.0.8",
     "@nestjs/platform-express": "7.0.8",
     "@nestjs/typeorm": "7.0.0",
-    "@openzeppelin/contracts": "2.5.0",
+    "@openzeppelin/contracts": "3.0.1",
     "@uniswap/sdk": "1.0.0-beta.4",
     "bs58check": "2.1.2",
     "class-validator": "0.12.1",
