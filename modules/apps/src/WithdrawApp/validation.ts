@@ -25,15 +25,15 @@ export const validateWithdrawApp = async (
     responderTransfer,
   );
 
-  if (initialState.finalized) {
-    throw new Error(`Cannot install a withdraw app with a finalized state. State: ${initialState}`);
-  }
+  // if (initialState.finalized) {
+  //   throw new Error(`Cannot install a withdraw app with a finalized state. State: ${initialState}`);
+  // }
 
-  if (initialState.signatures[1] !== HashZero) {
-    throw new Error(
-      `Cannot install a withdraw app with a populated signatures[1] field. Signatures[1]: ${initialState.signatures[1]}`,
-    );
-  }
+  // if (initialState.signatures[1] !== HashZero) {
+  //   throw new Error(
+  //     `Cannot install a withdraw app with a populated signatures[1] field. Signatures[1]: ${initialState.signatures[1]}`,
+  //   );
+  // }
 
   if (
     initialState.signers[0] !== initiatorSignerAddress ||
@@ -44,18 +44,18 @@ export const validateWithdrawApp = async (
     );
   }
 
-  if (!initialState.transfers[1].amount.eq(Zero)) {
-    throw new Error(
-      `Cannot install a withdraw app with nonzero recipient amount. ${initialState.transfers[1].amount.toString()}`,
-    );
-  }
+  // if (!initialState.transfers[1].amount.eq(Zero)) {
+  //   throw new Error(
+  //     `Cannot install a withdraw app with nonzero recipient amount. ${initialState.transfers[1].amount.toString()}`,
+  //   );
+  // }
 
-  let recovered = await recoverAddressFromChannelMessage(initialState.data, initialState.signatures[0]);
+  // let recovered = await recoverAddressFromChannelMessage(initialState.data, initialState.signatures[0]);
 
-  if (recovered !== initialState.signers[0]) {
-    throw new Error(
-      `Cannot install withdraw app - incorrect signer recovered from initiator sig on data. 
-         Recovered: ${recovered}, Expected: ${initialState.signers[0]}`,
-    );
-  }
+  // if (recovered !== initialState.signers[0]) {
+  //   throw new Error(
+  //     `Cannot install withdraw app - incorrect signer recovered from initiator sig on data. 
+  //        Recovered: ${recovered}, Expected: ${initialState.signers[0]}`,
+  //   );
+  // }
 };
