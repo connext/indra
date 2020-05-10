@@ -18,7 +18,6 @@ import { bigNumberifyJson, toBN } from "@connext/utils";
 import { NetworkContextForTestSuite } from "./contracts";
 import { Zero } from "ethers/constants";
 import { verifyChallengeProgressedEvent } from "./assertions";
-import { BigNumber } from "ethers/utils";
 
 export type OutcomeSetResults = [
   ChallengeOutcomeSetEventData,
@@ -35,12 +34,26 @@ export const initiateDispute = async (
   watcher: Watcher,
   store: IWatcherStoreService,
   networkContext: NetworkContextForTestSuite,
-  appSetStateFinalNonce?: BigNumber, // 1 for set state, 2 for set and progress
+  shouldCallSetAndProgress: boolean = false,
 ) => {
   // before starting, verify empty store
   const empty = await store.getAppChallenge(app.identityHash);
   expect(empty).to.be.undefined;
+  // setup event counters
   let appChallengeUpdatedEventsCaught = 0;
+  watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventPayload) => {
+    if (data.identityHash === app.identityHash) {
+      appChallengeUpdatedEventsCaught += 1;
+    }
+  });
+
+  // get expected nonce to resolve at
+  const appSetState = bigNumberifyJson(
+    shouldCallSetAndProgress
+      ? await app.getSingleSignedSetState(networkContext.ChallengeRegistry)
+      : await app.getDoubleSignedSetState(networkContext.ChallengeRegistry),
+  );
+
   const [
     contractEventFreeBalance,
     finalContractEventApp,
@@ -62,14 +75,11 @@ export const initiateDispute = async (
       watcher.on(
         WatcherEvents.ChallengeUpdatedEvent,
         async (data: ChallengeUpdatedEventPayload) => {
-          if (data.identityHash === app.identityHash) {
-            appChallengeUpdatedEventsCaught += 1;
-            // resolve if needed
-            if (!appSetStateFinalNonce) {
-              resolve(data);
-            } else if (data.versionNumber.eq(appSetStateFinalNonce)) {
-              resolve(data);
-            }
+          if (
+            data.identityHash === app.identityHash &&
+            data.versionNumber.eq(toBN(appSetState.versionNumber))
+          ) {
+            resolve(data);
           }
         },
       ),
@@ -99,18 +109,12 @@ export const initiateDispute = async (
   expect(result).to.be.ok;
 
   // verify app + free balance challenge
-  const calledSetAndProgress = appChallengeUpdatedEventsCaught > 1;
   const isStateTerminal = app.latestState.counter.gt(5);
   // get expected app values
-  const appSetState = bigNumberifyJson(
-    calledSetAndProgress
-      ? await app.getSingleSignedSetState(networkContext.ChallengeRegistry)
-      : await app.getDoubleSignedSetState(networkContext.ChallengeRegistry),
-  );
   const appFinalizesAt = toBN(await networkContext.provider.getBlockNumber())
     .add(appSetState.stateTimeout)
-    .add(calledSetAndProgress ? app.defaultTimeout : Zero);
-  const appStatus = !calledSetAndProgress
+    .add(shouldCallSetAndProgress ? app.defaultTimeout : Zero);
+  const appStatus = !shouldCallSetAndProgress
     ? ChallengeStatus.IN_DISPUTE
     : isStateTerminal
     ? ChallengeStatus.EXPLICITLY_FINALIZED
@@ -267,8 +271,6 @@ export const initiateDispute = async (
         expect(events.length).to.be.equal(2);
         expect(events.pop()).to.containSubset(expected1[appId]);
       } else {
-        // use "at least" comparison because listeners on watcher are not
-        // removed from creating dispute to setting outcome
         expect(events.length).to.be.at.least(appChallengeUpdatedEventsCaught);
         expect(events.pop()).to.containSubset(expected1[appId]);
       }

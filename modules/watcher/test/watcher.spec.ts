@@ -145,9 +145,6 @@ describe("Watcher.initiate", () => {
       signer: wallet.privateKey,
       // logger: new ColorfulLogger("Watcher", 5, true, ""),
     });
-    const { versionNumber } = await activeApps[0].getSingleSignedSetState(
-      networkContext.ChallengeRegistry,
-    );
     const [initiateRes, contractEvent] = await Promise.all([
       initiateDispute(
         activeApps[0],
@@ -155,7 +152,7 @@ describe("Watcher.initiate", () => {
         watcher,
         store,
         networkContext,
-        toBN(versionNumber),
+        true,
       ),
       new Promise((resolve) =>
         watcher.once(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
@@ -186,7 +183,6 @@ describe("Watcher.cancel", () => {
   let app: AppWithCounterClass;
   let freeBalance: MiniFreeBalance;
   let networkContext: NetworkContextForTestSuite;
-  let versionNumber: BigNumber;
 
   beforeEach(async () => {
     const context = await setupContext(true, [{ defaultTimeout: toBN(2) }]);
@@ -201,8 +197,6 @@ describe("Watcher.cancel", () => {
 
     // add action
     await addActionToAppInStore(store, app);
-    const singleSigned = await app.getSingleSignedSetState(networkContext.ChallengeRegistry);
-    versionNumber = toBN(singleSigned.versionNumber);
 
     // create watcher
     watcher = await Watcher.init({
@@ -210,7 +204,7 @@ describe("Watcher.cancel", () => {
       provider,
       store,
       signer: context["wallet"].privateKey,
-      // logger: new ColorfulLogger("Watcher", 5, true, ""),
+      // logger: new ColorfulLogger("Watcher", 3, true, ""),
     });
     expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
   });
@@ -223,7 +217,7 @@ describe("Watcher.cancel", () => {
   it("should work if in onchain state progression phase", async () => {
     // set and progress state
     const [_, stateProgressedEvent] = await Promise.all([
-      initiateDispute(app, freeBalance, watcher, store, networkContext, versionNumber),
+      initiateDispute(app, freeBalance, watcher, store, networkContext, true),
       new Promise((resolve) =>
         watcher.once(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
           resolve(data),
@@ -255,7 +249,7 @@ describe("Watcher.cancel", () => {
   it("should fail if outcome is set", async () => {
     // set and progress state
     const [initiateRes, stateProgressedEvent] = await Promise.all([
-      initiateDispute(app, freeBalance, watcher, store, networkContext, versionNumber),
+      initiateDispute(app, freeBalance, watcher, store, networkContext, true),
       new Promise((resolve) =>
         watcher.once(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
           resolve(data),
