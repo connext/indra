@@ -7,6 +7,8 @@ import {
   ProtocolParams,
   ProtocolRoles,
   CONVENTION_FOR_ETH_ASSET_ID,
+  JsonRpcProvider,
+  Contract,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, logTime, toBN, stringify } from "@connext/utils";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
@@ -18,6 +20,7 @@ import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 import { appIdentityToHash } from "../utils";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
+import { CounterfactualApp } from "@connext/contracts";
 
 const protocol = ProtocolNames.propose;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
@@ -28,7 +31,7 @@ const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } 
  */
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
-    const { message, store } = context;
+    const { message, store, network } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
@@ -86,6 +89,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       meta,
     };
 
+    // Validate initial state using contract init() fn
+    await validateInitialState(appInstanceProposal, network.provider);
+
+    // Injectable validators
     yield [
       OP_VALIDATE,
       protocol,
@@ -185,7 +192,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Responding */: async function* (context: Context) {
-    const { message, store } = context;
+    const { message, store, network } = context;
     const { params, processID } = message;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
@@ -247,6 +254,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderDepositAssetId: responderDepositAssetId || CONVENTION_FOR_ETH_ASSET_ID,
     };
 
+    // Validate initial state using init() validators in appDefinition
+    await validateInitialState(appInstanceProposal, network.provider);
+
+    // Any other injectable validators
     yield [
       OP_VALIDATE,
       protocol,
@@ -334,3 +345,17 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, start, `[${processID}] Response finished`);
   },
 };
+
+async function validateInitialState(
+  proposal: AppInstanceProposal,
+  provider: JsonRpcProvider 
+): Promise<void> {
+  // Validate init function
+  const app = new Contract(proposal.appDefinition, CounterfactualApp.abi, provider);
+  const initialState = defaultAbiCoder.encode([proposal.abiEncodings.stateEncoding], [proposal.initialState])
+  try {
+    await app.functions.init(initialState);
+  } catch (e) {
+    throw e;
+  }
+}
