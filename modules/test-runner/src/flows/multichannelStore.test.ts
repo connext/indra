@@ -124,13 +124,6 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     let pollerError;
 
     // call transfers on interval
-    let sentTransfers = 0;
-    sender.on(
-      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-      () => {
-        sentTransfers += 1;
-      },
-    );
     const interval = setInterval(async () => {
       intervals += 1;
       if (intervals > MIN_TRANSFERS) {
