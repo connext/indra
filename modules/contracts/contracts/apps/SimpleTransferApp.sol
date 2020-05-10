@@ -8,6 +8,7 @@ import "../funding/libs/LibOutcome.sol";
 
 /// @title SimpleTwoPartySwapApp
 /// @notice This contract lets Alice transfer assets to Bob
+/// @notice !!!!!THIS CONTRACT IS DEPRECATED - use simpleLinkedTransferApp instead
 contract SimpleTransferApp is CounterfactualApp {
 
     using SafeMath for uint256;
