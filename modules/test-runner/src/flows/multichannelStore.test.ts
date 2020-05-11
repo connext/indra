@@ -2,17 +2,28 @@ import {
   IConnextClient,
   CONVENTION_FOR_ETH_ASSET_ID,
   EventNames,
+  PublicParams,
+  EventPayloads,
+  ConditionalTransferTypes,
 } from "@connext/types";
 import { getPostgresStore } from "@connext/store";
-import { toBN } from "@connext/utils";
+import { ConnextClient } from "@connext/client";
+import { toBN, getRandomBytes32 } from "@connext/utils";
 import { Sequelize } from "sequelize";
 
 import { createClient, fundChannel, ETH_AMOUNT_MD, expect, env } from "../util";
+import { BigNumber, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 
 // NOTE: only groups correct number of promises associated with a payment together.
 // there is no validation done to ensure the events correspond to the payments, or
 // to ensure that the event payloads are correct.
-const performTransfer = async (params: any) => {
+
+const performTransfer = async (params: {
+  ASSET: string;
+  TRANSFER_AMT: BigNumber;
+  sender: IConnextClient;
+  recipient: IConnextClient;
+}): Promise<string> => {
   const { ASSET, TRANSFER_AMT, sender, recipient } = params;
   const TRANSFER_PARAMS = {
     amount: TRANSFER_AMT,
@@ -43,12 +54,12 @@ const performTransfer = async (params: any) => {
       });
     }),
   ]);
-  return preImage;
+  return preImage as string;
 };
 
 describe("Full Flow: Multichannel stores (clients share single sequelize instance)", () => {
-  let sender: IConnextClient;
-  let recipient: IConnextClient;
+  let sender: ConnextClient;
+  let recipient: ConnextClient;
 
   beforeEach(async () => {
     const { host, port, user: username, password, database } = env.dbConfig;
@@ -65,8 +76,8 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     const senderStore = getPostgresStore(sequelize, "sender");
     const recipientStore = getPostgresStore(sequelize, "recipient");
     // create clients with shared store
-    sender = await createClient({ store: senderStore, id: "S" });
-    recipient = await createClient({ store: recipientStore, id: "R" });
+    sender = (await createClient({ store: senderStore, id: "S" })) as ConnextClient;
+    recipient = (await createClient({ store: recipientStore, id: "R" })) as ConnextClient;
   });
 
   afterEach(async () => {
@@ -121,7 +132,24 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
 
     let receivedTransfers = 0;
     let intervals = 0;
-    let pollerError;
+    let pollerError: any;
+
+    recipient.on(
+      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
+      async (payload: EventPayloads.SignedTransferCreated) => {
+        console.log(`Created signed transfer: ${JSON.stringify(payload)}`);
+        const data = hexlify(randomBytes(32));
+        const digest = solidityKeccak256(["bytes32", "bytes32"], [data, payload.paymentId]);
+        const signature = await recipient.signer.signMessage(digest);
+        const res = await recipient.resolveCondition({
+          conditionType: ConditionalTransferTypes.SignedTransfer,
+          data,
+          paymentId: payload.paymentId,
+          signature,
+        } as PublicParams.ResolveSignedTransfer);
+        console.log(`Resolved signed transfer: ${JSON.stringify(res)}`);
+      },
+    );
 
     // call transfers on interval
     const interval = setInterval(async () => {
@@ -132,20 +160,18 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       }
       let error: any = undefined;
       try {
-        const preImage = await performTransfer({
-          sender,
-          recipient,
-          ASSET,
-          TRANSFER_AMT,
-        });
-        console.log(`[${intervals}/${MIN_TRANSFERS}] preImage: ${preImage}`);
+        const transferRes = await sender.conditionalTransfer({
+          amount: TRANSFER_AMT,
+          paymentId: getRandomBytes32(),
+          conditionType: ConditionalTransferTypes.SignedTransfer,
+          signer: recipient.signerAddress,
+          assetId: ASSET,
+          recipient: recipient.publicIdentifier,
+        } as PublicParams.SignedTransfer);
+        console.log(`[${intervals}/${MIN_TRANSFERS}] senderApp: ${transferRes.appIdentityHash}`);
       } catch (e) {
-        error = e;
-      }
-      if (error) {
         clearInterval(interval);
-        pollerError = error.stack || error.message;
-        throw new Error(pollerError);
+        throw error;
       }
     }, TRANSFER_INTERVAL);
 
