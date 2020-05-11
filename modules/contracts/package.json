@@ -38,9 +38,9 @@
     "eventemitter3": "4.0.0"
   },
   "devDependencies": {
-    "@nomiclabs/buidler": "1.3.1",
-    "@nomiclabs/buidler-ethers": "2.0.0-alpha.0",
-    "@nomiclabs/buidler-waffle": "2.0.0-alpha.0",
+    "@nomiclabs/buidler": "1.3.3",
+    "@nomiclabs/buidler-ethers": "2.0.0-alpha.1",
+    "@nomiclabs/buidler-waffle": "2.0.0-alpha.1",
     "@types/chai": "4.2.11",
     "@types/chai-subset": "1.3.3",
     "@types/mocha": "7.0.2",
@@ -48,7 +48,7 @@
     "@types/sinon-chai": "3.2.4",
     "chai": "4.2.0",
     "ethers": "4.0.47",
-    "ethereum-waffle": "2.4.1",
+    "ethereum-waffle": "3.0.0-beta.1",
     "ethlint": "1.2.5",
     "event-target-shim": "5.0.1",
     "mocha": "7.1.1",
