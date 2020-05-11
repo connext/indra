@@ -185,9 +185,14 @@ export class ChannelRepository extends Repository<Channel> {
     channel: Channel,
     assetId: string,
     collateralizationInFlight: boolean,
-  ): Promise<Channel> {
-    channel.activeCollateralizations[assetId] = collateralizationInFlight;
-    await this.save(channel);
-    return channel;
+  ): Promise<void> {
+    const query = this.createQueryBuilder()
+      .update(Channel)
+      .set({
+        activeCollateralizations: () =>
+          `"activeCollateralizations"::JSONB || '{"${assetId}": "${collateralizationInFlight}"}'`,
+      })
+      .where("multisigAddress = :multisigAddress", { multisigAddress: channel.multisigAddress });
+    await query.execute();
   }
 }
