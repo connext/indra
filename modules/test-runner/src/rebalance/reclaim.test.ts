@@ -1,4 +1,4 @@
-import { EventNames, IConnextClient } from "@connext/types";
+import { EventNames, IConnextClient, Contract } from "@connext/types";
 import { getRandomBytes32, toBN } from "@connext/utils";
 import { AddressZero, One, Two } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
@@ -8,8 +8,9 @@ import { Client } from "ts-nats";
 import { createClient, fundChannel, asyncTransferAsset, expect } from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 import { getNatsClient } from "../util/nats";
+import { ERC20 } from "@connext/contracts";
 
-describe("Reclaim", () => {
+describe.only("Reclaim", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
@@ -21,8 +22,8 @@ describe("Reclaim", () => {
   });
 
   beforeEach(async () => {
-    clientA = await createClient();
-    clientB = await createClient();
+    clientA = await createClient({id: "A"});
+    clientB = await createClient({id: "B"});
     tokenAddress = clientA.config.contractAddresses.Token;
     nodeSignerAddress = clientA.nodeSignerAddress;
   });
@@ -32,7 +33,7 @@ describe("Reclaim", () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: node should reclaim ETH with async transfer", async () => {
+  it.skip("happy case: node should reclaim ETH with async transfer", async () => {
     const REBALANCE_PROFILE = {
       assetId: AddressZero,
       lowerBoundCollateralize: toBN("5"),
@@ -61,15 +62,17 @@ describe("Reclaim", () => {
       AddressZero,
       nats,
     );
+    
+    const preBalance = await clientA.ethProvider.getBalance(clientA.multisigAddress)
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
       const paymentId = getRandomBytes32();
-      clientA.on(EventNames.UPDATE_STATE_EVENT, async data => {
-        if (data.newState.data) {
-          res();
+      clientA.ethProvider.on(clientA.multisigAddress, balance => {
+        if (preBalance.gt(balance)) {
+          res()
         }
-      });
+      })
       await clientA.transfer({
         amount: One.toString(),
         assetId: AddressZero,
@@ -110,8 +113,9 @@ describe("Reclaim", () => {
       bigNumberify(REBALANCE_PROFILE.upperBoundReclaim).add(Two),
       tokenAddress,
     );
-    await clientB.requestCollateral(AddressZero);
+    await clientB.requestCollateral(tokenAddress);
 
+    console.log(`requested collateral`)
     // transfer to node to get node over upper bound reclaim
     // first transfer gets to upper bound
     await asyncTransferAsset(
@@ -121,15 +125,20 @@ describe("Reclaim", () => {
       tokenAddress,
       nats,
     );
+    console.log(`async transferred`)
+
+    const tokenContract = new Contract(tokenAddress, ERC20.abi, clientA.ethProvider)
+    const preBalance = await tokenContract.functions.balanceOf(clientA.multisigAddress)
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
       const paymentId = getRandomBytes32();
-      clientA.on(EventNames.UPDATE_STATE_EVENT, async data => {
-        if (data.newState.data) {
-          res();
+      tokenContract.on("Transfer", (from, to, balance) => {
+        if (to === clientA.multisigAddress && preBalance.gt(balance)) {
+          console.log(`Caught correct event!`)
+          res()
         }
-      });
+      })
       await clientA.transfer({
         amount: One.toString(),
         assetId: tokenAddress,
