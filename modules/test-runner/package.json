@@ -21,7 +21,7 @@
     "@connext/messaging": "6.3.12",
     "@connext/store": "6.3.12",
     "@connext/types": "6.3.12",
-    "@ethereum-waffle/chai": "2.4.1",
+    "@ethereum-waffle/chai": "3.0.0-beta.1",
     "@openzeppelin/contracts": "2.5.0",
     "axios": "0.19.2",
     "bs58check": "2.1.2",

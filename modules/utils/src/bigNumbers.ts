@@ -3,12 +3,15 @@ import { BigNumber, BigNumberish } from "ethers";
 
 export const isBN = BigNumber.isBigNumber;
 
-export const toBN = (n: BigNumberish | BigNumberJson): BigNumber =>
-  BigNumber.from(n && (n as BigNumberJson)._hex ? (n as BigNumberJson)._hex : n.toString());
+export function toBN(n: BigNumberish | BigNumberJson): BigNumber {
+  return BigNumber.from(n && (n as BigNumberJson)._hex ? (n as BigNumberJson)._hex : n.toString());
+}
 
-export const toBNJson = (n: BigNumberish | BigNumberJson): BigNumberJson => ({
-  _hex: toBN(n).toHexString(),
-});
+export function toBNJson(n: BigNumberish | BigNumberJson): BigNumberJson {
+  return {
+    _hex: toBN(n).toHexString(),
+  };
+}
 
 export const getBigNumberError = (value: any): string | undefined =>
   isBN(value) ? undefined : `Value "${value}" is not a BigNumber`;

@@ -18,11 +18,11 @@ import {
 } from "./index";
 import { sortSignaturesBySignerAddress } from "../../utils";
 
-export const setupContext = async (
+export async function setupContext(
   appRegistry: Contract,
   appDefinition: Contract,
   providedWallet?: Wallet,
-) => {
+): Promise<any> {
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
   const alice = new Wallet("0x3570f77380e22f8dc2274d8fd33e7830cc2d29cf76804e8c21f4f7a6cc571d27");
   // 0xb37e49bFC97A948617bF3B63BC6942BB15285715
@@ -417,4 +417,4 @@ export const setupContext = async (
     cancelDispute,
     cancelDisputeAndVerify,
   };
-};
+}
