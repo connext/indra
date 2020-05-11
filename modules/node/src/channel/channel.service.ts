@@ -132,30 +132,41 @@ export class ChannelService {
     let receipt: TransactionReceipt;
     // If free balance is too low, collateralize up to upper bound
     if (nodeFreeBalance < lowerBoundCollateralize) {
+      this.log.info(
+        `nodeFreeBalance ${nodeFreeBalance.toString()} < lowerBoundCollateralize ${lowerBoundCollateralize.toString()}, withdrawing`,
+      );
       const amount = upperBoundCollateralize.sub(nodeFreeBalance);
       receipt = await this.depositService.deposit(channel, amount, normalizedAssetId);
     } else {
       this.log.debug(
-        `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${lowerBoundCollateralize}`,
+        `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${lowerBoundCollateralize.toString()}`,
       );
     }
 
     // If free balance is too high, reclaim down to lower bound
-    if (nodeFreeBalance > upperBoundReclaim) {
+    if (nodeFreeBalance > upperBoundReclaim && upperBoundReclaim.gt(0)) {
+      this.log.info(
+        `nodeFreeBalance ${nodeFreeBalance.toString()} > upperBoundReclaim ${upperBoundReclaim.toString()}, withdrawing`,
+      );
       const amount = nodeFreeBalance.sub(lowerBoundReclaim);
       await this.withdrawService.withdraw(channel, amount, normalizedAssetId);
     } else {
-      this.log.debug(`Free balance ${nodeFreeBalance} is less than or equal to `);
+      this.log.debug(
+        `Free balance ${nodeFreeBalance} is less than or equal to upper reclaim bound: ${upperBoundReclaim.toString()}`,
+      );
     }
     this.log.info(`rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`);
     return receipt as TransactionReceipt | undefined;
   }
 
-  async getRebalancingTargets(userPublicIdentifier: string, assetId: string = AddressZero) {
+  async getRebalancingTargets(
+    userPublicIdentifier: string,
+    assetId: string = AddressZero,
+  ): Promise<RebalancingTargetsResponse<BigNumber>> {
     this.log.debug(
       `Getting rebalancing targets for user: ${userPublicIdentifier}, assetId: ${assetId}`,
     );
-    let targets;
+    let targets: RebalancingTargetsResponse<BigNumber>;
     // option 1: rebalancing service, option 2: rebalance profile, option 3: default
     targets = await this.getDataFromRebalancingService(userPublicIdentifier, assetId);
 
