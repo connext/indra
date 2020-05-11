@@ -415,7 +415,7 @@ export async function getMultisigBalance(
   const provider = global[`wallet`].provider;
   return tokenAddress === constants.AddressZero
     ? await provider.getBalance(multisigAddr)
-    : await new Contract(tokenAddress, ERC20.abi as any, provider).balanceOf(multisigAddr);
+    : await new Contract(tokenAddress, ERC20.abi, provider).balanceOf(multisigAddr);
 }
 
 export async function getMultisigAmountWithdrawn(
@@ -501,7 +501,7 @@ export async function deposit(
           value: amount,
           to: multisigAddress,
         })
-      : await new Contract(getAddressFromAssetId(assetId), ERC20.abi as any, wallet).transfer(
+      : await new Contract(getAddressFromAssetId(assetId), ERC20.abi, wallet).transfer(
           multisigAddress,
           amount,
         );
