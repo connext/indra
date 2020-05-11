@@ -131,9 +131,9 @@ export class ChannelService {
 
     let receipt: TransactionReceipt;
     // If free balance is too low, collateralize up to upper bound
-    if (nodeFreeBalance < lowerBoundCollateralize) {
+    if (nodeFreeBalance.lt(lowerBoundCollateralize)) {
       this.log.info(
-        `nodeFreeBalance ${nodeFreeBalance.toString()} < lowerBoundCollateralize ${lowerBoundCollateralize.toString()}, withdrawing`,
+        `nodeFreeBalance ${nodeFreeBalance.toString()} < lowerBoundCollateralize ${lowerBoundCollateralize.toString()}, depositing`,
       );
       const amount = upperBoundCollateralize.sub(nodeFreeBalance);
       receipt = await this.depositService.deposit(channel, amount, normalizedAssetId);
@@ -144,7 +144,7 @@ export class ChannelService {
     }
 
     // If free balance is too high, reclaim down to lower bound
-    if (nodeFreeBalance > upperBoundReclaim && upperBoundReclaim.gt(0)) {
+    if (nodeFreeBalance.gt(upperBoundReclaim) && upperBoundReclaim.gt(0)) {
       this.log.info(
         `nodeFreeBalance ${nodeFreeBalance.toString()} > upperBoundReclaim ${upperBoundReclaim.toString()}, withdrawing`,
       );
