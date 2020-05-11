@@ -52,13 +52,13 @@ describe("Node method follows spec - rejectInstall", () => {
       // node B then decides to reject the proposal
       nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
         const rejectReq = constructRejectInstallRpc(msg.data.appIdentityHash);
-        expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(1);
         expect((await getProposedAppInstances(nodeB, multisigAddress)).length).toEqual(1);
         proposedAppId = msg.data.appIdentityHash;
         await nodeB.rpcRouter.dispatch(rejectReq);
       });
 
       await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
+      expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(1);
     });
 
     it("Node A installs, node a rejects", async done => {
@@ -86,13 +86,13 @@ describe("Node method follows spec - rejectInstall", () => {
       // node A then decides to reject the proposal
       nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
         const rejectReq = constructRejectInstallRpc(msg.data.appIdentityHash);
-        expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(1);
         expect((await getProposedAppInstances(nodeB, multisigAddress)).length).toEqual(1);
         proposedAppId = msg.data.appIdentityHash;
         await nodeA.rpcRouter.dispatch(rejectReq);
       });
 
       await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
+      expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(1);
     });
   });
 });

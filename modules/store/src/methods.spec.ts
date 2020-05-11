@@ -1,4 +1,4 @@
-import { STORE_SCHEMA_VERSION, ChallengeStatus } from "@connext/types";
+import { STORE_SCHEMA_VERSION, StoredAppChallengeStatus, StateChannelJSON, SetStateCommitmentJSON } from "@connext/types";
 import { toBNJson } from "@connext/utils";
 
 import {
@@ -118,15 +118,15 @@ describe("ConnextStore", () => {
         const app = TEST_STORE_CHANNEL.appInstances[0][1];
         const freeBalanceSetState0 = {
           ...TEST_STORE_SET_STATE_COMMITMENT,
-          identityHash: channel.freeBalanceAppInstance!.identityHash,
+          appIdentityHash: channel.freeBalanceAppInstance!.identityHash,
         };
         const freeBalanceSetState1 = {
           ...freeBalanceSetState0,
-          versionNumber: toBNJson(app.latestVersionNumber),
+          versionNumber: toBNJson(3),
         };
-        const appSetState = {
+        const appSetState: SetStateCommitmentJSON = {
           ...TEST_STORE_SET_STATE_COMMITMENT,
-          identityHash: app.identityHash,
+          appIdentityHash: app.identityHash,
           versionNumber: toBNJson(app.latestVersionNumber),
         };
 
@@ -181,11 +181,15 @@ describe("ConnextStore", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
-        const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const app = TEST_STORE_CHANNEL.appInstances[0][1];
+        const channel = {
+          ...TEST_STORE_CHANNEL,
+          proposedAppInstances: [[app.identityHash, app]],
+          appInstances: [],
+        };
         const freeBalanceSetState0 = {
           ...TEST_STORE_SET_STATE_COMMITMENT,
-          identityHash: channel.freeBalanceAppInstance!.identityHash,
+          appIdentityHash: channel.freeBalanceAppInstance!.identityHash,
         };
         const freeBalanceSetState1 = {
           ...freeBalanceSetState0,
@@ -196,7 +200,11 @@ describe("ConnextStore", () => {
           versionNumber: toBNJson(1136),
         };
         const multisigAddress = channel.multisigAddress;
-        await store.createStateChannel(channel, TEST_STORE_MINIMAL_TX, freeBalanceSetState0);
+        await store.createStateChannel(
+          channel as StateChannelJSON,
+          TEST_STORE_MINIMAL_TX,
+          freeBalanceSetState0,
+        );
         await store.createAppInstance(
           multisigAddress,
           app,
@@ -216,7 +224,10 @@ describe("ConnextStore", () => {
           const retrieved = await store.getAppInstance(app.identityHash);
           expect(retrieved).to.be.undefined;
           const chan = await store.getStateChannel(multisigAddress);
-          expect(chan.appInstances).to.deep.eq([]);
+          expect(chan).to.deep.eq({
+            ...channel,
+            proposedAppInstances: [],
+          });
           const freeBalance = await store.getSetStateCommitments(
             channel.freeBalanceAppInstance!.identityHash,
           );
@@ -372,24 +383,21 @@ describe("ConnextStore", () => {
     });
   });
 
-  describe("getAppChallenge / createAppChallenge / updateAppChallenge", () => {
+  describe("getAppChallenge / saveAppChallenge", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should be able to create, get, and update app challenges`, async () => {
         const value = { ...TEST_STORE_APP_CHALLENGE };
-        const edited = { ...value, status: ChallengeStatus.NO_CHALLENGE };
         const store = await createConnextStore(type as StoreTypes, { fileDir });
+        await store.clear();
 
         const empty = await store.getAppChallenge(value.identityHash);
         expect(empty).to.be.undefined;
 
         // can be called multiple times in a row and preserve the data
         for (let i = 0; i < 3; i++) {
-        await store.createAppChallenge(value.identityHash, value);
-        expect(await store.getAppChallenge(value.identityHash)).to.containSubset(value);
+          await store.saveAppChallenge(value);
+          expect(await store.getAppChallenge(value.identityHash)).to.containSubset(value);
         }
-
-        await store.updateAppChallenge(value.identityHash, edited);
-        expect(await store.getAppChallenge(value.identityHash)).to.containSubset(edited);
         await store.clear();
       });
     });
@@ -399,32 +407,17 @@ describe("ConnextStore", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should be able to retrieve active challenges for a channel`, async () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
-        const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
-        const challenge = { ...TEST_STORE_APP_CHALLENGE };
-        const app = TEST_STORE_CHANNEL.appInstances[0][1];
-        const freeBalanceSetState0 = {
-          ...TEST_STORE_SET_STATE_COMMITMENT,
-          identityHash: channel.freeBalanceAppInstance!.identityHash,
+        await store.clear();
+        const challenge = {
+          ...TEST_STORE_APP_CHALLENGE,
+          status: StoredAppChallengeStatus.IN_DISPUTE,
         };
-        const freeBalanceSetState1 = {
-          ...freeBalanceSetState0,
-          versionNumber: toBNJson(app.latestVersionNumber),
-        };
-        const multisigAddress = channel.multisigAddress;
-        await store.createStateChannel(channel, TEST_STORE_MINIMAL_TX, freeBalanceSetState0);
-        await store.createAppInstance(
-          multisigAddress,
-          app,
-          channel.freeBalanceAppInstance!,
-          freeBalanceSetState1,
-          TEST_STORE_CONDITIONAL_COMMITMENT,
-        );
 
-        const empty = await store.getActiveChallenges(channel.multisigAddress);
+        const empty = await store.getActiveChallenges();
         expect(empty.length).to.be.eq(0);
 
-        await store.createAppChallenge(challenge.appStateHash, challenge);
-        const vals = await store.getActiveChallenges(channel.multisigAddress);
+        await store.saveAppChallenge(challenge);
+        const vals = await store.getActiveChallenges();
         expect(vals.length).to.be.eq(1);
         expect(vals[0]).to.containSubset(challenge);
         await store.clear();
@@ -455,7 +448,7 @@ describe("ConnextStore", () => {
         const empty = await store.getStateProgressedEvents(value.identityHash);
         expect(empty).to.containSubset([]);
 
-        await store.createStateProgressedEvent(value.identityHash, value);
+        await store.createStateProgressedEvent(value);
         const vals = await store.getStateProgressedEvents(value.identityHash);
         expect(vals.length).to.be.eq(1);
         expect(vals[0]).to.containSubset(value);
@@ -466,14 +459,14 @@ describe("ConnextStore", () => {
 
   describe("getChallengeUpdatedEvents / createChallengeUpdatedEvent", () => {
     storeTypes.forEach((type) => {
-      it(`${type} - should be able to get/create challenge updated events`, async () => {
+      it(`${type} - should be able to get/create state progressed events`, async () => {
         const value = { ...TEST_STORE_CHALLENGE_UPDATED_EVENT };
         const store = await createConnextStore(type as StoreTypes, { fileDir });
 
         const empty = await store.getChallengeUpdatedEvents(value.identityHash);
         expect(empty).to.containSubset([]);
 
-        await store.createChallengeUpdatedEvent(value.identityHash, value);
+        await store.createChallengeUpdatedEvent(value);
         const vals = await store.getChallengeUpdatedEvents(value.identityHash);
         expect(vals.length).to.be.eq(1);
         expect(vals[0]).to.containSubset(value);

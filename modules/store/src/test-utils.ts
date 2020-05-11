@@ -14,6 +14,7 @@ import {
   StoredAppChallenge,
   StoreFactoryOptions,
   StorePair,
+  StoredAppChallengeStatus,
 } from "@connext/types";
 import { ColorfulLogger, toBN, toBNJson, getRandomBytes32 } from "@connext/utils";
 import { expect, use } from "chai";
@@ -24,13 +25,7 @@ import { v4 as uuid } from "uuid";
 
 import { ConnextStore } from "./connextStore";
 import { StoreTypes } from "./types";
-import {
-  FileStorage,
-  KeyValueStorage,
-  WrappedAsyncStorage,
-  WrappedLocalStorage,
-  WrappedSequelizeStorage,
-} from "./wrappers";
+import { KeyValueStorage } from "./wrappers";
 
 use(require("chai-as-promised"));
 use(require("chai-subset"));
@@ -51,7 +46,7 @@ export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" 
 export const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
 
 export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
-  identityHash: "identityHashApp",
+  identityHash: getRandomBytes32(),
   multisigAddress: TEST_STORE_ETH_ADDRESS,
   initiatorIdentifier: "sender",
   responderIdentifier: "receiver",
@@ -82,7 +77,7 @@ export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
   },
   appDefinition: TEST_STORE_ETH_ADDRESS,
   appSeqNo: 1,
-  identityHash: "identityHashProposal",
+  identityHash: getRandomBytes32(),
   initialState: {
     counter: 4,
   },
@@ -111,7 +106,7 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
   userIdentifiers: ["address1", "address2"],
   proposedAppInstances: [[TEST_STORE_PROPOSAL.identityHash, TEST_STORE_PROPOSAL]],
   appInstances: [[TEST_STORE_APP_INSTANCE.identityHash, TEST_STORE_APP_INSTANCE]],
-  freeBalanceAppInstance: TEST_STORE_APP_INSTANCE,
+  freeBalanceAppInstance: { ...TEST_STORE_APP_INSTANCE, identityHash: getRandomBytes32() },
   monotonicNumProposedApps: 2,
 };
 
@@ -156,7 +151,7 @@ export const TEST_STORE_APP_CHALLENGE: StoredAppChallenge = {
   appStateHash: getRandomBytes32(),
   versionNumber: toBN(1),
   finalizesAt: toBN(3),
-  status: ChallengeStatus.IN_DISPUTE,
+  status: StoredAppChallengeStatus.IN_DISPUTE,
 };
 
 export const TEST_STORE_STATE_PROGRESSED_EVENT: StateProgressedEventPayload = {
@@ -179,6 +174,8 @@ export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = 
 ////////////////////////////////////////
 // Helper Methods
 
+export const postgresConnectionUri = `postgres://${env.user}:${env.password}@${env.host}:${env.port}/${env.database}`;
+
 export const createKeyValueStore = async (
   type: StoreTypes,
   opts: StoreFactoryOptions = {},
@@ -197,7 +194,9 @@ export const createConnextStore = async (
   }
   opts.logger = new ColorfulLogger(`ConnextStore_${type}`, env.logLevel, true);
   if (type === StoreTypes.Postgres) {
-    opts.postgresConnectionUri = `postgres://${env.user}:${env.password}@${env.host}:${env.port}/${env.database}`;
+    opts.sequelize =
+      opts.sequelize ||
+      postgresConnectionUri;
   } else if (type === StoreTypes.AsyncStorage) {
     opts.storage = new MockAsyncStorage();
   }
