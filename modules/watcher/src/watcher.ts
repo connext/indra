@@ -619,10 +619,7 @@ export class Watcher implements IWatcher {
         transaction: response as TransactionReceipt,
         multisigAddress: channel.multisigAddress,
       });
-      await this.store.saveAppChallenge({
-        ...challenge,
-        status: StoredAppChallengeStatus.CONDITIONAL_SENT,
-      });
+      await this.updateChallengeStatus(StoredAppChallengeStatus.CONDITIONAL_SENT, challenge!);
     }
     return response;
   };
@@ -652,10 +649,7 @@ export class Watcher implements IWatcher {
       });
       // update challenge of app and free balance
       const appChallenge = await this.store.getAppChallenge(app.identityHash);
-      await this.store.saveAppChallenge({
-        ...appChallenge!,
-        status: StoredAppChallengeStatus.CONDITIONAL_SENT,
-      });
+      await this.updateChallengeStatus(StoredAppChallengeStatus.CONDITIONAL_SENT, appChallenge!);
     }
     return response;
   };
