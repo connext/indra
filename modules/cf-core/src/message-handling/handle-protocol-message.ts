@@ -173,8 +173,8 @@ function getStateUpdateEventData(params: ProtocolParams.TakeAction, newState: So
   return { newState, appIdentityHash, action };
 }
 
-function getUninstallEventData({ appIdentityHash }: ProtocolParams.Uninstall) {
-  return { appIdentityHash };
+function getUninstallEventData({ appIdentityHash, multisigAddress }: ProtocolParams.Uninstall) {
+  return { appIdentityHash, multisigAddress };
 }
 
 function getSetupEventData(
