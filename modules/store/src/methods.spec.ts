@@ -1,5 +1,10 @@
-import { STORE_SCHEMA_VERSION, StoredAppChallengeStatus, StateChannelJSON, SetStateCommitmentJSON } from "@connext/types";
-import { toBNJson } from "@connext/utils";
+import {
+  STORE_SCHEMA_VERSION,
+  StoredAppChallengeStatus,
+  StateChannelJSON,
+  SetStateCommitmentJSON,
+} from "@connext/types";
+import { toBNJson, toBN } from "@connext/utils";
 
 import {
   expect,
@@ -399,6 +404,24 @@ describe("ConnextStore", () => {
           expect(await store.getAppChallenge(value.identityHash)).to.containSubset(value);
         }
         await store.clear();
+      });
+    });
+
+    storeTypes.forEach((type) => {
+      it(`${type} -- should be able to handle concurrent writes properly`, async () => {
+        const value0 = { ...TEST_STORE_APP_CHALLENGE };
+        const value1 = { ...value0, versionNumber: toBN(value0.versionNumber).add(1) };
+        const value2 = { ...value0, status: StoredAppChallengeStatus.IN_ONCHAIN_PROGRESSION };
+        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        // write all values concurrently
+        await Promise.all([
+          store.saveAppChallenge(value0),
+          store.saveAppChallenge(value1),
+          store.saveAppChallenge(value2),
+        ]);
+        // assert final stored is value with highest nonce
+        const retrieved = await store.getAppChallenge(value0.identityHash);
+        expect(retrieved).to.containSubset(value1);
       });
     });
   });
