@@ -120,12 +120,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   clear(): Promise<void> {
     return this.execute(async () => {
       const keys = await this.storage.getKeys();
-      await Promise.all(keys.map((key) => {
-        if (key === storeKeys.STORE) {
-          return this.storage.setItem(key, {});
-        }
-        return this.storage.removeItem(key);
-      }));
+      await Promise.all(
+        keys.map((key) => {
+          if (key === storeKeys.STORE) {
+            return this.storage.setItem(key, {});
+          }
+          return this.storage.removeItem(key);
+        }),
+      );
     });
   }
 
@@ -512,6 +514,19 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.execute(async () => {
       const { identityHash } = data;
       const challengeKey = this.getKey(storeKeys.CHALLENGE, identityHash);
+      const existing = await this.storage.getItem(challengeKey);
+      if (
+        existing &&
+        toBN(existing.versionNumber).gt(data.versionNumber) &&
+        !data.versionNumber.isZero() // cancel challenge
+      ) {
+        this.log.debug(
+          `Existing challenge has nonce ${toBN(
+            existing.versionNumber,
+          ).toString()} and data has nonce ${data.versionNumber.toString()}, doing nothing.`,
+        );
+        return;
+      }
       this.log.debug(`Updating challenge for ${identityHash} with ${stringify(data)}`);
       return this.storage.setItem(challengeKey, data);
     });
@@ -528,13 +543,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       StoredAppChallengeStatus.NO_CHALLENGE,
       StoredAppChallengeStatus.CONDITIONAL_SENT,
     ];
-    const challenges = await Promise.all(challengeKeys
-      .map((key) => this.storage.getItem(key)));
-    return challenges
-      .filter(
-        (challenge) =>
-          !!challenge && !inactiveStatuses.find((status) => status === challenge.status),
-      );
+    const challenges = await Promise.all(challengeKeys.map((key) => this.storage.getItem(key)));
+    return challenges.filter(
+      (challenge) => !!challenge && !inactiveStatuses.find((status) => status === challenge.status),
+    );
   }
 
   ///// Events
@@ -711,8 +723,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (commitments.length === 0) {
       return undefined;
     }
-    const [latest] = commitments.sort(
-      (a, b) => toBN(b.versionNumber).sub(toBN(a.versionNumber)).toNumber(),
+    const [latest] = commitments.sort((a, b) =>
+      toBN(b.versionNumber).sub(toBN(a.versionNumber)).toNumber(),
     );
     return latest;
   }
@@ -744,12 +756,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   ): any {
     const setStateKey = this.getKey(storeKeys.SET_STATE_COMMITMENT, appIdentityHash);
     const existing = [...(store[setStateKey] || [])];
-    const idx = existing.findIndex((c) =>
-      toBN(c.versionNumber).eq(toBN(commitment.versionNumber)),
-    );
-    idx === -1
-      ? existing.push(commitment)
-      : existing[idx] = commitment;
+    const idx = existing.findIndex((c) => toBN(c.versionNumber).eq(toBN(commitment.versionNumber)));
+    idx === -1 ? existing.push(commitment) : (existing[idx] = commitment);
     store[setStateKey] = existing;
     return store;
   }
@@ -759,7 +767,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const existing = [...(store[setStateKey] || [])];
     // find commitment equal to or below version number
     const remaining = existing.filter((commitment) =>
-      toBN(commitment.versionNumber ).gt(versionNumber),
+      toBN(commitment.versionNumber).gt(versionNumber),
     );
     store[setStateKey] = remaining;
     return store;
@@ -776,7 +784,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   /**
    * NOTE: this relies on all `instruction`s being idempotent in case
    * the same instruction is added to the `deferred` array simultaneously.
-   * 
+   *
    * Additionally, if you call a function within `execute` that also calls
    * `execute` you will have an infinite loop.
    */
