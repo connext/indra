@@ -1,10 +1,13 @@
 pragma solidity 0.6.7;
 pragma experimental "ABIEncoderV2";
 
+import "./CounterfactualAppInterface.sol";
 
-contract CounterfactualApp {
+
+contract CounterfactualApp is CounterfactualAppInterface {
 
     function isStateTerminal(bytes calldata)
+        override
         virtual
         external
         view
@@ -14,6 +17,7 @@ contract CounterfactualApp {
     }
 
     function getTurnTaker(bytes calldata, address[] calldata)
+        override
         virtual
         external
         view
@@ -23,6 +27,7 @@ contract CounterfactualApp {
     }
 
     function applyAction(bytes calldata, bytes calldata)
+        override
         virtual
         external
         view
@@ -32,6 +37,7 @@ contract CounterfactualApp {
     }
 
     function computeOutcome(bytes calldata)
+        override
         virtual
         external
         view
