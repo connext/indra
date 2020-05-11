@@ -427,6 +427,10 @@ export async function getMultisigAmountWithdrawn(
   try {
     return await multisig.totalAmountWithdrawn(tokenAddress);
   } catch (e) {
+    // FIXME: need to investigate this
+    if (e.toString().includes("CALL_EXCEPTION")) {
+      return constants.Zero;
+    }
     if (!e.message.includes(CONTRACT_NOT_DEPLOYED)) {
       console.log(CONTRACT_NOT_DEPLOYED);
       throw new Error(e);
