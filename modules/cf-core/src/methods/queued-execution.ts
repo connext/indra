@@ -1,4 +1,4 @@
-import Queue, { Task } from "p-queue";
+import Queue from "p-queue";
 
 import { Deferred } from "../deferred";
 
@@ -10,7 +10,7 @@ import { Deferred } from "../deferred";
  * @param {Task<any>} task - any function which returns a promise-like
  * @returns
  */
-export async function addToManyQueues(queues: Queue[], task: Task<any>) {
+export async function addToManyQueues(queues: Queue[], task: any) {
   if (queues.length === 0) return task();
 
   let promise: PromiseLike<any>;
