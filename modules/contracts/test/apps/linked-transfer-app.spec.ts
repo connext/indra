@@ -125,13 +125,10 @@ describe("LinkedUnidirectionalTransferApp", () => {
   let unidirectionalLinkedTransferApp: Contract;
 
   const applyAction = (state: any, action: any): any =>
-    unidirectionalLinkedTransferApp.functions.applyAction(
-      encodeAppState(state),
-      encodeAppAction(action),
-    );
+    unidirectionalLinkedTransferApp.applyAction(encodeAppState(state), encodeAppAction(action));
 
   const computeOutcome = (state: any): any =>
-    unidirectionalLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
+    unidirectionalLinkedTransferApp.computeOutcome(encodeAppState(state));
 
   before(async () => {
     const wallet = new Wallet((await provider.getWallets())[0].privateKey);

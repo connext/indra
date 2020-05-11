@@ -50,11 +50,11 @@ describe("Nim", () => {
   }
 
   async function applyAction(state: SolidityValueType, action: SolidityValueType) {
-    return nim.functions.applyAction(encodeState(state), encodeAction(action));
+    return nim.applyAction(encodeState(state), encodeAction(action));
   }
 
   async function isStateTerminal(state: SolidityValueType) {
-    return nim.functions.isStateTerminal(encodeState(state));
+    return nim.isStateTerminal(encodeState(state));
   }
 
   before(async () => {

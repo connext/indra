@@ -55,7 +55,7 @@ export const setupContext = async () => {
       await new ChannelSigner(channelInitiator.privateKey, ethProvider).signMessage(digest),
       await new ChannelSigner(channelResponder.privateKey, ethProvider).signMessage(digest),
     ];
-    const tx = await challengeRegistry.functions.setState(appInstance.appIdentity, {
+    const tx = await challengeRegistry.setState(appInstance.appIdentity, {
       versionNumber,
       appStateHash: stateHash,
       timeout,
@@ -114,7 +114,7 @@ export const setupContext = async () => {
         ),
       ],
     };
-    return challengeRegistry.functions.setAndProgressState(
+    return challengeRegistry.setAndProgressState(
       appInstance.appIdentity,
       req1,
       req2,

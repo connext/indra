@@ -30,7 +30,7 @@ export const sendOnchainValue = async (
     await ethWallet.sendTransaction({ to, value });
   } else {
     const tokenContract = new Contract(assetId, abi, ethWallet);
-    await tokenContract.functions.transfer(to, value);
+    await tokenContract.transfer(to, value);
   }
 };
 
@@ -48,7 +48,7 @@ export const getOnchainBalance = async (
   } else {
     try {
       const tokenContract = new Contract(assetId, abi, ethProvider);
-      result = await tokenContract.functions.balanceOf(address);
+      result = await tokenContract.balanceOf(address);
     } catch (e) {
       throw new Error(`Error getting token balance for ${address}: ${e.toString()}`);
     }

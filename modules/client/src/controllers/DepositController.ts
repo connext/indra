@@ -39,7 +39,7 @@ export class DepositController extends AbstractController {
     const startingBalance =
       tokenAddress === constants.AddressZero
         ? await this.ethProvider.getBalance(this.connext.signerAddress)
-        : await new Contract(tokenAddress, tokenAbi, this.ethProvider).functions.balanceOf(
+        : await new Contract(tokenAddress, tokenAbi, this.ethProvider).balanceOf(
             this.connext.signerAddress,
           );
     this.throwIfAny(
@@ -194,7 +194,7 @@ export class DepositController extends AbstractController {
 
     let startingTotalAmountWithdrawn: BigNumber;
     try {
-      startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(tokenAddress);
+      startingTotalAmountWithdrawn = await multisig.totalAmountWithdrawn(tokenAddress);
     } catch (e) {
       const NOT_DEPLOYED_ERR = `contract not deployed (contractAddress="${this.connext.multisigAddress}"`;
       if (!e.message.includes(NOT_DEPLOYED_ERR)) {
@@ -209,7 +209,7 @@ export class DepositController extends AbstractController {
     const startingMultisigBalance =
       tokenAddress === constants.AddressZero
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
-        : await new Contract(tokenAddress, tokenAbi, this.ethProvider).functions.balanceOf(
+        : await new Contract(tokenAddress, tokenAbi, this.ethProvider).balanceOf(
             this.connext.multisigAddress,
           );
 

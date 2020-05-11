@@ -123,10 +123,7 @@ export class DepositService {
       tx = {
         to: tokenAddress,
         value: 0,
-        data: token.interface.encodeFunctionData(token.interface.functions.transfer, [
-          channel.multisigAddress,
-          amount,
-        ]),
+        data: token.interface.encodeFunctionData("transfer", [channel.multisigAddress, amount]),
       };
     }
     return this.onchainTransactionService.sendDeposit(channel, tx);
@@ -142,7 +139,7 @@ export class DepositService {
     const multisig = new Contract(channel.multisigAddress, MinimumViableMultisig.abi, ethProvider);
     let startingTotalAmountWithdrawn: BigNumber;
     try {
-      startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(tokenAddress);
+      startingTotalAmountWithdrawn = await multisig.totalAmountWithdrawn(tokenAddress);
     } catch (e) {
       const NOT_DEPLOYED_ERR = `contract not deployed (contractAddress="${channel.multisigAddress}"`;
       if (!e.message.includes(NOT_DEPLOYED_ERR)) {
@@ -157,11 +154,9 @@ export class DepositService {
     const startingMultisigBalance =
       tokenAddress === constants.AddressZero
         ? await ethProvider.getBalance(channel.multisigAddress)
-        : await new Contract(
-            tokenAddress,
-            ERC20.abi,
-            this.configService.getSigner(),
-          ).functions.balanceOf(channel.multisigAddress);
+        : await new Contract(tokenAddress, ERC20.abi, this.configService.getSigner()).balanceOf(
+            channel.multisigAddress,
+          );
 
     const initialState: DepositAppState = {
       transfers: [

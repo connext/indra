@@ -45,7 +45,7 @@ describe("SimpleTransferApp", () => {
   let simpleTransferApp: Contract;
 
   async function computeOutcome(state: SimpleTransferAppState): Promise<string> {
-    return simpleTransferApp.functions.computeOutcome(encodeAppState(state));
+    return simpleTransferApp.computeOutcome(encodeAppState(state));
   }
 
   before(async () => {

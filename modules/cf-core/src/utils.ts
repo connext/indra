@@ -65,7 +65,7 @@ export const getCreate2MultisigAddress = async (
 ): Promise<string> => {
   const proxyFactory = new Contract(addresses.proxyFactory, ProxyFactory.abi, ethProvider);
 
-  const proxyBytecode = toxicBytecode || (await proxyFactory.functions.proxyCreationCode());
+  const proxyBytecode = toxicBytecode || (await proxyFactory.proxyCreationCode());
 
   const iface = new utils.Interface(MinimumViableMultisig.abi);
 

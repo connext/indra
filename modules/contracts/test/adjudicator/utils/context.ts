@@ -46,12 +46,9 @@ export async function setupContext(
 
   // Contract helpers
   const getChallenge = async (): Promise<AppChallenge> => {
-    const [
-      status,
-      appStateHash,
-      versionNumber,
-      finalizesAt,
-    ] = await appRegistry.functions.getAppChallenge(appInstance.identityHash);
+    const [status, appStateHash, versionNumber, finalizesAt] = await appRegistry.getAppChallenge(
+      appInstance.identityHash,
+    );
     return {
       status,
       appStateHash,
@@ -61,7 +58,7 @@ export async function setupContext(
   };
 
   const getOutcome = async (): Promise<string> => {
-    const outcome = await appRegistry.functions.getOutcome(appInstance.identityHash);
+    const outcome = await appRegistry.getOutcome(appInstance.identityHash);
     return outcome;
   };
 
@@ -72,30 +69,30 @@ export async function setupContext(
 
   const isProgressable = async () => {
     const challenge = await getChallenge();
-    return appRegistry.functions.isProgressable(challenge, appInstance.defaultTimeout);
+    return appRegistry.isProgressable(challenge, appInstance.defaultTimeout);
   };
 
   const isDisputable = async (challenge?: AppChallenge) => {
     if (!challenge) {
       challenge = await getChallenge();
     }
-    return appRegistry.functions.isDisputable(challenge);
+    return appRegistry.isDisputable(challenge);
   };
 
   const isFinalized = async () => {
     const challenge = await getChallenge();
-    return appRegistry.functions.isFinalized(challenge, appInstance.defaultTimeout);
+    return appRegistry.isFinalized(challenge, appInstance.defaultTimeout);
   };
 
   const isCancellable = async (challenge?: AppChallenge) => {
     if (!challenge) {
       challenge = await getChallenge();
     }
-    return appRegistry.functions.isCancellable(challenge, appInstance.defaultTimeout);
+    return appRegistry.isCancellable(challenge, appInstance.defaultTimeout);
   };
 
   const hasPassed = (timeout: BigNumberish) => {
-    return appRegistry.functions.hasPassed(toBN(timeout));
+    return appRegistry.hasPassed(toBN(timeout));
   };
 
   const verifySignatures = async (
@@ -114,7 +111,7 @@ export async function setupContext(
       signers = [alice.address, bob.address];
     }
 
-    return appRegistry.functions.verifySignatures(signatures, digest, signers);
+    return appRegistry.verifySignatures(signatures, digest, signers);
   };
 
   const wrapInEventVerification = async (
@@ -136,10 +133,7 @@ export async function setupContext(
   // State Progression methods
   const setOutcome = async (encodedFinalState?: string): Promise<void> => {
     await wrapInEventVerification(
-      appRegistry.functions.setOutcome(
-        appInstance.appIdentity,
-        encodedFinalState || constants.HashZero,
-      ),
+      appRegistry.setOutcome(appInstance.appIdentity, encodedFinalState || constants.HashZero),
       { status: ChallengeStatus.OUTCOME_SET },
     );
   };
@@ -163,7 +157,7 @@ export async function setupContext(
       versionNumber,
       timeout,
     );
-    const call = appRegistry.functions.setState(appInstance.appIdentity, {
+    const call = appRegistry.setState(appInstance.appIdentity, {
       versionNumber,
       appStateHash: stateHash,
       timeout,
@@ -226,7 +220,7 @@ export async function setupContext(
       signatures: [await new ChannelSigner(signer.privateKey).signMessage(digest)],
     };
     await wrapInEventVerification(
-      appRegistry.functions.progressState(
+      appRegistry.progressState(
         appInstance.appIdentity,
         req,
         encodeState(state),
@@ -343,7 +337,7 @@ export async function setupContext(
       timeout: timeout2,
       signatures: [await new ChannelSigner(turnTaker.privateKey).signMessage(resultingStateDigest)],
     };
-    await appRegistry.functions.setAndProgressState(
+    await appRegistry.setAndProgressState(
       appInstance.appIdentity,
       req1,
       req2,
@@ -362,7 +356,7 @@ export async function setupContext(
     }
     // TODO: why does event verification fail?
     // await wrapInEventVerification(
-    await appRegistry.functions.cancelDispute(appInstance.appIdentity, {
+    await appRegistry.cancelDispute(appInstance.appIdentity, {
       versionNumber: toBN(versionNumber),
       signatures,
     });

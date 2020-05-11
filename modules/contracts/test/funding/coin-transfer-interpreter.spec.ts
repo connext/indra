@@ -41,14 +41,14 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     state: CoinTransfer[][],
     params: { limit: BigNumber[]; tokenAddresses: string[] },
   ) {
-    return multiAssetMultiPartyCoinTransferInterpreter.functions.interpretOutcomeAndExecuteEffect(
+    return multiAssetMultiPartyCoinTransferInterpreter.interpretOutcomeAndExecuteEffect(
       encodeOutcome(state),
       encodeParams(params),
     );
   }
 
   async function getTotalAmountWithdrawn(assetId: string) {
-    return multiAssetMultiPartyCoinTransferInterpreter.functions.totalAmountWithdrawn(assetId);
+    return multiAssetMultiPartyCoinTransferInterpreter.totalAmountWithdrawn(assetId);
   }
 
   beforeEach(async () => {
@@ -62,9 +62,9 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     ).deploy();
 
     // fund interpreter with ERC20 tokenAddresses
-    await erc20.functions.transfer(
+    await erc20.transfer(
       multiAssetMultiPartyCoinTransferInterpreter.address,
-      erc20.functions.balanceOf(wallet.address),
+      erc20.balanceOf(wallet.address),
     );
 
     // fund interpreter with ETH
@@ -128,7 +128,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
       tokenAddresses: [erc20.address],
     });
 
-    expect(await erc20.functions.balanceOf(to)).to.eq(constants.One);
+    expect(await erc20.balanceOf(to)).to.eq(constants.One);
     expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
       preAmountWithdrawn.add(constants.One),
     );
@@ -156,8 +156,8 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
       },
     );
 
-    expect(await erc20.functions.balanceOf(to1)).to.eq(constants.One);
-    expect(await erc20.functions.balanceOf(to2)).to.eq(constants.One);
+    expect(await erc20.balanceOf(to1)).to.eq(constants.One);
+    expect(await erc20.balanceOf(to2)).to.eq(constants.One);
     expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
       preAmountWithdrawn.add(constants.One).add(constants.One),
     );
@@ -175,7 +175,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     });
 
     expect(await provider.getBalance(to)).to.eq(constants.One);
-    expect(await erc20.functions.balanceOf(to)).to.eq(constants.One);
+    expect(await erc20.balanceOf(to)).to.eq(constants.One);
     expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
       preAmountWithdrawnToken.add(constants.One),
     );
@@ -203,7 +203,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     );
 
     expect(await provider.getBalance(to1)).to.eq(constants.One);
-    expect(await erc20.functions.balanceOf(to2)).to.eq(constants.One);
+    expect(await erc20.balanceOf(to2)).to.eq(constants.One);
     expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
       preAmountWithdrawnToken.add(constants.One),
     );
@@ -240,10 +240,10 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     );
 
     expect(await provider.getBalance(to1)).to.eq(constants.One);
-    expect(await erc20.functions.balanceOf(to1)).to.eq(constants.One);
+    expect(await erc20.balanceOf(to1)).to.eq(constants.One);
 
     expect(await provider.getBalance(to2)).to.eq(constants.One);
-    expect(await erc20.functions.balanceOf(to2)).to.eq(constants.One);
+    expect(await erc20.balanceOf(to2)).to.eq(constants.One);
 
     expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
       preAmountWithdrawnToken.add(constants.One).add(constants.One),
@@ -281,10 +281,10 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     );
 
     expect(await provider.getBalance(to1)).to.eq(constants.One);
-    expect(await erc20.functions.balanceOf(to1)).to.eq(constants.One);
+    expect(await erc20.balanceOf(to1)).to.eq(constants.One);
 
     expect(await provider.getBalance(to2)).to.eq(constants.One);
-    expect(await erc20.functions.balanceOf(to2)).to.eq(constants.One);
+    expect(await erc20.balanceOf(to2)).to.eq(constants.One);
 
     expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
       preAmountWithdrawnToken.add(constants.One).add(constants.One),

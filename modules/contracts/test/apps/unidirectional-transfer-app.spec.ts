@@ -77,10 +77,10 @@ describe("UnidirectionalTransferApp", () => {
   let unidirectionalTransferApp: Contract;
 
   const applyAction = (state: SolidityValueType, action: SolidityValueType) =>
-    unidirectionalTransferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
+    unidirectionalTransferApp.applyAction(encodeAppState(state), encodeAppAction(action));
 
   const computeOutcome = (state: SolidityValueType) =>
-    unidirectionalTransferApp.functions.computeOutcome(encodeAppState(state));
+    unidirectionalTransferApp.computeOutcome(encodeAppState(state));
 
   before(async () => {
     const wallet = new Wallet((await provider.getWallets())[0].privateKey);

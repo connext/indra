@@ -114,7 +114,7 @@ describe("Node method follows spec - deposit", () => {
       DolphinCoin.abi,
       global["wallet"].provider,
     );
-    const preDepositERC20Balance = await erc20Contract.functions.balanceOf(multisigAddress);
+    const preDepositERC20Balance = await erc20Contract.balanceOf(multisigAddress);
 
     await transferERC20Tokens(await nodeA.signerAddress);
     await transferERC20Tokens(await nodeB.signerAddress);
@@ -130,7 +130,7 @@ describe("Node method follows spec - deposit", () => {
       constants.One,
       constants.One,
     ]);
-    expect(await erc20Contract.functions.balanceOf(multisigAddress)).toEqual(
+    expect(await erc20Contract.balanceOf(multisigAddress)).toEqual(
       preDepositERC20Balance.add(constants.Two),
     );
   });
@@ -147,7 +147,7 @@ describe("Node method follows spec - deposit", () => {
     await transferERC20Tokens(await nodeB.signerAddress);
 
     const preDepositEthBalance = await provider.getBalance(multisigAddress);
-    const preDepositERC20Balance = await erc20Contract.functions.balanceOf(multisigAddress);
+    const preDepositERC20Balance = await erc20Contract.balanceOf(multisigAddress);
 
     await deposit(nodeA, multisigAddress, constants.One, nodeB, erc20AssetId);
     await confirmEthAndERC20FreeBalances(nodeA, nodeB, multisigAddress, tokenAddress, undefined, [
@@ -163,7 +163,7 @@ describe("Node method follows spec - deposit", () => {
 
     expect(await provider.getBalance(multisigAddress)).toEqual(preDepositEthBalance);
 
-    expect(await erc20Contract.functions.balanceOf(multisigAddress)).toEqual(
+    expect(await erc20Contract.balanceOf(multisigAddress)).toEqual(
       preDepositERC20Balance.add(constants.Two),
     );
 

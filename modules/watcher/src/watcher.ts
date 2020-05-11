@@ -362,7 +362,7 @@ export class Watcher implements IWatcher {
       appStateHash,
       versionNumber,
       finalizesAt,
-    ] = await this.challengeRegistry.functions.getAppChallenge(appInstanceId);
+    ] = await this.challengeRegistry.getAppChallenge(appInstanceId);
     return {
       status,
       appStateHash,

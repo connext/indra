@@ -68,7 +68,7 @@ describe("ProxyFactory with CREATE2", function () {
 
       const echoProxy = new Contract(create2(initcode), Echo.abi, wallet);
 
-      expect(await echoProxy.functions.helloWorld()).to.eq("hello world");
+      expect(await echoProxy.helloWorld()).to.eq("hello world");
     });
   });
 });

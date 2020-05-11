@@ -46,7 +46,7 @@ describe("DepositApp", () => {
   });
 
   const computeOutcome = async (state: DepositAppState): Promise<string> => {
-    return depositApp.functions.computeOutcome(encodeAppState(state));
+    return depositApp.computeOutcome(encodeAppState(state));
   };
 
   const createInitialState = async (assetId: string): Promise<DepositAppState> => {
@@ -71,11 +71,11 @@ describe("DepositApp", () => {
   const getMultisigBalance = async (assetId: string): Promise<BigNumber> => {
     return assetId === constants.AddressZero
       ? await provider.getBalance(proxy.address)
-      : await erc20.functions.balanceOf(proxy.address);
+      : await erc20.balanceOf(proxy.address);
   };
 
   const getTotalAmountWithdrawn = async (assetId: string): Promise<BigNumber> => {
-    return proxy.functions.totalAmountWithdrawn(assetId);
+    return proxy.totalAmountWithdrawn(assetId);
   };
 
   const deposit = async (assetId: string, amount: BigNumber): Promise<void> => {
@@ -87,14 +87,14 @@ describe("DepositApp", () => {
       });
       expect(tx.hash).to.exist;
     } else {
-      const tx = await erc20.functions.transfer(proxy.address, amount);
+      const tx = await erc20.transfer(proxy.address, amount);
       expect(tx.hash).to.exist;
     }
     expect(await getMultisigBalance(assetId)).to.be.eq(preDepositValue.add(amount));
   };
 
   const withdraw = async (assetId: string, amount: BigNumber): Promise<void> => {
-    await proxy.functions.withdraw(assetId, wallet.address, amount);
+    await proxy.withdraw(assetId, wallet.address, amount);
   };
 
   const validateOutcomes = async (

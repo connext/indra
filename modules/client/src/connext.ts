@@ -804,9 +804,7 @@ export class ConnextClient implements IConnextClient {
       const currentMultisigBalance =
         assetId === constants.AddressZero
           ? await this.ethProvider.getBalance(this.multisigAddress)
-          : await new Contract(assetId, tokenAbi, this.ethProvider).functions.balanceOf(
-              this.multisigAddress,
-            );
+          : await new Contract(assetId, tokenAbi, this.ethProvider).balanceOf(this.multisigAddress);
 
       if (currentMultisigBalance.gt(latestState.startingMultisigBalance)) {
         // deposit has occurred, rescind
@@ -835,7 +833,7 @@ export class ConnextClient implements IConnextClient {
         "Transfer",
         async (sender: string, recipient: string, amount: BigNumber) => {
           if (recipient === this.multisigAddress && amount.gt(0)) {
-            const bal = await new Contract(assetId, tokenAbi, this.ethProvider).functions.balanceOf(
+            const bal = await new Contract(assetId, tokenAbi, this.ethProvider).balanceOf(
               this.multisigAddress,
             );
             if (bal.gt(latestState.startingMultisigBalance)) {

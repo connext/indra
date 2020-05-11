@@ -415,9 +415,7 @@ export async function getMultisigBalance(
   const provider = global[`wallet`].provider;
   return tokenAddress === constants.AddressZero
     ? await provider.getBalance(multisigAddr)
-    : await new Contract(tokenAddress, ERC20.abi as any, provider).functions.balanceOf(
-        multisigAddr,
-      );
+    : await new Contract(tokenAddress, ERC20.abi as any, provider).balanceOf(multisigAddr);
 }
 
 export async function getMultisigAmountWithdrawn(
@@ -427,7 +425,7 @@ export async function getMultisigAmountWithdrawn(
   const provider = global[`wallet`].provider;
   const multisig = new Contract(multisigAddr, MinimumViableMultisig.abi, provider);
   try {
-    return await multisig.functions.totalAmountWithdrawn(tokenAddress);
+    return await multisig.totalAmountWithdrawn(tokenAddress);
   } catch (e) {
     if (!e.message.includes(CONTRACT_NOT_DEPLOYED)) {
       console.log(CONTRACT_NOT_DEPLOYED);
@@ -932,9 +930,9 @@ export async function transferERC20Tokens(
 ): Promise<BigNumber> {
   const deployerAccount = global["wallet"];
   const contract = new Contract(tokenAddress, contractABI, deployerAccount);
-  const balanceBefore: BigNumber = await contract.functions.balanceOf(toAddress);
-  await contract.functions.transfer(toAddress, amount);
-  const balanceAfter: BigNumber = await contract.functions.balanceOf(toAddress);
+  const balanceBefore: BigNumber = await contract.balanceOf(toAddress);
+  await contract.transfer(toAddress, amount);
+  const balanceAfter: BigNumber = await contract.balanceOf(toAddress);
   expect(balanceAfter.sub(balanceBefore)).toEqual(amount);
   return balanceAfter;
 }

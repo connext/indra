@@ -58,14 +58,11 @@ describe("LightningHTLCTransferApp", () => {
   let preState: HashLockTransferAppState;
 
   async function computeOutcome(state: HashLockTransferAppState): Promise<string> {
-    return lightningHTLCTransferApp.functions.computeOutcome(encodeAppState(state));
+    return lightningHTLCTransferApp.computeOutcome(encodeAppState(state));
   }
 
   async function applyAction(state: any, action: SolidityValueType): Promise<string> {
-    return lightningHTLCTransferApp.functions.applyAction(
-      encodeAppState(state),
-      encodeAppAction(action),
-    );
+    return lightningHTLCTransferApp.applyAction(encodeAppState(state), encodeAppAction(action));
   }
 
   async function validateOutcome(encodedTransfers: string, postState: HashLockTransferAppState) {

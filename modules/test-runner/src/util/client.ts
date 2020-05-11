@@ -1,11 +1,6 @@
 import { connect } from "@connext/client";
 import { getLocalStore, getMemoryStore } from "@connext/store";
-import {
-  ClientOptions,
-  IChannelProvider,
-  IChannelSigner,
-  IConnextClient,
-} from "@connext/types";
+import { ClientOptions, IChannelProvider, IChannelSigner, IConnextClient } from "@connext/types";
 import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
@@ -43,7 +38,7 @@ export const createClient = async (
   });
   if (fund) {
     const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethWallet);
-    const tokenTx = await token.functions.transfer(client.signerAddress, TOKEN_AMOUNT);
+    const tokenTx = await token.transfer(client.signerAddress, TOKEN_AMOUNT);
     await Promise.all([ethTx.wait(), tokenTx.wait()]);
   }
   expect(client.signerAddress).to.be.ok;

@@ -44,7 +44,7 @@ describe("Deposits", () => {
     const onchainBalance: BigNumber =
       expected.assetId === constants.AddressZero
         ? await ethProvider.getBalance(client.multisigAddress)
-        : await new Contract(expected.assetId!, tokenAbi, ethProvider).functions.balanceOf(
+        : await new Contract(expected.assetId!, tokenAbi, ethProvider).balanceOf(
             client.multisigAddress,
           );
     expect(onchainBalance.eq(toBN(expected.node).add(toBN(expected.client))));

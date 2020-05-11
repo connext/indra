@@ -299,7 +299,7 @@ export class AppInstance {
     state: SolidityValueType,
     provider: providers.JsonRpcProvider,
   ): Promise<string> {
-    return this.toEthersContract(provider).functions.computeOutcome(this.encodeState(state));
+    return this.toEthersContract(provider).computeOutcome(this.encodeState(state));
   }
 
   public async computeOutcomeWithCurrentState(
@@ -313,7 +313,7 @@ export class AppInstance {
     provider: providers.JsonRpcProvider,
   ): Promise<SolidityValueType> {
     const computedNextState = this.decodeAppState(
-      await this.toEthersContract(provider).functions.applyAction(
+      await this.toEthersContract(provider).applyAction(
         this.encodedLatestState,
         this.encodeAction(action),
       ),

@@ -52,11 +52,11 @@ describe("WithdrawApp", async () => {
 
   // helpers
   const computeOutcome = async (state: WithdrawAppState): Promise<string> => {
-    return withdrawApp.functions.computeOutcome(encodeAppState(state));
+    return withdrawApp.computeOutcome(encodeAppState(state));
   };
 
   const applyAction = async (state: any, action: WithdrawAppAction): Promise<string> => {
-    return withdrawApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
+    return withdrawApp.applyAction(encodeAppState(state), encodeAppAction(action));
   };
 
   const createInitialState = async (): Promise<WithdrawAppState> => {
