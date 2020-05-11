@@ -11,13 +11,13 @@ import "./AppWithAction.sol";
 contract AppApplyActionFails is AppWithAction {
 
     function applyAction(
-        bytes calldata encodedState,
-        bytes calldata encodedAction
+        bytes calldata /* encodedState */,
+        bytes calldata /* encodedAction */
     )
         override
         external
         view
-        returns (bytes memory ret)
+        returns (bytes memory)
     {
         revert("applyAction fails for this app");
     }

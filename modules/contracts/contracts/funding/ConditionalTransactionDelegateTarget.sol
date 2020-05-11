@@ -30,7 +30,7 @@ contract ConditionalTransactionDelegateTarget is MultisigTransfer {
         address payable recipient,
         address assetId,
         uint256 amount,
-        bytes32 nonce
+        bytes32 /* nonce */
     )
         public
     {

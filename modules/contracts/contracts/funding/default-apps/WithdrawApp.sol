@@ -42,7 +42,7 @@ contract WithdrawApp is CounterfactualApp {
 
     function getTurnTaker(
         bytes calldata encodedState,
-        address[] calldata participants
+        address[] calldata /* participants */
     )
         override
         external

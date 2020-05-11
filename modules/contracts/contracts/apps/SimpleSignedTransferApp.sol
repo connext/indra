@@ -62,7 +62,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
     }
 
     function getTurnTaker(
-        bytes calldata encodedState,
+        bytes calldata /* encodedState */,
         address[] calldata participants
     )
         override
