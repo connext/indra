@@ -155,7 +155,6 @@ export default class ListenerService implements OnModuleInit {
           app,
           newState as any, // AppState (excluding simple swap app)
           action as AppAction,
-          data.from,
         );
       },
       WITHDRAWAL_FAILED_EVENT: (data: DepositFailedMessage): void => {

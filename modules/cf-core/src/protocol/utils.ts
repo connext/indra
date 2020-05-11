@@ -24,6 +24,7 @@ export async function assertIsValidSignature(
   expectedSigner: string,
   commitmentHash?: string,
   signature?: string,
+  loggingContext?: string,
 ): Promise<void> {
   if (typeof commitmentHash === "undefined") {
     throw new Error("assertIsValidSignature received an undefined commitment");
@@ -35,7 +36,7 @@ export async function assertIsValidSignature(
   const signer = await recoverAddressFromChannelMessage(commitmentHash, signature);
   if (utils.getAddress(expectedSigner).toLowerCase() !== signer.toLowerCase()) {
     throw new Error(
-      `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${commitmentHash}.`,
+      `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${commitmentHash}. ${loggingContext ? `${loggingContext}` : ""}`,
     );
   }
 }

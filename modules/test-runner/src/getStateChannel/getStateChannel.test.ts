@@ -90,7 +90,7 @@ describe("Get State Channel", () => {
   });
 
   it("Store does not contain state channel", async () => {
-    clientA.store.clear();
+    await clientA.store.clear();
     await expect(clientA.getStateChannel()).to.be.rejectedWith(
       "Call to getStateChannel failed when searching for multisig address",
     );

@@ -4,6 +4,7 @@ import { ConnextStore } from "./connextStore";
 import { PisaClientBackupAPI } from "./pisaClient";
 import { StoreTypes } from "./types";
 import { WrappedAsyncStorage } from "./wrappers";
+import { Sequelize } from "sequelize/types";
 
 export const getAsyncStore = (
   storage: IAsyncStorage,
@@ -27,12 +28,13 @@ export const getMemoryStore = (): IClientStore =>
   new ConnextStore(StoreTypes.Memory);
 
 export const getPostgresStore = (
-  connectionUri: string,
+  sequelize: Sequelize | string,
+  prefix?: string,
   backupService?: PisaClientBackupAPI,
 ): IClientStore =>
   new ConnextStore(
     StoreTypes.Postgres,
-    { postgresConnectionUri: connectionUri, backupService },
+    { sequelize, backupService, prefix },
   );
 
 ////////////////////////////////////////
