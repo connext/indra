@@ -108,7 +108,9 @@ export class SetStateCommitment implements EthereumCommitment {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
       timeout: this.stateTimeout, // this is a *state-specific* timeout (defaults to defaultTimeout)
-      signatures: this.signatures,
+      // safe to do because IFF single signed commitment, then contract
+      // will take a single signers array of just the turn taker
+      signatures: this.signatures.filter(x => !!x),
     };
   }
 
@@ -117,16 +119,13 @@ export class SetStateCommitment implements EthereumCommitment {
       throw new Error(`No signatures detected`);
     }
 
-    for (const idx in this.signatures) {
-      if (!this.signatures[idx]) {
+    for (const [idx, sig] of this.signatures.entries()) {
+      if (!sig) {
         // set state commitments may be singly signed if they are going
         // to be used in the `progressState` path
         continue;
       }
-      const signer = await recoverAddressFromChannelMessage(
-        this.hashToSign(),
-        this.signatures[idx],
-      );
+      const signer = await recoverAddressFromChannelMessage(this.hashToSign(), sig);
       if (signer !== this.appIdentity.participants[idx]) {
         throw new Error(
           `Got ${signer} and expected ${this.appIdentity.participants[idx]} in set state commitment`,

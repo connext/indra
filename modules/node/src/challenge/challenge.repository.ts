@@ -1,7 +1,6 @@
-import { StoredAppChallenge, ChallengeStatus } from "@connext/types";
-import { Repository, EntityRepository, getRepository } from "typeorm";
+import { StoredAppChallenge, StoredAppChallengeStatus } from "@connext/types";
+import { Repository, EntityRepository } from "typeorm";
 import { Challenge, ProcessedBlock } from "./challenge.entity";
-import { Channel } from "../channel/channel.entity";
 
 export const entityToStoredChallenge = (entity: Challenge): StoredAppChallenge => {
   const { app, versionNumber, appStateHash, finalizesAt, status } = entity;
@@ -46,28 +45,20 @@ export class ChallengeRepository extends Repository<Challenge> {
     return challenge;
   }
 
-  async findActiveChallengesByMultisig(multisigAddress: string): Promise<Challenge[]> {
-    // TODO: make this one query
-
-    const channel = await getRepository(Channel)
-      .createQueryBuilder("channel")
-      .leftJoinAndSelect("channel.appInstances", "appInstance")
-      .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
-      .getOne();
-    const ids = channel.appInstances.map(app => app.identityHash);
-
+  async findActiveChallenges(): Promise<Challenge[]> {
     return this.createQueryBuilder("challenge")
       .leftJoinAndSelect("challenge.stateProgressedEvents", "state_progressed_event")
       .leftJoinAndSelect("challenge.challengeUpdatedEvents", "challenge_updated_event")
       .leftJoinAndSelect("challenge.app", "app_instance")
+      .leftJoinAndSelect("challenge.channel", "channel")
       .where("challenge.status IN (:...statuses)", {
         statuses: [
-          ChallengeStatus.EXPLICITLY_FINALIZED,
-          ChallengeStatus.IN_DISPUTE,
-          ChallengeStatus.IN_ONCHAIN_PROGRESSION,
+          StoredAppChallengeStatus.OUTCOME_SET,
+          StoredAppChallengeStatus.EXPLICITLY_FINALIZED,
+          StoredAppChallengeStatus.IN_DISPUTE,
+          StoredAppChallengeStatus.IN_ONCHAIN_PROGRESSION,
         ],
       })
-      .where("challenge.app IN (:...ids)", { ids })
       .getMany();
   }
 }
