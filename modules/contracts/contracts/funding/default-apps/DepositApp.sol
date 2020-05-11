@@ -2,6 +2,7 @@ pragma solidity 0.6.7;
 pragma experimental "ABIEncoderV2";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "../../adjudicator/interfaces/CounterfactualApp.sol";
 import "../state-deposit-holders/MinimumViableMultisig.sol";
 import "../libs/LibOutcome.sol";
@@ -35,7 +36,7 @@ contract DepositApp is CounterfactualApp {
         uint256 endingTotalAmountWithdrawn;
         uint256 endingMultisigBalance;
 
-        if (isDeployed(state.multisigAddress)) {
+        if (Address.isContract(state.multisigAddress)) {
             endingTotalAmountWithdrawn = MinimumViableMultisig(state.multisigAddress).totalAmountWithdrawn(state.assetId);
         } else {
             endingTotalAmountWithdrawn = 0;
@@ -62,15 +63,4 @@ contract DepositApp is CounterfactualApp {
         ]));
     }
 
-    function isDeployed(address _addr)
-        internal
-        view
-    returns (bool)
-    {
-        uint32 size;
-        assembly {
-            size := extcodesize(_addr)
-        }
-        return (size > 0);
-    }
 }
