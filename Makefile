@@ -207,8 +207,6 @@ builder: $(shell find ops/builder)
 node-modules: builder package.json $(shell ls modules/*/package.json)
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist --no-progress"
-	# rm below hack once this PR gets merged: https://github.com/EthWorks/Waffle/pull/205
-	$(docker_run) "sed -i 's|{ input }|{ input, maxBuffer: 1024 * 1024 * 4 }|' node_modules/@ethereum-waffle/compiler/dist/cjs/compileNative.js"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 py-requirements: builder docs/requirements.txt
