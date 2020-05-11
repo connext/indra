@@ -18,7 +18,8 @@ then
     --mnemonic="$ETH_MNEMONIC" \
     --networkId="4447" \
     --port="8545" \
-    --defaultBalanceEther="1000000000"
+    --defaultBalanceEther="1000000000" \
+    --blockTime="2"
 elif [[ "$1" == "deploy" ]]
 then
   if [[ "${ETH_PROVIDER#*://}" == "localhost"* ]]
