@@ -1,7 +1,7 @@
 pragma solidity 0.6.7;
 pragma experimental "ABIEncoderV2";
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../adjudicator/interfaces/CounterfactualApp.sol";
 import "../state-deposit-holders/MinimumViableMultisig.sol";
 import "../libs/LibOutcome.sol";
@@ -44,7 +44,7 @@ contract DepositApp is CounterfactualApp {
         if (state.assetId == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
             endingMultisigBalance = state.multisigAddress.balance;
         } else {
-            endingMultisigBalance = ERC20(state.assetId).balanceOf(state.multisigAddress);
+            endingMultisigBalance = IERC20(state.assetId).balanceOf(state.multisigAddress);
         }
 
         return abi.encode(LibOutcome.CoinTransfer[2]([

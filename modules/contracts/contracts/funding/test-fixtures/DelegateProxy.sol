@@ -1,6 +1,6 @@
 pragma solidity 0.6.7;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract DelegateProxy {
     receive() external payable { }
@@ -19,7 +19,7 @@ contract DelegateProxy {
         if (assetId == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
             recipient.send(amount);
         } else {
-            ERC20(assetId).transfer(recipient, amount);
+            IERC20(assetId).transfer(recipient, amount);
         }
     }
 }
