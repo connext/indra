@@ -152,7 +152,7 @@ contract TicTacToeApp is CounterfactualApp {
         uint256 y
     )
         internal
-        view
+        pure
         returns (AppState memory)
     {
         require(state.board[x][y] == 0, "playMove: square is not empty");
@@ -167,7 +167,7 @@ contract TicTacToeApp is CounterfactualApp {
 
     function assertBoardIsFull(AppState memory preState)
         internal
-        view
+        pure
     {
         for (uint256 i = 0; i < 3; i++) {
             for (uint256 j = 0; j < 3; j++) {
@@ -184,7 +184,7 @@ contract TicTacToeApp is CounterfactualApp {
         WinClaim memory winClaim
     )
         internal
-        view
+        pure
     {
         uint256 expectedSquareState = playerId + 1;
         if (winClaim.winClaimType == WinClaimType.COL) {

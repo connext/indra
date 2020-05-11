@@ -86,7 +86,7 @@ contract NimApp is CounterfactualApp {
 
     function isWin(AppState memory state)
         internal
-        view
+        pure
         returns (bool)
     {
         return (

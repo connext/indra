@@ -66,7 +66,7 @@ contract LibStateChannelApp is LibDispute {
         AppChallenge memory appChallenge
     )
         public
-        view
+        pure
         returns (bool)
     {
         return appChallenge.status == ChallengeStatus.OUTCOME_SET;
