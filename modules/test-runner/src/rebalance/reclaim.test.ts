@@ -22,8 +22,8 @@ describe("Reclaim", () => {
   });
 
   beforeEach(async () => {
-    clientA = await createClient({id: "A"});
-    clientB = await createClient({id: "B"});
+    clientA = await createClient({ id: "A" });
+    clientB = await createClient({ id: "B" });
     tokenAddress = clientA.config.contractAddresses.Token;
     nodeSignerAddress = clientA.nodeSignerAddress;
   });
@@ -62,17 +62,17 @@ describe("Reclaim", () => {
       AddressZero,
       nats,
     );
-    
-    const preBalance = await clientA.ethProvider.getBalance(clientA.multisigAddress)
+
+    const preBalance = await clientA.ethProvider.getBalance(clientA.multisigAddress);
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
-    await new Promise(async res => {
+    await new Promise(async (res) => {
       const paymentId = getRandomBytes32();
-      clientA.ethProvider.on(clientA.multisigAddress, balance => {
+      clientA.ethProvider.on(clientA.multisigAddress, (balance) => {
         if (preBalance.gt(balance)) {
-          res()
+          res();
         }
-      })
+      });
       await clientA.transfer({
         amount: One.toString(),
         assetId: AddressZero,
@@ -84,9 +84,7 @@ describe("Reclaim", () => {
     const freeBalancePost = await clientA.getFreeBalance(AddressZero);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
     expect(
-      freeBalancePost[nodeSignerAddress].gte(
-        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
-      ),
+      freeBalancePost[nodeSignerAddress].gte(bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim)),
     ).to.be.true;
     expect(
       freeBalancePost[nodeSignerAddress].lte(
@@ -115,7 +113,7 @@ describe("Reclaim", () => {
     );
     await clientB.requestCollateral(tokenAddress);
 
-    console.log(`requested collateral`)
+    console.log(`requested collateral`);
     // transfer to node to get node over upper bound reclaim
     // first transfer gets to upper bound
     await asyncTransferAsset(
@@ -125,19 +123,19 @@ describe("Reclaim", () => {
       tokenAddress,
       nats,
     );
-    console.log(`async transferred`)
+    console.log(`async transferred`);
 
-    const tokenContract = new Contract(tokenAddress, ERC20.abi, clientA.ethProvider)
-    const preBalance = await tokenContract.functions.balanceOf(clientA.multisigAddress)
+    const tokenContract = new Contract(tokenAddress, ERC20.abi, clientA.ethProvider);
+    const preBalance = await tokenContract.functions.balanceOf(clientA.multisigAddress);
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
-    await new Promise(async res => {
+    await new Promise(async (res) => {
       const paymentId = getRandomBytes32();
       tokenContract.on("Transfer", (from, to, balance) => {
         if (to === clientA.nodeSignerAddress && preBalance.gt(balance)) {
-          res()
+          res();
         }
-      })
+      });
       await clientA.transfer({
         amount: One.toString(),
         assetId: tokenAddress,
@@ -149,9 +147,7 @@ describe("Reclaim", () => {
     const freeBalancePost = await clientA.getFreeBalance(tokenAddress);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
     expect(
-      freeBalancePost[nodeSignerAddress].gte(
-        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
-      ),
+      freeBalancePost[nodeSignerAddress].gte(bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim)),
     ).to.be.true;
     expect(
       freeBalancePost[nodeSignerAddress].lte(
@@ -163,5 +159,4 @@ describe("Reclaim", () => {
   it.skip("happy case: node should reclaim ETH after linked transfer", async () => {});
 
   it.skip("happy case: node should reclaim tokens after linked transfer", async () => {});
-
 });
