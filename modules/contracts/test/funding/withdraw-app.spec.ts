@@ -78,7 +78,7 @@ describe("WithdrawApp", async () => {
         },
       ],
       signatures: [
-        await (new ChannelSigner(withdrawerSigningKey.privateKey).signMessage(data)),
+        await new ChannelSigner(withdrawerSigningKey.privateKey).signMessage(data),
         HashZero,
       ],
       signers: [withdrawerWallet.address, counterpartyWallet.address],
@@ -90,7 +90,7 @@ describe("WithdrawApp", async () => {
 
   const createAction = async (): Promise<WithdrawAppAction> => {
     return {
-      signature: await (new ChannelSigner(counterpartySigningKey.privateKey).signMessage(data)),
+      signature: await new ChannelSigner(counterpartySigningKey.privateKey).signMessage(data),
     };
   };
 
