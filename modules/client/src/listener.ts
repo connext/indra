@@ -348,6 +348,7 @@ export class ConnextListener extends ConnextEventEmitter {
         return;
       } else {
         await this.connext.rejectInstallApp(appIdentityHash);
+        return;
       }
     }
     // install and run post-install tasks
