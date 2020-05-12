@@ -29,8 +29,8 @@
     "transpile": "./node_modules/.bin/tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@connext/utils": "6.3.12",
-    "@connext/types": "6.3.12",
+    "@connext/utils": "6.3.13",
+    "@connext/types": "6.3.13",
     "ethers": "4.0.47",
     "@openzeppelin/contracts": "3.0.1",
     "ganache-cli": "6.9.1",
