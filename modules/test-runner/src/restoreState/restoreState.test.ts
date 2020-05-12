@@ -1,9 +1,10 @@
 import { getLocalStore } from "@connext/store";
 import { IConnextClient, IChannelSigner, EventNames, EventPayloads } from "@connext/types";
-import { getRandomChannelSigner, stringify } from "@connext/utils";
+import { getRandomChannelSigner, stringify, toBN } from "@connext/utils";
 import { AddressZero, Zero } from "ethers/constants";
 
-import { expect, TOKEN_AMOUNT, createClient, ETH_AMOUNT_SM, fundChannel, TOKEN_AMOUNT_SM, env } from "../util";
+import { expect, TOKEN_AMOUNT, createClient, ETH_AMOUNT_SM, fundChannel, TOKEN_AMOUNT_SM, env, getNatsClient } from "../util";
+import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 
 describe("Restore State", () => {
   let clientA: IConnextClient;
@@ -12,10 +13,22 @@ describe("Restore State", () => {
   let signerA: IChannelSigner;
 
   beforeEach(async () => {
+    const nats = getNatsClient();
     signerA = getRandomChannelSigner(env.ethProviderUrl);
     clientA = await createClient({ signer: signerA, store: getLocalStore() });
     tokenAddress = clientA.config.contractAddresses.Token;
     nodeSignerAddress = clientA.nodeSignerAddress;
+
+    const REBALANCE_PROFILE = {
+      assetId: AddressZero,
+      lowerBoundCollateralize: toBN("0"),
+      upperBoundCollateralize: toBN("0"),
+      lowerBoundReclaim: toBN("0"),
+      upperBoundReclaim: toBN("0"),
+    };
+
+    // set rebalancing profile to reclaim collateral
+    await addRebalanceProfile(nats, clientA, REBALANCE_PROFILE);
   });
 
   afterEach(async () => {
