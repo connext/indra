@@ -54,7 +54,6 @@ export class DepositService {
         app.appDefinition === depositRegistry.appDefinitionAddress &&
         app.latestState.assetId === assetId,
     );
-    this.log.debug(`Found existing deposit app: ${stringify(depositApp)}`);
     if (depositApp && depositApp.latestState.transfers[0].to === channel.userIdentifier) {
       throw new Error(
         `Cannot deposit, user has deposit app installed for asset ${assetId}, app: ${depositApp.identityHash}`,
