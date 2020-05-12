@@ -20,12 +20,7 @@ import {
   Contract,
   ChallengeEvents,
 } from "@connext/types";
-import {
-  toBN,
-  nullLogger,
-  getSignerAddressFromPublicIdentifier,
-  stringify,
-} from "@connext/utils";
+import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import pWaterfall from "p-waterfall";
 
 import { storeKeys } from "../constants";
@@ -607,9 +602,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
     return this.execute((store) => {
       const key = this.getKey(storeKeys.CHALLENGE_UPDATED_EVENT, event.identityHash);
-      const existing = store[key] || [];
-      const idx = existing.findIndex((stored) => stringify(stored) === stringify(event));
-      if (idx !== -1) {
+      const existing: ChallengeUpdatedEventPayload[] = store[key] || [];
+      if (existing.map((stored) => stringify(stored)).includes(stringify(event))) {
         this.log.debug(`Found existing identical challenge created event, doing nothing.`);
         return store;
       }
