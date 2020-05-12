@@ -133,17 +133,22 @@ export default class ListenerService implements OnModuleInit {
         await this.appInstanceRepository.save(rejectedApp);
       },
       UNINSTALL_EVENT: async (data: UninstallMessage): Promise<void> => {
-        if(!data.data.multisigAddress) {
-          this.log.error(`Unexpected error - no multisigAddress found in uninstall event data: ${data.data.appIdentityHash}`)
+        if (!data.data.multisigAddress) {
+          this.log.error(
+            `Unexpected error - no multisigAddress found in uninstall event data: ${data.data.appIdentityHash}`,
+          );
         }
-        const channel = await this.channelRepository.findByMultisigAddressOrThrow(data.data.multisigAddress)
-        const assetIdResponder = (await this.appInstanceRepository.findByIdentityHashOrThrow(data.data.appIdentityHash)).responderDepositAssetId;
+        const channel = await this.channelRepository.findByMultisigAddressOrThrow(
+          data.data.multisigAddress,
+        );
+        const assetIdResponder = (
+          await this.appInstanceRepository.findByIdentityHashOrThrow(data.data.appIdentityHash)
+        ).responderDepositAssetId;
         // attempt a rebalance without blocking
-        this.channelService.rebalance(
-          channel,
-          assetIdResponder,
-        ).catch(e => {
-          this.log.error(`Caught error rebalancing channel ${channel.multisigAddress}: ${e.stack || e.message}`);
+        this.channelService.rebalance(channel, assetIdResponder).catch((e) => {
+          this.log.error(
+            `Caught error rebalancing channel ${channel.multisigAddress}: ${e.stack || e.message}`,
+          );
         });
         this.logEvent(UNINSTALL_EVENT, data);
       },

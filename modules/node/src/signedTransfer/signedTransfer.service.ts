@@ -116,10 +116,10 @@ export class SignedTransferService {
     if (freeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
       const depositReceipt = await this.depositService.deposit(
-        receiverChannel, 
-        amount.sub(freeBal[freeBalanceAddr]), 
-        assetId
-      )
+        receiverChannel,
+        amount.sub(freeBal[freeBalanceAddr]),
+        assetId,
+      );
       if (!depositReceipt) {
         throw new Error(
           `Could not deposit sufficient collateral to resolve linked transfer for reciever: ${userIdentifier}`,
@@ -169,10 +169,7 @@ export class SignedTransferService {
     };
 
     // kick off a rebalance before finishing
-    this.channelService.rebalance(
-      receiverChannel,
-      assetId
-    );
+    this.channelService.rebalance(receiverChannel, assetId);
 
     this.log.info(
       `installSignedTransferReceiverApp for ${userIdentifier} paymentId ${paymentId} complete: ${JSON.stringify(
