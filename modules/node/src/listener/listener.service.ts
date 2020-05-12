@@ -120,17 +120,7 @@ export default class ListenerService implements OnModuleInit {
       },
       REJECT_INSTALL_EVENT: async (data: RejectProposalMessage): Promise<void> => {
         this.logEvent(REJECT_INSTALL_EVENT, data);
-
-        // update app status
-        const rejectedApp = await this.appInstanceRepository.findByIdentityHash(
-          data.data.appIdentityHash,
-        );
-        if (!rejectedApp) {
-          this.log.debug(`No app found`);
-          return;
-        }
-        rejectedApp.type = AppType.REJECTED;
-        await this.appInstanceRepository.save(rejectedApp);
+        return;
       },
       UNINSTALL_EVENT: async (data: UninstallMessage): Promise<void> => {
         if (!data.data.multisigAddress) {
