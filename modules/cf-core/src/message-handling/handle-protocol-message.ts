@@ -68,18 +68,6 @@ export async function handleReceivedProtocolMessage(
     await emitOutgoingMessage(router, outgoingEventData);
     return;
   }
-
-  // remove proposal from channel and store
-  const json = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-  if (!json) {
-    throw new Error(
-      `Could not find channel for app instance ${appIdentityHash} when processing install protocol message`,
-    );
-  }
-  const channel = StateChannel.fromJson(json).removeProposal(proposal.identityHash);
-  await store.removeAppProposal(channel.multisigAddress, proposal.identityHash);
-
-  // finally, emit message
   await emitOutgoingMessage(router, outgoingEventData);
 }
 
