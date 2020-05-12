@@ -97,7 +97,7 @@ describe("SimpleLinkedTransferApp", () => {
   }
 
   before(async () => {
-    const wallet = new Wallet((await provider.getWallets())[0].privateKey);
+    const wallet = provider.getWallets()[0];
     simpleLinkedTransferApp = await new ContractFactory(
       SimpleLinkedTransferApp.abi,
       SimpleLinkedTransferApp.bytecode,

@@ -88,7 +88,7 @@ describe("HighRollerApp", () => {
   }
 
   before(async () => {
-    const wallet = new Wallet((await provider.getWallets())[0].privateKey);
+    const wallet = provider.getWallets()[0];
     highRollerApp = await new ContractFactory(
       HighRollerApp.abi,
       HighRollerApp.bytecode,

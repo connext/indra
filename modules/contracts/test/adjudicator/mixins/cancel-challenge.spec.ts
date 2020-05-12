@@ -41,7 +41,7 @@ describe("cancelDispute", () => {
   let cancelDisputeAndVerify: (versionNumber: number, signatures?: string[]) => Promise<void>;
 
   before(async () => {
-    wallet = new Wallet((await provider.getWallets())[0].privateKey);
+    wallet = provider.getWallets()[0];
     await wallet.getTransactionCount();
 
     appRegistry = await new ContractFactory(

@@ -46,7 +46,7 @@ describe("SimpleTwoPartySwapApp", () => {
   }
 
   before(async () => {
-    const wallet = new Wallet((await provider.getWallets())[0].privateKey);
+    const wallet = provider.getWallets()[0];
     simpleSwapApp = await new ContractFactory(
       SimpleTwoPartySwapApp.abi,
       SimpleTwoPartySwapApp.bytecode,

@@ -41,7 +41,7 @@ describe("MChallengeRegistryCore", () => {
   let isFinalized: () => Promise<boolean>;
 
   before(async () => {
-    wallet = new Wallet((await provider.getWallets())[0].privateKey);
+    wallet = provider.getWallets()[0];
     await wallet.getTransactionCount();
 
     appRegistry = await new ContractFactory(

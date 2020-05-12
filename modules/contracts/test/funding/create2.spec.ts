@@ -35,7 +35,7 @@ describe("ProxyFactory with CREATE2", function () {
   }
 
   before(async () => {
-    wallet = new Wallet((await provider.getWallets())[0].privateKey);
+    wallet = provider.getWallets()[0];
     pf = await new ContractFactory(ProxyFactory.abi, ProxyFactory.bytecode, wallet).deploy();
 
     echo = await new ContractFactory(Echo.abi, Echo.bytecode, wallet).deploy();

@@ -36,7 +36,7 @@ describe("DepositApp", () => {
 
   before(async () => {
     // use max funded wallet, see builder.config.ts
-    wallet = new Wallet((await provider.getWallets())[0].privateKey);
+    wallet = provider.getWallets()[0];
 
     depositApp = await new ContractFactory(DepositApp.abi, DepositApp.bytecode, wallet).deploy();
 

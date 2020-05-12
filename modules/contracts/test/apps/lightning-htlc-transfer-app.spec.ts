@@ -75,7 +75,7 @@ describe("LightningHTLCTransferApp", () => {
   }
 
   beforeEach(async () => {
-    const wallet = new Wallet((await provider.getWallets())[0].privateKey);
+    const wallet = provider.getWallets()[0];
     lightningHTLCTransferApp = await new ContractFactory(
       LightningHTLCTransferApp.abi,
       LightningHTLCTransferApp.bytecode,

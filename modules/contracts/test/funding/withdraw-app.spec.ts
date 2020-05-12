@@ -46,7 +46,7 @@ describe("WithdrawApp", async () => {
   const counterpartySigningKey = new utils.SigningKey(counterpartyWallet.privateKey);
 
   before(async () => {
-    wallet = new Wallet((await provider.getWallets())[0].privateKey);
+    wallet = provider.getWallets()[0];
     withdrawApp = await new ContractFactory(WithdrawApp.abi, WithdrawApp.bytecode, wallet).deploy();
   });
 

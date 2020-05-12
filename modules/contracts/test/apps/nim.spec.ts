@@ -58,7 +58,7 @@ describe("Nim", () => {
   }
 
   before(async () => {
-    const wallet = new Wallet((await provider.getWallets())[0].privateKey);
+    const wallet = provider.getWallets()[0];
     nim = await new ContractFactory(NimApp.abi, NimApp.bytecode, wallet).deploy();
   });
 

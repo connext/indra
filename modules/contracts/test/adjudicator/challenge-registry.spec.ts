@@ -55,7 +55,7 @@ describe("ChallengeRegistry", () => {
   let isProgressable: () => Promise<boolean>;
 
   before(async () => {
-    wallet = new Wallet((await provider.getWallets())[0].privateKey);
+    wallet = provider.getWallets()[0];
 
     appRegistry = await new ContractFactory(
       ChallengeRegistry.abi,

@@ -52,7 +52,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   }
 
   beforeEach(async () => {
-    wallet = new Wallet((await provider.getWallets())[0].privateKey);
+    wallet = provider.getWallets()[0];
     erc20 = await new ContractFactory(DolphinCoin.abi, DolphinCoin.bytecode, wallet).deploy();
 
     multiAssetMultiPartyCoinTransferInterpreter = await new ContractFactory(

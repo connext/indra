@@ -65,7 +65,7 @@ describe("TicTacToeApp", () => {
   }
 
   before(async () => {
-    const wallet = new Wallet((await provider.getWallets())[0].privateKey);
+    const wallet = provider.getWallets()[0];
     ticTacToe = await new ContractFactory(TicTacToeApp.abi, TicTacToeApp.bytecode, wallet).deploy();
   });
 
