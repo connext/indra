@@ -317,8 +317,13 @@ export class ConnextListener extends ConnextEventEmitter {
           break;
         }
         case DepositAppName: {
-          if (this.connext.checkDepositRights({ assetId: params.initiatorDepositAssetId })) {
-            throw new Error(`Deposit app already installed in client, rejecting.`);
+          const { appIdentityHash } = await this.connext.checkDepositRights({
+            assetId: params.initiatorDepositAssetId,
+          });
+          if (appIdentityHash) {
+            throw new Error(
+              `Deposit app already installed in client for ${params.initiatorDepositAssetId}, rejecting.`,
+            );
           }
           await validateDepositApp(
             params,
