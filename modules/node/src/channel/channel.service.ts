@@ -99,7 +99,7 @@ export class ChannelService {
     channel: Channel,
     assetId: string = AddressZero,
   ): Promise<TransactionReceipt | undefined> {
-    this.log.info(`rebalance for ${channel.userIdentifier} asset ${assetId} started`);
+    this.log.info(`Rebalance for ${channel.userIdentifier} asset ${assetId} started`);
     const normalizedAssetId = getAddress(assetId);
 
     const rebalancingTargets = await this.getRebalancingTargets(
@@ -155,7 +155,7 @@ export class ChannelService {
         `Free balance ${nodeFreeBalance} is less than or equal to upper reclaim bound: ${upperBoundReclaim.toString()}`,
       );
     }
-    this.log.info(`rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`);
+    this.log.info(`Rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`);
     return receipt as TransactionReceipt | undefined;
   }
 

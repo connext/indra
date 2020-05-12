@@ -77,6 +77,8 @@ export class DepositService {
           `Attempted to wait for ongoing transaction, but it took longer than 5 blocks, retry later.`,
         );
       }
+      this.log.warn(`Waited for active deposit, result: ${stringify(waited)}`);
+      return waited;
     }
 
     await this.channelRepository.setInflightCollateralization(channel, assetId, true);
@@ -94,8 +96,8 @@ export class DepositService {
       throw e;
     } finally {
       await this.rescindDepositRights(appIdentityHash);
+      await this.channelRepository.setInflightCollateralization(channel, assetId, false);
     }
-    await this.channelRepository.setInflightCollateralization(channel, assetId, false);
     this.log.info(`Deposit complete: ${JSON.stringify(receipt)}`);
     return receipt;
   }
@@ -138,7 +140,7 @@ export class DepositService {
     const startingBlock = await ethProvider.getBlockNumber();
     let depositReceipt;
     // register listener
-    depositReceipt = new Promise(async (resolve) => {
+    const resolvedReceipt = new Promise<TransactionReceipt>(async (resolve) => {
       const BLOCKS_TO_WAIT = 5;
       this.cfCoreService.cfCore.on(
         EventNames.UNINSTALL_EVENT,
@@ -151,7 +153,7 @@ export class DepositService {
             (await this.appRegistryRepository.findByAppDefinitionAddress(appInstance.appDefinition))
               .name === DepositAppName &&
             appInstance.initiatorDepositAssetId === assetId &&
-            depositReceipt
+            !!depositReceipt
           ) {
             resolve(depositReceipt);
           }
@@ -176,9 +178,9 @@ export class DepositService {
       });
     });
     this.log.info(
-      `Done waiting for collateralization in flight. DepositReceipt: ${depositReceipt}`,
+      `Done waiting for collateralization in flight. DepositReceipt: ${stringify(resolvedReceipt)}`,
     );
-    return depositReceipt;
+    return resolvedReceipt;
   }
 
   private async sendDepositToChain(
