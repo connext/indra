@@ -13,13 +13,14 @@ export const sugarDaddy = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider)
 export const ethWallet = Wallet.createRandom().connect(ethProvider);
 
 export const fundEthWallet = async () => {
+  const FUND_AMT = parseEther("10000");
+  const tokenContract = new Contract(addressBook[4447].Token.address, ERC20.abi, sugarDaddy);
   const ethFunding = await sugarDaddy.sendTransaction({
     to: ethWallet.address,
-    value: parseEther("50"),
+    value: FUND_AMT,
   });
   await ethFunding.wait();
-  const tokenContract = new Contract(addressBook[4447].Token.address, ERC20.abi, sugarDaddy);
-  const tx = await tokenContract.functions.transfer(ethWallet.address, parseEther("100"));
+  const tx = await tokenContract.functions.transfer(ethWallet.address, FUND_AMT);
   await tx.wait();
   return;
 };
