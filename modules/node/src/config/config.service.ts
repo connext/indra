@@ -145,6 +145,16 @@ export class ConfigService implements OnModuleInit {
     return JSON.parse(this.get("INDRA_ALLOWED_SWAPS"));
   }
 
+  async getHardcodedRate(from: string, to: string): Promise<string | undefined> {
+    const swaps = this.getAllowedSwaps();
+    const swap = swaps.find(s => s.from === from && s.to === to);
+    if (swap) {
+      return swap.rate;
+    } else {
+      return this.getDefaultSwapRate(from, to);
+    }
+  }
+
   async getDefaultSwapRate(from: string, to: string): Promise<string | undefined> {
     const tokenAddress = await this.getTokenAddress();
     if (from === AddressZero && to === tokenAddress) {
