@@ -10,7 +10,7 @@ import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 import { getNatsClient } from "../util/nats";
 import { ERC20 } from "@connext/contracts";
 
-describe.only("Reclaim", () => {
+describe("Reclaim", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
@@ -33,7 +33,7 @@ describe.only("Reclaim", () => {
     await clientB.messaging.disconnect();
   });
 
-  it.skip("happy case: node should reclaim ETH with async transfer", async () => {
+  it("happy case: node should reclaim ETH with async transfer", async () => {
     const REBALANCE_PROFILE = {
       assetId: AddressZero,
       lowerBoundCollateralize: toBN("5"),
@@ -134,8 +134,7 @@ describe.only("Reclaim", () => {
     await new Promise(async res => {
       const paymentId = getRandomBytes32();
       tokenContract.on("Transfer", (from, to, balance) => {
-        if (to === clientA.multisigAddress && preBalance.gt(balance)) {
-          console.log(`Caught correct event!`)
+        if (to === clientA.nodeSignerAddress && preBalance.gt(balance)) {
           res()
         }
       })
