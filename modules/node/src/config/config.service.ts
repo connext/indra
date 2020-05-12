@@ -148,7 +148,7 @@ export class ConfigService implements OnModuleInit {
   async getHardcodedRate(from: string, to: string): Promise<string | undefined> {
     const swaps = this.getAllowedSwaps();
     const swap = swaps.find(s => s.from === from && s.to === to);
-    if (swap) {
+    if (swap && swap.rate) {
       return swap.rate;
     } else {
       return this.getDefaultSwapRate(from, to);
