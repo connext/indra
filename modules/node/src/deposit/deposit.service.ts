@@ -39,7 +39,7 @@ export class DepositService {
     private readonly log: LoggerService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
-    private readonly appInstanceRepository: AppInstanceRepository
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("DepositService");
   }
@@ -67,9 +67,15 @@ export class DepositService {
     // don't allow deposit if an active deposit is in process
     if (channel.activeCollateralizations[assetId]) {
       this.log.warn(`Collateral request is in flight for ${assetId}, waiting for transaction`);
-      const waited = await this.waitForActiveDeposit(channel.userIdentifier, channel.multisigAddress, assetId);
+      const waited = await this.waitForActiveDeposit(
+        channel.userIdentifier,
+        channel.multisigAddress,
+        assetId,
+      );
       if (!waited) {
-        throw new Error(`Attempted to wait for ongoing transaction, but it took longer than 5 blocks, retry later.`);
+        throw new Error(
+          `Attempted to wait for ongoing transaction, but it took longer than 5 blocks, retry later.`,
+        );
       }
     }
 
@@ -98,10 +104,10 @@ export class DepositService {
     channel: Channel,
     tokenAddress: string = AddressZero,
   ): Promise<string | undefined> {
-    console.log(`Channel: ${stringify(channel)}`)
+    console.log(`Channel: ${stringify(channel)}`);
     const appIdentityHash = await this.proposeDepositInstall(channel, tokenAddress);
     if (!appIdentityHash) {
-      console.log(`Trying to throw this error`)
+      console.log(`Trying to throw this error`);
       throw new Error(
         `Failed to install deposit app for ${tokenAddress} in channel ${channel.multisigAddress}`,
       );
@@ -122,7 +128,11 @@ export class DepositService {
     return tx;
   }
 
-  private async waitForActiveDeposit(userId: string, multisigAddress: string, assetId: string): Promise<TransactionReceipt> {
+  private async waitForActiveDeposit(
+    userId: string,
+    multisigAddress: string,
+    assetId: string,
+  ): Promise<TransactionReceipt> {
     this.log.info(`Collateralization in flight for user ${userId}, waiting`);
     const ethProvider = this.configService.getEthProvider();
     const startingBlock = await ethProvider.getBlockNumber();
@@ -130,15 +140,23 @@ export class DepositService {
     // register listener
     depositReceipt = new Promise(async (resolve) => {
       const BLOCKS_TO_WAIT = 5;
-      this.cfCoreService.cfCore.on(EventNames.UNINSTALL_EVENT, async (data: EventPayloads.Uninstall) => {
-        const appInstance = await this.appInstanceRepository.findByIdentityHashOrThrow(data.appIdentityHash)
-        if (data.multisigAddress === multisigAddress && 
-          (await this.appRegistryRepository.findByAppDefinitionAddress(appInstance.appDefinition)).name === DepositAppName && 
-          appInstance.initiatorDepositAssetId === assetId && depositReceipt
-        ) {
-          resolve(depositReceipt)
-        }
-      })
+      this.cfCoreService.cfCore.on(
+        EventNames.UNINSTALL_EVENT,
+        async (data: EventPayloads.Uninstall) => {
+          const appInstance = await this.appInstanceRepository.findByIdentityHashOrThrow(
+            data.appIdentityHash,
+          );
+          if (
+            data.multisigAddress === multisigAddress &&
+            (await this.appRegistryRepository.findByAppDefinitionAddress(appInstance.appDefinition))
+              .name === DepositAppName &&
+            appInstance.initiatorDepositAssetId === assetId &&
+            depositReceipt
+          ) {
+            resolve(depositReceipt);
+          }
+        },
+      );
       ethProvider.on("block", async (blockNumber: number) => {
         if (blockNumber - startingBlock > BLOCKS_TO_WAIT) {
           return resolve(undefined);
@@ -156,7 +174,7 @@ export class DepositService {
           }
         }
       });
-    })
+    });
     this.log.info(
       `Done waiting for collateralization in flight. DepositReceipt: ${depositReceipt}`,
     );
