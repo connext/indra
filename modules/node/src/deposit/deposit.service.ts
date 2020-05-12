@@ -106,7 +106,6 @@ export class DepositService {
     channel: Channel,
     tokenAddress: string = AddressZero,
   ): Promise<string | undefined> {
-    console.log(`Channel: ${stringify(channel)}`);
     const appIdentityHash = await this.proposeDepositInstall(channel, tokenAddress);
     if (!appIdentityHash) {
       console.log(`Trying to throw this error`);
