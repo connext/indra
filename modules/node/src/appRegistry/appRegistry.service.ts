@@ -99,7 +99,12 @@ export class AppRegistryService implements OnModuleInit {
         throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
       }
 
-      await this.runPreInstallValidation(registryAppInfo, proposeInstallParams, from, installerChannel);
+      await this.runPreInstallValidation(
+        registryAppInfo,
+        proposeInstallParams,
+        from,
+        installerChannel,
+      );
 
       // check if we need to collateralize, only for swap app
       if (registryAppInfo.name === SimpleTwoPartySwapAppName) {
@@ -148,7 +153,7 @@ export class AppRegistryService implements OnModuleInit {
     registryAppInfo: AppRegistry,
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
-    channel: Channel
+    channel: Channel,
   ): Promise<void> {
     this.log.info(`runPreInstallValidation for app name ${registryAppInfo.name} started`);
     const supportedAddresses = this.configService.getSupportedTokenAddresses();
@@ -182,14 +187,15 @@ export class AppRegistryService implements OnModuleInit {
         break;
       }
       case DepositAppName: {
-        const appInstances = await this.cfCoreService.getAppInstances(channel.multisigAddress)
+        const appInstances = await this.cfCoreService.getAppInstances(channel.multisigAddress);
         const depositApp = appInstances.find(
-          appInstance =>
+          (appInstance) =>
             appInstance.appInterface.addr === registryAppInfo.appDefinitionAddress &&
-            (appInstance.latestState as DepositAppState).assetId === proposeInstallParams.initiatorDepositAssetId,
+            (appInstance.latestState as DepositAppState).assetId ===
+              proposeInstallParams.initiatorDepositAssetId,
         );
         if (depositApp) {
-          throw new Error(`Deposit app already installed for this assetId, rejecting.`)
+          throw new Error(`Deposit app already installed for this assetId, rejecting.`);
         }
         await validateDepositApp(
           proposeInstallParams,
