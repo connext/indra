@@ -61,7 +61,7 @@ describe("Watcher.init", () => {
   });
 });
 
-describe("Watcher.initiate", () => {
+describe.only("Watcher.initiate", () => {
   let provider: JsonRpcProvider;
   let store: IClientStore;
   let multisigAddress: string;
@@ -176,7 +176,7 @@ describe("Watcher.initiate", () => {
   });
 });
 
-describe("Watcher.cancel", () => {
+describe.only("Watcher.cancel", () => {
   let provider: JsonRpcProvider;
   let store: IClientStore;
   let watcher: Watcher;
