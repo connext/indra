@@ -209,7 +209,7 @@ export class CFCoreService {
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout,
     };
-    this.log.info(`Attempting to install app: ${appInfo.name}`);
+    this.log.info(`Attempting to install ${appInfo.name}`);
 
     let proposeRes: MethodResults.ProposeInstall;
     try {
