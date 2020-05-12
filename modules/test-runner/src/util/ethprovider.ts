@@ -30,10 +30,12 @@ export const sendOnchainValue = async (
   assetId: string = AddressZero,
 ): Promise<void> => {
   if (assetId === AddressZero) {
-    await ethWallet.sendTransaction({ to, value });
+    const tx = await ethWallet.sendTransaction({ to, value });
+    await tx.wait()
   } else {
     const tokenContract = new Contract(assetId, abi, ethWallet);
-    await tokenContract.functions.transfer(to, value);
+    const tx = await tokenContract.functions.transfer(to, value);
+    await tx.wait()
   }
 };
 
