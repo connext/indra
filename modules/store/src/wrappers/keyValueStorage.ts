@@ -20,7 +20,12 @@ import {
   Contract,
   ChallengeEvents,
 } from "@connext/types";
-import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import {
+  toBN,
+  nullLogger,
+  getSignerAddressFromPublicIdentifier,
+  stringify,
+} from "@connext/utils";
 import pWaterfall from "p-waterfall";
 
 import { storeKeys } from "../constants";
@@ -72,7 +77,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   /**
    * The store stores everything under a single key using the internal storage
-   * 
+   *
    * Only methods that are dealing with the store in memory should be wrapped
    * with an "exeucte" call. Because of this, use "getItem" to make sure you
    * are pulling from the latest store values (ie after all deferred promises
@@ -101,7 +106,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getItem<T>(key: string): Promise<T | undefined> {
-    const store = await this.execute(store => Promise.resolve(store));
+    const store = await this.execute((store) => store);
     const item = store[key];
     if (!item || Object.values(item).length === 0) {
       return undefined;
@@ -124,7 +129,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getEntries(): Promise<[string, any][]> {
-    const store = await this.execute(store => Promise.resolve(store));
+    const store = await this.execute((store) => store);
     return Object.entries(store);
   }
 
@@ -150,7 +155,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
     const channelKeys = (await this.getKeys()).filter((key) => key.includes(storeKeys.CHANNEL));
-    const store = await this.execute(store => Promise.resolve(store));
+    const store = await this.execute((store) => store);
     return channelKeys
       .map((key) => (store[key] ? properlyConvertChannelNullVals(store[key]) : undefined))
       .filter((channel) => !!channel);
@@ -460,8 +465,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async getSetStateCommitments(appIdentityHash: string): Promise<SetStateCommitmentJSON[]> {
     // get all stored challenges
     const key = this.getKey(storeKeys.SET_STATE_COMMITMENT, appIdentityHash);
-    const store = await this.execute((store) => Promise.resolve(store));
-    return store[key];
+    const store = await this.execute((store) => store);
+    return store[key] || [];
   }
 
   async getConditionalTransactionCommitment(
@@ -512,9 +517,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
-    this.execute((store) => {
+    return this.execute((store) => {
       const { identityHash } = data;
-      const existing = this.getChallengeFromStore(store, identityHash);
+      const challengeKey = this.getKey(storeKeys.CHALLENGE, identityHash);
+      const existing = store[challengeKey];
       if (
         existing &&
         toBN(existing.versionNumber).gt(data.versionNumber) &&
@@ -527,14 +533,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         );
         return store;
       }
-      this.log.debug(`Updating challenge for ${identityHash} with ${stringify(data)}`);
-      return this.saveStore(this.setAppChallenge(store, data));
+      store[challengeKey] = data;
+      return this.saveStore(store);
     });
   }
 
   async getActiveChallenges(): Promise<StoredAppChallenge[]> {
     // get all stored challenges
-    const store = await this.execute((store) => Promise.resolve(store));
+    const store = await this.execute((store) => store);
     const challengeKeys = Object.keys(store).filter(
       (key) =>
         key.includes(storeKeys.CHALLENGE) && !key.includes(storeKeys.CHALLENGE_UPDATED_EVENT),
@@ -551,7 +557,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   ///// Events
   async getLatestProcessedBlock(): Promise<number> {
-    const store = await this.execute((store) => Promise.resolve(store));
+    const store = await this.execute((store) => store);
     const key = this.getKey(storeKeys.BLOCK_PROCESSED);
     const item = store[key];
     return item ? parseInt(`${item}`) : 0;
@@ -567,8 +573,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
     const key = this.getKey(storeKeys.STATE_PROGRESSED_EVENT, appIdentityHash);
-    const existing = await this.getItem<StateProgressedEventPayload[]>(key);
-    return existing || [];
+    const store = await this.execute((store) => store);
+    return store[key] || [];
   }
 
   async createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void> {
@@ -585,15 +591,15 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         return store;
       }
       this.log.debug(`Adding state progressed event: ${stringify(event)}`);
-      const updatedStore = { ...store, [key]: existing.concat(event) };
-      return this.saveStore(updatedStore);
+      store[key] = existing.concat(event);
+      return this.saveStore(store);
     });
   }
 
   async getChallengeUpdatedEvents(
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]> {
-    const store = await this.execute((store) => Promise.resolve(store));
+    const store = await this.execute((store) => store);
     const key = this.getKey(storeKeys.CHALLENGE_UPDATED_EVENT, appIdentityHash);
     return store[key] || [];
   }
@@ -608,14 +614,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
         return store;
       }
       this.log.debug(`Adding challenge updated event: ${stringify(event)}`);
-      const updatedStore = { ...store, [key]: existing.concat(event) };
-      return this.saveStore(updatedStore);
+      store[key] = existing.concat(event);
+      return this.saveStore(store);
     });
   }
 
   async addOnchainAction(appIdentityHash: Bytes32, provider: JsonRpcProvider): Promise<void> {
     // fetch existing data
-    const store = await this.execute((store) => Promise.resolve(store));
+    const store = await this.execute((store) => store);
     const channel = await this.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!channel) {
       throw new Error(`Could not find channel for app ${appIdentityHash}`);
@@ -792,20 +798,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return existsIndex >= 0;
   }
 
-  private getChallengeFromStore(store: any, identityHash: Bytes32): StoredAppChallenge | undefined {
-    const challengeKey = this.getKey(storeKeys.CHALLENGE, identityHash);
-    return store[challengeKey] || undefined;
-  }
-
-  private setAppChallenge(store: any, data: ChallengeUpdatedEventPayload | StoredAppChallenge) {
-    const challengeKey = this.getKey(storeKeys.CHALLENGE, data.identityHash);
-    const updatedStore = {
-      ...store,
-      [challengeKey]: data,
-    };
-    return updatedStore;
-  }
-
   /**
    * NOTE: this relies on all `instruction`s being idempotent in case
    * the same instruction is added to the `deferred` array simultaneously.
@@ -815,11 +807,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
    */
   private execute = async (instruction: (store: any) => Promise<any>): Promise<any> => {
     // TODO: ideally this would make sure `this.deferred` is properly deduped.
-    // right now, it does not protect against that. Instead idempotent calls are serialized, 
-    // and the same call may be run multiple times. While this is not a problem, it is 
-    // an inefficient way to handle concurrent store writes
+    // right now, it does not protect against that. Instead idempotent calls are serialized,
+    // and the same call may be run multiple times. While this is not a problem, it is
+    const store = await this.getStore();
     this.deferred.push((store) => instruction(store));
-    const updatedStore = await pWaterfall(this.deferred, await this.getStore());
+    const updatedStore = await pWaterfall(this.deferred, store);
     this.deferred = [];
     return updatedStore;
   };
