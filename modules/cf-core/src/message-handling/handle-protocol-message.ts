@@ -124,7 +124,7 @@ async function getOutgoingEventDataFromProtocol(
           // TODO: It is weird that `params` is in the event data, we should
           // remove it, but after telling all consumers about this change
           params: {
-            appIdentityHash: postProtocolStateChannel.mostRecentlyInstalledAppInstance()
+            appIdentityHash: postProtocolStateChannel.getAppInstanceByAppSeqNo((params as ProtocolParams.Install).appSeqNo)
               .identityHash,
           },
         },
