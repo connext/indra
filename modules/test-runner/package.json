@@ -22,7 +22,7 @@
     "@connext/store": "6.3.13",
     "@connext/types": "6.3.13",
     "@ethereum-waffle/chai": "2.4.1",
-    "@openzeppelin/contracts": "2.5.0",
+    "@openzeppelin/contracts": "3.0.1",
     "axios": "0.19.2",
     "bs58check": "2.1.2",
     "chai": "4.2.0",

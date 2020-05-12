@@ -1,4 +1,4 @@
-pragma solidity 0.5.11;
+pragma solidity 0.6.7;
 pragma experimental "ABIEncoderV2";
 
 import "../adjudicator/interfaces/CounterfactualApp.sol";
@@ -56,6 +56,7 @@ contract HighRollerApp is CounterfactualApp {
     }
 
     function isStateTerminal(bytes calldata encodedState)
+        override
         external
         view
         returns (bool)
@@ -72,6 +73,7 @@ contract HighRollerApp is CounterfactualApp {
         bytes calldata encodedState,
         address[] calldata participants
     )
+        override
         external
         view
         returns (address)
@@ -84,6 +86,7 @@ contract HighRollerApp is CounterfactualApp {
         bytes calldata encodedState,
         bytes calldata encodedAction
     )
+        override
         external
         view
         returns (bytes memory)
@@ -154,6 +157,7 @@ contract HighRollerApp is CounterfactualApp {
     }
 
     function computeOutcome(bytes calldata encodedState)
+        override
         external
         view
         returns (bytes memory)
@@ -192,7 +196,7 @@ contract HighRollerApp is CounterfactualApp {
 
     function highRoller(bytes32 randomness)
         public
-        view
+        pure
         returns(uint8 playerFirstTotal, uint8 playerSecondTotal)
     {
         (
@@ -207,7 +211,7 @@ contract HighRollerApp is CounterfactualApp {
 
     function getPlayerRolls(bytes32 randomness)
         public // NOTE: This is used in app-root.tsx for the clientside dapp
-        view
+        pure
         returns(uint8 playerFirstRollOne, uint8 playerFirstRollTwo, uint8 playerSecondRollOne, uint8 playerSecondRollTwo)
     {
         (
@@ -224,7 +228,7 @@ contract HighRollerApp is CounterfactualApp {
 
     function getWinningAmounts(uint256 num1, uint256 num2)
         internal
-        view
+        pure
         returns (LibOutcome.TwoPartyFixedOutcome)
     {
         bytes32 randomSalt = calculateRandomSalt(num1, num2);
@@ -245,7 +249,7 @@ contract HighRollerApp is CounterfactualApp {
 
     function calculateRandomSalt(uint256 num1, uint256 num2)
         internal
-        view
+        pure
         returns (bytes32)
     {
         return keccak256(abi.encodePacked(num1 * num2));
@@ -258,7 +262,7 @@ contract HighRollerApp is CounterfactualApp {
     ///      string (e.g., 0x08, 0x10) by incrementing by 8 bytes each time.
     function cutBytes32(bytes32 h)
         internal
-        view
+        pure
         returns (bytes8 q1, bytes8 q2, bytes8 q3, bytes8 q4)
     {
         assembly {
@@ -276,7 +280,7 @@ contract HighRollerApp is CounterfactualApp {
     /// @dev Splits this by using modulo 6 to get the uint
     function bytes8toDiceRoll(bytes8 q)
       internal
-      view
+      pure
       returns (uint8)
     {
         return uint8(uint64(q) % 6);

@@ -1,4 +1,4 @@
-pragma solidity 0.5.11;
+pragma solidity 0.6.7;
 pragma experimental "ABIEncoderV2";
 
 import "../adjudicator/interfaces/CounterfactualApp.sol";
@@ -30,6 +30,7 @@ contract NimApp is CounterfactualApp {
     }
 
     function isStateTerminal(bytes calldata encodedState)
+        override
         external
         view
         returns (bool)
@@ -43,6 +44,7 @@ contract NimApp is CounterfactualApp {
         bytes calldata encodedState,
         address[] calldata participants
     )
+        override
         external
         view
         returns (address)
@@ -54,6 +56,7 @@ contract NimApp is CounterfactualApp {
     function applyAction(
         bytes calldata encodedState, bytes calldata encodedAction
     )
+        override
         external
         view
         returns (bytes memory)
@@ -75,6 +78,7 @@ contract NimApp is CounterfactualApp {
     }
 
     function computeOutcome(bytes calldata encodedState)
+        override
         external
         view
         returns (bytes memory)
@@ -90,7 +94,7 @@ contract NimApp is CounterfactualApp {
 
     function isWin(AppState memory state)
         internal
-        view
+        pure
         returns (bool)
     {
         return (

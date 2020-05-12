@@ -1,4 +1,4 @@
-pragma solidity 0.5.11;
+pragma solidity 0.6.7;
 pragma experimental "ABIEncoderV2";
 
 import "./AppWithAction.sol";
@@ -19,6 +19,7 @@ contract AppComputeOutcomeFails is AppWithAction {
     }
 
     function computeOutcome(bytes calldata)
+        override
         external
         view
         returns (bytes memory)
