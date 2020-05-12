@@ -27,6 +27,8 @@ contract CounterfactualApp is CounterfactualAppInterface {
     }
 
     function init(bytes calldata)
+        override
+        virtual
         external
         view
         returns (bool)

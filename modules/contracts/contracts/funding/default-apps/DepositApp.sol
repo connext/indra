@@ -26,6 +26,7 @@ contract DepositApp is CounterfactualApp {
     }
 
     function init(bytes calldata encodedState)
+        override
         external
         view
         returns (bool)
@@ -38,7 +39,7 @@ contract DepositApp is CounterfactualApp {
         uint256 startingTotalAmountWithdrawn;
         uint256 startingMultisigBalance;
 
-        if (isDeployed(state.multisigAddress)) {
+        if (Address.isContract(state.multisigAddress)) {
             startingTotalAmountWithdrawn = MinimumViableMultisig(state.multisigAddress).totalAmountWithdrawn(state.assetId);
         } else {
             startingTotalAmountWithdrawn = 0;
@@ -47,7 +48,7 @@ contract DepositApp is CounterfactualApp {
         if (state.assetId == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
             startingMultisigBalance = state.multisigAddress.balance;
         } else {
-            startingMultisigBalance = ERC20(state.assetId).balanceOf(state.multisigAddress);
+            startingMultisigBalance = IERC20(state.assetId).balanceOf(state.multisigAddress);
         }
 
         require(

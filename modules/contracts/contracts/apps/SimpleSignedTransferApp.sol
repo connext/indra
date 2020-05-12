@@ -28,6 +28,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
     }
 
     function init(bytes calldata encodedState)
+        override
         external
         view
         returns(bool)

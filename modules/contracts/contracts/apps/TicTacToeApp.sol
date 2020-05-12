@@ -50,10 +50,11 @@ contract TicTacToeApp is CounterfactualApp {
         WinClaim winClaim;
     }
 
-    function init(bytes calldata encodedState)
+    function init(bytes calldata /* encodedState */)
+        override
         external
         view
-        returns (bool) 
+        returns (bool)
     {
         return true;
     }

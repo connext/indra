@@ -14,6 +14,11 @@ interface CounterfactualAppInterface {
         view
         returns (address);
 
+    function init(bytes calldata)
+        external
+        view
+        returns (bool);
+
     function applyAction(bytes calldata, bytes calldata)
         external
         view

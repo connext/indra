@@ -16,7 +16,8 @@ contract SimpleTwoPartySwapApp is CounterfactualApp {
         LibOutcome.CoinTransfer[][] coinTransfers;
     }
 
-    function init(bytes calldata encodedState)
+    function init(bytes calldata /* encodedState */)
+        override
         external
         view
         returns(bool)

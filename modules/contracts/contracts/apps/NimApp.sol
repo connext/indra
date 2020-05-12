@@ -21,7 +21,8 @@ contract NimApp is CounterfactualApp {
         uint256[3] pileHeights;
     }
 
-    function init(bytes calldata encodedState)
+    function init(bytes calldata /* encodedState */)
+        override
         external
         view
         returns(bool)

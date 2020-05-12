@@ -11,8 +11,9 @@ import "./AppWithAction.sol";
 contract AppApplyActionFails is AppWithAction {
 
     function init(
-        bytes calldata encodedState
+        bytes calldata /* encodedState */
     )
+        override
         external
         view
         returns (bool)

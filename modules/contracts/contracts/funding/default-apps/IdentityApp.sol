@@ -6,7 +6,8 @@ import "../../adjudicator/interfaces/CounterfactualApp.sol";
 
 contract IdentityApp is CounterfactualApp {
 
-    function init(bytes calldata encodedState)
+    function init(bytes calldata /* encodedState */)
+        override
         external
         view
         returns(bool)
