@@ -1,4 +1,4 @@
-import { EventNames, IConnextClient, IChannelSigner } from "@connext/types";
+import { EventNames, IConnextClient, IChannelSigner, CF_METHOD_TIMEOUT } from "@connext/types";
 import { ChannelSigner, delay, getRandomChannelSigner } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
@@ -73,7 +73,7 @@ describe("Withdraw offline tests", () => {
 
     await expect(
       withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
-    ).to.be.rejectedWith(`proposal took longer than 90 seconds`);
+    ).to.be.rejectedWith(`proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`);
   });
 
   it("client proposes withdrawal and then goes offline before node responds", async () => {
@@ -94,7 +94,7 @@ describe("Withdraw offline tests", () => {
 
     await expect(
       withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
-    ).to.be.rejectedWith(`proposal took longer than 90 seconds`);
+    ).to.be.rejectedWith(`proposal took longer than ${CF_METHOD_TIMEOUT/1000} seconds`);
   });
 
   it.skip("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {

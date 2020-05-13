@@ -11,5 +11,5 @@ export const CONVENTION_FOR_ETH_ASSET_ID = AddressZero;
 export const CF_METHOD_TIMEOUT = 10_000;
 
 // shortest timeout
-export const NATS_TIMEOUT = 10_100;
+export const NATS_TIMEOUT = 11_000;
 export const NATS_ATTEMPTS = 2;

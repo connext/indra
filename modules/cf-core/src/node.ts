@@ -210,7 +210,7 @@ export class Node {
           type: EventNames.PROTOCOL_MESSAGE_EVENT,
         } as ProtocolMessage);
 
-        // 90 seconds is the default lock acquiring time time
+        // 10 seconds is the default lock acquiring time time
         const msg = await Promise.race([counterpartyResponse, delay(IO_SEND_AND_WAIT_TIMEOUT)]);
 
         if (!msg || !("data" in (msg as ProtocolMessage))) {
