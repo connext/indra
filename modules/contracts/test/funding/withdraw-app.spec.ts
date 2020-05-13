@@ -128,7 +128,7 @@ describe("WithdrawApp", async () => {
 
   it("fails init with incorrect withdrawer signature", async() => {
     let initialState = await createInitialState();
-    initialState.signatures[0] = "0x0100000000000000000000000000000000000000000000000000000000000000";
+    initialState.signatures[0] = await new ChannelSigner(bystanderSigningKey.privateKey).signMessage(data);
     await expect(init(initialState)).revertedWith("cannot install withdraw app with invalid withdrawer signature");
   })
 
