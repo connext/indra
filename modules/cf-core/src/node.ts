@@ -215,7 +215,7 @@ export class Node {
 
         if (!msg || !("data" in (msg as ProtocolMessage))) {
           throw new Error(
-            `IO_SEND_AND_WAIT timed out after 90s waiting for counterparty reply in ${data.protocol}`,
+            `IO_SEND_AND_WAIT timed out after ${IO_SEND_AND_WAIT_TIMEOUT / 1000}s waiting for counterparty reply in ${data.protocol}`,
           );
         }
 
