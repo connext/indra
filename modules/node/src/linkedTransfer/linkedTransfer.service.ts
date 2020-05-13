@@ -5,7 +5,7 @@ import {
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, toBN, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
 
@@ -67,7 +67,7 @@ export class LinkedTransferService {
     this.log.info(
       `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId} started`,
     );
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+    let receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userIdentifier,
     );
 
@@ -120,15 +120,41 @@ export class LinkedTransferService {
     );
 
     if (freeBal[freeBalanceAddr].lt(amount)) {
+      // to avoid unnecessary small collateralizations, choose the max
+      // of the payment and the upper bound for deposit efficiency
+      const deposit = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
+        userIdentifier,
+        assetId,
+        amount,
+        freeBal[freeBalanceAddr],
+      );
+      
       // request collateral and wait for deposit to come through
       const depositReceipt = await this.depositService.deposit(
         receiverChannel,
-        amount.sub(freeBal[freeBalanceAddr]),
+        deposit,
         assetId,
       );
+      this.log.warn(`Deposit receipt: ${stringify(depositReceipt)}`);
       if (!depositReceipt) {
         throw new Error(
           `Could not deposit sufficient collateral to resolve linked transfer for reciever: ${userIdentifier}`,
+        );
+      }
+      // sanity check the post-deposit free balance
+      receiverChannel = await this.channelRepository.findByMultisigAddressOrThrow(
+        receiverChannel.multisigAddress,
+      );
+      const postDeposit = await this.cfCoreService.getFreeBalance(
+        userIdentifier,
+        receiverChannel.multisigAddress,
+        assetId,
+      );
+      if (postDeposit[freeBalanceAddr].lt(amount)) {
+        throw new Error(
+          `Post deposit collateral is insufficient to forward a payment for ${amount.toString()} of ${assetId}. Post-deposit collateral: ${postDeposit[
+            freeBalanceAddr
+          ].toString()}, pre-deposit collateral: ${freeBal[freeBalanceAddr].toString()}`,
         );
       }
     }
@@ -164,7 +190,7 @@ export class LinkedTransferService {
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appIdentityHash) {
-      throw new Error(`Could not install app on receiver side.`);
+      throw new Error(`Could not install app on receiver side for payment ${paymentId}`);
     }
 
     const returnRes: NodeResponses.ResolveLinkedTransfer = {
