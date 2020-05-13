@@ -6,12 +6,12 @@ import { deBigNumberifyJson, ChannelSigner, stringify } from "@connext/utils";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { NetworkContextForTestSuite } from "../contracts";
 import {
-  ProposeMessage,
   MethodParams,
   JsonRpcProvider,
   IClientStore,
   MethodNames,
   EventNames,
+  EventPayloads,
 } from "@connext/types";
 import { getMemoryStore } from "@connext/store";
 import { MemoryLockService } from "../services";
@@ -103,10 +103,6 @@ describe("Node method follows spec - propose install", () => {
           console.log(`Caught error sending rpc: ${stringify(e)}`);
         }
       });
-      const channelA = await storeServiceA.getStateChannel(multisigAddress);
-      console.log("channelA: ", stringify(channelA));
-      const channelB = await storeServiceB.getStateChannel(multisigAddress);
-      console.log("channelB: ", stringify(channelB));
       nodeA = await Node.create(
         new MemoryMessagingServiceWithLimits(sharedEventEmitter),
         storeServiceA,
@@ -119,8 +115,10 @@ describe("Node method follows spec - propose install", () => {
         new Logger("CreateClient", env.logLevel, true, "A"),
       );
 
-      await new Promise(async (resolve) => {
-        nodeA.on(EventNames.SYNC, resolve);
+      const expectedChannel = await storeServiceB.getStateChannel(multisigAddress);
+
+      const eventData = await new Promise<EventPayloads.Sync>(async (resolve) => {
+        nodeB.on(EventNames.SYNC, (data) => resolve(data));
         await nodeA.rpcRouter.dispatch({
           methodName: MethodNames.chan_sync,
           parameters: { multisigAddress } as MethodParams.Sync,
@@ -128,15 +126,11 @@ describe("Node method follows spec - propose install", () => {
         });
       });
 
-      expect(true).toBe(true);
-
-      // await new Promise(async (res) => {
-      //   nodeB.once("PROPOSE_INSTALL_EVENT", res);
-      //   await nodeA.rpcRouter.dispatch({
-      //     ...rpc,
-      //     parameters: deBigNumberifyJson(params),
-      //   });
-      // });
+      expect(eventData).toMatchObject({
+        from: nodeA.publicIdentifier,
+        type: EventNames.SYNC,
+        data: { syncedChannel: expectedChannel },
+      });
     }, 30_000);
   });
 });

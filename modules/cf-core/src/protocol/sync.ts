@@ -12,19 +12,18 @@ import {
   toBN,
   getSignerAddressFromPublicIdentifier,
   recoverAddressFromChannelMessage,
-  getPublicKeyFromPublicIdentifier,
 } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { StateChannel, AppInstance } from "../models";
-import { Context, ProtocolExecutionFlow } from "../types";
+import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 
-import { stateChannelClassFromStoreByMultisig, assertIsValidSignature } from "./utils";
-import { getSetStateCommitment } from "../ethereum";
+import { stateChannelClassFromStoreByMultisig } from "./utils";
+import { getSetStateCommitment, SetStateCommitment } from "../ethereum";
 import { keccak256, defaultAbiCoder } from "ethers/utils";
 
 const protocol = ProtocolNames.sync;
-const { IO_SEND, IO_SEND_AND_WAIT } = Opcode;
+const { IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
 
 /**
  * @description This exchange is described at the following URL:
@@ -44,11 +43,10 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
       initiatorIdentifier,
     } = params as ProtocolParams.Sync;
-    let preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
       multisigAddress,
       store,
     );
-
     const m1 = {
       protocol,
       processID,
@@ -81,28 +79,27 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     } = m2!;
 
     const responderChannel = StateChannel.fromJson(channelJson);
-    console.log("channelJson: ", channelJson);
 
     if (
       preProtocolStateChannel.freeBalance.latestVersionNumber <
       responderChannel.freeBalance.latestVersionNumber
     ) {
-      console.log(`Channel freeBalance is out of sync, attempting sync now`);
+      throw new Error("TODO: handle case where initiator free balance is out of sync");
     }
 
+    let postProtocolStateChannel;
+    let commitments: SetStateCommitment[] = [];
     if (preProtocolStateChannel.numProposedApps < responderChannel.numProposedApps) {
       if (responderChannel.numProposedApps - preProtocolStateChannel.numProposedApps !== 1) {
         throw new Error(`Cannot sync by more than one proposed app, use restore instead.`);
       }
-      console.log(`Channel numProposedApps is out of sync, attempting sync now`);
-      const untrackedProposedApps = [...responderChannel.proposedAppInstances.values()].filter(
+      log.debug(`Channel numProposedApps is out of sync, attempting sync now`);
+      const untrackedProposedApp = [...responderChannel.proposedAppInstances.values()].find(
         (app) => !preProtocolStateChannel.proposedAppInstances.has(app.identityHash),
       );
-      if (untrackedProposedApps.length !== 1) {
-        throw new Error(`Cannot sync more than one proposed app`);
+      if (!untrackedProposedApp) {
+        throw new Error(`Cannot find matching proposal, aborting sync`);
       }
-
-      const [untrackedProposedApp] = untrackedProposedApps;
       const correspondingSetStateCommitment = proposalCommitments.find(
         (p) => p.appIdentityHash === untrackedProposedApp.identityHash,
       );
@@ -135,7 +132,6 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         context,
         proposedAppInstance as AppInstance,
       );
-      console.log('generatedCommitment: ', generatedCommitment);
       const signer1 = await recoverAddressFromChannelMessage(
         generatedCommitment.hashToSign(),
         correspondingSetStateCommitment.signatures[0],
@@ -144,28 +140,29 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         generatedCommitment.hashToSign(),
         correspondingSetStateCommitment.signatures[1],
       );
-      // TODO: check counterparty sig
-      console.log(
-        "getSignerAddressFromPublicIdentifier(initiatorIdentifier): ",
-        getSignerAddressFromPublicIdentifier(initiatorIdentifier),
-      );
-      console.log("signer1: ", signer1);
-      console.log(
-        "getSignerAddressFromPublicIdentifier(initiatorIdentifier): ",
-        getSignerAddressFromPublicIdentifier(initiatorIdentifier),
-      );
-      console.log("signer2: ", signer2);
       if (
         signer1 === getSignerAddressFromPublicIdentifier(initiatorIdentifier) ||
         signer2 === getSignerAddressFromPublicIdentifier(initiatorIdentifier)
       ) {
-        preProtocolStateChannel = preProtocolStateChannel.addProposal(untrackedProposedApp);
+        postProtocolStateChannel = preProtocolStateChannel.addProposal(untrackedProposedApp);
+        commitments.push(generatedCommitment);
       }
+    } else {
+      throw new Error("TODO: handle case where initiator is ahead of responder in sync");
     }
 
-    console.log("POST SYNC CHANNEL: ", stringify(preProtocolStateChannel.toJson()));
+    if (!postProtocolStateChannel || commitments.length === 0) {
+      throw new Error("Could not generate commitments or new channel using the sync protocol");
+    }
 
-    logTime(log, substart, `[${processID}] Response finished`);
+    yield [
+      PERSIST_STATE_CHANNEL,
+      PersistStateChannelType.SyncProposal,
+      postProtocolStateChannel,
+      commitments,
+    ];
+
+    logTime(log, substart, `[${processID}] Initiation finished`);
   },
 
   1 /* Responding */: async function* (context: Context) {
@@ -192,7 +189,6 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         store.getSetStateCommitments(proposedApp.identityHash),
       ),
     );
-    console.log("initiatorChannelJson: ", initiatorChannelJson);
 
     substart = Date.now();
 
@@ -207,7 +203,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         proposalCommitments: proposalCommitments.map((commitment) => commitment[0]),
       },
     } as ProtocolMessageData;
-    yield [IO_SEND, m1];
+    yield [IO_SEND, m1, preProtocolStateChannel];
 
     logTime(log, substart, `[${processID}] Response finished`);
     substart = Date.now();
