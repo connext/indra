@@ -2,7 +2,7 @@ import { env } from "../setup";
 import { Node } from "../../node";
 import { createChannel, makeProposeCall } from "../utils";
 import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
-import { deBigNumberifyJson, ChannelSigner, stringify } from "@connext/utils";
+import { deBigNumberifyJson, ChannelSigner, stringify, delay } from "@connext/utils";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { NetworkContextForTestSuite } from "../contracts";
 import {
@@ -115,22 +115,26 @@ describe("Node method follows spec - propose install", () => {
         new Logger("CreateClient", env.logLevel, true, "A"),
       );
 
-      const expectedChannel = await storeServiceB.getStateChannel(multisigAddress);
+      const expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
 
-      const eventData = await new Promise<EventPayloads.Sync>(async (resolve) => {
-        nodeB.on(EventNames.SYNC, (data) => resolve(data));
-        await nodeA.rpcRouter.dispatch({
+      const [eventData, rpcResult] = await Promise.all([
+        new Promise((resolve) => {
+          nodeB.on(EventNames.SYNC, (data) => resolve(data));
+        }),
+        nodeA.rpcRouter.dispatch({
           methodName: MethodNames.chan_sync,
           parameters: { multisigAddress } as MethodParams.Sync,
           id: Date.now(),
-        });
-      });
+        }),
+      ]) as [EventPayloads.Sync, any];
 
+      const { result: { result: syncedChannel } } = rpcResult;
       expect(eventData).toMatchObject({
         from: nodeA.publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
+      expect(syncedChannel).toMatchObject(expectedChannel);
     }, 30_000);
   });
 });
