@@ -142,7 +142,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       );
       const signer2 = await recoverAddressFromChannelMessage(
         generatedCommitment.hashToSign(),
-        correspondingSetStateCommitment.signatures[0],
+        correspondingSetStateCommitment.signatures[1],
       );
       // TODO: check counterparty sig
       console.log(
