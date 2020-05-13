@@ -268,6 +268,9 @@ export class Node {
             );
             return { channel: stateChannel };
           }
+          case PersistStateChannelType.NoChange: { 
+            return { channel: stateChannel };
+          }
           default: {
             throw new Error(`Unrecognized persist state channel type: ${type}`);
           }
