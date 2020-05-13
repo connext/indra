@@ -20,7 +20,7 @@ import { EventEmitter } from "events";
 
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
-describe("Node method follows spec - propose install", () => {
+describe("Sync", () => {
   let multisigAddress: string;
   let nodeA: Node;
   let nodeB: Node;
@@ -35,7 +35,7 @@ describe("Node method follows spec - propose install", () => {
 
   beforeEach(async () => {});
 
-  describe("NodeA initiates proposal, nodeB approves, found in both stores", () => {
+  describe("Sync::propose", () => {
     beforeEach(async () => {
       sharedEventEmitter = new EventEmitter();
 
@@ -83,7 +83,7 @@ describe("Node method follows spec - propose install", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
     });
 
-    it("propose install an app with eth and a meta", async () => {
+    it("sync protocol initiator is missing a proposal held by the protocol responder", async () => {
       const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const params = {
         ...(rpc.parameters as MethodParams.ProposeInstall),
@@ -131,6 +131,61 @@ describe("Node method follows spec - propose install", () => {
       const { result: { result: { syncedChannel } } } = rpcResult;
       expect(eventData).toMatchObject({
         from: nodeA.publicIdentifier,
+        type: EventNames.SYNC,
+        data: { syncedChannel: expectedChannel },
+      });
+      expect(syncedChannel).toMatchObject(expectedChannel);
+    }, 30_000);
+
+    it("sync protocol responder is missing a proposal held by the protocol initiator", async () => {
+      // nodeA is responder, nodeB is sync initiator
+      const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
+      const params = {
+        ...(rpc.parameters as MethodParams.ProposeInstall),
+        multisigAddress: undefined,
+        meta: {
+          info: "Provided meta",
+        },
+      };
+      await new Promise(async (res, rej) => {
+        nodeB.once("PROPOSE_INSTALL_EVENT", res);
+        try {
+          await nodeA.rpcRouter.dispatch({
+            ...rpc,
+            parameters: deBigNumberifyJson(params),
+          });
+        } catch (e) {
+          return rej(`Caught error sending rpc: ${stringify(e)}`);
+        }
+      });
+      nodeA = await Node.create(
+        new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+        storeServiceA,
+        global["network"],
+        nodeConfig,
+        provider,
+        channelSignerA,
+        lockService,
+        0,
+        new Logger("CreateClient", env.logLevel, true, "A"),
+      );
+
+      const expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
+
+      const [eventData, rpcResult] = await Promise.all([
+        new Promise((resolve) => {
+          nodeA.on(EventNames.SYNC, (data) => resolve(data));
+        }),
+        nodeB.rpcRouter.dispatch({
+          methodName: MethodNames.chan_sync,
+          parameters: { multisigAddress } as MethodParams.Sync,
+          id: Date.now(),
+        }),
+      ]) as [EventPayloads.Sync, any];
+
+      const { result: { result: { syncedChannel } } } = rpcResult;
+      expect(eventData).toMatchObject({
+        from: nodeB.publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });

@@ -98,9 +98,20 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     const responderChannel = StateChannel.fromJson(responderChannelJson);
 
     if (!needsSyncFromCounterparty(preProtocolStateChannel, responderChannel)) {
-      throw new Error("TODO: handle case where responder should sync");
+      log.debug(`No sync from counterparty needed, completing.`);
+      // use yield syntax to properly return values from the protocol
+      // to the controllers
+      yield [
+        PERSIST_STATE_CHANNEL,
+        PersistStateChannelType.NoChange,
+        preProtocolStateChannel,
+      ];
+      logTime(log, start, `[${processID}] Initiation finished`);
+      return;
     }
 
+    // sync and save all proposals
+    substart = Date.now();
     const {
       updatedChannel: postProposalChannel,
       commitments: postProposalSyncCommitments,
@@ -111,21 +122,16 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       context,
       ourIdentifier,
     );
-
-    const commitments = postProposalSyncCommitments;
-    const postProtocolStateChannel = postProposalChannel;
-    if (!postProtocolStateChannel) {
-      throw new Error("wtf tho");
-    }
+    logTime(log, substart, `[${processID}] Synced proposals from responder`);
 
     yield [
       PERSIST_STATE_CHANNEL,
       PersistStateChannelType.SyncProposal,
-      postProtocolStateChannel,
-      commitments,
+      postProposalChannel,
+      postProposalSyncCommitments,
     ];
 
-    logTime(log, substart, `[${processID}] Initiation finished`);
+    logTime(log, start, `[${processID}] Initiation finished`);
   },
 
   1 /* Responding */: async function* (context: Context) {
@@ -136,14 +142,19 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     let substart = start;
     log.info(`[${processID}] Response started ${stringify(params)}`);
 
-    const { multisigAddress, initiatorIdentifier } = params as ProtocolParams.Sync;
+    const {
+      multisigAddress,
+      initiatorIdentifier,
+      responderIdentifier,
+    } = params as ProtocolParams.Sync;
+    const ourIdentifier = responderIdentifier;
 
     const {
       customData: {
         channel: initiatorChannelJson,
         proposalCommitments: initiatorProposalCommitments,
-        freeBalanceCommitments: initatorFreeBalanceCommitments,
-        installedCommitments: initatorInstalledCommitments,
+        // freeBalanceCommitments: initatorFreeBalanceCommitments,
+        // installedCommitments: initatorInstalledCommitments,
       },
     } = message;
 
@@ -159,28 +170,52 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceCommitments,
     } = await getCommitmentsFromChannel(preProtocolStateChannel, store);
 
-    if (needsSyncFromCounterparty(preProtocolStateChannel, initatorChannel)) {
-      throw new Error("TODO: Implement responder syncing");
+    let postSyncStateChannel = StateChannel.fromJson(preProtocolStateChannel.toJson());
+    const messageToSend = {
+      protocol,
+      processID,
+      params,
+      seq: UNASSIGNED_SEQ_NO,
+      to: initiatorIdentifier,
+      customData: {
+        channel: preProtocolStateChannel.toJson(),
+        proposalCommitments,
+        freeBalanceCommitments,
+        installedCommitments,
+      },
+    };
+    if (!needsSyncFromCounterparty(preProtocolStateChannel, initatorChannel)) {
+      // immediately send message without updating channel
+      log.debug(`No sync from counterparty needed, sending response and completing.`);
+      yield [IO_SEND, messageToSend, postSyncStateChannel];
+      logTime(log, start, `[${processID}] Response finished`);
+      return;
     }
 
+    // sync and save all proposals
     substart = Date.now();
+    const {
+      updatedChannel: postProposalChannel,
+      commitments: postProposalSyncCommitments,
+    } = await syncUntrackedProposals(
+      postSyncStateChannel,
+      initatorChannel,
+      initiatorProposalCommitments,
+      context,
+      ourIdentifier,
+    );
+    logTime(log, substart, `[${processID}] Synced proposals from initator`);
+
     yield [
-      IO_SEND,
-      {
-        protocol,
-        processID,
-        params,
-        seq: UNASSIGNED_SEQ_NO,
-        to: initiatorIdentifier,
-        customData: {
-          channel: preProtocolStateChannel.toJson(),
-          proposalCommitments,
-          freeBalanceCommitments,
-          installedCommitments,
-        },
-      },
-      preProtocolStateChannel,
+      PERSIST_STATE_CHANNEL,
+      PersistStateChannelType.SyncProposal,
+      postProposalChannel,
+      postProposalSyncCommitments,
     ];
+    postSyncStateChannel = StateChannel.fromJson(postProposalChannel.toJson());
+
+    yield [IO_SEND, messageToSend, postSyncStateChannel];
+    logTime(log, start, `[${processID}] Response finished`);
   },
 };
 
@@ -284,8 +319,11 @@ async function getCommitmentsFromChannel(channel: StateChannel, store: IStoreSer
 }
 
 // will return true IFF there is information in our counterparty's channel
-// we must update with. Will return false if the responder 
-function needsSyncFromCounterparty(ourChannel: StateChannel, counterpartyChannel: StateChannel): boolean {
+// we must update with. Will return false if the responder
+function needsSyncFromCounterparty(
+  ourChannel: StateChannel,
+  counterpartyChannel: StateChannel,
+): boolean {
   // check channel nonces
   // covers interruptions in: propose
   if (ourChannel.numProposedApps < counterpartyChannel.numProposedApps) {
@@ -295,8 +333,7 @@ function needsSyncFromCounterparty(ourChannel: StateChannel, counterpartyChannel
   // check free balance nonces
   // covers interruptions in: uninstall, install
   if (
-    ourChannel.freeBalance.latestVersionNumber <
-    counterpartyChannel.freeBalance.latestVersionNumber
+    ourChannel.freeBalance.latestVersionNumber < counterpartyChannel.freeBalance.latestVersionNumber
   ) {
     return true;
   }
@@ -314,10 +351,7 @@ function needsSyncFromCounterparty(ourChannel: StateChannel, counterpartyChannel
       return;
     }
     const counterpartyCopy = counterpartyChannel.appInstances.get(app.identityHash);
-    if (
-      counterpartyCopy &&
-      counterpartyCopy.latestVersionNumber > app.latestVersionNumber
-    ) {
+    if (counterpartyCopy && counterpartyCopy.latestVersionNumber > app.latestVersionNumber) {
       needCounterpartyAppData = true;
     }
   });
