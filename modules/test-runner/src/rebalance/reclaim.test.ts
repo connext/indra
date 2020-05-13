@@ -1,4 +1,4 @@
-import { EventNames, IConnextClient } from "@connext/types";
+import { IConnextClient, Contract } from "@connext/types";
 import { getRandomBytes32, toBN } from "@connext/utils";
 import { AddressZero, One, Two } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
@@ -8,6 +8,7 @@ import { Client } from "ts-nats";
 import { createClient, fundChannel, asyncTransferAsset, expect } from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 import { getNatsClient } from "../util/nats";
+import { ERC20 } from "@connext/contracts";
 
 describe("Reclaim", () => {
   let clientA: IConnextClient;
@@ -21,8 +22,8 @@ describe("Reclaim", () => {
   });
 
   beforeEach(async () => {
-    clientA = await createClient();
-    clientB = await createClient();
+    clientA = await createClient({ id: "A" });
+    clientB = await createClient({ id: "B" });
     tokenAddress = clientA.config.contractAddresses.Token;
     nodeSignerAddress = clientA.nodeSignerAddress;
   });
@@ -61,12 +62,14 @@ describe("Reclaim", () => {
       AddressZero,
       nats,
     );
+
+    const preBalance = await clientA.ethProvider.getBalance(clientA.multisigAddress);
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
-    await new Promise(async res => {
+    await new Promise(async (res) => {
       const paymentId = getRandomBytes32();
-      clientA.on(EventNames.UPDATE_STATE_EVENT, async data => {
-        if (data.newState.data) {
+      clientA.ethProvider.on(clientA.multisigAddress, (balance) => {
+        if (preBalance.gt(balance)) {
           res();
         }
       });
@@ -81,9 +84,7 @@ describe("Reclaim", () => {
     const freeBalancePost = await clientA.getFreeBalance(AddressZero);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
     expect(
-      freeBalancePost[nodeSignerAddress].gte(
-        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
-      ),
+      freeBalancePost[nodeSignerAddress].gte(bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim)),
     ).to.be.true;
     expect(
       freeBalancePost[nodeSignerAddress].lte(
@@ -110,7 +111,7 @@ describe("Reclaim", () => {
       bigNumberify(REBALANCE_PROFILE.upperBoundReclaim).add(Two),
       tokenAddress,
     );
-    await clientB.requestCollateral(AddressZero);
+    await clientB.requestCollateral(tokenAddress);
 
     // transfer to node to get node over upper bound reclaim
     // first transfer gets to upper bound
@@ -121,12 +122,15 @@ describe("Reclaim", () => {
       tokenAddress,
       nats,
     );
+
+    const tokenContract = new Contract(tokenAddress, ERC20.abi, clientA.ethProvider);
+    const preBalance = await tokenContract.functions.balanceOf(clientA.multisigAddress);
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
-    await new Promise(async res => {
+    await new Promise(async (res) => {
       const paymentId = getRandomBytes32();
-      clientA.on(EventNames.UPDATE_STATE_EVENT, async data => {
-        if (data.newState.data) {
+      tokenContract.on("Transfer", (from, to, balance) => {
+        if (to === clientA.nodeSignerAddress && preBalance.gt(balance)) {
           res();
         }
       });
@@ -141,9 +145,7 @@ describe("Reclaim", () => {
     const freeBalancePost = await clientA.getFreeBalance(tokenAddress);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
     expect(
-      freeBalancePost[nodeSignerAddress].gte(
-        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
-      ),
+      freeBalancePost[nodeSignerAddress].gte(bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim)),
     ).to.be.true;
     expect(
       freeBalancePost[nodeSignerAddress].lte(
@@ -155,5 +157,4 @@ describe("Reclaim", () => {
   it.skip("happy case: node should reclaim ETH after linked transfer", async () => {});
 
   it.skip("happy case: node should reclaim tokens after linked transfer", async () => {});
-
 });

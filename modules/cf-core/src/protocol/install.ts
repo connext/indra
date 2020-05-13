@@ -93,7 +93,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       params as ProtocolParams.Install,
     );
 
-    const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
+    const newAppInstance = stateChannelAfter.getAppInstanceByAppSeqNo((params as ProtocolParams.Install).appSeqNo);
 
     // safe to do here, nothing is signed or written to store
     yield [
@@ -199,8 +199,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         : (mySignatureOnFreeBalanceStateUpdate as any),
     );
 
-    stateChannelAfter = stateChannelAfter.removeProposal(newAppInstance.identityHash);
-
     yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.CreateInstance,
@@ -292,7 +290,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
 
-    const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
+    const newAppInstance = stateChannelAfter.getAppInstanceByAppSeqNo((params as ProtocolParams.Install).appSeqNo);
 
     // safe to do here, nothing is signed or written to store
     yield [

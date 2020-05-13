@@ -48,6 +48,6 @@ export type ConditionalTransactionCommitmentJSON = {
   readonly interpreterParams: HexString; // ?
   readonly multisigAddress: Address;
   readonly multisigOwners: Address[];
-  readonly networkContext: NetworkContext;
+  readonly networkContext: any;
   readonly signatures: string[];
 };

@@ -1,4 +1,4 @@
-import { Contract, Wallet } from "ethers";
+import { Contract } from "ethers";
 import {
   JsonRpcProvider,
   ChallengeUpdatedEventPayload,
@@ -25,19 +25,17 @@ describe("ChainListener", () => {
   let chainListener: ChainListener;
   let setAndProgressState: any;
   let appInstance: AppWithCounterClass;
-  let channelResponder: Wallet;
+  let signers: ChannelSigner[];
 
   const logLevel = parseInt(process.env.LOG_LEVEL || "0");
   const log = new ColorfulLogger("TestChainListener", logLevel, true, "T");
-  const versionNumber = toBN(3);
-  const state = {
-    counter: Zero,
-  };
+
+
   const action = {
     actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
     increment: toBN(1),
   };
-  const timeout = Zero;
+  const timeout = One;
 
   const verifySetAndProgressEvents = async (
     states: ChallengeUpdatedEventPayload[],
@@ -47,50 +45,48 @@ describe("ChainListener", () => {
     expect((states as ChallengeUpdatedEventPayload[])[0]).to.containSubset({
       identityHash: appInstance.identityHash,
       status: ChallengeStatus.IN_DISPUTE,
-      appStateHash: stateToHash(AppWithCounterClass.encodeState(state)),
-      versionNumber,
-      finalizesAt: timeout.add(await provider.getBlockNumber()),
+      appStateHash: stateToHash(AppWithCounterClass.encodeState(appInstance.latestState)),
+      versionNumber: appInstance.latestVersionNumber,
     });
     // final state from "applyAction"
     const finalState = AppWithCounterClass.encodeState({
-      counter: state.counter.add(action.increment),
+      counter: appInstance.latestState.counter.add(action.increment),
     });
     expect((states as ChallengeUpdatedEventPayload[])[1]).to.containSubset({
       identityHash: appInstance.identityHash,
       status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
       appStateHash: stateToHash(finalState),
-      versionNumber: versionNumber.add(1),
-      finalizesAt: appInstance.defaultTimeout.add(await provider.getBlockNumber()),
+      versionNumber: appInstance.latestVersionNumber.add(1),
     });
     // applied action
-    const turnTaker = new ChannelSigner(channelResponder.privateKey);
+    const turnTaker = signers[0];
     const digest = computeAppChallengeHash(
       appInstance.identityHash,
       stateToHash(finalState),
-      versionNumber.add(One),
+      appInstance.latestVersionNumber.add(One),
       Zero,
     );
     expect(progressed).to.containSubset({
       identityHash: appInstance.identityHash,
       action: AppWithCounterClass.encodeAction(action),
-      versionNumber: versionNumber.add(One),
+      versionNumber: appInstance.latestVersionNumber.add(One),
       turnTaker: turnTaker.address,
       signature: await turnTaker.signMessage(digest),
     });
   };
 
   beforeEach(async () => {
-    const context = await setupContext();
+    const context = await setupContext(false, [{ defaultTimeout: timeout }]);
     challengeRegistry = context["challengeRegistry"];
     provider = context["provider"];
     setAndProgressState = context["setAndProgressState"];
-    appInstance = context["appInstance"];
-    channelResponder = context["channelResponder"];
+    appInstance = context["activeApps"][0];
+    signers = context["signers"];
 
     chainListener = new ChainListener(
       provider,
       { ChallengeRegistry: challengeRegistry.address } as NetworkContext,
-      new ColorfulLogger("NewChainListener", logLevel, true, " "),
+      new ColorfulLogger("Test", logLevel, true, " "),
     );
   });
 
@@ -119,21 +115,13 @@ describe("ChainListener", () => {
           return resolve(data);
         });
       }),
-      new Promise(async (resolve, reject) => {
-        try {
-          const tx = await setAndProgressState(versionNumber, state, action);
-          await tx.wait();
-          return resolve(tx);
-        } catch (e) {
-          return reject(e.stack || e.message);
-        }
-      }),
+      setAndProgressState(action),
     ]);
     ////// verification
     // tx
     expect(tx).to.be.ok;
     // first state from "setState"
-    verifySetAndProgressEvents(
+    await verifySetAndProgressEvents(
       states as ChallengeUpdatedEventPayload[],
       progressed as StateProgressedEventPayload,
     );
@@ -142,10 +130,6 @@ describe("ChainListener", () => {
   it("should not parse any events if disabled", async () => {
     await chainListener.disable();
 
-    const versionNumber = toBN(3);
-    const state = {
-      counter: Zero,
-    };
     const action = {
       actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
       increment: toBN(1),
@@ -163,8 +147,7 @@ describe("ChainListener", () => {
     });
 
     // submit transaction
-    const tx = await setAndProgressState(versionNumber, state, action);
-    await tx.wait();
+    const tx = await setAndProgressState(action);
     expect(tx).to.be.ok;
     expect(emitted).to.be.eq(0);
   });
@@ -175,9 +158,8 @@ describe("ChainListener", () => {
     // submit transaction
     const startingBlock = await provider.getBlockNumber();
     log.debug(`parsing past logs staring from block: ${startingBlock}`);
-    const tx = await setAndProgressState(versionNumber, state, action);
+    const tx = await setAndProgressState(action);
     expect(tx).to.be.ok;
-    await tx.wait();
 
     // wait for block number to increase
     await new Promise(resolve =>
@@ -212,7 +194,7 @@ describe("ChainListener", () => {
 
     // verify events
     // first state from "setState"
-    verifySetAndProgressEvents(
+    await verifySetAndProgressEvents(
       states as ChallengeUpdatedEventPayload[],
       progressed as StateProgressedEventPayload,
     );

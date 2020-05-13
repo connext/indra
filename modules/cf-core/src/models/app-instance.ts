@@ -235,7 +235,7 @@ export class AppInstance {
 
       default: {
         throw new Error(
-          "The outcome type in this application logic contract is not supported yet.",
+          `The outcome type in this application logic contract is not supported yet. Outcome type: ${this.outcomeType}, expected one of: ${OutcomeType.TWO_PARTY_FIXED_OUTCOME}, ${OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER}, or ${OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER}`,
         );
       }
     }

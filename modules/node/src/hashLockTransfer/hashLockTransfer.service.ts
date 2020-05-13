@@ -12,17 +12,18 @@ import { HashZero, Zero } from "ethers/constants";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelService, RebalanceType } from "../channel/channel.service";
+import { ChannelService } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { TIMEOUT_BUFFER } from "../constants";
 import { ConfigService } from "../config/config.service";
+import { DepositService } from "../deposit/deposit.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 import { HashlockTransferRepository } from "./hashlockTransfer.repository";
 
 const appStatusesToHashLockTransferStatus = (
   currentBlockNumber: number,
-  senderApp: AppInstance<"HashLockTransferApp">,
-  receiverApp?: AppInstance<"HashLockTransferApp">,
+  senderApp: AppInstance<typeof HashLockTransferAppName>,
+  receiverApp?: AppInstance<typeof HashLockTransferAppName>,
 ): HashLockTransferStatus | undefined => {
   if (!senderApp) {
     return undefined;
@@ -60,6 +61,7 @@ export class HashLockTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
+    private readonly depositService: DepositService,
     private readonly configService: ConfigService,
     private readonly log: LoggerService,
     private readonly channelRepository: ChannelRepository,
@@ -119,26 +121,23 @@ export class HashLockTransferService {
       assetId,
     );
     if (receiverFreeBal[freeBalanceAddr].lt(amount)) {
-      // request collateral and wait for deposit to come through
-      const depositReceipt = await this.channelService.rebalance(
+      const deposit = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
         receiverIdentifier,
         assetId,
-        RebalanceType.COLLATERALIZE,
         amount,
+        receiverFreeBal[freeBalanceAddr],
+      );
+      // request collateral and wait for deposit to come through
+      const depositReceipt = await this.depositService.deposit(
+        receiverChannel,
+        deposit,
+        assetId,
       );
       if (!depositReceipt) {
         throw new Error(
           `Could not deposit sufficient collateral to resolve hash lock transfer app for reciever: ${receiverIdentifier}`,
         );
       }
-    } else {
-      // request collateral normally without awaiting
-      this.channelService.rebalance(
-        receiverIdentifier,
-        assetId,
-        RebalanceType.COLLATERALIZE,
-        amount,
-      );
     }
 
     const initialState: HashLockTransferAppState = {
@@ -177,11 +176,16 @@ export class HashLockTransferService {
     const response = {
       appIdentityHash: receiverAppInstallRes.appIdentityHash,
     };
+
+    // kick off a rebalance before finishing
+    this.channelService.rebalance(receiverChannel, assetId);
+
     this.log.info(
       `installHashLockTransferReceiverApp from ${senderIdentifier} to ${receiverIdentifier} assetId ${assetId} completed: ${JSON.stringify(
         response,
       )}`,
     );
+
     return response;
   }
 

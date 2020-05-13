@@ -121,29 +121,26 @@ describe("HashLock Transfers", () => {
       [clientA.nodeSignerAddress]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
-    expect(nodePostTransferBal).to.eq(0);
 
-    clientB.resolveCondition({
-      conditionType: ConditionalTransferTypes.HashLockTransfer,
-      preImage,
-      assetId: transfer.assetId,
-    } as PublicParams.ResolveHashLockTransfer);
     await Promise.all([
       new Promise(async (res) => {
-        clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
-          const {
-            [clientA.signerAddress]: clientAPostReclaimBal,
-            [clientA.nodeSignerAddress]: nodePostReclaimBal,
-          } = await clientA.getFreeBalance(transfer.assetId);
-          expect(clientAPostReclaimBal).to.eq(0);
-          expect(nodePostReclaimBal).to.eq(transfer.amount);
-          res();
-        });
+        clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, res);
       }),
       new Promise(async (res) => {
         clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, res);
       }),
+      clientB.resolveCondition({
+        conditionType: ConditionalTransferTypes.HashLockTransfer,
+        preImage,
+        assetId: transfer.assetId,
+      } as PublicParams.ResolveHashLockTransfer),
     ]);
+    const {
+      [clientA.signerAddress]: clientAPostReclaimBal,
+      [clientA.nodeSignerAddress]: nodePostReclaimBal,
+    } = await clientA.getFreeBalance(transfer.assetId);
+    expect(clientAPostReclaimBal).to.eq(0);
+    expect(nodePostReclaimBal).to.eq(nodePostTransferBal.add(transfer.amount));
     const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
       transfer.assetId,
     );
@@ -194,7 +191,6 @@ describe("HashLock Transfers", () => {
       [clientA.nodeSignerAddress]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
-    expect(nodePostTransferBal).to.eq(0);
 
     await new Promise(async (res) => {
       clientA.on(EventNames.UNINSTALL_EVENT, async (data) => {
@@ -203,7 +199,7 @@ describe("HashLock Transfers", () => {
           [clientA.nodeSignerAddress]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
-        expect(nodePostReclaimBal).to.eq(transfer.amount);
+        expect(nodePostReclaimBal).to.eq(nodePostTransferBal.add(transfer.amount));
         res();
       });
       await clientB.resolveCondition({
@@ -377,22 +373,24 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelock = 101;
+    const timelock = 102;
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
-    clientA.conditionalTransfer({
-      amount: transfer.amount.toString(),
-      conditionType: ConditionalTransferTypes.HashLockTransfer,
-      lockHash,
-      timelock,
-      assetId: transfer.assetId,
-      meta: { foo: "bar", sender: clientA.publicIdentifier },
-      recipient: clientB.publicIdentifier,
-    } as PublicParams.HashLockTransfer);
-    await new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res));
+    await new Promise((resolve, reject) => {
+      clientA.conditionalTransfer({
+        amount: transfer.amount.toString(),
+        conditionType: ConditionalTransferTypes.HashLockTransfer,
+        lockHash,
+        timelock,
+        assetId: transfer.assetId,
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
+        recipient: clientB.publicIdentifier,
+      } as PublicParams.HashLockTransfer);
+      clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, resolve);
+      clientA.once(EventNames.REJECT_INSTALL_EVENT, reject);
+    });
 
     await new Promise((resolve) => provider.once("block", resolve));
-
     await expect(
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,

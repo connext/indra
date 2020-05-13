@@ -1,9 +1,10 @@
 import { after, before } from "mocha";
-import { connectDb, disconnectDb, connectNats, closeNats } from "./util";
+import { connectDb, disconnectDb, connectNats, closeNats, fundEthWallet } from "./util";
 
 before(async () => {
   await connectDb();
   await connectNats();
+  await fundEthWallet();
 });
 
 after(async () => {

@@ -27,6 +27,7 @@ import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
 import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.service";
 import { AppInstance } from "../appInstance/appInstance.entity";
+import { getRandomBytes32, stringify } from "@connext/utils";
 
 @Injectable()
 export class AppActionsService {
@@ -118,10 +119,11 @@ export class AppActionsService {
         amount: state.transfers[0].amount,
         assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
         recipient: this.cfCoreService.cfCore.signerAddress,
+        nonce: state.nonce,
       },
       appInstance.multisigAddress,
     );
-    commitment.signatures = state.signatures as string[];
+    await commitment.addSignatures(state.signatures[0], state.signatures[1]);
     const tx = await commitment.getSignedTransaction();
 
     this.log.debug(

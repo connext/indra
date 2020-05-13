@@ -10,6 +10,7 @@ import {
   ChallengeStatus,
   StateProgressedEventPayload,
   ChallengeUpdatedEventPayload,
+  StoredAppChallengeStatus,
 } from "@connext/types";
 import { deBigNumberifyJson, getRandomBytes32, getRandomAddress, getRandomChannelSigner } from "@connext/utils";
 import { AddressZero, HashZero, Zero, One } from "ethers/constants";
@@ -164,7 +165,7 @@ export const createStoredAppChallenge = (
     appStateHash: getRandomBytes32(),
     versionNumber: One,
     finalizesAt: Zero,
-    status: ChallengeStatus.IN_DISPUTE,
+    status: StoredAppChallengeStatus.IN_DISPUTE,
     ...overrides,
   };
 };
