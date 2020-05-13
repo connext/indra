@@ -238,7 +238,9 @@ type SyncParams = {
   multisigAddress: Address;
 };
 
-type SyncResult = {};
+type SyncResult = {
+  syncedChannel: StateChannelJSON;
+};
 
 ////////////////////////////////////////
 // exports

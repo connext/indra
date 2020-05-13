@@ -1,9 +1,4 @@
-import {
-  MethodNames,
-  MethodParams,
-  MethodResults,
-  ProtocolNames,
-} from "@connext/types";
+import { MethodNames, MethodParams, MethodResults, ProtocolNames } from "@connext/types";
 
 import { jsonRpcMethod } from "rpc-server";
 
@@ -44,12 +39,15 @@ export class SyncController extends NodeController {
       throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
     }
 
-    await protocolRunner.initiateProtocol(ProtocolNames.sync, {
-      multisigAddress,
-      initiatorIdentifier: publicIdentifier,
-      responderIdentifier,
-    });
+    const { channel: updated }: { channel: StateChannel } = await protocolRunner.initiateProtocol(
+      ProtocolNames.sync,
+      {
+        multisigAddress,
+        initiatorIdentifier: publicIdentifier,
+        responderIdentifier,
+      },
+    );
 
-    return {};
+    return { syncedChannel: updated.toJson() };
   }
 }
