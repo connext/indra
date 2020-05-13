@@ -18,8 +18,14 @@ export class RejectInstallController extends NodeController {
     params: MethodParams.RejectInstall,
   ): Promise<string[]> {
     const { appIdentityHash } = params;
+    const { store } = requestHandler;
 
-    return [appIdentityHash];
+    const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
+    if (!stateChannel) {
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
+    }
+
+    return [appIdentityHash, stateChannel.multisigAddress];
   }
 
   @jsonRpcMethod(MethodNames.chan_rejectInstall)
