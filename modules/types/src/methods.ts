@@ -195,7 +195,10 @@ type UninstallParams = {
   appIdentityHash: Bytes32;
 };
 
-type UninstallResult = {};
+type UninstallResult = {
+  appIdentityHash: Bytes32;
+  multisigAddress: Address;
+};
 
 ////////////////////////////////////////
 

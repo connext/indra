@@ -215,10 +215,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         value: toBN(params.amount),
       });
       hash = tx.hash;
+      await tx.wait()
     } else {
       const erc20 = new Contract(params.assetId, tokenAbi, this.signer);
       const tx = await erc20.transfer(recipient, toBN(params.amount));
       hash = tx.hash;
+      await tx.wait()
     }
     return hash;
   };

@@ -14,7 +14,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
   async findByHash(txHash: string): Promise<OnchainTransaction | undefined> {
     return this.findOne({
       where: { hash: txHash },
-      relations: [ "channel" ],
+      relations: ["channel"],
     });
   }
 
@@ -42,7 +42,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
   }
 
   async addWithdrawal(tx: Transaction, channel: Channel): Promise<void> {
-    return getManager().transaction(async transactionalEntityManager => {
+    return getManager().transaction(async (transactionalEntityManager) => {
       const { identifiers } = await transactionalEntityManager
         .createQueryBuilder()
         .insert()
@@ -63,7 +63,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
   }
 
   async addCollateralization(tx: Transaction, channel: Channel): Promise<void> {
-    return getManager().transaction(async transactionalEntityManager => {
+    return getManager().transaction(async (transactionalEntityManager) => {
       const { identifiers } = await transactionalEntityManager
         .createQueryBuilder()
         .insert()
@@ -84,7 +84,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
   }
 
   async addReclaim(tx: Transaction, channel: Channel): Promise<void> {
-    return getManager().transaction(async transactionalEntityManager => {
+    return getManager().transaction(async (transactionalEntityManager) => {
       const { identifiers } = await transactionalEntityManager
         .createQueryBuilder()
         .insert()

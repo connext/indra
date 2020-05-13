@@ -50,6 +50,7 @@ describe("Node method follows spec - uninstall", () => {
 
       nodeB.once("UNINSTALL_EVENT", async (msg: UninstallMessage) => {
         expect(msg.data.appIdentityHash).toBe(appIdentityHash);
+        expect(msg.data.multisigAddress).toBe(multisigAddess);
 
         // FIXME: There is some timing issue with slow stores @snario noticed
         await delay(1000);

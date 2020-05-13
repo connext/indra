@@ -1,7 +1,12 @@
 import { Address, AssetId, PublicKey, PublicIdentifier } from "@connext/types";
 import bs58check from "bs58check";
 import { getAddress } from "ethers/utils";
-import { hexToBuffer, bufferToHex, compress, decompress } from "eccrypto-js";
+import {
+  hexToBuffer,
+  bufferToHex,
+  compress,
+  decompress,
+} from "eccrypto-js";
 
 import { getAddressError } from "./hexStrings";
 import { getAddressFromPublicKey } from "./crypto";

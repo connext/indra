@@ -68,18 +68,6 @@ export async function handleReceivedProtocolMessage(
     await emitOutgoingMessage(router, outgoingEventData);
     return;
   }
-
-  // remove proposal from channel and store
-  const json = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-  if (!json) {
-    throw new Error(
-      `Could not find channel for app instance ${appIdentityHash} when processing install protocol message`,
-    );
-  }
-  const channel = StateChannel.fromJson(json).removeProposal(proposal.identityHash);
-  await store.removeAppProposal(channel.multisigAddress, proposal.identityHash);
-
-  // finally, emit message
   await emitOutgoingMessage(router, outgoingEventData);
 }
 
@@ -124,7 +112,7 @@ async function getOutgoingEventDataFromProtocol(
           // TODO: It is weird that `params` is in the event data, we should
           // remove it, but after telling all consumers about this change
           params: {
-            appIdentityHash: postProtocolStateChannel.mostRecentlyInstalledAppInstance()
+            appIdentityHash: postProtocolStateChannel.getAppInstanceByAppSeqNo((params as ProtocolParams.Install).appSeqNo)
               .identityHash,
           },
         },
@@ -173,8 +161,8 @@ function getStateUpdateEventData(params: ProtocolParams.TakeAction, newState: So
   return { newState, appIdentityHash, action };
 }
 
-function getUninstallEventData({ appIdentityHash }: ProtocolParams.Uninstall) {
-  return { appIdentityHash };
+function getUninstallEventData({ appIdentityHash, multisigAddress }: ProtocolParams.Uninstall) {
+  return { appIdentityHash, multisigAddress };
 }
 
 function getSetupEventData(
