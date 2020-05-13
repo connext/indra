@@ -15,6 +15,7 @@ import {
   WithdrawalMonitorObject,
   Bytes32,
   Address,
+  JsonRpcProvider,
 } from "@connext/types";
 import { nullLogger } from "@connext/utils";
 
@@ -271,16 +272,12 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getAppChallenge(appIdentityHash);
   }
 
-  createAppChallenge(appIdentityHash: Bytes32, appChallenge: StoredAppChallenge): Promise<void> {
-    return this.internalStore.createAppChallenge(appIdentityHash, appChallenge);
+  saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
+    return this.internalStore.saveAppChallenge(data);
   }
 
-  updateAppChallenge(appIdentityHash: Bytes32, appChallenge: StoredAppChallenge): Promise<void> {
-    return this.internalStore.updateAppChallenge(appIdentityHash, appChallenge);
-  }
-
-  getActiveChallenges(multisigAddress: Address): Promise<StoredAppChallenge[]> {
-    return this.internalStore.getActiveChallenges(multisigAddress);
+  getActiveChallenges(): Promise<StoredAppChallenge[]> {
+    return this.internalStore.getActiveChallenges();
   }
 
   ///// Events
@@ -296,21 +293,25 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getStateProgressedEvents(appIdentityHash);
   }
 
-  createStateProgressedEvent(
-    appIdentityHash: Bytes32,
-    event: StateProgressedEventPayload,
-  ): Promise<void> {
-    return this.internalStore.createStateProgressedEvent(appIdentityHash, event);
+  createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void> {
+    return this.internalStore.createStateProgressedEvent(event);
   }
 
   getChallengeUpdatedEvents(appIdentityHash: Bytes32): Promise<ChallengeUpdatedEventPayload[]> {
     return this.internalStore.getChallengeUpdatedEvents(appIdentityHash);
   }
 
-  createChallengeUpdatedEvent(
+  createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
+    return this.internalStore.createChallengeUpdatedEvent(event);
+  }
+
+  addOnchainAction(
     appIdentityHash: Bytes32,
-    event: ChallengeUpdatedEventPayload,
+    provider: JsonRpcProvider,
   ): Promise<void> {
-    return this.internalStore.createChallengeUpdatedEvent(appIdentityHash, event);
+    return this.internalStore.addOnchainAction(
+      appIdentityHash,
+      provider,
+    );
   }
 }

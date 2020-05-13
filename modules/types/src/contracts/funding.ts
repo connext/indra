@@ -67,7 +67,8 @@ export type TwoPartyFixedOutcomeInterpreterParamsJson = Partial<
 // TODO: tokenAddress?!
 export const twoPartyFixedOutcomeInterpreterParamsEncoding = tidy(`tuple(
   address[2] playerAddrs,
-  uint256 amount
+  uint256 amount,
+  address tokenAddress
 )`);
 
 ////////////////////////////////////////

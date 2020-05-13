@@ -47,10 +47,12 @@ export abstract class MultisigCommitment implements EthereumCommitment {
   }
 
   public async getSignedTransaction(): Promise<MinimalTransaction> {
-    this.assertSignatures();
+    await this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
 
-    const txData = new Interface(MinimumViableMultisig.abi as any).functions.execTransaction.encode([
+    const txData = new Interface(
+      MinimumViableMultisig.abi as any,
+    ).functions.execTransaction.encode([
       multisigInput.to,
       multisigInput.value,
       multisigInput.data,

@@ -14,7 +14,7 @@ import DolphinCoin from "../../build/DolphinCoin.json";
 
 import { Zero, AddressZero } from "ethers/constants";
 
-import { expect, provider, fund } from "../utils";
+import { expect, provider } from "../utils";
 const MAX_INT = new BigNumber(2).pow(256).sub(1);
 
 const decodeTransfers = (encodedTransfers: string): CoinTransfer[] =>

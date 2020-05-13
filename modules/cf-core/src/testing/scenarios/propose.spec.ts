@@ -70,20 +70,31 @@ describe("Node method follows spec - propose install", () => {
         type: "PROPOSE_INSTALL_EVENT",
       };
 
-      nodeB.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
-        // make sure message has the right structure
-        assertMessage(msg, expectedMessageB, ["data.appIdentityHash"]);
-        // both nodes should have 1 app, they should be the same
-        await assertEqualProposedApps(nodeA, nodeB, multisigAddress, [msg.data.appIdentityHash]);
-        done();
+      const appId = await new Promise(async (resolve, reject) => {
+        let identityHash;
+        let dispatched = false;
+        nodeB.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
+          // make sure message has the right structure
+          assertMessage(msg, expectedMessageB, ["data.appIdentityHash"]);
+          // both nodes should have 1 app, they should be the same
+          identityHash = msg.data.appIdentityHash;
+          if (dispatched) resolve(identityHash);
+        });
+  
+        // TODO: add expected message B
+        try {
+          await nodeA.rpcRouter.dispatch({
+            ...rpc,
+            parameters: deBigNumberifyJson(params),
+          });
+          dispatched = true;
+          if (identityHash) resolve(identityHash);
+        } catch (e) {
+          return reject(e);
+        }
       });
-
-      // TODO: add expected message B
-
-      await nodeA.rpcRouter.dispatch({
-        ...rpc,
-        parameters: deBigNumberifyJson(params),
-      });
+      await assertEqualProposedApps(nodeA, nodeB, multisigAddress, [appId] as string[]);
+      done();
     });
   });
 });

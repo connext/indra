@@ -41,7 +41,7 @@ import { JsonRpcResponse, Rpc } from "rpc-server";
 import { Node } from "../node";
 import { AppInstance, StateChannel } from "../models";
 import { CONTRACT_NOT_DEPLOYED } from "../errors";
-import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
+import { getRandomPublicIdentifier, getRandomPublicIdentifiers } from "../testing/random-signing-keys";
 
 import { DolphinCoin, NetworkContextForTestSuite } from "./contracts";
 import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
@@ -73,11 +73,14 @@ export const newWallet = (wallet: Wallet) =>
     new JsonRpcProvider((wallet.provider as JsonRpcProvider).connection.url),
   );
 
-export function createAppInstanceProposalForTest(appIdentityHash: string): AppInstanceProposal {
+export function createAppInstanceProposalForTest(appIdentityHash: string, stateChannel?: StateChannel): AppInstanceProposal {
+  const [initiator, responder] = StateChannel
+  ? [stateChannel!.userIdentifiers[0], stateChannel!.userIdentifiers[1]]
+  : [getRandomPublicIdentifier(), getRandomPublicIdentifier()];
   return {
     identityHash: appIdentityHash,
-    initiatorIdentifier: getRandomChannelSigner().address,
-    responderIdentifier: getRandomChannelSigner().address,
+    initiatorIdentifier: initiator,
+    responderIdentifier: responder,
     appDefinition: AddressZero,
     abiEncodings: {
       stateEncoding: "tuple(address foo, uint256 bar)",
@@ -91,7 +94,7 @@ export function createAppInstanceProposalForTest(appIdentityHash: string): AppIn
       foo: AddressZero,
       bar: 0,
     } as SolidityValueType,
-    appSeqNo: 0,
+    appSeqNo: stateChannel ? stateChannel.numProposedApps : Math.ceil(1000 * Math.random()),
     outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
     responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
     initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
@@ -783,14 +786,14 @@ export async function installApp(
         installationProposalRpc.parameters,
         await getAppInstanceProposal(nodeB, appIdentityHash, multisigAddress),
       );
-      confirmProposedAppInstance(
-        installationProposalRpc.parameters,
-        await getAppInstanceProposal(nodeA, appIdentityHash, multisigAddress),
-      );
       resolve(msg.data.appIdentityHash);
     });
 
     await nodeA.rpcRouter.dispatch(installationProposalRpc);
+    confirmProposedAppInstance(
+      installationProposalRpc.parameters,
+      await getAppInstanceProposal(nodeA, appIdentityHash, multisigAddress),
+    );
   });
 
   // send nodeB install call
