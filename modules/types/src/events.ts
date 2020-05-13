@@ -18,6 +18,7 @@ import { ProtocolMessageData } from "./messaging";
 import { PublicParams } from "./public";
 import { MinimalTransaction } from "./commitments";
 import { TransactionResponse } from "ethers/providers";
+import { StateChannelJSON } from "./state";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
@@ -173,6 +174,7 @@ type WithdrawalStartedEventData = {
 const SYNC_EVENT = "SYNC";
 
 type SyncEventData = {
+  syncedChannel: StateChannelJSON;
 };
 
 ////////////////////////////////////////
@@ -235,6 +237,7 @@ export namespace EventPayloads {
   export type Uninstall = UninstallEventData;
   export type UpdateState = UpdateStateEventData;
   export type ProtocolMessage = ProtocolMessageData;
+  export type Sync = SyncEventData;
 
   // TODO: chain listener events
 
