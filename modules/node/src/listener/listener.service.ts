@@ -127,6 +127,11 @@ export default class ListenerService implements OnModuleInit {
           this.log.error(
             `Unexpected error - no multisigAddress found in uninstall event data: ${data.data.appIdentityHash}`,
           );
+          return;
+        }
+        if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
+          this.log.debug(`Received uninstall from our own node. Doing nothing.`);
+          return;
         }
         const channel = await this.channelRepository.findByMultisigAddressOrThrow(
           data.data.multisigAddress,
