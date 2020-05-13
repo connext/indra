@@ -65,7 +65,6 @@ export const sendOnchainValue = async (
         return;
       }
     } catch (e) {
-      console.log("***** caught error!", stringify(e), e.message);
       if (e.message.includes(nonceErr)) {
         continue;
       }
