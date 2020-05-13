@@ -27,6 +27,13 @@ export const PersistCommitmentType = enumify({
 export type PersistCommitmentType =
   typeof PersistCommitmentType[keyof typeof PersistCommitmentType];
 
+
+export const PersistStateChannelType = {
+  CreateChannel: "CreateChannel",
+  SyncProposal: "SyncProposal",
+} as const;
+export type PersistStateChannelType = keyof typeof PersistStateChannelType
+
 export interface IPrivateKeyGenerator {
   (s: string): Promise<string>;
 }

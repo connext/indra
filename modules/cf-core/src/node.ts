@@ -34,7 +34,7 @@ import { StateChannel, AppInstance } from "./models";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
-import { MethodRequest, MethodResponse, PersistAppType } from "./types";
+import { MethodRequest, MethodResponse, PersistAppType, PersistStateChannelType } from "./types";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -215,7 +215,9 @@ export class Node {
 
         if (!msg || !("data" in (msg as ProtocolMessage))) {
           throw new Error(
-            `IO_SEND_AND_WAIT timed out after ${IO_SEND_AND_WAIT_TIMEOUT / 1000}s waiting for counterparty reply in ${data.protocol}`,
+            `IO_SEND_AND_WAIT timed out after ${
+              IO_SEND_AND_WAIT_TIMEOUT / 1000
+            }s waiting for counterparty reply in ${data.protocol}`,
           );
         }
 
@@ -231,15 +233,45 @@ export class Node {
 
     protocolRunner.register(
       Opcode.PERSIST_STATE_CHANNEL,
-      async (args: [StateChannel, MinimalTransaction, SetStateCommitment]) => {
-        const [stateChannel, signedSetupCommitment, signedFreeBalanceUpdate] = args;
-        await this.storeService.createStateChannel(
-          stateChannel.toJson(),
-          signedSetupCommitment,
-          signedFreeBalanceUpdate.toJson(),
-        );
-        await this.storeService.updateSchemaVersion(STORE_SCHEMA_VERSION);
-        return { channel: stateChannel };
+      async (
+        args: [PersistStateChannelType, StateChannel, (MinimalTransaction | SetStateCommitment)[]],
+      ) => {
+        const [type, stateChannel, signedCommitments] = args;
+        switch (type) {
+          case PersistStateChannelType.CreateChannel: {
+            const [setup, freeBalance] = signedCommitments as [
+              MinimalTransaction,
+              SetStateCommitment,
+            ];
+            await this.storeService.createStateChannel(
+              stateChannel.toJson(),
+              setup,
+              freeBalance.toJson(),
+            );
+
+            await this.storeService.updateSchemaVersion(STORE_SCHEMA_VERSION);
+            return { channel: stateChannel };
+          }
+
+          case PersistStateChannelType.SyncProposal: {
+            const [setState] = signedCommitments as [SetStateCommitment];
+            const proposal = stateChannel.proposedAppInstances.get(setState.appIdentityHash);
+            if (!proposal) {
+              throw new Error("Could not find proposal in post protocol channel");
+            }
+            // this is adding a proposal
+            await this.storeService.createAppProposal(
+              stateChannel.multisigAddress,
+              proposal,
+              stateChannel.numProposedApps,
+              setState.toJson(),
+            );
+            return { channel: stateChannel };
+          }
+          default: {
+            throw new Error(`Unrecognized persist state channel type: ${type}`);
+          }
+        }
       },
     );
 
