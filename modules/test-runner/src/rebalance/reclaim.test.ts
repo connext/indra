@@ -113,7 +113,6 @@ describe("Reclaim", () => {
     );
     await clientB.requestCollateral(tokenAddress);
 
-    console.log(`requested collateral`);
     // transfer to node to get node over upper bound reclaim
     // first transfer gets to upper bound
     await asyncTransferAsset(
@@ -123,7 +122,6 @@ describe("Reclaim", () => {
       tokenAddress,
       nats,
     );
-    console.log(`async transferred`);
 
     const tokenContract = new Contract(tokenAddress, ERC20.abi, clientA.ethProvider);
     const preBalance = await tokenContract.functions.balanceOf(clientA.multisigAddress);
