@@ -193,7 +193,7 @@ export class ChannelRepository extends Repository<Channel> {
       .update(Channel)
       .set({
         activeCollateralizations: () =>
-          `"activeCollateralizations"::JSONB || '{"${assetId}": "${collateralizationInFlight}"}'`,
+          `"activeCollateralizations"::JSONB || '{"${assetId}": "${collateralizationInFlight}"::boolean}'`,
       })
       .where("multisigAddress = :multisigAddress", { multisigAddress: channel.multisigAddress });
     await query.execute();
