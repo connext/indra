@@ -151,7 +151,7 @@ describe("Deposit offline tests", () => {
     });
   });
 
-  it("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
+  it.only("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
     const signer = getRandomChannelSigner(env.ethProviderUrl);
     client = await createClientWithMessagingLimits({
       protocol: "install",
@@ -162,7 +162,7 @@ describe("Deposit offline tests", () => {
     await makeDepositCall({
       client,
       clock,
-      failsWith: "App install took longer than 90 seconds",
+      failsWith: `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
       subjectToFastforward: RECEIVED,
       protocol: "install",
     });
