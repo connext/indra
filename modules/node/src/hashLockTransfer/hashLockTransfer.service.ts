@@ -121,10 +121,16 @@ export class HashLockTransferService {
       assetId,
     );
     if (receiverFreeBal[freeBalanceAddr].lt(amount)) {
+      const deposit = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
+        receiverIdentifier,
+        assetId,
+        amount,
+        receiverFreeBal[freeBalanceAddr],
+      );
       // request collateral and wait for deposit to come through
       const depositReceipt = await this.depositService.deposit(
         receiverChannel,
-        amount.sub(receiverFreeBal[freeBalanceAddr]),
+        deposit,
         assetId,
       );
       if (!depositReceipt) {

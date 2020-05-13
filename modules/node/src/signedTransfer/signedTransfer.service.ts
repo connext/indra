@@ -115,9 +115,16 @@ export class SignedTransferService {
 
     if (freeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
+      const deposit = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
+        userIdentifier,
+        assetId,
+        amount,
+        freeBalanceAddr[freeBalanceAddr],
+      );
+      // request collateral and wait for deposit to come through
       const depositReceipt = await this.depositService.deposit(
         receiverChannel,
-        amount.sub(freeBal[freeBalanceAddr]),
+        deposit,
         assetId,
       );
       if (!depositReceipt) {
