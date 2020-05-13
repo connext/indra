@@ -119,7 +119,7 @@ export class SignedTransferService {
         userIdentifier,
         assetId,
         amount,
-        freeBalanceAddr[freeBalanceAddr],
+        freeBal[freeBalanceAddr],
       );
       // request collateral and wait for deposit to come through
       const depositReceipt = await this.depositService.deposit(
