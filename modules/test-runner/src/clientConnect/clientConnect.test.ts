@@ -3,14 +3,7 @@ import { ClientOptions } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, One } from "ethers/constants";
 
-import {
-  createClient,
-  expect,
-  sendOnchainValue,
-  env,
-  fundChannel,
-  ETH_AMOUNT_SM,
-} from "../util";
+import { createClient, expect, sendOnchainValue, env, fundChannel, ETH_AMOUNT_SM } from "../util";
 import { hexlify, randomBytes } from "ethers/utils";
 
 describe("Client Connect", () => {
@@ -59,10 +52,12 @@ describe("Client Connect", () => {
     await client.requestDepositRights({ assetId: AddressZero });
     await client.requestDepositRights({ assetId: client.config.contractAddresses.Token });
     let apps = await client.getAppInstances();
-    let depositApps = apps.filter(
-      app => app.appInterface.addr === client.config.contractAddresses.DepositApp,
+    const initDepositApps = apps.filter(
+      (app) =>
+        app.appInterface.addr === client.config.contractAddresses.DepositApp &&
+        app.initiatorIdentifier === client.publicIdentifier,
     );
-    expect(depositApps.length).to.be.eq(2);
+    expect(initDepositApps.length).to.be.eq(2);
     await client.messaging.disconnect();
 
     await sendOnchainValue(client.multisigAddress, One);
@@ -70,8 +65,10 @@ describe("Client Connect", () => {
 
     client = await createClient({ signer: pk, store });
     apps = await client.getAppInstances();
-    depositApps = apps.filter(
-      app => app.appInterface.addr === client.config.contractAddresses.DepositApp,
+    const depositApps = apps.filter(
+      (app) =>
+        app.appInterface.addr === client.config.contractAddresses.DepositApp &&
+        app.initiatorIdentifier === client.publicIdentifier,
     );
     expect(depositApps.length).to.be.eq(0);
   });
@@ -92,8 +89,7 @@ describe("Client Connect", () => {
 
   it.skip("Client should attempt to wait for user withdrawal if there are withdraw commitments in store", async () => {
     const pk = Wallet.createRandom().privateKey;
-    const store= getMemoryStore();
-    console.log(await store.getUserWithdrawals());
+    const store = getMemoryStore();
     store.saveUserWithdrawal({
       tx: {
         to: Wallet.createRandom().address,
@@ -107,7 +103,7 @@ describe("Client Connect", () => {
 
   it("Client should not need to wait for user withdrawal after successful withdraw", async () => {
     const pk = Wallet.createRandom().privateKey;
-    const store= getMemoryStore();
+    const store = getMemoryStore();
     const client = await createClient({ signer: pk, store });
     await fundChannel(client, ETH_AMOUNT_SM);
     await client.withdraw({

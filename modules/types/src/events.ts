@@ -135,6 +135,7 @@ const UNINSTALL_EVENT = "UNINSTALL_EVENT";
 
 type UninstallEventData = {
   appIdentityHash: Bytes32;
+  multisigAddress: string;
 };
 
 ////////////////////////////////////////

@@ -21,12 +21,13 @@ expect.extend({ toBeEq });
 
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
-function assertUninstallMessage(senderId: string, appIdentityHash: string, msg: UninstallMessage) {
+function assertUninstallMessage(senderId: string, multisigAddress: string, appIdentityHash: string, msg: UninstallMessage) {
   assertMessage(msg, {
     from: senderId,
     type: EventNames.UNINSTALL_EVENT,
     data: {
       appIdentityHash,
+      multisigAddress,
     },
   });
 }
@@ -91,7 +92,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
               return;
             }
             try {
-              assertUninstallMessage(nodeA.publicIdentifier, appIdentityHash, msg);
+              assertUninstallMessage(nodeA.publicIdentifier, multisigAddress, appIdentityHash, msg);
     
               const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
               expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(Two);
@@ -144,7 +145,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
               return;
             }
             try {
-              assertUninstallMessage(nodeA.publicIdentifier, appIdentityHash, msg);
+              assertUninstallMessage(nodeA.publicIdentifier, multisigAddress, appIdentityHash, msg);
 
               const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
               expect(balancesSeenByB[nodeB.signerAddress]).toBeEq(Two);
@@ -196,7 +197,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
               return;
             }
             try {
-              assertUninstallMessage(nodeA.publicIdentifier, appIdentityHash, msg);
+              assertUninstallMessage(nodeA.publicIdentifier, multisigAddress, appIdentityHash, msg);
 
               const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
               expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(depositAmount);
