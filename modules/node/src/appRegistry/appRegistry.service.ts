@@ -115,7 +115,10 @@ export class AppRegistryService implements OnModuleInit {
         );
         const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
         if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
-          const amount = responderDepositBigNumber.sub(
+          const amount = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
+            from,
+            proposeInstallParams.responderDepositAssetId,
+            responderDepositBigNumber,
             freeBal[this.cfCoreService.cfCore.signerAddress],
           );
           const depositReceipt = await this.depositService.deposit(
