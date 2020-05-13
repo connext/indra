@@ -133,7 +133,9 @@ export class AppRegistryService implements OnModuleInit {
           }
         }
       }
-      ({ appInstance } = await this.cfCoreService.installApp(appIdentityHash));
+      if (registryAppInfo.name !== HashLockTransferAppName) {
+        ({ appInstance } = await this.cfCoreService.installApp(appIdentityHash));
+      }
       // any tasks that need to happen after install, i.e. DB writes
       await this.runPostInstallTasks(
         registryAppInfo,
@@ -142,7 +144,7 @@ export class AppRegistryService implements OnModuleInit {
         from,
         installerChannel,
       );
-      const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstance.identityHash}.install`;
+      const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appIdentityHash}.install`;
       await this.messagingService.publish(installSubject, appInstance);
     } catch (e) {
       // reject if error
