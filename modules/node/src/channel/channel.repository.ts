@@ -189,11 +189,14 @@ export class ChannelRepository extends Repository<Channel> {
     assetId: string,
     collateralizationInFlight: boolean,
   ): Promise<void> {
+    const toSave = {
+      ...channel.activeCollateralizations,
+      [assetId]: collateralizationInFlight,
+    };
     const query = this.createQueryBuilder()
       .update(Channel)
       .set({
-        activeCollateralizations: () =>
-          `"activeCollateralizations"::JSONB || '{"${assetId}": "${collateralizationInFlight}"::boolean}'`,
+        activeCollateralizations: toSave,
       })
       .where("multisigAddress = :multisigAddress", { multisigAddress: channel.multisigAddress });
     await query.execute();
