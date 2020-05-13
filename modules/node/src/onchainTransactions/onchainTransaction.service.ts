@@ -1,7 +1,7 @@
 import { MinimalTransaction } from "@connext/types";
 import { stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { TransactionResponse } from "ethers/providers";
+import { TransactionReceipt, TransactionResponse } from "ethers/providers";
 
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
@@ -30,28 +30,28 @@ export class OnchainTransactionService {
   async sendWithdrawalCommitment(
     channel: Channel,
     transaction: MinimalTransaction,
-  ): Promise<TransactionResponse> {
-    const tx = await this.sendTransaction(transaction);
+  ): Promise<TransactionReceipt> {
+    const [receipt, tx] = await this.sendTransaction(transaction);
     await this.onchainTransactionRepository.addReclaim(tx, channel);
-    return tx;
+    return receipt;
   }
 
   async sendWithdrawal(
     channel: Channel,
     transaction: MinimalTransaction,
-  ): Promise<TransactionResponse> {
-    const tx = await this.sendTransaction(transaction);
+  ): Promise<TransactionReceipt> {
+    const [receipt, tx] = await this.sendTransaction(transaction);
     await this.onchainTransactionRepository.addWithdrawal(tx, channel);
-    return tx;
+    return receipt;
   }
 
   async sendDeposit(
     channel: Channel,
     transaction: MinimalTransaction,
-  ): Promise<TransactionResponse> {
-    const tx = await this.sendTransaction(transaction);
+  ): Promise<TransactionReceipt> {
+    const [receipt, tx] = await this.sendTransaction(transaction);
     await this.onchainTransactionRepository.addCollateralization(tx, channel);
-    return tx;
+    return receipt;
   }
 
   findByHash(hash: string): Promise<OnchainTransaction | undefined> {
@@ -60,7 +60,7 @@ export class OnchainTransactionService {
 
   private async sendTransaction(
     transaction: MinimalTransaction,
-  ): Promise<TransactionResponse> {
+  ): Promise<[TransactionReceipt, TransactionResponse]> {
     const wallet = this.configService.getSigner();
     let errors: {[k: number]: string} = [];
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
@@ -70,11 +70,12 @@ export class OnchainTransactionService {
           ...transaction,
           nonce: await wallet.provider.getTransactionCount(await wallet.getAddress()),
         });
+        const receipt = await tx.wait();
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
         }
-        this.log.info(`Success sending transaction! Tx hash: ${tx.hash}`);
-        return tx;
+        this.log.info(`Success sending transaction! Tx hash: ${receipt.transactionHash}`);
+        return [receipt, tx];
       } catch (e) {
         errors[attempt] = e.message;
         const knownErr = KNOWN_ERRORS.find(err => e.message.includes(err));
