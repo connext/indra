@@ -90,7 +90,6 @@ describe("Client Connect", () => {
   it.skip("Client should attempt to wait for user withdrawal if there are withdraw commitments in store", async () => {
     const pk = Wallet.createRandom().privateKey;
     const store = getMemoryStore();
-    console.log(await store.getUserWithdrawals());
     store.saveUserWithdrawal({
       tx: {
         to: Wallet.createRandom().address,
