@@ -11,7 +11,7 @@ import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@conne
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment, getSetStateCommitment } from "../ethereum";
 import { StateChannel } from "../models";
-import { Context, ProtocolExecutionFlow } from "../types";
+import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 
 import { assertIsValidSignature } from "./utils";
 
@@ -117,9 +117,9 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_STATE_CHANNEL,
+      PersistStateChannelType.CreateChannel,
       stateChannel,
-      await setupCommitment.getSignedTransaction(),
-      freeBalanceUpdateData,
+      [await setupCommitment.getSignedTransaction(), freeBalanceUpdateData],
     ];
 
     logTime(log, start, `[${processID}] Initiation finished`);
@@ -195,9 +195,9 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_STATE_CHANNEL,
+      PersistStateChannelType.CreateChannel,
       stateChannel,
-      await setupCommitment.getSignedTransaction(),
-      freeBalanceUpdateData,
+      [await setupCommitment.getSignedTransaction(), freeBalanceUpdateData],
     ];
 
     yield [
