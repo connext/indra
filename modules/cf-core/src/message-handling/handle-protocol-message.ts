@@ -17,6 +17,7 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
 import { StateChannel } from "../models";
+import { stringify } from "querystring";
 
 /**
  * Forwards all received Messages that are for the machine's internal
@@ -28,6 +29,7 @@ export async function handleReceivedProtocolMessage(
   msg: ProtocolMessage,
 ) {
   const { protocolRunner, store, router } = requestHandler;
+  const log = requestHandler.log.newContext("CF-handleReceivedProtocolMessage");
 
   const { data } = bigNumberifyJson(msg) as ProtocolMessage;
 
@@ -35,10 +37,17 @@ export async function handleReceivedProtocolMessage(
 
   if (seq === UNASSIGNED_SEQ_NO) return;
 
-  const {
-    channel: postProtocolStateChannel,
-  }: { channel: StateChannel } = await protocolRunner.runProtocolWithMessage(data);
-
+  let postProtocolStateChannel;
+  try {
+    const { channel }: { channel: StateChannel } = await protocolRunner.runProtocolWithMessage(
+      data,
+    );
+    postProtocolStateChannel = channel;
+  } catch (e) {
+    log.error(`Caught error running protocol, aborting. Error: ${stringify(e)}`);
+    return;
+  }
+  
   const outgoingEventData = await getOutgoingEventDataFromProtocol(
     protocol,
     params!,
