@@ -5,7 +5,14 @@ import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-s
 import { deBigNumberifyJson, ChannelSigner, stringify } from "@connext/utils";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { NetworkContextForTestSuite } from "../contracts";
-import { ProposeMessage, MethodParams, JsonRpcProvider, IClientStore } from "@connext/types";
+import {
+  ProposeMessage,
+  MethodParams,
+  JsonRpcProvider,
+  IClientStore,
+  MethodNames,
+  EventNames,
+} from "@connext/types";
 import { getMemoryStore } from "@connext/store";
 import { MemoryLockService } from "../services";
 import { Logger } from "../logger";
@@ -25,6 +32,8 @@ describe("Node method follows spec - propose install", () => {
   let nodeConfig: any;
   let lockService: MemoryLockService;
   let channelSignerA: ChannelSigner;
+
+  beforeEach(async () => {});
 
   describe("NodeA initiates proposal, nodeB approves, found in both stores", () => {
     beforeEach(async () => {
@@ -98,7 +107,6 @@ describe("Node method follows spec - propose install", () => {
       console.log("channelA: ", stringify(channelA));
       const channelB = await storeServiceB.getStateChannel(multisigAddress);
       console.log("channelB: ", stringify(channelB));
-      expect(true).toBe(true);
       nodeA = await Node.create(
         new MemoryMessagingServiceWithLimits(sharedEventEmitter),
         storeServiceA,
@@ -110,10 +118,25 @@ describe("Node method follows spec - propose install", () => {
         0,
         new Logger("CreateClient", env.logLevel, true, "A"),
       );
-      await nodeA.rpcRouter.dispatch({
-        ...rpc,
-        parameters: deBigNumberifyJson(params),
+
+      await new Promise(async (resolve) => {
+        nodeA.on(EventNames.SYNC, resolve);
+        await nodeA.rpcRouter.dispatch({
+          methodName: MethodNames.chan_sync,
+          parameters: { multisigAddress } as MethodParams.Sync,
+          id: Date.now(),
+        });
       });
+
+      expect(true).toBe(true);
+
+      // await new Promise(async (res) => {
+      //   nodeB.once("PROPOSE_INSTALL_EVENT", res);
+      //   await nodeA.rpcRouter.dispatch({
+      //     ...rpc,
+      //     parameters: deBigNumberifyJson(params),
+      //   });
+      // });
     }, 30_000);
   });
 });
