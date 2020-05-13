@@ -5,6 +5,7 @@ import {
   ProtocolParams,
   StateChannelJSON,
   SetStateCommitmentJSON,
+  IStoreService,
 } from "@connext/types";
 import {
   logTime,
@@ -19,7 +20,7 @@ import { StateChannel, AppInstance } from "../models";
 import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 
 import { stateChannelClassFromStoreByMultisig } from "./utils";
-import { getSetStateCommitment, SetStateCommitment } from "../ethereum";
+import { getSetStateCommitment } from "../ethereum";
 import { keccak256, defaultAbiCoder } from "ethers/utils";
 
 const protocol = ProtocolNames.sync;
@@ -43,10 +44,16 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
       initiatorIdentifier,
     } = params as ProtocolParams.Sync;
+    const ourIdentifier = initiatorIdentifier;
     const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
       multisigAddress,
       store,
     );
+    const {
+      proposalCommitments,
+      installedCommitments,
+      freeBalanceCommitments,
+    } = await getCommitmentsFromChannel(preProtocolStateChannel, store);
     const m1 = {
       protocol,
       processID,
@@ -54,7 +61,10 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       seq: 1,
       to: responderIdentifier,
       customData: {
-        channelJson: preProtocolStateChannel.toJson(),
+        channel: preProtocolStateChannel.toJson(),
+        proposalCommitments,
+        freeBalanceCommitments,
+        installedCommitments,
       },
     } as ProtocolMessageData;
 
@@ -67,92 +77,45 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     const {
       data: {
-        customData: { channelJson, proposalCommitments },
+        customData: {
+          channel: responderChannelJson,
+          proposalCommitments: responderProposalCommitments,
+          // freeBalanceComitments: responderFreeBalanceCommitments,
+          // installedCommitments: responderInstalledCommitments,
+        },
       },
     }: {
       data: {
         customData: {
-          channelJson: StateChannelJSON;
+          channel: StateChannelJSON;
           proposalCommitments: SetStateCommitmentJSON[];
+          freeBalanceComitments: SetStateCommitmentJSON[];
+          installedCommitments: SetStateCommitmentJSON[];
         };
       };
     } = m2!;
 
-    const responderChannel = StateChannel.fromJson(channelJson);
+    const responderChannel = StateChannel.fromJson(responderChannelJson);
 
-    if (
-      preProtocolStateChannel.freeBalance.latestVersionNumber <
-      responderChannel.freeBalance.latestVersionNumber
-    ) {
-      throw new Error("TODO: handle case where initiator free balance is out of sync");
+    if (!needsSyncFromCounterparty(preProtocolStateChannel, responderChannel)) {
+      throw new Error("TODO: handle case where responder should sync");
     }
 
-    let postProtocolStateChannel;
-    let commitments: SetStateCommitment[] = [];
-    if (preProtocolStateChannel.numProposedApps < responderChannel.numProposedApps) {
-      if (responderChannel.numProposedApps - preProtocolStateChannel.numProposedApps !== 1) {
-        throw new Error(`Cannot sync by more than one proposed app, use restore instead.`);
-      }
-      log.debug(`Channel numProposedApps is out of sync, attempting sync now`);
-      const untrackedProposedApp = [...responderChannel.proposedAppInstances.values()].find(
-        (app) => !preProtocolStateChannel.proposedAppInstances.has(app.identityHash),
-      );
-      if (!untrackedProposedApp) {
-        throw new Error(`Cannot find matching proposal, aborting sync`);
-      }
-      const correspondingSetStateCommitment = proposalCommitments.find(
-        (p) => p.appIdentityHash === untrackedProposedApp.identityHash,
-      );
-      if (!correspondingSetStateCommitment) {
-        throw new Error(
-          `No corresponding set state commitment for ${untrackedProposedApp.identityHash}`,
-        );
-      }
-      const proposedAppInstance = {
-        identity: {
-          appDefinition: untrackedProposedApp.appDefinition,
-          channelNonce: toBN(responderChannel.numProposedApps),
-          participants: responderChannel.getSigningKeysFor(
-            untrackedProposedApp.initiatorIdentifier,
-            untrackedProposedApp.responderIdentifier,
-          ),
-          multisigAddress: preProtocolStateChannel.multisigAddress,
-          defaultTimeout: toBN(untrackedProposedApp.defaultTimeout),
-        },
-        hashOfLatestState: keccak256(
-          defaultAbiCoder.encode(
-            [untrackedProposedApp.abiEncodings.stateEncoding],
-            [untrackedProposedApp.initialState],
-          ),
-        ),
-        versionNumber: 1,
-        stateTimeout: untrackedProposedApp.stateTimeout,
-      };
-      const generatedCommitment = getSetStateCommitment(
-        context,
-        proposedAppInstance as AppInstance,
-      );
-      const signer1 = await recoverAddressFromChannelMessage(
-        generatedCommitment.hashToSign(),
-        correspondingSetStateCommitment.signatures[0],
-      );
-      const signer2 = await recoverAddressFromChannelMessage(
-        generatedCommitment.hashToSign(),
-        correspondingSetStateCommitment.signatures[1],
-      );
-      if (
-        signer1 === getSignerAddressFromPublicIdentifier(initiatorIdentifier) ||
-        signer2 === getSignerAddressFromPublicIdentifier(initiatorIdentifier)
-      ) {
-        postProtocolStateChannel = preProtocolStateChannel.addProposal(untrackedProposedApp);
-        commitments.push(generatedCommitment);
-      }
-    } else {
-      throw new Error("TODO: handle case where initiator is ahead of responder in sync");
-    }
+    const {
+      updatedChannel: postProposalChannel,
+      commitments: postProposalSyncCommitments,
+    } = await syncUntrackedProposals(
+      preProtocolStateChannel,
+      responderChannel,
+      responderProposalCommitments,
+      context,
+      ourIdentifier,
+    );
 
-    if (!postProtocolStateChannel || commitments.length === 0) {
-      throw new Error("Could not generate commitments or new channel using the sync protocol");
+    const commitments = postProposalSyncCommitments;
+    const postProtocolStateChannel = postProposalChannel;
+    if (!postProtocolStateChannel) {
+      throw new Error("wtf tho");
     }
 
     yield [
@@ -176,36 +139,188 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     const { multisigAddress, initiatorIdentifier } = params as ProtocolParams.Sync;
 
     const {
-      customData: { channelJson: initiatorChannelJson },
+      customData: {
+        channel: initiatorChannelJson,
+        proposalCommitments: initiatorProposalCommitments,
+        freeBalanceCommitments: initatorFreeBalanceCommitments,
+        installedCommitments: initatorInstalledCommitments,
+      },
     } = message;
 
+    const initatorChannel = StateChannel.fromJson(initiatorChannelJson);
     const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
       multisigAddress,
       store,
     );
 
-    const proposalCommitments = await Promise.all(
-      [...preProtocolStateChannel.proposedAppInstances.values()].map(async (proposedApp) =>
-        store.getSetStateCommitments(proposedApp.identityHash),
-      ),
-    );
+    const {
+      proposalCommitments,
+      installedCommitments,
+      freeBalanceCommitments,
+    } = await getCommitmentsFromChannel(preProtocolStateChannel, store);
+
+    if (needsSyncFromCounterparty(preProtocolStateChannel, initatorChannel)) {
+      throw new Error("TODO: Implement responder syncing");
+    }
 
     substart = Date.now();
-
-    const m1 = {
-      protocol,
-      processID,
-      params,
-      seq: UNASSIGNED_SEQ_NO,
-      to: initiatorIdentifier,
-      customData: {
-        channelJson: preProtocolStateChannel.toJson(),
-        proposalCommitments: proposalCommitments.map((commitment) => commitment[0]),
+    yield [
+      IO_SEND,
+      {
+        protocol,
+        processID,
+        params,
+        seq: UNASSIGNED_SEQ_NO,
+        to: initiatorIdentifier,
+        customData: {
+          channel: preProtocolStateChannel.toJson(),
+          proposalCommitments,
+          freeBalanceCommitments,
+          installedCommitments,
+        },
       },
-    } as ProtocolMessageData;
-    yield [IO_SEND, m1, preProtocolStateChannel];
-
-    logTime(log, substart, `[${processID}] Response finished`);
-    substart = Date.now();
+      preProtocolStateChannel,
+    ];
   },
 };
+
+// adds a missing proposal from the responder channel to our channel. Is only
+// safe for use when there is one proposal missing. Verifies we have signed
+// the update before adding the proposal to our channel.s
+async function syncUntrackedProposals(
+  ourChannel: StateChannel,
+  counterpartyChannel: StateChannel,
+  proposalCommitments: SetStateCommitmentJSON[],
+  context: Context,
+  publicIdentifier: string,
+) {
+  // handle case where we have to add a proposal to our store
+  if (ourChannel.numProposedApps >= counterpartyChannel.numProposedApps) {
+    // our proposals are ahead, counterparty should sync if needed
+    throw new Error("No proposal sync needed for our channel");
+  }
+  if (ourChannel.numProposedApps !== counterpartyChannel.numProposedApps - 1) {
+    throw new Error(`Cannot sync by more than one proposed app, use restore instead.`);
+  }
+
+  const untrackedProposedApp = [...counterpartyChannel.proposedAppInstances.values()].find(
+    (app) => !ourChannel.proposedAppInstances.has(app.identityHash),
+  );
+  if (!untrackedProposedApp) {
+    throw new Error(`Cannot find matching untracked proposal in counterparty's store, aborting`);
+  }
+  const correspondingSetStateCommitment = proposalCommitments.find(
+    (p) => p.appIdentityHash === untrackedProposedApp.identityHash,
+  );
+  if (!correspondingSetStateCommitment) {
+    throw new Error(
+      `No corresponding set state commitment for ${untrackedProposedApp.identityHash}, aborting`,
+    );
+  }
+
+  // generate the commitment and verify signatures
+  const proposedAppInstance = {
+    identity: {
+      appDefinition: untrackedProposedApp.appDefinition,
+      channelNonce: toBN(counterpartyChannel.numProposedApps),
+      participants: counterpartyChannel.getSigningKeysFor(
+        untrackedProposedApp.initiatorIdentifier,
+        untrackedProposedApp.responderIdentifier,
+      ),
+      multisigAddress: ourChannel.multisigAddress,
+      defaultTimeout: toBN(untrackedProposedApp.defaultTimeout),
+    },
+    hashOfLatestState: keccak256(
+      defaultAbiCoder.encode(
+        [untrackedProposedApp.abiEncodings.stateEncoding],
+        [untrackedProposedApp.initialState],
+      ),
+    ),
+    versionNumber: 1,
+    stateTimeout: untrackedProposedApp.stateTimeout,
+  };
+  const generatedCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
+  const signers = await Promise.all(
+    correspondingSetStateCommitment.signatures.map((sig) =>
+      recoverAddressFromChannelMessage(generatedCommitment.hashToSign(), sig),
+    ),
+  );
+  const signer = getSignerAddressFromPublicIdentifier(publicIdentifier);
+  const recovered = signers.find((addr) => addr === signer);
+  if (!recovered) {
+    throw new Error(
+      `Could not find valid signer in recovered addresses. Recovered: ${stringify(
+        signers,
+      )}, expected: ${signer}`,
+    );
+  }
+  const updatedChannel = ourChannel.addProposal(untrackedProposedApp);
+  return {
+    updatedChannel,
+    commitments: [generatedCommitment],
+  };
+}
+
+async function getCommitmentsFromChannel(channel: StateChannel, store: IStoreService) {
+  const proposalCommitments = await Promise.all(
+    [...channel.proposedAppInstances.values()].map((proposedApp) =>
+      store.getSetStateCommitments(proposedApp.identityHash),
+    ),
+  );
+
+  const installedCommitments = await Promise.all(
+    [...channel.appInstances.values()].map((app) => store.getSetStateCommitments(app.identityHash)),
+  );
+
+  const freeBalanceCommitments = await store.getSetStateCommitments(
+    channel.freeBalance.identityHash,
+  )[0];
+
+  return {
+    proposalCommitments: proposalCommitments.map((commitment) => commitment[0]),
+    installedCommitments: installedCommitments.map((commitment) => commitment[0]),
+    freeBalanceCommitments,
+  };
+}
+
+// will return true IFF there is information in our counterparty's channel
+// we must update with. Will return false if the responder 
+function needsSyncFromCounterparty(ourChannel: StateChannel, counterpartyChannel: StateChannel): boolean {
+  // check channel nonces
+  // covers interruptions in: propose
+  if (ourChannel.numProposedApps < counterpartyChannel.numProposedApps) {
+    return true;
+  }
+
+  // check free balance nonces
+  // covers interruptions in: uninstall, install
+  if (
+    ourChannel.freeBalance.latestVersionNumber <
+    counterpartyChannel.freeBalance.latestVersionNumber
+  ) {
+    return true;
+  }
+
+  // because we know we have the latest free balance nonce,
+  // we can assume we have the most up to date list of installed
+  // app instances. If the counterparty does NOT have an app that
+  // you do, you know they are out of sync, not you
+
+  // make sure all apps have the same nonce
+  // covers interruptions in: takeAction
+  let needCounterpartyAppData = false;
+  [...ourChannel.appInstances.values()].forEach((app) => {
+    if (needCounterpartyAppData) {
+      return;
+    }
+    const counterpartyCopy = counterpartyChannel.appInstances.get(app.identityHash);
+    if (
+      counterpartyCopy &&
+      counterpartyCopy.latestVersionNumber > app.latestVersionNumber
+    ) {
+      needCounterpartyAppData = true;
+    }
+  });
+
+  return needCounterpartyAppData;
+}
