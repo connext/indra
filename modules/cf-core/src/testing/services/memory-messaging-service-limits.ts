@@ -27,7 +27,6 @@ export class MemoryMessagingServiceWithLimits implements IMessagingService {
 
     this.eventEmitter.emit(to, msg);
     if (this.protocol && msg.data.protocol === this.protocol) {
-      console.log(`SENDING ${msg.data.protocol} MESSAGE ${stringify(msg)} to ${to}`);
       this.messagesSent += 1;
       if (this.messagesSent >= this.messagesToSend) {
         console.log(`Disconnecting after ${this.messagesSent} messages sent`);
