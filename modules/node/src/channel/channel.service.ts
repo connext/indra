@@ -101,6 +101,12 @@ export class ChannelService {
   ): Promise<TransactionReceipt | undefined> {
     this.log.info(`Rebalance for ${channel.userIdentifier} asset ${assetId} started`);
     const normalizedAssetId = getAddress(assetId);
+    if (channel.activeCollateralizations[assetId]) {
+      this.log.warn(
+        `Channel has collateralization in flight for ${normalizedAssetId}, doing nothing`,
+      );
+      return undefined;
+    }
 
     const rebalancingTargets = await this.getRebalancingTargets(
       channel.userIdentifier,
@@ -157,6 +163,31 @@ export class ChannelService {
     }
     this.log.info(`Rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`);
     return receipt as TransactionReceipt | undefined;
+  }
+
+  async getCollateralAmountToCoverPaymentAndRebalance(
+    userPublicIdentifier: string,
+    assetId: string,
+    paymentAmount: BigNumber,
+    currentBalance: BigNumber,
+  ): Promise<BigNumber> {
+    const { upperBoundCollateralize, lowerBoundCollateralize } = await this.getRebalancingTargets(
+      userPublicIdentifier,
+      assetId,
+    );
+    // if the payment reduces the nodes current balance to below the lower
+    // collateral bound, then on the next uninstall the node will try to
+    // deposit again
+    const resultingBalance = currentBalance.sub(paymentAmount);
+    if (resultingBalance.lte(lowerBoundCollateralize)) {
+      // return proper amount for balance to be the collateral limit
+      // after the payment is performed
+      return upperBoundCollateralize.add(paymentAmount).sub(currentBalance);
+    }
+    // always default to the greater collateral value
+    return paymentAmount.gt(upperBoundCollateralize)
+      ? paymentAmount.sub(currentBalance)
+      : upperBoundCollateralize.sub(currentBalance);
   }
 
   async getRebalancingTargets(
