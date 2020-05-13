@@ -128,6 +128,7 @@ export class LinkedTransferService {
         amount,
         freeBal[freeBalanceAddr],
       );
+      this.log.warn(`Depositing ${deposit.toString()} of ${assetId} into channel with user ${userIdentifier}`);
       
       // request collateral and wait for deposit to come through
       const depositReceipt = await this.depositService.deposit(
