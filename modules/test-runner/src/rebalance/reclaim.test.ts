@@ -1,4 +1,4 @@
-import { EventNames, IConnextClient, Contract } from "@connext/types";
+import { IConnextClient, Contract } from "@connext/types";
 import { getRandomBytes32, toBN } from "@connext/utils";
 import { AddressZero, One, Two } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
