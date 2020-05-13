@@ -114,7 +114,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       const proposedAppInstance = {
         identity: {
           appDefinition: untrackedProposedApp.appDefinition,
-          channelNonce: toBN(responderChannel.numProposedApps + 1),
+          channelNonce: toBN(responderChannel.numProposedApps),
           participants: responderChannel.getSigningKeysFor(
             untrackedProposedApp.initiatorIdentifier,
             untrackedProposedApp.responderIdentifier,
