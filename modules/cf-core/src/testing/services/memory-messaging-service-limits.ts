@@ -1,6 +1,5 @@
 import { IMessagingService, Message, ProtocolName } from "@connext/types";
 import { EventEmitter } from "events";
-import { stringify } from "@connext/utils";
 
 export type MessagingLimit = { to: string; limit: number };
 export type MessagingLimitAndCount = MessagingLimit & { count: number };
@@ -21,7 +20,7 @@ export class MemoryMessagingServiceWithLimits implements IMessagingService {
 
   async send(to: string, msg: Message): Promise<void> {
     if (!this.connected) {
-      console.log(`Messaging service disconnected, not responding to message: ${stringify(msg)}`);
+      console.log(`Messaging service disconnected, not sending message`);
       return;
     }
 
@@ -38,7 +37,7 @@ export class MemoryMessagingServiceWithLimits implements IMessagingService {
   async onReceive(address: string, callback: (msg: Message) => void) {
     this.eventEmitter.on(address, (msg) => {
       if (!this.connected) {
-        console.log(`Messaging service disconnected, not responding to message: ${stringify(msg)}`);
+        console.log(`Messaging service disconnected, not responding to message`);
         return;
       }
       callback(msg);
