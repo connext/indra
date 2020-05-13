@@ -2,7 +2,7 @@ import { env } from "../setup";
 import { Node } from "../../node";
 import { createChannel, makeProposeCall } from "../utils";
 import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
-import { deBigNumberifyJson, ChannelSigner, stringify, delay } from "@connext/utils";
+import { deBigNumberifyJson, ChannelSigner, stringify } from "@connext/utils";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { NetworkContextForTestSuite } from "../contracts";
 import {
@@ -128,7 +128,7 @@ describe("Node method follows spec - propose install", () => {
         }),
       ]) as [EventPayloads.Sync, any];
 
-      const { result: { result: syncedChannel } } = rpcResult;
+      const { result: { result: { syncedChannel } } } = rpcResult;
       expect(eventData).toMatchObject({
         from: nodeA.publicIdentifier,
         type: EventNames.SYNC,
