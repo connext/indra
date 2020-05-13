@@ -141,7 +141,7 @@ describe("WithdrawApp", async () => {
     let initialState = await createInitialState();
     let action = await createAction();
 
-    initialState.signatures[0] = await (new ChannelSigner(bystanderSigningKey.privateKey).signMessage(data));
+    initialState.signatures[0] = await new ChannelSigner(bystanderSigningKey.privateKey).signMessage(data);
     await expect(applyAction(initialState, action)).revertedWith("invalid withdrawer signature");
   });
 
@@ -149,7 +149,7 @@ describe("WithdrawApp", async () => {
     let initialState = await createInitialState();
     let action = await createAction();
 
-    action.signature = await (new ChannelSigner(bystanderSigningKey.privateKey).signMessage(data));
+    action.signature = await new ChannelSigner(bystanderSigningKey.privateKey).signMessage(data);
     await expect(applyAction(initialState, action)).revertedWith("invalid counterparty signature");
   });
 });
