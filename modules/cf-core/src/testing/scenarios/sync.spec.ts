@@ -12,6 +12,7 @@ import {
   MethodNames,
   EventNames,
   EventPayloads,
+  StateChannelJSON,
 } from "@connext/types";
 import { getMemoryStore } from "@connext/store";
 import { MemoryLockService } from "../services";
@@ -32,6 +33,7 @@ describe("Sync", () => {
   let nodeConfig: any;
   let lockService: MemoryLockService;
   let channelSignerA: ChannelSigner;
+  let expectedChannel: StateChannelJSON;
 
   beforeEach(async () => {});
 
@@ -81,9 +83,8 @@ describe("Sync", () => {
       );
 
       multisigAddress = await createChannel(nodeA, nodeB);
-    });
 
-    it("sync protocol initiator is missing a proposal held by the protocol responder", async () => {
+      // load stores with proposal
       const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const params = {
         ...(rpc.parameters as MethodParams.ProposeInstall),
@@ -103,6 +104,8 @@ describe("Sync", () => {
           console.log(`Caught error sending rpc: ${stringify(e)}`);
         }
       });
+
+      // recreate nodeA
       nodeA = await Node.create(
         new MemoryMessagingServiceWithLimits(sharedEventEmitter),
         storeServiceA,
@@ -115,8 +118,10 @@ describe("Sync", () => {
         new Logger("CreateClient", env.logLevel, true, "A"),
       );
 
-      const expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
+      expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
+    });
 
+    it("sync protocol initiator is missing a proposal held by the protocol responder", async () => {
       const [eventData, rpcResult] = await Promise.all([
         new Promise((resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -138,40 +143,6 @@ describe("Sync", () => {
     }, 30_000);
 
     it("sync protocol responder is missing a proposal held by the protocol initiator", async () => {
-      // nodeA is responder, nodeB is sync initiator
-      const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
-      const params = {
-        ...(rpc.parameters as MethodParams.ProposeInstall),
-        multisigAddress: undefined,
-        meta: {
-          info: "Provided meta",
-        },
-      };
-      await new Promise(async (res, rej) => {
-        nodeB.once("PROPOSE_INSTALL_EVENT", res);
-        try {
-          await nodeA.rpcRouter.dispatch({
-            ...rpc,
-            parameters: deBigNumberifyJson(params),
-          });
-        } catch (e) {
-          return rej(`Caught error sending rpc: ${stringify(e)}`);
-        }
-      });
-      nodeA = await Node.create(
-        new MemoryMessagingServiceWithLimits(sharedEventEmitter),
-        storeServiceA,
-        global["network"],
-        nodeConfig,
-        provider,
-        channelSignerA,
-        lockService,
-        0,
-        new Logger("CreateClient", env.logLevel, true, "A"),
-      );
-
-      const expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
-
       const [eventData, rpcResult] = await Promise.all([
         new Promise((resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
