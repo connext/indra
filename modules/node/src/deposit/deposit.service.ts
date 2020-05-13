@@ -118,7 +118,6 @@ export class DepositService {
   ): Promise<string | undefined> {
     const appIdentityHash = await this.proposeDepositInstall(channel, tokenAddress);
     if (!appIdentityHash) {
-      console.log(`Trying to throw this error`);
       throw new Error(
         `Failed to install deposit app for ${tokenAddress} in channel ${channel.multisigAddress}`,
       );
@@ -158,7 +157,6 @@ export class DepositService {
     const ourDepositAppIds = depositApps
       .filter((app) => {
         const latestState = app.latestState as DepositAppState;
-        console.log("deposit app latest state", latestState);
         return latestState.assetId === assetId && latestState.transfers[0].to === signerAddr;
       })
       .map((app) => app.identityHash);
