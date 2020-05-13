@@ -149,6 +149,13 @@ async function getOutgoingEventDataFromProtocol(
         },
       };
     }
+    case ProtocolNames.sync: {
+      return {
+        ...baseEvent,
+        type: EventNames.UPDATE_STATE_EVENT,
+        data: "foo",
+      };
+    }
     case ProtocolNames.takeAction: {
       return {
         ...baseEvent,

@@ -170,6 +170,12 @@ type WithdrawalStartedEventData = {
 };
 
 ////////////////////////////////////////
+const SYNC_EVENT = "SYNC";
+
+type SyncEventData = {
+};
+
+////////////////////////////////////////
 // Exports
 export const EventNames = enumify({
   [CONDITIONAL_TRANSFER_CREATED_EVENT]: CONDITIONAL_TRANSFER_CREATED_EVENT,
@@ -183,6 +189,7 @@ export const EventNames = enumify({
   [PROPOSE_INSTALL_EVENT]: PROPOSE_INSTALL_EVENT,
   [PROTOCOL_MESSAGE_EVENT]: PROTOCOL_MESSAGE_EVENT,
   [REJECT_INSTALL_EVENT]: REJECT_INSTALL_EVENT,
+  [SYNC_EVENT]: SYNC_EVENT,
   [UNINSTALL_EVENT]: UNINSTALL_EVENT,
   [UPDATE_STATE_EVENT]: UPDATE_STATE_EVENT,
   [WITHDRAWAL_CONFIRMED_EVENT]: WITHDRAWAL_CONFIRMED_EVENT,
