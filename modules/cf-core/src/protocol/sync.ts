@@ -338,7 +338,7 @@ async function syncFreeBalanceState(
       /* initiator */ installedProposal.initiatorIdentifier,
       /* responder */ installedProposal.responderIdentifier,
       /* defaultTimeout */ installedProposal.defaultTimeout,
-      /* appInterface */ { 
+      /* appInterface */ {
         addr: installedProposal.appDefinition,
         stateEncoding: installedProposal.abiEncodings.stateEncoding,
         actionEncoding: installedProposal.abiEncodings.actionEncoding,
@@ -355,12 +355,14 @@ async function syncFreeBalanceState(
       multiAssetMultiPartyCoinTransferInterpreterParams,
       singleAssetTwoPartyCoinTransferInterpreterParams,
     );
-    const withoutProposal = ourChannel.removeProposal(appInstance.identityHash);
-    const withApp = withoutProposal.addAppInstance(appInstance);
-    updatedChannel = withApp.setFreeBalance(freeBalance);
+    updatedChannel = ourChannel
+      .removeProposal(appInstance.identityHash)
+      .addAppInstance(appInstance)
+      .setFreeBalance(freeBalance);
   } else if (uninstalledApp && !installedProposal) {
-    const withoutApp = ourChannel.removeAppInstance(uninstalledApp.identityHash);
-    updatedChannel = withoutApp.setFreeBalance(freeBalance);
+    updatedChannel = ourChannel
+      .removeAppInstance(uninstalledApp.identityHash)
+      .setFreeBalance(freeBalance);
   } else {
     throw new Error(
       `Free balance has higher nonce, but cannot find an app that has been uninstalled or installed, or found both an installed and uninstalled app. Our channel: ${stringify(
@@ -368,9 +370,6 @@ async function syncFreeBalanceState(
       )}, free balance: ${stringify(freeBalance.toFreeBalanceState())}`,
     );
   }
-
-  console.log(`updated channel: ${stringify(updatedChannel.toJson())}`);
-  await delay(500);
 
   return {
     updatedChannel,
