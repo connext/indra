@@ -7,6 +7,7 @@ import {
   SetStateCommitmentJSON,
   IStoreService,
   ConditionalTransactionCommitmentJSON,
+  ProtocolRoles,
 } from "@connext/types";
 import {
   logTime,
@@ -21,7 +22,7 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { StateChannel, AppInstance, FreeBalanceClass } from "../models";
 import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 
-import { stateChannelClassFromStoreByMultisig } from "./utils";
+import { stateChannelClassFromStoreByMultisig, assertIsValidSignature } from "./utils";
 import {
   getSetStateCommitment,
   SetStateCommitment,
@@ -31,7 +32,7 @@ import { keccak256, defaultAbiCoder } from "ethers/utils";
 import { computeInterpreterParameters } from "./install";
 
 const protocol = ProtocolNames.sync;
-const { IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
+const { IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, OP_SIGN, OP_VALIDATE } = Opcode;
 
 /**
  * @description This exchange is described at the following URL:
@@ -39,7 +40,11 @@ const { IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
  */
 export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
-    const { message, store } = context;
+    const {
+      message,
+      store,
+      network: { provider },
+    } = context;
     const log = context.log.newContext("CF-SyncProtocol");
     const start = Date.now();
     let substart = start;
@@ -151,7 +156,80 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `[${processID}] Synced free balance with responder`);
 
     // sync and save all app instances
-    // substart = Date.now();
+    substart = Date.now();
+    const appSync = await syncAppStates(
+      postSyncStateChannel,
+      responderChannel,
+      responderSetStateCommitments,
+      ourIdentifier,
+    );
+    if (!appSync) {
+      logTime(log, start, `[${processID}] Initiation finished`);
+      return;
+    }
+
+    const { commitments, updatedChannel } = appSync;
+
+    // update the channel with any double signed commitments
+    if (updatedChannel) {
+      postSyncStateChannel = StateChannel.fromJson(updatedChannel.toJson());
+    }
+
+    let doubleSigned: SetStateCommitment[] = [];
+    // process single-signed commitments
+    for (const commitment of commitments) {
+      if (commitment.signatures.length === 2) {
+        doubleSigned.push(commitment);
+        continue;
+      }
+
+      const responderApp = responderChannel.appInstances.get(commitment.appIdentityHash)!;
+      const app = postSyncStateChannel.appInstances.get(commitment.appIdentityHash)!;
+
+      // signature has been validated, add our signature
+      yield [
+        OP_VALIDATE,
+        ProtocolNames.takeAction,
+        {
+          params: {
+            initiatorIdentifier: responderIdentifier, // from *this* protocol
+            responderIdentifier: ourIdentifier,
+            multisigAddress: postSyncStateChannel.multisigAddress,
+            appIdentityHash: app.identityHash,
+            action: responderApp.latestAction,
+            stateTimeout: commitment.stateTimeout,
+          },
+          appInstance: app.toJson(),
+          role: ProtocolRoles.responder,
+        },
+      ];
+
+      // update the app
+      postSyncStateChannel.setState(
+        app,
+        await app.computeStateTransition(responderApp!.latestAction, provider),
+        commitment.stateTimeout,
+      );
+
+      // counterparty sig has already been asserted, add sign to commitment
+      // and update channel
+      const isAppInitiator = app.initiatorIdentifier === ourIdentifier;
+      const mySig = yield [OP_SIGN, commitment.hashToSign()];
+      await commitment.addSignatures(
+        isAppInitiator ? (mySig as any) : commitment.signatures[0],
+        isAppInitiator ? commitment.signatures[1] : (mySig as any),
+      );
+      doubleSigned.push(commitment);
+    }
+
+    yield [
+      PERSIST_STATE_CHANNEL,
+      PersistStateChannelType.SyncAppInstances,
+      postSyncStateChannel,
+      doubleSigned,
+    ];
+
+    logTime(log, substart, `[${processID}] Synced app states with responder`);
 
     logTime(log, start, `[${processID}] Initiation finished`);
   },
@@ -255,6 +333,80 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, start, `[${processID}] Response finished`);
   },
 };
+
+async function syncAppStates(
+  ourChannel: StateChannel,
+  counterpartyChannel: StateChannel,
+  counterpartySetState: SetStateCommitmentJSON[],
+  publicIdentifier: string,
+) {
+  let updatedChannel: StateChannel | undefined = undefined;
+  let commitments: SetStateCommitment[] = [];
+
+  for (const ourApp of [...ourChannel.appInstances.values()]) {
+    const counterpartyApp = counterpartyChannel.appInstances.get(ourApp.identityHash);
+    if (!counterpartyApp || ourApp.latestVersionNumber >= counterpartyApp.latestVersionNumber) {
+      continue;
+    }
+    if (ourApp.latestVersionNumber + 1 !== counterpartyApp.latestVersionNumber) {
+      throw new Error(`Cannot sync by more than one app update, use restore instead.`);
+    }
+    const json = counterpartySetState.find(
+      (c) =>
+        c.appIdentityHash === ourApp.identityHash &&
+        toBN(c.versionNumber).eq(counterpartyApp.versionNumber),
+    );
+    if (!json) {
+      throw new Error(`No corresponding set state commitment for ${ourApp.identityHash}, aborting`);
+    }
+    const counterpartyCommitment = SetStateCommitment.fromJson(json);
+    if (counterpartyCommitment.appStateHash !== counterpartyApp.hashOfLatestState) {
+      throw new Error(
+        `Counterparty commitment and counterparty app do not have the same latest state hash, aborting`,
+      );
+    }
+    // make sure we signed the commiment if it is double signed, if it is single signed
+    // check that it is a valid signature from the counterparty
+    if (counterpartyCommitment.signatures.length === 1) {
+      await assertIsValidSignature(
+        ourChannel.multisigOwners.find(
+          (addr) => addr !== getSignerAddressFromPublicIdentifier(publicIdentifier),
+        )!,
+        counterpartyCommitment.hashToSign(),
+        counterpartyCommitment.signatures.find((sig) => !!sig),
+        `Failed to validate counterparty's signature on set state commitment when syncing app instance ${
+          ourApp.identityHash
+        }. Counterparty commitment: ${stringify(json)}, our channel: ${stringify(
+          ourChannel.toJson(),
+        )}`,
+      );
+    } else {
+      await assertSignerPresent(
+        getSignerAddressFromPublicIdentifier(publicIdentifier),
+        counterpartyCommitment,
+      );
+      // commitment is valid and double signed, update channel
+      updatedChannel = ourChannel.setState(
+        ourApp,
+        counterpartyApp.latestState,
+        toBN(counterpartyApp.stateTimeout),
+      );
+      // commitment is valid but single signed, dont update channel
+    }
+    // commitment is valid
+    commitments.push(counterpartyCommitment);
+  }
+
+  if (!updatedChannel && commitments.length === 0) {
+    // no updates were made to any of our apps
+    return undefined;
+  }
+
+  return {
+    updatedChannel,
+    commitments,
+  };
+}
 
 // will update the channel object if needed to sync the free balance apps
 // between the counterparties. this sync represents an incompleted install
