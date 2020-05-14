@@ -242,7 +242,7 @@ describe("Sync", () => {
       expect(unsynced?.appInstances.length).toBe(0);
     }, 30_000);
 
-    test.only("sync protocol -- initiator is missing an app held by responder", async () => {
+    test("sync protocol -- initiator is missing an app held by responder", async () => {
       const [eventData] = await Promise.all([
         new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -272,9 +272,12 @@ describe("Sync", () => {
     test("sync protocol -- responder is missing an app held by initiator", async () => {
       messagingServiceB.disconnect();
       messagingServiceA.connect();
-      const eventData = await new Promise(async (resolve) => {
-        nodeA.on(EventNames.SYNC, (data) => resolve(data));
-        nodeB = await Node.create(
+
+      const [eventData] = await Promise.all([
+        new Promise(async (resolve) => {
+          nodeA.on(EventNames.SYNC, (data) => resolve(data));
+        }),
+        Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
           global["network"],
@@ -283,9 +286,9 @@ describe("Sync", () => {
           channelSignerB,
           lockService,
           0,
-          new Logger("CreateClient", env.logLevel, true, "A"),
-        );
-      });
+          new Logger("CreateClient", env.logLevel, true, "B"),
+        ),
+      ]);
 
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
       expect(eventData).toMatchObject({
@@ -300,7 +303,7 @@ describe("Sync", () => {
   describe("Sync::uninstall", () => {
     beforeEach(async () => {
       // uninstall-specific setup
-      const messagingServiceA = new MemoryMessagingServiceWithLimits(
+      messagingServiceA = new MemoryMessagingServiceWithLimits(
         sharedEventEmitter,
         1,
         ProtocolNames.uninstall,
@@ -341,38 +344,27 @@ describe("Sync", () => {
       expect(expectedChannel.appInstances.length).toBe(0);
       const unsynced = await storeServiceA.getStateChannel(multisigAddress);
       expect(unsynced?.appInstances.length).toBe(1);
-
-      // recreate nodeA
-      nodeA = await Node.create(
-        new MemoryMessagingServiceWithLimits(sharedEventEmitter),
-        storeServiceA,
-        global["network"],
-        nodeConfig,
-        provider,
-        channelSignerA,
-        lockService,
-        0,
-        new Logger("CreateClient", env.logLevel, true, "A"),
-      );
     }, 30_000);
 
     test("sync protocol -- initiator has an app uninstalled by responder", async () => {
-      const [eventData, rpcResult] = (await Promise.all([
-        new Promise((resolve) => {
+      const [eventData] = await Promise.all([
+        new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
         }),
-        nodeA.rpcRouter.dispatch({
-          methodName: MethodNames.chan_sync,
-          parameters: { multisigAddress } as MethodParams.Sync,
-          id: Date.now(),
-        }),
-      ])) as [EventPayloads.Sync, any];
+        Node.create(
+          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+          storeServiceA,
+          global["network"],
+          nodeConfig,
+          provider,
+          channelSignerA,
+          lockService,
+          0,
+          new Logger("CreateClient", env.logLevel, true, "A"),
+        ),
+      ]);
 
-      const {
-        result: {
-          result: { syncedChannel },
-        },
-      } = rpcResult;
+      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
       expect(eventData).toMatchObject({
         from: nodeA.publicIdentifier,
         type: EventNames.SYNC,
@@ -382,22 +374,26 @@ describe("Sync", () => {
     }, 30_000);
 
     test("sync protocol -- responder has an app uninstalled by initiator", async () => {
-      const [eventData, rpcResult] = (await Promise.all([
-        new Promise((resolve) => {
+      messagingServiceB.disconnect();
+      messagingServiceA.connect();
+      const [eventData] = await Promise.all([
+        new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
         }),
-        nodeB.rpcRouter.dispatch({
-          methodName: MethodNames.chan_sync,
-          parameters: { multisigAddress } as MethodParams.Sync,
-          id: Date.now(),
-        }),
-      ])) as [EventPayloads.Sync, any];
+        Node.create(
+          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+          storeServiceB,
+          global["network"],
+          nodeConfig,
+          provider,
+          channelSignerB,
+          lockService,
+          0,
+          new Logger("CreateClient", env.logLevel, true, "A"),
+        ),
+      ]);
 
-      const {
-        result: {
-          result: { syncedChannel },
-        },
-      } = rpcResult;
+      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
       expect(eventData).toMatchObject({
         from: nodeB.publicIdentifier,
         type: EventNames.SYNC,
@@ -410,7 +406,7 @@ describe("Sync", () => {
   describe("Sync::takeAction", () => {
     beforeEach(async () => {
       // uninstall-specific setup
-      const messagingServiceA = new MemoryMessagingServiceWithLimits(
+      messagingServiceA = new MemoryMessagingServiceWithLimits(
         sharedEventEmitter,
         1,
         ProtocolNames.takeAction,
@@ -443,19 +439,6 @@ describe("Sync", () => {
         }
       });
 
-      // recreate nodeA
-      nodeA = await Node.create(
-        new MemoryMessagingServiceWithLimits(sharedEventEmitter, undefined, undefined, "NodeA"),
-        storeServiceA,
-        global["network"],
-        nodeConfig,
-        provider,
-        channelSignerA,
-        lockService,
-        0,
-        new Logger("CreateClient", env.logLevel, true, "A"),
-      );
-
       // get expected channel from nodeB
       expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
       expect(expectedChannel.appInstances.length).toBe(1);
@@ -473,21 +456,24 @@ describe("Sync", () => {
     }, 30_000);
 
     test("responder has an app that has a single signed update that the initiator does not have", async () => {
-      const [eventData, rpcResult] = (await Promise.all([
-        new Promise((resolve) => {
+      const [eventData] = await Promise.all([
+        new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
         }),
-        nodeA.rpcRouter.dispatch({
-          methodName: MethodNames.chan_sync,
-          parameters: { multisigAddress } as MethodParams.Sync,
-          id: Date.now(),
-        }),
-      ])) as [EventPayloads.Sync, any];
-      const {
-        result: {
-          result: { syncedChannel },
-        },
-      } = rpcResult;
+        Node.create(
+          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+          storeServiceA,
+          global["network"],
+          nodeConfig,
+          provider,
+          channelSignerA,
+          lockService,
+          0,
+          new Logger("CreateClient", env.logLevel, true, "A"),
+        ),
+      ]);
+
+      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
       expect(eventData).toMatchObject({
         from: nodeA.publicIdentifier,
         type: EventNames.SYNC,
@@ -497,22 +483,26 @@ describe("Sync", () => {
     }, 30_000);
 
     test("initiator has an app that has a single signed update that the responder does not have", async () => {
-      const [eventData, rpcResult] = (await Promise.all([
-        new Promise((resolve) => {
+      messagingServiceB.disconnect();
+      messagingServiceA.connect();
+      const [eventData] = await Promise.all([
+        new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
         }),
-        nodeB.rpcRouter.dispatch({
-          methodName: MethodNames.chan_sync,
-          parameters: { multisigAddress } as MethodParams.Sync,
-          id: Date.now(),
-        }),
-      ])) as [EventPayloads.Sync, any];
+        Node.create(
+          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+          storeServiceB,
+          global["network"],
+          nodeConfig,
+          provider,
+          channelSignerB,
+          lockService,
+          0,
+          new Logger("CreateClient", env.logLevel, true, "A"),
+        ),
+      ]);
 
-      const {
-        result: {
-          result: { syncedChannel },
-        },
-      } = rpcResult;
+      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
       expect(eventData).toMatchObject({
         from: nodeB.publicIdentifier,
         type: EventNames.SYNC,
