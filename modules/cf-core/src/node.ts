@@ -22,7 +22,7 @@ import {
   MethodNames,
   MethodParams,
 } from "@connext/types";
-import { delay, nullLogger } from "@connext/utils";
+import { delay, nullLogger, stringify } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
@@ -253,6 +253,7 @@ export class Node {
         ],
       ) => {
         const [type, stateChannel, signedCommitments] = args;
+        console.log("Opcode.PERSIST_STATE_CHANNEL type: ", type);
         switch (type) {
           case PersistStateChannelType.CreateChannel: {
             const [setup, freeBalance] = signedCommitments as [
@@ -294,11 +295,22 @@ export class Node {
             ];
             if (!conditional) {
               // this was an uninstall, so remove app instance
+              console.log(
+                "BEFORE this.storeService.removeAppInstance: ",
+                stringify(stateChannel.toJson()),
+              );
               await this.storeService.removeAppInstance(
                 stateChannel.multisigAddress,
                 setState.appIdentityHash,
                 stateChannel.freeBalance.toJson(),
                 setState.toJson(),
+              );
+              const newstateChannel = await this.storeService.getStateChannel(
+                stateChannel.multisigAddress,
+              );
+              console.log(
+                "AFTER this.storeService.removeAppInstance: ",
+                stringify(newstateChannel),
               );
             } else {
               // this was an install, add app and remove proposals
@@ -350,6 +362,8 @@ export class Node {
         ] = args;
         const { multisigAddress, numProposedApps, freeBalance } = postProtocolChannel;
         const { identityHash } = app;
+
+        console.log("Opcode.PERSIST_APP_INSTANCE type: ", type);
 
         switch (type) {
           case PersistAppType.CreateProposal: {

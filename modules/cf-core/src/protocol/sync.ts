@@ -103,131 +103,135 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     } = m2!;
 
     const responderChannel = StateChannel.fromJson(responderChannelJson);
-    if (!needsSyncFromCounterparty(preProtocolStateChannel, responderChannel)) {
-      log.debug(`No sync from counterparty needed, completing.`);
-      // use yield syntax to properly return values from the protocol
-      // to the controllers
-      yield [PERSIST_STATE_CHANNEL, PersistStateChannelType.NoChange, preProtocolStateChannel];
-      logTime(log, start, `[${processID}] Initiation finished`);
-      return;
-    }
-
     let postSyncStateChannel = StateChannel.fromJson(preProtocolStateChannel.toJson());
-    // sync and save all proposals
+
+    const syncType = needsSyncFromCounterparty(preProtocolStateChannel, responderChannel);
     substart = Date.now();
-    const proposalSync = await syncUntrackedProposals(
-      postSyncStateChannel,
-      responderChannel,
-      responderSetStateCommitments,
-      context,
-      ourIdentifier,
-    );
-    if (proposalSync) {
-      yield [
-        PERSIST_STATE_CHANNEL,
-        PersistStateChannelType.SyncProposal,
-        proposalSync.updatedChannel,
-        proposalSync.commitments,
-      ];
-      postSyncStateChannel = StateChannel.fromJson(proposalSync.updatedChannel.toJson());
-    }
-    logTime(log, substart, `[${processID}] Synced proposals with responder`);
-
-    // sync and save free balance
-    substart = Date.now();
-    const freeBalanceSync = await syncFreeBalanceState(
-      postSyncStateChannel,
-      responderChannel,
-      responderSetStateCommitments,
-      responderConditionalCommitments,
-      ourIdentifier,
-    );
-    if (freeBalanceSync) {
-      yield [
-        PERSIST_STATE_CHANNEL,
-        PersistStateChannelType.SyncFreeBalance,
-        freeBalanceSync.updatedChannel,
-        freeBalanceSync.commitments,
-      ];
-      postSyncStateChannel = StateChannel.fromJson(freeBalanceSync.updatedChannel.toJson());
-    }
-    logTime(log, substart, `[${processID}] Synced free balance with responder`);
-
-    // sync and save all app instances
-    substart = Date.now();
-    const appSync = await syncAppStates(
-      postSyncStateChannel,
-      responderChannel,
-      responderSetStateCommitments,
-      ourIdentifier,
-    );
-    if (!appSync) {
-      logTime(log, start, `[${processID}] Initiation finished`);
-      return;
-    }
-
-    const { commitments, updatedChannel } = appSync;
-
-    // update the channel with any double signed commitments
-    if (updatedChannel) {
-      postSyncStateChannel = StateChannel.fromJson(updatedChannel.toJson());
-    }
-
-    let doubleSigned: SetStateCommitment[] = [];
-    // process single-signed commitments
-    for (const commitment of commitments) {
-      if (commitment.signatures.length === 2) {
-        doubleSigned.push(commitment);
-        continue;
+    switch (syncType) {
+      case PersistStateChannelType.SyncProposal: {
+        // sync and save all proposals
+        const proposalSync = await syncUntrackedProposals(
+          postSyncStateChannel,
+          responderChannel,
+          responderSetStateCommitments,
+          context,
+          ourIdentifier,
+        );
+        yield [
+          PERSIST_STATE_CHANNEL,
+          PersistStateChannelType.SyncProposal,
+          proposalSync!.updatedChannel,
+          proposalSync!.commitments,
+        ];
+        postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
+        logTime(log, substart, `[${processID}] Synced proposals with responder`);
+        break;
       }
+      case PersistStateChannelType.SyncFreeBalance: {
+        const freeBalanceSync = await syncFreeBalanceState(
+          postSyncStateChannel,
+          responderChannel,
+          responderSetStateCommitments,
+          responderConditionalCommitments,
+          ourIdentifier,
+        );
+        yield [
+          PERSIST_STATE_CHANNEL,
+          PersistStateChannelType.SyncFreeBalance,
+          freeBalanceSync!.updatedChannel,
+          freeBalanceSync!.commitments,
+        ];
+        postSyncStateChannel = StateChannel.fromJson(freeBalanceSync!.updatedChannel.toJson());
+        logTime(log, substart, `[${processID}] Synced free balance with responder`);
+        break;
+      }
+      case PersistStateChannelType.SyncAppInstances: {
+        const appSync = await syncAppStates(
+          postSyncStateChannel,
+          responderChannel,
+          responderSetStateCommitments,
+          ourIdentifier,
+        );
 
-      const responderApp = responderChannel.appInstances.get(commitment.appIdentityHash)!;
-      const app = postSyncStateChannel.appInstances.get(commitment.appIdentityHash)!;
+        const { commitments, updatedChannel } = appSync!;
 
-      // signature has been validated, add our signature
-      yield [
-        OP_VALIDATE,
-        ProtocolNames.takeAction,
-        {
-          params: {
-            initiatorIdentifier: responderIdentifier, // from *this* protocol
-            responderIdentifier: ourIdentifier,
-            multisigAddress: postSyncStateChannel.multisigAddress,
-            appIdentityHash: app.identityHash,
-            action: responderApp.latestAction,
-            stateTimeout: commitment.stateTimeout,
-          },
-          appInstance: app.toJson(),
-          role: ProtocolRoles.responder,
-        },
-      ];
+        // update the channel with any double signed commitments
+        if (updatedChannel) {
+          postSyncStateChannel = StateChannel.fromJson(updatedChannel.toJson());
+        }
 
-      // update the app
-      postSyncStateChannel.setState(
-        app,
-        await app.computeStateTransition(responderApp!.latestAction, provider),
-        commitment.stateTimeout,
-      );
+        let doubleSigned: SetStateCommitment[] = [];
+        // process single-signed commitments
+        for (const commitment of commitments) {
+          if (commitment.signatures.length === 2) {
+            doubleSigned.push(commitment);
+            continue;
+          }
 
-      // counterparty sig has already been asserted, add sign to commitment
-      // and update channel
-      const isAppInitiator = app.initiatorIdentifier === ourIdentifier;
-      const mySig = yield [OP_SIGN, commitment.hashToSign()];
-      await commitment.addSignatures(
-        isAppInitiator ? (mySig as any) : commitment.signatures[0],
-        isAppInitiator ? commitment.signatures[1] : (mySig as any),
-      );
-      doubleSigned.push(commitment);
+          const responderApp = responderChannel.appInstances.get(commitment.appIdentityHash)!;
+          const app = postSyncStateChannel.appInstances.get(commitment.appIdentityHash)!;
+
+          // signature has been validated, add our signature
+          yield [
+            OP_VALIDATE,
+            ProtocolNames.takeAction,
+            {
+              params: {
+                initiatorIdentifier: responderIdentifier, // from *this* protocol
+                responderIdentifier: ourIdentifier,
+                multisigAddress: postSyncStateChannel.multisigAddress,
+                appIdentityHash: app.identityHash,
+                action: responderApp.latestAction,
+                stateTimeout: commitment.stateTimeout,
+              },
+              appInstance: app.toJson(),
+              role: ProtocolRoles.responder,
+            },
+          ];
+
+          // update the app
+          postSyncStateChannel.setState(
+            app,
+            await app.computeStateTransition(responderApp!.latestAction, provider),
+            commitment.stateTimeout,
+          );
+
+          // counterparty sig has already been asserted, add sign to commitment
+          // and update channel
+          const isAppInitiator = app.initiatorIdentifier === ourIdentifier;
+          const mySig = yield [OP_SIGN, commitment.hashToSign()];
+          await commitment.addSignatures(
+            isAppInitiator ? (mySig as any) : commitment.signatures[0],
+            isAppInitiator ? commitment.signatures[1] : (mySig as any),
+          );
+          doubleSigned.push(commitment);
+        }
+
+        yield [
+          PERSIST_STATE_CHANNEL,
+          PersistStateChannelType.SyncAppInstances,
+          postSyncStateChannel,
+          doubleSigned,
+        ];
+
+        logTime(log, substart, `[${processID}] Synced app states with responder`);
+        break;
+      }
+      case PersistStateChannelType.NoChange: {
+        log.debug(`No sync from counterparty needed, completing.`);
+        // use yield syntax to properly return values from the protocol
+        // to the controllers
+        yield [PERSIST_STATE_CHANNEL, PersistStateChannelType.NoChange, preProtocolStateChannel];
+        logTime(log, start, `[${processID}] Initiation finished`);
+        return;
+      }
+      case PersistStateChannelType.CreateChannel: {
+        throw new Error(`Cannot sync type: ${syncType}`);
+      }
+      default:
+        const c: never = syncType;
+        log.error(`Unreachable: ${c}`);
     }
-
-    yield [
-      PERSIST_STATE_CHANNEL,
-      PersistStateChannelType.SyncAppInstances,
-      postSyncStateChannel,
-      doubleSigned,
-    ];
-
-    logTime(log, substart, `[${processID}] Synced app states with responder`);
 
     logTime(log, start, `[${processID}] Initiation finished`);
   },
@@ -283,123 +287,133 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         conditionalCommitments,
       },
     };
-    if (!needsSyncFromCounterparty(preProtocolStateChannel, initiatorChannel)) {
-      // immediately send message without updating channel
-      log.debug(`No sync from counterparty needed, sending response and completing.`);
-      yield [IO_SEND, messageToSend, postSyncStateChannel];
-      logTime(log, start, `[${processID}] Response finished`);
-      return;
-    }
 
-    // sync and save all proposals
+    const syncType = needsSyncFromCounterparty(preProtocolStateChannel, initiatorChannel);
     substart = Date.now();
-    const proposalSync = await syncUntrackedProposals(
-      postSyncStateChannel,
-      initiatorChannel,
-      initiatorSetStateCommitments,
-      context,
-      ourIdentifier,
-    );
-    if (proposalSync) {
-      postSyncStateChannel = StateChannel.fromJson(proposalSync.updatedChannel.toJson());
-      yield [
-        PERSIST_STATE_CHANNEL,
-        PersistStateChannelType.SyncProposal,
-        postSyncStateChannel,
-        proposalSync.commitments,
-      ];
-    }
-    logTime(log, substart, `[${processID}] Synced proposals with initator`);
-
-    // sync and save free balance
-    substart = Date.now();
-    const freeBalanceSync = await syncFreeBalanceState(
-      postSyncStateChannel,
-      initiatorChannel,
-      initiatorSetStateCommitments,
-      initiatorConditionalCommitments,
-      ourIdentifier,
-    );
-    if (freeBalanceSync) {
-      yield [
-        PERSIST_STATE_CHANNEL,
-        PersistStateChannelType.SyncFreeBalance,
-        freeBalanceSync.updatedChannel,
-        freeBalanceSync.commitments,
-      ];
-      postSyncStateChannel = StateChannel.fromJson(freeBalanceSync.updatedChannel.toJson());
-    }
-    logTime(log, substart, `[${processID}] Synced free balance with initiator`);
-
-    // sync and save all app instances
-    substart = Date.now();
-    const appSync = await syncAppStates(
-      postSyncStateChannel,
-      initiatorChannel,
-      initiatorSetStateCommitments,
-      ourIdentifier,
-    );
-    if (appSync) {
-      const { commitments, updatedChannel } = appSync;
-
-      // update the channel with any double signed commitments
-      if (updatedChannel) {
-        postSyncStateChannel = StateChannel.fromJson(updatedChannel.toJson());
+    switch (syncType) {
+      case PersistStateChannelType.SyncProposal: {
+        // sync and save all proposals
+        const proposalSync = await syncUntrackedProposals(
+          postSyncStateChannel,
+          initiatorChannel,
+          initiatorSetStateCommitments,
+          context,
+          ourIdentifier,
+        );
+        yield [
+          PERSIST_STATE_CHANNEL,
+          PersistStateChannelType.SyncProposal,
+          proposalSync!.updatedChannel,
+          proposalSync!.commitments,
+        ];
+        postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
+        logTime(log, substart, `[${processID}] Synced proposals with initiator`);
+        break;
       }
+      case PersistStateChannelType.SyncFreeBalance: {
+        const freeBalanceSync = await syncFreeBalanceState(
+          postSyncStateChannel,
+          initiatorChannel,
+          initiatorSetStateCommitments,
+          initiatorConditionalCommitments,
+          ourIdentifier,
+        );
+        yield [
+          PERSIST_STATE_CHANNEL,
+          PersistStateChannelType.SyncFreeBalance,
+          freeBalanceSync!.updatedChannel,
+          freeBalanceSync!.commitments,
+        ];
+        postSyncStateChannel = StateChannel.fromJson(freeBalanceSync!.updatedChannel.toJson());
+        logTime(log, substart, `[${processID}] Synced free balance with initiator`);
+        break;
+      }
+      case PersistStateChannelType.SyncAppInstances: {
+        const appSync = await syncAppStates(
+          postSyncStateChannel,
+          initiatorChannel,
+          initiatorSetStateCommitments,
+          ourIdentifier,
+        );
 
-      let doubleSigned: SetStateCommitment[] = [];
-      // process single-signed commitments
-      for (const commitment of commitments) {
-        if (commitment.signatures.length === 2) {
-          doubleSigned.push(commitment);
-          continue;
+        const { commitments, updatedChannel } = appSync!;
+
+        // update the channel with any double signed commitments
+        if (updatedChannel) {
+          postSyncStateChannel = StateChannel.fromJson(updatedChannel.toJson());
         }
 
-        const responderApp = initiatorChannel.appInstances.get(commitment.appIdentityHash)!;
-        const app = postSyncStateChannel.appInstances.get(commitment.appIdentityHash)!;
+        let doubleSigned: SetStateCommitment[] = [];
+        // process single-signed commitments
+        for (const commitment of commitments) {
+          if (commitment.signatures.length === 2) {
+            doubleSigned.push(commitment);
+            continue;
+          }
 
-        // signature has been validated, add our signature
-        yield [
-          OP_VALIDATE,
-          ProtocolNames.takeAction,
-          {
-            params: {
-              initiatorIdentifier: responderIdentifier, // from *this* protocol
-              responderIdentifier: ourIdentifier,
-              multisigAddress: postSyncStateChannel.multisigAddress,
-              appIdentityHash: app.identityHash,
-              action: responderApp.latestAction,
-              stateTimeout: commitment.stateTimeout,
+          const initiatorApp = initiatorChannel.appInstances.get(commitment.appIdentityHash)!;
+          const app = postSyncStateChannel.appInstances.get(commitment.appIdentityHash)!;
+
+          // signature has been validated, add our signature
+          yield [
+            OP_VALIDATE,
+            ProtocolNames.takeAction,
+            {
+              params: {
+                initiatorIdentifier: responderIdentifier, // from *this* protocol
+                responderIdentifier: ourIdentifier,
+                multisigAddress: postSyncStateChannel.multisigAddress,
+                appIdentityHash: app.identityHash,
+                action: initiatorApp.latestAction,
+                stateTimeout: commitment.stateTimeout,
+              },
+              appInstance: app.toJson(),
+              role: ProtocolRoles.responder,
             },
-            appInstance: app.toJson(),
-            role: ProtocolRoles.responder,
-          },
+          ];
+
+          // update the app
+          postSyncStateChannel.setState(
+            app,
+            await app.computeStateTransition(initiatorApp!.latestAction, provider),
+            commitment.stateTimeout,
+          );
+
+          // counterparty sig has already been asserted, add sign to commitment
+          // and update channel
+          const isAppInitiator = app.initiatorIdentifier === ourIdentifier;
+          const mySig = yield [OP_SIGN, commitment.hashToSign()];
+          await commitment.addSignatures(
+            isAppInitiator ? (mySig as any) : commitment.signatures[0],
+            isAppInitiator ? commitment.signatures[1] : (mySig as any),
+          );
+          doubleSigned.push(commitment);
+        }
+
+        yield [
+          PERSIST_STATE_CHANNEL,
+          PersistStateChannelType.SyncAppInstances,
+          postSyncStateChannel,
+          doubleSigned,
         ];
 
-        // update the app
-        postSyncStateChannel.setState(
-          app,
-          await app.computeStateTransition(responderApp!.latestAction, provider),
-          commitment.stateTimeout,
-        );
-
-        // counterparty sig has already been asserted, add sign to commitment
-        // and update channel
-        const isAppInitiator = app.initiatorIdentifier === ourIdentifier;
-        const mySig = yield [OP_SIGN, commitment.hashToSign()];
-        await commitment.addSignatures(
-          isAppInitiator ? (mySig as any) : commitment.signatures[0],
-          isAppInitiator ? commitment.signatures[1] : (mySig as any),
-        );
-        doubleSigned.push(commitment);
+        logTime(log, substart, `[${processID}] Synced app states with responder`);
+        break;
       }
-
-      yield [
-        PERSIST_STATE_CHANNEL,
-        PersistStateChannelType.SyncAppInstances,
-        postSyncStateChannel,
-        doubleSigned,
-      ];
+      case PersistStateChannelType.NoChange: {
+        log.debug(`No sync from counterparty needed, completing.`);
+        // use yield syntax to properly return values from the protocol
+        // to the controllers
+        yield [PERSIST_STATE_CHANNEL, PersistStateChannelType.NoChange, preProtocolStateChannel];
+        logTime(log, start, `[${processID}] Initiation finished`);
+        return;
+      }
+      case PersistStateChannelType.CreateChannel: {
+        throw new Error(`Cannot sync type: ${syncType}`);
+      }
+      default:
+        const c: never = syncType;
+        log.error(`Unreachable: ${c}`);
     }
 
     logTime(log, substart, `[${processID}] Synced app states with responder`);
@@ -532,8 +546,11 @@ async function syncFreeBalanceState(
     activeAppIds.includes(proposal.identityHash),
   );
 
-  let updatedChannel;
-  let conditionalCommitment;
+  let updatedChannel: StateChannel;
+  let conditionalCommitment:
+    | ConditionalTransactionCommitment
+    | SetStateCommitment
+    | undefined = undefined;
   if (installedProposal && !uninstalledApp) {
     // conditional commitment should also be returned
     const conditionalJson = counterpartyConditional.find(
@@ -726,11 +743,11 @@ async function assertSignerPresent(
 function needsSyncFromCounterparty(
   ourChannel: StateChannel,
   counterpartyChannel: StateChannel,
-): boolean {
+): PersistStateChannelType {
   // check channel nonces
   // covers interruptions in: propose
   if (ourChannel.numProposedApps < counterpartyChannel.numProposedApps) {
-    return true;
+    return PersistStateChannelType.SyncProposal;
   }
 
   // check free balance nonces
@@ -738,7 +755,7 @@ function needsSyncFromCounterparty(
   if (
     ourChannel.freeBalance.latestVersionNumber < counterpartyChannel.freeBalance.latestVersionNumber
   ) {
-    return true;
+    return PersistStateChannelType.SyncFreeBalance;
   }
 
   // because we know we have the latest free balance nonce,
@@ -759,5 +776,7 @@ function needsSyncFromCounterparty(
     }
   });
 
-  return needCounterpartyAppData;
+  return needCounterpartyAppData
+    ? PersistStateChannelType.SyncAppInstances
+    : PersistStateChannelType.NoChange;
 }

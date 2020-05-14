@@ -60,6 +60,7 @@ describe("Sync", () => {
     storeServiceA = getMemoryStore();
     channelSignerA = new ChannelSigner(A_PRIVATE_KEY, ethUrl);
     await storeServiceA.init();
+    await storeServiceA.clear();
 
     // create nodeB values
     messagingServiceB = new MemoryMessagingServiceWithLimits(
@@ -297,7 +298,7 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel);
     }, 30_000);
   });
-
+  let identityHash: string;
   describe("Sync::uninstall", () => {
     beforeEach(async () => {
       // uninstall-specific setup
@@ -322,7 +323,7 @@ describe("Sync", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
 
       // create app
-      const [identityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
+      [identityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
       // nodeB should respond to the uninstall, nodeA will not get the
       // message, but nodeB thinks its sent
@@ -333,6 +334,7 @@ describe("Sync", () => {
           await nodeA.rpcRouter.dispatch(constructUninstallRpc(identityHash));
           return reject(`Initiator should be able to complete uninstall`);
         } catch (e) {
+          console.log("e: ", e);
           return resolve();
         }
       });
@@ -344,7 +346,7 @@ describe("Sync", () => {
       expect(unsynced?.appInstances.length).toBe(1);
     }, 30_000);
 
-    test("sync protocol -- initiator has an app uninstalled by responder", async () => {
+    test.only("sync protocol -- initiator has an app uninstalled by responder", async () => {
       const [eventData] = await Promise.all([
         new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -361,7 +363,11 @@ describe("Sync", () => {
           new Logger("CreateClient", env.logLevel, true, "A"),
         ),
       ]);
+      // const [freeBal] = await storeServiceB.getSetStateCommitments(identityHash);
+      // const appInstance = await storeServiceB.getAppInstance(identityHash);
+      // await storeServiceA.removeAppInstance(multisigAddress, identityHash, appInstance!, freeBal);
 
+      await delay(500);
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
       expect(eventData).toMatchObject({
         from: nodeA.publicIdentifier,
