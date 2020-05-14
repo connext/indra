@@ -103,12 +103,6 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     } = m2!;
 
     const responderChannel = StateChannel.fromJson(responderChannelJson);
-    console.log(
-      `NEED TO SYNC INITIATOR: ${needsSyncFromCounterparty(
-        preProtocolStateChannel,
-        responderChannel,
-      )}`,
-    );
     if (!needsSyncFromCounterparty(preProtocolStateChannel, responderChannel)) {
       log.debug(`No sync from counterparty needed, completing.`);
       // use yield syntax to properly return values from the protocol
@@ -289,12 +283,6 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         conditionalCommitments,
       },
     };
-    console.log(
-      `NEED TO SYNC RESPONDER: ${needsSyncFromCounterparty(
-        preProtocolStateChannel,
-        initiatorChannel,
-      )}`,
-    );
     if (!needsSyncFromCounterparty(preProtocolStateChannel, initiatorChannel)) {
       // immediately send message without updating channel
       log.debug(`No sync from counterparty needed, sending response and completing.`);
