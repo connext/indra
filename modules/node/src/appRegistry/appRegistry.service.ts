@@ -304,6 +304,9 @@ export class AppRegistryService implements OnModuleInit {
         case ProtocolNames.takeAction: {
           return;
         }
+        case ProtocolNames.sync: {
+          return;
+        }
         case ProtocolNames.install: {
           return await this.installMiddleware(cxt as InstallMiddlewareContext);
         }
