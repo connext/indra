@@ -15,7 +15,6 @@ import {
   toBN,
   getSignerAddressFromPublicIdentifier,
   recoverAddressFromChannelMessage,
-  delay,
 } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -235,7 +234,11 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Responding */: async function* (context: Context) {
-    const { message, store } = context;
+    const {
+      message,
+      store,
+      network: { provider },
+    } = context;
     const { params, processID } = message;
     const log = context.log.newContext("CF-SyncProtocol");
     const start = Date.now();
@@ -291,20 +294,20 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     // sync and save all proposals
     substart = Date.now();
-    const ret = await syncUntrackedProposals(
+    const proposalSync = await syncUntrackedProposals(
       postSyncStateChannel,
       initiatorChannel,
       initiatorSetStateCommitments,
       context,
       ourIdentifier,
     );
-    if (ret) {
-      postSyncStateChannel = StateChannel.fromJson(ret.updatedChannel.toJson());
+    if (proposalSync) {
+      postSyncStateChannel = StateChannel.fromJson(proposalSync.updatedChannel.toJson());
       yield [
         PERSIST_STATE_CHANNEL,
         PersistStateChannelType.SyncProposal,
         postSyncStateChannel,
-        ret.commitments,
+        proposalSync.commitments,
       ];
     }
     logTime(log, substart, `[${processID}] Synced proposals with initator`);
@@ -328,6 +331,79 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       postSyncStateChannel = StateChannel.fromJson(freeBalanceSync.updatedChannel.toJson());
     }
     logTime(log, substart, `[${processID}] Synced free balance with initiator`);
+
+    // sync and save all app instances
+    substart = Date.now();
+    const appSync = await syncAppStates(
+      postSyncStateChannel,
+      initiatorChannel,
+      initiatorSetStateCommitments,
+      ourIdentifier,
+    );
+    if (appSync) {
+      const { commitments, updatedChannel } = appSync;
+
+      // update the channel with any double signed commitments
+      if (updatedChannel) {
+        postSyncStateChannel = StateChannel.fromJson(updatedChannel.toJson());
+      }
+
+      let doubleSigned: SetStateCommitment[] = [];
+      // process single-signed commitments
+      for (const commitment of commitments) {
+        if (commitment.signatures.length === 2) {
+          doubleSigned.push(commitment);
+          continue;
+        }
+
+        const responderApp = initiatorChannel.appInstances.get(commitment.appIdentityHash)!;
+        const app = postSyncStateChannel.appInstances.get(commitment.appIdentityHash)!;
+
+        // signature has been validated, add our signature
+        yield [
+          OP_VALIDATE,
+          ProtocolNames.takeAction,
+          {
+            params: {
+              initiatorIdentifier: responderIdentifier, // from *this* protocol
+              responderIdentifier: ourIdentifier,
+              multisigAddress: postSyncStateChannel.multisigAddress,
+              appIdentityHash: app.identityHash,
+              action: responderApp.latestAction,
+              stateTimeout: commitment.stateTimeout,
+            },
+            appInstance: app.toJson(),
+            role: ProtocolRoles.responder,
+          },
+        ];
+
+        // update the app
+        postSyncStateChannel.setState(
+          app,
+          await app.computeStateTransition(responderApp!.latestAction, provider),
+          commitment.stateTimeout,
+        );
+
+        // counterparty sig has already been asserted, add sign to commitment
+        // and update channel
+        const isAppInitiator = app.initiatorIdentifier === ourIdentifier;
+        const mySig = yield [OP_SIGN, commitment.hashToSign()];
+        await commitment.addSignatures(
+          isAppInitiator ? (mySig as any) : commitment.signatures[0],
+          isAppInitiator ? commitment.signatures[1] : (mySig as any),
+        );
+        doubleSigned.push(commitment);
+      }
+
+      yield [
+        PERSIST_STATE_CHANNEL,
+        PersistStateChannelType.SyncAppInstances,
+        postSyncStateChannel,
+        doubleSigned,
+      ];
+    }
+
+    logTime(log, substart, `[${processID}] Synced app states with responder`);
 
     yield [IO_SEND, messageToSend, postSyncStateChannel];
     logTime(log, start, `[${processID}] Response finished`);
