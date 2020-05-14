@@ -131,9 +131,10 @@ describe("Sync", () => {
 
       // get expected channel from nodeB
       expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
+      expect(expectedChannel.proposedAppInstances.length).toBe(1);
     });
 
-    it("sync protocol initiator is missing a proposal held by the protocol responder", async () => {
+    test("sync protocol initiator is missing a proposal held by the protocol responder", async () => {
       const [eventData, rpcResult] = (await Promise.all([
         new Promise((resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -184,8 +185,7 @@ describe("Sync", () => {
     }, 30_000);
   });
 
-  describe.only("Sync::install", () => {
-
+  describe("Sync::install", () => {
     // TODO: figure out how to fast-forward IO_SEND_AND_WAIT
     beforeEach(async () => {
       // install-specific setup
@@ -194,7 +194,6 @@ describe("Sync", () => {
         1,
         ProtocolNames.install,
       );
-      console.log("created messaging service A");
       nodeA = await Node.create(
         messagingServiceA,
         storeServiceA,
@@ -234,6 +233,8 @@ describe("Sync", () => {
       // get expected channel from nodeB
       expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
       expect(expectedChannel.appInstances.length).toBe(1);
+      console.log(`expected channel`, stringify(expectedChannel));
+      await delay(500);
 
       // recreate nodeA
       nodeA = await Node.create(
@@ -249,7 +250,7 @@ describe("Sync", () => {
       );
     }, 30_000);
 
-    test("sync protocol -- initiator is missing an app held by responder", async () => {
+    test.only("sync protocol -- initiator is missing an app held by responder", async () => {
       // above stuff should be in before, now begin real test
       const [eventData, rpcResult] = (await Promise.all([
         new Promise((resolve) => {
@@ -269,6 +270,32 @@ describe("Sync", () => {
       } = rpcResult;
       expect(eventData).toMatchObject({
         from: nodeA.publicIdentifier,
+        type: EventNames.SYNC,
+        data: { syncedChannel: expectedChannel },
+      });
+      expect(syncedChannel).toMatchObject(expectedChannel);
+    }, 30_000);
+
+    test.only("sync protocol -- initiator is missing an app held by initiator", async () => {
+      // above stuff should be in before, now begin real test
+      const [eventData, rpcResult] = (await Promise.all([
+        new Promise((resolve) => {
+          nodeA.on(EventNames.SYNC, (data) => resolve(data));
+        }),
+        nodeB.rpcRouter.dispatch({
+          methodName: MethodNames.chan_sync,
+          parameters: { multisigAddress } as MethodParams.Sync,
+          id: Date.now(),
+        }),
+      ])) as [EventPayloads.Sync, any];
+
+      const {
+        result: {
+          result: { syncedChannel },
+        },
+      } = rpcResult;
+      expect(eventData).toMatchObject({
+        from: nodeB.publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
