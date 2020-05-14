@@ -59,7 +59,12 @@ describe("Sync", () => {
     await storeServiceA.init();
 
     // create nodeB values
-    const messagingServiceB = new MemoryMessagingServiceWithLimits(sharedEventEmitter);
+    const messagingServiceB = new MemoryMessagingServiceWithLimits(
+      sharedEventEmitter,
+      undefined,
+      undefined,
+      "NodeB",
+    );
     storeServiceB = getMemoryStore();
     const channelSignerB = new ChannelSigner(B_PRIVATE_KEY, ethUrl);
     await storeServiceB.init();
@@ -422,8 +427,9 @@ describe("Sync", () => {
       // uninstall-specific setup
       const messagingServiceA = new MemoryMessagingServiceWithLimits(
         sharedEventEmitter,
-        0,
+        1,
         ProtocolNames.takeAction,
+        "NodeA",
       );
       nodeA = await Node.create(
         messagingServiceA,
@@ -443,22 +449,19 @@ describe("Sync", () => {
       // create app
       const [identityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
-      // nodeB should respond to the uninstall, nodeA will not get the
-      // message, but nodeB thinks its sent
       await new Promise(async (resolve, reject) => {
         nodeA.once(EventNames.UPDATE_STATE_EVENT, () => reject("NodeA caught update state event"));
-        nodeB.once(EventNames.UPDATE_STATE_EVENT, () => resolve);
+        nodeB.once(EventNames.UPDATE_STATE_EVENT, () => resolve());
         try {
-          await nodeB.rpcRouter.dispatch(constructTakeActionRpc(identityHash, validAction));
-          return resolve();
+          nodeA.rpcRouter.dispatch(constructTakeActionRpc(identityHash, validAction));
         } catch (e) {
-          return reject(`Error sending take action rpc call`);
+          console.log(`Caught error sending rpc: ${stringify(e)}`);
         }
       });
 
-       // recreate nodeA
+      // recreate nodeA
       nodeA = await Node.create(
-        new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+        new MemoryMessagingServiceWithLimits(sharedEventEmitter, undefined, undefined, "NodeA"),
         storeServiceA,
         global["network"],
         nodeConfig,
@@ -471,19 +474,23 @@ describe("Sync", () => {
 
       // get expected channel from nodeB
       expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
+      console.log("expectedChannel: ", stringify(expectedChannel));
+      await delay(500);
+
       expect(expectedChannel.appInstances.length).toBe(1);
-      const ret = expectedChannel.appInstances.find(
-        ([id, app]) => id === identityHash,
-      );
+      let ret = expectedChannel.appInstances.find(([id, app]) => id === identityHash);
       expect(ret).toBeDefined();
       const expectedAppInstance = ret![1];
-      expect(expectedAppInstance).toMatchObject({
-        latestAction: validAction,
-      });
+      expect(expectedAppInstance.latestVersionNumber).toBe(2);
 
-      const unsynced = await storeServiceA.getStateChannel(multisigAddress);
-      expect(unsynced?.appInstances.length).toBe(1);
-
+      const unsynced = (await storeServiceA.getStateChannel(multisigAddress))!;
+      console.log("unsynced: ", stringify(unsynced));
+      await delay(500);
+      expect(unsynced.appInstances.length).toBe(1);
+      ret = unsynced.appInstances.find(([id, app]) => id === identityHash);
+      expect(ret).toBeDefined();
+      const unsyncedAppInstance = ret![1];
+      expect(unsyncedAppInstance.latestVersionNumber).toBe(1);
     }, 30_000);
 
     test.only("responder has an app that has a single signed update that the initiator does not have", async () => {
@@ -497,7 +504,6 @@ describe("Sync", () => {
           id: Date.now(),
         }),
       ])) as [EventPayloads.Sync, any];
-  
       const {
         result: {
           result: { syncedChannel },
@@ -510,7 +516,7 @@ describe("Sync", () => {
       });
       expect(syncedChannel).toMatchObject(expectedChannel);
     }, 30_000);
-  
+
     test("initiator has an app that has a single signed update that the responder does not have", async () => {
       const [eventData, rpcResult] = (await Promise.all([
         new Promise((resolve) => {
@@ -522,7 +528,7 @@ describe("Sync", () => {
           id: Date.now(),
         }),
       ])) as [EventPayloads.Sync, any];
-  
+
       const {
         result: {
           result: { syncedChannel },

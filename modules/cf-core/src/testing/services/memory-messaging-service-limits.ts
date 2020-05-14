@@ -13,6 +13,7 @@ export class MemoryMessagingServiceWithLimits implements IMessagingService {
     eventEmitter: EventEmitter = new EventEmitter(),
     private readonly messagesToSend: number = 0,
     private readonly protocol?: ProtocolName,
+    private readonly name: string = "Node",
   ) {
     this.messagesToSend = messagesToSend;
     this.eventEmitter = eventEmitter;
@@ -20,15 +21,14 @@ export class MemoryMessagingServiceWithLimits implements IMessagingService {
 
   async send(to: string, msg: Message): Promise<void> {
     if (!this.connected) {
-      console.log(`Messaging service disconnected, not sending message`);
+      console.log(`[${this.name}]: Messaging service disconnected, not sending message`);
       return;
     }
-
     this.eventEmitter.emit(to, msg);
     if (this.protocol && msg.data.protocol === this.protocol) {
       this.messagesSent += 1;
       if (this.messagesSent >= this.messagesToSend) {
-        console.log(`Disconnecting after ${this.messagesSent} messages sent`);
+        console.log(`[${this.name}]: Disconnecting after ${this.messagesSent} messages sent`);
         await this.disconnect();
       }
     }
@@ -37,7 +37,7 @@ export class MemoryMessagingServiceWithLimits implements IMessagingService {
   async onReceive(address: string, callback: (msg: Message) => void) {
     this.eventEmitter.on(address, (msg) => {
       if (!this.connected) {
-        console.log(`Messaging service disconnected, not responding to message`);
+        console.log(`[${this.name}]: Messaging service disconnected, not responding to message`);
         return;
       }
       callback(msg);

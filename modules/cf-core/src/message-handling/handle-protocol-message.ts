@@ -47,7 +47,7 @@ export async function handleReceivedProtocolMessage(
     log.error(`Caught error running protocol, aborting. Error: ${stringify(e)}`);
     return;
   }
-  
+
   const outgoingEventData = await getOutgoingEventDataFromProtocol(
     protocol,
     params!,
