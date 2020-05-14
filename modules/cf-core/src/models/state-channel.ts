@@ -325,7 +325,6 @@ export class StateChannel {
 
     return this.build({
       appInstances,
-      monotonicNumProposedApps: this.monotonicNumProposedApps + 1,
     });
   }
 
