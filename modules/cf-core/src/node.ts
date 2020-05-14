@@ -300,6 +300,16 @@ export class Node {
             }
             break;
           }
+          case PersistStateChannelType.SyncAppInstances: {
+            for (const commitment of signedCommitments as SetStateCommitment[]) {
+              await this.storeService.updateAppInstance(
+                stateChannel.multisigAddress,
+                stateChannel.appInstances.get(commitment.appIdentityHash)!.toJson(),
+                commitment.toJson(),
+              );
+            }
+            break;
+          }
           default: {
             throw new Error(`Unrecognized persist state channel type: ${type}`);
           }
