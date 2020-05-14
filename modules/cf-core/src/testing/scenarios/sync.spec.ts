@@ -17,9 +17,7 @@ import {
   MethodParams,
   JsonRpcProvider,
   IClientStore,
-  MethodNames,
   EventNames,
-  EventPayloads,
   StateChannelJSON,
   ProtocolNames,
 } from "@connext/types";
