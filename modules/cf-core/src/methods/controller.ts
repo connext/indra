@@ -18,7 +18,7 @@ export abstract class NodeController extends Controller {
 
     const ret = await requestHandler.processQueue.addTask(lockNames, createExecutionPromise);
 
-    await this.afterExecution(requestHandler, params);
+    await this.afterExecution(requestHandler, params, ret);
 
     return ret;
   }
@@ -36,6 +36,7 @@ export abstract class NodeController extends Controller {
   protected async afterExecution(
     requestHandler: RequestHandler,
     params: MethodParam,
+    returnValue: MethodResult,
   ): Promise<void> {}
 
   protected async getRequiredLockNames(

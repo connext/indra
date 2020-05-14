@@ -22,11 +22,12 @@ import { HARD_CODED_ASSUMPTIONS } from "../constants";
 import { AppInstance } from "./app-instance";
 import { createFreeBalance, FreeBalanceClass, TokenIndexedCoinTransferMap } from "./free-balance";
 import { flipTokenIndexedBalances } from "./utils";
+import { NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH } from "../errors";
 
 const ERRORS = {
   APPS_NOT_EMPTY: (size: number) => `Expected the appInstances list to be empty but size ${size}`,
   APP_DOES_NOT_EXIST: (identityHash: string) =>
-    `Attempted to edit an appInstance that does not exist: identity hash = ${identityHash}`,
+    `Attempted to retrieve an appInstance that does not exist: identity hash = ${identityHash}`,
   FREE_BALANCE_MISSING: "Cannot find ETH Free Balance App in StateChannel",
   FREE_BALANCE_IDX_CORRUPT: (idx: string) => `Index ${idx} used to find ETH Free Balance is broken`,
   INSUFFICIENT_FUNDS: "Attempted to install an appInstance without sufficient funds",
@@ -94,13 +95,13 @@ export class StateChannel {
     );
   }
 
-  public mostRecentlyInstalledAppInstance(): AppInstance {
+  public getAppInstanceByAppSeqNo(appSeqNo: number): AppInstance {
     if (this.appInstances.size === 0) {
       throw new Error("There are no installed AppInstances in this StateChannel");
     }
-    return [...this.appInstances.values()].reduce((prev, current) =>
-      current.appSeqNo > prev.appSeqNo ? current : prev,
-    );
+    const appInstance = [...this.appInstances.values()].find((instance) => instance.appSeqNo === appSeqNo)
+    if (!appInstance) throw new Error(`No app instance exists for given appSeqNo: ${appSeqNo}`)
+    return appInstance;
   }
 
   public mostRecentlyProposedAppInstance(): AppInstanceProposal {
@@ -365,25 +366,27 @@ export class StateChannel {
       this.proposedAppInstances.has(appInstance.identityHash) 
         ? this.proposedAppInstances.get(appInstance.identityHash) 
         : undefined;
-        
-    if (!!proposal) {
-      const [initiator, responder] = this.getSigningKeysFor(
-        proposal.initiatorIdentifier, 
-        proposal.responderIdentifier, 
+    
+    if (!proposal) {
+      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(appInstance.identityHash))
+    }
+
+    const [initiator, responder] = this.getSigningKeysFor(
+      proposal.initiatorIdentifier, 
+      proposal.responderIdentifier, 
+    );
+
+    if (
+      appInstance.initiatorIdentifier !== proposal.initiatorIdentifier 
+      || appInstance.responderIdentifier !== proposal.responderIdentifier
+    ) {
+      throw new Error(
+        `AppInstance passed to installApp has incorrect participants. Got ${
+          JSON.stringify(appInstance.identity.participants)
+        } but expected ${
+          JSON.stringify([initiator, responder])
+        }`,
       );
-  
-      if (
-        appInstance.initiatorIdentifier !== proposal.initiatorIdentifier 
-        || appInstance.responderIdentifier !== proposal.responderIdentifier
-      ) {
-        throw new Error(
-          `AppInstance passed to installApp has incorrect participants. Got ${
-            JSON.stringify(appInstance.identity.participants)
-          } but expected ${
-            JSON.stringify([initiator, responder])
-          }`,
-        );
-      }
     }
 
     /// Add modified FB and new AppInstance to appInstances
@@ -391,9 +394,8 @@ export class StateChannel {
 
     appInstances.set(appInstance.identityHash, appInstance);
 
-    const proposedAppInstances = !!proposal
-      ? this.removeProposal(appInstance.identityHash).proposedAppInstances
-      : this.proposedAppInstances;
+    const proposedAppInstances = this.removeProposal(appInstance.identityHash).proposedAppInstances
+
     return this.build({
       appInstances,
       proposedAppInstances,

@@ -52,10 +52,12 @@ describe("Client Connect", () => {
     await client.requestDepositRights({ assetId: AddressZero });
     await client.requestDepositRights({ assetId: client.config.contractAddresses.Token });
     let apps = await client.getAppInstances();
-    let depositApps = apps.filter(
-      (app) => app.appInterface.addr === client.config.contractAddresses.DepositApp,
+    const initDepositApps = apps.filter(
+      (app) =>
+        app.appInterface.addr === client.config.contractAddresses.DepositApp &&
+        app.initiatorIdentifier === client.publicIdentifier,
     );
-    expect(depositApps.length).to.be.eq(2);
+    expect(initDepositApps.length).to.be.eq(2);
     await client.messaging.disconnect();
 
     await sendOnchainValue(client.multisigAddress, One);
@@ -63,8 +65,10 @@ describe("Client Connect", () => {
 
     client = await createClient({ signer: pk, store });
     apps = await client.getAppInstances();
-    depositApps = apps.filter(
-      (app) => app.appInterface.addr === client.config.contractAddresses.DepositApp,
+    const depositApps = apps.filter(
+      (app) =>
+        app.appInterface.addr === client.config.contractAddresses.DepositApp &&
+        app.initiatorIdentifier === client.publicIdentifier,
     );
     expect(depositApps.length).to.be.eq(0);
   });

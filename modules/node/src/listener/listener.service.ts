@@ -28,6 +28,7 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { ChannelRepository } from "../channel/channel.repository";
 
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
@@ -62,6 +63,7 @@ export default class ListenerService implements OnModuleInit {
     private readonly channelService: ChannelService,
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly log: LoggerService,
+    private readonly channelRepository: ChannelRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
   ) {
@@ -120,22 +122,30 @@ export default class ListenerService implements OnModuleInit {
       },
       REJECT_INSTALL_EVENT: async (data: RejectProposalMessage): Promise<void> => {
         this.logEvent(REJECT_INSTALL_EVENT, data);
-
-        // update app status
-        const rejectedApp = await this.appInstanceRepository.findByIdentityHash(
-          data.data.appIdentityHash,
-        );
-        if (!rejectedApp) {
-          this.log.debug(`No app found`);
-          return;
-        }
-        rejectedApp.type = AppType.REJECTED;
-        await this.appInstanceRepository.save(rejectedApp);
+        return;
       },
       SYNC: (data: SyncMessage): void => {
         this.logEvent(SYNC, data);
       },
       UNINSTALL_EVENT: async (data: UninstallMessage): Promise<void> => {
+        if (!data.data.multisigAddress) {
+          this.log.error(
+            `Unexpected error - no multisigAddress found in uninstall event data: ${data.data.appIdentityHash}`,
+          );
+          return;
+        }
+        const channel = await this.channelRepository.findByMultisigAddressOrThrow(
+          data.data.multisigAddress,
+        );
+        const assetIdResponder = (
+          await this.appInstanceRepository.findByIdentityHashOrThrow(data.data.appIdentityHash)
+        ).responderDepositAssetId;
+        // attempt a rebalance without blocking
+        this.channelService.rebalance(channel, assetIdResponder).catch((e) => {
+          this.log.error(
+            `Caught error rebalancing channel ${channel.multisigAddress}: ${e.stack || e.message}`,
+          );
+        });
         this.logEvent(UNINSTALL_EVENT, data);
       },
       UPDATE_STATE_EVENT: async (data: UpdateStateMessage): Promise<void> => {
