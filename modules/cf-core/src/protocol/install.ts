@@ -88,7 +88,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderBalanceDecrement,
     );
 
-    let stateChannelAfter = computeStateChannelTransition(
+    let stateChannelAfter = computeInstallStateChannelTransition(
       stateChannelBefore,
       params as ProtocolParams.Install,
     );
@@ -284,7 +284,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderBalanceDecrement,
     );
 
-    const stateChannelAfter = computeStateChannelTransition(
+    const stateChannelAfter = computeInstallStateChannelTransition(
       stateChannelBefore,
       params as ProtocolParams.Install,
     );
@@ -429,7 +429,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
  *
  * @returns {Promise<StateChannel>} - The post-protocol state of the channel
  */
-function computeStateChannelTransition(
+function computeInstallStateChannelTransition(
   stateChannel: StateChannel,
   params: ProtocolParams.Install,
 ): StateChannel {
@@ -438,8 +438,6 @@ function computeStateChannelTransition(
     responderBalanceDecrement,
     initiatorDepositAssetId,
     responderDepositAssetId,
-    initiatorIdentifier,
-    responderIdentifier,
     initialState,
     appInterface,
     defaultTimeout,
@@ -452,8 +450,8 @@ function computeStateChannelTransition(
     appResponderIdentifier,
   } = params;
 
-  const initiatorFbAddress = stateChannel.getFreeBalanceAddrOf(initiatorIdentifier);
-  const responderFbAddress = stateChannel.getFreeBalanceAddrOf(responderIdentifier);
+  const initiatorFbAddress = stateChannel.getFreeBalanceAddrOf(appInitiatorIdentifier);
+  const responderFbAddress = stateChannel.getFreeBalanceAddrOf(appResponderIdentifier);
 
   const {
     multiAssetMultiPartyCoinTransferInterpreterParams,
@@ -539,7 +537,7 @@ function computeStateChannelTransition(
  * will be undefined and the other will be a correctly structured POJO. The AppInstance
  * object currently accepts both in its constructor and internally manages them.
  */
-function computeInterpreterParameters(
+export function computeInterpreterParameters(
   outcomeType: OutcomeType,
   initiatorAssetId: AssetId,
   responderAssetId: AssetId,
