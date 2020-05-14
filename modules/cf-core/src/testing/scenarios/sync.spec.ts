@@ -334,7 +334,6 @@ describe("Sync", () => {
           await nodeA.rpcRouter.dispatch(constructUninstallRpc(identityHash));
           return reject(`Initiator should be able to complete uninstall`);
         } catch (e) {
-          console.log("e: ", e);
           return resolve();
         }
       });
@@ -346,7 +345,7 @@ describe("Sync", () => {
       expect(unsynced?.appInstances.length).toBe(1);
     }, 30_000);
 
-    test.only("sync protocol -- initiator has an app uninstalled by responder", async () => {
+    test("sync protocol -- initiator has an app uninstalled by responder", async () => {
       const [eventData] = await Promise.all([
         new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -363,9 +362,6 @@ describe("Sync", () => {
           new Logger("CreateClient", env.logLevel, true, "A"),
         ),
       ]);
-      // const [freeBal] = await storeServiceB.getSetStateCommitments(identityHash);
-      // const appInstance = await storeServiceB.getAppInstance(identityHash);
-      // await storeServiceA.removeAppInstance(multisigAddress, identityHash, appInstance!, freeBal);
 
       await delay(500);
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
