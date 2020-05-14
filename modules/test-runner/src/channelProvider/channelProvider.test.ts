@@ -1,8 +1,4 @@
-import {
-  EventNames,
-  IConnextClient,
-  CONVENTION_FOR_ETH_ASSET_ID,
-} from "@connext/types";
+import { EventNames, IConnextClient, CONVENTION_FOR_ETH_ASSET_ID } from "@connext/types";
 import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { AddressZero, One } from "ethers/constants";
 
@@ -30,7 +26,7 @@ describe("ChannelProvider", () => {
     client = await createClient({ id: "A" });
     remoteClient = await createRemoteClient(await createChannelProvider(client));
     nodeIdentifier = client.config.nodeIdentifier;
-    nodeSignerAddress = client.nodeSignerAddress;;
+    nodeSignerAddress = client.nodeSignerAddress;
     tokenAddress = client.config.contractAddresses.Token;
   });
 
@@ -47,49 +43,57 @@ describe("ChannelProvider", () => {
     expect(_nodeSignerAddress).to.be.eq(nodeSignerAddress);
   });
 
-  it("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async () => {
+  it.only("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async () => {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: CONVENTION_FOR_ETH_ASSET_ID };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
     ////////////////////////////////////////
     // DEPOSIT FLOW
+    console.log(`Funding sender`);
     await fundChannel(client, input.amount, input.assetId);
+    console.log(`Funded! collateralizing sender`);
     await remoteClient.requestCollateral(getAddressFromAssetId(output.assetId));
 
     ////////////////////////////////////////
     // SWAP FLOW
+    console.log(`collateralized! swapping ${input.assetId} for ${output.assetId}`);
     await swapAsset(remoteClient, input, output, nodeSignerAddress);
 
     ////////////////////////////////////////
     // TRANSFER FLOW
     const transfer: AssetOptions = { amount: One, assetId: tokenAddress };
+    console.log(`swapped! creating receiver`);
     const clientB = await createClient({ id: "B" });
+    console.log(`created! collateralizing receiver`);
     await clientB.requestCollateral(tokenAddress);
 
     const transferFinished = Promise.all([
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         await clientB.messaging.subscribe(
           `${client.nodeIdentifier}.channel.*.app-instance.*.uninstall`,
           resolve,
         );
       }),
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async () => {
           resolve();
         });
       }),
     ]);
 
+    console.log(`receiver collateralized! sending transfer`);
     await remoteClient.transfer({
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
       recipient: clientB.publicIdentifier,
     });
+    console.log(`sent! waiting for completion`);
 
     await transferFinished;
 
     ////////////////////////////////////////
     // WITHDRAW FLOW
+    console.log(`completed! withdrawing`);
     const withdraw: AssetOptions = { amount: One, assetId: tokenAddress };
     await withdrawFromChannel(remoteClient, withdraw.amount, withdraw.assetId);
   });

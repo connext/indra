@@ -65,6 +65,7 @@ export const createCFChannelProvider = async ({
     lockService,
     undefined,
     logger,
+    true, // sync all client channels on start up
   );
 
   // register any default middlewares
@@ -250,11 +251,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     // save the channel + setup commitment + latest free balance set state
     const freeBalanceSetStates = setStateCommitments
       .filter(([id, json]) => id === channel.freeBalanceAppInstance.identityHash)
-      .sort((a, b) =>
-        toBN(b[1].versionNumber)
-          .sub(toBN(a[1].versionNumber))
-          .toNumber(),
-      );
+      .sort((a, b) => toBN(b[1].versionNumber).sub(toBN(a[1].versionNumber)).toNumber());
 
     if (!freeBalanceSetStates[0]) {
       throw new Error(

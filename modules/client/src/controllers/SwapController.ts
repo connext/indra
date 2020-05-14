@@ -59,7 +59,7 @@ export class SwapController extends AbstractController {
     })) as DefaultApp;
 
     // install the swap app
-    this.log.debug(`Installing swap app`);
+    console.log(`Installing swap app`);
     const appIdentityHash = await this.swapAppInstall(
       amount,
       toTokenAddress,
@@ -67,7 +67,7 @@ export class SwapController extends AbstractController {
       swapRate,
       appInfo,
     );
-    this.log.debug(`Swap app installed: ${appIdentityHash}, uninstalling`);
+    console.log(`Swap app installed: ${appIdentityHash}, uninstalling`);
 
     // if app installed, that means swap was accepted now uninstall
     try {

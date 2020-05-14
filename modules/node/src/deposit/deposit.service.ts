@@ -91,7 +91,6 @@ export class DepositService {
         )}`,
       );
     }
-
     // deposit app for asset id with node as initiator is already installed
     // send deposit to chain
     let appIdentityHash: Bytes32;

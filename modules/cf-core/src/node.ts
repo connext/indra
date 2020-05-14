@@ -22,7 +22,7 @@ import {
   MethodNames,
   MethodParams,
 } from "@connext/types";
-import { delay, nullLogger, stringify } from "@connext/utils";
+import { delay, nullLogger } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
@@ -74,6 +74,7 @@ export class Node {
     lockService?: ILockService,
     blocksNeededForConfirmation?: number,
     logger?: ILoggerService,
+    syncOnStart: boolean = true,
   ): Promise<Node> {
     const node = new Node(
       signer,
@@ -87,7 +88,7 @@ export class Node {
       lockService,
     );
 
-    return node.asynchronouslySetupUsingRemoteServices();
+    return node.asynchronouslySetupUsingRemoteServices(syncOnStart);
   }
 
   private constructor(
@@ -118,7 +119,7 @@ export class Node {
     return this.signer.publicIdentifier;
   }
 
-  private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
+  private async asynchronouslySetupUsingRemoteServices(syncOnStart: boolean): Promise<Node> {
     this.log.info(`Node signer address: ${await this.signer.getAddress()}`);
     this.requestHandler = new RequestHandler(
       this.publicIdentifier,
@@ -144,6 +145,9 @@ export class Node {
     this.registerMessagingConnection();
     this.rpcRouter = createRpcRouter(this.requestHandler);
     this.requestHandler.injectRouter(this.rpcRouter);
+    if (!syncOnStart) {
+      return this;
+    }
     const channels = await this.storeService.getAllChannels();
     await Promise.all(
       channels.map(async (channel) => {
