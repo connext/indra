@@ -7,6 +7,7 @@ import {
   makeAndSendProposeCall,
   installApp,
   constructUninstallRpc,
+  constructTakeActionRpc,
 } from "../utils";
 import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
 import { deBigNumberifyJson, ChannelSigner, stringify, delay } from "@connext/utils";
@@ -26,6 +27,7 @@ import { getMemoryStore } from "@connext/store";
 import { MemoryLockService } from "../services";
 import { Logger } from "../logger";
 import { EventEmitter } from "events";
+import { validAction } from "../tic-tac-toe";
 
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
@@ -134,6 +136,8 @@ describe("Sync", () => {
       // get expected channel from nodeB
       expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
       expect(expectedChannel.proposedAppInstances.length).toBe(1);
+      const unsynced = await storeServiceA.getStateChannel(multisigAddress);
+      expect(unsynced?.proposedAppInstances.length).toBe(0);
     });
 
     test("sync protocol initiator is missing a proposal held by the protocol responder", async () => {
@@ -235,6 +239,8 @@ describe("Sync", () => {
       // get expected channel from nodeB
       expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
       expect(expectedChannel.appInstances.length).toBe(1);
+      const unsynced = await storeServiceA.getStateChannel(multisigAddress);
+      expect(unsynced?.appInstances.length).toBe(0);
 
       // recreate nodeA
       nodeA = await Node.create(
@@ -343,6 +349,8 @@ describe("Sync", () => {
       // get expected channel from nodeB
       expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
       expect(expectedChannel.appInstances.length).toBe(0);
+      const unsynced = await storeServiceA.getStateChannel(multisigAddress);
+      expect(unsynced?.appInstances.length).toBe(1);
 
       // recreate nodeA
       nodeA = await Node.create(
@@ -382,7 +390,7 @@ describe("Sync", () => {
       });
       expect(syncedChannel).toMatchObject(expectedChannel);
     }, 30_000);
-  
+
     test("sync protocol -- responder has an app uninstalled by initiator", async () => {
       const [eventData, rpcResult] = (await Promise.all([
         new Promise((resolve) => {
@@ -410,6 +418,122 @@ describe("Sync", () => {
   });
 
   describe("Sync::takeAction", () => {
-    beforeEach(async () => {});
+    beforeEach(async () => {
+      // uninstall-specific setup
+      const messagingServiceA = new MemoryMessagingServiceWithLimits(
+        sharedEventEmitter,
+        0,
+        ProtocolNames.takeAction,
+      );
+      nodeA = await Node.create(
+        messagingServiceA,
+        storeServiceA,
+        global["network"],
+        nodeConfig,
+        provider,
+        channelSignerA,
+        lockService,
+        0,
+        new Logger("CreateClient", env.logLevel, true, "A"),
+      );
+
+      // create channel
+      multisigAddress = await createChannel(nodeA, nodeB);
+
+      // create app
+      const [identityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
+
+      // nodeB should respond to the uninstall, nodeA will not get the
+      // message, but nodeB thinks its sent
+      await new Promise(async (resolve, reject) => {
+        nodeA.once(EventNames.UPDATE_STATE_EVENT, () => reject("NodeA caught update state event"));
+        nodeB.once(EventNames.UPDATE_STATE_EVENT, () => resolve);
+        try {
+          await nodeB.rpcRouter.dispatch(constructTakeActionRpc(identityHash, validAction));
+          return resolve();
+        } catch (e) {
+          return reject(`Error sending take action rpc call`);
+        }
+      });
+
+       // recreate nodeA
+      nodeA = await Node.create(
+        new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+        storeServiceA,
+        global["network"],
+        nodeConfig,
+        provider,
+        channelSignerA,
+        lockService,
+        0,
+        new Logger("CreateClient", env.logLevel, true, "A"),
+      );
+
+      // get expected channel from nodeB
+      expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
+      expect(expectedChannel.appInstances.length).toBe(1);
+      const ret = expectedChannel.appInstances.find(
+        ([id, app]) => id === identityHash,
+      );
+      expect(ret).toBeDefined();
+      const expectedAppInstance = ret![1];
+      expect(expectedAppInstance).toMatchObject({
+        latestAction: validAction,
+      });
+
+      const unsynced = await storeServiceA.getStateChannel(multisigAddress);
+      expect(unsynced?.appInstances.length).toBe(1);
+
+    }, 30_000);
+
+    test.only("responder has an app that has a single signed update that the initiator does not have", async () => {
+      const [eventData, rpcResult] = (await Promise.all([
+        new Promise((resolve) => {
+          nodeB.on(EventNames.SYNC, (data) => resolve(data));
+        }),
+        nodeA.rpcRouter.dispatch({
+          methodName: MethodNames.chan_sync,
+          parameters: { multisigAddress } as MethodParams.Sync,
+          id: Date.now(),
+        }),
+      ])) as [EventPayloads.Sync, any];
+  
+      const {
+        result: {
+          result: { syncedChannel },
+        },
+      } = rpcResult;
+      expect(eventData).toMatchObject({
+        from: nodeB.publicIdentifier,
+        type: EventNames.SYNC,
+        data: { syncedChannel: expectedChannel },
+      });
+      expect(syncedChannel).toMatchObject(expectedChannel);
+    }, 30_000);
+  
+    test("initiator has an app that has a single signed update that the responder does not have", async () => {
+      const [eventData, rpcResult] = (await Promise.all([
+        new Promise((resolve) => {
+          nodeA.on(EventNames.SYNC, (data) => resolve(data));
+        }),
+        nodeB.rpcRouter.dispatch({
+          methodName: MethodNames.chan_sync,
+          parameters: { multisigAddress } as MethodParams.Sync,
+          id: Date.now(),
+        }),
+      ])) as [EventPayloads.Sync, any];
+  
+      const {
+        result: {
+          result: { syncedChannel },
+        },
+      } = rpcResult;
+      expect(eventData).toMatchObject({
+        from: nodeA.publicIdentifier,
+        type: EventNames.SYNC,
+        data: { syncedChannel: expectedChannel },
+      });
+      expect(syncedChannel).toMatchObject(expectedChannel);
+    }, 30_000);
   });
 });
