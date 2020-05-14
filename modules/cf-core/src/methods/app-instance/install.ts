@@ -105,7 +105,7 @@ export async function install(
     initiatorDepositAssetId: isSame
       ? proposal.initiatorDepositAssetId
       : proposal.responderDepositAssetId,
-    initiatorIdentifier: isSame ? proposal.initiatorIdentifier : proposal.responderIdentifier,
+    initiatorIdentifier,
     meta: proposal.meta,
     multisigAddress: stateChannel.multisigAddress,
     outcomeType: proposal.outcomeType,

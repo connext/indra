@@ -124,9 +124,11 @@ export class FreeBalanceClass {
 
   public getBalance(tokenAddress: string, beneficiary: string) {
     try {
-      return convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress])[
-        beneficiary
-      ];
+      return (
+        convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress])[
+          beneficiary
+        ] || Zero
+      );
     } catch {
       return Zero;
     }
@@ -175,22 +177,22 @@ export class FreeBalanceClass {
   }
 
   public increment(increments: TokenIndexedCoinTransferMap) {
+    let updatedBalancesIndexedByToken = {};
     for (const tokenAddress of Object.keys(increments)) {
       const t1 = convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress]);
       const t2 = merge(t1, increments[tokenAddress]);
-
       for (const val of Object.values(t2)) {
         if (val.lt(Zero)) {
           throw new Error(
             `FreeBalanceClass::increment ended up with a negative balance when
-            merging ${stringify(t1)} and ${stringify(increments[tokenAddress])}`,
+            merging ${stringify(t1)} and ${stringify(increments[tokenAddress])}.`,
           );
         }
       }
 
-      this.balancesIndexedByToken[tokenAddress] = convertCoinTransfersMapToCoinTransfers(t2);
+      updatedBalancesIndexedByToken[tokenAddress] = convertCoinTransfersMapToCoinTransfers(t2);
     }
-    return this;
+    return new FreeBalanceClass(this.activeAppsMap, updatedBalancesIndexedByToken);
   }
 }
 
