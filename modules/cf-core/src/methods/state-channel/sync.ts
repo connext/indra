@@ -1,4 +1,11 @@
-import { MethodNames, MethodParams, MethodResults, ProtocolNames } from "@connext/types";
+import {
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  ProtocolNames,
+  EventNames,
+  SyncMessage,
+} from "@connext/types";
 
 import { jsonRpcMethod } from "rpc-server";
 
@@ -7,6 +14,7 @@ import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
 import { StateChannel } from "../../models";
+import { stringify } from "@connext/utils";
 
 export class SyncController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_sync)
@@ -49,5 +57,25 @@ export class SyncController extends NodeController {
     );
 
     return { syncedChannel: updated.toJson() };
+  }
+
+  protected async afterExecution(
+    requestHandler: RequestHandler,
+    params: MethodParams.Sync,
+  ): Promise<void> {
+    const { store, router, publicIdentifier } = requestHandler;
+    const { multisigAddress } = params;
+
+    const postProtocolStateChannel = await store.getStateChannel(multisigAddress);
+    if (!postProtocolStateChannel) {
+      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+    }
+
+    const msg = {
+      from: publicIdentifier,
+      type: EventNames.SYNC,
+      data: { syncedChannel: postProtocolStateChannel },
+    } as SyncMessage;
+    await router.emit(msg.type, msg, `outgoing`);
   }
 }

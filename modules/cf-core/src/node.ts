@@ -19,6 +19,8 @@ import {
   ValidationMiddleware,
   Address,
   PublicIdentifier,
+  MethodNames,
+  MethodParams,
 } from "@connext/types";
 import { delay, nullLogger } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
@@ -142,6 +144,16 @@ export class Node {
     this.registerMessagingConnection();
     this.rpcRouter = createRpcRouter(this.requestHandler);
     this.requestHandler.injectRouter(this.rpcRouter);
+    const channels = await this.storeService.getAllChannels();
+    await Promise.all(
+      channels.map(async (channel) => {
+        await this.rpcRouter.dispatch({
+          methodName: MethodNames.chan_sync,
+          parameters: { multisigAddress: channel.multisigAddress } as MethodParams.Sync,
+          id: Date.now(),
+        });
+      }),
+    );
     return this;
   }
 
