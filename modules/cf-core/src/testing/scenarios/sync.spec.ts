@@ -455,7 +455,7 @@ describe("Sync", () => {
       expect(unsyncedAppInstance.latestVersionNumber).toBe(1);
     }, 30_000);
 
-    test.only("responder has an app that has a single signed update that the initiator does not have", async () => {
+    test("responder has an app that has a single signed update that the initiator does not have", async () => {
       const [eventData] = await Promise.all([
         new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -482,7 +482,7 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel);
     }, 30_000);
 
-    test.only("initiator has an app that has a single signed update that the responder does not have", async () => {
+    test("initiator has an app that has a single signed update that the responder does not have", async () => {
       messagingServiceB.disconnect();
       messagingServiceA.connect();
       const [eventData] = await Promise.all([
