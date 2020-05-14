@@ -250,7 +250,7 @@ describe("Sync", () => {
       );
     }, 30_000);
 
-    test.only("sync protocol -- initiator is missing an app held by responder", async () => {
+    test("sync protocol -- initiator is missing an app held by responder", async () => {
       // above stuff should be in before, now begin real test
       const [eventData, rpcResult] = (await Promise.all([
         new Promise((resolve) => {
@@ -276,7 +276,7 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel);
     }, 30_000);
 
-    test.only("sync protocol -- initiator is missing an app held by initiator", async () => {
+    test("sync protocol -- initiator is missing an app held by initiator", async () => {
       // above stuff should be in before, now begin real test
       const [eventData, rpcResult] = (await Promise.all([
         new Promise((resolve) => {
