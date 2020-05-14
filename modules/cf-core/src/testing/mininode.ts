@@ -103,7 +103,7 @@ export class MiniNode {
               // this was an install, add app and remove proposals
               await this.store.createAppInstance(
                 stateChannel.multisigAddress,
-                stateChannel.mostRecentlyInstalledAppInstance().toJson(),
+                stateChannel.getAppInstanceByAppSeqNo(setState.versionNumber.toNumber()).toJson(),
                 stateChannel.freeBalance.toJson(),
                 setState.toJson(),
                 conditional.toJson(),

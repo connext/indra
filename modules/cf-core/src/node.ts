@@ -308,7 +308,7 @@ export class Node {
               // this was an install, add app and remove proposals
               await this.storeService.createAppInstance(
                 stateChannel.multisigAddress,
-                stateChannel.mostRecentlyInstalledAppInstance().toJson(),
+                stateChannel.getAppInstanceByAppSeqNo(stateChannel.numProposedApps).toJson(),
                 stateChannel.freeBalance.toJson(),
                 setState.toJson(),
                 conditional.toJson(),
