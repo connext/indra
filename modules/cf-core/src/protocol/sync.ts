@@ -128,6 +128,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       case PersistStateChannelType.SyncFreeBalance: {
         const freeBalanceSync = await syncFreeBalanceState(
           preProtocolStateChannel,
+          setStateCommitments,
           responderChannel,
           responderSetStateCommitments,
           responderConditionalCommitments,
@@ -305,6 +306,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       case PersistStateChannelType.SyncFreeBalance: {
         const freeBalanceSync = await syncFreeBalanceState(
           postSyncStateChannel,
+          setStateCommitments,
           initiatorChannel,
           initiatorSetStateCommitments,
           initiatorConditionalCommitments,
@@ -497,6 +499,7 @@ async function syncAppStates(
 // (the set state for the free balance and the conditional)
 async function syncFreeBalanceState(
   ourChannel: StateChannel,
+  ourSetState: SetStateCommitmentJSON[],
   counterpartyChannel: StateChannel,
   counterpartySetState: SetStateCommitmentJSON[],
   counterpartyConditional: ConditionalTransactionCommitmentJSON[],
@@ -522,9 +525,9 @@ async function syncFreeBalanceState(
     );
   }
   // make sure we signed the commitments
-  const commitment = SetStateCommitment.fromJson(json);
+  const freeBalanceSetState = SetStateCommitment.fromJson(json);
   const signer = getSignerAddressFromPublicIdentifier(publicIdentifier);
-  await assertSignerPresent(signer, commitment);
+  await assertSignerPresent(signer, freeBalanceSetState);
 
   const freeBalance = FreeBalanceClass.fromAppInstance(counterpartyFreeBalance);
 
@@ -539,11 +542,12 @@ async function syncFreeBalanceState(
   );
 
   let updatedChannel: StateChannel;
-  let conditionalCommitment:
-    | ConditionalTransactionCommitment
-    | SetStateCommitment
-    | undefined = undefined;
+  let setStateCommitment: SetStateCommitment;
+  let conditionalCommitment: ConditionalTransactionCommitment | undefined = undefined;
   if (installedProposal && !uninstalledApp) {
+    // set state commitment needed by store is the free balance
+    // commitment
+    setStateCommitment = SetStateCommitment.fromJson(freeBalanceSetState.toJson());
     // conditional commitment should also be returned
     const conditionalJson = counterpartyConditional.find(
       (c) => c.appIdentityHash === installedProposal.identityHash,
@@ -596,6 +600,26 @@ async function syncFreeBalanceState(
       .addAppInstance(appInstance)
       .setFreeBalance(freeBalance);
   } else if (uninstalledApp && !installedProposal) {
+    // set state commitment needed here is for the app
+    // counterparty may not have this since it is uninstalled,
+    // so find from our records
+    const json = ourSetState.find(
+      (c) =>
+        c.appIdentityHash === uninstalledApp.identityHash &&
+        toBN(c.versionNumber).eq(uninstalledApp.versionNumber),
+    );
+    if (!json) {
+      throw new Error(
+        `Failed to find final set state commitment for app in counterparty's commitments, aborting. App: ${stringify(
+          uninstalledApp,
+        )}, counterparty commitments: ${stringify(counterpartySetState)}`,
+      );
+    }
+    setStateCommitment = SetStateCommitment.fromJson(json);
+    await assertSignerPresent(
+      getSignerAddressFromPublicIdentifier(publicIdentifier),
+      setStateCommitment,
+    );
     updatedChannel = ourChannel
       .removeAppInstance(uninstalledApp.identityHash)
       .setFreeBalance(freeBalance);
@@ -609,7 +633,7 @@ async function syncFreeBalanceState(
 
   return {
     updatedChannel,
-    commitments: [commitment, conditionalCommitment].filter((x) => !!x),
+    commitments: [setStateCommitment, conditionalCommitment].filter((x) => !!x),
   };
 }
 
