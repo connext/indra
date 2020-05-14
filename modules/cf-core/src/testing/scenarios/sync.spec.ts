@@ -45,6 +45,8 @@ describe("Sync", () => {
   let channelSignerA: ChannelSigner;
   let expectedChannel: StateChannelJSON;
 
+  const log = new Logger("Sync", env.logLevel, true);
+
   beforeEach(async () => {
     // test global fixtures
     sharedEventEmitter = new EventEmitter();
@@ -121,7 +123,7 @@ describe("Sync", () => {
             parameters: deBigNumberifyJson(params),
           });
         } catch (e) {
-          console.log(`Caught error sending rpc: ${stringify(e)}`);
+          log.info(`Caught error sending rpc: ${stringify(e)}`);
         }
       });
 
@@ -473,9 +475,6 @@ describe("Sync", () => {
 
       // get expected channel from nodeB
       expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
-      console.log("expectedChannel: ", stringify(expectedChannel));
-      await delay(500);
-
       expect(expectedChannel.appInstances.length).toBe(1);
       let ret = expectedChannel.appInstances.find(([id, app]) => id === identityHash);
       expect(ret).toBeDefined();
@@ -483,8 +482,6 @@ describe("Sync", () => {
       expect(expectedAppInstance.latestVersionNumber).toBe(2);
 
       const unsynced = (await storeServiceA.getStateChannel(multisigAddress))!;
-      console.log("unsynced: ", stringify(unsynced));
-      await delay(500);
       expect(unsynced.appInstances.length).toBe(1);
       ret = unsynced.appInstances.find(([id, app]) => id === identityHash);
       expect(ret).toBeDefined();
@@ -492,7 +489,7 @@ describe("Sync", () => {
       expect(unsyncedAppInstance.latestVersionNumber).toBe(1);
     }, 30_000);
 
-    test.only("responder has an app that has a single signed update that the initiator does not have", async () => {
+    test("responder has an app that has a single signed update that the initiator does not have", async () => {
       const [eventData, rpcResult] = (await Promise.all([
         new Promise((resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -509,7 +506,7 @@ describe("Sync", () => {
         },
       } = rpcResult;
       expect(eventData).toMatchObject({
-        from: nodeB.publicIdentifier,
+        from: nodeA.publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
@@ -534,7 +531,7 @@ describe("Sync", () => {
         },
       } = rpcResult;
       expect(eventData).toMatchObject({
-        from: nodeA.publicIdentifier,
+        from: nodeB.publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
