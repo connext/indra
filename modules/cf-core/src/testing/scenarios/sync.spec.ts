@@ -450,10 +450,9 @@ describe("Sync", () => {
       const [identityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
       await new Promise(async (resolve, reject) => {
-        nodeA.once(EventNames.UPDATE_STATE_EVENT, () => reject("NodeA caught update state event"));
         nodeB.once(EventNames.UPDATE_STATE_EVENT, () => resolve());
         try {
-          nodeA.rpcRouter.dispatch(constructTakeActionRpc(identityHash, validAction));
+          await nodeA.rpcRouter.dispatch(constructTakeActionRpc(identityHash, validAction));
         } catch (e) {
           console.log(`Caught error sending rpc: ${stringify(e)}`);
         }
