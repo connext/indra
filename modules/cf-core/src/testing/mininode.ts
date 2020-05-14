@@ -6,13 +6,14 @@ import {
   Opcode,
   PublicIdentifier,
   MinimalTransaction,
+  STORE_SCHEMA_VERSION,
 } from "@connext/types";
 import { getRandomChannelSigner, nullLogger } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { ProtocolRunner } from "../machine";
 import { AppInstance, StateChannel } from "../models";
-import { PersistAppType } from "../types";
+import { PersistAppType, PersistStateChannelType } from "../types";
 import { SetStateCommitment, ConditionalTransactionCommitment } from "../ethereum";
 
 /// Returns a function that can be registered with IO_SEND{_AND_WAIT}
@@ -47,13 +48,83 @@ export class MiniNode {
     this.protocolRunner.register(Opcode.OP_SIGN, makeSigner(this.signer));
     this.protocolRunner.register(
       Opcode.PERSIST_STATE_CHANNEL,
-      async (args: [StateChannel, MinimalTransaction, SetStateCommitment]) => {
-        const [stateChannel, signedSetupCommitment, signedFreeBalanceUpdate] = args;
-        await this.store.createStateChannel(
-          stateChannel.toJson(),
-          signedSetupCommitment,
-          signedFreeBalanceUpdate.toJson(),
-        );
+      async (
+        args: [
+          PersistStateChannelType,
+          StateChannel,
+          (MinimalTransaction | SetStateCommitment | ConditionalTransactionCommitment)[],
+        ],
+      ) => {
+        const [type, stateChannel, signedCommitments] = args;
+        switch (type) {
+          case PersistStateChannelType.CreateChannel: {
+            const [setup, freeBalance] = signedCommitments as [
+              MinimalTransaction,
+              SetStateCommitment,
+            ];
+            await this.store.createStateChannel(stateChannel.toJson(), setup, freeBalance.toJson());
+
+            await this.store.updateSchemaVersion(STORE_SCHEMA_VERSION);
+            break;
+          }
+
+          case PersistStateChannelType.SyncProposal: {
+            const [setState] = signedCommitments as [SetStateCommitment];
+            const proposal = stateChannel.proposedAppInstances.get(setState.appIdentityHash);
+            if (!proposal) {
+              throw new Error("Could not find proposal in post protocol channel");
+            }
+            // this is adding a proposal
+            await this.store.createAppProposal(
+              stateChannel.multisigAddress,
+              proposal,
+              stateChannel.numProposedApps,
+              setState.toJson(),
+            );
+            break;
+          }
+          case PersistStateChannelType.NoChange: {
+            break;
+          }
+          case PersistStateChannelType.SyncFreeBalance: {
+            const [setState, conditional] = signedCommitments as [
+              SetStateCommitment,
+              ConditionalTransactionCommitment | undefined,
+            ];
+            if (!conditional) {
+              // this was an uninstall, so remove app instance
+              await this.store.removeAppInstance(
+                stateChannel.multisigAddress,
+                setState.appIdentityHash,
+                stateChannel.freeBalance.toJson(),
+                setState.toJson(),
+              );
+            } else {
+              // this was an install, add app and remove proposals
+              await this.store.createAppInstance(
+                stateChannel.multisigAddress,
+                stateChannel.mostRecentlyInstalledAppInstance().toJson(),
+                stateChannel.freeBalance.toJson(),
+                setState.toJson(),
+                conditional.toJson(),
+              );
+            }
+            break;
+          }
+          case PersistStateChannelType.SyncAppInstances: {
+            for (const commitment of signedCommitments as SetStateCommitment[]) {
+              await this.store.updateAppInstance(
+                stateChannel.multisigAddress,
+                stateChannel.appInstances.get(commitment.appIdentityHash)!.toJson(),
+                commitment.toJson(),
+              );
+            }
+            break;
+          }
+          default: {
+            throw new Error(`Unrecognized persist state channel type: ${type}`);
+          }
+        }
         return { channel: stateChannel };
       },
     );
