@@ -234,7 +234,11 @@ export class Node {
     protocolRunner.register(
       Opcode.PERSIST_STATE_CHANNEL,
       async (
-        args: [PersistStateChannelType, StateChannel, (MinimalTransaction | SetStateCommitment)[]],
+        args: [
+          PersistStateChannelType,
+          StateChannel,
+          (MinimalTransaction | SetStateCommitment | ConditionalTransactionCommitment)[],
+        ],
       ) => {
         const [type, stateChannel, signedCommitments] = args;
         switch (type) {
@@ -250,7 +254,7 @@ export class Node {
             );
 
             await this.storeService.updateSchemaVersion(STORE_SCHEMA_VERSION);
-            return { channel: stateChannel };
+            break;
           }
 
           case PersistStateChannelType.SyncProposal: {
@@ -266,15 +270,41 @@ export class Node {
               stateChannel.numProposedApps,
               setState.toJson(),
             );
-            return { channel: stateChannel };
+            break;
           }
-          case PersistStateChannelType.NoChange: { 
-            return { channel: stateChannel };
+          case PersistStateChannelType.NoChange: {
+            break;
+          }
+          case PersistStateChannelType.SyncFreeBalance: {
+            const [setState, conditional] = signedCommitments as [
+              SetStateCommitment,
+              ConditionalTransactionCommitment | undefined,
+            ];
+            if (!conditional) {
+              // this was an uninstall, so remove app instance
+              await this.storeService.removeAppInstance(
+                stateChannel.multisigAddress,
+                setState.appIdentityHash,
+                stateChannel.freeBalance.toJson(),
+                setState.toJson(),
+              );
+            } else {
+              // this was an install, add app and remove proposals
+              await this.storeService.createAppInstance(
+                stateChannel.multisigAddress,
+                stateChannel.mostRecentlyInstalledAppInstance().toJson(),
+                stateChannel.freeBalance.toJson(),
+                setState.toJson(),
+                conditional.toJson(),
+              );
+            }
+            break;
           }
           default: {
             throw new Error(`Unrecognized persist state channel type: ${type}`);
           }
         }
+        return { channel: stateChannel };
       },
     );
 
