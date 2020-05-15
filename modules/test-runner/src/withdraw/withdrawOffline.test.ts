@@ -1,5 +1,11 @@
-import { EventNames, IConnextClient, IChannelSigner, CF_METHOD_TIMEOUT } from "@connext/types";
-import { ChannelSigner, delay, getRandomChannelSigner } from "@connext/utils";
+import {
+  EventNames,
+  IConnextClient,
+  IChannelSigner,
+  CF_METHOD_TIMEOUT,
+  WithdrawAppName,
+} from "@connext/types";
+import { ChannelSigner, delay, getRandomChannelSigner, stringify } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
 import * as lolex from "lolex";
@@ -19,7 +25,9 @@ import {
   withdrawFromChannel,
   ZERO_ZERO_ZERO_FIVE_ETH,
   env,
+  getParamsFromData,
 } from "../util";
+import { addressBook } from "@connext/contracts";
 
 describe("Withdraw offline tests", () => {
   let clock: any;
@@ -33,9 +41,10 @@ describe("Withdraw offline tests", () => {
   ): Promise<IConnextClient> => {
     // make sure the signer is set
     messagingConfig.signer = messagingConfig.signer || getRandomChannelSigner(env.ethProviderUrl);
-    signer = typeof messagingConfig.signer === "string" 
-      ? new ChannelSigner(messagingConfig.signer, env.ethProviderUrl) 
-      : messagingConfig.signer;
+    signer =
+      typeof messagingConfig.signer === "string"
+        ? new ChannelSigner(messagingConfig.signer, env.ethProviderUrl)
+        : messagingConfig.signer;
     client = await createClientWithMessagingLimits({
       signer,
       ...messagingConfig,
@@ -55,17 +64,24 @@ describe("Withdraw offline tests", () => {
 
   afterEach(async () => {
     clock && clock.reset && clock.reset();
-    await client.messaging.disconnect();
+    client && (await client.store.clear());
+    client && (await client.messaging.disconnect());
   });
 
   it("client proposes withdrawal but doesn't receive a response from node", async () => {
+    const addr = addressBook[4447].WithdrawApp.address;
     await createAndFundChannel({
       ceiling: { received: 1 },
       protocol: "propose",
+      params: { appDefinition: addr },
     });
 
     (client.messaging as TestMessagingService).on(RECEIVED, (msg: MessagingEventData) => {
       if (getProtocolFromData(msg) === "propose") {
+        const { appDefinition } = getParamsFromData(msg) || {};
+        if (appDefinition !== addr) {
+          return;
+        }
         clock.tick(89_000);
         return;
       }
@@ -77,30 +93,34 @@ describe("Withdraw offline tests", () => {
   });
 
   it("client proposes withdrawal and then goes offline before node responds", async () => {
+    const addr = addressBook[4447].WithdrawApp.address;
     await createAndFundChannel({
       ceiling: { sent: 1 },
       protocol: "propose",
+      params: { appDefinition: addr },
     });
 
-    let eventCount = 0;
     (client.messaging as TestMessagingService).on(SEND, async (msg: MessagingEventData) => {
-      eventCount += 1;
-      if (getProtocolFromData(msg) === "propose" && eventCount === 1) {
+      if (getProtocolFromData(msg) === "propose") {
+        const { appDefinition } = getParamsFromData(msg) || {};
+        if (appDefinition !== addr) {
+          return;
+        }
         // wait for message to be sent (happens after event thrown)
         await delay(500);
-        clock.tick(89_000);
+        clock.tick(9_000);
       }
     });
 
     await expect(
       withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
-    ).to.be.rejectedWith(`proposal took longer than ${CF_METHOD_TIMEOUT/1000} seconds`);
+    ).to.be.rejectedWith(`proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`);
   });
 
   it.skip("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
     await createAndFundChannel();
 
-    await new Promise(resolve => {
+    await new Promise((resolve) => {
       client.once(EventNames.UPDATE_STATE_EVENT, async () => {
         // wait for the value to actually be written to the store,
         // takes longer than the `disconnect` call
