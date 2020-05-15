@@ -1,6 +1,6 @@
 import Queue from "p-queue";
 
-import { addToManyQueues } from "./queued-execution";
+import { addToManyQueues } from "./process-queue";
 
 describe("p-queue", () => {
   it.skip("should be possible to mimic onEmpty via inspection of _queue", async () => {
