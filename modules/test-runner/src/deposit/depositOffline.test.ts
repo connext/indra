@@ -1,4 +1,5 @@
-import { CF_METHOD_TIMEOUT, IConnextClient, IChannelSigner } from "@connext/types";
+import { CF_METHOD_TIMEOUT, IConnextClient, IChannelSigner, IClientStore } from "@connext/types";
+import { getMemoryStore} from "@connext/store";
 import * as lolex from "lolex";
 
 import {
@@ -23,7 +24,6 @@ import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { getRandomChannelSigner } from "@connext/utils";
 import { addressBook } from "@connext/contracts";
-import { Wallet, Signer } from "ethers";
 
 const makeDepositCall = async (opts: {
   client: IConnextClient;
@@ -72,9 +72,9 @@ const makeDepositCall = async (opts: {
   return;
 };
 
-const recreateClientAndRetryDepositCall = async (signer: IChannelSigner, client: IConnextClient) => {
+const recreateClientAndRetryDepositCall = async (signer: IChannelSigner, client: IConnextClient, store: IClientStore) => {
   client.messaging.disconnect()
-  const newClient = await createClient({signer})
+  const newClient = await createClient({signer, store})
 
   // Check that client can recover and continue
   await fundChannel(newClient, ETH_AMOUNT_SM)
@@ -91,9 +91,11 @@ describe("Deposit offline tests", () => {
   let clock: any;
   let client: IConnextClient;
   let signer: IChannelSigner;
+  let store: IClientStore;
 
   beforeEach(() => {
     signer = getRandomChannelSigner(env.ethProviderUrl)
+    store = getMemoryStore();
     clock = lolex.install({
       shouldAdvanceTime: true,
       advanceTimeDelta: 1,
@@ -126,7 +128,8 @@ describe("Deposit offline tests", () => {
     client = await createClientWithMessagingLimits({
       ceiling: { received: 0 },
       protocol: "propose",
-      signer
+      signer,
+      store
     });
 
     await makeDepositCall({
@@ -137,7 +140,7 @@ describe("Deposit offline tests", () => {
       protocol: "propose",
     });
 
-    await recreateClientAndRetryDepositCall(signer, client)
+    await recreateClientAndRetryDepositCall(signer, client, store)
   });
 
   it("client proposes deposit, but node only receives the NATS message after timeout is over", async () => {
@@ -158,7 +161,7 @@ describe("Deposit offline tests", () => {
       protocol: "propose",
     });
 
-    await recreateClientAndRetryDepositCall(signer, client)
+    await recreateClientAndRetryDepositCall(signer, client, store)
   });
 
   it("client proposes deposit, but node only responds after timeout is over", async () => {
@@ -169,6 +172,7 @@ describe("Deposit offline tests", () => {
       delay: { received: CLIENT_DELAY },
       protocol: "propose",
       signer,
+      store
     });
 
     await makeDepositCall({
@@ -179,7 +183,7 @@ describe("Deposit offline tests", () => {
       protocol: "propose",
     });
 
-    await recreateClientAndRetryDepositCall(signer, client)
+    await recreateClientAndRetryDepositCall(signer, client, store)
   });
 
   it("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
@@ -187,6 +191,7 @@ describe("Deposit offline tests", () => {
       protocol: "install",
       ceiling: { received: 0 },
       signer,
+      store
     });
 
     await makeDepositCall({
@@ -197,6 +202,6 @@ describe("Deposit offline tests", () => {
       protocol: "install",
     });
 
-    await recreateClientAndRetryDepositCall(signer, client)
+    await recreateClientAndRetryDepositCall(signer, client, store)
   });
 });
