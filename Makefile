@@ -277,6 +277,11 @@ client: types utils channel-provider messaging store contracts cf-core apps $(sh
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
+bot: types utils channel-provider messaging store contracts cf-core apps $(shell find modules/bot $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/bot && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
 node: types utils messaging store contracts cf-core apps client $(shell find modules/node $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"

@@ -1,0 +1,25 @@
+{
+  "name": "bots",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@connext/client": "6.4.0",
+    "@connext/store": "6.4.0",
+    "@connext/types": "6.4.0",
+    "@connext/utils": "6.4.0",
+    "ethers": "4.0.47",
+    "yargs": "15.3.1"
+  },
+  "devDependencies": {
+    "ts-node": "8.10.1",
+    "typescript": "3.8.3"
+  }
+}

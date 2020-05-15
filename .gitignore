@@ -54,3 +54,4 @@ ops/database/snapshots
 
 # Http files
 ganache.http
+modules/bot/.connext-store/

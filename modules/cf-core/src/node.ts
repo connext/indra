@@ -145,19 +145,23 @@ export class Node {
     this.registerMessagingConnection();
     this.rpcRouter = createRpcRouter(this.requestHandler);
     this.requestHandler.injectRouter(this.rpcRouter);
-    if (!syncOnStart) {
-      return this;
+    if (syncOnStart) {
+      this.log.info(`Attempting channel sync`);
+      const channels = await this.storeService.getAllChannels();
+      this.log.info(
+        `Found channels to sync: ${channels.map((channel) => channel.multisigAddress)}`,
+      );
+      await Promise.all(
+        channels.map(async (channel) => {
+          await this.rpcRouter.dispatch({
+            methodName: MethodNames.chan_sync,
+            parameters: { multisigAddress: channel.multisigAddress } as MethodParams.Sync,
+            id: Date.now(),
+          });
+        }),
+      );
+      this.log.info(`Channel sync complete`);
     }
-    const channels = await this.storeService.getAllChannels();
-    await Promise.all(
-      channels.map(async (channel) => {
-        await this.rpcRouter.dispatch({
-          methodName: MethodNames.chan_sync,
-          parameters: { multisigAddress: channel.multisigAddress } as MethodParams.Sync,
-          id: Date.now(),
-        });
-      }),
-    );
     return this;
   }
 
