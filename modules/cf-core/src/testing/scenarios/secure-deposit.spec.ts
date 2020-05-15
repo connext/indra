@@ -220,10 +220,6 @@ async function confirmEthAndERC20FreeBalances(
       multisigAddress,
       getAddressFromAssetId(tokenAddress),
     );
-    console.log(`ethFreeBalance: `, ethFreeBalance);
-    console.log(`tokenFreeBalance: `, tokenFreeBalance);
-    console.log(`tokenIndexedFreeBalances: `, tokenIndexedFreeBalances);
-    await delay(500);
     // validate eth
     expect(deBigNumberifyJson(tokenIndexedFreeBalances[AddressZero] || {})).toMatchObject(eth);
     expect(deBigNumberifyJson(ethFreeBalance)).toMatchObject(eth);

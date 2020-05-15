@@ -49,22 +49,17 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // DEPOSIT FLOW
-    console.log(`Funding sender`);
     await fundChannel(client, input.amount, input.assetId);
-    console.log(`Funded! collateralizing sender`);
     await remoteClient.requestCollateral(getAddressFromAssetId(output.assetId));
 
     ////////////////////////////////////////
     // SWAP FLOW
-    console.log(`collateralized! swapping ${input.assetId} for ${output.assetId}`);
     await swapAsset(remoteClient, input, output, nodeSignerAddress);
 
     ////////////////////////////////////////
     // TRANSFER FLOW
     const transfer: AssetOptions = { amount: One, assetId: tokenAddress };
-    console.log(`swapped! creating receiver`);
     const clientB = await createClient({ id: "B" });
-    console.log(`created! collateralizing receiver`);
     await clientB.requestCollateral(tokenAddress);
 
     const transferFinished = Promise.all([
@@ -81,19 +76,16 @@ describe("ChannelProvider", () => {
       }),
     ]);
 
-    console.log(`receiver collateralized! sending transfer`);
     await remoteClient.transfer({
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
       recipient: clientB.publicIdentifier,
     });
-    console.log(`sent! waiting for completion`);
 
     await transferFinished;
 
     ////////////////////////////////////////
     // WITHDRAW FLOW
-    console.log(`completed! withdrawing`);
     const withdraw: AssetOptions = { amount: One, assetId: tokenAddress };
     await withdrawFromChannel(remoteClient, withdraw.amount, withdraw.assetId);
   });
