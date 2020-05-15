@@ -19,7 +19,9 @@ export class GetAppInstanceController extends NodeController {
   ): Promise<MethodResults.GetAppInstanceDetails> {
     const { store } = requestHandler;
     const { appIdentityHash } = params;
-
+    requestHandler.log.newContext("GetAppInstanceMethod").info(
+      `Called w params: ${JSON.stringify(params)}`,
+    );
     if (!appIdentityHash) {
       throw new Error(NO_APP_IDENTITY_HASH_TO_GET_DETAILS);
     }

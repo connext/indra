@@ -70,6 +70,9 @@ export class ProposeInstallAppInstanceController extends NodeController {
     params: MethodParams.ProposeInstall,
   ): Promise<MethodResults.ProposeInstall> {
     const { protocolRunner, publicIdentifier, store } = requestHandler;
+    requestHandler.log.newContext("ProposeMethod").info(
+      `Called w params: ${JSON.stringify(params)}`,
+    );
 
     const { responderIdentifier, stateTimeout, defaultTimeout } = params;
 

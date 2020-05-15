@@ -24,6 +24,10 @@ export class GetFreeBalanceStateController extends NodeController {
     const { store } = requestHandler;
     const { multisigAddress, assetId } = params;
 
+    requestHandler.log.newContext("GetFreeBalanceMethod").info(
+      `Called w params: ${JSON.stringify(params)}`,
+    );
+
     // NOTE: We default to ETH in case of undefined tokenAddress param
     // TODO: standardize on either address or assetId, not both
     const tokenAddress = getAddress(getAddressFromAssetId(assetId || CONVENTION_FOR_ETH_ASSET_ID));

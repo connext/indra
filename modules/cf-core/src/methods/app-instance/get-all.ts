@@ -19,6 +19,9 @@ export class GetInstalledAppInstancesController extends NodeController {
   ): Promise<MethodResults.GetAppInstances> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
+    requestHandler.log.newContext("GetAppInstancesMethod").info(
+      `Called w params: ${JSON.stringify(params)}`,
+    );
 
     if (!multisigAddress) {
       throw new Error("Multisig address must be provided");

@@ -52,6 +52,9 @@ export class InstallAppInstanceController extends NodeController {
     params: MethodParams.Install,
   ): Promise<MethodResults.Install> {
     const { store, protocolRunner, publicIdentifier } = requestHandler;
+    requestHandler.log.newContext("InstallMethod").info(
+      `Called w params: ${JSON.stringify(params)}`,
+    );
 
     const appInstanceProposal = await install(store, protocolRunner, params, publicIdentifier);
 

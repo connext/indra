@@ -12,6 +12,9 @@ export class GetProposedAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.GetProposedAppInstance,
   ): Promise<MethodResults.GetProposedAppInstance> {
+    requestHandler.log.newContext("GetProposedAppMethod").info(
+      `Called w params: ${JSON.stringify(params)}`,
+    );
     const appInstance = await requestHandler.store.getAppProposal(params.appIdentityHash);
     if (!appInstance) {
       throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(params.appIdentityHash));

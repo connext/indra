@@ -41,6 +41,9 @@ export class RejectInstallController extends NodeController {
     params: MethodParams.RejectInstall,
   ): Promise<MethodResults.RejectInstall> {
     const { store, messagingService, publicIdentifier } = requestHandler;
+    requestHandler.log.newContext("RejectMethod").info(
+      `Called w params: ${JSON.stringify(params)}`,
+    );
 
     const { appIdentityHash } = params;
 

@@ -81,6 +81,9 @@ export class TakeActionController extends NodeController {
   ): Promise<MethodResults.TakeAction> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appIdentityHash, action, stateTimeout } = params;
+    requestHandler.log.newContext("TakeActionMethod").info(
+      `Called w params: ${JSON.stringify(params)}`,
+    );
 
     const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!sc) {

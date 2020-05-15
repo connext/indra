@@ -75,6 +75,9 @@ export class UninstallController extends NodeController {
   ): Promise<MethodResults.Uninstall> {
     const { store, protocolRunner, publicIdentifier } = requestHandler;
     const { appIdentityHash } = params;
+    requestHandler.log.newContext("UninstallMethod").info(
+      `Called w params: ${JSON.stringify(params)}`,
+    );
 
     if (!appIdentityHash) {
       throw new Error(NO_APP_IDENTITY_HASH_TO_UNINSTALL);

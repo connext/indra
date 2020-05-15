@@ -77,6 +77,9 @@ export class DeployStateDepositController extends NodeController {
   ): Promise<MethodResults.DeployStateDepositHolder> {
     const { multisigAddress, retryCount } = params;
     const { log, networkContext, store, provider, signer } = requestHandler;
+    log.newContext("DeployStateDepositHolderMethod").info(
+      `Called w params: ${JSON.stringify(params)}`,
+    );
 
     // By default, if the contract has been deployed and
     // DB has records of it, controller will return HashZero

@@ -16,6 +16,9 @@ export class GetTokenIndexedFreeBalancesController extends NodeController {
   ): Promise<MethodResults.GetTokenIndexedFreeBalanceStates> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
+    requestHandler.log.newContext("GetTokenIndexedFBMethod").info(
+      `Called w params: ${JSON.stringify(params)}`,
+    );
 
     if (!multisigAddress) {
       throw new Error(

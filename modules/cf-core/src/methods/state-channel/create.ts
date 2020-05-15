@@ -45,6 +45,9 @@ export class CreateChannelController extends NodeController {
   ): Promise<MethodResults.CreateChannel> {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
+    requestHandler.log.newContext("CreateMethod").info(
+      `Called w params: ${JSON.stringify(params)}`,
+    );
 
     // safe to use network context proxy factory address directly here
     // using the assumption that `create` is only called for new state

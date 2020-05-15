@@ -13,6 +13,9 @@ export class GetStateChannelController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.GetStateChannel,
   ): Promise<MethodResults.GetStateChannel> {
+    requestHandler.log.newContext("GetStateChannelMethod").info(
+      `Called w params: ${JSON.stringify(params)}`,
+    );
     const data = await requestHandler.store.getStateChannel(params.multisigAddress);
     if (!data) {
       throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(params.multisigAddress));
