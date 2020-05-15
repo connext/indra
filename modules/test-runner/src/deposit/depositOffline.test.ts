@@ -1,4 +1,4 @@
-import { CF_METHOD_TIMEOUT, IConnextClient } from "@connext/types";
+import { CF_METHOD_TIMEOUT, IConnextClient, IChannelSigner } from "@connext/types";
 import * as lolex from "lolex";
 
 import {
@@ -17,11 +17,13 @@ import {
   ZERO_ZERO_ONE_ETH,
   env,
   getParamsFromData,
+  ETH_AMOUNT_SM,
 } from "../util";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { getRandomChannelSigner } from "@connext/utils";
 import { addressBook } from "@connext/contracts";
+import { Wallet, Signer } from "ethers";
 
 const makeDepositCall = async (opts: {
   client: IConnextClient;
@@ -70,16 +72,28 @@ const makeDepositCall = async (opts: {
   return;
 };
 
+const recreateClientAndRetryDepositCall = async (signer: IChannelSigner, client: IConnextClient) => {
+  client.messaging.disconnect()
+  const newClient = await createClient({signer})
+
+  // Check that client can recover and continue
+  await fundChannel(newClient, ETH_AMOUNT_SM)
+  const fb = await newClient.getFreeBalance()
+  expect(fb[newClient.signerAddress].eq(ETH_AMOUNT_SM)).to.be.true;
+}
+
 /**
  * Contains any deposit tests that involve the client going offline at some
  * point in the protocol.
  */
 
-describe.only("Deposit offline tests", () => {
+describe("Deposit offline tests", () => {
   let clock: any;
   let client: IConnextClient;
+  let signer: IChannelSigner;
 
   beforeEach(() => {
+    signer = getRandomChannelSigner(env.ethProviderUrl)
     clock = lolex.install({
       shouldAdvanceTime: true,
       advanceTimeDelta: 1,
@@ -108,9 +122,11 @@ describe.only("Deposit offline tests", () => {
     // initiator in the `propose` protocol)
     // in the propose protocol, the initiator sends one message, and receives
     // one message, set the cap at 1 for `propose` in messaging of client
+    
     client = await createClientWithMessagingLimits({
       ceiling: { received: 0 },
       protocol: "propose",
+      signer
     });
 
     await makeDepositCall({
@@ -120,6 +136,8 @@ describe.only("Deposit offline tests", () => {
       subjectToFastforward: RECEIVED,
       protocol: "propose",
     });
+
+    await recreateClientAndRetryDepositCall(signer, client)
   });
 
   it("client proposes deposit, but node only receives the NATS message after timeout is over", async () => {
@@ -129,6 +147,7 @@ describe.only("Deposit offline tests", () => {
     client = await createClientWithMessagingLimits({
       delay: { sent: CLIENT_DELAY },
       protocol: "propose",
+      signer
     });
 
     await makeDepositCall({
@@ -138,6 +157,8 @@ describe.only("Deposit offline tests", () => {
       subjectToFastforward: SEND,
       protocol: "propose",
     });
+
+    await recreateClientAndRetryDepositCall(signer, client)
   });
 
   it("client proposes deposit, but node only responds after timeout is over", async () => {
@@ -147,6 +168,7 @@ describe.only("Deposit offline tests", () => {
     client = await createClientWithMessagingLimits({
       delay: { received: CLIENT_DELAY },
       protocol: "propose",
+      signer,
     });
 
     await makeDepositCall({
@@ -156,10 +178,11 @@ describe.only("Deposit offline tests", () => {
       subjectToFastforward: RECEIVED,
       protocol: "propose",
     });
+
+    await recreateClientAndRetryDepositCall(signer, client)
   });
 
   it("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
-    const signer = getRandomChannelSigner(env.ethProviderUrl);
     client = await createClientWithMessagingLimits({
       protocol: "install",
       ceiling: { received: 0 },
@@ -174,6 +197,6 @@ describe.only("Deposit offline tests", () => {
       protocol: "install",
     });
 
-    await createClient({ signer });
+    await recreateClientAndRetryDepositCall(signer, client)
   });
 });
