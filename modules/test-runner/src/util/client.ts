@@ -6,6 +6,7 @@ import {
   IChannelSigner,
   IConnextClient,
   ProtocolParam,
+  IClientStore,
 } from "@connext/types";
 import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
 import { expect } from "chai";
@@ -26,7 +27,7 @@ export const createClient = async (
   const log = new ColorfulLogger("CreateClient", env.logLevel);
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
-    loggerService: new ColorfulLogger("Client", env.logLevel, true, opts.id),
+    loggerService: new ColorfulLogger("Client", 3, true, opts.id),
     signer: opts.signer || wallet.privateKey,
     nodeUrl: env.nodeUrl,
     store,
@@ -97,12 +98,13 @@ export type ClientTestMessagingInputOpts = {
   delay: Partial<MessageCounter>; // ms delay or sent callbacks
   signer: IChannelSigner;
   params: Partial<ProtocolParam>;
+  store?: IClientStore;
 };
 
 export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
-  const { protocol, ceiling, delay, signer: signerOpts, params } = opts;
+  const { protocol, ceiling, delay, signer: signerOpts, params, store } = opts;
   let signer;
   if(typeof signerOpts == "string") {
     signer = new ChannelSigner(signerOpts, env.ethProviderUrl)
@@ -143,5 +145,5 @@ export const createClientWithMessagingLimits = async (
     ? expect(messaging.count).to.containSubset(expected)
     : expect(messaging[protocol]).to.containSubset(expected);
   expect(messaging.options).to.containSubset(messageOptions);
-  return createClient({ messaging, signer: signer });
+  return createClient({ messaging, signer: signer, store });
 };
