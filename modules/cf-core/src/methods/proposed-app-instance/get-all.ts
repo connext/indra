@@ -13,7 +13,7 @@ export class GetProposedAppInstancesController extends NodeController {
   ): Promise<MethodResults.GetProposedAppInstances> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
-    requestHandler.log.newContext("GetProposedAppsMethod").info(
+    requestHandler.log.newContext("CF-GetProposedAppsMethod").info(
       `Called w params: ${JSON.stringify(params)}`,
     );
 

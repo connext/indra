@@ -19,7 +19,7 @@ export class GetInstalledAppInstancesController extends NodeController {
   ): Promise<MethodResults.GetAppInstances> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
-    requestHandler.log.newContext("GetAppInstancesMethod").info(
+    requestHandler.log.newContext("CF-GetAppInstancesMethod").info(
       `Called w params: ${JSON.stringify(params)}`,
     );
 

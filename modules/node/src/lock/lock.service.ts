@@ -6,6 +6,8 @@ import { LoggerService } from "../logger/logger.service";
 
 @Injectable()
 export class LockService {
+  private locks: Set<string> = new Set();
+
   constructor(
     private readonly log: LoggerService,
     @Inject(RedlockProviderId) private readonly redlockClient: Redlock,
@@ -33,11 +35,18 @@ export class LockService {
   async acquireLock(lockName: string, lockTTL: number = LOCK_SERVICE_TTL): Promise<string> {
     const start = Date.now();
     this.log.debug(`Acquiring lock for ${lockName} (TTL=${lockTTL / 1000}s)`);
+    if (this.locks.has(lockName)) {
+      const locked = Array.from(this.locks).map(
+        n => `${n.substring(0, 6)}..${n.substring(n.length - 4)}`,
+      ).join(", ");
+      this.log.warn(`Acquiring lock for ${lockName}, currently locked: ${locked}`);
+    }
     return new Promise((resolve: any, reject: any): any => {
       this.redlockClient
         .lock(lockName, lockTTL)
         .then((lock: Lock) => {
           this.log.debug(`Acquired lock for ${lock.resource} with secret ${lock.value} in ${Date.now() - start} ms`);
+          this.locks.add(lockName);
           resolve(lock.value);
         })
         .catch((e: any) => {
@@ -57,6 +66,7 @@ export class LockService {
         .unlock({ resource: lockName, value: lockValue } as Lock)
         .then(() => {
           this.log.debug(`Released lock for ${lockName} in ${Date.now() - start} ms`);
+          this.locks.delete(lockName);
           resolve();
         })
         .catch((e: any) => {

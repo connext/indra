@@ -12,7 +12,7 @@ export class GetProposedAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.GetProposedAppInstance,
   ): Promise<MethodResults.GetProposedAppInstance> {
-    requestHandler.log.newContext("GetProposedAppMethod").info(
+    requestHandler.log.newContext("CF-GetProposedAppMethod").info(
       `Called w params: ${JSON.stringify(params)}`,
     );
     const appInstance = await requestHandler.store.getAppProposal(params.appIdentityHash);

@@ -13,7 +13,7 @@ export class GetStateChannelController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.GetStateChannel,
   ): Promise<MethodResults.GetStateChannel> {
-    requestHandler.log.newContext("GetStateChannelMethod").info(
+    requestHandler.log.newContext("CF-GetStateChannelMethod").info(
       `Called w params: ${JSON.stringify(params)}`,
     );
     const data = await requestHandler.store.getStateChannel(params.multisigAddress);

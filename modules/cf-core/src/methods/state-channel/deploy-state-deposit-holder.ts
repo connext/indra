@@ -77,7 +77,7 @@ export class DeployStateDepositController extends NodeController {
   ): Promise<MethodResults.DeployStateDepositHolder> {
     const { multisigAddress, retryCount } = params;
     const { log, networkContext, store, provider, signer } = requestHandler;
-    log.newContext("DeployStateDepositHolderMethod").info(
+    log.newContext("CF-DeployStateDepositHolderMethod").info(
       `Called w params: ${JSON.stringify(params)}`,
     );
 

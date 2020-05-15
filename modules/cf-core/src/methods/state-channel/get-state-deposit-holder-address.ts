@@ -16,7 +16,7 @@ export class GetStateDepositHolderAddressController extends NodeController {
   ): Promise<MethodResults.GetStateDepositHolderAddress> {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
-    requestHandler.log.newContext("GetStateDepositHolderMethod").info(
+    requestHandler.log.newContext("CF-GetStateDepositHolderMethod").info(
       `Called w params: ${JSON.stringify(params)}`,
     );
     if (!networkContext.provider) {

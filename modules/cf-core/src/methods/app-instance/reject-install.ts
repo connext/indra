@@ -32,7 +32,7 @@ export class RejectInstallController extends NodeController {
     }
 
     const result = [appIdentityHash, stateChannel.multisigAddress];
-    requestHandler.log.newContext("RejectMethod").info(`Acquiring locks: [${result}]`);
+    requestHandler.log.newContext("CF-RejectMethod").info(`Acquiring locks: [${result}]`);
     return result;
   }
 
@@ -41,7 +41,7 @@ export class RejectInstallController extends NodeController {
     params: MethodParams.RejectInstall,
   ): Promise<MethodResults.RejectInstall> {
     const { store, messagingService, publicIdentifier } = requestHandler;
-    requestHandler.log.newContext("RejectMethod").info(
+    requestHandler.log.newContext("CF-RejectMethod").info(
       `Called w params: ${JSON.stringify(params)}`,
     );
 

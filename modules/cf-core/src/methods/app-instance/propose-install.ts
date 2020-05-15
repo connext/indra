@@ -38,7 +38,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
     }
 
     const result = [json.multisigAddress];
-    requestHandler.log.newContext("ProposeMethod").info(`Acquiring locks: [${result}]`);
+    requestHandler.log.newContext("CF-ProposeMethod").info(`Acquiring locks: [${result}]`);
     return result;
   }
 
@@ -70,7 +70,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
     params: MethodParams.ProposeInstall,
   ): Promise<MethodResults.ProposeInstall> {
     const { protocolRunner, publicIdentifier, store } = requestHandler;
-    requestHandler.log.newContext("ProposeMethod").info(
+    requestHandler.log.newContext("CF-ProposeMethod").info(
       `Called w params: ${JSON.stringify(params)}`,
     );
 

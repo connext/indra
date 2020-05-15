@@ -44,7 +44,7 @@ export class TakeActionController extends NodeController {
     }
 
     const result = [app.multisigAddress, params.appIdentityHash];
-    requestHandler.log.newContext("TakeActionMethod").info(`Acquiring locks: [${result}]`);
+    requestHandler.log.newContext("CF-TakeActionMethod").info(`Acquiring locks: [${result}]`);
     return result;
   }
 
@@ -81,7 +81,7 @@ export class TakeActionController extends NodeController {
   ): Promise<MethodResults.TakeAction> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appIdentityHash, action, stateTimeout } = params;
-    requestHandler.log.newContext("TakeActionMethod").info(
+    requestHandler.log.newContext("CF-TakeActionMethod").info(
       `Called w params: ${JSON.stringify(params)}`,
     );
 

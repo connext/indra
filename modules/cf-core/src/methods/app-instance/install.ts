@@ -43,7 +43,7 @@ export class InstallAppInstanceController extends NodeController {
     }
 
     const result = [sc.multisigAddress];
-    requestHandler.log.newContext("InstallMethod").info(`Acquiring locks: [${result}]`);
+    requestHandler.log.newContext("CF-InstallMethod").info(`Acquiring locks: [${result}]`);
     return result;
   }
 
@@ -52,7 +52,7 @@ export class InstallAppInstanceController extends NodeController {
     params: MethodParams.Install,
   ): Promise<MethodResults.Install> {
     const { store, protocolRunner, publicIdentifier } = requestHandler;
-    requestHandler.log.newContext("InstallMethod").info(
+    requestHandler.log.newContext("CF-InstallMethod").info(
       `Called w params: ${JSON.stringify(params)}`,
     );
 

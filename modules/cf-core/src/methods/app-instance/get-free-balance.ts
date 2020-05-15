@@ -24,7 +24,7 @@ export class GetFreeBalanceStateController extends NodeController {
     const { store } = requestHandler;
     const { multisigAddress, assetId } = params;
 
-    requestHandler.log.newContext("GetFreeBalanceMethod").info(
+    requestHandler.log.newContext("CF-GetFreeBalanceMethod").info(
       `Called w params: ${JSON.stringify(params)}`,
     );
 

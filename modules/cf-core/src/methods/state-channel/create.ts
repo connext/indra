@@ -35,7 +35,7 @@ export class CreateChannelController extends NodeController {
     params: MethodParams.CreateChannel,
   ): Promise<string[]> {
     const result = [`${MethodNames.chan_create}:${params.owners.sort().toString()}`];
-    requestHandler.log.newContext("CreateMethod").info(`Acquiring locks: [${result}]`);
+    requestHandler.log.newContext("CF-CreateMethod").info(`Acquiring locks: [${result}]`);
     return result;
   }
 
@@ -45,7 +45,7 @@ export class CreateChannelController extends NodeController {
   ): Promise<MethodResults.CreateChannel> {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
-    requestHandler.log.newContext("CreateMethod").info(
+    requestHandler.log.newContext("CF-CreateMethod").info(
       `Called w params: ${JSON.stringify(params)}`,
     );
 

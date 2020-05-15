@@ -38,7 +38,7 @@ export class UninstallController extends NodeController {
     }
 
     const result = [sc.multisigAddress, appIdentityHash];
-    requestHandler.log.newContext("UninstallMethod").info(`Acquiring locks: [${result}]`);
+    requestHandler.log.newContext("CF-UninstallMethod").info(`Acquiring locks: [${result}]`);
     return [sc.multisigAddress, appIdentityHash];
   }
 
@@ -75,7 +75,7 @@ export class UninstallController extends NodeController {
   ): Promise<MethodResults.Uninstall> {
     const { store, protocolRunner, publicIdentifier } = requestHandler;
     const { appIdentityHash } = params;
-    requestHandler.log.newContext("UninstallMethod").info(
+    requestHandler.log.newContext("CF-UninstallMethod").info(
       `Called w params: ${JSON.stringify(params)}`,
     );
 

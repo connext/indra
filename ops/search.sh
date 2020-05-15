@@ -7,4 +7,4 @@ if [[ -z "$target" ]]
 then echo "One arg required: bash ops/search.sh <target>" && exit 1
 fi
 
-grep "$@" --exclude=*.swp --exclude=*.pdf --color=auto -r "$target" modules/*/src modules/*/ops
+grep "$@" --exclude=*.swp --exclude=*.pdf --color=auto -r "$target" modules/*/src modules/*/ops modules/*/contracts
