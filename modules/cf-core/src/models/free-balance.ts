@@ -124,11 +124,9 @@ export class FreeBalanceClass {
 
   public getBalance(tokenAddress: string, beneficiary: string) {
     try {
-      return (
-        convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress])[
-          beneficiary
-        ] || Zero
-      );
+      return convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress])[
+        beneficiary
+      ];
     } catch {
       return Zero;
     }
@@ -177,7 +175,7 @@ export class FreeBalanceClass {
   }
 
   public increment(increments: TokenIndexedCoinTransferMap) {
-    let updatedBalancesIndexedByToken = {};
+    let updatedBalancesIndexedByToken = { ...this.balancesIndexedByToken };
     for (const tokenAddress of Object.keys(increments)) {
       const t1 = convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress]);
       const t2 = merge(t1, increments[tokenAddress]);
