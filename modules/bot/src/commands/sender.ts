@@ -1,13 +1,10 @@
 import { Argv } from "yargs";
 import {
   ColorfulLogger,
-  toBN,
-  delay,
   getRandomBytes32,
   getSignerAddressFromPublicIdentifier,
   stringify,
 } from "@connext/utils";
-import { JsonRpcProvider } from "ethers/providers";
 import { parseEther } from "ethers/utils";
 import { createClient } from "../helpers/client";
 import { EventNames, EventPayloads, ConditionalTransferTypes, PublicParams } from "@connext/types";

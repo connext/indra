@@ -1,7 +1,6 @@
 import { Argv } from "yargs";
 import { ColorfulLogger, stringify } from "@connext/utils";
 import { AddressZero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
 import { parseEther, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { createClient } from "../helpers/client";
 import { EventNames, EventPayloads, ConditionalTransferTypes, PublicParams } from "@connext/types";
