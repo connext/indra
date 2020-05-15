@@ -1,8 +1,4 @@
-import {
-  EventNames,
-  IConnextClient,
-  LinkedTransferStatus,
-} from "@connext/types";
+import { EventNames, IConnextClient, LinkedTransferStatus } from "@connext/types";
 import { delay, stringify } from "@connext/utils";
 import * as lolex from "lolex";
 
@@ -152,7 +148,7 @@ describe("Async transfer offline tests", () => {
     await fundForTransfers(receiverClient, senderClient);
     // transfer from the sender to the receiver, then take the
     // sender offline
-    const received = new Promise(resolve =>
+    const received = new Promise((resolve) =>
       receiverClient.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve),
     );
     const { paymentId } = await senderClient.transfer({
@@ -218,7 +214,7 @@ describe("Async transfer offline tests", () => {
     // disconnect messaging on take action event, ensuring transfer received
     const transferCompleteAndActionTaken = Promise.all([
       new Promise((resolve: Function) =>
-        receiverClient.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, data => {
+        receiverClient.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
           resolve();
         }),
       ),

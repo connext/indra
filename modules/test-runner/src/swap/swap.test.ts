@@ -53,12 +53,7 @@ describe("Swaps", () => {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(client, input.amount, input.assetId);
-    await swapAsset(
-      client,
-      input,
-      output,
-      nodeSignerAddress,
-    );
+    await swapAsset(client, input, output, nodeSignerAddress);
   });
 
   it("client tries to swap with invalid from token address", async () => {
