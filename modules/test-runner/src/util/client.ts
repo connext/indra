@@ -27,7 +27,7 @@ export const createClient = async (
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     loggerService: new ColorfulLogger("Client", env.logLevel, true, opts.id),
-    signer: wallet.privateKey,
+    signer: opts.signer || wallet.privateKey,
     nodeUrl: env.nodeUrl,
     store,
     ...opts,
@@ -103,7 +103,12 @@ export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
   const { protocol, ceiling, delay, signer: signerOpts, params } = opts;
-  const signer = signerOpts || getRandomChannelSigner(env.ethProviderUrl);
+  let signer;
+  if(typeof signerOpts == "string") {
+    signer = new ChannelSigner(signerOpts, env.ethProviderUrl)
+  } else {
+    signer = signerOpts || getRandomChannelSigner(env.ethProviderUrl);
+  }
   const messageOptions: any = {};
   // no defaults specified, exit early
   if (Object.keys(opts).length === 0) {
