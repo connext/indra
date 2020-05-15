@@ -39,12 +39,12 @@ jobs:
     - run: make store
     - run: make test-store
 
-  test-watcher:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - run: make watcher
-    - run: make test-watcher
+#   test-watcher:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - uses: actions/checkout@v1
+#     - run: make watcher
+#     - run: make test-watcher
 
   test-contracts:
     runs-on: ubuntu-latest
