@@ -42,7 +42,9 @@ export class InstallAppInstanceController extends NodeController {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
-    return [sc.multisigAddress];
+    const result = [sc.multisigAddress];
+    requestHandler.log.newContext("InstallMethod").info(`Acquiring locks: [${result}]`);
+    return result;
   }
 
   protected async executeMethodImplementation(

@@ -1,5 +1,4 @@
 import {
-  IStoreService,
   MethodNames,
   MethodParams,
   MethodResults,
@@ -38,6 +37,8 @@ export class UninstallController extends NodeController {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
+    const result = [sc.multisigAddress, appIdentityHash];
+    requestHandler.log.newContext("UninstallMethod").info(`Acquiring locks: [${result}]`);
     return [sc.multisigAddress, appIdentityHash];
   }
 

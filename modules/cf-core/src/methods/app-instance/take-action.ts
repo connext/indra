@@ -36,11 +36,16 @@ export class TakeActionController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
   ): Promise<string[]> {
-    const app = await requestHandler.store.getAppInstance(params.appIdentityHash);
+    const { store } = requestHandler;
+
+    const app = await store.getAppInstance(params.appIdentityHash);
     if (!app) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
-    return [app.multisigAddress, params.appIdentityHash];
+
+    const result = [app.multisigAddress, params.appIdentityHash];
+    requestHandler.log.newContext("TakeActionMethod").info(`Acquiring locks: [${result}]`);
+    return result;
   }
 
   protected async beforeExecution(

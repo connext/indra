@@ -37,7 +37,9 @@ export class ProposeInstallAppInstanceController extends NodeController {
       );
     }
 
-    return [json.multisigAddress];
+    const result = [json.multisigAddress];
+    requestHandler.log.newContext("ProposeMethod").info(`Acquiring locks: [${result}]`);
+    return result;
   }
 
   protected async beforeExecution(

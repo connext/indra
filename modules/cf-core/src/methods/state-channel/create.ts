@@ -34,7 +34,9 @@ export class CreateChannelController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.CreateChannel,
   ): Promise<string[]> {
-    return [`${MethodNames.chan_create}:${params.owners.sort().toString()}`];
+    const result = [`${MethodNames.chan_create}:${params.owners.sort().toString()}`];
+    requestHandler.log.newContext("CreateMethod").info(`Acquiring locks: [${result}]`);
+    return result;
   }
 
   protected async executeMethodImplementation(

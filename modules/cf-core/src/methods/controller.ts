@@ -1,10 +1,11 @@
-import { MethodName, MethodParam, MethodResult } from "@connext/types";
+import { ILoggerService, MethodName, MethodParam, MethodResult } from "@connext/types";
 import { Controller } from "rpc-server";
 
 import { RequestHandler } from "../request-handler";
 
 export abstract class NodeController extends Controller {
   public static readonly methodName: MethodName;
+  public log?: ILoggerService;
 
   public async executeMethod(
     requestHandler: RequestHandler,
@@ -12,15 +13,13 @@ export abstract class NodeController extends Controller {
   ): Promise<MethodResult> {
     await this.beforeExecution(requestHandler, params);
 
-    const lockNames = await this.getRequiredLockNames(requestHandler, params);
+    const result = await requestHandler.processQueue.addTask(
+      await this.getRequiredLockNames(requestHandler, params),
+      () => this.executeMethodImplementation(requestHandler, params),
+    );
 
-    const createExecutionPromise = () => this.executeMethodImplementation(requestHandler, params);
-
-    const ret = await requestHandler.processQueue.addTask(lockNames, createExecutionPromise);
-
-    await this.afterExecution(requestHandler, params, ret);
-
-    return ret;
+    await this.afterExecution(requestHandler, params, result);
+    return result;
   }
 
   protected abstract executeMethodImplementation(
