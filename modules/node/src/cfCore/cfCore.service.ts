@@ -46,11 +46,11 @@ export class CFCoreService {
   }
 
   private logCfCoreMethodStart<T = any>(name: string, params: T): void {
-    this.log.warn(`Calling cfCore RPC method ${name} with params: ${stringify(params)}`);
+    this.log.debug(`Calling cfCore RPC method ${name} with params: ${stringify(params)}`);
   }
 
   private logCfCoreMethodResult<T = any>(name: string, result: T): void {
-    this.log.warn(`${name} called with result: ${stringify(result)}`);
+    this.log.debug(`${name} called with result: ${stringify(result)}`);
   }
 
   async getFreeBalance(
