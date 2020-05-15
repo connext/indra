@@ -61,27 +61,23 @@ const fundChannelAndSwap = async (opts: {
   await fundChannel(client, input.amount, input.assetId);
   await requestCollateral(client, output.assetId);
   // swap call back
-  const swapCb = async () =>
-    await swapAsset(client, input, output, client.nodeSignerAddress);
+  const swapCb = async () => await swapAsset(client, input, output, client.nodeSignerAddress);
   // try to swap, first check if test must be fast forwarded
   if (fastForward) {
     // fast forward the clock for tests with delay
     // after swapping
-    (client.messaging as TestMessagingService)!.on(
-      fastForward,
-      async (msg: MessagingEventData) => {
-        // check if you should fast forward on specific protocol, or
-        // just on specfic subject
-        if (!protocol) {
-          clock.tick(89_000);
-          return;
-        }
-        if (getProtocolFromData(msg) === protocol) {
-          clock.tick(89_000);
-          return;
-        }
-      },
-    );
+    (client.messaging as TestMessagingService)!.on(fastForward, async (msg: MessagingEventData) => {
+      // check if you should fast forward on specific protocol, or
+      // just on specfic subject
+      if (!protocol) {
+        clock.tick(89_000);
+        return;
+      }
+      if (getProtocolFromData(msg) === protocol) {
+        clock.tick(89_000);
+        return;
+      }
+    });
     return;
   }
 

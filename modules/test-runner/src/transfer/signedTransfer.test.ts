@@ -321,7 +321,8 @@ describe("Signed Transfers", () => {
     ).to.eventually.be.rejectedWith(/VM Exception while processing transaction/);
   });
 
-  it("Experimental: Average latency of 5 signed transfers with Eth", async () => {
+  // average time in multichannel test
+  it.skip("Experimental: Average latency of 5 signed transfers with Eth", async () => {
     let runTime: number[] = [];
     let sum = 0;
     const numberOfRuns = 5;

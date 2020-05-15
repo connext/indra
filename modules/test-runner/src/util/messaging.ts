@@ -6,8 +6,9 @@ import {
   Message,
   VerifyNonceDtoType,
   IChannelSigner,
+  ProtocolParam,
 } from "@connext/types";
-import { ChannelSigner, ColorfulLogger, delay } from "@connext/utils";
+import { ChannelSigner, ColorfulLogger, delay, stringify } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { Wallet } from "ethers";
 
@@ -25,6 +26,7 @@ export type MessageCounter = {
 type DetailedMessageCounter = MessageCounter & {
   ceiling?: Partial<MessageCounter>;
   delay?: Partial<MessageCounter>;
+  params?: Partial<ProtocolParam>;
 };
 
 export type TestMessagingConfig = {
@@ -76,6 +78,17 @@ export const getProtocolFromData = (msg: MessagingEventData) => {
   }
 };
 
+export const getParamsFromData = (msg: MessagingEventData) => {
+  const { subject, data } = msg;
+  if (!data || !subject) {
+    return;
+  }
+  if (data.data && data.data.params) {
+    // fast forward
+    return data.data.params;
+  }
+};
+
 const defaultCount = (details: string[] = []): MessageCounter | DetailedMessageCounter => {
   if (details.includes("delay") && details.includes("ceiling")) {
     return {
@@ -120,10 +133,7 @@ const defaultOpts = (): TestMessagingConfig => {
       withdraw: defaultCount(),
     },
     count: defaultCount(),
-    signer: new ChannelSigner(
-      Wallet.createRandom().privateKey,
-      env.ethProviderUrl,
-    ),
+    signer: new ChannelSigner(Wallet.createRandom().privateKey, env.ethProviderUrl),
   };
 };
 
@@ -145,9 +155,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       messagingConfig: combineObjects(opts.messagingConfig, defaults.messagingConfig),
       count: combineObjects(opts.count, defaults.count),
       protocolDefaults: combineObjects(opts.protocolDefaults, defaults.protocolDefaults),
-      signer: typeof opts.signer === "string" 
-        ? new ChannelSigner(opts.signer) 
-        : opts.signer,
+      signer: typeof opts.signer === "string" ? new ChannelSigner(opts.signer) : opts.signer,
     };
     const getSignature = (msg: string) => this.options.signer.signMessage(msg);
 
@@ -247,6 +255,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
       // check if any protocol messages are increased
       const protocol = this.getProtocol(msg);
+      const msgParams = this.getParams(msg);
       if (!protocol || !this.protocolDefaults[protocol]) {
         // Could not find protocol corresponding to received message,
         // proceeding with callback
@@ -254,6 +263,17 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       }
       // wait out delay
       await this.awaitDelay(false, protocol);
+      // check any params
+      const { params } = this.protocolDefaults[protocol];
+      if (
+        params &&
+        msgParams &&
+        !!Object.values(msgParams).includes((p) => stringify(p) === stringify(params))
+      ) {
+        // has params specified, but not included in this message.
+        // so return callback
+        return callback(msg);
+      }
       // verify ceiling exists and has not been reached
       if (
         this.hasCeiling({ protocol, type: "received" }) &&
@@ -287,9 +307,21 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
     // check protocol ceiling
     const protocol = this.getProtocol(msg);
+    const msgParams = this.getParams(msg);
     if (!protocol || !this.protocolDefaults[protocol]) {
       // Could not find protocol corresponding to received message,
       // proceeding with sending
+      return this.connection.send(to, msg);
+    }
+    // check any params
+    const { params } = this.protocolDefaults[protocol];
+    if (
+      params &&
+      msgParams &&
+      !!Object.values(msgParams).includes((p) => stringify(p) === stringify(params))
+    ) {
+      // has params specified, but not included in this message.
+      // so return callback
       return this.connection.send(to, msg);
     }
     // wait out delay
@@ -386,6 +418,20 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     }
 
     return protocol;
+  }
+
+  private getParams(msg: any): ProtocolParam | undefined {
+    if (!msg.data) {
+      // no .data field found, cannot find protocol of msg
+      return undefined;
+    }
+    const params = msg.data.params;
+    if (!params || Object.keys(params).length === 0) {
+      // no .data.protocol field found, cannot find protocol of msg
+      return undefined;
+    }
+
+    return params as ProtocolParam;
   }
 
   private hasCeiling(opts: Partial<{ type: "sent" | "received"; protocol: string }> = {}): boolean {

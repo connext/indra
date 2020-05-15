@@ -1,5 +1,5 @@
 import { CONVENTION_FOR_ETH_ASSET_ID, EventNames, UninstallMessage } from "@connext/types";
-import { One, Two, Zero, AddressZero } from "ethers/constants";
+import { One, Two, Zero } from "ethers/constants";
 
 import { Node } from "../../node";
 
@@ -21,7 +21,12 @@ expect.extend({ toBeEq });
 
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
-function assertUninstallMessage(senderId: string, multisigAddress: string, appIdentityHash: string, msg: UninstallMessage) {
+function assertUninstallMessage(
+  senderId: string,
+  multisigAddress: string,
+  appIdentityHash: string,
+  msg: UninstallMessage,
+) {
   assertMessage(msg, {
     from: senderId,
     type: EventNames.UNINSTALL_EVENT,
@@ -72,7 +77,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
       expect(balancesAfter[nodeB.signerAddress]).toBeEq(depositAmount);
     });
 
-    it("installs an app with the TwoPartyFixedOutcome outcome and expects Node A to win total", async done => {
+    it("installs an app with the TwoPartyFixedOutcome outcome and expects Node A to win total", async (done) => {
       [appIdentityHash] = await installApp(
         nodeA,
         nodeB,
@@ -93,10 +98,10 @@ describe("Node A and B install apps of different outcome types, then uninstall t
             }
             try {
               assertUninstallMessage(nodeA.publicIdentifier, multisigAddress, appIdentityHash, msg);
-    
+
               const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
-              expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(Two);
-              expect(balancesSeenByB[nodeB.signerAddress]).toBeEq(Zero);
+              expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(Zero);
+              expect(balancesSeenByB[nodeB.signerAddress]).toBeEq(Two);
               expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
               resolve();
             } catch (e) {
@@ -109,8 +114,8 @@ describe("Node A and B install apps of different outcome types, then uninstall t
             await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash));
 
             const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
-            expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(Two);
-            expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(Zero);
+            expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(Zero);
+            expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(Two);
 
             expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
             resolve();
@@ -123,7 +128,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
       done();
     });
 
-    it("installs an app with the TwoPartyFixedOutcome outcome and expects Node B to win total", async done => {
+    it("installs an app with the TwoPartyFixedOutcome outcome and expects Node B to win total", async (done) => {
       initialState.winner = 1;
 
       [appIdentityHash] = await installApp(
@@ -148,8 +153,8 @@ describe("Node A and B install apps of different outcome types, then uninstall t
               assertUninstallMessage(nodeA.publicIdentifier, multisigAddress, appIdentityHash, msg);
 
               const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
-              expect(balancesSeenByB[nodeB.signerAddress]).toBeEq(Two);
-              expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(Zero);
+              expect(balancesSeenByB[nodeB.signerAddress]).toBeEq(Zero);
+              expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(Two);
               expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
               resolve();
             } catch (e) {
@@ -162,8 +167,8 @@ describe("Node A and B install apps of different outcome types, then uninstall t
             await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash));
 
             const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
-            expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(Two);
-            expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(Zero);
+            expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(Zero);
+            expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(Two);
 
             expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
             resolve();
@@ -175,7 +180,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
       done();
     });
 
-    it("installs an app with the TwoPartyFixedOutcome outcome and expects the funds to be split between the nodes", async done => {
+    it("installs an app with the TwoPartyFixedOutcome outcome and expects the funds to be split between the nodes", async (done) => {
       initialState.winner = 3;
 
       [appIdentityHash] = await installApp(
