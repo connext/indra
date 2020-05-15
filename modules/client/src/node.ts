@@ -182,7 +182,7 @@ export class NodeApiClient implements INodeApiClient {
     const lockValue = await this.send(`${this.userIdentifier}.lock.acquire.${lockName}`, {
       lockTTL: timeout,
     });
-    this.log.info(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
+    this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
     try {
       retVal = await callback();
@@ -356,7 +356,7 @@ export class NodeApiClient implements INodeApiClient {
     logTime(
       this.log,
       start,
-      `Node responded to ${subject.split(".").slice(0, 2).join(".")} request`, // prettier-ignore
+      `Node responded to ${subject} request`,
     );
     return !response || isEmptyObj ? undefined : bigNumberifyJson(response);
   }

@@ -32,12 +32,12 @@ export class LockService {
 
   async acquireLock(lockName: string, lockTTL: number = LOCK_SERVICE_TTL): Promise<string> {
     const start = Date.now();
-    this.log.info(`Acquiring lock for ${lockName} (TTL=${lockTTL / 1000}s)`);
+    this.log.debug(`Acquiring lock for ${lockName} (TTL=${lockTTL / 1000}s)`);
     return new Promise((resolve: any, reject: any): any => {
       this.redlockClient
         .lock(lockName, lockTTL)
         .then((lock: Lock) => {
-          this.log.info(`Acquired lock for ${lock.resource} with secret ${lock.value} in ${Date.now() - start} ms`);
+          this.log.debug(`Acquired lock for ${lock.resource} with secret ${lock.value} in ${Date.now() - start} ms`);
           resolve(lock.value);
         })
         .catch((e: any) => {
@@ -48,7 +48,7 @@ export class LockService {
   }
 
   async releaseLock(lockName: string, lockValue: string): Promise<void> {
-    this.log.info(`Releasing lock for ${lockName} with secret ${lockValue}`);
+    this.log.debug(`Releasing lock for ${lockName} with secret ${lockValue}`);
     const start = Date.now();
     return new Promise((resolve: any, reject: any): any => {
       this.redlockClient
@@ -56,7 +56,7 @@ export class LockService {
         // only the parameters in the Lock object that are used in the unlock function
         .unlock({ resource: lockName, value: lockValue } as Lock)
         .then(() => {
-          this.log.info(`Released lock for ${lockName} in ${Date.now() - start} ms`);
+          this.log.debug(`Released lock for ${lockName} in ${Date.now() - start} ms`);
           resolve();
         })
         .catch((e: any) => {

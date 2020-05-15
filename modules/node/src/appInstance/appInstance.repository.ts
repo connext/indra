@@ -14,7 +14,7 @@ import { AppInstance, AppType } from "./appInstance.entity";
 import { HashZero } from "ethers/constants";
 
 export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
-  if (!app) {
+  if (!app || !channel) {
     return undefined;
   }
   // interpreter params
