@@ -55,18 +55,41 @@ export const createCFChannelProvider = async ({
   const messaging = node.messaging;
   const nodeConfig = { STORE_KEY_PREFIX: ConnextClientStorePrefix };
   const lockService = { acquireLock: node.acquireLock.bind(node) };
-  const cfCore = await CFCore.create(
-    messaging,
-    store,
-    contractAddresses,
-    nodeConfig,
-    ethProvider,
-    signer,
-    lockService,
-    undefined,
-    logger,
-    true, // sync all client channels on start up
-  );
+  let cfCore;
+  try {
+    cfCore = await CFCore.create(
+      messaging,
+      store,
+      contractAddresses,
+      nodeConfig,
+      ethProvider,
+      signer,
+      lockService,
+      undefined,
+      logger,
+      true, // sync all client channels on start up
+    );
+  } catch (e) {
+    console.error(
+      `Could not setup cf-core with sync protocol on, Error: ${stringify(
+        e,
+      )}. Trying again without syncing on start...`,
+    );
+  }
+  if (!cfCore) {
+    cfCore = await CFCore.create(
+      messaging,
+      store,
+      contractAddresses,
+      nodeConfig,
+      ethProvider,
+      signer,
+      lockService,
+      undefined,
+      logger,
+      false, // sync all client channels on start up
+    );
+  }
 
   // register any default middlewares
   cfCore.injectMiddleware(
@@ -216,12 +239,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         value: toBN(params.amount),
       });
       hash = tx.hash;
-      await tx.wait()
+      await tx.wait();
     } else {
       const erc20 = new Contract(params.assetId, tokenAbi, this.signer);
       const tx = await erc20.transfer(recipient, toBN(params.amount));
       hash = tx.hash;
-      await tx.wait()
+      await tx.wait();
     }
     return hash;
   };
