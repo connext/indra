@@ -1,11 +1,5 @@
-import {
-  EventNames,
-  IConnextClient,
-  IChannelSigner,
-  CF_METHOD_TIMEOUT,
-  WithdrawAppName,
-} from "@connext/types";
-import { ChannelSigner, delay, getRandomChannelSigner, stringify } from "@connext/utils";
+import { EventNames, IConnextClient, IChannelSigner, CF_METHOD_TIMEOUT } from "@connext/types";
+import { ChannelSigner, delay, getRandomChannelSigner } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
 import * as lolex from "lolex";
