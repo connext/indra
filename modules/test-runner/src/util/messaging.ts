@@ -120,10 +120,7 @@ const defaultOpts = (): TestMessagingConfig => {
       withdraw: defaultCount(),
     },
     count: defaultCount(),
-    signer: new ChannelSigner(
-      Wallet.createRandom().privateKey,
-      env.ethProviderUrl,
-    ),
+    signer: new ChannelSigner(Wallet.createRandom().privateKey, env.ethProviderUrl),
   };
 };
 
@@ -145,9 +142,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       messagingConfig: combineObjects(opts.messagingConfig, defaults.messagingConfig),
       count: combineObjects(opts.count, defaults.count),
       protocolDefaults: combineObjects(opts.protocolDefaults, defaults.protocolDefaults),
-      signer: typeof opts.signer === "string" 
-        ? new ChannelSigner(opts.signer) 
-        : opts.signer,
+      signer: typeof opts.signer === "string" ? new ChannelSigner(opts.signer) : opts.signer,
     };
     const getSignature = (msg: string) => this.options.signer.signMessage(msg);
 
