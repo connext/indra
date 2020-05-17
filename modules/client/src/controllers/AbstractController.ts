@@ -96,15 +96,10 @@ export abstract class AbstractController {
   ): void => {
     // check app id
     const data = message.data && message.data.data ? message.data.data : message.data || message;
-    if (data.appIdentityHash !== appIdentityHash) {
-      const msg = `Caught reject install event for different app ${stringify(
-        message,
-      )}, expected ${appIdentityHash}. This should not happen.`;
-      this.log.warn(msg);
-      return rej(new Error(msg));
+    if (data.appIdentityHash === appIdentityHash) {
+      return rej(new Error(`Install failed. Event data: ${stringify(message)}`));
     }
-
-    return rej(new Error(`Install failed. Event data: ${stringify(message)}`));
+    return; 
   };
 
   private cleanupInstallListeners = (boundReject: any, appIdentityHash: string): void => {
