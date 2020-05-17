@@ -52,19 +52,16 @@ export const requestCollateral = async (
   const log = new ColorfulLogger("RequestCollateral", env.logLevel);
   const tokenAddress = getAddressFromAssetId(assetId);
   const preCollateralBal = await client.getFreeBalance(tokenAddress);
-
+  log.debug(`client.requestCollateral() called`);
+  const start = Date.now();
+  if (!enforce) {
+    await client.requestCollateral(assetId);
+    log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
+    return;
+  }
   return new Promise(async (resolve, reject) => {
     log.debug(`client.requestCollateral() called`);
     const start = Date.now();
-    if (!enforce) {
-      try {
-        await client.requestCollateral(assetId);
-        log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
-        return resolve();
-      } catch (e) {
-        return reject(e);
-      }
-    }
     // watch for balance change on uninstall
     try {
       await Promise.race([

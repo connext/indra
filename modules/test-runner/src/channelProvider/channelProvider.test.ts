@@ -1,8 +1,4 @@
-import {
-  EventNames,
-  IConnextClient,
-  CONVENTION_FOR_ETH_ASSET_ID,
-} from "@connext/types";
+import { EventNames, IConnextClient, CONVENTION_FOR_ETH_ASSET_ID } from "@connext/types";
 import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { AddressZero, One } from "ethers/constants";
 
@@ -30,7 +26,7 @@ describe("ChannelProvider", () => {
     client = await createClient({ id: "A" });
     remoteClient = await createRemoteClient(await createChannelProvider(client));
     nodeIdentifier = client.config.nodeIdentifier;
-    nodeSignerAddress = client.nodeSignerAddress;;
+    nodeSignerAddress = client.nodeSignerAddress;
     tokenAddress = client.config.contractAddresses.Token;
   });
 
@@ -67,13 +63,13 @@ describe("ChannelProvider", () => {
     await clientB.requestCollateral(tokenAddress);
 
     const transferFinished = Promise.all([
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         await clientB.messaging.subscribe(
           `${client.nodeIdentifier}.channel.*.app-instance.*.uninstall`,
           resolve,
         );
       }),
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async () => {
           resolve();
         });

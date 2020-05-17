@@ -1,5 +1,10 @@
-import { STORE_SCHEMA_VERSION, StoredAppChallengeStatus, StateChannelJSON, SetStateCommitmentJSON } from "@connext/types";
-import { toBNJson } from "@connext/utils";
+import {
+  STORE_SCHEMA_VERSION,
+  StoredAppChallengeStatus,
+  StateChannelJSON,
+  SetStateCommitmentJSON,
+} from "@connext/types";
+import { toBNJson, toBN, getRandomBytes32 } from "@connext/utils";
 
 import {
   expect,
@@ -398,6 +403,36 @@ describe("ConnextStore", () => {
           await store.saveAppChallenge(value);
           expect(await store.getAppChallenge(value.identityHash)).to.containSubset(value);
         }
+        await store.clear();
+      });
+    });
+
+    storeTypes.forEach((type) => {
+      it(`${type} -- should be able to handle concurrent writes properly`, async () => {
+        const value0 = { ...TEST_STORE_APP_CHALLENGE };
+        const value1 = { ...value0, versionNumber: toBN(value0.versionNumber).add(1) };
+        const value2 = { ...value0, status: StoredAppChallengeStatus.IN_ONCHAIN_PROGRESSION };
+        const value3 = { ...value0, identityHash: getRandomBytes32() };
+        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        await store.clear();
+        // write all values concurrently
+        await Promise.all([
+          store.createChallengeUpdatedEvent(value0 as any),
+          store.saveAppChallenge(value0),
+          store.createChallengeUpdatedEvent(value1 as any),
+          store.saveAppChallenge(value1),
+          store.saveAppChallenge(value2),
+          store.createChallengeUpdatedEvent(value3 as any),
+          store.saveAppChallenge(value3),
+        ]);
+        // assert final stored is value with highest nonce
+        expect(await store.getAppChallenge(value0.identityHash)).to.containSubset(value1);
+        expect(await store.getAppChallenge(value3.identityHash)).to.containSubset(value3);
+        expect(await store.getChallengeUpdatedEvents(value3.identityHash)).to.containSubset([
+          value3,
+        ]);
+        const events = await store.getChallengeUpdatedEvents(value0.identityHash);
+        expect(events.sort()).to.containSubset([value0, value1].sort());
         await store.clear();
       });
     });

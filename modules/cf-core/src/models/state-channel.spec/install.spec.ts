@@ -2,7 +2,7 @@ import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext
 import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 
-import { createAppInstanceForTest } from "../../testing/utils";
+import { createAppInstanceForTest, createAppInstanceProposalForTest } from "../../testing/utils";
 import { generateRandomNetworkContext } from "../../testing/mocks";
 
 import { StateChannel } from "../state-channel";
@@ -33,6 +33,7 @@ describe("StateChannel::uninstallApp", () => {
     );
 
     const appInstance = createAppInstanceForTest(sc1);
+    sc1 = sc1.addProposal(createAppInstanceProposalForTest(appInstance.identityHash, sc1))
 
     appIdentityHash = appInstance.identityHash;
 

@@ -98,20 +98,22 @@ export class UninstallController extends NodeController {
       appIdentityHash,
     );
 
-    return { appIdentityHash };
+    return { appIdentityHash, multisigAddress: stateChannel.multisigAddress };
   }
 
   protected async afterExecution(
     requestHandler: RequestHandler,
-    params: MethodParams.TakeAction,
+    params: MethodParams.Uninstall,
+    returnValue: MethodResults.Uninstall,
   ): Promise<void> {
     const { router, publicIdentifier } = requestHandler;
     const { appIdentityHash } = params;
+    const {  multisigAddress } = returnValue;
 
     const msg = {
       from: publicIdentifier,
       type: EventNames.UNINSTALL_EVENT,
-      data: { appIdentityHash },
+      data: { appIdentityHash, multisigAddress },
     } as UninstallMessage;
 
     await router.emit(msg.type, msg, `outgoing`);
