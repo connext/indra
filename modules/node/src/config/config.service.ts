@@ -1,10 +1,5 @@
 import { ChannelSigner } from "@connext/utils";
-import {
-  ContractAddresses,
-  IChannelSigner,
-  MessagingConfig,
-  SwapRate,
-} from "@connext/types";
+import { ContractAddresses, IChannelSigner, MessagingConfig, SwapRate } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -37,10 +32,7 @@ export class ConfigService implements OnModuleInit {
   constructor() {
     this.envConfig = process.env;
     this.ethProvider = new JsonRpcProvider(this.getEthRpcUrl());
-    this.signer = new ChannelSigner(
-      this.getPrivateKey(),
-      this.getEthRpcUrl(),
-    );
+    this.signer = new ChannelSigner(this.getPrivateKey(), this.getEthRpcUrl());
   }
 
   get(key: string): string {
@@ -119,11 +111,11 @@ export class ConfigService implements OnModuleInit {
 
     if (currentChainId !== 1) {
       const tokenConfig = await this.getTestnetTokenConfig();
-      const configIndex = tokenConfig.findIndex(tc =>
-        tc.find(t => t.chainId === currentChainId && t.address === tokenAddress),
+      const configIndex = tokenConfig.findIndex((tc) =>
+        tc.find((t) => t.chainId === currentChainId && t.address === tokenAddress),
       );
       const configExists =
-        configIndex < 0 ? undefined : tokenConfig[configIndex].find(tc => tc.chainId === 1);
+        configIndex < 0 ? undefined : tokenConfig[configIndex].find((tc) => tc.chainId === 1);
       tokenAddress = configExists ? configExists.address : tokenAddress;
     }
 
@@ -147,7 +139,7 @@ export class ConfigService implements OnModuleInit {
 
   async getHardcodedRate(from: string, to: string): Promise<string | undefined> {
     const swaps = this.getAllowedSwaps();
-    const swap = swaps.find(s => s.from === from && s.to === to);
+    const swap = swaps.find((s) => s.from === from && s.to === to);
     if (swap && swap.rate) {
       return swap.rate;
     } else {
@@ -222,31 +214,24 @@ export class ConfigService implements OnModuleInit {
   async getDefaultRebalanceProfile(
     assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
-    const tokenAddress = await this.getTokenAddress();
-    switch (assetId) {
-      case AddressZero:
-        return {
-          assetId: AddressZero,
-          channels: [],
-          id: 0,
-          lowerBoundCollateralize: parseEther(`0.05`),
-          upperBoundCollateralize: parseEther(`0.1`),
-          lowerBoundReclaim: Zero,
-          upperBoundReclaim: Zero,
-        };
-      case tokenAddress:
-        return {
-          assetId: AddressZero,
-          channels: [],
-          id: 0,
-          lowerBoundCollateralize: parseEther(`5`),
-          upperBoundCollateralize: parseEther(`20`),
-          lowerBoundReclaim: Zero,
-          upperBoundReclaim: Zero,
-        };
-      default:
-        return undefined;
+    if (assetId === AddressZero) {
+      return {
+        assetId: AddressZero,
+        channels: [],
+        id: 0,
+        collateralizeThreshold: parseEther(`0.05`),
+        target: parseEther(`0.1`),
+        reclaimThreshold: Zero,
+      };
     }
+    return {
+      assetId,
+      channels: [],
+      id: 0,
+      collateralizeThreshold: parseEther(`5`),
+      target: parseEther(`20`),
+      reclaimThreshold: Zero,
+    };
   }
 
   async onModuleInit(): Promise<void> {}
