@@ -44,7 +44,7 @@ export abstract class AbstractController {
     const proposeRes = await Promise.race([
       this.connext.proposeInstallApp(params),
       delayAndThrow(
-        CF_METHOD_TIMEOUT,
+        CF_METHOD_TIMEOUT + 1000,
         `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
       ),
     ]);
@@ -57,7 +57,7 @@ export abstract class AbstractController {
       // 1676 ms TODO: why does this step take so long?
       await Promise.race([
         delayAndThrow(
-          CF_METHOD_TIMEOUT,
+          CF_METHOD_TIMEOUT + 1000,
           `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
         ),
         new Promise((res: () => any, rej: () => any): void => {
