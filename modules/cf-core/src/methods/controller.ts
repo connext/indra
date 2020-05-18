@@ -2,7 +2,7 @@ import { MethodName, MethodParam, MethodResult } from "@connext/types";
 import { Controller } from "rpc-server";
 
 import { RequestHandler } from "../request-handler";
-import { ColorfulLogger, logTime, delay } from "@connext/utils";
+import { ColorfulLogger, logTime } from "@connext/utils";
 
 export abstract class NodeController extends Controller {
   public static readonly methodName: MethodName;
