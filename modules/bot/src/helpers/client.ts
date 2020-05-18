@@ -1,10 +1,10 @@
-import { ColorfulLogger } from "@connext/utils";
-import { getFileStore } from "@connext/store";
 import { connect } from "@connext/client";
-import { AddressZero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
-import { JsonRpcProvider } from "ethers/providers";
+import { getFileStore } from "@connext/store";
 import { IConnextClient } from "@connext/types";
+import { ColorfulLogger } from "@connext/utils";
+import { AddressZero } from "ethers/constants";
+import { JsonRpcProvider } from "ethers/providers";
+import { BigNumber } from "ethers/utils";
 
 export const createClient = async (
   privateKey: string,

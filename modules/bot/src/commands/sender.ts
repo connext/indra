@@ -1,15 +1,19 @@
-import { Argv } from "yargs";
+import { EventNames, EventPayloads, ConditionalTransferTypes, PublicParams } from "@connext/types";
 import {
   ColorfulLogger,
   getRandomBytes32,
   getSignerAddressFromPublicIdentifier,
+  getPublicIdentifierFromPublicKey,
+  getPublicKeyError,
+  getPublicIdentifierError,
   stringify,
 } from "@connext/utils";
-import { parseEther } from "ethers/utils";
-import { createClient } from "../helpers/client";
-import { EventNames, EventPayloads, ConditionalTransferTypes, PublicParams } from "@connext/types";
 import { utils } from "ethers";
 import { AddressZero } from "ethers/constants";
+import { parseEther } from "ethers/utils";
+import { Argv } from "yargs";
+
+import { createClient } from "../helpers/client";
 
 export default {
   command: "sender",
@@ -27,6 +31,10 @@ export default {
       })
       .option("receiver-identifier", {
         description: "Receiver identifier",
+        type: "string",
+      })
+      .option("receiver-public-key", {
+        description: "Receiver public key",
         type: "string",
       })
       .demandOption(["private-key"]);
@@ -51,11 +59,30 @@ export default {
       messagingUrl!,
       argv.logLevel,
     );
-    if (!argv.receiver) {
-      log.warn(`No receiver configured, returning`);
+
+    // Verify/calculate provided receiver public identifier
+    const idError = getPublicIdentifierError(argv.receiverIdentifier);
+    if (argv.receiverIdentifier && idError) {
+      log.error(idError);
+      return;
+    }
+    const keyError = getPublicKeyError(argv.receiverPublicKey);
+    if (argv.receiverPublicKey && keyError) {
+      log.error(keyError);
       return;
     }
 
+    let receiverIdentifier =
+      argv.receiverIdentifier || (
+        argv.receiverPublicKey ? getPublicIdentifierFromPublicKey(argv.receiverPublicKey) : null
+      );
+
+    if (!receiverIdentifier) {
+      log.warn(`No receiver identifier or public key was provided, returning`);
+      return;
+    }
+
+    // Register sender listeners to send a new payment once prev one finishes
     client.on(
       EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
       async (eventData: EventPayloads.LinkedTransferUnlocked) => {
@@ -92,7 +119,7 @@ export default {
       },
     );
 
-    const receiverSigner = getSignerAddressFromPublicIdentifier(argv.receiver);
+    const receiverSigner = getSignerAddressFromPublicIdentifier(receiverIdentifier);
     const paymentId = getRandomBytes32();
     log.info(
       `Send conditional transfer ${paymentId} for ${utils.formatEther(TRANSFER_AMT)} ETH to ${

@@ -1,9 +1,10 @@
-import { Argv } from "yargs";
+import { EventNames, EventPayloads, ConditionalTransferTypes, PublicParams } from "@connext/types";
 import { ColorfulLogger, stringify } from "@connext/utils";
 import { AddressZero } from "ethers/constants";
 import { parseEther, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
+import { Argv } from "yargs";
+
 import { createClient } from "../helpers/client";
-import { EventNames, EventPayloads, ConditionalTransferTypes, PublicParams } from "@connext/types";
 
 export default {
   command: "receiver",
