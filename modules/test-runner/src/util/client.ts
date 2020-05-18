@@ -6,6 +6,7 @@ import {
   IChannelSigner,
   IConnextClient,
   ProtocolParam,
+  ProtocolNames,
 } from "@connext/types";
 import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
 import { expect } from "chai";
@@ -15,7 +16,7 @@ import tokenAbi from "human-standard-token-abi";
 import { ETH_AMOUNT_LG, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
 import { ethWallet } from "./ethprovider";
-import { MessageCounter, TestMessagingService } from "./messaging";
+import { TestMessagingService, SendReceiveCounter, RECEIVED, SEND, NO_LIMIT } from "./messaging";
 
 export const createClient = async (
   opts: Partial<ClientOptions & { id: string }> = {},
@@ -92,9 +93,8 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
 };
 
 export type ClientTestMessagingInputOpts = {
-  ceiling: Partial<MessageCounter>; // set ceiling of sent/received
-  protocol: string; // use "any" to limit any messages by count
-  delay: Partial<MessageCounter>; // ms delay or sent callbacks
+  ceiling: Partial<SendReceiveCounter>; // set ceiling of sent/received
+  protocol: keyof typeof ProtocolNames | "any"; // use "any" to limit any messages by count
   signer: IChannelSigner;
   params: Partial<ProtocolParam>;
 };
@@ -102,41 +102,51 @@ export type ClientTestMessagingInputOpts = {
 export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
-  const { protocol, ceiling, delay, signer: signerOpts, params } = opts;
+  const { protocol, ceiling, signer: signerOpts, params } = opts;
   const signer = signerOpts || getRandomChannelSigner(env.ethProviderUrl);
-  const messageOptions: any = {};
   // no defaults specified, exit early
   if (Object.keys(opts).length === 0) {
     const messaging = new TestMessagingService({ signer: signer as ChannelSigner });
-    expect(messaging.install.ceiling).to.be.undefined;
-    expect(messaging.count.received).to.be.equal(0);
-    expect(messaging.count.sent).to.be.equal(0);
+    const emptyCount = { [SEND]: 0, [RECEIVED]: 0 };
+    const noLimit = { [SEND]: NO_LIMIT, [RECEIVED]: NO_LIMIT };
+    expect(messaging.installCount).to.contain(emptyCount);
+    expect(messaging.installLimit.ceiling).to.contain(noLimit);
+    expect(messaging.installLimit.params).to.be.undefined;
+    expect(messaging.apiCount).to.containSubset(emptyCount);
     return createClient({ messaging, signer });
   }
-  if (protocol === "any") {
+  let messageOptions = {} as any;
+  if (protocol === "any" && ceiling) {
     // assign the ceiling for the general message count
-    messageOptions.count = { ceiling, delay };
+    // by default, only use the send and receive methods here
+    messageOptions.apiLimits = {
+      [SEND]: { ceiling: ceiling[SEND] || NO_LIMIT },
+      [RECEIVED]: { ceiling: ceiling[RECEIVED] || NO_LIMIT },
+    };
   } else if (protocol && typeof protocol === "string") {
     // assign the protocol defaults struct
-    messageOptions.protocolDefaults = {
-      [protocol]: {
+    messageOptions.protocolLimits = {
+      [protocol!]: {
         ceiling,
-        delay,
         params,
       },
     };
   }
   const messaging = new TestMessagingService({ ...messageOptions, signer });
   // verification of messaging settings
-  const expected = {
-    sent: 0,
-    received: 0,
+  const expectedCount = {
+    [SEND]: 0,
+    [RECEIVED]: 0,
+  };
+  const expectedLimits = {
     ceiling,
-    delay,
   };
   !protocol || protocol === "any"
-    ? expect(messaging.count).to.containSubset(expected)
-    : expect(messaging[protocol]).to.containSubset(expected);
-  expect(messaging.options).to.containSubset(messageOptions);
+    ? expect(messaging.apiCount).to.containSubset(expectedCount)
+    : expect(messaging.protocolCount[protocol]).to.containSubset(expectedCount);
+  !protocol || protocol === "any"
+    ? expect(messaging.apiLimits).to.containSubset(expectedLimits)
+    : expect(messaging.protocolLimits[protocol]).to.containSubset({ ...expectedLimits, params });
+  expect(messaging.providedOptions).to.containSubset(messageOptions);
   return createClient({ messaging, signer: signer });
 };
