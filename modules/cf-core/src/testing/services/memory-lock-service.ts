@@ -1,27 +1,27 @@
 import { ILockService } from "@connext/types";
+import { Mutex, MutexInterface } from "async-mutex";
 
-import { Lock } from "./lock";
+type InternalLock = {
+  lock: Mutex;
+  releaser: MutexInterface.Releaser;
+};
 
 export class MemoryLockService implements ILockService {
-  public readonly locks: Map<string, Lock> = new Map<string, Lock>();
+  public readonly locks: Map<string, InternalLock> = new Map();
 
-  async acquireLock(
-    lockName: string,
-  ): Promise<any> {
-    let lock;
+  async acquireLock(lockName: string): Promise<any> {
+    let lock: Mutex;
     if (!this.locks.has(lockName)) {
-      this.locks.set(lockName, new Lock(lockName));
-      lock = this.locks.get(lockName)!;
+      lock = new Mutex();
+    } else {
+      lock = this.locks.get(lockName)!.lock;
     }
-    return lock.acquireLock();
+    const releaser = await lock.acquire();
+    this.locks.set(lockName, { lock, releaser });
   }
 
-  async releaseLock(
-    lockName: string,
-    lockValue: string,
-  ): Promise<any> {
-    const lock = this.locks.get(lockName)
-    //@ts-ignore
-    return lock.releaseLock(lockName, lockValue);
+  async releaseLock(lockName: string): Promise<void> {
+    const lock = this.locks.get(lockName);
+    return lock!.releaser();
   }
 }
