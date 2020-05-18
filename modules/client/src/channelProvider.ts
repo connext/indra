@@ -33,6 +33,7 @@ import {
   delayAndThrow,
   getPublicKeyFromPublicIdentifier,
   toBN,
+  delay,
 } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -352,24 +353,24 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       multisigAddress = channel.multisigAddress;
     } else {
       this.logger.debug("no channel detected, creating channel..");
-      const creationEventData = await Promise.race([
-        delayAndThrow(30_000, "Create channel event not fired within 30s"),
-        new Promise(
-          async (res: any): Promise<any> => {
-            this.cfCore.once(
-              EventNames.CREATE_CHANNEL_EVENT,
-              (data: CreateChannelMessage): void => {
-                this.logger.debug(`Received CREATE_CHANNEL_EVENT`);
-                res(data.data);
-              },
-            );
+      const creationEventData = await new Promise(async (resolve, reject) => {
+        this.cfCore.once(EventNames.CREATE_CHANNEL_EVENT, (data: CreateChannelMessage): void => {
+          this.logger.debug(`Received CREATE_CHANNEL_EVENT`);
+          return resolve(data.data);
+        });
 
-            // FYI This continues async in the background after CREATE_CHANNEL_EVENT is recieved
-            const creationData = await this.node.createChannel();
-            this.logger.debug(`created channel, transaction: ${stringify(creationData)}`);
-          },
-        ),
-      ]);
+        try {
+          const creationData = await this.node.createChannel();
+          this.logger.debug(`created channel, transaction: ${stringify(creationData)}`);
+        } catch (e) {
+          return reject(new Error(stringify(e)));
+        }
+        await delay(20_000);
+        return reject(`Could not create channel within 20s`);
+      });
+      if (!creationEventData) {
+        throw new Error(`Could not create channel within 20s`);
+      }
       multisigAddress = (creationEventData as MethodResults.CreateChannel).multisigAddress;
     }
 

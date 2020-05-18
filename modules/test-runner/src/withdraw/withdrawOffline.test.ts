@@ -1,4 +1,11 @@
-import { EventNames, IConnextClient, IChannelSigner, CF_METHOD_TIMEOUT, IClientStore } from "@connext/types";
+import {
+  EventNames,
+  IConnextClient,
+  IChannelSigner,
+  CF_METHOD_TIMEOUT,
+  IClientStore,
+  ProtocolNames,
+} from "@connext/types";
 import { ChannelSigner, delay, getRandomChannelSigner } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
@@ -30,6 +37,8 @@ describe("Withdraw offline tests", () => {
   let signer: IChannelSigner;
   let store: IClientStore;
 
+  const addr = addressBook[4447].WithdrawApp.address;
+
   const createAndFundChannel = async (
     messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
     amount: BigNumber = ETH_AMOUNT_SM,
@@ -50,17 +59,21 @@ describe("Withdraw offline tests", () => {
     return client;
   };
 
-  const recreateClientAndRetryWithdraw = async (client: IConnextClient, store: IClientStore, withdrawParams: any) => {
+  const recreateClientAndRetryWithdraw = async (
+    client: IConnextClient,
+    store: IClientStore,
+    withdrawParams: any,
+  ) => {
     const { amount, assetId, recipient } = withdrawParams;
-    client.messaging.disconnect()
-    const newClient = await createClient({signer, store})
+    client.messaging.disconnect();
+    const newClient = await createClient({ signer, store });
 
     const fbBefore = (await newClient.getFreeBalance())[newClient.signerAddress];
     // Check that client can recover and continue
-    await withdrawFromChannel(newClient, amount, assetId, recipient)
+    await withdrawFromChannel(newClient, amount, assetId, recipient);
     const fbAfter = (await newClient.getFreeBalance())[newClient.signerAddress];
-    expect((fbBefore.sub(fbAfter)).eq(amount)).to.be.true;
-  }
+    expect(fbBefore.sub(fbAfter).eq(amount)).to.be.true;
+  };
 
   beforeEach(async () => {
     store = getMemoryStore();
@@ -79,10 +92,10 @@ describe("Withdraw offline tests", () => {
   });
 
   it("client proposes withdrawal but doesn't receive a response from node", async () => {
-    const addr = addressBook[4447].WithdrawApp.address;    
+    const addr = addressBook[4447].WithdrawApp.address;
     await createAndFundChannel({
-      ceiling: { received: 1 },
-      protocol: "propose",
+      ceiling: { [SEND]: 0 },
+      protocol: ProtocolNames.propose,
       params: { appDefinition: addr },
     });
 
@@ -107,36 +120,6 @@ describe("Withdraw offline tests", () => {
     //   amount: ZERO_ZERO_ZERO_FIVE_ETH,
     //   assetId: AddressZero,
     // })
-  });
-
-  it("client proposes withdrawal and then goes offline before node responds", async () => {
-    const addr = addressBook[4447].WithdrawApp.address;
-    await createAndFundChannel({
-      ceiling: { sent: 1 },
-      protocol: "propose",
-      params: { appDefinition: addr },
-    });
-
-    (client.messaging as TestMessagingService).on(SEND, async (msg: MessagingEventData) => {
-      if (getProtocolFromData(msg) === "propose") {
-        const { appDefinition } = getParamsFromData(msg) || {};
-        if (appDefinition !== addr) {
-          return;
-        }
-        // wait for message to be sent (happens after event thrown)
-        await delay(500);
-        clock.tick(CF_METHOD_TIMEOUT + 1000);
-      }
-    });
-
-    await expect(
-      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
-    ).to.be.rejectedWith(`proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`);
-
-    await recreateClientAndRetryWithdraw(client, store, {
-      amount: ZERO_ZERO_ZERO_FIVE_ETH,
-      assetId: AddressZero,
-    })
   });
 
   it.skip("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
