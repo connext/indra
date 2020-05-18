@@ -130,6 +130,7 @@ describe("Deposit offline tests", () => {
     // preconfigured delay
     client = await createClientWithMessagingLimits({
       protocol: ProtocolNames.propose,
+      ceiling: { [SEND]: 0 },
       params: { appDefinition: addressBook[4447].DepositApp.address },
     });
 
@@ -149,6 +150,7 @@ describe("Deposit offline tests", () => {
     // with a preconfigured delay
     client = await createClientWithMessagingLimits({
       protocol: ProtocolNames.propose,
+      ceiling: { [RECEIVED]: 0 },
       params: { appDefinition: addressBook[4447].DepositApp.address },
     });
 

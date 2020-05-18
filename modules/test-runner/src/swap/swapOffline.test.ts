@@ -19,6 +19,9 @@ import {
   swapAsset,
   TestMessagingService,
   TOKEN_AMOUNT,
+  UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED,
+  UNINSTALL_SUPPORTED_APP_COUNT_SENT,
+  INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
 } from "../util";
 import { addressBook } from "@connext/contracts";
 
@@ -58,8 +61,6 @@ const fundChannelAndSwap = async (opts: {
   };
   await fundChannel(client, input.amount, input.assetId);
   await requestCollateral(client, output.assetId);
-  // swap call back
-  const swapCb = async () => await swapAsset(client, input, output, client.nodeSignerAddress);
   // try to swap, first check if test must be fast forwarded
   if (fastForward) {
     // fast forward the clock for tests with delay
@@ -81,12 +82,14 @@ const fundChannelAndSwap = async (opts: {
 
   // check if its a failure case
   if (failsWith) {
-    await expect(swapCb()).to.be.rejectedWith(failsWith);
+    await expect(swapAsset(client, input, output, client.nodeSignerAddress)).to.be.rejectedWith(
+      failsWith,
+    );
     return;
   }
 
   // otherwise execute cb
-  await swapCb();
+  await swapAsset(client, input, output, client.nodeSignerAddress);
 };
 
 describe("Swap offline", () => {
@@ -106,7 +109,7 @@ describe("Swap offline", () => {
   it("Bot A tries to install swap but there’s no response from node", async () => {
     // 3 app installs expected (coin balance x2, swap)
     const messagingConfig = {
-      ceiling: { [RECEIVED]: 0 },
+      // ceiling: { [RECEIVED]: 0 },
       protocol: ProtocolNames.install,
       params: ({
         appInterface: { addr: swapAppAddr },
@@ -127,12 +130,10 @@ describe("Swap offline", () => {
 
   it("Bot A installs swap app successfully but then node goes offline for uninstall", async () => {
     // does not receive messages, node is offline
+    const count = UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED + UNINSTALL_SUPPORTED_APP_COUNT_SENT + 1;
     const messagingConfig = {
-      ceiling: { [RECEIVED]: 0 },
+      ceiling: { [RECEIVED]: count },
       protocol: ProtocolNames.uninstall,
-      params: ({
-        appInterface: { addr: swapAppAddr },
-      } as unknown) as ProtocolParams.Install,
     };
     // deposit eth into channel and swap for token
     // go offline during swap, should fail with swap timeout
@@ -148,8 +149,9 @@ describe("Swap offline", () => {
 
   it("Bot A install swap app successfully but then goes offline for uninstall", async () => {
     // does not receive messages, node is offline
+    const count = INSTALL_SUPPORTED_APP_COUNT_RECEIVED + UNINSTALL_SUPPORTED_APP_COUNT_SENT + 1;
     const messagingConfig = {
-      ceiling: { [SEND]: 0 },
+      ceiling: { [SEND]: count },
       protocol: ProtocolNames.uninstall,
       params: ({
         appInterface: { addr: swapAppAddr },

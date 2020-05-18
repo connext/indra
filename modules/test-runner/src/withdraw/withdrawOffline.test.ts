@@ -1,4 +1,10 @@
-import { EventNames, IConnextClient, IChannelSigner, CF_METHOD_TIMEOUT } from "@connext/types";
+import {
+  EventNames,
+  IConnextClient,
+  IChannelSigner,
+  CF_METHOD_TIMEOUT,
+  ProtocolNames,
+} from "@connext/types";
 import { ChannelSigner, delay, getRandomChannelSigner } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
@@ -27,6 +33,8 @@ describe("Withdraw offline tests", () => {
   let clock: any;
   let client: IConnextClient;
   let signer: IChannelSigner;
+
+  const addr = addressBook[4447].WithdrawApp.address;
 
   const createAndFundChannel = async (
     messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
@@ -63,10 +71,9 @@ describe("Withdraw offline tests", () => {
   });
 
   it("client proposes withdrawal but doesn't receive a response from node", async () => {
-    const addr = addressBook[4447].WithdrawApp.address;
     await createAndFundChannel({
-      ceiling: { received: 1 },
-      protocol: "propose",
+      ceiling: { [SEND]: 0 },
+      protocol: ProtocolNames.propose,
       params: { appDefinition: addr },
     });
 
@@ -78,31 +85,6 @@ describe("Withdraw offline tests", () => {
         }
         clock.tick(89_000);
         return;
-      }
-    });
-
-    await expect(
-      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
-    ).to.be.rejectedWith(`proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`);
-  });
-
-  it("client proposes withdrawal and then goes offline before node responds", async () => {
-    const addr = addressBook[4447].WithdrawApp.address;
-    await createAndFundChannel({
-      ceiling: { sent: 1 },
-      protocol: "propose",
-      params: { appDefinition: addr },
-    });
-
-    (client.messaging as TestMessagingService).on(SEND, async (msg: MessagingEventData) => {
-      if (getProtocolFromData(msg) === "propose") {
-        const { appDefinition } = getParamsFromData(msg) || {};
-        if (appDefinition !== addr) {
-          return;
-        }
-        // wait for message to be sent (happens after event thrown)
-        await delay(500);
-        clock.tick(9_000);
       }
     });
 

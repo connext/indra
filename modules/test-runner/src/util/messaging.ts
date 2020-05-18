@@ -10,7 +10,7 @@ import {
   ProtocolName,
   ProtocolNames,
 } from "@connext/types";
-import { ChannelSigner, ColorfulLogger, stringify } from "@connext/utils";
+import { ChannelSigner, ColorfulLogger, stringify, isBN } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { Wallet } from "ethers";
 
@@ -424,25 +424,45 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   ): boolean {
     // get the params from the message and our limits
     const msgParams = getParamsFromData(msg);
-    const { ceiling, params } = this.protocolLimits[protocol];
-    const hasSpecifiedParam = () => {
-      if (!params || msgParams) {
+    const { ceiling: indexedCeiling, params } = this.protocolLimits[protocol];
+
+    const ceiling =
+      (indexedCeiling || {})[apiType] === undefined || (indexedCeiling || {})[apiType] === null
+        ? NO_LIMIT
+        : indexedCeiling[apiType];
+
+    const evaluateCeiling = () => {
+      if (this.protocolCounter[protocol][apiType] >= ceiling) {
         return false;
       }
-      const valuesSet = new Set(...Object.values<any>(msgParams), ...Object.values<any>(params!));
-      return [...valuesSet].length === Object.values(msgParams).length;
+      this.protocolCounter[protocol][apiType]++;
+      return this.protocolCounter[protocol][apiType] < ceiling;
     };
-    if (params && msgParams && !hasSpecifiedParam()) {
-      // params are specified, but they are not included in the
-      // message, has not reached limit
-      return true;
+
+    if (!params || !msgParams) {
+      // nothing specified, applies to all
+      return evaluateCeiling();
     }
-    // no specified params/not included, check ceiling
-    const count = this.protocolCounter[protocol][apiType];
-    if (count >= ceiling[apiType]) {
-      return false;
+
+    let containsVal = false;
+    Object.entries(msgParams).forEach(([key, value]) => {
+      if (!params[key]) {
+        return;
+      }
+      let unnestedVal = value as any;
+      let unnestedComp = params[key];
+      while (typeof unnestedVal === "object" && !isBN(unnestedVal)) {
+        const [key] = Object.entries(unnestedVal as object).pop() as any;
+        unnestedVal = unnestedVal[key];
+        unnestedComp = unnestedComp[key];
+      }
+      containsVal = unnestedVal.toString() === unnestedComp.toString();
+    });
+    if (containsVal) {
+      return evaluateCeiling();
     }
-    this.protocolCounter[protocol][apiType]++;
-    return this.protocolCounter[protocol][apiType] < ceiling[apiType];
+    // otherwise dont count and return true (msg does not include)
+    // user-specificed params
+    return true;
   }
 }
