@@ -38,7 +38,7 @@ export class UninstallController extends NodeController {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
-    return [sc.multisigAddress, appIdentityHash];
+    return [sc.multisigAddress];
   }
 
   protected async beforeExecution(

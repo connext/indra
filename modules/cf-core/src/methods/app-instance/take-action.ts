@@ -40,7 +40,7 @@ export class TakeActionController extends NodeController {
     if (!app) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
-    return [app.multisigAddress, params.appIdentityHash];
+    return [app.multisigAddress];
   }
 
   protected async beforeExecution(
