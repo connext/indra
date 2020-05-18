@@ -245,7 +245,7 @@ describe("HashLock Transfers", () => {
     } as NodeResponses.GetHashLockTransfer);
   });
 
-  it.only("gets a completed hashlock transfer by lock hash", async () => {
+  it("gets a completed hashlock transfer by lock hash", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
