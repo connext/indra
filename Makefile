@@ -154,6 +154,9 @@ test-backwards-compatibility: pull-backwards-compatible
 test-bot: bot
 	bash ops/test/bot.sh
 
+test-bot-farm: bot
+	bash ops/test/bot.sh 3
+
 test-cf: cf-core
 	bash ops/test/cf.sh
 
