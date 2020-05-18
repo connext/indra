@@ -29,13 +29,14 @@ export default {
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
     const NAME = "Receiver";
+    const id = "1";
     const TRANSFER_AMT = parseEther("0.01");
     const ethUrl = process.env.INDRA_ETH_RPC_URL;
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
 
-    const log = new ColorfulLogger(NAME, 3, true, NAME);
-    console.log(argv);
+    const log = new ColorfulLogger(NAME, 3, true, id);
+    log.info(JSON.stringify(argv));
 
     const client = await createClient(
       argv.privateKey,
