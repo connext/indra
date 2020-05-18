@@ -32,15 +32,15 @@ export class TakeActionController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_takeAction)
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockNames(
+  protected async getRequiredLockName(
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
-  ): Promise<string[]> {
+  ): Promise<string> {
     const app = await requestHandler.store.getAppInstance(params.appIdentityHash);
     if (!app) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
-    return [app.multisigAddress];
+    return app.multisigAddress;
   }
 
   protected async beforeExecution(

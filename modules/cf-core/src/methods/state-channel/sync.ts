@@ -20,11 +20,11 @@ export class SyncController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_sync)
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockNames(
+  protected async getRequiredLockName(
     requestHandler: RequestHandler,
     params: MethodParams.Sync,
-  ): Promise<string[]> {
-    return [params.multisigAddress];
+  ): Promise<string> {
+    return params.multisigAddress;
   }
 
   protected async executeMethodImplementation(

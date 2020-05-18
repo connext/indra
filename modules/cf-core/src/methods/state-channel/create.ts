@@ -30,11 +30,11 @@ export class CreateChannelController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_create)
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockNames(
+  protected async getRequiredLockName(
     requestHandler: RequestHandler,
     params: MethodParams.CreateChannel,
-  ): Promise<string[]> {
-    return [`${MethodNames.chan_create}:${params.owners.sort().toString()}`];
+  ): Promise<string> {
+    return `${MethodNames.chan_create}:${params.owners.sort().toString()}`;
   }
 
   protected async executeMethodImplementation(
