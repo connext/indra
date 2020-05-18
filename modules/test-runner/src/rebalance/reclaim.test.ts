@@ -10,7 +10,7 @@ import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 import { getNatsClient } from "../util/nats";
 import { ERC20 } from "@connext/contracts";
 
-describe.only("Reclaim", () => {
+describe("Reclaim", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
