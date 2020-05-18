@@ -15,6 +15,7 @@ import axios, { AxiosResponse } from "axios";
 import { Wallet } from "ethers";
 
 import { env } from "./env";
+import { combineObjects } from "./misc";
 
 const log = new ColorfulLogger("Messaging", env.logLevel);
 
@@ -200,8 +201,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     this.providedOptions = opts;
     const defaults = defaultOpts();
     this.options = {
-      ...defaults,
-      ...opts,
+      ...combineObjects(opts, defaults),
       signer:
         opts.signer && typeof opts.signer === "string"
           ? new ChannelSigner(opts.signer, env.ethProviderUrl)
@@ -383,7 +383,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     return this.connection.publish(subject, data);
   }
 
-  async request(subject: string, timeout: number, data: object): Promise<any> {
+  request(subject: string, timeout: number, data: object): Promise<any> {
     // make sure that client is allowed to send message
     // note: when sending via node.ts uses request
     // make sure that client is allowed to send message
@@ -412,13 +412,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   private emitEventAndIncrementApiCount(event: MessagingEvent, data: MessagingEventData): boolean {
     this.emit(event, data);
     this.apiCounter[event]++;
-    const limit = this.apiLimits[event]?.ceiling;
-    if (limit && this[event] >= limit) {
-      // should halt execution after event emission
-      return false;
-    }
-    // no limit or not reached, continue
-    return true;
+    return this.apiCounter[event] < this.apiLimits[event].ceiling;
   }
 
   // returns true if the callback should continue, false if the protocol
@@ -432,6 +426,9 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     const msgParams = getParamsFromData(msg);
     const { ceiling, params } = this.protocolLimits[protocol];
     const hasSpecifiedParam = () => {
+      if (!params || msgParams) {
+        return false;
+      }
       const valuesSet = new Set(...Object.values<any>(msgParams), ...Object.values<any>(params!));
       return [...valuesSet].length === Object.values(msgParams).length;
     };
