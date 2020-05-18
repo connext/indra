@@ -12,9 +12,11 @@ describe("Node", () => {
 
   it("can be created", async () => {
     const provider = new JsonRpcProvider(global["network"].provider.connection.url);
+    const store = getMemoryStore();
+    await store.init();
     const node = await Node.create(
       memoryMessagingService,
-      getMemoryStore(),
+      store,
       global["network"],
       { STORE_KEY_PREFIX: "./node.spec.ts-test-file" },
       provider,

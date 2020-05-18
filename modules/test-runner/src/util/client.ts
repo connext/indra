@@ -5,6 +5,7 @@ import {
   IChannelProvider,
   IChannelSigner,
   IConnextClient,
+  ProtocolParam,
 } from "@connext/types";
 import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
 import { expect } from "chai";
@@ -95,12 +96,13 @@ export type ClientTestMessagingInputOpts = {
   protocol: string; // use "any" to limit any messages by count
   delay: Partial<MessageCounter>; // ms delay or sent callbacks
   signer: IChannelSigner;
+  params: Partial<ProtocolParam>;
 };
 
 export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
-  const { protocol, ceiling, delay, signer: signerOpts } = opts;
+  const { protocol, ceiling, delay, signer: signerOpts, params } = opts;
   const signer = signerOpts || getRandomChannelSigner(env.ethProviderUrl);
   const messageOptions: any = {};
   // no defaults specified, exit early
@@ -120,6 +122,7 @@ export const createClientWithMessagingLimits = async (
       [protocol]: {
         ceiling,
         delay,
+        params,
       },
     };
   }

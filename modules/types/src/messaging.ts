@@ -27,16 +27,17 @@ export type ProtocolMessageData = {
 type ProposeInstallMessageData = {
   params: MethodParams.ProposeInstall;
   appIdentityHash: Bytes32;
-}
+};
 
 export type CreateChannelMessage = Message<MethodResults.CreateChannel>;
 export type DepositConfirmationMessage = Message<MethodParams.Deposit>;
-export type DepositFailedMessage = Message<{ params: MethodParams.Deposit; errors: string[]; }>;
-export type DepositStartedMessage = Message<{ value: DecString; txHash: Bytes32; }>;
-export type InstallMessage = Message<{ params: MethodParams.Install; }>;
+export type DepositFailedMessage = Message<{ params: MethodParams.Deposit; errors: string[] }>;
+export type DepositStartedMessage = Message<{ value: DecString; txHash: Bytes32 }>;
+export type InstallMessage = Message<{ params: MethodParams.Install }>;
 export type ProtocolMessage = Message<ProtocolMessageData>;
 export type ProposeMessage = Message<ProposeInstallMessageData>;
-export type RejectProposalMessage = Message<{ appIdentityHash: Bytes32; }>;
+export type RejectProposalMessage = Message<{ appIdentityHash: Bytes32 }>;
+export type SyncMessage = Message<EventPayloads.Sync>;
 export type UninstallMessage = Message<EventPayloads.Uninstall>;
 export type UpdateStateMessage = Message<EventPayloads.UpdateState>;
 

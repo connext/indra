@@ -13,6 +13,7 @@ import {
   RejectProposalMessage,
   UninstallMessage,
   UpdateStateMessage,
+  SyncMessage,
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
@@ -41,6 +42,7 @@ const {
   PROPOSE_INSTALL_EVENT,
   PROTOCOL_MESSAGE_EVENT,
   REJECT_INSTALL_EVENT,
+  SYNC,
   UNINSTALL_EVENT,
   UPDATE_STATE_EVENT,
   WITHDRAWAL_CONFIRMED_EVENT,
@@ -121,6 +123,9 @@ export default class ListenerService implements OnModuleInit {
       REJECT_INSTALL_EVENT: async (data: RejectProposalMessage): Promise<void> => {
         this.logEvent(REJECT_INSTALL_EVENT, data);
         return;
+      },
+      SYNC: (data: SyncMessage): void => {
+        this.logEvent(SYNC, data);
       },
       UNINSTALL_EVENT: async (data: UninstallMessage): Promise<void> => {
         if (!data.data.multisigAddress) {

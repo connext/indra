@@ -10,7 +10,10 @@ import { jsonRpcMethod } from "rpc-server";
 import { RequestHandler } from "../../request-handler";
 
 import { NodeController } from "../controller";
-import { NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH, NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH } from "../../errors";
+import {
+  NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
+  NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH,
+} from "../../errors";
 
 export class RejectInstallController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_rejectInstall)
@@ -45,7 +48,7 @@ export class RejectInstallController extends NodeController {
     if (!stateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
-    
+
     await store.removeAppProposal(stateChannel.multisigAddress, appIdentityHash);
 
     const rejectProposalMsg: RejectProposalMessage = {

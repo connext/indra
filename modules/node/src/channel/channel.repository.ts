@@ -18,16 +18,16 @@ const log = new LoggerService("ChannelRepository");
 export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
   const json: StateChannelJSON = {
     addresses: channel.addresses,
-    appInstances: channel.appInstances
+    appInstances: (channel.appInstances || [])
       .filter((app) => app.type === AppType.INSTANCE)
       .map((app) => [app.identityHash, convertAppToInstanceJSON(app, channel)]),
     freeBalanceAppInstance: convertAppToInstanceJSON(
-      channel.appInstances.find((app) => app.type === AppType.FREE_BALANCE),
+      (channel.appInstances || []).find((app) => app.type === AppType.FREE_BALANCE),
       channel,
     ),
     monotonicNumProposedApps: channel.monotonicNumProposedApps,
     multisigAddress: channel.multisigAddress,
-    proposedAppInstances: channel.appInstances
+    proposedAppInstances: (channel.appInstances || [])
       .filter((app) => app.type === AppType.PROPOSAL)
       .map((app) => [app.identityHash, convertAppToProposedInstanceJSON(app)]),
     schemaVersion: channel.schemaVersion,

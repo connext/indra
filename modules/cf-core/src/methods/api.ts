@@ -24,6 +24,7 @@ import {
   GetAllChannelAddressesController,
   GetStateChannelController,
   GetStateDepositHolderAddressController,
+  SyncController,
 } from "./state-channel";
 
 const controllers = [
@@ -36,6 +37,7 @@ const controllers = [
   RejectInstallController,
   TakeActionController,
   UninstallController,
+  SyncController,
 
   /**
    * Constant methods

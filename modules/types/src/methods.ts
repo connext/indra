@@ -236,6 +236,16 @@ type WithdrawCommitmentResult = {
 };
 
 ////////////////////////////////////////
+
+type SyncParams = {
+  multisigAddress: Address;
+};
+
+type SyncResult = {
+  syncedChannel: StateChannelJSON;
+};
+
+////////////////////////////////////////
 // exports
 
 export const MethodNames = enumify({
@@ -253,6 +263,7 @@ export const MethodNames = enumify({
   chan_install: "chan_install",
   chan_proposeInstall: "chan_proposeInstall",
   chan_rejectInstall: "chan_rejectInstall",
+  chan_sync: "chan_sync",
   chan_takeAction: "chan_takeAction",
   chan_uninstall: "chan_uninstall",
   chan_withdraw: "chan_withdraw",
@@ -280,6 +291,7 @@ export namespace MethodParams {
   export type RequestDepositRights = RequestDepositRightsParams;
   export type RescindDepositRights = RescindDepositRightsParams;
   export type TakeAction = TakeActionParams;
+  export type Sync = SyncParams;
   export type Uninstall = UninstallParams;
   export type Withdraw = WithdrawParams;
   export type WithdrawCommitment = WithdrawCommitmentParams;
@@ -303,6 +315,7 @@ export type MethodParam =
   | RejectInstallParams
   | RequestDepositRightsParams
   | RescindDepositRightsParams
+  | SyncParams
   | TakeActionParams
   | UninstallParams
   | WithdrawParams
@@ -326,6 +339,7 @@ export namespace MethodResults {
   export type RejectInstall = RejectInstallResult;
   export type RequestDepositRights = RequestDepositRightsResult;
   export type RescindDepositRights = RescindDepositRightsResult;
+  export type Sync = SyncResult;
   export type TakeAction = TakeActionResult;
   export type Uninstall = UninstallResult;
   export type Withdraw = WithdrawResult;
@@ -350,6 +364,7 @@ export type MethodResult =
   | RejectInstallResult
   | RequestDepositRightsResult
   | RescindDepositRightsResult
+  | SyncResult
   | TakeActionResult
   | UninstallResult
   | WithdrawResult
