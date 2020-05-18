@@ -4,7 +4,6 @@ import {
   MethodResults,
   ProtocolNames,
   CONVENTION_FOR_ETH_ASSET_ID,
-  ProtocolParams,
 } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
