@@ -29,22 +29,20 @@ describe("Reclaim", () => {
   it("throws error if collateral targets are higher than reclaim", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
       assetId: AddressZero,
-      lowerBoundCollateralize: toBN("1"),
-      upperBoundCollateralize: toBN("10"),
-      lowerBoundReclaim: toBN("9"),
-      upperBoundReclaim: toBN("15"),
+      collateralizeThreshold: toBN("16"),
+      target: toBN("10"),
+      reclaimThreshold: toBN("15"),
     };
     const profileResponse = await addRebalanceProfile(nats, client, REBALANCE_PROFILE, false);
-    expect(profileResponse).to.match(/Reclaim targets cannot be less than collateralize targets/);
+    expect(profileResponse).to.match(/Rebalancing targets not properly configured/);
   });
 
   it("throws error if collateralize upper bound is lower than higher bound", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
       assetId: AddressZero,
-      lowerBoundCollateralize: toBN("10"),
-      upperBoundCollateralize: toBN("1"),
-      lowerBoundReclaim: toBN("9"),
-      upperBoundReclaim: toBN("15"),
+      collateralizeThreshold: toBN("2"),
+      target: toBN("1"),
+      reclaimThreshold: toBN("9"),
     };
     const profileResponse = await addRebalanceProfile(nats, client, REBALANCE_PROFILE, false);
     expect(profileResponse).to.match(/Rebalancing targets not properly configured/);
@@ -53,10 +51,9 @@ describe("Reclaim", () => {
   it("throws error if reclaim upper bound is lower than higher bound", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
       assetId: AddressZero,
-      lowerBoundCollateralize: toBN("1"),
-      upperBoundCollateralize: toBN("10"),
-      lowerBoundReclaim: toBN("15"),
-      upperBoundReclaim: toBN("9"),
+      collateralizeThreshold: toBN("1"),
+      target: toBN("10"),
+      reclaimThreshold: toBN("9"),
     };
     const profileResponse = await addRebalanceProfile(nats, client, REBALANCE_PROFILE, false);
     expect(profileResponse).to.match(/Rebalancing targets not properly configured/);

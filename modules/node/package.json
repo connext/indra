@@ -25,10 +25,10 @@
     "@connext/apps": "6.5.0",
     "@connext/cf-core": "6.5.0",
     "@connext/contracts": "2.0.6",
-    "@connext/utils": "6.5.0",
     "@connext/messaging": "6.5.0",
     "@connext/store": "6.5.0",
     "@connext/types": "6.5.0",
+    "@connext/utils": "6.5.0",
     "@nestjs/common": "7.0.8",
     "@nestjs/core": "7.0.8",
     "@nestjs/microservices": "7.0.8",
@@ -43,12 +43,13 @@
     "ethers": "5.0.0-beta.184",
     "ioredis": "4.16.3",
     "nats": "1.4.8",
+    "pg": "8.0.3",
     "redlock": "4.1.0",
     "reflect-metadata": "0.1.13",
     "rxjs": "6.5.5",
-    "pg": "8.0.3",
     "ts-natsutil": "1.0.6",
-    "typeorm": "0.2.24"
+    "typeorm": "0.2.24",
+    "typescript-memoize": "^1.0.0-alpha.3"
   },
   "devDependencies": {
     "@connext/client": "6.5.0",

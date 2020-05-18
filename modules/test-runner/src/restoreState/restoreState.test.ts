@@ -32,10 +32,9 @@ describe("Restore State", () => {
 
     const REBALANCE_PROFILE = {
       assetId: AddressZero,
-      lowerBoundCollateralize: toBN("0"),
-      upperBoundCollateralize: toBN("0"),
-      lowerBoundReclaim: toBN("0"),
-      upperBoundReclaim: toBN("0"),
+      collateralizeThreshold: toBN("0"),
+      target: toBN("0"),
+      reclaimThreshold: toBN("0"),
     };
 
     // set rebalancing profile to reclaim collateral

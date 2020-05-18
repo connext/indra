@@ -23,14 +23,6 @@ import { ChannelRepository } from "./channel.repository";
 const { getAddress, sha256, toUtf8Bytes } = utils;
 const { AddressZero } = constants;
 
-type RebalancingTargetsResponse<T = string> = {
-  assetId: string;
-  upperBoundCollateralize: T;
-  lowerBoundCollateralize: T;
-  upperBoundReclaim: T;
-  lowerBoundReclaim: T;
-};
-
 export enum RebalanceType {
   COLLATERALIZE = "COLLATERALIZE",
   RECLAIM = "RECLAIM",
@@ -114,16 +106,11 @@ export class ChannelService {
       normalizedAssetId,
     );
 
-    const {
-      lowerBoundCollateralize,
-      upperBoundCollateralize,
-      lowerBoundReclaim,
-      upperBoundReclaim,
-    } = rebalancingTargets;
+    const { collateralizeThreshold, target, reclaimThreshold } = rebalancingTargets;
 
     if (
-      upperBoundCollateralize.lt(lowerBoundCollateralize) ||
-      upperBoundReclaim.lt(lowerBoundReclaim)
+      (collateralizeThreshold.gt(target) || reclaimThreshold.lt(target)) &&
+      !reclaimThreshold.isZero()
     ) {
       throw new Error(`Rebalancing targets not properly configured: ${rebalancingTargets}`);
     }
@@ -138,28 +125,28 @@ export class ChannelService {
 
     let receipt: providers.TransactionReceipt;
     // If free balance is too low, collateralize up to upper bound
-    if (nodeFreeBalance.lt(lowerBoundCollateralize)) {
+    if (nodeFreeBalance.lt(collateralizeThreshold)) {
       this.log.info(
-        `nodeFreeBalance ${nodeFreeBalance.toString()} < lowerBoundCollateralize ${lowerBoundCollateralize.toString()}, depositing`,
+        `nodeFreeBalance ${nodeFreeBalance.toString()} < collateralizeThreshold ${collateralizeThreshold.toString()}, depositing`,
       );
-      const amount = upperBoundCollateralize.sub(nodeFreeBalance);
+      const amount = target.sub(nodeFreeBalance);
       receipt = await this.depositService.deposit(channel, amount, normalizedAssetId);
     } else {
       this.log.debug(
-        `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${lowerBoundCollateralize.toString()}`,
+        `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${collateralizeThreshold.toString()}`,
       );
     }
 
     // If free balance is too high, reclaim down to lower bound
-    if (nodeFreeBalance.gt(upperBoundReclaim) && upperBoundReclaim.gt(0)) {
+    if (nodeFreeBalance.gt(reclaimThreshold) && reclaimThreshold.gt(0)) {
       this.log.info(
-        `nodeFreeBalance ${nodeFreeBalance.toString()} > upperBoundReclaim ${upperBoundReclaim.toString()}, withdrawing`,
+        `nodeFreeBalance ${nodeFreeBalance.toString()} > reclaimThreshold ${reclaimThreshold.toString()}, withdrawing`,
       );
-      const amount = nodeFreeBalance.sub(lowerBoundReclaim);
+      const amount = nodeFreeBalance.sub(target);
       await this.withdrawService.withdraw(channel, amount, normalizedAssetId);
     } else {
       this.log.debug(
-        `Free balance ${nodeFreeBalance} is less than or equal to upper reclaim bound: ${upperBoundReclaim.toString()}`,
+        `Free balance ${nodeFreeBalance} is less than or equal to upper reclaim bound: ${reclaimThreshold.toString()}`,
       );
     }
     this.log.info(`Rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`);
@@ -172,7 +159,7 @@ export class ChannelService {
     paymentAmount: BigNumber,
     currentBalance: BigNumber,
   ): Promise<BigNumber> {
-    const { upperBoundCollateralize, lowerBoundCollateralize } = await this.getRebalancingTargets(
+    const { collateralizeThreshold, target } = await this.getRebalancingTargets(
       userPublicIdentifier,
       assetId,
     );
@@ -180,25 +167,25 @@ export class ChannelService {
     // collateral bound, then on the next uninstall the node will try to
     // deposit again
     const resultingBalance = currentBalance.sub(paymentAmount);
-    if (resultingBalance.lte(lowerBoundCollateralize)) {
+    if (resultingBalance.lte(target)) {
       // return proper amount for balance to be the collateral limit
       // after the payment is performed
-      return upperBoundCollateralize.add(paymentAmount).sub(currentBalance);
+      return collateralizeThreshold.add(paymentAmount).sub(currentBalance);
     }
     // always default to the greater collateral value
-    return paymentAmount.gt(upperBoundCollateralize)
+    return paymentAmount.gt(collateralizeThreshold)
       ? paymentAmount.sub(currentBalance)
-      : upperBoundCollateralize.sub(currentBalance);
+      : collateralizeThreshold.sub(currentBalance);
   }
 
   async getRebalancingTargets(
     userPublicIdentifier: string,
     assetId: string = AddressZero,
-  ): Promise<RebalancingTargetsResponse<BigNumber>> {
+  ): Promise<RebalanceProfileType> {
     this.log.debug(
       `Getting rebalancing targets for user: ${userPublicIdentifier}, assetId: ${assetId}`,
     );
-    let targets: RebalancingTargetsResponse<BigNumber>;
+    let targets: RebalanceProfileType;
     // option 1: rebalancing service, option 2: rebalance profile, option 3: default
     targets = await this.getDataFromRebalancingService(userPublicIdentifier, assetId);
 
@@ -229,48 +216,26 @@ export class ChannelService {
     profile: RebalanceProfileType,
   ): Promise<RebalanceProfile> {
     this.log.info(
-      `addRebalanceProfileToChannel for ${userPublicIdentifier} with ${JSON.stringify(profile)}`,
+      `addRebalanceProfileToChannel for ${userPublicIdentifier} with ${stringify(profile)}`,
     );
-    const {
-      assetId,
-      lowerBoundCollateralize,
-      upperBoundCollateralize,
-      lowerBoundReclaim,
-      upperBoundReclaim,
-    } = profile;
-    if (
-      upperBoundCollateralize.lt(lowerBoundCollateralize) ||
-      upperBoundReclaim.lt(lowerBoundReclaim)
-    ) {
-      throw new Error(
-        `Rebalancing targets not properly configured: ${JSON.stringify({
-          lowerBoundCollateralize,
-          upperBoundCollateralize,
-          lowerBoundReclaim,
-          upperBoundReclaim,
-        })}`,
-      );
+    const { assetId, collateralizeThreshold, target, reclaimThreshold } = profile;
+    if (reclaimThreshold.lt(target) || collateralizeThreshold.gt(target)) {
+      throw new Error(`Rebalancing targets not properly configured: ${stringify(profile)}`);
     }
 
     // reclaim targets cannot be less than collateralize targets, otherwise we get into a loop of
     // collateralize/reclaim
-    if (lowerBoundReclaim.lt(upperBoundCollateralize)) {
+    if (reclaimThreshold.lt(collateralizeThreshold)) {
       throw new Error(
-        `Reclaim targets cannot be less than collateralize targets: ${JSON.stringify({
-          lowerBoundCollateralize,
-          upperBoundCollateralize,
-          lowerBoundReclaim,
-          upperBoundReclaim,
-        })}`,
+        `Reclaim targets cannot be less than collateralize targets: ${stringify(profile)}`,
       );
     }
 
     const rebalanceProfile = new RebalanceProfile();
     rebalanceProfile.assetId = getAddress(assetId);
-    rebalanceProfile.lowerBoundCollateralize = lowerBoundCollateralize;
-    rebalanceProfile.upperBoundCollateralize = upperBoundCollateralize;
-    rebalanceProfile.lowerBoundReclaim = lowerBoundReclaim;
-    rebalanceProfile.upperBoundReclaim = upperBoundReclaim;
+    rebalanceProfile.collateralizeThreshold = collateralizeThreshold;
+    rebalanceProfile.target = target;
+    rebalanceProfile.reclaimThreshold = reclaimThreshold;
     const result = await this.channelRepository.addRebalanceProfileToChannel(
       userPublicIdentifier,
       rebalanceProfile,
@@ -325,7 +290,7 @@ export class ChannelService {
   async getDataFromRebalancingService(
     userPublicIdentifier: string,
     assetId: string,
-  ): Promise<RebalancingTargetsResponse<BigNumber> | undefined> {
+  ): Promise<RebalanceProfileType | undefined> {
     this.log.info(
       `getDataFromRebalancingService for ${userPublicIdentifier} asset ${assetId} start`,
     );
@@ -339,7 +304,7 @@ export class ChannelService {
     const {
       data: rebalancingTargets,
       status,
-    }: AxiosResponse<RebalancingTargetsResponse<string>> = await this.httpService
+    }: AxiosResponse<RebalanceProfileType> = await this.httpService
       .get(
         `${rebalancingServiceUrl}/api/v1/recommendations/asset/${assetId}/channel/${hashedPublicIdentifier}`,
       )
@@ -351,12 +316,11 @@ export class ChannelService {
       );
       return undefined;
     }
-    const response: RebalancingTargetsResponse<BigNumber> = {
+    const response: RebalanceProfileType = {
       assetId: rebalancingTargets.assetId,
-      lowerBoundCollateralize: BigNumber.from(rebalancingTargets.lowerBoundCollateralize),
-      upperBoundCollateralize: BigNumber.from(rebalancingTargets.upperBoundCollateralize),
-      lowerBoundReclaim: BigNumber.from(rebalancingTargets.lowerBoundReclaim),
-      upperBoundReclaim: BigNumber.from(rebalancingTargets.upperBoundReclaim),
+      collateralizeThreshold: BigNumber.from(rebalancingTargets.collateralizeThreshold),
+      target: BigNumber.from(rebalancingTargets.target),
+      reclaimThreshold: BigNumber.from(rebalancingTargets.reclaimThreshold),
     };
     this.log.info(
       `getDataFromRebalancingService for ${userPublicIdentifier} asset ${assetId} complete: ${JSON.stringify(

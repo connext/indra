@@ -1,4 +1,4 @@
-import { IConnextClient, Contract } from "@connext/types";
+import { IConnextClient, Contract, RebalanceProfile } from "@connext/types";
 import { getRandomBytes32, toBN } from "@connext/utils";
 import { BigNumber, constants } from "ethers";
 import { before, describe } from "mocha";
@@ -35,12 +35,11 @@ describe("Reclaim", () => {
   });
 
   it("happy case: node should reclaim ETH with async transfer", async () => {
-    const REBALANCE_PROFILE = {
+    const REBALANCE_PROFILE: RebalanceProfile = {
       assetId: AddressZero,
-      lowerBoundCollateralize: toBN("5"),
-      upperBoundCollateralize: toBN("10"),
-      lowerBoundReclaim: toBN("20"),
-      upperBoundReclaim: toBN("30"),
+      collateralizeThreshold: toBN("5"),
+      target: toBN("10"),
+      reclaimThreshold: toBN("30"),
     };
 
     // set rebalancing profile to reclaim collateral
@@ -49,7 +48,7 @@ describe("Reclaim", () => {
     // deposit client
     await fundChannel(
       clientA,
-      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(Two),
+      BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(Two),
       AddressZero,
     );
     await clientB.requestCollateral(AddressZero);
@@ -59,7 +58,7 @@ describe("Reclaim", () => {
     await asyncTransferAsset(
       clientA,
       clientB,
-      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(One),
+      BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(One),
       AddressZero,
       nats,
     );
@@ -84,23 +83,19 @@ describe("Reclaim", () => {
 
     const freeBalancePost = await clientA.getFreeBalance(AddressZero);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
+    expect(freeBalancePost[nodeSignerAddress].gte(BigNumber.from(REBALANCE_PROFILE.target))).to.be
+      .true;
     expect(
-      freeBalancePost[nodeSignerAddress].gte(BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim)),
-    ).to.be.true;
-    expect(
-      freeBalancePost[nodeSignerAddress].lte(
-        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
-      ),
+      freeBalancePost[nodeSignerAddress].lte(BigNumber.from(REBALANCE_PROFILE.target).add(One)),
     ).to.be.true;
   });
 
   it("happy case: node should reclaim tokens after async transfer", async () => {
     const REBALANCE_PROFILE = {
       assetId: tokenAddress,
-      lowerBoundCollateralize: toBN("5"),
-      upperBoundCollateralize: toBN("10"),
-      lowerBoundReclaim: toBN("20"),
-      upperBoundReclaim: toBN("30"),
+      collateralizeThreshold: toBN("5"),
+      target: toBN("10"),
+      reclaimThreshold: toBN("30"),
     };
 
     // set rebalancing profile to reclaim collateral
@@ -109,7 +104,7 @@ describe("Reclaim", () => {
     // deposit client
     await fundChannel(
       clientA,
-      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(Two),
+      BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(Two),
       tokenAddress,
     );
     await clientB.requestCollateral(tokenAddress);
@@ -119,7 +114,7 @@ describe("Reclaim", () => {
     await asyncTransferAsset(
       clientA,
       clientB,
-      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(One),
+      BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(One),
       tokenAddress,
       nats,
     );
@@ -145,13 +140,10 @@ describe("Reclaim", () => {
 
     const freeBalancePost = await clientA.getFreeBalance(tokenAddress);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
+    expect(freeBalancePost[nodeSignerAddress].gte(BigNumber.from(REBALANCE_PROFILE.target))).to.be
+      .true;
     expect(
-      freeBalancePost[nodeSignerAddress].gte(BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim)),
-    ).to.be.true;
-    expect(
-      freeBalancePost[nodeSignerAddress].lte(
-        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
-      ),
+      freeBalancePost[nodeSignerAddress].lte(BigNumber.from(REBALANCE_PROFILE.target).add(One)),
     ).to.be.true;
   });
 

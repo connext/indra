@@ -1,4 +1,4 @@
-import { CF_METHOD_TIMEOUT, IConnextClient } from "@connext/types";
+import { CF_METHOD_TIMEOUT, IConnextClient, ProtocolNames } from "@connext/types";
 import * as lolex from "lolex";
 
 import {
@@ -110,8 +110,9 @@ describe("Deposit offline tests", () => {
     // in the propose protocol, the initiator sends one message, and receives
     // one message, set the cap at 1 for `propose` in messaging of client
     client = await createClientWithMessagingLimits({
-      ceiling: { received: 0 },
-      protocol: "propose",
+      ceiling: { [RECEIVED]: 0 },
+      protocol: ProtocolNames.propose,
+      params: { appDefinition: addressBook[4447].DepositApp.address },
     });
 
     await makeDepositCall({
@@ -119,17 +120,19 @@ describe("Deposit offline tests", () => {
       clock,
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
       subjectToFastforward: RECEIVED,
-      protocol: "propose",
+      protocol: ProtocolNames.propose,
     });
+    const messaging = client.messaging! as TestMessagingService;
+    expect(messaging.proposeCount[RECEIVED]).to.be.eq(0);
   });
 
   it("client proposes deposit, but node only receives the NATS message after timeout is over", async () => {
     // cf method timeout is 90s, client will send any messages with a
     // preconfigured delay
-    const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
     client = await createClientWithMessagingLimits({
-      delay: { sent: CLIENT_DELAY },
-      protocol: "propose",
+      protocol: ProtocolNames.propose,
+      ceiling: { [SEND]: 0 },
+      params: { appDefinition: addressBook[4447].DepositApp.address },
     });
 
     await makeDepositCall({
@@ -137,17 +140,19 @@ describe("Deposit offline tests", () => {
       clock,
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
       subjectToFastforward: SEND,
-      protocol: "propose",
+      protocol: ProtocolNames.propose,
     });
+    const messaging = client.messaging! as TestMessagingService;
+    expect(messaging.proposeCount[SEND]).to.be.eq(0);
   });
 
   it("client proposes deposit, but node only responds after timeout is over", async () => {
     // cf method timeout is 90s, client will process any received messages
     // with a preconfigured delay
-    const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
     client = await createClientWithMessagingLimits({
-      delay: { received: CLIENT_DELAY },
-      protocol: "propose",
+      protocol: ProtocolNames.propose,
+      ceiling: { [RECEIVED]: 0 },
+      params: { appDefinition: addressBook[4447].DepositApp.address },
     });
 
     await makeDepositCall({
@@ -155,15 +160,17 @@ describe("Deposit offline tests", () => {
       clock,
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
       subjectToFastforward: RECEIVED,
-      protocol: "propose",
+      protocol: ProtocolNames.propose,
     });
+    const messaging = client.messaging! as TestMessagingService;
+    expect(messaging.proposeCount[RECEIVED]).to.be.eq(0);
   });
 
   it("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
     const signer = getRandomChannelSigner(env.ethProviderUrl);
     client = await createClientWithMessagingLimits({
-      protocol: "install",
-      ceiling: { received: 0 },
+      protocol: ProtocolNames.install,
+      ceiling: { [RECEIVED]: 0 },
       signer,
     });
 
@@ -172,8 +179,10 @@ describe("Deposit offline tests", () => {
       clock,
       failsWith: `Install failed`,
       subjectToFastforward: RECEIVED,
-      protocol: "install",
+      protocol: ProtocolNames.install,
     });
+    const messaging = client.messaging! as TestMessagingService;
+    expect(messaging.installCount[RECEIVED]).to.be.eq(0);
 
     await createClient({ signer });
   });

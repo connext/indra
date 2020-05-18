@@ -1,5 +1,5 @@
-import { EventNames, IConnextClient, LinkedTransferStatus } from "@connext/types";
-import { delay, stringify } from "@connext/utils";
+import { EventNames, IConnextClient, LinkedTransferStatus, ProtocolNames } from "@connext/types";
+import { delay } from "@connext/utils";
 import * as lolex from "lolex";
 
 import {
@@ -11,7 +11,6 @@ import {
   fundChannel,
   getProtocolFromData,
   MessagingEventData,
-  PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   RECEIVED,
   REQUEST,
   requestCollateral,
@@ -20,6 +19,7 @@ import {
   TOKEN_AMOUNT_SM,
   getNatsClient,
   env,
+  SEND,
 } from "../util";
 import { BigNumber } from "ethers";
 import { Client } from "ts-nats";
@@ -84,7 +84,7 @@ describe("Async transfer offline tests", () => {
     senderClient = await createClientWithMessagingLimits();
     // 1 successful proposal (balance refund)
     receiverClient = await createClientWithMessagingLimits({
-      ceiling: { received: PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
+      ceiling: { [RECEIVED]: 0 },
       protocol: "propose",
     });
     const tokenAddress = senderClient.config.contractAddresses.Token;
@@ -113,15 +113,15 @@ describe("Async transfer offline tests", () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits();
     receiverClient = await createClientWithMessagingLimits({
-      ceiling: { received: 0 },
-      protocol: "takeAction",
+      ceiling: { [RECEIVED]: 1 },
+      protocol: ProtocolNames.takeAction,
     });
     const tokenAddress = senderClient.config.contractAddresses.Token;
     await fundForTransfers(receiverClient, senderClient);
     (receiverClient.messaging as TestMessagingService).on(
       RECEIVED,
       async (msg: MessagingEventData) => {
-        if (getProtocolFromData(msg) === "takeAction") {
+        if (getProtocolFromData(msg) === ProtocolNames.takeAction) {
           clock.tick(89_000);
         }
       },
@@ -203,7 +203,7 @@ describe("Async transfer offline tests", () => {
     const receiverSigner = getRandomChannelSigner(env.ethProviderUrl);
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits({
-      ceiling: { sent: 1 }, // for deposit app
+      ceiling: { [SEND]: 1 }, // for deposit app
       protocol: "uninstall",
       signer: senderSigner,
     });

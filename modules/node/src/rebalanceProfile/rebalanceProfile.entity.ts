@@ -15,7 +15,7 @@ export class RebalanceProfile {
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  lowerBoundCollateralize!: BigNumber;
+  collateralizeThreshold!: BigNumber;
 
   @Column("text", {
     default: "0",
@@ -24,7 +24,7 @@ export class RebalanceProfile {
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  upperBoundCollateralize!: BigNumber;
+  target!: BigNumber;
 
   @Column("text", {
     default: "0",
@@ -33,16 +33,7 @@ export class RebalanceProfile {
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  lowerBoundReclaim!: BigNumber;
-
-  @Column("text", {
-    default: "0",
-    transformer: {
-      from: (value: string): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
-  upperBoundReclaim!: BigNumber;
+  reclaimThreshold!: BigNumber;
 
   @Column("text")
   assetId: string;
