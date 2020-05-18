@@ -2,6 +2,7 @@ import { MethodName, MethodParam, MethodResult } from "@connext/types";
 import { Controller } from "rpc-server";
 
 import { RequestHandler } from "../request-handler";
+import { ColorfulLogger, logTime } from "@connext/utils";
 
 export abstract class NodeController extends Controller {
   public static readonly methodName: MethodName;
@@ -10,15 +11,32 @@ export abstract class NodeController extends Controller {
     requestHandler: RequestHandler,
     params: MethodParam,
   ): Promise<MethodResult> {
+    const log = new ColorfulLogger(`MethodController`, 3, true)
+    const start = Date.now();
+    let substart = start;
     await this.beforeExecution(requestHandler, params);
+    logTime(log, substart, "Before execution complete")
+    substart = Date.now()
 
-    const lockNames = await this.getRequiredLockNames(requestHandler, params);
+    const lockName = await this.getRequiredLockName(requestHandler, params);
+    logTime(log, substart, "Got lockname")
+    substart = Date.now()
 
-    const createExecutionPromise = () => this.executeMethodImplementation(requestHandler, params);
+    const lockValue = await requestHandler.lockService.acquireLock(lockName);
+    logTime(log, substart, "Got lock")
+    substart = Date.now()
 
-    const ret = await requestHandler.processQueue.addTask(lockNames, createExecutionPromise);
+    const ret = await this.executeMethodImplementation(requestHandler, params);
+    logTime(log, substart, "Executed method implementation")
+    substart = Date.now()
+
+    await requestHandler.lockService.releaseLock(lockName, lockValue);
+    logTime(log, substart, "Released lock")
+    substart = Date.now()
 
     await this.afterExecution(requestHandler, params, ret);
+    logTime(log, substart, "After execution complete")
+    substart = Date.now()
 
     return ret;
   }
@@ -39,10 +57,10 @@ export abstract class NodeController extends Controller {
     returnValue: MethodResult,
   ): Promise<void> {}
 
-  protected async getRequiredLockNames(
+  protected async getRequiredLockName(
     requestHandler: RequestHandler,
     params: MethodParam,
-  ): Promise<string[]> {
-    return [];
+  ): Promise<string> {
+    return "";
   }
 }
