@@ -3,7 +3,16 @@ import { IConnextClient, IChannelSigner, EventNames, EventPayloads } from "@conn
 import { getRandomChannelSigner, stringify, toBN } from "@connext/utils";
 import { AddressZero, Zero } from "ethers/constants";
 
-import { expect, TOKEN_AMOUNT, createClient, ETH_AMOUNT_SM, fundChannel, TOKEN_AMOUNT_SM, env, getNatsClient } from "../util";
+import {
+  expect,
+  TOKEN_AMOUNT,
+  createClient,
+  ETH_AMOUNT_SM,
+  fundChannel,
+  TOKEN_AMOUNT_SM,
+  env,
+  getNatsClient,
+} from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 
 describe("Restore State", () => {
@@ -21,10 +30,9 @@ describe("Restore State", () => {
 
     const REBALANCE_PROFILE = {
       assetId: AddressZero,
-      lowerBoundCollateralize: toBN("0"),
-      upperBoundCollateralize: toBN("0"),
-      lowerBoundReclaim: toBN("0"),
-      upperBoundReclaim: toBN("0"),
+      collateralizeThreshold: toBN("0"),
+      target: toBN("0"),
+      reclaimThreshold: toBN("0"),
     };
 
     // set rebalancing profile to reclaim collateral
@@ -92,7 +100,7 @@ describe("Restore State", () => {
           return reject();
         });
       }),
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         const result = await senderClient.transfer({
           amount: transferAmount,
           assetId,
@@ -109,12 +117,13 @@ describe("Restore State", () => {
     // bring clientA back online
     await new Promise(async (resolve, reject) => {
       clientA.on(
-        EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, 
+        EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT,
         (msg: EventPayloads.LinkedTransferFailed) => {
           return reject(`${clientA.publicIdentifier} failed to transfer: ${stringify(msg)}`);
-      });
-      clientA = await createClient({ 
-        signer: signerA, 
+        },
+      );
+      clientA = await createClient({
+        signer: signerA,
         store: getLocalStore(),
       });
       expect(clientA.signerAddress).to.be.eq(signerA.address);
