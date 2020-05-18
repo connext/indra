@@ -108,9 +108,12 @@ type InternalMessagingConfig = Omit<TestMessagingConfig, "protocolLimits"> & {
 
 // Helpers for parsing protocol data from messages
 export const getProtocolFromData = (msg: MessagingEventData) => {
-  const { subject, data } = msg;
-  if (!data || !subject) {
+  const { data } = msg;
+  if (!data) {
     return;
+  }
+  if (data.protocol) {
+    return data.protocol;
   }
   if (data.data && data.data.protocol) {
     // fast forward
@@ -119,9 +122,12 @@ export const getProtocolFromData = (msg: MessagingEventData) => {
 };
 
 export const getParamsFromData = (msg: MessagingEventData) => {
-  const { subject, data } = msg;
-  if (!data || !subject) {
+  const { data } = msg;
+  if (!data) {
     return;
+  }
+  if (data.params) {
+    return data.params;
   }
   if (data.data && data.data.params) {
     // fast forward
@@ -153,7 +159,7 @@ const defaultOpts = (): TestMessagingConfig => {
   return {
     nodeUrl: env.nodeUrl,
     messagingConfig: {
-      messagingUrl: "nats://172.17.0.1:4222",
+      messagingUrl: env.natsUrl,
     },
     apiLimits: getDefaultApiLimits(),
     protocolLimits: getDefaultProtocolLimits(),
@@ -199,7 +205,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       signer:
         opts.signer && typeof opts.signer === "string"
           ? new ChannelSigner(opts.signer, env.ethProviderUrl)
-          : defaults.signer,
+          : opts.signer || defaults.signer,
     } as InternalMessagingConfig;
     const getSignature = (msg: string) => this.options.signer.signMessage(msg);
 
@@ -235,7 +241,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
   // top level
   get protocolLimits() {
-    return this.protocolLimits;
+    return this.options.protocolLimits;
   }
   get protocolCount() {
     return this.protocolCounter;
@@ -286,9 +292,9 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
   ////////////////////////////////////////
   // IMessagingService Methods
-  async onReceive(subject: string, callback: (msg: Message) => void): Promise<void> {
+  onReceive(subject: string, callback: (msg: Message) => void): Promise<void> {
     // return connection callback
-    return this.connection.onReceive(subject, async (msg: Message) => {
+    return this.connection.onReceive(subject, (msg: Message) => {
       const shouldContinue = this.emitEventAndIncrementApiCount(RECEIVED, {
         subject,
         data: msg,
@@ -298,7 +304,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
         log.warn(
           `Reached API ceiling, refusing to process any more messages. Received ${this.apiCounter[RECEIVED]} total messages`,
         );
-        return;
+        return Promise.resolve();
       }
       // check if any protocol messages are increased
       const protocol = getProtocolFromData(msg);
@@ -313,7 +319,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
           this.protocolCounter[protocol],
         )}`;
         log.warn(msg);
-        return;
+        return Promise.resolve();
       }
       // has params specified, but not included in this message.
       // so return callback
@@ -321,7 +327,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     });
   }
 
-  async send(to: string, msg: Message): Promise<void> {
+  send(to: string, msg: Message): Promise<void> {
     const shouldContinue = this.emitEventAndIncrementApiCount(SEND, {
       subject: to,
       data: msg,
@@ -331,7 +337,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       log.warn(
         `Reached API ceiling, refusing to process any more messages. Seny ${this.apiCounter[SEND]} total messages`,
       );
-      return;
+      return Promise.resolve();
     }
 
     // check protocol ceiling
@@ -341,13 +347,13 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       // proceeding with sending
       return this.connection.send(to, msg);
     }
-    const canContinue = this.incrementProtocolCount(protocol, msg, RECEIVED);
+    const canContinue = this.incrementProtocolCount(protocol, msg, SEND);
     if (!canContinue) {
       const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${stringify(
         this.protocolCounter[protocol],
       )}`;
       log.warn(msg);
-      return;
+      return Promise.resolve();
     }
 
     return this.connection.send(to, msg);
@@ -356,33 +362,28 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   ////////////////////////////////////////
   // More generic methods
 
-  async connect(): Promise<void> {
+  connect(): Promise<void> {
     this.emitEventAndIncrementApiCount(CONNECT, {} as MessagingEventData);
-    await this.connection.connect();
+    return this.connection.connect();
   }
 
-  async disconnect(): Promise<void> {
+  disconnect(): Promise<void> {
     this.emitEventAndIncrementApiCount(DISCONNECT, {} as MessagingEventData);
-    await this.connection.disconnect();
+    return this.connection.disconnect();
   }
 
-  async flush(): Promise<void> {
+  flush(): Promise<void> {
     this.emitEventAndIncrementApiCount(FLUSH, {} as MessagingEventData);
     return this.connection.flush();
   }
 
-  async publish(subject: string, data: any): Promise<void> {
+  publish(subject: string, data: any): Promise<void> {
     // make sure that client is allowed to send message
     this.emitEventAndIncrementApiCount(PUBLISH, { data, subject } as MessagingEventData);
     return this.connection.publish(subject, data);
   }
 
-  async request(
-    subject: string,
-    timeout: number,
-    data: object,
-    callback?: (response: any) => any,
-  ): Promise<any> {
+  async request(subject: string, timeout: number, data: object): Promise<any> {
     // make sure that client is allowed to send message
     // note: when sending via node.ts uses request
     // make sure that client is allowed to send message
@@ -391,14 +392,14 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     return this.connection.request(subject, timeout, data);
   }
 
-  async subscribe(subject: string, callback: (msg: Message) => void): Promise<void> {
+  subscribe(subject: string, callback: (msg: Message) => void): Promise<void> {
     return this.connection.subscribe(subject, (msg: Message) => {
       this.emitEventAndIncrementApiCount(SUBSCRIBE, { subject, data: msg } as MessagingEventData);
       return callback(msg);
     });
   }
 
-  async unsubscribe(subject: string): Promise<void> {
+  unsubscribe(subject: string): Promise<void> {
     this.emitEventAndIncrementApiCount(UNSUBSCRIBE, { subject } as MessagingEventData);
     return this.connection.unsubscribe(subject);
   }
@@ -431,7 +432,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     const msgParams = getParamsFromData(msg);
     const { ceiling, params } = this.protocolLimits[protocol];
     const hasSpecifiedParam = () => {
-      const valuesSet = new Set(...Object.values<any>(msgParams), ...Object.values<any>(params));
+      const valuesSet = new Set(...Object.values<any>(msgParams), ...Object.values<any>(params!));
       return [...valuesSet].length === Object.values(msgParams).length;
     };
     if (params && msgParams && !hasSpecifiedParam()) {
@@ -442,6 +443,6 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     // no specified params/not included, check ceiling
     this.protocolCounter[protocol][apiType]++;
     const count = this.protocolCounter[protocol][apiType];
-    return count < ceiling;
+    return count < ceiling[apiType];
   }
 }
