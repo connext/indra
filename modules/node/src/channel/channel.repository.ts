@@ -18,16 +18,16 @@ const log = new LoggerService("ChannelRepository");
 export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
   const json: StateChannelJSON = {
     addresses: channel.addresses,
-    appInstances: channel.appInstances
+    appInstances: (channel.appInstances || [])
       .filter((app) => app.type === AppType.INSTANCE)
       .map((app) => [app.identityHash, convertAppToInstanceJSON(app, channel)]),
     freeBalanceAppInstance: convertAppToInstanceJSON(
-      channel.appInstances.find((app) => app.type === AppType.FREE_BALANCE),
+      (channel.appInstances || []).find((app) => app.type === AppType.FREE_BALANCE),
       channel,
     ),
     monotonicNumProposedApps: channel.monotonicNumProposedApps,
     multisigAddress: channel.multisigAddress,
-    proposedAppInstances: channel.appInstances
+    proposedAppInstances: (channel.appInstances || [])
       .filter((app) => app.type === AppType.PROPOSAL)
       .map((app) => [app.identityHash, convertAppToProposedInstanceJSON(app)]),
     schemaVersion: channel.schemaVersion,
@@ -93,6 +93,9 @@ export class ChannelRepository extends Repository<Channel> {
       .leftJoin("channel.appInstances", "appInstance")
       .where("appInstance.identityHash = :appIdentityHash", { appIdentityHash })
       .getOne();
+    if (!channel) {
+      return undefined;
+    }
     return this.findOne(channel.multisigAddress, {
       relations: ["appInstances"],
     });
@@ -185,9 +188,17 @@ export class ChannelRepository extends Repository<Channel> {
     channel: Channel,
     assetId: string,
     collateralizationInFlight: boolean,
-  ): Promise<Channel> {
-    channel.activeCollateralizations[assetId] = collateralizationInFlight;
-    await this.save(channel);
-    return channel;
+  ): Promise<void> {
+    const toSave = {
+      ...channel.activeCollateralizations,
+      [assetId]: collateralizationInFlight,
+    };
+    const query = this.createQueryBuilder()
+      .update(Channel)
+      .set({
+        activeCollateralizations: toSave,
+      })
+      .where("multisigAddress = :multisigAddress", { multisigAddress: channel.multisigAddress });
+    await query.execute();
   }
 }

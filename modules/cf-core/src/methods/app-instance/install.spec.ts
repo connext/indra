@@ -117,7 +117,7 @@ describe("Can handle correct & incorrect installs", () => {
       commitment,
     );
 
-    const appInstanceProposal = createAppInstanceProposalForTest(appIdentityHash);
+    const appInstanceProposal = createAppInstanceProposalForTest(appIdentityHash, stateChannel);
 
     appInstanceProposal.abiEncodings.actionEncoding = null as any; // TODO: why?
 

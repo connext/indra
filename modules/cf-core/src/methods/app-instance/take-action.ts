@@ -107,6 +107,7 @@ export class TakeActionController extends NodeController {
   protected async afterExecution(
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
+    returnValue: MethodResults.TakeAction,
   ): Promise<void> {
     const { store, router, publicIdentifier } = requestHandler;
     const { appIdentityHash, action } = params;

@@ -8,7 +8,7 @@ import {
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "@connext/types";
-import { logTime, recoverAddressFromChannelMessage } from "@connext/utils";
+import { logTime, recoverAddressFromChannelMessage, stringify } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, getAddress } from "ethers/utils";
 
@@ -37,7 +37,9 @@ export async function assertIsValidSignature(
   const signer = await recoverAddressFromChannelMessage(commitmentHash, signature);
   if (getAddress(expectedSigner).toLowerCase() !== signer.toLowerCase()) {
     throw new Error(
-      `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${commitmentHash}. ${loggingContext ? `${loggingContext}` : ""}`,
+      `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${commitmentHash}. ${
+        loggingContext ? `${loggingContext}` : ""
+      }`,
     );
   }
 }
@@ -200,7 +202,7 @@ function decodeMultiAssetMultiPartyCoinTransfer(encodedOutcome: string): CoinTra
     encodedOutcome,
   );
 
-  return coinTransferListOfLists.map(coinTransferList =>
+  return coinTransferListOfLists.map((coinTransferList) =>
     coinTransferList.map(({ to, amount }) => ({ to, amount })),
   );
 }

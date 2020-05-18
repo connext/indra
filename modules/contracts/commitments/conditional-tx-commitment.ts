@@ -34,6 +34,7 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
   }
 
   toJson(): ConditionalTransactionCommitmentJSON {
+    const { provider, ...networkContext } = this.networkContext;
     return {
       appIdentityHash: this.appIdentityHash,
       freeBalanceAppIdentityHash: this.freeBalanceAppIdentityHash,
@@ -41,7 +42,7 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
       interpreterParams: this.interpreterParams,
       multisigAddress: this.multisigAddress,
       multisigOwners: this.multisigOwners,
-      networkContext: this.networkContext,
+      networkContext: networkContext,
       signatures: this.signatures,
     };
   }

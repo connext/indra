@@ -183,7 +183,9 @@ export const connect = async (
     await client.getFreeBalance();
   } catch (e) {
     if (e.message.includes("StateChannel does not exist yet")) {
-      logger.info(`Our store does not contain channel, attempting to restore: ${e.stack || e.message}`);
+      logger.info(
+        `Our store does not contain channel, attempting to restore: ${e.stack || e.message}`,
+      );
       await client.restoreState();
       logger.info(`State restored successfully`);
     } else {
@@ -209,8 +211,9 @@ export const connect = async (
     await client.cleanupRegistryApps();
   } catch (e) {
     logger.error(
-      `Could not clean up registry: ${e.stack ||
-        e.message}... will attempt again on next connection`,
+      `Could not clean up registry: ${
+        e.stack || e.message
+      }... will attempt again on next connection`,
     );
   }
   logger.info("Cleaned up registry apps");
@@ -227,8 +230,9 @@ export const connect = async (
     await client.reclaimPendingAsyncTransfers();
   } catch (e) {
     logger.error(
-      `Could not reclaim pending async transfers: ${e.stack ||
-        e.message}... will attempt again on next connection`,
+      `Could not reclaim pending async transfers: ${
+        e.stack || e.message
+      }... will attempt again on next connection`,
     );
   }
   logger.info("Reclaimed pending async transfers");
@@ -239,8 +243,9 @@ export const connect = async (
     await client.clientCheckIn();
   } catch (e) {
     logger.error(
-      `Could not complete node check-in: ${e.stack ||
-        e.message}... will attempt again on next connection`,
+      `Could not complete node check-in: ${
+        e.stack || e.message
+      }... will attempt again on next connection`,
     );
   }
   logger.info("Checked in with node");
@@ -258,12 +263,13 @@ export const connect = async (
     logger.info(`Watching for user withdrawals`);
     const transactions = await client.watchForUserWithdrawal();
     if (transactions.length > 0) {
-      logger.info(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
+      logger.info(`Found node submitted user withdrawals: ${transactions.map((tx) => tx.hash)}`);
     }
   } catch (e) {
     logger.error(
-      `Could not complete watching for user withdrawals: ${e.stack ||
-        e.message}... will attempt again on next connection`,
+      `Could not complete watching for user withdrawals: ${
+        e.stack || e.message
+      }... will attempt again on next connection`,
     );
   }
 
