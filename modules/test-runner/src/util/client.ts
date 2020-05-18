@@ -107,10 +107,12 @@ export const createClientWithMessagingLimits = async (
   // no defaults specified, exit early
   if (Object.keys(opts).length === 0) {
     const messaging = new TestMessagingService({ signer: signer as ChannelSigner });
-    expect(messaging.installCount[RECEIVED]).to.be.eq(0);
-    expect(messaging.installLimit.ceiling).to.be.equal(0);
+    const emptyCount = { [SEND]: 0, [RECEIVED]: 0 };
+    const noLimit = { [SEND]: NO_LIMIT, [RECEIVED]: NO_LIMIT };
+    expect(messaging.installCount).to.contain(emptyCount);
+    expect(messaging.installLimit.ceiling).to.contain(noLimit);
     expect(messaging.installLimit.params).to.be.undefined;
-    expect(messaging.apiCount).to.be.equal({ [SEND]: 0, [RECEIVED]: 0 });
+    expect(messaging.apiCount).to.containSubset(emptyCount);
     return createClient({ messaging, signer });
   }
   let messageOptions = {} as any;
