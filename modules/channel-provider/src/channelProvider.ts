@@ -40,13 +40,13 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
           this._config = config;
           this._multisigAddress = config.multisigAddress;
           this.emit("connect");
-          resolve(config);
+          return resolve(config);
         } else {
           const err: any = new Error("User Denied Channel Config");
           err.code = 4001;
           this.connected = false;
           await this.connection.close();
-          reject(err);
+          return reject(err);
         }
       },
     );
