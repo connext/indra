@@ -11,7 +11,6 @@ import { Challenge } from "../challenge/challenge.entity";
 import { StateProgressedEventPayload, AppName, AppActions, Address } from "@connext/types";
 import { IsEthAddress } from "../validate";
 import { BigNumber, utils } from "ethers";
-import { toBN } from "@connext/utils";
 
 const { defaultAbiCoder } = utils;
 
@@ -47,7 +46,7 @@ export class StateProgressedEvent<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => toBN(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
@@ -55,7 +54,7 @@ export class StateProgressedEvent<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => toBN(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })

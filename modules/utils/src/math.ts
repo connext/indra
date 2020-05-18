@@ -1,8 +1,6 @@
 import { DecString } from "@connext/types";
 import { BigNumber, utils, constants } from "ethers";
 
-import { toBN } from "./bigNumbers";
-
 const { parseEther, formatEther } = utils;
 const { Zero, MaxUint256 } = constants;
 
@@ -11,7 +9,7 @@ export const toWad = (n: any) => parseEther(n.toString());
 export const fromWad = formatEther;
 
 export const weiToToken = (wei: any, tokenPerEth: any) =>
-  toBN(formatEther(toWad(tokenPerEth).mul(wei)).replace(/\.[0-9]*$/, ``));
+  BigNumber.from(formatEther(toWad(tokenPerEth).mul(wei)).replace(/\.[0-9]*$/, ``));
 
 export const tokenToWei = (token: any, tokenPerEth: any) => toWad(token).div(toWad(tokenPerEth));
 

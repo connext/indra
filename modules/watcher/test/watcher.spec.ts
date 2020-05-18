@@ -8,7 +8,7 @@ import {
   ChallengeProgressionFailedEventData,
   IClientStore,
 } from "@connext/types";
-import { ChannelSigner, getRandomAddress, ColorfulLogger, toBN } from "@connext/utils";
+import { ChannelSigner, getRandomAddress, ColorfulLogger } from "@connext/utils";
 import { Wallet, providers, constants } from "ethers";
 
 import {
@@ -178,7 +178,7 @@ describe("Watcher.cancel", () => {
   let networkContext: NetworkContextForTestSuite;
 
   beforeEach(async () => {
-    const context = await setupContext(true, [{ defaultTimeout: toBN(2) }]);
+    const context = await setupContext(true, [{ defaultTimeout: BigNumber.from(2) }]);
 
     // get all values needed from context
     provider = context["provider"];
@@ -279,7 +279,7 @@ describe("Watcher responses", () => {
   ) => Promise<AppWithCounterClass>;
 
   beforeEach(async () => {
-    const context = await setupContext(true, [{ defaultTimeout: toBN(3) }]);
+    const context = await setupContext(true, [{ defaultTimeout: BigNumber.from(3) }]);
 
     // get all values needed from context
     provider = context["provider"];
@@ -308,7 +308,10 @@ describe("Watcher responses", () => {
   });
 
   it("should respond with `setState` if it has a higher nonced state", async () => {
-    const setState0 = await app.getInitialSetState(networkContext.ChallengeRegistry, toBN(3));
+    const setState0 = await app.getInitialSetState(
+      networkContext.ChallengeRegistry,
+      BigNumber.from(3),
+    );
     const expected = await app.getDoubleSignedSetState(networkContext.ChallengeRegistry);
     await setState(app, setState0);
     const [appWatcherEvent, appContractEvent] = await Promise.all([
@@ -324,7 +327,7 @@ describe("Watcher responses", () => {
       }),
       new Promise((resolve) => {
         watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventData) => {
-          if (data.versionNumber.eq(toBN(expected.versionNumber))) {
+          if (data.versionNumber.eq(BigNumber.from(expected.versionNumber))) {
             resolve(data);
           }
         });
@@ -343,7 +346,10 @@ describe("Watcher responses", () => {
     app = await addActionToAppInStore(store, app);
 
     // set initial state
-    const setState0 = await app.getInitialSetState(networkContext.ChallengeRegistry, toBN(3));
+    const setState0 = await app.getInitialSetState(
+      networkContext.ChallengeRegistry,
+      BigNumber.from(3),
+    );
     const expected = await app.getSingleSignedSetState(networkContext.ChallengeRegistry);
     await setState(app, setState0);
 
@@ -360,7 +366,7 @@ describe("Watcher responses", () => {
       }),
       new Promise((resolve) => {
         watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventData) => {
-          if (data.versionNumber.eq(toBN(expected.versionNumber))) {
+          if (data.versionNumber.eq(BigNumber.from(expected.versionNumber))) {
             resolve(data);
           }
         });
@@ -402,7 +408,7 @@ describe("Watcher responses", () => {
       }),
       new Promise((resolve) => {
         watcher.on(WatcherEvents.ChallengeUpdatedEvent, async (data: ChallengeUpdatedEventData) => {
-          if (data.versionNumber.eq(toBN(expected.versionNumber))) {
+          if (data.versionNumber.eq(BigNumber.from(expected.versionNumber))) {
             resolve(data);
           }
         });

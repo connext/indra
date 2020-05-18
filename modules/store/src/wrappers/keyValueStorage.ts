@@ -20,8 +20,8 @@ import {
   Contract,
   ChallengeEvents,
 } from "@connext/types";
-import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
-import { constants, utils } from "ethers";
+import { nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import { constants, utils, BigNumber } from "ethers";
 import pWaterfall from "p-waterfall";
 
 import { storeKeys } from "../constants";
@@ -255,14 +255,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       let updatedStore = store;
       if (oldFreeBalanceUpdate) {
         this.log.debug(
-          `Removing stale free balance update at nonce ${toBN(
+          `Removing stale free balance update at nonce ${BigNumber.from(
             oldFreeBalanceUpdate.versionNumber,
           ).toString()}`,
         );
         updatedStore = this.unsetSetStateCommitment(
           updatedStore,
           freeBalanceAppInstance.identityHash,
-          toBN(oldFreeBalanceUpdate.versionNumber).toString(),
+          BigNumber.from(oldFreeBalanceUpdate.versionNumber).toString(),
         );
       }
       this.log.debug(
@@ -303,12 +303,12 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       let updatedStore = store;
       if (oldCommitment && signedSetStateCommitment.signatures.filter((x) => !!x).length === 2) {
         this.log.debug(
-          `Removing stale commitment at ${toBN(oldCommitment.versionNumber).toString()}`,
+          `Removing stale commitment at ${BigNumber.from(oldCommitment.versionNumber).toString()}`,
         );
         updatedStore = this.unsetSetStateCommitment(
           updatedStore,
           appInstance.identityHash,
-          toBN(oldCommitment.versionNumber).toString(),
+          BigNumber.from(oldCommitment.versionNumber).toString(),
         );
       }
       this.log.debug(
@@ -357,14 +357,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       let updatedStore = store;
       if (oldFreeBalanceUpdate) {
         this.log.debug(
-          `Unsetting free balance set state commitment at nonce ${toBN(
+          `Unsetting free balance set state commitment at nonce ${BigNumber.from(
             oldFreeBalanceUpdate.versionNumber,
           ).toString()}`,
         );
         updatedStore = this.unsetSetStateCommitment(
           updatedStore,
           freeBalanceAppInstance.identityHash,
-          toBN(oldFreeBalanceUpdate.versionNumber).toString(),
+          BigNumber.from(oldFreeBalanceUpdate.versionNumber).toString(),
         );
       }
       this.log.debug(`Updating channel with new free balance updates without app instance`);
@@ -520,11 +520,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       const existing = store[challengeKey];
       if (
         existing &&
-        toBN(existing.versionNumber).gt(data.versionNumber) &&
+        BigNumber.from(existing.versionNumber).gt(data.versionNumber) &&
         data.versionNumber.gt(Zero) // cancel challenge special case
       ) {
         this.log.debug(
-          `Existing challenge has nonce ${toBN(
+          `Existing challenge has nonce ${BigNumber.from(
             existing.versionNumber,
           ).toString()} and data has nonce ${data.versionNumber.toString()}, doing nothing.`,
         );
@@ -579,7 +579,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       const key = this.getKey(storeKeys.STATE_PROGRESSED_EVENT, event.identityHash);
       const existing = store[key] || [];
       const idx = existing.findIndex((stored) =>
-        toBN(stored.versionNumber).eq(event.versionNumber),
+        BigNumber.from(stored.versionNumber).eq(event.versionNumber),
       );
       if (idx !== -1) {
         this.log.debug(
@@ -737,7 +737,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       return undefined;
     }
     const [latest] = commitments.sort((a, b) =>
-      toBN(b.versionNumber).sub(toBN(a.versionNumber)).toNumber(),
+      BigNumber.from(b.versionNumber).sub(BigNumber.from(a.versionNumber)).toNumber(),
     );
     return latest;
   }
@@ -769,7 +769,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   ): any {
     const setStateKey = this.getKey(storeKeys.SET_STATE_COMMITMENT, appIdentityHash);
     const existing = [...(store[setStateKey] || [])];
-    const idx = existing.findIndex((c) => toBN(c.versionNumber).eq(toBN(commitment.versionNumber)));
+    const idx = existing.findIndex((c) =>
+      BigNumber.from(c.versionNumber).eq(BigNumber.from(commitment.versionNumber)),
+    );
     idx === -1 ? existing.push(commitment) : (existing[idx] = commitment);
     store[setStateKey] = existing;
     return store;
@@ -780,7 +782,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const existing = [...(store[setStateKey] || [])];
     // find commitment equal to or below version number
     const remaining = existing.filter((commitment) =>
-      toBN(commitment.versionNumber).gt(versionNumber),
+      BigNumber.from(commitment.versionNumber).gt(versionNumber),
     );
     store[setStateKey] = remaining;
     return store;

@@ -17,9 +17,7 @@ import {
   bigNumberifyJson,
   deBigNumberifyJson,
   getSignerAddressFromPublicIdentifier,
-  isBN,
   stringify,
-  toBN,
   appIdentityToHash,
 } from "@connext/utils";
 import { Contract, BigNumber, constants, utils, providers } from "ethers";
@@ -189,8 +187,8 @@ export class AppInstance {
       participants: this.participants,
       multisigAddress: this.multisigAddress,
       appDefinition: this.appInterface.addr,
-      defaultTimeout: toBN(this.defaultTimeout),
-      channelNonce: toBN(this.appSeqNo),
+      defaultTimeout: BigNumber.from(this.defaultTimeout),
+      channelNonce: BigNumber.from(this.appSeqNo),
     };
   }
 
@@ -328,7 +326,7 @@ export class AppInstance {
       let template = key ? templateObj[key] : templateObj;
       let data = key ? dataObj[key] : dataObj;
       let output;
-      if (isBN(template) || typeof template !== "object") {
+      if (BigNumber.isBigNumber(template) || typeof template !== "object") {
         output = data;
       } else if (typeof template === "object" && typeof template.length === "number") {
         output = [];

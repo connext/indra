@@ -1,7 +1,7 @@
 /* global before */
 import { AppChallenge, ChallengeStatus } from "@connext/types";
-import { ChannelSigner, toBN } from "@connext/utils";
-import { Contract, Wallet, ContractFactory, constants } from "ethers";
+import { ChannelSigner } from "@connext/utils";
+import { Contract, Wallet, ContractFactory, constants, BigNumber } from "ethers";
 
 import {
   randomState,
@@ -81,8 +81,8 @@ describe("setState", () => {
       await verifyChallenge({
         status: ChallengeStatus.IN_DISPUTE,
         appStateHash: appStateToHash(state),
-        versionNumber: toBN(versionNumber),
-        finalizesAt: toBN((await provider.getBlockNumber()) + timeout),
+        versionNumber: BigNumber.from(versionNumber),
+        finalizesAt: BigNumber.from((await provider.getBlockNumber()) + timeout),
       });
     });
 
@@ -96,8 +96,8 @@ describe("setState", () => {
       await verifyChallenge({
         status: ChallengeStatus.IN_DISPUTE,
         appStateHash: appStateToHash(state),
-        versionNumber: toBN(versionNumber),
-        finalizesAt: toBN((await provider.getBlockNumber()) + timeout),
+        versionNumber: BigNumber.from(versionNumber),
+        finalizesAt: BigNumber.from((await provider.getBlockNumber()) + timeout),
       });
 
       const newVersionNumber = 10;
@@ -109,8 +109,8 @@ describe("setState", () => {
       await verifyChallenge({
         status: ChallengeStatus.IN_DISPUTE,
         appStateHash: appStateToHash(newState),
-        versionNumber: toBN(newVersionNumber),
-        finalizesAt: toBN((await provider.getBlockNumber()) + newTimeout),
+        versionNumber: BigNumber.from(newVersionNumber),
+        finalizesAt: BigNumber.from((await provider.getBlockNumber()) + newTimeout),
       });
     });
 
@@ -171,7 +171,7 @@ describe("setState", () => {
       await verifyChallenge({
         status: ChallengeStatus.IN_DISPUTE,
         appStateHash: appStateToHash(state),
-        versionNumber: toBN(20),
+        versionNumber: BigNumber.from(20),
       });
 
       await expect(setState(1, state)).to.be.revertedWith(

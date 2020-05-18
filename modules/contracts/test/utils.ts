@@ -1,4 +1,4 @@
-import { toBN, recoverAddressFromChannelMessage } from "@connext/utils";
+import { recoverAddressFromChannelMessage } from "@connext/utils";
 import { waffle as buidler } from "@nomiclabs/buidler";
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
@@ -31,8 +31,8 @@ export const restore = async (snapshotId: any) => await provider.send("evm_rever
 
 // TODO: Not sure this works correctly/reliably...
 export const moveToBlock = async (blockNumber: BigNumberish) => {
-  const desired: BigNumber = toBN(blockNumber);
-  const current: BigNumber = toBN(await provider.getBlockNumber());
+  const desired: BigNumber = BigNumber.from(blockNumber);
+  const current: BigNumber = BigNumber.from(await provider.getBlockNumber());
   if (current.gt(desired)) {
     throw new Error(
       `Already at block ${current.toNumber()}, cannot rewind to ${blockNumber.toString()}`,
@@ -44,7 +44,7 @@ export const moveToBlock = async (blockNumber: BigNumberish) => {
   for (const _ of Array(desired.sub(current).toNumber())) {
     await mineBlock();
   }
-  const final: BigNumber = toBN(await provider.getBlockNumber());
+  const final: BigNumber = BigNumber.from(await provider.getBlockNumber());
   expect(final).to.be.eq(desired);
 };
 
@@ -89,7 +89,7 @@ export const fund = async (amount: BigNumber, recipient: Wallet) => {
 };
 
 export function sortByAddress(a: string, b: string) {
-  return toBN(a).lt(toBN(b)) ? -1 : 1;
+  return BigNumber.from(a).lt(BigNumber.from(b)) ? -1 : 1;
 }
 
 export function sortAddresses(addrs: string[]) {

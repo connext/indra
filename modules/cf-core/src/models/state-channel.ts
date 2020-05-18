@@ -12,7 +12,6 @@ import {
   deBigNumberifyJson,
   getSignerAddressFromPublicIdentifier,
   stringify,
-  toBN,
 } from "@connext/utils";
 
 import { BigNumber } from "ethers";
@@ -339,7 +338,7 @@ export class StateChannel {
   public setState(
     appInstance: AppInstance,
     state: SolidityValueType,
-    stateTimeout: BigNumber = toBN(appInstance.defaultTimeout),
+    stateTimeout: BigNumber = BigNumber.from(appInstance.defaultTimeout),
   ) {
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 

@@ -17,7 +17,7 @@ import {
 import { utils, constants } from "ethers";
 import {
   ChannelSigner,
-  toBNJson,
+  toBigNumberJson,
   bigNumberifyJson,
   computeCancelDisputeHash,
 } from "@connext/utils";
@@ -118,7 +118,7 @@ export class AppWithCounterClass {
     const coinTransfers = this.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID];
     return {
       playerAddrs: coinTransfers.map(({ to }) => to) as [string, string],
-      amount: toBNJson(
+      amount: toBigNumberJson(
         coinTransfers.reduce(
           (prev, curr) => {
             return { amount: prev.amount.add(curr.amount), to: "" };

@@ -1,6 +1,6 @@
 import { NetworkContext } from "@connext/types";
-import { getRandomAddress, toBN } from "@connext/utils";
-import { Contract, Wallet, constants, utils } from "ethers";
+import { getRandomAddress } from "@connext/utils";
+import { Contract, Wallet, constants, utils, BigNumber } from "ethers";
 
 import { SetStateCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
@@ -62,8 +62,8 @@ describe("set state on free balance", () => {
       network.ChallengeRegistry,
       freeBalanceETH.identity,
       freeBalanceETH.hashOfLatestState,
-      toBN(freeBalanceETH.versionNumber),
-      toBN(freeBalanceETH.stateTimeout),
+      BigNumber.from(freeBalanceETH.versionNumber),
+      BigNumber.from(freeBalanceETH.stateTimeout),
     );
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 

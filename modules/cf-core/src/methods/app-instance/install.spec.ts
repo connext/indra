@@ -8,7 +8,7 @@ import {
   getRandomBytes32,
   getSignerAddressFromPublicIdentifier,
   nullLogger,
-  toBNJson,
+  toBigNumberJson,
 } from "@connext/utils";
 import { Wallet, providers, constants } from "ethers";
 import { instance, mock } from "ts-mockito";
@@ -99,12 +99,12 @@ describe("Can handle correct & incorrect installs", () => {
 
     const commitment = {
       appIdentity: {} as any,
-      stateTimeout: toBNJson("0"),
+      stateTimeout: toBigNumberJson("0"),
       appIdentityHash,
       appStateHash: HashZero,
       challengeRegistryAddress: AddressZero,
       signatures: ["0x0", "0x0"],
-      versionNumber: toBNJson(1),
+      versionNumber: toBigNumberJson(1),
     };
 
     await store.createStateChannel(

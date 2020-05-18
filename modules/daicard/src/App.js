@@ -1,11 +1,11 @@
 import * as connext from "@connext/client";
 import { getLocalStore, PisaClientBackupAPI } from "@connext/store";
 import { ConnextClientStorePrefix, EventNames } from "@connext/types";
-import { Currency, minBN, toBN, tokenToWei, weiToToken } from "@connext/utils";
+import { Currency, minBN, tokenToWei, weiToToken } from "@connext/utils";
 import { ERC20 } from "@connext/contracts";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
-import { Contract, ethers as eth, constants, utils } from "ethers";
+import { Contract, ethers as eth, constants, utils, BigNumber } from "ethers";
 import interval from "interval-promise";
 import { PisaClient } from "pisa-client";
 import React from "react";
@@ -57,8 +57,8 @@ const urls = {
 const LOG_LEVEL = 5;
 
 // Constants for channel max/min - this is also enforced on the hub
-const WITHDRAW_ESTIMATED_GAS = toBN("300000");
-const DEPOSIT_ESTIMATED_GAS = toBN("25000");
+const WITHDRAW_ESTIMATED_GAS = BigNumber.from("300000");
+const DEPOSIT_ESTIMATED_GAS = BigNumber.from("25000");
 const MAX_CHANNEL_VALUE = Currency.DAI("30");
 
 // it is important to add a default payment
@@ -370,7 +370,7 @@ class App extends React.Component {
   getDepositLimits = async () => {
     const { swapRate } = this.state;
     let gasPrice = await ethProvider.getGasPrice();
-    let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
+    let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(BigNumber.from(2)).mul(gasPrice);
     let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
     const minDeposit = Currency.WEI(
       totalDepositGasWei.add(totalWithdrawalGasWei),

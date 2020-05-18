@@ -10,8 +10,8 @@ import {
   SimpleSignedTransferAppState,
   DefaultApp,
 } from "@connext/types";
-import { toBN, stringify } from "@connext/utils";
-import { constants } from "ethers";
+import { stringify } from "@connext/utils";
+import { constants, BigNumber } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
@@ -23,7 +23,7 @@ export class SignedTransferController extends AbstractController {
   ): Promise<PublicResults.SignedTransfer> => {
     this.log.info(`signedTransfer started: ${stringify(params)}`);
     // convert params + validate
-    const amount = toBN(params.amount);
+    const amount = BigNumber.from(params.amount);
     const { meta, paymentId, signer, assetId, recipient } = params;
     const submittedMeta = { ...(meta || {}) } as any;
     submittedMeta.recipient = recipient;

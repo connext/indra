@@ -8,7 +8,6 @@ import {
   ProtocolParams,
   PublicIdentifier,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -20,6 +19,7 @@ import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
+import { BigNumber } from "ethers";
 
 /**
  * This converts a proposed app instance to an installed app instance while
@@ -96,12 +96,12 @@ export async function install(
     appInterface: { ...proposal.abiEncodings, addr: proposal.appDefinition },
     appResponderIdentifier: proposal.responderIdentifier,
     appSeqNo: proposal.appSeqNo,
-    defaultTimeout: toBN(proposal.defaultTimeout),
+    defaultTimeout: BigNumber.from(proposal.defaultTimeout),
     disableLimit: false,
     initialState: proposal.initialState,
     initiatorBalanceDecrement: isSame
-      ? toBN(proposal.initiatorDeposit)
-      : toBN(proposal.responderDeposit),
+      ? BigNumber.from(proposal.initiatorDeposit)
+      : BigNumber.from(proposal.responderDeposit),
     initiatorDepositAssetId: isSame
       ? proposal.initiatorDepositAssetId
       : proposal.responderDepositAssetId,
@@ -110,13 +110,13 @@ export async function install(
     multisigAddress: stateChannel.multisigAddress,
     outcomeType: proposal.outcomeType,
     responderBalanceDecrement: isSame
-      ? toBN(proposal.responderDeposit)
-      : toBN(proposal.initiatorDeposit),
+      ? BigNumber.from(proposal.responderDeposit)
+      : BigNumber.from(proposal.initiatorDeposit),
     responderDepositAssetId: isSame
       ? proposal.responderDepositAssetId
       : proposal.initiatorDepositAssetId,
     responderIdentifier: isSame ? proposal.responderIdentifier : proposal.initiatorIdentifier,
-    stateTimeout: toBN(proposal.stateTimeout),
+    stateTimeout: BigNumber.from(proposal.stateTimeout),
   } as ProtocolParams.Install);
 
   return proposal;

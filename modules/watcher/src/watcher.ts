@@ -34,7 +34,6 @@ import {
   ChannelSigner,
   getSignerAddressFromPublicIdentifier,
   nullLogger,
-  toBN,
   stringify,
   bigNumberifyJson,
 } from "@connext/utils";
@@ -146,7 +145,9 @@ export class Watcher implements IWatcher {
     req: SignedCancelChallengeRequest,
   ): Promise<providers.TransactionReceipt> => {
     this.log.info(
-      `Cancelling challenge for ${appInstanceId} at nonce ${toBN(req.versionNumber).toString()}`,
+      `Cancelling challenge for ${appInstanceId} at nonce ${BigNumber.from(
+        req.versionNumber,
+      ).toString()}`,
     );
     const channel = await this.store.getStateChannelByAppIdentityHash(appInstanceId);
     const app = await this.store.getAppInstance(appInstanceId);
@@ -397,7 +398,7 @@ export class Watcher implements IWatcher {
     // make sure that challenge is up to date with our commitments
     if (versionNumber.gte(app.latestVersionNumber)) {
       // no actions available
-      const msg = `Latest set-state commitment version number ${toBN(
+      const msg = `Latest set-state commitment version number ${BigNumber.from(
         app.latestVersionNumber,
       ).toString()} is the same as challenge version number ${versionNumber.toString()}, doing nothing`;
       return msg;
@@ -428,14 +429,14 @@ export class Watcher implements IWatcher {
         }
         // if there is no state to set, but there is an action to play
         // call `progressState`
-        if (toBN(prev.versionNumber).eq(challenge.versionNumber)) {
+        if (BigNumber.from(prev.versionNumber).eq(challenge.versionNumber)) {
           this.log.debug(`Calling progress state for challenge`);
           return this.progressState(app, channel, [latest, prev]);
         }
         // if there is a state that is set and immediately finalized,
         // call `setAndProgressState`
         if (
-          toBN(prev.stateTimeout).isZero() &&
+          BigNumber.from(prev.stateTimeout).isZero() &&
           challenge.versionNumber.lt(prev.versionNumber._hex)
         ) {
           this.log.debug(`Calling set and progress state for challenge`);
@@ -567,7 +568,7 @@ export class Watcher implements IWatcher {
     setStateCommitment: SetStateCommitmentJSON,
   ): Promise<providers.TransactionResponse | string> => {
     this.log.info(
-      `Calling 'setState' for ${setStateCommitment.appIdentityHash} at nonce ${toBN(
+      `Calling 'setState' for ${setStateCommitment.appIdentityHash} at nonce ${BigNumber.from(
         setStateCommitment.versionNumber,
       ).toString()}`,
     );
@@ -663,7 +664,7 @@ export class Watcher implements IWatcher {
   ): Promise<providers.TransactionReceipt | string> => {
     const challenge = await this.getChallengeOrThrow(app.identityHash);
     this.log.info(
-      `Calling 'progressState' for ${app.identityHash} at currrent nonce ${toBN(
+      `Calling 'progressState' for ${app.identityHash} at currrent nonce ${BigNumber.from(
         challenge.versionNumber,
       ).toString()}`,
     );
@@ -708,7 +709,9 @@ export class Watcher implements IWatcher {
     sortedCommitments: SetStateCommitmentJSON[],
   ): Promise<providers.TransactionReceipt | string> => {
     this.log.info(
-      `Calling 'setAndProgressState' for ${app.identityHash} with expected final nonce of ${toBN(
+      `Calling 'setAndProgressState' for ${
+        app.identityHash
+      } with expected final nonce of ${BigNumber.from(
         sortedCommitments[0].versionNumber,
       ).toString()}`,
     );
@@ -752,7 +755,7 @@ export class Watcher implements IWatcher {
   ): Promise<providers.TransactionReceipt | string> => {
     const challenge = await this.getChallengeOrThrow(app.identityHash);
     this.log.info(
-      `Calling 'setOutcome' for ${app.identityHash} at nonce ${toBN(
+      `Calling 'setOutcome' for ${app.identityHash} at nonce ${BigNumber.from(
         challenge.versionNumber,
       ).toString()}`,
     );
@@ -763,7 +766,7 @@ export class Watcher implements IWatcher {
     // participants are expected to subscribe to events and update their own
     // apps and commitments if desired. Log a warning if values are out of
     // sync, and proceed to set outcome
-    if (!toBN(challenge.versionNumber).eq(toBN(app.latestVersionNumber))) {
+    if (!BigNumber.from(challenge.versionNumber).eq(BigNumber.from(app.latestVersionNumber))) {
       this.log.warn(
         `Stored app is not up to date with onchain challenges, calling set outcome regardless since state is finalized onchain`,
       );
@@ -816,7 +819,7 @@ export class Watcher implements IWatcher {
   ): Promise<providers.TransactionReceipt | string> => {
     const challenge = await this.getChallengeOrThrow(app.identityHash);
     this.log.debug(
-      `Calling 'cancelChallenge' for ${app.identityHash} at nonce ${toBN(
+      `Calling 'cancelChallenge' for ${app.identityHash} at nonce ${BigNumber.from(
         challenge.versionNumber,
       ).toString()}`,
     );
@@ -895,14 +898,14 @@ export class Watcher implements IWatcher {
 
   private getAppIdentity = (app: AppInstanceJson, multisigAddress: string): AppIdentity => {
     return {
-      channelNonce: toBN(app.appSeqNo),
+      channelNonce: BigNumber.from(app.appSeqNo),
       participants: [
         getSignerAddressFromPublicIdentifier(app.initiatorIdentifier),
         getSignerAddressFromPublicIdentifier(app.responderIdentifier),
       ],
       multisigAddress,
       appDefinition: app.appInterface.addr,
-      defaultTimeout: toBN(app.defaultTimeout),
+      defaultTimeout: BigNumber.from(app.defaultTimeout),
     };
   };
 
@@ -936,15 +939,15 @@ export class Watcher implements IWatcher {
     const validLatestCommitment =
       !!latest &&
       latest.signatures.filter((x) => !!x).length === 1 &&
-      toBN(latest.versionNumber).gt(versionNumber);
+      BigNumber.from(latest.versionNumber).gt(versionNumber);
 
     // must be double signed, have eq or greater nonce then existing,
     // and nonce == latest.nonce - 1
     const validPreviousCommitment =
       !!prev &&
       prev.signatures.filter((x) => !!x).length === 2 &&
-      toBN(prev.versionNumber).gte(versionNumber) &&
-      toBN(prev.versionNumber).add(1).eq(latest.versionNumber._hex);
+      BigNumber.from(prev.versionNumber).gte(versionNumber) &&
+      BigNumber.from(prev.versionNumber).add(1).eq(latest.versionNumber._hex);
 
     if (!validLatestCommitment || !validPreviousCommitment) {
       return false;
@@ -953,10 +956,10 @@ export class Watcher implements IWatcher {
     const current = await this.provider.getBlockNumber();
     // handle empty challenge case (in initiate) by using current block
     // as the `finalizesAt`
-    const noLongerProgressable = toBN(
+    const noLongerProgressable = BigNumber.from(
       challenge.finalizesAt.isZero() ? current : challenge.finalizesAt,
     ).add(app.defaultTimeout);
-    return toBN(current).lt(noLongerProgressable);
+    return BigNumber.from(current).lt(noLongerProgressable);
   };
 
   private updateChallengeStatus = async (
@@ -982,6 +985,8 @@ export class Watcher implements IWatcher {
     identityHash: string,
   ): Promise<SetStateCommitmentJSON[]> => {
     const unsorted = await this.store.getSetStateCommitments(identityHash);
-    return unsorted.sort((a, b) => toBN(b.versionNumber).sub(toBN(a.versionNumber)).toNumber());
+    return unsorted.sort((a, b) =>
+      BigNumber.from(b.versionNumber).sub(BigNumber.from(a.versionNumber)).toNumber(),
+    );
   };
 }

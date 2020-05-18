@@ -33,10 +33,9 @@ import {
   stringify,
   delayAndThrow,
   getPublicKeyFromPublicIdentifier,
-  toBN,
   delay,
 } from "@connext/utils";
-import { Contract, constants } from "ethers";
+import { Contract, constants, BigNumber } from "ethers";
 
 const { AddressZero } = constants;
 
@@ -238,13 +237,13 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     if (params.assetId === AddressZero) {
       const tx = await this.signer.sendTransaction({
         to: recipient,
-        value: toBN(params.amount),
+        value: BigNumber.from(params.amount),
       });
       hash = tx.hash;
       await tx.wait();
     } else {
       const erc20 = new Contract(params.assetId, ERC20.abi, this.signer);
-      const tx = await erc20.transfer(recipient, toBN(params.amount));
+      const tx = await erc20.transfer(recipient, BigNumber.from(params.amount));
       hash = tx.hash;
       await tx.wait();
     }
@@ -276,7 +275,9 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     // save the channel + setup commitment + latest free balance set state
     const freeBalanceSetStates = setStateCommitments
       .filter(([id, json]) => id === channel.freeBalanceAppInstance.identityHash)
-      .sort((a, b) => toBN(b[1].versionNumber).sub(toBN(a[1].versionNumber)).toNumber());
+      .sort((a, b) =>
+        BigNumber.from(b[1].versionNumber).sub(BigNumber.from(a[1].versionNumber)).toNumber(),
+      );
 
     if (!freeBalanceSetStates[0]) {
       throw new Error(
@@ -292,7 +293,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       .sort((a, b) => a.appSeqNo - b.appSeqNo);
     for (const proposal of proposals) {
       const [_, setState] = setStateCommitments.find(
-        ([id, json]) => id === proposal.identityHash && toBN(json.versionNumber).eq(1),
+        ([id, json]) => id === proposal.identityHash && BigNumber.from(json.versionNumber).eq(1),
       );
       if (!setState) {
         throw new Error(

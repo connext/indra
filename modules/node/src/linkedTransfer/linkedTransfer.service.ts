@@ -5,9 +5,9 @@ import {
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, toBN, stringify } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { constants } from "ethers";
+import { constants, BigNumber } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -85,7 +85,7 @@ export class LinkedTransferService {
     if (latestState.preImage !== HashZero) {
       throw new Error(`Sender app has action, refusing to redeem`);
     }
-    const amount = toBN(latestState.amount);
+    const amount = BigNumber.from(latestState.amount);
     const { assetId, linkedHash } = latestState;
 
     // check if receiver app exists

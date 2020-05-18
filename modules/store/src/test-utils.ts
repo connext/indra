@@ -16,7 +16,7 @@ import {
   StorePair,
   StoredAppChallengeStatus,
 } from "@connext/types";
-import { ColorfulLogger, toBN, toBNJson, getRandomBytes32 } from "@connext/utils";
+import { ColorfulLogger, getRandomBytes32, toBigNumberJson } from "@connext/utils";
 import { expect, use } from "chai";
 import { BigNumber, constants, utils } from "ethers";
 import MockAsyncStorage from "mock-async-storage";
@@ -120,20 +120,20 @@ export const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
 
 export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   appIdentity: {
-    channelNonce: toBN(TEST_STORE_APP_INSTANCE.appSeqNo),
+    channelNonce: BigNumber.from(TEST_STORE_APP_INSTANCE.appSeqNo),
     participants: [
       TEST_STORE_APP_INSTANCE.initiatorIdentifier,
       TEST_STORE_APP_INSTANCE.responderIdentifier,
     ],
     multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
     appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
-    defaultTimeout: toBN(35),
+    defaultTimeout: BigNumber.from(35),
   },
   appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
   appStateHash: "setStateAppStateHash",
   challengeRegistryAddress: TEST_STORE_ETH_ADDRESS,
-  stateTimeout: toBNJson(17),
-  versionNumber: toBNJson(23),
+  stateTimeout: toBigNumberJson(17),
+  versionNumber: toBigNumberJson(23),
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
 
@@ -151,16 +151,16 @@ export const TEST_STORE_CONDITIONAL_COMMITMENT: ConditionalTransactionCommitment
 export const TEST_STORE_APP_CHALLENGE: StoredAppChallenge = {
   identityHash: TEST_STORE_APP_INSTANCE.identityHash,
   appStateHash: getRandomBytes32(),
-  versionNumber: toBN(1),
-  finalizesAt: toBN(3),
+  versionNumber: BigNumber.from(1),
+  finalizesAt: BigNumber.from(3),
   status: StoredAppChallengeStatus.IN_DISPUTE,
 };
 
 export const TEST_STORE_STATE_PROGRESSED_EVENT: StateProgressedEventPayload = {
   identityHash: TEST_STORE_APP_INSTANCE.identityHash,
   action: getRandomBytes32(),
-  versionNumber: toBN(1),
-  timeout: toBN(3),
+  versionNumber: BigNumber.from(1),
+  timeout: BigNumber.from(3),
   turnTaker: TEST_STORE_CHANNEL.userIdentifiers[0],
   signature: getRandomBytes32(),
 };
@@ -168,8 +168,8 @@ export const TEST_STORE_STATE_PROGRESSED_EVENT: StateProgressedEventPayload = {
 export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = {
   identityHash: TEST_STORE_APP_INSTANCE.identityHash,
   appStateHash: getRandomBytes32(),
-  versionNumber: toBN(1),
-  finalizesAt: toBN(3),
+  versionNumber: BigNumber.from(1),
+  finalizesAt: BigNumber.from(3),
   status: ChallengeStatus.IN_DISPUTE,
 };
 

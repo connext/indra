@@ -17,9 +17,8 @@ import {
   getAddressError,
   getPublicIdentifierError,
   stringify,
-  toBN,
 } from "@connext/utils";
-import { utils, constants } from "ethers";
+import { utils, constants, BigNumber } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
@@ -31,7 +30,7 @@ export class LinkedTransferController extends AbstractController {
     params: PublicParams.LinkedTransfer,
   ): Promise<PublicResults.LinkedTransfer> => {
     this.log.info(`linkedTransfer started: ${stringify(params)}`);
-    const amount = toBN(params.amount);
+    const amount = BigNumber.from(params.amount);
     const { paymentId, preImage, meta, recipient } = params;
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)

@@ -1,5 +1,4 @@
 import { IConnextClient, EventPayloads, EventNames } from "@connext/types";
-import { toBN } from "@connext/utils";
 import { BigNumber, constants } from "ethers";
 
 import { expect, createClient, fundChannel } from "../util";
@@ -55,7 +54,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
             res();
           }
           await gateway.transfer({
-            amount: toBN(data.amount),
+            amount: BigNumber.from(data.amount),
             assetId: AddressZero,
             recipient: data.sender,
           });
@@ -74,7 +73,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
         async (data: EventPayloads.LinkedTransferUnlocked) => {
           indexerATransfers.received += 1;
           await indexerA.transfer({
-            amount: toBN(data.amount),
+            amount: BigNumber.from(data.amount),
             assetId: AddressZero,
             recipient: data.sender,
           });
@@ -88,7 +87,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
         async (data: EventPayloads.LinkedTransferUnlocked) => {
           indexerBTransfers.received += 1;
           await indexerB.transfer({
-            amount: toBN(data.amount),
+            amount: BigNumber.from(data.amount),
             assetId: AddressZero,
             recipient: data.sender,
           });
@@ -108,12 +107,12 @@ describe.skip("Full Flow: Multi-client transfer", () => {
       rejectIfFailed(gateway);
 
       await gateway.transfer({
-        amount: toBN("1"),
+        amount: BigNumber.from("1"),
         recipient: indexerA.publicIdentifier,
         assetId: AddressZero,
       });
       await gateway.transfer({
-        amount: toBN("1"),
+        amount: BigNumber.from("1"),
         recipient: indexerB.publicIdentifier,
         assetId: AddressZero,
       });

@@ -1,5 +1,5 @@
 import { ConditionalTransferTypes } from "@connext/types";
-import { Currency, toBN, getRandomBytes32 } from "@connext/utils";
+import { Currency, getRandomBytes32 } from "@connext/utils";
 import {
   Button,
   CircularProgress,
@@ -15,7 +15,7 @@ import {
 } from "@material-ui/core";
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
 import { useMachine } from "@xstate/react";
-import { constants } from "ethers";
+import { constants, BigNumber } from "ethers";
 import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
 
@@ -131,7 +131,7 @@ export const SendCard = style(
       if (recipient.error && !recipient.value) {
         setRecipientError(null);
       }
-      if (toBN(amount.value.toDEI()).gt(LINK_LIMIT.wad)) {
+      if (BigNumber.from(amount.value.toDEI()).gt(LINK_LIMIT.wad)) {
         setAmount({ ...amount, error: `Linked payments are capped at ${LINK_LIMIT.format()}.` });
         return;
       }

@@ -12,13 +12,8 @@ import {
   WithdrawAppState,
   DefaultApp,
 } from "@connext/types";
-import {
-  getSignerAddressFromPublicIdentifier,
-  getAddressError,
-  stringify,
-  toBN,
-} from "@connext/utils";
-import { providers, utils, constants } from "ethers";
+import { getSignerAddressFromPublicIdentifier, getAddressError, stringify } from "@connext/utils";
+import { providers, utils, constants, BigNumber } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
@@ -145,7 +140,7 @@ export class WithdrawalController extends AbstractController {
     withdrawCommitmentHash: string,
     withdrawerSignatureOnWithdrawCommitment: string,
   ): Promise<string> {
-    const amount = toBN(params.amount);
+    const amount = BigNumber.from(params.amount);
     const { assetId, nonce, recipient } = params;
     const network = await this.ethProvider.getNetwork();
     const appInfo = (await this.connext.getAppRegistry({

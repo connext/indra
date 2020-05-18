@@ -1,17 +1,16 @@
 import { BigNumber } from "ethers";
-import { isBN, toBN } from "./bigNumbers";
 
 export const bigNumberifyJson = (json: any): any =>
   typeof json === "string"
     ? json
     : JSON.parse(JSON.stringify(json), (key: string, value: any): any =>
-        value && value["_hex"] ? toBN(value._hex) : value,
+        value && value["_hex"] ? BigNumber.from(value._hex) : value,
       );
 
 export const deBigNumberifyJson = (json: any): any =>
   JSON.parse(JSON.stringify(json), (key: string, val: any) =>
     // TODO: added check for toHexString temporarily
-    val && isBN(val) && val.toHexString ? val.toHexString() : val,
+    val && BigNumber.isBigNumber(val) && val.toHexString ? val.toHexString() : val,
   );
 
 // Give abrv = true to abbreviate hex strings and addresss to look like "0x6FEC..kuQk"

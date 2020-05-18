@@ -14,7 +14,7 @@ import {
   ChallengeStatus,
   IClientStore,
 } from "@connext/types";
-import { toBN, getRandomChannelSigner } from "@connext/utils";
+import { getRandomChannelSigner } from "@connext/utils";
 import { getMemoryStore } from "@connext/store";
 import { Wallet, Contract, constants, utils, providers } from "ethers";
 
@@ -108,7 +108,7 @@ export const setupContext = async (
       multisigAddress,
       networkContext.AppWithAction,
       defaultTimeout, // default timeout
-      toBN(idx).add(2), // channel nonce = idx + free-bal + 1
+      BigNumber.from(idx).add(2), // channel nonce = idx + free-bal + 1
       balances,
     );
   });
@@ -224,8 +224,8 @@ export const setupContext = async (
               identityHash,
               status,
               appStateHash,
-              versionNumber: toBN(versionNumber),
-              finalizesAt: toBN(finalizesAt),
+              versionNumber: BigNumber.from(versionNumber),
+              finalizesAt: BigNumber.from(finalizesAt),
             };
             resolve(converted);
           },

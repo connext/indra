@@ -14,7 +14,7 @@ import {
   installApp,
   assertMessage,
 } from "../utils";
-import { toBN, deBigNumberifyJson } from "@connext/utils";
+import { deBigNumberifyJson } from "@connext/utils";
 
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 

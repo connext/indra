@@ -1,6 +1,6 @@
 import { AppInstanceProposal } from "@connext/types";
-import { getRandomAddress, getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
-import { utils, constants } from "ethers";
+import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { utils, constants, BigNumber } from "ethers";
 
 import { HARD_CODED_ASSUMPTIONS } from "../../constants";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
@@ -68,13 +68,13 @@ describe("StateChannel::setupChannel", () => {
     it("should have a default timeout defined by the hard-coded assumption", () => {
       // See HARD_CODED_ASSUMPTIONS in state-channel.ts
       expect(fb.defaultTimeout).toBe(
-        toBN(HARD_CODED_ASSUMPTIONS.freeBalanceDefaultTimeout).toHexString(),
+        BigNumber.from(HARD_CODED_ASSUMPTIONS.freeBalanceDefaultTimeout).toHexString(),
       );
     });
 
     it("should use the default timeout for the initial timeout", () => {
       expect(fb.stateTimeout).toBe(
-        toBN(HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout).toHexString(),
+        BigNumber.from(HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout).toHexString(),
       );
     });
 

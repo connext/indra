@@ -4,7 +4,7 @@ import {
   StateChannelJSON,
   SetStateCommitmentJSON,
 } from "@connext/types";
-import { toBNJson, toBN, getRandomBytes32 } from "@connext/utils";
+import { toBigNumberJson, getRandomBytes32 } from "@connext/utils";
 
 import {
   expect,
@@ -20,6 +20,7 @@ import {
   TEST_STORE_CHALLENGE_UPDATED_EVENT,
 } from "./test-utils";
 import { StoreTypes } from "./types";
+import { BigNumber } from "ethers";
 
 export const storeTypes = Object.keys(StoreTypes);
 
@@ -127,12 +128,12 @@ describe("ConnextStore", () => {
         };
         const freeBalanceSetState1 = {
           ...freeBalanceSetState0,
-          versionNumber: toBNJson(3),
+          versionNumber: toBigNumberJson(3),
         };
         const appSetState: SetStateCommitmentJSON = {
           ...TEST_STORE_SET_STATE_COMMITMENT,
           appIdentityHash: app.identityHash,
-          versionNumber: toBNJson(app.latestVersionNumber),
+          versionNumber: toBigNumberJson(app.latestVersionNumber),
         };
 
         const multisigAddress = channel.multisigAddress;
@@ -140,7 +141,7 @@ describe("ConnextStore", () => {
         const edited = { ...app, latestVersionNumber: 14 };
         const editedSetState = {
           ...appSetState,
-          versionNumber: toBNJson(edited.latestVersionNumber),
+          versionNumber: toBigNumberJson(edited.latestVersionNumber),
         };
 
         // can be called multiple times in a row and preserve the data
@@ -198,11 +199,11 @@ describe("ConnextStore", () => {
         };
         const freeBalanceSetState1 = {
           ...freeBalanceSetState0,
-          versionNumber: toBNJson(154),
+          versionNumber: toBigNumberJson(154),
         };
         const freeBalanceSetState2 = {
           ...freeBalanceSetState0,
-          versionNumber: toBNJson(1136),
+          versionNumber: toBigNumberJson(1136),
         };
         const multisigAddress = channel.multisigAddress;
         await store.createStateChannel(
@@ -410,7 +411,7 @@ describe("ConnextStore", () => {
     storeTypes.forEach((type) => {
       it(`${type} -- should be able to handle concurrent writes properly`, async () => {
         const value0 = { ...TEST_STORE_APP_CHALLENGE };
-        const value1 = { ...value0, versionNumber: toBN(value0.versionNumber).add(1) };
+        const value1 = { ...value0, versionNumber: BigNumber.from(value0.versionNumber).add(1) };
         const value2 = { ...value0, status: StoredAppChallengeStatus.IN_ONCHAIN_PROGRESSION };
         const value3 = { ...value0, identityHash: getRandomBytes32() };
         const store = await createConnextStore(type as StoreTypes, { fileDir });

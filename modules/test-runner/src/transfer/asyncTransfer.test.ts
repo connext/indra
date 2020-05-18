@@ -117,7 +117,7 @@ describe("Async Transfers", () => {
       for (let i = 0; i < 5; i++) {
         startTime[i] = Date.now();
         await clientA.transfer({
-          amount: transfer.amount.div(toBN(10)).toString(),
+          amount: transfer.amount.div(BigNumber.from(10)).toString(),
           assetId: AddressZero,
           meta: { index: i },
           recipient: clientB.publicIdentifier,

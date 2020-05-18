@@ -1,6 +1,6 @@
 import { AppChallenge, ChallengeStatus, ChallengeEvents } from "@connext/types";
-import { ChannelSigner, getRandomAddress, getRandomBytes32, toBN } from "@connext/utils";
-import { Wallet, Contract, BigNumberish, constants, utils } from "ethers";
+import { ChannelSigner, getRandomAddress, getRandomBytes32 } from "@connext/utils";
+import { Wallet, Contract, BigNumberish, constants, utils, BigNumber } from "ethers";
 
 import {
   provider,
@@ -95,7 +95,7 @@ export async function setupContext(
   };
 
   const hasPassed = (timeout: BigNumberish) => {
-    return appRegistry.hasPassed(toBN(timeout));
+    return appRegistry.hasPassed(BigNumber.from(timeout));
   };
 
   const verifySignatures = async (
@@ -172,9 +172,9 @@ export async function setupContext(
     await wrapInEventVerification(call, {
       status: ChallengeStatus.IN_DISPUTE,
       appStateHash: stateHash,
-      versionNumber: toBN(versionNumber),
+      versionNumber: BigNumber.from(versionNumber),
       // FIXME: why is this off by one?
-      finalizesAt: toBN((await provider.getBlockNumber()) + timeout + 1),
+      finalizesAt: BigNumber.from((await provider.getBlockNumber()) + timeout + 1),
     });
   };
 
@@ -185,7 +185,7 @@ export async function setupContext(
   ) => {
     await setState(versionNumber, appState, timeout);
     await verifyChallenge({
-      versionNumber: toBN(versionNumber),
+      versionNumber: BigNumber.from(versionNumber),
       appStateHash: keccak256(appState || HashZero),
       status: ChallengeStatus.IN_DISPUTE,
     });
@@ -234,9 +234,11 @@ export async function setupContext(
           ? ChallengeStatus.EXPLICITLY_FINALIZED
           : ChallengeStatus.IN_ONCHAIN_PROGRESSION,
         appStateHash: resultingStateHash,
-        versionNumber: toBN(resultingStateVersionNumber),
+        versionNumber: BigNumber.from(resultingStateVersionNumber),
         // FIXME: why is this off by one?
-        finalizesAt: toBN((await provider.getBlockNumber()) + appInstance.defaultTimeout + 1),
+        finalizesAt: BigNumber.from(
+          (await provider.getBlockNumber()) + appInstance.defaultTimeout + 1,
+        ),
       },
     );
   };
@@ -350,7 +352,10 @@ export async function setupContext(
   };
 
   const cancelDispute = async (versionNumber: number, signatures?: string[]): Promise<void> => {
-    const digest = computeCancelDisputeHash(appInstance.identityHash, toBN(versionNumber));
+    const digest = computeCancelDisputeHash(
+      appInstance.identityHash,
+      BigNumber.from(versionNumber),
+    );
     if (!signatures) {
       signatures = await sortSignaturesBySignerAddress(digest, [
         await new ChannelSigner(alice.privateKey).signMessage(digest),
@@ -360,7 +365,7 @@ export async function setupContext(
     // TODO: why does event verification fail?
     // await wrapInEventVerification(
     await appRegistry.cancelDispute(appInstance.appIdentity, {
-      versionNumber: toBN(versionNumber),
+      versionNumber: BigNumber.from(versionNumber),
       signatures,
     });
     //   { ...EMPTY_CHALLENGE },
@@ -380,14 +385,14 @@ export async function setupContext(
     alice,
     bob,
     state0: { counter: Zero },
-    state1: { counter: toBN(2) },
+    state1: { counter: BigNumber.from(2) },
     action: {
       actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
-      increment: toBN(2),
+      increment: BigNumber.from(2),
     },
     explicitlyFinalizingAction: {
       actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
-      increment: toBN(6),
+      increment: BigNumber.from(6),
     },
     ONCHAIN_CHALLENGE_TIMEOUT,
     DEFAULT_TIMEOUT,

@@ -1,5 +1,5 @@
 import { IConnextClient, Contract, RebalanceProfile } from "@connext/types";
-import { getRandomBytes32, toBN } from "@connext/utils";
+import { getRandomBytes32 } from "@connext/utils";
 import { BigNumber, constants } from "ethers";
 import { before, describe } from "mocha";
 import { Client } from "ts-nats";
@@ -37,9 +37,9 @@ describe("Reclaim", () => {
   it("happy case: node should reclaim ETH with async transfer", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
       assetId: AddressZero,
-      collateralizeThreshold: toBN("5"),
-      target: toBN("10"),
-      reclaimThreshold: toBN("30"),
+      collateralizeThreshold: BigNumber.from("5"),
+      target: BigNumber.from("10"),
+      reclaimThreshold: BigNumber.from("30"),
     };
 
     // set rebalancing profile to reclaim collateral
@@ -93,9 +93,9 @@ describe("Reclaim", () => {
   it("happy case: node should reclaim tokens after async transfer", async () => {
     const REBALANCE_PROFILE = {
       assetId: tokenAddress,
-      collateralizeThreshold: toBN("5"),
-      target: toBN("10"),
-      reclaimThreshold: toBN("30"),
+      collateralizeThreshold: BigNumber.from("5"),
+      target: BigNumber.from("10"),
+      reclaimThreshold: BigNumber.from("30"),
     };
 
     // set rebalancing profile to reclaim collateral

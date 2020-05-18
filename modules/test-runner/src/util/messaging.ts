@@ -10,9 +10,9 @@ import {
   ProtocolName,
   ProtocolNames,
 } from "@connext/types";
-import { ChannelSigner, ColorfulLogger, stringify, isBN } from "@connext/utils";
+import { ChannelSigner, ColorfulLogger, stringify } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
-import { Wallet } from "ethers";
+import { Wallet, BigNumber } from "ethers";
 
 import { env } from "./env";
 import { combineObjects } from "./misc";
@@ -451,7 +451,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       }
       let unnestedVal = value as any;
       let unnestedComp = params[key];
-      while (typeof unnestedVal === "object" && !isBN(unnestedVal)) {
+      while (typeof unnestedVal === "object" && !BigNumber.isBigNumber(unnestedVal)) {
         const [key] = Object.entries(unnestedVal as object).pop() as any;
         unnestedVal = unnestedVal[key];
         unnestedComp = unnestedComp[key];

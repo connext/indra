@@ -12,8 +12,8 @@ import {
   StoredAppChallengeStatus,
   StateProgressedEventData,
 } from "@connext/types";
-import { bigNumberifyJson, toBN } from "@connext/utils";
-import { constants } from "ethers";
+import { bigNumberifyJson } from "@connext/utils";
+import { constants, BigNumber } from "ethers";
 
 import { expect } from ".";
 import { AppWithCounterClass } from "./appWithCounter";
@@ -82,7 +82,7 @@ export const initiateDispute = async (
         async (data: ChallengeUpdatedEventPayload) => {
           if (
             data.identityHash === app.identityHash &&
-            data.versionNumber.eq(toBN(appSetState.versionNumber))
+            data.versionNumber.eq(BigNumber.from(appSetState.versionNumber))
           ) {
             resolve(data);
           }
@@ -125,7 +125,7 @@ export const initiateDispute = async (
   // verify app + free balance challenge
   const isStateTerminal = app.latestState.counter.gt(5);
   // get expected app values
-  const appFinalizesAt = toBN(await networkContext.provider.getBlockNumber())
+  const appFinalizesAt = BigNumber.from(await networkContext.provider.getBlockNumber())
     .add(appSetState.stateTimeout)
     .add(shouldCallSetAndProgress ? app.defaultTimeout : Zero);
   const appStatus = !shouldCallSetAndProgress
@@ -185,7 +185,7 @@ export const initiateDispute = async (
     } else {
       expect(setStateEvents.length).to.be.equal(appChallengeUpdatedEventsCaught);
       const final = setStateEvents.find((event) =>
-        toBN(event.versionNumber).eq(appSetState.versionNumber),
+        BigNumber.from(event.versionNumber).eq(appSetState.versionNumber),
       );
       expect(final).to.containSubset(expected0[appId]);
     }
@@ -297,7 +297,7 @@ export const initiateDispute = async (
         expect(
           events.find(
             (event) =>
-              toBN(event.versionNumber).eq(appSetState.versionNumber) &&
+              BigNumber.from(event.versionNumber).eq(appSetState.versionNumber) &&
               event.status === ChallengeStatus.OUTCOME_SET,
           ),
         ).to.containSubset(expected1[appId]);

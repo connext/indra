@@ -15,15 +15,14 @@ import {
 } from "@connext/contracts";
 import { NetworkContext } from "@connext/types";
 import { ContractFactory, Wallet, BigNumber, BigNumberish, providers } from "ethers";
-import { toBN } from "@connext/utils";
 import { expect } from "./assertions";
 
 export const moveToBlock = async (
   blockNumber: BigNumberish,
   provider: providers.JsonRpcProvider,
 ) => {
-  const desired: BigNumber = toBN(blockNumber);
-  const current: BigNumber = toBN(await provider.getBlockNumber());
+  const desired: BigNumber = BigNumber.from(blockNumber);
+  const current: BigNumber = BigNumber.from(await provider.getBlockNumber());
   if (current.gt(desired)) {
     throw new Error(
       `Already at block ${current.toNumber()}, cannot rewind to ${blockNumber.toString()}`,
@@ -35,7 +34,7 @@ export const moveToBlock = async (
   for (const _ of Array(desired.sub(current).toNumber())) {
     await mineBlock(provider);
   }
-  const final: BigNumber = toBN(await provider.getBlockNumber());
+  const final: BigNumber = BigNumber.from(await provider.getBlockNumber());
   expect(final).to.be.eq(desired);
 };
 

@@ -1,6 +1,6 @@
 /* global before */
-import { ChannelSigner, toBN } from "@connext/utils";
-import { Contract, Wallet, ContractFactory } from "ethers";
+import { ChannelSigner } from "@connext/utils";
+import { Contract, Wallet, ContractFactory, BigNumber } from "ethers";
 
 import {
   expect,
@@ -115,7 +115,10 @@ describe("cancelDispute", () => {
     await setAndProgressState(versionNumber);
     expect(await isProgressable()).to.be.true;
 
-    const digest = computeCancelDisputeHash(appInstance.identityHash, toBN(versionNumber));
+    const digest = computeCancelDisputeHash(
+      appInstance.identityHash,
+      BigNumber.from(versionNumber),
+    );
     const signatures = await sortSignaturesBySignerAddress(digest, [
       await new ChannelSigner(wallet.privateKey).signMessage(digest),
       await new ChannelSigner(bob.privateKey).signMessage(digest),

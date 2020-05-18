@@ -1,6 +1,6 @@
 import { OutcomeType } from "@connext/types";
-import { getRandomAddress, toBN } from "@connext/utils";
-import { utils, constants } from "ethers";
+import { getRandomAddress } from "@connext/utils";
+import { utils, constants, BigNumber } from "ethers";
 
 import { AppInstance } from "./app-instance";
 import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
@@ -15,7 +15,7 @@ describe("AppInstance", () => {
     const appInstance = new AppInstance(
       /* initiator */ participants[0],
       /* responder*/ participants[1],
-      /* default timeout */ toBN(Math.ceil(Math.random() * 2e10)).toHexString(),
+      /* default timeout */ BigNumber.from(Math.ceil(Math.random() * 2e10)).toHexString(),
       /* appInterface */ {
         addr: getAddress(getRandomAddress()),
         stateEncoding: "tuple(address foo, uint256 bar)",
@@ -24,7 +24,7 @@ describe("AppInstance", () => {
       /* appSeqNo */ Math.ceil(Math.random() * 2e10),
       /* latestState */ { foo: getAddress(getRandomAddress()), bar: 0 },
       /* latestVersionNumber */ 999,
-      /* stateTimeout */ toBN(Math.ceil(1000 * Math.random())).toHexString(),
+      /* stateTimeout */ BigNumber.from(Math.ceil(1000 * Math.random())).toHexString(),
       /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
       /* multisigAddress */ getAddress(getRandomAddress()),
       /* meta */ undefined,

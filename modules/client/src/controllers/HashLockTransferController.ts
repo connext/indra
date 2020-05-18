@@ -10,8 +10,8 @@ import {
   PublicResults,
   DefaultApp,
 } from "@connext/types";
-import { toBN, stringify } from "@connext/utils";
-import { constants } from "ethers";
+import { stringify } from "@connext/utils";
+import { constants, BigNumber } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
@@ -23,12 +23,12 @@ export class HashLockTransferController extends AbstractController {
   ): Promise<PublicResults.HashLockTransfer> => {
     this.log.info(`hashLockTransfer started: ${stringify(params)}`);
     // convert params + validate
-    const amount = toBN(params.amount);
+    const amount = BigNumber.from(params.amount);
     const assetId = params.assetId ? params.assetId : AddressZero;
     // backwards compatibility for timelock
     // convert to block height
     const timelock = params.timelock ? params.timelock : 5000;
-    const expiry = toBN(timelock).add(await this.connext.ethProvider.getBlockNumber());
+    const expiry = BigNumber.from(timelock).add(await this.connext.ethProvider.getBlockNumber());
 
     const { lockHash, meta, recipient } = params;
     const submittedMeta = { ...(meta || {}) } as any;

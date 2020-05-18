@@ -19,7 +19,7 @@ import {
   Contract,
   ChallengeEvents,
 } from "@connext/types";
-import { toBN, getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { getManager } from "typeorm";
 import { BigNumber, utils, constants } from "ethers";
 
@@ -196,14 +196,14 @@ export class CFCoreStore implements IStoreService {
     }
     setupCommitment.data = signedSetupCommitment.data;
     setupCommitment.to = signedSetupCommitment.to;
-    setupCommitment.value = toBN(signedSetupCommitment.value);
+    setupCommitment.value = BigNumber.from(signedSetupCommitment.value);
     setupCommitment.multisigAddress = stateChannel.multisigAddress;
 
     channel.setupCommitment = setupCommitment;
 
     let freeBalanceUpdateCommitment = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
       freeBalanceApp.identityHash,
-      toBN(signedFreeBalanceUpdate.versionNumber),
+      BigNumber.from(signedFreeBalanceUpdate.versionNumber),
     );
     if (!freeBalanceUpdateCommitment) {
       freeBalanceUpdateCommitment = new SetStateCommitment();
@@ -214,10 +214,10 @@ export class CFCoreStore implements IStoreService {
     freeBalanceUpdateCommitment.challengeRegistryAddress =
       signedFreeBalanceUpdate.challengeRegistryAddress;
     freeBalanceUpdateCommitment.signatures = signedFreeBalanceUpdate.signatures;
-    freeBalanceUpdateCommitment.stateTimeout = toBN(
+    freeBalanceUpdateCommitment.stateTimeout = BigNumber.from(
       signedFreeBalanceUpdate.stateTimeout,
     ).toString();
-    freeBalanceUpdateCommitment.versionNumber = toBN(
+    freeBalanceUpdateCommitment.versionNumber = BigNumber.from(
       signedFreeBalanceUpdate.versionNumber,
     ).toNumber();
 
@@ -312,8 +312,8 @@ export class CFCoreStore implements IStoreService {
           appStateHash: signedFreeBalanceUpdate.appStateHash,
           challengeRegistryAddress: signedFreeBalanceUpdate.challengeRegistryAddress,
           signatures: signedFreeBalanceUpdate.signatures,
-          stateTimeout: toBN(signedFreeBalanceUpdate.stateTimeout).toString(),
-          versionNumber: toBN(signedFreeBalanceUpdate.versionNumber).toNumber(),
+          stateTimeout: BigNumber.from(signedFreeBalanceUpdate.stateTimeout).toString(),
+          versionNumber: BigNumber.from(signedFreeBalanceUpdate.versionNumber).toNumber(),
         })
         .where('"appIdentityHash" = :appIdentityHash', {
           appIdentityHash: freeBalanceAppInstance.identityHash,
@@ -393,8 +393,8 @@ export class CFCoreStore implements IStoreService {
           appStateHash: signedSetStateCommitment.appStateHash,
           challengeRegistryAddress: signedSetStateCommitment.challengeRegistryAddress,
           signatures: signedSetStateCommitment.signatures,
-          stateTimeout: toBN(signedSetStateCommitment.stateTimeout).toString(),
-          versionNumber: toBN(signedSetStateCommitment.versionNumber).toNumber(),
+          stateTimeout: BigNumber.from(signedSetStateCommitment.stateTimeout).toString(),
+          versionNumber: BigNumber.from(signedSetStateCommitment.versionNumber).toNumber(),
         })
         .where('"appIdentityHash" = :appIdentityHash', {
           appIdentityHash: signedSetStateCommitment.appIdentityHash,
@@ -447,8 +447,8 @@ export class CFCoreStore implements IStoreService {
           appStateHash: signedFreeBalanceUpdate.appStateHash,
           challengeRegistryAddress: signedFreeBalanceUpdate.challengeRegistryAddress,
           signatures: signedFreeBalanceUpdate.signatures,
-          stateTimeout: toBN(signedFreeBalanceUpdate.stateTimeout).toString(),
-          versionNumber: toBN(signedFreeBalanceUpdate.versionNumber).toNumber(),
+          stateTimeout: BigNumber.from(signedFreeBalanceUpdate.stateTimeout).toString(),
+          versionNumber: BigNumber.from(signedFreeBalanceUpdate.versionNumber).toNumber(),
         })
         .where('"appIdentityHash" = :appIdentityHash', {
           appIdentityHash: freeBalanceAppInstance.identityHash,
@@ -493,7 +493,7 @@ export class CFCoreStore implements IStoreService {
 
     let setStateCommitment = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
       appProposal.identityHash,
-      toBN(signedSetStateCommitment.versionNumber),
+      BigNumber.from(signedSetStateCommitment.versionNumber),
     );
     if (!setStateCommitment) {
       setStateCommitment = new SetStateCommitment();
@@ -503,8 +503,12 @@ export class CFCoreStore implements IStoreService {
     setStateCommitment.appStateHash = signedSetStateCommitment.appStateHash;
     setStateCommitment.challengeRegistryAddress = signedSetStateCommitment.challengeRegistryAddress;
     setStateCommitment.signatures = signedSetStateCommitment.signatures;
-    setStateCommitment.stateTimeout = toBN(signedSetStateCommitment.stateTimeout).toString();
-    setStateCommitment.versionNumber = toBN(signedSetStateCommitment.versionNumber).toNumber();
+    setStateCommitment.stateTimeout = BigNumber.from(
+      signedSetStateCommitment.stateTimeout,
+    ).toString();
+    setStateCommitment.versionNumber = BigNumber.from(
+      signedSetStateCommitment.versionNumber,
+    ).toNumber();
 
     // because the app instance has `cascade` set to true, saving
     // the channel will involve multiple queries and should be put
@@ -586,8 +590,8 @@ export class CFCoreStore implements IStoreService {
     entity.appStateHash = commitment.appStateHash;
     entity.challengeRegistryAddress = commitment.challengeRegistryAddress;
     entity.signatures = commitment.signatures;
-    entity.stateTimeout = toBN(commitment.stateTimeout).toHexString();
-    entity.versionNumber = toBN(commitment.versionNumber).toNumber();
+    entity.stateTimeout = BigNumber.from(commitment.stateTimeout).toHexString();
+    entity.versionNumber = BigNumber.from(commitment.versionNumber).toNumber();
     await this.setStateCommitmentRepository.save(entity);
   }
 
@@ -615,8 +619,8 @@ export class CFCoreStore implements IStoreService {
         appStateHash,
         challengeRegistryAddress,
         signatures,
-        stateTimeout: toBN(stateTimeout).toHexString(),
-        versionNumber: toBN(versionNumber).toNumber(),
+        stateTimeout: BigNumber.from(stateTimeout).toHexString(),
+        versionNumber: BigNumber.from(versionNumber).toNumber(),
       })
       .where('set_state_commitment."appId" = (' + subQuery.getQuery() + ")")
       .setParameters(subQuery.getParameters())
@@ -627,7 +631,7 @@ export class CFCoreStore implements IStoreService {
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
-    const versionNumber = toBN(commitment.versionNumber).toNumber();
+    const versionNumber = BigNumber.from(commitment.versionNumber).toNumber();
 
     const subQuery = this.appInstanceRepository
       .createQueryBuilder("app")
@@ -738,7 +742,7 @@ export class CFCoreStore implements IStoreService {
     const app = channel.appInstances.find((a) => a.identityHash === appIdentityHash);
     const latestSetState = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
       appIdentityHash,
-      toBN(app.latestVersionNumber),
+      BigNumber.from(app.latestVersionNumber),
     );
     // fetch onchain data
     const registry = new Contract(
@@ -857,11 +861,11 @@ export class CFCoreStore implements IStoreService {
             app,
             signatures,
             appIdentity: {
-              channelNonce: toBN(app.appSeqNo),
+              channelNonce: BigNumber.from(app.appSeqNo),
               participants: appSigners,
               multisigAddress: channel.multisigAddress,
               appDefinition: app.appDefinition,
-              defaultTimeout: toBN(app.defaultTimeout),
+              defaultTimeout: BigNumber.from(app.defaultTimeout),
             },
             appStateHash: onchainChallenge.appStateHash,
             versionNumber: onchainChallenge.versionNumber,

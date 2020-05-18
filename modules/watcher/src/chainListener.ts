@@ -9,7 +9,6 @@ import {
   ChallengeStatus,
   Address,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
 import { Contract, Event, BigNumber, providers, utils } from "ethers";
 import EventEmitter from "eventemitter3";
 
@@ -204,8 +203,8 @@ export class ChainListener implements IChainListener {
         this.emit(ChallengeEvents.StateProgressed, {
           identityHash,
           action,
-          versionNumber: toBN(versionNumber),
-          timeout: toBN(timeout),
+          versionNumber: BigNumber.from(versionNumber),
+          timeout: BigNumber.from(timeout),
           turnTaker,
           signature,
         });
@@ -225,8 +224,8 @@ export class ChainListener implements IChainListener {
           identityHash,
           status,
           appStateHash,
-          versionNumber: toBN(versionNumber),
-          finalizesAt: toBN(finalizesAt),
+          versionNumber: BigNumber.from(versionNumber),
+          finalizesAt: BigNumber.from(finalizesAt),
         });
       },
     );

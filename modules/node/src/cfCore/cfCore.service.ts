@@ -16,7 +16,7 @@ import {
   RejectProposalMessage,
   StateChannelJSON,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
 import { BigNumber, constants } from "ethers";
 
@@ -135,7 +135,7 @@ export class CFCoreService {
     params: PublicParams.Withdraw,
     multisigAddress: string,
   ): Promise<WithdrawCommitment> {
-    const amount = toBN(params.amount);
+    const amount = BigNumber.from(params.amount);
     const { assetId, nonce, recipient } = params;
     const { data: channel } = await this.getStateChannel(multisigAddress);
     const contractAddresses = await this.configService.getContractAddresses(

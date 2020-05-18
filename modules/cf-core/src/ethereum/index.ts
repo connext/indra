@@ -5,8 +5,7 @@ import {
   SetupCommitment,
 } from "@connext/contracts";
 import { OutcomeType } from "@connext/types";
-import { toBN } from "@connext/utils";
-import { constants } from "ethers";
+import { constants, BigNumber } from "ethers";
 
 import { Context } from "../types";
 import { StateChannel, AppInstance } from "../models";
@@ -39,8 +38,8 @@ const getSetStateCommitment = (context: Context, appInstance: AppInstance) =>
     context.network.ChallengeRegistry,
     appInstance.identity,
     appInstance.hashOfLatestState,
-    toBN(appInstance.versionNumber),
-    toBN(appInstance.stateTimeout),
+    BigNumber.from(appInstance.versionNumber),
+    BigNumber.from(appInstance.stateTimeout),
   );
 
 const getSetupCommitment = (context: Context, stateChannel: StateChannel): SetupCommitment =>

@@ -1,7 +1,6 @@
 /* global before */
 import { ChallengeStatus, AppChallenge } from "@connext/types";
-import { toBN } from "@connext/utils";
-import { Wallet, Contract, ContractFactory, utils } from "ethers";
+import { Wallet, Contract, ContractFactory, utils, BigNumber } from "ethers";
 
 import AppWithAction from "../../build/AppWithAction.json";
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
@@ -117,7 +116,7 @@ describe("ChallengeRegistry", () => {
 
     // update with `progressState` to finalized state
     // state finalizes when counter > 5
-    const finalizingAction = { ...action, increment: toBN(10) };
+    const finalizingAction = { ...action, increment: BigNumber.from(10) };
     await progressState(state1, finalizingAction, alice);
     // verify explicitly finalized
     const finalState = {
@@ -126,7 +125,7 @@ describe("ChallengeRegistry", () => {
     await verifyChallenge({
       appStateHash: keccak256(encodeState(finalState)),
       status: ChallengeStatus.EXPLICITLY_FINALIZED,
-      versionNumber: toBN(3),
+      versionNumber: BigNumber.from(3),
     });
 
     // set + verify outcome

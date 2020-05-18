@@ -1,7 +1,7 @@
 import { getLocalStore } from "@connext/store";
 import { IConnextClient, IChannelSigner, EventNames, EventPayloads } from "@connext/types";
-import { getRandomChannelSigner, stringify, toBN } from "@connext/utils";
-import { constants } from "ethers";
+import { getRandomChannelSigner, stringify } from "@connext/utils";
+import { constants, BigNumber } from "ethers";
 
 import {
   expect,
@@ -32,9 +32,9 @@ describe("Restore State", () => {
 
     const REBALANCE_PROFILE = {
       assetId: AddressZero,
-      collateralizeThreshold: toBN("0"),
-      target: toBN("0"),
-      reclaimThreshold: toBN("0"),
+      collateralizeThreshold: BigNumber.from("0"),
+      target: BigNumber.from("0"),
+      reclaimThreshold: BigNumber.from("0"),
     };
 
     // set rebalancing profile to reclaim collateral

@@ -1,7 +1,6 @@
 /* global before */
-import { Contract, Wallet, ContractFactory, utils, constants } from "ethers";
+import { Contract, Wallet, ContractFactory, utils, constants, BigNumber } from "ethers";
 import { ChallengeStatus, AppChallenge } from "@connext/types";
-import { toBN } from "@connext/utils";
 
 import {
   expect,
@@ -90,7 +89,7 @@ describe("MChallengeRegistryCore", () => {
 
   describe("isFinalized", () => {
     it("should return true if state is explicitly finalized", async () => {
-      const state = { counter: toBN(10) };
+      const state = { counter: BigNumber.from(10) };
       // NOTE: cannot get to `EXPLICITLY_FINALIZED` status without calling
       // `progressState`. This is because `MixinSetState` only has access
       // to the state hash, and cannot call `isStateTerminal` on the
@@ -99,7 +98,7 @@ describe("MChallengeRegistryCore", () => {
       await setAndProgressState(1, state, alice);
       await verifyChallenge({
         appStateHash: keccak256(encodeState(resultingState)),
-        versionNumber: toBN(2),
+        versionNumber: BigNumber.from(2),
         status: ChallengeStatus.EXPLICITLY_FINALIZED,
       });
 
@@ -128,7 +127,7 @@ describe("MChallengeRegistryCore", () => {
     it("should return true if state progression period elapsed", async () => {
       await setAndProgressState(1);
       await verifyChallenge({
-        versionNumber: toBN(2),
+        versionNumber: BigNumber.from(2),
         status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
       });
 
@@ -152,7 +151,7 @@ describe("MChallengeRegistryCore", () => {
     it("should return false if challenge is in state progression period", async () => {
       await setAndProgressState(1);
       await verifyChallenge({
-        versionNumber: toBN(2),
+        versionNumber: BigNumber.from(2),
         status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
       });
 

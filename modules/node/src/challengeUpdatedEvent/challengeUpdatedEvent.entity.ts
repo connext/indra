@@ -10,7 +10,6 @@ import {
 import { Challenge } from "../challenge/challenge.entity";
 import { AppName, Bytes32, ChallengeUpdatedEventPayload, ChallengeStatus } from "@connext/types";
 import { BigNumber } from "ethers";
-import { toBN } from "@connext/utils";
 import { IsKeccak256Hash } from "../validate";
 
 export const entityToChallengeUpdatedPayload = (
@@ -44,7 +43,7 @@ export class ChallengeUpdatedEvent<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => toBN(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
@@ -52,7 +51,7 @@ export class ChallengeUpdatedEvent<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => toBN(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })

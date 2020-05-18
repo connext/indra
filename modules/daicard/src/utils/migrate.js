@@ -1,6 +1,5 @@
 import * as Connext from "connext";
-import { toBN } from "@connext/utils";
-import { utils, constants } from "ethers";
+import { utils, constants, BigNumber } from "ethers";
 import interval from "interval-promise";
 
 const { formatEther } = utils;
@@ -16,8 +15,8 @@ export const migrate = async (hubUrl, wallet, ethUrl) => {
   const state = await legacy.getState();
   const latestState = state.persistent.latestValidState;
 
-  const tokenBalance = toBN(latestState.balanceTokenUser);
-  const etherBalance = toBN(latestState.balanceWeiUser);
+  const tokenBalance = BigNumber.from(latestState.balanceTokenUser);
+  const etherBalance = BigNumber.from(latestState.balanceWeiUser);
   console.log(`Legacy channel has a balance of $${formatEther(tokenBalance)}`);
 
   const amountToken = tokenBalance.add(state.persistent.custodialBalance.balanceToken);
@@ -36,7 +35,7 @@ export const migrate = async (hubUrl, wallet, ethUrl) => {
     console.log(
       `Cashing out legacy channel: ${JSON.stringify(
         withdrawalParams,
-        (key, value) => (value._hex ? toBN(value._hex).toString() : value),
+        (key, value) => (value._hex ? BigNumber.from(value._hex).toString() : value),
         2,
       )}`,
     );

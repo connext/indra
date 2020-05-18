@@ -29,7 +29,6 @@ import {
   deBigNumberifyJson,
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
-  toBN,
 } from "@connext/utils";
 import { Contract, Wallet, BigNumber, constants, utils, providers } from "ethers";
 import { JsonRpcResponse, Rpc } from "rpc-server";
@@ -119,7 +118,7 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
     /* appSeqNo */ stateChannel ? stateChannel.numProposedApps : Math.ceil(1000 * Math.random()),
     /* latestState */ { foo: AddressZero, bar: BigNumber.from(0) },
     /* latestVersionNumber */ 0,
-    /* stateTimeout */ toBN(Math.ceil(1000 * Math.random())).toHexString(),
+    /* stateTimeout */ BigNumber.from(Math.ceil(1000 * Math.random())).toHexString(),
     /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
     /* multisig */ stateChannel
       ? stateChannel.multisigAddress
@@ -617,8 +616,8 @@ export function confirmProposedAppInstance(
     );
   }
 
-  expect(proposalParams.defaultTimeout).toEqual(toBN(appInstanceProposal.defaultTimeout));
-  expect(proposalParams.stateTimeout).toEqual(toBN(appInstanceProposal.stateTimeout));
+  expect(proposalParams.defaultTimeout).toEqual(BigNumber.from(appInstanceProposal.defaultTimeout));
+  expect(proposalParams.stateTimeout).toEqual(BigNumber.from(appInstanceProposal.stateTimeout));
 
   // TODO: uncomment when getState is implemented
   // expect(proposalParams.initialState).toEqual(appInstanceInitialState);

@@ -17,7 +17,6 @@ import {
   notGreaterThan,
   notLessThanOrEqualTo,
   notPositive,
-  toBN,
 } from "@connext/utils";
 import { BigNumber, constants, utils } from "ethers";
 
@@ -29,7 +28,7 @@ const { Zero, AddressZero } = constants;
 export class SwapController extends AbstractController {
   public async swap(params: PublicParams.Swap): Promise<PublicResults.Swap> {
     this.log.info(`swap started: ${stringify(params)}`);
-    const amount = toBN(params.amount);
+    const amount = BigNumber.from(params.amount);
     const { swapRate } = params;
 
     const toTokenAddress = getAddressFromAssetId(params.toAssetId);
@@ -48,7 +47,10 @@ export class SwapController extends AbstractController {
       notPositive(parseEther(swapRate)),
     );
 
-    const error = notLessThanOrEqualTo(amount, toBN(preSwapFromBal[this.connext.signerAddress]));
+    const error = notLessThanOrEqualTo(
+      amount,
+      BigNumber.from(preSwapFromBal[this.connext.signerAddress]),
+    );
     if (error) {
       throw new Error(error);
     }

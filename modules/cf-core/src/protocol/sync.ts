@@ -12,11 +12,10 @@ import {
 import {
   logTime,
   stringify,
-  toBN,
   getSignerAddressFromPublicIdentifier,
   recoverAddressFromChannelMessage,
 } from "@connext/utils";
-import { utils } from "ethers";
+import { utils, BigNumber } from "ethers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { StateChannel, AppInstance, FreeBalanceClass } from "../models";
@@ -439,7 +438,7 @@ async function syncAppStates(
     const json = counterpartySetState.find(
       (c) =>
         c.appIdentityHash === ourApp.identityHash &&
-        toBN(c.versionNumber).eq(counterpartyApp.versionNumber),
+        BigNumber.from(c.versionNumber).eq(counterpartyApp.versionNumber),
     );
     if (!json) {
       throw new Error(`No corresponding set state commitment for ${ourApp.identityHash}, aborting`);
@@ -474,7 +473,7 @@ async function syncAppStates(
       updatedChannel = ourChannel.setState(
         ourApp,
         counterpartyApp.latestState,
-        toBN(counterpartyApp.stateTimeout),
+        BigNumber.from(counterpartyApp.stateTimeout),
       );
       // commitment is valid but single signed, dont update channel
     }
@@ -519,7 +518,7 @@ async function syncFreeBalanceState(
   const json = counterpartySetState.find(
     (commitment) =>
       commitment.appIdentityHash === ourFreeBalance.identityHash &&
-      toBN(commitment.versionNumber).eq(counterpartyFreeBalance.versionNumber),
+      BigNumber.from(commitment.versionNumber).eq(counterpartyFreeBalance.versionNumber),
   );
   if (!json) {
     throw new Error(
@@ -570,8 +569,8 @@ async function syncFreeBalanceState(
       installedProposal.outcomeType,
       installedProposal.initiatorDepositAssetId,
       installedProposal.responderDepositAssetId,
-      toBN(installedProposal.initiatorDeposit),
-      toBN(installedProposal.responderDeposit),
+      BigNumber.from(installedProposal.initiatorDeposit),
+      BigNumber.from(installedProposal.responderDeposit),
       getSignerAddressFromPublicIdentifier(installedProposal.initiatorIdentifier),
       getSignerAddressFromPublicIdentifier(installedProposal.responderIdentifier),
       false,
@@ -608,7 +607,7 @@ async function syncFreeBalanceState(
     const json = ourSetState.find(
       (c) =>
         c.appIdentityHash === uninstalledApp.identityHash &&
-        toBN(c.versionNumber).eq(uninstalledApp.versionNumber),
+        BigNumber.from(c.versionNumber).eq(uninstalledApp.versionNumber),
     );
     if (!json) {
       throw new Error(
@@ -677,13 +676,13 @@ async function syncUntrackedProposals(
   const proposedAppInstance = {
     identity: {
       appDefinition: untrackedProposedApp.appDefinition,
-      channelNonce: toBN(counterpartyChannel.numProposedApps),
+      channelNonce: BigNumber.from(counterpartyChannel.numProposedApps),
       participants: counterpartyChannel.getSigningKeysFor(
         untrackedProposedApp.initiatorIdentifier,
         untrackedProposedApp.responderIdentifier,
       ),
       multisigAddress: ourChannel.multisigAddress,
-      defaultTimeout: toBN(untrackedProposedApp.defaultTimeout),
+      defaultTimeout: BigNumber.from(untrackedProposedApp.defaultTimeout),
     },
     hashOfLatestState: keccak256(
       defaultAbiCoder.encode(
@@ -721,7 +720,7 @@ async function getCommitmentsFromChannel(channel: StateChannel, store: IStoreSer
       // only fetch latest commitment for the app
       const commitments = await store.getSetStateCommitments(id);
       return commitments.sort((a, b) =>
-        toBN(b.versionNumber).sub(toBN(a.versionNumber)).toNumber(),
+        BigNumber.from(b.versionNumber).sub(BigNumber.from(a.versionNumber)).toNumber(),
       )[0];
     }),
   );

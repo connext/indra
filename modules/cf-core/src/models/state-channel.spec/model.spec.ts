@@ -1,6 +1,6 @@
 import { StateChannelJSON } from "@connext/types";
-import { bigNumberifyJson, getRandomAddress, getRandomBytes32, toBN } from "@connext/utils";
-import { BigNumberish, utils, constants } from "ethers";
+import { bigNumberifyJson, getRandomAddress, getRandomBytes32 } from "@connext/utils";
+import { BigNumberish, utils, constants, BigNumber } from "ethers";
 
 import { generateRandomNetworkContext } from "../../testing/mocks";
 
@@ -41,7 +41,7 @@ describe("StateChannel", () => {
     const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
     const tokenAddress = getAddress(getRandomAddress());
     const identityHash = getRandomBytes32();
-    const channelInitialDeposit = toBN(15);
+    const channelInitialDeposit = BigNumber.from(15);
 
     let sc: StateChannel;
 
@@ -94,10 +94,10 @@ describe("StateChannel", () => {
         const runTest = (initiatorDeposit: BigNumberish, responderDeposit: BigNumberish) => {
           const balanceDecrements = {
             [appInitiatorAssetId]: {
-              [appInitiator]: toBN(initiatorDeposit),
+              [appInitiator]: BigNumber.from(initiatorDeposit),
             },
             [appResponderAssetId]: {
-              [appResponder]: toBN(responderDeposit),
+              [appResponder]: BigNumber.from(responderDeposit),
             },
           };
           // app initiator is channel responder:

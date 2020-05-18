@@ -1,5 +1,5 @@
 import { AppInterface, OutcomeType, PublicIdentifier } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { BigNumber, utils, constants } from "ethers";
 
 import { HARD_CODED_ASSUMPTIONS } from "../constants";
@@ -225,12 +225,14 @@ export function createFreeBalance(
   return new AppInstance(
     /* initiator */ initiatorId,
     /* responder */ responderId,
-    /* defaultTimeout */ toBN(freeBalanceTimeout).toHexString(),
+    /* defaultTimeout */ BigNumber.from(freeBalanceTimeout).toHexString(),
     /* appInterface */ getFreeBalanceAppInterface(coinBucketAddress),
     /* appSeqNo */ HARD_CODED_ASSUMPTIONS.appSequenceNumberForFreeBalance,
     /* latestState */ serializeFreeBalanceState(initialState),
     /* latestVersionNumber */ 1,
-    /* latestTimeout */ toBN(HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout).toHexString(),
+    /* latestTimeout */ BigNumber.from(
+      HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout,
+    ).toHexString(),
     /* outcomeType */ OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
     /* multisigAddr */ multisigAddress,
   );

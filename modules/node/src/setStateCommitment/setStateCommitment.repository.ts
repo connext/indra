@@ -1,5 +1,5 @@
 import { SetStateCommitmentJSON } from "@connext/types";
-import { toBNJson } from "@connext/utils";
+import { toBigNumberJson } from "@connext/utils";
 import { EntityRepository, Repository } from "typeorm";
 
 import { SetStateCommitment } from "./setStateCommitment.entity";
@@ -13,8 +13,8 @@ export const setStateToJson = (entity: SetStateCommitment): SetStateCommitmentJS
     appStateHash: entity.appStateHash,
     challengeRegistryAddress: entity.challengeRegistryAddress,
     signatures: entity.signatures as any,
-    stateTimeout: toBNJson(entity.stateTimeout),
-    versionNumber: toBNJson(entity.versionNumber),
+    stateTimeout: toBigNumberJson(entity.stateTimeout),
+    versionNumber: toBigNumberJson(entity.versionNumber),
   };
 };
 

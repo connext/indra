@@ -18,7 +18,6 @@ import {
   getAddressError,
   notGreaterThan,
   notLessThanOrEqualTo,
-  toBN,
 } from "@connext/utils";
 import { Contract, constants } from "ethers";
 
@@ -29,7 +28,7 @@ const { AddressZero, Zero } = constants;
 export class DepositController extends AbstractController {
   public deposit = async (params: PublicParams.Deposit): Promise<PublicResults.Deposit> => {
     this.log.info(`deposit started: ${JSON.stringify(params)}`);
-    const amount = toBN(params.amount);
+    const amount = BigNumber.from(params.amount);
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;

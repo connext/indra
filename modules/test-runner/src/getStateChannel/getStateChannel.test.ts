@@ -7,8 +7,8 @@ import {
   StateChannelJSON,
   StateSchemaVersion,
 } from "@connext/types";
-import { toBN, toBNJson } from "@connext/utils";
-import { utils, constants } from "ethers";
+import { toBigNumberJson } from "@connext/utils";
+import { utils, constants, BigNumber } from "ethers";
 
 import { createClient, ETH_AMOUNT_SM, expect } from "../util";
 
@@ -50,20 +50,20 @@ const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
 
 const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   appIdentity: {
-    channelNonce: toBN(TEST_STORE_APP_INSTANCE.appSeqNo),
+    channelNonce: BigNumber.from(TEST_STORE_APP_INSTANCE.appSeqNo),
     participants: [
       TEST_STORE_APP_INSTANCE.initiatorIdentifier,
       TEST_STORE_APP_INSTANCE.responderIdentifier,
     ],
     multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
     appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
-    defaultTimeout: toBN(35),
+    defaultTimeout: BigNumber.from(35),
   },
   appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
   appStateHash: "setStateAppStateHash",
   challengeRegistryAddress: TEST_STORE_ETH_ADDRESS,
-  stateTimeout: toBNJson(17),
-  versionNumber: toBNJson(23),
+  stateTimeout: toBigNumberJson(17),
+  versionNumber: toBigNumberJson(23),
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
 

@@ -11,7 +11,7 @@ import {
   StateSchemaVersion,
   MinimalTransaction,
 } from "@connext/types";
-import { ChannelSigner, toBN } from "@connext/utils";
+import { ChannelSigner } from "@connext/utils";
 import { SetStateCommitment, SetupCommitment } from "@connext/contracts";
 
 import { stateToHash } from "./utils";
@@ -123,13 +123,13 @@ export class MiniFreeBalance {
     },
   ): [MiniFreeBalance, StateChannelJSON] {
     const appIds = activeApps.map((app) => app.identityHash);
-    const channelNonce = toBN(activeApps.length).add(1);
+    const channelNonce = BigNumber.from(activeApps.length).add(1);
     const freeBalance = new MiniFreeBalance(
       signers,
       multisigAddress,
       remainingBalance,
       networkContext,
-      toBN(appIds.length + 1),
+      BigNumber.from(appIds.length + 1),
       appIds,
     );
     const channel = {

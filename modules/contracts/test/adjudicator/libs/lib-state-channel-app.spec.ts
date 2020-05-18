@@ -1,7 +1,6 @@
 /* global before */
 import { AppChallenge, ChallengeStatus } from "@connext/types";
-import { toBN } from "@connext/utils";
-import { Contract, Wallet, ContractFactory, BigNumberish } from "ethers";
+import { Contract, Wallet, ContractFactory, BigNumberish, BigNumber } from "ethers";
 
 import {
   provider,
@@ -137,7 +136,7 @@ describe("LibStateChannelApp", () => {
     it("should return true if challenge is in onchain progression and the progress state period has not elapsed", async () => {
       await setAndProgressState(1);
       await verifyChallenge({
-        versionNumber: toBN(2),
+        versionNumber: BigNumber.from(2),
         status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
       });
 
@@ -179,7 +178,7 @@ describe("LibStateChannelApp", () => {
     it("should return false if it is explicitly finalized", async () => {
       await setAndProgressState(1, {
         actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
-        increment: toBN(10),
+        increment: BigNumber.from(10),
       });
       await verifyChallenge({ status: ChallengeStatus.EXPLICITLY_FINALIZED });
       expect(await isProgressable()).to.be.false;

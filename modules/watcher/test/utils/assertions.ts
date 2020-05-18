@@ -15,7 +15,7 @@ import {
   TransactionResponse,
 } from "@connext/types";
 import { expect } from "chai";
-import { ChannelSigner, toBN } from "@connext/utils";
+import { ChannelSigner } from "@connext/utils";
 import { AppWithCounterClass } from "./appWithCounter";
 import { NetworkContextForTestSuite } from "./contracts";
 
@@ -79,17 +79,17 @@ export const verifyChallengeUpdatedEvent = async (
     expect(event).to.containSubset({
       identityHash: app.identityHash,
       appStateHash: setState.appStateHash,
-      versionNumber: toBN(setState.versionNumber),
+      versionNumber: BigNumber.from(setState.versionNumber),
       status: StoredAppChallengeStatus.IN_ONCHAIN_PROGRESSION,
-      finalizesAt: toBN(app.defaultTimeout).add(current),
+      finalizesAt: BigNumber.from(app.defaultTimeout).add(current),
     });
   } else {
     expect(event).to.containSubset({
       identityHash: setState.appIdentityHash,
       appStateHash: setState.appStateHash,
-      versionNumber: toBN(setState.versionNumber),
+      versionNumber: BigNumber.from(setState.versionNumber),
       status: StoredAppChallengeStatus.IN_DISPUTE,
-      finalizesAt: toBN(setState.stateTimeout).add(current),
+      finalizesAt: BigNumber.from(setState.stateTimeout).add(current),
     });
   }
 };

@@ -8,7 +8,7 @@ import {
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
+import { BigNumber } from "ethers";
 
 export const SupportedApplications = enumify({
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
@@ -19,8 +19,7 @@ export const SupportedApplications = enumify({
   [DepositAppName]: DepositAppName,
 });
 
-export type SupportedApplications =
-  (typeof SupportedApplications)[keyof typeof SupportedApplications];
+export type SupportedApplications = typeof SupportedApplications[keyof typeof SupportedApplications];
 
 export type AppRegistryInfo = {
   actionEncoding?: string;
@@ -33,4 +32,4 @@ export type AppRegistryInfo = {
 export type AppRegistryType = AppRegistryInfo[];
 
 // timeout default values
-export const DEFAULT_APP_TIMEOUT = toBN(8640); // 6 blocks per min (ethereum) * 60 mins * 24h
+export const DEFAULT_APP_TIMEOUT = BigNumber.from(8640); // 6 blocks per min (ethereum) * 60 mins * 24h

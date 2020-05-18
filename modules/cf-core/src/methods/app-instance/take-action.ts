@@ -9,7 +9,6 @@ import {
   UpdateStateMessage,
   PublicIdentifier,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
 import { BigNumber, utils } from "ethers";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -94,7 +93,7 @@ export class TakeActionController extends NodeController {
       publicIdentifier,
       sc.userIdentifiers.find((id) => id !== publicIdentifier)!,
       action,
-      stateTimeout || toBN(app.defaultTimeout),
+      stateTimeout || BigNumber.from(app.defaultTimeout),
     );
 
     const appInstance = channel.getAppInstance(appIdentityHash);

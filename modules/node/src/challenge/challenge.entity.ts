@@ -18,7 +18,6 @@ import { BigNumber } from "ethers";
 import { AppName, StoredAppChallengeStatus } from "@connext/types";
 import { StateProgressedEvent } from "../stateProgressedEvent/stateProgressedEvent.entity";
 import { ChallengeUpdatedEvent } from "../challengeUpdatedEvent/challengeUpdatedEvent.entity";
-import { toBN } from "@connext/utils";
 
 @Entity()
 export class ProcessedBlock {
@@ -33,7 +32,7 @@ export class Challenge<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => toBN(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
@@ -45,7 +44,7 @@ export class Challenge<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => toBN(value),
+      from: (value: string): BigNumber => BigNumber.from(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })

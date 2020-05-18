@@ -1,9 +1,9 @@
 import { IConnextClient, CONVENTION_FOR_ETH_ASSET_ID, EventNames } from "@connext/types";
 import { getPostgresStore } from "@connext/store";
-import { toBN } from "@connext/utils";
 import { Sequelize } from "sequelize";
 
 import { createClient, fundChannel, ETH_AMOUNT_MD, expect, env } from "../util";
+import { BigNumber } from "ethers";
 
 // NOTE: only groups correct number of promises associated with a payment together.
 // there is no validation done to ensure the events correspond to the payments, or
@@ -77,7 +77,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     // establish tests constants
     const DEPOSIT_AMT = ETH_AMOUNT_MD;
     const ASSET = CONVENTION_FOR_ETH_ASSET_ID;
-    const TRANSFER_AMT = toBN(100);
+    const TRANSFER_AMT = BigNumber.from(100);
     await fundChannel(sender, DEPOSIT_AMT, ASSET);
 
     // get initial balances
@@ -106,7 +106,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     // establish tests constants
     const DEPOSIT_AMT = ETH_AMOUNT_MD;
     const ASSET = CONVENTION_FOR_ETH_ASSET_ID;
-    const TRANSFER_AMT = toBN(100);
+    const TRANSFER_AMT = BigNumber.from(100);
     const MIN_TRANSFERS = 25;
     const TRANSFER_INTERVAL = 500; // ms between consecutive transfer calls
 

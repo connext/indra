@@ -1,9 +1,9 @@
 import { AppInstanceJson } from "@connext/types";
-import { toBN, toBNJson } from "@connext/utils";
+import { toBigNumberJson } from "@connext/utils";
 import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { getConnection } from "typeorm";
-import { constants } from "ethers";
+import { constants, BigNumber } from "ethers";
 
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -100,7 +100,7 @@ const createTestChannelWithAppInstance = async (
   };
   const freeBalanceUpdateCommitment = createSetStateCommitmentJSON({
     appIdentityHash: channelJson.freeBalanceAppInstance.identityHash,
-    versionNumber: toBNJson(100),
+    versionNumber: toBigNumberJson(100),
   });
   const conditionalCommitment = createConditionalTransactionCommitmentJSON({
     appIdentityHash: appInstance.identityHash,
@@ -357,7 +357,7 @@ describe("CFCoreStore", () => {
       };
       const updatedFreeBalanceCommitment = createSetStateCommitmentJSON({
         ...freeBalanceUpdate,
-        versionNumber: toBNJson(100),
+        versionNumber: toBigNumberJson(100),
       });
       const conditionalTx = createConditionalTransactionCommitmentJSON({
         appIdentityHash: appInstance.identityHash,
@@ -404,13 +404,13 @@ describe("CFCoreStore", () => {
         ...appInstance,
         latestState: { updated: "updated app instance" },
         latestVersionNumber: 42,
-        stateTimeout: toBN(1142).toHexString(),
+        stateTimeout: BigNumber.from(1142).toHexString(),
         defaultTimeout: "0x00",
       });
 
       const updatedSetStateCommitment = createSetStateCommitmentJSON({
         appIdentityHash: appInstance.identityHash,
-        versionNumber: toBNJson(updated.latestVersionNumber),
+        versionNumber: toBigNumberJson(updated.latestVersionNumber),
       });
 
       for (let index = 0; index < 3; index++) {
@@ -437,7 +437,7 @@ describe("CFCoreStore", () => {
       };
       const updatedFreeBalanceCommitment = createSetStateCommitmentJSON({
         appIdentityHash: channelJson.freeBalanceAppInstance.identityHash,
-        versionNumber: toBNJson(1337),
+        versionNumber: toBigNumberJson(1337),
       });
 
       for (let index = 0; index < 3; index++) {
@@ -486,7 +486,7 @@ describe("CFCoreStore", () => {
       );
       const updated = {
         ...challenge,
-        versionNumber: toBN(5),
+        versionNumber: BigNumber.from(5),
       };
       await cfCoreStore.saveAppChallenge(updated);
       const retrieved = await cfCoreStore.getAppChallenge(challenge.identityHash);

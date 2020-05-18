@@ -1,7 +1,11 @@
 import { getMemoryStore } from "@connext/store";
 import { Contract, ContractFactory, BigNumber, providers, constants } from "ethers";
 import { OutcomeType, ProtocolNames, ProtocolParams, MinimalTransaction } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, getRandomAddress, toBNJson } from "@connext/utils";
+import {
+  getSignerAddressFromPublicIdentifier,
+  getRandomAddress,
+  toBigNumberJson,
+} from "@connext/utils";
 
 import { getCreate2MultisigAddress } from "../utils";
 
@@ -144,7 +148,7 @@ export class TestRunner {
           appStasteHash: updatedSc.freeBalance.hashOfLatestState,
           challengeRegistryAddress: getRandomAddress(),
           signatures: [HashZero, HashZero],
-          versionNumber: toBNJson(updatedSc.freeBalance.latestVersionNumber),
+          versionNumber: toBigNumberJson(updatedSc.freeBalance.latestVersionNumber),
         } as any,
       );
       mininode.scm.set(this.multisigAB, updatedSc);
@@ -172,7 +176,7 @@ export class TestRunner {
           appStasteHash: updatedSc.freeBalance.hashOfLatestState,
           challengeRegistryAddress: getRandomAddress(),
           signatures: [HashZero, HashZero],
-          versionNumber: toBNJson(updatedSc.freeBalance.latestVersionNumber),
+          versionNumber: toBigNumberJson(updatedSc.freeBalance.latestVersionNumber),
         } as any,
       );
       mininode.scm.set(this.multisigBC, updatedSc);
