@@ -111,7 +111,7 @@ export class ColorfulLogger implements ILoggerService {
     this.context = typeof context !== "undefined" ? context : this.context;
     this.level = typeof level !== "undefined" ? parseInt(level.toString(), 10) : this.level;
     this.color = color || false;
-    this.id = id.toString() || "?";
+    this.id = id ? id.toString() : "?";
     if (!this.color) {
       this.colors = { context: "", debug: "", error: "", info: "", warn: "", reset: "" };
     }
