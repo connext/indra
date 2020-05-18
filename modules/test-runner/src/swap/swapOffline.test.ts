@@ -1,4 +1,4 @@
-import { IConnextClient } from "@connext/types";
+import { IConnextClient, ProtocolNames, ProtocolParams } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import * as lolex from "lolex";
@@ -11,7 +11,6 @@ import {
   expect,
   fundChannel,
   getProtocolFromData,
-  INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   MessagingEvent,
   MessagingEventData,
   RECEIVED,
@@ -20,9 +19,8 @@ import {
   swapAsset,
   TestMessagingService,
   TOKEN_AMOUNT,
-  UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED,
-  UNINSTALL_SUPPORTED_APP_COUNT_SENT,
 } from "../util";
+import { addressBook } from "@connext/contracts";
 
 let clock: any;
 
@@ -92,6 +90,7 @@ const fundChannelAndSwap = async (opts: {
 };
 
 describe("Swap offline", () => {
+  const swapAppAddr = addressBook[4447].SimpleTwoPartySwapApp.address;
   beforeEach(async () => {
     clock = lolex.install({
       shouldAdvanceTime: true,
@@ -106,10 +105,12 @@ describe("Swap offline", () => {
 
   it("Bot A tries to install swap but there’s no response from node", async () => {
     // 3 app installs expected (coin balance x2, swap)
-    const expectedInstallsReceived = 2 * INSTALL_SUPPORTED_APP_COUNT_RECEIVED;
     const messagingConfig = {
-      ceiling: { received: expectedInstallsReceived },
-      protocol: "install",
+      ceiling: { [RECEIVED]: 0 },
+      protocol: ProtocolNames.install,
+      params: ({
+        appInterface: { addr: swapAppAddr },
+      } as unknown) as ProtocolParams.Install,
     };
 
     // deposit eth into channel and swap for token
@@ -120,16 +121,18 @@ describe("Swap offline", () => {
       outputAmount: TOKEN_AMOUNT,
       failsWith: APP_PROTOCOL_TOO_LONG("install"),
       fastForward: RECEIVED,
-      protocol: "install",
+      protocol: ProtocolNames.install,
     });
   });
 
   it("Bot A installs swap app successfully but then node goes offline for uninstall", async () => {
-    const expectedUninstallsReceived = 2 * UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED;
     // does not receive messages, node is offline
     const messagingConfig = {
-      ceiling: { received: expectedUninstallsReceived },
-      protocol: "uninstall",
+      ceiling: { [RECEIVED]: 0 },
+      protocol: ProtocolNames.uninstall,
+      params: ({
+        appInterface: { addr: swapAppAddr },
+      } as unknown) as ProtocolParams.Install,
     };
     // deposit eth into channel and swap for token
     // go offline during swap, should fail with swap timeout
@@ -139,16 +142,18 @@ describe("Swap offline", () => {
       outputAmount: TOKEN_AMOUNT,
       failsWith: `Failed to uninstall swap: Error: ${APP_PROTOCOL_TOO_LONG("uninstall")}`,
       fastForward: RECEIVED,
-      protocol: "uninstall",
+      protocol: ProtocolNames.uninstall,
     });
   });
 
   it("Bot A install swap app successfully but then goes offline for uninstall", async () => {
-    const expectedUninstallsSent = 2 * UNINSTALL_SUPPORTED_APP_COUNT_SENT;
     // does not receive messages, node is offline
     const messagingConfig = {
-      ceiling: { sent: expectedUninstallsSent },
-      protocol: "uninstall",
+      ceiling: { [SEND]: 0 },
+      protocol: ProtocolNames.uninstall,
+      params: ({
+        appInterface: { addr: swapAppAddr },
+      } as unknown) as ProtocolParams.Install,
     };
     // deposit eth into channel and swap for token
     // go offline during swap, should fail with swap timeout
@@ -158,7 +163,7 @@ describe("Swap offline", () => {
       outputAmount: TOKEN_AMOUNT,
       failsWith: `Failed to uninstall swap: Error: ${APP_PROTOCOL_TOO_LONG("uninstall")}`,
       fastForward: SEND,
-      protocol: "uninstall",
+      protocol: ProtocolNames.uninstall,
     });
   });
 
