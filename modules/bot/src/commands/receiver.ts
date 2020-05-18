@@ -11,31 +11,35 @@ export default {
   describe: "Start the receiver service",
   builder: (yargs: Argv) => {
     return yargs
-      .option("private-key", {
-        describe: "Ethereum Private Key",
+      .option("concurrency-index", {
+        description: "Number that identifies this bot when many are running in parallel",
         type: "string",
-      })
-      .option("name", {
-        description: "Client namespace",
-        type: "string",
-        default: "client",
+        default: "1",
       })
       .option("log-level", {
         description: "Log level",
         type: "number",
         default: 1,
       })
+      .option("name", {
+        description: "Client namespace",
+        type: "string",
+        default: "client",
+      })
+      .option("private-key", {
+        describe: "Ethereum Private Key",
+        type: "string",
+      })
       .demandOption(["private-key"]);
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
     const NAME = "Receiver";
-    const id = "1";
     const TRANSFER_AMT = parseEther("0.01");
     const ethUrl = process.env.INDRA_ETH_RPC_URL;
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
 
-    const log = new ColorfulLogger(NAME, 3, true, id);
+    const log = new ColorfulLogger(NAME, 3, true, argv.concurrencyIndex);
     log.info(JSON.stringify(argv));
 
     const client = await createClient(
