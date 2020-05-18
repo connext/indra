@@ -1,29 +1,25 @@
-import Queue from "p-queue";
-import { v4 as uuid } from "uuid";
-
 import { Deferred } from "../../deferred";
+import { IO_SEND_AND_WAIT_TIMEOUT } from "../../constants";
 
 export class Lock {
   private currentLockHandle: Deferred<any> | null = new Deferred();
   private unlockKey: string = "";
-  private readonly requestsForLock: Queue;
 
   constructor(public readonly lockName: string) {
-    this.requestsForLock = new Queue({ concurrency: 1 });
   }
 
-  async acquireLock(timeout: number): Promise<string> {
-    const unlockKey = uuid();
-    const lockAvailableNow = new Deferred();
-    this.requestsForLock.add(() => {
-      lockAvailableNow.resolve();
-      return this.acquireLockInternal(unlockKey, timeout);
-    });
-    await lockAvailableNow.promise;
-    return unlockKey;
+  async acquireLock(
+    unlockKey: string,
+    timeout: number = IO_SEND_AND_WAIT_TIMEOUT,
+  ): Promise<string> {
+    const claim = new Deferred();
+    this.currentLockHandle = claim;
+    this.unlockKey = unlockKey;
+    setTimeout(() => claim.reject("Request timed out."), timeout);
+    return claim.promise as Promise<string>;
   }
 
-  async releaseLock(unlockKey: string) {
+  async releaseLock(name: string, unlockKey: string) {
     this.verifyLockKey(unlockKey);
     if (this.currentLockHandle) this.currentLockHandle.resolve();
     this.currentLockHandle = null;
@@ -31,14 +27,6 @@ export class Lock {
 
   public isAcquired() {
     return this.currentLockHandle !== null;
-  }
-
-  private acquireLockInternal(unlockKey: string, timeout: number): Promise<any> {
-    const claim = new Deferred();
-    this.currentLockHandle = claim;
-    this.unlockKey = unlockKey;
-    setTimeout(() => claim.reject("Request timed out."), timeout);
-    return claim.promise;
   }
 
   private verifyLockKey(unlockKey: string) {
