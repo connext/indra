@@ -40,7 +40,7 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 
 default: dev
 all: dev staging release
-dev: database proxy node test-runner
+dev: bot database proxy node test-runner
 staging: database ethprovider proxy node-staging test-runner-staging webserver
 release: database ethprovider proxy node-release test-runner-release webserver
 
@@ -150,6 +150,9 @@ watch: watch-integration
 
 test-backwards-compatibility: pull-backwards-compatible
 	bash ops/test/integration.sh $(backwards_compatible_version)
+
+test-bot: bot
+	bash ops/test/bot.sh
 
 test-cf: cf-core
 	bash ops/test/cf.sh
