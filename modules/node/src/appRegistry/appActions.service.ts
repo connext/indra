@@ -25,6 +25,8 @@ import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.se
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { getRandomBytes32, stringify } from "@connext/utils";
 
+const { soliditySha256 } = utils;
+
 @Injectable()
 export class AppActionsService {
   constructor(
@@ -70,7 +72,7 @@ export class AppActionsService {
       }
       case HashLockTransferAppName: {
         const senderApp = await this.hashlockTransferService.findSenderAppByLockHashAndAssetId(
-          utils.soliditySha256(["bytes32"], [(action as HashLockTransferAppAction).preImage]),
+          soliditySha256(["bytes32"], [(action as HashLockTransferAppAction).preImage]),
           app.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
         );
         if (!senderApp) {

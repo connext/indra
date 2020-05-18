@@ -4,6 +4,8 @@ import { Wallet, providers, utils } from "ethers";
 import { deployTestArtifactsToChain } from "./contracts";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY, C_PRIVATE_KEY } from "./test-constants.jest";
 
+const { parseEther } = utils;
+
 dotenvExtended.load();
 const env = {
   ETHPROVIDER_URL: process.env.ETHPROVIDER_URL || "http://localhost:8545",
@@ -14,7 +16,7 @@ const env = {
 
 const fundAddress = async (to: string, ethProvider: providers.JsonRpcProvider): Promise<void> => {
   const sugarDaddy = Wallet.fromMnemonic(env.SUGAR_DADDY).connect(ethProvider);
-  const tx = await sugarDaddy.sendTransaction({ to, value: utils.parseEther("1000") });
+  const tx = await sugarDaddy.sendTransaction({ to, value: parseEther("1000") });
   if (!tx.hash) throw new Error(`Couldn't fund account ${to}`);
   await ethProvider.waitForTransaction(tx.hash);
 };

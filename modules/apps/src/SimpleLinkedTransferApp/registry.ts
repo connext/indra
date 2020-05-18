@@ -8,6 +8,8 @@ import { constants } from "ethers";
 
 import { AppRegistryInfo } from "../shared";
 
+const { Zero } = constants;
+
 export const SimpleLinkedTransferAppRegistryInfo: AppRegistryInfo = {
   actionEncoding: SimpleLinkedTransferAppActionEncoding,
   allowNodeInstall: true,
@@ -17,4 +19,4 @@ export const SimpleLinkedTransferAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const LINKED_TRANSFER_STATE_TIMEOUT = constants.Zero;
+export const LINKED_TRANSFER_STATE_TIMEOUT = Zero;

@@ -23,6 +23,9 @@ import { BigNumber, constants, utils } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
+const { parseEther, formatEther } = utils;
+const { Zero, AddressZero } = constants;
+
 export class SwapController extends AbstractController {
   public async swap(params: PublicParams.Swap): Promise<PublicResults.Swap> {
     this.log.info(`swap started: ${stringify(params)}`);
@@ -41,8 +44,8 @@ export class SwapController extends AbstractController {
       getAddressError(fromTokenAddress),
       getAddressError(toTokenAddress),
       notLessThanOrEqualTo(amount, userBal),
-      notGreaterThan(amount, constants.Zero),
-      notPositive(utils.parseEther(swapRate)),
+      notGreaterThan(amount, Zero),
+      notPositive(parseEther(swapRate)),
     );
 
     const error = notLessThanOrEqualTo(amount, toBN(preSwapFromBal[this.connext.signerAddress]));
@@ -142,11 +145,9 @@ export class SwapController extends AbstractController {
     const swappedAmount = calculateExchange(amount, swapRate);
 
     this.log.debug(
-      `Swapping ${utils.formatEther(amount)} ${
-        toTokenAddress === constants.AddressZero ? "ETH" : "Tokens"
-      } for ${utils.formatEther(swappedAmount)} ${
-        fromTokenAddress === constants.AddressZero ? "ETH" : "Tokens"
-      }`,
+      `Swapping ${formatEther(amount)} ${
+        toTokenAddress === AddressZero ? "ETH" : "Tokens"
+      } for ${formatEther(swappedAmount)} ${fromTokenAddress === AddressZero ? "ETH" : "Tokens"}`,
     );
 
     // NOTE: always put the initiators swap information FIRST

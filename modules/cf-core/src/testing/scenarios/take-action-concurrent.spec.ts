@@ -20,6 +20,9 @@ import {
   makeProposeCall,
 } from "../utils";
 
+const { parseEther } = utils;
+const { One } = constants;
+
 expect.extend({ toBeLt });
 
 jest.setTimeout(7500);
@@ -47,7 +50,7 @@ describe("Node method follows spec - toke action", () => {
         multisigAddress,
         nodeA,
         nodeB,
-        utils.parseEther("2"), // We are depositing in 2 and use 1 for each concurrent app
+        parseEther("2"), // We are depositing in 2 and use 1 for each concurrent app
       );
 
       nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
@@ -63,9 +66,9 @@ describe("Node method follows spec - toke action", () => {
         TicTacToeApp,
         multisigAddress,
         /* initialState */ undefined,
-        constants.One,
+        One,
         CONVENTION_FOR_ETH_ASSET_ID,
-        constants.One,
+        One,
         CONVENTION_FOR_ETH_ASSET_ID,
       );
 

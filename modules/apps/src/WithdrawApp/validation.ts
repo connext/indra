@@ -8,6 +8,8 @@ import { constants } from "ethers";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 
+const { HashZero, Zero } = constants;
+
 export const validateWithdrawApp = async (
   params: MethodParams.ProposeInstall,
   initiatorIdentifier: string,
@@ -33,7 +35,7 @@ export const validateWithdrawApp = async (
     throw new Error(`Cannot install a withdraw app with a finalized state. State: ${initialState}`);
   }
 
-  if (initialState.signatures[1] !== constants.HashZero) {
+  if (initialState.signatures[1] !== HashZero) {
     throw new Error(
       `Cannot install a withdraw app with a populated signatures[1] field. Signatures[1]: ${initialState.signatures[1]}`,
     );
@@ -48,7 +50,7 @@ export const validateWithdrawApp = async (
     );
   }
 
-  if (!initialState.transfers[1].amount.eq(constants.Zero)) {
+  if (!initialState.transfers[1].amount.eq(Zero)) {
     throw new Error(
       `Cannot install a withdraw app with nonzero recipient amount. ${initialState.transfers[1].amount.toString()}`,
     );

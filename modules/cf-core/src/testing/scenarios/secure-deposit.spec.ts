@@ -17,6 +17,8 @@ import {
   transferERC20Tokens,
 } from "../utils";
 
+const { AddressZero, Zero, One, Two } = constants;
+
 expect.extend({ toBeEq });
 
 // NOTE: no deposit started event emitted for responder
@@ -77,26 +79,23 @@ describe("Node method follows spec - deposit", () => {
 
     const freeBalanceState = await getFreeBalanceState(nodeA, multisigAddress, erc20AssetId);
 
-    expect(Object.values(freeBalanceState)).toMatchObject([constants.Zero, constants.Zero]);
+    expect(Object.values(freeBalanceState)).toMatchObject([Zero, Zero]);
   });
 
   it("has the right balance for both parties after eth deposits", async () => {
     const preDepositBalance = await provider.getBalance(multisigAddress);
 
-    await deposit(nodeB, multisigAddress, constants.One, nodeA);
+    await deposit(nodeB, multisigAddress, One, nodeA);
     await confirmEthAndERC20FreeBalances(
       nodeA,
       nodeB,
       multisigAddress,
-      constants.AddressZero,
-      [constants.Zero, constants.One], // balA, balB
+      AddressZero,
+      [Zero, One], // balA, balB
     );
 
-    await deposit(nodeA, multisigAddress, constants.One, nodeB);
-    await confirmEthAndERC20FreeBalances(nodeA, nodeB, multisigAddress, constants.AddressZero, [
-      constants.One,
-      constants.One,
-    ]);
+    await deposit(nodeA, multisigAddress, One, nodeB);
+    await confirmEthAndERC20FreeBalances(nodeA, nodeB, multisigAddress, AddressZero, [One, One]);
 
     expect(await provider.getBalance(multisigAddress)).toBeEq(preDepositBalance.add(2));
   });
@@ -118,19 +117,19 @@ describe("Node method follows spec - deposit", () => {
     await transferERC20Tokens(await nodeA.signerAddress);
     await transferERC20Tokens(await nodeB.signerAddress);
 
-    await deposit(nodeB, multisigAddress, constants.One, nodeA, erc20AssetId);
+    await deposit(nodeB, multisigAddress, One, nodeA, erc20AssetId);
     await confirmEthAndERC20FreeBalances(nodeA, nodeB, multisigAddress, tokenAddress, undefined, [
-      constants.Zero,
-      constants.One,
+      Zero,
+      One,
     ]);
 
-    await deposit(nodeA, multisigAddress, constants.One, nodeB, erc20AssetId);
+    await deposit(nodeA, multisigAddress, One, nodeB, erc20AssetId);
     await confirmEthAndERC20FreeBalances(nodeA, nodeB, multisigAddress, tokenAddress, undefined, [
-      constants.One,
-      constants.One,
+      One,
+      One,
     ]);
     expect(await erc20Contract.functions.balanceOf(multisigAddress)).toEqual(
-      preDepositERC20Balance.add(constants.Two),
+      preDepositERC20Balance.add(Two),
     );
   });
 
@@ -148,44 +147,42 @@ describe("Node method follows spec - deposit", () => {
     const preDepositEthBalance = await provider.getBalance(multisigAddress);
     const preDepositERC20Balance = await erc20Contract.balanceOf(multisigAddress);
 
-    await deposit(nodeA, multisigAddress, constants.One, nodeB, erc20AssetId);
+    await deposit(nodeA, multisigAddress, One, nodeB, erc20AssetId);
     await confirmEthAndERC20FreeBalances(nodeA, nodeB, multisigAddress, tokenAddress, undefined, [
-      constants.One,
-      constants.Zero,
+      One,
+      Zero,
     ]);
 
-    await deposit(nodeB, multisigAddress, constants.One, nodeA, erc20AssetId);
+    await deposit(nodeB, multisigAddress, One, nodeA, erc20AssetId);
     await confirmEthAndERC20FreeBalances(nodeA, nodeB, multisigAddress, tokenAddress, undefined, [
-      constants.One,
-      constants.One,
+      One,
+      One,
     ]);
 
     expect(await provider.getBalance(multisigAddress)).toEqual(preDepositEthBalance);
 
-    expect(await erc20Contract.balanceOf(multisigAddress)).toEqual(
-      preDepositERC20Balance.add(constants.Two),
-    );
+    expect(await erc20Contract.balanceOf(multisigAddress)).toEqual(preDepositERC20Balance.add(Two));
 
     // now deposits ETH
 
-    await deposit(nodeA, multisigAddress, constants.One, nodeB);
+    await deposit(nodeA, multisigAddress, One, nodeB);
     await confirmEthAndERC20FreeBalances(
       nodeA,
       nodeB,
       multisigAddress,
       tokenAddress,
-      [constants.One, constants.Zero],
-      [constants.One, constants.One],
+      [One, Zero],
+      [One, One],
     );
 
-    await deposit(nodeB, multisigAddress, constants.One, nodeA);
+    await deposit(nodeB, multisigAddress, One, nodeA);
     await confirmEthAndERC20FreeBalances(
       nodeA,
       nodeB,
       multisigAddress,
       tokenAddress,
-      [constants.One, constants.One],
-      [constants.One, constants.One],
+      [One, One],
+      [One, One],
     );
     expect(await provider.getBalance(multisigAddress)).toBeEq(preDepositEthBalance.add(2));
   });
@@ -196,8 +193,8 @@ async function confirmEthAndERC20FreeBalances(
   channelResponder: Node,
   multisigAddress: string,
   tokenAddress: string,
-  ethExpected: [BigNumber, BigNumber] = [constants.Zero, constants.Zero],
-  erc20Expected: [BigNumber, BigNumber] = [constants.Zero, constants.Zero],
+  ethExpected: [BigNumber, BigNumber] = [Zero, Zero],
+  erc20Expected: [BigNumber, BigNumber] = [Zero, Zero],
 ) {
   const eth = deBigNumberifyJson({
     [channelInitiator.signerAddress]: ethExpected[0],
@@ -213,7 +210,7 @@ async function confirmEthAndERC20FreeBalances(
     const ethFreeBalance = await getFreeBalanceState(
       node,
       multisigAddress,
-      getAddressFromAssetId(constants.AddressZero),
+      getAddressFromAssetId(AddressZero),
     );
     const tokenFreeBalance = await getFreeBalanceState(
       node,
@@ -221,17 +218,15 @@ async function confirmEthAndERC20FreeBalances(
       getAddressFromAssetId(tokenAddress),
     );
     // validate eth
-    expect(deBigNumberifyJson(tokenIndexedFreeBalances[constants.AddressZero] || {})).toMatchObject(
-      eth,
-    );
+    expect(deBigNumberifyJson(tokenIndexedFreeBalances[AddressZero] || {})).toMatchObject(eth);
     expect(deBigNumberifyJson(ethFreeBalance)).toMatchObject(eth);
 
     // validate tokens
     expect(deBigNumberifyJson(tokenIndexedFreeBalances[tokenAddress] || {})).toMatchObject(
-      tokenAddress === constants.AddressZero ? eth : token,
+      tokenAddress === AddressZero ? eth : token,
     );
     expect(deBigNumberifyJson(tokenFreeBalance)).toMatchObject(
-      tokenAddress === constants.AddressZero ? eth : token,
+      tokenAddress === AddressZero ? eth : token,
     );
   }
 }

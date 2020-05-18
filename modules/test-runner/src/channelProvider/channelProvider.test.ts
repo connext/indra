@@ -15,6 +15,8 @@ import {
   withdrawFromChannel,
 } from "../util";
 
+const { One, AddressZero } = constants;
+
 describe("ChannelProvider", () => {
   let client: IConnextClient;
   let remoteClient: IConnextClient;
@@ -58,7 +60,7 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // TRANSFER FLOW
-    const transfer: AssetOptions = { amount: constants.One, assetId: tokenAddress };
+    const transfer: AssetOptions = { amount: One, assetId: tokenAddress };
     const clientB = await createClient({ id: "B" });
     await clientB.requestCollateral(tokenAddress);
 
@@ -86,14 +88,14 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // WITHDRAW FLOW
-    const withdraw: AssetOptions = { amount: constants.One, assetId: tokenAddress };
+    const withdraw: AssetOptions = { amount: One, assetId: tokenAddress };
     await withdrawFromChannel(remoteClient, withdraw.amount, withdraw.assetId);
   });
 
   it("Remote client tries to call a function when client is offline", async () => {
     // close channelProvider connection
     remoteClient.channelProvider.close();
-    await expect(remoteClient.getFreeBalance(constants.AddressZero)).to.be.rejectedWith(
+    await expect(remoteClient.getFreeBalance(AddressZero)).to.be.rejectedWith(
       "RpcConnection: Timeout - JSON-RPC not responded within 30s",
     );
   });

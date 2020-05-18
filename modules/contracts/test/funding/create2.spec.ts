@@ -7,6 +7,8 @@ import ProxyFactory from "../../build/ProxyFactory.json";
 
 import { expect, provider } from "../utils";
 
+const { getAddress, solidityKeccak256, keccak256, solidityPack } = utils;
+
 describe("ProxyFactory with CREATE2", function () {
   this.timeout(5000);
 
@@ -16,21 +18,16 @@ describe("ProxyFactory with CREATE2", function () {
   let echo: Contract;
 
   function create2(initcode: string, saltNonce: number = 0, initializer: string = "0x") {
-    return utils.getAddress(
-      utils
-        .solidityKeccak256(
-          ["bytes1", "address", "uint256", "bytes32"],
-          [
-            "0xff",
-            pf.address,
-            utils.solidityKeccak256(
-              ["bytes32", "uint256"],
-              [utils.keccak256(initializer), saltNonce],
-            ),
-            utils.keccak256(initcode),
-          ],
-        )
-        .slice(-40),
+    return getAddress(
+      solidityKeccak256(
+        ["bytes1", "address", "uint256", "bytes32"],
+        [
+          "0xff",
+          pf.address,
+          solidityKeccak256(["bytes32", "uint256"], [keccak256(initializer), saltNonce]),
+          keccak256(initcode),
+        ],
+      ).slice(-40),
     );
   }
 
@@ -45,7 +42,7 @@ describe("ProxyFactory with CREATE2", function () {
     it("can be used to deploy a contract at a predictable address", async () => {
       const masterCopy = echo.address;
 
-      const initcode = utils.solidityPack(
+      const initcode = solidityPack(
         ["bytes", "uint256"],
         [`0x${Proxy.bytecode.replace(/^0x/, "")}`, echo.address],
       );

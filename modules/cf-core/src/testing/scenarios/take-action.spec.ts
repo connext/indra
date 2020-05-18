@@ -18,6 +18,8 @@ import { toBN, deBigNumberifyJson } from "@connext/utils";
 
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
+const { Zero, Two } = constants;
+
 // NOTE: no initiator events
 function confirmMessages(
   initiator: Node,
@@ -65,12 +67,12 @@ describe("Node method follows spec - takeAction", () => {
 
         const expectedNewState = {
           board: [
-            [constants.Two, constants.Zero, constants.Zero],
-            [constants.Zero, constants.Zero, constants.Zero],
-            [constants.Zero, constants.Zero, constants.Zero],
+            [Two, Zero, Zero],
+            [Zero, Zero, Zero],
+            [Zero, Zero, Zero],
           ],
-          versionNumber: toBN(2),
-          winner: constants.Zero,
+          versionNumber: Two,
+          winner: Zero,
         };
 
         nodeB.on(EventNames.UPDATE_STATE_EVENT, async (msg: UpdateStateMessage) => {

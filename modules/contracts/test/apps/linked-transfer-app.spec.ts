@@ -7,6 +7,9 @@ import UnidirectionalLinkedTransferApp from "../../build/UnidirectionalLinkedTra
 
 import { expect, provider } from "../utils";
 
+const { solidityKeccak256, defaultAbiCoder } = utils;
+const { AddressZero, Zero, One } = constants;
+
 type CoinTransfer = {
   to: string;
   amount: BigNumber;
@@ -61,22 +64,19 @@ function mkAddress(prefix: string = "0xa"): string {
 }
 
 function decodeAppState(encodedAppState: string): UnidirectionalLinkedTransferAppState {
-  return utils.defaultAbiCoder.decode(
-    [unidirectionalLinkedTransferAppStateEncoding],
-    encodedAppState,
-  )[0];
+  return defaultAbiCoder.decode([unidirectionalLinkedTransferAppStateEncoding], encodedAppState)[0];
 }
 
 function encodeAppState(state: SolidityValueType): string {
-  return utils.defaultAbiCoder.encode([unidirectionalLinkedTransferAppStateEncoding], [state]);
+  return defaultAbiCoder.encode([unidirectionalLinkedTransferAppStateEncoding], [state]);
 }
 
 function encodeAppAction(state: SolidityValueType): string {
-  return utils.defaultAbiCoder.encode([unidirectionalLinkedTransferAppActionEncoding], [state]);
+  return defaultAbiCoder.encode([unidirectionalLinkedTransferAppActionEncoding], [state]);
 }
 
 function createLinkedHash(action: UnidirectionalLinkedTransferAppAction): string {
-  return utils.solidityKeccak256(
+  return solidityKeccak256(
     ["uint256", "address", "bytes32", "bytes32"],
     [action.amount, action.assetId, action.paymentId, action.preImage],
   );
@@ -150,7 +150,7 @@ describe("LinkedUnidirectionalTransferApp", () => {
 
     const action: UnidirectionalLinkedTransferAppAction = {
       amount,
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
       paymentId,
       preImage,
     };
@@ -171,27 +171,27 @@ describe("LinkedUnidirectionalTransferApp", () => {
           to: senderAddr,
         },
         {
-          amount: constants.Zero,
+          amount: Zero,
           to: redeemerAddr,
         },
       ],
-      turnNum: constants.Zero,
+      turnNum: Zero,
     };
 
     const ret = await applyAction(prevState, action);
 
     const state = decodeAppState(ret);
 
-    assertRedeemed(state, { senderAddr, redeemerAddr, linkedHash, amount, turnNum: constants.One });
+    assertRedeemed(state, { senderAddr, redeemerAddr, linkedHash, amount, turnNum: One });
 
     // verify outcome
     const res = await computeOutcome(state);
     expect(res).to.eq(
-      utils.defaultAbiCoder.encode(
+      defaultAbiCoder.encode(
         [singleAssetTwoPartyCoinTransferEncoding],
         [
           [
-            [senderAddr, constants.Zero],
+            [senderAddr, Zero],
             [redeemerAddr, amount],
           ],
         ],
@@ -210,7 +210,7 @@ describe("LinkedUnidirectionalTransferApp", () => {
 
     const action: UnidirectionalLinkedTransferAppAction = {
       amount,
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
       paymentId,
       preImage,
     };
@@ -235,32 +235,28 @@ describe("LinkedUnidirectionalTransferApp", () => {
           to: senderAddr,
         },
         {
-          amount: constants.Zero,
+          amount: Zero,
           to: redeemerAddr,
         },
       ],
-      turnNum: constants.Zero,
+      turnNum: Zero,
     };
 
     const ret = await applyAction(prevState, suppliedAction);
 
     const state = decodeAppState(ret);
 
-    assertRedeemed(
-      state,
-      { senderAddr, redeemerAddr, linkedHash, amount, turnNum: constants.One },
-      false,
-    );
+    assertRedeemed(state, { senderAddr, redeemerAddr, linkedHash, amount, turnNum: One }, false);
 
     // verify outcome
     const res = await computeOutcome(state);
     expect(res).to.eq(
-      utils.defaultAbiCoder.encode(
+      defaultAbiCoder.encode(
         [singleAssetTwoPartyCoinTransferEncoding],
         [
           [
             [senderAddr, amount],
-            [redeemerAddr, constants.Zero],
+            [redeemerAddr, Zero],
           ],
         ],
       ),

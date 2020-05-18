@@ -15,6 +15,8 @@ import {
 } from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 
+const { AddressZero, Zero } = constants;
+
 describe("Restore State", () => {
   let clientA: IConnextClient;
   let tokenAddress: string;
@@ -29,7 +31,7 @@ describe("Restore State", () => {
     nodeSignerAddress = clientA.nodeSignerAddress;
 
     const REBALANCE_PROFILE = {
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
       lowerBoundCollateralize: toBN("0"),
       upperBoundCollateralize: toBN("0"),
       lowerBoundReclaim: toBN("0"),
@@ -46,22 +48,22 @@ describe("Restore State", () => {
 
   it("happy case: client can delete its store and restore from a remote backup", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: constants.AddressZero });
+    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
 
     // check balances pre
-    const freeBalanceEthPre = await clientA.getFreeBalance(constants.AddressZero);
+    const freeBalanceEthPre = await clientA.getFreeBalance(AddressZero);
     const freeBalanceTokenPre = await clientA.getFreeBalance(tokenAddress);
     expect(freeBalanceEthPre[clientA.signerAddress]).to.be.eq(ETH_AMOUNT_SM);
-    expect(freeBalanceEthPre[nodeSignerAddress]).to.be.eq(constants.Zero);
-    expect(freeBalanceTokenPre[clientA.signerAddress]).to.be.eq(constants.Zero);
+    expect(freeBalanceEthPre[nodeSignerAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPre[clientA.signerAddress]).to.be.eq(Zero);
     expect(freeBalanceTokenPre[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
 
     // delete store
     await clientA.store.clear();
 
     // check that getting balances will now error
-    await expect(clientA.getFreeBalance(constants.AddressZero)).to.be.rejectedWith(
+    await expect(clientA.getFreeBalance(AddressZero)).to.be.rejectedWith(
       "Call to getStateChannel failed when searching for multisig address",
     );
     await expect(clientA.getFreeBalance(tokenAddress)).to.be.rejectedWith(
@@ -71,11 +73,11 @@ describe("Restore State", () => {
     await clientA.restoreState();
 
     // check balances post
-    const freeBalanceEthPost = await clientA.getFreeBalance(constants.AddressZero);
+    const freeBalanceEthPost = await clientA.getFreeBalance(AddressZero);
     const freeBalanceTokenPost = await clientA.getFreeBalance(tokenAddress);
     expect(freeBalanceEthPost[clientA.signerAddress]).to.be.eq(ETH_AMOUNT_SM);
-    expect(freeBalanceEthPost[nodeSignerAddress]).to.be.eq(constants.Zero);
-    expect(freeBalanceTokenPost[clientA.signerAddress]).to.be.eq(constants.Zero);
+    expect(freeBalanceEthPost[nodeSignerAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPost[clientA.signerAddress]).to.be.eq(Zero);
     expect(freeBalanceTokenPost[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
   });
 

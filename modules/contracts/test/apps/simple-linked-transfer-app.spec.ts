@@ -6,6 +6,9 @@ import SimpleLinkedTransferApp from "../../build/SimpleLinkedTransferApp.json";
 
 import { expect, provider } from "../utils";
 
+const { defaultAbiCoder, solidityKeccak256 } = utils;
+const { AddressZero, Zero } = constants;
+
 type CoinTransfer = {
   to: string;
   amount: BigNumber;
@@ -52,25 +55,21 @@ function mkHash(prefix: string = "0xa"): string {
 }
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
-  utils.defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
+  defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
 
 const decodeAppState = (encodedAppState: string): SimpleLinkedTransferAppState =>
-  utils.defaultAbiCoder.decode([linkedTransferAppStateEncoding], encodedAppState)[0];
+  defaultAbiCoder.decode([linkedTransferAppStateEncoding], encodedAppState)[0];
 
 const encodeAppState = (
   state: SimpleLinkedTransferAppState,
   onlyCoinTransfers: boolean = false,
 ): string => {
-  if (!onlyCoinTransfers)
-    return utils.defaultAbiCoder.encode([linkedTransferAppStateEncoding], [state]);
-  return utils.defaultAbiCoder.encode(
-    [singleAssetTwoPartyCoinTransferEncoding],
-    [state.coinTransfers],
-  );
+  if (!onlyCoinTransfers) return defaultAbiCoder.encode([linkedTransferAppStateEncoding], [state]);
+  return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
 };
 
 function encodeAppAction(state: SolidityValueType): string {
-  return utils.defaultAbiCoder.encode([linkedTransferAppActionEncoding], [state]);
+  return defaultAbiCoder.encode([linkedTransferAppActionEncoding], [state]);
 }
 
 function createLinkedHash(
@@ -79,7 +78,7 @@ function createLinkedHash(
   paymentId: string,
   preImage: string,
 ): string {
-  return utils.solidityKeccak256(
+  return solidityKeccak256(
     ["uint256", "address", "bytes32", "bytes32"],
     [amount, assetId, paymentId, preImage],
   );
@@ -112,7 +111,7 @@ describe("SimpleLinkedTransferApp", () => {
       const transferAmount = BigNumber.from(10000);
       const paymentId = mkHash("0xa");
       const preImage = mkHash("0xb");
-      const assetId = constants.AddressZero;
+      const assetId = AddressZero;
 
       const linkedHash = createLinkedHash(transferAmount, assetId, paymentId, preImage);
 
@@ -125,7 +124,7 @@ describe("SimpleLinkedTransferApp", () => {
             to: senderAddr,
           },
           {
-            amount: constants.Zero,
+            amount: Zero,
             to: receiverAddr,
           },
         ],
@@ -147,7 +146,7 @@ describe("SimpleLinkedTransferApp", () => {
         assetId,
         coinTransfers: [
           {
-            amount: constants.Zero,
+            amount: Zero,
             to: senderAddr,
           },
           {

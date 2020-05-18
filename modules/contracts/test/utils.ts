@@ -5,6 +5,8 @@ import { solidity } from "ethereum-waffle";
 import { use } from "chai";
 import { BigNumber, BigNumberish, utils, Wallet } from "ethers";
 
+const { parseEther } = utils;
+
 export function mkXpub(prefix: string = "xpub"): string {
   return prefix.padEnd(111, "0");
 }
@@ -64,7 +66,7 @@ export const fund = async (amount: BigNumber, recipient: Wallet) => {
     }
     const funderBalance = await provider.getBalance(wallet.address);
     // leave 1 eth in account for gas or w.e
-    const fundAmount = funderBalance.sub(utils.parseEther("1").toHexString());
+    const fundAmount = funderBalance.sub(parseEther("1").toHexString());
     if (fundAmount.lte(0)) {
       // funder has insufficient funds, move on
       continue;

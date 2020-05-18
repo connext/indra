@@ -11,6 +11,8 @@ import { constants } from "ethers";
 import { Context } from "../types";
 import { StateChannel, AppInstance } from "../models";
 
+const { AddressZero } = constants;
+
 const getConditionalTransactionCommitment = (
   context: Context,
   stateChannel: StateChannel,
@@ -28,7 +30,7 @@ const getConditionalTransactionCommitment = (
       ? context.network.SingleAssetTwoPartyCoinTransferInterpreter
       : appInstance.outcomeType === OutcomeType.TWO_PARTY_FIXED_OUTCOME
       ? context.network.TwoPartyFixedOutcomeInterpreter
-      : constants.AddressZero,
+      : AddressZero,
     appInstance.encodedInterpreterParams,
   );
 

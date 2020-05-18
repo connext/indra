@@ -7,11 +7,14 @@ import {
   singleAssetTwoPartyCoinTransferEncoding,
   SolidityValueType,
 } from "@connext/types";
-import { Wallet, Contract, ContractFactory, BigNumber, utils, constants } from "ethers";
+import { Contract, ContractFactory, BigNumber, utils, constants } from "ethers";
 
 import LightningHTLCTransferApp from "../../build/HashLockTransferApp.json";
 
 import { expect, provider } from "../utils";
+
+const { defaultAbiCoder, soliditySha256 } = utils;
+const { Zero } = constants;
 
 function mkAddress(prefix: string = "0xa"): string {
   return prefix.padEnd(42, "0");
@@ -22,29 +25,26 @@ function mkHash(prefix: string = "0xa"): string {
 }
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
-  utils.defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
+  defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
 
 const decodeAppState = (encodedAppState: string): HashLockTransferAppState =>
-  utils.defaultAbiCoder.decode([HashLockTransferAppStateEncoding], encodedAppState)[0];
+  defaultAbiCoder.decode([HashLockTransferAppStateEncoding], encodedAppState)[0];
 
 const encodeAppState = (
   state: HashLockTransferAppState,
   onlyCoinTransfers: boolean = false,
 ): string => {
   if (!onlyCoinTransfers)
-    return utils.defaultAbiCoder.encode([HashLockTransferAppStateEncoding], [state]);
-  return utils.defaultAbiCoder.encode(
-    [singleAssetTwoPartyCoinTransferEncoding],
-    [state.coinTransfers],
-  );
+    return defaultAbiCoder.encode([HashLockTransferAppStateEncoding], [state]);
+  return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
 };
 
 function encodeAppAction(state: SolidityValueType): string {
-  return utils.defaultAbiCoder.encode([HashLockTransferAppActionEncoding], [state]);
+  return defaultAbiCoder.encode([HashLockTransferAppActionEncoding], [state]);
 }
 
 function createLockHash(preImage: string): string {
-  return utils.soliditySha256(["bytes32"], [preImage]);
+  return soliditySha256(["bytes32"], [preImage]);
 }
 
 describe("LightningHTLCTransferApp", () => {
@@ -95,7 +95,7 @@ describe("LightningHTLCTransferApp", () => {
           to: senderAddr,
         },
         {
-          amount: constants.Zero,
+          amount: Zero,
           to: receiverAddr,
         },
       ],
@@ -118,7 +118,7 @@ describe("LightningHTLCTransferApp", () => {
       const expectedPostState: HashLockTransferAppState = {
         coinTransfers: [
           {
-            amount: constants.Zero,
+            amount: Zero,
             to: senderAddr,
           },
           {

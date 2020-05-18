@@ -30,6 +30,7 @@ import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./
 
 const protocol = ProtocolNames.install;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
+const { MaxUint256 } = constants;
 
 /**
  * @description This exchange is described at the following URL:
@@ -630,7 +631,7 @@ export function computeInterpreterParameters(
       return {
         singleAssetTwoPartyCoinTransferInterpreterParams: {
           limit: disableLimit
-            ? constants.MaxUint256
+            ? MaxUint256
             : initiatorBalanceDecrement.add(responderBalanceDecrement),
           tokenAddress: initiatorDepositAssetId,
         },

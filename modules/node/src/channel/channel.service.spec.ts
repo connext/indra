@@ -13,6 +13,8 @@ import { ConfigService } from "../config/config.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 
+const { AddressZero, One, Zero } = constants;
+
 class MockCFCoreService {
   cfCore = {
     signerAddress: mkAddress("0xabcdef"),
@@ -21,7 +23,7 @@ class MockCFCoreService {
   async deposit(): Promise<MethodResults.Deposit> {
     return {
       freeBalance: {
-        [constants.AddressZero]: constants.One,
+        [AddressZero]: One,
       },
     };
   }
@@ -31,7 +33,7 @@ class MockChannelRepository extends ChannelRepository {
   async findByMultisigAddress(): Promise<Channel | undefined> {
     const channel = new Channel();
     channel.available = true;
-    channel.activeCollateralizations = { [constants.AddressZero]: false };
+    channel.activeCollateralizations = { [AddressZero]: false };
     channel.multisigAddress = mkAddress("0xAAA");
     channel.nodeIdentifier = mkAddress("addressAAA");
     channel.userIdentifier = mkAddress("addressBBB");
@@ -55,8 +57,8 @@ class MockEthProvider {
       confirmations: 10,
       data: "0x",
       from: mkAddress("0xabc"),
-      gasLimit: constants.One,
-      gasPrice: constants.One,
+      gasLimit: One,
+      gasPrice: One,
       hash: mkHash("0xbbb"),
       nonce: 1,
       r: "foo",
@@ -64,12 +66,12 @@ class MockEthProvider {
       timestamp: 111,
       to: mkAddress("0xdef"),
       v: 1,
-      value: constants.Zero,
+      value: Zero,
     } as any;
   }
 
   async getBalance(): Promise<BigNumber> {
-    return constants.One;
+    return One;
   }
 }
 
@@ -113,9 +115,9 @@ describe.skip("Channel Service", () => {
   it("should add deposits to the onchain transaction table", async () => {
     await channelService.rebalance(
       mkAddress("0xAddress"),
-      constants.AddressZero,
+      AddressZero,
       RebalanceType.COLLATERALIZE,
-      constants.One,
+      One,
     );
   });
 });

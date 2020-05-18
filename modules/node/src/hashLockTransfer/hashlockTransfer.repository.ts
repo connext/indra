@@ -5,6 +5,8 @@ import { EntityRepository, Repository } from "typeorm";
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 
+const { HashZero } = constants;
+
 @EntityRepository(AppInstance)
 export class HashlockTransferRepository extends Repository<
   AppInstance<typeof HashLockTransferAppName>
@@ -147,7 +149,7 @@ export class HashlockTransferRepository extends Repository<
         // node should takeAction + uninstall. if its not HashZero, then
         // the node should just uninstall. If the node has completed the
         // transfer, then the type would be AppType.UNINSTALLED
-        .andWhere(`app_instance."latestState"::JSONB @> '{"lockHash": "${constants.HashZero}"}'`)
+        .andWhere(`app_instance."latestState"::JSONB @> '{"lockHash": "${HashZero}"}'`)
         // and timeout hasnt passed
         .andWhere(`app_instance."latestState"->>"timeout"::NUMERIC > ${currentBlock}`)
         .getMany()

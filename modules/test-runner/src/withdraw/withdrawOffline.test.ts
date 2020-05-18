@@ -22,6 +22,8 @@ import {
 } from "../util";
 import { addressBook } from "@connext/contracts";
 
+const { AddressZero } = constants;
+
 describe("Withdraw offline tests", () => {
   let clock: any;
   let client: IConnextClient;
@@ -30,7 +32,7 @@ describe("Withdraw offline tests", () => {
   const createAndFundChannel = async (
     messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
     amount: BigNumber = ETH_AMOUNT_SM,
-    assetId: string = constants.AddressZero,
+    assetId: string = AddressZero,
   ): Promise<IConnextClient> => {
     // make sure the signer is set
     messagingConfig.signer = messagingConfig.signer || getRandomChannelSigner(env.ethProviderUrl);
@@ -81,7 +83,7 @@ describe("Withdraw offline tests", () => {
     });
 
     await expect(
-      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, constants.AddressZero),
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
     ).to.be.rejectedWith(`proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`);
   });
 
@@ -106,7 +108,7 @@ describe("Withdraw offline tests", () => {
     });
 
     await expect(
-      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, constants.AddressZero),
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
     ).to.be.rejectedWith(`proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`);
   });
 
@@ -122,7 +124,7 @@ describe("Withdraw offline tests", () => {
         clock.tick(89_000);
         resolve();
       });
-      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, constants.AddressZero);
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero);
     });
 
     const [val] = await client.store.getUserWithdrawals!();

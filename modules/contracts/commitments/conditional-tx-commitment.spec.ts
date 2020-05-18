@@ -15,6 +15,9 @@
 //   ConditionalTransactionCommitment,
 // } from "./conditional-tx-commitment";
 
+// const { getAddress, Interface } = utils;
+// const { WeiPerEther,AddressZero } = constants;
+
 // describe("ConditionalTransactionCommitment", () => {
 //   let tx: MultisigTransaction;
 //   let commitment: ConditionalTransactionCommitment;
@@ -32,7 +35,7 @@
 //       proxyFactory: context.network.ProxyFactory,
 //       multisigMastercopy: context.network.MinimumViableMultisig,
 //     },
-//     utils.getAddress(createRandomAddress()),
+//     getAddress(createRandomAddress()),
 //     initiator.publicIdentifier,
 //     responder.publicIdentifier,
 //   );
@@ -42,8 +45,8 @@
 
 //   // Set the state to some test values
 //   stateChannel = stateChannel.setFreeBalance(
-//     FreeBalanceClass.createWithFundedTokenAmounts(stateChannel.multisigOwners, constants.WeiPerEther, [
-//       constants.AddressZero,
+//     FreeBalanceClass.createWithFundedTokenAmounts(stateChannel.multisigOwners, WeiPerEther, [
+//       AddressZero,
 //     ]),
 //   );
 
@@ -81,11 +84,11 @@
 //   });
 
 //   describe("the calldata", () => {
-//     let iface: utils.Interface;
+//     let iface: Interface;
 //     let calldata: TransactionDescription;
 
 //     beforeAll(() => {
-//       iface = new utils.Interface(ConditionalTransactionDelegateTarget.abi);
+//       iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 //       calldata = iface.parseTransaction({ data: tx.data });
 //     });
 

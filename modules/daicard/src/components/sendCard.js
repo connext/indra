@@ -24,6 +24,8 @@ import { sendMachine } from "../state";
 import { Copyable } from "./copyable";
 import { usePublicIdentifier, PublicIdentifierInput } from "./input";
 
+const { Zero } = constants;
+
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
 
 const style = withStyles((theme) => ({
@@ -76,7 +78,7 @@ export const SendCard = style(
         if (!error && value && value.wad.gt(tokenBalance)) {
           error = `Invalid amount: must be less than your balance`;
         }
-        if (!error && value && value.wad.lte(constants.Zero)) {
+        if (!error && value && value.wad.lte(Zero)) {
           error = "Invalid amount: must be greater than 0";
         }
         setAmount({

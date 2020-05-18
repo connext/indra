@@ -7,6 +7,9 @@ import { HARD_CODED_ASSUMPTIONS } from "../constants";
 import { AppInstance } from "./app-instance";
 import { merge } from "./utils";
 
+const { getAddress } = utils;
+const { Zero, AddressZero } = constants;
+
 export function getFreeBalanceAppInterface(addr: string): AppInterface {
   return {
     actionEncoding: undefined, // because no actions exist for FreeBalanceApp
@@ -127,7 +130,7 @@ export class FreeBalanceClass {
         beneficiary
       ];
     } catch {
-      return constants.Zero;
+      return Zero;
     }
   }
 
@@ -138,10 +141,10 @@ export class FreeBalanceClass {
       // get addresses from default token mapping and
       // return 0 values
       const addresses = Object.keys(
-        convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[constants.AddressZero]),
+        convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[AddressZero]),
       );
       for (const address of addresses) {
-        balances[address] = constants.Zero;
+        balances[address] = Zero;
       }
     }
     return balances;
@@ -178,7 +181,7 @@ export class FreeBalanceClass {
       const t1 = convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress]);
       const t2 = merge(t1, increments[tokenAddress]);
       for (const val of Object.values(t2)) {
-        if (val.lt(constants.Zero)) {
+        if (val.lt(Zero)) {
           throw new Error(
             `FreeBalanceClass::increment ended up with a negative balance when
             merging ${stringify(t1)} and ${stringify(increments[tokenAddress])}`,
@@ -212,9 +215,9 @@ export function createFreeBalance(
       // NOTE: Extremely important to understand that the default
       // addresses of the recipients are the "top level keys" as defined
       // as the 0th derived children of the addresss.
-      [constants.AddressZero]: [
-        { to: initiator, amount: constants.Zero },
-        { to: responder, amount: constants.Zero },
+      [AddressZero]: [
+        { to: initiator, amount: Zero },
+        { to: responder, amount: Zero },
       ],
     },
   };
@@ -239,7 +242,7 @@ function deserializeFreeBalanceState(freeBalanceStateJSON: FreeBalanceStateJSON)
     balancesIndexedByToken: (tokenAddresses || []).reduce(
       (acc, tokenAddress, idx) => ({
         ...acc,
-        [utils.getAddress(tokenAddress)]: balances[idx].map(({ to, amount }) => ({
+        [getAddress(tokenAddress)]: balances[idx].map(({ to, amount }) => ({
           to,
           amount: BigNumber.from(amount._hex),
         })),

@@ -18,6 +18,9 @@ import {
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 
+const { keccak256 } = utils;
+const { One } = constants;
+
 describe("MChallengeRegistryCore", () => {
   let appRegistry: Contract;
   let appDefinition: Contract;
@@ -95,7 +98,7 @@ describe("MChallengeRegistryCore", () => {
       const resultingState = { counter: state.counter.add(action.increment) };
       await setAndProgressState(1, state, alice);
       await verifyChallenge({
-        appStateHash: utils.keccak256(encodeState(resultingState)),
+        appStateHash: keccak256(encodeState(resultingState)),
         versionNumber: toBN(2),
         status: ChallengeStatus.EXPLICITLY_FINALIZED,
       });
@@ -106,7 +109,7 @@ describe("MChallengeRegistryCore", () => {
     it("should return true if set state period elapsed", async () => {
       await setState(1);
       await verifyChallenge({
-        versionNumber: constants.One,
+        versionNumber: One,
         status: ChallengeStatus.IN_DISPUTE,
       });
 
@@ -139,7 +142,7 @@ describe("MChallengeRegistryCore", () => {
     it("should return false if challenge is in set state period", async () => {
       await setState(1);
       await verifyChallenge({
-        versionNumber: constants.One,
+        versionNumber: One,
         status: ChallengeStatus.IN_DISPUTE,
       });
 

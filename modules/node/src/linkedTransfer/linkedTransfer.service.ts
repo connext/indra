@@ -18,6 +18,8 @@ import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 
+const { HashZero, Zero } = constants;
+
 const appStatusesToLinkedTransferStatus = (
   senderAppType: AppType,
   receiverAppType?: AppType,
@@ -80,7 +82,7 @@ export class LinkedTransferService {
     }
 
     const latestState = senderApp.latestState as SimpleLinkedTransferAppState;
-    if (latestState.preImage !== constants.HashZero) {
+    if (latestState.preImage !== HashZero) {
       throw new Error(`Sender app has action, refusing to redeem`);
     }
     const amount = toBN(latestState.amount);
@@ -167,13 +169,13 @@ export class LinkedTransferService {
           to: freeBalanceAddr,
         },
         {
-          amount: constants.Zero,
+          amount: Zero,
           to: getSignerAddressFromPublicIdentifier(userIdentifier),
         },
       ],
       linkedHash,
       paymentId,
-      preImage: constants.HashZero,
+      preImage: HashZero,
     };
 
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
@@ -181,7 +183,7 @@ export class LinkedTransferService {
       initialState,
       amount,
       assetId,
-      constants.Zero,
+      Zero,
       assetId,
       SimpleLinkedTransferAppName,
       senderApp.meta,
@@ -238,7 +240,7 @@ export class LinkedTransferService {
 
   // reclaimable transfer:
   // sender app is installed with meta containing recipient information
-  // preImage is constants.HashZero
+  // preImage is HashZero
   // receiver app has never been installed
   //
   // eg:
@@ -281,7 +283,7 @@ export class LinkedTransferService {
 
   // unlockable transfer:
   // sender app is installed with node as recipient
-  // preImage is constants.HashZero
+  // preImage is HashZero
   // receiver app with same paymentId is uninstalled
   // preImage on receiver app is used to unlock sender transfer
   //
@@ -313,7 +315,7 @@ export class LinkedTransferService {
       if (receiverApp) {
         this.log.log(`Found transfer to unlock, paymentId ${senderApp.latestState["paymentId"]}`);
         const preImage: string = senderApp.latestState["preImage"];
-        if (preImage === constants.HashZero) {
+        if (preImage === HashZero) {
           // no action has been taken, but is not uninstalled
           await this.cfCoreService.takeAction(senderApp.identityHash, {
             preImage,

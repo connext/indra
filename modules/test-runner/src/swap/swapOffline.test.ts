@@ -23,6 +23,8 @@ import {
   UNINSTALL_SUPPORTED_APP_COUNT_SENT,
 } from "../util";
 
+const { AddressZero } = constants;
+
 let clock: any;
 
 const fundChannelAndSwap = async (opts: {
@@ -51,11 +53,11 @@ const fundChannelAndSwap = async (opts: {
 
   const input = {
     amount: inputAmount,
-    assetId: tokenToEth ? client.config.contractAddresses.Token : constants.AddressZero,
+    assetId: tokenToEth ? client.config.contractAddresses.Token : AddressZero,
   };
   const output = {
     amount: outputAmount,
-    assetId: tokenToEth ? constants.AddressZero : client.config.contractAddresses.Token,
+    assetId: tokenToEth ? AddressZero : client.config.contractAddresses.Token,
   };
   await fundChannel(client, input.amount, input.assetId);
   await requestCollateral(client, output.assetId);

@@ -22,6 +22,8 @@ import { BigNumber, constants } from "ethers";
 import { getRandomChannelSigner } from "@connext/utils";
 import { addressBook } from "@connext/contracts";
 
+const { AddressZero } = constants;
+
 const makeDepositCall = async (opts: {
   client: IConnextClient;
   clock: any;
@@ -32,8 +34,7 @@ const makeDepositCall = async (opts: {
   assetId?: string;
 }) => {
   const { client, clock, amount, assetId, failsWith, protocol, subjectToFastforward } = opts;
-  const defaultAmount =
-    assetId && assetId !== constants.AddressZero ? TOKEN_AMOUNT : ZERO_ZERO_ONE_ETH;
+  const defaultAmount = assetId && assetId !== AddressZero ? TOKEN_AMOUNT : ZERO_ZERO_ONE_ETH;
   if (!failsWith) {
     await fundChannel(client, amount || defaultAmount, assetId);
     return;

@@ -20,12 +20,15 @@ import {
   isBN,
   stringify,
   toBN,
+  appIdentityToHash,
 } from "@connext/utils";
 import { Contract, BigNumber, constants, utils, providers } from "ethers";
 import { Memoize } from "typescript-memoize";
 
 import { CounterfactualApp } from "../contracts";
-import { appIdentityToHash } from "../utils";
+
+const { keccak256, defaultAbiCoder } = utils;
+const { Zero } = constants;
 
 /**
  * Representation of an AppInstance.
@@ -193,33 +196,33 @@ export class AppInstance {
 
   @Memoize()
   public get hashOfLatestState() {
-    return utils.keccak256(this.encodedLatestState);
+    return keccak256(this.encodedLatestState);
   }
 
   @Memoize()
   public get encodedLatestState() {
-    return utils.defaultAbiCoder.encode([this.appInterface.stateEncoding], [this.latestState]);
+    return defaultAbiCoder.encode([this.appInterface.stateEncoding], [this.latestState]);
   }
 
   @Memoize()
   public get encodedInterpreterParams() {
     switch (this.outcomeType) {
       case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
-        return utils.defaultAbiCoder.encode(
+        return defaultAbiCoder.encode(
           [singleAssetTwoPartyCoinTransferInterpreterParamsEncoding],
           [this.singleAssetTwoPartyCoinTransferInterpreterParams],
         );
       }
 
       case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
-        return utils.defaultAbiCoder.encode(
+        return defaultAbiCoder.encode(
           [multiAssetMultiPartyCoinTransferInterpreterParamsEncoding],
           [this.multiAssetMultiPartyCoinTransferInterpreterParams],
         );
       }
 
       case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
-        return utils.defaultAbiCoder.encode(
+        return defaultAbiCoder.encode(
           [twoPartyFixedOutcomeInterpreterParamsEncoding],
           [this.twoPartyOutcomeInterpreterParams],
         );
@@ -245,9 +248,9 @@ export class AppInstance {
     return this.stateTimeout;
   }
 
-  public setState(newState: SolidityValueType, stateTimeout: BigNumber = constants.Zero) {
+  public setState(newState: SolidityValueType, stateTimeout: BigNumber = Zero) {
     try {
-      utils.defaultAbiCoder.encode([this.appInterface.stateEncoding], [newState]);
+      defaultAbiCoder.encode([this.appInterface.stateEncoding], [newState]);
     } catch (e) {
       // TODO: Catch ethers.errors.INVALID_ARGUMENT specifically in catch {}
 
@@ -276,7 +279,7 @@ export class AppInstance {
       throw new Error(`Cannot set an action without providing an encoding`);
     }
     try {
-      utils.defaultAbiCoder.encode([this.appInterface.actionEncoding], [action]);
+      defaultAbiCoder.encode([this.appInterface.actionEncoding], [action]);
     } catch (e) {
       // TODO: Catch ethers.errors.INVALID_ARGUMENT specifically in catch {}
 
@@ -347,18 +350,15 @@ export class AppInstance {
   }
 
   public encodeAction(action: SolidityValueType) {
-    return utils.defaultAbiCoder.encode([this.appInterface.actionEncoding!], [action]);
+    return defaultAbiCoder.encode([this.appInterface.actionEncoding!], [action]);
   }
 
   public encodeState(state: SolidityValueType) {
-    return utils.defaultAbiCoder.encode([this.appInterface.stateEncoding], [state]);
+    return defaultAbiCoder.encode([this.appInterface.stateEncoding], [state]);
   }
 
   public decodeAppState(encodedSolidityValueType: string): SolidityValueType {
-    return utils.defaultAbiCoder.decode(
-      [this.appInterface.stateEncoding],
-      encodedSolidityValueType,
-    )[0];
+    return defaultAbiCoder.decode([this.appInterface.stateEncoding], encodedSolidityValueType)[0];
   }
 
   public toEthersContract(provider: providers.JsonRpcProvider) {

@@ -3,6 +3,9 @@ import { toBN } from "@connext/utils";
 import { utils, constants } from "ethers";
 import interval from "interval-promise";
 
+const { formatEther } = utils;
+const { Zero } = constants;
+
 export const migrate = async (hubUrl, wallet, ethUrl) => {
   console.log(`==== Migration Started | hubUrl: ${hubUrl}, ethUrl: ${ethUrl}`);
   if (!hubUrl) {
@@ -15,12 +18,12 @@ export const migrate = async (hubUrl, wallet, ethUrl) => {
 
   const tokenBalance = toBN(latestState.balanceTokenUser);
   const etherBalance = toBN(latestState.balanceWeiUser);
-  console.log(`Legacy channel has a balance of $${utils.formatEther(tokenBalance)}`);
+  console.log(`Legacy channel has a balance of $${formatEther(tokenBalance)}`);
 
   const amountToken = tokenBalance.add(state.persistent.custodialBalance.balanceToken);
   const amountWei = etherBalance.add(state.persistent.custodialBalance.balanceWei);
 
-  if (amountToken.gt(constants.Zero) || amountWei.gt(constants.Zero)) {
+  if (amountToken.gt(Zero) || amountWei.gt(Zero)) {
     const withdrawalParams = {
       exchangeRate: state.runtime.exchangeRate.rates.DAI,
       recipient: wallet.address,

@@ -19,6 +19,9 @@ import { NetworkContextForTestSuite } from "./contracts";
 import { AppWithCounterClass } from "./appWithCounter";
 import { TokenIndexedBalance } from "./context";
 
+const { keccak256, solidityPack, defaultAbiCoder } = utils;
+const { One, Zero } = constants;
+
 type FreeBalanceStateJSON = {
   tokenAddresses: string[];
   balances: CoinTransfer[][]; // why is this serialized?
@@ -28,27 +31,27 @@ type FreeBalanceStateJSON = {
 const freeBalStateEncoding = `tuple(address[] tokenAddresses, tuple(address to, uint256 amount)[][] balances, bytes32[] activeApps)`;
 
 export class MiniFreeBalance {
-  private channelNonce = constants.One;
-  private defaultTimeout = constants.Zero;
-  private stateTimeout = constants.Zero;
+  private channelNonce = One;
+  private defaultTimeout = Zero;
+  private stateTimeout = Zero;
 
   constructor(
     public readonly signerParticipants: ChannelSigner[],
     public readonly multisigAddress: string,
     private balancesIndexedByToken: TokenIndexedBalance,
     private readonly networkContext: NetworkContextForTestSuite,
-    public versionNumber: BigNumber = constants.One,
+    public versionNumber: BigNumber = One,
     private activeApps: string[] = [],
   ) {}
 
   get identityHash(): string {
-    return utils.keccak256(
-      utils.solidityPack(
+    return keccak256(
+      solidityPack(
         ["address", "uint256", "bytes32", "address", "uint256"],
         [
           this.multisigAddress,
           this.channelNonce,
-          utils.keccak256(utils.solidityPack(["address[]"], [this.participants])),
+          keccak256(solidityPack(["address[]"], [this.participants])),
           this.appDefinition,
           this.defaultTimeout,
         ],
@@ -100,14 +103,14 @@ export class MiniFreeBalance {
     return {
       activeApps: [],
       balances: Object.values(this.balancesIndexedByToken).map((balances) =>
-        balances.map(({ to }) => ({ to, amount: constants.Zero })),
+        balances.map(({ to }) => ({ to, amount: Zero })),
       ),
       tokenAddresses: Object.keys(this.balancesIndexedByToken),
     };
   }
 
   public static encodeState(state: FreeBalanceStateJSON) {
-    return utils.defaultAbiCoder.encode([freeBalStateEncoding], [state]);
+    return defaultAbiCoder.encode([freeBalStateEncoding], [state]);
   }
 
   public static channelFactory(
@@ -186,7 +189,7 @@ export class MiniFreeBalance {
       this.networkContext.ChallengeRegistry,
       this.appIdentity,
       stateToHash(MiniFreeBalance.encodeState(this.initialState)),
-      constants.One,
+      One,
       this.stateTimeout,
       this.identityHash,
     );

@@ -9,6 +9,8 @@ import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 import { getNatsClient } from "../util/nats";
 import { ERC20 } from "@connext/contracts";
 
+const { AddressZero, One, Two } = constants;
+
 describe("Reclaim", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
@@ -34,7 +36,7 @@ describe("Reclaim", () => {
 
   it("happy case: node should reclaim ETH with async transfer", async () => {
     const REBALANCE_PROFILE = {
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
       lowerBoundCollateralize: toBN("5"),
       upperBoundCollateralize: toBN("10"),
       lowerBoundReclaim: toBN("20"),
@@ -47,18 +49,18 @@ describe("Reclaim", () => {
     // deposit client
     await fundChannel(
       clientA,
-      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(constants.Two),
-      constants.AddressZero,
+      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(Two),
+      AddressZero,
     );
-    await clientB.requestCollateral(constants.AddressZero);
+    await clientB.requestCollateral(AddressZero);
 
     // transfer to node to get node over upper bound reclaim
     // first transfer gets to upper bound
     await asyncTransferAsset(
       clientA,
       clientB,
-      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(constants.One),
-      constants.AddressZero,
+      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(One),
+      AddressZero,
       nats,
     );
 
@@ -73,21 +75,21 @@ describe("Reclaim", () => {
         }
       });
       await clientA.transfer({
-        amount: constants.One.toString(),
-        assetId: constants.AddressZero,
+        amount: One.toString(),
+        assetId: AddressZero,
         recipient: clientB.publicIdentifier,
         paymentId,
       });
     });
 
-    const freeBalancePost = await clientA.getFreeBalance(constants.AddressZero);
+    const freeBalancePost = await clientA.getFreeBalance(AddressZero);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
     expect(
       freeBalancePost[nodeSignerAddress].gte(BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim)),
     ).to.be.true;
     expect(
       freeBalancePost[nodeSignerAddress].lte(
-        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim).add(constants.One),
+        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
       ),
     ).to.be.true;
   });
@@ -107,7 +109,7 @@ describe("Reclaim", () => {
     // deposit client
     await fundChannel(
       clientA,
-      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(constants.Two),
+      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(Two),
       tokenAddress,
     );
     await clientB.requestCollateral(tokenAddress);
@@ -117,7 +119,7 @@ describe("Reclaim", () => {
     await asyncTransferAsset(
       clientA,
       clientB,
-      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(constants.One),
+      BigNumber.from(REBALANCE_PROFILE.upperBoundReclaim).add(One),
       tokenAddress,
       nats,
     );
@@ -134,7 +136,7 @@ describe("Reclaim", () => {
         }
       });
       await clientA.transfer({
-        amount: constants.One.toString(),
+        amount: One.toString(),
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
         paymentId,
@@ -148,7 +150,7 @@ describe("Reclaim", () => {
     ).to.be.true;
     expect(
       freeBalancePost[nodeSignerAddress].lte(
-        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim).add(constants.One),
+        BigNumber.from(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
       ),
     ).to.be.true;
   });

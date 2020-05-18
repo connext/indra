@@ -1,5 +1,8 @@
 import { BigNumber, utils, constants } from "ethers";
 
+const { commify, parseUnits, formatUnits } = utils;
+const { EtherSymbol } = constants;
+
 export class Currency {
   ////////////////////////////////////////
   // Static Properties/Methods
@@ -13,7 +16,7 @@ export class Currency {
   public typeToSymbol = {
     DAI: "$",
     DEI: "DEI ",
-    ETH: constants.EtherSymbol,
+    ETH: EtherSymbol,
     FIN: "FIN ",
     WEI: "WEI ",
   };
@@ -112,7 +115,7 @@ export class Currency {
       : options.decimals < nDecimals
       ? amt.substring(0, amt.indexOf(".") + options.decimals + 1)
       : amt;
-    return `${symbol}${options.commas ? utils.commify(amount) : amount}`;
+    return `${symbol}${options.commas ? commify(amount) : amount}`;
   }
 
   public round(decimals: any) {
@@ -139,10 +142,10 @@ export class Currency {
   public getRate = (currency: any) => {
     const exchangeRates = {
       DAI: this.toRay(this.daiRate),
-      DEI: this.toRay(utils.parseUnits(this.daiRate, 18).toString()),
+      DEI: this.toRay(parseUnits(this.daiRate, 18).toString()),
       ETH: this.toRay("1"),
-      FIN: this.toRay(utils.parseUnits("1", 3).toString()),
-      WEI: this.toRay(utils.parseUnits("1", 18).toString()),
+      FIN: this.toRay(parseUnits("1", 3).toString()),
+      WEI: this.toRay(parseUnits("1", 18).toString()),
     };
     if (
       (this.isEthType() && this.isEthType(currency)) ||
@@ -187,11 +190,11 @@ export class Currency {
 
   public _floor = (decStr: any) => decStr.substring(0, decStr.indexOf("."));
 
-  public toWad = (n: any) => utils.parseUnits(n.toString(), 18);
+  public toWad = (n: any) => parseUnits(n.toString(), 18);
 
   public toRay = (n: any) => this.toWad(this.toWad(n.toString()));
 
-  public fromWad = (n: any) => utils.formatUnits(n.toString(), 18);
+  public fromWad = (n: any) => formatUnits(n.toString(), 18);
 
   public fromRoundRay = (n: any) => this._round(this.fromRay(n));
 

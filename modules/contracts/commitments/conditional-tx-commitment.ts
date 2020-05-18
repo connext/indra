@@ -10,7 +10,10 @@ import * as ConditionalTransactionDelegateTarget from "../build/ConditionalTrans
 
 import { MultisigCommitment } from "./multisig-commitment";
 
-const iface = new utils.Interface(ConditionalTransactionDelegateTarget.abi);
+const { Interface } = utils;
+const { AddressZero } = constants;
+
+const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 
 // class to represent an unsigned multisignature wallet transaction
 // to the ConditionalTransactionDelegateTarget contract.
@@ -27,7 +30,7 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
     responderSignature?: string,
   ) {
     super(multisig, multisigOwners, initiatorSignature, responderSignature);
-    if (interpreterAddr === constants.AddressZero) {
+    if (interpreterAddr === AddressZero) {
       throw Error("The outcome type in this application logic contract is not supported yet.");
     }
   }

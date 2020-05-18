@@ -12,6 +12,8 @@ import { stateToHash, setupContext, AppWithCounterClass, ActionType, expect } fr
 
 import { ChainListener } from "../src";
 
+const { One, Zero } = constants;
+
 describe("ChainListener", () => {
   let challengeRegistry: Contract;
   let provider: providers.JsonRpcProvider;
@@ -25,9 +27,9 @@ describe("ChainListener", () => {
 
   const action = {
     actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
-    increment: constants.One,
+    increment: One,
   };
-  const timeout = constants.One;
+  const timeout = One;
 
   const verifySetAndProgressEvents = async (
     states: ChallengeUpdatedEventPayload[],
@@ -55,13 +57,13 @@ describe("ChainListener", () => {
     const digest = computeAppChallengeHash(
       appInstance.identityHash,
       stateToHash(finalState),
-      appInstance.latestVersionNumber.add(constants.One),
-      constants.Zero,
+      appInstance.latestVersionNumber.add(One),
+      Zero,
     );
     expect(progressed).to.containSubset({
       identityHash: appInstance.identityHash,
       action: AppWithCounterClass.encodeAction(action),
-      versionNumber: appInstance.latestVersionNumber.add(constants.One),
+      versionNumber: appInstance.latestVersionNumber.add(One),
       turnTaker: turnTaker.address,
       signature: await turnTaker.signMessage(digest),
     });
@@ -124,7 +126,7 @@ describe("ChainListener", () => {
 
     const action = {
       actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
-      increment: constants.One,
+      increment: One,
     };
 
     // track any emitted events

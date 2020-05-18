@@ -1,15 +1,18 @@
 /* global before */
 import { SolidityValueType, TwoPartyFixedOutcome } from "@connext/types";
-import { Wallet, Contract, ContractFactory, constants, utils } from "ethers";
+import { Contract, ContractFactory, constants, utils } from "ethers";
 
 import HighRollerApp from "../../build/HighRollerApp.json";
 
 import { expect, provider } from "../utils";
 
+const { solidityKeccak256, defaultAbiCoder } = utils;
+const { HashZero } = constants;
+
 /// Returns the commit hash that can be used to commit to chosenNumber
 /// using appSalt
 function computeCommitHash(appSalt: string, chosenNumber: number) {
-  return utils.solidityKeccak256(["bytes32", "uint256"], [appSalt, chosenNumber]);
+  return solidityKeccak256(["bytes32", "uint256"], [appSalt, chosenNumber]);
 }
 
 enum HighRollerStage {
@@ -61,15 +64,15 @@ const rlpActionEncoding = `
 `;
 
 function decodeBytesToAppState(encodedAppState: string): HighRollerAppState {
-  return utils.defaultAbiCoder.decode([rlpAppStateEncoding], encodedAppState)[0];
+  return defaultAbiCoder.decode([rlpAppStateEncoding], encodedAppState)[0];
 }
 
 function encodeState(state: SolidityValueType) {
-  return utils.defaultAbiCoder.encode([rlpAppStateEncoding], [state]);
+  return defaultAbiCoder.encode([rlpAppStateEncoding], [state]);
 }
 
 function encodeAction(state: SolidityValueType) {
-  return utils.defaultAbiCoder.encode([rlpActionEncoding], [state]);
+  return defaultAbiCoder.encode([rlpActionEncoding], [state]);
 }
 
 describe("HighRollerApp", () => {
@@ -80,7 +83,7 @@ describe("HighRollerApp", () => {
   }
 
   async function computeOutcome(state: SolidityValueType) {
-    const [decodedResult] = utils.defaultAbiCoder.decode(
+    const [decodedResult] = defaultAbiCoder.decode(
       ["uint256"],
       await highRollerApp.computeOutcome(encodeState(state)),
     );
@@ -100,8 +103,8 @@ describe("HighRollerApp", () => {
     it("can commit to hash", async () => {
       const preState: HighRollerAppState = {
         stage: HighRollerStage.WAITING_FOR_P1_COMMITMENT,
-        salt: constants.HashZero,
-        commitHash: constants.HashZero,
+        salt: HashZero,
+        commitHash: HashZero,
         playerFirstNumber: 0,
         playerSecondNumber: 0,
         versionNumber: 0,
@@ -136,7 +139,7 @@ describe("HighRollerApp", () => {
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P1_COMMITTED_TO_HASH,
-        salt: constants.HashZero,
+        salt: HashZero,
         commitHash: hash,
         playerFirstNumber: 0,
         playerSecondNumber: 0,
@@ -146,7 +149,7 @@ describe("HighRollerApp", () => {
       const action: HighRollerAction = {
         actionType: HighRollerActionType.COMMIT_TO_NUM,
         number: 2,
-        actionHash: constants.HashZero,
+        actionHash: HashZero,
       };
 
       const ret = await computeStateTransition(preState, action);
@@ -167,7 +170,7 @@ describe("HighRollerApp", () => {
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P1_COMMITTED_TO_HASH,
-        salt: constants.HashZero,
+        salt: HashZero,
         commitHash: hash,
         playerFirstNumber: 0,
         playerSecondNumber: 0,
@@ -177,7 +180,7 @@ describe("HighRollerApp", () => {
       const action: HighRollerAction = {
         actionType: HighRollerActionType.COMMIT_TO_NUM,
         number: 0,
-        actionHash: constants.HashZero,
+        actionHash: HashZero,
       };
 
       await expect(computeStateTransition(preState, action)).to.be.revertedWith(
@@ -194,7 +197,7 @@ describe("HighRollerApp", () => {
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P2_COMMITTED_TO_NUM,
-        salt: constants.HashZero,
+        salt: HashZero,
         commitHash: hash,
         playerFirstNumber: 0,
         playerSecondNumber: 2,
@@ -226,7 +229,7 @@ describe("HighRollerApp", () => {
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P2_COMMITTED_TO_NUM,
-        salt: constants.HashZero,
+        salt: HashZero,
         commitHash: hash,
         playerFirstNumber: 0,
         playerSecondNumber: 2,

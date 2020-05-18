@@ -18,6 +18,8 @@ import {
   moveToBlock,
 } from "./utils";
 
+const { keccak256 } = utils;
+
 describe("ChallengeRegistry", () => {
   let appRegistry: Contract;
   let appDefinition: Contract;
@@ -122,7 +124,7 @@ describe("ChallengeRegistry", () => {
       counter: state1.counter.add(finalizingAction.increment),
     };
     await verifyChallenge({
-      appStateHash: utils.keccak256(encodeState(finalState)),
+      appStateHash: keccak256(encodeState(finalState)),
       status: ChallengeStatus.EXPLICITLY_FINALIZED,
       versionNumber: toBN(3),
     });

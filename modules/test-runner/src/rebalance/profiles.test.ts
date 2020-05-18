@@ -8,6 +8,8 @@ import { createClient, expect } from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 import { getNatsClient } from "../util/nats";
 
+const { AddressZero } = constants;
+
 describe("Reclaim", () => {
   let client: IConnextClient;
   let nats: Client;
@@ -26,7 +28,7 @@ describe("Reclaim", () => {
 
   it("throws error if collateral targets are higher than reclaim", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
       lowerBoundCollateralize: toBN("1"),
       upperBoundCollateralize: toBN("10"),
       lowerBoundReclaim: toBN("9"),
@@ -38,7 +40,7 @@ describe("Reclaim", () => {
 
   it("throws error if collateralize upper bound is lower than higher bound", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
       lowerBoundCollateralize: toBN("10"),
       upperBoundCollateralize: toBN("1"),
       lowerBoundReclaim: toBN("9"),
@@ -50,7 +52,7 @@ describe("Reclaim", () => {
 
   it("throws error if reclaim upper bound is lower than higher bound", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
       lowerBoundCollateralize: toBN("1"),
       upperBoundCollateralize: toBN("10"),
       lowerBoundReclaim: toBN("15"),

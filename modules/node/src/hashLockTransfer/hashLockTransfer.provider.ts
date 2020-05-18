@@ -14,6 +14,8 @@ import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 import { HashLockTransferService } from "./hashLockTransfer.service";
 import { constants } from "ethers";
 
+const { AddressZero } = constants;
+
 export class HashLockTransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
@@ -43,7 +45,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       receiverApp,
     } = await this.hashLockTransferService.findSenderAndReceiverAppsWithStatus(
       lockHash,
-      assetId || constants.AddressZero,
+      assetId || AddressZero,
     );
     if (!senderApp) {
       return undefined;

@@ -24,6 +24,8 @@ import {
 } from "../util";
 import { getNatsClient } from "../util/nats";
 
+const { AddressZero } = constants;
+
 describe("Async Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
@@ -46,7 +48,7 @@ describe("Async Transfers", () => {
   });
 
   it("happy case: client A transfers eth to client B through node", async () => {
-    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
@@ -54,7 +56,7 @@ describe("Async Transfers", () => {
 
   it("happy case: client A transfers eth to client B through node with localstorage", async () => {
     const localStorageClient = await createClient({ store: getLocalStore() });
-    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(localStorageClient, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
     await asyncTransferAsset(localStorageClient, clientB, transfer.amount, transfer.assetId, nats);
@@ -86,7 +88,7 @@ describe("Async Transfers", () => {
   });
 
   it.skip("latency test: deposit, collateralize, many transfers, withdraw", async () => {
-    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, ETH_AMOUNT_MD, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
@@ -94,11 +96,11 @@ describe("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
-    await withdrawFromChannel(clientA, ZERO_ZERO_ONE_ETH, constants.AddressZero);
+    await withdrawFromChannel(clientA, ZERO_ZERO_ONE_ETH, AddressZero);
     /*
       // @ts-ignore
       this.timeout(1200000);
-      const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
+      const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
       await fundChannel(clientA, transfer.amount, transfer.assetId);
       await requestCollateral(clientB, transfer.assetId);
       let startTime: number[] = [];
@@ -116,7 +118,7 @@ describe("Async Transfers", () => {
         startTime[i] = Date.now();
         await clientA.transfer({
           amount: transfer.amount.div(toBN(10)).toString(),
-          assetId: constants.AddressZero,
+          assetId: AddressZero,
           meta: { index: i },
           recipient: clientB.publicIdentifier,
         });
@@ -128,7 +130,7 @@ describe("Async Transfers", () => {
   });
 
   it("client A transfers eth to client B without collateralizing", async () => {
-    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const receiverBal = await clientB.getFreeBalance(transfer.assetId);
@@ -265,7 +267,7 @@ describe("Async Transfers", () => {
     let runTime: number[] = [];
     let sum = 0;
     const numberOfRuns = 5;
-    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount.mul(25), transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
     for (let i = 0; i < numberOfRuns; i++) {

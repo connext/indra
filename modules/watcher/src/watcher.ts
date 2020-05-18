@@ -42,6 +42,9 @@ import EventEmitter from "eventemitter3";
 
 import { ChainListener } from "./chainListener";
 
+const { defaultAbiCoder, Interface } = utils;
+const { HashZero, Zero } = constants;
+
 /**
  * Watchers will watch for contract events and respond to disputes on behalf
  * of channel participants. They can also be used to initiate disputes.
@@ -296,9 +299,9 @@ export class Watcher implements IWatcher {
     this.log.debug(`Starting challenge for ${appInstanceId}`);
     const challenge = (await this.store.getAppChallenge(appInstanceId)) || {
       identityHash: appInstanceId,
-      appStateHash: constants.HashZero,
-      versionNumber: constants.Zero,
-      finalizesAt: constants.Zero,
+      appStateHash: HashZero,
+      versionNumber: Zero,
+      finalizesAt: Zero,
       status: StoredAppChallengeStatus.NO_CHALLENGE,
     };
     const response = await this.respondToChallenge(challenge);
@@ -666,16 +669,13 @@ export class Watcher implements IWatcher {
     );
     const [latest] = sortedCommitments.map(SetStateCommitment.fromJson);
 
-    const action = utils.defaultAbiCoder.encode(
-      [app.appInterface.actionEncoding!],
-      [app.latestAction],
-    );
-    const state = utils.defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
+    const action = defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]);
+    const state = defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
 
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new utils.Interface(ChallengeRegistry.abi).encodeFunctionData("progressState", [
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("progressState", [
         this.getAppIdentity(app, channel.multisigAddress),
         await latest.getSignedAppChallengeUpdate(),
         state,
@@ -714,15 +714,12 @@ export class Watcher implements IWatcher {
     );
     const [latest, prev] = sortedCommitments.map(SetStateCommitment.fromJson);
 
-    const action = utils.defaultAbiCoder.encode(
-      [app.appInterface.actionEncoding!],
-      [app.latestAction],
-    );
-    const state = utils.defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
+    const action = defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]);
+    const state = defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new utils.Interface(ChallengeRegistry.abi).encodeFunctionData("setAndProgressState", [
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("setAndProgressState", [
         this.getAppIdentity(app, channel.multisigAddress),
         await prev.getSignedAppChallengeUpdate(),
         await latest.getSignedAppChallengeUpdate(),
@@ -774,21 +771,21 @@ export class Watcher implements IWatcher {
     }
 
     // derive final state from action on app
-    const encodedState = utils.defaultAbiCoder.encode(
+    const encodedState = defaultAbiCoder.encode(
       [app.appInterface.stateEncoding],
       [app.latestState],
     );
     const encodedFinalState = !!app.latestAction
       ? await new Contract(app.appInterface.addr, CounterfactualApp.abi, this.provider).applyAction(
           encodedState,
-          utils.defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]),
+          defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]),
         )
       : encodedState;
 
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new utils.Interface(ChallengeRegistry.abi).encodeFunctionData("setOutcome", [
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("setOutcome", [
         this.getAppIdentity(app, channel.multisigAddress),
         encodedFinalState,
       ]),
@@ -826,7 +823,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new utils.Interface(ChallengeRegistry.abi).functions.cancelDispute.encode([
+      data: new Interface(ChallengeRegistry.abi).functions.cancelDispute.encode([
         this.getAppIdentity(app, channel.multisigAddress),
         req,
       ]),

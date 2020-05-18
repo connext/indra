@@ -20,13 +20,16 @@ import {
 } from "@connext/utils";
 import { Wallet, BigNumber, utils, constants } from "ethers";
 
+const { hexlify, randomBytes } = utils;
+const { AddressZero, One, Zero, HashZero } = constants;
+
 export const generateRandomAddress = () => Wallet.createRandom().address;
 
 export const generateRandomIdentifier = () => getRandomChannelSigner().publicIdentifier;
 
-export const generateRandomBytes32 = () => utils.hexlify(utils.randomBytes(32));
+export const generateRandomBytes32 = () => hexlify(randomBytes(32));
 
-export const generateRandomSignature = () => utils.hexlify(utils.randomBytes(65));
+export const generateRandomSignature = () => hexlify(randomBytes(65));
 
 export const createAppInstanceJson = (
   overrides: Partial<AppInstanceJson> = {},
@@ -34,11 +37,11 @@ export const createAppInstanceJson = (
   return {
     appInterface: {
       actionEncoding: null,
-      addr: constants.AddressZero,
+      addr: AddressZero,
       stateEncoding: "",
     },
     appSeqNo: 0,
-    defaultTimeout: constants.Zero.toHexString(),
+    defaultTimeout: Zero.toHexString(),
     identityHash: generateRandomBytes32(),
     latestState: {},
     stateTimeout: BigNumber.from(1000).toHexString(),
@@ -58,7 +61,7 @@ export const createAppInstanceProposal = (
   overrides: Partial<AppInstanceProposal> = {},
 ): AppInstanceProposal => {
   return {
-    appDefinition: constants.AddressZero,
+    appDefinition: AddressZero,
     appSeqNo: 0,
     identityHash: generateRandomBytes32(),
     abiEncodings: {
@@ -67,11 +70,11 @@ export const createAppInstanceProposal = (
     },
     initialState: {},
     initiatorDeposit: "0x00",
-    initiatorDepositAssetId: constants.AddressZero,
+    initiatorDepositAssetId: AddressZero,
     initiatorIdentifier: generateRandomIdentifier(),
     responderIdentifier: generateRandomIdentifier(),
     responderDeposit: "0x00",
-    responderDepositAssetId: constants.AddressZero,
+    responderDepositAssetId: AddressZero,
     defaultTimeout: "0x00",
     stateTimeout: "0x00",
     multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
@@ -116,18 +119,18 @@ export const createSetStateCommitmentJSON = (
 ): SetStateCommitmentJSON => {
   return deBigNumberifyJson({
     appIdentity: {
-      channelNonce: constants.Zero,
+      channelNonce: Zero,
       participants: [generateRandomAddress(), generateRandomAddress()],
       multisigAddress: generateRandomAddress(),
-      appDefinition: constants.AddressZero,
-      defaultTimeout: constants.Zero,
+      appDefinition: AddressZero,
+      defaultTimeout: Zero,
     },
     appIdentityHash: generateRandomBytes32(),
     appStateHash: generateRandomBytes32(),
-    challengeRegistryAddress: constants.AddressZero,
+    challengeRegistryAddress: AddressZero,
     signatures: [generateRandomSignature(), generateRandomSignature()],
-    stateTimeout: constants.Zero,
-    versionNumber: constants.Zero,
+    stateTimeout: Zero,
+    versionNumber: Zero,
     ...overrides,
   });
 };
@@ -138,7 +141,7 @@ export const createConditionalTransactionCommitmentJSON = (
   return {
     appIdentityHash: generateRandomBytes32(),
     freeBalanceAppIdentityHash: generateRandomBytes32(),
-    interpreterAddr: constants.AddressZero,
+    interpreterAddr: AddressZero,
     interpreterParams: "",
     multisigAddress: generateRandomAddress(),
     multisigOwners: [generateRandomAddress(), generateRandomAddress()],
@@ -152,9 +155,9 @@ export const createMinimalTransaction = (
   overrides: Partial<MinimalTransaction> = {},
 ): MinimalTransaction => {
   return {
-    data: constants.HashZero,
-    to: constants.AddressZero,
-    value: constants.Zero,
+    data: HashZero,
+    to: AddressZero,
+    value: Zero,
     ...overrides,
   };
 };
@@ -165,8 +168,8 @@ export const createStoredAppChallenge = (
   return {
     identityHash: getRandomBytes32(),
     appStateHash: getRandomBytes32(),
-    versionNumber: constants.One,
-    finalizesAt: constants.Zero,
+    versionNumber: One,
+    finalizesAt: Zero,
     status: StoredAppChallengeStatus.IN_DISPUTE,
     ...overrides,
   };
@@ -178,8 +181,8 @@ export const createStateProgressedEventPayload = (
   return {
     identityHash: getRandomBytes32(),
     action: "0x",
-    versionNumber: constants.One,
-    timeout: constants.Zero,
+    versionNumber: One,
+    timeout: Zero,
     turnTaker: getRandomAddress(),
     signature: getRandomAddress(),
     ...overrides,
@@ -192,8 +195,8 @@ export const createChallengeUpdatedEventPayload = (
   return {
     identityHash: getRandomBytes32(),
     appStateHash: getRandomBytes32(),
-    versionNumber: constants.One,
-    finalizesAt: constants.Zero,
+    versionNumber: One,
+    finalizesAt: Zero,
     status: ChallengeStatus.IN_DISPUTE,
     ...overrides,
   };

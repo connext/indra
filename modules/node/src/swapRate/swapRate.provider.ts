@@ -8,6 +8,8 @@ import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { SwapRateService } from "./swapRate.service";
 
+const { getAddress } = utils;
+
 export class SwapRateMessaging extends AbstractMessagingProvider {
   constructor(
     log: LoggerService,
@@ -20,7 +22,7 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
 
   async getLatestSwapRate(subject: string): Promise<string> {
     const [, , from, to] = subject.split(".");
-    return this.swapRateService.getOrFetchRate(utils.getAddress(from), utils.getAddress(to));
+    return this.swapRateService.getOrFetchRate(getAddress(from), getAddress(to));
   }
 
   async setupSubscriptions(): Promise<void> {

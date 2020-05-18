@@ -30,6 +30,8 @@ import { CFCoreRecordRepository } from "./cfCore.repository";
 import { AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
+const { Zero } = constants;
+
 Injectable();
 export class CFCoreService {
   constructor(
@@ -77,8 +79,8 @@ export class CFCoreService {
         // NOTE: can return free balance obj with 0s,
         // but need the free balance address in the multisig
         const obj = {};
-        obj[this.cfCore.signerAddress] = constants.Zero;
-        obj[getSignerAddressFromPublicIdentifier(userPubId)] = constants.Zero;
+        obj[this.cfCore.signerAddress] = Zero;
+        obj[getSignerAddressFromPublicIdentifier(userPubId)] = Zero;
         return obj;
       }
       this.log.error(e.message, e.stack);
@@ -176,7 +178,7 @@ export class CFCoreService {
     responderDepositAssetId: AssetId,
     app: string,
     meta: object = {},
-    stateTimeout: BigNumber = constants.Zero,
+    stateTimeout: BigNumber = Zero,
   ): Promise<MethodResults.ProposeInstall | undefined> {
     let boundReject: (reason?: any) => void;
     let boundResolve: (reason?: any) => void;

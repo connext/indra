@@ -20,6 +20,8 @@ import {
 } from "../models";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 
+const { getAddress, defaultAbiCoder } = utils;
+
 export async function assertIsValidSignature(
   expectedSigner: string,
   commitmentHash?: string,
@@ -34,7 +36,7 @@ export async function assertIsValidSignature(
   }
   // recoverAddressFromChannelMessage: 83 ms, hashToSign: 7 ms
   const signer = await recoverAddressFromChannelMessage(commitmentHash, signature);
-  if (utils.getAddress(expectedSigner).toLowerCase() !== signer.toLowerCase()) {
+  if (getAddress(expectedSigner).toLowerCase() !== signer.toLowerCase()) {
     throw new Error(
       `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${commitmentHash}. ${
         loggingContext ? `${loggingContext}` : ""
@@ -176,9 +178,7 @@ function handleSingleAssetTwoPartyCoinTransfer(
 }
 
 function decodeTwoPartyFixedOutcome(encodedOutcome: string): TwoPartyFixedOutcome {
-  const [twoPartyFixedOutcome] = utils.defaultAbiCoder.decode(["uint256"], encodedOutcome) as [
-    BigNumber,
-  ];
+  const [twoPartyFixedOutcome] = defaultAbiCoder.decode(["uint256"], encodedOutcome) as [BigNumber];
 
   return twoPartyFixedOutcome.toNumber();
 }
@@ -186,7 +186,7 @@ function decodeTwoPartyFixedOutcome(encodedOutcome: string): TwoPartyFixedOutcom
 function decodeSingleAssetTwoPartyCoinTransfer(
   encodedOutcome: string,
 ): [CoinTransfer, CoinTransfer] {
-  const [[[to1, amount1], [to2, amount2]]] = utils.defaultAbiCoder.decode(
+  const [[[to1, amount1], [to2, amount2]]] = defaultAbiCoder.decode(
     ["tuple(address to, uint256 amount)[2]"],
     encodedOutcome,
   );
@@ -198,7 +198,7 @@ function decodeSingleAssetTwoPartyCoinTransfer(
 }
 
 function decodeMultiAssetMultiPartyCoinTransfer(encodedOutcome: string): CoinTransfer[][] {
-  const [coinTransferListOfLists] = utils.defaultAbiCoder.decode(
+  const [coinTransferListOfLists] = defaultAbiCoder.decode(
     [multiAssetMultiPartyCoinTransferEncoding],
     encodedOutcome,
   );

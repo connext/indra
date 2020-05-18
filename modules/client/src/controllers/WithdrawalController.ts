@@ -22,22 +22,25 @@ import { providers, utils, constants } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
+const { getAddress, hexlify, randomBytes } = utils;
+const { AddressZero, HashZero, Zero } = constants;
+
 export class WithdrawalController extends AbstractController {
   public async withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> {
     this.log.info(`withdraw started: ${stringify(params)}`);
     // Set defaults
     if (!params.assetId) {
-      params.assetId = constants.AddressZero;
+      params.assetId = AddressZero;
     }
-    params.assetId = utils.getAddress(params.assetId);
+    params.assetId = getAddress(params.assetId);
 
     if (!params.recipient) {
       params.recipient = this.connext.signerAddress;
     }
-    params.recipient = utils.getAddress(params.recipient);
+    params.recipient = getAddress(params.recipient);
 
     if (!params.nonce) {
-      params.nonce = utils.hexlify(utils.randomBytes(32));
+      params.nonce = hexlify(randomBytes(32));
     }
 
     const { assetId, recipient } = params;
@@ -158,9 +161,9 @@ export class WithdrawalController extends AbstractController {
     const initialState: WithdrawAppState = {
       transfers: [
         { amount: amount, to: recipient },
-        { amount: constants.Zero, to: this.connext.nodeSignerAddress },
+        { amount: Zero, to: this.connext.nodeSignerAddress },
       ],
-      signatures: [withdrawerSignatureOnWithdrawCommitment, constants.HashZero],
+      signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
       signers: [this.connext.signerAddress, this.connext.nodeSignerAddress],
       data: withdrawCommitmentHash,
       nonce,
@@ -177,7 +180,7 @@ export class WithdrawalController extends AbstractController {
       initiatorDepositAssetId: assetId,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
-      responderDeposit: constants.Zero,
+      responderDeposit: Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: WITHDRAW_STATE_TIMEOUT,

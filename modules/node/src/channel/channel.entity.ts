@@ -19,6 +19,8 @@ import { IsEthAddress, IsValidPublicIdentifier } from "../validate";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 
+const { AddressZero } = constants;
+
 @Entity()
 export class Channel {
   @PrimaryColumn("text")
@@ -43,7 +45,7 @@ export class Channel {
   @Column("boolean", { default: false })
   available!: boolean;
 
-  @Column("json", { default: { [constants.AddressZero]: false } })
+  @Column("json", { default: { [AddressZero]: false } })
   activeCollateralizations!: Collateralizations;
 
   @OneToMany((type: any) => AppInstance, (appInstance: AppInstance) => appInstance.channel, {

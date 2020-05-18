@@ -12,6 +12,8 @@
 
 // import { getSetupCommitment } from "./setup-commitment";
 
+// const { getAddress, Interface } = utils;
+
 // /**
 //  * This test suite decodes a constructed SetupCommitment transaction object according
 //  * to the specifications defined by Counterfactual as can be found here:
@@ -41,7 +43,7 @@
 //       proxyFactory: context.network.ProxyFactory,
 //       multisigMastercopy: context.network.MinimumViableMultisig,
 //     },
-//     utils.getAddress(createRandomAddress()),
+//     getAddress(createRandomAddress()),
 //     initiatorId,
 //     responderId,
 //   );
@@ -61,7 +63,7 @@
 //   });
 
 //   describe("the calldata", () => {
-//     const iface = new utils.Interface(ConditionalTransactionDelegateTarget.abi);
+//     const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 //     let desc: TransactionDescription;
 
 //     beforeAll(() => {

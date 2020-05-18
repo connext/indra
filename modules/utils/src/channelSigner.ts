@@ -20,6 +20,8 @@ import {
 } from "./crypto";
 import { getPublicIdentifierFromPublicKey } from "./identifiers";
 
+type Bytes = utils.Bytes;
+
 export const getRandomChannelSigner = (ethProviderUrl?: UrlString) =>
   new ChannelSigner(getRandomPrivateKey(), ethProviderUrl);
 
@@ -54,7 +56,7 @@ export class ChannelSigner extends Signer implements IChannelSigner {
     return decrypt(message, this.privateKey);
   }
 
-  public async signMessage(message: utils.Bytes | string): Promise<SignatureString> {
+  public async signMessage(message: Bytes | string): Promise<SignatureString> {
     return signChannelMessage(
       typeof message === "string" ? message : message.toString(),
       this.privateKey,

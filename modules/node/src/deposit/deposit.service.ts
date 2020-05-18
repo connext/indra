@@ -30,6 +30,7 @@ import {
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
+const { AddressZero, Zero } = constants;
 @Injectable()
 export class DepositService {
   constructor(
@@ -113,7 +114,7 @@ export class DepositService {
 
   async requestDepositRights(
     channel: Channel,
-    tokenAddress: string = constants.AddressZero,
+    tokenAddress: string = AddressZero,
   ): Promise<string | undefined> {
     const appIdentityHash = await this.proposeDepositInstall(channel, tokenAddress);
     if (!appIdentityHash) {
@@ -202,7 +203,7 @@ export class DepositService {
     // derive the proper minimal transaction for the
     // onchain transaction service
     let tx: MinimalTransaction;
-    if (tokenAddress === constants.AddressZero) {
+    if (tokenAddress === AddressZero) {
       tx = {
         to: channel.multisigAddress,
         value: amount,
@@ -221,7 +222,7 @@ export class DepositService {
 
   private async proposeDepositInstall(
     channel: Channel,
-    tokenAddress: string = constants.AddressZero,
+    tokenAddress: string = AddressZero,
   ): Promise<string | undefined> {
     const ethProvider = this.configService.getEthProvider();
 
@@ -237,12 +238,12 @@ export class DepositService {
       }
       // multisig is deployed on withdrawal, if not
       // deployed withdrawal amount is 0
-      startingTotalAmountWithdrawn = constants.Zero;
+      startingTotalAmountWithdrawn = Zero;
     }
 
     // generate starting multisig balance
     const startingMultisigBalance =
-      tokenAddress === constants.AddressZero
+      tokenAddress === AddressZero
         ? await ethProvider.getBalance(channel.multisigAddress)
         : await new Contract(tokenAddress, ERC20.abi, this.configService.getSigner()).balanceOf(
             channel.multisigAddress,
@@ -251,11 +252,11 @@ export class DepositService {
     const initialState: DepositAppState = {
       transfers: [
         {
-          amount: constants.Zero,
+          amount: Zero,
           to: await this.configService.getSignerAddress(),
         },
         {
-          amount: constants.Zero,
+          amount: Zero,
           to: getSignerAddressFromPublicIdentifier(channel.userIdentifier),
         },
       ],
@@ -268,9 +269,9 @@ export class DepositService {
     const res = await this.cfCoreService.proposeAndWaitForInstallApp(
       channel,
       initialState,
-      constants.Zero,
+      Zero,
       tokenAddress,
-      constants.Zero,
+      Zero,
       tokenAddress,
       DepositAppName,
       { reason: "Node deposit" }, // meta

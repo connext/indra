@@ -8,16 +8,23 @@ import {
   ProtocolRoles,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime, toBN, stringify } from "@connext/utils";
+import {
+  getSignerAddressFromPublicIdentifier,
+  logTime,
+  toBN,
+  stringify,
+  appIdentityToHash,
+} from "@connext/utils";
 import { utils } from "ethers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import { AppInstance } from "../models";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
-import { appIdentityToHash } from "../utils";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
+
+const { keccak256, defaultAbiCoder } = utils;
 
 const protocol = ProtocolNames.propose;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
@@ -111,8 +118,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         multisigAddress: preProtocolStateChannel.multisigAddress,
         defaultTimeout: toBN(defaultTimeout),
       },
-      hashOfLatestState: utils.keccak256(
-        utils.defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
+      hashOfLatestState: keccak256(
+        defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
       ),
       versionNumber: 1,
       stateTimeout: stateTimeout.toHexString(),
@@ -273,8 +280,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         multisigAddress: preProtocolStateChannel.multisigAddress,
         defaultTimeout: toBN(defaultTimeout),
       },
-      hashOfLatestState: utils.keccak256(
-        utils.defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
+      hashOfLatestState: keccak256(
+        defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
       ),
       versionNumber: 1,
       stateTimeout: stateTimeout.toHexString(),

@@ -12,6 +12,8 @@ import {
   getMultisigCreationAddress,
 } from "../utils";
 
+const { isHexString } = utils;
+
 describe("Node can create multisig, other owners get notified", () => {
   let nodeA: Node;
   let nodeB: Node;
@@ -54,7 +56,7 @@ describe("Node can create multisig, other owners get notified", () => {
         result: { multisigAddress },
       },
     } = await nodeB.rpcRouter.dispatch(constructChannelCreationRpc(owners));
-    expect(utils.isHexString(multisigAddress)).toBeTruthy();
+    expect(isHexString(multisigAddress)).toBeTruthy();
     assertionCount += 1;
     if (assertionCount === 3) done();
   });

@@ -6,6 +6,8 @@ import { toBeEq } from "../bignumber-jest-matcher";
 import { setup, SetupContext } from "../setup";
 import { createChannel, deployStateDepositHolder, deposit } from "../utils";
 
+const { HashZero, One } = constants;
+
 expect.extend({ toBeEq });
 
 describe("Node method follows spec - deploy state deposit holder", () => {
@@ -27,15 +29,15 @@ describe("Node method follows spec - deploy state deposit holder", () => {
     const deployTxHash = await deployStateDepositHolder(nodeA, multisigAddress);
 
     expect(deployTxHash).toBeDefined();
-    expect(deployTxHash !== constants.HashZero).toBeTruthy();
+    expect(deployTxHash !== HashZero).toBeTruthy();
   });
 
   it("can deposit when multisig has not been deployed", async () => {
     const startingMultisigBalance = await provider.getBalance(multisigAddress);
-    await deposit(nodeA, multisigAddress, constants.One, nodeB);
+    await deposit(nodeA, multisigAddress, One, nodeB);
 
     const postDepositMultisigBalance = await provider.getBalance(multisigAddress);
 
-    expect(postDepositMultisigBalance).toBeEq(startingMultisigBalance.add(constants.One));
+    expect(postDepositMultisigBalance).toBeEq(startingMultisigBalance.add(One));
   });
 });

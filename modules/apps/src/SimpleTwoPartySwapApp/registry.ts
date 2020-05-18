@@ -3,6 +3,8 @@ import { constants } from "ethers";
 
 import { AppRegistryInfo } from "../shared";
 
+const { Zero } = constants;
+
 export const SimpleTwoPartySwapAppRegistryInfo: AppRegistryInfo = {
   allowNodeInstall: true,
   name: SimpleTwoPartySwapAppName,
@@ -11,4 +13,4 @@ export const SimpleTwoPartySwapAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const SWAP_STATE_TIMEOUT = constants.Zero;
+export const SWAP_STATE_TIMEOUT = Zero;

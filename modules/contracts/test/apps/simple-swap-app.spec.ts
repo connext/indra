@@ -5,6 +5,8 @@ import SimpleTwoPartySwapApp from "../../build/SimpleTwoPartySwapApp.json";
 
 import { expect, provider } from "../utils";
 
+const { defaultAbiCoder } = utils;
+
 type CoinTransfer = {
   to: string;
   amount: BigNumber;
@@ -28,14 +30,11 @@ function mkAddress(prefix: string = "0xa"): string {
 
 // FIXME: why does this have to use the multiAsset one?
 const decodeAppState = (encodedAppState: string): CoinTransfer[][] =>
-  utils.defaultAbiCoder.decode([multiAssetMultiPartyCoinTransferEncoding], encodedAppState)[0];
+  defaultAbiCoder.decode([multiAssetMultiPartyCoinTransferEncoding], encodedAppState)[0];
 
 const encodeAppState = (state: SimpleSwapAppState, onlyCoinTransfers: boolean = false): string => {
-  if (!onlyCoinTransfers) return utils.defaultAbiCoder.encode([swapAppStateEncoding], [state]);
-  return utils.defaultAbiCoder.encode(
-    [multiAssetMultiPartyCoinTransferEncoding],
-    [state.coinTransfers],
-  );
+  if (!onlyCoinTransfers) return defaultAbiCoder.encode([swapAppStateEncoding], [state]);
+  return defaultAbiCoder.encode([multiAssetMultiPartyCoinTransferEncoding], [state.coinTransfers]);
 };
 
 describe("SimpleTwoPartySwapApp", () => {

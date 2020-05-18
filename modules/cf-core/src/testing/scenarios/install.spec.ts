@@ -29,6 +29,9 @@ import {
   transferERC20Tokens,
 } from "../utils";
 
+const { isHexString } = utils;
+const { One } = constants;
+
 expect.extend({ toBeLt, toBeEq });
 
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
@@ -49,12 +52,12 @@ describe("Node method follows spec - install", () => {
 
         multisigAddress = await createChannel(nodeA, nodeB);
         expect(multisigAddress).toBeDefined();
-        expect(utils.isHexString(multisigAddress)).toBeTruthy();
+        expect(isHexString(multisigAddress)).toBeTruthy();
       });
 
       it("install app with ETH", async (done) => {
         await collateralizeChannel(multisigAddress, nodeA, nodeB);
-        const appDeposit = constants.One;
+        const appDeposit = One;
 
         let preInstallETHBalanceNodeA: BigNumber;
         let postInstallETHBalanceNodeA: BigNumber;
@@ -122,7 +125,7 @@ describe("Node method follows spec - install", () => {
         const erc20TokenAddress = (global["network"] as NetworkContextForTestSuite).DolphinCoin;
         const assetId = getAddressFromAssetId(erc20TokenAddress);
 
-        await collateralizeChannel(multisigAddress, nodeA, nodeB, constants.One, assetId);
+        await collateralizeChannel(multisigAddress, nodeA, nodeB, One, assetId);
 
         let preInstallERC20BalanceNodeA: BigNumber;
         let postInstallERC20BalanceNodeA: BigNumber;
@@ -171,9 +174,9 @@ describe("Node method follows spec - install", () => {
           TicTacToeApp,
           multisigAddress,
           undefined,
-          constants.One,
+          One,
           assetId,
-          constants.One,
+          One,
           assetId,
         );
         proposedParams = params;

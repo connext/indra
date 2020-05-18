@@ -9,6 +9,8 @@ import { utils } from "ethers";
 
 import * as MinimumViableMultisig from "../build/MinimumViableMultisig.json";
 
+const { Interface, solidityPack, solidityKeccak256, keccak256 } = utils;
+
 // A commitment to make MinimumViableMultisig perform a message call
 export abstract class MultisigCommitment implements EthereumCommitment {
   constructor(
@@ -49,7 +51,7 @@ export abstract class MultisigCommitment implements EthereumCommitment {
   public async getSignedTransaction(): Promise<MinimalTransaction> {
     await this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
-    const iface = new utils.Interface(MinimumViableMultisig.abi);
+    const iface = new Interface(MinimumViableMultisig.abi);
 
     const txData = iface.encodeFunctionData("execTransaction", [
       multisigInput.to,
@@ -64,21 +66,21 @@ export abstract class MultisigCommitment implements EthereumCommitment {
 
   public encode(): string {
     const { to, value, data, operation } = this.getTransactionDetails();
-    return utils.solidityPack(
+    return solidityPack(
       ["uint8", "address", "address", "uint256", "bytes32", "uint8"],
       [
         CommitmentTarget.MULTISIG,
         this.multisigAddress,
         to,
         value,
-        utils.solidityKeccak256(["bytes"], [data]),
+        solidityKeccak256(["bytes"], [data]),
         operation,
       ],
     );
   }
 
   public hashToSign(): string {
-    return utils.keccak256(this.encode());
+    return keccak256(this.encode());
   }
 
   private async assertSignatures() {

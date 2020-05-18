@@ -54,6 +54,8 @@ import { bigNumberifyJson, stringify } from "@connext/utils";
 import { ConnextClient } from "./connext";
 import { constants } from "ethers";
 
+const { HashZero } = constants;
+
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
   CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
@@ -529,7 +531,7 @@ export class ConnextListener extends ConnextEventEmitter {
           type: ConditionalTransferTypes.HashLockTransfer,
           amount: transferAmount,
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
-          paymentId: constants.HashZero,
+          paymentId: HashZero,
           sender: appInstance.meta ? appInstance.meta["sender"] : undefined, // https://github.com/ConnextProject/indra/issues/1054
           recipient: appInstance.meta ? appInstance.meta["recipient"] : undefined,
           meta: appInstance.meta,

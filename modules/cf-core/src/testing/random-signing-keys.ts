@@ -2,10 +2,12 @@ import { IChannelSigner } from "@connext/types";
 import { getRandomBytes32, getRandomChannelSigner } from "@connext/utils";
 import { utils } from "ethers";
 
+const { SigningKey } = utils;
+
 export function getRandomSigningKeys(length: number) {
   return Array(length)
     .fill(0)
-    .map((_) => new utils.SigningKey(getRandomBytes32()));
+    .map((_) => new SigningKey(getRandomBytes32()));
 }
 
 export function getRandomChannelSigners(length: number, ethProviderUrl?: string): IChannelSigner[] {

@@ -9,8 +9,11 @@ import { generateRandomNetworkContext } from "../../testing/mocks";
 import { AppInstance } from "../app-instance";
 import { StateChannel } from "../state-channel";
 
+const { getAddress } = utils;
+const { AddressZero, Zero } = constants;
+
 describe("StateChannel::setupChannel", () => {
-  const multisigAddress = utils.getAddress(getRandomAddress());
+  const multisigAddress = getAddress(getRandomAddress());
   const ids = getRandomPublicIdentifiers(2);
 
   let sc: StateChannel;
@@ -95,9 +98,9 @@ describe("StateChannel::setupChannel", () => {
 
     it("should have 0 balances for Alice and Bob", () => {
       for (const amount of Object.values(
-        sc.getFreeBalanceClass().withTokenAddress(constants.AddressZero) || {},
+        sc.getFreeBalanceClass().withTokenAddress(AddressZero) || {},
       )) {
-        expect(amount).toEqual(constants.Zero);
+        expect(amount).toEqual(Zero);
       }
     });
   });

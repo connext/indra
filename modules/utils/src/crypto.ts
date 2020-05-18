@@ -26,6 +26,8 @@ import {
 
 import { getAddressError, getHexStringError, isValidHexString } from "./hexStrings";
 
+const { arrayify, hexlify, randomBytes, getAddress, toUtf8String } = utils;
+
 export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
 
 ////////////////////////////////////////
@@ -37,10 +39,10 @@ export const bufferify = (input: Uint8Array | Buffer | string): Buffer =>
       ? hexToBuffer(input)
       : utf8ToBuffer(input)
     : !Buffer.isBuffer(input)
-    ? arrayToBuffer(utils.arrayify(input))
+    ? arrayToBuffer(arrayify(input))
     : input;
 
-export const getRandomPrivateKey = (): PrivateKey => utils.hexlify(utils.randomBytes(32));
+export const getRandomPrivateKey = (): PrivateKey => hexlify(randomBytes(32));
 
 ////////////////////////////////////////
 // Validators
@@ -82,12 +84,12 @@ export const isValidEthSignature = (value: any): boolean => !getEthSignatureErro
 // Conversions
 
 export const getPublicKeyFromPrivateKey = (privateKey: PrivateKey): PublicKey =>
-  utils.hexlify(getPublic(bufferify(privateKey)));
+  hexlify(getPublic(bufferify(privateKey)));
 
 export const getAddressFromPublicKey = (publicKey: PublicKey): Address => {
   const buf = bufferify(publicKey);
-  return utils.getAddress(
-    utils.hexlify(keccak256((isDecompressed(buf) ? buf : decompress(buf)).slice(1)).slice(12)),
+  return getAddress(
+    hexlify(keccak256((isDecompressed(buf) ? buf : decompress(buf)).slice(1)).slice(12)),
   );
 };
 
@@ -98,7 +100,7 @@ export const getAddressFromPrivateKey = (privateKey: PrivateKey): Address =>
 // Crypto functions
 
 export const hashChannelMessage = (message: string): Bytes32 =>
-  utils.hexlify(
+  hexlify(
     keccak256(
       concatBuffers(
         bufferify(INDRA_SIGN_PREFIX),
@@ -109,10 +111,10 @@ export const hashChannelMessage = (message: string): Bytes32 =>
   );
 
 export const encrypt = async (message: string, publicKey: PublicKey): Promise<HexString> =>
-  utils.hexlify(serialize(await libEncrypt(bufferify(publicKey), utf8ToBuffer(message))));
+  hexlify(serialize(await libEncrypt(bufferify(publicKey), utf8ToBuffer(message))));
 
 export const decrypt = async (encrypted: HexString, privateKey: PrivateKey): Promise<HexString> =>
-  utils.toUtf8String(
+  toUtf8String(
     await libDecrypt(
       bufferify(privateKey),
       deserialize(bufferify(`0x${encrypted.replace(/^0x/, "")}`)),
@@ -123,12 +125,12 @@ export const signChannelMessage = async (
   message: string,
   privateKey: PrivateKey,
 ): Promise<HexString> =>
-  utils.hexlify(await sign(bufferify(privateKey), bufferify(hashChannelMessage(message)), true));
+  hexlify(await sign(bufferify(privateKey), bufferify(hashChannelMessage(message)), true));
 
 export const recoverAddressFromChannelMessage = async (
   message: HexString,
   sig: SignatureString,
 ): Promise<Address> =>
   getAddressFromPublicKey(
-    utils.hexlify(await recover(bufferify(hashChannelMessage(message)), bufferify(sig))),
+    hexlify(await recover(bufferify(hashChannelMessage(message)), bufferify(sig))),
   );

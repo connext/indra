@@ -8,6 +8,9 @@ import { StateChannel } from "../state-channel";
 import { FreeBalanceClass } from "../free-balance";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 
+const { getAddress } = utils;
+const { WeiPerEther, AddressZero, Zero } = constants;
+
 describe("StateChannel::uninstallApp", () => {
   const networkContext = generateRandomNetworkContext();
 
@@ -17,7 +20,7 @@ describe("StateChannel::uninstallApp", () => {
   let appIdentityHash: string;
 
   beforeAll(() => {
-    const multisigAddress = utils.getAddress(getRandomAddress());
+    const multisigAddress = getAddress(getRandomAddress());
     const ids = getRandomPublicIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
@@ -32,7 +35,7 @@ describe("StateChannel::uninstallApp", () => {
     );
 
     const appInstance = createAppInstanceForTest(sc1);
-    sc1 = sc1.addProposal(createAppInstanceProposalForTest(appInstance.identityHash, sc1))
+    sc1 = sc1.addProposal(createAppInstanceProposalForTest(appInstance.identityHash, sc1));
 
     appIdentityHash = appInstance.identityHash;
 
@@ -44,15 +47,15 @@ describe("StateChannel::uninstallApp", () => {
           getSignerAddressFromPublicIdentifier(ids[0]),
           getSignerAddressFromPublicIdentifier(ids[1]),
         ],
-        constants.WeiPerEther,
-        [constants.AddressZero],
+        WeiPerEther,
+        [AddressZero],
       ),
     );
 
     sc2 = sc1.installApp(appInstance, {
-      [constants.AddressZero]: {
-        [getSignerAddressFromPublicIdentifier(ids[0])]: constants.WeiPerEther,
-        [getSignerAddressFromPublicIdentifier(ids[1])]: constants.WeiPerEther,
+      [AddressZero]: {
+        [getSignerAddressFromPublicIdentifier(ids[0])]: WeiPerEther,
+        [getSignerAddressFromPublicIdentifier(ids[1])]: WeiPerEther,
       },
     });
   });
@@ -74,8 +77,8 @@ describe("StateChannel::uninstallApp", () => {
     });
 
     it("should have updated balances for Alice and Bob", () => {
-      for (const amount of Object.values(fb.withTokenAddress(constants.AddressZero) || {})) {
-        expect(amount).toEqual(constants.Zero);
+      for (const amount of Object.values(fb.withTokenAddress(AddressZero) || {})) {
+        expect(amount).toEqual(Zero);
       }
     });
   });

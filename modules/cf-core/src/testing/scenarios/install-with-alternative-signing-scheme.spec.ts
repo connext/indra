@@ -18,6 +18,8 @@ import {
   newWallet,
 } from "../utils";
 
+const { One } = constants;
+
 expect.extend({ toBeLt });
 
 describe(`Uses a provided signing key generation function to sign channel state updates`, () => {
@@ -110,9 +112,9 @@ describe(`Uses a provided signing key generation function to sign channel state 
             (global[`network`] as NetworkContextForTestSuite).TicTacToeApp,
             multisigAddress,
             undefined,
-            constants.One,
+            One,
             CONVENTION_FOR_ETH_ASSET_ID,
-            constants.One,
+            One,
             CONVENTION_FOR_ETH_ASSET_ID,
           ),
         );

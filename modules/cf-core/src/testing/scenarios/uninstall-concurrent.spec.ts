@@ -20,6 +20,9 @@ import {
   makeProposeCall,
 } from "../utils";
 
+const { parseEther } = utils;
+const { One } = constants;
+
 expect.extend({ toBeLt });
 
 jest.setTimeout(7500);
@@ -47,7 +50,7 @@ describe("Node method follows spec - uninstall", () => {
         multisigAddress,
         nodeA,
         nodeB,
-        utils.parseEther("2"), // We are depositing in 2 and use 1 for each concurrent app
+        parseEther("2"), // We are depositing in 2 and use 1 for each concurrent app
       );
 
       nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
@@ -63,9 +66,9 @@ describe("Node method follows spec - uninstall", () => {
         TicTacToeApp,
         multisigAddress,
         /* initialState */ undefined,
-        constants.One,
+        One,
         CONVENTION_FOR_ETH_ASSET_ID,
-        constants.One,
+        One,
         CONVENTION_FOR_ETH_ASSET_ID,
       );
 
@@ -82,7 +85,7 @@ describe("Node method follows spec - uninstall", () => {
       // NOTE: nodeA does not ever emit this event
       nodeB.on("UNINSTALL_EVENT", (msg: UninstallMessage) => {
         expect(appIdentityHashes.includes(msg.data.appIdentityHash)).toBe(true);
-        expect(msg.data.multisigAddress).toBe(multisigAddress)
+        expect(msg.data.multisigAddress).toBe(multisigAddress);
         uninstalledApps += 1;
         if (uninstalledApps === 2) done();
       });

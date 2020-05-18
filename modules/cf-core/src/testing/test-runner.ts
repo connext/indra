@@ -12,6 +12,8 @@ import { MiniNode } from "./mininode";
 import { newWallet } from "./utils";
 import { StateChannel } from "../models";
 
+const { HashZero, AddressZero, Zero, One, Two } = constants;
+
 expect.extend({ toBeEq });
 
 export enum Participant {
@@ -123,25 +125,25 @@ export class TestRunner {
     for (const mininode of [this.mininodeA, this.mininodeB]) {
       const json = await mininode.store.getStateChannel(this.multisigAB)!;
       const sc = StateChannel.fromJson(json!);
-      const updatedSc = sc.addActiveAppAndIncrementFreeBalance(constants.HashZero, {
-        [constants.AddressZero]: {
-          [this.mininodeA.address]: constants.One,
-          [this.mininodeB.address]: constants.One,
+      const updatedSc = sc.addActiveAppAndIncrementFreeBalance(HashZero, {
+        [AddressZero]: {
+          [this.mininodeA.address]: One,
+          [this.mininodeB.address]: One,
         },
         [TestRunner.TEST_TOKEN_ADDRESS]: {
-          [this.mininodeA.address]: constants.One,
-          [this.mininodeB.address]: constants.One,
+          [this.mininodeA.address]: One,
+          [this.mininodeB.address]: One,
         },
       });
       await mininode.store.createStateChannel(
         updatedSc.toJson(),
-        { to: updatedSc.multisigAddress, value: 0, data: constants.HashZero } as MinimalTransaction,
+        { to: updatedSc.multisigAddress, value: 0, data: HashZero } as MinimalTransaction,
         {
           appIdentity: updatedSc.freeBalance.identity,
           appIdentityHash: updatedSc.freeBalance.identityHash,
           appStasteHash: updatedSc.freeBalance.hashOfLatestState,
           challengeRegistryAddress: getRandomAddress(),
-          signatures: [constants.HashZero, constants.HashZero],
+          signatures: [HashZero, HashZero],
           versionNumber: toBNJson(updatedSc.freeBalance.latestVersionNumber),
         } as any,
       );
@@ -151,25 +153,25 @@ export class TestRunner {
     for (const mininode of [this.mininodeB, this.mininodeC]) {
       const json = await mininode.store.getStateChannel(this.multisigBC)!;
       const sc = StateChannel.fromJson(json!);
-      const updatedSc = sc.addActiveAppAndIncrementFreeBalance(constants.HashZero, {
-        [constants.AddressZero]: {
-          [this.mininodeB.address]: constants.One,
-          [this.mininodeC.address]: constants.One,
+      const updatedSc = sc.addActiveAppAndIncrementFreeBalance(HashZero, {
+        [AddressZero]: {
+          [this.mininodeB.address]: One,
+          [this.mininodeC.address]: One,
         },
         [TestRunner.TEST_TOKEN_ADDRESS]: {
-          [this.mininodeB.address]: constants.One,
-          [this.mininodeC.address]: constants.One,
+          [this.mininodeB.address]: One,
+          [this.mininodeC.address]: One,
         },
       });
       await mininode.store.createStateChannel(
         updatedSc.toJson(),
-        { to: updatedSc.multisigAddress, value: 0, data: constants.HashZero } as MinimalTransaction,
+        { to: updatedSc.multisigAddress, value: 0, data: HashZero } as MinimalTransaction,
         {
           appIdentity: updatedSc.freeBalance.identity,
           appIdentityHash: updatedSc.freeBalance.identityHash,
           appStasteHash: updatedSc.freeBalance.hashOfLatestState,
           challengeRegistryAddress: getRandomAddress(),
-          signatures: [constants.HashZero, constants.HashZero],
+          signatures: [HashZero, HashZero],
           versionNumber: toBNJson(updatedSc.freeBalance.latestVersionNumber),
         } as any,
       );
@@ -189,22 +191,22 @@ export class TestRunner {
       [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: [
         {
           to: this.mininodeA.address,
-          amount: constants.Two,
+          amount: Two,
         },
         {
           to: this.mininodeB.address,
-          amount: constants.Zero,
+          amount: Zero,
         },
       ],
       [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: [
         [
           {
             to: this.mininodeA.address,
-            amount: constants.Two,
+            amount: Two,
           },
           {
             to: this.mininodeB.address,
-            amount: constants.Zero,
+            amount: Zero,
           },
         ],
       ],
@@ -219,12 +221,12 @@ export class TestRunner {
         stateEncoding,
         actionEncoding: undefined,
       },
-      initiatorDeposit: constants.One,
+      initiatorDeposit: One,
       initiatorDepositAssetId: tokenAddress,
-      responderDeposit: constants.One,
+      responderDeposit: One,
       responderDepositAssetId: tokenAddress,
       defaultTimeout: this.defaultTimeout,
-      stateTimeout: constants.Zero,
+      stateTimeout: Zero,
       initialState,
       outcomeType,
     } as ProtocolParams.Propose);
@@ -242,15 +244,15 @@ export class TestRunner {
       },
       appSeqNo: proposal.appSeqNo,
       defaultTimeout: this.defaultTimeout,
-      stateTimeout: constants.Zero,
+      stateTimeout: Zero,
       disableLimit: false,
       initialState,
-      initiatorBalanceDecrement: constants.One,
+      initiatorBalanceDecrement: One,
       initiatorDepositAssetId: tokenAddress,
       initiatorIdentifier: this.mininodeA.publicIdentifier,
       multisigAddress: this.multisigAB,
       outcomeType,
-      responderBalanceDecrement: constants.One,
+      responderBalanceDecrement: One,
       responderDepositAssetId: tokenAddress,
       responderIdentifier: this.mininodeB.publicIdentifier,
       appInitiatorIdentifier: this.mininodeA.publicIdentifier,
@@ -274,22 +276,22 @@ export class TestRunner {
       [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: [
         {
           to: this.mininodeA.address,
-          amount: constants.Two,
+          amount: Two,
         },
         {
           to: this.mininodeB.address,
-          amount: constants.Zero,
+          amount: Zero,
         },
       ],
       [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: [
         [
           {
             to: this.mininodeA.address,
-            amount: constants.Two,
+            amount: Two,
           },
           {
             to: this.mininodeB.address,
-            amount: constants.Zero,
+            amount: Zero,
           },
         ],
       ],
@@ -304,12 +306,12 @@ export class TestRunner {
         stateEncoding,
         actionEncoding: undefined,
       },
-      initiatorDeposit: constants.One,
+      initiatorDeposit: One,
       initiatorDepositAssetId: tokenAddressA,
-      responderDeposit: constants.One,
+      responderDeposit: One,
       responderDepositAssetId: tokenAddressB,
       defaultTimeout: this.defaultTimeout,
-      stateTimeout: constants.Zero,
+      stateTimeout: Zero,
       initialState,
       outcomeType,
     } as ProtocolParams.Propose);
@@ -325,8 +327,8 @@ export class TestRunner {
       initiatorIdentifier: this.mininodeA.publicIdentifier,
       responderIdentifier: this.mininodeB.publicIdentifier,
       multisigAddress: this.multisigAB,
-      initiatorBalanceDecrement: constants.One,
-      responderBalanceDecrement: constants.One,
+      initiatorBalanceDecrement: One,
+      responderBalanceDecrement: One,
       appInterface: {
         stateEncoding,
         addr: this.identityApp.address,
@@ -334,7 +336,7 @@ export class TestRunner {
       },
       appSeqNo: proposal.appSeqNo,
       defaultTimeout: this.defaultTimeout,
-      stateTimeout: constants.Zero,
+      stateTimeout: Zero,
       initiatorDepositAssetId: tokenAddressA,
       responderDepositAssetId: tokenAddressB,
       disableLimit: false,

@@ -6,13 +6,15 @@ import NimApp from "../../build/NimApp.json";
 
 import { expect, provider } from "../utils";
 
+const { defaultAbiCoder } = utils;
+
 type NimAppState = {
   versionNumber: BigNumber;
   pileHeights: BigNumber[];
 };
 
 function decodeBytesToAppState(encodedAppState: string): NimAppState {
-  return utils.defaultAbiCoder.decode(
+  return defaultAbiCoder.decode(
     ["tuple(uint256 versionNumber, uint256[3] pileHeights)"],
     encodedAppState,
   )[0];
@@ -22,7 +24,7 @@ describe("Nim", () => {
   let nim: Contract;
 
   function encodeState(state: SolidityValueType) {
-    return utils.defaultAbiCoder.encode(
+    return defaultAbiCoder.encode(
       [
         `
         tuple(
@@ -36,7 +38,7 @@ describe("Nim", () => {
   }
 
   function encodeAction(state: SolidityValueType) {
-    return utils.defaultAbiCoder.encode(
+    return defaultAbiCoder.encode(
       [
         `
         tuple(

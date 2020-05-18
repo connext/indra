@@ -27,6 +27,9 @@ import { getCreate2MultisigAddress } from "../../utils";
 
 import { NodeController } from "../controller";
 
+const { Interface, solidityKeccak256 } = utils;
+const { HashZero } = constants;
+
 // Estimate based on rinkeby transaction:
 // 0xaac429aac389b6fccc7702c8ad5415248a5add8e8e01a09a42c4ed9733086bec
 const CREATE_PROXY_AND_SETUP_GAS = 500_000;
@@ -76,8 +79,8 @@ export class DeployStateDepositController extends NodeController {
     const { log, networkContext, store, provider, signer } = requestHandler;
 
     // By default, if the contract has been deployed and
-    // DB has records of it, controller will return constants.HashZero
-    let tx = { hash: constants.HashZero } as providers.TransactionResponse;
+    // DB has records of it, controller will return HashZero
+    let tx = { hash: HashZero } as providers.TransactionResponse;
 
     const json = await store.getStateChannel(multisigAddress);
     if (!json) {
@@ -126,7 +129,7 @@ async function sendMultisigDeployTx(
 
   const signerAddress = await signer.getAddress();
 
-  const iface = new utils.Interface(MinimumViableMultisig.abi);
+  const iface = new Interface(MinimumViableMultisig.abi);
 
   let error;
   for (let tryCount = 1; tryCount < retryCount + 1; tryCount += 1) {
@@ -135,7 +138,7 @@ async function sendMultisigDeployTx(
         networkContext.MinimumViableMultisig,
         iface.encodeFunctionData("setup", [stateChannel.multisigOwners]),
         // hash chainId plus nonce for x-chain replay protection
-        utils.solidityKeccak256(["uint256", "uint256"], [(await provider.getNetwork()).chainId, 0]), // TODO: Increment nonce as needed
+        solidityKeccak256(["uint256", "uint256"], [(await provider.getNetwork()).chainId, 0]), // TODO: Increment nonce as needed
         {
           gasLimit: CREATE_PROXY_AND_SETUP_GAS,
           gasPrice: provider.getGasPrice(),

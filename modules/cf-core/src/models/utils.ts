@@ -2,6 +2,8 @@ import { BigNumber, constants } from "ethers";
 
 import { CoinTransferMap, TokenIndexedCoinTransferMap } from "./free-balance";
 
+const { Zero } = constants;
+
 // makes all values that are decremental incremental. Example:
 // fb.sub(balanceDecrement) === fb.add(flib(balanceDecrement))
 export function flipTokenIndexedBalances(
@@ -23,7 +25,7 @@ export function flip(coinTransferMap: CoinTransferMap): CoinTransferMap {
   return Object.entries(coinTransferMap).reduce(
     (returnValueAccumulator, [to, amount]) => ({
       ...returnValueAccumulator,
-      [to]: constants.Zero.sub(amount),
+      [to]: Zero.sub(amount),
     }),
     {},
   );
@@ -42,7 +44,7 @@ export function merge(base: { [s: string]: BigNumber }, increments: CoinTransfer
   const s2 = new Set(Object.keys(increments));
 
   for (const key of new Set([...s1, ...s2])) {
-    ret[key] = (base[key] || constants.Zero).add(increments[key] || constants.Zero);
+    ret[key] = (base[key] || Zero).add(increments[key] || Zero);
   }
   return ret;
 }

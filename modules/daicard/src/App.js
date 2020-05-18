@@ -31,6 +31,9 @@ import { WithdrawSaiDialog } from "./components/withdrawSai";
 import { rootMachine } from "./state";
 import { cleanWalletConnect, migrate, initWalletConnect } from "./utils";
 
+const { formatEther } = utils;
+const { AddressZero, Zero } = constants;
+
 const urls = {
   ethProviderUrl:
     process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
@@ -268,7 +271,7 @@ class App extends React.Component {
     console.log(`Successfully connected channel`);
 
     const token = new Contract(channel.config.contractAddresses.Token, tokenAbi, ethProvider);
-    const swapRate = await channel.getLatestSwapRate(constants.AddressZero, token.address);
+    const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
@@ -277,7 +280,7 @@ class App extends React.Component {
     console.log(` - Token address: ${token.address}`);
     console.log(` - Swap rate: ${swapRate}`);
 
-    channel.subscribeToSwapRates(constants.AddressZero, token.address, (res) => {
+    channel.subscribeToSwapRates(AddressZero, token.address, (res) => {
       if (!res || !res.swapRate) return;
       console.log(`Got swap rate upate: ${this.state.swapRate} -> ${res.swapRate}`);
       this.setState({ swapRate: res.swapRate });
@@ -319,7 +322,7 @@ class App extends React.Component {
   getSaiBalance = async (wallet) => {
     const { channel } = this.state;
     if (!channel.config.contractAddresses.SAIToken) {
-      return constants.Zero;
+      return Zero;
     }
     const saiToken = new Contract(channel.config.contractAddresses.SAIToken, tokenAbi, wallet);
     const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
@@ -430,13 +433,13 @@ class App extends React.Component {
       console.warn(`Another operation is pending, waiting to autoswap`);
       return;
     }
-    if (balance.onChain.ether.wad.eq(constants.Zero)) {
+    if (balance.onChain.ether.wad.eq(Zero)) {
       console.debug(`No on-chain eth to deposit`);
       return;
     }
 
     let nowMaxDeposit = maxDeposit.wad.sub(this.state.balance.channel.total.wad);
-    if (nowMaxDeposit.lte(constants.Zero)) {
+    if (nowMaxDeposit.lte(Zero)) {
       console.debug(
         `Channel balance (${balance.channel.total.toDAI().format()}) is at or above ` +
           `cap of ${maxDeposit.toDAI(swapRate).format()}`,
@@ -444,13 +447,10 @@ class App extends React.Component {
       return;
     }
 
-    if (
-      balance.onChain.token.wad.gt(constants.Zero) ||
-      balance.onChain.ether.wad.gt(minDeposit.wad)
-    ) {
+    if (balance.onChain.token.wad.gt(Zero) || balance.onChain.ether.wad.gt(minDeposit.wad)) {
       machine.send(["START_DEPOSIT"]);
 
-      if (balance.onChain.token.wad.gt(constants.Zero)) {
+      if (balance.onChain.token.wad.gt(Zero)) {
         const amount = minBN([
           Currency.WEI(nowMaxDeposit, swapRate).toDAI().wad,
           balance.onChain.token.wad,
@@ -470,7 +470,7 @@ class App extends React.Component {
       }
 
       nowMaxDeposit = maxDeposit.wad.sub(this.state.balance.channel.total.wad);
-      if (nowMaxDeposit.lte(constants.Zero)) {
+      if (nowMaxDeposit.lte(Zero)) {
         console.debug(
           `Channel balance (${balance.channel.total.toDAI().format()}) is at or above ` +
             `cap of ${maxDeposit.toDAI(swapRate).format()}`,
@@ -490,7 +490,7 @@ class App extends React.Component {
       console.log(`Depositing ${amount} wei into channel: ${channel.multisigAddress}`);
       const result = await channel.deposit({
         amount: amount.toString(),
-        assetId: constants.AddressZero,
+        assetId: AddressZero,
       });
       await this.refreshBalances();
       console.log(`Successfully deposited ether! Result: ${JSON.stringify(result, null, 2)}`);
@@ -513,7 +513,7 @@ class App extends React.Component {
       console.warn(`Another operation is pending, waiting to autoswap`);
       return;
     }
-    if (balance.channel.ether.wad.eq(constants.Zero)) {
+    if (balance.channel.ether.wad.eq(Zero)) {
       console.debug(`No in-channel eth available to swap`);
       return;
     }
@@ -535,7 +535,7 @@ class App extends React.Component {
     }
 
     console.log(
-      `Attempting to swap ${utils.formatEther(availableWeiToSwap)} eth for ${utils.formatEther(
+      `Attempting to swap ${formatEther(availableWeiToSwap)} eth for ${formatEther(
         weiToToken(availableWeiToSwap, swapRate),
       )} dai at rate: ${swapRate}`,
     );
@@ -543,7 +543,7 @@ class App extends React.Component {
 
     await channel.swap({
       amount: availableWeiToSwap,
-      fromAssetId: constants.AddressZero,
+      fromAssetId: AddressZero,
       swapRate,
       toAssetId: token.address,
     });
@@ -600,11 +600,7 @@ class App extends React.Component {
       token,
       wallet,
     } = this.state;
-    const address = wallet
-      ? wallet.address
-      : channel
-      ? channel.signerAddress
-      : constants.AddressZero;
+    const address = wallet ? wallet.address : channel ? channel.signerAddress : AddressZero;
     const { classes } = this.props;
     return (
       <Router>

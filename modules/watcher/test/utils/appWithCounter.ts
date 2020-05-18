@@ -15,11 +15,19 @@ import {
   SignedCancelChallengeRequest,
 } from "@connext/types";
 import { utils, constants } from "ethers";
-import { ChannelSigner, toBNJson, bigNumberifyJson, toBN } from "@connext/utils";
+import {
+  ChannelSigner,
+  toBNJson,
+  bigNumberifyJson,
+  computeCancelDisputeHash,
+} from "@connext/utils";
 
 import { stateToHash } from "./utils";
 import { ConditionalTransactionCommitment, SetStateCommitment } from "@connext/contracts";
 import { NetworkContextForTestSuite } from "./contracts";
+
+const { keccak256, solidityPack, defaultAbiCoder } = utils;
+const { One, Zero, Two } = constants;
 
 export type AppWithCounterAction = {
   actionType: ActionType;
@@ -50,24 +58,24 @@ export class AppWithCounterClass {
       [tokenAddress: string]: CoinTransfer[];
     } = {
       [CONVENTION_FOR_ETH_ASSET_ID]: [
-        { to: signerParticipants[0].address, amount: constants.One },
-        { to: signerParticipants[1].address, amount: constants.Zero },
+        { to: signerParticipants[0].address, amount: One },
+        { to: signerParticipants[1].address, amount: Zero },
       ], // initiator, resp
     },
-    public readonly stateTimeout: BigNumber = constants.Zero,
-    public latestVersionNumber: BigNumber = constants.Two,
-    public latestState: AppWithCounterState = { counter: constants.One },
+    public readonly stateTimeout: BigNumber = Zero,
+    public latestVersionNumber: BigNumber = Two,
+    public latestState: AppWithCounterState = { counter: One },
     public latestAction: AppWithCounterAction | undefined = undefined,
   ) {}
 
   get identityHash(): string {
-    return utils.keccak256(
-      utils.solidityPack(
+    return keccak256(
+      solidityPack(
         ["address", "uint256", "bytes32", "address", "uint256"],
         [
           this.multisigAddress,
           this.channelNonce,
-          utils.keccak256(utils.solidityPack(["address[]"], [this.participants])),
+          keccak256(solidityPack(["address[]"], [this.participants])),
           this.appDefinition,
           this.defaultTimeout,
         ],
@@ -115,7 +123,7 @@ export class AppWithCounterClass {
           (prev, curr) => {
             return { amount: prev.amount.add(curr.amount), to: "" };
           },
-          { to: "", amount: constants.Zero },
+          { to: "", amount: Zero },
         ).amount,
       ) as any,
       tokenAddress: CONVENTION_FOR_ETH_ASSET_ID,
@@ -123,7 +131,7 @@ export class AppWithCounterClass {
   }
 
   get encodedInterpreterParams() {
-    return utils.defaultAbiCoder.encode(
+    return defaultAbiCoder.encode(
       [twoPartyFixedOutcomeInterpreterParamsEncoding],
       [this.interpreterParams],
     );
@@ -134,11 +142,11 @@ export class AppWithCounterClass {
   }
 
   public static encodeState(state: AppWithCounterState) {
-    return utils.defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
+    return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
   }
 
   public static encodeAction(action: AppWithCounterAction) {
-    return utils.defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
+    return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
   }
 
   public toJson(): AppInstanceJson {
@@ -173,7 +181,7 @@ export class AppWithCounterClass {
       },
       outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
       appDefinition: this.appInterface.addr,
-      initialState: { counter: constants.Zero },
+      initialState: { counter: Zero },
       initiatorDeposit: this.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][0].amount.toString(),
       initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
       responderDeposit: this.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][1].amount.toString(),
@@ -222,7 +230,7 @@ export class AppWithCounterClass {
     if (!this.latestAction) {
       throw new Error(`Cannot generate next set state commitment`);
     }
-    const turnTakerIdx = this.latestState.counter.gt(constants.Zero) ? 0 : 1;
+    const turnTakerIdx = this.latestState.counter.gt(Zero) ? 0 : 1;
     const setState = new SetStateCommitment(
       challengeRegistryAddress,
       this.appIdentity,

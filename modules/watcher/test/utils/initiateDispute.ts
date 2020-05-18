@@ -21,6 +21,8 @@ import { MiniFreeBalance } from "./miniFreeBalance";
 import { NetworkContextForTestSuite } from "./contracts";
 import { verifyChallengeProgressedEvent } from "./assertions";
 
+const { Zero } = constants;
+
 export type OutcomeSetResults = [
   ChallengeOutcomeSetEventData,
   ChallengeOutcomeSetEventData,
@@ -125,7 +127,7 @@ export const initiateDispute = async (
   // get expected app values
   const appFinalizesAt = toBN(await networkContext.provider.getBlockNumber())
     .add(appSetState.stateTimeout)
-    .add(shouldCallSetAndProgress ? app.defaultTimeout : constants.Zero);
+    .add(shouldCallSetAndProgress ? app.defaultTimeout : Zero);
   const appStatus = !shouldCallSetAndProgress
     ? ChallengeStatus.IN_DISPUTE
     : isStateTerminal

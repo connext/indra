@@ -13,6 +13,8 @@ import { NodeController } from "../controller";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
 import { StateChannel } from "../../models";
 
+const { getAddress } = utils;
+
 export class GetFreeBalanceStateController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_getFreeBalanceState)
   public executeMethod = super.executeMethod;
@@ -26,9 +28,7 @@ export class GetFreeBalanceStateController extends NodeController {
 
     // NOTE: We default to ETH in case of undefined tokenAddress param
     // TODO: standardize on either address or assetId, not both
-    const tokenAddress = utils.getAddress(
-      getAddressFromAssetId(assetId || CONVENTION_FOR_ETH_ASSET_ID),
-    );
+    const tokenAddress = getAddress(getAddressFromAssetId(assetId || CONVENTION_FOR_ETH_ASSET_ID));
 
     if (!multisigAddress) {
       throw new Error("getFreeBalanceState method was given undefined multisigAddress");

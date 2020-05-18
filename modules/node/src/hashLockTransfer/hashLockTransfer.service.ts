@@ -20,6 +20,8 @@ import { DepositService } from "../deposit/deposit.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 import { HashlockTransferRepository } from "./hashlockTransfer.repository";
 
+const { HashZero, Zero } = constants;
+
 const appStatusesToHashLockTransferStatus = (
   currentBlockNumber: number,
   senderApp: AppInstance<typeof HashLockTransferAppName>,
@@ -36,8 +38,8 @@ const appStatusesToHashLockTransferStatus = (
   if (!receiverApp) {
     return isSenderExpired ? HashLockTransferStatus.EXPIRED : HashLockTransferStatus.PENDING;
   } else if (
-    senderApp.latestState.preImage !== constants.HashZero ||
-    receiverApp.latestState.preImage !== constants.HashZero
+    senderApp.latestState.preImage !== HashZero ||
+    receiverApp.latestState.preImage !== HashZero
   ) {
     // iff sender uninstalled, payment is unlocked
     return HashLockTransferStatus.COMPLETED;
@@ -93,7 +95,7 @@ export class HashLockTransferService {
     // sender amount
     const amount = appState.coinTransfers[0].amount;
     const expiry = appState.expiry.sub(TIMEOUT_BUFFER);
-    if (expiry.lte(constants.Zero)) {
+    if (expiry.lte(Zero)) {
       throw new Error(
         `Cannot resolve hash lock transfer with 0 or negative expiry: ${expiry.toString()}`,
       );
@@ -128,11 +130,7 @@ export class HashLockTransferService {
         receiverFreeBal[freeBalanceAddr],
       );
       // request collateral and wait for deposit to come through
-      const depositReceipt = await this.depositService.deposit(
-        receiverChannel,
-        deposit,
-        assetId,
-      );
+      const depositReceipt = await this.depositService.deposit(receiverChannel, deposit, assetId);
       if (!depositReceipt) {
         throw new Error(
           `Could not deposit sufficient collateral to resolve hash lock transfer app for reciever: ${receiverIdentifier}`,
@@ -147,12 +145,12 @@ export class HashLockTransferService {
           to: freeBalanceAddr,
         },
         {
-          amount: constants.Zero,
+          amount: Zero,
           to: getSignerAddressFromPublicIdentifier(receiverIdentifier),
         },
       ],
       lockHash: appState.lockHash,
-      preImage: constants.HashZero,
+      preImage: HashZero,
       expiry,
       finalized: false,
     };
@@ -162,7 +160,7 @@ export class HashLockTransferService {
       initialState,
       amount,
       assetId,
-      constants.Zero,
+      Zero,
       assetId,
       HashLockTransferAppName,
       { ...meta, sender: senderIdentifier },

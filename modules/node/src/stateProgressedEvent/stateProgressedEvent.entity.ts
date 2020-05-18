@@ -13,6 +13,8 @@ import { IsEthAddress } from "../validate";
 import { BigNumber, utils } from "ethers";
 import { toBN } from "@connext/utils";
 
+const { defaultAbiCoder } = utils;
+
 export const entityToStateProgressedEventPayload = (
   item: StateProgressedEvent | undefined,
   challenge: Challenge,
@@ -21,7 +23,7 @@ export const entityToStateProgressedEventPayload = (
     return undefined;
   }
   const { action, versionNumber, timeout, turnTaker, signature } = item;
-  const encodedAction = utils.defaultAbiCoder.encode([challenge.app.actionEncoding!], [action]);
+  const encodedAction = defaultAbiCoder.encode([challenge.app.actionEncoding!], [action]);
   return {
     action: encodedAction,
     versionNumber,

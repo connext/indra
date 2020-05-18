@@ -12,12 +12,15 @@ import { utils, constants } from "ethers";
 
 import { createClient, ETH_AMOUNT_SM, expect } from "../util";
 
+const { hexlify, randomBytes } = utils;
+const { One, AddressZero } = constants;
+
 const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
 
 const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
   to: TEST_STORE_ETH_ADDRESS,
-  value: constants.One,
-  data: utils.hexlify(utils.randomBytes(64)),
+  value: One,
+  data: hexlify(randomBytes(64)),
 };
 
 const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
@@ -40,8 +43,8 @@ const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
   twoPartyOutcomeInterpreterParams: {
     amount: { _hex: "0x42" } as any,
-    playerAddrs: [constants.AddressZero, constants.AddressZero],
-    tokenAddress: constants.AddressZero,
+    playerAddrs: [AddressZero, AddressZero],
+    tokenAddress: AddressZero,
   },
 };
 
@@ -71,7 +74,7 @@ describe("Get State Channel", () => {
   beforeEach(async () => {
     clientA = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
-    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: constants.AddressZero });
+    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
   });
 
@@ -99,7 +102,7 @@ describe("Get State Channel", () => {
   it("Store contains multiple state channels", async () => {
     // Client with same store and new signer
     const clientB = await createClient({ store: clientA.store });
-    await clientB.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: constants.AddressZero });
+    await clientB.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientB.requestCollateral(tokenAddress);
 
     // Now check both exist in the same store

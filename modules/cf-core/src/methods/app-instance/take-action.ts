@@ -27,6 +27,8 @@ import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { AppInstance } from "../../models";
 
+const { Logger } = utils;
+
 export class TakeActionController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_takeAction)
   public executeMethod = super.executeMethod;
@@ -62,7 +64,7 @@ export class TakeActionController extends NodeController {
     try {
       appInstance.encodeAction(action);
     } catch (e) {
-      if (e.code === utils.Logger.errors.INVALID_ARGUMENT) {
+      if (e.code === Logger.errors.INVALID_ARGUMENT) {
         throw new Error(`${IMPROPERLY_FORMATTED_STRUCT}: ${e.message}`);
       }
       throw new Error(STATE_OBJECT_NOT_ENCODABLE);

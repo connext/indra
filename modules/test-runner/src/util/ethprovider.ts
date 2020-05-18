@@ -9,8 +9,11 @@ export const ethProvider = new providers.JsonRpcProvider(env.ethProviderUrl);
 export const sugarDaddy = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
 export const ethWallet = Wallet.createRandom().connect(ethProvider);
 
+const { parseEther } = utils;
+const { AddressZero } = constants;
+
 export const fundEthWallet = async () => {
-  const FUND_AMT = utils.parseEther("10000");
+  const FUND_AMT = parseEther("10000");
   const tokenContract = new Contract(addressBook[4447].Token.address, ERC20.abi, sugarDaddy);
   const ethFunding = await sugarDaddy.sendTransaction({
     to: ethWallet.address,
@@ -40,14 +43,14 @@ export const revertEVMSnapshot = async (snapshotId: string): Promise<void> => {
 export const sendOnchainValue = async (
   to: string,
   value: BigNumberish,
-  assetId: string = constants.AddressZero,
+  assetId: string = AddressZero,
 ): Promise<void> => {
   const nonceErr = "the tx doesn't have the correct nonce";
   const retries = 3;
   for (let i = 0; i < retries; i++) {
     const nonce = await ethWallet.getTransactionCount();
     try {
-      if (assetId === constants.AddressZero) {
+      if (assetId === AddressZero) {
         const tx = await ethWallet.sendTransaction({
           to,
           value,
@@ -72,10 +75,10 @@ export const sendOnchainValue = async (
 
 export const getOnchainBalance = async (
   address: string,
-  assetId: string = constants.AddressZero,
+  assetId: string = AddressZero,
 ): Promise<BigNumber> => {
   let result: BigNumber;
-  if (assetId === constants.AddressZero) {
+  if (assetId === AddressZero) {
     try {
       result = await ethProvider.getBalance(address);
     } catch (e) {

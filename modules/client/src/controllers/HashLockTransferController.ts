@@ -15,6 +15,8 @@ import { constants } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
+const { AddressZero, HashZero, Zero } = constants;
+
 export class HashLockTransferController extends AbstractController {
   public hashLockTransfer = async (
     params: PublicParams.HashLockTransfer,
@@ -22,7 +24,7 @@ export class HashLockTransferController extends AbstractController {
     this.log.info(`hashLockTransfer started: ${stringify(params)}`);
     // convert params + validate
     const amount = toBN(params.amount);
-    const assetId = params.assetId ? params.assetId : constants.AddressZero;
+    const assetId = params.assetId ? params.assetId : AddressZero;
     // backwards compatibility for timelock
     // convert to block height
     const timelock = params.timelock ? params.timelock : 5000;
@@ -38,13 +40,13 @@ export class HashLockTransferController extends AbstractController {
           to: this.connext.signerAddress,
         },
         {
-          amount: constants.Zero,
+          amount: Zero,
           to: this.connext.nodeSignerAddress,
         },
       ],
       expiry,
       lockHash,
-      preImage: constants.HashZero,
+      preImage: HashZero,
       finalized: false,
     };
 
@@ -74,7 +76,7 @@ export class HashLockTransferController extends AbstractController {
       meta: submittedMeta,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
-      responderDeposit: constants.Zero,
+      responderDeposit: Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: HASHLOCK_TRANSFER_STATE_TIMEOUT,

@@ -13,6 +13,8 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { Channel } from "./channel.entity";
 import { AppType } from "../appInstance/appInstance.entity";
 
+const { AddressZero } = constants;
+
 const log = new LoggerService("ChannelRepository");
 
 export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
@@ -166,7 +168,7 @@ export class ChannelRepository extends Repository<Channel> {
 
   async getRebalanceProfileForChannelAndAsset(
     userIdentifier: string,
-    assetId: string = constants.AddressZero,
+    assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
     const channel = await this.createQueryBuilder("channel")
       .leftJoinAndSelect("channel.rebalanceProfiles", "rebalanceProfiles")

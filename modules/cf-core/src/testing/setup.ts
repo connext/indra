@@ -9,6 +9,8 @@ import { MemoryLockService, MemoryMessagingService, MemoryStoreServiceFactory } 
 import { A_PRIVATE_KEY, B_PRIVATE_KEY, C_PRIVATE_KEY } from "./test-constants.jest";
 import { Logger } from "./logger";
 
+const { parseEther } = utils;
+
 export const env = {
   logLevel: process.env.LOG_LEVEL ? parseInt(process.env.LOG_LEVEL, 10) : 0,
 };
@@ -121,7 +123,7 @@ export async function generateNewFundedWallet(
 
   const transactionToA: providers.TransactionRequest = {
     to: wallet.address,
-    value: utils.parseEther("20").toHexString(),
+    value: parseEther("20").toHexString(),
   };
   await fundedWallet.sendTransaction(transactionToA);
   return wallet;
@@ -137,11 +139,11 @@ export async function generateNewFundedExtendedPrvKeys(
 
   const transactionToA: providers.TransactionRequest = {
     to: walletA.address,
-    value: utils.parseEther("1").toHexString(),
+    value: parseEther("1").toHexString(),
   };
   const transactionToB: providers.TransactionRequest = {
     to: walletB.address,
-    value: utils.parseEther("1").toHexString(),
+    value: parseEther("1").toHexString(),
   };
   await fundedWallet.sendTransaction(transactionToA);
   await fundedWallet.sendTransaction(transactionToB);

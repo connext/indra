@@ -15,6 +15,8 @@ import {
 import { createClient } from "../util/client";
 import { getOnchainBalance, ethProvider } from "../util/ethprovider";
 
+const { AddressZero, Zero, One } = constants;
+
 describe("Deposits", () => {
   let client: IConnextClient;
   let tokenAddress: string;
@@ -24,7 +26,7 @@ describe("Deposits", () => {
     client: IConnextClient,
     expected: { node: BigNumberish; client: BigNumberish; assetId?: string },
   ): Promise<void> => {
-    const freeBalance = await client.getFreeBalance(expected.assetId || constants.AddressZero);
+    const freeBalance = await client.getFreeBalance(expected.assetId || AddressZero);
     expect(freeBalance[client.signerAddress]).to.equal(expected.client);
     // does not need to be equal, because node may be collateralizing
     expect(freeBalance[nodeSignerAddress]).to.be.at.least(expected.node);
@@ -42,7 +44,7 @@ describe("Deposits", () => {
     expected: { node: BigNumberish; client: BigNumberish; assetId?: string },
   ): Promise<void> => {
     const onchainBalance: BigNumber =
-      expected.assetId === constants.AddressZero
+      expected.assetId === AddressZero
         ? await ethProvider.getBalance(client.multisigAddress)
         : await new Contract(expected.assetId!, tokenAbi, ethProvider).balanceOf(
             client.multisigAddress,
@@ -62,9 +64,9 @@ describe("Deposits", () => {
 
   it("happy case: client should deposit ETH", async () => {
     const expected = {
-      node: constants.Zero.toString(),
+      node: Zero.toString(),
       client: ONE,
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
     };
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
     await assertOnchainBalance(client, expected);
@@ -74,8 +76,8 @@ describe("Deposits", () => {
 
   it("happy case: client should deposit tokens", async () => {
     const expected = {
-      node: constants.Zero.toString(),
-      client: constants.One.toString(),
+      node: Zero.toString(),
+      client: One.toString(),
       assetId: tokenAddress,
     };
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
@@ -90,9 +92,9 @@ describe("Deposits", () => {
   });
 
   it("client should not be able to deposit with negative amount", async () => {
-    await expect(
-      client.deposit({ amount: NEGATIVE_ONE, assetId: constants.AddressZero }),
-    ).to.be.rejectedWith("Value (-1) is not greater than 0");
+    await expect(client.deposit({ amount: NEGATIVE_ONE, assetId: AddressZero })).to.be.rejectedWith(
+      "Value (-1) is not greater than 0",
+    );
   });
 
   it("client should not be able to propose deposit with value it doesn't have", async () => {
@@ -106,7 +108,7 @@ describe("Deposits", () => {
 
   it("client has already requested deposit rights before calling deposit", async () => {
     const expected = {
-      node: constants.Zero,
+      node: Zero,
       client: ONE,
       assetId: tokenAddress,
     };
@@ -124,7 +126,7 @@ describe("Deposits", () => {
     // send a payment to a receiver client to
     // trigger collateral event
     const expected = {
-      node: constants.Zero.toString(),
+      node: Zero.toString(),
       client: TOKEN_AMOUNT.toString(),
       assetId: tokenAddress,
     };
@@ -181,9 +183,9 @@ describe("Deposits", () => {
 
   it("client deposits eth, withdraws, then successfully deposits eth again", async () => {
     const expected = {
-      node: constants.Zero,
+      node: Zero,
       client: ONE,
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
     };
     await client.deposit({ amount: TWO, assetId: expected.assetId });
     await client.withdraw({ amount: TWO, assetId: expected.assetId });
@@ -194,14 +196,14 @@ describe("Deposits", () => {
 
   it("client deposits eth, withdraws, then successfully deposits tokens", async () => {
     const ethExpected = {
-      client: constants.Zero,
-      assetId: constants.AddressZero,
-      node: constants.Zero,
+      client: Zero,
+      assetId: AddressZero,
+      node: Zero,
     };
     const tokenExpected = {
       client: ONE,
       assetId: tokenAddress,
-      node: constants.Zero,
+      node: Zero,
     };
     await client.deposit({ amount: TWO, assetId: ethExpected.assetId });
     await client.withdraw({ amount: TWO, assetId: ethExpected.assetId });

@@ -18,6 +18,9 @@ import {
 } from "./index";
 import { sortSignaturesBySignerAddress } from "../../utils";
 
+const { keccak256 } = utils;
+const { HashZero, Zero, One } = constants;
+
 export async function setupContext(
   appRegistry: Contract,
   appDefinition: Contract,
@@ -133,7 +136,7 @@ export async function setupContext(
   // State Progression methods
   const setOutcome = async (encodedFinalState?: string): Promise<void> => {
     await wrapInEventVerification(
-      appRegistry.setOutcome(appInstance.appIdentity, encodedFinalState || constants.HashZero),
+      appRegistry.setOutcome(appInstance.appIdentity, encodedFinalState || HashZero),
       { status: ChallengeStatus.OUTCOME_SET },
     );
   };
@@ -150,7 +153,7 @@ export async function setupContext(
     appState?: string,
     timeout: number = ONCHAIN_CHALLENGE_TIMEOUT,
   ) => {
-    const stateHash = utils.keccak256(appState || constants.HashZero);
+    const stateHash = keccak256(appState || HashZero);
     const digest = computeAppChallengeHash(
       appInstance.identityHash,
       stateHash,
@@ -183,7 +186,7 @@ export async function setupContext(
     await setState(versionNumber, appState, timeout);
     await verifyChallenge({
       versionNumber: toBN(versionNumber),
-      appStateHash: utils.keccak256(appState || constants.HashZero),
+      appStateHash: keccak256(appState || HashZero),
       status: ChallengeStatus.IN_DISPUTE,
     });
   };
@@ -203,9 +206,9 @@ export async function setupContext(
           ? state.counter
           : state.counter.add(action.increment),
     };
-    const resultingStateHash = utils.keccak256(encodeState(resultingState));
+    const resultingStateHash = keccak256(encodeState(resultingState));
     resultingStateVersionNumber =
-      resultingStateVersionNumber ?? existingChallenge.versionNumber.add(constants.One);
+      resultingStateVersionNumber ?? existingChallenge.versionNumber.add(One);
     resultingStateTimeout = resultingStateTimeout ?? 0;
     const digest = computeAppChallengeHash(
       appInstance.identityHash,
@@ -251,14 +254,14 @@ export async function setupContext(
           ? state.counter
           : state.counter.add(action.increment),
     };
-    const resultingStateHash = utils.keccak256(encodeState(resultingState));
+    const resultingStateHash = keccak256(encodeState(resultingState));
     const explicitlyFinalized = resultingState.counter.gt(5);
     const status = explicitlyFinalized
       ? ChallengeStatus.EXPLICITLY_FINALIZED
       : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
     const expected = {
       appStateHash: resultingStateHash,
-      versionNumber: existingChallenge.versionNumber.add(constants.One),
+      versionNumber: existingChallenge.versionNumber.add(One),
       status,
     };
     await progressState(state, action, signer);
@@ -280,13 +283,13 @@ export async function setupContext(
           ? state.counter
           : state.counter.add(action.increment),
     };
-    const resultingStateHash = utils.keccak256(encodeState(resultingState));
+    const resultingStateHash = keccak256(encodeState(resultingState));
     const status = resultingState.counter.gt(5)
       ? ChallengeStatus.EXPLICITLY_FINALIZED
       : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
     await verifyChallenge({
       appStateHash: resultingStateHash,
-      versionNumber: constants.One.add(versionNumber),
+      versionNumber: One.add(versionNumber),
       status,
     });
     expect(await isProgressable()).to.be.equal(status === ChallengeStatus.IN_ONCHAIN_PROGRESSION);
@@ -301,7 +304,7 @@ export async function setupContext(
     timeout: number = 0,
     turnTaker: Wallet = bob,
   ) => {
-    const stateHash = utils.keccak256(encodeState(state));
+    const stateHash = keccak256(encodeState(state));
     const stateDigest = computeAppChallengeHash(
       appInstance.identityHash,
       stateHash,
@@ -315,11 +318,11 @@ export async function setupContext(
           : state.counter.add(action.increment),
     };
     const timeout2 = 0;
-    const resultingStateHash = utils.keccak256(encodeState(resultingState));
+    const resultingStateHash = keccak256(encodeState(resultingState));
     const resultingStateDigest = computeAppChallengeHash(
       appInstance.identityHash,
       resultingStateHash,
-      constants.One.add(versionNumber),
+      One.add(versionNumber),
       timeout2,
     );
     const req1 = {
@@ -332,7 +335,7 @@ export async function setupContext(
       ]),
     };
     const req2 = {
-      versionNumber: constants.One.add(versionNumber),
+      versionNumber: One.add(versionNumber),
       appStateHash: resultingStateHash,
       timeout: timeout2,
       signatures: [await new ChannelSigner(turnTaker.privateKey).signMessage(resultingStateDigest)],
@@ -376,7 +379,7 @@ export async function setupContext(
     // app defaults
     alice,
     bob,
-    state0: { counter: constants.Zero },
+    state0: { counter: Zero },
     state1: { counter: toBN(2) },
     action: {
       actionType: ActionType.SUBMIT_COUNTER_INCREMENT,

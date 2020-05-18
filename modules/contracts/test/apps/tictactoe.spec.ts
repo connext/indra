@@ -6,6 +6,8 @@ import TicTacToeApp from "../../build/TicTacToeApp.json";
 
 import { expect, provider } from "../utils";
 
+const { defaultAbiCoder } = utils;
+
 type TicTacToeAppState = {
   versionNumber: number;
   winner: number;
@@ -13,7 +15,7 @@ type TicTacToeAppState = {
 };
 
 function decodeBytesToAppState(encodedAppState: string): TicTacToeAppState {
-  return utils.defaultAbiCoder.decode(
+  return defaultAbiCoder.decode(
     ["tuple(uint256 versionNumber, uint256 winner, uint256[3][3] board)"],
     encodedAppState,
   )[0];
@@ -27,7 +29,7 @@ describe("TicTacToeApp", () => {
   }
 
   function encodeState(state: SolidityValueType) {
-    return utils.defaultAbiCoder.encode(
+    return defaultAbiCoder.encode(
       [
         `
         tuple(
@@ -42,7 +44,7 @@ describe("TicTacToeApp", () => {
   }
 
   function encodeAction(state: SolidityValueType) {
-    return utils.defaultAbiCoder.encode(
+    return defaultAbiCoder.encode(
       [
         `
         tuple(
@@ -341,7 +343,7 @@ describe("TicTacToeApp", () => {
 
       const ret = await computeOutcome(state);
 
-      expect(ret).to.eq(utils.defaultAbiCoder.encode(["uint256"], [0]));
+      expect(ret).to.eq(defaultAbiCoder.encode(["uint256"], [0]));
     });
   });
 });

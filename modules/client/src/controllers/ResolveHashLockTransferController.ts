@@ -12,6 +12,8 @@ import { utils } from "ethers";
 import { AbstractController } from "./AbstractController";
 import { stringify } from "@connext/utils";
 
+const { soliditySha256 } = utils;
+
 export class ResolveHashLockTransferController extends AbstractController {
   public resolveHashLockTransfer = async (
     params: PublicParams.ResolveHashLockTransfer,
@@ -19,7 +21,7 @@ export class ResolveHashLockTransferController extends AbstractController {
     this.log.info(`resolveHashLockTransfer started: ${stringify(params)}`);
     const { preImage, assetId } = params;
 
-    const lockHash = utils.soliditySha256(["bytes32"], [preImage]);
+    const lockHash = soliditySha256(["bytes32"], [preImage]);
 
     const installedApps = await this.connext.getAppInstances();
     const hashlockApp = installedApps.find(

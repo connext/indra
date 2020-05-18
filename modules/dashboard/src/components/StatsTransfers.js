@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Button, Grid, Typography, styled } from "@material-ui/core";
 import { constants } from "ethers";
 
+const { WeiPerEther } = constants;
+
 const TopGrid = styled(Grid)({
   display: "flex",
   flexWrap: "wrap",
@@ -94,10 +96,10 @@ const StatsTransfers = (props) => {
         return a + b;
       }, 0);
     }
-    let averageTransfer = totalTransfersReduced / res.length / constants.WeiPerEther;
-    let averageTransferDay = pastDayReduced / pastDayAvg.length / constants.WeiPerEther;
-    let averageTransferWeek = pastWeekReduced / pastWeekAvg.length / constants.WeiPerEther;
-    let averageTransferMonth = pastMonthReduced / pastMonthAvg.length / constants.WeiPerEther;
+    let averageTransfer = totalTransfersReduced / res.length / WeiPerEther;
+    let averageTransferDay = pastDayReduced / pastDayAvg.length / WeiPerEther;
+    let averageTransferWeek = pastWeekReduced / pastWeekAvg.length / WeiPerEther;
+    let averageTransferMonth = pastMonthReduced / pastMonthAvg.length / WeiPerEther;
 
     let transferDateWindows = {
       pastDayTotal: pastDayTotal,

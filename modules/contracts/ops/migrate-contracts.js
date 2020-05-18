@@ -1,5 +1,5 @@
 const fs = require("fs");
-const eth = require("ethers");
+const { Wallet, Contract, ContractFactory, providers, utils, constants } = require("ethers");
 const tokenArtifacts = require("@openzeppelin/contracts/build/contracts/ERC20Mintable.json");
 
 const coreContracts = [
@@ -25,7 +25,10 @@ const appContracts = [
   "WithdrawApp",
 ];
 
-const hash = input => eth.utils.keccak256(`0x${input.replace(/^0x/, "")}`);
+const { EtherSymbol, Zero } = constants;
+const { formatEther, parseEther, keccak256 } = utils;
+
+const hash = (input) => keccak256(`0x${input.replace(/^0x/, "")}`);
 
 const artifacts = {};
 for (const contract of coreContracts) {
@@ -35,9 +38,6 @@ for (const contract of coreContracts) {
 for (const contract of appContracts) {
   artifacts[contract] = require(`../build/${contract}.json`);
 }
-
-const { EtherSymbol, Zero } = eth.constants;
-const { formatEther, parseEther } = eth.utils;
 
 ////////////////////////////////////////
 // Environment Setup
@@ -50,9 +50,7 @@ const ganacheId = 4447;
 const addressBookPath = "./address-book.json";
 const addressBook = JSON.parse(fs.readFileSync(addressBookPath, "utf8") || "{}");
 
-const classicProviders = [
-  "https://www.ethercluster.com/etc",
-];
+const classicProviders = ["https://www.ethercluster.com/etc"];
 
 // Global scope vars
 let chainId;
@@ -71,7 +69,7 @@ const getSavedData = (contractName, property) => {
 };
 
 // Write addressBook to disk
-const saveAddressBook = addressBook => {
+const saveAddressBook = (addressBook) => {
   try {
     fs.writeFileSync(addressBookPath, JSON.stringify(addressBook, null, 2));
   } catch (e) {
@@ -111,10 +109,10 @@ const deployContract = async (name, artifacts, args) => {
   const savedAddress = getSavedData(name, "address");
   if (await contractIsDeployed(name, savedAddress, artifacts)) {
     console.log(`${name} is up to date, no action required\nAddress: ${savedAddress}`);
-    return new eth.Contract(savedAddress, artifacts.abi, wallet);
+    return new Contract(savedAddress, artifacts.abi, wallet);
   }
-  const factory = eth.ContractFactory.fromSolidity(artifacts);
-  const contract = await factory.connect(wallet).deploy(...args.map(a => a.value));
+  const factory = ContractFactory.fromSolidity(artifacts);
+  const contract = await factory.connect(wallet).deploy(...args.map((a) => a.value));
   const txHash = contract.deployTransaction.hash;
   console.log(`Sent transaction to deploy ${name}, txHash: ${txHash}`);
   await wallet.provider.waitForTransaction(txHash);
@@ -124,7 +122,7 @@ const deployContract = async (name, artifacts, args) => {
   const creationCodeHash = hash(artifacts.bytecode);
   // Update address-book w new address + the args we deployed with
   const saveArgs = {};
-  args.forEach(a => (saveArgs[a.name] = a.value));
+  args.forEach((a) => (saveArgs[a.name] = a.value));
   if (!addressBook[chainId]) addressBook[chainId] = {};
   if (!addressBook[chainId][name]) addressBook[chainId][name] = {};
   addressBook[chainId][name] = { address, creationCodeHash, runtimeCodeHash, txHash, ...saveArgs };
@@ -164,7 +162,7 @@ const sendGift = async (address, token) => {
 // Begin executing main migration script in async wrapper function
 // First, setup signer & connect to eth provider
 
-(async function() {
+(async function () {
   let provider, balance, nonce, token;
 
   if (!process.env.ETH_PROVIDER) {
@@ -177,12 +175,12 @@ const sendGift = async (address, token) => {
     process.exit(1);
   }
 
-  provider = new eth.providers.JsonRpcProvider(
+  provider = new providers.JsonRpcProvider(
     process.env.ETH_PROVIDER,
     classicProviders.includes(process.env.ETH_PROVIDER) ? "classic" : null,
   );
   mnemonic = process.env.ETH_MNEMONIC;
-  wallet = eth.Wallet.fromMnemonic(mnemonic).connect(provider); // saved to global scope
+  wallet = Wallet.fromMnemonic(mnemonic).connect(provider); // saved to global scope
 
   try {
     chainId = (await wallet.provider.getNetwork()).chainId; // saved to global scope
@@ -205,7 +203,7 @@ const sendGift = async (address, token) => {
   // if args are provided, only deploy given contracts
   const args = process.argv.slice(2);
   if (args.length > 0) {
-    args.forEach(contractName => {
+    args.forEach((contractName) => {
       if (!knownContracts.includes(contractName)) {
         console.error(`Unknown contract name: ${contractName}`);
         return;
@@ -230,9 +228,9 @@ const sendGift = async (address, token) => {
   // On testnet, give relevant accounts a healthy starting balance
 
   if (chainId === ganacheId) {
-    await sendGift(eth.Wallet.fromMnemonic(mnemonic).address, token);
+    await sendGift(Wallet.fromMnemonic(mnemonic).address, token);
     for (const botMnemonic of botMnemonics) {
-      await sendGift(eth.Wallet.fromMnemonic(botMnemonic).address, token);
+      await sendGift(Wallet.fromMnemonic(botMnemonic).address, token);
     }
   }
 

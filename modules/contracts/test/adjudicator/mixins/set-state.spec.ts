@@ -20,6 +20,8 @@ import {
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 
+const { One } = constants;
+
 describe("setState", () => {
   let wallet: Wallet;
   let snapshotId: number;
@@ -118,7 +120,7 @@ describe("setState", () => {
       await verifyChallenge({
         status: ChallengeStatus.IN_DISPUTE,
         appStateHash: appStateToHash(state),
-        versionNumber: toBN(1),
+        versionNumber: One,
       });
 
       await moveToBlock(100);
@@ -138,7 +140,7 @@ describe("setState", () => {
       );
       await expect(
         appRegistry.setState(appInstance.appIdentity, {
-          versionNumber: constants.One,
+          versionNumber: One,
           appStateHash: appStateToHash(state),
           timeout: ONCHAIN_CHALLENGE_TIMEOUT,
           signatures: await sortSignaturesBySignerAddress(thingToSign, [
@@ -155,7 +157,7 @@ describe("setState", () => {
       await verifyChallenge({
         status: ChallengeStatus.IN_DISPUTE,
         appStateHash: appStateToHash(state),
-        versionNumber: toBN(1),
+        versionNumber: One,
       });
 
       await expect(setState(1, state)).to.be.revertedWith(

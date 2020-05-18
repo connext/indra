@@ -4,6 +4,8 @@ import { BigNumber, constants } from "ethers";
 
 import { AppRegistryInfo } from "./registry";
 
+const { Zero } = constants;
+
 const appProposalMatchesRegistry = (
   proposal: MethodParams.ProposeInstall,
   appRegistryInfo: AppRegistryInfo,
@@ -76,25 +78,25 @@ export const unidirectionalCoinTransferValidation = (
     initiatorTransfer,
     responderTransfer,
   );
-  if (!responderDeposit.eq(constants.Zero)) {
+  if (!responderDeposit.eq(Zero)) {
     throw new Error(
       `Will not accept transfer install where responder deposit is != 0 ${responderDeposit.toString()}`,
     );
   }
 
-  if (initiatorDeposit.lte(constants.Zero)) {
+  if (initiatorDeposit.lte(Zero)) {
     throw new Error(
       `Will not accept transfer install where initiator deposit is <=0 ${initiatorDeposit.toString()}`,
     );
   }
 
-  if (initiatorTransfer.amount.lte(constants.Zero)) {
+  if (initiatorTransfer.amount.lte(Zero)) {
     throw new Error(
       `Cannot install a linked transfer app with a sender transfer of <= 0. Transfer amount: ${initiatorTransfer.amount.toString()}`,
     );
   }
 
-  if (!responderTransfer.amount.eq(constants.Zero)) {
+  if (!responderTransfer.amount.eq(Zero)) {
     throw new Error(
       `Cannot install a linked transfer app with a redeemer transfer of != 0. Transfer amount: ${responderTransfer.amount.toString()}`,
     );

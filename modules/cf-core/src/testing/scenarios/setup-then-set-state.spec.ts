@@ -16,6 +16,9 @@ import {
 } from "../contracts";
 import { getRandomChannelSigners } from "../random-signing-keys";
 
+const { keccak256, Interface } = utils;
+const { WeiPerEther, AddressZero, Zero } = constants;
+
 expect.extend({ toBeEq });
 jest.setTimeout(10000);
 
@@ -77,8 +80,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       ).setFreeBalance(
         FreeBalanceClass.createWithFundedTokenAmounts(
           [initiator, responder].map<string>((key) => key.address),
-          constants.WeiPerEther,
-          [constants.AddressZero],
+          WeiPerEther,
+          [AddressZero],
         ),
       );
 
@@ -87,7 +90,7 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       const setStateCommitment = new SetStateCommitment(
         network.ChallengeRegistry,
         freeBalance.identity,
-        utils.keccak256(freeBalance.encodedLatestState),
+        keccak256(freeBalance.encodedLatestState),
         toBN(freeBalance.versionNumber),
         toBN(freeBalance.stateTimeout),
       );
@@ -121,23 +124,23 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
 
       const setupTx = await setupCommitment.getSignedTransaction();
 
-      await wallet.sendTransaction({ to: proxy, value: constants.WeiPerEther.mul(2) });
+      await wallet.sendTransaction({ to: proxy, value: WeiPerEther.mul(2) });
 
       await wallet.sendTransaction({
         ...setupTx,
         gasLimit: SETUP_COMMITMENT_GAS,
       });
 
-      expect(await provider.getBalance(proxy)).toBeEq(constants.Zero);
+      expect(await provider.getBalance(proxy)).toBeEq(Zero);
 
-      expect(await provider.getBalance(initiator.address)).toBeEq(constants.WeiPerEther);
+      expect(await provider.getBalance(initiator.address)).toBeEq(WeiPerEther);
 
-      expect(await provider.getBalance(responder.address)).toBeEq(constants.WeiPerEther);
+      expect(await provider.getBalance(responder.address)).toBeEq(WeiPerEther);
 
       done();
     });
 
-    const iface = new utils.Interface(MinimumViableMultisig.abi);
+    const iface = new Interface(MinimumViableMultisig.abi);
 
     await proxyFactory.createProxyWithNonce(
       network.MinimumViableMultisig,

@@ -15,6 +15,8 @@ import { constants } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
+const { Zero } = constants;
+
 export class SignedTransferController extends AbstractController {
   public signedTransfer = async (
     params: PublicParams.SignedTransfer,
@@ -34,7 +36,7 @@ export class SignedTransferController extends AbstractController {
           to: this.connext.signerAddress,
         },
         {
-          amount: constants.Zero,
+          amount: Zero,
           to: this.connext.nodeSignerAddress,
         },
       ],
@@ -65,7 +67,7 @@ export class SignedTransferController extends AbstractController {
       meta: submittedMeta,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
-      responderDeposit: constants.Zero,
+      responderDeposit: Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: SIGNED_TRANSFER_STATE_TIMEOUT,

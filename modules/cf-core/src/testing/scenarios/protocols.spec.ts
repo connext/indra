@@ -12,6 +12,8 @@ import { toBeEq } from "../bignumber-jest-matcher";
 import { AppWithAction } from "../contracts";
 import { TestRunner } from "../test-runner";
 
+const { Zero } = constants;
+
 let wallet: Wallet;
 let appWithAction: Contract;
 
@@ -43,7 +45,7 @@ describe("Three mininodes", () => {
       initiatorIdentifier: tr.mininodeA.publicIdentifier,
       responderIdentifier: tr.mininodeB.publicIdentifier,
       defaultTimeout: BigNumber.from(100),
-      stateTimeout: constants.Zero,
+      stateTimeout: Zero,
       appDefinition: appWithAction.address,
       abiEncodings: {
         stateEncoding: "tuple(uint256 counter)",
@@ -87,7 +89,7 @@ describe("Three mininodes", () => {
       appInitiatorIdentifier: proposal.initiatorIdentifier,
       appResponderIdentifier: proposal.responderIdentifier,
       defaultTimeout: BigNumber.from(100),
-      stateTimeout: constants.Zero,
+      stateTimeout: Zero,
       appSeqNo: proposal.appSeqNo,
       outcomeType: proposal.outcomeType,
       disableLimit: false,

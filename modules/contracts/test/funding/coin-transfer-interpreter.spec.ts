@@ -6,20 +6,20 @@ import MultiAssetMultiPartyCoinTransferInterpreter from "../../build/MultiAssetM
 
 import { expect, provider } from "../utils";
 
+const { defaultAbiCoder } = utils;
+const { AddressZero, One } = constants;
+
 type CoinTransfer = {
   to: string;
   amount: BigNumber;
 };
 
 function encodeParams(params: { limit: BigNumber[]; tokenAddresses: string[] }) {
-  return utils.defaultAbiCoder.encode(
-    [`tuple(uint256[] limit, address[] tokenAddresses)`],
-    [params],
-  );
+  return defaultAbiCoder.encode([`tuple(uint256[] limit, address[] tokenAddresses)`], [params]);
 }
 
 function encodeOutcome(state: CoinTransfer[][]) {
-  return utils.defaultAbiCoder.encode(
+  return defaultAbiCoder.encode(
     [
       `
         tuple(
@@ -76,27 +76,25 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
 
   it("Can distribute ETH coins only correctly to one person", async () => {
     const to = getRandomAddress();
-    const amount = constants.One;
-    const preAmountWithdrawn = await getTotalAmountWithdrawn(constants.AddressZero);
+    const amount = One;
+    const preAmountWithdrawn = await getTotalAmountWithdrawn(AddressZero);
 
     await interpretOutcomeAndExecuteEffect([[{ to, amount }]], {
       limit: [amount],
-      tokenAddresses: [constants.AddressZero],
+      tokenAddresses: [AddressZero],
     });
 
-    expect(await provider.getBalance(to)).to.eq(constants.One);
-    expect(await getTotalAmountWithdrawn(constants.AddressZero)).to.eq(
-      preAmountWithdrawn.add(constants.One),
-    );
+    expect(await provider.getBalance(to)).to.eq(One);
+    expect(await getTotalAmountWithdrawn(AddressZero)).to.eq(preAmountWithdrawn.add(One));
   });
 
   it("Can distribute ETH coins only correctly two people", async () => {
     const to1 = getRandomAddress();
-    const amount1 = constants.One;
+    const amount1 = One;
 
     const to2 = getRandomAddress();
-    const amount2 = constants.One;
-    const preAmountWithdrawn = await getTotalAmountWithdrawn(constants.AddressZero);
+    const amount2 = One;
+    const preAmountWithdrawn = await getTotalAmountWithdrawn(AddressZero);
 
     await interpretOutcomeAndExecuteEffect(
       [
@@ -107,20 +105,18 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
       ],
       {
         limit: [amount1.add(amount2)],
-        tokenAddresses: [constants.AddressZero],
+        tokenAddresses: [AddressZero],
       },
     );
 
-    expect(await provider.getBalance(to1)).to.eq(constants.One);
-    expect(await provider.getBalance(to2)).to.eq(constants.One);
-    expect(await getTotalAmountWithdrawn(constants.AddressZero)).to.eq(
-      preAmountWithdrawn.add(constants.One).add(constants.One),
-    );
+    expect(await provider.getBalance(to1)).to.eq(One);
+    expect(await provider.getBalance(to2)).to.eq(One);
+    expect(await getTotalAmountWithdrawn(AddressZero)).to.eq(preAmountWithdrawn.add(One).add(One));
   });
 
   it("Can distribute ERC20 coins correctly for one person", async () => {
     const to = getRandomAddress();
-    const amount = constants.One;
+    const amount = One;
     const preAmountWithdrawn = await getTotalAmountWithdrawn(erc20.address);
 
     await interpretOutcomeAndExecuteEffect([[{ to, amount }]], {
@@ -128,18 +124,16 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
       tokenAddresses: [erc20.address],
     });
 
-    expect(await erc20.balanceOf(to)).to.eq(constants.One);
-    expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
-      preAmountWithdrawn.add(constants.One),
-    );
+    expect(await erc20.balanceOf(to)).to.eq(One);
+    expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(preAmountWithdrawn.add(One));
   });
 
   it("Can distribute ERC20 coins only correctly two people", async () => {
     const to1 = getRandomAddress();
-    const amount1 = constants.One;
+    const amount1 = One;
 
     const to2 = getRandomAddress();
-    const amount2 = constants.One;
+    const amount2 = One;
 
     const preAmountWithdrawn = await getTotalAmountWithdrawn(erc20.address);
 
@@ -156,71 +150,63 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
       },
     );
 
-    expect(await erc20.balanceOf(to1)).to.eq(constants.One);
-    expect(await erc20.balanceOf(to2)).to.eq(constants.One);
+    expect(await erc20.balanceOf(to1)).to.eq(One);
+    expect(await erc20.balanceOf(to2)).to.eq(One);
     expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
-      preAmountWithdrawn.add(constants.One).add(constants.One),
+      preAmountWithdrawn.add(One).add(One),
     );
   });
 
   it("Can distribute both ETH and ERC20 coins to one person", async () => {
     const to = getRandomAddress();
-    const amount = constants.One;
+    const amount = One;
     const preAmountWithdrawnToken = await getTotalAmountWithdrawn(erc20.address);
-    const preAmountWithdrawnEth = await getTotalAmountWithdrawn(constants.AddressZero);
+    const preAmountWithdrawnEth = await getTotalAmountWithdrawn(AddressZero);
 
     await interpretOutcomeAndExecuteEffect([[{ to, amount }], [{ to, amount }]], {
       limit: [amount, amount],
-      tokenAddresses: [constants.AddressZero, erc20.address],
+      tokenAddresses: [AddressZero, erc20.address],
     });
 
-    expect(await provider.getBalance(to)).to.eq(constants.One);
-    expect(await erc20.balanceOf(to)).to.eq(constants.One);
-    expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
-      preAmountWithdrawnToken.add(constants.One),
-    );
-    expect(await getTotalAmountWithdrawn(constants.AddressZero)).to.eq(
-      preAmountWithdrawnEth.add(constants.One),
-    );
+    expect(await provider.getBalance(to)).to.eq(One);
+    expect(await erc20.balanceOf(to)).to.eq(One);
+    expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(preAmountWithdrawnToken.add(One));
+    expect(await getTotalAmountWithdrawn(AddressZero)).to.eq(preAmountWithdrawnEth.add(One));
   });
 
   it("Can distribute a split of ETH and ERC20 coins to two people", async () => {
     const to1 = getRandomAddress();
-    const amount1 = constants.One;
+    const amount1 = One;
 
     const to2 = getRandomAddress();
-    const amount2 = constants.One;
+    const amount2 = One;
 
     const preAmountWithdrawnToken = await getTotalAmountWithdrawn(erc20.address);
-    const preAmountWithdrawnEth = await getTotalAmountWithdrawn(constants.AddressZero);
+    const preAmountWithdrawnEth = await getTotalAmountWithdrawn(AddressZero);
 
     await interpretOutcomeAndExecuteEffect(
       [[{ to: to1, amount: amount1 }], [{ to: to2, amount: amount2 }]],
       {
         limit: [amount1, amount2],
-        tokenAddresses: [constants.AddressZero, erc20.address],
+        tokenAddresses: [AddressZero, erc20.address],
       },
     );
 
-    expect(await provider.getBalance(to1)).to.eq(constants.One);
-    expect(await erc20.balanceOf(to2)).to.eq(constants.One);
-    expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
-      preAmountWithdrawnToken.add(constants.One),
-    );
-    expect(await getTotalAmountWithdrawn(constants.AddressZero)).to.eq(
-      preAmountWithdrawnEth.add(constants.One),
-    );
+    expect(await provider.getBalance(to1)).to.eq(One);
+    expect(await erc20.balanceOf(to2)).to.eq(One);
+    expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(preAmountWithdrawnToken.add(One));
+    expect(await getTotalAmountWithdrawn(AddressZero)).to.eq(preAmountWithdrawnEth.add(One));
   });
 
   it("Can distribute a mix of ETH and ERC20 coins to two people", async () => {
     const to1 = getRandomAddress();
-    const amount1 = constants.One;
+    const amount1 = One;
 
     const to2 = getRandomAddress();
-    const amount2 = constants.One;
+    const amount2 = One;
 
     const preAmountWithdrawnToken = await getTotalAmountWithdrawn(erc20.address);
-    const preAmountWithdrawnEth = await getTotalAmountWithdrawn(constants.AddressZero);
+    const preAmountWithdrawnEth = await getTotalAmountWithdrawn(AddressZero);
 
     await interpretOutcomeAndExecuteEffect(
       [
@@ -235,33 +221,33 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
       ],
       {
         limit: [amount1.add(amount2), amount1.add(amount2)],
-        tokenAddresses: [constants.AddressZero, erc20.address],
+        tokenAddresses: [AddressZero, erc20.address],
       },
     );
 
-    expect(await provider.getBalance(to1)).to.eq(constants.One);
-    expect(await erc20.balanceOf(to1)).to.eq(constants.One);
+    expect(await provider.getBalance(to1)).to.eq(One);
+    expect(await erc20.balanceOf(to1)).to.eq(One);
 
-    expect(await provider.getBalance(to2)).to.eq(constants.One);
-    expect(await erc20.balanceOf(to2)).to.eq(constants.One);
+    expect(await provider.getBalance(to2)).to.eq(One);
+    expect(await erc20.balanceOf(to2)).to.eq(One);
 
     expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
-      preAmountWithdrawnToken.add(constants.One).add(constants.One),
+      preAmountWithdrawnToken.add(One).add(One),
     );
-    expect(await getTotalAmountWithdrawn(constants.AddressZero)).to.eq(
-      preAmountWithdrawnEth.add(constants.One).add(constants.One),
+    expect(await getTotalAmountWithdrawn(AddressZero)).to.eq(
+      preAmountWithdrawnEth.add(One).add(One),
     );
   });
 
   it("Can distribute a mix of ETH and ERC20 coins to an unorderded list of people", async () => {
     const to1 = getRandomAddress();
-    const amount1 = constants.One;
+    const amount1 = One;
 
     const to2 = getRandomAddress();
-    const amount2 = constants.One;
+    const amount2 = One;
 
     const preAmountWithdrawnToken = await getTotalAmountWithdrawn(erc20.address);
-    const preAmountWithdrawnEth = await getTotalAmountWithdrawn(constants.AddressZero);
+    const preAmountWithdrawnEth = await getTotalAmountWithdrawn(AddressZero);
 
     await interpretOutcomeAndExecuteEffect(
       [
@@ -276,21 +262,21 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
       ],
       {
         limit: [amount1.add(amount2), amount1.add(amount2)],
-        tokenAddresses: [constants.AddressZero, erc20.address],
+        tokenAddresses: [AddressZero, erc20.address],
       },
     );
 
-    expect(await provider.getBalance(to1)).to.eq(constants.One);
-    expect(await erc20.balanceOf(to1)).to.eq(constants.One);
+    expect(await provider.getBalance(to1)).to.eq(One);
+    expect(await erc20.balanceOf(to1)).to.eq(One);
 
-    expect(await provider.getBalance(to2)).to.eq(constants.One);
-    expect(await erc20.balanceOf(to2)).to.eq(constants.One);
+    expect(await provider.getBalance(to2)).to.eq(One);
+    expect(await erc20.balanceOf(to2)).to.eq(One);
 
     expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
-      preAmountWithdrawnToken.add(constants.One).add(constants.One),
+      preAmountWithdrawnToken.add(One).add(One),
     );
-    expect(await getTotalAmountWithdrawn(constants.AddressZero)).to.eq(
-      preAmountWithdrawnEth.add(constants.One).add(constants.One),
+    expect(await getTotalAmountWithdrawn(AddressZero)).to.eq(
+      preAmountWithdrawnEth.add(One).add(One),
     );
   });
 });

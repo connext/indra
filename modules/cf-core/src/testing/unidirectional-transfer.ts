@@ -1,6 +1,8 @@
 import { AppABIEncodings } from "@connext/types";
 import { BigNumber, BigNumberish, constants } from "ethers";
 
+const { Zero } = constants;
+
 const singleAssetTwoPartyCoinTransferEncoding = `
 tuple(address to, uint256 amount)[2]
 `;
@@ -41,7 +43,7 @@ export function initialTransferState(
       },
       {
         to: receiverAddr,
-        amount: constants.Zero,
+        amount: Zero,
       },
     ],
     turnNum: 0,

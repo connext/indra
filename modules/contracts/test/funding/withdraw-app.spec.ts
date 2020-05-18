@@ -14,23 +14,26 @@ import WithdrawApp from "../../build/WithdrawApp.json";
 
 import { expect, provider } from "../utils";
 
+const { defaultAbiCoder, SigningKey, hexlify, randomBytes } = utils;
+const { Zero, HashZero } = constants;
+
 function mkHash(prefix: string = "0xa"): string {
   return prefix.padEnd(66, "0");
 }
 
 const decodeTransfers = (encodedTransfers: string): CoinTransfer[] =>
-  utils.defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedTransfers)[0];
+  defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedTransfers)[0];
 
 const decodeAppState = (encodedAppState: string): WithdrawAppState =>
-  utils.defaultAbiCoder.decode([WithdrawAppStateEncoding], encodedAppState)[0];
+  defaultAbiCoder.decode([WithdrawAppStateEncoding], encodedAppState)[0];
 
 const encodeAppState = (state: WithdrawAppState, onlyCoinTransfers: boolean = false): string => {
-  if (!onlyCoinTransfers) return utils.defaultAbiCoder.encode([WithdrawAppStateEncoding], [state]);
-  return utils.defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.transfers]);
+  if (!onlyCoinTransfers) return defaultAbiCoder.encode([WithdrawAppStateEncoding], [state]);
+  return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.transfers]);
 };
 
 const encodeAppAction = (state: WithdrawAppAction): string => {
-  return utils.defaultAbiCoder.encode([WithdrawAppActionEncoding], [state]);
+  return defaultAbiCoder.encode([WithdrawAppActionEncoding], [state]);
 };
 
 describe("WithdrawApp", async () => {
@@ -42,8 +45,8 @@ describe("WithdrawApp", async () => {
   const counterpartyWallet = Wallet.createRandom();
   const amount = BigNumber.from(10000);
   const data = mkHash("0xa"); // TODO: test this with real withdrawal commitment hash?
-  const withdrawerSigningKey = new utils.SigningKey(withdrawerWallet.privateKey);
-  const counterpartySigningKey = new utils.SigningKey(counterpartyWallet.privateKey);
+  const withdrawerSigningKey = new SigningKey(withdrawerWallet.privateKey);
+  const counterpartySigningKey = new SigningKey(counterpartyWallet.privateKey);
 
   before(async () => {
     wallet = provider.getWallets()[0];
@@ -67,17 +70,17 @@ describe("WithdrawApp", async () => {
           to: withdrawerWallet.address,
         },
         {
-          amount: constants.Zero,
+          amount: Zero,
           to: counterpartyWallet.address,
         },
       ],
       signatures: [
         await new ChannelSigner(withdrawerSigningKey.privateKey).signMessage(data),
-        constants.HashZero,
+        HashZero,
       ],
       signers: [withdrawerWallet.address, counterpartyWallet.address],
       data,
-      nonce: utils.hexlify(utils.randomBytes(32)),
+      nonce: hexlify(randomBytes(32)),
       finalized: false,
     };
   };
@@ -101,9 +104,9 @@ describe("WithdrawApp", async () => {
     const decoded = decodeTransfers(ret);
 
     expect(decoded[0].to).eq(initialState.transfers[0].to);
-    expect(decoded[0].amount).eq(constants.Zero);
+    expect(decoded[0].amount).eq(Zero);
     expect(decoded[1].to).eq(initialState.transfers[1].to);
-    expect(decoded[1].amount).eq(constants.Zero);
+    expect(decoded[1].amount).eq(Zero);
   });
 
   it("It cancels the withdrawal if state is not finalized", async () => {
@@ -116,7 +119,7 @@ describe("WithdrawApp", async () => {
     expect(decoded[0].to).eq(initialState.transfers[0].to);
     expect(decoded[0].amount).eq(initialState.transfers[0].amount);
     expect(decoded[1].to).eq(initialState.transfers[1].to);
-    expect(decoded[1].amount).eq(constants.Zero);
+    expect(decoded[1].amount).eq(Zero);
   });
 
   it("It reverts the action if state is finalized", async () => {
@@ -145,7 +148,7 @@ describe("WithdrawApp", async () => {
     let initialState = await createInitialState();
     let action = await createAction();
 
-    action.signature = constants.HashZero;
+    action.signature = HashZero;
     await expect(applyAction(initialState, action)).revertedWith("invalid counterparty signature");
   });
 });

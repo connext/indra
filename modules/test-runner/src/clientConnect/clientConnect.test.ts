@@ -5,12 +5,15 @@ import { utils, constants } from "ethers";
 
 import { createClient, expect, sendOnchainValue, env, fundChannel, ETH_AMOUNT_SM } from "../util";
 
+const { hexlify, randomBytes } = utils;
+const { One, AddressZero } = constants;
+
 describe("Client Connect", () => {
   it("Client should not rescind deposit rights if no transfers have been made to the multisig", async () => {
     const pk = Wallet.createRandom().privateKey;
     let client = await createClient({ signer: pk });
     const { appIdentityHash: ethDeposit } = await client.requestDepositRights({
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
     });
     const { appIdentityHash: tokenDeposit } = await client.requestDepositRights({
       assetId: client.config.contractAddresses.Token,
@@ -18,7 +21,7 @@ describe("Client Connect", () => {
 
     // verify
     const { appIdentityHash: retrievedEth } = await client.checkDepositRights({
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
     });
     expect(retrievedEth).to.eq(ethDeposit);
 
@@ -34,7 +37,7 @@ describe("Client Connect", () => {
 
     // verify still installed
     const { appIdentityHash: retrievedEth2 } = await client.checkDepositRights({
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
     });
     expect(retrievedEth2).to.eq(ethDeposit);
 
@@ -48,7 +51,7 @@ describe("Client Connect", () => {
     const pk = Wallet.createRandom().privateKey;
     const store = getMemoryStore();
     let client = await createClient({ signer: pk, store } as Partial<ClientOptions>);
-    await client.requestDepositRights({ assetId: constants.AddressZero });
+    await client.requestDepositRights({ assetId: AddressZero });
     await client.requestDepositRights({ assetId: client.config.contractAddresses.Token });
     let apps = await client.getAppInstances();
     const initDepositApps = apps.filter(
@@ -59,12 +62,8 @@ describe("Client Connect", () => {
     expect(initDepositApps.length).to.be.eq(2);
     await client.messaging.disconnect();
 
-    await sendOnchainValue(client.multisigAddress, constants.One);
-    await sendOnchainValue(
-      client.multisigAddress,
-      constants.One,
-      client.config.contractAddresses.Token,
-    );
+    await sendOnchainValue(client.multisigAddress, One);
+    await sendOnchainValue(client.multisigAddress, One, client.config.contractAddresses.Token);
 
     client = await createClient({ signer: pk, store });
     apps = await client.getAppInstances();
@@ -97,7 +96,7 @@ describe("Client Connect", () => {
       tx: {
         to: Wallet.createRandom().address,
         value: 0,
-        data: utils.hexlify(utils.randomBytes(32)),
+        data: hexlify(randomBytes(32)),
       },
       retry: 0,
     });
@@ -112,7 +111,7 @@ describe("Client Connect", () => {
     await client.withdraw({
       amount: ETH_AMOUNT_SM,
       recipient: Wallet.createRandom().address,
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
     });
     await client.messaging.disconnect();
 

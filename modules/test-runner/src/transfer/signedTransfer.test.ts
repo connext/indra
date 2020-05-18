@@ -22,6 +22,9 @@ import {
   requestCollateral,
 } from "../util";
 
+const { hexlify, randomBytes, solidityKeccak256 } = utils;
+const { AddressZero } = constants;
+
 describe("Signed Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
@@ -54,9 +57,9 @@ describe("Signed Transfers", () => {
   });
 
   it("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
-    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const paymentId = utils.hexlify(utils.randomBytes(32));
+    const paymentId = hexlify(randomBytes(32));
     const signer = getRandomChannelSigner();
     const signerAddress = await signer.getAddress();
 
@@ -97,8 +100,8 @@ describe("Signed Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
 
-    const data = utils.hexlify(utils.randomBytes(32));
-    const digest = utils.solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
+    const data = hexlify(randomBytes(32));
+    const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
     const signature = await signer.signMessage(digest);
 
     const [eventData] = await Promise.all([
@@ -152,7 +155,7 @@ describe("Signed Transfers", () => {
   it("happy case: clientA signed transfers tokens to clientB through node", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const paymentId = utils.hexlify(utils.randomBytes(32));
+    const paymentId = hexlify(randomBytes(32));
     const signer = getRandomChannelSigner();
     const signerAddress = await signer.getAddress();
 
@@ -192,8 +195,8 @@ describe("Signed Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
 
-    const data = utils.hexlify(utils.randomBytes(32));
-    const digest = utils.solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
+    const data = hexlify(randomBytes(32));
+    const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
     const signature = await signer.signMessage(digest);
 
     await new Promise(async (res) => {
@@ -222,7 +225,7 @@ describe("Signed Transfers", () => {
   it("gets a pending signed transfer by lock hash", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const paymentId = utils.hexlify(utils.randomBytes(32));
+    const paymentId = hexlify(randomBytes(32));
     const signer = getRandomChannelSigner();
     const signerAddress = await signer.getAddress();
 
@@ -249,7 +252,7 @@ describe("Signed Transfers", () => {
   it("gets a completed signed transfer by lock hash", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const paymentId = utils.hexlify(utils.randomBytes(32));
+    const paymentId = hexlify(randomBytes(32));
     const signer = getRandomChannelSigner();
     const signerAddress = await signer.getAddress();
 
@@ -264,8 +267,8 @@ describe("Signed Transfers", () => {
     // disconnect so that it cant be unlocked
     await clientA.messaging.disconnect();
 
-    const data = utils.hexlify(utils.randomBytes(32));
-    const digest = utils.solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
+    const data = hexlify(randomBytes(32));
+    const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
     const signature = await signer.signMessage(digest);
 
     // wait for transfer to be picked up by receiver
@@ -294,7 +297,7 @@ describe("Signed Transfers", () => {
   it("cannot resolve a signed transfer if signature is wrong", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const paymentId = utils.hexlify(utils.randomBytes(32));
+    const paymentId = hexlify(randomBytes(32));
     const signer = getRandomChannelSigner();
     const signerAddress = await signer.getAddress();
 
@@ -307,8 +310,8 @@ describe("Signed Transfers", () => {
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
 
-    const badSig = utils.hexlify(utils.randomBytes(65));
-    const data = utils.hexlify(utils.randomBytes(32));
+    const badSig = hexlify(randomBytes(65));
+    const data = hexlify(randomBytes(32));
     await expect(
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
@@ -324,7 +327,7 @@ describe("Signed Transfers", () => {
     let runTime: number[] = [];
     let sum = 0;
     const numberOfRuns = 5;
-    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const signer = getRandomChannelSigner();
     const signerAddress = signer.address;
 
@@ -339,8 +342,8 @@ describe("Signed Transfers", () => {
         [clientB.signerAddress]: clientBPreBal,
         [clientB.nodeSignerAddress]: nodeBPreBal,
       } = await clientB.getFreeBalance(transfer.assetId);
-      const data = utils.hexlify(utils.randomBytes(32));
-      const paymentId = utils.hexlify(utils.randomBytes(32));
+      const data = hexlify(randomBytes(32));
+      const paymentId = hexlify(randomBytes(32));
 
       // Start timer
       const start = Date.now();
@@ -362,7 +365,7 @@ describe("Signed Transfers", () => {
       });
 
       // Including recipient signing in test to match real conditions
-      const digest = utils.solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
+      const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
       const signature = await signer.signMessage(digest);
 
       await new Promise(async (res) => {

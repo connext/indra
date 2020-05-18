@@ -19,6 +19,8 @@ import { LoggerService } from "../logger/logger.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 import { SignedTransferRepository } from "./signedTransfer.repository";
 
+const { Zero } = constants;
+
 const appStatusesToSignedTransferStatus = (
   senderApp: AppInstance<typeof SimpleSignedTransferAppName>,
   receiverApp?: AppInstance<typeof SimpleSignedTransferAppName>,
@@ -122,11 +124,7 @@ export class SignedTransferService {
         freeBal[freeBalanceAddr],
       );
       // request collateral and wait for deposit to come through
-      const depositReceipt = await this.depositService.deposit(
-        receiverChannel,
-        deposit,
-        assetId,
-      );
+      const depositReceipt = await this.depositService.deposit(receiverChannel, deposit, assetId);
       if (!depositReceipt) {
         throw new Error(
           `Could not deposit sufficient collateral to resolve linked transfer for reciever: ${userIdentifier}`,
@@ -141,7 +139,7 @@ export class SignedTransferService {
           to: freeBalanceAddr,
         },
         {
-          amount: constants.Zero,
+          amount: Zero,
           to: getSignerAddressFromPublicIdentifier(userIdentifier),
         },
       ],
@@ -156,7 +154,7 @@ export class SignedTransferService {
       initialState,
       amount,
       assetId,
-      constants.Zero,
+      Zero,
       assetId,
       SimpleSignedTransferAppName,
       meta,

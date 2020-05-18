@@ -8,6 +8,9 @@ import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId } from "../constants";
 
+const { parseEther } = utils;
+const { AddressZero } = constants;
+
 @Injectable()
 export class SwapRateService implements OnModuleInit {
   private latestSwapRates: SwapRate[] = [];
@@ -104,8 +107,8 @@ export class SwapRateService implements OnModuleInit {
     } else {
       this.latestSwapRates.push(newSwap);
     }
-    const oldRateBn = utils.parseEther(oldRate || "0");
-    const newRateBn = utils.parseEther(newRate);
+    const oldRateBn = parseEther(oldRate || "0");
+    const newRateBn = parseEther(newRate);
     if (!oldRateBn.eq(newRateBn)) {
       this.log.info(`Got swap rate from Uniswap at block ${blockNumber}: ${newRate}`);
       this.broadcastRate(from, to); // Only broadcast the rate if it's changed
@@ -115,13 +118,13 @@ export class SwapRateService implements OnModuleInit {
 
   async getUniswapRate(from: string, to: string): Promise<string> {
     let fromReserves = undefined;
-    if (from !== constants.AddressZero) {
+    if (from !== AddressZero) {
       const fromMainnetAddress = await this.config.getTokenAddressForSwap(from);
       fromReserves = await getTokenReserves(fromMainnetAddress);
     }
 
     let toReserves = undefined;
-    if (to !== constants.AddressZero) {
+    if (to !== AddressZero) {
       const toMainnetAddress = await this.config.getTokenAddressForSwap(to);
       toReserves = await getTokenReserves(toMainnetAddress);
     }

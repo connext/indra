@@ -27,6 +27,9 @@ import pWaterfall from "p-waterfall";
 import { storeKeys } from "../constants";
 import { WrappedStorage } from "../types";
 
+const { defaultAbiCoder } = utils;
+const { Zero } = constants;
+
 const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
   return {
     ...json,
@@ -518,7 +521,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       if (
         existing &&
         toBN(existing.versionNumber).gt(data.versionNumber) &&
-        data.versionNumber.gt(constants.Zero) // cancel challenge special case
+        data.versionNumber.gt(Zero) // cancel challenge special case
       ) {
         this.log.debug(
           `Existing challenge has nonce ${toBN(
@@ -691,10 +694,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     };
     const updatedApp = {
       ...ourApp,
-      latestAction: utils.defaultAbiCoder.decode(
-        [ourApp.appInterface.actionEncoding],
-        encodedAction,
-      ),
+      latestAction: defaultAbiCoder.decode([ourApp.appInterface.actionEncoding], encodedAction),
     };
     await this.updateAppInstance(channel.multisigAddress, updatedApp, setStateJson);
 

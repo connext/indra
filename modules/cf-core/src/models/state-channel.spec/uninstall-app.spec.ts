@@ -9,6 +9,9 @@ import { StateChannel } from "../state-channel";
 import { FreeBalanceClass } from "../free-balance";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 
+const { getAddress } = utils;
+const { AddressZero, Zero } = constants;
+
 describe("StateChannel::uninstallApp", () => {
   const networkContext = generateRandomNetworkContext();
 
@@ -17,7 +20,7 @@ describe("StateChannel::uninstallApp", () => {
   let appInstance: AppInstance;
 
   beforeAll(() => {
-    const multisigAddress = utils.getAddress(getRandomAddress());
+    const multisigAddress = getAddress(getRandomAddress());
     const ids = getRandomPublicIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
@@ -35,16 +38,16 @@ describe("StateChannel::uninstallApp", () => {
     sc1 = sc1.addProposal(createAppInstanceProposalForTest(appInstance.identityHash, sc1));
 
     sc1 = sc1.installApp(appInstance, {
-      [constants.AddressZero]: {
-        [getSignerAddressFromPublicIdentifier(ids[0])]: constants.Zero,
-        [getSignerAddressFromPublicIdentifier(ids[1])]: constants.Zero,
+      [AddressZero]: {
+        [getSignerAddressFromPublicIdentifier(ids[0])]: Zero,
+        [getSignerAddressFromPublicIdentifier(ids[1])]: Zero,
       },
     });
 
     sc2 = sc1.uninstallApp(appInstance, {
-      [constants.AddressZero]: {
-        [getSignerAddressFromPublicIdentifier(ids[0])]: constants.Zero,
-        [getSignerAddressFromPublicIdentifier(ids[1])]: constants.Zero,
+      [AddressZero]: {
+        [getSignerAddressFromPublicIdentifier(ids[0])]: Zero,
+        [getSignerAddressFromPublicIdentifier(ids[1])]: Zero,
       },
     });
   });
@@ -74,8 +77,8 @@ describe("StateChannel::uninstallApp", () => {
     });
 
     it("should have updated balances for Alice and Bob", () => {
-      for (const amount of Object.values(fb.withTokenAddress(constants.AddressZero) || {})) {
-        expect(amount).toEqual(constants.Zero);
+      for (const amount of Object.values(fb.withTokenAddress(AddressZero) || {})) {
+        expect(amount).toEqual(Zero);
       }
     });
   });

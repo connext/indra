@@ -4,6 +4,8 @@ import { BigNumber, constants } from "ethers";
 
 import { expect, createClient, fundChannel } from "../util";
 
+const { AddressZero } = constants;
+
 // TODO: fix race condition
 describe.skip("Full Flow: Multi-client transfer", () => {
   let gateway: IConnextClient;
@@ -54,7 +56,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
           }
           await gateway.transfer({
             amount: toBN(data.amount),
-            assetId: constants.AddressZero,
+            assetId: AddressZero,
             recipient: data.sender,
           });
           if (data.sender === indexerA.publicIdentifier) {
@@ -73,7 +75,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
           indexerATransfers.received += 1;
           await indexerA.transfer({
             amount: toBN(data.amount),
-            assetId: constants.AddressZero,
+            assetId: AddressZero,
             recipient: data.sender,
           });
           expect(data.sender).to.be.equal(gateway.publicIdentifier);
@@ -87,7 +89,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
           indexerBTransfers.received += 1;
           await indexerB.transfer({
             amount: toBN(data.amount),
-            assetId: constants.AddressZero,
+            assetId: AddressZero,
             recipient: data.sender,
           });
           expect(data.sender).to.be.equal(gateway.publicIdentifier);
@@ -108,12 +110,12 @@ describe.skip("Full Flow: Multi-client transfer", () => {
       await gateway.transfer({
         amount: toBN("1"),
         recipient: indexerA.publicIdentifier,
-        assetId: constants.AddressZero,
+        assetId: AddressZero,
       });
       await gateway.transfer({
         amount: toBN("1"),
         recipient: indexerB.publicIdentifier,
-        assetId: constants.AddressZero,
+        assetId: AddressZero,
       });
     });
     expect(gatewayTransfers.received).to.be.gt(0);

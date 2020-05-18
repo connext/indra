@@ -30,6 +30,8 @@ import {
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
+const { getAddress } = utils;
+
 class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
@@ -63,7 +65,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
       userPublicIdentifier,
     );
     try {
-      const tx = await this.channelService.rebalance(channel, utils.getAddress(data.assetId));
+      const tx = await this.channelService.rebalance(channel, getAddress(data.assetId));
       return tx;
     } catch (e) {
       this.log.debug(`Failed to collateralize: ${stringify(e)}`);

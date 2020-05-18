@@ -8,8 +8,11 @@ import { generateRandomNetworkContext } from "../../testing/mocks";
 import { AppInstance } from "../app-instance";
 import { StateChannel } from "../state-channel";
 
+const { getAddress } = utils;
+const { AddressZero, Zero } = constants;
+
 const APP_STATE = {
-  foo: constants.AddressZero,
+  foo: AddressZero,
   bar: 42,
 };
 
@@ -21,7 +24,7 @@ describe("StateChannel::setState", () => {
   let appInstance: AppInstance;
 
   beforeAll(() => {
-    const multisigAddress = utils.getAddress(getRandomAddress());
+    const multisigAddress = getAddress(getRandomAddress());
     const ids = getRandomPublicIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
@@ -39,9 +42,9 @@ describe("StateChannel::setState", () => {
     sc1 = sc1.addProposal(createAppInstanceProposalForTest(appInstance.identityHash, sc1));
 
     sc1 = sc1.installApp(appInstance, {
-      [constants.AddressZero]: {
-        [getSignerAddressFromPublicIdentifier(ids[0])]: constants.Zero,
-        [getSignerAddressFromPublicIdentifier(ids[1])]: constants.Zero,
+      [AddressZero]: {
+        [getSignerAddressFromPublicIdentifier(ids[0])]: Zero,
+        [getSignerAddressFromPublicIdentifier(ids[1])]: Zero,
       },
     });
 

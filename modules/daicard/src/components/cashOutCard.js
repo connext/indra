@@ -9,6 +9,8 @@ import DaiIcon from "../assets/dai.svg";
 
 import { useAddress, AddressInput } from "./input";
 
+const { Zero, AddressZero } = constants;
+
 const style = withStyles((theme) => ({
   icon: {
     width: "40px",
@@ -50,7 +52,7 @@ export const CashoutCard = style(
       const value = recipient.value;
       if (!channel || !value) return;
       const total = balance.channel.total;
-      if (total.wad.lte(constants.Zero)) return;
+      if (total.wad.lte(Zero)) return;
       // Put lock on actions, no more autoswaps until we're done withdrawing
       machine.send("START_WITHDRAW");
       setWithdrawing(true);
@@ -70,24 +72,24 @@ export const CashoutCard = style(
       const value = recipient.value;
       if (!channel || !value) return;
       const total = balance.channel.total;
-      if (total.wad.lte(constants.Zero)) return;
+      if (total.wad.lte(Zero)) return;
       // Put lock on actions, no more autoswaps until we're done withdrawing
       machine.send("START_WITHDRAW");
       setWithdrawing(true);
       console.log(`Withdrawing ${total.toETH().format()} to: ${value}`);
       // swap all in-channel tokens for eth
-      if (balance.channel.token.wad.gt(constants.Zero)) {
+      if (balance.channel.token.wad.gt(Zero)) {
         await channel.swap({
           amount: balance.channel.token.wad,
           fromAssetId: token.address,
           swapRate: inverse(swapRate),
-          toAssetId: constants.AddressZero,
+          toAssetId: AddressZero,
         });
         await refreshBalances();
       }
       const result = await channel.withdraw({
         amount: balance.channel.ether.wad.toString(),
-        assetId: constants.AddressZero,
+        assetId: AddressZero,
         recipient: value,
       });
       console.log(`Cashout result: ${JSON.stringify(result)}`);

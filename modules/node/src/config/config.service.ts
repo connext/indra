@@ -5,6 +5,9 @@ import { Wallet, providers, utils, constants } from "ethers";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
+const { getAddress, parseEther } = utils;
+const { AddressZero, Zero } = constants;
+
 type PostgresConfig = {
   database: string;
   host: string;
@@ -72,7 +75,7 @@ export class ConfigService implements OnModuleInit {
     const ethAddressBook = this.getEthAddressBook();
     Object.keys(ethAddressBook[chainId]).map(
       (contract: string) =>
-        (ethAddresses[contract] = utils.getAddress(ethAddressBook[chainId][contract].address)),
+        (ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address)),
     );
     return ethAddresses as ContractAddresses;
   }
@@ -80,7 +83,7 @@ export class ConfigService implements OnModuleInit {
   async getTokenAddress(): Promise<string> {
     const chainId = (await this.getEthNetwork()).chainId.toString();
     const ethAddressBook = JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
-    return utils.getAddress(ethAddressBook[chainId].Token.address);
+    return getAddress(ethAddressBook[chainId].Token.address);
   }
 
   async getTestnetTokenConfig(): Promise<TestnetTokenConfig> {
@@ -125,7 +128,7 @@ export class ConfigService implements OnModuleInit {
       (tokensArray, swap) => tokensArray.concat([swap.from, swap.to]),
       [],
     );
-    tokens.push(constants.AddressZero);
+    tokens.push(AddressZero);
     const tokenSet = new Set(tokens);
     return [...tokenSet];
   }
@@ -136,7 +139,7 @@ export class ConfigService implements OnModuleInit {
 
   async getHardcodedRate(from: string, to: string): Promise<string | undefined> {
     const swaps = this.getAllowedSwaps();
-    const swap = swaps.find(s => s.from === from && s.to === to);
+    const swap = swaps.find((s) => s.from === from && s.to === to);
     if (swap && swap.rate) {
       return swap.rate;
     } else {
@@ -146,10 +149,10 @@ export class ConfigService implements OnModuleInit {
 
   async getDefaultSwapRate(from: string, to: string): Promise<string | undefined> {
     const tokenAddress = await this.getTokenAddress();
-    if (from === constants.AddressZero && to === tokenAddress) {
+    if (from === AddressZero && to === tokenAddress) {
       return "100.0";
     }
-    if (from === tokenAddress && to === constants.AddressZero) {
+    if (from === tokenAddress && to === AddressZero) {
       return "0.01";
     }
     return undefined;
@@ -209,29 +212,29 @@ export class ConfigService implements OnModuleInit {
   }
 
   async getDefaultRebalanceProfile(
-    assetId: string = constants.AddressZero,
+    assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
     const tokenAddress = await this.getTokenAddress();
     switch (assetId) {
-      case constants.AddressZero:
+      case AddressZero:
         return {
-          assetId: constants.AddressZero,
+          assetId: AddressZero,
           channels: [],
           id: 0,
-          lowerBoundCollateralize: utils.parseEther(`0.05`),
-          upperBoundCollateralize: utils.parseEther(`0.1`),
-          lowerBoundReclaim: constants.Zero,
-          upperBoundReclaim: constants.Zero,
+          lowerBoundCollateralize: parseEther(`0.05`),
+          upperBoundCollateralize: parseEther(`0.1`),
+          lowerBoundReclaim: Zero,
+          upperBoundReclaim: Zero,
         };
       case tokenAddress:
         return {
-          assetId: constants.AddressZero,
+          assetId: AddressZero,
           channels: [],
           id: 0,
-          lowerBoundCollateralize: utils.parseEther(`5`),
-          upperBoundCollateralize: utils.parseEther(`20`),
-          lowerBoundReclaim: constants.Zero,
-          upperBoundReclaim: constants.Zero,
+          lowerBoundCollateralize: parseEther(`5`),
+          upperBoundCollateralize: parseEther(`20`),
+          lowerBoundReclaim: Zero,
+          upperBoundReclaim: Zero,
         };
       default:
         return undefined;

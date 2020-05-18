@@ -37,6 +37,8 @@ import {
 import { Contract, constants } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
+const { AddressZero } = constants;
+
 export const createCFChannelProvider = async ({
   ethProvider,
   signer,
@@ -232,7 +234,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       throw new Error(`Cannot make deposit without channel created - missing multisigAddress`);
     }
     let hash;
-    if (params.assetId === constants.AddressZero) {
+    if (params.assetId === AddressZero) {
       const tx = await this.signer.sendTransaction({
         to: recipient,
         value: toBN(params.amount),

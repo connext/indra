@@ -8,6 +8,8 @@ import { constants } from "ethers";
 
 import { AppRegistryInfo } from "../shared";
 
+const { Zero } = constants;
+
 export const HashLockTransferAppRegistryInfo: AppRegistryInfo = {
   name: HashLockTransferAppName,
   allowNodeInstall: true,
@@ -17,4 +19,4 @@ export const HashLockTransferAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const HASHLOCK_TRANSFER_STATE_TIMEOUT = constants.Zero;
+export const HASHLOCK_TRANSFER_STATE_TIMEOUT = Zero;

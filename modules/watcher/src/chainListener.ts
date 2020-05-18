@@ -13,6 +13,8 @@ import { toBN } from "@connext/utils";
 import { Contract, Event, BigNumber, providers, utils } from "ethers";
 import EventEmitter from "eventemitter3";
 
+const { Interface } = utils;
+
 // While fetching historical data, we query this many blocks at a time
 const chunkSize = 30;
 
@@ -109,7 +111,7 @@ export class ChainListener implements IChainListener {
     );
 
     progressedLogs.concat(updatedLogs).forEach((log) => {
-      const iface = new utils.Interface(ChallengeRegistry.abi);
+      const iface = new Interface(ChallengeRegistry.abi);
       const { name, args, eventFragment } = iface.parseLog(log);
       const { identityHash, versionNumber } = args;
       switch (name) {

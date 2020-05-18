@@ -8,6 +8,8 @@ import { constants } from "ethers";
 
 import { AppRegistryInfo } from "../shared";
 
+const { Zero } = constants;
+
 export const WithdrawAppRegistryInfo: AppRegistryInfo = {
   allowNodeInstall: true,
   name: WithdrawAppName,
@@ -17,4 +19,4 @@ export const WithdrawAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const WITHDRAW_STATE_TIMEOUT = constants.Zero;
+export const WITHDRAW_STATE_TIMEOUT = Zero;

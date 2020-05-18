@@ -5,6 +5,8 @@ import { constants } from "ethers";
 import { expect } from "../";
 import { AssetOptions, ExistingBalancesSwap } from "../types";
 
+const { AddressZero, Zero } = constants;
+
 export async function swapAsset(
   client: IConnextClient,
   input: AssetOptions,
@@ -13,17 +15,17 @@ export async function swapAsset(
   preExistingBalances?: Partial<ExistingBalancesSwap>,
   resultingBalances?: Partial<ExistingBalancesSwap>,
 ): Promise<ExistingBalancesSwap> {
-  const ethToToken = getAddressFromAssetId(input.assetId) === constants.AddressZero;
+  const ethToToken = getAddressFromAssetId(input.assetId) === AddressZero;
   const ethAssetId = ethToToken ? input.assetId : output.assetId;
   const tokenAssetId = ethToToken ? output.assetId : input.assetId;
   const ethAddress = getAddressFromAssetId(ethAssetId);
   const tokenAddress = getAddressFromAssetId(tokenAssetId);
 
   const preSwap: ExistingBalancesSwap = {
-    freeBalanceClientEth: ethToToken ? input.amount : constants.Zero,
-    freeBalanceClientToken: ethToToken ? constants.Zero : input.amount,
-    freeBalanceNodeEth: ethToToken ? constants.Zero : output.amount,
-    freeBalanceNodeToken: ethToToken ? output.amount : constants.Zero,
+    freeBalanceClientEth: ethToToken ? input.amount : Zero,
+    freeBalanceClientToken: ethToToken ? Zero : input.amount,
+    freeBalanceNodeEth: ethToToken ? Zero : output.amount,
+    freeBalanceNodeToken: ethToToken ? output.amount : Zero,
     ...preExistingBalances,
   };
 

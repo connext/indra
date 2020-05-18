@@ -9,6 +9,9 @@ import { ChallengeRegistry } from "../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { getRandomChannelSigners } from "../random-signing-keys";
 
+const { getAddress } = utils;
+const { WeiPerEther, AddressZero } = constants;
+
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
 const SETSTATE_COMMITMENT_GAS = 6e9;
@@ -38,7 +41,7 @@ describe("set state on free balance", () => {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
       },
-      utils.getAddress(getRandomAddress()),
+      getAddress(getRandomAddress()),
       initiatorNode.publicIdentifier,
       responderNode.publicIdentifier,
     );
@@ -48,11 +51,9 @@ describe("set state on free balance", () => {
 
     // Set the state to some test values
     stateChannel = stateChannel.setFreeBalance(
-      FreeBalanceClass.createWithFundedTokenAmounts(
-        stateChannel.multisigOwners,
-        constants.WeiPerEther,
-        [constants.AddressZero],
-      ),
+      FreeBalanceClass.createWithFundedTokenAmounts(stateChannel.multisigOwners, WeiPerEther, [
+        AddressZero,
+      ]),
     );
 
     const freeBalanceETH = stateChannel.freeBalance;

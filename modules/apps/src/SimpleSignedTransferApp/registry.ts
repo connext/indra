@@ -8,6 +8,8 @@ import { constants } from "ethers";
 
 import { AppRegistryInfo } from "../shared";
 
+const { Zero } = constants;
+
 export const SimpleSignedTransferAppRegistryInfo: AppRegistryInfo = {
   allowNodeInstall: true,
   name: SimpleSignedTransferAppName,
@@ -17,4 +19,4 @@ export const SimpleSignedTransferAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const SIGNED_TRANSFER_STATE_TIMEOUT = constants.Zero;
+export const SIGNED_TRANSFER_STATE_TIMEOUT = Zero;

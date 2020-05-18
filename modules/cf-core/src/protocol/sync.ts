@@ -30,6 +30,8 @@ import {
 } from "../ethereum";
 import { computeInterpreterParameters } from "./install";
 
+const { keccak256, defaultAbiCoder } = utils;
+
 const protocol = ProtocolNames.sync;
 const { IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, OP_SIGN, OP_VALIDATE } = Opcode;
 
@@ -683,8 +685,8 @@ async function syncUntrackedProposals(
       multisigAddress: ourChannel.multisigAddress,
       defaultTimeout: toBN(untrackedProposedApp.defaultTimeout),
     },
-    hashOfLatestState: utils.keccak256(
-      utils.defaultAbiCoder.encode(
+    hashOfLatestState: keccak256(
+      defaultAbiCoder.encode(
         [untrackedProposedApp.abiEncodings.stateEncoding],
         [untrackedProposedApp.initialState],
       ),

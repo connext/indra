@@ -31,6 +31,9 @@ use(require("chai-subset"));
 
 export { expect } from "chai";
 
+const { hexlify, randomBytes } = utils;
+const { AddressZero, One } = constants;
+
 const env = {
   database: process.env.INDRA_PG_DATABASE || "",
   host: process.env.INDRA_PG_HOST || "",
@@ -64,8 +67,8 @@ export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
   twoPartyOutcomeInterpreterParams: {
     amount: { _hex: "0x42" } as any,
-    playerAddrs: [constants.AddressZero, constants.AddressZero],
-    tokenAddress: constants.AddressZero,
+    playerAddrs: [AddressZero, AddressZero],
+    tokenAddress: AddressZero,
   },
 };
 
@@ -91,7 +94,7 @@ export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
   stateTimeout: "0x00",
   singleAssetTwoPartyCoinTransferInterpreterParams: {
     limit: { _hex: "0x1" } as any,
-    tokenAddress: constants.AddressZero,
+    tokenAddress: AddressZero,
   },
 };
 
@@ -111,8 +114,8 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
 
 export const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
   to: TEST_STORE_ETH_ADDRESS,
-  value: constants.One,
-  data: utils.hexlify(utils.randomBytes(64)),
+  value: One,
+  data: hexlify(randomBytes(64)),
 };
 
 export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
@@ -193,9 +196,7 @@ export const createConnextStore = async (
   }
   opts.logger = new ColorfulLogger(`ConnextStore_${type}`, env.logLevel, true);
   if (type === StoreTypes.Postgres) {
-    opts.sequelize =
-      opts.sequelize ||
-      postgresConnectionUri;
+    opts.sequelize = opts.sequelize || postgresConnectionUri;
   } else if (type === StoreTypes.AsyncStorage) {
     opts.storage = new MockAsyncStorage();
   }

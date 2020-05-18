@@ -30,6 +30,9 @@ export type CreatedAppInstanceOpts = {
   defaultTimeout: BigNumber;
 };
 
+const { Interface } = utils;
+const { One, Zero } = constants;
+
 const MAX_FUNDING_RETRIES = 3;
 
 /////////////////////////////
@@ -56,11 +59,11 @@ export const setupContext = async (
   const defaultAppOpts = {
     balances: {
       [CONVENTION_FOR_ETH_ASSET_ID]: [
-        { to: signers[0].address, amount: constants.One },
-        { to: signers[1].address, amount: constants.Zero },
+        { to: signers[0].address, amount: One },
+        { to: signers[1].address, amount: Zero },
       ],
     },
-    defaultTimeout: constants.Zero,
+    defaultTimeout: Zero,
   };
   const store = await getAndInitStore();
 
@@ -79,7 +82,7 @@ export const setupContext = async (
     proxyFactory.once("ProxyCreation", async (proxyAddress: string) => resolve(proxyAddress));
     await proxyFactory.createProxyWithNonce(
       networkContext.MinimumViableMultisig,
-      new utils.Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
+      new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
         [signers[0].address, signers[1].address],
       ]),
       0,
@@ -92,7 +95,7 @@ export const setupContext = async (
     MinimumViableMultisig.abi,
     wallet,
   ).functions.totalAmountWithdrawn(CONVENTION_FOR_ETH_ASSET_ID);
-  expect(withdrawn).to.be.eq(constants.Zero);
+  expect(withdrawn).to.be.eq(Zero);
 
   // create objects from provided overrides
   const activeApps = (providedOpts || [defaultAppOpts]).map((provided, idx) => {
@@ -117,12 +120,12 @@ export const setupContext = async (
     activeApps,
     {
       [CONVENTION_FOR_ETH_ASSET_ID]: [
-        { to: signers[0].address, amount: constants.Zero },
-        { to: signers[1].address, amount: constants.Zero },
+        { to: signers[0].address, amount: Zero },
+        { to: signers[1].address, amount: Zero },
       ],
       [networkContext.Token]: [
-        { to: signers[0].address, amount: constants.Zero },
-        { to: signers[1].address, amount: constants.Zero },
+        { to: signers[0].address, amount: Zero },
+        { to: signers[1].address, amount: Zero },
       ],
     },
   );
@@ -135,9 +138,9 @@ export const setupContext = async (
 
   let channelBalances: { [assetId: string]: BigNumber } = {};
   Object.keys(freeBalance.balances).forEach((assetId) => {
-    let assetTotal = constants.Zero;
+    let assetTotal = Zero;
     appBalances.forEach((tokenIndexed) => {
-      const appTotal = (tokenIndexed[assetId] || [{ to: "", amount: constants.Zero }]).reduce(
+      const appTotal = (tokenIndexed[assetId] || [{ to: "", amount: Zero }]).reduce(
         (prev, curr) => {
           return { to: "", amount: curr.amount.add(prev.amount) };
         },
@@ -314,7 +317,7 @@ export const setupContext = async (
     store: IClientStore,
     appPriorToAction: AppWithCounterClass,
     action: AppWithCounterAction = {
-      increment: constants.One,
+      increment: One,
       actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
     },
   ): Promise<AppWithCounterClass> => {

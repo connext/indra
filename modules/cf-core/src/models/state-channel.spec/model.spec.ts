@@ -9,9 +9,12 @@ import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 import { FreeBalanceClass } from "../free-balance";
 import { flipTokenIndexedBalances } from "../utils";
 
+const { getAddress } = utils;
+const { AddressZero } = constants;
+
 describe("StateChannel", () => {
   test("should be able to instantiate", () => {
-    const multisigAddress = utils.getAddress(getRandomAddress());
+    const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
 
     const { ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
@@ -33,10 +36,10 @@ describe("StateChannel", () => {
 
   // TODO: moar tests!
   describe("addActiveAppAndIncrementFreeBalance", () => {
-    const multisigAddress = utils.getAddress(getRandomAddress());
+    const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
     const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
-    const tokenAddress = utils.getAddress(getRandomAddress());
+    const tokenAddress = getAddress(getRandomAddress());
     const identityHash = getRandomBytes32();
     const channelInitialDeposit = toBN(15);
 
@@ -61,13 +64,13 @@ describe("StateChannel", () => {
       const freeBalance = FreeBalanceClass.createWithFundedTokenAmounts(
         init.multisigOwners,
         channelInitialDeposit,
-        [constants.AddressZero, tokenAddress],
+        [AddressZero, tokenAddress],
       );
       sc = init.setFreeBalance(freeBalance);
       expect(sc).toBeDefined();
       const freeBalanceClass = sc.getFreeBalanceClass();
       [...init.multisigOwners].forEach((addr) => {
-        const eth = freeBalanceClass.getBalance(constants.AddressZero, addr);
+        const eth = freeBalanceClass.getBalance(AddressZero, addr);
         const token = freeBalanceClass.getBalance(tokenAddress, addr);
         expect(eth.toString()).toBe(channelInitialDeposit.toString());
         expect(token.toString()).toBe(channelInitialDeposit.toString());
@@ -85,7 +88,7 @@ describe("StateChannel", () => {
         beforeEach(() => {
           expect(sc).toBeDefined();
           appInitiatorAssetId = tokenAddress; // channel responder
-          appResponderAssetId = constants.AddressZero; // channel initiator
+          appResponderAssetId = AddressZero; // channel initiator
         });
 
         const runTest = (initiatorDeposit: BigNumberish, responderDeposit: BigNumberish) => {
@@ -101,7 +104,7 @@ describe("StateChannel", () => {
           // channel responder token balance decreases
           // channel initiator eth balance decreases
           const expected = {
-            [constants.AddressZero]: {
+            [AddressZero]: {
               [sc.multisigOwners[0]]: channelInitialDeposit.sub(responderDeposit),
               [sc.multisigOwners[1]]: channelInitialDeposit,
             },
@@ -139,7 +142,7 @@ describe("StateChannel", () => {
   });
 
   describe("should be able to write a channel to a json", () => {
-    const multisigAddress = utils.getAddress(getRandomAddress());
+    const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
 
     let sc: StateChannel;
@@ -189,7 +192,7 @@ describe("StateChannel", () => {
   });
 
   describe("should be able to rehydrate from json", () => {
-    const multisigAddress = utils.getAddress(getRandomAddress());
+    const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
 
     const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();

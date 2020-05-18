@@ -30,6 +30,8 @@ import { Watcher } from "../src";
 import { initiateDispute, OutcomeSetResults } from "./utils/initiateDispute";
 import { cancelDispute } from "./utils/cancelDispute";
 
+const { One } = constants;
+
 describe("Watcher.init", () => {
   let provider: providers.JsonRpcProvider;
 
@@ -132,7 +134,7 @@ describe("Watcher.initiate", () => {
       signers,
       store,
       addActionToAppInStore,
-    } = await setupContext(true, [{ defaultTimeout: constants.One }]);
+    } = await setupContext(true, [{ defaultTimeout: One }]);
     // update app with action
     await addActionToAppInStore(store, activeApps[0]);
     // reinstantiate watcher

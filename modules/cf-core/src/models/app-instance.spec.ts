@@ -5,6 +5,9 @@ import { utils, constants } from "ethers";
 import { AppInstance } from "./app-instance";
 import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
 
+const { getAddress } = utils;
+const { Zero, AddressZero } = constants;
+
 describe("AppInstance", () => {
   it("should be able to instantiate", () => {
     const participants = [getRandomPublicIdentifier(), getRandomPublicIdentifier()];
@@ -14,22 +17,22 @@ describe("AppInstance", () => {
       /* responder*/ participants[1],
       /* default timeout */ toBN(Math.ceil(Math.random() * 2e10)).toHexString(),
       /* appInterface */ {
-        addr: utils.getAddress(getRandomAddress()),
+        addr: getAddress(getRandomAddress()),
         stateEncoding: "tuple(address foo, uint256 bar)",
         actionEncoding: undefined,
       },
       /* appSeqNo */ Math.ceil(Math.random() * 2e10),
-      /* latestState */ { foo: utils.getAddress(getRandomAddress()), bar: 0 },
+      /* latestState */ { foo: getAddress(getRandomAddress()), bar: 0 },
       /* latestVersionNumber */ 999,
       /* stateTimeout */ toBN(Math.ceil(1000 * Math.random())).toHexString(),
       /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-      /* multisigAddress */ utils.getAddress(getRandomAddress()),
+      /* multisigAddress */ getAddress(getRandomAddress()),
       /* meta */ undefined,
       /* latestAction */ undefined,
       /* twoPartyOutcomeInterpreterParamsInternal */ {
-        playerAddrs: [constants.AddressZero, constants.AddressZero],
-        amount: constants.Zero,
-        tokenAddress: constants.AddressZero,
+        playerAddrs: [AddressZero, AddressZero],
+        amount: Zero,
+        tokenAddress: AddressZero,
       },
       /* multiAssetMultiPartyCoinTransferInterpreterParamsInternal */ undefined,
       /* singleAssetTwoPartyCoinTransferInterpreterParamsInternal */ undefined,

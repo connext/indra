@@ -28,6 +28,8 @@ use(waffleChai);
 
 export { expect } from "chai";
 
+const { Zero, HashZero } = constants;
+
 /////////////////////////////
 //// Assertion Fns
 export const verifyOnchainBalancesPostChallenge = async (
@@ -42,11 +44,11 @@ export const verifyOnchainBalancesPostChallenge = async (
     wallet,
   ).functions.totalAmountWithdrawn(CONVENTION_FOR_ETH_ASSET_ID);
   expect(withdrawn).to.be.eq(expected[CONVENTION_FOR_ETH_ASSET_ID]);
-  expect(await wallet.provider.getBalance(multisigAddress)).to.be.eq(constants.Zero);
+  expect(await wallet.provider.getBalance(multisigAddress)).to.be.eq(Zero);
   expect(await wallet.provider.getBalance(signers[0].address)).to.be.eq(
     expected[CONVENTION_FOR_ETH_ASSET_ID],
   );
-  expect(await wallet.provider.getBalance(signers[1].address)).to.be.eq(constants.Zero);
+  expect(await wallet.provider.getBalance(signers[1].address)).to.be.eq(Zero);
 };
 
 export const verifyStateProgressedEvent = async (
@@ -99,10 +101,10 @@ export const verifyCancelChallenge = (
 ) => {
   const expectedChallenge = {
     identityHash: app.identityHash,
-    appStateHash: constants.HashZero,
-    versionNumber: constants.Zero,
+    appStateHash: HashZero,
+    versionNumber: Zero,
     status: StoredAppChallengeStatus.NO_CHALLENGE,
-    finalizesAt: constants.Zero,
+    finalizesAt: Zero,
   };
   expect(challenge).to.containSubset(expectedChallenge);
   expect(contractEvent).to.containSubset(expectedChallenge);

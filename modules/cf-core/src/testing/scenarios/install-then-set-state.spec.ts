@@ -21,6 +21,9 @@ import { transferERC20Tokens, newWallet } from "../utils";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { getRandomChannelSigners } from "../random-signing-keys";
 
+const { parseEther, Interface } = utils;
+const { WeiPerEther, AddressZero, Zero } = constants;
+
 expect.extend({ toBeEq });
 
 // ProxyFactory.createProxy uses assembly `call` so we can't estimate
@@ -74,8 +77,8 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       ).setFreeBalance(
         FreeBalanceClass.createWithFundedTokenAmounts(
           signers.map((key) => key.address),
-          constants.WeiPerEther,
-          [constants.AddressZero, erc20TokenAddress],
+          WeiPerEther,
+          [AddressZero, erc20TokenAddress],
         ),
       );
 
@@ -94,13 +97,13 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         [
           // ETH token index
           [
-            { to: signers[0].address, amount: constants.WeiPerEther },
-            { to: signers[1].address, amount: constants.Zero },
+            { to: signers[0].address, amount: WeiPerEther },
+            { to: signers[1].address, amount: Zero },
           ],
           // ERC20 token index
           [
-            { to: signers[0].address, amount: constants.Zero },
-            { to: signers[1].address, amount: constants.WeiPerEther },
+            { to: signers[0].address, amount: Zero },
+            { to: signers[1].address, amount: WeiPerEther },
           ],
         ],
         1,
@@ -112,21 +115,21 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         undefined,
         {
           // total limit of ETH and ERC20 token that can be transferred
-          limit: [constants.WeiPerEther, constants.WeiPerEther],
+          limit: [WeiPerEther, WeiPerEther],
           // The only assets being transferred are ETH and the ERC20 token
-          tokenAddresses: [constants.AddressZero, erc20TokenAddress],
+          tokenAddresses: [AddressZero, erc20TokenAddress],
         } as MultiAssetMultiPartyCoinTransferInterpreterParams,
         undefined,
       );
 
       stateChannel = stateChannel.installApp(identityAppInstance, {
-        [constants.AddressZero]: {
-          [signers[0].address]: constants.WeiPerEther,
-          [signers[1].address]: constants.Zero,
+        [AddressZero]: {
+          [signers[0].address]: WeiPerEther,
+          [signers[1].address]: Zero,
         },
         [erc20TokenAddress]: {
-          [signers[0].address]: constants.Zero,
-          [signers[1].address]: constants.WeiPerEther,
+          [signers[0].address]: Zero,
+          [signers[1].address]: WeiPerEther,
         },
       });
 
@@ -188,14 +191,14 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
 
       await wallet.sendTransaction({
         to: proxyAddress,
-        value: utils.parseEther("2"),
+        value: parseEther("2"),
       });
 
       await transferERC20Tokens(
         proxyAddress,
         erc20TokenAddress,
-        new utils.Interface(DolphinCoin.abi),
-        utils.parseEther("2"),
+        new Interface(DolphinCoin.abi),
+        parseEther("2"),
       );
 
       await wallet.sendTransaction({
@@ -203,15 +206,15 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         gasLimit: CONDITIONAL_TX_DELEGATECALL_GAS,
       });
 
-      expect(await wallet.provider.getBalance(proxyAddress)).toBeEq(constants.WeiPerEther);
-      expect(await wallet.provider.getBalance(signers[0].address)).toBeEq(constants.WeiPerEther);
-      expect(await wallet.provider.getBalance(signers[1].address)).toBeEq(constants.Zero);
+      expect(await wallet.provider.getBalance(proxyAddress)).toBeEq(WeiPerEther);
+      expect(await wallet.provider.getBalance(signers[0].address)).toBeEq(WeiPerEther);
+      expect(await wallet.provider.getBalance(signers[1].address)).toBeEq(Zero);
 
       const erc20Contract = new Contract(erc20TokenAddress, DolphinCoin.abi, wallet.provider);
 
-      expect(await erc20Contract.balanceOf(proxyAddress)).toBeEq(constants.WeiPerEther);
-      expect(await erc20Contract.balanceOf(signers[0].address)).toBeEq(constants.Zero);
-      expect(await erc20Contract.balanceOf(signers[1].address)).toBeEq(constants.WeiPerEther);
+      expect(await erc20Contract.balanceOf(proxyAddress)).toBeEq(WeiPerEther);
+      expect(await erc20Contract.balanceOf(signers[0].address)).toBeEq(Zero);
+      expect(await erc20Contract.balanceOf(signers[1].address)).toBeEq(WeiPerEther);
 
       const freeBalanceConditionalTransaction = getSetupCommitment(context, stateChannel);
 
@@ -227,18 +230,18 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         gasLimit: CONDITIONAL_TX_DELEGATECALL_GAS,
       });
 
-      expect(await wallet.provider.getBalance(proxyAddress)).toBeEq(constants.Zero);
-      expect(await wallet.provider.getBalance(signers[0].address)).toBeEq(constants.WeiPerEther);
-      expect(await wallet.provider.getBalance(signers[1].address)).toBeEq(constants.WeiPerEther);
+      expect(await wallet.provider.getBalance(proxyAddress)).toBeEq(Zero);
+      expect(await wallet.provider.getBalance(signers[0].address)).toBeEq(WeiPerEther);
+      expect(await wallet.provider.getBalance(signers[1].address)).toBeEq(WeiPerEther);
 
-      expect(await erc20Contract.balanceOf(proxyAddress)).toBeEq(constants.Zero);
-      expect(await erc20Contract.balanceOf(signers[0].address)).toBeEq(constants.WeiPerEther);
-      expect(await erc20Contract.balanceOf(signers[1].address)).toBeEq(constants.WeiPerEther);
+      expect(await erc20Contract.balanceOf(proxyAddress)).toBeEq(Zero);
+      expect(await erc20Contract.balanceOf(signers[0].address)).toBeEq(WeiPerEther);
+      expect(await erc20Contract.balanceOf(signers[1].address)).toBeEq(WeiPerEther);
 
       done();
     });
 
-    const iface = new utils.Interface(MinimumViableMultisig.abi);
+    const iface = new Interface(MinimumViableMultisig.abi);
 
     await proxyFactory.createProxyWithNonce(
       network.MinimumViableMultisig,

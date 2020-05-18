@@ -6,6 +6,8 @@ import React, { useEffect, useState } from "react";
 import { Copyable } from "./copyable";
 import { QRGenerate } from "./qrCode";
 
+const { Zero } = constants;
+
 const style = withStyles((theme) => ({
   icon: {
     width: "40px",
@@ -38,7 +40,7 @@ export const RequestCard = style((props) => {
     if (value && maxDeposit && value.wad.gt(maxDeposit.toDAI().wad)) {
       error = `Channel balances are capped at ${maxDeposit.toDAI().format()}`;
     }
-    if (value && value.wad.lt(constants.Zero)) {
+    if (value && value.wad.lt(Zero)) {
       error = "Please enter a payment amount above 0";
     }
     setQrUrl(generateQrUrl(error ? zero : value.amount, publicId));

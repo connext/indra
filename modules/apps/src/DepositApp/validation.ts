@@ -15,6 +15,8 @@ import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
 import { baseCoinTransferValidation } from "../shared";
 import { Contract, providers, constants } from "ethers";
 
+const { Zero } = constants;
+
 export const validateDepositApp = async (
   params: MethodParams.ProposeInstall,
   initiatorIdentifier: string,
@@ -91,7 +93,7 @@ export const validateDepositApp = async (
     }
     // multisig is deployed on withdrawal, if not
     // deployed withdrawal amount is 0
-    startingTotalAmountWithdrawn = constants.Zero;
+    startingTotalAmountWithdrawn = Zero;
   }
 
   if (!initialState.startingTotalAmountWithdrawn.eq(startingTotalAmountWithdrawn)) {

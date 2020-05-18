@@ -59,6 +59,9 @@ import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 import { ChallengeRegistry } from "@connext/contracts";
 import { LoggerService } from "../logger/logger.service";
 
+const { defaultAbiCoder } = utils;
+const { Zero, AddressZero } = constants;
+
 @Injectable()
 export class CFCoreStore implements IStoreService {
   private schemaVersion: number = STORE_SCHEMA_VERSION;
@@ -173,10 +176,10 @@ export class CFCoreStore implements IStoreService {
     freeBalanceApp.stateTimeout = stateTimeout;
 
     // app proposal defaults
-    freeBalanceApp.initiatorDeposit = constants.Zero;
-    freeBalanceApp.initiatorDepositAssetId = constants.AddressZero;
-    freeBalanceApp.responderDeposit = constants.Zero;
-    freeBalanceApp.responderDepositAssetId = constants.AddressZero;
+    freeBalanceApp.initiatorDeposit = Zero;
+    freeBalanceApp.initiatorDepositAssetId = AddressZero;
+    freeBalanceApp.responderDeposit = Zero;
+    freeBalanceApp.responderDepositAssetId = AddressZero;
     freeBalanceApp.responderIdentifier = userIdentifier;
     freeBalanceApp.initiatorIdentifier = nodeIdentifier;
     freeBalanceApp.userIdentifier = userId;
@@ -820,7 +823,7 @@ export class CFCoreStore implements IStoreService {
         .createQueryBuilder()
         .update(AppInstance)
         .set({
-          latestAction: utils.defaultAbiCoder.decode([app.actionEncoding], encodedAction),
+          latestAction: defaultAbiCoder.decode([app.actionEncoding], encodedAction),
         })
         .where("app.identityHash = :appIdentityHash", {
           appIdentityHash,
@@ -876,7 +879,7 @@ export class CFCoreStore implements IStoreService {
     // `StateProgressed` event, must always go through the set state game
     const challenge = await this.challengeRepository.findByIdentityHashOrThrow(identityHash);
     const entity = new StateProgressedEvent();
-    entity.action = utils.defaultAbiCoder.decode([challenge.app.actionEncoding!], action);
+    entity.action = defaultAbiCoder.decode([challenge.app.actionEncoding!], action);
     entity.challenge = challenge;
     entity.signature = signature;
     entity.timeout = timeout;

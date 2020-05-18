@@ -25,10 +25,12 @@ import { createAppInstanceProposalForTest } from "../../testing/utils";
 import { install } from "./install";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 
+const { HashZero, AddressZero, Zero } = constants;
+
 const NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES = EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT.reduce(
   (acc, contractName) => ({
     ...acc,
-    [contractName]: constants.AddressZero,
+    [contractName]: AddressZero,
   }),
   {} as NetworkContext,
 );
@@ -64,8 +66,8 @@ describe("Can handle correct & incorrect installs", () => {
 
   it("fails to install without the AppInstance being proposed first", async () => {
     await expect(
-      install(store, protocolRunner, { appIdentityHash: constants.HashZero }, initiatorIdentifier),
-    ).rejects.toThrowError(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(constants.HashZero));
+      install(store, protocolRunner, { appIdentityHash: HashZero }, initiatorIdentifier),
+    ).rejects.toThrowError(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(HashZero));
   });
 
   it("succeeds to install a proposed AppInstance", async () => {
@@ -81,26 +83,26 @@ describe("Can handle correct & incorrect installs", () => {
     ];
 
     const stateChannel = StateChannel.setupChannel(
-      constants.AddressZero,
-      { proxyFactory: constants.AddressZero, multisigMastercopy: constants.AddressZero },
+      AddressZero,
+      { proxyFactory: AddressZero, multisigMastercopy: AddressZero },
       multisigAddress,
       publicIdentifiers[0],
       publicIdentifiers[1],
     );
 
-    expect(
-      stateChannel.getFreeBalanceClass().getBalance(constants.AddressZero, participants[0]),
-    ).toEqual(constants.Zero);
-    expect(
-      stateChannel.getFreeBalanceClass().getBalance(constants.AddressZero, participants[1]),
-    ).toEqual(constants.Zero);
+    expect(stateChannel.getFreeBalanceClass().getBalance(AddressZero, participants[0])).toEqual(
+      Zero,
+    );
+    expect(stateChannel.getFreeBalanceClass().getBalance(AddressZero, participants[1])).toEqual(
+      Zero,
+    );
 
     const commitment = {
       appIdentity: {} as any,
       stateTimeout: toBNJson("0"),
       appIdentityHash,
-      appStateHash: constants.HashZero,
-      challengeRegistryAddress: constants.AddressZero,
+      appStateHash: HashZero,
+      challengeRegistryAddress: AddressZero,
       signatures: ["0x0", "0x0"],
       versionNumber: toBNJson(1),
     };
@@ -110,7 +112,7 @@ describe("Can handle correct & incorrect installs", () => {
       {
         data: "0x",
         to: stateChannel.multisigAddress,
-        value: constants.Zero,
+        value: Zero,
       },
       commitment,
     );

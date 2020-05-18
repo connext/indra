@@ -24,6 +24,8 @@ import queryString from "query-string";
 
 import { redeemMachine } from "../state";
 
+const { AddressZero } = constants;
+
 const style = withStyles((theme) => ({
   icon: {
     width: "40px",
@@ -47,7 +49,7 @@ export const RedeemCard = style(({ channel, classes, history, location, token })
   const [secret, setSecret] = useState("");
   const [link, setLink] = useState({
     amount: Currency.DAI("0"),
-    assetId: constants.AddressZero,
+    assetId: AddressZero,
     status: "UNKNOWN",
   });
   const [message, setMessage] = useState("");

@@ -3,6 +3,8 @@ import { constants } from "ethers";
 
 import { createClient, ethProvider, expect, getOnchainBalance, sendOnchainValue } from "../util";
 
+const { One, Zero } = constants;
+
 describe("Deposit Rights", () => {
   let client: IConnextClient;
 
@@ -12,11 +14,11 @@ describe("Deposit Rights", () => {
 
   it("happy case: client should request deposit rights and deposit ETH", async () => {
     const assetId = CONVENTION_FOR_ETH_ASSET_ID;
-    const depositAmount = constants.One;
+    const depositAmount = One;
     client = await createClient();
     await client.requestDepositRights({ assetId });
     const { [client.signerAddress]: preDeposit } = await client.getFreeBalance(assetId);
-    expect(preDeposit).to.be.eq(constants.Zero);
+    expect(preDeposit).to.be.eq(Zero);
     const initialBalance = await getOnchainBalance(client.multisigAddress);
     await new Promise(
       async (res: any, rej: any): Promise<any> => {
@@ -48,12 +50,12 @@ describe("Deposit Rights", () => {
   it("happy case: client should request deposit rights and deposit token", async () => {
     client = await createClient();
     const assetId = client.config.contractAddresses.Token;
-    const depositAmount = constants.One;
+    const depositAmount = One;
     await client.requestDepositRights({ assetId });
     const { [client.signerAddress]: preDeposit } = await client.getFreeBalance(assetId);
-    expect(preDeposit).to.be.eq(constants.Zero);
+    expect(preDeposit).to.be.eq(Zero);
     const initialBalance = await getOnchainBalance(client.multisigAddress, assetId);
-    expect(initialBalance).to.be.eq(constants.Zero);
+    expect(initialBalance).to.be.eq(Zero);
     await new Promise(
       async (res: any, rej: any): Promise<any> => {
         ethProvider.on(client.multisigAddress, async () => {

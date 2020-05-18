@@ -23,6 +23,9 @@ import { utils, constants } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
+const { solidityKeccak256 } = utils;
+const { Zero, HashZero } = constants;
+
 export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (
     params: PublicParams.LinkedTransfer,
@@ -53,7 +56,7 @@ export class LinkedTransferController extends AbstractController {
       submittedMeta.sender = this.connext.publicIdentifier;
     }
 
-    const linkedHash = utils.solidityKeccak256(
+    const linkedHash = solidityKeccak256(
       ["uint256", "address", "bytes32", "bytes32"],
       [amount, assetId, paymentId, preImage],
     );
@@ -67,13 +70,13 @@ export class LinkedTransferController extends AbstractController {
           to: this.connext.signerAddress,
         },
         {
-          amount: constants.Zero,
+          amount: Zero,
           to: this.connext.nodeSignerAddress,
         },
       ],
       linkedHash,
       paymentId,
-      preImage: constants.HashZero,
+      preImage: HashZero,
     };
 
     const network = await this.ethProvider.getNetwork();
@@ -98,7 +101,7 @@ export class LinkedTransferController extends AbstractController {
       meta: submittedMeta,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
-      responderDeposit: constants.Zero,
+      responderDeposit: Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: LINKED_TRANSFER_STATE_TIMEOUT,

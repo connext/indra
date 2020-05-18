@@ -7,7 +7,8 @@ import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./errors";
 import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from "./contracts";
 import { StateChannel } from "./models";
 
-export { appIdentityToHash } from "@connext/utils";
+const { Interface, solidityKeccak256, keccak256, getAddress } = utils;
+const { Zero } = constants;
 
 export function assertSufficientFundsWithinFreeBalance(
   channel: StateChannel,
@@ -18,8 +19,7 @@ export function assertSufficientFundsWithinFreeBalance(
   const freeBalanceForToken =
     channel
       .getFreeBalanceClass()
-      .getBalance(tokenAddress, getSignerAddressFromPublicIdentifier(publicIdentifier)) ||
-    constants.Zero;
+      .getBalance(tokenAddress, getSignerAddressFromPublicIdentifier(publicIdentifier)) || Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {
     throw new Error(
@@ -67,42 +67,40 @@ export const getCreate2MultisigAddress = async (
 
   const proxyBytecode = toxicBytecode || (await proxyFactory.proxyCreationCode());
 
-  const iface = new utils.Interface(MinimumViableMultisig.abi);
+  const iface = new Interface(MinimumViableMultisig.abi);
 
   return memoizedGetAddress(
-    utils
-      .solidityKeccak256(
-        ["bytes1", "address", "uint256", "bytes32"],
-        [
-          "0xff",
-          addresses.proxyFactory,
-          utils.solidityKeccak256(
-            ["bytes32", "uint256"],
-            [
-              utils.keccak256(
-                // see encoding notes
-                iface.encodeFunctionData("setup", [
-                  [
-                    getSignerAddressFromPublicIdentifier(initiatorIdentifier),
-                    getSignerAddressFromPublicIdentifier(responderIdentifier),
-                  ],
-                ]),
-              ),
-              // hash chainId + saltNonce to ensure multisig addresses are *always* unique
-              utils.solidityKeccak256(["uint256", "uint256"], [ethProvider.network.chainId, 0]),
-            ],
-          ),
-          utils.solidityKeccak256(
-            ["bytes", "uint256"],
-            [`0x${proxyBytecode.replace(/^0x/, "")}`, addresses.multisigMastercopy],
-          ),
-        ],
-      )
-      .slice(-40),
+    solidityKeccak256(
+      ["bytes1", "address", "uint256", "bytes32"],
+      [
+        "0xff",
+        addresses.proxyFactory,
+        solidityKeccak256(
+          ["bytes32", "uint256"],
+          [
+            keccak256(
+              // see encoding notes
+              iface.encodeFunctionData("setup", [
+                [
+                  getSignerAddressFromPublicIdentifier(initiatorIdentifier),
+                  getSignerAddressFromPublicIdentifier(responderIdentifier),
+                ],
+              ]),
+            ),
+            // hash chainId + saltNonce to ensure multisig addresses are *always* unique
+            solidityKeccak256(["uint256", "uint256"], [ethProvider.network.chainId, 0]),
+          ],
+        ),
+        solidityKeccak256(
+          ["bytes", "uint256"],
+          [`0x${proxyBytecode.replace(/^0x/, "")}`, addresses.multisigMastercopy],
+        ),
+      ],
+    ).slice(-40),
   );
 };
 
-const memoizedGetAddress = memoize((params: string): string => utils.getAddress(params), {
+const memoizedGetAddress = memoize((params: string): string => getAddress(params), {
   max: 100,
   maxAge: 60 * 1000,
   primitive: true,

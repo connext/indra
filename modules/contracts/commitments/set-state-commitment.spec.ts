@@ -14,6 +14,9 @@
 // import { StateChannel, FreeBalanceClass } from "../../../cf-core/src/models";
 // import { getRandomChannelSigners } from "../../../cf-core/src/testing/random-signing-keys";
 
+// const { getAddress, Interface, keccak256, solidityPack } = utils;
+// const { WeiPerEther, AddressZero } = constants;
+
 // /**
 //  * This test suite decodes a constructed SetState Commitment transaction object
 //  * to the specifications defined by Counterfactual as can be found here:
@@ -34,7 +37,7 @@
 //       proxyFactory: context.network.ProxyFactory,
 //       multisigMastercopy: context.network.MinimumViableMultisig,
 //     },
-//     utils.getAddress(createRandomAddress()),
+//     getAddress(createRandomAddress()),
 //     initiator.publicIdentifier,
 //     responder.publicIdentifier,
 //   );
@@ -44,8 +47,8 @@
 
 //   // Set the state to some test values
 //   stateChannel = stateChannel.setFreeBalance(
-//     FreeBalanceClass.createWithFundedTokenAmounts(stateChannel.multisigOwners, constants.WeiPerEther, [
-//       constants.AddressZero,
+//     FreeBalanceClass.createWithFundedTokenAmounts(stateChannel.multisigOwners, WeiPerEther, [
+//       AddressZero,
 //     ]),
 //   );
 
@@ -76,7 +79,7 @@
 //   });
 
 //   describe("the calldata", () => {
-//     const iface = new utils.Interface(ChallengeRegistry.abi);
+//     const iface = new Interface(ChallengeRegistry.abi);
 //     let desc: TransactionDescription;
 
 //     beforeAll(() => {
@@ -118,8 +121,8 @@
 //     // Based on MChallengeRegistryCore::computeStateHash
 //     // TODO: Probably should be able to compute this from some helper
 //     //       function ... maybe an ChallengeRegistry class or something
-//     const expectedHashToSign = utils.keccak256(
-//       utils.solidityPack(
+//     const expectedHashToSign = keccak256(
+//       solidityPack(
 //         ["uint8", "bytes32", "bytes32", "uint256", "uint256"],
 //         [
 //           CommitmentTarget.SET_STATE,

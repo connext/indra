@@ -16,7 +16,9 @@ import {
 import { utils } from "ethers";
 
 import * as ChallengeRegistry from "../build/ChallengeRegistry.json";
-const iface = new utils.Interface(ChallengeRegistry.abi);
+
+const { Interface, solidityPack, keccak256 } = utils;
+const iface = new Interface(ChallengeRegistry.abi);
 
 export class SetStateCommitment implements EthereumCommitment {
   constructor(
@@ -47,7 +49,7 @@ export class SetStateCommitment implements EthereumCommitment {
   }
 
   public encode(): string {
-    return utils.solidityPack(
+    return solidityPack(
       ["uint8", "bytes32", "bytes32", "uint256", "uint256"],
       [
         CommitmentTarget.SET_STATE,
@@ -60,7 +62,7 @@ export class SetStateCommitment implements EthereumCommitment {
   }
 
   public hashToSign(): string {
-    return utils.keccak256(this.encode());
+    return keccak256(this.encode());
   }
 
   public async getSignedTransaction(): Promise<MinimalTransaction> {
@@ -109,7 +111,7 @@ export class SetStateCommitment implements EthereumCommitment {
       timeout: this.stateTimeout, // this is a *state-specific* timeout (defaults to defaultTimeout)
       // safe to do because IFF single signed commitment, then contract
       // will take a single signers array of just the turn taker
-      signatures: this.signatures.filter(x => !!x),
+      signatures: this.signatures.filter((x) => !!x),
     };
   }
 

@@ -4,6 +4,9 @@ import { utils, constants } from "ethers";
 
 import { assertIsValidSignature } from "./utils";
 
+const { hashMessage } = utils;
+const { HashZero } = constants;
+
 describe("Signature Validator Helper", () => {
   let signer: IChannelSigner;
   let signature: string;
@@ -14,7 +17,7 @@ describe("Signature Validator Helper", () => {
     signer = getRandomChannelSigner();
 
     commitment = {
-      hashToSign: () => utils.hashMessage("test"),
+      hashToSign: () => hashMessage("test"),
     } as EthereumCommitment;
     commitmentHash = commitment.hashToSign();
     signature = await signer.signMessage(commitmentHash);
@@ -40,7 +43,7 @@ describe("Signature Validator Helper", () => {
 
   it("throws if the signature is wrong", async () => {
     const rightHash = commitment.hashToSign();
-    const wrongHash = constants.HashZero.replace("00", "11"); // 0x11000...
+    const wrongHash = HashZero.replace("00", "11"); // 0x11000...
     const signature = await signer.signMessage(wrongHash);
     const wrongSigner = await recoverAddressFromChannelMessage(rightHash, signature);
     await expect(assertIsValidSignature(signer.address, commitmentHash, signature)).rejects.toThrow(

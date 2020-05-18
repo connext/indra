@@ -59,6 +59,8 @@ import { ConnextListener } from "./listener";
 import { InternalClientOptions } from "./types";
 import { NodeApiClient } from "./node";
 
+const { AddressZero } = constants;
+
 export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
   public channelProvider: IChannelProvider;
@@ -374,7 +376,7 @@ export class ConnextClient implements IConnextClient {
 
   public getHashLockTransfer = async (
     lockHash: string,
-    assetId: string = constants.AddressZero,
+    assetId: string = AddressZero,
   ): Promise<NodeResponses.GetHashLockTransfer> => {
     return this.node.getHashLockTransfer(lockHash, assetId);
   };
@@ -521,7 +523,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   public getFreeBalance = async (
-    assetId: AssetId | Address = constants.AddressZero,
+    assetId: AssetId | Address = AddressZero,
   ): Promise<MethodResults.GetFreeBalanceState> => {
     if (typeof assetId !== "string") {
       throw new Error(`Asset id must be a string: ${stringify(assetId)}`);
@@ -795,7 +797,7 @@ export class ConnextClient implements IConnextClient {
       // there is still an active deposit, setup a listener to
       // rescind deposit rights when deposit is sent to multisig
       const currentMultisigBalance =
-        assetId === constants.AddressZero
+        assetId === AddressZero
           ? await this.ethProvider.getBalance(this.multisigAddress)
           : await new Contract(assetId, tokenAbi, this.ethProvider).balanceOf(this.multisigAddress);
 
@@ -813,7 +815,7 @@ export class ConnextClient implements IConnextClient {
 
       // there is still an active deposit, setup a listener to
       // rescind deposit rights when deposit is sent to multisig
-      if (assetId === constants.AddressZero) {
+      if (assetId === AddressZero) {
         this.ethProvider.on(this.multisigAddress, async (balance: BigNumber) => {
           if (balance.gt((latestState as DepositAppState).startingMultisigBalance)) {
             await this.rescindDepositRights({ assetId, appIdentityHash });

@@ -5,6 +5,8 @@ import { constants } from "ethers";
 import { expect } from "../util";
 import { AssetOptions, createClient, fundChannel } from "../util";
 
+const { One, AddressZero } = constants;
+
 describe("Get Linked Transfer", () => {
   let clientA: IConnextClient;
 
@@ -19,12 +21,12 @@ describe("Get Linked Transfer", () => {
   it.skip("happy case: get linked transfer by payment id", async () => {
     const paymentId = getRandomBytes32();
     const preImage = getRandomBytes32();
-    const transfer: AssetOptions = { amount: constants.One, assetId: constants.AddressZero };
+    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId,
       preImage,
@@ -36,7 +38,7 @@ describe("Get Linked Transfer", () => {
 
     expect(linkedTransfer).to.deep.include({
       amount: transfer.amount,
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
       paymentId,
       receiverIdentifier: null,
       senderIdentifier: clientA.publicIdentifier,
@@ -47,12 +49,12 @@ describe("Get Linked Transfer", () => {
     const clientB = await createClient();
     const paymentId = getRandomBytes32();
     const preImage = getRandomBytes32();
-    const transfer: AssetOptions = { amount: constants.One, assetId: constants.AddressZero };
+    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId,
       preImage,
@@ -61,7 +63,7 @@ describe("Get Linked Transfer", () => {
     const linkedTransfer = await clientA.getLinkedTransfer(paymentId);
     expect(linkedTransfer).to.deep.include({
       amount: transfer.amount,
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
       paymentId,
       receiverIdentifier: clientB.publicIdentifier,
       senderIdentifier: clientA.publicIdentifier,
@@ -72,12 +74,12 @@ describe("Get Linked Transfer", () => {
     const clientB = await createClient();
     const paymentId = getRandomBytes32();
     const preImage = getRandomBytes32();
-    const transfer: AssetOptions = { amount: constants.One, assetId: constants.AddressZero };
+    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await clientA.conditionalTransfer({
       amount: transfer.amount,
-      assetId: constants.AddressZero,
+      assetId: AddressZero,
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId,
       preImage,

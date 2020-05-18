@@ -6,6 +6,8 @@ import { hexToBuffer, bufferToHex, compress, decompress } from "eccrypto-js";
 import { getAddressError } from "./hexStrings";
 import { getAddressFromPublicKey } from "./crypto";
 
+const { getAddress } = utils;
+
 export const INDRA_PUB_ID_PREFIX = "indra";
 
 ////////////////////////////////////////
@@ -25,7 +27,7 @@ export const getSignerAddressFromPublicIdentifier = (publicIdentifier: PublicIde
   getAddressFromPublicKey(getPublicKeyFromPublicIdentifier(publicIdentifier));
 
 // makes sure all addresses are normalized
-export const getAddressFromAssetId = (assetId: AssetId): Address => utils.getAddress(assetId);
+export const getAddressFromAssetId = (assetId: AssetId): Address => getAddress(assetId);
 
 ////////////////////////////////////////
 // Validators

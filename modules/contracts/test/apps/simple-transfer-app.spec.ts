@@ -5,6 +5,9 @@ import SimpleTransferApp from "../../build/SimpleTransferApp.json";
 
 import { expect, provider } from "../utils";
 
+const { defaultAbiCoder } = utils;
+const { Zero } = constants;
+
 type CoinTransfer = {
   to: string;
   amount: BigNumber;
@@ -28,17 +31,14 @@ function mkAddress(prefix: string = "0xa"): string {
 
 // FIXME: why does this have to use the multiAsset one?
 const decodeAppState = (encodedAppState: string): CoinTransfer[] =>
-  utils.defaultAbiCoder.decode([multiAssetMultiPartyCoinTransferEncoding], encodedAppState)[0];
+  defaultAbiCoder.decode([multiAssetMultiPartyCoinTransferEncoding], encodedAppState)[0];
 
 const encodeAppState = (
   state: SimpleTransferAppState,
   onlyCoinTransfers: boolean = false,
 ): string => {
-  if (!onlyCoinTransfers) return utils.defaultAbiCoder.encode([transferAppStateEncoding], [state]);
-  return utils.defaultAbiCoder.encode(
-    [multiAssetMultiPartyCoinTransferEncoding],
-    [state.coinTransfers],
-  );
+  if (!onlyCoinTransfers) return defaultAbiCoder.encode([transferAppStateEncoding], [state]);
+  return defaultAbiCoder.encode([multiAssetMultiPartyCoinTransferEncoding], [state.coinTransfers]);
 };
 
 describe("SimpleTransferApp", () => {
@@ -70,7 +70,7 @@ describe("SimpleTransferApp", () => {
             to: senderAddr,
           },
           {
-            amount: constants.Zero,
+            amount: Zero,
             to: receiverAddr,
           },
         ],
@@ -79,7 +79,7 @@ describe("SimpleTransferApp", () => {
       const state: SimpleTransferAppState = {
         coinTransfers: [
           {
-            amount: constants.Zero,
+            amount: Zero,
             to: senderAddr,
           },
           {

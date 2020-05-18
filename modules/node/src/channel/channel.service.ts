@@ -20,6 +20,9 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
 
+const { getAddress, sha256, toUtf8Bytes } = utils;
+const { AddressZero } = constants;
+
 type RebalancingTargetsResponse<T = string> = {
   assetId: string;
   upperBoundCollateralize: T;
@@ -95,10 +98,10 @@ export class ChannelService {
 
   async rebalance(
     channel: Channel,
-    assetId: string = constants.AddressZero,
+    assetId: string = AddressZero,
   ): Promise<providers.TransactionReceipt | undefined> {
     this.log.info(`Rebalance for ${channel.userIdentifier} asset ${assetId} started`);
-    const normalizedAssetId = utils.getAddress(assetId);
+    const normalizedAssetId = getAddress(assetId);
     if (channel.activeCollateralizations[assetId]) {
       this.log.warn(
         `Channel has collateralization in flight for ${normalizedAssetId}, doing nothing`,
@@ -190,7 +193,7 @@ export class ChannelService {
 
   async getRebalancingTargets(
     userPublicIdentifier: string,
-    assetId: string = constants.AddressZero,
+    assetId: string = AddressZero,
   ): Promise<RebalancingTargetsResponse<BigNumber>> {
     this.log.debug(
       `Getting rebalancing targets for user: ${userPublicIdentifier}, assetId: ${assetId}`,
@@ -263,7 +266,7 @@ export class ChannelService {
     }
 
     const rebalanceProfile = new RebalanceProfile();
-    rebalanceProfile.assetId = utils.getAddress(assetId);
+    rebalanceProfile.assetId = getAddress(assetId);
     rebalanceProfile.lowerBoundCollateralize = lowerBoundCollateralize;
     rebalanceProfile.upperBoundCollateralize = upperBoundCollateralize;
     rebalanceProfile.lowerBoundReclaim = lowerBoundReclaim;
@@ -332,7 +335,7 @@ export class ChannelService {
       return undefined;
     }
 
-    const hashedPublicIdentifier = utils.sha256(utils.toUtf8Bytes(userPublicIdentifier));
+    const hashedPublicIdentifier = sha256(toUtf8Bytes(userPublicIdentifier));
     const {
       data: rebalancingTargets,
       status,
@@ -365,7 +368,7 @@ export class ChannelService {
 
   async getRebalanceProfileForChannelAndAsset(
     userIdentifier: string,
-    assetId: string = constants.AddressZero,
+    assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
     // try to get rebalance profile configured
     let profile = await this.channelRepository.getRebalanceProfileForChannelAndAsset(

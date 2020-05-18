@@ -25,6 +25,8 @@ import tokenAbi from "human-standard-token-abi";
 
 import { AbstractController } from "./AbstractController";
 
+const { AddressZero, Zero } = constants;
+
 export class DepositController extends AbstractController {
   public deposit = async (params: PublicParams.Deposit): Promise<PublicResults.Deposit> => {
     this.log.info(`deposit started: ${JSON.stringify(params)}`);
@@ -37,15 +39,12 @@ export class DepositController extends AbstractController {
     const tokenAddress = getAddressFromAssetId(assetId);
     this.log.info(`Depositing ${amount.toString()} of ${tokenAddress} into channel`);
     const startingBalance =
-      tokenAddress === constants.AddressZero
+      tokenAddress === AddressZero
         ? await this.ethProvider.getBalance(this.connext.signerAddress)
         : await new Contract(tokenAddress, tokenAbi, this.ethProvider).balanceOf(
             this.connext.signerAddress,
           );
-    this.throwIfAny(
-      notLessThanOrEqualTo(amount, startingBalance),
-      notGreaterThan(amount, constants.Zero),
-    );
+    this.throwIfAny(notLessThanOrEqualTo(amount, startingBalance), notGreaterThan(amount, Zero));
     const { appIdentityHash } = await this.requestDepositRights({ assetId });
 
     let ret: PublicResults.RescindDepositRights;
@@ -202,12 +201,12 @@ export class DepositController extends AbstractController {
       }
       // multisig is deployed on withdrawal, if not
       // deployed withdrawal amount is 0
-      startingTotalAmountWithdrawn = constants.Zero;
+      startingTotalAmountWithdrawn = Zero;
     }
 
     // generate starting multisig balance
     const startingMultisigBalance =
-      tokenAddress === constants.AddressZero
+      tokenAddress === AddressZero
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
         : await new Contract(tokenAddress, tokenAbi, this.ethProvider).balanceOf(
             this.connext.multisigAddress,
@@ -216,11 +215,11 @@ export class DepositController extends AbstractController {
     const initialState: DepositAppState = {
       transfers: [
         {
-          amount: constants.Zero,
+          amount: Zero,
           to: this.connext.signerAddress,
         },
         {
-          amount: constants.Zero,
+          amount: Zero,
           to: this.connext.nodeSignerAddress,
         },
       ],
@@ -248,11 +247,11 @@ export class DepositController extends AbstractController {
       },
       appDefinition,
       initialState,
-      initiatorDeposit: constants.Zero,
+      initiatorDeposit: Zero,
       initiatorDepositAssetId: assetId,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
-      responderDeposit: constants.Zero,
+      responderDeposit: Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: DEPOSIT_STATE_TIMEOUT,

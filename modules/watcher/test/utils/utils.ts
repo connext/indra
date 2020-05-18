@@ -1,11 +1,13 @@
 import { utils } from "ethers";
 
+const { hexlify, randomBytes, keccak256 } = utils;
+
 /////////////////////////////
 //// Helper functions
 
-export const randomState = (numBytes: number = 64) => utils.hexlify(utils.randomBytes(numBytes));
+export const randomState = (numBytes: number = 64) => hexlify(randomBytes(numBytes));
 
-export const stateToHash = (state: string) => utils.keccak256(state);
+export const stateToHash = (state: string) => keccak256(state);
 
 export const nullify = (key: string, value: any) => (typeof value === "undefined" ? null : value);
 

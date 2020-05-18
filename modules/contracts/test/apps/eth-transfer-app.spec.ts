@@ -13,6 +13,9 @@ import UnidirectionalTransferApp from "../../build/UnidirectionalTransferApp.jso
 
 import { expect, provider } from "../utils";
 
+const { defaultAbiCoder } = utils;
+const { Zero } = constants;
+
 type CoinTransfer = {
   to: string;
   amount: BigNumber;
@@ -64,13 +67,13 @@ const unidirectionalTransferAppActionEncoding = `
   )`;
 
 const decodeAppState = (encodedAppState: string): UnidirectionalTransferAppState =>
-  utils.defaultAbiCoder.decode([unidirectionalTransferAppStateEncoding], encodedAppState)[0];
+  defaultAbiCoder.decode([unidirectionalTransferAppStateEncoding], encodedAppState)[0];
 
 const encodeAppState = (state: any): string =>
-  utils.defaultAbiCoder.encode([unidirectionalTransferAppStateEncoding], [state]);
+  defaultAbiCoder.encode([unidirectionalTransferAppStateEncoding], [state]);
 
 const encodeAppAction = (state: any): string =>
-  utils.defaultAbiCoder.encode([unidirectionalTransferAppActionEncoding], [state]);
+  defaultAbiCoder.encode([unidirectionalTransferAppActionEncoding], [state]);
 
 describe("UnidirectionalTransferApp", () => {
   let unidirectionalTransferApp: Contract;
@@ -102,7 +105,7 @@ describe("UnidirectionalTransferApp", () => {
       stage: AppStage.POST_FUND,
       transfers: [
         { to: senderAddr, amount: senderAmt },
-        { to: receiverAddr, amount: constants.Zero },
+        { to: receiverAddr, amount: Zero },
       ],
       turnNum: 0,
     };
@@ -131,14 +134,14 @@ describe("UnidirectionalTransferApp", () => {
       stage: AppStage.POST_FUND,
       transfers: [
         { to: senderAddr, amount: senderAmt },
-        { to: receiverAddr, amount: constants.Zero },
+        { to: receiverAddr, amount: Zero },
       ],
       turnNum: 0,
     };
 
     const action: UnidirectionalTransferAppAction = {
       actionType: ActionType.END_CHANNEL,
-      amount: constants.Zero,
+      amount: Zero,
     };
 
     let ret = await applyAction(preState, action);
@@ -150,12 +153,12 @@ describe("UnidirectionalTransferApp", () => {
     ret = await computeOutcome(state);
 
     expect(ret).to.eq(
-      utils.defaultAbiCoder.encode(
+      defaultAbiCoder.encode(
         [singleAssetTwoPartyCoinTransferEncoding],
         [
           [
             [senderAddr, senderAmt],
-            [receiverAddr, constants.Zero],
+            [receiverAddr, Zero],
           ],
         ],
       ),

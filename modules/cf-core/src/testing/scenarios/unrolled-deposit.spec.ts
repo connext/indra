@@ -17,6 +17,8 @@ import {
   getMultisigBalance,
 } from "../utils";
 
+const { Interface } = utils;
+
 expect.extend({ toBeLt, toBeEq });
 
 describe(`Node method follows spec - install deposit app`, () => {
@@ -67,7 +69,7 @@ describe(`Node method follows spec - install deposit app`, () => {
       : await transferERC20Tokens(
           multisigAddress,
           getAddressFromAssetId(assetId),
-          new utils.Interface(DolphinCoin.abi),
+          new Interface(DolphinCoin.abi),
           depositAmt,
         );
     const multisigBalance = await getMultisigBalance(
@@ -136,7 +138,7 @@ describe(`Node method follows spec - install deposit app`, () => {
     await transferERC20Tokens(
       multisigAddress,
       getAddressFromAssetId(erc20AssetId),
-      new utils.Interface(DolphinCoin.abi),
+      new Interface(DolphinCoin.abi),
       depositAmtToken,
     );
     const tx = await provider.getSigner().sendTransaction({

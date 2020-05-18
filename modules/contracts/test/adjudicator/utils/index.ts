@@ -7,7 +7,10 @@ export * from "./context";
 // include all top level utils
 export * from "../../utils";
 
-export const randomState = (numBytes: number = 64) => utils.hexlify(utils.randomBytes(numBytes));
+const { hexlify, randomBytes, defaultAbiCoder, keccak256, solidityPack } = utils;
+const { Zero, HashZero } = constants;
+
+export const randomState = (numBytes: number = 64) => hexlify(randomBytes(numBytes));
 
 // App State With Action types for testing
 export type AppWithCounterState = {
@@ -31,28 +34,28 @@ export type AppWithCounterAction = {
 };
 
 export function encodeState(state: AppWithCounterState) {
-  return utils.defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
+  return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
 }
 
 export function encodeAction(action: AppWithCounterAction) {
-  return utils.defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
+  return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
 }
 
 export function encodeOutcome() {
-  return utils.defaultAbiCoder.encode([`uint`], [TwoPartyFixedOutcome.SEND_TO_ADDR_ONE]);
+  return defaultAbiCoder.encode([`uint`], [TwoPartyFixedOutcome.SEND_TO_ADDR_ONE]);
 }
 
 // TS version of MChallengeRegistryCore::computeCancelDisputeHash
 export const computeCancelDisputeHash = (identityHash: string, versionNumber: BigNumber) =>
-  utils.keccak256(
-    utils.solidityPack(
+  keccak256(
+    solidityPack(
       ["uint8", "bytes32", "uint256"],
       [CommitmentTarget.CANCEL_DISPUTE, identityHash, versionNumber],
     ),
   );
 
 // TS version of MChallengeRegistryCore::appStateToHash
-export const appStateToHash = (state: string) => utils.keccak256(state);
+export const appStateToHash = (state: string) => keccak256(state);
 
 // TS version of MChallengeRegistryCore::computeAppChallengeHash
 export const computeAppChallengeHash = (
@@ -61,8 +64,8 @@ export const computeAppChallengeHash = (
   versionNumber: BigNumberish,
   timeout: number,
 ) =>
-  utils.keccak256(
-    utils.solidityPack(
+  keccak256(
+    solidityPack(
       ["uint8", "bytes32", "bytes32", "uint256", "uint256"],
       [CommitmentTarget.SET_STATE, id, appStateHash, versionNumber, timeout],
     ),
@@ -70,13 +73,13 @@ export const computeAppChallengeHash = (
 
 export class AppWithCounterClass {
   get identityHash(): string {
-    return utils.keccak256(
-      utils.solidityPack(
+    return keccak256(
+      solidityPack(
         ["address", "uint256", "bytes32", "address", "uint256"],
         [
           this.multisigAddress,
           this.channelNonce,
-          utils.keccak256(utils.solidityPack(["address[]"], [this.participants])),
+          keccak256(solidityPack(["address[]"], [this.participants])),
           this.appDefinition,
           this.defaultTimeout,
         ],
@@ -104,8 +107,8 @@ export class AppWithCounterClass {
 }
 
 export const EMPTY_CHALLENGE = {
-  versionNumber: constants.Zero,
-  appStateHash: constants.HashZero,
+  versionNumber: Zero,
+  appStateHash: HashZero,
   status: ChallengeStatus.NO_CHALLENGE,
-  finalizesAt: constants.Zero,
+  finalizesAt: Zero,
 };

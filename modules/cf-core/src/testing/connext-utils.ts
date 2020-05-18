@@ -6,6 +6,8 @@ import { Node } from "../node";
 import { NetworkContextForTestSuite } from "./contracts";
 import { getAppInstance, getApps, installApp, takeAppAction, uninstallApp } from "./utils";
 
+const { Zero } = constants;
+
 type UnidirectionalLinkedTransferAppAction = {
   amount: BigNumber;
   assetId: Address;
@@ -45,7 +47,7 @@ export async function installLink(
     state,
     BigNumber.from(action.amount),
     action.assetId,
-    constants.Zero,
+    Zero,
     action.assetId,
   );
   return res[0]; // appIdentityHash
@@ -54,9 +56,7 @@ export async function installLink(
 function assertLinkRedemption(app: AppInstanceJson, amount: BigNumber): void {
   expect((app.latestState as UnidirectionalLinkedTransferAppState).finalized).toEqual(true);
   expect((app.latestState as UnidirectionalLinkedTransferAppState).transfers[1][1]).toBeEq(amount);
-  expect((app.latestState as UnidirectionalLinkedTransferAppState).transfers[0][1]).toBeEq(
-    constants.Zero,
-  );
+  expect((app.latestState as UnidirectionalLinkedTransferAppState).transfers[0][1]).toBeEq(Zero);
 }
 
 /**

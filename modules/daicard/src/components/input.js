@@ -6,6 +6,8 @@ import { utils } from "ethers";
 import { resolveAddress } from "../utils";
 import { QRScan } from "./qrCode";
 
+const { isHexString } = utils;
+
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -45,7 +47,7 @@ export const useAddress = (initialAddress, ethProvider) => {
       }
       if (value && value.endsWith(".eth")) {
         error = `Network "${network.name}" (chainId ${network.chainId}) doesn"t support ENS`;
-      } else if (!value || !utils.isHexString(value)) {
+      } else if (!value || !isHexString(value)) {
         error = `Invalid address: ${value}`;
       }
       if (!error && value.length !== addressLen) {

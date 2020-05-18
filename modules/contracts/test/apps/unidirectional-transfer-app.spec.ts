@@ -14,6 +14,9 @@ import UnidirectionalTransferApp from "../../build/UnidirectionalTransferApp.jso
 
 import { expect, provider } from "../utils";
 
+const { getAddress, defaultAbiCoder } = utils;
+const { One, Zero } = constants;
+
 type CoinTransfer = {
   to: string;
   amount: BigNumberish;
@@ -43,7 +46,7 @@ type UnidirectionalTransferAppAction = {
 };
 
 function mkAddress(prefix: string = "0xa"): string {
-  return utils.getAddress(prefix.padEnd(42, "0"));
+  return getAddress(prefix.padEnd(42, "0"));
 }
 
 const singleAssetTwoPartyCoinTransferEncoding = `
@@ -65,13 +68,13 @@ const unidirectionalTransferAppActionEncoding = `
   )`;
 
 const decodeAppState = (encodedAppState: string): UnidirectionalTransferAppState =>
-  utils.defaultAbiCoder.decode([unidirectionalTransferAppStateEncoding], encodedAppState)[0];
+  defaultAbiCoder.decode([unidirectionalTransferAppStateEncoding], encodedAppState)[0];
 
 const encodeAppState = (state: SolidityValueType) =>
-  utils.defaultAbiCoder.encode([unidirectionalTransferAppStateEncoding], [state]);
+  defaultAbiCoder.encode([unidirectionalTransferAppStateEncoding], [state]);
 
 const encodeAppAction = (state: SolidityValueType) =>
-  utils.defaultAbiCoder.encode([unidirectionalTransferAppActionEncoding], [state]);
+  defaultAbiCoder.encode([unidirectionalTransferAppActionEncoding], [state]);
 
 describe("UnidirectionalTransferApp", () => {
   let unidirectionalTransferApp: Contract;
@@ -95,8 +98,8 @@ describe("UnidirectionalTransferApp", () => {
     const initialState: UnidirectionalTransferAppState = {
       stage: AppStage.POST_FUND,
       transfers: [
-        { to: mkAddress("0xa"), amount: constants.One.mul(2) },
-        { to: mkAddress("0xb"), amount: constants.Zero },
+        { to: mkAddress("0xa"), amount: One.mul(2) },
+        { to: mkAddress("0xb"), amount: Zero },
       ],
       turnNum: 0,
       finalized: false,
@@ -107,7 +110,7 @@ describe("UnidirectionalTransferApp", () => {
 
       before(async () => {
         const action: UnidirectionalTransferAppAction = {
-          amount: constants.One,
+          amount: One,
           actionType: ActionType.SEND_MONEY,
         };
 
@@ -118,14 +121,14 @@ describe("UnidirectionalTransferApp", () => {
         const {
           transfers: [{ amount }],
         } = newState;
-        expect(amount).to.eq(constants.One);
+        expect(amount).to.eq(One);
       });
 
       it("increments the balance of the recipient", async () => {
         const {
           transfers: [{}, { amount }],
         } = newState;
-        expect(amount).to.eq(constants.One);
+        expect(amount).to.eq(One);
       });
 
       it("does not change the addresses of the participants", async () => {
@@ -139,7 +142,7 @@ describe("UnidirectionalTransferApp", () => {
 
     it("reverts if the amount is larger than the sender's balance", async () => {
       const action: UnidirectionalTransferAppAction = {
-        amount: constants.One.mul(3),
+        amount: One.mul(3),
         actionType: ActionType.SEND_MONEY,
       };
 
@@ -150,7 +153,7 @@ describe("UnidirectionalTransferApp", () => {
 
     it("reverts if given an invalid actionType", async () => {
       const action: UnidirectionalTransferAppAction = {
-        amount: constants.One,
+        amount: One,
         actionType: 2,
       };
 
@@ -159,7 +162,7 @@ describe("UnidirectionalTransferApp", () => {
 
     it("reverts if given a SEND_MONEY action from CHANNEL_CLOSED state", async () => {
       const action: UnidirectionalTransferAppAction = {
-        amount: constants.One.mul(3),
+        amount: One.mul(3),
         actionType: ActionType.SEND_MONEY,
       };
 
@@ -179,7 +182,7 @@ describe("UnidirectionalTransferApp", () => {
         stage: AppStage.POST_FUND,
         transfers: [
           { to: senderAddr, amount: senderAmt },
-          { to: receiverAddr, amount: constants.Zero },
+          { to: receiverAddr, amount: Zero },
         ],
         turnNum: 0,
         finalized: false,
@@ -187,7 +190,7 @@ describe("UnidirectionalTransferApp", () => {
 
       const action: UnidirectionalTransferAppAction = {
         actionType: ActionType.END_CHANNEL,
-        amount: constants.Zero,
+        amount: Zero,
       };
 
       let ret = await applyAction(preState, action);
@@ -199,12 +202,12 @@ describe("UnidirectionalTransferApp", () => {
       ret = await computeOutcome(state);
 
       expect(ret).to.eq(
-        utils.defaultAbiCoder.encode(
+        defaultAbiCoder.encode(
           [singleAssetTwoPartyCoinTransferEncoding],
           [
             [
               [senderAddr, senderAmt],
-              [receiverAddr, constants.Zero],
+              [receiverAddr, Zero],
             ],
           ],
         ),

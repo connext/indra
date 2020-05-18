@@ -21,6 +21,8 @@ import { v4 as uuid } from "uuid";
 import { createCFChannelProvider } from "./channelProvider";
 import { MessagingService } from "@connext/messaging";
 
+const { getAddress } = utils;
+
 const sendFailed = "Failed to send message";
 
 // NOTE: swap rates are given as a decimal string describing:
@@ -286,7 +288,7 @@ export class NodeApiClient implements INodeApiClient {
 
   public async getRebalanceProfile(assetId?: string): Promise<NodeResponses.GetRebalanceProfile> {
     return this.send(`${this.userIdentifier}.channel.get-profile`, {
-      assetId: utils.getAddress(assetId),
+      assetId: getAddress(assetId),
     });
   }
 
