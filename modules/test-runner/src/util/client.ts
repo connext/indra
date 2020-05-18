@@ -1,5 +1,6 @@
 import { connect } from "@connext/client";
 import { getLocalStore, getMemoryStore } from "@connext/store";
+import { ERC20 } from "@connext/contracts";
 import {
   ClientOptions,
   IChannelProvider,
@@ -10,7 +11,6 @@ import {
 import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
-import tokenAbi from "human-standard-token-abi";
 
 import { ETH_AMOUNT_LG, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
@@ -43,7 +43,7 @@ export const createClient = async (
     value: ETH_AMOUNT_LG,
   });
   if (fund) {
-    const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethWallet);
+    const token = new Contract(client.config.contractAddresses.Token, ERC20.abi, ethWallet);
     const tokenTx = await token.transfer(client.signerAddress, TOKEN_AMOUNT);
     await Promise.all([ethTx.wait(), tokenTx.wait()]);
   }

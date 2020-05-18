@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@connext/client": "6.5.0",
+    "@connext/contracts": "2.0.6",
     "@connext/utils": "6.5.0",
     "@connext/store": "6.5.0",
     "@connext/types": "6.5.0",
@@ -27,7 +28,6 @@
     "connext": "4.2.5",
     "ethereum-blockies-png": "0.1.3",
     "ethers": "5.0.0-beta.184",
-    "human-standard-token-abi": "2.0.0",
     "interval-promise": "1.4.0",
     "mdi-material-ui": "6.13.2",
     "pisa-client": "0.1.5",

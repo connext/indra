@@ -5,9 +5,9 @@ import {
   DepositAppName,
   DefaultApp,
 } from "@connext/types";
+import { ERC20 } from "@connext/contracts";
 import { delay } from "@connext/utils";
 import { Contract, BigNumber, constants } from "ethers";
-import tokenAbi from "human-standard-token-abi";
 
 import { expect } from "../";
 import { ethProvider } from "../ethprovider";
@@ -23,7 +23,7 @@ export const requestDepositRights = async (
   const multisigBalance =
     assetId === AddressZero
       ? await ethProvider.getBalance(client.multisigAddress)
-      : await new Contract(assetId, tokenAbi, ethProvider).balanceOf(client.multisigAddress);
+      : await new Contract(assetId, ERC20.abi, ethProvider).balanceOf(client.multisigAddress);
   // get coin balance app details
   const network = await ethProvider.getNetwork();
   const { appDefinitionAddress: appDefinition } = (await client.getAppRegistry({

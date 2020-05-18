@@ -1,4 +1,5 @@
 import { generateValidationMiddleware } from "@connext/apps";
+import { ERC20 } from "@connext/contracts";
 import { ChannelProvider } from "@connext/channel-provider";
 import { Node as CFCore } from "@connext/cf-core";
 import {
@@ -35,7 +36,6 @@ import {
   toBN,
 } from "@connext/utils";
 import { Contract, constants } from "ethers";
-import tokenAbi from "human-standard-token-abi";
 
 const { AddressZero } = constants;
 
@@ -242,7 +242,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       hash = tx.hash;
       await tx.wait();
     } else {
-      const erc20 = new Contract(params.assetId, tokenAbi, this.signer);
+      const erc20 = new Contract(params.assetId, ERC20.abi, this.signer);
       const tx = await erc20.transfer(recipient, toBN(params.amount));
       hash = tx.hash;
       await tx.wait();

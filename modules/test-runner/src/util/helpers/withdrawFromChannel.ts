@@ -1,7 +1,7 @@
 import { IConnextClient } from "@connext/types";
 import { ColorfulLogger } from "@connext/utils";
+import { ERC20 } from "@connext/contracts";
 import { Contract, Wallet, BigNumber, constants } from "ethers";
-import tokenAbi from "human-standard-token-abi";
 
 import { env } from "../env";
 import { expect } from "../";
@@ -32,7 +32,7 @@ export const withdrawFromChannel = async (
   if (assetId === AddressZero) {
     recipientBalance = await ethProvider.getBalance(recipient);
   } else {
-    const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethProvider);
+    const token = new Contract(client.config.contractAddresses.Token, ERC20.abi, ethProvider);
     recipientBalance = await token.balanceOf(recipient);
   }
   expect(recipientBalance).to.be.at.least(amount.toString());
