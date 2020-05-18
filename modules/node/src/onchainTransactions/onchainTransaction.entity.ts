@@ -77,10 +77,7 @@ export class OnchainTransaction {
   createdAt!: Date;
 
   // should this just be a ref to user pub id?
-  @ManyToOne(
-    (type: any) => Channel,
-    (channel: Channel) => channel.transactions,
-  )
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.transactions)
   channel!: Channel;
 }
 
@@ -99,7 +96,7 @@ export class OnchainTransaction {
     "onchain_transaction"."nonce" as "nonce",
     encode(digest("channel"."userIdentifier", 'sha256'), 'hex') as "publicIdentifier"
   FROM "onchain_transaction"
-    LEFT JOIN "channel" ON "channel"."id" = "onchain_transaction"."channelId"
+    LEFT JOIN "channel" ON "channel"."multisigAddress" = "onchain_transaction"."channelMultisigAddress"
   `,
 })
 export class AnonymizedOnchainTransaction {
