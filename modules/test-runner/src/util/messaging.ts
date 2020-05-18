@@ -441,8 +441,11 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       return true;
     }
     // no specified params/not included, check ceiling
-    this.protocolCounter[protocol][apiType]++;
     const count = this.protocolCounter[protocol][apiType];
-    return count < ceiling[apiType];
+    if (count >= ceiling[apiType]) {
+      return false;
+    }
+    this.protocolCounter[protocol][apiType]++;
+    return this.protocolCounter[protocol][apiType] < ceiling[apiType];
   }
 }
