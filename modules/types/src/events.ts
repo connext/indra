@@ -18,6 +18,7 @@ import { ProtocolParams } from "./protocol";
 import { ProtocolMessageData } from "./messaging";
 import { PublicParams } from "./public";
 import { MinimalTransaction } from "./commitments";
+import { StateChannelJSON } from "./state";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
@@ -135,6 +136,7 @@ const UNINSTALL_EVENT = "UNINSTALL_EVENT";
 
 type UninstallEventData = {
   appIdentityHash: Bytes32;
+  multisigAddress: string;
 };
 
 ////////////////////////////////////////
@@ -170,6 +172,13 @@ type WithdrawalStartedEventData = {
 };
 
 ////////////////////////////////////////
+const SYNC_EVENT = "SYNC";
+
+type SyncEventData = {
+  syncedChannel: StateChannelJSON;
+};
+
+////////////////////////////////////////
 // Exports
 export const EventNames = enumify({
   [CONDITIONAL_TRANSFER_CREATED_EVENT]: CONDITIONAL_TRANSFER_CREATED_EVENT,
@@ -183,6 +192,7 @@ export const EventNames = enumify({
   [PROPOSE_INSTALL_EVENT]: PROPOSE_INSTALL_EVENT,
   [PROTOCOL_MESSAGE_EVENT]: PROTOCOL_MESSAGE_EVENT,
   [REJECT_INSTALL_EVENT]: REJECT_INSTALL_EVENT,
+  [SYNC_EVENT]: SYNC_EVENT,
   [UNINSTALL_EVENT]: UNINSTALL_EVENT,
   [UPDATE_STATE_EVENT]: UPDATE_STATE_EVENT,
   [WITHDRAWAL_CONFIRMED_EVENT]: WITHDRAWAL_CONFIRMED_EVENT,
@@ -228,6 +238,7 @@ export namespace EventPayloads {
   export type Uninstall = UninstallEventData;
   export type UpdateState = UpdateStateEventData;
   export type ProtocolMessage = ProtocolMessageData;
+  export type Sync = SyncEventData;
 
   // TODO: chain listener events
 

@@ -5,10 +5,10 @@ import {
   CoinTransfer,
   MinimalTransaction,
   PublicParams,
-  TransactionResponse,
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
+  TransactionReceipt,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
@@ -115,15 +115,17 @@ export class WithdrawService {
       );
     }
 
-    const onchainTransaction = await this.onchainTransactionRepository.findByHash(transaction.hash);
+    const onchainTransaction = await this.onchainTransactionRepository.findByHash(
+      transaction.transactionHash,
+    );
     if (!onchainTransaction) {
       this.log.error(
-        `Unable to find onchain tx that we just submitted in db. Hash: ${transaction.hash}`,
+        `Unable to find onchain tx that we just submitted in db. Hash: ${transaction.transactionHash}`,
       );
     }
 
     await this.withdrawRepository.addOnchainTransaction(withdraw, onchainTransaction);
-    this.log.info(`Node responded with transaction: ${transaction.hash}`);
+    this.log.info(`Node responded with transaction: ${transaction.transactionHash}`);
     this.log.debug(`Transaction details: ${stringify(transaction)}`);
     return;
   }
@@ -131,7 +133,7 @@ export class WithdrawService {
   async submitWithdrawToChain(
     multisigAddress: string,
     tx: MinimalTransaction,
-  ): Promise<TransactionResponse> {
+  ): Promise<TransactionReceipt> {
     this.log.info(`submitWithdrawToChain for ${multisigAddress}`);
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
 
@@ -151,7 +153,7 @@ export class WithdrawService {
 
     this.log.info(`Sending withdrawal to chain`);
     const txRes = await this.onchainTransactionService.sendWithdrawal(channel, tx);
-    this.log.info(`Withdrawal tx sent! Hash: ${txRes.hash}`);
+    this.log.info(`Withdrawal tx sent! Hash: ${txRes.transactionHash}`);
     return txRes;
   }
 

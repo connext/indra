@@ -20,12 +20,18 @@ expect.extend({ toBeEq });
 
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
-function assertUninstallMessage(senderId: string, appIdentityHash: string, msg: UninstallMessage) {
+function assertUninstallMessage(
+  senderId: string,
+  multisigAddress: string,
+  appIdentityHash: string,
+  msg: UninstallMessage,
+) {
   assertMessage(msg, {
     from: senderId,
     type: EventNames.UNINSTALL_EVENT,
     data: {
       appIdentityHash,
+      multisigAddress,
     },
   });
 }
@@ -90,11 +96,11 @@ describe("Node A and B install apps of different outcome types, then uninstall t
               return;
             }
             try {
-              assertUninstallMessage(nodeA.publicIdentifier, appIdentityHash, msg);
+              assertUninstallMessage(nodeA.publicIdentifier, multisigAddress, appIdentityHash, msg);
 
               const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
-              expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(constants.Two);
-              expect(balancesSeenByB[nodeB.signerAddress]).toBeEq(constants.Zero);
+              expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(constants.Zero);
+              expect(balancesSeenByB[nodeB.signerAddress]).toBeEq(constants.Two);
               expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
               resolve();
             } catch (e) {
@@ -107,8 +113,8 @@ describe("Node A and B install apps of different outcome types, then uninstall t
             await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash));
 
             const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
-            expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(constants.Two);
-            expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(constants.Zero);
+            expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(constants.Zero);
+            expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(constants.Two);
 
             expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
             resolve();
@@ -143,11 +149,11 @@ describe("Node A and B install apps of different outcome types, then uninstall t
               return;
             }
             try {
-              assertUninstallMessage(nodeA.publicIdentifier, appIdentityHash, msg);
+              assertUninstallMessage(nodeA.publicIdentifier, multisigAddress, appIdentityHash, msg);
 
               const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
-              expect(balancesSeenByB[nodeB.signerAddress]).toBeEq(constants.Two);
-              expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(constants.Zero);
+              expect(balancesSeenByB[nodeB.signerAddress]).toBeEq(constants.Zero);
+              expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(constants.Two);
               expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
               resolve();
             } catch (e) {
@@ -160,8 +166,8 @@ describe("Node A and B install apps of different outcome types, then uninstall t
             await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash));
 
             const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
-            expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(constants.Two);
-            expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(constants.Zero);
+            expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(constants.Zero);
+            expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(constants.Two);
 
             expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
             resolve();
@@ -195,7 +201,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
               return;
             }
             try {
-              assertUninstallMessage(nodeA.publicIdentifier, appIdentityHash, msg);
+              assertUninstallMessage(nodeA.publicIdentifier, multisigAddress, appIdentityHash, msg);
 
               const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
               expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(depositAmount);

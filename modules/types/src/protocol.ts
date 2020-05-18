@@ -53,6 +53,12 @@ type SetupProtocolParams = {
   multisigAddress: Address;
 };
 
+type SyncProtocolParams = {
+  initiatorIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
+  multisigAddress: Address;
+};
+
 type TakeActionProtocolParams = {
   initiatorIdentifier: PublicIdentifier;
   responderIdentifier: PublicIdentifier;
@@ -94,6 +100,7 @@ export const ProtocolNames = enumify({
   install: "install",
   propose: "propose",
   setup: "setup",
+  sync: "sync",
   takeAction: "takeAction",
   uninstall: "uninstall",
 });
@@ -104,6 +111,7 @@ export namespace ProtocolParams {
   export type Install = InstallProtocolParams;
   export type Propose = ProposeProtocolParams;
   export type Setup = SetupProtocolParams;
+  export type Sync = SyncProtocolParams;
   export type TakeAction = TakeActionProtocolParams;
   export type Uninstall = UninstallProtocolParams;
 }

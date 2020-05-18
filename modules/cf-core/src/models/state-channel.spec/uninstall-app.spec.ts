@@ -1,7 +1,7 @@
 import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { utils, constants } from "ethers";
 
-import { createAppInstanceForTest } from "../../testing/utils";
+import { createAppInstanceForTest, createAppInstanceProposalForTest } from "../../testing/utils";
 import { generateRandomNetworkContext } from "../../testing/mocks";
 
 import { AppInstance } from "../app-instance";
@@ -14,7 +14,7 @@ describe("StateChannel::uninstallApp", () => {
 
   let sc1: StateChannel;
   let sc2: StateChannel;
-  let testApp: AppInstance;
+  let appInstance: AppInstance;
 
   beforeAll(() => {
     const multisigAddress = utils.getAddress(getRandomAddress());
@@ -31,16 +31,17 @@ describe("StateChannel::uninstallApp", () => {
       ids[1],
     );
 
-    testApp = createAppInstanceForTest(sc1);
+    appInstance = createAppInstanceForTest(sc1);
+    sc1 = sc1.addProposal(createAppInstanceProposalForTest(appInstance.identityHash, sc1));
 
-    sc1 = sc1.installApp(testApp, {
+    sc1 = sc1.installApp(appInstance, {
       [constants.AddressZero]: {
         [getSignerAddressFromPublicIdentifier(ids[0])]: constants.Zero,
         [getSignerAddressFromPublicIdentifier(ids[1])]: constants.Zero,
       },
     });
 
-    sc2 = sc1.uninstallApp(testApp, {
+    sc2 = sc1.uninstallApp(appInstance, {
       [constants.AddressZero]: {
         [getSignerAddressFromPublicIdentifier(ids[0])]: constants.Zero,
         [getSignerAddressFromPublicIdentifier(ids[1])]: constants.Zero,
@@ -62,7 +63,7 @@ describe("StateChannel::uninstallApp", () => {
   });
 
   it("should have deleted the app being uninstalled", () => {
-    expect(sc2.isAppInstanceInstalled(testApp.identityHash)).toBe(false);
+    expect(sc2.isAppInstanceInstalled(appInstance.identityHash)).toBe(false);
   });
 
   describe("the updated ETH Free Balance", () => {

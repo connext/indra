@@ -157,6 +157,10 @@ export class FreeBalanceClass {
     return this;
   }
 
+  public hasActiveApp(activeApp: string) {
+    return !!this.activeAppsMap[activeApp];
+  }
+
   public prettyPrint() {
     const balances = this.balancesIndexedByToken;
     const ret = {} as any;
@@ -173,7 +177,6 @@ export class FreeBalanceClass {
     for (const tokenAddress of Object.keys(increments)) {
       const t1 = convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress]);
       const t2 = merge(t1, increments[tokenAddress]);
-
       for (const val of Object.values(t2)) {
         if (val.lt(constants.Zero)) {
           throw new Error(

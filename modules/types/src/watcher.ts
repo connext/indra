@@ -8,6 +8,7 @@ import {
   NetworkContext,
   SignedCancelChallengeRequest,
   StateProgressedEventPayload,
+  ChallengeEvents,
 } from "./contracts";
 import { StateChannelJSON } from "./state";
 import { Address, Bytes32 } from "./basic";
@@ -29,64 +30,91 @@ export type WatcherInitOptions = {
   context: NetworkContext;
   store: IWatcherStoreService;
   logger?: ILoggerService | ILogger;
+  logLevel?: number;
 };
 
 ////////////////////////////////////////
 // Watcher Events
 
-export const ChallengeInitiatedEvent = "ChallengeInitiatedEvent";
-export type ChallengeInitiatedEventData = {
+type BaseChallengeTransactionCompletedEvent = {
   transaction: providers.TransactionReceipt;
-  challenge: AppChallenge;
   appInstanceId: Bytes32;
   multisigAddress: Address;
 };
-
-////////////////////////////////////////
-export const ChallengeInitiationFailedEvent = "ChallengeInitiationFailedEvent";
-export type ChallengeInitiationFailedEventData = {
+type BaseChallengeTransactionFailedEvent = {
+  appInstanceId: Bytes32;
   error: string;
-  appInstanceId: Bytes32;
   multisigAddress: Address;
-};
-
-////////////////////////////////////////
-export const ChallengeUpdatedEvent = "ChallengeUpdatedEvent";
-export type ChallengeUpdatedEventData = ChallengeInitiatedEventData;
-
-////////////////////////////////////////
-export const ChallengeUpdateFailedEvent = "ChallengeUpdateFailedEvent";
-export type ChallengeUpdateFailedEventData = ChallengeInitiationFailedEventData & {
-  challenge: AppChallenge;
+  challenge: StoredAppChallenge | undefined;
   params: any; // ProgressStateParams | SetStateParams | CancelChallengeParams
 };
 
 ////////////////////////////////////////
+export const ChallengeProgressedEvent = "ChallengeProgressedEvent";
+export type ChallengeProgressedEventData = BaseChallengeTransactionCompletedEvent;
+
+////////////////////////////////////////
+export const ChallengeProgressionFailedEvent = "ChallengeProgressionFailedEvent";
+export type ChallengeProgressionFailedEventData = BaseChallengeTransactionFailedEvent;
+
+////////////////////////////////////////
 export const ChallengeCompletedEvent = "ChallengeCompletedEvent";
-export type ChallengeCompletedEventData = ChallengeInitiatedEventData;
+export type ChallengeCompletedEventData = BaseChallengeTransactionCompletedEvent;
+
+////////////////////////////////////////
+export const ChallengeCompletionFailedEvent = "ChallengeCompletionFailedEvent";
+export type ChallengeCompletionFailedEventData = BaseChallengeTransactionFailedEvent;
+
+////////////////////////////////////////
+export const ChallengeOutcomeSetEvent = "ChallengeOutcomeSetEvent";
+export type ChallengeOutcomeSetEventData = BaseChallengeTransactionCompletedEvent;
+
+////////////////////////////////////////
+export const ChallengeOutcomeFailedEvent = "ChallengeOutcomeFailedEvent";
+export type ChallengeOutcomeFailedEventData = BaseChallengeTransactionFailedEvent;
 
 ////////////////////////////////////////
 export const ChallengeCancelledEvent = "ChallengeCancelledEvent";
-export type ChallengeCancelledEventData = ChallengeInitiatedEventData;
+export type ChallengeCancelledEventData = BaseChallengeTransactionCompletedEvent;
+
+////////////////////////////////////////
+export const ChallengeCancellationFailedEvent = "ChallengeCancellationFailedEvent";
+export type ChallengeCancellationFailedEventData = BaseChallengeTransactionFailedEvent;
+
+////////////////////////////////////////
+/// From contracts
+export const ChallengeUpdatedEvent = "ChallengeUpdatedEvent";
+export type ChallengeUpdatedEventData = ChallengeEventData[typeof ChallengeEvents.ChallengeUpdated];
+
+export const StateProgressedEvent = "StateProgressedEvent";
+export type StateProgressedEventData = ChallengeEventData[typeof ChallengeEvents.StateProgressed];
 
 ////////////////////////////////////////
 export const WatcherEvents = {
-  [ChallengeInitiatedEvent]: ChallengeInitiatedEvent,
-  [ChallengeInitiationFailedEvent]: ChallengeInitiationFailedEvent,
   [ChallengeUpdatedEvent]: ChallengeUpdatedEvent,
-  [ChallengeUpdateFailedEvent]: ChallengeUpdateFailedEvent,
+  [StateProgressedEvent]: StateProgressedEvent,
+  [ChallengeProgressedEvent]: ChallengeProgressedEvent,
+  [ChallengeProgressionFailedEvent]: ChallengeProgressionFailedEvent,
+  [ChallengeOutcomeSetEvent]: ChallengeOutcomeSetEvent,
+  [ChallengeOutcomeFailedEvent]: ChallengeOutcomeFailedEvent,
   [ChallengeCompletedEvent]: ChallengeCompletedEvent,
+  [ChallengeCompletionFailedEvent]: ChallengeCompletionFailedEvent,
   [ChallengeCancelledEvent]: ChallengeCancelledEvent,
+  [ChallengeCancellationFailedEvent]: ChallengeCancellationFailedEvent,
 } as const;
 export type WatcherEvent = keyof typeof WatcherEvents;
 
 interface WatcherEventDataMap {
-  [ChallengeInitiatedEvent]: ChallengeInitiatedEventData;
-  [ChallengeInitiationFailedEvent]: ChallengeInitiationFailedEventData;
   [ChallengeUpdatedEvent]: ChallengeUpdatedEventData;
-  [ChallengeUpdateFailedEvent]: ChallengeUpdateFailedEventData;
+  [StateProgressedEvent]: StateProgressedEventData;
+  [ChallengeProgressedEvent]: ChallengeProgressedEventData;
+  [ChallengeProgressionFailedEvent]: ChallengeProgressionFailedEventData;
+  [ChallengeOutcomeFailedEvent]: ChallengeOutcomeFailedEventData;
+  [ChallengeOutcomeSetEvent]: ChallengeOutcomeSetEventData;
   [ChallengeCompletedEvent]: ChallengeCompletedEventData;
+  [ChallengeCompletionFailedEvent]: ChallengeCompletionFailedEventData;
   [ChallengeCancelledEvent]: ChallengeCancelledEventData;
+  [ChallengeCancellationFailedEvent]: ChallengeCancellationFailedEventData;
 }
 export type WatcherEventData = {
   [P in keyof WatcherEventDataMap]: WatcherEventDataMap[P];
@@ -97,6 +125,11 @@ export type WatcherEventData = {
 
 ////////////////////////////////////////
 // Watcher interface
+
+export type ChallengeInitiatedResponse = {
+  freeBalanceChallenge: providers.TransactionReceipt;
+  appChallenge: providers.TransactionReceipt;
+};
 
 export interface IWatcher {
   //////// Listener methods
@@ -115,11 +148,11 @@ export interface IWatcher {
   //////// Public methods
   enable(): Promise<void>;
   disable(): Promise<void>;
-  initiate(appIdentityHash: string): Promise<void>;
+  initiate(appIdentityHash: string): Promise<ChallengeInitiatedResponse>;
   cancel(
     appIdentityHash: string,
     req: SignedCancelChallengeRequest,
-  ): Promise<providers.TransactionResponse>;
+  ): Promise<providers.TransactionReceipt>;
 }
 
 ////////////////////////////////////////
@@ -147,35 +180,38 @@ export interface IChainListener {
 
 ////////////////////////////////////////
 // Storage
-
-export type StoredAppChallenge = AppChallenge & {
+// The status of a challenge in the ChallengeRegistry
+export enum StoredAppChallengeStatus {
+  NO_CHALLENGE = 0,
+  IN_DISPUTE = 1,
+  IN_ONCHAIN_PROGRESSION = 2,
+  EXPLICITLY_FINALIZED = 3,
+  OUTCOME_SET = 4,
+  CONDITIONAL_SENT = 5,
+  PENDING_TRANSITION = 6,
+}
+export type StoredAppChallenge = Omit<AppChallenge, "status"> & {
   identityHash: Bytes32;
+  status: StoredAppChallengeStatus;
 };
 
 export interface IWatcherStoreService {
   // Disputes
-  getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined>;
-  createAppChallenge(appIdentityHash: string, appChallenge: StoredAppChallenge): Promise<void>;
-  updateAppChallenge(appIdentityHash: string, appChallenge: StoredAppChallenge): Promise<void>;
-  getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]>;
+  getAppChallenge(appIdentityHash: Bytes32): Promise<StoredAppChallenge | undefined>;
+  saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void>;
+  getActiveChallenges(): Promise<StoredAppChallenge[]>;
 
   // Events
   getLatestProcessedBlock(): Promise<number>;
   updateLatestProcessedBlock(blockNumber: number): Promise<void>;
 
-  getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]>;
+  getStateProgressedEvents(appIdentityHash: Bytes32): Promise<StateProgressedEventPayload[]>;
+  createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void>;
 
-  createStateProgressedEvent(
-    appIdentityHash: string,
-    event: StateProgressedEventPayload,
-  ): Promise<void>;
+  getChallengeUpdatedEvents(appIdentityHash: Bytes32): Promise<ChallengeUpdatedEventPayload[]>;
+  createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void>;
 
-  getChallengeUpdatedEvents(appIdentityHash: string): Promise<ChallengeUpdatedEventPayload[]>;
-
-  createChallengeUpdatedEvent(
-    appIdentityHash: string,
-    event: ChallengeUpdatedEventPayload,
-  ): Promise<void>;
+  addOnchainAction(appIdentityHash: Bytes32, provider: providers.JsonRpcProvider): Promise<void>;
 
   ////////////////////////////////////////
   //// Channel data

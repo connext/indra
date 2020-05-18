@@ -9,7 +9,7 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
 } from "@connext/types";
 import { logTime, recoverAddressFromChannelMessage } from "@connext/utils";
-import { BigNumber, providers, utils } from "ethers";
+import { BigNumber, utils, providers } from "ethers";
 
 import {
   AppInstance,
@@ -36,7 +36,9 @@ export async function assertIsValidSignature(
   const signer = await recoverAddressFromChannelMessage(commitmentHash, signature);
   if (utils.getAddress(expectedSigner).toLowerCase() !== signer.toLowerCase()) {
     throw new Error(
-      `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${commitmentHash}. ${loggingContext ? `${loggingContext}` : ""}`,
+      `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${commitmentHash}. ${
+        loggingContext ? `${loggingContext}` : ""
+      }`,
     );
   }
 }

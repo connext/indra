@@ -70,8 +70,8 @@ export async function asyncTransferAsset(
   await transferFinished(appIdentityHash);
   log.info(`Got transfer finished event in ${Date.now() - start}ms`);
 
-  expect((await clientB.getAppInstances()).length).to.be.eq(0);
-  expect((await clientA.getAppInstances()).length).to.be.eq(0);
+  const appInstanceCheck = await clientA.getAppInstance(appIdentityHash);
+  expect(appInstanceCheck).to.be.undefined;
 
   const {
     [clientA.signerAddress]: postTransferFreeBalanceClientA,

@@ -10,6 +10,7 @@ import {
   ChallengeStatus,
   StateProgressedEventPayload,
   ChallengeUpdatedEventPayload,
+  StoredAppChallengeStatus,
 } from "@connext/types";
 import {
   deBigNumberifyJson,
@@ -166,7 +167,7 @@ export const createStoredAppChallenge = (
     appStateHash: getRandomBytes32(),
     versionNumber: constants.One,
     finalizesAt: constants.Zero,
-    status: ChallengeStatus.IN_DISPUTE,
+    status: StoredAppChallengeStatus.IN_DISPUTE,
     ...overrides,
   };
 };

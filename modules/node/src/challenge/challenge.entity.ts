@@ -15,7 +15,7 @@ import { AppInstance } from "../appInstance/appInstance.entity";
 import { IsKeccak256Hash } from "../validate";
 import { Channel } from "../channel/channel.entity";
 import { BigNumber } from "ethers";
-import { ChallengeStatus, AppName } from "@connext/types";
+import { AppName, StoredAppChallengeStatus } from "@connext/types";
 import { StateProgressedEvent } from "../stateProgressedEvent/stateProgressedEvent.entity";
 import { ChallengeUpdatedEvent } from "../challengeUpdatedEvent/challengeUpdatedEvent.entity";
 import { toBN } from "@connext/utils";
@@ -51,8 +51,8 @@ export class Challenge<T extends AppName = any> {
   })
   finalizesAt: BigNumber;
 
-  @Column({ type: "enum", enum: ChallengeStatus })
-  status: ChallengeStatus;
+  @Column({ type: "enum", enum: StoredAppChallengeStatus })
+  status: StoredAppChallengeStatus;
 
   @OneToOne((type: any) => AppInstance)
   @JoinColumn()

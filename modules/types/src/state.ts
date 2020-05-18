@@ -1,5 +1,6 @@
 import { AppInstanceProposal, AppInstanceJson } from "./app";
 import { Address, Bytes32, PublicIdentifier } from "./basic";
+import { SetStateCommitmentJSON } from "./commitments";
 
 // Increment this every time StateChannelJSON is modified
 // This is used to signal to clients that they need to delete/restore their state
@@ -24,3 +25,7 @@ export type StateChannelJSON = {
   readonly freeBalanceAppInstance: AppInstanceJson | undefined;
   readonly monotonicNumProposedApps: number;
 };
+
+export type FullChannelJSON = StateChannelJSON & {
+  freeBalanceSetStateCommitment: SetStateCommitmentJSON
+}

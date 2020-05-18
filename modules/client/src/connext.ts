@@ -292,7 +292,7 @@ export class ConnextClient implements IConnextClient {
     params: PublicParams.CheckDepositRights,
   ): Promise<PublicResults.CheckDepositRights> => {
     const app = await this.depositController.getDepositApp(params);
-    if (!app) {
+    if (!app || app.initiatorIdentifier !== this.publicIdentifier) {
       return { appIdentityHash: undefined };
     }
     return { appIdentityHash: app.identityHash };
@@ -788,16 +788,9 @@ export class ConnextClient implements IConnextClient {
         continue;
       }
       // otherwise, handle installed app
-      const { appInstance } = await this.getAppInstance(appIdentityHash);
-      if (!appInstance) {
-        continue;
-      }
-
-      // if we are not the initiator, continue
-      const latestState = appInstance.latestState as DepositAppState;
-      if (latestState.transfers[0].to !== this.signerAddress) {
-        continue;
-      }
+      const {
+        appInstance: { latestState },
+      } = await this.getAppInstance(appIdentityHash);
 
       // there is still an active deposit, setup a listener to
       // rescind deposit rights when deposit is sent to multisig
@@ -806,7 +799,7 @@ export class ConnextClient implements IConnextClient {
           ? await this.ethProvider.getBalance(this.multisigAddress)
           : await new Contract(assetId, tokenAbi, this.ethProvider).balanceOf(this.multisigAddress);
 
-      if (currentMultisigBalance.gt(latestState.startingMultisigBalance)) {
+      if (currentMultisigBalance.gt((latestState as DepositAppState).startingMultisigBalance)) {
         // deposit has occurred, rescind
         try {
           await this.rescindDepositRights({ assetId, appIdentityHash });
@@ -822,8 +815,9 @@ export class ConnextClient implements IConnextClient {
       // rescind deposit rights when deposit is sent to multisig
       if (assetId === constants.AddressZero) {
         this.ethProvider.on(this.multisigAddress, async (balance: BigNumber) => {
-          if (balance.gt(latestState.startingMultisigBalance)) {
+          if (balance.gt((latestState as DepositAppState).startingMultisigBalance)) {
             await this.rescindDepositRights({ assetId, appIdentityHash });
+            this.ethProvider.removeAllListeners(this.multisigAddress);
           }
         });
         continue;
@@ -836,7 +830,7 @@ export class ConnextClient implements IConnextClient {
             const bal = await new Contract(assetId, tokenAbi, this.ethProvider).balanceOf(
               this.multisigAddress,
             );
-            if (bal.gt(latestState.startingMultisigBalance)) {
+            if (bal.gt((latestState as DepositAppState).startingMultisigBalance)) {
               await this.rescindDepositRights({ assetId, appIdentityHash });
             }
           }

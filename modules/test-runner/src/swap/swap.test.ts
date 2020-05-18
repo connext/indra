@@ -52,20 +52,7 @@ describe("Swaps", () => {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: constants.AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(client, input.amount, input.assetId);
-    const expectedFreeBalanceNodeToken = COLLATERAL_AMOUNT_TOKEN.sub(
-      calculateExchange(
-        input.amount,
-        await client.getLatestSwapRate(input.assetId, output.assetId),
-      ),
-    );
-    await swapAsset(
-      client,
-      input,
-      output,
-      nodeSignerAddress,
-      { freeBalanceNodeToken: constants.Zero },
-      { freeBalanceNodeToken: expectedFreeBalanceNodeToken },
-    );
+    await swapAsset(client, input, output, nodeSignerAddress);
   });
 
   it("client tries to swap with invalid from token address", async () => {

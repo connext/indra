@@ -1,5 +1,5 @@
 import { SetStateCommitmentJSON } from "@connext/types";
-import { deBigNumberifyJson, toBN } from "@connext/utils";
+import { toBNJson } from "@connext/utils";
 import { EntityRepository, Repository } from "typeorm";
 
 import { SetStateCommitment } from "./setStateCommitment.entity";
@@ -7,15 +7,15 @@ import { AppType } from "../appInstance/appInstance.entity";
 import { BigNumber } from "ethers";
 
 export const setStateToJson = (entity: SetStateCommitment): SetStateCommitmentJSON => {
-  return deBigNumberifyJson({
+  return {
     appIdentity: entity.appIdentity as any,
     appIdentityHash: entity.app.identityHash,
     appStateHash: entity.appStateHash,
     challengeRegistryAddress: entity.challengeRegistryAddress,
     signatures: entity.signatures as any,
-    stateTimeout: toBN(entity.stateTimeout),
-    versionNumber: toBN(entity.versionNumber),
-  });
+    stateTimeout: toBNJson(entity.stateTimeout),
+    versionNumber: toBNJson(entity.versionNumber),
+  };
 };
 
 @EntityRepository(SetStateCommitment)

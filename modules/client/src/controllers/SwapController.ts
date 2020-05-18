@@ -95,7 +95,30 @@ export class SwapController extends AbstractController {
       preSwapToBal[this.connext.signerAddress],
     );
     if (!diffFrom.eq(amount) || !diffTo.eq(swappedAmount)) {
-      throw new Error("Invalid final swap amounts - this shouldn't happen!!");
+      const expectedTo = {
+        [this.connext.signerAddress]: preSwapToBal[this.connext.signerAddress].add(swappedAmount),
+        [this.connext.nodeSignerAddress]: preSwapToBal[this.connext.nodeSignerAddress].sub(
+          swappedAmount,
+        ),
+      };
+      const expectedFrom = {
+        [this.connext.signerAddress]: preSwapFromBal[this.connext.signerAddress].sub(amount),
+        [this.connext.nodeSignerAddress]: preSwapFromBal[this.connext.nodeSignerAddress].add(
+          amount,
+        ),
+      };
+      throw new Error(
+        `Invalid final swap amounts - this shouldn't happen!!\n` +
+          `Post swap free balance:\n` +
+          `   - ${toTokenAddress}: ${stringify(postSwapToBal)}\n` +
+          `   - ${fromTokenAddress}: ${stringify(postSwapFromBal)}\n` +
+          `Expected free balance: \n` +
+          `   - ${toTokenAddress}: ${stringify(expectedTo)}\n` +
+          `   - ${fromTokenAddress}: ${stringify(expectedFrom)}\n` +
+          `Amounts: \n` +
+          `   - ${toTokenAddress}: ${swappedAmount.toString()}\n` +
+          `   - ${fromTokenAddress}: ${amount.toString()}\n`,
+      );
     }
     const res = await this.connext.getChannel();
 
@@ -142,7 +165,7 @@ export class SwapController extends AbstractController {
         [
           {
             amount: swappedAmount,
-            to: getSignerAddressFromPublicIdentifier(this.connext.nodeIdentifier),
+            to: this.connext.nodeSignerAddress,
           },
         ],
       ],

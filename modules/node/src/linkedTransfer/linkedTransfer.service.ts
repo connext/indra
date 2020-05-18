@@ -5,13 +5,14 @@ import {
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, toBN, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelService, RebalanceType } from "../channel/channel.service";
+import { DepositService } from "../deposit/deposit.service";
+import { ChannelService } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
@@ -51,6 +52,7 @@ export class LinkedTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
+    private readonly depositService: DepositService,
     private readonly log: LoggerService,
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
@@ -65,7 +67,7 @@ export class LinkedTransferService {
     this.log.info(
       `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId} started`,
     );
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+    let receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userIdentifier,
     );
 
@@ -116,22 +118,44 @@ export class LinkedTransferService {
       receiverChannel.multisigAddress,
       assetId,
     );
+
     if (freeBal[freeBalanceAddr].lt(amount)) {
-      // request collateral and wait for deposit to come through
-      const depositReceipt = await this.channelService.rebalance(
+      // to avoid unnecessary small collateralizations, choose the max
+      // of the payment and the upper bound for deposit efficiency
+      const deposit = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
         userIdentifier,
         assetId,
-        RebalanceType.COLLATERALIZE,
         amount,
+        freeBal[freeBalanceAddr],
       );
+      this.log.warn(
+        `Depositing ${deposit.toString()} of ${assetId} into channel with user ${userIdentifier}`,
+      );
+
+      // request collateral and wait for deposit to come through
+      const depositReceipt = await this.depositService.deposit(receiverChannel, deposit, assetId);
+      this.log.warn(`Deposit receipt: ${stringify(depositReceipt)}`);
       if (!depositReceipt) {
         throw new Error(
-          `Could not obtain sufficient collateral for receiver channel when resolving linked payment ${paymentId}`,
+          `Could not deposit sufficient collateral to resolve linked transfer for reciever: ${userIdentifier}`,
         );
       }
-    } else {
-      // request collateral normally without awaiting
-      this.channelService.rebalance(userIdentifier, assetId, RebalanceType.COLLATERALIZE, amount);
+      // sanity check the post-deposit free balance
+      receiverChannel = await this.channelRepository.findByMultisigAddressOrThrow(
+        receiverChannel.multisigAddress,
+      );
+      const postDeposit = await this.cfCoreService.getFreeBalance(
+        userIdentifier,
+        receiverChannel.multisigAddress,
+        assetId,
+      );
+      if (postDeposit[freeBalanceAddr].lt(amount)) {
+        throw new Error(
+          `Post deposit collateral is insufficient to forward a payment for ${amount.toString()} of ${assetId}. Post-deposit collateral: ${postDeposit[
+            freeBalanceAddr
+          ].toString()}, pre-deposit collateral: ${freeBal[freeBalanceAddr].toString()}`,
+        );
+      }
     }
 
     const initialState: SimpleLinkedTransferAppState = {
@@ -165,7 +189,7 @@ export class LinkedTransferService {
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appIdentityHash) {
-      throw new Error(`Could not install app on receiver side.`);
+      throw new Error(`Could not install app on receiver side for payment ${paymentId}`);
     }
 
     const returnRes: NodeResponses.ResolveLinkedTransfer = {
@@ -176,11 +200,16 @@ export class LinkedTransferService {
       amount,
       assetId,
     };
+
+    // kick off a rebalance before finishing
+    this.channelService.rebalance(receiverChannel, assetId);
+
     this.log.info(
       `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId}} complete ${JSON.stringify(
         returnRes,
       )}`,
     );
+
     return returnRes;
   }
 

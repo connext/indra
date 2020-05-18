@@ -1,6 +1,12 @@
 import { connect } from "@connext/client";
 import { getLocalStore, getMemoryStore } from "@connext/store";
-import { ClientOptions, IChannelProvider, IChannelSigner, IConnextClient } from "@connext/types";
+import {
+  ClientOptions,
+  IChannelProvider,
+  IChannelSigner,
+  IConnextClient,
+  ProtocolParam,
+} from "@connext/types";
 import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
@@ -20,7 +26,7 @@ export const createClient = async (
   const log = new ColorfulLogger("CreateClient", env.logLevel);
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
-    loggerService: new ColorfulLogger("Client", 3, true, opts.id),
+    loggerService: new ColorfulLogger("Client", env.logLevel, true, opts.id),
     signer: wallet.privateKey,
     nodeUrl: env.nodeUrl,
     store,
@@ -90,12 +96,13 @@ export type ClientTestMessagingInputOpts = {
   protocol: string; // use "any" to limit any messages by count
   delay: Partial<MessageCounter>; // ms delay or sent callbacks
   signer: IChannelSigner;
+  params: Partial<ProtocolParam>;
 };
 
 export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
-  const { protocol, ceiling, delay, signer: signerOpts } = opts;
+  const { protocol, ceiling, delay, signer: signerOpts, params } = opts;
   const signer = signerOpts || getRandomChannelSigner(env.ethProviderUrl);
   const messageOptions: any = {};
   // no defaults specified, exit early
@@ -115,6 +122,7 @@ export const createClientWithMessagingLimits = async (
       [protocol]: {
         ceiling,
         delay,
+        params,
       },
     };
   }

@@ -37,13 +37,14 @@ import { BigNumber } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelService, RebalanceType } from "../channel/channel.service";
+import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { MessagingProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { LoggerService } from "../logger/logger.service";
 import { Channel } from "../channel/channel.entity";
 import { WithdrawService } from "../withdraw/withdraw.service";
+import { DepositService } from "../deposit/deposit.service";
 import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.service";
 import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
 import { CFCoreStore } from "../cfCore/cfCore.store";
@@ -65,6 +66,7 @@ export class AppRegistryService implements OnModuleInit {
     private readonly swapRateService: SwapRateService,
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly withdrawService: WithdrawService,
+    private readonly depositService: DepositService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
@@ -97,7 +99,12 @@ export class AppRegistryService implements OnModuleInit {
         throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
       }
 
-      await this.runPreInstallValidation(registryAppInfo, proposeInstallParams, from);
+      await this.runPreInstallValidation(
+        registryAppInfo,
+        proposeInstallParams,
+        from,
+        installerChannel,
+      );
 
       // check if we need to collateralize, only for swap app
       if (registryAppInfo.name === SimpleTwoPartySwapAppName) {
@@ -108,11 +115,16 @@ export class AppRegistryService implements OnModuleInit {
         );
         const responderDepositBigNumber = BigNumber.from(proposeInstallParams.responderDeposit);
         if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
-          const depositReceipt = await this.channelService.rebalance(
+          const amount = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
             from,
-            getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
-            RebalanceType.COLLATERALIZE,
+            proposeInstallParams.responderDepositAssetId,
             responderDepositBigNumber,
+            freeBal[this.cfCoreService.cfCore.signerAddress],
+          );
+          const depositReceipt = await this.depositService.deposit(
+            installerChannel,
+            amount,
+            proposeInstallParams.responderDepositAssetId,
           );
           if (!depositReceipt) {
             throw new Error(
@@ -121,17 +133,18 @@ export class AppRegistryService implements OnModuleInit {
           }
         }
       }
-
-      if (registryAppInfo.name === HashLockTransferAppName) {
-        // install is done through middleware
-        this.log.info(`Hashlock transfer sender app is installed through middleware`);
-        return;
+      if (registryAppInfo.name !== HashLockTransferAppName) {
+        ({ appInstance } = await this.cfCoreService.installApp(appIdentityHash));
       }
-      // collateralized in post-install tasks
-      ({ appInstance } = await this.cfCoreService.installApp(appIdentityHash));
       // any tasks that need to happen after install, i.e. DB writes
-      await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams, from);
-      const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstance.identityHash}.install`;
+      await this.runPostInstallTasks(
+        registryAppInfo,
+        appIdentityHash,
+        proposeInstallParams,
+        from,
+        installerChannel,
+      );
+      const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appIdentityHash}.install`;
       await this.messagingService.publish(installSubject, appInstance);
     } catch (e) {
       // reject if error
@@ -145,6 +158,7 @@ export class AppRegistryService implements OnModuleInit {
     registryAppInfo: AppRegistry,
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
+    channel: Channel,
   ): Promise<void> {
     this.log.info(`runPreInstallValidation for app name ${registryAppInfo.name} started`);
     const supportedAddresses = this.configService.getSupportedTokenAddresses();
@@ -178,6 +192,16 @@ export class AppRegistryService implements OnModuleInit {
         break;
       }
       case DepositAppName: {
+        const appInstances = await this.cfCoreService.getAppInstances(channel.multisigAddress);
+        const depositApp = appInstances.find(
+          (appInstance) =>
+            appInstance.appInterface.addr === registryAppInfo.appDefinitionAddress &&
+            (appInstance.latestState as DepositAppState).assetId ===
+              proposeInstallParams.initiatorDepositAssetId,
+        );
+        if (depositApp) {
+          throw new Error(`Deposit app already installed for this assetId, rejecting.`);
+        }
         await validateDepositApp(
           proposeInstallParams,
           from,
@@ -230,6 +254,7 @@ export class AppRegistryService implements OnModuleInit {
     appIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
+    channel: Channel,
   ): Promise<void> {
     this.log.info(
       `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} started`,
@@ -276,14 +301,8 @@ export class AppRegistryService implements OnModuleInit {
       default:
         this.log.debug(`No post-install actions configured.`);
     }
-    // rebalance at the end without blocking
-    this.channelService.rebalance(
-      from,
-      getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
-      RebalanceType.RECLAIM,
-    );
     this.log.info(
-      `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} completed`,
+      `runPostInstallTasks for app ${registryAppInfo.name} ${appIdentityHash} completed`,
     );
   }
 
@@ -302,6 +321,9 @@ export class AppRegistryService implements OnModuleInit {
         case ProtocolNames.setup:
         case ProtocolNames.propose:
         case ProtocolNames.takeAction: {
+          return;
+        }
+        case ProtocolNames.sync: {
           return;
         }
         case ProtocolNames.install: {

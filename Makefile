@@ -250,14 +250,14 @@ messaging: types utils $(shell find modules/messaging $(find_options))
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-store: types utils $(shell find modules/store $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/store && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
 contracts: types utils $(shell find modules/contracts $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+store: types utils contracts $(shell find modules/store $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/store && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 cf-core: types utils store contracts $(shell find modules/cf-core $(find_options))
@@ -290,7 +290,7 @@ test-runner: types utils channel-provider messaging store contracts cf-core apps
 	$(docker_run) "cd modules/test-runner && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-watcher: types utils contracts $(shell find modules/watcher $(find_options))
+watcher: types utils contracts store $(shell find modules/watcher $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/watcher && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@

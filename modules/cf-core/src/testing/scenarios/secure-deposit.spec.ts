@@ -1,6 +1,6 @@
 import { DepositConfirmationMessage, MethodParams, DepositStartedMessage } from "@connext/types";
 import { getAddressFromAssetId, deBigNumberifyJson } from "@connext/utils";
-import { Contract, constants, providers } from "ethers";
+import { BigNumber, Contract, constants, providers } from "ethers";
 
 import { Node } from "../../node";
 
@@ -16,7 +16,6 @@ import {
   getTokenIndexedFreeBalanceStates,
   transferERC20Tokens,
 } from "../utils";
-import { BigNumber } from "ethers";
 
 expect.extend({ toBeEq });
 
@@ -130,7 +129,7 @@ describe("Node method follows spec - deposit", () => {
       constants.One,
       constants.One,
     ]);
-    expect(await erc20Contract.balanceOf(multisigAddress)).toEqual(
+    expect(await erc20Contract.functions.balanceOf(multisigAddress)).toEqual(
       preDepositERC20Balance.add(constants.Two),
     );
   });
@@ -222,11 +221,13 @@ async function confirmEthAndERC20FreeBalances(
       getAddressFromAssetId(tokenAddress),
     );
     // validate eth
-    expect(deBigNumberifyJson(tokenIndexedFreeBalances[constants.AddressZero])).toMatchObject(eth);
+    expect(deBigNumberifyJson(tokenIndexedFreeBalances[constants.AddressZero] || {})).toMatchObject(
+      eth,
+    );
     expect(deBigNumberifyJson(ethFreeBalance)).toMatchObject(eth);
 
     // validate tokens
-    expect(deBigNumberifyJson(tokenIndexedFreeBalances[tokenAddress])).toMatchObject(
+    expect(deBigNumberifyJson(tokenIndexedFreeBalances[tokenAddress] || {})).toMatchObject(
       tokenAddress === constants.AddressZero ? eth : token,
     );
     expect(deBigNumberifyJson(tokenFreeBalance)).toMatchObject(

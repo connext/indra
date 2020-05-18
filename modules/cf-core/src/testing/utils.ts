@@ -28,7 +28,6 @@ import {
   bigNumberifyJson,
   deBigNumberifyJson,
   getAddressFromAssetId,
-  getRandomChannelSigner,
   getSignerAddressFromPublicIdentifier,
   toBN,
 } from "@connext/utils";
@@ -70,11 +69,17 @@ export const newWallet = (wallet: Wallet) =>
     new providers.JsonRpcProvider((wallet.provider as providers.JsonRpcProvider).connection.url),
   );
 
-export function createAppInstanceProposalForTest(appIdentityHash: string): AppInstanceProposal {
+export function createAppInstanceProposalForTest(
+  appIdentityHash: string,
+  stateChannel?: StateChannel,
+): AppInstanceProposal {
+  const [initiator, responder] = StateChannel
+    ? [stateChannel!.userIdentifiers[0], stateChannel!.userIdentifiers[1]]
+    : [getRandomPublicIdentifier(), getRandomPublicIdentifier()];
   return {
     identityHash: appIdentityHash,
-    initiatorIdentifier: getRandomChannelSigner().address,
-    responderIdentifier: getRandomChannelSigner().address,
+    initiatorIdentifier: initiator,
+    responderIdentifier: responder,
     appDefinition: constants.AddressZero,
     abiEncodings: {
       stateEncoding: "tuple(address foo, uint256 bar)",
@@ -88,7 +93,7 @@ export function createAppInstanceProposalForTest(appIdentityHash: string): AppIn
       foo: constants.AddressZero,
       bar: 0,
     } as SolidityValueType,
-    appSeqNo: 0,
+    appSeqNo: stateChannel ? stateChannel.numProposedApps : Math.ceil(1000 * Math.random()),
     outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
     responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
     initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,

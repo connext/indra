@@ -16,9 +16,11 @@ import {
   TOKEN_AMOUNT,
   ZERO_ZERO_ONE_ETH,
   env,
+  getParamsFromData,
 } from "../util";
 import { BigNumber, constants } from "ethers";
 import { getRandomChannelSigner } from "@connext/utils";
+import { addressBook } from "@connext/contracts";
 
 const makeDepositCall = async (opts: {
   client: IConnextClient;
@@ -53,6 +55,10 @@ const makeDepositCall = async (opts: {
         return;
       }
       if (getProtocolFromData(msg) === protocol) {
+        const { appDefinition } = getParamsFromData(msg) || {};
+        if (appDefinition !== addressBook[4447].DepositApp.address) {
+          return;
+        }
         clock.tick(89_000);
         return;
       }
@@ -83,7 +89,8 @@ describe("Deposit offline tests", () => {
 
   afterEach(async () => {
     clock && clock.reset && clock.reset();
-    await client.messaging.disconnect();
+    client && (await client.store.clear());
+    client && (await client.messaging.disconnect());
   });
 
   /**
@@ -162,7 +169,7 @@ describe("Deposit offline tests", () => {
     await makeDepositCall({
       client,
       clock,
-      failsWith: "App install took longer than 90 seconds",
+      failsWith: `Install failed`,
       subjectToFastforward: RECEIVED,
       protocol: "install",
     });

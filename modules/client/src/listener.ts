@@ -47,6 +47,7 @@ import {
   UnlockedLinkedTransferMeta,
   UnlockedHashLockTransferMeta,
   UnlockedSignedTransferMeta,
+  SyncMessage,
 } from "@connext/types";
 import { bigNumberifyJson, stringify } from "@connext/utils";
 
@@ -68,6 +69,7 @@ const {
   PROPOSE_INSTALL_EVENT,
   PROTOCOL_MESSAGE_EVENT,
   REJECT_INSTALL_EVENT,
+  SYNC,
   UNINSTALL_EVENT,
   UPDATE_STATE_EVENT,
 } = EventNames;
@@ -134,6 +136,9 @@ export class ConnextListener extends ConnextEventEmitter {
     },
     REJECT_INSTALL_EVENT: (msg: RejectProposalMessage): void => {
       this.emitAndLog(REJECT_INSTALL_EVENT, msg.data);
+    },
+    SYNC: (msg: SyncMessage): void => {
+      this.emitAndLog(SYNC, msg.data);
     },
     UNINSTALL_EVENT: (msg: UninstallMessage): void => {
       this.emitAndLog(UNINSTALL_EVENT, msg.data);
@@ -317,6 +322,14 @@ export class ConnextListener extends ConnextEventEmitter {
           break;
         }
         case DepositAppName: {
+          const { appIdentityHash } = await this.connext.checkDepositRights({
+            assetId: params.initiatorDepositAssetId,
+          });
+          if (appIdentityHash) {
+            throw new Error(
+              `Deposit app already installed in client for ${params.initiatorDepositAssetId}, rejecting.`,
+            );
+          }
           await validateDepositApp(
             params,
             from,
@@ -345,8 +358,8 @@ export class ConnextListener extends ConnextEventEmitter {
         return;
       } else {
         await this.connext.rejectInstallApp(appIdentityHash);
+        return;
       }
-      throw e;
     }
     // install and run post-install tasks
     await this.runPostInstallTasks(appIdentityHash, registryAppInfo, params);

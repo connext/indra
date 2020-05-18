@@ -14,13 +14,14 @@ import { constants } from "ethers";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
+import { DepositService } from "../deposit/deposit.service";
 import { LoggerService } from "../logger/logger.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 import { SignedTransferRepository } from "./signedTransfer.repository";
 
 const appStatusesToSignedTransferStatus = (
-  senderApp: AppInstance<"SimpleSignedTransferApp">,
-  receiverApp?: AppInstance<"SimpleSignedTransferApp">,
+  senderApp: AppInstance<typeof SimpleSignedTransferAppName>,
+  receiverApp?: AppInstance<typeof SimpleSignedTransferAppName>,
 ): SignedTransferStatus | undefined => {
   if (!senderApp) {
     return undefined;
@@ -40,7 +41,7 @@ const appStatusesToSignedTransferStatus = (
 
 export const normalizeSignedTransferAppState = (
   app: AppInstance,
-): AppInstance<"SimpleSignedTransferApp"> | undefined => {
+): AppInstance<typeof SimpleSignedTransferAppName> | undefined => {
   return (
     app && {
       ...app,
@@ -54,6 +55,7 @@ export class SignedTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
+    private readonly depositService: DepositService,
     private readonly log: LoggerService,
     private readonly channelRepository: ChannelRepository,
     private readonly signedTransferRepository: SignedTransferRepository,
@@ -110,22 +112,26 @@ export class SignedTransferService {
       receiverChannel.multisigAddress,
       assetId,
     );
+
     if (freeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
-      const depositReceipt = await this.channelService.rebalance(
+      const deposit = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
         userIdentifier,
         assetId,
-        RebalanceType.COLLATERALIZE,
         amount,
+        freeBal[freeBalanceAddr],
+      );
+      // request collateral and wait for deposit to come through
+      const depositReceipt = await this.depositService.deposit(
+        receiverChannel,
+        deposit,
+        assetId,
       );
       if (!depositReceipt) {
         throw new Error(
-          `Could not deposit sufficient collateral to resolve signed transfer app for receiver: ${userIdentifier}`,
+          `Could not deposit sufficient collateral to resolve linked transfer for reciever: ${userIdentifier}`,
         );
       }
-    } else {
-      // request collateral normally without awaiting
-      this.channelService.rebalance(userIdentifier, assetId, RebalanceType.COLLATERALIZE, amount);
     }
 
     const initialState: SimpleSignedTransferAppState = {
@@ -168,6 +174,10 @@ export class SignedTransferService {
       amount,
       assetId,
     };
+
+    // kick off a rebalance before finishing
+    this.channelService.rebalance(receiverChannel, assetId);
+
     this.log.info(
       `installSignedTransferReceiverApp for ${userIdentifier} paymentId ${paymentId} complete: ${JSON.stringify(
         result,

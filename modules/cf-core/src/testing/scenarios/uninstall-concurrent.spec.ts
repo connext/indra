@@ -82,6 +82,7 @@ describe("Node method follows spec - uninstall", () => {
       // NOTE: nodeA does not ever emit this event
       nodeB.on("UNINSTALL_EVENT", (msg: UninstallMessage) => {
         expect(appIdentityHashes.includes(msg.data.appIdentityHash)).toBe(true);
+        expect(msg.data.multisigAddress).toBe(multisigAddress)
         uninstalledApps += 1;
         if (uninstalledApps === 2) done();
       });
