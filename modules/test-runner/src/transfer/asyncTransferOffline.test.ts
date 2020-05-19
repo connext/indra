@@ -1,5 +1,13 @@
-import { EventNames, IConnextClient, LinkedTransferStatus } from "@connext/types";
-import { delay, stringify } from "@connext/utils";
+import {
+  EventNames,
+  IConnextClient,
+  LinkedTransferStatus,
+  IChannelSigner,
+  IClientStore,
+  ProtocolNames,
+  CF_METHOD_TIMEOUT,
+} from "@connext/types";
+import { delay } from "@connext/utils";
 import * as lolex from "lolex";
 
 import {
@@ -11,7 +19,6 @@ import {
   fundChannel,
   getProtocolFromData,
   MessagingEventData,
-  PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   RECEIVED,
   REQUEST,
   requestCollateral,
@@ -20,11 +27,13 @@ import {
   TOKEN_AMOUNT_SM,
   getNatsClient,
   env,
+  SEND,
 } from "../util";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 import { before } from "mocha";
 import { getRandomChannelSigner } from "@connext/utils";
+import { getMemoryStore } from "@connext/store";
 
 const fundForTransfers = async (
   receiverClient: IConnextClient,
@@ -49,17 +58,36 @@ const verifyTransfer = async (
   expect(transfer.encryptedPreImage).to.be.ok;
 };
 
+const recreateReceiverAndRetryTransfer = async (
+  receiverSigner: IChannelSigner,
+  senderClient: IConnextClient,
+  receiverClient: IConnextClient,
+  receiverStore: IClientStore,
+  transferParams: any,
+) => {
+  const { amount, assetId, nats } = transferParams;
+  await receiverClient.messaging.disconnect();
+  const newClient = await createClient({ signer: receiverSigner, store: receiverStore });
+
+  // Check that client can recover and continue
+  await asyncTransferAsset(senderClient, newClient, amount, assetId, nats);
+};
+
 describe("Async transfer offline tests", () => {
   let clock: any;
   let senderClient: IConnextClient;
   let receiverClient: IConnextClient;
   let nats: Client;
+  let signer: IChannelSigner;
+  let store: IClientStore;
 
   before(async () => {
     nats = getNatsClient();
   });
 
   beforeEach(async () => {
+    signer = getRandomChannelSigner(env.ethProviderUrl);
+    store = getMemoryStore();
     clock = lolex.install({
       shouldAdvanceTime: true,
       advanceTimeDelta: 1,
@@ -84,8 +112,10 @@ describe("Async transfer offline tests", () => {
     senderClient = await createClientWithMessagingLimits();
     // 1 successful proposal (balance refund)
     receiverClient = await createClientWithMessagingLimits({
-      ceiling: { received: PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
+      ceiling: { [RECEIVED]: 0 },
       protocol: "propose",
+      signer,
+      store,
     });
     const tokenAddress = senderClient.config.contractAddresses.Token;
     await fundForTransfers(receiverClient, senderClient);
@@ -96,7 +126,7 @@ describe("Async transfer offline tests", () => {
         if (subject!.includes(`resolve`)) {
           // wait for message to be sent, event is fired first
           await delay(500);
-          clock.tick(89_000);
+          clock.tick(CF_METHOD_TIMEOUT + 1_000);
         }
       },
     );
@@ -113,22 +143,30 @@ describe("Async transfer offline tests", () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits();
     receiverClient = await createClientWithMessagingLimits({
-      ceiling: { received: 0 },
-      protocol: "takeAction",
+      ceiling: { [RECEIVED]: 1 },
+      protocol: ProtocolNames.takeAction,
+      signer,
+      store,
     });
     const tokenAddress = senderClient.config.contractAddresses.Token;
     await fundForTransfers(receiverClient, senderClient);
     (receiverClient.messaging as TestMessagingService).on(
       RECEIVED,
       async (msg: MessagingEventData) => {
-        if (getProtocolFromData(msg) === "takeAction") {
-          clock.tick(89_000);
+        if (getProtocolFromData(msg) === ProtocolNames.takeAction) {
+          clock.tick(CF_METHOD_TIMEOUT + 1_000);
         }
       },
     );
     await expect(
       asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress, nats),
     ).to.be.rejectedWith(APP_PROTOCOL_TOO_LONG("takeAction"));
+
+    await recreateReceiverAndRetryTransfer(signer, senderClient, receiverClient, store, {
+      amount: TOKEN_AMOUNT_SM,
+      assetId: tokenAddress,
+      nats,
+    });
   });
 
   /**
@@ -203,7 +241,7 @@ describe("Async transfer offline tests", () => {
     const receiverSigner = getRandomChannelSigner(env.ethProviderUrl);
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits({
-      ceiling: { sent: 1 }, // for deposit app
+      ceiling: { [SEND]: 1 }, // for deposit app
       protocol: "uninstall",
       signer: senderSigner,
     });

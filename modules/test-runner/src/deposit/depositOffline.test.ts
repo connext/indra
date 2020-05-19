@@ -1,4 +1,5 @@
-import { CF_METHOD_TIMEOUT, IConnextClient } from "@connext/types";
+import { IConnextClient, IChannelSigner, IClientStore, ProtocolNames } from "@connext/types";
+import { getMemoryStore } from "@connext/store";
 import * as lolex from "lolex";
 
 import {
@@ -17,6 +18,7 @@ import {
   ZERO_ZERO_ONE_ETH,
   env,
   getParamsFromData,
+  ETH_AMOUNT_SM,
 } from "../util";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -70,6 +72,18 @@ const makeDepositCall = async (opts: {
   return;
 };
 
+const recreateClientAndRetryDepositCall = async (
+  signer: IChannelSigner,
+  client: IConnextClient,
+  store: IClientStore,
+) => {
+  await client.messaging.disconnect();
+  const newClient = await createClient({ signer, store });
+
+  // Check that client can recover and continue
+  await fundChannel(newClient, ETH_AMOUNT_SM);
+};
+
 /**
  * Contains any deposit tests that involve the client going offline at some
  * point in the protocol.
@@ -78,8 +92,12 @@ const makeDepositCall = async (opts: {
 describe("Deposit offline tests", () => {
   let clock: any;
   let client: IConnextClient;
+  let signer: IChannelSigner;
+  let store: IClientStore;
 
   beforeEach(() => {
+    signer = getRandomChannelSigner(env.ethProviderUrl);
+    store = getMemoryStore();
     clock = lolex.install({
       shouldAdvanceTime: true,
       advanceTimeDelta: 1,
@@ -108,9 +126,13 @@ describe("Deposit offline tests", () => {
     // initiator in the `propose` protocol)
     // in the propose protocol, the initiator sends one message, and receives
     // one message, set the cap at 1 for `propose` in messaging of client
+
     client = await createClientWithMessagingLimits({
-      ceiling: { received: 0 },
-      protocol: "propose",
+      ceiling: { [RECEIVED]: 0 },
+      protocol: ProtocolNames.propose,
+      params: { appDefinition: addressBook[4447].DepositApp.address },
+      signer,
+      store,
     });
 
     await makeDepositCall({
@@ -118,17 +140,23 @@ describe("Deposit offline tests", () => {
       clock,
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
       subjectToFastforward: RECEIVED,
-      protocol: "propose",
+      protocol: ProtocolNames.propose,
     });
+
+    const messaging = client.messaging! as TestMessagingService;
+    expect(messaging.proposeCount[RECEIVED]).to.be.eq(0);
+
+    await recreateClientAndRetryDepositCall(signer, client, store);
   });
 
   it("client proposes deposit, but node only receives the NATS message after timeout is over", async () => {
     // cf method timeout is 90s, client will send any messages with a
     // preconfigured delay
-    const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
     client = await createClientWithMessagingLimits({
-      delay: { sent: CLIENT_DELAY },
-      protocol: "propose",
+      protocol: ProtocolNames.propose,
+      ceiling: { [SEND]: 0 },
+      params: { appDefinition: addressBook[4447].DepositApp.address },
+      signer,
     });
 
     await makeDepositCall({
@@ -136,17 +164,24 @@ describe("Deposit offline tests", () => {
       clock,
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
       subjectToFastforward: SEND,
-      protocol: "propose",
+      protocol: ProtocolNames.propose,
     });
+
+    const messaging = client.messaging! as TestMessagingService;
+    expect(messaging.proposeCount[SEND]).to.be.eq(0);
+
+    await recreateClientAndRetryDepositCall(signer, client, store);
   });
 
   it("client proposes deposit, but node only responds after timeout is over", async () => {
     // cf method timeout is 90s, client will process any received messages
     // with a preconfigured delay
-    const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
     client = await createClientWithMessagingLimits({
-      delay: { received: CLIENT_DELAY },
-      protocol: "propose",
+      protocol: ProtocolNames.propose,
+      ceiling: { [RECEIVED]: 0 },
+      params: { appDefinition: addressBook[4447].DepositApp.address },
+      signer,
+      store,
     });
 
     await makeDepositCall({
@@ -154,16 +189,21 @@ describe("Deposit offline tests", () => {
       clock,
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
       subjectToFastforward: RECEIVED,
-      protocol: "propose",
+      protocol: ProtocolNames.propose,
     });
+
+    const messaging = client.messaging! as TestMessagingService;
+    expect(messaging.proposeCount[RECEIVED]).to.be.eq(0);
+
+    await recreateClientAndRetryDepositCall(signer, client, store);
   });
 
   it("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
-    const signer = getRandomChannelSigner(env.ethProviderUrl);
     client = await createClientWithMessagingLimits({
-      protocol: "install",
-      ceiling: { received: 0 },
+      protocol: ProtocolNames.install,
+      ceiling: { [RECEIVED]: 0 },
       signer,
+      store,
     });
 
     await makeDepositCall({
@@ -171,9 +211,11 @@ describe("Deposit offline tests", () => {
       clock,
       failsWith: `Install failed`,
       subjectToFastforward: RECEIVED,
-      protocol: "install",
+      protocol: ProtocolNames.install,
     });
+    const messaging = client.messaging! as TestMessagingService;
+    expect(messaging.installCount[RECEIVED]).to.be.eq(0);
 
-    await createClient({ signer });
+    await recreateClientAndRetryDepositCall(signer, client, store);
   });
 });
