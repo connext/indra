@@ -54,6 +54,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         params,
         appInstance: preAppInstance.toJson(),
         role: ProtocolRoles.initiator,
+        stateChannel: preProtocolStateChannel.toJson(),
       } as TakeActionMiddlewareContext,
     ];
     logTime(log, substart, `[${processID}] Validated action`);
@@ -185,6 +186,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         params,
         appInstance: preAppInstance.toJson(),
         role: ProtocolRoles.responder,
+        stateChannel: preProtocolStateChannel.toJson(),
       } as TakeActionMiddlewareContext,
     ];
     logTime(log, substart, `[${processID}] Validated action`);
