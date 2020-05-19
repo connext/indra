@@ -14,6 +14,8 @@ export abstract class NodeController extends Controller {
     const log = new ColorfulLogger(`MethodController`, 1, true);
     const start = Date.now();
     let substart = start;
+    let lockValue;
+    
     await this.beforeExecution(requestHandler, params);
     logTime(log, substart, "Before execution complete");
     substart = Date.now();
@@ -22,17 +24,21 @@ export abstract class NodeController extends Controller {
     logTime(log, substart, "Got lockname");
     substart = Date.now();
 
-    const lockValue = await requestHandler.lockService.acquireLock(lockName);
-    logTime(log, substart, "Got lock");
-    substart = Date.now();
-
+    // Dont lock for static functions
+    if(lockName !== "") {
+      lockValue = await requestHandler.lockService.acquireLock(lockName);
+      logTime(log, substart, "Got lock");
+      substart = Date.now();
+    }
     const ret = await this.executeMethodImplementation(requestHandler, params);
     logTime(log, substart, "Executed method implementation");
     substart = Date.now();
 
-    await requestHandler.lockService.releaseLock(lockName, lockValue);
-    logTime(log, substart, "Released lock");
-    substart = Date.now();
+    if(lockName !== "") {
+      await requestHandler.lockService.releaseLock(lockName, lockValue);
+      logTime(log, substart, "Released lock");
+      substart = Date.now();
+    }
 
     await this.afterExecution(requestHandler, params, ret);
     logTime(log, substart, "After execution complete");

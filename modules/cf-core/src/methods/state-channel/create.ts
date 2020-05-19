@@ -5,7 +5,7 @@ import {
   MethodParams,
   MethodResults,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
 import { jsonRpcMethod } from "rpc-server";
 
@@ -34,6 +34,9 @@ export class CreateChannelController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.CreateChannel,
   ): Promise<string> {
+    if(!params.owners) {
+      throw new Error(`No owners provided in params. ${stringify(params)}`)
+    }
     return `${MethodNames.chan_create}:${params.owners.sort().toString()}`;
   }
 
