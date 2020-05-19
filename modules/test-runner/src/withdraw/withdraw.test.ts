@@ -50,7 +50,7 @@ describe.only("Withdrawal", () => {
   it("client tries to withdraw more than it has in free balance", async () => {
     await fundChannel(client, ZERO_ZERO_ZERO_ONE_ETH);
     await expect(withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero)).to.be.rejectedWith(
-      `Insufficient balance.`,
+      `Insufficient funds.`,
     );
   });
 
