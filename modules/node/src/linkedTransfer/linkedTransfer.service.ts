@@ -166,10 +166,10 @@ export class LinkedTransferService {
       coinTransfers: [
         {
           amount,
-          to: freeBalanceAddr,
+          to: freeBalanceAddr, // sender
         },
         {
-          amount: Zero,
+          amount: Zero, // receiver
           to: getSignerAddressFromPublicIdentifier(userIdentifier),
         },
       ],

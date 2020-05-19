@@ -108,7 +108,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.initiator,
       } as InstallMiddlewareContext,
     ];
-    logTime(log, substart, `[${processID}] Validated app instance`);
+    logTime(log, substart, `[${processID}] Validated app ${newAppInstance.identityHash}`);
     substart = Date.now();
 
     const conditionalTxCommitment = getConditionalTransactionCommitment(
@@ -307,7 +307,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.responder,
       } as InstallMiddlewareContext,
     ];
-    logTime(log, substart, `[${processID}] Validated app instance`);
+    logTime(log, substart, `[${processID}] Validated app ${newAppInstance.identityHash}`);
     substart = Date.now();
 
     const conditionalTxCommitment = getConditionalTransactionCommitment(

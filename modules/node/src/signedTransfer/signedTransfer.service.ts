@@ -103,7 +103,7 @@ export class SignedTransferService {
         amount,
         assetId,
       };
-      this.log.warn(`Found existing hashlock transfer app, returning: ${stringify(result)}`);
+      this.log.warn(`Found existing signed transfer app, returning: ${stringify(result)}`);
       return result;
     }
 

@@ -29,8 +29,11 @@ import {
   InstallMiddlewareContext,
   DepositAppState,
   ProtocolRoles,
+  SimpleLinkedTransferAppState,
+  ProposeMiddlewareContext,
+  AppInstanceProposal,
 } from "@connext/types";
-import { getAddressFromAssetId } from "@connext/utils";
+import { getAddressFromAssetId, stringify } from "@connext/utils";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
 import { BigNumber } from "ethers";
@@ -52,6 +55,7 @@ import { AppType } from "../appInstance/appInstance.entity";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -69,6 +73,7 @@ export class AppRegistryService implements OnModuleInit {
     private readonly depositService: DepositService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("AppRegistryService");
   }
@@ -319,12 +324,12 @@ export class AppRegistryService implements OnModuleInit {
       await defaultValidation(protocol, cxt);
       switch (protocol) {
         case ProtocolNames.setup:
-        case ProtocolNames.propose:
-        case ProtocolNames.takeAction: {
-          return;
-        }
+        case ProtocolNames.takeAction:
         case ProtocolNames.sync: {
           return;
+        }
+        case ProtocolNames.propose: {
+          return await this.proposeMiddleware(cxt as ProposeMiddlewareContext);
         }
         case ProtocolNames.install: {
           return await this.installMiddleware(cxt as InstallMiddlewareContext);
@@ -354,6 +359,61 @@ export class AppRegistryService implements OnModuleInit {
         // middleware for app not configured
         return;
       }
+    }
+  };
+
+  private proposeMiddleware = async (cxt: ProposeMiddlewareContext) => {
+    const { proposal } = cxt;
+    const contractAddresses = await this.configService.getContractAddresses();
+
+    switch (proposal.appDefinition) {
+      case contractAddresses.SimpleLinkedTransferApp: {
+        return await this.proposeLinkedTransferMiddleware(proposal);
+      }
+      case contractAddresses.SimpleSignedTransferApp: {
+        return await this.proposeSignedTransferMiddleware(proposal);
+      }
+      default: {
+        // middleware for app not configured
+        return;
+      }
+    }
+  };
+
+  private proposeLinkedTransferMiddleware = async (proposal: AppInstanceProposal) => {
+    const { paymentId, coinTransfers } = proposal.initialState as SimpleLinkedTransferAppState;
+    // if node is the receiver, ignore
+    if (coinTransfers[0].to !== this.cfCoreService.cfCore.signerAddress) {
+      return;
+    }
+    // node is sender, make sure app doesnt already exist
+    const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
+      paymentId,
+      this.cfCoreService.cfCore.signerAddress,
+    );
+    if (receiverApp) {
+      throw new Error(
+        `Found existing app for ${paymentId}, aborting linked transfer proposal. App: ${stringify(
+          receiverApp,
+        )}`,
+      );
+    }
+  };
+
+  private proposeSignedTransferMiddleware = async (proposal: AppInstanceProposal) => {
+    const { paymentId, coinTransfers } = proposal.initialState as SimpleSignedTransferAppState;
+    // if node is the receiver, ignore
+    if (coinTransfers[0].to !== this.cfCoreService.cfCore.signerAddress) {
+      return;
+    }
+    // node is sender, make sure app doesnt already exist
+    const receiverApp = await this.signedTransferService.findReceiverAppByPaymentId(paymentId);
+    if (receiverApp) {
+      throw new Error(
+        `Found existing app for ${paymentId}, aborting signed transfer proposal. App: ${stringify(
+          receiverApp,
+        )}`,
+      );
     }
   };
 

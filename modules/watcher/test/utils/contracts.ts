@@ -74,7 +74,7 @@ export const deployTestArtifactsToChain = async (
     wallet,
   ).deploy();
 
-  const token = await new ContractFactory(ERC20.abi, ERC20.bytecode, wallet).deploy();
+  const token = await new ContractFactory(ERC20.abi, ERC20.bytecode, wallet).deploy("", "");
 
   const appWithCounter = await new ContractFactory(
     AppWithAction.abi,

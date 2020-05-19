@@ -34,16 +34,12 @@ export async function swapAsset(
     [nodeSignerAddress]: preSwapFreeBalanceNodeEth,
   } = await client.getFreeBalance(ethAssetId);
   expect(preSwapFreeBalanceClientEth).to.be.eq(preSwap.freeBalanceClientEth);
-  // for backwards compatibility
-  expect(preSwapFreeBalanceNodeEth).to.be.least(preSwap.freeBalanceNodeEth.div(2));
 
   const {
     [client.signerAddress]: preSwapFreeBalanceClientToken,
     [nodeSignerAddress]: preSwapFreeBalanceNodeToken,
   } = await client.getFreeBalance(tokenAssetId);
   expect(preSwapFreeBalanceClientToken).to.be.eq(preSwap.freeBalanceClientToken);
-  // // for backwards compatibility
-  // expect(preSwapFreeBalanceNodeToken).to.be.least(preSwap.freeBalanceNodeToken.div(2));
 
   const rate = await client.getLatestSwapRate(ethAddress, tokenAddress);
   const swapRate = ethToToken ? rate : inverse(rate);
@@ -86,7 +82,6 @@ export async function swapAsset(
   expect(postSwapFreeBalanceClientEth).to.be.eq(postSwap.freeBalanceClientEth);
   expect(postSwapFreeBalanceNodeEth).to.be.at.least(postSwap.freeBalanceNodeEth);
   expect(postSwapFreeBalanceClientToken).to.be.eq(postSwap.freeBalanceClientToken);
-  // take absolute value in the case were its under collateralized
   expect(postSwapFreeBalanceNodeToken).to.be.at.least(postSwap.freeBalanceNodeToken);
 
   return postSwap;
