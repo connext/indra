@@ -67,5 +67,7 @@ describe("Create Channel", () => {
         protocol: ProtocolNames.setup,
       }),
     ).to.be.rejectedWith("Could not enable channel");
+    const client = await createClientWithMessagingLimits();
+    expect(client.multisigAddress).to.be.ok;
   });
 });
