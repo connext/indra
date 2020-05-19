@@ -1,10 +1,5 @@
-import {
-  AssetId,
-  CONVENTION_FOR_ETH_ASSET_ID,
-  EventNames,
-  IConnextClient,
-} from "@connext/types";
-import { ColorfulLogger, delay, getAddressFromAssetId } from "@connext/utils";
+import { AssetId, CONVENTION_FOR_ETH_ASSET_ID, EventNames, IConnextClient } from "@connext/types";
+import { ColorfulLogger, getAddressFromAssetId, delayAndThrow } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 
 import { env, expect } from "../";
@@ -65,19 +60,11 @@ export const requestCollateral = async (
     // watch for balance change on uninstall
     try {
       await Promise.race([
-        new Promise(async (res, rej) => {
-          await delay(20_000);
-          return rej(`Could not detect increase in node free balance within 20s`);
-        }),
-        new Promise(async res => {
-          client.on(
-            EventNames.UNINSTALL_EVENT,
-            async () => {
+        delayAndThrow(20_000, `Could not detect increase in node free balance within 20s`),
+        new Promise(async (res) => {
+          client.on(EventNames.UNINSTALL_EVENT, async () => {
             const currBal = await client.getFreeBalance(tokenAddress);
-            if (
-              currBal[client.nodeSignerAddress]
-                .lte(preCollateralBal[client.nodeSignerAddress])
-            ) {
+            if (currBal[client.nodeSignerAddress].lte(preCollateralBal[client.nodeSignerAddress])) {
               // no increase in bal
               return;
             }
