@@ -5,6 +5,7 @@ import {
   IChannelSigner,
   IClientStore,
   ProtocolNames,
+  CF_METHOD_TIMEOUT,
 } from "@connext/types";
 import { delay } from "@connext/utils";
 import * as lolex from "lolex";
@@ -57,26 +58,22 @@ const verifyTransfer = async (
   expect(transfer.encryptedPreImage).to.be.ok;
 };
 
-const recreateClientAndRetryTransfer = async (
-  signer: IChannelSigner,
+const recreateReceiverAndRetryTransfer = async (
+  receiverSigner: IChannelSigner,
   senderClient: IConnextClient,
   receiverClient: IConnextClient,
-  store: IClientStore,
+  receiverStore: IClientStore,
   transferParams: any,
 ) => {
   const { amount, assetId, nats } = transferParams;
-  receiverClient.messaging.disconnect();
-  const newClient = await createClient({ signer, store });
+  await receiverClient.messaging.disconnect();
+  const newClient = await createClient({ signer: receiverSigner, store: receiverStore });
 
-  const fbBefore = (await newClient.getFreeBalance())[newClient.signerAddress];
   // Check that client can recover and continue
   await asyncTransferAsset(senderClient, newClient, amount, assetId, nats);
-  const fb = await newClient.getFreeBalance();
-  const fbAfter = (await newClient.getFreeBalance())[newClient.signerAddress];
-  expect(fbBefore.sub(fbAfter).eq(amount)).to.be.true;
 };
 
-describe.only("Async transfer offline tests", () => {
+describe("Async transfer offline tests", () => {
   let clock: any;
   let senderClient: IConnextClient;
   let receiverClient: IConnextClient;
@@ -129,7 +126,7 @@ describe.only("Async transfer offline tests", () => {
         if (subject!.includes(`resolve`)) {
           // wait for message to be sent, event is fired first
           await delay(500);
-          clock.tick(89_000);
+          clock.tick(CF_METHOD_TIMEOUT + 1_000);
         }
       },
     );
@@ -142,7 +139,7 @@ describe.only("Async transfer offline tests", () => {
   /**
    * Should get timeout errors
    */
-  it.only("sender installs transfer successfully, receiver installs successfully, but node is offline for take action (times out)", async () => {
+  it("sender installs transfer successfully, receiver installs successfully, but node is offline for take action (times out)", async () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits();
     receiverClient = await createClientWithMessagingLimits({
@@ -157,7 +154,7 @@ describe.only("Async transfer offline tests", () => {
       RECEIVED,
       async (msg: MessagingEventData) => {
         if (getProtocolFromData(msg) === ProtocolNames.takeAction) {
-          clock.tick(89_000);
+          clock.tick(CF_METHOD_TIMEOUT + 1_000);
         }
       },
     );
@@ -165,7 +162,7 @@ describe.only("Async transfer offline tests", () => {
       asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress, nats),
     ).to.be.rejectedWith(APP_PROTOCOL_TOO_LONG("takeAction"));
 
-    await recreateClientAndRetryTransfer(signer, senderClient, receiverClient, store, {
+    await recreateReceiverAndRetryTransfer(signer, senderClient, receiverClient, store, {
       amount: TOKEN_AMOUNT_SM,
       assetId: tokenAddress,
       nats,

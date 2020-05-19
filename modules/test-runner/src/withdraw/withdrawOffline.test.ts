@@ -6,7 +6,7 @@ import {
   IClientStore,
   ProtocolNames,
 } from "@connext/types";
-import { ChannelSigner, delay, getRandomChannelSigner } from "@connext/utils";
+import { delay, getRandomChannelSigner } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
 import * as lolex from "lolex";
@@ -37,19 +37,11 @@ describe("Withdraw offline tests", () => {
   let signer: IChannelSigner;
   let store: IClientStore;
 
-  const addr = addressBook[4447].WithdrawApp.address;
-
   const createAndFundChannel = async (
     messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
     amount: BigNumber = ETH_AMOUNT_SM,
     assetId: string = AddressZero,
   ): Promise<IConnextClient> => {
-    // make sure the signer is set
-    messagingConfig.signer = messagingConfig.signer || getRandomChannelSigner(env.ethProviderUrl);
-    signer =
-      typeof messagingConfig.signer === "string"
-        ? new ChannelSigner(messagingConfig.signer, env.ethProviderUrl)
-        : messagingConfig.signer;
     client = await createClientWithMessagingLimits({
       signer,
       store,
@@ -65,17 +57,14 @@ describe("Withdraw offline tests", () => {
     withdrawParams: any,
   ) => {
     const { amount, assetId, recipient } = withdrawParams;
-    client.messaging.disconnect();
+    await client.messaging.disconnect();
     const newClient = await createClient({ signer, store });
-
-    const fbBefore = (await newClient.getFreeBalance())[newClient.signerAddress];
     // Check that client can recover and continue
     await withdrawFromChannel(newClient, amount, assetId, recipient);
-    const fbAfter = (await newClient.getFreeBalance())[newClient.signerAddress];
-    expect(fbBefore.sub(fbAfter).eq(amount)).to.be.true;
   };
 
   beforeEach(async () => {
+    signer = getRandomChannelSigner(env.ethProviderUrl);
     store = getMemoryStore();
     // create the clock
     clock = lolex.install({
@@ -114,12 +103,10 @@ describe("Withdraw offline tests", () => {
       withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
     ).to.be.rejectedWith(`proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`);
 
-    // **TODO** The below doesn't work for some reason -- investigate this further.
-
-    // await recreateClientAndRetryWithdraw(client, store, {
-    //   amount: ZERO_ZERO_ZERO_FIVE_ETH,
-    //   assetId: AddressZero,
-    // })
+    await recreateClientAndRetryWithdraw(client, store, {
+      amount: ZERO_ZERO_ZERO_FIVE_ETH,
+      assetId: AddressZero,
+    });
   });
 
   it.skip("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {

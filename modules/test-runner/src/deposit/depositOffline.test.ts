@@ -77,13 +77,11 @@ const recreateClientAndRetryDepositCall = async (
   client: IConnextClient,
   store: IClientStore,
 ) => {
-  client.messaging.disconnect();
+  await client.messaging.disconnect();
   const newClient = await createClient({ signer, store });
 
   // Check that client can recover and continue
   await fundChannel(newClient, ETH_AMOUNT_SM);
-  const fb = await newClient.getFreeBalance();
-  expect(fb[newClient.signerAddress].eq(ETH_AMOUNT_SM)).to.be.true;
 };
 
 /**
