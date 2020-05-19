@@ -30,10 +30,10 @@ export class InstallAppInstanceController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_install)
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockNames(
+  protected async getRequiredLockName(
     requestHandler: RequestHandler,
     params: MethodParams.Install,
-  ): Promise<string[]> {
+  ): Promise<string> {
     const { store } = requestHandler;
     const { appIdentityHash } = params;
 
@@ -42,7 +42,7 @@ export class InstallAppInstanceController extends NodeController {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
-    return [sc.multisigAddress];
+    return sc.multisigAddress;
   }
 
   protected async executeMethodImplementation(

@@ -5,7 +5,7 @@ import {
   MethodParams,
   MethodResults,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
 import { jsonRpcMethod } from "rpc-server";
 
@@ -30,11 +30,14 @@ export class CreateChannelController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_create)
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockNames(
+  protected async getRequiredLockName(
     requestHandler: RequestHandler,
     params: MethodParams.CreateChannel,
-  ): Promise<string[]> {
-    return [`${MethodNames.chan_create}:${params.owners.sort().toString()}`];
+  ): Promise<string> {
+    if(!params.owners) {
+      throw new Error(`No owners provided in params. ${stringify(params)}`)
+    }
+    return `${MethodNames.chan_create}:${params.owners.sort().toString()}`;
   }
 
   protected async executeMethodImplementation(

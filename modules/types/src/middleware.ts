@@ -15,7 +15,7 @@ export const ProtocolRoles = enumify({
   initiator: "initiator",
   responder: "responder",
 });
-export type ProtocolRoles = (typeof ProtocolRoles)[keyof typeof ProtocolRoles];
+export type ProtocolRoles = typeof ProtocolRoles[keyof typeof ProtocolRoles];
 export type ProtocolRole = keyof typeof ProtocolRoles;
 
 export type SetupMiddlewareContext = {
@@ -26,6 +26,7 @@ export type ProposeMiddlewareContext = {
   role: ProtocolRole;
   params: ProtocolParams.Propose;
   proposal: AppInstanceProposal;
+  stateChannel: StateChannelJSON;
 };
 export type InstallMiddlewareContext = {
   role: ProtocolRole;
@@ -37,6 +38,7 @@ export type TakeActionMiddlewareContext = {
   role: ProtocolRole;
   params: ProtocolParams.TakeAction;
   appInstance: AppInstanceJson; // pre-action
+  stateChannel: StateChannelJSON;
 };
 export type UninstallMiddlewareContext = {
   role: ProtocolRole;
@@ -45,12 +47,12 @@ export type UninstallMiddlewareContext = {
   stateChannel: StateChannelJSON;
 };
 
-export type MiddlewareContext = 
+export type MiddlewareContext =
   | SetupMiddlewareContext
   | ProposeMiddlewareContext
   | InstallMiddlewareContext
   | TakeActionMiddlewareContext
-  | UninstallMiddlewareContext
+  | UninstallMiddlewareContext;
 
 export type ValidationMiddleware = {
   (protocol: ProtocolName, context: MiddlewareContext): Promise<void>;

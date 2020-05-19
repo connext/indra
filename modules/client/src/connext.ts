@@ -40,6 +40,7 @@ import {
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
   stringify,
+  toBN,
 } from "@connext/utils";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -347,6 +348,7 @@ export class ConnextClient implements IConnextClient {
         return this.resolveLinkedTransferController.resolveLinkedTransfer(params);
       }
       case ConditionalTransferTypes.HashLockTransfer: {
+        params.assetId = params.assetId ? params.assetId : AddressZero;
         return this.resolveHashLockTransferController.resolveHashLockTransfer(params);
       }
       case ConditionalTransferTypes.SignedTransfer: {
@@ -360,11 +362,13 @@ export class ConnextClient implements IConnextClient {
   public conditionalTransfer = async (
     params: PublicParams.ConditionalTransfer,
   ): Promise<PublicResults.ConditionalTransfer> => {
+    params.assetId = params.assetId ? params.assetId : AddressZero;
     switch (params.conditionType) {
       case ConditionalTransferTypes.LinkedTransfer: {
         return this.linkedTransferController.linkedTransfer(params);
       }
       case ConditionalTransferTypes.HashLockTransfer: {
+        params.timelock = params.timelock ? params.timelock : 5000;
         return this.hashlockTransferController.hashLockTransfer(params);
       }
       case ConditionalTransferTypes.SignedTransfer: {
@@ -674,7 +678,7 @@ export class ConnextClient implements IConnextClient {
       paymentId,
       preImage,
     });
-    this.log.debug(`Reclaimed transfer ${paymentId}`);
+    this.log.debug(`Reclaimed transfer ${paymentId} using preImage: ${preImage}`);
     return response;
   };
 
