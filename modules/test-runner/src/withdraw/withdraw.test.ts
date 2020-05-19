@@ -18,7 +18,7 @@ import {
 // TODO: multiple withdrawal tests are skipped because there are issues where
 // the TX is sent before the client can subscribe. need to fix by possibly increasing block
 // time
-describe("Withdrawal", () => {
+describe.only("Withdrawal", () => {
   let client: IConnextClient;
   let tokenAddress: string;
 
@@ -50,7 +50,7 @@ describe("Withdrawal", () => {
   it("client tries to withdraw more than it has in free balance", async () => {
     await fundChannel(client, ZERO_ZERO_ZERO_ONE_ETH);
     await expect(withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero)).to.be.rejectedWith(
-      `Install failed.`,
+      `Insufficient balance.`,
     );
   });
 
