@@ -1,4 +1,4 @@
-import { IConnextClient, ProtocolNames, ProtocolParams } from "@connext/types";
+import { IConnextClient, ProtocolNames, ProtocolParams, IChannelSigner } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import * as lolex from "lolex";
@@ -22,8 +22,10 @@ import {
   UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   UNINSTALL_SUPPORTED_APP_COUNT_SENT,
   INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
+  env,
 } from "../util";
 import { addressBook } from "@connext/contracts";
+import { getRandomChannelSigner } from "@connext/utils";
 
 let clock: any;
 
@@ -36,9 +38,12 @@ const fundChannelAndSwap = async (opts: {
   client?: IConnextClient;
   fastForward?: MessagingEvent;
   protocol?: string;
+  signer?: IChannelSigner;
+  balanceUpdatedWithoutRetry?: boolean;
 }) => {
   const {
     client: providedClient,
+    signer: providedSigner,
     inputAmount,
     outputAmount,
     failsWith,
@@ -46,10 +51,13 @@ const fundChannelAndSwap = async (opts: {
     tokenToEth,
     fastForward,
     protocol,
+    balanceUpdatedWithoutRetry,
   } = opts;
   // these tests should not have collateral issues
   // so make sure they are always properly funded
-  const client = providedClient || (await createClientWithMessagingLimits(messagingConfig));
+  const signer = providedSigner || getRandomChannelSigner(env.ethProviderUrl);
+  const client =
+    providedClient || (await createClientWithMessagingLimits({ ...messagingConfig, signer }));
 
   const input = {
     amount: inputAmount,
@@ -61,6 +69,7 @@ const fundChannelAndSwap = async (opts: {
   };
   await fundChannel(client, input.amount, input.assetId);
   await requestCollateral(client, output.assetId);
+  const preSwapFb = await client.getFreeBalance(output.assetId);
   // try to swap, first check if test must be fast forwarded
   if (fastForward) {
     // fast forward the clock for tests with delay
@@ -85,6 +94,16 @@ const fundChannelAndSwap = async (opts: {
     await expect(swapAsset(client, input, output, client.nodeSignerAddress)).to.be.rejectedWith(
       failsWith,
     );
+    await client.messaging.disconnect();
+    // recreate client and retry swap after failure
+    const recreated = await createClientWithMessagingLimits({ signer, store: client.store });
+    if (balanceUpdatedWithoutRetry) {
+      // happens for cases where the registry app should be cleaned on connect
+      const postFb = await recreated.getFreeBalance(output.assetId);
+      expect(postFb[recreated.signerAddress].gt(preSwapFb[recreated.signerAddress])).to.be.true;
+      return;
+    }
+    await swapAsset(recreated, input, output, recreated.nodeSignerAddress);
     return;
   }
 
@@ -170,7 +189,8 @@ describe("Swap offline", () => {
   });
 
   it("Bot A installs swap app successfully but then deletes store (before uninstall)", async () => {
-    const providedClient = await createClientWithMessagingLimits();
+    const signer = getRandomChannelSigner(env.ethProviderUrl);
+    const providedClient = await createClientWithMessagingLimits({ signer });
     expect(providedClient.messaging).to.be.ok;
     // deposit eth into channel and swap for token
     // go offline during swap, should fail with swap timeout
@@ -190,9 +210,11 @@ describe("Swap offline", () => {
     // get state channel error
     await fundChannelAndSwap({
       client: providedClient,
+      signer,
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
       failsWith: "Failed to uninstall swap",
+      balanceUpdatedWithoutRetry: true,
     });
   });
 });
