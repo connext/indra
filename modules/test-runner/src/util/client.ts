@@ -7,6 +7,7 @@ import {
   IConnextClient,
   ProtocolParam,
   ProtocolNames,
+  IClientStore,
 } from "@connext/types";
 import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
 import { expect } from "chai";
@@ -27,7 +28,7 @@ export const createClient = async (
   const log = new ColorfulLogger("CreateClient", env.logLevel);
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
-    loggerService: new ColorfulLogger("Client", 3, true, opts.id),
+    loggerService: new ColorfulLogger("Client", env.logLevel, true, opts.id),
     signer: opts.signer || wallet.privateKey,
     nodeUrl: env.nodeUrl,
     store,
