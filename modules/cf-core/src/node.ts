@@ -108,8 +108,10 @@ export class Node {
     this.protocolRunner = this.buildProtocolRunner();
 
     // Create a new copy of networkContext so caller's copy doesn't get modified unexpectedly
-    delete this.networkContext.provider;
-    this.networkContext = JSON.parse(JSON.stringify(this.networkContext));
+    this.networkContext = JSON.parse(JSON.stringify({
+      ...this.networkContext,
+      provider: undefined,
+    }));
     this.networkContext.provider = this.provider;
   }
 
