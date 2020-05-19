@@ -23,7 +23,7 @@
     "@connext/types": "6.5.2",
     "async-mutex": "0.2.2",
     "ethers": "4.0.47",
-    "@openzeppelin/contracts": "2.5.0",
+    "@openzeppelin/contracts": "3.0.1",
     "eventemitter3": "4.0.0",
     "memoizee": "0.4.14",
     "p-queue": "6.4.0",
