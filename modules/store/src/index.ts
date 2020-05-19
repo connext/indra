@@ -44,7 +44,6 @@ export const getPostgresStore = (
 export { StoreTypes } from "./types";
 
 export {
-  FileStorage,
   KeyValueStorage,
   WrappedAsyncStorage,
   WrappedLocalStorage,
