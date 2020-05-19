@@ -12,6 +12,7 @@ import { providers } from "ethers";
 
 import { ConnextClient } from "../connext";
 import { ConnextListener } from "../listener";
+import { BigNumber } from "ethers/utils";
 
 export abstract class AbstractController {
   public name: string;
@@ -41,6 +42,16 @@ export abstract class AbstractController {
     // 163 ms
     this.log.info(`Calling propose install`);
     this.log.debug(`Calling propose install with ${stringify(params)}`);
+
+    // Temporarily validate this here until we move it into propose protocol as  part of other PRs. 
+    // Without this, install will fail with a timeout
+    const freeBalance = await this.connext.getFreeBalance(params.initiatorDepositAssetId);
+    if (params.initiatorDeposit.gt(freeBalance[this.connext.signerAddress])) {
+      throw new Error(
+        `Insufficient funds. Free balance: ${freeBalance.toString()}, Required balance: ${params.initiatorDeposit.toString()}`,
+      );
+    }
+
     const proposeRes = await Promise.race([
       this.connext.proposeInstallApp(params),
       delayAndThrow(
@@ -83,7 +94,7 @@ export abstract class AbstractController {
   };
 
   public throwIfAny = (...maybeErrorMessages: Array<string | undefined>): void => {
-    const errors = maybeErrorMessages.filter(c => !!c);
+    const errors = maybeErrorMessages.filter((c) => !!c);
     if (errors.length > 0) {
       throw new Error(errors.join(", "));
     }
