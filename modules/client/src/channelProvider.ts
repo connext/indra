@@ -363,7 +363,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
           const creationData = await this.node.createChannel();
           this.logger.debug(`created channel, transaction: ${stringify(creationData)}`);
         } catch (e) {
-          return reject(new Error(stringify(e)));
+          return reject(new Error(e.message));
         }
         await delay(20_000);
         return reject(`Could not create channel within 20s`);

@@ -10,7 +10,7 @@ import {
   constructTakeActionRpc,
 } from "../utils";
 import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
-import { deBigNumberifyJson, ChannelSigner, stringify, delay } from "@connext/utils";
+import { deBigNumberifyJson, ChannelSigner, delay } from "@connext/utils";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { NetworkContextForTestSuite } from "../contracts";
 import {
@@ -121,7 +121,7 @@ describe("Sync", () => {
             parameters: deBigNumberifyJson(params),
           });
         } catch (e) {
-          log.info(`Caught error sending rpc: ${stringify(e)}`);
+          log.info(`Caught error sending rpc: ${e.message}`);
         }
       });
 
@@ -435,7 +435,7 @@ describe("Sync", () => {
         try {
           await nodeA.rpcRouter.dispatch(constructTakeActionRpc(identityHash, validAction));
         } catch (e) {
-          console.log(`Caught error sending rpc: ${stringify(e)}`);
+          console.log(`Caught error sending rpc: ${e.message}`);
         }
       });
 
