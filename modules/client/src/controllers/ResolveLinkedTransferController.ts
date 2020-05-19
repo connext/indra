@@ -31,18 +31,18 @@ export class ResolveLinkedTransferController extends AbstractController {
 
     const installed = await this.connext.getAppInstances();
     const existing = installed.find(
-      app =>
+      (app) =>
         (
           app.appInterface.addr ===
-            this.connext.appRegistry.find(app => app.name === SimpleLinkedTransferAppName)
+            this.connext.appRegistry.find((app) => app.name === SimpleLinkedTransferAppName)
               .appDefinitionAddress && (app.latestState as SimpleLinkedTransferAppState)
         ).paymentId === paymentId,
     );
     let resolveRes: PublicResults.ResolveLinkedTransfer;
     try {
       // node installs app, validation happens in listener
-      this.log.debug(`Requesting node installs app`);
       if (existing) {
+        this.log.debug(`[${paymentId}] Found installed transfer app: ${existing.identityHash}`);
         resolveRes = {
           paymentId,
           appIdentityHash: existing.identityHash,
@@ -52,10 +52,11 @@ export class ResolveLinkedTransferController extends AbstractController {
           meta: existing.meta,
         };
       } else {
+        this.log.debug(`[${paymentId}] Requesting node installs app`);
         resolveRes = await this.connext.node.resolveLinkedTransfer(paymentId);
       }
       this.log.debug(
-        `Installed linked transfer app ${resolveRes.appIdentityHash}. Taking action with preImage: ${preImage}`,
+        `[${paymentId}] Installed linked transfer app ${resolveRes.appIdentityHash}. Taking action with preImage: ${preImage}`,
       );
       await this.connext.takeAction(resolveRes.appIdentityHash, { preImage });
       await this.connext.uninstallApp(resolveRes.appIdentityHash);
