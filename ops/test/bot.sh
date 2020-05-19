@@ -2,6 +2,7 @@
 set -e
 
 concurrency="${1:-1}"
+limit="${2:-5}"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
@@ -13,32 +14,39 @@ INDRA_NATS_URL="${INDRA_NATS_URL:-nats://172.17.0.1:4222}"
 receiver_name="${project}_bot_receiver"
 sender_name="${project}_bot_sender"
 
-
 # Kill the dependency containers when this script exits
 function cleanup {
   exit_code="0"
   echo;
   for (( n=1; n<=$concurrency; n++ ))
   do 
-    echo "Stopping ping pong pair $n.."
-    docker container stop ${receiver_name}_$n || true
-    docker container stop ${sender_name}_$n || true
-
-    receiver_code="`docker container inspect ${receiver_name}_$n | jq '.[0].State.ExitCode'`"
-    sender_code="`docker container inspect ${sender_name}_$n | jq '.[0].State.ExitCode'`"
-    if [[ "$receiver_code" != "0" ]]
+    if [[ -n "`docker container ls -a | grep $receiver_name`" ]]
     then
-      echo "receiver failed: $receiver_code";
-      exit_code="$receiver_code";
-    elif [[ "$sender_code" != "0" ]]
-    then
-      echo "sender failed: $sender_code";
-      exit_code="$sender_code";
+      echo "Stopping receiver for ping pong pair $n.."
+      docker container stop ${receiver_name}_$n &> /dev/null || true
+      receiver_code="`docker container inspect ${receiver_name}_$n | jq '.[0].State.ExitCode'`"
+      if [[ "$receiver_code" != "0" ]]
+      then
+        echo "receiver failed: $receiver_code";
+        exit_code="$receiver_code";
+      fi
+      echo "Removing receiver ping pong pair $n.."
+      docker container rm ${receiver_name}_$n &> /dev/null || true
     fi
 
-    echo "Removing ping pong pair $n.."
-    docker container rm ${receiver_name}_$n || true
-    docker container rm ${sender_name}_$n || true
+    if [[ -n "`docker container ls -a | grep $sender_name`" ]]
+    then
+      echo "Stopping sender for ping pong pair $n.."
+      docker container stop ${sender_name}_$n &> /dev/null || true
+      sender_code="`docker container inspect ${sender_name}_$n | jq '.[0].State.ExitCode'`"
+      if [[ "$sender_code" != "0" ]]
+      then
+        echo "sender failed: $sender_code";
+        exit_code="$sender_code";
+      fi
+      echo "Removing sender ping pong pair $n.."
+      docker container rm ${sender_name}_$n &> /dev/null || true
+    fi
   done
   exit $exit_code
 }
@@ -89,7 +97,7 @@ do
       }
       trap finish SIGTERM SIGINT
       echo "Launching receiver bot!";echo
-      npm run start -- receiver --private-key '$receiver_key' --concurrency-index '$n'
+      npm run start -- receiver --private-key '$receiver_key' --concurrency-index '$n' --payment-limit '$limit'
     '
 
   docker logs --follow $receiver &
@@ -115,14 +123,14 @@ do
       }
       trap finish SIGTERM SIGINT
       echo "Launching sender bot!";echo
-      npm run start -- sender --private-key '$sender_key' --receiver-public-key '$receiver_pub_key' --concurrency-index '$n'
+      npm run start -- sender --private-key '$sender_key' --receiver-public-key '$receiver_pub_key' --concurrency-index '$n' --payment-limit '$limit'
     '
 
   docker logs --follow $sender &
 
 done
 
-# wait for bots to finish or a ctrl-c
+# wait for bots to finish
 while true
 do
   if [[ \
