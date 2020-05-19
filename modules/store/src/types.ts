@@ -2,7 +2,6 @@ import { enumify } from "@connext/types";
 
 export const StoreTypes = enumify({
   AsyncStorage: "AsyncStorage",
-  File: "File",
   LocalStorage: "LocalStorage",
   Postgres: "Postgres",
   Memory: "Memory",

@@ -18,7 +18,6 @@ export const ConnextClientStorePrefix = "INDRA_CLIENT_CF_CORE";
 // TODO: remove StoreTypes during next breaking release
 export const StoreTypes = enumify({
   AsyncStorage: "AsyncStorage",
-  File: "File",
   LocalStorage: "LocalStorage",
   Postgres: "Postgres",
   Memory: "Memory",
@@ -42,19 +41,13 @@ export interface IAsyncStorage {
   removeItem(key: string): Promise<void>;
 }
 
-// TODO: Remove
-export interface FileStorageOptions {
-  fileExt?: string;
-  fileDir?: string;
-}
-
 export interface SequelizeStorageOptions {
   sequelize?: Sequelize | string;
   dbTableName?: string;
 }
 
 // TODO: Remove
-export interface StoreFactoryOptions extends FileStorageOptions, SequelizeStorageOptions {
+export interface StoreFactoryOptions extends SequelizeStorageOptions {
   logger?: ILoggerService;
   storage?: IAsyncStorage | any;
   prefix?: string;

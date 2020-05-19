@@ -6,7 +6,6 @@ export * from "./crypto";
 export * from "./currency";
 export * from "./delay";
 export * from "./env";
-export * from "./fs";
 export * from "./hexStrings";
 export * from "./identifiers";
 export * from "./json";

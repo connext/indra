@@ -10,32 +10,18 @@ export const getAsyncStore = (
   storage: IAsyncStorage,
   backupService?: PisaClientBackupAPI,
 ): IClientStore =>
-  new ConnextStore(
-    StoreTypes.AsyncStorage,
-    { storage: new WrappedAsyncStorage(storage) },
-  );
-
-export const getFileStore = (
-  directory: string,
-  backupService?: PisaClientBackupAPI,
-): IClientStore =>
-  new ConnextStore(StoreTypes.File, { backupService, fileDir: directory });
+  new ConnextStore(StoreTypes.AsyncStorage, { storage: new WrappedAsyncStorage(storage) });
 
 export const getLocalStore = (backupService?: PisaClientBackupAPI): IClientStore =>
   new ConnextStore(StoreTypes.LocalStorage, { backupService });
 
-export const getMemoryStore = (): IClientStore =>
-  new ConnextStore(StoreTypes.Memory);
+export const getMemoryStore = (): IClientStore => new ConnextStore(StoreTypes.Memory);
 
 export const getPostgresStore = (
   sequelize: Sequelize | string,
   prefix?: string,
   backupService?: PisaClientBackupAPI,
-): IClientStore =>
-  new ConnextStore(
-    StoreTypes.Postgres,
-    { sequelize, backupService, prefix },
-  );
+): IClientStore => new ConnextStore(StoreTypes.Postgres, { sequelize, backupService, prefix });
 
 ////////////////////////////////////////
 // TODO: the following @connext/store interface is depreciated
@@ -44,7 +30,6 @@ export const getPostgresStore = (
 export { StoreTypes } from "./types";
 
 export {
-  FileStorage,
   KeyValueStorage,
   WrappedAsyncStorage,
   WrappedLocalStorage,

@@ -79,20 +79,6 @@ export class ConnextStore implements IClientStore {
         break;
       }
 
-      case StoreTypes.File: {
-        this.internalStore = new KeyValueStorage(
-          new WrappedSequelizeStorage(
-            `sqlite:${opts.fileDir}/${storeDefaults.SQLITE_STORE_NAME}`,
-            this.prefix,
-            this.separator,
-            opts.dbTableName,
-          ),
-          this.backupService,
-          logger,
-        );
-        break;
-      }
-
       case StoreTypes.Memory: {
         this.internalStore = new KeyValueStorage(
           new WrappedSequelizeStorage(
@@ -305,13 +291,7 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.createChallengeUpdatedEvent(event);
   }
 
-  addOnchainAction(
-    appIdentityHash: Bytes32,
-    provider: JsonRpcProvider,
-  ): Promise<void> {
-    return this.internalStore.addOnchainAction(
-      appIdentityHash,
-      provider,
-    );
+  addOnchainAction(appIdentityHash: Bytes32, provider: JsonRpcProvider): Promise<void> {
+    return this.internalStore.addOnchainAction(appIdentityHash, provider);
   }
 }

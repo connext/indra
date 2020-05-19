@@ -24,12 +24,10 @@ import { StoreTypes } from "./types";
 export const storeTypes = Object.keys(StoreTypes);
 
 describe("ConnextStore", () => {
-  const fileDir = "./.test-store";
-
   describe("getSchemaVersion", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
         const schema = await store.getSchemaVersion();
         expect(schema).to.be.eq(0);
         await store.updateSchemaVersion();
@@ -42,7 +40,7 @@ describe("ConnextStore", () => {
   describe("createStateChannel + getStateChannel + getSetupCommitment + getSetStateCommitment", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
         await store.updateSchemaVersion();
         const channel = TEST_STORE_CHANNEL;
         const nullValue = await store.getStateChannel(channel.multisigAddress);
@@ -76,7 +74,7 @@ describe("ConnextStore", () => {
   describe("getStateChannelByOwners", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
         await store.updateSchemaVersion();
         const channel = TEST_STORE_CHANNEL;
         const owners = channel.userIdentifiers;
@@ -97,7 +95,7 @@ describe("ConnextStore", () => {
   describe("getStateChannelByAppIdentityHash", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
         await store.updateSchemaVersion();
         const channel = TEST_STORE_CHANNEL;
         const appIdentityHash = channel.appInstances[0][0];
@@ -118,7 +116,7 @@ describe("ConnextStore", () => {
   describe("createAppInstance + updateAppInstance + getAppInstance + getConditionalTransactionCommitment", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const app = TEST_STORE_CHANNEL.appInstances[0][1];
         const freeBalanceSetState0 = {
@@ -185,7 +183,7 @@ describe("ConnextStore", () => {
   describe("removeAppInstance", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
         const app = TEST_STORE_CHANNEL.appInstances[0][1];
         const channel = {
           ...TEST_STORE_CHANNEL,
@@ -247,7 +245,7 @@ describe("ConnextStore", () => {
   describe("createAppProposal + getAppProposal", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const proposal = TEST_STORE_CHANNEL.proposedAppInstances[0][1];
         const multisigAddress = channel.multisigAddress;
@@ -278,7 +276,7 @@ describe("ConnextStore", () => {
   describe("removeAppProposal", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const proposal = TEST_STORE_CHANNEL.proposedAppInstances[0][1];
         const multisigAddress = channel.multisigAddress;
@@ -309,7 +307,7 @@ describe("ConnextStore", () => {
   describe("getFreeBalance", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const freeBalance = channel.freeBalanceAppInstance!;
         const multisigAddress = channel.multisigAddress;
@@ -332,7 +330,7 @@ describe("ConnextStore", () => {
   describe("clear", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
         await store.updateSchemaVersion();
         const multisigAddress = TEST_STORE_ETH_ADDRESS;
         await store.createStateChannel(
@@ -351,7 +349,7 @@ describe("ConnextStore", () => {
   describe("restore", async () => {
     storeTypes.forEach((type) => {
       it(`${type} - should restore empty state when not provided with a backup service`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
         await store.updateSchemaVersion();
         const multisigAddress = TEST_STORE_ETH_ADDRESS;
         await store.createStateChannel(
@@ -370,7 +368,6 @@ describe("ConnextStore", () => {
       it(`${type} - should backup state when provided with a backup service`, async () => {
         const store = await createConnextStore(type as StoreTypes, {
           backupService: new MockBackupService(),
-          fileDir,
         });
         await store.updateSchemaVersion();
         const multisigAddress = TEST_STORE_ETH_ADDRESS;
@@ -392,7 +389,7 @@ describe("ConnextStore", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should be able to create, get, and update app challenges`, async () => {
         const value = { ...TEST_STORE_APP_CHALLENGE };
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
         await store.clear();
 
         const empty = await store.getAppChallenge(value.identityHash);
@@ -413,7 +410,7 @@ describe("ConnextStore", () => {
         const value1 = { ...value0, versionNumber: toBN(value0.versionNumber).add(1) };
         const value2 = { ...value0, status: StoredAppChallengeStatus.IN_ONCHAIN_PROGRESSION };
         const value3 = { ...value0, identityHash: getRandomBytes32() };
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
         await store.clear();
         // write all values concurrently
         await Promise.all([
@@ -441,7 +438,7 @@ describe("ConnextStore", () => {
   describe("getActiveChallenges", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should be able to retrieve active challenges for a channel`, async () => {
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
         await store.clear();
         const challenge = {
           ...TEST_STORE_APP_CHALLENGE,
@@ -464,7 +461,7 @@ describe("ConnextStore", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should be able to get/update latest processed blocks`, async () => {
         const block = 200;
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
 
         expect(await store.getLatestProcessedBlock()).to.be.eq(0);
         await store.updateLatestProcessedBlock(block);
@@ -478,7 +475,7 @@ describe("ConnextStore", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should be able to get/create state progressed events`, async () => {
         const value = { ...TEST_STORE_STATE_PROGRESSED_EVENT };
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
 
         const empty = await store.getStateProgressedEvents(value.identityHash);
         expect(empty).to.containSubset([]);
@@ -496,7 +493,7 @@ describe("ConnextStore", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should be able to get/create state progressed events`, async () => {
         const value = { ...TEST_STORE_CHALLENGE_UPDATED_EVENT };
-        const store = await createConnextStore(type as StoreTypes, { fileDir });
+        const store = await createConnextStore(type as StoreTypes);
 
         const empty = await store.getChallengeUpdatedEvents(value.identityHash);
         expect(empty).to.containSubset([]);
