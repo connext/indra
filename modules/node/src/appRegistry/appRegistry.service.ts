@@ -370,6 +370,9 @@ export class AppRegistryService implements OnModuleInit {
       case contractAddresses.SimpleLinkedTransferApp: {
         return await this.proposeLinkedTransferMiddleware(proposal);
       }
+      case contractAddresses.SimpleSignedTransferApp: {
+        return await this.proposeSignedTransferMiddleware(proposal);
+      }
       default: {
         // middleware for app not configured
         return;
@@ -390,7 +393,26 @@ export class AppRegistryService implements OnModuleInit {
     );
     if (receiverApp) {
       throw new Error(
-        `Found existing app for ${paymentId}, aborting proposal. App: ${stringify(receiverApp)}`,
+        `Found existing app for ${paymentId}, aborting linked transfer proposal. App: ${stringify(
+          receiverApp,
+        )}`,
+      );
+    }
+  };
+
+  private proposeSignedTransferMiddleware = async (proposal: AppInstanceProposal) => {
+    const { paymentId, coinTransfers } = proposal.initialState as SimpleSignedTransferAppState;
+    // if node is the receiver, ignore
+    if (coinTransfers[0].to !== this.cfCoreService.cfCore.signerAddress) {
+      return;
+    }
+    // node is sender, make sure app doesnt already exist
+    const receiverApp = await this.signedTransferService.findReceiverAppByPaymentId(paymentId);
+    if (receiverApp) {
+      throw new Error(
+        `Found existing app for ${paymentId}, aborting signed transfer proposal. App: ${stringify(
+          receiverApp,
+        )}`,
       );
     }
   };
