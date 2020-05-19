@@ -7,6 +7,7 @@ import {
   IConnextClient,
   ProtocolParam,
   ProtocolNames,
+  IClientStore,
 } from "@connext/types";
 import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
 import { expect } from "chai";
@@ -28,7 +29,7 @@ export const createClient = async (
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     loggerService: new ColorfulLogger("Client", env.logLevel, true, opts.id),
-    signer: wallet.privateKey,
+    signer: opts.signer || wallet.privateKey,
     nodeUrl: env.nodeUrl,
     store,
     ...opts,
@@ -97,6 +98,7 @@ export type ClientTestMessagingInputOpts = {
   protocol: keyof typeof ProtocolNames | "any"; // use "any" to limit any messages by count
   signer: IChannelSigner;
   params: Partial<ProtocolParam>;
+  store?: IClientStore;
 };
 
 export const createClientWithMessagingLimits = async (
@@ -143,10 +145,13 @@ export const createClientWithMessagingLimits = async (
   };
   !protocol || protocol === "any"
     ? expect(messaging.apiCount).to.containSubset(expectedCount)
-    : expect(messaging.protocolCount[protocol]).to.containSubset(expectedCount);
+    : expect(messaging.protocolCount[protocol as string]).to.containSubset(expectedCount);
   !protocol || protocol === "any"
     ? expect(messaging.apiLimits).to.containSubset(expectedLimits)
-    : expect(messaging.protocolLimits[protocol]).to.containSubset({ ...expectedLimits, params });
+    : expect(messaging.protocolLimits[protocol as string]).to.containSubset({
+        ...expectedLimits,
+        params,
+      });
   expect(messaging.providedOptions).to.containSubset(messageOptions);
   return createClient({ messaging, signer: signer });
 };

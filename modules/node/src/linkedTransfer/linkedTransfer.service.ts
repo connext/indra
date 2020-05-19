@@ -128,14 +128,12 @@ export class LinkedTransferService {
         amount,
         freeBal[freeBalanceAddr],
       );
-      this.log.warn(`Depositing ${deposit.toString()} of ${assetId} into channel with user ${userIdentifier}`);
-      
-      // request collateral and wait for deposit to come through
-      const depositReceipt = await this.depositService.deposit(
-        receiverChannel,
-        deposit,
-        assetId,
+      this.log.warn(
+        `Depositing ${deposit.toString()} of ${assetId} into channel with user ${userIdentifier}`,
       );
+
+      // request collateral and wait for deposit to come through
+      const depositReceipt = await this.depositService.deposit(receiverChannel, deposit, assetId);
       this.log.warn(`Deposit receipt: ${stringify(depositReceipt)}`);
       if (!depositReceipt) {
         throw new Error(
@@ -166,10 +164,10 @@ export class LinkedTransferService {
       coinTransfers: [
         {
           amount,
-          to: freeBalanceAddr,
+          to: freeBalanceAddr, // sender
         },
         {
-          amount: Zero,
+          amount: Zero, // receiver
           to: getSignerAddressFromPublicIdentifier(userIdentifier),
         },
       ],
