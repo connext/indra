@@ -1,5 +1,5 @@
 import { EventNames, IConnextClient, LinkedTransferStatus, Address } from "@connext/types";
-import { ColorfulLogger } from "@connext/utils";
+import { ColorfulLogger, getRandomBytes32 } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 
@@ -26,48 +26,55 @@ export async function asyncTransferAsset(
     [clientB.signerAddress]: preTransferFreeBalanceClientB,
     [nodeSignerAddress]: preTransferFreeBalanceNodeB,
   } = await clientB.getFreeBalance(assetId);
+  const paymentId = getRandomBytes32();
 
-  let paymentId: string;
-
-  const transferFinished = (senderAppId: string) =>
-    Promise.all([
-      Promise.race([
-        new Promise((resolve: Function): void => {
-          clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
+  const transferFinished = () => {
+    return Promise.all([
+      new Promise((resolve, reject) => {
+        clientB.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
+          expect(data.paymentId).to.be.ok;
+          if (data.paymentId === paymentId) {
             expect(data).to.deep.include({
               amount: transferAmount,
               sender: clientA.publicIdentifier,
               recipient: clientB.publicIdentifier,
+              paymentId,
             });
-            resolve();
-          });
-        }),
-        new Promise((resolve: Function, reject: Function): void => {
-          clientB.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, (msg: any) => {
-            reject(msg.error);
-          });
-        }),
-      ]),
-      new Promise((resolve: Function): void => {
+            return resolve();
+          }
+        });
+        clientB.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, (data) => {
+          expect(data.paymentId).to.be.ok;
+          expect(data.error).to.be.ok;
+          if (data.paymentId === paymentId) {
+            return reject(new Error(data.error));
+          }
+        });
+      }),
+      new Promise((resolve) => {
         clientA.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
+          if (data.paymentId === paymentId) {
+            return resolve();
+          }
           // TODO: Sender/recipient are undefined here because https://github.com/ConnextProject/indra/issues/1054
-          resolve();
         });
       }),
     ]);
+  };
 
   let start = Date.now();
   log.info(`call client.transfer()`);
-  const { paymentId: senderPaymentId, appIdentityHash } = await clientA.transfer({
+  const { appIdentityHash } = await clientA.transfer({
     amount: transferAmount.toString(),
     assetId,
     meta: { ...SENDER_INPUT_META },
     recipient: clientB.publicIdentifier,
+    paymentId,
   });
+  console.log(`[${paymentId.substring(0, 7)}] sender appIdentityHash: ${appIdentityHash}`);
   log.info(`transfer() returned in ${Date.now() - start}ms`);
-  paymentId = senderPaymentId;
 
-  await transferFinished(appIdentityHash);
+  await transferFinished();
   log.info(`Got transfer finished event in ${Date.now() - start}ms`);
 
   const appInstanceCheck = await clientA.getAppInstance(appIdentityHash);
@@ -77,17 +84,18 @@ export async function asyncTransferAsset(
     [clientA.signerAddress]: postTransferFreeBalanceClientA,
     [nodeSignerAddress]: postTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
+
+  const {
+    [clientB.signerAddress]: postTransferFreeBalanceClientB,
+    [nodeSignerAddress]: postTransferFreeBalanceNodeB,
+  } = await clientB.getFreeBalance(assetId);
+
   expect(postTransferFreeBalanceClientA).to.equal(
     preTransferFreeBalanceClientA.sub(transferAmount),
   );
   expect(postTransferFreeBalanceNodeA).to.be.at.least(
     preTransferFreeBalanceNodeA.add(transferAmount),
   );
-
-  const {
-    [clientB.signerAddress]: postTransferFreeBalanceClientB,
-    [nodeSignerAddress]: postTransferFreeBalanceNodeB,
-  } = await clientB.getFreeBalance(assetId);
   expect(postTransferFreeBalanceClientB).equal(preTransferFreeBalanceClientB.add(transferAmount));
 
   // node could have collateralized
