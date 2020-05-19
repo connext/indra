@@ -19,6 +19,8 @@ import {
   ValidationMiddleware,
   Address,
   PublicIdentifier,
+  MethodNames,
+  MethodParams,
 } from "@connext/types";
 import { delay, nullLogger } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
@@ -28,16 +30,13 @@ import { Memoize } from "typescript-memoize";
 import { createRpcRouter } from "./methods";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
-import {
-  SetStateCommitment,
-  ConditionalTransactionCommitment,
-} from "./ethereum";
+import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 import { ProtocolRunner } from "./machine";
 import { StateChannel, AppInstance } from "./models";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
-import { MethodRequest, MethodResponse, PersistAppType } from "./types";
+import { MethodRequest, MethodResponse, PersistAppType, PersistStateChannelType } from "./types";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -75,6 +74,7 @@ export class Node {
     lockService?: ILockService,
     blocksNeededForConfirmation?: number,
     logger?: ILoggerService,
+    syncOnStart: boolean = true,
   ): Promise<Node> {
     const node = new Node(
       signer,
@@ -88,7 +88,7 @@ export class Node {
       lockService,
     );
 
-    return node.asynchronouslySetupUsingRemoteServices();
+    return node.asynchronouslySetupUsingRemoteServices(syncOnStart);
   }
 
   private constructor(
@@ -119,7 +119,7 @@ export class Node {
     return this.signer.publicIdentifier;
   }
 
-  private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
+  private async asynchronouslySetupUsingRemoteServices(syncOnStart: boolean): Promise<Node> {
     this.log.info(`Node signer address: ${await this.signer.getAddress()}`);
     this.requestHandler = new RequestHandler(
       this.publicIdentifier,
@@ -145,6 +145,19 @@ export class Node {
     this.registerMessagingConnection();
     this.rpcRouter = createRpcRouter(this.requestHandler);
     this.requestHandler.injectRouter(this.rpcRouter);
+    if (!syncOnStart) {
+      return this;
+    }
+    const channels = await this.storeService.getAllChannels();
+    await Promise.all(
+      channels.map(async (channel) => {
+        await this.rpcRouter.dispatch({
+          methodName: MethodNames.chan_sync,
+          parameters: { multisigAddress: channel.multisigAddress } as MethodParams.Sync,
+          id: Date.now(),
+        });
+      }),
+    );
     return this;
   }
 
@@ -184,24 +197,8 @@ export class Node {
       return this.signer.signMessage(commitmentHash);
     });
 
-    protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessageData]) => {
-      const [data] = args;
-
-      await this.messagingService.send(data.to, {
-        data,
-        from: this.publicIdentifier,
-        type: EventNames.PROTOCOL_MESSAGE_EVENT,
-      } as ProtocolMessage);
-    });
-
-    protocolRunner.register(Opcode.IO_SEND_AND_WAIT, async (args: [ProtocolMessageData]) => {
-      const [data] = args;
-
-      const deferral = new Deferred<ProtocolMessage>();
-
-      this.ioSendDeferrals.set(data.processID, deferral);
-
-      const counterpartyResponse = deferral.promise;
+    protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessageData, StateChannel]) => {
+      const [data, channel] = args;
 
       await this.messagingService.send(data.to, {
         data,
@@ -209,34 +206,131 @@ export class Node {
         type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as ProtocolMessage);
 
-      // 90 seconds is the default lock acquiring time time
-      const msg = await Promise.race([counterpartyResponse, delay(IO_SEND_AND_WAIT_TIMEOUT)]);
-
-      if (!msg || !("data" in (msg as ProtocolMessage))) {
-        throw new Error(
-          `IO_SEND_AND_WAIT timed out after 90s waiting for counterparty reply in ${data.protocol}`,
-        );
-      }
-
-      // Removes the deferral from the list of pending defferals after
-      // its promise has been resolved and the necessary callback (above)
-      // has been called. Note that, as is, only one defferal can be open
-      // per counterparty at the moment.
-      this.ioSendDeferrals.delete(data.processID);
-
-      return (msg as ProtocolMessage).data;
+      return { channel };
     });
 
     protocolRunner.register(
+      Opcode.IO_SEND_AND_WAIT,
+      async (args: [ProtocolMessageData, StateChannel]) => {
+        const [data, channel] = args;
+
+        const deferral = new Deferred<ProtocolMessage>();
+
+        this.ioSendDeferrals.set(data.processID, deferral);
+
+        const counterpartyResponse = deferral.promise;
+
+        await this.messagingService.send(data.to, {
+          data,
+          from: this.publicIdentifier,
+          type: EventNames.PROTOCOL_MESSAGE_EVENT,
+        } as ProtocolMessage);
+
+        // 10 seconds is the default lock acquiring time time
+        const msg = await Promise.race([counterpartyResponse, delay(IO_SEND_AND_WAIT_TIMEOUT)]);
+
+        if (!msg || !("data" in (msg as ProtocolMessage))) {
+          throw new Error(
+            `IO_SEND_AND_WAIT timed out after ${
+              IO_SEND_AND_WAIT_TIMEOUT / 1000
+            }s waiting for counterparty reply in ${data.protocol}`,
+          );
+        }
+
+        // Removes the deferral from the list of pending defferals after
+        // its promise has been resolved and the necessary callback (above)
+        // has been called. Note that, as is, only one defferal can be open
+        // per counterparty at the moment.
+        this.ioSendDeferrals.delete(data.processID);
+
+        return { data: (msg as ProtocolMessage).data, channel };
+      },
+    );
+
+    protocolRunner.register(
       Opcode.PERSIST_STATE_CHANNEL,
-      async (args: [StateChannel, MinimalTransaction, SetStateCommitment]) => {
-        const [stateChannel, signedSetupCommitment, signedFreeBalanceUpdate] = args;
-        await this.storeService.createStateChannel(
-          stateChannel.toJson(),
-          signedSetupCommitment,
-          signedFreeBalanceUpdate.toJson(),
-        );
-        await this.storeService.updateSchemaVersion(STORE_SCHEMA_VERSION);
+      async (
+        args: [
+          PersistStateChannelType,
+          StateChannel,
+          (MinimalTransaction | SetStateCommitment | ConditionalTransactionCommitment)[],
+        ],
+      ) => {
+        const [type, stateChannel, signedCommitments] = args;
+        switch (type) {
+          case PersistStateChannelType.CreateChannel: {
+            const [setup, freeBalance] = signedCommitments as [
+              MinimalTransaction,
+              SetStateCommitment,
+            ];
+            await this.storeService.createStateChannel(
+              stateChannel.toJson(),
+              setup,
+              freeBalance.toJson(),
+            );
+
+            await this.storeService.updateSchemaVersion(STORE_SCHEMA_VERSION);
+            break;
+          }
+
+          case PersistStateChannelType.SyncProposal: {
+            const [setState] = signedCommitments as [SetStateCommitment];
+            const proposal = stateChannel.proposedAppInstances.get(setState.appIdentityHash);
+            if (!proposal) {
+              throw new Error("Could not find proposal in post protocol channel");
+            }
+            // this is adding a proposal
+            await this.storeService.createAppProposal(
+              stateChannel.multisigAddress,
+              proposal,
+              stateChannel.numProposedApps,
+              setState.toJson(),
+            );
+            break;
+          }
+          case PersistStateChannelType.NoChange: {
+            break;
+          }
+          case PersistStateChannelType.SyncFreeBalance: {
+            const [setState, conditional] = signedCommitments as [
+              SetStateCommitment,
+              ConditionalTransactionCommitment | undefined,
+            ];
+            if (!conditional) {
+              // this was an uninstall, so remove app instance
+              await this.storeService.removeAppInstance(
+                stateChannel.multisigAddress,
+                setState.appIdentityHash,
+                stateChannel.freeBalance.toJson(),
+                setState.toJson(),
+              );
+            } else {
+              // this was an install, add app and remove proposals
+              await this.storeService.createAppInstance(
+                stateChannel.multisigAddress,
+                stateChannel.getAppInstanceByAppSeqNo(stateChannel.numProposedApps).toJson(),
+                stateChannel.freeBalance.toJson(),
+                setState.toJson(),
+                conditional.toJson(),
+              );
+            }
+            break;
+          }
+          case PersistStateChannelType.SyncAppInstances: {
+            for (const commitment of signedCommitments as SetStateCommitment[]) {
+              await this.storeService.updateAppInstance(
+                stateChannel.multisigAddress,
+                stateChannel.appInstances.get(commitment.appIdentityHash)!.toJson(),
+                commitment.toJson(),
+              );
+            }
+            break;
+          }
+          default: {
+            throw new Error(`Unrecognized persist state channel type: ${type}`);
+          }
+        }
+        return { channel: stateChannel };
       },
     );
 
@@ -260,7 +354,6 @@ export class Node {
         ] = args;
         const { multisigAddress, numProposedApps, freeBalance } = postProtocolChannel;
         const { identityHash } = app;
-
         switch (type) {
           case PersistAppType.CreateProposal: {
             await this.storeService.createAppProposal(
@@ -313,9 +406,12 @@ export class Node {
           }
 
           default: {
-            throw new Error(`Unrecognized app persistence call: ${type}`);
+            const c: never = type;
+            throw new Error(`Unrecognized app persistence call: ${c}`);
           }
         }
+
+        return { channel: postProtocolChannel };
       },
     );
 

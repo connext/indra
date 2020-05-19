@@ -1,10 +1,9 @@
-import { ConnextStore } from "@connext/store";
+import { getMemoryStore } from "@connext/store";
 import { getRandomChannelSigner } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { Node } from "./node";
 import { memoryMessagingService } from "./testing/services";
-import { StoreTypes } from "@connext/types";
 
 describe("Node", () => {
   it("is defined", () => {
@@ -13,9 +12,11 @@ describe("Node", () => {
 
   it("can be created", async () => {
     const provider = new JsonRpcProvider(global["network"].provider.connection.url);
+    const store = getMemoryStore();
+    await store.init();
     const node = await Node.create(
       memoryMessagingService,
-      new ConnextStore(StoreTypes.Memory),
+      store,
       global["network"],
       { STORE_KEY_PREFIX: "./node.spec.ts-test-file" },
       provider,

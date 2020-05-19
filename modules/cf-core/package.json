@@ -1,6 +1,6 @@
 {
   "name": "@connext/cf-core",
-  "version": "6.3.1",
+  "version": "6.5.2",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
@@ -19,13 +19,13 @@
   },
   "dependencies": {
     "@connext/contracts": "2.0.6",
-    "@connext/utils": "6.3.1",
-    "@connext/types": "6.3.1",
+    "@connext/utils": "6.5.2",
+    "@connext/types": "6.5.2",
     "ethers": "4.0.47",
     "@openzeppelin/contracts": "2.5.0",
     "eventemitter3": "4.0.0",
     "memoizee": "0.4.14",
-    "p-queue": "5.0.0",
+    "p-queue": "6.4.0",
     "rpc-server": "0.0.1",
     "typescript-memoize": "1.0.0-alpha.3",
     "uuid": "7.0.3"
@@ -33,7 +33,7 @@
   "devDependencies": {
     "@babel/core": "7.9.0",
     "@babel/plugin-proposal-object-rest-spread": "7.9.5",
-    "@connext/store": "6.3.1",
+    "@connext/store": "6.5.2",
     "@types/chai": "4.2.11",
     "@types/dotenv-safe": "8.1.0",
     "@types/jest": "25.2.1",

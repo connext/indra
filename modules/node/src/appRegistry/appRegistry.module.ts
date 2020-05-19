@@ -15,6 +15,7 @@ import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { WithdrawRepository } from "../withdraw/withdraw.repository";
 import { SignedTransferModule } from "../signedTransfer/signedTransfer.module";
 import { HashLockTransferModule } from "../hashLockTransfer/hashLockTransfer.module";
+import { DepositModule } from "../deposit/deposit.module";
 
 import { AppRegistryController } from "./appRegistry.controller";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -28,6 +29,7 @@ import { AppActionsService } from "./appActions.service";
     CFCoreModule,
     ChannelModule,
     ConfigModule,
+    DepositModule,
     HashLockTransferModule,
     LinkedTransferModule,
     LoggerModule,

@@ -1,9 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import {
-  LinkedTransferStatus,
-  NodeResponses,
-  SimpleLinkedTransferAppState,
-} from "@connext/types";
+import { LinkedTransferStatus, NodeResponses, SimpleLinkedTransferAppState } from "@connext/types";
 import { bigNumberifyJson, stringify } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
@@ -65,13 +61,14 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     pubId: string,
     { paymentId }: { paymentId: string },
   ): Promise<NodeResponses.ResolveLinkedTransfer> {
-    this.log.debug(
-      `Got resolve link request with data: ${stringify(paymentId)}`,
-    );
+    this.log.debug(`Got resolve link request with data: ${stringify(paymentId)}`);
     if (!paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(paymentId)}`);
     }
-    const response = await this.linkedTransferService.installLinkedTransferReceiverApp(pubId, paymentId);
+    const response = await this.linkedTransferService.installLinkedTransferReceiverApp(
+      pubId,
+      paymentId,
+    );
     return {
       ...response,
       amount: response.amount,
@@ -84,7 +81,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     const transfers = await this.linkedTransferService.getLinkedTransfersForReceiverUnlock(
       userIdentifier,
     );
-    return transfers.map(transfer => {
+    return transfers.map((transfer) => {
       const state = bigNumberifyJson(transfer.latestState) as SimpleLinkedTransferAppState;
       return {
         paymentId: state.paymentId,

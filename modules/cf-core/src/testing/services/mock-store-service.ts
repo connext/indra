@@ -10,9 +10,14 @@ import {
   StoredAppChallenge,
   StateProgressedEventPayload,
   ChallengeUpdatedEventPayload,
+  JsonRpcProvider,
 } from "@connext/types";
 
 export class MockStoreService implements IStoreService {
+  init(): Promise<void> {
+    return Promise.resolve();
+  }
+
   getSchemaVersion(): Promise<number> {
     return Promise.resolve(STORE_SCHEMA_VERSION);
   }
@@ -60,9 +65,6 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve(undefined);
   }
   createFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
-    return Promise.resolve();
-  }
-  updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
     return Promise.resolve();
   }
   getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
@@ -136,21 +138,11 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve(undefined);
   }
 
-  async createAppChallenge(
-    appIdentityHash: string,
-    appChallenge: StoredAppChallenge,
-  ): Promise<void> {
+  async saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
     return Promise.resolve();
   }
 
-  async updateAppChallenge(
-    appIdentityHash: string,
-    appChallenge: StoredAppChallenge,
-  ): Promise<void> {
-    return Promise.resolve();
-  }
-
-  async getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
+  async getActiveChallenges(): Promise<StoredAppChallenge[]> {
     return Promise.resolve([]);
   }
 
@@ -163,13 +155,19 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve();
   }
 
-  async getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
+  getStateProgressedEvents(appIdentityHash: string): Promise<StateProgressedEventPayload[]> {
     return Promise.resolve([]);
   }
 
-  async createStateProgressedEvent(
-    appIdentityHash: string,
+  createStateProgressedEvent(
     event: StateProgressedEventPayload,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+
+  addOnchainAction(
+    appIdentityHash: string,
+    provider: JsonRpcProvider,
   ): Promise<void> {
     return Promise.resolve();
   }
@@ -180,8 +178,7 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve([]);
   }
 
-  async createChallengeUpdatedEvent(
-    appIdentityHash: string,
+  createChallengeUpdatedEvent(
     event: ChallengeUpdatedEventPayload,
   ): Promise<void> {
     return Promise.resolve();

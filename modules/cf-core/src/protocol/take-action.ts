@@ -6,26 +6,16 @@ import {
   ProtocolRoles,
   TakeActionMiddlewareContext,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import {
-  Context,
-  PersistAppType,
-  ProtocolExecutionFlow,
-} from "../types";
+import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
 const protocol = ProtocolNames.takeAction;
-const {
-  OP_SIGN,
-  OP_VALIDATE,
-  IO_SEND,
-  IO_SEND_AND_WAIT,
-  PERSIST_APP_INSTANCE,
-} = Opcode;
+const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
 /**
  * @description This exchange is described at the following URL:
  *
@@ -33,13 +23,14 @@ const {
  *
  */
 export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
-  0 /* Initiating */: async function*(context: Context) {
+  0 /* Initiating */: async function* (context: Context) {
     const { store, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
-    log.info(`Initiation started`);
-
+    let substart = start;
     const { processID, params } = message;
+    log.info(`[${processID}] Initiation started`);
+    log.debug(`[${processID}] Protocol initiated with params: ${stringify(params)}`);
 
     const {
       appIdentityHash,
@@ -65,15 +56,17 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.initiator,
       } as TakeActionMiddlewareContext,
     ];
+    logTime(log, substart, `[${processID}] Validated action`);
+    substart = Date.now();
 
     // 40ms
-    let substart = Date.now();
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
       await preAppInstance.computeStateTransition(action, network.provider),
       stateTimeout,
     );
-    logTime(log, substart, `SetState called in takeAction initiating`);
+    logTime(log, substart, `[${processID}] Updated channel with new app state`);
+    substart = Date.now();
 
     // 0ms
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
@@ -108,7 +101,9 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
 
     // 117ms
     const {
-      customData: { signature: counterpartySig },
+      data: {
+        customData: { signature: counterpartySig },
+      },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -124,7 +119,16 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     ] as any;
 
     // 10ms
-    await assertIsValidSignature(responderAddr, setStateCommitmentHash, counterpartySig);
+    await assertIsValidSignature(
+      responderAddr,
+      setStateCommitmentHash,
+      counterpartySig,
+      `Failed to validate responder's signature on initial set state commitment in the take-action protocol. Our commitment: ${stringify(
+        setStateCommitment.toJson(),
+      )}`,
+    );
+    logTime(log, substart, `[${processID}] Verified responders signature`);
+    substart = Date.now();
 
     // add signatures and write commitment to store
     await setStateCommitment.addSignatures(
@@ -141,20 +145,22 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       setStateCommitment,
     ];
 
-    logTime(log, start, `Finished Initiating`);
+    logTime(log, start, `[${processID}] Finished Initiating`);
   } as any,
 
-  1 /* Responding */: async function*(context: Context) {
+  1 /* Responding */: async function* (context: Context) {
     const { store, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
-    log.debug(`Response started for takeAction`);
-
+    let substart = start;
     const {
       processID,
       params,
       customData: { signature: counterpartySignature },
     } = message;
+
+    log.info(`[${processID}] Response started`);
+    log.debug(`[${processID}] Protocol response started with parameters ${stringify(params)}`);
 
     const {
       appIdentityHash,
@@ -181,6 +187,8 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.responder,
       } as TakeActionMiddlewareContext,
     ];
+    logTime(log, substart, `[${processID}] Validated action`);
+    substart = Date.now();
 
     // 48ms
     const postProtocolStateChannel = preProtocolStateChannel.setState(
@@ -199,7 +207,16 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     // 9ms
-    await assertIsValidSignature(initiatorAddr, setStateCommitmentHash, counterpartySignature);
+    await assertIsValidSignature(
+      initiatorAddr,
+      setStateCommitmentHash,
+      counterpartySignature,
+      `Failed to validate initiator's signature on initial set state commitment in the take-action protocol. Our commitment: ${stringify(
+        setStateCommitment.toJson(),
+      )}`,
+    );
+    logTime(log, substart, `[${processID}] Verified initiators signature`);
+    substart = Date.now();
 
     // 7ms
     const mySignature = yield [OP_SIGN, setStateCommitmentHash];
@@ -233,9 +250,10 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
           signature: mySignature,
         },
       } as ProtocolMessageData,
+      postProtocolStateChannel,
     ];
 
     // 149ms
-    logTime(log, start, `Finished responding to takeAction`);
+    logTime(log, start, `[${processID}] Finished responding`);
   },
 };

@@ -12,44 +12,42 @@ import {
   StateProgressedEventPayload,
   STORE_SCHEMA_VERSION,
   StoreFactoryOptions,
-  StoreTypes,
   WithdrawalMonitorObject,
-  WrappedStorage,
   Bytes32,
   Address,
+  JsonRpcProvider,
 } from "@connext/types";
+import { nullLogger } from "@connext/utils";
 
+import { storeDefaults } from "./constants";
 import {
-  DEFAULT_DATABASE_STORAGE_TABLE_NAME,
-  DEFAULT_STORE_PREFIX,
-  DEFAULT_STORE_SEPARATOR,
-} from "./constants";
-import {
-  FileStorage,
   KeyValueStorage,
-  WrappedMemoryStorage,
   WrappedAsyncStorage,
   WrappedLocalStorage,
-  WrappedPostgresStorage,
+  WrappedSequelizeStorage,
 } from "./wrappers";
+import { StoreTypes, WrappedStorage } from "./types";
 
 export class ConnextStore implements IClientStore {
-  private internalStore: IClientStore;
+  public internalStore: KeyValueStorage;
 
-  private prefix: string = DEFAULT_STORE_PREFIX;
-  private separator: string = DEFAULT_STORE_SEPARATOR;
+  private prefix: string = storeDefaults.PREFIX;
+  private separator: string = storeDefaults.SEPARATOR;
   private backupService: IBackupServiceAPI | null = null;
 
   constructor(storageType: StoreTypes, opts: StoreFactoryOptions = {}) {
-    this.prefix = opts.prefix || DEFAULT_STORE_PREFIX;
-    this.separator = opts.separator || DEFAULT_STORE_SEPARATOR;
+    this.prefix = opts.prefix || storeDefaults.PREFIX;
+    this.separator = opts.separator || storeDefaults.SEPARATOR;
     this.backupService = opts.backupService || null;
+    const logger = opts.logger || nullLogger;
 
     // set internal storage
     switch (storageType) {
       case StoreTypes.LocalStorage: {
         this.internalStore = new KeyValueStorage(
-          new WrappedLocalStorage(this.prefix, this.separator, this.backupService),
+          new WrappedLocalStorage(this.prefix, this.separator),
+          this.backupService,
+          logger,
         );
         break;
       }
@@ -59,48 +57,51 @@ export class ConnextStore implements IClientStore {
           throw new Error(`Must pass in a reference to an 'IAsyncStorage' interface`);
         }
         this.internalStore = new KeyValueStorage(
-          new WrappedAsyncStorage(
-            opts.storage,
-            this.prefix,
-            this.separator,
-            opts.asyncStorageKey,
-            this.backupService,
-          ),
+          new WrappedAsyncStorage(opts.storage, this.prefix, this.separator, opts.asyncStorageKey),
+          this.backupService,
+          logger,
         );
         break;
       }
 
       case StoreTypes.Postgres: {
         this.internalStore = new KeyValueStorage(
-          (opts.storage as WrappedPostgresStorage) ||
-            new WrappedPostgresStorage(
+          (opts.storage as WrappedSequelizeStorage) ||
+            new WrappedSequelizeStorage(
+              opts.sequelize,
               this.prefix,
               this.separator,
-              DEFAULT_DATABASE_STORAGE_TABLE_NAME,
-              opts.sequelize,
-              opts.postgresConnectionUri,
-              this.backupService,
+              storeDefaults.DATABASE_TABLE_NAME,
             ),
+          this.backupService,
+          logger,
         );
         break;
       }
 
       case StoreTypes.File: {
         this.internalStore = new KeyValueStorage(
-          new FileStorage(
+          new WrappedSequelizeStorage(
+            `sqlite:${opts.fileDir}/${storeDefaults.SQLITE_STORE_NAME}`,
             this.prefix,
-            this.separator === DEFAULT_STORE_SEPARATOR ? "-" : this.separator,
-            opts.fileExt,
-            opts.fileDir,
-            this.backupService,
+            this.separator,
+            opts.dbTableName,
           ),
+          this.backupService,
+          logger,
         );
         break;
       }
 
       case StoreTypes.Memory: {
         this.internalStore = new KeyValueStorage(
-          new WrappedMemoryStorage(this.prefix, this.separator, this.backupService),
+          new WrappedSequelizeStorage(
+            `sqlite:${storeDefaults.SQLITE_MEMORY_STORE_STRING}`,
+            this.prefix,
+            this.separator,
+          ),
+          this.backupService,
+          logger,
         );
         break;
       }
@@ -114,6 +115,10 @@ export class ConnextStore implements IClientStore {
         this.internalStore = new KeyValueStorage(opts.storage as WrappedStorage);
       }
     }
+  }
+
+  init(): Promise<void> {
+    return this.internalStore.init();
   }
 
   getSchemaVersion(): Promise<number> {
@@ -228,13 +233,6 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getFreeBalance(multisigAddress);
   }
 
-  updateFreeBalance(
-    multisigAddress: Address,
-    freeBalanceAppInstance: AppInstanceJson,
-  ): Promise<void> {
-    return this.internalStore.updateFreeBalance(multisigAddress, freeBalanceAppInstance);
-  }
-
   getSetupCommitment(multisigAddress: Address): Promise<MinimalTransaction | undefined> {
     return this.internalStore.getSetupCommitment(multisigAddress);
   }
@@ -274,16 +272,12 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getAppChallenge(appIdentityHash);
   }
 
-  createAppChallenge(appIdentityHash: Bytes32, appChallenge: StoredAppChallenge): Promise<void> {
-    return this.internalStore.createAppChallenge(appIdentityHash, appChallenge);
+  saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
+    return this.internalStore.saveAppChallenge(data);
   }
 
-  updateAppChallenge(appIdentityHash: Bytes32, appChallenge: StoredAppChallenge): Promise<void> {
-    return this.internalStore.updateAppChallenge(appIdentityHash, appChallenge);
-  }
-
-  getActiveChallenges(multisigAddress: Address): Promise<StoredAppChallenge[]> {
-    return this.internalStore.getActiveChallenges(multisigAddress);
+  getActiveChallenges(): Promise<StoredAppChallenge[]> {
+    return this.internalStore.getActiveChallenges();
   }
 
   ///// Events
@@ -299,21 +293,25 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getStateProgressedEvents(appIdentityHash);
   }
 
-  createStateProgressedEvent(
-    appIdentityHash: Bytes32,
-    event: StateProgressedEventPayload,
-  ): Promise<void> {
-    return this.internalStore.createStateProgressedEvent(appIdentityHash, event);
+  createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void> {
+    return this.internalStore.createStateProgressedEvent(event);
   }
 
   getChallengeUpdatedEvents(appIdentityHash: Bytes32): Promise<ChallengeUpdatedEventPayload[]> {
     return this.internalStore.getChallengeUpdatedEvents(appIdentityHash);
   }
 
-  createChallengeUpdatedEvent(
+  createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
+    return this.internalStore.createChallengeUpdatedEvent(event);
+  }
+
+  addOnchainAction(
     appIdentityHash: Bytes32,
-    event: ChallengeUpdatedEventPayload,
+    provider: JsonRpcProvider,
   ): Promise<void> {
-    return this.internalStore.createChallengeUpdatedEvent(appIdentityHash, event);
+    return this.internalStore.addOnchainAction(
+      appIdentityHash,
+      provider,
+    );
   }
 }

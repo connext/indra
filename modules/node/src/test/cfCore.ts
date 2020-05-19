@@ -10,14 +10,17 @@ import {
   ChallengeStatus,
   StateProgressedEventPayload,
   ChallengeUpdatedEventPayload,
+  StoredAppChallengeStatus,
 } from "@connext/types";
-import { deBigNumberifyJson, getRandomBytes32, getRandomAddress } from "@connext/utils";
+import { deBigNumberifyJson, getRandomBytes32, getRandomAddress, getRandomChannelSigner } from "@connext/utils";
 import { AddressZero, HashZero, Zero, One } from "ethers/constants";
 import { Wallet } from "ethers";
 import { hexlify, bigNumberify } from "ethers/utils";
 import { randomBytes } from "crypto";
 
 export const generateRandomAddress = () => Wallet.createRandom().address;
+
+export const generateRandomIdentifier = () => getRandomChannelSigner().publicIdentifier;
 
 export const generateRandomBytes32 = () => hexlify(randomBytes(32));
 
@@ -40,8 +43,8 @@ export const createAppInstanceJson = (
     latestVersionNumber: 0,
     multisigAddress: generateRandomAddress(),
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-    initiatorIdentifier: generateRandomAddress(),
-    responderIdentifier: generateRandomAddress(),
+    initiatorIdentifier: generateRandomIdentifier(),
+    responderIdentifier: generateRandomIdentifier(),
     multiAssetMultiPartyCoinTransferInterpreterParams: null,
     singleAssetTwoPartyCoinTransferInterpreterParams: null,
     twoPartyOutcomeInterpreterParams: null,
@@ -63,8 +66,8 @@ export const createAppInstanceProposal = (
     initialState: {},
     initiatorDeposit: "0x00",
     initiatorDepositAssetId: AddressZero,
-    initiatorIdentifier: generateRandomAddress(),
-    responderIdentifier: generateRandomAddress(),
+    initiatorIdentifier: generateRandomIdentifier(),
+    responderIdentifier: generateRandomIdentifier(),
     responderDeposit: "0x00",
     responderDepositAssetId: AddressZero,
     defaultTimeout: "0x00",
@@ -162,7 +165,7 @@ export const createStoredAppChallenge = (
     appStateHash: getRandomBytes32(),
     versionNumber: One,
     finalizesAt: Zero,
-    status: ChallengeStatus.IN_DISPUTE,
+    status: StoredAppChallengeStatus.IN_DISPUTE,
     ...overrides,
   };
 };

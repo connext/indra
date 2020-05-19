@@ -76,7 +76,7 @@ export abstract class AbstractController {
       return appIdentityHash;
     } catch (e) {
       this.log.error(`Error installing app: ${e.stack || e.message}`);
-      throw new Error(e.stack || e.message);
+      throw e;
     } finally {
       this.cleanupInstallListeners(boundReject, appIdentityHash);
     }

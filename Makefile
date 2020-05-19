@@ -155,22 +155,28 @@ test-cf: cf-core
 	bash ops/test/cf.sh
 
 test-contracts: contracts utils
-	bash ops/test/contracts.sh
-
-test-utils: utils
-	bash ops/test/utils.sh
-
-test-watcher: watcher
-	bash ops/test/watcher.sh
+	bash ops/test/unit.sh contracts
 
 test-daicard:
 	bash ops/test/ui.sh daicard
+
+test-docs: docs
+	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b linkcheck -d build/linkcheck . build/html"
 
 test-integration:
 	bash ops/test/integration.sh
 
 test-node: node
 	bash ops/test/node.sh --runInBand --forceExit
+
+test-store: store
+	bash ops/test/store.sh
+
+test-utils: utils
+	bash ops/test/unit.sh utils
+
+test-watcher: watcher
+	bash ops/test/watcher.sh
 
 watch-cf: cf-core
 	bash ops/test/cf.sh --watch
@@ -183,9 +189,6 @@ watch-ui: node-modules
 
 watch-node: node
 	bash ops/test/node.sh --watch
-
-test-docs: docs
-	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b linkcheck -d build/linkcheck . build/html"
 
 ########################################
 # Begin Real Build Rules
@@ -249,14 +252,14 @@ messaging: types utils $(shell find modules/messaging $(find_options))
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-store: types utils $(shell find modules/store $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/store && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
 contracts: types utils $(shell find modules/contracts $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+store: types utils contracts $(shell find modules/store $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/store && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 cf-core: types utils store contracts $(shell find modules/cf-core $(find_options))
@@ -289,7 +292,7 @@ test-runner: types utils channel-provider messaging store contracts cf-core apps
 	$(docker_run) "cd modules/test-runner && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-watcher: types utils contracts $(shell find modules/watcher $(find_options))
+watcher: types utils contracts store $(shell find modules/watcher $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/watcher && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@

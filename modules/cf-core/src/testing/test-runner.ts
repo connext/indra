@@ -1,6 +1,6 @@
-import { ConnextStore } from "@connext/store";
-import { OutcomeType, ProtocolNames, ProtocolParams, StoreTypes } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { getMemoryStore } from "@connext/store";
+import { OutcomeType, ProtocolNames, ProtocolParams, MinimalTransaction } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier, getRandomAddress, toBNJson } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero, HashZero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -50,9 +50,12 @@ export class TestRunner {
 
     this.defaultTimeout = bigNumberify(100);
 
-    this.mininodeA = new MiniNode(network, this.provider, new ConnextStore(StoreTypes.Memory));
-    this.mininodeB = new MiniNode(network, this.provider, new ConnextStore(StoreTypes.Memory));
-    this.mininodeC = new MiniNode(network, this.provider, new ConnextStore(StoreTypes.Memory));
+    this.mininodeA = new MiniNode(network, this.provider, getMemoryStore());
+    await this.mininodeA.store.init();
+    this.mininodeB = new MiniNode(network, this.provider, getMemoryStore());
+    await this.mininodeB.store.init();
+    this.mininodeC = new MiniNode(network, this.provider, getMemoryStore());
+    await this.mininodeC.store.init();
 
     this.multisigAB = await getCreate2MultisigAddress(
       this.mininodeA.publicIdentifier,
@@ -123,7 +126,7 @@ export class TestRunner {
     for (const mininode of [this.mininodeA, this.mininodeB]) {
       const json = await mininode.store.getStateChannel(this.multisigAB)!;
       const sc = StateChannel.fromJson(json!);
-      const updatedBalance = sc.addActiveAppAndIncrementFreeBalance(HashZero, {
+      const updatedSc = sc.addActiveAppAndIncrementFreeBalance(HashZero, {
         [AddressZero]: {
           [this.mininodeA.address]: One,
           [this.mininodeB.address]: One,
@@ -133,11 +136,19 @@ export class TestRunner {
           [this.mininodeB.address]: One,
         },
       });
-      await mininode.store.updateFreeBalance(
-        updatedBalance.multisigAddress,
-        updatedBalance.freeBalance.toJson(),
+      await mininode.store.createStateChannel(
+        updatedSc.toJson(),
+        { to: updatedSc.multisigAddress, value: 0, data: HashZero } as MinimalTransaction,
+        {
+          appIdentity: updatedSc.freeBalance.identity,
+          appIdentityHash: updatedSc.freeBalance.identityHash,
+          appStasteHash: updatedSc.freeBalance.hashOfLatestState,
+          challengeRegistryAddress: getRandomAddress(),
+          signatures: [HashZero, HashZero],
+          versionNumber: toBNJson(updatedSc.freeBalance.latestVersionNumber),
+        } as any,
       );
-      mininode.scm.set(this.multisigAB, updatedBalance);
+      mininode.scm.set(this.multisigAB, updatedSc);
     }
 
     for (const mininode of [this.mininodeB, this.mininodeC]) {
@@ -153,9 +164,17 @@ export class TestRunner {
           [this.mininodeC.address]: One,
         },
       });
-      await mininode.store.updateFreeBalance(
-        updatedSc.multisigAddress,
-        updatedSc.freeBalance.toJson(),
+      await mininode.store.createStateChannel(
+        updatedSc.toJson(),
+        { to: updatedSc.multisigAddress, value: 0, data: HashZero } as MinimalTransaction,
+        {
+          appIdentity: updatedSc.freeBalance.identity,
+          appIdentityHash: updatedSc.freeBalance.identityHash,
+          appStasteHash: updatedSc.freeBalance.hashOfLatestState,
+          challengeRegistryAddress: getRandomAddress(),
+          signatures: [HashZero, HashZero],
+          versionNumber: toBNJson(updatedSc.freeBalance.latestVersionNumber),
+        } as any,
       );
       mininode.scm.set(this.multisigBC, updatedSc);
     }

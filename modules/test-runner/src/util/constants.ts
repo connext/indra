@@ -1,4 +1,5 @@
 import { parseEther } from "ethers/utils";
+import { CF_METHOD_TIMEOUT } from "@connext/types";
 
 export const FUNDED_MNEMONICS = [
   "humble sense shrug young vehicle assault destroy cook property average silent travel",
@@ -10,9 +11,9 @@ export const WRONG_ADDRESS = "0xdeadbeef";
 // error messages
 export const APP_PROTOCOL_TOO_LONG = (protocol: string): string => {
   if (protocol === `takeAction`) {
-    return `Couldn't run TakeAction protocol: IO_SEND_AND_WAIT timed out after 90s`;
+    return `Couldn't run TakeAction protocol: IO_SEND_AND_WAIT timed out after ${CF_METHOD_TIMEOUT/1000}s`;
   }
-  return `App ${protocol} took longer than 90 seconds`;
+  return `App ${protocol} took longer than ${CF_METHOD_TIMEOUT/1000} seconds`;
 };
 export const MESSAGE_FAILED_TO_SEND = (reason?: string): string =>
   `Failed to send message: ${reason}`;

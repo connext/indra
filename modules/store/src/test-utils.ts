@@ -1,43 +1,52 @@
 import {
-  ConnextStore,
-  KeyValueStorage,
-  WrappedLocalStorage,
-  FileStorage,
-  WrappedAsyncStorage,
-  WrappedPostgresStorage,
-} from "@connext/store";
-import {
+  AppInstanceJson,
+  AppInstanceProposal,
+  ChallengeStatus,
+  ChallengeUpdatedEventPayload,
+  ConditionalTransactionCommitmentJSON,
+  IBackupServiceAPI,
+  MinimalTransaction,
+  NetworkContext,
+  OutcomeType,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
+  StateProgressedEventPayload,
+  StoredAppChallenge,
   StoreFactoryOptions,
   StorePair,
-  StoreTypes,
-  WrappedStorage,
-  AppInstanceProposal,
-  StateChannelJSON,
-  AppInstanceJson,
-  OutcomeType,
-  MinimalTransaction,
-  SetStateCommitmentJSON,
-  NetworkContext,
-  ConditionalTransactionCommitmentJSON,
-  StoredAppChallenge,
-  ChallengeStatus,
-  StateProgressedEventPayload,
-  ChallengeUpdatedEventPayload,
+  StoredAppChallengeStatus,
 } from "@connext/types";
-import { toBN, toBNJson, getRandomBytes32 } from "@connext/utils";
+import { ColorfulLogger, toBN, toBNJson, getRandomBytes32 } from "@connext/utils";
+import { expect, use } from "chai";
+import { One, AddressZero } from "ethers/constants";
 import { BigNumber, hexlify, randomBytes } from "ethers/utils";
 import MockAsyncStorage from "mock-async-storage";
 import { v4 as uuid } from "uuid";
 
-import { expect, env } from "../";
-import { One, AddressZero } from "ethers/constants";
+import { ConnextStore } from "./connextStore";
+import { StoreTypes } from "./types";
+import { KeyValueStorage } from "./wrappers";
+
+use(require("chai-as-promised"));
+use(require("chai-subset"));
+
+export { expect } from "chai";
+
+const env = {
+  database: process.env.INDRA_PG_DATABASE || "",
+  host: process.env.INDRA_PG_HOST || "",
+  password: process.env.INDRA_PG_PASSWORD || "",
+  port: parseInt(process.env.INDRA_PG_PORT || "", 10),
+  user: process.env.INDRA_PG_USERNAME || "",
+  logLevel: parseInt(process.env.LOG_LEVEL || "0", 10),
+};
 
 export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
 
 export const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
 
 export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
-  identityHash: "identityHashApp",
+  identityHash: getRandomBytes32(),
   multisigAddress: TEST_STORE_ETH_ADDRESS,
   initiatorIdentifier: "sender",
   responderIdentifier: "receiver",
@@ -68,7 +77,7 @@ export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
   },
   appDefinition: TEST_STORE_ETH_ADDRESS,
   appSeqNo: 1,
-  identityHash: "identityHashProposal",
+  identityHash: getRandomBytes32(),
   initialState: {
     counter: 4,
   },
@@ -97,7 +106,7 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
   userIdentifiers: ["address1", "address2"],
   proposedAppInstances: [[TEST_STORE_PROPOSAL.identityHash, TEST_STORE_PROPOSAL]],
   appInstances: [[TEST_STORE_APP_INSTANCE.identityHash, TEST_STORE_APP_INSTANCE]],
-  freeBalanceAppInstance: TEST_STORE_APP_INSTANCE,
+  freeBalanceAppInstance: { ...TEST_STORE_APP_INSTANCE, identityHash: getRandomBytes32() },
   monotonicNumProposedApps: 2,
 };
 
@@ -142,7 +151,7 @@ export const TEST_STORE_APP_CHALLENGE: StoredAppChallenge = {
   appStateHash: getRandomBytes32(),
   versionNumber: toBN(1),
   finalizesAt: toBN(3),
-  status: ChallengeStatus.IN_DISPUTE,
+  status: StoredAppChallengeStatus.IN_DISPUTE,
 };
 
 export const TEST_STORE_STATE_PROGRESSED_EVENT: StateProgressedEventPayload = {
@@ -162,77 +171,46 @@ export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = 
   status: ChallengeStatus.IN_DISPUTE,
 };
 
-export function createKeyValueStore(type: StoreTypes, opts: StoreFactoryOptions = {}) {
-  switch (type) {
-    case StoreTypes.AsyncStorage:
-      return new KeyValueStorage(
-        new WrappedAsyncStorage(
-          new MockAsyncStorage(),
-          opts.prefix,
-          opts.separator,
-          opts.asyncStorageKey,
-        ),
-      );
-    case StoreTypes.LocalStorage:
-      return new KeyValueStorage(new WrappedLocalStorage(opts.prefix, opts.separator));
-    case StoreTypes.File:
-      return new KeyValueStorage(
-        new FileStorage(opts.prefix, opts.separator, opts.fileExt, opts.fileDir),
-      );
-    default:
-      throw new Error(`Unable to create KeyValueStore from type: ${type}`);
-  }
-}
+////////////////////////////////////////
+// Helper Methods
 
-export async function createConnextStore(
+export const postgresConnectionUri = `postgres://${env.user}:${env.password}@${env.host}:${env.port}/${env.database}`;
+
+export const createKeyValueStore = async (
   type: StoreTypes,
   opts: StoreFactoryOptions = {},
-): Promise<ConnextStore> {
+): Promise<KeyValueStorage> => {
+  const cStore = await createConnextStore(type, opts);
+  await cStore.internalStore.init();
+  return cStore.internalStore;
+};
+
+export const createConnextStore = async (
+  type: StoreTypes,
+  opts: StoreFactoryOptions = {},
+): Promise<ConnextStore> => {
   if (!Object.values(StoreTypes).includes(type)) {
     throw new Error(`Unrecognized type: ${type}`);
   }
-
+  opts.logger = new ColorfulLogger(`ConnextStore_${type}`, env.logLevel, true);
   if (type === StoreTypes.Postgres) {
-    const wrappedStore = new WrappedPostgresStorage(
-      "test",
-      "/",
-      undefined,
-      undefined,
-      `postgres://${env.dbConfig.user}:${env.dbConfig.password}@${env.dbConfig.host}:${env.dbConfig.port}/${env.dbConfig.database}`,
-      opts.backupService,
-    );
-    opts.storage = wrappedStore;
-    await wrappedStore.sequelize.authenticate();
-    await wrappedStore.syncModels(true);
-  }
-
-  if (type === StoreTypes.AsyncStorage) {
+    opts.sequelize =
+      opts.sequelize ||
+      postgresConnectionUri;
+  } else if (type === StoreTypes.AsyncStorage) {
     opts.storage = new MockAsyncStorage();
   }
+  const cStore = new ConnextStore(type, opts);
+  await cStore.internalStore.init();
+  expect(cStore).to.be.instanceOf(ConnextStore);
+  await cStore.clear();
+  return cStore;
+};
 
-  const store = new ConnextStore(type, opts);
-  expect(store).to.be.instanceOf(ConnextStore);
-
-  await store.clear();
-
-  return store;
-}
-
-export function createArray(length: number = 10): string[] {
-  return Array(length).fill("");
-}
-
-export function generateStorePairs(length: number = 10): StorePair[] {
-  return createArray(length).map(() => {
-    const id = uuid();
-    return { path: `path-${id}`, value: `value-${id}` };
-  });
-}
-
-export async function setAndGet(
+export const setAndGet = async (
   store: KeyValueStorage,
   pair: StorePair = TEST_STORE_PAIR,
-): Promise<void> {
+): Promise<void> => {
   await store.setItem(pair.path, pair.value);
   const value = await store.getItem(pair.path);
   if (typeof pair.value === "object" && !BigNumber.isBigNumber(pair.value)) {
@@ -240,24 +218,72 @@ export async function setAndGet(
     return;
   }
   expect(value).to.be.equal(pair.value);
-}
+};
 
-export async function setAndGetMultiple(
+export const setAndGetMultiple = async (
   store: KeyValueStorage,
   length: number = 10,
-): Promise<void> {
-  const pairs = generateStorePairs(length);
+): Promise<void> => {
+  const pairs = Array(length)
+    .fill(0)
+    .map(() => {
+      const id = uuid();
+      return { path: `path-${id}`, value: `value-${id}` };
+    });
+
   expect(pairs.length).to.equal(length);
   for (const pair of pairs) {
     await setAndGet(store, pair);
   }
-}
+};
 
-export async function testAsyncStorageKey(
-  storage: WrappedStorage,
+export const testAsyncStorageKey = async (
+  storage: KeyValueStorage,
   asyncStorageKey: string,
-): Promise<void> {
+): Promise<void> => {
   const keys = await storage.getKeys();
   expect(keys.length).to.equal(1);
   expect(keys[0]).to.equal(asyncStorageKey);
+};
+
+/**
+ * Class simply holds all the states in memory that would otherwise get
+ * backed up by the service.
+ *
+ * TODO: Currently the implementation implies that the backup service
+ * will have write access to the store (or at least there is no specific
+ * call to `.set` when calling `restoreState` in
+ * `client/src/channelProvider.ts`). This should be addressed in a larger
+ * store refactor, and it is not clear how this would impact backwards
+ * compatability of custom stores.
+ */
+export class MockBackupService implements IBackupServiceAPI {
+  private prefix: string;
+  private storage = new Map<string, any>();
+
+  constructor(prefix: string = "backup/") {
+    this.prefix = prefix;
+  }
+
+  public async restore(): Promise<StorePair[]> {
+    this.storage.keys();
+    const keys: string[] = [];
+    for (const key of this.storage.keys()) {
+      if (key.includes(this.prefix)) {
+        keys.push(key);
+      }
+    }
+    const statesToRestore: StorePair[] = [];
+    for (const key of keys) {
+      const value = this.storage.get(key);
+      const path = key.split(this.prefix)[1];
+      statesToRestore.push({ path, value });
+      this.storage.set(path, value);
+    }
+    return statesToRestore;
+  }
+
+  public async backup(pair: StorePair): Promise<any> {
+    return this.storage.set(`${this.prefix}${pair.path}`, pair.value);
+  }
 }

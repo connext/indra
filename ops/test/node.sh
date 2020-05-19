@@ -161,5 +161,4 @@ docker run \
     trap finish SIGTERM SIGINT
 
     '"$command"'
-
   '

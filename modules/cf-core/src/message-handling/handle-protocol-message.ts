@@ -1,6 +1,5 @@
 import {
   EventNames,
-  IStoreService,
   Message,
   ProtocolMessage,
   ProtocolName,
@@ -14,11 +13,11 @@ import {
 import { bigNumberifyJson } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
-import { StateChannel, AppInstance } from "../models";
+import { StateChannel } from "../models";
+import { stringify } from "querystring";
 
 /**
  * Forwards all received Messages that are for the machine's internal
@@ -30,6 +29,7 @@ export async function handleReceivedProtocolMessage(
   msg: ProtocolMessage,
 ) {
   const { protocolRunner, store, router } = requestHandler;
+  const log = requestHandler.log.newContext("CF-handleReceivedProtocolMessage");
 
   const { data } = bigNumberifyJson(msg) as ProtocolMessage;
 
@@ -37,12 +37,21 @@ export async function handleReceivedProtocolMessage(
 
   if (seq === UNASSIGNED_SEQ_NO) return;
 
-  await protocolRunner.runProtocolWithMessage(data);
+  let postProtocolStateChannel;
+  try {
+    const { channel }: { channel: StateChannel } = await protocolRunner.runProtocolWithMessage(
+      data,
+    );
+    postProtocolStateChannel = channel;
+  } catch (e) {
+    log.error(`Caught error running protocol, aborting. Error: ${stringify(e)}`);
+    return;
+  }
 
   const outgoingEventData = await getOutgoingEventDataFromProtocol(
     protocol,
     params!,
-    store,
+    postProtocolStateChannel,
   );
 
   if (!outgoingEventData) {
@@ -55,8 +64,8 @@ export async function handleReceivedProtocolMessage(
   }
 
   const appIdentityHash =
-      outgoingEventData!.data["appIdentityHash"] ||
-      (outgoingEventData!.data as any).params["appIdentityHash"];
+    outgoingEventData!.data["appIdentityHash"] ||
+    (outgoingEventData!.data as any).params["appIdentityHash"];
 
   if (!appIdentityHash) {
     await emitOutgoingMessage(router, outgoingEventData);
@@ -68,16 +77,6 @@ export async function handleReceivedProtocolMessage(
     await emitOutgoingMessage(router, outgoingEventData);
     return;
   }
-
-  // remove proposal from channel and store
-  const json = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-  if (!json) {
-    throw new Error(`Could not find channel for app instance ${appIdentityHash} when processing install protocol message`);
-  }
-  const channel = StateChannel.fromJson(json).removeProposal(proposal.identityHash);
-  await store.removeAppProposal(channel.multisigAddress, proposal.identityHash);
-
-  // finally, emit message
   await emitOutgoingMessage(router, outgoingEventData);
 }
 
@@ -88,24 +87,20 @@ function emitOutgoingMessage(router: RpcRouter, msg: Message) {
 async function getOutgoingEventDataFromProtocol(
   protocol: ProtocolName,
   params: ProtocolParam,
-  store: IStoreService,
+  postProtocolStateChannel: StateChannel,
 ): Promise<Message | undefined> {
   // default to the pubId that initiated the protocol
   const baseEvent = { from: params.initiatorIdentifier };
 
   switch (protocol) {
-    case ProtocolNames.propose:
+    case ProtocolNames.propose: {
       const {
         multisigAddress,
         initiatorIdentifier,
         responderIdentifier,
         ...emittedParams
       } = params as ProtocolParams.Propose;
-      const json = await store.getStateChannel(multisigAddress);
-      if (!json) {
-        throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
-      }
-      const app = StateChannel.fromJson(json).mostRecentlyProposedAppInstance();
+      const app = postProtocolStateChannel.mostRecentlyProposedAppInstance();
       return {
         ...baseEvent,
         type: EventNames.PROPOSE_INSTALL_EVENT,
@@ -117,12 +112,8 @@ async function getOutgoingEventDataFromProtocol(
           appIdentityHash: app.identityHash,
         },
       };
-    case ProtocolNames.install:
-      const multisig = (params as ProtocolParams.Install).multisigAddress;
-      const retrieved = await store.getStateChannel(multisig);
-      if (!retrieved) {
-        throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisig));
-      }
+    }
+    case ProtocolNames.install: {
       return {
         ...baseEvent,
         type: EventNames.INSTALL_EVENT,
@@ -130,46 +121,50 @@ async function getOutgoingEventDataFromProtocol(
           // TODO: It is weird that `params` is in the event data, we should
           // remove it, but after telling all consumers about this change
           params: {
-            appIdentityHash:
-              StateChannel
-                .fromJson(retrieved)
-                .mostRecentlyInstalledAppInstance()
-                .identityHash,
+            appIdentityHash: postProtocolStateChannel.getAppInstanceByAppSeqNo((params as ProtocolParams.Install).appSeqNo)
+              .identityHash,
           },
         },
       };
-    case ProtocolNames.uninstall:
+    }
+    case ProtocolNames.uninstall: {
       return {
         ...baseEvent,
         type: EventNames.UNINSTALL_EVENT,
         data: getUninstallEventData(params as ProtocolParams.Uninstall),
       };
-    case ProtocolNames.setup:
+    }
+    case ProtocolNames.setup: {
       return {
         ...baseEvent,
         type: EventNames.CREATE_CHANNEL_EVENT,
         data: {
           ...getSetupEventData(
             params as ProtocolParams.Setup,
-            StateChannel.fromJson(
-              (await store.getStateChannel((params as ProtocolParams.Setup).multisigAddress))!,
-            ).multisigOwners,
+            postProtocolStateChannel.multisigOwners,
           ),
         },
       };
-    case ProtocolNames.takeAction:
+    }
+    case ProtocolNames.sync: {
+      return {
+        ...baseEvent,
+        type: EventNames.SYNC,
+        data: { syncedChannel: postProtocolStateChannel.toJson() },
+      };
+    }
+    case ProtocolNames.takeAction: {
       return {
         ...baseEvent,
         type: EventNames.UPDATE_STATE_EVENT,
         data: getStateUpdateEventData(
           params as ProtocolParams.TakeAction,
-          AppInstance.fromJson(
-            (await store.getAppInstance(
-              (params as ProtocolParams.TakeAction).appIdentityHash,
-            ))!,
+          postProtocolStateChannel.getAppInstance(
+            (params as ProtocolParams.TakeAction).appIdentityHash,
           ).state,
         ),
       };
+    }
     default:
       throw new Error(
         `handleReceivedProtocolMessage received invalid protocol message: ${protocol}`,
@@ -177,16 +172,13 @@ async function getOutgoingEventDataFromProtocol(
   }
 }
 
-function getStateUpdateEventData(
-  params: ProtocolParams.TakeAction,
-  newState: SolidityValueType,
-) {
+function getStateUpdateEventData(params: ProtocolParams.TakeAction, newState: SolidityValueType) {
   const { appIdentityHash, action } = params;
   return { newState, appIdentityHash, action };
 }
 
-function getUninstallEventData({ appIdentityHash }: ProtocolParams.Uninstall) {
-  return { appIdentityHash };
+function getUninstallEventData({ appIdentityHash, multisigAddress }: ProtocolParams.Uninstall) {
+  return { appIdentityHash, multisigAddress };
 }
 
 function getSetupEventData(

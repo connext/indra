@@ -1,13 +1,29 @@
 import { Contract, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { BigNumber, BigNumberish } from "ethers/utils";
+import { BigNumber, BigNumberish, parseEther } from "ethers/utils";
 import abi from "human-standard-token-abi";
 
 import { env } from "./env";
+import { stringify } from "@connext/utils";
+import { ERC20, addressBook } from "@connext/contracts";
 
 export const ethProvider = new JsonRpcProvider(env.ethProviderUrl);
-export const ethWallet = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
+export const sugarDaddy = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
+export const ethWallet = Wallet.createRandom().connect(ethProvider);
+
+export const fundEthWallet = async () => {
+  const FUND_AMT = parseEther("10000");
+  const tokenContract = new Contract(addressBook[4447].Token.address, ERC20.abi, sugarDaddy);
+  const ethFunding = await sugarDaddy.sendTransaction({
+    to: ethWallet.address,
+    value: FUND_AMT,
+  });
+  await ethFunding.wait();
+  const tx = await tokenContract.functions.transfer(ethWallet.address, FUND_AMT);
+  await tx.wait();
+  return;
+};
 
 /**
  * EVM snapshot, returns hex string of snapshot ID.
@@ -29,11 +45,31 @@ export const sendOnchainValue = async (
   value: BigNumberish,
   assetId: string = AddressZero,
 ): Promise<void> => {
-  if (assetId === AddressZero) {
-    await ethWallet.sendTransaction({ to, value });
-  } else {
-    const tokenContract = new Contract(assetId, abi, ethWallet);
-    await tokenContract.functions.transfer(to, value);
+  const nonceErr = "the tx doesn't have the correct nonce";
+  const retries = 3;
+  for (let i = 0; i < retries; i++) {
+    const nonce = await ethWallet.getTransactionCount();
+    try {
+      if (assetId === AddressZero) {
+        const tx = await ethWallet.sendTransaction({
+          to,
+          value,
+          nonce,
+        });
+        await tx.wait();
+        return;
+      } else {
+        const tokenContract = new Contract(assetId, abi, ethWallet);
+        const tx = await tokenContract.functions.transfer(to, value, { nonce });
+        await tx.wait();
+        return;
+      }
+    } catch (e) {
+      if (e.message.includes(nonceErr)) {
+        continue;
+      }
+      throw e;
+    }
   }
 };
 

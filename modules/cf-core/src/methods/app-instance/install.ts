@@ -55,7 +55,9 @@ export class InstallAppInstanceController extends NodeController {
 
     const appInstance = await store.getAppInstance(appInstanceProposal.identityHash);
     if (!appInstance) {
-      throw new Error(`Cannot find app instance after install protocol run for hash ${appInstanceProposal.identityHash}`);
+      throw new Error(
+        `Cannot find app instance after install protocol run for hash ${appInstanceProposal.identityHash}`,
+      );
     }
 
     return {
@@ -97,38 +99,25 @@ export async function install(
     defaultTimeout: toBN(proposal.defaultTimeout),
     disableLimit: false,
     initialState: proposal.initialState,
-    initiatorBalanceDecrement:
-      isSame
-        ? toBN(proposal.initiatorDeposit)
-        : toBN(proposal.responderDeposit),
-    initiatorDepositAssetId:
-      isSame
-        ? proposal.initiatorDepositAssetId
-        : proposal.responderDepositAssetId,
-    initiatorIdentifier:
-      isSame
-        ? proposal.initiatorIdentifier
-        : proposal.responderIdentifier,
+    initiatorBalanceDecrement: isSame
+      ? toBN(proposal.initiatorDeposit)
+      : toBN(proposal.responderDeposit),
+    initiatorDepositAssetId: isSame
+      ? proposal.initiatorDepositAssetId
+      : proposal.responderDepositAssetId,
+    initiatorIdentifier,
     meta: proposal.meta,
     multisigAddress: stateChannel.multisigAddress,
     outcomeType: proposal.outcomeType,
-    responderBalanceDecrement:
-      isSame
-        ? toBN(proposal.responderDeposit)
-        : toBN(proposal.initiatorDeposit),
-    responderDepositAssetId:
-      isSame
-        ? proposal.responderDepositAssetId
-        : proposal.initiatorDepositAssetId,
-    responderIdentifier:
-      isSame
-        ? proposal.responderIdentifier
-        : proposal.initiatorIdentifier,
+    responderBalanceDecrement: isSame
+      ? toBN(proposal.responderDeposit)
+      : toBN(proposal.initiatorDeposit),
+    responderDepositAssetId: isSame
+      ? proposal.responderDepositAssetId
+      : proposal.initiatorDepositAssetId,
+    responderIdentifier: isSame ? proposal.responderIdentifier : proposal.initiatorIdentifier,
     stateTimeout: toBN(proposal.stateTimeout),
   } as ProtocolParams.Install);
-  
-  stateChannel.removeProposal(appIdentityHash);
-  await store.removeAppProposal(stateChannel.multisigAddress, proposal.identityHash);
 
   return proposal;
 }

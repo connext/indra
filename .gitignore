@@ -51,3 +51,6 @@ cypress/videos
 **/.env
 **/react-app-env.d.ts
 ops/database/snapshots
+
+# Http files
+ganache.http

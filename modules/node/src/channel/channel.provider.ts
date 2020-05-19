@@ -1,7 +1,4 @@
-import {
-  MethodResults,
-  NodeResponses,
-} from "@connext/types";
+import { MethodResults, NodeResponses } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { getAddress } from "ethers/utils";
@@ -16,12 +13,23 @@ import { OnchainTransactionRepository } from "../onchainTransactions/onchainTran
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
-import { setStateToJson, SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
-import { convertConditionalCommitmentToJson, ConditionalTransactionCommitmentRepository } from "../conditionalCommitment/conditionalCommitment.repository";
-import { convertSetupEntityToMinimalTransaction, SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
+import {
+  setStateToJson,
+  SetStateCommitmentRepository,
+} from "../setStateCommitment/setStateCommitment.repository";
+import {
+  convertConditionalCommitmentToJson,
+  ConditionalTransactionCommitmentRepository,
+} from "../conditionalCommitment/conditionalCommitment.repository";
+import {
+  convertSetupEntityToMinimalTransaction,
+  SetupCommitmentRepository,
+} from "../setupCommitment/setupCommitment.repository";
 
 import { ChannelRepository } from "./channel.repository";
-import { ChannelService, RebalanceType } from "./channel.service";
+import { ChannelService } from "./channel.service";
+import { TransactionReceipt } from "ethers/providers";
+import { stringify } from "@connext/utils";
 
 class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
@@ -34,8 +42,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly setupCommitmentRepository: SetupCommitmentRepository,
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
-    private readonly conditionalTransactionCommitmentRepository:
-      ConditionalTransactionCommitmentRepository,
+    private readonly conditionalTransactionCommitmentRepository: ConditionalTransactionCommitmentRepository,
   ) {
     super(log, messaging);
   }
@@ -49,15 +56,20 @@ class ChannelMessaging extends AbstractMessagingProvider {
   }
 
   async requestCollateral(
-    pubId: string,
+    userPublicIdentifier: string,
     data: { assetId?: string },
-  ): Promise<MethodResults.Deposit> {
+  ): Promise<TransactionReceipt | undefined> {
     // do not allow clients to specify an amount to collateralize with
-    return (await (this.channelService.rebalance(
-      pubId,
-      getAddress(data.assetId),
-      RebalanceType.COLLATERALIZE,
-    ) as unknown)) as MethodResults.Deposit;
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      userPublicIdentifier,
+    );
+    try {
+      const tx = await this.channelService.rebalance(channel, getAddress(data.assetId));
+      return tx;
+    } catch (e) {
+      this.log.debug(`Failed to collateralize: ${stringify(e)}`);
+      return undefined;
+    }
   }
 
   async addRebalanceProfile(pubId: string, data: { profile: RebalanceProfile }): Promise<void> {
@@ -85,28 +97,30 @@ class ChannelMessaging extends AbstractMessagingProvider {
       throw new Error(`No channel found for user: ${pubId}`);
     }
     // get setup commitment
-    const setupCommitment = await this.setupCommitmentRepository
-      .findByMultisigAddress(channel.multisigAddress);
+    const setupCommitment = await this.setupCommitmentRepository.findByMultisigAddress(
+      channel.multisigAddress,
+    );
     if (!setupCommitment) {
       throw new Error(`Found channel, but no setup commitment. This should not happen.`);
     }
     // get active app set state commitments
-    const setStateCommitments = await this.setStateCommitmentRepository
-      .findAllActiveCommitmentsByMultisig(channel.multisigAddress);
-    
+    const setStateCommitments = await this.setStateCommitmentRepository.findAllActiveCommitmentsByMultisig(
+      channel.multisigAddress,
+    );
+
     // get active app conditional transaction commitments
-    const conditionalCommitments = await this
-      .conditionalTransactionCommitmentRepository
-      .findAllActiveCommitmentsByMultisig(channel.multisigAddress);
+    const conditionalCommitments = await this.conditionalTransactionCommitmentRepository.findAllActiveCommitmentsByMultisig(
+      channel.multisigAddress,
+    );
     const network = await this.configService.getContractAddresses();
     return {
       channel,
-      setupCommitment: 
-        convertSetupEntityToMinimalTransaction(setupCommitment), 
-      setStateCommitments:
-        setStateCommitments.map(s => [s.app.identityHash, setStateToJson(s)]),
-      conditionalCommitments: conditionalCommitments
-        .map(c => [c.app.identityHash, convertConditionalCommitmentToJson(c, network)]),
+      setupCommitment: convertSetupEntityToMinimalTransaction(setupCommitment),
+      setStateCommitments: setStateCommitments.map((s) => [s.app.identityHash, setStateToJson(s)]),
+      conditionalCommitments: conditionalCommitments.map((c) => [
+        c.app.identityHash,
+        convertConditionalCommitmentToJson(c, network),
+      ]),
     };
   }
 

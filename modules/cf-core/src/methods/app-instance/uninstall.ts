@@ -91,27 +91,29 @@ export class UninstallController extends NodeController {
     }
 
     await uninstallAppInstanceFromChannel(
-      store,
+      StateChannel.fromJson(stateChannel),
       protocolRunner,
       publicIdentifier,
       stateChannel.userIdentifiers.find(id => id !== publicIdentifier)!,
       appIdentityHash,
     );
 
-    return { appIdentityHash };
+    return { appIdentityHash, multisigAddress: stateChannel.multisigAddress };
   }
 
   protected async afterExecution(
     requestHandler: RequestHandler,
-    params: MethodParams.TakeAction,
+    params: MethodParams.Uninstall,
+    returnValue: MethodResults.Uninstall,
   ): Promise<void> {
-    const { store, router, publicIdentifier } = requestHandler;
+    const { router, publicIdentifier } = requestHandler;
     const { appIdentityHash } = params;
+    const {  multisigAddress } = returnValue;
 
     const msg = {
       from: publicIdentifier,
       type: EventNames.UNINSTALL_EVENT,
-      data: { appIdentityHash },
+      data: { appIdentityHash, multisigAddress },
     } as UninstallMessage;
 
     await router.emit(msg.type, msg, `outgoing`);
@@ -119,18 +121,12 @@ export class UninstallController extends NodeController {
 }
 
 export async function uninstallAppInstanceFromChannel(
-  store: IStoreService,
+  stateChannel: StateChannel,
   protocolRunner: ProtocolRunner,
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
   appIdentityHash: string,
 ): Promise<void> {
-  const json = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-  if (!json) {
-    throw new Error(`Could not find state channel in store associated with app ${appIdentityHash} when uninstalling`);
-  }
-  const stateChannel = StateChannel.fromJson(json);
-
   const appInstance = stateChannel.getAppInstance(appIdentityHash);
 
   await protocolRunner.initiateProtocol(ProtocolNames.uninstall, {

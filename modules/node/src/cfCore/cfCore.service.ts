@@ -209,7 +209,7 @@ export class CFCoreService {
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout,
     };
-    this.log.info(`Attempting to install app: ${appInfo.name}`);
+    this.log.info(`Attempting to install ${appInfo.name} in channel ${channel.multisigAddress}`);
 
     let proposeRes: MethodResults.ProposeInstall;
     try {
@@ -228,7 +228,7 @@ export class CFCoreService {
       this.log.debug(`App install result: ${stringify(proposeRes)}`);
       return proposeRes;
     } catch (e) {
-      this.log.error(`Error installing app: ${e.message}`, e.stack);
+      this.log.error(`Error installing app: ${e}`);
       return undefined;
     } finally {
       this.cleanupInstallListeners(boundReject, boundResolve);

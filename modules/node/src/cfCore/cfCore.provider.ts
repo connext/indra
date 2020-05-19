@@ -39,6 +39,7 @@ export const cfCoreProviderFactory: Provider = {
       { acquireLock: lockService.lockedOperation.bind(lockService) },
       undefined,
       log.newContext("CFCore"),
+      false, // only clients sync on cf core start
     );
     const balance = (await provider.getBalance(signerAddress)).toString();
     log.info(
