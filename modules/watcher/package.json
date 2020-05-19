@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@connext/apps": "6.5.2",
-    "@connext/contracts": "2.0.6",
+    "@connext/contracts": "3.0.0",
     "@connext/store": "6.5.2",
     "@connext/types": "6.5.2",
     "@connext/utils": "6.5.2",
