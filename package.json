@@ -1,7 +1,7 @@
 {
   "name": "indra",
-  "version": "6.5.0",
-  "backwardsCompatibleWith": "6.5.0",
+  "version": "6.5.2",
+  "backwardsCompatibleWith": "6.5.1",
   "registry": "docker.io/connextproject",
   "description": "",
   "repository": {
