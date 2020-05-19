@@ -9,19 +9,15 @@ import {
   NetworkContext,
   ProtocolMessage,
   PublicIdentifier,
-  ProtocolName,
-  ProtocolNames,
-  ProtocolParams,
-  ProtocolParam,
+  ILockService,
   StateChannelJSON,
 } from "@connext/types";
-import { bigNumberifyJson, logTime, delay } from "@connext/utils";
+import { bigNumberifyJson, logTime } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 
 import { eventNameToImplementation, methodNameToImplementation } from "./methods";
 import { ProtocolRunner } from "./machine";
-import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
 import { MethodRequest, MethodResponse } from "./types";
 import { StateChannel } from "./models";
@@ -47,7 +43,7 @@ export class RequestHandler {
     readonly provider: JsonRpcProvider,
     readonly signer: IChannelSigner,
     readonly blocksNeededForConfirmation: number,
-    public readonly processQueue: ProcessQueue,
+    readonly lockService: ILockService,
     public readonly log: ILoggerService,
   ) {
     this.log = this.log.newContext("CF-RequestHandler");

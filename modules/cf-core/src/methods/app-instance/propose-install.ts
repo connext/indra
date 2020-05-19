@@ -23,11 +23,11 @@ export class ProposeInstallAppInstanceController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_proposeInstall)
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockNames(
+  protected async getRequiredLockName(
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
-  ): Promise<string[]> {
-    return [requestHandler.channel!.multisigAddress];
+  ): Promise<string> {
+    return requestHandler.channel!.multisigAddress;
   }
 
   protected async beforeExecution(

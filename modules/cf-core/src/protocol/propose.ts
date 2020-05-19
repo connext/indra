@@ -86,6 +86,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         proposal: appInstanceProposal,
         params,
         role: ProtocolRoles.initiator,
+        stateChannel: preProtocolStateChannel.toJson(),
       } as ProposeMiddlewareContext,
     ];
     logTime(log, substart, `[${processID}] Validated proposal`);
@@ -170,7 +171,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       appInstanceProposal,
       setStateCommitment,
     ];
-    logTime(log, substart, `[${processID}] Persisted app instance ${appInstanceProposal.identityHash}`);
+    logTime(
+      log,
+      substart,
+      `[${processID}] Persisted app instance ${appInstanceProposal.identityHash}`,
+    );
     substart = Date.now();
 
     // Total 298ms
@@ -241,6 +246,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         proposal: appInstanceProposal,
         params,
         role: ProtocolRoles.responder,
+        stateChannel: preProtocolStateChannel.toJson(),
       } as ProposeMiddlewareContext,
     ];
     logTime(log, substart, `[${processID}] Validated proposal`);
@@ -300,7 +306,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       appInstanceProposal,
       setStateCommitment,
     ];
-    logTime(log, substart, `[${processID}] Persisted app instance ${appInstanceProposal.identityHash}`);
+    logTime(
+      log,
+      substart,
+      `[${processID}] Persisted app instance ${appInstanceProposal.identityHash}`,
+    );
 
     // 0ms
     yield [

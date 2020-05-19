@@ -5,7 +5,7 @@ import {
   MethodParams,
   MethodResults,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
 import { jsonRpcMethod } from "rpc-server";
 
@@ -30,17 +30,14 @@ export class CreateChannelController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_create)
   public executeMethod = super.executeMethod;
 
-  protected async beforeExecution(
+  protected async getRequiredLockName(
     requestHandler: RequestHandler,
     params: MethodParams.CreateChannel,
-  ): Promise<void> {
-  }
-
-  protected async getRequiredLockNames(
-    requestHandler: RequestHandler,
-    params: MethodParams.CreateChannel,
-  ): Promise<string[]> {
-    return [`${MethodNames.chan_create}:${params.owners.sort().toString()}`];
+  ): Promise<string> {
+    if (!params.owners) {
+      throw new Error(`No owners provided in params. ${stringify(params)}`);
+    }
+    return `${MethodNames.chan_create}:${params.owners.sort().toString()}`;
   }
 
   protected async executeMethodImplementation(
@@ -55,21 +52,23 @@ export class CreateChannelController extends NodeController {
     // channels. also because the `getMultisigAddressWithCounterparty` function
     // will default to using any existing multisig address for the provided
     // owners before creating one
-    const { 
-      multisigAddress: storedMultisig,
-    } = await store.getStateChannelByOwners(owners) || { multisigAddress: undefined };
+    const { multisigAddress: storedMultisig } = (await store.getStateChannelByOwners(owners)) || {
+      multisigAddress: undefined,
+    };
     if (!networkContext.provider && !storedMultisig) {
       throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
     }
-    const multisigAddress = storedMultisig || await getCreate2MultisigAddress(
-      requestHandler.publicIdentifier,
-      owners.find(id => id !== requestHandler.publicIdentifier)!,
-      { 
-        proxyFactory: networkContext.ProxyFactory, 
-        multisigMastercopy: networkContext.MinimumViableMultisig,
-      },
-      networkContext.provider,
-    );
+    const multisigAddress =
+      storedMultisig ||
+      (await getCreate2MultisigAddress(
+        requestHandler.publicIdentifier,
+        owners.find((id) => id !== requestHandler.publicIdentifier)!,
+        {
+          proxyFactory: networkContext.ProxyFactory,
+          multisigMastercopy: networkContext.MinimumViableMultisig,
+        },
+        networkContext.provider,
+      ));
     // Check if the database has stored the relevant data for this state channel
     if (!storedMultisig) {
       await this.setupAndCreateChannel(multisigAddress, requestHandler, params);
@@ -86,7 +85,7 @@ export class CreateChannelController extends NodeController {
     const { owners } = params;
     const { publicIdentifier, protocolRunner, outgoing } = requestHandler;
 
-    const [responderIdentifier] = owners.filter(x => x !== publicIdentifier);
+    const [responderIdentifier] = owners.filter((x) => x !== publicIdentifier);
 
     await protocolRunner.runSetupProtocol({
       multisigAddress,

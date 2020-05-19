@@ -1,7 +1,10 @@
 export interface ILockService {
   acquireLock(
     lockName: string /* Bytes32? */,
-    callback: (...args: any[]) => any,
-    timeout: number,
-  ): Promise<any>;
+  ): Promise<string>;
+
+  releaseLock(
+    lockName: string /* Bytes32? */,
+    lockValue: string,
+  ): Promise<void>;
 }

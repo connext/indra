@@ -18,17 +18,18 @@ import {
 export class RejectInstallController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_rejectInstall)
   public executeMethod = super.executeMethod;
-  protected async getRequiredLockNames(
+  protected async getRequiredLockName(
     requestHandler: RequestHandler,
     params: MethodParams.RejectInstall,
-  ): Promise<string[]> {
+  ): Promise<string> {
     const { appIdentityHash } = params;
     const { store } = requestHandler;
+    
     const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!stateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
-    return [appIdentityHash, stateChannel.multisigAddress];
+    return stateChannel.multisigAddress;
   }
 
   protected async executeMethodImplementation(
