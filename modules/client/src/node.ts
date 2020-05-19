@@ -174,16 +174,11 @@ export class NodeApiClient implements INodeApiClient {
   ////////////////////////////////////////
   // PUBLIC
 
-  async acquireLock(
-    lockName: string
-  ): Promise<string> {
+  async acquireLock(lockName: string): Promise<string> {
     return this.send(`${this.userIdentifier}.lock.acquire.${lockName}`);
   }
 
-  async releaseLock(
-    lockName: string,
-    lockValue: string,
-  ): Promise<void> {
+  async releaseLock(lockName: string, lockValue: string): Promise<void> {
     return this.send(`${this.userIdentifier}.lock.release.${lockName}`, { lockValue });
   }
 
@@ -231,9 +226,11 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  // TODO: right now node doesnt return until the deposit has completed
-  // which exceeds the timeout.....
   public async requestCollateral(assetId: string): Promise<NodeResponses.RequestCollateral | void> {
+    // DONT added extended timeout to prevent client application from being
+    // held up longer than necessary if node is collateralizing. The endpoint
+    // will return after an onchain tx is submitted and mined in cases where
+    // a rebalancing occurs
     try {
       return this.send(`${this.userIdentifier}.channel.request-collateral`, {
         assetId,
@@ -241,7 +238,6 @@ export class NodeApiClient implements INodeApiClient {
     } catch (e) {
       // TODO: node should return once deposit starts
       if (e.message.startsWith("Request timed out")) {
-        this.log.warn("request collateral message timed out");
         return;
       }
       throw e;
@@ -263,17 +259,37 @@ export class NodeApiClient implements INodeApiClient {
   public async resolveLinkedTransfer(
     paymentId: string,
   ): Promise<NodeResponses.ResolveLinkedTransfer> {
-    return this.send(`${this.userIdentifier}.transfer.install-linked`, {
-      paymentId,
-    });
+    // add a special timeout here, because this request could include
+    // up to the following protocols:
+    // - propose (DepositApp)
+    // - install (DepositApp)
+    // - onchain tx (collateral)
+    // - uninstall (DepositApp)
+    // - propose (LinkedTransfer)
+    // if the user is not already collateralized
+    const extendedTimeout = NATS_TIMEOUT * 5; // 55s
+    return this.send(
+      `${this.userIdentifier}.transfer.install-linked`,
+      {
+        paymentId,
+      },
+      extendedTimeout,
+    );
   }
 
   public async resolveSignedTransfer(
     paymentId: string,
   ): Promise<NodeResponses.ResolveSignedTransfer> {
-    return this.send(`${this.userIdentifier}.transfer.install-signed`, {
-      paymentId,
-    });
+    // add extended timeout in case receiver uncollateralized and multiple
+    // protocols are run (see comments in `resolveLinkedTransfer` for details)
+    const extendedTimeout = NATS_TIMEOUT * 5; // 55s
+    return this.send(
+      `${this.userIdentifier}.transfer.install-signed`,
+      {
+        paymentId,
+      },
+      extendedTimeout,
+    );
   }
 
   public async getRebalanceProfile(assetId?: string): Promise<NodeResponses.GetRebalanceProfile> {
@@ -318,11 +334,19 @@ export class NodeApiClient implements INodeApiClient {
   ////////////////////////////////////////
   // PRIVATE
 
-  private async send(subject: string, data?: any): Promise<any | undefined> {
-    return this.sendAttempt(subject, data);
+  private async send(
+    subject: string,
+    data?: any,
+    timeout: number = NATS_TIMEOUT,
+  ): Promise<any | undefined> {
+    return this.sendAttempt(timeout, subject, data);
   }
 
-  private async sendAttempt(subject: string, data?: any): Promise<any | undefined> {
+  private async sendAttempt(
+    timeout: number,
+    subject: string,
+    data?: any,
+  ): Promise<any | undefined> {
     const start = Date.now();
     const payload = {
       ...data,
@@ -330,7 +354,7 @@ export class NodeApiClient implements INodeApiClient {
     };
     let msg: any;
     try {
-      msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
+      msg = await this.messaging.request(subject, timeout, payload);
     } catch (e) {
       throw new Error(`${sendFailed}: ${e.message}`);
     }

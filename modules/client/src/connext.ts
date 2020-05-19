@@ -678,7 +678,7 @@ export class ConnextClient implements IConnextClient {
       paymentId,
       preImage,
     });
-    this.log.debug(`Reclaimed transfer ${paymentId}`);
+    this.log.debug(`Reclaimed transfer ${paymentId} using preImage: ${preImage}`);
     return response;
   };
 
