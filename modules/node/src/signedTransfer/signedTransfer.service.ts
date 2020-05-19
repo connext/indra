@@ -101,7 +101,7 @@ export class SignedTransferService {
         amount,
         assetId,
       };
-      this.log.warn(`Found existing hashlock transfer app, returning: ${stringify(result)}`);
+      this.log.warn(`Found existing signed transfer app, returning: ${stringify(result)}`);
       return result;
     }
 
@@ -122,11 +122,7 @@ export class SignedTransferService {
         freeBal[freeBalanceAddr],
       );
       // request collateral and wait for deposit to come through
-      const depositReceipt = await this.depositService.deposit(
-        receiverChannel,
-        deposit,
-        assetId,
-      );
+      const depositReceipt = await this.depositService.deposit(receiverChannel, deposit, assetId);
       if (!depositReceipt) {
         throw new Error(
           `Could not deposit sufficient collateral to resolve linked transfer for reciever: ${userIdentifier}`,

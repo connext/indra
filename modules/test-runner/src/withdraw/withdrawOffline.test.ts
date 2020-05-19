@@ -3,9 +3,10 @@ import {
   IConnextClient,
   IChannelSigner,
   CF_METHOD_TIMEOUT,
+  IClientStore,
   ProtocolNames,
 } from "@connext/types";
-import { ChannelSigner, delay, getRandomChannelSigner } from "@connext/utils";
+import { delay, getRandomChannelSigner } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
 import * as lolex from "lolex";
@@ -28,34 +29,43 @@ import {
   getParamsFromData,
 } from "../util";
 import { addressBook } from "@connext/contracts";
+import { getMemoryStore } from "@connext/store";
 
 describe("Withdraw offline tests", () => {
   let clock: any;
   let client: IConnextClient;
   let signer: IChannelSigner;
-
-  const addr = addressBook[4447].WithdrawApp.address;
+  let store: IClientStore;
 
   const createAndFundChannel = async (
     messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
     amount: BigNumber = ETH_AMOUNT_SM,
     assetId: string = AddressZero,
   ): Promise<IConnextClient> => {
-    // make sure the signer is set
-    messagingConfig.signer = messagingConfig.signer || getRandomChannelSigner(env.ethProviderUrl);
-    signer =
-      typeof messagingConfig.signer === "string"
-        ? new ChannelSigner(messagingConfig.signer, env.ethProviderUrl)
-        : messagingConfig.signer;
     client = await createClientWithMessagingLimits({
       signer,
+      store,
       ...messagingConfig,
     });
     await fundChannel(client, amount, assetId);
     return client;
   };
 
+  const recreateClientAndRetryWithdraw = async (
+    client: IConnextClient,
+    store: IClientStore,
+    withdrawParams: any,
+  ) => {
+    const { amount, assetId, recipient } = withdrawParams;
+    await client.messaging.disconnect();
+    const newClient = await createClient({ signer, store });
+    // Check that client can recover and continue
+    await withdrawFromChannel(newClient, amount, assetId, recipient);
+  };
+
   beforeEach(async () => {
+    signer = getRandomChannelSigner(env.ethProviderUrl);
+    store = getMemoryStore();
     // create the clock
     clock = lolex.install({
       shouldAdvanceTime: true,
@@ -71,6 +81,7 @@ describe("Withdraw offline tests", () => {
   });
 
   it("client proposes withdrawal but doesn't receive a response from node", async () => {
+    const addr = addressBook[4447].WithdrawApp.address;
     await createAndFundChannel({
       ceiling: { [SEND]: 0 },
       protocol: ProtocolNames.propose,
@@ -83,7 +94,7 @@ describe("Withdraw offline tests", () => {
         if (appDefinition !== addr) {
           return;
         }
-        clock.tick(89_000);
+        clock.tick(CF_METHOD_TIMEOUT + 15000);
         return;
       }
     });
@@ -91,6 +102,11 @@ describe("Withdraw offline tests", () => {
     await expect(
       withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
     ).to.be.rejectedWith(`proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`);
+
+    await recreateClientAndRetryWithdraw(client, store, {
+      amount: ZERO_ZERO_ZERO_FIVE_ETH,
+      assetId: AddressZero,
+    });
   });
 
   it.skip("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
