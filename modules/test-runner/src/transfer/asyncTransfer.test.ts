@@ -228,7 +228,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Install failed.`);
+    ).to.be.rejectedWith(`Insufficient funds.`);
   });
 
   it("Bot A tries to transfer with a paymentId that is not 32 bytes", async () => {
