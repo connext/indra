@@ -37,10 +37,12 @@ export async function handleReceivedProtocolMessage(
 
   if (seq === UNASSIGNED_SEQ_NO) return;
 
-  let postProtocolStateChannel;
+  let postProtocolStateChannel: StateChannel;
+  await requestHandler.addChannelToRequestHandler(params!);
   try {
     const { channel }: { channel: StateChannel } = await protocolRunner.runProtocolWithMessage(
       data,
+      requestHandler.channel,
     );
     postProtocolStateChannel = channel;
   } catch (e) {
@@ -53,28 +55,9 @@ export async function handleReceivedProtocolMessage(
     params!,
     postProtocolStateChannel,
   );
+  console.log('outgoingEventData: ', outgoingEventData);
 
   if (!outgoingEventData) {
-    return;
-  }
-
-  if (protocol !== ProtocolNames.install) {
-    await emitOutgoingMessage(router, outgoingEventData);
-    return;
-  }
-
-  const appIdentityHash =
-    outgoingEventData!.data["appIdentityHash"] ||
-    (outgoingEventData!.data as any).params["appIdentityHash"];
-
-  if (!appIdentityHash) {
-    await emitOutgoingMessage(router, outgoingEventData);
-    return;
-  }
-
-  const proposal = await store.getAppProposal(appIdentityHash);
-  if (!proposal) {
-    await emitOutgoingMessage(router, outgoingEventData);
     return;
   }
   await emitOutgoingMessage(router, outgoingEventData);

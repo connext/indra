@@ -41,7 +41,10 @@ export class ProposeInstallAppInstanceController extends NodeController {
       throw new Error(NULL_INITIAL_STATE_FOR_PROPOSAL);
     }
 
-    await requestHandler.addChannelToRequestHandler(params);
+    await requestHandler.addChannelToRequestHandler({
+      ...params,
+      initiatorIdentifier: publicIdentifier,
+    });
     if (!requestHandler.channel) {
       throw new Error(
         NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, responderIdentifier].toString()),

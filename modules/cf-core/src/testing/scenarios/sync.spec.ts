@@ -118,14 +118,14 @@ describe("Sync", () => {
         },
       };
       await new Promise(async (res) => {
-        nodeB.once("PROPOSE_INSTALL_EVENT", res)
+        nodeB.once("PROPOSE_INSTALL_EVENT", res);
         try {
           await nodeA.rpcRouter.dispatch({
             ...rpc,
             parameters: deBigNumberifyJson(params),
           });
         } catch (e) {
-          log.info(`Caught error sending rpc: ${stringify(e)}`);
+          log.info(`Caught error sending rpc: ${e.message}`);
         }
       });
 
@@ -164,18 +164,18 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel);
 
       await (newNodeA as Node).rpcRouter.dispatch(constructInstallRpc(identityHash));
-      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash)
-      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash)
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress)
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress)
-      expect(newChannelA!).toMatchObject(newChannelB!)
-      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!)
-      expect(newAppInstanceA!.identityHash).toBe(identityHash)
-      expect(newAppInstanceA!.appSeqNo).toBe(2)
-      expect(newAppInstanceA!.latestVersionNumber).toBe(1)
-      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(2)
-      expect(newChannelA!.monotonicNumProposedApps).toBe(2)
-      expect(newChannelA!.appInstances.length).toBe(1)
+      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
+      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceA!.identityHash).toBe(identityHash);
+      expect(newAppInstanceA!.appSeqNo).toBe(2);
+      expect(newAppInstanceA!.latestVersionNumber).toBe(1);
+      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(2);
+      expect(newChannelA!.monotonicNumProposedApps).toBe(2);
+      expect(newChannelA!.appInstances.length).toBe(1);
     }, 30_000);
 
     test("sync protocol responder is missing a proposal held by the protocol initiator", async () => {
@@ -207,18 +207,18 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel);
 
       await (newNodeB as Node).rpcRouter.dispatch(constructInstallRpc(identityHash));
-      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash)
-      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash)
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress)
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress)
-      expect(newChannelA!).toMatchObject(newChannelB!)
-      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!)
-      expect(newAppInstanceB!.identityHash).toBe(identityHash)
-      expect(newAppInstanceB!.appSeqNo).toBe(2)
-      expect(newAppInstanceB!.latestVersionNumber).toBe(1)
-      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(2)
-      expect(newChannelB!.monotonicNumProposedApps).toBe(2)
-      expect(newChannelB!.appInstances.length).toBe(1)
+      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
+      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceB!.identityHash).toBe(identityHash);
+      expect(newAppInstanceB!.appSeqNo).toBe(2);
+      expect(newAppInstanceB!.latestVersionNumber).toBe(1);
+      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(2);
+      expect(newChannelB!.monotonicNumProposedApps).toBe(2);
+      expect(newChannelB!.appInstances.length).toBe(1);
     }, 30_000);
   });
 
@@ -304,7 +304,7 @@ describe("Sync", () => {
       await uninstallApp(newNodeA as Node, nodeB, appIdentityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).toMatchObject(newChannelB!)
+      expect(newChannelA!).toMatchObject(newChannelB!);
       expect(newChannelA!.appInstances.length).toBe(0);
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelA!.monotonicNumProposedApps).toBe(2);
@@ -342,7 +342,7 @@ describe("Sync", () => {
       await uninstallApp(nodeA, newNodeB as Node, appIdentityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).toMatchObject(newChannelB!)
+      expect(newChannelA!).toMatchObject(newChannelB!);
       expect(newChannelB!.appInstances.length).toBe(0);
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelB!.monotonicNumProposedApps).toBe(2);
@@ -425,18 +425,18 @@ describe("Sync", () => {
 
       // create new app
       [identityHash] = await installApp(newNodeA as Node, nodeB, multisigAddress, TicTacToeApp);
-      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash)
-      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash)
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress)
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress)
-      expect(newChannelA!).toMatchObject(newChannelB!)
-      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!)
-      expect(newAppInstanceA!.identityHash).toBe(identityHash)
-      expect(newAppInstanceA!.appSeqNo).toBe(3)
-      expect(newAppInstanceA!.latestVersionNumber).toBe(1)
-      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(4)
-      expect(newChannelA!.monotonicNumProposedApps).toBe(3)
-      expect(newChannelA!.appInstances.length).toBe(1)
+      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
+      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceA!.identityHash).toBe(identityHash);
+      expect(newAppInstanceA!.appSeqNo).toBe(3);
+      expect(newAppInstanceA!.latestVersionNumber).toBe(1);
+      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(4);
+      expect(newChannelA!.monotonicNumProposedApps).toBe(3);
+      expect(newChannelA!.appInstances.length).toBe(1);
     }, 30_000);
 
     test("sync protocol -- responder has an app uninstalled by initiator", async () => {
@@ -469,18 +469,18 @@ describe("Sync", () => {
 
       // create new app
       [identityHash] = await installApp(nodeA, newNodeB as Node, multisigAddress, TicTacToeApp);
-      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash)
-      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash)
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress)
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress)
-      expect(newChannelA!).toMatchObject(newChannelB!)
-      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!)
-      expect(newAppInstanceB!.identityHash).toBe(identityHash)
-      expect(newAppInstanceB!.appSeqNo).toBe(3)
-      expect(newAppInstanceB!.latestVersionNumber).toBe(1)
-      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(4)
-      expect(newChannelB!.monotonicNumProposedApps).toBe(3)
-      expect(newChannelB!.appInstances.length).toBe(1)
+      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
+      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceB!.identityHash).toBe(identityHash);
+      expect(newAppInstanceB!.appSeqNo).toBe(3);
+      expect(newAppInstanceB!.latestVersionNumber).toBe(1);
+      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(4);
+      expect(newChannelB!.monotonicNumProposedApps).toBe(3);
+      expect(newChannelB!.appInstances.length).toBe(1);
     }, 30_000);
   });
 
@@ -517,7 +517,7 @@ describe("Sync", () => {
         try {
           await nodeA.rpcRouter.dispatch(constructTakeActionRpc(appIdentityHash, validAction));
         } catch (e) {
-          console.log(`Caught error sending rpc: ${stringify(e)}`);
+          log.info(`Caught error sending rpc: ${e.message}`);
         }
       });
 
@@ -567,7 +567,7 @@ describe("Sync", () => {
       await uninstallApp(newNodeA as Node, nodeB, appIdentityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).toMatchObject(newChannelB!)
+      expect(newChannelA!).toMatchObject(newChannelB!);
       expect(newChannelA!.appInstances.length).toBe(0);
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelA!.monotonicNumProposedApps).toBe(2);
@@ -605,7 +605,7 @@ describe("Sync", () => {
       await uninstallApp(nodeA, newNodeB as Node, appIdentityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).toMatchObject(newChannelB!)
+      expect(newChannelA!).toMatchObject(newChannelB!);
       expect(newChannelB!.appInstances.length).toBe(0);
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelB!.monotonicNumProposedApps).toBe(2);

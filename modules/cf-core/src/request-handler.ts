@@ -15,7 +15,7 @@ import {
   ProtocolParam,
   StateChannelJSON,
 } from "@connext/types";
-import { bigNumberifyJson, logTime } from "@connext/utils";
+import { bigNumberifyJson, logTime, delay } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 
@@ -161,13 +161,11 @@ export class RequestHandler {
     return this._channel;
   }
 
-  public async addChannelToRequestHandler(
-    params: {
-      initiatorIdentifier?: string;
-      responderIdentifier?: string;
-      appIdentityHash?: string;
-    },
-  ): Promise<void> {
+  public async addChannelToRequestHandler(params: {
+    initiatorIdentifier?: string;
+    responderIdentifier?: string;
+    appIdentityHash?: string;
+  }): Promise<void> {
     let json: StateChannelJSON | undefined;
     if (params.appIdentityHash) {
       json = await this.store.getStateChannelByAppIdentityHash(params.appIdentityHash);
@@ -180,6 +178,5 @@ export class RequestHandler {
       return;
     }
     this._channel = json && StateChannel.fromJson(json);
-    console.log('this._channel: ', this._channel);
   }
 }

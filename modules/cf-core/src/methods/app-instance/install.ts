@@ -53,81 +53,81 @@ export class InstallAppInstanceController extends NodeController {
     if (!requestHandler.channel) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(params.appIdentityHash));
     }
+
+    const { appIdentityHash } = params;
+
+    if (!appIdentityHash || !appIdentityHash.trim()) {
+      throw new Error(NO_APP_IDENTITY_HASH_TO_INSTALL);
+    }
+
+    const proposal = requestHandler.channel.proposedAppInstances.get(appIdentityHash);
+    if (!proposal) {
+      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(appIdentityHash));
+    }
   }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.Install,
   ): Promise<MethodResults.Install> {
-    const { store, protocolRunner, publicIdentifier } = requestHandler;
+    const { channel, protocolRunner, publicIdentifier } = requestHandler;
 
-    const appInstanceProposal = await install(store, protocolRunner, params, publicIdentifier);
+    console.log(`CALLING INSTALL PROTOCOL`);
+    const postProtocolChannel = await install(channel!, protocolRunner, params, publicIdentifier);
+    console.log(`INSTALL PROTOCOL COMPLETE`);
 
-    const appInstance = await store.getAppInstance(appInstanceProposal.identityHash);
+    const appInstance = postProtocolChannel.appInstances.get(params.appIdentityHash);
     if (!appInstance) {
       throw new Error(
-        `Cannot find app instance after install protocol run for hash ${appInstanceProposal.identityHash}`,
+        `Cannot find app instance after install protocol run for hash ${params.appIdentityHash}`,
       );
     }
 
     return {
-      appInstance,
+      appInstance: appInstance.toJson(),
     };
   }
 }
 
 export async function install(
-  store: IStoreService,
+  preProtocolStateChannel: StateChannel,
   protocolRunner: ProtocolRunner,
   params: MethodParams.Install,
   initiatorIdentifier: PublicIdentifier,
-): Promise<AppInstanceProposal> {
-  const { appIdentityHash } = params;
-
-  if (!appIdentityHash || !appIdentityHash.trim()) {
-    throw new Error(NO_APP_IDENTITY_HASH_TO_INSTALL);
-  }
-
-  const proposal = await store.getAppProposal(appIdentityHash);
-  if (!proposal) {
-    throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(appIdentityHash));
-  }
-
-  const json = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-  if (!json) {
-    throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
-  }
-  const stateChannel = StateChannel.fromJson(json);
-
+): Promise<StateChannel> {
+  const proposal = preProtocolStateChannel.proposedAppInstances.get(params.appIdentityHash)!;
   const isSame = initiatorIdentifier === proposal.initiatorIdentifier;
 
-  await protocolRunner.initiateProtocol(ProtocolNames.install, {
-    appInitiatorIdentifier: proposal.initiatorIdentifier,
-    appInterface: { ...proposal.abiEncodings, addr: proposal.appDefinition },
-    appResponderIdentifier: proposal.responderIdentifier,
-    appSeqNo: proposal.appSeqNo,
-    defaultTimeout: toBN(proposal.defaultTimeout),
-    disableLimit: false,
-    initialState: proposal.initialState,
-    initiatorBalanceDecrement: isSame
-      ? toBN(proposal.initiatorDeposit)
-      : toBN(proposal.responderDeposit),
-    initiatorDepositAssetId: isSame
-      ? proposal.initiatorDepositAssetId
-      : proposal.responderDepositAssetId,
-    initiatorIdentifier,
-    meta: proposal.meta,
-    multisigAddress: stateChannel.multisigAddress,
-    outcomeType: proposal.outcomeType,
-    responderBalanceDecrement: isSame
-      ? toBN(proposal.responderDeposit)
-      : toBN(proposal.initiatorDeposit),
-    responderDepositAssetId: isSame
-      ? proposal.responderDepositAssetId
-      : proposal.initiatorDepositAssetId,
-    responderIdentifier: isSame ? proposal.responderIdentifier : proposal.initiatorIdentifier,
-    stateTimeout: toBN(proposal.stateTimeout),
-  } as ProtocolParams.Install);
+  const { channel: postProtocolChannel } = await protocolRunner.initiateProtocol(
+    ProtocolNames.install,
+    {
+      appInitiatorIdentifier: proposal.initiatorIdentifier,
+      appInterface: { ...proposal.abiEncodings, addr: proposal.appDefinition },
+      appResponderIdentifier: proposal.responderIdentifier,
+      appSeqNo: proposal.appSeqNo,
+      defaultTimeout: toBN(proposal.defaultTimeout),
+      disableLimit: false,
+      initialState: proposal.initialState,
+      initiatorBalanceDecrement: isSame
+        ? toBN(proposal.initiatorDeposit)
+        : toBN(proposal.responderDeposit),
+      initiatorDepositAssetId: isSame
+        ? proposal.initiatorDepositAssetId
+        : proposal.responderDepositAssetId,
+      initiatorIdentifier,
+      meta: proposal.meta,
+      multisigAddress: preProtocolStateChannel.multisigAddress,
+      outcomeType: proposal.outcomeType,
+      responderBalanceDecrement: isSame
+        ? toBN(proposal.responderDeposit)
+        : toBN(proposal.initiatorDeposit),
+      responderDepositAssetId: isSame
+        ? proposal.responderDepositAssetId
+        : proposal.initiatorDepositAssetId,
+      responderIdentifier: isSame ? proposal.responderIdentifier : proposal.initiatorIdentifier,
+      stateTimeout: toBN(proposal.stateTimeout),
+    } as ProtocolParams.Install,
+  );
 
-  return proposal;
+  return postProtocolChannel;
 }

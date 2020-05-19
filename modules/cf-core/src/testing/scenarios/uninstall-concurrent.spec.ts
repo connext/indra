@@ -1,4 +1,9 @@
-import { CONVENTION_FOR_ETH_ASSET_ID, InstallMessage, ProposeMessage, UninstallMessage } from "@connext/types";
+import {
+  CONVENTION_FOR_ETH_ASSET_ID,
+  InstallMessage,
+  ProposeMessage,
+  UninstallMessage,
+} from "@connext/types";
 import { One } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
@@ -36,7 +41,7 @@ describe("Node method follows spec - uninstall", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
     });
 
-    it("uninstall apps with ETH concurrently", async done => {
+    it.only("uninstall apps with ETH concurrently", async (done) => {
       const appIdentityHashes: string[] = [];
       let uninstalledApps = 0;
       await collateralizeChannel(
@@ -46,11 +51,15 @@ describe("Node method follows spec - uninstall", () => {
         parseEther("2"), // We are depositing in 2 and use 1 for each concurrent app
       );
 
+      console.log("nodeA: ", nodeA.publicIdentifier);
+      console.log("nodeB: ", nodeB.publicIdentifier);
       nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
+        console.log("PROPOSE_INSTALL_EVENT msg: ", msg);
         makeInstallCall(nodeB, msg.data.appIdentityHash);
       });
 
       nodeA.on("INSTALL_EVENT", (msg: InstallMessage) => {
+        console.log("INSTALL_EVENT msg: ", msg);
         appIdentityHashes.push(msg.data.params.appIdentityHash);
       });
 
@@ -69,7 +78,7 @@ describe("Node method follows spec - uninstall", () => {
       nodeA.rpcRouter.dispatch(proposeRpc);
 
       while (appIdentityHashes.length !== 2) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
       nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHashes[0]));
@@ -78,7 +87,7 @@ describe("Node method follows spec - uninstall", () => {
       // NOTE: nodeA does not ever emit this event
       nodeB.on("UNINSTALL_EVENT", (msg: UninstallMessage) => {
         expect(appIdentityHashes.includes(msg.data.appIdentityHash)).toBe(true);
-        expect(msg.data.multisigAddress).toBe(multisigAddress)
+        expect(msg.data.multisigAddress).toBe(multisigAddress);
         uninstalledApps += 1;
         if (uninstalledApps === 2) done();
       });
