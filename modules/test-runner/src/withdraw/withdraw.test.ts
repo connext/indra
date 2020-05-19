@@ -18,7 +18,7 @@ import {
 // TODO: multiple withdrawal tests are skipped because there are issues where
 // the TX is sent before the client can subscribe. need to fix by possibly increasing block
 // time
-describe.only("Withdrawal", () => {
+describe("Withdrawal", () => {
   let client: IConnextClient;
   let tokenAddress: string;
 
