@@ -121,7 +121,9 @@ describe("Deposits", () => {
     expect(appIdentityHash).to.be.undefined;
   });
 
-  it("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {
+  // TODO: move this test case to the node unit tests where the deposit app
+  // flow of the node can be more granularly controlled
+  it.skip("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {
     // send a payment to a receiver client to
     // trigger collateral event
     const expected = {
@@ -140,7 +142,7 @@ describe("Deposits", () => {
     // for nodes proposed deposit app and install event will not be
     // emitted
     await new Promise(async (resolve, reject) => {
-      receiver.on("PROPOSE_INSTALL_EVENT", msg => {
+      receiver.on("PROPOSE_INSTALL_EVENT", (msg) => {
         if (msg.params.appDefinition === receiver.config.contractAddresses.DepositApp) {
           resolve();
         }
@@ -155,7 +157,7 @@ describe("Deposits", () => {
     const getDepositApps = async () => {
       const apps = await receiver.getAppInstances();
       return apps.filter(
-        app => app.appInterface.addr === client.config.contractAddresses.DepositApp,
+        (app) => app.appInterface.addr === client.config.contractAddresses.DepositApp,
       )[0];
     };
     while (!(await getDepositApps())) {
