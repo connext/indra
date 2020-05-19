@@ -79,7 +79,7 @@ export const deployTestArtifactsToChain = async (
     ERC20.abi,
     ERC20.bytecode,
     wallet,
-  ).deploy();
+  ).deploy("", "");
 
   const appWithCounter = await new ContractFactory(
     AppWithAction.abi,
