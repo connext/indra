@@ -103,10 +103,14 @@ export class Node {
     private readonly lockService?: ILockService,
   ) {
     this.log = log.newContext("CF-Node");
-    this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
     this.protocolRunner = this.buildProtocolRunner();
+
+    // Create a new copy of networkContext so caller's copy doesn't get modified unexpectedly
+    delete this.networkContext.provider;
+    this.networkContext = JSON.parse(JSON.stringify(this.networkContext));
+    this.networkContext.provider = this.provider;
   }
 
   @Memoize()
