@@ -19,6 +19,7 @@ import {
   notGreaterThan,
   notLessThanOrEqualTo,
   toBN,
+  delayAndThrow,
 } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -106,13 +107,32 @@ export class DepositController extends AbstractController {
       };
     }
 
-    this.log.debug(`Found existing deposit app`);
+    this.log.debug(`Found existing deposit app: ${depositApp.identityHash}`);
     const latestState = depositApp.latestState as DepositAppState;
 
     // check if you are the initiator;
     const initiatorTransfer = latestState.transfers[0];
     if (initiatorTransfer.to !== this.connext.signerAddress) {
-      throw new Error(`Node has unfinalized deposit, cannot request deposit rights for ${assetId}`);
+      this.log.warn(`Found node transfer, waiting 20s to see if app is uninstalled`);
+      await Promise.race([
+        delayAndThrow(
+          20_000,
+          `Node has unfinalized deposit, cannot request deposit rights for ${assetId}`,
+        ),
+        new Promise((resolve) => {
+          this.connext.on(EventNames.UNINSTALL_EVENT, (msg) => {
+            if (msg.appIdentityHash === depositApp.identityHash) {
+              resolve();
+            }
+          });
+        }),
+      ]);
+      const appIdentityHash = await this.proposeDepositInstall(assetId);
+      this.log.info(`Successfully obtained deposit rights for ${assetId}`);
+      return {
+        appIdentityHash,
+        multisigAddress: this.connext.multisigAddress,
+      };
     }
 
     this.log.debug(
@@ -123,7 +143,9 @@ export class DepositController extends AbstractController {
       appIdentityHash: depositApp.identityHash,
       multisigAddress: this.connext.multisigAddress,
     };
-    this.log.info(`requestDepositRights for assetId ${assetId} complete: ${JSON.stringify(result)}`);
+    this.log.info(
+      `requestDepositRights for assetId ${assetId} complete: ${JSON.stringify(result)}`,
+    );
     return result;
   };
 
@@ -163,7 +185,7 @@ export class DepositController extends AbstractController {
       chainId: this.ethProvider.network.chainId,
     })) as DefaultApp;
     const depositApp = appInstances.find(
-      appInstance =>
+      (appInstance) =>
         appInstance.appInterface.addr === depositAppInfo.appDefinitionAddress &&
         (appInstance.latestState as DepositAppState).assetId === params.assetId,
     );
