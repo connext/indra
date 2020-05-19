@@ -12,7 +12,6 @@ import { providers } from "ethers";
 
 import { ConnextClient } from "../connext";
 import { ConnextListener } from "../listener";
-import { BigNumber } from "ethers/utils";
 
 export abstract class AbstractController {
   public name: string;
@@ -43,7 +42,7 @@ export abstract class AbstractController {
     this.log.info(`Calling propose install`);
     this.log.debug(`Calling propose install with ${stringify(params)}`);
 
-    // Temporarily validate this here until we move it into propose protocol as  part of other PRs. 
+    // Temporarily validate this here until we move it into propose protocol as  part of other PRs.
     // Without this, install will fail with a timeout
     const freeBalance = await this.connext.getFreeBalance(params.initiatorDepositAssetId);
     if (params.initiatorDeposit.gt(freeBalance[this.connext.signerAddress])) {
