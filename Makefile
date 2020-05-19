@@ -65,6 +65,12 @@ start-test-release:
 start-prod:
 	bash ops/start-prod.sh
 
+start-bot: bot
+	bash ops/test/bot.sh 1 -1
+
+start-bot-farm: bot
+	bash ops/test/bot.sh 3 -1
+
 stop:
 	bash ops/stop.sh
 
@@ -152,10 +158,10 @@ test-backwards-compatibility: pull-backwards-compatible
 	bash ops/test/integration.sh $(backwards_compatible_version)
 
 test-bot: bot
-	bash ops/test/bot.sh
+	bash ops/test/bot.sh 1 3
 
 test-bot-farm: bot
-	bash ops/test/bot.sh 3
+	bash ops/test/bot.sh 3 3
 
 test-cf: cf-core
 	bash ops/test/cf.sh

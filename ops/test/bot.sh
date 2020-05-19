@@ -30,7 +30,6 @@ function cleanup {
         echo "receiver failed: $receiver_code";
         exit_code="$receiver_code";
       fi
-      echo "Removing receiver ping pong pair $n.."
       docker container rm ${receiver_name}_$n &> /dev/null || true
     fi
 
@@ -44,7 +43,6 @@ function cleanup {
         echo "sender failed: $sender_code";
         exit_code="$sender_code";
       fi
-      echo "Removing sender ping pong pair $n.."
       docker container rm ${sender_name}_$n &> /dev/null || true
     fi
   done

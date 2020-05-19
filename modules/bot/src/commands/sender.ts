@@ -26,9 +26,14 @@ export default {
         default: "1",
       })
       .option("log-level", {
-        description: "Log level",
+        description: "0 = print no logs, 5 = print all logs",
         type: "number",
-        default: 1,
+        default: 2,
+      })
+      .option("payment-limit", {
+        description: "Exit after sending this number of payments (defaults to -1 for no limit)",
+        type: "number",
+        default: -1,
       })
       .option("private-key", {
         describe: "Ethereum Private Key",
@@ -88,15 +93,25 @@ export default {
     }
 
     // Register sender listeners to send a new payment once prev one finishes
+    let paymentCount = 0;
     client.on(
       EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
       async (eventData: EventPayloads.LinkedTransferUnlocked) => {
-        log.info(`Received transfer: ${stringify(eventData)}`);
 
+        // ignore transfers from self
         if (eventData.sender === client.publicIdentifier) {
-          // our own transfer
           return;
         }
+
+        paymentCount += 1;
+        if (argv.paymentLimit >= 0 && paymentCount > argv.paymentLimit) {
+          log.info(`We've passed the payment limit, exiting successfully`);
+          process.exit(0);
+        } else if (argv.paymentLimit >= 0) {
+          log.info(`${argv.paymentLimit - paymentCount} payments to go`);
+        }
+
+        log.info(`Received transfer ${paymentCount}: ${stringify(eventData)}`);
 
         if (!eventData.sender) {
           log.error(`Sender not specified, cannot send payment back`);
@@ -121,6 +136,7 @@ export default {
           assetId: AddressZero,
           meta: { info: "Response payment" },
         } as PublicParams.SignedTransfer);
+
       },
     );
 

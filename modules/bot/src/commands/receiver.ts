@@ -17,14 +17,19 @@ export default {
         default: "1",
       })
       .option("log-level", {
-        description: "Log level",
+        description: "0 = print no logs, 5 = print all logs",
         type: "number",
-        default: 1,
+        default: 2,
       })
       .option("name", {
         description: "Client namespace",
         type: "string",
         default: "client",
+      })
+      .option("payment-limit", {
+        description: "Exit after receiving this number of payments (defaults to -1 for no limit)",
+        type: "number",
+        default: -1,
       })
       .option("private-key", {
         describe: "Ethereum Private Key",
@@ -53,15 +58,17 @@ export default {
       argv.logLevel,
     );
 
+    let paymentCount = 0;
     client.on(
       EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
       async (eventData: EventPayloads.SignedTransferCreated) => {
-        log.info(`Received transfer: ${stringify(eventData)}`);
 
+        // ignore transfers from self
         if (eventData.sender === client.publicIdentifier) {
-          // our own transfer
           return;
         }
+
+        log.info(`Received transfer ${paymentCount}: ${stringify(eventData)}`);
 
         if (eventData.type !== ConditionalTransferTypes.SignedTransfer) {
           log.error(`Receiver unexpected transfer type: ${eventData.type}`);
@@ -105,6 +112,15 @@ export default {
         log.info(
           `${eventData.amount} ETH sent back to ${eventData.sender} via transfer ${response.paymentId}`,
         );
+
+        paymentCount += 1;
+        if (argv.paymentLimit >= 0 && paymentCount > argv.paymentLimit) {
+          log.info(`Received last payment before exceeding limit`);
+          process.exit(0);
+        } else if (argv.paymentLimit >= 0) {
+          log.info(`${argv.paymentLimit - paymentCount} payments to go`);
+        }
+
       },
     );
 
