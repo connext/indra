@@ -12,6 +12,7 @@ import { providers } from "ethers";
 
 import { ConnextClient } from "../connext";
 import { ConnextListener } from "../listener";
+import { BigNumber } from "ethers/utils";
 
 export abstract class AbstractController {
   public name: string;
@@ -41,10 +42,20 @@ export abstract class AbstractController {
     // 163 ms
     this.log.info(`Calling propose install`);
     this.log.debug(`Calling propose install with ${stringify(params)}`);
+
+    // Temporarily validate this here until we move it into propose protocol as  part of other PRs. 
+    // Without this, install will fail with a timeout
+    const freeBalance = await this.connext.getFreeBalance(params.initiatorDepositAssetId);
+    if (params.initiatorDeposit.gt(freeBalance[this.connext.signerAddress])) {
+      throw new Error(
+        `Insufficient funds. Free balance: ${freeBalance.toString()}, Required balance: ${params.initiatorDeposit.toString()}`,
+      );
+    }
+
     const proposeRes = await Promise.race([
       this.connext.proposeInstallApp(params),
       delayAndThrow(
-        CF_METHOD_TIMEOUT,
+        CF_METHOD_TIMEOUT + 1000,
         `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
       ),
     ]);
@@ -57,7 +68,7 @@ export abstract class AbstractController {
       // 1676 ms TODO: why does this step take so long?
       await Promise.race([
         delayAndThrow(
-          CF_METHOD_TIMEOUT,
+          CF_METHOD_TIMEOUT + 1000,
           `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
         ),
         new Promise((res: () => any, rej: () => any): void => {
@@ -83,7 +94,7 @@ export abstract class AbstractController {
   };
 
   public throwIfAny = (...maybeErrorMessages: Array<string | undefined>): void => {
-    const errors = maybeErrorMessages.filter(c => !!c);
+    const errors = maybeErrorMessages.filter((c) => !!c);
     if (errors.length > 0) {
       throw new Error(errors.join(", "));
     }
@@ -96,15 +107,10 @@ export abstract class AbstractController {
   ): void => {
     // check app id
     const data = message.data && message.data.data ? message.data.data : message.data || message;
-    if (data.appIdentityHash !== appIdentityHash) {
-      const msg = `Caught reject install event for different app ${stringify(
-        message,
-      )}, expected ${appIdentityHash}. This should not happen.`;
-      this.log.warn(msg);
-      return rej(new Error(msg));
+    if (data.appIdentityHash === appIdentityHash) {
+      return rej(new Error(`Install failed. Event data: ${stringify(message)}`));
     }
-
-    return rej(new Error(`Install failed. Event data: ${stringify(message)}`));
+    return; 
   };
 
   private cleanupInstallListeners = (boundReject: any, appIdentityHash: string): void => {

@@ -125,7 +125,7 @@ export class ConnextListener extends ConnextEventEmitter {
         return;
       }
       this.log.info(`Processing proposal for ${appIdentityHash}`);
-      this.handleAppProposal(params, appIdentityHash, from);
+      await this.handleAppProposal(params, appIdentityHash, from);
       this.log.info(`Done processing propose install event ${time()}`);
       // validate and automatically install for the known and supported
       // applications
@@ -351,12 +351,12 @@ export class ConnextListener extends ConnextEventEmitter {
       await this.connext.installApp(appIdentityHash);
       this.log.info(`app ${appIdentityHash} installed`);
     } catch (e) {
-      this.log.error(`Caught error: ${e.message}`);
       // TODO: first proposal after reset is responded to
       // twice
       if (e.message.includes("No proposed AppInstance exists")) {
         return;
       } else {
+        this.log.error(`Caught error, rejecting install: ${e.message}`);
         await this.connext.rejectInstallApp(appIdentityHash);
         return;
       }
@@ -473,7 +473,13 @@ export class ConnextListener extends ConnextEventEmitter {
     action: AppAction,
   ): Promise<void> => {
     let boundResolve: (reason?: any) => void;
-    const appInstance = (await this.connext.getAppInstance(appIdentityHash)).appInstance;
+    const { appInstance } = (await this.connext.getAppInstance(appIdentityHash)) || {};
+    if (!appInstance) {
+      this.log.info(
+        `Could not find app instance, this likely means the app has been uninstalled, doing nothing`,
+      );
+      return;
+    }
     const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
       return app.appDefinitionAddress === appInstance.appInterface.addr;
     });

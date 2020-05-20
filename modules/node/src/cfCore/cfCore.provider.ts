@@ -36,7 +36,10 @@ export const cfCoreProviderFactory: Provider = {
       { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
       provider,
       config.getSigner(),
-      { acquireLock: lockService.lockedOperation.bind(lockService) },
+      { 
+        acquireLock: lockService.acquireLock.bind(lockService),
+        releaseLock: lockService.releaseLock.bind(lockService),
+      },
       undefined,
       log.newContext("CFCore"),
       false, // only clients sync on cf core start

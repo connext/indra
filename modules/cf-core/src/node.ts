@@ -33,7 +33,6 @@ import { Deferred } from "./deferred";
 import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 import { ProtocolRunner } from "./machine";
 import { StateChannel, AppInstance } from "./models";
-import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
 import { MethodRequest, MethodResponse, PersistAppType, PersistStateChannelType } from "./types";
@@ -71,7 +70,7 @@ export class Node {
     nodeConfig: NodeConfig,
     provider: JsonRpcProvider,
     signer: IChannelSigner,
-    lockService?: ILockService,
+    lockService: ILockService,
     blocksNeededForConfirmation?: number,
     logger?: ILoggerService,
     syncOnStart: boolean = true,
@@ -100,7 +99,7 @@ export class Node {
     public readonly networkContext: NetworkContext,
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
     public readonly log: ILoggerService = nullLogger,
-    private readonly lockService?: ILockService,
+    private readonly lockService: ILockService,
   ) {
     this.log = log.newContext("CF-Node");
     this.incoming = new EventEmitter();
@@ -147,7 +146,7 @@ export class Node {
       //   new JsonRpcProvider(this.provider.connection.url),
       // ),
       this.blocksNeededForConfirmation!,
-      new ProcessQueue(this.lockService),
+      this.lockService,
       this.log,
     );
     this.registerMessagingConnection();

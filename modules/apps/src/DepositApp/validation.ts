@@ -4,6 +4,8 @@ import {
   UninstallMiddlewareContext,
   ProtocolRoles,
   CONVENTION_FOR_ETH_ASSET_ID,
+  ProposeMiddlewareContext,
+  Address,
 } from "@connext/types";
 import {
   getAddressFromAssetId,
@@ -145,4 +147,22 @@ export const uninstallDepositMiddleware = async (
   }
 
   // TODO: withdrawal amount validation?
+};
+
+export const proposeDepositMiddleware = async (
+  context: ProposeMiddlewareContext,
+  appDefinitionAddress: Address,
+) => {
+  const { proposal, stateChannel } = context;
+  const depositApp = stateChannel.appInstances.find(([id, app]) => {
+    return (
+      app.appInterface.addr === appDefinitionAddress &&
+      app.latestState["assetId"] === proposal.initialState["assetId"]
+    );
+  });
+  if (depositApp) {
+    throw new Error(
+      `Cannot install two deposit apps with the same asset id simultaneously. Existing app: ${depositApp[0]}`,
+    );
+  }
 };

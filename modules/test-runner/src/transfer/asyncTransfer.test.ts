@@ -174,7 +174,7 @@ describe("Async Transfers", () => {
         assetId,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`invalid address`);
+    ).to.be.rejectedWith(`Invalid hex string`);
     // NOTE: will also include a `Value (..) is not less than or equal to 0
     // because it will not be able to fetch the free balance of the assetId
   });
@@ -230,7 +230,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Install failed.`);
+    ).to.be.rejectedWith(`Insufficient funds.`);
   });
 
   it("Bot A tries to transfer with a paymentId that is not 32 bytes", async () => {

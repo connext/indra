@@ -325,7 +325,7 @@ export class LinkedTransferService {
       }
     }
     this.log.info(
-      `unlockLinkedTransfersFromUser for ${userIdentifier} complete: ${unlockedAppIds}`,
+      `unlockLinkedTransfersFromUser for ${userIdentifier} complete: ${stringify(unlockedAppIds)}`,
     );
     return unlockedAppIds;
   }

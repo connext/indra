@@ -30,10 +30,7 @@ export class LinkedTransferController extends AbstractController {
   ): Promise<PublicResults.LinkedTransfer> => {
     this.log.info(`linkedTransfer started: ${stringify(params)}`);
     const amount = toBN(params.amount);
-    const { paymentId, preImage, meta, recipient } = params;
-    const assetId = params.assetId
-      ? getAddressFromAssetId(params.assetId)
-      : CONVENTION_FOR_ETH_ASSET_ID;
+    const { paymentId, preImage, meta, recipient, assetId } = params;
 
     this.throwIfAny(
       getAddressError(assetId),
