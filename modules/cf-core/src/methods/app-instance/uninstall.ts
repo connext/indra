@@ -30,20 +30,13 @@ export class UninstallController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.Uninstall,
   ): Promise<string> {
-    const { store } = requestHandler;
-    const { appIdentityHash } = params;
-
-    const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-    if (!sc) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
-    }
-
-    return sc.multisigAddress;
+    return params.multisigAddress;
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.Uninstall,
+    preProtocolStateChannel: StateChannel | undefined,
   ) {
     const { store } = requestHandler;
     const { appIdentityHash } = params;
@@ -52,17 +45,19 @@ export class UninstallController extends NodeController {
       throw new Error(NO_APP_IDENTITY_HASH_TO_UNINSTALL);
     }
 
-    const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-    if (!sc) {
+    if (!preProtocolStateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
-    if (sc.freeBalanceAppInstance && sc.freeBalanceAppInstance!.identityHash === appIdentityHash) {
-      throw new Error(CANNOT_UNINSTALL_FREE_BALANCE(sc.multisigAddress));
+    if (
+      preProtocolStateChannel.freeBalance &&
+      preProtocolStateChannel.freeBalance.identityHash === appIdentityHash
+    ) {
+      throw new Error(CANNOT_UNINSTALL_FREE_BALANCE(preProtocolStateChannel.multisigAddress));
     }
 
     // check if its the balance refund app
-    const app = await store.getAppInstance(appIdentityHash);
+    const app = preProtocolStateChannel.appInstances.get(appIdentityHash);
     if (!app) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
@@ -71,44 +66,34 @@ export class UninstallController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.Uninstall,
-  ): Promise<MethodResults.Uninstall> {
+    preProtocolStateChannel: StateChannel | undefined,
+  ): Promise<{ updatedChannel: StateChannel; result: MethodResults.Uninstall }> {
     const { store, protocolRunner, publicIdentifier } = requestHandler;
     const { appIdentityHash } = params;
 
-    if (!appIdentityHash) {
-      throw new Error(NO_APP_IDENTITY_HASH_TO_UNINSTALL);
-    }
-
-    const app = await store.getAppInstance(appIdentityHash);
-    if (!app) {
-      throw new Error(APP_ALREADY_UNINSTALLED(appIdentityHash));
-    }
-
-    const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-
-    if (!stateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
-    }
-
-    await uninstallAppInstanceFromChannel(
-      StateChannel.fromJson(stateChannel),
+    const updatedChannel = await uninstallAppInstanceFromChannel(
+      preProtocolStateChannel!,
       protocolRunner,
       publicIdentifier,
-      stateChannel.userIdentifiers.find(id => id !== publicIdentifier)!,
+      preProtocolStateChannel!.userIdentifiers.find((id) => id !== publicIdentifier)!,
       appIdentityHash,
     );
 
-    return { appIdentityHash, multisigAddress: stateChannel.multisigAddress };
+    return {
+      updatedChannel,
+      result: { appIdentityHash, multisigAddress: updatedChannel.multisigAddress },
+    };
   }
 
   protected async afterExecution(
     requestHandler: RequestHandler,
     params: MethodParams.Uninstall,
+    updatedChannel: StateChannel | undefined,
     returnValue: MethodResults.Uninstall,
   ): Promise<void> {
     const { router, publicIdentifier } = requestHandler;
     const { appIdentityHash } = params;
-    const {  multisigAddress } = returnValue;
+    const { multisigAddress } = returnValue;
 
     const msg = {
       from: publicIdentifier,
@@ -126,13 +111,17 @@ export async function uninstallAppInstanceFromChannel(
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
   appIdentityHash: string,
-): Promise<void> {
+): Promise<StateChannel> {
   const appInstance = stateChannel.getAppInstance(appIdentityHash);
 
-  await protocolRunner.initiateProtocol(ProtocolNames.uninstall, {
-    initiatorIdentifier,
-    responderIdentifier,
-    multisigAddress: stateChannel.multisigAddress,
-    appIdentityHash: appInstance.identityHash,
-  });
+  const { channel: updatedChannel } = await protocolRunner.initiateProtocol(
+    ProtocolNames.uninstall,
+    {
+      initiatorIdentifier,
+      responderIdentifier,
+      multisigAddress: stateChannel.multisigAddress,
+      appIdentityHash: appInstance.identityHash,
+    },
+  );
+  return updatedChannel;
 }

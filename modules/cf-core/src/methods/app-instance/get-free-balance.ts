@@ -20,7 +20,7 @@ export class GetFreeBalanceStateController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.GetFreeBalanceState,
-  ): Promise<MethodResults.GetFreeBalanceState> {
+  ): Promise<{ result: MethodResults.GetFreeBalanceState }> {
     const { store } = requestHandler;
     const { multisigAddress, assetId } = params;
 
@@ -38,6 +38,6 @@ export class GetFreeBalanceStateController extends NodeController {
     }
     const stateChannel = StateChannel.fromJson(json);
 
-    return stateChannel.getFreeBalanceClass().withTokenAddress(tokenAddress);
+    return { result: stateChannel.getFreeBalanceClass().withTokenAddress(tokenAddress) };
   }
 }

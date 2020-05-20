@@ -52,14 +52,14 @@ describe("Node method follows spec - takeAction", () => {
       "Node B confirms receipt of state update",
     () => {
       it("sends takeAction with invalid appIdentityHash", async () => {
-        const takeActionReq = constructTakeActionRpc("", validAction);
+        const takeActionReq = constructTakeActionRpc("", "", validAction);
 
         await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(
           NO_APP_INSTANCE_FOR_TAKE_ACTION,
         );
       });
 
-      it("can take action", async done => {
+      it("can take action", async (done) => {
         const multisigAddress = await createChannel(nodeA, nodeB);
         const [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
@@ -85,7 +85,7 @@ describe("Node method follows spec - takeAction", () => {
           done();
         });
 
-        const takeActionReq = constructTakeActionRpc(appIdentityHash, validAction);
+        const takeActionReq = constructTakeActionRpc(appIdentityHash, multisigAddress, validAction);
 
         /**
          * TEST #1
@@ -108,7 +108,7 @@ describe("Node method follows spec - takeAction", () => {
           },
         } = await nodeA.rpcRouter.dispatch(takeActionReq);
         // allow nodeA to confirm its messages
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
           nodeA.once(EventNames.UPDATE_STATE_EVENT, () => {
             setTimeout(resolve, 2000);
           });

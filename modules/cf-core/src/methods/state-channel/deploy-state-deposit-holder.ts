@@ -74,7 +74,7 @@ export class DeployStateDepositController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.DeployStateDepositHolder,
-  ): Promise<MethodResults.DeployStateDepositHolder> {
+  ): Promise<{ result: MethodResults.DeployStateDepositHolder }> {
     const { multisigAddress, retryCount } = params;
     const { log, networkContext, store, provider, signer } = requestHandler;
 
@@ -105,7 +105,7 @@ export class DeployStateDepositController extends NodeController {
       tx = await sendMultisigDeployTx(signer, channel, networkContext, retryCount, log);
     }
 
-    return { transactionHash: tx.hash! };
+    return { result: { transactionHash: tx.hash! } };
   }
 }
 
@@ -177,8 +177,9 @@ async function sendMultisigDeployTx(
     } catch (e) {
       error = e;
       log.error(
-        `Channel creation attempt ${tryCount} failed: ${e}.\n Retrying ${retryCount -
-          tryCount} more times`,
+        `Channel creation attempt ${tryCount} failed: ${e}.\n Retrying ${
+          retryCount - tryCount
+        } more times`,
       );
     }
   }

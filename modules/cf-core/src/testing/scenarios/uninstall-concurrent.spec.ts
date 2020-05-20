@@ -52,7 +52,7 @@ describe("Node method follows spec - uninstall", () => {
       );
 
       nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
-        makeInstallCall(nodeB, msg.data.appIdentityHash);
+        makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress);
       });
 
       nodeA.on("INSTALL_EVENT", (msg: InstallMessage) => {
@@ -77,8 +77,8 @@ describe("Node method follows spec - uninstall", () => {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
-      nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHashes[0]));
-      nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHashes[1]));
+      nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHashes[0], multisigAddress));
+      nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHashes[1], multisigAddress));
 
       // NOTE: nodeA does not ever emit this event
       nodeB.on("UNINSTALL_EVENT", (msg: UninstallMessage) => {

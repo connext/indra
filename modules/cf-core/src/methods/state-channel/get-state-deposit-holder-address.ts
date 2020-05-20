@@ -13,7 +13,7 @@ export class GetStateDepositHolderAddressController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.GetStateDepositHolderAddress,
-  ): Promise<MethodResults.GetStateDepositHolderAddress> {
+  ): Promise<{ result: MethodResults.GetStateDepositHolderAddress }> {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
     if (!networkContext.provider) {
@@ -24,21 +24,24 @@ export class GetStateDepositHolderAddressController extends NodeController {
     // the `getMultisigAddressWithCounterparty` function will default
     // to using any existing multisig address for the provided
     // owners before creating one
-    const { multisigAddress: storedMultisig } = await store
-      .getStateChannelByOwners(owners) || { multisigAddress: undefined };
+    const { multisigAddress: storedMultisig } = (await store.getStateChannelByOwners(owners)) || {
+      multisigAddress: undefined,
+    };
     if (!networkContext.provider && !storedMultisig) {
       throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
     }
-    const address = storedMultisig || await getCreate2MultisigAddress(
-      owners[0],
-      owners[1],
-      { 
-        proxyFactory: networkContext.ProxyFactory,
-        multisigMastercopy: networkContext.MinimumViableMultisig,
-      },
-      networkContext.provider,
-    );
+    const address =
+      storedMultisig ||
+      (await getCreate2MultisigAddress(
+        owners[0],
+        owners[1],
+        {
+          proxyFactory: networkContext.ProxyFactory,
+          multisigMastercopy: networkContext.MinimumViableMultisig,
+        },
+        networkContext.provider,
+      ));
 
-    return { address };
+    return { result: { address } };
   }
 }

@@ -32,7 +32,7 @@ describe("Node method follows spec - fails with improper action taken", () => {
 
       const [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
-      const takeActionReq = constructTakeActionRpc(appIdentityHash, validAction);
+      const takeActionReq = constructTakeActionRpc(appIdentityHash, multisigAddress, validAction);
 
       await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(INVALID_ACTION);
     });

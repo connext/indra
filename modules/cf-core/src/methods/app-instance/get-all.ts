@@ -16,7 +16,7 @@ export class GetInstalledAppInstancesController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.GetAppInstances,
-  ): Promise<MethodResults.GetAppInstances> {
+  ): Promise<{ result: MethodResults.GetAppInstances }> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
 
@@ -30,7 +30,9 @@ export class GetInstalledAppInstancesController extends NodeController {
     }
 
     return {
-      appInstances: channel.appInstances.map(([id, json]) => json),
+      result: {
+        appInstances: channel.appInstances.map(([id, json]) => json),
+      },
     };
   }
 }

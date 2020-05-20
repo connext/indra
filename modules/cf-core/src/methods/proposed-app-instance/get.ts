@@ -11,11 +11,11 @@ export class GetProposedAppInstanceController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.GetProposedAppInstance,
-  ): Promise<MethodResults.GetProposedAppInstance> {
+  ): Promise<{ result: MethodResults.GetProposedAppInstance }> {
     const appInstance = await requestHandler.store.getAppProposal(params.appIdentityHash);
     if (!appInstance) {
       throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(params.appIdentityHash));
     }
-    return { appInstance: bigNumberifyJson(appInstance) };
+    return { result: { appInstance: bigNumberifyJson(appInstance) } };
   }
 }

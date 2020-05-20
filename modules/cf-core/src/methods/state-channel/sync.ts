@@ -29,18 +29,18 @@ export class SyncController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.Sync,
-  ): Promise<MethodResults.Sync> {
-    const { protocolRunner, store, publicIdentifier } = requestHandler;
+    preProtocolStateChannel: StateChannel | undefined,
+  ): Promise<{ updatedChannel: StateChannel; result: MethodResults.Sync }> {
+    const { protocolRunner, publicIdentifier } = requestHandler;
     const { multisigAddress } = params;
-    const json = await store.getStateChannel(multisigAddress);
-    if (!json) {
+    if (!preProtocolStateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
     }
 
-    const channel = StateChannel.fromJson(json);
-    const responderIdentifier = [channel.initiatorIdentifier, channel.responderIdentifier].find(
-      (identifier) => identifier !== publicIdentifier,
-    );
+    const responderIdentifier = [
+      preProtocolStateChannel.initiatorIdentifier,
+      preProtocolStateChannel.responderIdentifier,
+    ].find((identifier) => identifier !== publicIdentifier);
 
     if (!responderIdentifier) {
       throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
@@ -55,25 +55,20 @@ export class SyncController extends NodeController {
       },
     );
 
-    return { syncedChannel: updated.toJson() };
+    return { updatedChannel: updated, result: { syncedChannel: updated.toJson() } };
   }
 
   protected async afterExecution(
     requestHandler: RequestHandler,
     params: MethodParams.Sync,
+    updatedChannel: StateChannel | undefined,
   ): Promise<void> {
-    const { store, router, publicIdentifier } = requestHandler;
-    const { multisigAddress } = params;
-
-    const postProtocolStateChannel = await store.getStateChannel(multisigAddress);
-    if (!postProtocolStateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
-    }
+    const { router, publicIdentifier } = requestHandler;
 
     const msg = {
       from: publicIdentifier,
       type: EventNames.SYNC,
-      data: { syncedChannel: postProtocolStateChannel },
+      data: { syncedChannel: updatedChannel!.toJson() },
     } as SyncMessage;
     await router.emit(msg.type, msg, `outgoing`);
   }

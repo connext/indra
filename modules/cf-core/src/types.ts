@@ -25,9 +25,7 @@ export const PersistCommitmentType = enumify({
   CreateWithdrawal: "CreateWithdrawal",
   UpdateWithdrawal: "UpdateWithdrawal",
 });
-export type PersistCommitmentType =
-  typeof PersistCommitmentType[keyof typeof PersistCommitmentType];
-
+export type PersistCommitmentType = typeof PersistCommitmentType[keyof typeof PersistCommitmentType];
 
 export const PersistStateChannelType = {
   CreateChannel: "CreateChannel",
@@ -36,7 +34,7 @@ export const PersistStateChannelType = {
   SyncFreeBalance: "SyncFreeBalance",
   SyncAppInstances: "SyncAppInstances",
 } as const;
-export type PersistStateChannelType = keyof typeof PersistStateChannelType
+export type PersistStateChannelType = keyof typeof PersistStateChannelType;
 
 export interface IPrivateKeyGenerator {
   (s: string): Promise<string>;
@@ -72,3 +70,5 @@ export type MethodRequest = MethodMessage & {
 export type MethodResponse = MethodMessage & {
   result: MethodResult;
 };
+
+export type ControllerExecutionResult = { updatedChannel?: StateChannel; result: MethodResult };

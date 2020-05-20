@@ -10,7 +10,6 @@ import {
   ProtocolMessage,
   PublicIdentifier,
   ILockService,
-  StateChannelJSON,
 } from "@connext/types";
 import { bigNumberifyJson, logTime } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
@@ -20,7 +19,6 @@ import { eventNameToImplementation, methodNameToImplementation } from "./methods
 import { ProtocolRunner } from "./machine";
 import RpcRouter from "./rpc-router";
 import { MethodRequest, MethodResponse } from "./types";
-import { StateChannel } from "./models";
 /**
  * This class registers handlers for requests to get or set some information
  * about app instances and channels for this Node and any relevant peer Nodes.
@@ -28,7 +26,6 @@ import { StateChannel } from "./models";
 export class RequestHandler {
   private readonly methods = new Map();
   private readonly events = new Map();
-  private _channel?: StateChannel;
 
   router!: RpcRouter;
 
@@ -151,28 +148,5 @@ export class RequestHandler {
   public getSignerAddress(): Promise<string> {
     const signer = this.getSigner();
     return signer.getAddress();
-  }
-
-  get channel() {
-    return this._channel;
-  }
-
-  public async addChannelToRequestHandler(params: {
-    initiatorIdentifier?: string;
-    responderIdentifier?: string;
-    appIdentityHash?: string;
-  }): Promise<void> {
-    let json: StateChannelJSON | undefined;
-    if (params.appIdentityHash) {
-      json = await this.store.getStateChannelByAppIdentityHash(params.appIdentityHash);
-    } else if (params.initiatorIdentifier! && params.responderIdentifier!) {
-      json = await this.store.getStateChannelByOwners([
-        params.initiatorIdentifier!,
-        params.responderIdentifier!,
-      ]);
-    } else {
-      return;
-    }
-    this._channel = json && StateChannel.fromJson(json);
   }
 }

@@ -34,23 +34,15 @@ export class InstallAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.Install,
   ): Promise<string> {
-    const { store } = requestHandler;
-    const { appIdentityHash } = params;
-
-    const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-    if (!sc) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
-    }
-
-    return sc.multisigAddress;
+    return params.multisigAddress;
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.Install,
+    preProtocolStateChannel: StateChannel | undefined,
   ): Promise<void> {
-    await requestHandler.addChannelToRequestHandler(params);
-    if (!requestHandler.channel) {
+    if (!preProtocolStateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(params.appIdentityHash));
     }
 
@@ -60,7 +52,7 @@ export class InstallAppInstanceController extends NodeController {
       throw new Error(NO_APP_IDENTITY_HASH_TO_INSTALL);
     }
 
-    const proposal = requestHandler.channel.proposedAppInstances.get(appIdentityHash);
+    const proposal = preProtocolStateChannel.proposedAppInstances.get(appIdentityHash);
     if (!proposal) {
       throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
@@ -69,10 +61,16 @@ export class InstallAppInstanceController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.Install,
-  ): Promise<MethodResults.Install> {
-    const { channel, protocolRunner, publicIdentifier } = requestHandler;
+    preProtocolStateChannel: StateChannel | undefined,
+  ): Promise<{ updatedChannel: StateChannel; result: MethodResults.Install }> {
+    const { protocolRunner, publicIdentifier } = requestHandler;
 
-    const postProtocolChannel = await install(channel!, protocolRunner, params, publicIdentifier);
+    const postProtocolChannel = await install(
+      preProtocolStateChannel!,
+      protocolRunner,
+      params,
+      publicIdentifier,
+    );
 
     const appInstance = postProtocolChannel.appInstances.get(params.appIdentityHash);
     if (!appInstance) {
@@ -82,7 +80,10 @@ export class InstallAppInstanceController extends NodeController {
     }
 
     return {
-      appInstance: appInstance.toJson(),
+      updatedChannel: postProtocolChannel,
+      result: {
+        appInstance: appInstance.toJson(),
+      },
     };
   }
 }

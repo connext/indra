@@ -43,7 +43,7 @@ export class CreateChannelController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.CreateChannel,
-  ): Promise<MethodResults.CreateChannel> {
+  ): Promise<{ result: MethodResults.CreateChannel }> {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
 
@@ -74,7 +74,7 @@ export class CreateChannelController extends NodeController {
       await this.setupAndCreateChannel(multisigAddress, requestHandler, params);
     }
 
-    return { multisigAddress };
+    return { result: { multisigAddress } };
   }
 
   private async setupAndCreateChannel(

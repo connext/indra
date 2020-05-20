@@ -56,9 +56,9 @@ describe("Node method follows spec when happening concurrently - install / unins
       );
 
       // install the first app
-      installedAppIdentityHash = await new Promise(async resolve => {
+      installedAppIdentityHash = await new Promise(async (resolve) => {
         nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
-          makeInstallCall(nodeB, msg.data.appIdentityHash);
+          makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress);
         });
 
         nodeA.once("INSTALL_EVENT", (msg: InstallMessage) => {
@@ -70,11 +70,11 @@ describe("Node method follows spec when happening concurrently - install / unins
       });
     });
 
-    it("install app with ETH then uninstall and install apps simultaneously from the same node", async done => {
+    it("install app with ETH then uninstall and install apps simultaneously from the same node", async (done) => {
       let completedActions = 0;
 
       nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) =>
-        makeInstallCall(nodeB, msg.data.appIdentityHash),
+        makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress),
       );
 
       nodeA.once("INSTALL_EVENT", () => {
@@ -100,14 +100,14 @@ describe("Node method follows spec when happening concurrently - install / unins
       );
 
       nodeA.rpcRouter.dispatch(installCall);
-      nodeA.rpcRouter.dispatch(constructUninstallRpc(installedAppIdentityHash));
+      nodeA.rpcRouter.dispatch(constructUninstallRpc(installedAppIdentityHash, multisigAddress));
     });
 
-    it("install app with ETH then uninstall and install apps simultaneously from separate nodes", async done => {
+    it("install app with ETH then uninstall and install apps simultaneously from separate nodes", async (done) => {
       let completedActions = 0;
 
       nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) =>
-        makeInstallCall(nodeB, msg.data.appIdentityHash),
+        makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress),
       );
 
       nodeA.once("INSTALL_EVENT", () => {
@@ -133,7 +133,7 @@ describe("Node method follows spec when happening concurrently - install / unins
       );
 
       nodeA.rpcRouter.dispatch(installCall);
-      nodeB.rpcRouter.dispatch(constructUninstallRpc(installedAppIdentityHash));
+      nodeB.rpcRouter.dispatch(constructUninstallRpc(installedAppIdentityHash, multisigAddress));
     });
   });
 });

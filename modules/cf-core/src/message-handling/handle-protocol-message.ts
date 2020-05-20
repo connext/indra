@@ -17,7 +17,6 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
 import { StateChannel } from "../models";
-import { stringify } from "querystring";
 
 /**
  * Forwards all received Messages that are for the machine's internal
@@ -38,11 +37,14 @@ export async function handleReceivedProtocolMessage(
   if (seq === UNASSIGNED_SEQ_NO) return;
 
   let postProtocolStateChannel: StateChannel;
-  await requestHandler.addChannelToRequestHandler(params!);
+  const json = await store.getStateChannelByOwners([
+    params!.initiatorIdentifier,
+    params!.responderIdentifier,
+  ]);
   try {
-    const { channel }: { channel: StateChannel } = await protocolRunner.runProtocolWithMessage(
+    const { channel } = await protocolRunner.runProtocolWithMessage(
       data,
-      requestHandler.channel,
+      json && StateChannel.fromJson(json),
     );
     postProtocolStateChannel = channel;
   } catch (e) {

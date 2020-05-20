@@ -27,12 +27,13 @@ export class ProposeInstallAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
   ): Promise<string> {
-    return requestHandler.channel!.multisigAddress;
+    return params.multisigAddress;
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
+    preProtocolStateChannel: StateChannel | undefined,
   ): Promise<void> {
     const { initialState, responderIdentifier } = params;
     const { publicIdentifier } = requestHandler;
@@ -41,11 +42,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
       throw new Error(NULL_INITIAL_STATE_FOR_PROPOSAL);
     }
 
-    await requestHandler.addChannelToRequestHandler({
-      ...params,
-      initiatorIdentifier: publicIdentifier,
-    });
-    if (!requestHandler.channel) {
+    if (!preProtocolStateChannel) {
       throw new Error(
         NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, responderIdentifier].toString()),
       );
@@ -67,12 +64,9 @@ export class ProposeInstallAppInstanceController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
-  ): Promise<MethodResults.ProposeInstall> {
-    await requestHandler.addChannelToRequestHandler({
-      ...params,
-      initiatorIdentifier: requestHandler.publicIdentifier,
-    });
-    const { protocolRunner, publicIdentifier, channel } = requestHandler;
+    preProtocolStateChannel: StateChannel | undefined,
+  ): Promise<{ updatedChannel: StateChannel; result: MethodResults.ProposeInstall }> {
+    const { protocolRunner, publicIdentifier } = requestHandler;
 
     const { responderIdentifier, stateTimeout, defaultTimeout } = params;
 
@@ -81,15 +75,15 @@ export class ProposeInstallAppInstanceController extends NodeController {
       {
         ...params,
         stateTimeout: stateTimeout || defaultTimeout,
-        multisigAddress: channel!.multisigAddress,
         initiatorIdentifier: publicIdentifier,
         responderIdentifier: responderIdentifier,
       },
-      channel!,
+      preProtocolStateChannel!,
     );
 
     return {
-      appIdentityHash: updated.mostRecentlyProposedAppInstance().identityHash,
+      updatedChannel: updated,
+      result: { appIdentityHash: updated.mostRecentlyProposedAppInstance().identityHash },
     };
   }
 }

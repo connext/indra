@@ -8,11 +8,7 @@ import { Node } from "../../node";
 
 import { toBeLt } from "../bignumber-jest-matcher";
 import { NetworkContextForTestSuite } from "../contracts";
-import {
-  MemoryLockService,
-  MemoryMessagingService,
-  MemoryStoreServiceFactory,
-} from "../services";
+import { MemoryLockService, MemoryMessagingService, MemoryStoreServiceFactory } from "../services";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import {
   collateralizeChannel,
@@ -72,7 +68,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         multisigAddress = await createChannel(nodeA, nodeB);
       });
 
-      it(`install app with ETH`, async done => {
+      it(`install app with ETH`, async (done) => {
         await collateralizeChannel(multisigAddress, nodeA, nodeB);
 
         let preInstallETHBalanceNodeA: BigNumber;
@@ -87,7 +83,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
             multisigAddress,
             CONVENTION_FOR_ETH_ASSET_ID,
           );
-          makeInstallCall(nodeB, msg.data.appIdentityHash);
+          makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress);
         });
 
         nodeA.on(`INSTALL_EVENT`, async () => {
