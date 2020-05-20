@@ -25,7 +25,10 @@ describe("Confirms that a FreeBalance cannot be uninstalled", () => {
       } = await nodeA.rpcRouter.dispatch(constructGetStateChannelRpc(multisigAddress));
       expect(channel.multisigAddress).toBe(multisigAddress);
 
-      const fbUninstallReq = constructUninstallRpc(channel.freeBalanceAppInstance.identityHash);
+      const fbUninstallReq = constructUninstallRpc(
+        channel.freeBalanceAppInstance.identityHash,
+        channel.multisigAddress,
+      );
 
       try {
         await nodeA.rpcRouter.dispatch(fbUninstallReq);

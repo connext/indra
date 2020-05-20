@@ -1,5 +1,5 @@
 import { ProposeMessage, MethodParams } from "@connext/types";
-import { deBigNumberifyJson } from "@connext/utils";
+import { deBigNumberifyJson, stringify } from "@connext/utils";
 
 import { Node } from "../../node";
 
@@ -50,14 +50,12 @@ describe("Node method follows spec - propose install", () => {
       nodeB = context["B"].node;
 
       multisigAddress = await createChannel(nodeA, nodeB);
-      await collateralizeChannel(multisigAddress, nodeA, nodeB);
     });
 
     it("propose install an app with eth and a meta", async (done: jest.DoneCallback) => {
       const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const params = {
         ...(rpc.parameters as MethodParams.ProposeInstall),
-        multisigAddress: undefined,
         meta: {
           info: "Provided meta",
         },
@@ -71,7 +69,7 @@ describe("Node method follows spec - propose install", () => {
       };
 
       const appId = await new Promise(async (resolve, reject) => {
-        let identityHash;
+        let identityHash: string = "";
         let dispatched = false;
         nodeB.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
           // make sure message has the right structure
@@ -80,7 +78,7 @@ describe("Node method follows spec - propose install", () => {
           identityHash = msg.data.appIdentityHash;
           if (dispatched) resolve(identityHash);
         });
-  
+
         // TODO: add expected message B
         try {
           await nodeA.rpcRouter.dispatch({

@@ -202,6 +202,7 @@ export class CFCoreService {
       initiatorDeposit,
       initiatorDepositAssetId,
       meta,
+      multisigAddress: channel.multisigAddress,
       outcomeType,
       responderIdentifier: channel.userIdentifier,
       responderDeposit,
@@ -235,9 +236,13 @@ export class CFCoreService {
     }
   }
 
-  async installApp(appIdentityHash: string): Promise<MethodResults.Install> {
+  async installApp(
+    appIdentityHash: string,
+    multisigAddress: string,
+  ): Promise<MethodResults.Install> {
     const parameters: MethodParams.Install = {
       appIdentityHash,
+      multisigAddress,
     };
     this.logCfCoreMethodStart(MethodNames.chan_install, parameters);
     const installRes = await this.cfCore.rpcRouter.dispatch({
@@ -249,17 +254,19 @@ export class CFCoreService {
     return installRes.result.result as MethodResults.Install;
   }
 
-  async rejectInstallApp(appIdentityHash: string): Promise<MethodResults.RejectInstall> {
-    const parameters: MethodParams.Install = {
+  async rejectInstallApp(
+    appIdentityHash: string,
+    multisigAddress: string,
+  ): Promise<MethodResults.RejectInstall> {
+    const parameters: MethodParams.RejectInstall = {
       appIdentityHash,
+      multisigAddress,
     };
     this.logCfCoreMethodStart(MethodNames.chan_rejectInstall, parameters);
     const rejectRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_rejectInstall,
-      parameters: {
-        appIdentityHash,
-      } as MethodParams.RejectInstall,
+      parameters,
     });
     this.logCfCoreMethodResult(MethodNames.chan_rejectInstall, rejectRes.result.result);
     // update app status
@@ -274,6 +281,7 @@ export class CFCoreService {
 
   async takeAction(
     appIdentityHash: string,
+    multisigAddress: string,
     action: AppAction,
     stateTimeout?: BigNumber,
   ): Promise<MethodResults.TakeAction> {
@@ -281,6 +289,7 @@ export class CFCoreService {
       action,
       appIdentityHash,
       stateTimeout,
+      multisigAddress,
     } as MethodParams.TakeAction;
     this.logCfCoreMethodStart(MethodNames.chan_takeAction, parameters);
 
@@ -294,9 +303,13 @@ export class CFCoreService {
     return actionResponse.result.result as MethodResults.TakeAction;
   }
 
-  async uninstallApp(appIdentityHash: string): Promise<MethodResults.Uninstall> {
+  async uninstallApp(
+    appIdentityHash: string,
+    multisigAddress: string,
+  ): Promise<MethodResults.Uninstall> {
     const parameters = {
       appIdentityHash,
+      multisigAddress,
     } as MethodParams.Uninstall;
     this.logCfCoreMethodStart(MethodNames.chan_uninstall, parameters);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({

@@ -25,7 +25,7 @@ describe("Node method follows spec - uninstall", () => {
   });
 
   describe("Node A and B install TTT, then uninstall it", () => {
-    it("sends proposal with non-null initial state", async done => {
+    it("sends proposal with non-null initial state", async (done) => {
       const initialState = {
         versionNumber: 1,
         winner: 1, // Hard-coded winner for test
@@ -59,7 +59,7 @@ describe("Node method follows spec - uninstall", () => {
         done();
       });
 
-      await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash));
+      await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash, multisigAddess));
 
       expect(await getInstalledAppInstances(nodeA, multisigAddess)).toEqual([]);
     });

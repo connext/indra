@@ -24,7 +24,7 @@ const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL }
  * specs.counterfactual.com/04-setup-protocol
  */
 export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
-  0 /* Initiating */: async function* (context: Context) {
+  0 /* Initiating */: async function* (context: Context & { preProtocolChannel: StateChannel }) {
     const { message, network } = context;
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();

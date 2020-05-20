@@ -210,7 +210,7 @@ export class MiniNode {
     );
   }
 
-  public async dispatchMessage(message: any) {
-    await this.protocolRunner.runProtocolWithMessage(message);
+  public async dispatchMessage(message: any, channel: StateChannel) {
+    await this.protocolRunner.runProtocolWithMessage(message, channel);
   }
 }
