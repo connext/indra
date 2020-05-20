@@ -68,6 +68,10 @@ export class ProposeInstallAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
   ): Promise<MethodResults.ProposeInstall> {
+    await requestHandler.addChannelToRequestHandler({
+      ...params,
+      initiatorIdentifier: requestHandler.publicIdentifier,
+    });
     const { protocolRunner, publicIdentifier, channel } = requestHandler;
 
     const { responderIdentifier, stateTimeout, defaultTimeout } = params;
