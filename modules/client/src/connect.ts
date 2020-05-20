@@ -50,11 +50,12 @@ export const connect = async (
         ? `provided channel provider`
         : `signer ${
             typeof opts.signer === "string"
-              ? `using pk: ${opts.signer}`
-              : `with id: ${opts.signer!.publicIdentifier}`
+              ? `using private key`
+              : `with injected signer`
           }`
     }`,
   );
+
   // setup ethProvider + network information
   logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);

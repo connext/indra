@@ -105,7 +105,6 @@ export class Node {
     this.log = log.newContext("CF-Node");
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
-    this.protocolRunner = this.buildProtocolRunner();
 
     // Create a new copy of networkContext so caller's copy doesn't get modified unexpectedly
     this.networkContext = JSON.parse(JSON.stringify({
@@ -113,6 +112,9 @@ export class Node {
       provider: undefined,
     }));
     this.networkContext.provider = this.provider;
+    this.log.info(`Provider getBalance is a ${typeof this.provider.getBalance} & context's is a ${typeof this.networkContext.provider.getBalance}`);
+
+    this.protocolRunner = this.buildProtocolRunner();
   }
 
   @Memoize()

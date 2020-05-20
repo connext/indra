@@ -35,7 +35,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const start = Date.now();
     let substart = start;
     const { params, processID } = message;
-    log.info(`[${processID}] Initiation started`);
+    log.info(`[${processID}] Initiation started. getBalance is a ${typeof network.provider.getBalance}`);
     log.debug(`[${processID}] Protocol initiated with params ${stringify(params)}`);
 
     const {

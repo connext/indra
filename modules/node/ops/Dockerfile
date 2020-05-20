@@ -6,6 +6,6 @@ RUN npm config set unsafe-perm true
 RUN npm install -g npm@6.12.0
 RUN curl https://raw.githubusercontent.com/vishnubob/wait-for-it/ed77b63706ea721766a62ff22d3a251d8b4a6a30/wait-for-it.sh > /bin/wait-for && chmod +x /bin/wait-for
 COPY modules/node/package.json package.json
-RUN npm install --only=production > /dev/null 2>&1
+RUN npm install --only=production > /dev/null
 COPY modules/node /root
 ENTRYPOINT ["bash", "ops/entry.sh"]

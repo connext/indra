@@ -119,6 +119,10 @@ export const uninstallDepositMiddleware = async (
 ) => {
   const { role, appInstance, stateChannel, params } = context;
 
+  if (!provider || !provider.getBalance) {
+    throw new Error(`Uninstall deposit middleware needs access to a provider, got ${JSON.stringify(provider, null, 2)}`);
+  }
+
   const latestState = appInstance.latestState as DepositAppState;
   const currentMultisigBalance =
     latestState.assetId === CONVENTION_FOR_ETH_ASSET_ID
