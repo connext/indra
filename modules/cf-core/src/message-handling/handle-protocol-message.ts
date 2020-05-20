@@ -79,7 +79,6 @@ async function getOutgoingEventDataFromProtocol(
   switch (protocol) {
     case ProtocolNames.propose: {
       const {
-        multisigAddress,
         initiatorIdentifier,
         responderIdentifier,
         ...emittedParams
