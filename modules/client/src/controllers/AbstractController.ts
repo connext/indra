@@ -4,15 +4,12 @@ import {
   ILoggerService,
   INodeApiClient,
   MethodParams,
-  MethodResults,
 } from "@connext/types";
-import { delayAndThrow, stringify } from "@connext/utils";
+import { stringify } from "@connext/utils";
 import { providers } from "ethers";
 
 import { ConnextClient } from "../connext";
 import { ConnextListener } from "../listener";
-
-export const CLIENT_METHOD_TIMEOUT = 90_000;
 
 export abstract class AbstractController {
   public name: string;
@@ -52,25 +49,21 @@ export abstract class AbstractController {
       );
     }
 
-    const proposeRes = await Promise.race([
-      this.connext.proposeInstallApp(params),
-      delayAndThrow(
-        CLIENT_METHOD_TIMEOUT,
-        `App proposal took longer than ${CLIENT_METHOD_TIMEOUT / 1000} seconds`,
-      ),
-    ]);
-    const { appIdentityHash } = proposeRes as MethodResults.ProposeInstall;
+    // if propose protocol fails on the initiator side, this will hard error
+    // so no need to wait for event
+    const { appIdentityHash } = await this.connext.proposeInstallApp(params);
     this.log.debug(`App instance successfully proposed`);
 
     let boundReject: (reason?: any) => void;
+    let boundInstallFailed: (reason?: any) => void;
 
     try {
       // 1676 ms TODO: why does this step take so long?
       await Promise.race([
-        delayAndThrow(
-          CLIENT_METHOD_TIMEOUT,
-          `App install took longer than ${CLIENT_METHOD_TIMEOUT / 1000} seconds`,
-        ),
+        new Promise((resolve, reject) => {
+          boundInstallFailed = this.rejectInstall.bind(null, reject, appIdentityHash);
+          this.listener.on(EventNames.INSTALL_FAILED_EVENT, boundInstallFailed);
+        }),
         new Promise((res: () => any, rej: () => any): void => {
           boundReject = this.rejectInstall.bind(null, rej, appIdentityHash);
 
@@ -78,7 +71,6 @@ export abstract class AbstractController {
           const subject = `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`;
           this.connext.node.messaging.subscribe(subject, res);
 
-          // this.listener.on(INSTALL_EVENT, boundResolve, appIdentityHash);
           this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
         }),
       ]);
@@ -89,7 +81,7 @@ export abstract class AbstractController {
       this.log.error(`Error installing app: ${e.stack || e.message}`);
       throw e;
     } finally {
-      this.cleanupInstallListeners(boundReject, appIdentityHash);
+      this.cleanupInstallListeners(boundReject, boundInstallFailed, appIdentityHash);
     }
   };
 
@@ -113,10 +105,15 @@ export abstract class AbstractController {
     return;
   };
 
-  private cleanupInstallListeners = (boundReject: any, appIdentityHash: string): void => {
+  private cleanupInstallListeners = (
+    boundReject: any,
+    boundInstallFailed: any,
+    appIdentityHash: string,
+  ): void => {
     this.connext.node.messaging.unsubscribe(
       `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
     );
     this.listener.removeCfListener(EventNames.REJECT_INSTALL_EVENT, boundReject);
+    this.listener.removeCfListener(EventNames.INSTALL_FAILED_EVENT, boundInstallFailed);
   };
 }
