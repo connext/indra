@@ -39,15 +39,13 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       initiatorIdentifier,
     } = params as ProtocolParams.Setup;
 
-    const ret = yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       { params, role: ProtocolRoles.initiator } as SetupMiddlewareContext,
     ];
-    console.log(`ret: ${ret}`);
-    await delay(500);
-    if (!!ret) {
-      throw new Error(ret);
+    if (!!error) {
+      throw new Error(error);
     }
 
     // 56 ms
@@ -152,13 +150,13 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
     } = params as ProtocolParams.Setup;
 
-    const ret = yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       { params, role: ProtocolRoles.responder } as SetupMiddlewareContext,
     ];
-    if (!!ret) {
-      throw new Error(ret);
+    if (!!error) {
+      throw new Error(error);
     }
 
     // 73 ms
