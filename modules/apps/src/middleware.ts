@@ -5,8 +5,9 @@ import {
   MiddlewareContext,
   UninstallMiddlewareContext,
   ContractAddresses,
+  ProposeMiddlewareContext,
 } from "@connext/types";
-import { uninstallDepositMiddleware } from "./DepositApp";
+import { uninstallDepositMiddleware, proposeDepositMiddleware } from "./DepositApp";
 
 // add any validation middlewares
 export const generateValidationMiddleware = async (
@@ -22,9 +23,13 @@ export const generateValidationMiddleware = async (
   ) => {
     switch (protocol) {
       case ProtocolNames.setup:
-      case ProtocolNames.propose:
       case ProtocolNames.install:
       case ProtocolNames.takeAction: {
+        break;
+      }
+
+      case ProtocolNames.propose: {
+        await proposeMiddleware(contracts, middlewareContext as ProposeMiddlewareContext);
         break;
       }
 
@@ -50,6 +55,23 @@ const uninstallMiddleware = async (
   switch (appDef) {
     case contracts.DepositApp: {
       await uninstallDepositMiddleware(middlewareContext, contracts.provider);
+      break;
+    }
+    default: {
+      return;
+    }
+  }
+};
+
+const proposeMiddleware = async (
+  contracts: ContractAddresses,
+  middlewareContext: ProposeMiddlewareContext,
+) => {
+  const { proposal } = middlewareContext;
+  const appDef = proposal.appDefinition;
+  switch (appDef) {
+    case contracts.DepositApp: {
+      await proposeDepositMiddleware(middlewareContext, contracts.depositApp);
       break;
     }
     default: {

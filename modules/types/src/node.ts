@@ -22,6 +22,7 @@ type GetHashLockTransferResponse =
       lockHash: Bytes32;
       status: HashLockTransferStatus;
       meta?: any;
+      preImage: Bytes32;
     }
   | undefined;
 
@@ -104,9 +105,9 @@ export namespace NodeResponses {
   export type ResolveSignedTransfer = PublicResults.ResolveSignedTransfer;
   export type GetRebalanceProfile = GetRebalanceProfileResponse;
   export type GetHashLockTransfer = GetHashLockTransferResponse;
-  export type GetSignedTransfer = GetSignedTransferResponse
-  export type GetChannel = GetChannelResponse
-  export type CreateChannel = CreateChannelResponse
-  export type RequestCollateral = RequestCollateralResponse
-  export type ChannelRestore = ChannelRestoreResponse
+  export type GetSignedTransfer = GetSignedTransferResponse;
+  export type GetChannel = GetChannelResponse;
+  export type CreateChannel = CreateChannelResponse;
+  export type RequestCollateral = RequestCollateralResponse;
+  export type ChannelRestore = ChannelRestoreResponse;
 }

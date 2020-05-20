@@ -49,7 +49,7 @@ describe("Sync", () => {
   let messagingServiceA: MemoryMessagingServiceWithLimits;
   let messagingServiceB: MemoryMessagingServiceWithLimits;
 
-  const log = new Logger("Sync", env.logLevel, true);
+  const log = new Logger("SyncTest", env.logLevel, true);
 
   beforeEach(async () => {
     // test global fixtures
@@ -84,7 +84,7 @@ describe("Sync", () => {
       channelSignerB,
       lockService,
       0,
-      new Logger("CreateClient", env.logLevel, true, "A"),
+      new Logger("CreateClient", env.logLevel, true, "B"),
     );
   });
 
