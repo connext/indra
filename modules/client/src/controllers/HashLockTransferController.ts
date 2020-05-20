@@ -15,22 +15,18 @@ import { constants, BigNumber } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
-const { AddressZero, HashZero, Zero } = constants;
+const { HashZero, Zero } = constants;
 
 export class HashLockTransferController extends AbstractController {
   public hashLockTransfer = async (
     params: PublicParams.HashLockTransfer,
   ): Promise<PublicResults.HashLockTransfer> => {
     this.log.info(`hashLockTransfer started: ${stringify(params)}`);
-    // convert params + validate
-    const amount = BigNumber.from(params.amount);
-    const assetId = params.assetId ? params.assetId : AddressZero;
-    // backwards compatibility for timelock
-    // convert to block height
-    const timelock = params.timelock ? params.timelock : 5000;
-    const expiry = BigNumber.from(timelock).add(await this.connext.ethProvider.getBlockNumber());
 
-    const { lockHash, meta, recipient } = params;
+    const amount = BigNumber.from(params.amount);
+    const { lockHash, meta, recipient, timelock, assetId } = params;
+    // convert to block height
+    const expiry = BigNumber.from(timelock).add(await this.connext.ethProvider.getBlockNumber());
     const submittedMeta = { ...(meta || {}) } as any;
 
     const initialState: HashLockTransferAppState = {

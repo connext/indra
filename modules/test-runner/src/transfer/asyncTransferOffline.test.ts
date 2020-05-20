@@ -139,7 +139,7 @@ describe("Async transfer offline tests", () => {
   /**
    * Should get timeout errors
    */
-  it("sender installs transfer successfully, receiver installs successfully, but node is offline for take action (times out)", async () => {
+  it.skip("sender installs transfer successfully, receiver installs successfully, but node is offline for take action (times out)", async () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits();
     receiverClient = await createClientWithMessagingLimits({

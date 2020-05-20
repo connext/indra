@@ -139,7 +139,7 @@ describe("Deposit offline tests", () => {
     await makeDepositCall({
       client,
       clock,
-      failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
+      failsWith: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       subjectToFastforward: RECEIVED,
       protocol: ProtocolNames.propose,
     });
@@ -163,7 +163,7 @@ describe("Deposit offline tests", () => {
     await makeDepositCall({
       client,
       clock,
-      failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
+      failsWith: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose, false),
       subjectToFastforward: SEND,
       protocol: ProtocolNames.propose,
     });
@@ -188,7 +188,7 @@ describe("Deposit offline tests", () => {
     await makeDepositCall({
       client,
       clock,
-      failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
+      failsWith: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       subjectToFastforward: RECEIVED,
       protocol: ProtocolNames.propose,
     });

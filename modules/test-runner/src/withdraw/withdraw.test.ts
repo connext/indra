@@ -1,5 +1,11 @@
 import { MinimumViableMultisig } from "@connext/contracts";
-import { IConnextClient, EventNames, BigNumberish } from "@connext/types";
+import {
+  IConnextClient,
+  EventNames,
+  BigNumberish,
+  CONVENTION_FOR_ETH_ASSET_ID,
+  RebalanceProfile,
+} from "@connext/types";
 import { Wallet, Contract, constants } from "ethers";
 
 import {
@@ -12,7 +18,11 @@ import {
   ZERO_ZERO_ONE_ETH,
   ZERO_ZERO_TWO_ETH,
   ZERO_ZERO_ZERO_ONE_ETH,
+  requestCollateral,
+  getNatsClient,
 } from "../util";
+import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
+import { Client } from "ts-nats";
 
 const { AddressZero, Zero } = constants;
 
@@ -22,10 +32,28 @@ const { AddressZero, Zero } = constants;
 describe("Withdrawal", () => {
   let client: IConnextClient;
   let tokenAddress: string;
+  let nats: Client;
 
   beforeEach(async () => {
     client = await createClient();
+    nats = getNatsClient();
     tokenAddress = client.config.contractAddresses.Token;
+
+    const REBALANCE_PROFILE_ETH: RebalanceProfile = {
+      assetId: AddressZero,
+      collateralizeThreshold: Zero,
+      target: Zero,
+      reclaimThreshold: Zero,
+    };
+    await addRebalanceProfile(nats, client, REBALANCE_PROFILE_ETH, false);
+
+    const REBALANCE_PROFILE_TOKEN: RebalanceProfile = {
+      assetId: tokenAddress,
+      collateralizeThreshold: Zero,
+      target: Zero,
+      reclaimThreshold: Zero,
+    };
+    await addRebalanceProfile(nats, client, REBALANCE_PROFILE_TOKEN, false);
   });
 
   it("happy case: client successfully withdraws eth and node submits the tx", async () => {
@@ -130,8 +158,16 @@ describe("Withdrawal", () => {
   });
 
   describe("client tries to withdraw while it has active deposit rights", () => {
-    it("client has active rights in eth, withdrawing eth", async () => {
+    beforeEach(async () => {
       await fundChannel(client, ZERO_ZERO_ONE_ETH);
+      await fundChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
+      // if node is collateralizing, it will not allow client to gain deposit
+      // rights, so make sure that the channel is collateralized properly
+      await requestCollateral(client, tokenAddress);
+      await requestCollateral(client, CONVENTION_FOR_ETH_ASSET_ID);
+    });
+
+    it("client has active rights in eth, withdrawing eth", async () => {
       // give client eth rights
       await requestDepositRights(client);
       // try to withdraw
@@ -139,7 +175,6 @@ describe("Withdrawal", () => {
     });
 
     it("client has active rights in tokens, withdrawing eth", async () => {
-      await fundChannel(client, ZERO_ZERO_ONE_ETH);
       // give client eth rights
       await requestDepositRights(client, tokenAddress);
       // try to withdraw
@@ -147,7 +182,6 @@ describe("Withdrawal", () => {
     });
 
     it("client has active rights in tokens, withdrawing tokens", async () => {
-      await fundChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
       // give client eth rights
       await requestDepositRights(client, tokenAddress);
       // try to withdraw
@@ -155,7 +189,6 @@ describe("Withdrawal", () => {
     });
 
     it("client has active rights in eth, withdrawing tokens", async () => {
-      await fundChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
       // give client eth rights
       await requestDepositRights(client, AddressZero);
       // try to withdraw

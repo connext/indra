@@ -18,6 +18,7 @@ import {
   getAddressError,
   notGreaterThan,
   notLessThanOrEqualTo,
+  delayAndThrow,
 } from "@connext/utils";
 import { Contract, constants } from "ethers";
 
@@ -105,13 +106,32 @@ export class DepositController extends AbstractController {
       };
     }
 
-    this.log.debug(`Found existing deposit app`);
+    this.log.debug(`Found existing deposit app: ${depositApp.identityHash}`);
     const latestState = depositApp.latestState as DepositAppState;
 
     // check if you are the initiator;
     const initiatorTransfer = latestState.transfers[0];
     if (initiatorTransfer.to !== this.connext.signerAddress) {
-      throw new Error(`Node has unfinalized deposit, cannot request deposit rights for ${assetId}`);
+      this.log.warn(`Found node transfer, waiting 20s to see if app is uninstalled`);
+      await Promise.race([
+        delayAndThrow(
+          20_000,
+          `Node has unfinalized deposit, cannot request deposit rights for ${assetId}`,
+        ),
+        new Promise((resolve) => {
+          this.connext.on(EventNames.UNINSTALL_EVENT, (msg) => {
+            if (msg.appIdentityHash === depositApp.identityHash) {
+              resolve();
+            }
+          });
+        }),
+      ]);
+      const appIdentityHash = await this.proposeDepositInstall(assetId);
+      this.log.info(`Successfully obtained deposit rights for ${assetId}`);
+      return {
+        appIdentityHash,
+        multisigAddress: this.connext.multisigAddress,
+      };
     }
 
     this.log.debug(

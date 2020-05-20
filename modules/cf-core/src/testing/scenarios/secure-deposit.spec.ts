@@ -128,9 +128,7 @@ describe("Node method follows spec - deposit", () => {
       One,
       One,
     ]);
-    expect(await erc20Contract.functions.balanceOf(multisigAddress)).toEqual(
-      preDepositERC20Balance.add(Two),
-    );
+    expect(await erc20Contract.balanceOf(multisigAddress)).toEqual(preDepositERC20Balance.add(Two));
   });
 
   it("updates balances correctly when depositing both ERC20 tokens and ETH", async () => {

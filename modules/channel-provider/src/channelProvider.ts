@@ -33,7 +33,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
         try {
           config = await this._send(ChannelMethods.chan_enable);
         } catch (e) {
-          return reject(new Error(`Could not enable channel: ${JSON.stringify(e)}`));
+          return reject(`Could not enable channel: ${e.message}`);
         }
         if (Object.keys(config).length > 0) {
           this.connected = true;

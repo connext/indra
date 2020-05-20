@@ -750,7 +750,7 @@ export class CFCoreStore implements IStoreService {
       ChallengeRegistry.abi,
       provider,
     );
-    const onchainChallenge = await registry.functions.getAppChallenge(appIdentityHash);
+    const onchainChallenge = await registry.getAppChallenge(appIdentityHash);
     if (onchainChallenge.versionNumber.eq(latestSetState.versionNumber)) {
       return;
     }

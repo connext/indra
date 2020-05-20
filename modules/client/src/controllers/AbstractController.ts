@@ -54,7 +54,7 @@ export abstract class AbstractController {
     const proposeRes = await Promise.race([
       this.connext.proposeInstallApp(params),
       delayAndThrow(
-        CF_METHOD_TIMEOUT,
+        CF_METHOD_TIMEOUT + 1000,
         `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
       ),
     ]);
@@ -67,7 +67,7 @@ export abstract class AbstractController {
       // 1676 ms TODO: why does this step take so long?
       await Promise.race([
         delayAndThrow(
-          CF_METHOD_TIMEOUT,
+          CF_METHOD_TIMEOUT + 1000,
           `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
         ),
         new Promise((res: () => any, rej: () => any): void => {
@@ -106,15 +106,10 @@ export abstract class AbstractController {
   ): void => {
     // check app id
     const data = message.data && message.data.data ? message.data.data : message.data || message;
-    if (data.appIdentityHash !== appIdentityHash) {
-      const msg = `Caught reject install event for different app ${stringify(
-        message,
-      )}, expected ${appIdentityHash}. This should not happen.`;
-      this.log.warn(msg);
-      return rej(new Error(msg));
+    if (data.appIdentityHash === appIdentityHash) {
+      return rej(new Error(`Install failed. Event data: ${stringify(message)}`));
     }
-
-    return rej(new Error(`Install failed. Event data: ${stringify(message)}`));
+    return; 
   };
 
   private cleanupInstallListeners = (boundReject: any, appIdentityHash: string): void => {

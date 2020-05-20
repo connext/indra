@@ -19,7 +19,7 @@ export const fundEthWallet = async () => {
     value: FUND_AMT,
   });
   await ethFunding.wait();
-  const tx = await tokenContract.functions.transfer(ethWallet.address, FUND_AMT);
+  const tx = await tokenContract.transfer(ethWallet.address, FUND_AMT);
   await tx.wait();
   return;
 };
@@ -59,7 +59,7 @@ export const sendOnchainValue = async (
         return;
       } else {
         const tokenContract = new Contract(assetId, ERC20.abi, ethWallet);
-        const tx = await tokenContract.functions.transfer(to, value, { nonce });
+        const tx = await tokenContract.transfer(to, value, { nonce });
         await tx.wait();
         return;
       }

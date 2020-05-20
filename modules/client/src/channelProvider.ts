@@ -55,7 +55,10 @@ export const createCFChannelProvider = async ({
   const contractAddresses = config.contractAddresses;
   const messaging = node.messaging;
   const nodeConfig = { STORE_KEY_PREFIX: ConnextClientStorePrefix };
-  const lockService = { acquireLock: node.acquireLock.bind(node) };
+  const lockService = { 
+    acquireLock: node.acquireLock.bind(node),
+    releaseLock: node.releaseLock.bind(node), 
+  };
   let cfCore;
   try {
     cfCore = await CFCore.create(

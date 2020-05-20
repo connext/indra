@@ -634,7 +634,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       ChallengeRegistry.abi,
       provider,
     );
-    const onchainChallenge = await registry.functions.getAppChallenge(appIdentityHash);
+    const onchainChallenge = await registry.getAppChallenge(appIdentityHash);
     if (onchainChallenge.versionNumber.eq(ourLatestSetState.versionNumber)) {
       return;
     }

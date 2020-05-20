@@ -122,7 +122,9 @@ describe("Deposits", () => {
     expect(appIdentityHash).to.be.undefined;
   });
 
-  it("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {
+  // TODO: move this test case to the node unit tests where the deposit app
+  // flow of the node can be more granularly controlled
+  it.skip("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {
     // send a payment to a receiver client to
     // trigger collateral event
     const expected = {

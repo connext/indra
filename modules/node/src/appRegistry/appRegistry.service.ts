@@ -205,7 +205,9 @@ export class AppRegistryService implements OnModuleInit {
               proposeInstallParams.initiatorDepositAssetId,
         );
         if (depositApp) {
-          throw new Error(`Deposit app already installed for this assetId, rejecting.`);
+          throw new Error(
+            `Deposit app already installed for this assetId, rejecting (${depositApp.identityHash})`,
+          );
         }
         await validateDepositApp(
           proposeInstallParams,

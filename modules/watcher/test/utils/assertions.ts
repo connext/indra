@@ -42,7 +42,7 @@ export const verifyOnchainBalancesPostChallenge = async (
     multisigAddress,
     MinimumViableMultisig.abi,
     wallet,
-  ).functions.totalAmountWithdrawn(CONVENTION_FOR_ETH_ASSET_ID);
+  ).totalAmountWithdrawn(CONVENTION_FOR_ETH_ASSET_ID);
   expect(withdrawn).to.be.eq(expected[CONVENTION_FOR_ETH_ASSET_ID]);
   expect(await wallet.provider.getBalance(multisigAddress)).to.be.eq(Zero);
   expect(await wallet.provider.getBalance(signers[0].address)).to.be.eq(

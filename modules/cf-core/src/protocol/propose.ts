@@ -98,6 +98,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         proposal: appInstanceProposal,
         params,
         role: ProtocolRoles.initiator,
+        stateChannel: preProtocolStateChannel.toJson(),
       } as ProposeMiddlewareContext,
     ];
     logTime(log, substart, `[${processID}] Validated proposal`);
@@ -263,6 +264,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         proposal: appInstanceProposal,
         params,
         role: ProtocolRoles.responder,
+        stateChannel: preProtocolStateChannel.toJson(),
       } as ProposeMiddlewareContext,
     ];
     logTime(log, substart, `[${processID}] Validated proposal`);

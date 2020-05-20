@@ -120,7 +120,7 @@ describe("Reclaim", () => {
     );
 
     const tokenContract = new Contract(tokenAddress, ERC20.abi, clientA.ethProvider);
-    const preBalance = await tokenContract.functions.balanceOf(clientA.multisigAddress);
+    const preBalance = await tokenContract.balanceOf(clientA.multisigAddress);
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async (res) => {

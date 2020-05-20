@@ -826,7 +826,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi).functions.cancelDispute.encode([
+      data: new Interface(ChallengeRegistry.abi).cancelDispute.encode([
         this.getAppIdentity(app, channel.multisigAddress),
         req,
       ]),

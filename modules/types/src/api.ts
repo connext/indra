@@ -44,7 +44,8 @@ export interface INodeApiClient {
   nodeIdentifier: PublicIdentifier | undefined;
   config: NodeResponses.GetConfig | undefined;
   channelProvider: IChannelProvider | undefined;
-  acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
+  acquireLock(lockName: string): Promise<string>;
+  releaseLock(lockName: string, lockValue: string): Promise<void>;
   appRegistry(
     appDetails?:
       | {
