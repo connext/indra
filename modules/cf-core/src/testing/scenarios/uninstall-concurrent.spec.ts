@@ -41,7 +41,7 @@ describe("Node method follows spec - uninstall", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
     });
 
-    it.only("uninstall apps with ETH concurrently", async (done) => {
+    it("uninstall apps with ETH concurrently", async (done) => {
       const appIdentityHashes: string[] = [];
       let uninstalledApps = 0;
       await collateralizeChannel(
@@ -51,15 +51,11 @@ describe("Node method follows spec - uninstall", () => {
         parseEther("2"), // We are depositing in 2 and use 1 for each concurrent app
       );
 
-      console.log("nodeA: ", nodeA.publicIdentifier);
-      console.log("nodeB: ", nodeB.publicIdentifier);
       nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
-        console.log("PROPOSE_INSTALL_EVENT msg: ", msg);
         makeInstallCall(nodeB, msg.data.appIdentityHash);
       });
 
       nodeA.on("INSTALL_EVENT", (msg: InstallMessage) => {
-        console.log("INSTALL_EVENT msg: ", msg);
         appIdentityHashes.push(msg.data.params.appIdentityHash);
       });
 
