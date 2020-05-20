@@ -12,7 +12,7 @@ import { providers } from "ethers";
 import { ConnextClient } from "../connext";
 import { ConnextListener } from "../listener";
 
-const CLIENT_METHOD_TIMEOUT = 90_000;
+export const CLIENT_METHOD_TIMEOUT = 90_000;
 
 export abstract class AbstractController {
   public name: string;
