@@ -1,5 +1,4 @@
 import {
-  CF_METHOD_TIMEOUT,
   EventNames,
   IChannelProvider,
   ILoggerService,
@@ -12,7 +11,8 @@ import { providers } from "ethers";
 
 import { ConnextClient } from "../connext";
 import { ConnextListener } from "../listener";
-import { BigNumber } from "ethers/utils";
+
+const CLIENT_METHOD_TIMEOUT = 90_000;
 
 export abstract class AbstractController {
   public name: string;
@@ -43,7 +43,7 @@ export abstract class AbstractController {
     this.log.info(`Calling propose install`);
     this.log.debug(`Calling propose install with ${stringify(params)}`);
 
-    // Temporarily validate this here until we move it into propose protocol as  part of other PRs. 
+    // Temporarily validate this here until we move it into propose protocol as  part of other PRs.
     // Without this, install will fail with a timeout
     const freeBalance = await this.connext.getFreeBalance(params.initiatorDepositAssetId);
     if (params.initiatorDeposit.gt(freeBalance[this.connext.signerAddress])) {
@@ -55,8 +55,8 @@ export abstract class AbstractController {
     const proposeRes = await Promise.race([
       this.connext.proposeInstallApp(params),
       delayAndThrow(
-        CF_METHOD_TIMEOUT + 1000,
-        `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        CLIENT_METHOD_TIMEOUT,
+        `App proposal took longer than ${CLIENT_METHOD_TIMEOUT} seconds`,
       ),
     ]);
     const { appIdentityHash } = proposeRes as MethodResults.ProposeInstall;
@@ -68,8 +68,8 @@ export abstract class AbstractController {
       // 1676 ms TODO: why does this step take so long?
       await Promise.race([
         delayAndThrow(
-          CF_METHOD_TIMEOUT + 1000,
-          `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+          CLIENT_METHOD_TIMEOUT,
+          `App install took longer than ${CLIENT_METHOD_TIMEOUT} seconds`,
         ),
         new Promise((res: () => any, rej: () => any): void => {
           boundReject = this.rejectInstall.bind(null, rej, appIdentityHash);
@@ -110,7 +110,7 @@ export abstract class AbstractController {
     if (data.appIdentityHash === appIdentityHash) {
       return rej(new Error(`Install failed. Event data: ${stringify(message)}`));
     }
-    return; 
+    return;
   };
 
   private cleanupInstallListeners = (boundReject: any, appIdentityHash: string): void => {
