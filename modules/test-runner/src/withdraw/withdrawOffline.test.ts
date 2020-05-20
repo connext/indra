@@ -27,11 +27,12 @@ import {
   ZERO_ZERO_ZERO_FIVE_ETH,
   env,
   getParamsFromData,
+  APP_PROTOCOL_TOO_LONG,
 } from "../util";
 import { addressBook } from "@connext/contracts";
 import { getMemoryStore } from "@connext/store";
 
-describe("Withdraw offline tests", () => {
+describe.only("Withdraw offline tests", () => {
   let clock: any;
   let client: IConnextClient;
   let signer: IChannelSigner;
@@ -101,7 +102,7 @@ describe("Withdraw offline tests", () => {
 
     await expect(
       withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
-    ).to.be.rejectedWith(`timed out`);
+    ).to.be.rejectedWith(APP_PROTOCOL_TOO_LONG(ProtocolNames.propose));
 
     await recreateClientAndRetryWithdraw(client, store, {
       amount: ZERO_ZERO_ZERO_FIVE_ETH,
