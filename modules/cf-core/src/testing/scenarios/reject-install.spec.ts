@@ -27,7 +27,7 @@ describe("Node method follows spec - rejectInstall", () => {
   });
 
   describe("Rejects proposal with non-null initial state", () => {
-    it("Node A installs, node b rejects", async done => {
+    it("Node A installs, node b rejects", async (done) => {
       const multisigAddress = await createChannel(nodeA, nodeB);
 
       await collateralizeChannel(multisigAddress, nodeA, nodeB);
@@ -51,7 +51,7 @@ describe("Node method follows spec - rejectInstall", () => {
 
       // node B then decides to reject the proposal
       nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
-        const rejectReq = constructRejectInstallRpc(msg.data.appIdentityHash);
+        const rejectReq = constructRejectInstallRpc(msg.data.appIdentityHash, multisigAddress);
         expect((await getProposedAppInstances(nodeB, multisigAddress)).length).toEqual(1);
         proposedAppId = msg.data.appIdentityHash;
         await nodeB.rpcRouter.dispatch(rejectReq);
@@ -61,7 +61,7 @@ describe("Node method follows spec - rejectInstall", () => {
       expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(1);
     });
 
-    it("Node A installs, node a rejects", async done => {
+    it("Node A installs, node a rejects", async (done) => {
       const multisigAddress = await createChannel(nodeA, nodeB);
 
       await collateralizeChannel(multisigAddress, nodeA, nodeB);
@@ -85,7 +85,7 @@ describe("Node method follows spec - rejectInstall", () => {
 
       // node A then decides to reject the proposal
       nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
-        const rejectReq = constructRejectInstallRpc(msg.data.appIdentityHash);
+        const rejectReq = constructRejectInstallRpc(msg.data.appIdentityHash, multisigAddress);
         expect((await getProposedAppInstances(nodeB, multisigAddress)).length).toEqual(1);
         proposedAppId = msg.data.appIdentityHash;
         await nodeA.rpcRouter.dispatch(rejectReq);

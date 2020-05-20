@@ -139,7 +139,10 @@ export class AppRegistryService implements OnModuleInit {
         }
       }
       if (registryAppInfo.name !== HashLockTransferAppName) {
-        ({ appInstance } = await this.cfCoreService.installApp(appIdentityHash));
+        ({ appInstance } = await this.cfCoreService.installApp(
+          appIdentityHash,
+          installerChannel.multisigAddress,
+        ));
       }
       // any tasks that need to happen after install, i.e. DB writes
       await this.runPostInstallTasks(
@@ -154,7 +157,7 @@ export class AppRegistryService implements OnModuleInit {
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.stack || e.message}`);
-      await this.cfCoreService.rejectInstallApp(appIdentityHash);
+      await this.cfCoreService.rejectInstallApp(appIdentityHash, installerChannel.multisigAddress);
       return;
     }
   }
@@ -449,7 +452,10 @@ export class AppRegistryService implements OnModuleInit {
     this.log.info(
       `installHashLockTransferMiddleware: Install sender app ${existingSenderApp.identityHash} for user ${appInstance.initiatorIdentifier} started`,
     );
-    const res = await this.cfCoreService.installApp(existingSenderApp.identityHash);
+    const res = await this.cfCoreService.installApp(
+      existingSenderApp.identityHash,
+      existingSenderApp.channel.multisigAddress,
+    );
     const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${existingSenderApp.channel.multisigAddress}.app-instance.${existingSenderApp.identityHash}.install`;
     await this.messagingService.publish(installSubject, appInstance);
     this.log.info(

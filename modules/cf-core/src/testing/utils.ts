@@ -41,7 +41,10 @@ import { JsonRpcResponse, Rpc } from "rpc-server";
 import { Node } from "../node";
 import { AppInstance, StateChannel } from "../models";
 import { CONTRACT_NOT_DEPLOYED } from "../errors";
-import { getRandomPublicIdentifier, getRandomPublicIdentifiers } from "../testing/random-signing-keys";
+import {
+  getRandomPublicIdentifier,
+  getRandomPublicIdentifiers,
+} from "../testing/random-signing-keys";
 
 import { DolphinCoin, NetworkContextForTestSuite } from "./contracts";
 import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
@@ -73,10 +76,13 @@ export const newWallet = (wallet: Wallet) =>
     new JsonRpcProvider((wallet.provider as JsonRpcProvider).connection.url),
   );
 
-export function createAppInstanceProposalForTest(appIdentityHash: string, stateChannel?: StateChannel): AppInstanceProposal {
+export function createAppInstanceProposalForTest(
+  appIdentityHash: string,
+  stateChannel?: StateChannel,
+): AppInstanceProposal {
   const [initiator, responder] = StateChannel
-  ? [stateChannel!.userIdentifiers[0], stateChannel!.userIdentifiers[1]]
-  : [getRandomPublicIdentifier(), getRandomPublicIdentifier()];
+    ? [stateChannel!.userIdentifiers[0], stateChannel!.userIdentifiers[1]]
+    : [getRandomPublicIdentifier(), getRandomPublicIdentifier()];
   return {
     identityHash: appIdentityHash,
     initiatorIdentifier: initiator,
@@ -179,7 +185,7 @@ export async function rescindDepositRights(
     return;
   }
   // uninstall
-  await uninstallApp(node, counterparty, depositApp.identityHash);
+  await uninstallApp(node, counterparty, depositApp.identityHash, multisigAddress);
 }
 
 export async function getDepositApps(
@@ -489,6 +495,7 @@ export async function getProposeDepositAppParams(
     responderDepositAssetId: assetId,
     defaultTimeout: Zero,
     stateTimeout: Zero,
+    multisigAddress,
   };
 }
 
@@ -531,22 +538,24 @@ export async function deployStateDepositHolder(node: Node, multisigAddress: stri
   return result.transactionHash;
 }
 
-export function constructInstallRpc(appIdentityHash: string): Rpc {
+export function constructInstallRpc(appIdentityHash: string, multisigAddress: string): Rpc {
   return {
     id: Date.now(),
     methodName: MethodNames.chan_install,
     parameters: {
       appIdentityHash,
+      multisigAddress,
     } as MethodParams.Install,
   };
 }
 
-export function constructRejectInstallRpc(appIdentityHash: string): Rpc {
+export function constructRejectInstallRpc(appIdentityHash: string, multisigAddress: string): Rpc {
   return {
     id: Date.now(),
     methodName: MethodNames.chan_rejectInstall,
     parameters: {
       appIdentityHash,
+      multisigAddress,
     } as MethodParams.RejectInstall,
   };
 }
@@ -580,6 +589,7 @@ export function constructAppProposalRpc(
       outcomeType,
       defaultTimeout,
       stateTimeout,
+      multisigAddress,
     } as MethodParams.ProposeInstall),
   };
 }
@@ -630,11 +640,16 @@ export function constructGetStateChannelRpc(multisigAddress: string): Rpc {
   };
 }
 
-export function constructTakeActionRpc(appIdentityHash: string, action: any): Rpc {
+export function constructTakeActionRpc(
+  appIdentityHash: string,
+  multisigAddress: string,
+  action: any,
+): Rpc {
   return {
     parameters: deBigNumberifyJson({
       appIdentityHash,
       action,
+      multisigAddress,
     } as MethodParams.TakeAction),
     id: Date.now(),
     methodName: MethodNames.chan_takeAction,
@@ -649,10 +664,11 @@ export function constructGetAppsRpc(multisigAddress: string): Rpc {
   };
 }
 
-export function constructUninstallRpc(appIdentityHash: string): Rpc {
+export function constructUninstallRpc(appIdentityHash: string, multisigAddress: string): Rpc {
   return {
     parameters: {
       appIdentityHash,
+      multisigAddress,
     } as MethodParams.Uninstall,
     id: Date.now(),
     methodName: MethodNames.chan_uninstall,
@@ -798,7 +814,7 @@ export async function installApp(
 
   // send nodeB install call
   await Promise.all([
-    nodeB.rpcRouter.dispatch(constructInstallRpc(appIdentityHash)),
+    nodeB.rpcRouter.dispatch(constructInstallRpc(appIdentityHash, multisigAddress)),
     new Promise(async (resolve) => {
       nodeA.on(EventNames.INSTALL_EVENT, async (msg: InstallMessage) => {
         if (msg.data.params.appIdentityHash === appIdentityHash) {
@@ -862,8 +878,12 @@ export async function confirmAppInstanceInstallation(
   expect(appInstance.latestState).toEqual(params.initialState);
 }
 
-export async function makeInstallCall(node: Node, appIdentityHash: string) {
-  return node.rpcRouter.dispatch(constructInstallRpc(appIdentityHash));
+export async function makeInstallCall(
+  node: Node,
+  appIdentityHash: string,
+  multisigAddress: string,
+) {
+  return node.rpcRouter.dispatch(constructInstallRpc(appIdentityHash, multisigAddress));
 }
 
 export function makeProposeCall(
@@ -1021,8 +1041,15 @@ export function getAppContext(
   }
 }
 
-export async function takeAppAction(node: Node, appIdentityHash: string, action: any) {
-  const res = await node.rpcRouter.dispatch(constructTakeActionRpc(appIdentityHash, action));
+export async function takeAppAction(
+  node: Node,
+  appIdentityHash: string,
+  multisigAddress: string,
+  action: any,
+) {
+  const res = await node.rpcRouter.dispatch(
+    constructTakeActionRpc(appIdentityHash, action, multisigAddress),
+  );
   return res.result.result;
 }
 
@@ -1030,9 +1057,10 @@ export async function uninstallApp(
   node: Node,
   counterparty: Node,
   appIdentityHash: string,
+  multisigAddress: string,
 ): Promise<string> {
   await Promise.all([
-    node.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash)),
+    node.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash, multisigAddress)),
     new Promise((resolve) => {
       counterparty.once(EventNames.UNINSTALL_EVENT, (msg: UninstallMessage) => {
         expect(msg.data.appIdentityHash).toBe(appIdentityHash);

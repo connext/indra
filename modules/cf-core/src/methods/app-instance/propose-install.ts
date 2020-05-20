@@ -7,7 +7,11 @@ import {
 } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
-import { NULL_INITIAL_STATE_FOR_PROPOSAL, NO_STATE_CHANNEL_FOR_OWNERS } from "../../errors";
+import {
+  NULL_INITIAL_STATE_FOR_PROPOSAL,
+  NO_STATE_CHANNEL_FOR_OWNERS,
+  NO_MULTISIG_IN_PARAMS,
+} from "../../errors";
 import { RequestHandler } from "../../request-handler";
 
 import { NodeController } from "../controller";
@@ -27,27 +31,28 @@ export class ProposeInstallAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
   ): Promise<string> {
-    const { publicIdentifier, store } = requestHandler;
-    const { responderIdentifier } = params;
-
-    const json = await store.getStateChannelByOwners([publicIdentifier, responderIdentifier]);
-    if (!json) {
-      throw new Error(
-        NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, responderIdentifier].toString()),
-      );
+    if (!params.multisigAddress) {
+      throw new Error(NO_MULTISIG_IN_PARAMS(params));
     }
-
-    return json.multisigAddress;
+    return params.multisigAddress;
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
+    preProtocolStateChannel: StateChannel | undefined,
   ): Promise<void> {
-    const { initialState } = params;
+    const { initialState, responderIdentifier } = params;
+    const { publicIdentifier } = requestHandler;
 
     if (!initialState) {
       throw new Error(NULL_INITIAL_STATE_FOR_PROPOSAL);
+    }
+
+    if (!preProtocolStateChannel) {
+      throw new Error(
+        NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, responderIdentifier].toString()),
+      );
     }
 
     const {
@@ -66,31 +71,23 @@ export class ProposeInstallAppInstanceController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
+    preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.ProposeInstall> {
-    const { protocolRunner, publicIdentifier, store } = requestHandler;
+    const { protocolRunner, publicIdentifier } = requestHandler;
 
     const { responderIdentifier, stateTimeout, defaultTimeout } = params;
-
-    const json = await store.getStateChannelByOwners([publicIdentifier, responderIdentifier]);
-    if (!json) {
-      throw new Error(
-        NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, responderIdentifier].toString()),
-      );
-    }
 
     const { channel: updated }: { channel: StateChannel } = await protocolRunner.initiateProtocol(
       ProtocolNames.propose,
       {
         ...params,
         stateTimeout: stateTimeout || defaultTimeout,
-        multisigAddress: json.multisigAddress,
         initiatorIdentifier: publicIdentifier,
         responderIdentifier: responderIdentifier,
       },
+      preProtocolStateChannel!,
     );
 
-    return {
-      appIdentityHash: updated.mostRecentlyProposedAppInstance().identityHash,
-    };
+    return { appIdentityHash: updated.mostRecentlyProposedAppInstance().identityHash };
   }
 }

@@ -12,7 +12,7 @@ import { jsonRpcMethod } from "rpc-server";
 import { RequestHandler } from "../../request-handler";
 
 import { NodeController } from "../controller";
-import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR, NO_MULTISIG_IN_PARAMS } from "../../errors";
 import { StateChannel } from "../../models";
 
 export class SyncController extends NodeController {
@@ -23,24 +23,27 @@ export class SyncController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.Sync,
   ): Promise<string> {
+    if (!params.multisigAddress) {
+      throw new Error(NO_MULTISIG_IN_PARAMS(params));
+    }
     return params.multisigAddress;
   }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.Sync,
+    preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.Sync> {
-    const { protocolRunner, store, publicIdentifier } = requestHandler;
+    const { protocolRunner, publicIdentifier } = requestHandler;
     const { multisigAddress } = params;
-    const json = await store.getStateChannel(multisigAddress);
-    if (!json) {
+    if (!preProtocolStateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
     }
 
-    const channel = StateChannel.fromJson(json);
-    const responderIdentifier = [channel.initiatorIdentifier, channel.responderIdentifier].find(
-      (identifier) => identifier !== publicIdentifier,
-    );
+    const responderIdentifier = [
+      preProtocolStateChannel.initiatorIdentifier,
+      preProtocolStateChannel.responderIdentifier,
+    ].find((identifier) => identifier !== publicIdentifier);
 
     if (!responderIdentifier) {
       throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
@@ -61,19 +64,14 @@ export class SyncController extends NodeController {
   protected async afterExecution(
     requestHandler: RequestHandler,
     params: MethodParams.Sync,
+    returnValue: MethodResults.Sync,
   ): Promise<void> {
-    const { store, router, publicIdentifier } = requestHandler;
-    const { multisigAddress } = params;
-
-    const postProtocolStateChannel = await store.getStateChannel(multisigAddress);
-    if (!postProtocolStateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
-    }
+    const { router, publicIdentifier } = requestHandler;
 
     const msg = {
       from: publicIdentifier,
       type: EventNames.SYNC,
-      data: { syncedChannel: postProtocolStateChannel },
+      data: { syncedChannel: returnValue.syncedChannel },
     } as SyncMessage;
     await router.emit(msg.type, msg, `outgoing`);
   }
