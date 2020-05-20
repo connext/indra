@@ -62,19 +62,24 @@ const {
   WITHDRAWAL_FAILED_EVENT,
   WITHDRAWAL_STARTED_EVENT,
   CREATE_CHANNEL_EVENT,
+  SETUP_FAILED_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DEPOSIT_STARTED_EVENT,
   INSTALL_EVENT,
+  INSTALL_FAILED_EVENT,
   PROPOSE_INSTALL_EVENT,
+  PROPOSE_INSTALL_FAILED_EVENT,
   PROTOCOL_MESSAGE_EVENT,
   REJECT_INSTALL_EVENT,
   SYNC,
+  SYNC_FAILED_EVENT,
   UNINSTALL_EVENT,
+  UNINSTALL_FAILED_EVENT,
   UPDATE_STATE_EVENT,
+  UPDATE_STATE_FAILED_EVENT,
 } = EventNames;
 
-// TODO: index of connext events only?
 type CallbackStruct = {
   [index in EventNames]: (data: any) => Promise<any> | void;
 };
@@ -89,6 +94,9 @@ export class ConnextListener extends ConnextEventEmitter {
   private defaultCallbacks: CallbackStruct = {
     CREATE_CHANNEL_EVENT: (msg: CreateChannelMessage): void => {
       this.emitAndLog(CREATE_CHANNEL_EVENT, msg.data);
+    },
+    SETUP_FAILED_EVENT: (data: EventPayloads.CreateMultisigFailed): void => {
+      this.emitAndLog(SETUP_FAILED_EVENT, data);
     },
     CONDITIONAL_TRANSFER_CREATED_EVENT: (msg: any): void => {
       this.emitAndLog(CONDITIONAL_TRANSFER_CREATED_EVENT, msg.data);
@@ -112,6 +120,9 @@ export class ConnextListener extends ConnextEventEmitter {
     INSTALL_EVENT: (msg: InstallMessage): void => {
       this.emitAndLog(INSTALL_EVENT, msg.data);
     },
+    INSTALL_FAILED_EVENT: (data: EventPayloads.InstallFailed): void => {
+      this.emitAndLog(INSTALL_FAILED_EVENT, data);
+    },
     PROPOSE_INSTALL_EVENT: async (msg: ProposeMessage): Promise<void> => {
       const {
         data: { params, appIdentityHash },
@@ -131,6 +142,9 @@ export class ConnextListener extends ConnextEventEmitter {
       // applications
       this.emitAndLog(PROPOSE_INSTALL_EVENT, msg.data);
     },
+    PROPOSE_INSTALL_FAILED_EVENT: (data: EventPayloads.ProposeFailed): void => {
+      this.emitAndLog(PROPOSE_INSTALL_FAILED_EVENT, data);
+    },
     PROTOCOL_MESSAGE_EVENT: (msg: ProtocolMessage): void => {
       this.emitAndLog(PROTOCOL_MESSAGE_EVENT, msg.data);
     },
@@ -140,8 +154,14 @@ export class ConnextListener extends ConnextEventEmitter {
     SYNC: (msg: SyncMessage): void => {
       this.emitAndLog(SYNC, msg.data);
     },
+    SYNC_FAILED_EVENT: (data: EventPayloads.SyncFailed): void => {
+      this.emitAndLog(SYNC_FAILED_EVENT, data);
+    },
     UNINSTALL_EVENT: (msg: UninstallMessage): void => {
       this.emitAndLog(UNINSTALL_EVENT, msg.data);
+    },
+    UNINSTALL_FAILED_EVENT: (data: EventPayloads.UninstallFailed): void => {
+      this.emitAndLog(UNINSTALL_FAILED_EVENT, data);
     },
     UPDATE_STATE_EVENT: async (msg: UpdateStateMessage): Promise<void> => {
       this.emitAndLog(UPDATE_STATE_EVENT, msg.data);
@@ -151,11 +171,14 @@ export class ConnextListener extends ConnextEventEmitter {
         msg.data.action as AppAction,
       );
     },
-    WITHDRAWAL_CONFIRMED_EVENT: (msg: UninstallMessage): void => {
-      this.emitAndLog(WITHDRAWAL_CONFIRMED_EVENT, msg.data);
+    UPDATE_STATE_FAILED_EVENT: (data: EventPayloads.UpdateStateFailed): void => {
+      this.emitAndLog(UPDATE_STATE_FAILED_EVENT, data);
     },
     WITHDRAWAL_FAILED_EVENT: (msg: UninstallMessage): void => {
       this.emitAndLog(WITHDRAWAL_FAILED_EVENT, msg.data);
+    },
+    WITHDRAWAL_CONFIRMED_EVENT: (msg: UninstallMessage): void => {
+      this.emitAndLog(WITHDRAWAL_CONFIRMED_EVENT, msg.data);
     },
     WITHDRAWAL_STARTED_EVENT: (msg: UninstallMessage): void => {
       this.emitAndLog(WITHDRAWAL_STARTED_EVENT, msg.data);
