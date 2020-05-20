@@ -28,7 +28,6 @@ import {
   bigNumberifyJson,
   deBigNumberifyJson,
   getAddressFromAssetId,
-  getRandomChannelSigner,
   getSignerAddressFromPublicIdentifier,
   toBN,
 } from "@connext/utils";
@@ -41,10 +40,7 @@ import { JsonRpcResponse, Rpc } from "rpc-server";
 import { Node } from "../node";
 import { AppInstance, StateChannel } from "../models";
 import { CONTRACT_NOT_DEPLOYED } from "../errors";
-import {
-  getRandomPublicIdentifier,
-  getRandomPublicIdentifiers,
-} from "../testing/random-signing-keys";
+import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
 
 import { DolphinCoin, NetworkContextForTestSuite } from "./contracts";
 import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
