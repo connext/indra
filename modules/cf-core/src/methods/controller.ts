@@ -52,7 +52,7 @@ export abstract class NodeController extends Controller {
       logTime(log, substart, "Executed method implementation");
       substart = Date.now();
 
-      // USE UPDATED CHANNEL IN AFETR EXECUTION
+      // USE RETURNED VALUE IN AFTER EXECUTION
       await this.afterExecution(requestHandler, params, ret);
       logTime(log, substart, "After execution complete");
       substart = Date.now();
