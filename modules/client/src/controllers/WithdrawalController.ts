@@ -108,8 +108,9 @@ export class WithdrawalController extends AbstractController {
     this.log.debug(`Signing withdrawal commitment: ${hash}`);
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment =
-      await this.connext.channelProvider.signMessage(hash);
+    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
+      hash,
+    );
     this.log.debug(`Taking action on ${appInstance.identityHash}`);
     await this.connext.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
@@ -176,6 +177,7 @@ export class WithdrawalController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositAssetId: assetId,
+      multisigAddress: this.connext.multisigAddress,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: Zero,
