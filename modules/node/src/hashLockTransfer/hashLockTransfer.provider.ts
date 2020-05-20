@@ -62,6 +62,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       lockHash: latestState.lockHash,
       status: status,
       meta,
+      preImage: latestState.preImage,
     };
   }
 
