@@ -33,8 +33,13 @@ export type CriticalStateChannelAddresses = {
 export type ContractAddresses = CriticalStateChannelAddresses & {
   challengeRegistry: Address;
   conditionalTransactionDelegateTarget: Address;
+  depositApp: Address;
+  hashLockTransferApp?: Address;
   identityApp: Address;
   multiAssetMultiPartyCoinTransferInterpreter: Address;
+  simpleLinkedTransferApp?: Address;
+  simpleSignedTransferApp?: Address;
+  simpleTwoPartySwapApp?: Address;
   singleAssetTwoPartyCoinTransferInterpreter: Address;
   timeLockedPassThrough: Address;
   token?: Address;
@@ -46,10 +51,11 @@ export interface NetworkContext {
   provider: JsonRpcProvider;
 }
 
-// Keep in sync with ContractAddresses
+// Keep in sync with required addresses of ContractAddresses
 export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "challengeRegistry",
   "conditionalTransactionDelegateTarget",
+  "depositApp",
   "identityApp",
   "minimumViableMultisig",
   "multiAssetMultiPartyCoinTransferInterpreter",

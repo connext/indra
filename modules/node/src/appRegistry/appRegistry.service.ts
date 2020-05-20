@@ -36,26 +36,27 @@ import {
 import { getAddressFromAssetId, stringify } from "@connext/utils";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
+import { JsonRpcProvider } from "ethers/providers";
 import { bigNumberify } from "ethers/utils";
 
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
+import { CFCoreStore } from "../cfCore/cfCore.store";
+import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { MessagingProviderId } from "../constants";
-import { SwapRateService } from "../swapRate/swapRate.service";
-import { LoggerService } from "../logger/logger.service";
-import { Channel } from "../channel/channel.entity";
-import { WithdrawService } from "../withdraw/withdraw.service";
 import { DepositService } from "../deposit/deposit.service";
 import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.service";
+import { LoggerService } from "../logger/logger.service";
+import { MessagingProviderId } from "../constants";
 import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
-import { CFCoreStore } from "../cfCore/cfCore.store";
-import { AppType } from "../appInstance/appInstance.entity";
+import { SwapRateService } from "../swapRate/swapRate.service";
+import { WithdrawService } from "../withdraw/withdraw.service";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -318,8 +319,8 @@ export class AppRegistryService implements OnModuleInit {
     const contractAddresses = await this.configService.getContractAddresses();
     const provider = this.configService.getEthProvider();
     const defaultValidation = await generateValidationMiddleware({
-      ...contractAddresses,
-      provider: provider as any,
+      contractAddresses,
+      provider: provider as JsonRpcProvider,
     });
 
     return async (protocol: ProtocolName, cxt: MiddlewareContext) => {
@@ -354,7 +355,7 @@ export class AppRegistryService implements OnModuleInit {
     const contractAddresses = await this.configService.getContractAddresses();
 
     switch (appDef) {
-      case contractAddresses.HashLockTransferApp: {
+      case contractAddresses.hashLockTransferApp: {
         return await this.installHashLockTransferMiddleware(appInstance);
       }
       default: {
@@ -369,10 +370,10 @@ export class AppRegistryService implements OnModuleInit {
     const contractAddresses = await this.configService.getContractAddresses();
 
     switch (proposal.appDefinition) {
-      case contractAddresses.SimpleLinkedTransferApp: {
+      case contractAddresses.simpleLinkedTransferApp: {
         return await this.proposeLinkedTransferMiddleware(proposal);
       }
-      case contractAddresses.SimpleSignedTransferApp: {
+      case contractAddresses.simpleSignedTransferApp: {
         return await this.proposeSignedTransferMiddleware(proposal);
       }
       default: {
@@ -467,7 +468,7 @@ export class AppRegistryService implements OnModuleInit {
     const nodeSignerAddress = await this.configService.getSignerAddress();
 
     switch (appDef) {
-      case contractAddresses.DepositApp: {
+      case contractAddresses.depositApp: {
         // do not respond to user requests to uninstall deposit
         // apps if node is depositor and there is an active collateralization
         const latestState = appInstance.latestState as DepositAppState;

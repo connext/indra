@@ -1,15 +1,16 @@
 import {
   AppInstanceJson,
-  OutcomeType,
   AppInstanceProposal,
-  StateChannelJSON,
-  SetStateCommitmentJSON,
-  ConditionalTransactionCommitmentJSON,
-  MinimalTransaction,
-  StoredAppChallenge,
   ChallengeStatus,
-  StateProgressedEventPayload,
   ChallengeUpdatedEventPayload,
+  ConditionalTransactionCommitmentJSON,
+  ContractAddresses,
+  MinimalTransaction,
+  OutcomeType,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
+  StateProgressedEventPayload,
+  StoredAppChallenge,
   StoredAppChallengeStatus,
 } from "@connext/types";
 import { deBigNumberifyJson, getRandomBytes32, getRandomAddress, getRandomChannelSigner } from "@connext/utils";
@@ -140,7 +141,7 @@ export const createConditionalTransactionCommitmentJSON = (
     interpreterParams: "",
     multisigAddress: generateRandomAddress(),
     multisigOwners: [generateRandomAddress(), generateRandomAddress()],
-    networkContext: {} as any,
+    contractAddresses: {} as ContractAddresses,
     signatures: [generateRandomSignature(), generateRandomSignature()],
     ...overrides,
   };

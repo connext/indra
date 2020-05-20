@@ -75,7 +75,7 @@ describe("Get State Channel", () => {
 
   beforeEach(async () => {
     clientA = await createClient();
-    tokenAddress = clientA.config.contractAddresses.Token;
+    tokenAddress = clientA.config.contractAddresses.token!;
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
   });

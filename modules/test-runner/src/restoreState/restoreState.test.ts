@@ -25,7 +25,7 @@ describe("Restore State", () => {
     const nats = getNatsClient();
     signerA = getRandomChannelSigner(env.ethProviderUrl);
     clientA = await createClient({ signer: signerA, store: getLocalStore() });
-    tokenAddress = clientA.config.contractAddresses.Token;
+    tokenAddress = clientA.config.contractAddresses.token!;
     nodeSignerAddress = clientA.nodeSignerAddress;
 
     const REBALANCE_PROFILE = {

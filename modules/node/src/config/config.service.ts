@@ -106,7 +106,7 @@ export class ConfigService implements OnModuleInit {
       const contractAddresses = await this.getContractAddresses("1");
       testnetTokenConfig.push([
         {
-          address: contractAddresses.Token,
+          address: contractAddresses.token,
           chainId: 1,
         },
         { address: await this.getTokenAddress(), chainId: currentChainId },

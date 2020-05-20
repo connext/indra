@@ -32,7 +32,7 @@ export const withdrawFromChannel = async (
   if (assetId === AddressZero) {
     recipientBalance = await ethProvider.getBalance(recipient);
   } else {
-    const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethProvider);
+    const token = new Contract(client.config.contractAddresses.token!, tokenAbi, ethProvider);
     recipientBalance = await token.balanceOf(recipient);
   }
   expect(recipientBalance).to.be.at.least(amount.toString());
