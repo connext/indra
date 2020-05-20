@@ -7,16 +7,11 @@ import { Node } from "../../node";
 import { toBeLt } from "../bignumber-jest-matcher";
 import { NetworkContextForTestSuite } from "../contracts";
 import { setup, SetupContext } from "../setup";
-import {
-  collateralizeChannel,
-  createChannel,
-  makeInstallCall,
-  makeProposeCall,
-} from "../utils";
+import { collateralizeChannel, createChannel, makeInstallCall, makeProposeCall } from "../utils";
 
 expect.extend({ toBeLt });
 
-jest.setTimeout(7500);
+jest.setTimeout(7_500);
 
 const { TicTacToeApp } = global[`network`] as NetworkContextForTestSuite;
 
@@ -44,7 +39,7 @@ describe(`Node method follows spec - install`, () => {
         );
       });
 
-      it(`install app with ETH`, done => {
+      it(`install app with ETH`, async (done) => {
         let completedInstalls = 0;
 
         nodeB.on(`PROPOSE_INSTALL_EVENT`, (msg: ProposeMessage) => {

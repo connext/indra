@@ -93,13 +93,9 @@ describe("Node method follows spec - install", () => {
             CONVENTION_FOR_ETH_ASSET_ID,
           );
 
-          expect(postInstallETHBalanceNodeA).toBeEq(
-            preInstallETHBalanceNodeA.sub(appDeposit),
-          );
+          expect(postInstallETHBalanceNodeA).toBeEq(preInstallETHBalanceNodeA.sub(appDeposit));
 
-          expect(postInstallETHBalanceNodeB).toBeEq(
-            preInstallETHBalanceNodeB.sub(appDeposit),
-          );
+          expect(postInstallETHBalanceNodeB).toBeEq(preInstallETHBalanceNodeB.sub(appDeposit));
 
           // assert install message
           assertInstallMessage(nodeB.publicIdentifier, msg, appInstanceNodeA.identityHash);

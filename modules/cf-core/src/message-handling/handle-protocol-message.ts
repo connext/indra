@@ -46,7 +46,7 @@ export async function handleReceivedProtocolMessage(
     );
     postProtocolStateChannel = channel;
   } catch (e) {
-    log.error(`Caught error running protocol, aborting. Error: ${stringify(e)}`);
+    log.error(`Caught error running protocol, aborting. Error: ${e.stack || e.message}`);
     return;
   }
 
@@ -55,7 +55,6 @@ export async function handleReceivedProtocolMessage(
     params!,
     postProtocolStateChannel,
   );
-  console.log('outgoingEventData: ', outgoingEventData);
 
   if (!outgoingEventData) {
     return;

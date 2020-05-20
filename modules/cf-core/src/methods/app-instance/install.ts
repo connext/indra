@@ -72,9 +72,7 @@ export class InstallAppInstanceController extends NodeController {
   ): Promise<MethodResults.Install> {
     const { channel, protocolRunner, publicIdentifier } = requestHandler;
 
-    console.log(`CALLING INSTALL PROTOCOL`);
     const postProtocolChannel = await install(channel!, protocolRunner, params, publicIdentifier);
-    console.log(`INSTALL PROTOCOL COMPLETE`);
 
     const appInstance = postProtocolChannel.appInstances.get(params.appIdentityHash);
     if (!appInstance) {
