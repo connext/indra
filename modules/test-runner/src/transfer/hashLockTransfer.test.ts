@@ -24,7 +24,7 @@ import {
   requestCollateral,
 } from "../util";
 
-describe("HashLock Transfers", () => {
+describe.only("HashLock Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
@@ -245,7 +245,7 @@ describe("HashLock Transfers", () => {
     } as NodeResponses.GetHashLockTransfer);
   });
 
-  it("gets a completed hashlock transfer by lock hash", async () => {
+  it.only("gets a completed hashlock transfer by lock hash", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
@@ -282,6 +282,7 @@ describe("HashLock Transfers", () => {
       senderIdentifier: clientA.publicIdentifier,
       receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.COMPLETED,
+      preImage,
       meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
     } as NodeResponses.GetHashLockTransfer);
   });
