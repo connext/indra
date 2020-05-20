@@ -21,6 +21,7 @@ import { Context } from "../types";
 import { MiddlewareContainer } from "./middleware";
 import { StateChannel } from "../models";
 import RpcRouter from "../rpc-router";
+import { delay } from "@connext/utils";
 
 function firstRecipientFromProtocolName(protocolName: ProtocolName) {
   if (Object.values(ProtocolNames).includes(protocolName)) {
@@ -59,7 +60,15 @@ export class ProtocolRunner {
     if (typeof step === "undefined") {
       throw new Error(`Received invalid seq ${msg.seq} for protocol ${msg.protocol}`);
     }
-    return this.runProtocol(router, step, msg, preProtocolStateChannel);
+    try {
+      const protocolRet = await this.runProtocol(step, msg, preProtocolStateChannel);
+      return protocolRet;
+    } catch (error) {
+      const { protocol, params } = msg;
+      const outgoingData = getOutgoingEventFailureDataFromProtocol(protocol, params!, error);
+      await emitOutgoingMessage(router, outgoingData);
+      throw error;
+    }
   }
 
   public async initiateProtocol(
@@ -68,70 +77,82 @@ export class ProtocolRunner {
     params: ProtocolParam,
     preProtocolStateChannel?: StateChannel,
   ) {
-    return this.runProtocol(
-      router,
-      getProtocolFromName(protocolName)[0],
-      {
-        params,
-        protocol: protocolName,
-        processID: uuid(),
-        seq: 0,
-        to: params[firstRecipientFromProtocolName(protocolName)],
-        customData: {},
-      },
-      preProtocolStateChannel,
-    );
+    try {
+      const protocolRet = this.runProtocol(
+        getProtocolFromName(protocolName)[0],
+        {
+          params,
+          protocol: protocolName,
+          processID: uuid(),
+          seq: 0,
+          to: params[firstRecipientFromProtocolName(protocolName)],
+          customData: {},
+        },
+        preProtocolStateChannel,
+      );
+      return protocolRet;
+    } catch (error) {
+      const outgoingData = getOutgoingEventFailureDataFromProtocol(protocolName, params, error);
+      await emitOutgoingMessage(router, outgoingData);
+      throw error;
+    }
   }
 
   public async runSetupProtocol(router: RpcRouter, params: ProtocolParams.Setup) {
     const protocol = ProtocolNames.setup;
-    return this.runProtocol(
-      router,
-      getProtocolFromName(protocol)[0],
-      {
-        protocol,
-        params,
-        processID: uuid(),
-        seq: 0,
-        to: params[firstRecipientFromProtocolName(protocol)],
-        customData: {},
-      },
-      {} as any,
-    );
+    try {
+      const protocolRet = await this.runProtocol(
+        getProtocolFromName(protocol)[0],
+        {
+          protocol,
+          params,
+          processID: uuid(),
+          seq: 0,
+          to: params[firstRecipientFromProtocolName(protocol)],
+          customData: {},
+        },
+        {} as any,
+      );
+      return protocolRet;
+    } catch (error) {
+      const outgoingData = getOutgoingEventFailureDataFromProtocol(protocol, params, error);
+      await emitOutgoingMessage(router, outgoingData);
+      throw error;
+    }
   }
 
   private async runProtocol(
-    router: RpcRouter,
     instruction: (context: Context) => AsyncIterableIterator<any>,
     message: ProtocolMessageData,
     preProtocolStateChannel?: StateChannel,
   ): Promise<{ channel: StateChannel; data: any }> {
-    try {
-      const context: Context = {
-        log: this.log,
-        message,
-        store: this.store,
-        network: this.network,
-        preProtocolStateChannel,
-      };
+    const context: Context = {
+      log: this.log,
+      message,
+      store: this.store,
+      network: this.network,
+      preProtocolStateChannel,
+    };
 
-      let lastMiddlewareRet: any = undefined;
-      const process = instruction(context);
-      while (true) {
-        const ret = await process.next(lastMiddlewareRet);
-        if (ret.done) {
-          break;
-        }
-        const [opcode, ...args] = ret.value;
-        lastMiddlewareRet = await this.middlewares.run(opcode, args);
+    let lastMiddlewareRet: any = undefined;
+    const process = instruction(context);
+    while (true) {
+      let ret;
+      try {
+        ret = await process.next(lastMiddlewareRet);
+      } catch (e) {
+        console.log(`******* got err: ${e.stack || e.message}`);
+        await delay(500);
+        throw e;
       }
-      return lastMiddlewareRet;
-    } catch (error) {
-      const { protocol, params } = message;
-      const outgoingEventData = getOutgoingEventFailureDataFromProtocol(protocol, params!, error);
-      await emitOutgoingMessage(router, outgoingEventData);
-      throw error;
+
+      if (ret.done) {
+        break;
+      }
+      const [opcode, ...args] = ret.value;
+      lastMiddlewareRet = await this.middlewares.run(opcode, args);
     }
+    return lastMiddlewareRet;
   }
 }
 
