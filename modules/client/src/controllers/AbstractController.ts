@@ -56,7 +56,7 @@ export abstract class AbstractController {
       this.connext.proposeInstallApp(params),
       delayAndThrow(
         CLIENT_METHOD_TIMEOUT,
-        `App proposal took longer than ${CLIENT_METHOD_TIMEOUT} seconds`,
+        `App proposal took longer than ${CLIENT_METHOD_TIMEOUT / 1000} seconds`,
       ),
     ]);
     const { appIdentityHash } = proposeRes as MethodResults.ProposeInstall;
@@ -69,7 +69,7 @@ export abstract class AbstractController {
       await Promise.race([
         delayAndThrow(
           CLIENT_METHOD_TIMEOUT,
-          `App install took longer than ${CLIENT_METHOD_TIMEOUT} seconds`,
+          `App install took longer than ${CLIENT_METHOD_TIMEOUT / 1000} seconds`,
         ),
         new Promise((res: () => any, rej: () => any): void => {
           boundReject = this.rejectInstall.bind(null, rej, appIdentityHash);
