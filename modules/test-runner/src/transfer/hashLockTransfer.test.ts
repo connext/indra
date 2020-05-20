@@ -10,7 +10,7 @@ import {
 } from "@connext/types";
 import { getRandomBytes32 } from "@connext/utils";
 import { providers } from "ethers";
-import { AddressZero } from "ethers/constants";
+import { AddressZero, HashZero } from "ethers/constants";
 import { soliditySha256, bigNumberify } from "ethers/utils";
 
 import {
@@ -24,7 +24,7 @@ import {
   requestCollateral,
 } from "../util";
 
-describe.only("HashLock Transfers", () => {
+describe("HashLock Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
@@ -242,10 +242,11 @@ describe.only("HashLock Transfers", () => {
       receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.PENDING,
       meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
+      preImage: HashZero,
     } as NodeResponses.GetHashLockTransfer);
   });
 
-  it.only("gets a completed hashlock transfer by lock hash", async () => {
+  it("gets a completed hashlock transfer by lock hash", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
