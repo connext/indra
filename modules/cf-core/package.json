@@ -1,6 +1,6 @@
 {
   "name": "@connext/cf-core",
-  "version": "6.5.4",
+  "version": "6.5.5",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
@@ -19,8 +19,8 @@
   },
   "dependencies": {
     "@connext/contracts": "3.0.0",
-    "@connext/utils": "6.5.4",
-    "@connext/types": "6.5.4",
+    "@connext/utils": "6.5.5",
+    "@connext/types": "6.5.5",
     "async-mutex": "0.2.2",
     "ethers": "4.0.47",
     "@openzeppelin/contracts": "3.0.1",
@@ -34,7 +34,7 @@
   "devDependencies": {
     "@babel/core": "7.9.0",
     "@babel/plugin-proposal-object-rest-spread": "7.9.5",
-    "@connext/store": "6.5.4",
+    "@connext/store": "6.5.5",
     "@types/chai": "4.2.11",
     "@types/dotenv-safe": "8.1.0",
     "@types/jest": "25.2.1",
