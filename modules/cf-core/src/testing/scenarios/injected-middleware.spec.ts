@@ -61,7 +61,7 @@ describe("injected validation middleware", () => {
     });
   });
 
-  it.only("protocol will fail if the validation middleware errors", async () => {
+  it("protocol will fail if the validation middleware errors", async () => {
     const initiatorFailure = `IO_SEND_AND_WAIT timed out after ${
       CF_METHOD_TIMEOUT / 1000
     }s waiting for counterparty reply in setup`;
