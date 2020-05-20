@@ -35,8 +35,7 @@ export class ProtocolRunner {
     public readonly store: IStoreService,
     public readonly log: ILoggerService,
   ) {
-    this.network.provider = provider || network.provider;
-    this.log.info(`Our network provider: ${typeof this.network.provider.getBalance} | provider: ${typeof this.provider.getBalance}`);
+    this.network.provider = network.provider || provider;
     this.middlewares = new MiddlewareContainer();
   }
 

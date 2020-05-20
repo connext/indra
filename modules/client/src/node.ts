@@ -80,7 +80,7 @@ export class NodeApiClient implements INodeApiClient {
       messaging = new MessagingService(
         {
           messagingUrl: messagingUrl || formatMessagingUrl(nodeUrl),
-          log,
+          logger: log,
         },
         "INDRA",
         () => NodeApiClient.getBearerToken(nodeUrl, userIdentifier, getSignature),
@@ -110,7 +110,7 @@ export class NodeApiClient implements INodeApiClient {
         ethProvider,
         signer,
         node,
-        log,
+        logger: log,
         store: opts.store,
       });
       log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);

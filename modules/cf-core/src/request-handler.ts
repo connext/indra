@@ -60,7 +60,6 @@ export class RequestHandler {
    */
   public async callMethod(method: MethodName, req: MethodRequest): Promise<MethodResponse> {
     const start = Date.now();
-    this.log.info(`provider getBalance is a ${typeof this.provider.getBalance}`);
     const result: MethodResponse = {
       type: req.type,
       requestId: req.requestId,

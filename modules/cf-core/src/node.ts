@@ -102,17 +102,9 @@ export class Node {
     private readonly lockService: ILockService,
   ) {
     this.log = log.newContext("CF-Node");
+    this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
-
-    // Create a new copy of networkContext so caller's copy doesn't get modified unexpectedly
-    this.networkContext = JSON.parse(JSON.stringify({
-      ...this.networkContext,
-      provider: undefined,
-    }));
-    this.networkContext.provider = this.provider;
-    this.log.info(`Provider getBalance is a ${typeof this.provider.getBalance} & context's is a ${typeof this.networkContext.provider.getBalance}`);
-
     this.protocolRunner = this.buildProtocolRunner();
   }
 
@@ -152,23 +144,19 @@ export class Node {
     this.registerMessagingConnection();
     this.rpcRouter = createRpcRouter(this.requestHandler);
     this.requestHandler.injectRouter(this.rpcRouter);
-    if (syncOnStart) {
-      this.log.info(`Attempting channel sync`);
-      const channels = await this.storeService.getAllChannels();
-      this.log.info(
-        `Found channels to sync: ${channels.map((channel) => channel.multisigAddress)}`,
-      );
-      await Promise.all(
-        channels.map(async (channel) => {
-          await this.rpcRouter.dispatch({
-            methodName: MethodNames.chan_sync,
-            parameters: { multisigAddress: channel.multisigAddress } as MethodParams.Sync,
-            id: Date.now(),
-          });
-        }),
-      );
-      this.log.info(`Channel sync complete`);
+    if (!syncOnStart) {
+      return this;
     }
+    const channels = await this.storeService.getAllChannels();
+    await Promise.all(
+      channels.map(async (channel) => {
+        await this.rpcRouter.dispatch({
+          methodName: MethodNames.chan_sync,
+          parameters: { multisigAddress: channel.multisigAddress } as MethodParams.Sync,
+          id: Date.now(),
+        });
+      }),
+    );
     return this;
   }
 

@@ -23,11 +23,8 @@ describe("ChannelProvider", () => {
   let tokenAddress: string;
 
   beforeEach(async () => {
-    console.log(`Creating normal client`);
     client = await createClient({ id: "A" });
-    console.log(`Created normal client`);
     remoteClient = await createRemoteClient(await createChannelProvider(client));
-    console.log(`Created remote client`);
     nodeIdentifier = client.config.nodeIdentifier;
     nodeSignerAddress = client.nodeSignerAddress;
     tokenAddress = client.config.contractAddresses.Token;
