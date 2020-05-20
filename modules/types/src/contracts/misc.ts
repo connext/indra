@@ -48,15 +48,15 @@ export interface NetworkContext {
 
 // Keep in sync with ContractAddresses
 export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
-  "ChallengeRegistry",
-  "ConditionalTransactionDelegateTarget",
-  "IdentityApp",
-  "MinimumViableMultisig",
-  "MultiAssetMultiPartyCoinTransferInterpreter",
-  "ProxyFactory",
-  "SingleAssetTwoPartyCoinTransferInterpreter",
-  "TimeLockedPassThrough",
-  "TwoPartyFixedOutcomeInterpreter",
+  "challengeRegistry",
+  "conditionalTransactionDelegateTarget",
+  "identityApp",
+  "minimumViableMultisig",
+  "multiAssetMultiPartyCoinTransferInterpreter",
+  "proxyFactory",
+  "singleAssetTwoPartyCoinTransferInterpreter",
+  "timeLockedPassThrough",
+  "twoPartyFixedOutcomeInterpreter",
 ];
 
 //////////////////////////////////////// 

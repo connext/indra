@@ -1,15 +1,15 @@
 import {
   AppInstanceProposal,
   IChannelSigner,
+  ILoggerService,
   IStoreService,
+  MinimalTransaction,
   NetworkContext,
   Opcode,
   PublicIdentifier,
-  MinimalTransaction,
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
 import { getRandomChannelSigner, nullLogger } from "@connext/utils";
-import { JsonRpcProvider } from "ethers/providers";
 
 import { ProtocolRunner } from "../machine";
 import { AppInstance, StateChannel } from "../models";
@@ -37,8 +37,8 @@ export class MiniNode {
 
   constructor(
     readonly networkContext: NetworkContext,
-    readonly provider: JsonRpcProvider,
     readonly store: IStoreService,
+    readonly log: ILoggerService = nullLogger,
   ) {
     this.signer = getRandomChannelSigner();
     this.publicIdentifier = this.signer.publicIdentifier;

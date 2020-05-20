@@ -1,7 +1,11 @@
 import { IdentityApp } from "@connext/contracts";
 import { getMemoryStore } from "@connext/store";
 import { OutcomeType, ProtocolNames, ProtocolParams, MinimalTransaction } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, getRandomAddress, toBNJson } from "@connext/utils";
+import {
+  getRandomAddress,
+  getSignerAddressFromPublicIdentifier,
+  toBNJson,
+} from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero, HashZero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -39,8 +43,9 @@ export class TestRunner {
 
   async connectToGanache(): Promise<void> {
     const wallet = newWallet(global["wallet"]);
-    const network = global["network"];
+    const contractAddresses = global["contracts"];
     this.provider = wallet.provider as JsonRpcProvider;
+    const network = { contractAddresses, provider: this.provider };
 
     this.identityApp = await new ContractFactory(
       IdentityApp.abi,
@@ -50,40 +55,31 @@ export class TestRunner {
 
     this.defaultTimeout = bigNumberify(100);
 
-    this.mininodeA = new MiniNode(network, this.provider, getMemoryStore());
+    this.mininodeA = new MiniNode(network, getMemoryStore());
     await this.mininodeA.store.init();
-    this.mininodeB = new MiniNode(network, this.provider, getMemoryStore());
+    this.mininodeB = new MiniNode(network, getMemoryStore());
     await this.mininodeB.store.init();
-    this.mininodeC = new MiniNode(network, this.provider, getMemoryStore());
+    this.mininodeC = new MiniNode(network, getMemoryStore());
     await this.mininodeC.store.init();
 
     this.multisigAB = await getCreate2MultisigAddress(
       this.mininodeA.publicIdentifier,
       this.mininodeB.publicIdentifier,
-      {
-        proxyFactory: network.ProxyFactory,
-        minimumViableMultisig: network.MinimumViableMultisig,
-      },
+      contractAddresses,
       this.provider,
     );
 
     this.multisigAC = await getCreate2MultisigAddress(
       this.mininodeA.publicIdentifier,
       this.mininodeC.publicIdentifier,
-      {
-        proxyFactory: network.ProxyFactory,
-        minimumViableMultisig: network.MinimumViableMultisig,
-      },
+      contractAddresses,
       this.provider,
     );
 
     this.multisigBC = await getCreate2MultisigAddress(
       this.mininodeB.publicIdentifier,
       this.mininodeC.publicIdentifier,
-      {
-        proxyFactory: network.ProxyFactory,
-        minimumViableMultisig: network.MinimumViableMultisig,
-      },
+      contractAddresses, 
       this.provider,
     );
 

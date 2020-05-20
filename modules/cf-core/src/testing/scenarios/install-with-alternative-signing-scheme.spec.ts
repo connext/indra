@@ -50,7 +50,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         nodeA = await Node.create(
           messagingService,
           storeServiceA,
-          global[`network`],
+          global[`contracts`],
           nodeConfig,
           provider,
           new ChannelSigner(A_PRIVATE_KEY),
@@ -62,7 +62,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         nodeB = await Node.create(
           messagingService,
           storeServiceB,
-          global[`network`],
+          global[`contracts`],
           nodeConfig,
           provider,
           new ChannelSigner(B_PRIVATE_KEY),

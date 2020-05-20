@@ -52,7 +52,7 @@ describe("Sync", () => {
   beforeEach(async () => {
     // test global fixtures
     sharedEventEmitter = new EventEmitter();
-    ethUrl = global["contracts"]["provider"].connection.url;
+    ethUrl = global["wallet"]["provider"].connection.url;
     provider = new JsonRpcProvider(ethUrl);
     nodeConfig = { STORE_KEY_PREFIX: "test" };
     lockService = new MemoryLockService();

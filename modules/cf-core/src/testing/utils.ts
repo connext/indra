@@ -60,6 +60,7 @@ interface AppContext {
 
 const {
   depositApp,
+  dolphinCoin,
   ticTacToeApp,
   simpleTransferApp,
   unidirectionalLinkedTransferApp,
@@ -171,17 +172,17 @@ export async function rescindDepositRights(
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ) {
   const apps = await getInstalledAppInstances(node, multisigAddress);
-  const depositApp = apps.filter(
+  const depositAppInstance = apps.filter(
     (app) =>
-      app.appInterface.addr === global[`network`][`depositApp`] &&
+      app.appInterface.addr === depositApp &&
       (app.latestState as DepositAppState).assetId === getAddressFromAssetId(assetId),
   )[0];
-  if (!depositApp) {
+  if (!depositAppInstance) {
     // no apps to uninstall, return
     return;
   }
   // uninstall
-  await uninstallApp(node, counterparty, depositApp.identityHash);
+  await uninstallApp(node, counterparty, depositAppInstance.identityHash);
 }
 
 export async function getDepositApps(
@@ -194,7 +195,7 @@ export async function getDepositApps(
     return [];
   }
   const depositApps = apps.filter(
-    (app) => app.appInterface.addr === global[`network`][`depositApp`],
+    (app) => app.appInterface.addr === depositApp,
   );
   if (tokenAddresses.length === 0) {
     return depositApps;
@@ -934,7 +935,7 @@ export async function makeAndSendProposeCall(
  */
 export async function transferERC20Tokens(
   toAddress: string,
-  tokenAddress: string = global[`network`][`DolphinCoin`],
+  tokenAddress: string = dolphinCoin,
   contractABI: ContractABI = DolphinCoin.abi,
   amount: BigNumber = One,
 ): Promise<BigNumber> {

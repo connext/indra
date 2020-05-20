@@ -24,6 +24,10 @@ expect.extend({ toBeEq });
 beforeAll(async () => {
   wallet = global["wallet"];
   contracts = global["contracts"];
+  if (!contracts) {
+    throw new Error(`Contracts missing: ${JSON.stringify(global["contracts"])} | ${Object.keys(global)}`);
+  }
+  console.log(``);
   appRegistry = new Contract(contracts.challengeRegistry, ChallengeRegistry.abi, wallet);
 });
 

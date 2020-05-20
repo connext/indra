@@ -124,13 +124,13 @@ describe(`Node method follows spec - install deposit app`, () => {
 
   it(`install app with tokens, sending tokens should increase free balance`, async () => {
     const depositAmt = new BigNumber(1000);
-    const assetId = getAddressFromAssetId(global[`network`].DolphinCoin);
+    const assetId = getAddressFromAssetId(global[`contracts`].dolphinCoin);
 
     await runUnrolledDepositTest(assetId, depositAmt);;
   });
 
   it(`install app with both eth and tokens, sending eth and tokens should increase free balance`, async () => {
-    const erc20AssetId = getAddressFromAssetId(global[`network`].DolphinCoin);
+    const erc20AssetId = getAddressFromAssetId(global[`contracts`].dolphinCoin);
     const depositAmtToken = new BigNumber(1000);
     const depositAmtEth = new BigNumber(500);
 

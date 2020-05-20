@@ -195,6 +195,8 @@ describe("StateChannel", () => {
 
     const { identityApp, proxyFactory, minimumViableMultisig } = getRandomContractAddresses();
 
+    console.log(`identityApp address: ${identityApp}`);
+
     let sc: StateChannel;
     let json: StateChannelJSON;
     let rehydrated: StateChannel;
@@ -203,7 +205,7 @@ describe("StateChannel", () => {
       // NOTE: this functionality is tested in `setup-channel.spec`
       sc = StateChannel.setupChannel(
         identityApp,
-        { proxyFactory: proxyFactory, minimumViableMultisig: minimumViableMultisig },
+        { proxyFactory, minimumViableMultisig },
         multisigAddress,
         initiator,
         responder,

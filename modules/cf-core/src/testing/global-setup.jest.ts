@@ -37,4 +37,7 @@ export default async function globalSetup(): Promise<void> {
   await fundAddress(fundedAccount.address, ethProvider);
   global["wallet"] = fundedAccount;
   global["contracts"] = await deployTestArtifactsToChain(fundedAccount);
+  if (!global["contracts"]) {
+    throw new Error(`Oops didn't set: ${JSON.stringify(global["contracts"])}`);
+  }
 }
