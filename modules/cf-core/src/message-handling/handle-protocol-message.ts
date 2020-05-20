@@ -47,8 +47,10 @@ export async function handleReceivedProtocolMessage(
       json && StateChannel.fromJson(json),
     );
     postProtocolStateChannel = channel;
-  } catch (e) {
-    log.error(`Caught error running protocol, aborting. Error: ${e.stack || e.message}`);
+  } catch (error) {
+    log.error(`Caught error running protocol, aborting. Error: ${error.stack || error.message}`);
+    const outgoingEventData = getOutgoingEventFailureDataFromProtocol(protocol, params!, error);
+    await emitOutgoingMessage(router, outgoingEventData);
     return;
   }
 
@@ -66,6 +68,62 @@ export async function handleReceivedProtocolMessage(
 
 function emitOutgoingMessage(router: RpcRouter, msg: Message) {
   return router.emit(msg["type"], msg, "outgoing");
+}
+
+function getOutgoingEventFailureDataFromProtocol(
+  protocol: ProtocolName,
+  params: ProtocolParam,
+  error: Error,
+): Message {
+  const baseEvent = {
+    from: params.initiatorIdentifier,
+    data: {
+      params,
+      error: error.stack || error.message,
+    },
+  };
+  switch (protocol) {
+    case ProtocolNames.setup: {
+      return {
+        ...baseEvent,
+        type: EventNames.SETUP_FAILED_EVENT,
+      };
+    }
+    case ProtocolNames.sync: {
+      return {
+        ...baseEvent,
+        type: EventNames.SYNC_FAILED_EVENT,
+      };
+    }
+    case ProtocolNames.propose: {
+      return {
+        ...baseEvent,
+        type: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
+      };
+    }
+    case ProtocolNames.install: {
+      return {
+        ...baseEvent,
+        type: EventNames.INSTALL_FAILED_EVENT,
+      };
+    }
+    case ProtocolNames.takeAction: {
+      return {
+        ...baseEvent,
+        type: EventNames.UPDATE_STATE_FAILED_EVENT,
+      };
+    }
+    case ProtocolNames.uninstall: {
+      return {
+        ...baseEvent,
+        type: EventNames.UNINSTALL_FAILED_EVENT,
+      };
+    }
+    default: {
+      const unexpected: never = protocol;
+      throw new Error(`[getOutgoingEventFailureDataFromProtocol] Unexpected case: ${unexpected}`);
+    }
+  }
 }
 
 async function getOutgoingEventDataFromProtocol(
@@ -151,7 +209,7 @@ async function getOutgoingEventDataFromProtocol(
     }
     default:
       throw new Error(
-        `handleReceivedProtocolMessage received invalid protocol message: ${protocol}`,
+        `[getOutgoingEventDataFromProtocol] handleReceivedProtocolMessage received invalid protocol message: ${protocol}`,
       );
   }
 }
