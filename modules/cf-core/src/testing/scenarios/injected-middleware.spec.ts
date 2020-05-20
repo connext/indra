@@ -6,13 +6,13 @@ import {
   SetupMiddlewareContext,
   ValidationMiddleware,
   CF_METHOD_TIMEOUT,
+  EventNames,
 } from "@connext/types";
 import { Node } from "../../node";
 import { getCreate2MultisigAddress } from "../../utils";
 
 import { SetupContext, setup } from "../setup";
 import { createChannel, assertMessage } from "../utils";
-import { stringify, delay } from "@connext/utils";
 
 jest.setTimeout(15_000);
 
@@ -67,7 +67,7 @@ describe("injected validation middleware", () => {
     }s waiting for counterparty reply in setup`;
     const FAILURE_MESSAGE = "Middleware failed";
     const middleware: any = (protocol, context) => {
-      return FAILURE_MESSAGE;
+      throw new Error(FAILURE_MESSAGE);
     };
     nodeB.injectMiddleware(Opcode.OP_VALIDATE, middleware);
     await Promise.all([
@@ -76,9 +76,7 @@ describe("injected validation middleware", () => {
         resolve();
       }),
       new Promise((resolve) => {
-        nodeB.once("SETUP_FAILED_EVENT", async (msg) => {
-          console.log(`got nodeB setup failed: ${stringify(msg)}`);
-          await delay(500);
+        nodeB.once(EventNames.SETUP_FAILED_EVENT, async (msg) => {
           assertMessage(
             msg,
             {
@@ -89,7 +87,7 @@ describe("injected validation middleware", () => {
                   initiatorIdentifier: nodeA.publicIdentifier,
                 },
               },
-              type: "SETUP_FAILED_EVENT",
+              type: EventNames.SETUP_FAILED_EVENT,
             },
             ["data.params.multisigAddress", "data.error"],
           );
@@ -98,9 +96,7 @@ describe("injected validation middleware", () => {
         });
       }),
       new Promise((resolve) => {
-        nodeA.once("SETUP_FAILED_EVENT", async (msg) => {
-          console.log(`got nodeA setup failed: ${stringify(msg)}`);
-          await delay(500);
+        nodeA.once(EventNames.SETUP_FAILED_EVENT, async (msg) => {
           assertMessage(
             msg,
             {

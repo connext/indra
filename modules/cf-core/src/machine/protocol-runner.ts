@@ -21,7 +21,6 @@ import { Context } from "../types";
 import { MiddlewareContainer } from "./middleware";
 import { StateChannel } from "../models";
 import RpcRouter from "../rpc-router";
-import { delay } from "@connext/utils";
 
 function firstRecipientFromProtocolName(protocolName: ProtocolName) {
   if (Object.values(ProtocolNames).includes(protocolName)) {
@@ -137,15 +136,7 @@ export class ProtocolRunner {
     let lastMiddlewareRet: any = undefined;
     const process = instruction(context);
     while (true) {
-      let ret;
-      try {
-        ret = await process.next(lastMiddlewareRet);
-      } catch (e) {
-        console.log(`******* got err: ${e.stack || e.message}`);
-        await delay(500);
-        throw e;
-      }
-
+      const ret = await process.next(lastMiddlewareRet);
       if (ret.done) {
         break;
       }
