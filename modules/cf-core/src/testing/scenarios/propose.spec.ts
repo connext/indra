@@ -1,5 +1,5 @@
 import { ProposeMessage, MethodParams } from "@connext/types";
-import { deBigNumberifyJson } from "@connext/utils";
+import { deBigNumberifyJson, stringify } from "@connext/utils";
 
 import { Node } from "../../node";
 
@@ -50,7 +50,6 @@ describe("Node method follows spec - propose install", () => {
       nodeB = context["B"].node;
 
       multisigAddress = await createChannel(nodeA, nodeB);
-      await collateralizeChannel(multisigAddress, nodeA, nodeB);
     });
 
     it("propose install an app with eth and a meta", async (done: jest.DoneCallback) => {
