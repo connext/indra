@@ -258,7 +258,7 @@ export class CFCoreService {
     appIdentityHash: string,
     multisigAddress: string,
   ): Promise<MethodResults.RejectInstall> {
-    const parameters: MethodParams.Install = {
+    const parameters: MethodParams.RejectInstall = {
       appIdentityHash,
       multisigAddress,
     };
@@ -266,9 +266,7 @@ export class CFCoreService {
     const rejectRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_rejectInstall,
-      parameters: {
-        appIdentityHash,
-      } as MethodParams.RejectInstall,
+      parameters,
     });
     this.logCfCoreMethodResult(MethodNames.chan_rejectInstall, rejectRes.result.result);
     // update app status
