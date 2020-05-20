@@ -2,7 +2,7 @@ import { EventNames, EventPayloads, UpdateStateMessage } from "@connext/types";
 import { Zero, Two } from "ethers/constants";
 
 import { Node } from "../../node";
-import { NO_APP_INSTANCE_FOR_TAKE_ACTION } from "../../errors";
+import { NO_MULTISIG_IN_PARAMS, NO_APP_INSTANCE_FOR_GIVEN_HASH } from "../../errors";
 
 import { NetworkContextForTestSuite } from "../contracts";
 import { setup, SetupContext } from "../setup";
@@ -41,7 +41,7 @@ describe("Node method follows spec - takeAction", () => {
   let nodeA: Node;
   let nodeB: Node;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const context: SetupContext = await setup(global);
     nodeA = context["A"].node;
     nodeB = context["B"].node;
@@ -52,10 +52,19 @@ describe("Node method follows spec - takeAction", () => {
       "Node B confirms receipt of state update",
     () => {
       it("sends takeAction with invalid appIdentityHash", async () => {
+        const multisigAddress = await createChannel(nodeA, nodeB);
+        const takeActionReq = constructTakeActionRpc("0xfail", multisigAddress, validAction);
+
+        await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(
+          NO_APP_INSTANCE_FOR_GIVEN_HASH,
+        );
+      });
+
+      it("sends takeAction with invalid multisig address", async () => {
         const takeActionReq = constructTakeActionRpc("", "", validAction);
 
         await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(
-          NO_APP_INSTANCE_FOR_TAKE_ACTION,
+          NO_MULTISIG_IN_PARAMS(takeActionReq.parameters),
         );
       });
 
@@ -110,7 +119,7 @@ describe("Node method follows spec - takeAction", () => {
         // allow nodeA to confirm its messages
         await new Promise((resolve) => {
           nodeA.once(EventNames.UPDATE_STATE_EVENT, () => {
-            setTimeout(resolve, 2000);
+            setTimeout(resolve, 500);
           });
         });
 
