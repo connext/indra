@@ -4,7 +4,7 @@ import { Zero, Two } from "ethers/constants";
 import { Node } from "../../node";
 import { NO_APP_INSTANCE_FOR_TAKE_ACTION } from "../../errors";
 
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import { validAction } from "../tic-tac-toe";
 import {
@@ -16,7 +16,7 @@ import {
 } from "../utils";
 import { toBN, deBigNumberifyJson } from "@connext/utils";
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
 
 // NOTE: no initiator events
 function confirmMessages(
@@ -61,7 +61,7 @@ describe("Node method follows spec - takeAction", () => {
 
       it("can take action", async done => {
         const multisigAddress = await createChannel(nodeA, nodeB);
-        const [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
+        const [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, ticTacToeApp);
 
         const expectedNewState = {
           board: [

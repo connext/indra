@@ -1,10 +1,10 @@
 import { Node } from "../../node";
 
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import { confirmAppInstanceInstallation, createChannel, getAppInstance, installApp } from "../utils";
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - getAppInstance", () => {
   let nodeA: Node;
@@ -23,7 +23,7 @@ describe("Node method follows spec - getAppInstance", () => {
       nodeA,
       nodeB,
       multisigAddress,
-      TicTacToeApp,
+      ticTacToeApp,
     );
 
     const appInstanceNodeA = await getAppInstance(nodeA, appIdentityHash);

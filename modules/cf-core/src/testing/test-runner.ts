@@ -1,3 +1,4 @@
+import { IdentityApp } from "@connext/contracts";
 import { getMemoryStore } from "@connext/store";
 import { OutcomeType, ProtocolNames, ProtocolParams, MinimalTransaction } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, getRandomAddress, toBNJson } from "@connext/utils";
@@ -8,7 +9,6 @@ import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { getCreate2MultisigAddress } from "../utils";
 
-import { IdentityApp } from "./contracts";
 import { toBeEq } from "./bignumber-jest-matcher";
 import { MessageRouter } from "./message-router";
 import { MiniNode } from "./mininode";
@@ -62,7 +62,7 @@ export class TestRunner {
       this.mininodeB.publicIdentifier,
       {
         proxyFactory: network.ProxyFactory,
-        multisigMastercopy: network.MinimumViableMultisig,
+        minimumViableMultisig: network.MinimumViableMultisig,
       },
       this.provider,
     );
@@ -72,7 +72,7 @@ export class TestRunner {
       this.mininodeC.publicIdentifier,
       {
         proxyFactory: network.ProxyFactory,
-        multisigMastercopy: network.MinimumViableMultisig,
+        minimumViableMultisig: network.MinimumViableMultisig,
       },
       this.provider,
     );
@@ -82,7 +82,7 @@ export class TestRunner {
       this.mininodeC.publicIdentifier,
       {
         proxyFactory: network.ProxyFactory,
-        multisigMastercopy: network.MinimumViableMultisig,
+        minimumViableMultisig: network.MinimumViableMultisig,
       },
       this.provider,
     );

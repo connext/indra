@@ -4,7 +4,7 @@ import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { Node } from "../node";
 
-import { NetworkContextForTestSuite } from "./contracts";
+import { TestContractAddresses } from "./contracts";
 import {
   getAppInstance,
   getApps,
@@ -33,7 +33,7 @@ type CoinTransfer = {
   amount: BigNumber;
 };
 
-const { UnidirectionalLinkedTransferApp } = global["network"] as NetworkContextForTestSuite;
+const { unidirectionalLinkedTransferApp } = global["contracts"] as TestContractAddresses;
 
 export async function installLink(
   funder: Node,
@@ -42,7 +42,7 @@ export async function installLink(
   state: UnidirectionalLinkedTransferAppState,
   action: UnidirectionalLinkedTransferAppAction,
 ): Promise<string> {
-  const linkDef = UnidirectionalLinkedTransferApp;
+  const linkDef = unidirectionalLinkedTransferApp;
 
   const res = await installApp(
     funder,
@@ -96,7 +96,7 @@ export async function installAndRedeemLink(
   multisigAddressIntermediaryRedeemer: string,
   stateAndAction: { action: any; state: any },
 ) {
-  const linkDef = UnidirectionalLinkedTransferApp;
+  const linkDef = unidirectionalLinkedTransferApp;
 
   const hubApps = await getApps(intermediary, multisigAddressFunderIntermediary);
 

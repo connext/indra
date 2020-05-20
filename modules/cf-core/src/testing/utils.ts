@@ -1,4 +1,4 @@
-import { ERC20, MinimumViableMultisig } from "@connext/contracts";
+import { DolphinCoin, ERC20, MinimumViableMultisig } from "@connext/contracts";
 import {
   Address,
   AppABIEncodings,
@@ -28,7 +28,6 @@ import {
   bigNumberifyJson,
   deBigNumberifyJson,
   getAddressFromAssetId,
-  getRandomChannelSigner,
   getSignerAddressFromPublicIdentifier,
   toBN,
 } from "@connext/utils";
@@ -41,9 +40,9 @@ import { JsonRpcResponse, Rpc } from "rpc-server";
 import { Node } from "../node";
 import { AppInstance, StateChannel } from "../models";
 import { CONTRACT_NOT_DEPLOYED } from "../errors";
-import { getRandomPublicIdentifier, getRandomPublicIdentifiers } from "../testing/random-signing-keys";
+import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
 
-import { DolphinCoin, NetworkContextForTestSuite } from "./contracts";
+import { TestContractAddresses } from "./contracts";
 import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
 import { initialSimpleTransferState, simpleTransferAbiEncodings } from "./simple-transfer";
 import { initialEmptyTTTState, tttAbiEncodings } from "./tic-tac-toe";
@@ -60,12 +59,12 @@ interface AppContext {
 }
 
 const {
-  DepositApp,
-  TicTacToeApp,
-  SimpleTransferApp,
-  UnidirectionalLinkedTransferApp,
-  UnidirectionalTransferApp,
-} = global[`network`] as NetworkContextForTestSuite;
+  depositApp,
+  ticTacToeApp,
+  simpleTransferApp,
+  unidirectionalLinkedTransferApp,
+  unidirectionalTransferApp,
+} = global[`contracts`] as TestContractAddresses;
 
 export const newWallet = (wallet: Wallet) =>
   new Wallet(
@@ -73,7 +72,10 @@ export const newWallet = (wallet: Wallet) =>
     new JsonRpcProvider((wallet.provider as JsonRpcProvider).connection.url),
   );
 
-export function createAppInstanceProposalForTest(appIdentityHash: string, stateChannel?: StateChannel): AppInstanceProposal {
+export function createAppInstanceProposalForTest(
+  appIdentityHash: string,
+  stateChannel?: StateChannel,
+): AppInstanceProposal {
   const [initiator, responder] = StateChannel
   ? [stateChannel!.userIdentifiers[0], stateChannel!.userIdentifiers[1]]
   : [getRandomPublicIdentifier(), getRandomPublicIdentifier()];
@@ -171,7 +173,7 @@ export async function rescindDepositRights(
   const apps = await getInstalledAppInstances(node, multisigAddress);
   const depositApp = apps.filter(
     (app) =>
-      app.appInterface.addr === global[`network`][`DepositApp`] &&
+      app.appInterface.addr === global[`network`][`depositApp`] &&
       (app.latestState as DepositAppState).assetId === getAddressFromAssetId(assetId),
   )[0];
   if (!depositApp) {
@@ -192,7 +194,7 @@ export async function getDepositApps(
     return [];
   }
   const depositApps = apps.filter(
-    (app) => app.appInterface.addr === global[`network`][`DepositApp`],
+    (app) => app.appInterface.addr === global[`network`][`depositApp`],
   );
   if (tokenAddresses.length === 0) {
     return depositApps;
@@ -479,7 +481,7 @@ export async function getProposeDepositAppParams(
       actionEncoding: undefined,
       stateEncoding: DepositAppStateEncoding,
     },
-    appDefinition: DepositApp,
+    appDefinition: depositApp,
     initialState,
     initiatorDeposit: Zero,
     initiatorDepositAssetId: assetId,
@@ -966,7 +968,7 @@ export function getAppContext(
   };
 
   switch (appDefinition) {
-    case TicTacToeApp:
+    case ticTacToeApp:
       return {
         appDefinition,
         abiEncodings: tttAbiEncodings,
@@ -974,7 +976,7 @@ export function getAppContext(
         outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
       };
 
-    case UnidirectionalTransferApp:
+    case unidirectionalTransferApp:
       checkForAddresses();
       return {
         appDefinition,
@@ -983,7 +985,7 @@ export function getAppContext(
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
       };
 
-    case UnidirectionalLinkedTransferApp:
+    case unidirectionalLinkedTransferApp:
       checkForAddresses();
       // TODO: need a better way to return the action info that generated
       // the linked hash as well
@@ -995,7 +997,7 @@ export function getAppContext(
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
       };
 
-    case SimpleTransferApp:
+    case simpleTransferApp:
       checkForAddresses();
       return {
         appDefinition,
@@ -1004,7 +1006,7 @@ export function getAppContext(
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
       };
 
-    case DepositApp:
+    case depositApp:
       checkForInitialState();
       return {
         appDefinition,

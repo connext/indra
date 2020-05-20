@@ -1,4 +1,5 @@
-import { NetworkContext } from "@connext/types";
+import { ChallengeRegistry } from "@connext/contracts";
+import { ContractAddresses } from "@connext/types";
 import { getRandomAddress, toBN } from "@connext/utils";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, AddressZero } from "ethers/constants";
@@ -6,7 +7,6 @@ import { WeiPerEther, AddressZero } from "ethers/constants";
 import { SetStateCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
 
-import { ChallengeRegistry } from "../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { getRandomChannelSigners } from "../random-signing-keys";
 import { getAddress } from "ethers/utils";
@@ -16,15 +16,15 @@ import { getAddress } from "ethers/utils";
 const SETSTATE_COMMITMENT_GAS = 6e9;
 
 let wallet: Wallet;
-let network: NetworkContext;
+let contracts: ContractAddresses;
 let appRegistry: Contract;
 
 expect.extend({ toBeEq });
 
 beforeAll(async () => {
   wallet = global["wallet"];
-  network = global["network"];
-  appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
+  contracts = global["contracts"];
+  appRegistry = new Contract(contracts.challengeRegistry, ChallengeRegistry.abi, wallet);
 });
 
 /**
@@ -35,11 +35,8 @@ describe("set state on free balance", () => {
     const [initiatorNode, responderNode] = getRandomChannelSigners(2);
     // State channel testing values
     let stateChannel = StateChannel.setupChannel(
-      network.IdentityApp,
-      {
-        proxyFactory: network.ProxyFactory,
-        multisigMastercopy: network.MinimumViableMultisig,
-      },
+      contracts.identityApp,
+      contracts,
       getAddress(getRandomAddress()),
       initiatorNode.publicIdentifier,
       responderNode.publicIdentifier,
@@ -58,7 +55,7 @@ describe("set state on free balance", () => {
     const freeBalanceETH = stateChannel.freeBalance;
 
     const setStateCommitment = new SetStateCommitment(
-      network.ChallengeRegistry,
+      contracts.challengeRegistry,
       freeBalanceETH.identity,
       freeBalanceETH.hashOfLatestState,
       toBN(freeBalanceETH.versionNumber),

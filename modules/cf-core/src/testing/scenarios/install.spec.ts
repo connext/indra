@@ -11,7 +11,7 @@ import { BigNumber, isHexString } from "ethers/utils";
 import { Node } from "../../node";
 import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
 
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
 
 import { setup, SetupContext } from "../setup";
@@ -32,7 +32,7 @@ import {
 
 expect.extend({ toBeLt, toBeEq });
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - install", () => {
   let multisigAddress: string;
@@ -109,7 +109,7 @@ describe("Node method follows spec - install", () => {
         const { params } = await makeAndSendProposeCall(
           nodeA,
           nodeB,
-          TicTacToeApp,
+          ticTacToeApp,
           multisigAddress,
           undefined,
           appDeposit,
@@ -124,7 +124,7 @@ describe("Node method follows spec - install", () => {
         await transferERC20Tokens(await nodeA.signerAddress);
         await transferERC20Tokens(await nodeB.signerAddress);
 
-        const erc20TokenAddress = (global["network"] as NetworkContextForTestSuite).DolphinCoin;
+        const erc20TokenAddress = (global["contracts"] as TestContractAddresses).dolphinCoin;
         const assetId = getAddressFromAssetId(erc20TokenAddress);
 
         await collateralizeChannel(multisigAddress, nodeA, nodeB, One, assetId);
@@ -173,7 +173,7 @@ describe("Node method follows spec - install", () => {
         const { params } = await makeAndSendProposeCall(
           nodeA,
           nodeB,
-          TicTacToeApp,
+          ticTacToeApp,
           multisigAddress,
           undefined,
           One,
@@ -185,7 +185,7 @@ describe("Node method follows spec - install", () => {
       });
 
       it("sends proposal with null initial state", async () => {
-        const appContext = getAppContext(TicTacToeApp);
+        const appContext = getAppContext(ticTacToeApp);
         const appInstanceProposalReq = constructAppProposalRpc(
           multisigAddress,
           nodeB.publicIdentifier,

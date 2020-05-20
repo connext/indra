@@ -1,3 +1,4 @@
+import { DolphinCoin } from "@connext/contracts";
 import {
   BigNumber,
   CONVENTION_FOR_ETH_ASSET_ID,
@@ -8,7 +9,6 @@ import { JsonRpcProvider } from "ethers/providers";
 import { Node } from "../../node";
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
-import { DolphinCoin } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   createChannel,

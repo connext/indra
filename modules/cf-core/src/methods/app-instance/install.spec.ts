@@ -12,7 +12,6 @@ import {
 } from "@connext/utils";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
 import { instance, mock } from "ts-mockito";
 
 import {
@@ -45,7 +44,6 @@ describe("Can handle correct & incorrect installs", () => {
     await store.init();
     protocolRunner = new ProtocolRunner(
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
-      {} as JsonRpcProvider,
       store,
       nullLogger,
     );
@@ -84,7 +82,7 @@ describe("Can handle correct & incorrect installs", () => {
 
     const stateChannel = StateChannel.setupChannel(
       AddressZero,
-      { proxyFactory: AddressZero, multisigMastercopy: AddressZero },
+      { proxyFactory: AddressZero, minimumViableMultisig: AddressZero },
       multisigAddress,
       publicIdentifiers[0],
       publicIdentifiers[1],

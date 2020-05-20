@@ -150,7 +150,7 @@ export class AdminService implements OnApplicationBootstrap {
       if (
         !state.addresses ||
         !state.addresses.proxyFactory ||
-        !state.addresses.multisigMastercopy ||
+        !state.addresses.minimumViableMultisig ||
         state.multisigAddress !==
           (await getCreate2MultisigAddress(
             state.userIdentifiers[0],
@@ -202,7 +202,7 @@ export class AdminService implements OnApplicationBootstrap {
       }
       channel.addresses = {
         proxyFactory: criticalAddresses.proxyFactory,
-        multisigMastercopy: criticalAddresses.multisigAddress,
+        minimumViableMultisig: criticalAddresses.multisigAddress,
       } as CriticalStateChannelAddresses;
       // @ts-ignore TS2589: Type instantiation is excessively deep and possibly infinite.
       await this.channelRepository.save(channel);

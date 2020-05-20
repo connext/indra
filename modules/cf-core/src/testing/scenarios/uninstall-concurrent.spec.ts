@@ -4,7 +4,7 @@ import { parseEther } from "ethers/utils";
 
 import { Node } from "../../node";
 
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { toBeLt } from "../bignumber-jest-matcher";
 
 import { setup, SetupContext } from "../setup";
@@ -20,7 +20,7 @@ expect.extend({ toBeLt });
 
 jest.setTimeout(7500);
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - uninstall", () => {
   let multisigAddress: string;
@@ -56,7 +56,7 @@ describe("Node method follows spec - uninstall", () => {
 
       const proposeRpc = makeProposeCall(
         nodeB,
-        TicTacToeApp,
+        ticTacToeApp,
         multisigAddress,
         /* initialState */ undefined,
         One,
@@ -78,7 +78,7 @@ describe("Node method follows spec - uninstall", () => {
       // NOTE: nodeA does not ever emit this event
       nodeB.on("UNINSTALL_EVENT", (msg: UninstallMessage) => {
         expect(appIdentityHashes.includes(msg.data.appIdentityHash)).toBe(true);
-        expect(msg.data.multisigAddress).toBe(multisigAddress)
+        expect(msg.data.multisigAddress).toBe(multisigAddress);
         uninstalledApps += 1;
         if (uninstalledApps === 2) done();
       });

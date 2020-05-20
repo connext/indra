@@ -4,7 +4,7 @@ import { One, Two, Zero } from "ethers/constants";
 import { Node } from "../../node";
 
 import { toBeEq } from "../bignumber-jest-matcher";
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
@@ -19,7 +19,7 @@ import { isHexString } from "ethers/utils";
 
 expect.extend({ toBeEq });
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
 
 function assertUninstallMessage(
   senderId: string,
@@ -82,7 +82,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         nodeA,
         nodeB,
         multisigAddress,
-        TicTacToeApp,
+        ticTacToeApp,
         initialState,
         depositAmount,
         CONVENTION_FOR_ETH_ASSET_ID,
@@ -135,7 +135,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         nodeA,
         nodeB,
         multisigAddress,
-        TicTacToeApp,
+        ticTacToeApp,
         initialState,
         depositAmount,
         CONVENTION_FOR_ETH_ASSET_ID,
@@ -187,7 +187,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         nodeA,
         nodeB,
         multisigAddress,
-        TicTacToeApp,
+        ticTacToeApp,
         initialState,
         depositAmount,
         CONVENTION_FOR_ETH_ASSET_ID,

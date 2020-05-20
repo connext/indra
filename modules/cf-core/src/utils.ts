@@ -104,7 +104,7 @@ export const getCreate2MultisigAddress = async (
         ),
         solidityKeccak256(
           ["bytes", "uint256"],
-          [`0x${proxyBytecode.replace(/^0x/, "")}`, addresses.multisigMastercopy],
+          [`0x${proxyBytecode.replace(/^0x/, "")}`, addresses.minimumViableMultisig],
         ),
       ],
     ).slice(-40),
@@ -168,12 +168,12 @@ export const scanForCriticalAddresses = async (
   // Second, scan these addresses looking for ones that match the given multisg
   for (const legacyKeygen of [false, true]) {
     for (const toxicBytecode of toxicBytecodes) {
-      for (const multisigMastercopy of mastercopies) {
+      for (const minimumViableMultisig of mastercopies) {
         for (const proxyFactory of proxyFactories) {
           let calculated = await getCreate2MultisigAddress(
             initiatorIdentifier,
             responderIdentifier,
-            { proxyFactory, multisigMastercopy },
+            { proxyFactory, minimumViableMultisig },
             ethProvider,
             legacyKeygen,
             toxicBytecode,
@@ -181,7 +181,7 @@ export const scanForCriticalAddresses = async (
           if (calculated === expectedMultisig) {
             return {
               legacyKeygen,
-              multisigMastercopy,
+              minimumViableMultisig,
               proxyFactory,
               toxicBytecode,
             };

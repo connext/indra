@@ -1,11 +1,11 @@
 import { Node } from "../../node";
 import { INVALID_ACTION } from "../../errors";
 
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { constructTakeActionRpc, createChannel, installApp } from "../utils";
 import { setup, SetupContext } from "../setup";
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - fails with improper action taken", () => {
   let nodeA: Node;
@@ -30,7 +30,7 @@ describe("Node method follows spec - fails with improper action taken", () => {
       };
       const multisigAddress = await createChannel(nodeA, nodeB);
 
-      const [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
+      const [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, ticTacToeApp);
 
       const takeActionReq = constructTakeActionRpc(appIdentityHash, validAction);
 

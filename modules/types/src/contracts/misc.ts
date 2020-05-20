@@ -21,25 +21,32 @@ export type AddressHistory = {
   };
 };
 
-export type ContractAddresses = NetworkContext & {
-  Token: Address;
-  [SupportedApplication: string]: Address;
+// Contract addresses that must be provided to withdraw funds from a channel
+// Losing track of a critical address means losing access to the funds in that channel
+// Each channel must track it's own critical addresses because there's no
+//   guarantee that these addresses will be the same across different channels
+export type CriticalStateChannelAddresses = {
+  proxyFactory: Address;
+  minimumViableMultisig: Address;
+};
+
+export type ContractAddresses = CriticalStateChannelAddresses & {
+  challengeRegistry: Address;
+  conditionalTransactionDelegateTarget: Address;
+  identityApp: Address;
+  multiAssetMultiPartyCoinTransferInterpreter: Address;
+  singleAssetTwoPartyCoinTransferInterpreter: Address;
+  timeLockedPassThrough: Address;
+  token?: Address;
+  twoPartyFixedOutcomeInterpreter: Address;
 };
 
 export interface NetworkContext {
-  ChallengeRegistry: Address;
-  ConditionalTransactionDelegateTarget: Address;
-  IdentityApp: Address;
-  MinimumViableMultisig: Address;
-  MultiAssetMultiPartyCoinTransferInterpreter: Address;
-  ProxyFactory: Address;
-  SingleAssetTwoPartyCoinTransferInterpreter: Address;
-  TimeLockedPassThrough: Address;
-  TwoPartyFixedOutcomeInterpreter: Address;
+  contractAddresses: ContractAddresses;
   provider: JsonRpcProvider;
 }
 
-// Keep in sync with above
+// Keep in sync with ContractAddresses
 export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "ChallengeRegistry",
   "ConditionalTransactionDelegateTarget",

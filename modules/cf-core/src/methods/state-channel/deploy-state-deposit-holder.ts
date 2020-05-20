@@ -42,7 +42,7 @@ export class DeployStateDepositController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.DeployStateDepositHolder,
   ): Promise<void> {
-    const { store, provider } = requestHandler;
+    const { store, networkContext } = requestHandler;
     const { multisigAddress } = params;
 
     const json = await store.getStateChannel(multisigAddress);
@@ -55,15 +55,15 @@ export class DeployStateDepositController extends NodeController {
       throw new Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
     }
 
-    if (!channel.addresses.multisigMastercopy) {
-      throw new Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
+    if (!channel.addresses.minimumViableMultisig) {
+      throw new Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.minimumViableMultisig));
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userIdentifiers[0],
       channel.userIdentifiers[1],
       channel.addresses,
-      provider,
+      networkContext.provider,
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
@@ -76,7 +76,7 @@ export class DeployStateDepositController extends NodeController {
     params: MethodParams.DeployStateDepositHolder,
   ): Promise<MethodResults.DeployStateDepositHolder> {
     const { multisigAddress, retryCount } = params;
-    const { log, networkContext, store, provider, signer } = requestHandler;
+    const { log, networkContext, store, signer } = requestHandler;
 
     // By default, if the contract has been deployed and
     // DB has records of it, controller will return HashZero
@@ -93,7 +93,7 @@ export class DeployStateDepositController extends NodeController {
       channel.userIdentifiers[0],
       channel.userIdentifiers[1],
       channel.addresses,
-      provider,
+      networkContext.provider,
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
@@ -101,7 +101,7 @@ export class DeployStateDepositController extends NodeController {
     }
 
     // Check if the contract has already been deployed on-chain
-    if ((await provider.getCode(multisigAddress)) === `0x`) {
+    if ((await networkContext.provider.getCode(multisigAddress)) === `0x`) {
       tx = await sendMultisigDeployTx(signer, channel, networkContext, retryCount, log);
     }
 
@@ -133,7 +133,7 @@ async function sendMultisigDeployTx(
   for (let tryCount = 1; tryCount < retryCount + 1; tryCount += 1) {
     try {
       const tx: TransactionResponse = await proxyFactory.functions.createProxyWithNonce(
-        networkContext.MinimumViableMultisig,
+        networkContext.contractAddresses.minimumViableMultisig,
         new Interface(MinimumViableMultisig.abi).functions.setup.encode([
           stateChannel.multisigOwners,
         ]),

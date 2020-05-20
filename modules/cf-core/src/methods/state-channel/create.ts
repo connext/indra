@@ -35,7 +35,7 @@ export class CreateChannelController extends NodeController {
     params: MethodParams.CreateChannel,
   ): Promise<string> {
     if(!params.owners) {
-      throw new Error(`No owners provided in params. ${stringify(params)}`)
+      throw new Error(`No owners provided in params. ${stringify(params)}`);
     }
     return `${MethodNames.chan_create}:${params.owners.sort().toString()}`;
   }
@@ -61,10 +61,7 @@ export class CreateChannelController extends NodeController {
     const multisigAddress = storedMultisig || await getCreate2MultisigAddress(
       requestHandler.publicIdentifier,
       owners.find(id => id !== requestHandler.publicIdentifier)!,
-      { 
-        proxyFactory: networkContext.ProxyFactory, 
-        multisigMastercopy: networkContext.MinimumViableMultisig,
-      },
+      networkContext.contractAddresses,
       networkContext.provider,
     );
     // Check if the database has stored the relevant data for this state channel

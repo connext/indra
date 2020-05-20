@@ -13,7 +13,7 @@ import {
 import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
 import { deBigNumberifyJson, ChannelSigner, stringify, delay } from "@connext/utils";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import {
   MethodParams,
   JsonRpcProvider,
@@ -21,8 +21,6 @@ import {
   EventNames,
   StateChannelJSON,
   ProtocolNames,
-  EventPayloads,
-  ProposeMessage,
 } from "@connext/types";
 import { getMemoryStore } from "@connext/store";
 import { MemoryLockService } from "../services";
@@ -30,7 +28,7 @@ import { Logger } from "../logger";
 import { EventEmitter } from "events";
 import { validAction } from "../tic-tac-toe";
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Sync", () => {
   let multisigAddress: string;
@@ -54,7 +52,7 @@ describe("Sync", () => {
   beforeEach(async () => {
     // test global fixtures
     sharedEventEmitter = new EventEmitter();
-    ethUrl = global["network"]["provider"].connection.url;
+    ethUrl = global["contracts"]["provider"].connection.url;
     provider = new JsonRpcProvider(ethUrl);
     nodeConfig = { STORE_KEY_PREFIX: "test" };
     lockService = new MemoryLockService();
@@ -78,7 +76,7 @@ describe("Sync", () => {
     nodeB = await Node.create(
       messagingServiceB,
       storeServiceB,
-      global["network"],
+      global["contracts"],
       nodeConfig,
       provider,
       channelSignerB,
@@ -96,7 +94,7 @@ describe("Sync", () => {
       nodeA = await Node.create(
         messagingServiceA,
         storeServiceA,
-        global["network"],
+        global["contracts"],
         nodeConfig,
         provider,
         channelSignerA,
@@ -109,7 +107,7 @@ describe("Sync", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
 
       // load stores with proposal
-      const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
+      const rpc = makeProposeCall(nodeB, ticTacToeApp, multisigAddress);
       const params = {
         ...(rpc.parameters as MethodParams.ProposeInstall),
         multisigAddress: undefined,
@@ -118,7 +116,7 @@ describe("Sync", () => {
         },
       };
       await new Promise(async (res) => {
-        nodeB.once("PROPOSE_INSTALL_EVENT", res)
+        nodeB.once("PROPOSE_INSTALL_EVENT", res);
         try {
           await nodeA.rpcRouter.dispatch({
             ...rpc,
@@ -145,7 +143,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerA,
@@ -164,18 +162,18 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel);
 
       await (newNodeA as Node).rpcRouter.dispatch(constructInstallRpc(identityHash));
-      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash)
-      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash)
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress)
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress)
-      expect(newChannelA!).toMatchObject(newChannelB!)
-      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!)
-      expect(newAppInstanceA!.identityHash).toBe(identityHash)
-      expect(newAppInstanceA!.appSeqNo).toBe(2)
-      expect(newAppInstanceA!.latestVersionNumber).toBe(1)
-      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(2)
-      expect(newChannelA!.monotonicNumProposedApps).toBe(2)
-      expect(newChannelA!.appInstances.length).toBe(1)
+      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
+      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceA!.identityHash).toBe(identityHash);
+      expect(newAppInstanceA!.appSeqNo).toBe(2);
+      expect(newAppInstanceA!.latestVersionNumber).toBe(1);
+      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(2);
+      expect(newChannelA!.monotonicNumProposedApps).toBe(2);
+      expect(newChannelA!.appInstances.length).toBe(1);
     }, 30_000);
 
     test("sync protocol responder is missing a proposal held by the protocol initiator", async () => {
@@ -188,7 +186,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerB,
@@ -207,18 +205,18 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel);
 
       await (newNodeB as Node).rpcRouter.dispatch(constructInstallRpc(identityHash));
-      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash)
-      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash)
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress)
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress)
-      expect(newChannelA!).toMatchObject(newChannelB!)
-      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!)
-      expect(newAppInstanceB!.identityHash).toBe(identityHash)
-      expect(newAppInstanceB!.appSeqNo).toBe(2)
-      expect(newAppInstanceB!.latestVersionNumber).toBe(1)
-      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(2)
-      expect(newChannelB!.monotonicNumProposedApps).toBe(2)
-      expect(newChannelB!.appInstances.length).toBe(1)
+      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
+      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceB!.identityHash).toBe(identityHash);
+      expect(newAppInstanceB!.appSeqNo).toBe(2);
+      expect(newAppInstanceB!.latestVersionNumber).toBe(1);
+      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(2);
+      expect(newChannelB!.monotonicNumProposedApps).toBe(2);
+      expect(newChannelB!.appInstances.length).toBe(1);
     }, 30_000);
   });
 
@@ -235,7 +233,7 @@ describe("Sync", () => {
       nodeA = await Node.create(
         messagingServiceA,
         storeServiceA,
-        global["network"],
+        global["contracts"],
         nodeConfig,
         provider,
         channelSignerA,
@@ -249,7 +247,7 @@ describe("Sync", () => {
 
       // create proposal
       const [ret] = await Promise.all([
-        makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress),
+        makeAndSendProposeCall(nodeA, nodeB, ticTacToeApp, multisigAddress),
         new Promise((resolve) => {
           nodeB.once(EventNames.PROPOSE_INSTALL_EVENT, resolve);
         }),
@@ -283,7 +281,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerA,
@@ -304,7 +302,7 @@ describe("Sync", () => {
       await uninstallApp(newNodeA as Node, nodeB, appIdentityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).toMatchObject(newChannelB!)
+      expect(newChannelA!).toMatchObject(newChannelB!);
       expect(newChannelA!.appInstances.length).toBe(0);
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelA!.monotonicNumProposedApps).toBe(2);
@@ -321,7 +319,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerB,
@@ -342,7 +340,7 @@ describe("Sync", () => {
       await uninstallApp(nodeA, newNodeB as Node, appIdentityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).toMatchObject(newChannelB!)
+      expect(newChannelA!).toMatchObject(newChannelB!);
       expect(newChannelB!.appInstances.length).toBe(0);
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelB!.monotonicNumProposedApps).toBe(2);
@@ -361,7 +359,7 @@ describe("Sync", () => {
       nodeA = await Node.create(
         messagingServiceA,
         storeServiceA,
-        global["network"],
+        global["contracts"],
         nodeConfig,
         provider,
         channelSignerA,
@@ -374,7 +372,7 @@ describe("Sync", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
 
       // create app
-      [identityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
+      [identityHash] = await installApp(nodeA, nodeB, multisigAddress, ticTacToeApp);
 
       // nodeB should respond to the uninstall, nodeA will not get the
       // message, but nodeB thinks its sent
@@ -404,7 +402,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerA,
@@ -424,19 +422,19 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel);
 
       // create new app
-      [identityHash] = await installApp(newNodeA as Node, nodeB, multisigAddress, TicTacToeApp);
-      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash)
-      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash)
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress)
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress)
-      expect(newChannelA!).toMatchObject(newChannelB!)
-      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!)
-      expect(newAppInstanceA!.identityHash).toBe(identityHash)
-      expect(newAppInstanceA!.appSeqNo).toBe(3)
-      expect(newAppInstanceA!.latestVersionNumber).toBe(1)
-      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(4)
-      expect(newChannelA!.monotonicNumProposedApps).toBe(3)
-      expect(newChannelA!.appInstances.length).toBe(1)
+      [identityHash] = await installApp(newNodeA as Node, nodeB, multisigAddress, ticTacToeApp);
+      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
+      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceA!.identityHash).toBe(identityHash);
+      expect(newAppInstanceA!.appSeqNo).toBe(3);
+      expect(newAppInstanceA!.latestVersionNumber).toBe(1);
+      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(4);
+      expect(newChannelA!.monotonicNumProposedApps).toBe(3);
+      expect(newChannelA!.appInstances.length).toBe(1);
     }, 30_000);
 
     test("sync protocol -- responder has an app uninstalled by initiator", async () => {
@@ -449,7 +447,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerB,
@@ -468,19 +466,19 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel);
 
       // create new app
-      [identityHash] = await installApp(nodeA, newNodeB as Node, multisigAddress, TicTacToeApp);
-      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash)
-      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash)
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress)
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress)
-      expect(newChannelA!).toMatchObject(newChannelB!)
-      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!)
-      expect(newAppInstanceB!.identityHash).toBe(identityHash)
-      expect(newAppInstanceB!.appSeqNo).toBe(3)
-      expect(newAppInstanceB!.latestVersionNumber).toBe(1)
-      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(4)
-      expect(newChannelB!.monotonicNumProposedApps).toBe(3)
-      expect(newChannelB!.appInstances.length).toBe(1)
+      [identityHash] = await installApp(nodeA, newNodeB as Node, multisigAddress, ticTacToeApp);
+      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
+      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceB!.identityHash).toBe(identityHash);
+      expect(newAppInstanceB!.appSeqNo).toBe(3);
+      expect(newAppInstanceB!.latestVersionNumber).toBe(1);
+      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(4);
+      expect(newChannelB!.monotonicNumProposedApps).toBe(3);
+      expect(newChannelB!.appInstances.length).toBe(1);
     }, 30_000);
   });
 
@@ -497,7 +495,7 @@ describe("Sync", () => {
       nodeA = await Node.create(
         messagingServiceA,
         storeServiceA,
-        global["network"],
+        global["contracts"],
         nodeConfig,
         provider,
         channelSignerA,
@@ -510,7 +508,7 @@ describe("Sync", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
 
       // create app
-      [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
+      [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, ticTacToeApp);
 
       await new Promise(async (resolve, reject) => {
         nodeB.once(EventNames.UPDATE_STATE_EVENT, () => resolve());
@@ -545,7 +543,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerA,
@@ -567,7 +565,7 @@ describe("Sync", () => {
       await uninstallApp(newNodeA as Node, nodeB, appIdentityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).toMatchObject(newChannelB!)
+      expect(newChannelA!).toMatchObject(newChannelB!);
       expect(newChannelA!.appInstances.length).toBe(0);
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelA!.monotonicNumProposedApps).toBe(2);
@@ -583,7 +581,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerB,
@@ -605,7 +603,7 @@ describe("Sync", () => {
       await uninstallApp(nodeA, newNodeB as Node, appIdentityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).toMatchObject(newChannelB!)
+      expect(newChannelA!).toMatchObject(newChannelB!);
       expect(newChannelB!.appInstances.length).toBe(0);
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelB!.monotonicNumProposedApps).toBe(2);

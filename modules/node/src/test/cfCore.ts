@@ -86,7 +86,7 @@ export const createStateChannelJSON = (
   const userIdentifiers = [generateRandomAddress(), generateRandomAddress()];
   const channelData: Omit<StateChannelJSON, "freeBalanceAppInstance"> = {
     addresses: {
-      multisigMastercopy: "",
+      minimumViableMultisig: "",
       proxyFactory: "",
     },
     appInstances: [],

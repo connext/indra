@@ -4,7 +4,7 @@ import { deBigNumberifyJson } from "@connext/utils";
 import { Node } from "../../node";
 
 import { toBeLt } from "../bignumber-jest-matcher";
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
@@ -17,7 +17,7 @@ import {
 
 expect.extend({ toBeLt });
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
 
 async function assertEqualProposedApps(
   nodeA: Node,
@@ -54,7 +54,7 @@ describe("Node method follows spec - propose install", () => {
     });
 
     it("propose install an app with eth and a meta", async (done: jest.DoneCallback) => {
-      const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
+      const rpc = makeProposeCall(nodeB, ticTacToeApp, multisigAddress);
       const params = {
         ...(rpc.parameters as MethodParams.ProposeInstall),
         multisigAddress: undefined,

@@ -3,7 +3,7 @@ import { delay } from "@connext/utils";
 
 import { Node } from "../../node";
 
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { SetupContext, setup } from "../setup";
 import {
   constructUninstallRpc,
@@ -12,7 +12,7 @@ import {
   installApp,
 } from "../utils";
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - uninstall", () => {
   let nodeA: Node;
@@ -43,7 +43,7 @@ describe("Node method follows spec - uninstall", () => {
         nodeA,
         nodeB,
         multisigAddess,
-        TicTacToeApp,
+        ticTacToeApp,
         initialState,
       );
       expect(appIdentityHash).toBeDefined;

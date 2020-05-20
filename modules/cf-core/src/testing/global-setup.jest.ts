@@ -36,5 +36,5 @@ export default async function globalSetup(): Promise<void> {
   await fundAddress(addresses[2], ethProvider);
   await fundAddress(fundedAccount.address, ethProvider);
   global["wallet"] = fundedAccount;
-  global["network"] = await deployTestArtifactsToChain(fundedAccount);
+  global["contracts"] = await deployTestArtifactsToChain(fundedAccount);
 }

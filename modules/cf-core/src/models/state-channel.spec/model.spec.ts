@@ -2,7 +2,7 @@ import { StateChannelJSON } from "@connext/types";
 import { bigNumberifyJson, getRandomAddress, getRandomBytes32, toBN } from "@connext/utils";
 import { getAddress, BigNumberish } from "ethers/utils";
 
-import { generateRandomNetworkContext } from "../../testing/mocks";
+import { getRandomContractAddresses } from "../../testing/mocks";
 
 import { StateChannel } from "../state-channel";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
@@ -15,11 +15,11 @@ describe("StateChannel", () => {
     const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
 
-    const { ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
+    const { proxyFactory, minimumViableMultisig } = getRandomContractAddresses();
 
     const sc = new StateChannel(
       multisigAddress,
-      { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
+      { proxyFactory: proxyFactory, minimumViableMultisig: minimumViableMultisig },
       initiator,
       responder,
     );
@@ -36,7 +36,7 @@ describe("StateChannel", () => {
   describe("addActiveAppAndIncrementFreeBalance", () => {
     const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
-    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
+    const { identityApp, proxyFactory, minimumViableMultisig } = getRandomContractAddresses();
     const tokenAddress = getAddress(getRandomAddress());
     const identityHash = getRandomBytes32();
     const channelInitialDeposit = toBN(15);
@@ -51,8 +51,8 @@ describe("StateChannel", () => {
 
     beforeEach(() => {
       const init = StateChannel.setupChannel(
-        IdentityApp,
-        { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
+        identityApp,
+        { proxyFactory: proxyFactory, minimumViableMultisig: minimumViableMultisig },
         multisigAddress,
         initiator,
         responder,
@@ -146,13 +146,13 @@ describe("StateChannel", () => {
     let sc: StateChannel;
     let json: StateChannelJSON;
 
-    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
+    const { identityApp, proxyFactory, minimumViableMultisig } = getRandomContractAddresses();
 
     beforeAll(() => {
       // NOTE: this functionality is tested in `setup-channel.spec`
       sc = StateChannel.setupChannel(
-        IdentityApp,
-        { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
+        identityApp,
+        { proxyFactory: proxyFactory, minimumViableMultisig: minimumViableMultisig },
         multisigAddress,
         initiator,
         responder,
@@ -183,9 +183,9 @@ describe("StateChannel", () => {
 
     test("should have the correct critical state channel addresses", () => {
       expect(json.addresses.proxyFactory).toEqual(sc.addresses.proxyFactory);
-      expect(sc.addresses.proxyFactory).toEqual(ProxyFactory);
-      expect(json.addresses.multisigMastercopy).toEqual(sc.addresses.multisigMastercopy);
-      expect(sc.addresses.multisigMastercopy).toEqual(MinimumViableMultisig);
+      expect(sc.addresses.proxyFactory).toEqual(proxyFactory);
+      expect(json.addresses.minimumViableMultisig).toEqual(sc.addresses.minimumViableMultisig);
+      expect(sc.addresses.minimumViableMultisig).toEqual(minimumViableMultisig);
     });
   });
 
@@ -193,7 +193,7 @@ describe("StateChannel", () => {
     const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
 
-    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
+    const { identityApp, proxyFactory, minimumViableMultisig } = getRandomContractAddresses();
 
     let sc: StateChannel;
     let json: StateChannelJSON;
@@ -202,8 +202,8 @@ describe("StateChannel", () => {
     beforeAll(() => {
       // NOTE: this functionality is tested in `setup-channel.spec`
       sc = StateChannel.setupChannel(
-        IdentityApp,
-        { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
+        identityApp,
+        { proxyFactory: proxyFactory, minimumViableMultisig: minimumViableMultisig },
         multisigAddress,
         initiator,
         responder,

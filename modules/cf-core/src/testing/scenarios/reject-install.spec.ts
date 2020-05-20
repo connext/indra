@@ -2,7 +2,7 @@ import { EventNames, ProposeMessage, RejectProposalMessage } from "@connext/type
 
 import { Node } from "../../node";
 
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
@@ -14,7 +14,7 @@ import {
   makeAndSendProposeCall,
 } from "../utils";
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - rejectInstall", () => {
   let nodeA: Node;
@@ -57,7 +57,7 @@ describe("Node method follows spec - rejectInstall", () => {
         await nodeB.rpcRouter.dispatch(rejectReq);
       });
 
-      await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
+      await makeAndSendProposeCall(nodeA, nodeB, ticTacToeApp, multisigAddress);
       expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(1);
     });
 
@@ -91,7 +91,7 @@ describe("Node method follows spec - rejectInstall", () => {
         await nodeA.rpcRouter.dispatch(rejectReq);
       });
 
-      await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
+      await makeAndSendProposeCall(nodeA, nodeB, ticTacToeApp, multisigAddress);
       expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(1);
     });
   });

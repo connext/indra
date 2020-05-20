@@ -13,18 +13,19 @@ import {
   stringify,
 } from "@connext/utils";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
+import { Contract } from "ethers";
+import { Zero } from "ethers/constants";
+import { JsonRpcProvider } from "ethers/providers";
 
 import { baseCoinTransferValidation } from "../shared";
-import { Zero } from "ethers/constants";
-import { Contract } from "ethers";
-import { BaseProvider, JsonRpcProvider } from "ethers/providers";
+
 
 export const validateDepositApp = async (
   params: MethodParams.ProposeInstall,
   initiatorIdentifier: string,
   responderIdentifier: string,
   multisigAddress: string,
-  provider: BaseProvider,
+  provider: JsonRpcProvider,
 ) => {
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as DepositAppState;

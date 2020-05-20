@@ -7,7 +7,7 @@ import { BigNumber } from "ethers/utils";
 import { Node } from "../../node";
 
 import { toBeLt } from "../bignumber-jest-matcher";
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import {
   MemoryLockService,
   MemoryMessagingService,
@@ -113,7 +113,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         nodeA.rpcRouter.dispatch(
           await makeProposeCall(
             nodeB,
-            (global[`network`] as NetworkContextForTestSuite).TicTacToeApp,
+            (global[`contracts`] as TestContractAddresses).ticTacToeApp,
             multisigAddress,
             undefined,
             One,
