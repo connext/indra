@@ -323,7 +323,10 @@ export class LinkedTransferService {
             },
           );
         }
-        await this.cfCoreService.uninstallApp(senderApp.identityHash);
+        await this.cfCoreService.uninstallApp(
+          senderApp.identityHash,
+          senderApp.channel.multisigAddress,
+        );
         unlockedAppIds.push(senderApp.identityHash);
         this.log.log(`Unlocked transfer from app ${senderApp.identityHash}`);
       }

@@ -96,7 +96,7 @@ export class WithdrawService {
       counterpartySignatureOnWithdrawCommitment,
     );
 
-    await this.cfCoreService.uninstallApp(appInstance.identityHash);
+    await this.cfCoreService.uninstallApp(appInstance.identityHash, appInstance.multisigAddress);
 
     await generatedCommitment.addSignatures(
       counterpartySignatureOnWithdrawCommitment, // our sig

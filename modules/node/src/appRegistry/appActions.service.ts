@@ -139,6 +139,9 @@ export class AppActionsService {
       senderApp.channel.multisigAddress,
       action,
     );
-    await this.cfCoreService.uninstallApp(senderApp.identityHash);
+    await this.cfCoreService.uninstallApp(
+      senderApp.identityHash,
+      senderApp.channel.multisigAddress,
+    );
   }
 }
