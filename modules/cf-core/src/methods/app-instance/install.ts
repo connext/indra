@@ -6,13 +6,14 @@ import {
   ProtocolParams,
   PublicIdentifier,
 } from "@connext/types";
-import { toBN, stringify } from "@connext/utils";
+import { toBN } from "@connext/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
   NO_APP_IDENTITY_HASH_TO_INSTALL,
   NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
   NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH,
+  NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
@@ -33,7 +34,7 @@ export class InstallAppInstanceController extends NodeController {
     params: MethodParams.Install,
   ): Promise<string> {
     if (!params.multisigAddress) {
-      throw new Error(`No multisig address provided in params: ${stringify(params)}`);
+      throw new Error(NO_MULTISIG_IN_PARAMS(params));
     }
     return params.multisigAddress;
   }

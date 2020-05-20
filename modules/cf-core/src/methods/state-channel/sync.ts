@@ -12,9 +12,8 @@ import { jsonRpcMethod } from "rpc-server";
 import { RequestHandler } from "../../request-handler";
 
 import { NodeController } from "../controller";
-import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR, NO_MULTISIG_IN_PARAMS } from "../../errors";
 import { StateChannel } from "../../models";
-import { stringify } from "@connext/utils";
 
 export class SyncController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_sync)
@@ -25,7 +24,7 @@ export class SyncController extends NodeController {
     params: MethodParams.Sync,
   ): Promise<string> {
     if (!params.multisigAddress) {
-      throw new Error(`No multisig address provided in params: ${stringify(params)}`);
+      throw new Error(NO_MULTISIG_IN_PARAMS(params));
     }
     return params.multisigAddress;
   }

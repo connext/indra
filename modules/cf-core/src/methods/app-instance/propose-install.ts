@@ -7,12 +7,15 @@ import {
 } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
-import { NULL_INITIAL_STATE_FOR_PROPOSAL, NO_STATE_CHANNEL_FOR_OWNERS } from "../../errors";
+import {
+  NULL_INITIAL_STATE_FOR_PROPOSAL,
+  NO_STATE_CHANNEL_FOR_OWNERS,
+  NO_MULTISIG_IN_PARAMS,
+} from "../../errors";
 import { RequestHandler } from "../../request-handler";
 
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
-import { stringify } from "@connext/utils";
 
 /**
  * This creates an entry of a proposed AppInstance while sending the proposal
@@ -29,7 +32,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
     params: MethodParams.ProposeInstall,
   ): Promise<string> {
     if (!params.multisigAddress) {
-      throw new Error(`No multisig address provided in params: ${stringify(params)}`);
+      throw new Error(NO_MULTISIG_IN_PARAMS(params));
     }
     return params.multisigAddress;
   }

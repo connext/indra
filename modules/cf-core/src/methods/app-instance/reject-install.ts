@@ -13,9 +13,9 @@ import { NodeController } from "../controller";
 import {
   NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
   NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH,
+  NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
 import { StateChannel } from "../../models/state-channel";
-import { stringify } from "@connext/utils";
 
 export class RejectInstallController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_rejectInstall)
@@ -25,7 +25,7 @@ export class RejectInstallController extends NodeController {
     params: MethodParams.RejectInstall,
   ): Promise<string> {
     if (!params.multisigAddress) {
-      throw new Error(`No multisig address provided in params: ${stringify(params)}`);
+      throw new Error(NO_MULTISIG_IN_PARAMS(params));
     }
     return params.multisigAddress;
   }

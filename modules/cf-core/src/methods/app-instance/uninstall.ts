@@ -14,12 +14,12 @@ import {
   NO_APP_IDENTITY_HASH_TO_UNINSTALL,
   NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
   NO_APP_INSTANCE_FOR_GIVEN_HASH,
+  NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
-import { stringify } from "@connext/utils";
 
 export class UninstallController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_uninstall)
@@ -30,7 +30,7 @@ export class UninstallController extends NodeController {
     params: MethodParams.Uninstall,
   ): Promise<string> {
     if (!params.multisigAddress) {
-      throw new Error(`No multisig address provided in params: ${stringify(params)}`);
+      throw new Error(NO_MULTISIG_IN_PARAMS(params));
     }
     return params.multisigAddress;
   }
