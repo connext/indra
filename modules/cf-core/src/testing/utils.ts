@@ -1,4 +1,4 @@
-import { DolphinCoin, ERC20, MinimumViableMultisig } from "@connext/contracts";
+import { ERC20, MinimumViableMultisig } from "@connext/contracts";
 import {
   Address,
   AppABIEncodings,
@@ -59,12 +59,12 @@ interface AppContext {
 }
 
 const {
-  depositApp,
-  dolphinCoin,
-  ticTacToeApp,
-  simpleTransferApp,
-  unidirectionalLinkedTransferApp,
-  unidirectionalTransferApp,
+  DepositApp,
+  DolphinCoin,
+  TicTacToeApp,
+  SimpleTransferApp,
+  UnidirectionalLinkedTransferApp,
+  UnidirectionalTransferApp,
 } = global[`contracts`] as TestContractAddresses;
 
 export const newWallet = (wallet: Wallet) =>
@@ -174,7 +174,7 @@ export async function rescindDepositRights(
   const apps = await getInstalledAppInstances(node, multisigAddress);
   const depositAppInstance = apps.filter(
     (app) =>
-      app.appInterface.addr === depositApp &&
+      app.appInterface.addr === DepositApp &&
       (app.latestState as DepositAppState).assetId === getAddressFromAssetId(assetId),
   )[0];
   if (!depositAppInstance) {
@@ -195,7 +195,7 @@ export async function getDepositApps(
     return [];
   }
   const depositApps = apps.filter(
-    (app) => app.appInterface.addr === depositApp,
+    (app) => app.appInterface.addr === DepositApp,
   );
   if (tokenAddresses.length === 0) {
     return depositApps;
@@ -482,7 +482,7 @@ export async function getProposeDepositAppParams(
       actionEncoding: undefined,
       stateEncoding: DepositAppStateEncoding,
     },
-    appDefinition: depositApp,
+    appDefinition: DepositApp,
     initialState,
     initiatorDeposit: Zero,
     initiatorDepositAssetId: assetId,
@@ -935,8 +935,8 @@ export async function makeAndSendProposeCall(
  */
 export async function transferERC20Tokens(
   toAddress: string,
-  tokenAddress: string = dolphinCoin,
-  contractABI: ContractABI = DolphinCoin.abi,
+  tokenAddress: string = DolphinCoin,
+  contractABI: ContractABI = ERC20.abi,
   amount: BigNumber = One,
 ): Promise<BigNumber> {
   const deployerAccount = global["wallet"];
@@ -969,7 +969,7 @@ export function getAppContext(
   };
 
   switch (appDefinition) {
-    case ticTacToeApp:
+    case TicTacToeApp:
       return {
         appDefinition,
         abiEncodings: tttAbiEncodings,
@@ -977,7 +977,7 @@ export function getAppContext(
         outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
       };
 
-    case unidirectionalTransferApp:
+    case UnidirectionalTransferApp:
       checkForAddresses();
       return {
         appDefinition,
@@ -986,7 +986,7 @@ export function getAppContext(
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
       };
 
-    case unidirectionalLinkedTransferApp:
+    case UnidirectionalLinkedTransferApp:
       checkForAddresses();
       // TODO: need a better way to return the action info that generated
       // the linked hash as well
@@ -998,7 +998,7 @@ export function getAppContext(
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
       };
 
-    case simpleTransferApp:
+    case SimpleTransferApp:
       checkForAddresses();
       return {
         appDefinition,
@@ -1007,7 +1007,7 @@ export function getAppContext(
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
       };
 
-    case depositApp:
+    case DepositApp:
       checkForInitialState();
       return {
         appDefinition,

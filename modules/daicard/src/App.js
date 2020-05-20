@@ -269,7 +269,7 @@ class App extends React.Component {
     }
     console.log(`Successfully connected channel`);
 
-    const token = new Contract(channel.config.contractAddresses.token, tokenAbi, ethProvider);
+    const token = new Contract(channel.config.contractAddresses.Token, tokenAbi, ethProvider);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     console.log(`Client created successfully!`);

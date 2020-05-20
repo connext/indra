@@ -20,7 +20,7 @@ describe("StateChannel::setupChannel", () => {
 
   beforeAll(() => {
     sc = StateChannel.setupChannel(
-      contractAddresses.identityApp,
+      contractAddresses.IdentityApp,
       contractAddresses,
       multisigAddress,
       ids[0],
@@ -83,7 +83,7 @@ describe("StateChannel::setupChannel", () => {
     });
 
     it("should use the FreeBalanceAppApp as the app target", () => {
-      expect(fb.appInterface.addr).toBe(contractAddresses.identityApp);
+      expect(fb.appInterface.addr).toBe(contractAddresses.IdentityApp);
       expect(fb.appInterface.actionEncoding).toBe(undefined);
     });
 

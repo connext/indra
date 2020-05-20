@@ -73,7 +73,7 @@ export const getCreate2MultisigAddress = async (
   legacyKeygen?: boolean,
   toxicBytecode?: string,
 ): Promise<string> => {
-  const proxyFactory = new Contract(addresses.proxyFactory, ProxyFactory.abi, ethProvider);
+  const proxyFactory = new Contract(addresses.ProxyFactory, ProxyFactory.abi, ethProvider);
 
   const proxyBytecode = toxicBytecode || (await proxyFactory.functions.proxyCreationCode());
 
@@ -82,7 +82,7 @@ export const getCreate2MultisigAddress = async (
       ["bytes1", "address", "uint256", "bytes32"],
       [
         "0xff",
-        addresses.proxyFactory,
+        addresses.ProxyFactory,
         solidityKeccak256(
           ["bytes32", "uint256"],
           [
@@ -104,7 +104,7 @@ export const getCreate2MultisigAddress = async (
         ),
         solidityKeccak256(
           ["bytes", "uint256"],
-          [`0x${proxyBytecode.replace(/^0x/, "")}`, addresses.minimumViableMultisig],
+          [`0x${proxyBytecode.replace(/^0x/, "")}`, addresses.MinimumViableMultisig],
         ),
       ],
     ).slice(-40),
@@ -168,12 +168,12 @@ export const scanForCriticalAddresses = async (
   // Second, scan these addresses looking for ones that match the given multisg
   for (const legacyKeygen of [false, true]) {
     for (const toxicBytecode of toxicBytecodes) {
-      for (const minimumViableMultisig of mastercopies) {
-        for (const proxyFactory of proxyFactories) {
+      for (const MinimumViableMultisig of mastercopies) {
+        for (const ProxyFactory of proxyFactories) {
           let calculated = await getCreate2MultisigAddress(
             initiatorIdentifier,
             responderIdentifier,
-            { proxyFactory, minimumViableMultisig },
+            { ProxyFactory, MinimumViableMultisig },
             ethProvider,
             legacyKeygen,
             toxicBytecode,
@@ -181,8 +181,8 @@ export const scanForCriticalAddresses = async (
           if (calculated === expectedMultisig) {
             return {
               legacyKeygen,
-              minimumViableMultisig,
-              proxyFactory,
+              MinimumViableMultisig,
+              ProxyFactory,
               toxicBytecode,
             };
           }

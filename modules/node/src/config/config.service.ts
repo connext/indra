@@ -80,10 +80,11 @@ export class ConfigService implements OnModuleInit {
     chainId = chainId ? chainId : (await this.getEthNetwork()).chainId.toString();
     const ethAddresses = {} as any;
     const ethAddressBook = this.getEthAddressBook();
-    Object.keys(ethAddressBook[chainId]).map(
+    Object.keys(ethAddressBook[chainId]).forEach(
       (contract: string) =>
         (ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address)),
     );
+    console.log(`Got contract addresses: ${JSON.stringify(ethAddresses)}`);
     return ethAddresses as ContractAddresses;
   }
 
@@ -106,7 +107,7 @@ export class ConfigService implements OnModuleInit {
       const contractAddresses = await this.getContractAddresses("1");
       testnetTokenConfig.push([
         {
-          address: contractAddresses.token,
+          address: contractAddresses.Token,
           chainId: 1,
         },
         { address: await this.getTokenAddress(), chainId: currentChainId },

@@ -22,7 +22,7 @@ describe("StateChannel::uninstallApp", () => {
     const ids = getRandomPublicIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
-      contractAddresses.identityApp,
+      contractAddresses.IdentityApp,
       contractAddresses,
       multisigAddress,
       ids[0],

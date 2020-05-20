@@ -355,7 +355,7 @@ export class AppRegistryService implements OnModuleInit {
     const contractAddresses = await this.configService.getContractAddresses();
 
     switch (appDef) {
-      case contractAddresses.hashLockTransferApp: {
+      case contractAddresses.HashLockTransferApp: {
         return await this.installHashLockTransferMiddleware(appInstance);
       }
       default: {
@@ -370,10 +370,10 @@ export class AppRegistryService implements OnModuleInit {
     const contractAddresses = await this.configService.getContractAddresses();
 
     switch (proposal.appDefinition) {
-      case contractAddresses.simpleLinkedTransferApp: {
+      case contractAddresses.SimpleLinkedTransferApp: {
         return await this.proposeLinkedTransferMiddleware(proposal);
       }
-      case contractAddresses.simpleSignedTransferApp: {
+      case contractAddresses.SimpleSignedTransferApp: {
         return await this.proposeSignedTransferMiddleware(proposal);
       }
       default: {
@@ -468,7 +468,7 @@ export class AppRegistryService implements OnModuleInit {
     const nodeSignerAddress = await this.configService.getSignerAddress();
 
     switch (appDef) {
-      case contractAddresses.depositApp: {
+      case contractAddresses.DepositApp: {
         // do not respond to user requests to uninstall deposit
         // apps if node is depositor and there is an active collateralization
         const latestState = appInstance.latestState as DepositAppState;
@@ -491,7 +491,7 @@ export class AppRegistryService implements OnModuleInit {
 
   async onModuleInit() {
     const ethNetwork = await this.configService.getEthNetwork();
-    const addressBook = await this.configService.getContractAddresses();
+    const contractAddresses = await this.configService.getContractAddresses();
     for (const app of RegistryOfApps) {
       let appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
         app.name,
@@ -500,7 +500,7 @@ export class AppRegistryService implements OnModuleInit {
       if (!appRegistry) {
         appRegistry = new AppRegistry();
       }
-      const appDefinitionAddress = addressBook[app.name];
+      const appDefinitionAddress = contractAddresses[app.name];
       this.log.info(
         `Creating ${app.name} app on chain ${ethNetwork.chainId}: ${appDefinitionAddress}`,
       );

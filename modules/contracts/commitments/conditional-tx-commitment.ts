@@ -69,10 +69,10 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
    */
   public getTransactionDetails() {
     return {
-      to: this.contractAddresses.conditionalTransactionDelegateTarget,
+      to: this.contractAddresses.ConditionalTransactionDelegateTarget,
       value: 0,
       data: iface.functions.executeEffectOfInterpretedAppOutcome.encode([
-        this.contractAddresses.challengeRegistry,
+        this.contractAddresses.ChallengeRegistry,
         this.freeBalanceAppIdentityHash,
         this.appIdentityHash,
         this.interpreterAddr,

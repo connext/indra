@@ -61,11 +61,11 @@ const fundChannelAndSwap = async (opts: {
 
   const input = {
     amount: inputAmount,
-    assetId: tokenToEth ? client.config.contractAddresses.token! : AddressZero,
+    assetId: tokenToEth ? client.config.contractAddresses.Token! : AddressZero,
   };
   const output = {
     amount: outputAmount,
-    assetId: tokenToEth ? AddressZero : client.config.contractAddresses.token!,
+    assetId: tokenToEth ? AddressZero : client.config.contractAddresses.Token!,
   };
   await fundChannel(client, input.amount, input.assetId);
   await requestCollateral(client, output.assetId);
@@ -198,7 +198,7 @@ describe("Swap offline", () => {
       `${providedClient.nodeIdentifier}.channel.${providedClient.multisigAddress}.app-instance.*.install`,
       async (msg: any) => {
         const { appInterface } = msg.data;
-        if (appInterface.addr !== providedClient.config.contractAddresses.simpleTwoPartySwapApp) {
+        if (appInterface.addr !== providedClient.config.contractAddresses.SimpleTwoPartySwapApp) {
           return;
         }
         // we know client has swap app installed,

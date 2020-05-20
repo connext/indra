@@ -51,12 +51,12 @@ export class DeployStateDepositController extends NodeController {
     }
     const channel = StateChannel.fromJson(json);
 
-    if (!channel.addresses.proxyFactory) {
-      throw new Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
+    if (!channel.addresses.ProxyFactory) {
+      throw new Error(INVALID_FACTORY_ADDRESS(channel.addresses.ProxyFactory));
     }
 
-    if (!channel.addresses.minimumViableMultisig) {
-      throw new Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.minimumViableMultisig));
+    if (!channel.addresses.MinimumViableMultisig) {
+      throw new Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.MinimumViableMultisig));
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
@@ -123,7 +123,7 @@ async function sendMultisigDeployTx(
 
   // make sure that the proxy factory used to deploy is the same as the one
   // used when the channel was created
-  const proxyFactory = new Contract(stateChannel.addresses.proxyFactory, ProxyFactory.abi, signer);
+  const proxyFactory = new Contract(stateChannel.addresses.ProxyFactory, ProxyFactory.abi, signer);
 
   const owners = stateChannel.userIdentifiers;
 
@@ -133,7 +133,7 @@ async function sendMultisigDeployTx(
   for (let tryCount = 1; tryCount < retryCount + 1; tryCount += 1) {
     try {
       const tx: TransactionResponse = await proxyFactory.functions.createProxyWithNonce(
-        networkContext.contractAddresses.minimumViableMultisig,
+        networkContext.contractAddresses.MinimumViableMultisig,
         new Interface(MinimumViableMultisig.abi).functions.setup.encode([
           stateChannel.multisigOwners,
         ]),

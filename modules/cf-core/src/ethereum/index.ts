@@ -23,18 +23,18 @@ const getConditionalTransactionCommitment = (
     appInstance.identityHash,
     stateChannel.freeBalance.identityHash,
     appInstance.outcomeType === OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER
-      ? context.network.contractAddresses.multiAssetMultiPartyCoinTransferInterpreter
+      ? context.network.contractAddresses.MultiAssetMultiPartyCoinTransferInterpreter
       : appInstance.outcomeType === OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER
-      ? context.network.contractAddresses.singleAssetTwoPartyCoinTransferInterpreter
+      ? context.network.contractAddresses.SingleAssetTwoPartyCoinTransferInterpreter
       : appInstance.outcomeType === OutcomeType.TWO_PARTY_FIXED_OUTCOME
-      ? context.network.contractAddresses.twoPartyFixedOutcomeInterpreter
+      ? context.network.contractAddresses.TwoPartyFixedOutcomeInterpreter
       : AddressZero,
     appInstance.encodedInterpreterParams,
   );
 
 const getSetStateCommitment = (context: Context, appInstance: AppInstance) =>
   new SetStateCommitment(
-    context.network.contractAddresses.challengeRegistry,
+    context.network.contractAddresses.ChallengeRegistry,
     appInstance.identity,
     appInstance.hashOfLatestState,
     toBN(appInstance.versionNumber),

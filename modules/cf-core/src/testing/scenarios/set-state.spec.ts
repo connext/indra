@@ -28,7 +28,7 @@ beforeAll(async () => {
     throw new Error(`Contracts missing: ${JSON.stringify(global["contracts"])} | ${Object.keys(global)}`);
   }
   console.log(``);
-  appRegistry = new Contract(contracts.challengeRegistry, ChallengeRegistry.abi, wallet);
+  appRegistry = new Contract(contracts.ChallengeRegistry, ChallengeRegistry.abi, wallet);
 });
 
 /**
@@ -39,7 +39,7 @@ describe("set state on free balance", () => {
     const [initiatorNode, responderNode] = getRandomChannelSigners(2);
     // State channel testing values
     let stateChannel = StateChannel.setupChannel(
-      contracts.identityApp,
+      contracts.IdentityApp,
       contracts,
       getAddress(getRandomAddress()),
       initiatorNode.publicIdentifier,
@@ -59,7 +59,7 @@ describe("set state on free balance", () => {
     const freeBalanceETH = stateChannel.freeBalance;
 
     const setStateCommitment = new SetStateCommitment(
-      contracts.challengeRegistry,
+      contracts.ChallengeRegistry,
       freeBalanceETH.identity,
       freeBalanceETH.hashOfLatestState,
       toBN(freeBalanceETH.versionNumber),

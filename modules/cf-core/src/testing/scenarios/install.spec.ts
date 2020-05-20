@@ -32,7 +32,7 @@ import {
 
 expect.extend({ toBeLt, toBeEq });
 
-const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - install", () => {
   let multisigAddress: string;
@@ -109,7 +109,7 @@ describe("Node method follows spec - install", () => {
         const { params } = await makeAndSendProposeCall(
           nodeA,
           nodeB,
-          ticTacToeApp,
+          TicTacToeApp,
           multisigAddress,
           undefined,
           appDeposit,
@@ -124,7 +124,7 @@ describe("Node method follows spec - install", () => {
         await transferERC20Tokens(await nodeA.signerAddress);
         await transferERC20Tokens(await nodeB.signerAddress);
 
-        const erc20TokenAddress = (global["contracts"] as TestContractAddresses).dolphinCoin;
+        const erc20TokenAddress = (global["contracts"] as TestContractAddresses).DolphinCoin;
         const assetId = getAddressFromAssetId(erc20TokenAddress);
 
         await collateralizeChannel(multisigAddress, nodeA, nodeB, One, assetId);
@@ -173,7 +173,7 @@ describe("Node method follows spec - install", () => {
         const { params } = await makeAndSendProposeCall(
           nodeA,
           nodeB,
-          ticTacToeApp,
+          TicTacToeApp,
           multisigAddress,
           undefined,
           One,
@@ -185,7 +185,7 @@ describe("Node method follows spec - install", () => {
       });
 
       it("sends proposal with null initial state", async () => {
-        const appContext = getAppContext(ticTacToeApp);
+        const appContext = getAppContext(TicTacToeApp);
         const appInstanceProposalReq = constructAppProposalRpc(
           multisigAddress,
           nodeB.publicIdentifier,

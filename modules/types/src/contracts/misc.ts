@@ -26,24 +26,24 @@ export type AddressHistory = {
 // Each channel must track it's own critical addresses because there's no
 //   guarantee that these addresses will be the same across different channels
 export type CriticalStateChannelAddresses = {
-  proxyFactory: Address;
-  minimumViableMultisig: Address;
+  ProxyFactory: Address;
+  MinimumViableMultisig: Address;
 };
 
 export type ContractAddresses = CriticalStateChannelAddresses & {
-  challengeRegistry: Address;
-  conditionalTransactionDelegateTarget: Address;
-  depositApp: Address;
-  hashLockTransferApp?: Address;
-  identityApp: Address;
-  multiAssetMultiPartyCoinTransferInterpreter: Address;
-  simpleLinkedTransferApp?: Address;
-  simpleSignedTransferApp?: Address;
-  simpleTwoPartySwapApp?: Address;
-  singleAssetTwoPartyCoinTransferInterpreter: Address;
-  timeLockedPassThrough: Address;
-  token?: Address;
-  twoPartyFixedOutcomeInterpreter: Address;
+  ChallengeRegistry: Address;
+  ConditionalTransactionDelegateTarget: Address;
+  DepositApp: Address;
+  HashLockTransferApp?: Address;
+  IdentityApp: Address;
+  MultiAssetMultiPartyCoinTransferInterpreter: Address;
+  SimpleLinkedTransferApp?: Address;
+  SimpleSignedTransferApp?: Address;
+  SimpleTwoPartySwapApp?: Address;
+  SingleAssetTwoPartyCoinTransferInterpreter: Address;
+  TimeLockedPassThrough: Address;
+  Token?: Address;
+  TwoPartyFixedOutcomeInterpreter: Address;
 };
 
 export interface NetworkContext {
@@ -53,16 +53,16 @@ export interface NetworkContext {
 
 // Keep in sync with required addresses of ContractAddresses
 export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
-  "challengeRegistry",
-  "conditionalTransactionDelegateTarget",
-  "depositApp",
-  "identityApp",
-  "minimumViableMultisig",
-  "multiAssetMultiPartyCoinTransferInterpreter",
-  "proxyFactory",
-  "singleAssetTwoPartyCoinTransferInterpreter",
-  "timeLockedPassThrough",
-  "twoPartyFixedOutcomeInterpreter",
+  "ChallengeRegistry",
+  "ConditionalTransactionDelegateTarget",
+  "DepositApp",
+  "IdentityApp",
+  "MinimumViableMultisig",
+  "MultiAssetMultiPartyCoinTransferInterpreter",
+  "ProxyFactory",
+  "SingleAssetTwoPartyCoinTransferInterpreter",
+  "TimeLockedPassThrough",
+  "TwoPartyFixedOutcomeInterpreter",
 ];
 
 //////////////////////////////////////// 

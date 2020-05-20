@@ -18,7 +18,7 @@ expect.extend({ toBeLt });
 
 jest.setTimeout(7500);
 
-const { ticTacToeApp } = global[`contracts`] as TestContractAddresses;
+const { TicTacToeApp } = global[`contracts`] as TestContractAddresses;
 
 describe(`Node method follows spec - install`, () => {
   let multisigAddress: string;
@@ -60,7 +60,7 @@ describe(`Node method follows spec - install`, () => {
 
         const rpc = makeProposeCall(
           nodeB,
-          ticTacToeApp,
+          TicTacToeApp,
           multisigAddress,
           /* initialState */ undefined,
           One,

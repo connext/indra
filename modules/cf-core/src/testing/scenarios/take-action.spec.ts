@@ -16,7 +16,7 @@ import {
 } from "../utils";
 import { toBN, deBigNumberifyJson } from "@connext/utils";
 
-const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 // NOTE: no initiator events
 function confirmMessages(
@@ -61,7 +61,7 @@ describe("Node method follows spec - takeAction", () => {
 
       it("can take action", async done => {
         const multisigAddress = await createChannel(nodeA, nodeB);
-        const [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, ticTacToeApp);
+        const [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
         const expectedNewState = {
           board: [

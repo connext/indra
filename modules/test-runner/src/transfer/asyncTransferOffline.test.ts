@@ -42,7 +42,7 @@ const fundForTransfers = async (
   assetId?: string,
 ): Promise<void> => {
   // make sure the tokenAddress is set
-  const tokenAddress = senderClient.config.contractAddresses.token!;
+  const tokenAddress = senderClient.config.contractAddresses.Token!;
   await fundChannel(senderClient, amount, assetId || tokenAddress);
   await requestCollateral(receiverClient, assetId || tokenAddress, true);
 };
@@ -117,7 +117,7 @@ describe("Async transfer offline tests", () => {
       signer,
       store,
     });
-    const tokenAddress = senderClient.config.contractAddresses.token!;
+    const tokenAddress = senderClient.config.contractAddresses.Token!;
     await fundForTransfers(receiverClient, senderClient);
     (receiverClient.messaging as TestMessagingService).on(
       REQUEST,
@@ -148,7 +148,7 @@ describe("Async transfer offline tests", () => {
       signer,
       store,
     });
-    const tokenAddress = senderClient.config.contractAddresses.token!;
+    const tokenAddress = senderClient.config.contractAddresses.Token!;
     await fundForTransfers(receiverClient, senderClient);
     (receiverClient.messaging as TestMessagingService).on(
       RECEIVED,
@@ -182,7 +182,7 @@ describe("Async transfer offline tests", () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits({ signer: senderSigner });
     receiverClient = await createClientWithMessagingLimits({ signer: receiverSigner });
-    const tokenAddress = senderClient.config.contractAddresses.token!;
+    const tokenAddress = senderClient.config.contractAddresses.Token!;
     await fundForTransfers(receiverClient, senderClient);
     // transfer from the sender to the receiver, then take the
     // sender offline
@@ -246,7 +246,7 @@ describe("Async transfer offline tests", () => {
       signer: senderSigner,
     });
     receiverClient = await createClientWithMessagingLimits({ signer: receiverSigner });
-    const tokenAddress = senderClient.config.contractAddresses.token!;
+    const tokenAddress = senderClient.config.contractAddresses.Token!;
     await fundForTransfers(receiverClient, senderClient);
 
     // disconnect messaging on take action event, ensuring transfer received

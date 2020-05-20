@@ -14,7 +14,7 @@ describe("Client Connect", () => {
       assetId: AddressZero,
     });
     const { appIdentityHash: tokenDeposit } = await client.requestDepositRights({
-      assetId: client.config.contractAddresses.token!,
+      assetId: client.config.contractAddresses.Token!,
     });
 
     // verify
@@ -24,7 +24,7 @@ describe("Client Connect", () => {
     expect(retrievedEth).to.eq(ethDeposit);
 
     const { appIdentityHash: retrievedToken } = await client.checkDepositRights({
-      assetId: client.config.contractAddresses.token!,
+      assetId: client.config.contractAddresses.Token!,
     });
     expect(retrievedToken).to.eq(tokenDeposit);
 
@@ -40,7 +40,7 @@ describe("Client Connect", () => {
     expect(retrievedEth2).to.eq(ethDeposit);
 
     const { appIdentityHash: retrievedToken2 } = await client.checkDepositRights({
-      assetId: client.config.contractAddresses.token!,
+      assetId: client.config.contractAddresses.Token!,
     });
     expect(retrievedToken2).to.eq(tokenDeposit);
   });
@@ -50,24 +50,24 @@ describe("Client Connect", () => {
     const store = getMemoryStore();
     let client = await createClient({ signer: pk, store } as Partial<ClientOptions>);
     await client.requestDepositRights({ assetId: AddressZero });
-    await client.requestDepositRights({ assetId: client.config.contractAddresses.token! });
+    await client.requestDepositRights({ assetId: client.config.contractAddresses.Token! });
     let apps = await client.getAppInstances();
     const initDepositApps = apps.filter(
       (app) =>
-        app.appInterface.addr === client.config.contractAddresses.depositApp &&
+        app.appInterface.addr === client.config.contractAddresses.DepositApp &&
         app.initiatorIdentifier === client.publicIdentifier,
     );
     expect(initDepositApps.length).to.be.eq(2);
     await client.messaging.disconnect();
 
     await sendOnchainValue(client.multisigAddress, One);
-    await sendOnchainValue(client.multisigAddress, One, client.config.contractAddresses.token!);
+    await sendOnchainValue(client.multisigAddress, One, client.config.contractAddresses.Token!);
 
     client = await createClient({ signer: pk, store });
     apps = await client.getAppInstances();
     const depositApps = apps.filter(
       (app) =>
-        app.appInterface.addr === client.config.contractAddresses.depositApp &&
+        app.appInterface.addr === client.config.contractAddresses.DepositApp &&
         app.initiatorIdentifier === client.publicIdentifier,
     );
     expect(depositApps.length).to.be.eq(0);

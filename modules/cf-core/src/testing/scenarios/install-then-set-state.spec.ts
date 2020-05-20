@@ -57,18 +57,18 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
     contracts = global["contracts"];
     wallet = newWallet(global["wallet"]);
     context = { network: { contractAddresses: global["contracts"] } } as Context;
-    appRegistry = new Contract(contracts.challengeRegistry, ChallengeRegistry.abi, wallet);
+    appRegistry = new Contract(contracts.ChallengeRegistry, ChallengeRegistry.abi, wallet);
   });
 
   it("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async done => {
     const signers = getRandomChannelSigners(2);
     const ids = signers.map(s => s.publicIdentifier);
-    const erc20TokenAddress = contracts.dolphinCoin;
-    const proxyFactory = new Contract(contracts.proxyFactory, ProxyFactory.abi, wallet);
+    const erc20TokenAddress = contracts.DolphinCoin;
+    const proxyFactory = new Contract(contracts.ProxyFactory, ProxyFactory.abi, wallet);
 
     proxyFactory.once("ProxyCreation", async (proxyAddress: string) => {
       let stateChannel = StateChannel.setupChannel(
-        contracts.identityApp,
+        contracts.IdentityApp,
         contracts,
         proxyAddress, // used as multisigAddress
         ids[0],
@@ -89,7 +89,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         signers[1].address,
         stateChannel.freeBalance.defaultTimeout, // Re-use ETH FreeBalance timeout
         {
-          addr: contracts.identityApp,
+          addr: contracts.IdentityApp,
           stateEncoding: "tuple(address to, uint256 amount)[][]",
           actionEncoding: undefined,
         },
@@ -244,7 +244,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
     });
 
     await proxyFactory.functions.createProxyWithNonce(
-      contracts.minimumViableMultisig,
+      contracts.MinimumViableMultisig,
       new Interface(MinimumViableMultisig.abi).functions.setup.encode([
         signers.map(x => x.address),
       ]),

@@ -19,7 +19,7 @@ import { isHexString } from "ethers/utils";
 
 expect.extend({ toBeEq });
 
-const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 function assertUninstallMessage(
   senderId: string,
@@ -82,7 +82,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         nodeA,
         nodeB,
         multisigAddress,
-        ticTacToeApp,
+        TicTacToeApp,
         initialState,
         depositAmount,
         CONVENTION_FOR_ETH_ASSET_ID,
@@ -135,7 +135,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         nodeA,
         nodeB,
         multisigAddress,
-        ticTacToeApp,
+        TicTacToeApp,
         initialState,
         depositAmount,
         CONVENTION_FOR_ETH_ASSET_ID,
@@ -187,7 +187,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         nodeA,
         nodeB,
         multisigAddress,
-        ticTacToeApp,
+        TicTacToeApp,
         initialState,
         depositAmount,
         CONVENTION_FOR_ETH_ASSET_ID,

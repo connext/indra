@@ -113,7 +113,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         nodeA.rpcRouter.dispatch(
           await makeProposeCall(
             nodeB,
-            (global[`contracts`] as TestContractAddresses).ticTacToeApp,
+            (global[`contracts`] as TestContractAddresses).TicTacToeApp,
             multisigAddress,
             undefined,
             One,

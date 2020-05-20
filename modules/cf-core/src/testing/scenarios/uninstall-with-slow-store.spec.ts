@@ -12,7 +12,7 @@ import {
   installApp,
 } from "../utils";
 
-const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - uninstall", () => {
   let nodeA: Node;
@@ -43,7 +43,7 @@ describe("Node method follows spec - uninstall", () => {
         nodeA,
         nodeB,
         multisigAddess,
-        ticTacToeApp,
+        TicTacToeApp,
         initialState,
       );
       expect(appIdentityHash).toBeDefined;

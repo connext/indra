@@ -47,7 +47,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     // 56 ms
     const stateChannel = StateChannel.setupChannel(
-      network.contractAddresses.identityApp,
+      network.contractAddresses.IdentityApp,
       network.contractAddresses,
       multisigAddress,
       initiatorIdentifier,
@@ -155,7 +155,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     // 73 ms
     const stateChannel = StateChannel.setupChannel(
-      network.contractAddresses.identityApp,
+      network.contractAddresses.IdentityApp,
       network.contractAddresses,
       multisigAddress,
       initiatorIdentifier,

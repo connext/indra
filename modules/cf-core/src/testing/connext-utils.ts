@@ -33,7 +33,7 @@ type CoinTransfer = {
   amount: BigNumber;
 };
 
-const { unidirectionalLinkedTransferApp } = global["contracts"] as TestContractAddresses;
+const { UnidirectionalLinkedTransferApp } = global["contracts"] as TestContractAddresses;
 
 export async function installLink(
   funder: Node,
@@ -42,7 +42,7 @@ export async function installLink(
   state: UnidirectionalLinkedTransferAppState,
   action: UnidirectionalLinkedTransferAppAction,
 ): Promise<string> {
-  const linkDef = unidirectionalLinkedTransferApp;
+  const linkDef = UnidirectionalLinkedTransferApp;
 
   const res = await installApp(
     funder,
@@ -96,7 +96,7 @@ export async function installAndRedeemLink(
   multisigAddressIntermediaryRedeemer: string,
   stateAndAction: { action: any; state: any },
 ) {
-  const linkDef = unidirectionalLinkedTransferApp;
+  const linkDef = UnidirectionalLinkedTransferApp;
 
   const hubApps = await getApps(intermediary, multisigAddressFunderIntermediary);
 

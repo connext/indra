@@ -28,7 +28,7 @@ import { Logger } from "../logger";
 import { EventEmitter } from "events";
 import { validAction } from "../tic-tac-toe";
 
-const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Sync", () => {
   let multisigAddress: string;
@@ -107,7 +107,7 @@ describe("Sync", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
 
       // load stores with proposal
-      const rpc = makeProposeCall(nodeB, ticTacToeApp, multisigAddress);
+      const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const params = {
         ...(rpc.parameters as MethodParams.ProposeInstall),
         multisigAddress: undefined,
@@ -247,7 +247,7 @@ describe("Sync", () => {
 
       // create proposal
       const [ret] = await Promise.all([
-        makeAndSendProposeCall(nodeA, nodeB, ticTacToeApp, multisigAddress),
+        makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress),
         new Promise((resolve) => {
           nodeB.once(EventNames.PROPOSE_INSTALL_EVENT, resolve);
         }),
@@ -372,7 +372,7 @@ describe("Sync", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
 
       // create app
-      [identityHash] = await installApp(nodeA, nodeB, multisigAddress, ticTacToeApp);
+      [identityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
       // nodeB should respond to the uninstall, nodeA will not get the
       // message, but nodeB thinks its sent
@@ -422,7 +422,7 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel);
 
       // create new app
-      [identityHash] = await installApp(newNodeA as Node, nodeB, multisigAddress, ticTacToeApp);
+      [identityHash] = await installApp(newNodeA as Node, nodeB, multisigAddress, TicTacToeApp);
       const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
       const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
@@ -466,7 +466,7 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel);
 
       // create new app
-      [identityHash] = await installApp(nodeA, newNodeB as Node, multisigAddress, ticTacToeApp);
+      [identityHash] = await installApp(nodeA, newNodeB as Node, multisigAddress, TicTacToeApp);
       const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
       const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
@@ -508,7 +508,7 @@ describe("Sync", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
 
       // create app
-      [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, ticTacToeApp);
+      [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
       await new Promise(async (resolve, reject) => {
         nodeB.once(EventNames.UPDATE_STATE_EVENT, () => resolve());

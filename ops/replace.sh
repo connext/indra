@@ -19,6 +19,6 @@ read response
 echo
 
 if [[ "$response" == "y" ]]
-then find ops docs modules/*/contracts modules/*/ops modules/*/src modules/*/test -type f -not -name "*.swp" -exec sed -i "s|$old|$new|g" {} \;
+then find ops docs modules/*/contracts modules/*/ops modules/*/src modules/*/test modules/*/commitments -type f -not -name "*.swp" -exec sed -i "s|$old|$new|g" {} \;
 else echo "Goodbye"
 fi

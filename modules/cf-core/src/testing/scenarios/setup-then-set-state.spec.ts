@@ -47,13 +47,13 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
     contracts = global["contracts"];
     provider = wallet.provider as JsonRpcProvider;
     context = { network: { contractAddresses: global["contracts"] } } as Context;
-    appRegistry = new Contract(contracts.challengeRegistry, ChallengeRegistry.abi, wallet);
+    appRegistry = new Contract(contracts.ChallengeRegistry, ChallengeRegistry.abi, wallet);
   });
 
   it("should distribute funds in ETH free balance when put on chain", async done => {
     const [initiator, responder] = getRandomChannelSigners(2);
 
-    const proxyFactory = new Contract(contracts.proxyFactory, ProxyFactory.abi, wallet);
+    const proxyFactory = new Contract(contracts.ProxyFactory, ProxyFactory.abi, wallet);
 
     proxyFactory.once("ProxyCreation", async proxy => {
       // TODO: Test this separately
@@ -67,7 +67,7 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       );
 
       const stateChannel = StateChannel.setupChannel(
-        contracts.identityApp,
+        contracts.IdentityApp,
         contracts,
         proxy, // used as multisig
         initiator.publicIdentifier,
@@ -84,7 +84,7 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       const freeBalance = stateChannel.freeBalance;
 
       const setStateCommitment = new SetStateCommitment(
-        contracts.challengeRegistry,
+        contracts.ChallengeRegistry,
         freeBalance.identity,
         keccak256(freeBalance.encodedLatestState),
         toBN(freeBalance.versionNumber),
@@ -137,7 +137,7 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
     });
 
     await proxyFactory.functions.createProxyWithNonce(
-      contracts.minimumViableMultisig,
+      contracts.MinimumViableMultisig,
       new Interface(MinimumViableMultisig.abi).functions.setup.encode([
         [initiator, responder].map(x => x.address),
       ]),

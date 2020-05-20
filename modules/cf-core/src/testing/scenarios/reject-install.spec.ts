@@ -14,7 +14,7 @@ import {
   makeAndSendProposeCall,
 } from "../utils";
 
-const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - rejectInstall", () => {
   let nodeA: Node;
@@ -57,7 +57,7 @@ describe("Node method follows spec - rejectInstall", () => {
         await nodeB.rpcRouter.dispatch(rejectReq);
       });
 
-      await makeAndSendProposeCall(nodeA, nodeB, ticTacToeApp, multisigAddress);
+      await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
       expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(1);
     });
 
@@ -91,7 +91,7 @@ describe("Node method follows spec - rejectInstall", () => {
         await nodeA.rpcRouter.dispatch(rejectReq);
       });
 
-      await makeAndSendProposeCall(nodeA, nodeB, ticTacToeApp, multisigAddress);
+      await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
       expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(1);
     });
   });

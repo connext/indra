@@ -53,7 +53,7 @@ const uninstallMiddleware = async (
   const { appInstance } = middlewareContext;
   const appDef = appInstance.appInterface.addr;
   switch (appDef) {
-    case network.contractAddresses.depositApp: {
+    case network.contractAddresses.DepositApp: {
       await uninstallDepositMiddleware(middlewareContext, network.provider);
       break;
     }
@@ -70,8 +70,8 @@ const proposeMiddleware = async (
   const { proposal } = middlewareContext;
   const appDef = proposal.appDefinition;
   switch (appDef) {
-    case network.contractAddresses.depositApp: {
-      await proposeDepositMiddleware(middlewareContext, network.contractAddresses.depositApp);
+    case network.contractAddresses.DepositApp: {
+      await proposeDepositMiddleware(middlewareContext, network.contractAddresses.DepositApp);
       break;
     }
     default: {

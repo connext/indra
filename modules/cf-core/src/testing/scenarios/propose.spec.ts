@@ -17,7 +17,7 @@ import {
 
 expect.extend({ toBeLt });
 
-const { ticTacToeApp } = global["contracts"] as TestContractAddresses;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 async function assertEqualProposedApps(
   nodeA: Node,
@@ -54,7 +54,7 @@ describe("Node method follows spec - propose install", () => {
     });
 
     it("propose install an app with eth and a meta", async (done: jest.DoneCallback) => {
-      const rpc = makeProposeCall(nodeB, ticTacToeApp, multisigAddress);
+      const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const params = {
         ...(rpc.parameters as MethodParams.ProposeInstall),
         multisigAddress: undefined,

@@ -100,8 +100,8 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
   schemaVersion: 1,
   multisigAddress: TEST_STORE_ETH_ADDRESS,
   addresses: {
-    minimumViableMultisig: TEST_STORE_ETH_ADDRESS,
-    proxyFactory: TEST_STORE_ETH_ADDRESS,
+    MinimumViableMultisig: TEST_STORE_ETH_ADDRESS,
+    ProxyFactory: TEST_STORE_ETH_ADDRESS,
   },
   userIdentifiers: ["address1", "address2"],
   proposedAppInstances: [[TEST_STORE_PROPOSAL.identityHash, TEST_STORE_PROPOSAL]],

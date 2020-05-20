@@ -47,7 +47,7 @@ describe("HashLock Transfers", () => {
   beforeEach(async () => {
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
-    tokenAddress = clientA.config.contractAddresses.token!;
+    tokenAddress = clientA.config.contractAddresses.Token!;
   });
 
   afterEach(async () => {

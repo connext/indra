@@ -76,7 +76,7 @@ describe("Node method follows spec - deposit", () => {
 
   it("has the right balance before an ERC20 deposit has been made", async () => {
     const erc20AssetId = getAddressFromAssetId(
-      (global["contracts"] as TestContractAddresses).dolphinCoin,
+      (global["contracts"] as TestContractAddresses).DolphinCoin,
     );
 
     const freeBalanceState = await getFreeBalanceState(nodeA, multisigAddress, erc20AssetId);
@@ -104,7 +104,7 @@ describe("Node method follows spec - deposit", () => {
 
   it("has the right balance for both parties after erc20 deposits", async () => {
     const erc20AssetId = getAddressFromAssetId(
-      (global["contracts"] as TestContractAddresses).dolphinCoin,
+      (global["contracts"] as TestContractAddresses).DolphinCoin,
     );
 
     const tokenAddress = getAddressFromAssetId(erc20AssetId);
@@ -137,7 +137,7 @@ describe("Node method follows spec - deposit", () => {
 
   it("updates balances correctly when depositing both ERC20 tokens and ETH", async () => {
     const erc20AssetId = getAddressFromAssetId(
-      (global["contracts"] as TestContractAddresses).dolphinCoin,
+      (global["contracts"] as TestContractAddresses).DolphinCoin,
     );
 
     const tokenAddress = getAddressFromAssetId(erc20AssetId);

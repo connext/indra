@@ -21,13 +21,13 @@ import { ContractFactory, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 
 export type TestContractAddresses = ContractAddresses & {
-  ticTacToeApp: string;
-  dolphinCoin: string;
-  unidirectionalTransferApp: string;
-  unidirectionalLinkedTransferApp: string;
-  simpleTransferApp: string;
-  withdrawApp: string;
-  depositApp: string;
+  TicTacToeApp: string;
+  DolphinCoin: string;
+  UnidirectionalTransferApp: string;
+  UnidirectionalLinkedTransferApp: string;
+  SimpleTransferApp: string;
+  WithdrawApp: string;
+  DepositApp: string;
 };
 
 export type TestNetworkContext = {
@@ -136,21 +136,21 @@ export const deployTestArtifactsToChain = async (
   ).deploy();
 
   return {
-    challengeRegistry: challengeRegistry.address,
-    conditionalTransactionDelegateTarget: conditionalTransactionDelegateTarget.address,
-    dolphinCoin: dolphinCoin.address,
-    depositApp: depositAppContract.address,
-    identityApp: identityApp.address,
-    minimumViableMultisig: mvmContract.address,
-    multiAssetMultiPartyCoinTransferInterpreter: coinTransferETHInterpreter.address,
-    proxyFactory: proxyFactoryContract.address,
-    simpleTransferApp: simpleTransferContract.address,
-    singleAssetTwoPartyCoinTransferInterpreter: singleAssetTwoPartyCoinTransferInterpreter.address,
-    ticTacToeApp: tttContract.address,
-    timeLockedPassThrough: timeLockedPassThrough.address,
-    twoPartyFixedOutcomeInterpreter: twoPartyFixedOutcomeInterpreter.address,
-    unidirectionalLinkedTransferApp: linkContract.address,
-    unidirectionalTransferApp: transferContract.address,
-    withdrawApp: withdrawAppContract.address,
+    ChallengeRegistry: challengeRegistry.address,
+    ConditionalTransactionDelegateTarget: conditionalTransactionDelegateTarget.address,
+    DolphinCoin: dolphinCoin.address,
+    DepositApp: depositAppContract.address,
+    IdentityApp: identityApp.address,
+    MinimumViableMultisig: mvmContract.address,
+    MultiAssetMultiPartyCoinTransferInterpreter: coinTransferETHInterpreter.address,
+    ProxyFactory: proxyFactoryContract.address,
+    SimpleTransferApp: simpleTransferContract.address,
+    SingleAssetTwoPartyCoinTransferInterpreter: singleAssetTwoPartyCoinTransferInterpreter.address,
+    TicTacToeApp: tttContract.address,
+    TimeLockedPassThrough: timeLockedPassThrough.address,
+    TwoPartyFixedOutcomeInterpreter: twoPartyFixedOutcomeInterpreter.address,
+    UnidirectionalLinkedTransferApp: linkContract.address,
+    UnidirectionalTransferApp: transferContract.address,
+    WithdrawApp: withdrawAppContract.address,
   };
 };
