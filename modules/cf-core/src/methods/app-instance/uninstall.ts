@@ -1,5 +1,4 @@
 import {
-  IStoreService,
   MethodNames,
   MethodParams,
   MethodResults,
@@ -11,7 +10,6 @@ import {
 import { jsonRpcMethod } from "rpc-server";
 
 import {
-  APP_ALREADY_UNINSTALLED,
   CANNOT_UNINSTALL_FREE_BALANCE,
   NO_APP_IDENTITY_HASH_TO_UNINSTALL,
   NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
@@ -21,6 +19,7 @@ import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
+import { stringify } from "@connext/utils";
 
 export class UninstallController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_uninstall)
@@ -30,6 +29,9 @@ export class UninstallController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.Uninstall,
   ): Promise<string> {
+    if (!params.multisigAddress) {
+      throw new Error(`No multisig address provided in params: ${stringify(params)}`);
+    }
     return params.multisigAddress;
   }
 
@@ -38,7 +40,6 @@ export class UninstallController extends NodeController {
     params: MethodParams.Uninstall,
     preProtocolStateChannel: StateChannel | undefined,
   ) {
-    const { store } = requestHandler;
     const { appIdentityHash } = params;
 
     if (!appIdentityHash) {

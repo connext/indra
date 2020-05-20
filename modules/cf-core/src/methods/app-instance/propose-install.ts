@@ -12,6 +12,7 @@ import { RequestHandler } from "../../request-handler";
 
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
+import { stringify } from "@connext/utils";
 
 /**
  * This creates an entry of a proposed AppInstance while sending the proposal
@@ -27,6 +28,9 @@ export class ProposeInstallAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
   ): Promise<string> {
+    if (!params.multisigAddress) {
+      throw new Error(`No multisig address provided in params: ${stringify(params)}`);
+    }
     return params.multisigAddress;
   }
 

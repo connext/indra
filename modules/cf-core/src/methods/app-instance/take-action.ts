@@ -9,7 +9,7 @@ import {
   UpdateStateMessage,
   PublicIdentifier,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
+import { toBN, stringify } from "@connext/utils";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
@@ -36,6 +36,9 @@ export class TakeActionController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
   ): Promise<string> {
+    if (!params.multisigAddress) {
+      throw new Error(`No multisig address provided in params: ${stringify(params)}`);
+    }
     return params.multisigAddress;
   }
 

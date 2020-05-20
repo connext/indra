@@ -1,6 +1,4 @@
 import {
-  AppInstanceProposal,
-  IStoreService,
   MethodNames,
   MethodParams,
   MethodResults,
@@ -8,7 +6,7 @@ import {
   ProtocolParams,
   PublicIdentifier,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
+import { toBN, stringify } from "@connext/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -34,6 +32,9 @@ export class InstallAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.Install,
   ): Promise<string> {
+    if (!params.multisigAddress) {
+      throw new Error(`No multisig address provided in params: ${stringify(params)}`);
+    }
     return params.multisigAddress;
   }
 
