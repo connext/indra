@@ -35,6 +35,13 @@ export abstract class NodeController extends Controller {
       if ((params as any).multisigAddress) {
         const json = await requestHandler.store.getStateChannel((params as any).multisigAddress);
         preProtocolStateChannel = json && StateChannel.fromJson(json);
+      } else if ((params as any).responderIdentifier) {
+        // TODO: should be able to to all of this with multisig address but its not showing up in some cases
+        const json = await requestHandler.store.getStateChannelByOwners([
+          (params as any).responderIdentifier,
+          requestHandler.publicIdentifier,
+        ]);
+        preProtocolStateChannel = json && StateChannel.fromJson(json);
       }
       await this.beforeExecution(requestHandler, params, preProtocolStateChannel);
       logTime(log, substart, "Before execution complete");
@@ -50,7 +57,7 @@ export abstract class NodeController extends Controller {
       logTime(log, substart, "After execution complete");
       substart = Date.now();
     } catch (e) {
-      requestHandler.log.error(`Error during protocol: ${e.message}`);
+      throw e;
     } finally {
       if (lockName !== "") {
         await requestHandler.lockService.releaseLock(lockName, lockValue);
