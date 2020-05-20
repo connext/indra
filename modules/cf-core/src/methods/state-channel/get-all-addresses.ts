@@ -10,12 +10,10 @@ export class GetAllChannelAddressesController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-  ): Promise<{ result: MethodResults.GetChannelAddresses }> {
+  ): Promise<MethodResults.GetChannelAddresses> {
     const allChannels = await requestHandler.store.getAllChannels();
     return {
-      result: {
-        multisigAddresses: allChannels.map((sc) => sc.multisigAddress),
-      },
+      multisigAddresses: allChannels.map((sc) => sc.multisigAddress),
     };
   }
 }

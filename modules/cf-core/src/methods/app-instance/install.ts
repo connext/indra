@@ -62,7 +62,7 @@ export class InstallAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.Install,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<{ updatedChannel: StateChannel; result: MethodResults.Install }> {
+  ): Promise<MethodResults.Install> {
     const { protocolRunner, publicIdentifier } = requestHandler;
 
     const postProtocolChannel = await install(
@@ -80,10 +80,7 @@ export class InstallAppInstanceController extends NodeController {
     }
 
     return {
-      updatedChannel: postProtocolChannel,
-      result: {
-        appInstance: appInstance.toJson(),
-      },
+      appInstance: appInstance.toJson(),
     };
   }
 }

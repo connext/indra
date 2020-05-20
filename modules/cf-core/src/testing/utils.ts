@@ -417,6 +417,7 @@ export async function getProposedAppInstances(
   };
   const response = (await node.rpcRouter.dispatch(rpc)) as JsonRpcResponse;
   const result = response.result.result as MethodResults.GetProposedAppInstances;
+  console.log("result: ", result);
   return result.appInstances;
 }
 

@@ -74,7 +74,7 @@ export class DeployStateDepositController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.DeployStateDepositHolder,
-  ): Promise<{ result: MethodResults.DeployStateDepositHolder }> {
+  ): Promise<MethodResults.DeployStateDepositHolder> {
     const { multisigAddress, retryCount } = params;
     const { log, networkContext, store, provider, signer } = requestHandler;
 
@@ -105,7 +105,7 @@ export class DeployStateDepositController extends NodeController {
       tx = await sendMultisigDeployTx(signer, channel, networkContext, retryCount, log);
     }
 
-    return { result: { transactionHash: tx.hash! } };
+    return { transactionHash: tx.hash! };
   }
 }
 

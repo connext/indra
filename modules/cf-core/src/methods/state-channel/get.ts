@@ -12,11 +12,11 @@ export class GetStateChannelController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.GetStateChannel,
-  ): Promise<{ result: MethodResults.GetStateChannel }> {
+  ): Promise<MethodResults.GetStateChannel> {
     const data = await requestHandler.store.getStateChannel(params.multisigAddress);
     if (!data) {
       throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(params.multisigAddress));
     }
-    return { result: { data } };
+    return { data };
   }
 }

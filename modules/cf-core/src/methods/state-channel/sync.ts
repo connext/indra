@@ -30,7 +30,7 @@ export class SyncController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.Sync,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<{ updatedChannel: StateChannel; result: MethodResults.Sync }> {
+  ): Promise<MethodResults.Sync> {
     const { protocolRunner, publicIdentifier } = requestHandler;
     const { multisigAddress } = params;
     if (!preProtocolStateChannel) {
@@ -55,20 +55,20 @@ export class SyncController extends NodeController {
       },
     );
 
-    return { updatedChannel: updated, result: { syncedChannel: updated.toJson() } };
+    return { syncedChannel: updated.toJson() };
   }
 
   protected async afterExecution(
     requestHandler: RequestHandler,
     params: MethodParams.Sync,
-    updatedChannel: StateChannel | undefined,
+    returnValue: MethodResults.Sync,
   ): Promise<void> {
     const { router, publicIdentifier } = requestHandler;
 
     const msg = {
       from: publicIdentifier,
       type: EventNames.SYNC,
-      data: { syncedChannel: updatedChannel!.toJson() },
+      data: { syncedChannel: returnValue.syncedChannel },
     } as SyncMessage;
     await router.emit(msg.type, msg, `outgoing`);
   }

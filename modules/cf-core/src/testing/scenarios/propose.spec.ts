@@ -71,7 +71,7 @@ describe("Node method follows spec - propose install", () => {
       };
 
       const appId = await new Promise(async (resolve, reject) => {
-        let identityHash;
+        let identityHash: string = "";
         let dispatched = false;
         nodeB.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
           // make sure message has the right structure
@@ -80,7 +80,7 @@ describe("Node method follows spec - propose install", () => {
           identityHash = msg.data.appIdentityHash;
           if (dispatched) resolve(identityHash);
         });
-  
+
         // TODO: add expected message B
         try {
           await nodeA.rpcRouter.dispatch({

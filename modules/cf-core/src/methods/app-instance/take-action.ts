@@ -73,7 +73,7 @@ export class TakeActionController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<{ updatedChannel: StateChannel; result: MethodResults.TakeAction }> {
+  ): Promise<MethodResults.TakeAction> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appIdentityHash, action, stateTimeout } = params;
 
@@ -94,24 +94,21 @@ export class TakeActionController extends NodeController {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
 
-    return { updatedChannel: channel, result: { newState: appInstance.state } };
+    return { newState: appInstance.state };
   }
 
   protected async afterExecution(
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
-    updatedChannel: StateChannel | undefined,
     returnValue: MethodResults.TakeAction,
   ): Promise<void> {
     const { router, publicIdentifier } = requestHandler;
     const { appIdentityHash, action } = params;
 
-    const appInstance = updatedChannel!.appInstances.get(appIdentityHash)!;
-
     const msg = {
       from: publicIdentifier,
       type: EventNames.UPDATE_STATE_EVENT,
-      data: { appIdentityHash, action, newState: appInstance.state },
+      data: { appIdentityHash, action, newState: returnValue.newState },
     } as UpdateStateMessage;
 
     await router.emit(msg.type, msg, `outgoing`);

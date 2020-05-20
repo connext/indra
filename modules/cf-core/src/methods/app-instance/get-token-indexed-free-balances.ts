@@ -13,7 +13,7 @@ export class GetTokenIndexedFreeBalancesController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.GetTokenIndexedFreeBalanceStates,
-  ): Promise<{ result: MethodResults.GetTokenIndexedFreeBalanceStates }> {
+  ): Promise<MethodResults.GetTokenIndexedFreeBalanceStates> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
 
@@ -29,6 +29,6 @@ export class GetTokenIndexedFreeBalancesController extends NodeController {
     }
     const stateChannel = StateChannel.fromJson(json);
 
-    return { result: stateChannel.getFreeBalanceClass().toTokenIndexedCoinTransferMap() };
+    return stateChannel.getFreeBalanceClass().toTokenIndexedCoinTransferMap();
   }
 }

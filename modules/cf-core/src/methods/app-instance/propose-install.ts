@@ -65,7 +65,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<{ updatedChannel: StateChannel; result: MethodResults.ProposeInstall }> {
+  ): Promise<MethodResults.ProposeInstall> {
     const { protocolRunner, publicIdentifier } = requestHandler;
 
     const { responderIdentifier, stateTimeout, defaultTimeout } = params;
@@ -81,9 +81,6 @@ export class ProposeInstallAppInstanceController extends NodeController {
       preProtocolStateChannel!,
     );
 
-    return {
-      updatedChannel: updated,
-      result: { appIdentityHash: updated.mostRecentlyProposedAppInstance().identityHash },
-    };
+    return { appIdentityHash: updated.mostRecentlyProposedAppInstance().identityHash };
   }
 }

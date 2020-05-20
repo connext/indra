@@ -67,8 +67,8 @@ export class UninstallController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.Uninstall,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<{ updatedChannel: StateChannel; result: MethodResults.Uninstall }> {
-    const { store, protocolRunner, publicIdentifier } = requestHandler;
+  ): Promise<MethodResults.Uninstall> {
+    const { protocolRunner, publicIdentifier } = requestHandler;
     const { appIdentityHash } = params;
 
     const updatedChannel = await uninstallAppInstanceFromChannel(
@@ -79,16 +79,12 @@ export class UninstallController extends NodeController {
       appIdentityHash,
     );
 
-    return {
-      updatedChannel,
-      result: { appIdentityHash, multisigAddress: updatedChannel.multisigAddress },
-    };
+    return { appIdentityHash, multisigAddress: updatedChannel.multisigAddress };
   }
 
   protected async afterExecution(
     requestHandler: RequestHandler,
     params: MethodParams.Uninstall,
-    updatedChannel: StateChannel | undefined,
     returnValue: MethodResults.Uninstall,
   ): Promise<void> {
     const { router, publicIdentifier } = requestHandler;

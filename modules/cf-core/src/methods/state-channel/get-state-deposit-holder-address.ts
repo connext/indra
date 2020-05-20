@@ -13,7 +13,7 @@ export class GetStateDepositHolderAddressController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.GetStateDepositHolderAddress,
-  ): Promise<{ result: MethodResults.GetStateDepositHolderAddress }> {
+  ): Promise<MethodResults.GetStateDepositHolderAddress> {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
     if (!networkContext.provider) {
@@ -42,6 +42,6 @@ export class GetStateDepositHolderAddressController extends NodeController {
         networkContext.provider,
       ));
 
-    return { result: { address } };
+    return { address };
   }
 }

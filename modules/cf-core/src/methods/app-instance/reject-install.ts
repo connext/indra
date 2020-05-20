@@ -45,7 +45,7 @@ export class RejectInstallController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.RejectInstall,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<{ updatedChannel: StateChannel; result: MethodResults.RejectInstall }> {
+  ): Promise<MethodResults.RejectInstall> {
     const { store, messagingService, publicIdentifier } = requestHandler;
 
     const { appIdentityHash } = params;
@@ -53,8 +53,6 @@ export class RejectInstallController extends NodeController {
     const proposal = preProtocolStateChannel!.proposedAppInstances.get(appIdentityHash);
 
     await store.removeAppProposal(preProtocolStateChannel!.multisigAddress, appIdentityHash);
-    const updatedChannelJson = await store.getStateChannel(params.multisigAddress);
-    const updatedChannel = StateChannel.fromJson(updatedChannelJson!);
 
     const rejectProposalMsg: RejectProposalMessage = {
       from: publicIdentifier,
@@ -70,6 +68,6 @@ export class RejectInstallController extends NodeController {
 
     await messagingService.send(counterparty, rejectProposalMsg);
 
-    return { updatedChannel, result: {} };
+    return {};
   }
 }

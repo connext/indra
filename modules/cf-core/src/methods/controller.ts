@@ -4,7 +4,6 @@ import { ColorfulLogger, logTime } from "@connext/utils";
 
 import { RequestHandler } from "../request-handler";
 import { StateChannel } from "../models/state-channel";
-import { ControllerExecutionResult } from "../types";
 
 export abstract class NodeController extends Controller {
   public static readonly methodName: MethodName;
@@ -42,17 +41,12 @@ export abstract class NodeController extends Controller {
       substart = Date.now();
 
       // GET UPDATED CHANNEL FROM EXECUTION
-      const { updatedChannel, result } = await this.executeMethodImplementation(
-        requestHandler,
-        params,
-        preProtocolStateChannel,
-      );
-      ret = result;
+      ret = await this.executeMethodImplementation(requestHandler, params, preProtocolStateChannel);
       logTime(log, substart, "Executed method implementation");
       substart = Date.now();
 
       // USE UPDATED CHANNEL IN AFETR EXECUTION
-      await this.afterExecution(requestHandler, params, updatedChannel, ret);
+      await this.afterExecution(requestHandler, params, ret);
       logTime(log, substart, "After execution complete");
       substart = Date.now();
     } catch (e) {
@@ -85,12 +79,11 @@ export abstract class NodeController extends Controller {
     requestHandler: RequestHandler,
     params: MethodParam,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<ControllerExecutionResult>;
+  ): Promise<MethodResult>;
 
   protected async afterExecution(
     requestHandler: RequestHandler,
     params: MethodParam,
-    updatedChannel: StateChannel | undefined,
     returnValue: MethodResult,
   ): Promise<void> {}
 }

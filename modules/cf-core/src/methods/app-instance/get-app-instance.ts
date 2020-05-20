@@ -16,7 +16,7 @@ export class GetAppInstanceController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.GetAppInstanceDetails,
-  ): Promise<{ result: MethodResults.GetAppInstanceDetails }> {
+  ): Promise<MethodResults.GetAppInstanceDetails> {
     const { store } = requestHandler;
     const { appIdentityHash } = params;
 
@@ -28,6 +28,6 @@ export class GetAppInstanceController extends NodeController {
     if (!appInstance) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
-    return { result: { appInstance } };
+    return { appInstance };
   }
 }

@@ -10,7 +10,7 @@ export class GetProposedAppInstancesController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.GetProposedAppInstances,
-  ): Promise<{ result: MethodResults.GetProposedAppInstances }> {
+  ): Promise<MethodResults.GetProposedAppInstances> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
 
@@ -24,9 +24,7 @@ export class GetProposedAppInstancesController extends NodeController {
     }
 
     return {
-      result: {
-        appInstances: channel.proposedAppInstances.map(([id, proposal]) => proposal),
-      },
+      appInstances: channel.proposedAppInstances.map(([id, proposal]) => proposal),
     };
   }
 }
