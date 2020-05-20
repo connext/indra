@@ -28,6 +28,7 @@ import { RequestHandler } from "../../request-handler";
 
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models/state-channel";
+import RpcRouter from "../../rpc-router";
 
 export class TakeActionController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_takeAction)
@@ -78,7 +79,7 @@ export class TakeActionController extends NodeController {
     params: MethodParams.TakeAction,
     preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.TakeAction> {
-    const { store, publicIdentifier, protocolRunner } = requestHandler;
+    const { store, publicIdentifier, protocolRunner, router } = requestHandler;
     const { appIdentityHash, action, stateTimeout } = params;
 
     const app = preProtocolStateChannel!.appInstances.get(appIdentityHash)!;
@@ -86,6 +87,7 @@ export class TakeActionController extends NodeController {
     const { channel } = await runTakeActionProtocol(
       appIdentityHash,
       store,
+      router,
       protocolRunner,
       publicIdentifier,
       preProtocolStateChannel!.userIdentifiers.find((id) => id !== publicIdentifier)!,
@@ -122,6 +124,7 @@ export class TakeActionController extends NodeController {
 async function runTakeActionProtocol(
   appIdentityHash: string,
   store: IStoreService,
+  router: RpcRouter,
   protocolRunner: ProtocolRunner,
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
@@ -134,7 +137,7 @@ async function runTakeActionProtocol(
   }
 
   try {
-    return await protocolRunner.initiateProtocol(ProtocolNames.takeAction, {
+    return await protocolRunner.initiateProtocol(router, ProtocolNames.takeAction, {
       initiatorIdentifier,
       responderIdentifier,
       appIdentityHash,
