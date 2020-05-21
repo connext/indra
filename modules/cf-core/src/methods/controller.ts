@@ -1,13 +1,9 @@
-import { MethodName, MethodParam, MethodResult, ProtocolNames } from "@connext/types";
+import { MethodName, MethodParam, MethodResult } from "@connext/types";
 import { Controller } from "rpc-server";
 import { ColorfulLogger, logTime } from "@connext/utils";
 
 import { RequestHandler } from "../request-handler";
 import { StateChannel } from "../models/state-channel";
-import {
-  getOutgoingEventFailureDataFromProtocol,
-  emitOutgoingMessage,
-} from "../machine/protocol-runner";
 
 export abstract class NodeController extends Controller {
   public static readonly methodName: MethodName;
@@ -33,6 +29,7 @@ export abstract class NodeController extends Controller {
     }
 
     let ret: MethodResult | undefined;
+    let error: Error | undefined;
     try {
       // GET CHANNEL BEFORE EXECUTION
       let preProtocolStateChannel: StateChannel | undefined;
@@ -61,21 +58,22 @@ export abstract class NodeController extends Controller {
       logTime(log, substart, "After execution complete");
       substart = Date.now();
     } catch (e) {
-      console.error(`caught error in abstract controller: ${e.message}, emitting message`);
-      // console.log(params);
-      // const outgoingData = getOutgoingEventFailureDataFromProtocol(
-      //   ProtocolNames.propose,
-      //   params as any,
-      //   e,
-      // );
-      // await emitOutgoingMessage(requestHandler.router, outgoingData);
-      throw e;
-    } finally {
-      if (lockName !== "") {
+      log.error(`caught error in node controller: ${e.message}, emitting message`);
+      error = e;
+    }
+    // don't do this in a finally to ensure any errors with releasing the
+    // lock do not swallow any protocol or controller errors
+    if (lockName !== "") {
+      try {
         await requestHandler.lockService.releaseLock(lockName, lockValue);
-        logTime(log, substart, "Released lock");
-        substart = Date.now();
+      } catch (e) {
+        log.error(`caught error trying to release lock: ${e.stack || e.message}`);
       }
+      logTime(log, substart, "Released lock");
+      substart = Date.now();
+    }
+    if (error) {
+      throw error;
     }
 
     return ret;
