@@ -111,7 +111,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         }),
         new Promise(async (resolve, reject) => {
           try {
-            await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash));
+            await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash, multisigAddress));
 
             const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
             expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(Zero);
@@ -164,7 +164,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         }),
         new Promise(async (resolve, reject) => {
           try {
-            await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash));
+            await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash, multisigAddress));
 
             const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
             expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(Zero);
@@ -216,7 +216,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         }),
         new Promise(async (resolve, reject) => {
           try {
-            await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash));
+            await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash, multisigAddress));
 
             const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
             expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(depositAmount);

@@ -27,10 +27,10 @@ type CheckDepositRightsResponse = {
   appIdentityHash: Bytes32;
 };
 
-type RequestDepositRightsParameters = MethodParams.RequestDepositRights;
+type RequestDepositRightsParameters = Omit<MethodParams.RequestDepositRights, "multisigAddress">;
 type RequestDepositRightsResponse = MethodResults.RequestDepositRights;
 
-type RescindDepositRightsParameters = MethodParams.RescindDepositRights;
+type RescindDepositRightsParameters = Omit<MethodParams.RescindDepositRights, "multisigAddress">;
 type RescindDepositRightsResponse = MethodResults.RescindDepositRights;
 
 ////////////////////////////////////////
@@ -87,7 +87,7 @@ type ResolveLinkedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.LinkedTransfer;
   paymentId: Bytes32;
   preImage: Bytes32;
-}
+};
 
 type ResolveLinkedTransferResponse = {
   appIdentityHash: Bytes32;
@@ -165,7 +165,7 @@ type SwapParameters = {
   fromAssetId: Address;
   swapRate: string; // DecString?
   toAssetId: Address;
-}
+};
 
 type SwapResponse = {
   id: number;
@@ -174,7 +174,7 @@ type SwapResponse = {
   multisigAddress: Address;
   available: boolean;
   activeCollateralizations: { [assetId: string]: boolean };
-}
+};
 
 ////////////////////////////////////////
 // withdraw
@@ -222,7 +222,7 @@ export namespace PublicParams {
   export type Withdraw = WithdrawParameters;
 }
 
-export type PublicParam = 
+export type PublicParam =
   | CheckDepositRightsParameters
   | ConditionalTransferParameters
   | DepositParameters
@@ -257,7 +257,7 @@ export namespace PublicResults {
   export type Withdraw = WithdrawResponse;
 }
 
-export type PublicResult = 
+export type PublicResult =
   | CheckDepositRightsResponse
   | ConditionalTransferResponse
   | DepositResponse

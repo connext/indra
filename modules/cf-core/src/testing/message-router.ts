@@ -28,7 +28,7 @@ export class MessageRouter {
 
       node.protocolRunner.register(Opcode.IO_SEND, (args: [any, StateChannel]) => {
         const [message, channel] = args;
-        this.appendToPendingPromisesIfNotNull(this.routeMessage(message));
+        this.appendToPendingPromisesIfNotNull(this.routeMessage(message, channel));
         return { channel };
       });
       node.protocolRunner.register(Opcode.IO_SEND_AND_WAIT, async (args: [any, StateChannel]) => {
@@ -36,7 +36,7 @@ export class MessageRouter {
         message.fromAddress = node.publicIdentifier;
 
         this.deferrals.set(node.publicIdentifier, new Deferred());
-        this.appendToPendingPromisesIfNotNull(this.routeMessage(message));
+        this.appendToPendingPromisesIfNotNull(this.routeMessage(message, channel));
         const ret = await this.deferrals.get(node.publicIdentifier)!.promise;
         this.deferrals.delete(node.publicIdentifier);
 
@@ -50,7 +50,7 @@ export class MessageRouter {
     this.pendingPromises.add(v);
   }
 
-  private routeMessage(message: any) {
+  private routeMessage(message: any, channel: StateChannel) {
     const { to } = message;
     if (typeof to === "undefined") {
       throw new Error("No to found on message");
@@ -65,7 +65,7 @@ export class MessageRouter {
 
       // This returns a promise that resolves when runProtocolWithMessage
       // finishes
-      return toNode.dispatchMessage(message);
+      return toNode.dispatchMessage(message, channel);
     }
 
     deferred.resolve(message);

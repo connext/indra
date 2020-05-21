@@ -1,4 +1,9 @@
-import { CONVENTION_FOR_ETH_ASSET_ID, EventNames, InstallMessage, ProposeMessage  } from "@connext/types";
+import {
+  CONVENTION_FOR_ETH_ASSET_ID,
+  EventNames,
+  InstallMessage,
+  ProposeMessage,
+} from "@connext/types";
 import { One } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
@@ -36,7 +41,7 @@ describe("Node method follows spec - toke action", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
     });
 
-    it("can take actions on two different apps concurrently", async done => {
+    it("can take actions on two different apps concurrently", async (done) => {
       const appIdentityHashes: string[] = [];
 
       await collateralizeChannel(
@@ -47,7 +52,7 @@ describe("Node method follows spec - toke action", () => {
       );
 
       nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
-        makeInstallCall(nodeB, msg.data.appIdentityHash);
+        makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress);
       });
 
       nodeA.on("INSTALL_EVENT", (msg: InstallMessage) => {
@@ -69,7 +74,7 @@ describe("Node method follows spec - toke action", () => {
       nodeA.rpcRouter.dispatch(proposeRpc);
 
       while (appIdentityHashes.length !== 2) {
-        await new Promise(resolve => setTimeout(resolve, 20));
+        await new Promise((resolve) => setTimeout(resolve, 20));
       }
 
       let appsTakenActionOn = 0;
@@ -79,8 +84,12 @@ describe("Node method follows spec - toke action", () => {
         if (appsTakenActionOn === 2) done();
       });
 
-      nodeA.rpcRouter.dispatch(constructTakeActionRpc(appIdentityHashes[0], validAction));
-      nodeA.rpcRouter.dispatch(constructTakeActionRpc(appIdentityHashes[1], validAction));
+      nodeA.rpcRouter.dispatch(
+        constructTakeActionRpc(appIdentityHashes[0], multisigAddress, validAction),
+      );
+      nodeA.rpcRouter.dispatch(
+        constructTakeActionRpc(appIdentityHashes[1], multisigAddress, validAction),
+      );
     });
   });
 });

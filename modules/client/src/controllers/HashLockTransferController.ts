@@ -11,7 +11,7 @@ import {
   DefaultApp,
 } from "@connext/types";
 import { toBN, stringify } from "@connext/utils";
-import { HashZero, Zero, AddressZero } from "ethers/constants";
+import { HashZero, Zero } from "ethers/constants";
 
 import { AbstractController } from "./AbstractController";
 
@@ -21,7 +21,7 @@ export class HashLockTransferController extends AbstractController {
   ): Promise<PublicResults.HashLockTransfer> => {
     this.log.info(`hashLockTransfer started: ${stringify(params)}`);
 
-    const amount = toBN(params.amount)
+    const amount = toBN(params.amount);
     const { lockHash, meta, recipient, timelock, assetId } = params;
     // convert to block height
     const expiry = toBN(timelock).add(await this.connext.ethProvider.getBlockNumber());
@@ -68,6 +68,7 @@ export class HashLockTransferController extends AbstractController {
       initiatorDeposit: amount,
       initiatorDepositAssetId: assetId,
       meta: submittedMeta,
+      multisigAddress: this.connext.multisigAddress,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: Zero,
