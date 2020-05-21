@@ -6,7 +6,7 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   ProtocolParams,
 } from "@connext/types";
-import { getRandomChannelSigner } from "@connext/utils";
+import { getRandomChannelSigner, delay } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
 import {
@@ -27,7 +27,7 @@ import {
 } from "../util";
 import { addressBook } from "@connext/contracts";
 
-describe.only("Withdraw offline tests", () => {
+describe("Withdraw offline tests", () => {
   let signer: IChannelSigner;
   const addr = addressBook[4447].WithdrawApp.address;
 
@@ -174,6 +174,11 @@ describe.only("Withdraw offline tests", () => {
       new Promise((resolve) => {
         // disconnect once withdrawal commitment is written to store
         client.once(EventNames.UPDATE_STATE_EVENT, async () => {
+          // TODO: why do we have to wait here when the handler is awaiting
+          // changes before emitting events?
+          // make sure any updates to the store from event have time to be
+          // written
+          await delay(500);
           await client.messaging.disconnect();
           resolve();
         });
