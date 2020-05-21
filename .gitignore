@@ -1,4 +1,5 @@
 # Build Output
+**/tsconfig.tsbuildinfo
 **/*.0x
 **/.flags
 **/_build/**
@@ -54,3 +55,4 @@ ops/database/snapshots
 
 # Http files
 ganache.http
+modules/bot/.connext-store/
