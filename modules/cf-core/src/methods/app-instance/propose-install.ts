@@ -77,23 +77,17 @@ export class ProposeInstallAppInstanceController extends NodeController {
 
     const { responderIdentifier, stateTimeout, defaultTimeout } = params;
 
-    console.log(`running protocol...`);
-    try {
-      const { channel: updated }: { channel: StateChannel } = await protocolRunner.initiateProtocol(
-        router,
-        ProtocolNames.propose,
-        {
-          ...params,
-          stateTimeout: stateTimeout || defaultTimeout,
-          initiatorIdentifier: publicIdentifier,
-          responderIdentifier: responderIdentifier,
-        },
-        preProtocolStateChannel!,
-      );
-      return { appIdentityHash: updated.mostRecentlyProposedAppInstance().identityHash };
-    } catch (e) {
-      console.error(`caught error in propose controller: ${e.message}`);
-      throw e;
-    }
+    const { channel: updated }: { channel: StateChannel } = await protocolRunner.initiateProtocol(
+      router,
+      ProtocolNames.propose,
+      {
+        ...params,
+        stateTimeout: stateTimeout || defaultTimeout,
+        initiatorIdentifier: publicIdentifier,
+        responderIdentifier: responderIdentifier,
+      },
+      preProtocolStateChannel!,
+    );
+    return { appIdentityHash: updated.mostRecentlyProposedAppInstance().identityHash };
   }
 }

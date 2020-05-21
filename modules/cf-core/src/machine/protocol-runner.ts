@@ -92,6 +92,7 @@ export class ProtocolRunner {
       );
       return protocolRet;
     } catch (error) {
+      console.log(`CAUGHT ERROR RUNNING PROTOCOL, EMITTING EVENT`);
       const outgoingData = getOutgoingEventFailureDataFromProtocol(protocolName, params, error);
       await emitOutgoingMessage(router, outgoingData);
       throw error;
@@ -148,7 +149,7 @@ export class ProtocolRunner {
   }
 }
 
-function getOutgoingEventFailureDataFromProtocol(
+export function getOutgoingEventFailureDataFromProtocol(
   protocol: ProtocolName,
   params: ProtocolParam,
   error: Error,
@@ -204,7 +205,7 @@ function getOutgoingEventFailureDataFromProtocol(
   }
 }
 
-function emitOutgoingMessage(router: RpcRouter, msg: Message) {
+export function emitOutgoingMessage(router: RpcRouter, msg: Message) {
   console.error(`protocol runner emitting: ${stringify(msg)}`);
   return router.emit(msg["type"], msg, "outgoing");
 }

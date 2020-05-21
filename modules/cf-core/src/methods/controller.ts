@@ -1,9 +1,13 @@
-import { MethodName, MethodParam, MethodResult } from "@connext/types";
+import { MethodName, MethodParam, MethodResult, ProtocolNames } from "@connext/types";
 import { Controller } from "rpc-server";
 import { ColorfulLogger, logTime } from "@connext/utils";
 
 import { RequestHandler } from "../request-handler";
 import { StateChannel } from "../models/state-channel";
+import {
+  getOutgoingEventFailureDataFromProtocol,
+  emitOutgoingMessage,
+} from "../machine/protocol-runner";
 
 export abstract class NodeController extends Controller {
   public static readonly methodName: MethodName;
@@ -57,7 +61,14 @@ export abstract class NodeController extends Controller {
       logTime(log, substart, "After execution complete");
       substart = Date.now();
     } catch (e) {
-      console.error(`caught error in abstract controller: ${e.message || e.stack}`);
+      console.error(`caught error in abstract controller: ${e.message}, emitting message`);
+      // console.log(params);
+      // const outgoingData = getOutgoingEventFailureDataFromProtocol(
+      //   ProtocolNames.propose,
+      //   params as any,
+      //   e,
+      // );
+      // await emitOutgoingMessage(requestHandler.router, outgoingData);
       throw e;
     } finally {
       if (lockName !== "") {

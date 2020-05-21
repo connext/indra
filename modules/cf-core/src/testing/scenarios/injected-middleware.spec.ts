@@ -66,7 +66,7 @@ describe("injected validation middleware", () => {
       CF_METHOD_TIMEOUT / 1000
     }s waiting for counterparty reply in setup`;
     const FAILURE_MESSAGE = "Middleware failed";
-    const middleware: any = (protocol, context) => {
+    const middleware: any = (protocol: any, context: any) => {
       throw new Error(FAILURE_MESSAGE);
     };
     nodeB.injectMiddleware(Opcode.OP_VALIDATE, middleware);

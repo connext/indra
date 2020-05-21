@@ -170,12 +170,8 @@ export class Node {
     }
     this.protocolRunner.register(opcode, async (args: [ProtocolName, MiddlewareContext]) => {
       const [protocol, context] = args;
-      try {
-        await middleware(protocol, context);
-        return undefined;
-      } catch (e) {
-        return e.stack || e.message;
-      }
+      await middleware(protocol, context);
+      return undefined;
     });
   }
 
