@@ -67,7 +67,8 @@ export abstract class NodeController extends Controller {
       try {
         await requestHandler.lockService.releaseLock(lockName, lockValue);
       } catch (e) {
-        log.error(`caught error trying to release lock: ${e.stack || e.message}`);
+        log.error(`Caught error trying to release lock: ${e.stack || e.message}`);
+        error = error || e;
       }
       logTime(log, substart, "Released lock");
       substart = Date.now();
