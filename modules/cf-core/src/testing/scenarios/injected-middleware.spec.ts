@@ -30,10 +30,7 @@ describe("injected validation middleware", () => {
     multisigAddress = await getCreate2MultisigAddress(
       nodeA.publicIdentifier,
       nodeB.publicIdentifier,
-      {
-        proxyFactory: nodeA.networkContext.ProxyFactory,
-        multisigMastercopy: nodeA.networkContext.MinimumViableMultisig,
-      },
+      nodeA.networkContext.contractAddresses,
       nodeA.networkContext.provider,
     );
   });

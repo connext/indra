@@ -10,7 +10,7 @@ import { parseEther } from "ethers/utils";
 import { Node } from "../../node";
 
 import { toBeLt } from "../bignumber-jest-matcher";
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import { validAction } from "../tic-tac-toe";
 import {
@@ -25,7 +25,7 @@ expect.extend({ toBeLt });
 
 jest.setTimeout(7500);
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - toke action", () => {
   let multisigAddress: string;

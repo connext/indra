@@ -125,7 +125,7 @@ export class SignedTransferService {
       const depositReceipt = await this.depositService.deposit(receiverChannel, deposit, assetId);
       if (!depositReceipt) {
         throw new Error(
-          `Could not deposit sufficient collateral to resolve linked transfer for reciever: ${userIdentifier}`,
+          `Could not deposit sufficient collateral to resolve linked transfer for receiver: ${userIdentifier}`,
         );
       }
     }

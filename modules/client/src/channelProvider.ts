@@ -97,7 +97,7 @@ export const createCFChannelProvider = async ({
   // register any default middlewares
   cfCore.injectMiddleware(
     Opcode.OP_VALIDATE,
-    await generateValidationMiddleware(contractAddresses),
+    await generateValidationMiddleware({ provider: ethProvider, contractAddresses }),
   );
 
   const connection = new CFCoreRpcConnection(cfCore, store, signer, node, logger);

@@ -4,7 +4,7 @@ import { One, Two, Zero } from "ethers/constants";
 import { Node } from "../../node";
 
 import { toBeEq } from "../bignumber-jest-matcher";
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
@@ -19,7 +19,7 @@ import { isHexString } from "ethers/utils";
 
 expect.extend({ toBeEq });
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 function assertUninstallMessage(
   senderId: string,

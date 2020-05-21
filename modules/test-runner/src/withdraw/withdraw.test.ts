@@ -36,7 +36,7 @@ describe("Withdrawal", () => {
   beforeEach(async () => {
     client = await createClient();
     nats = getNatsClient();
-    tokenAddress = client.config.contractAddresses.Token;
+    tokenAddress = client.config.contractAddresses.Token!;
 
     const REBALANCE_PROFILE_ETH: RebalanceProfile = {
       assetId: AddressZero,

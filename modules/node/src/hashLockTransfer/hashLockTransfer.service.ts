@@ -135,7 +135,7 @@ export class HashLockTransferService {
       );
       if (!depositReceipt) {
         throw new Error(
-          `Could not deposit sufficient collateral to resolve hash lock transfer app for reciever: ${receiverIdentifier}`,
+          `Could not deposit sufficient collateral to resolve hash lock transfer app for receiver: ${receiverIdentifier}`,
         );
       }
     }

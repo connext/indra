@@ -48,10 +48,8 @@ export async function handleReceivedProtocolMessage(
       json && StateChannel.fromJson(json),
     );
     postProtocolStateChannel = channel;
-  } catch (error) {
-    // error events are thrown from WITHIN the protocol runner
-    // to ensure they are always emitted symmetrically
-    log.error(`Caught error running protocol, aborting. Error: ${error.stack || error.message}`);
+  } catch (e) {
+    log.error(`Caught error running protocol, aborting. Error: ${e.stack}`);
     return;
   }
 

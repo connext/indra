@@ -61,11 +61,11 @@ const fundChannelAndSwap = async (opts: {
 
   const input = {
     amount: inputAmount,
-    assetId: tokenToEth ? client.config.contractAddresses.Token : AddressZero,
+    assetId: tokenToEth ? client.config.contractAddresses.Token! : AddressZero,
   };
   const output = {
     amount: outputAmount,
-    assetId: tokenToEth ? AddressZero : client.config.contractAddresses.Token,
+    assetId: tokenToEth ? AddressZero : client.config.contractAddresses.Token!,
   };
   await fundChannel(client, input.amount, input.assetId);
   await requestCollateral(client, output.assetId);

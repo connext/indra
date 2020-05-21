@@ -9,7 +9,7 @@ import Typography from "@material-ui/core/Typography";
 const emptyResult = {
   legacyKeygen: "",
   proxyFactory: "",
-  multisigMastercopy: "",
+  minimumViableMultisig: "",
   toxicBytecode: "",
 };
 
@@ -40,7 +40,7 @@ export const ScanCriticalAddresses = ({ messaging }) => {
     if (res) {
       console.log("MATCH DETECTED");
       console.log(`legacyKeygen:  ${res.legacyKeygen}`);
-      console.log(`mastercopy:    ${res.multisigMastercopy}`);
+      console.log(`mastercopy:    ${res.minimumViableMultisig}`);
       console.log(`factory:       ${res.proxyFactory}`);
       console.log(`toxicBytecode: ${res.toxicBytecode}`);
     } else {
@@ -88,7 +88,7 @@ export const ScanCriticalAddresses = ({ messaging }) => {
       <br /> <br />
       <Typography align={"left"}>Legacy Keygen: {result.legacyKeygen.toString()}</Typography>
       <Typography align={"left"}>Proxy Factory: {result.proxyFactory}</Typography>
-      <Typography align={"left"}>Multisig Mastercopy: {result.multisigMastercopy}</Typography>
+      <Typography align={"left"}>Multisig Mastercopy: {result.minimumViableMultisig}</Typography>
       <Typography align={"left"}>Toxic Bytecode: {result.toxicBytecode}</Typography>
     </Grid>
   );

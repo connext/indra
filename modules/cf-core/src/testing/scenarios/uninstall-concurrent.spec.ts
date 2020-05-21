@@ -9,7 +9,7 @@ import { parseEther } from "ethers/utils";
 
 import { Node } from "../../node";
 
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { toBeLt } from "../bignumber-jest-matcher";
 
 import { setup, SetupContext } from "../setup";
@@ -25,7 +25,7 @@ expect.extend({ toBeLt });
 
 jest.setTimeout(7500);
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - uninstall", () => {
   let multisigAddress: string;

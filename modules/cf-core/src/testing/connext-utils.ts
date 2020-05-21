@@ -4,7 +4,7 @@ import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { Node } from "../node";
 
-import { NetworkContextForTestSuite } from "./contracts";
+import { TestContractAddresses } from "./contracts";
 import { getAppInstance, getApps, installApp, takeAppAction, uninstallApp } from "./utils";
 
 type UnidirectionalLinkedTransferAppAction = {
@@ -27,7 +27,7 @@ type CoinTransfer = {
   amount: BigNumber;
 };
 
-const { UnidirectionalLinkedTransferApp } = global["network"] as NetworkContextForTestSuite;
+const { UnidirectionalLinkedTransferApp } = global["contracts"] as TestContractAddresses;
 
 export async function installLink(
   funder: Node,

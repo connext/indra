@@ -1,11 +1,11 @@
 import { Node } from "../../node";
 import { INVALID_ACTION } from "../../errors";
 
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { constructTakeActionRpc, createChannel, installApp } from "../utils";
 import { setup, SetupContext } from "../setup";
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - fails with improper action taken", () => {
   let nodeA: Node;

@@ -53,7 +53,7 @@ describe("Deposits", () => {
 
   beforeEach(async () => {
     client = await createClient();
-    tokenAddress = client.config.contractAddresses.Token;
+    tokenAddress = client.config.contractAddresses.Token!;
     nodeSignerAddress = client.nodeSignerAddress;
   });
 
@@ -100,7 +100,7 @@ describe("Deposits", () => {
     await expect(
       client.deposit({
         amount: (await getOnchainBalance(client.signerAddress, tokenAddress)).add(1).toString(),
-        assetId: client.config.contractAddresses.Token,
+        assetId: client.config.contractAddresses.Token!,
       }),
     ).to.be.rejectedWith("is not less than or equal to");
   });
@@ -116,7 +116,7 @@ describe("Deposits", () => {
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
     const { appIdentityHash } = await client.checkDepositRights({
-      assetId: client.config.contractAddresses.Token,
+      assetId: client.config.contractAddresses.Token!,
     });
     expect(appIdentityHash).to.be.undefined;
   });

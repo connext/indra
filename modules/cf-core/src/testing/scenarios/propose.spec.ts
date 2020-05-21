@@ -4,7 +4,7 @@ import { deBigNumberifyJson, stringify } from "@connext/utils";
 import { Node } from "../../node";
 
 import { toBeLt } from "../bignumber-jest-matcher";
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
@@ -17,7 +17,7 @@ import {
 
 expect.extend({ toBeLt });
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 async function assertEqualProposedApps(
   nodeA: Node,

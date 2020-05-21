@@ -50,8 +50,8 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     // 56 ms
     const stateChannel = StateChannel.setupChannel(
-      network.IdentityApp,
-      { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
+      network.contractAddresses.IdentityApp,
+      network.contractAddresses,
       multisigAddress,
       initiatorIdentifier,
       responderIdentifier,
@@ -161,8 +161,8 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     // 73 ms
     const stateChannel = StateChannel.setupChannel(
-      network.IdentityApp,
-      { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
+      network.contractAddresses.IdentityApp,
+      network.contractAddresses,
       multisigAddress,
       initiatorIdentifier,
       responderIdentifier,
