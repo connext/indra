@@ -18,7 +18,7 @@ export const APP_PROTOCOL_TOO_LONG = (protocol: ProtocolName): string => {
 };
 export const CLIENT_INSTALL_FAILED = (wasRejected: boolean = false): string => {
   const prefix = wasRejected ? `Proposal was rejected` : `Install protocol failed`;
-  return `Error: ${prefix}. Event data:`;
+  return `${prefix}. Event data:`;
 };
 export const MESSAGE_FAILED_TO_SEND = (reason?: string): string =>
   `Failed to send message: ${reason}`;
