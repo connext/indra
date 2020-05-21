@@ -13,18 +13,19 @@ import {
   stringify,
 } from "@connext/utils";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
+import { Contract } from "ethers";
+import { Zero } from "ethers/constants";
+import { JsonRpcProvider } from "ethers/providers";
 
 import { baseCoinTransferValidation } from "../shared";
-import { Zero } from "ethers/constants";
-import { Contract } from "ethers";
-import { BaseProvider, JsonRpcProvider } from "ethers/providers";
+
 
 export const validateDepositApp = async (
   params: MethodParams.ProposeInstall,
   initiatorIdentifier: string,
   responderIdentifier: string,
   multisigAddress: string,
-  provider: BaseProvider,
+  provider: JsonRpcProvider,
 ) => {
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as DepositAppState;
@@ -120,6 +121,10 @@ export const uninstallDepositMiddleware = async (
   provider: JsonRpcProvider,
 ) => {
   const { role, appInstance, stateChannel, params } = context;
+
+  if (!provider || !provider.getBalance) {
+    throw new Error(`Uninstall deposit middleware needs access to a provider, got ${JSON.stringify(provider, null, 2)}`);
+  }
 
   const latestState = appInstance.latestState as DepositAppState;
   const currentMultisigBalance =

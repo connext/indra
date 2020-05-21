@@ -4,17 +4,17 @@ import {
   ChallengeStatus,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
+  ContractAddresses,
   IBackupServiceAPI,
   MinimalTransaction,
-  NetworkContext,
   OutcomeType,
   SetStateCommitmentJSON,
   StateChannelJSON,
   StateProgressedEventPayload,
   StoredAppChallenge,
+  StoredAppChallengeStatus,
   StoreFactoryOptions,
   StorePair,
-  StoredAppChallengeStatus,
 } from "@connext/types";
 import { ColorfulLogger, toBN, toBNJson, getRandomBytes32 } from "@connext/utils";
 import { expect, use } from "chai";
@@ -100,8 +100,8 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
   schemaVersion: 1,
   multisigAddress: TEST_STORE_ETH_ADDRESS,
   addresses: {
-    multisigMastercopy: TEST_STORE_ETH_ADDRESS,
-    proxyFactory: TEST_STORE_ETH_ADDRESS,
+    MinimumViableMultisig: TEST_STORE_ETH_ADDRESS,
+    ProxyFactory: TEST_STORE_ETH_ADDRESS,
   },
   userIdentifiers: ["address1", "address2"],
   proposedAppInstances: [[TEST_STORE_PROPOSAL.identityHash, TEST_STORE_PROPOSAL]],
@@ -137,12 +137,12 @@ export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
 
 export const TEST_STORE_CONDITIONAL_COMMITMENT: ConditionalTransactionCommitmentJSON = {
   appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
+  contractAddresses: {} as ContractAddresses,
   freeBalanceAppIdentityHash: "conditionalFreeBalance",
   interpreterAddr: TEST_STORE_ETH_ADDRESS,
   interpreterParams: "conditionalInterpreter",
   multisigAddress: TEST_STORE_ETH_ADDRESS,
   multisigOwners: TEST_STORE_CHANNEL.userIdentifiers,
-  networkContext: {} as NetworkContext,
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
 

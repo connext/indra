@@ -1,6 +1,10 @@
 import { stringify } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 
+export const NO_MULTISIG_IN_PARAMS = (params: any): string => {
+  return `No multisig address provided in params: ${stringify(params)}`;
+};
+
 export const APP_ALREADY_UNINSTALLED = (appIdentityHash: string): string =>
   `Cannot uninstall app ${appIdentityHash}, it has already been uninstalled`;
 

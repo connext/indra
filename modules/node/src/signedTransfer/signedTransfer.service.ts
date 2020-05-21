@@ -13,7 +13,7 @@ import { Zero } from "ethers/constants";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelService, RebalanceType } from "../channel/channel.service";
+import { ChannelService } from "../channel/channel.service";
 import { DepositService } from "../deposit/deposit.service";
 import { LoggerService } from "../logger/logger.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
@@ -125,7 +125,7 @@ export class SignedTransferService {
       const depositReceipt = await this.depositService.deposit(receiverChannel, deposit, assetId);
       if (!depositReceipt) {
         throw new Error(
-          `Could not deposit sufficient collateral to resolve linked transfer for reciever: ${userIdentifier}`,
+          `Could not deposit sufficient collateral to resolve linked transfer for receiver: ${userIdentifier}`,
         );
       }
     }

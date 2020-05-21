@@ -181,6 +181,7 @@ export class SwapController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositAssetId: fromTokenAddress,
+      multisigAddress: this.connext.multisigAddress,
       outcomeType: appInfo.outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: swappedAmount,

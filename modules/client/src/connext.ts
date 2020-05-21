@@ -5,11 +5,11 @@ import {
   AppInstanceJson,
   AppInstanceProposal,
   AppRegistry,
-  AppState,
   AssetId,
   ChannelMethods,
   ChannelProviderConfig,
   ConditionalTransferTypes,
+  CONVENTION_FOR_ETH_ASSET_ID,
   DefaultApp,
   DepositAppName,
   DepositAppState,
@@ -19,6 +19,7 @@ import {
   IClientStore,
   IConnextClient,
   ILoggerService,
+  IMessagingService,
   INodeApiClient,
   MethodNames,
   MethodParams,
@@ -30,12 +31,11 @@ import {
   RebalanceProfile,
   SimpleLinkedTransferAppName,
   SimpleTwoPartySwapAppName,
-  WithdrawAppName,
-  CONVENTION_FOR_ETH_ASSET_ID,
-  IMessagingService,
   WithdrawalMonitorObject,
+  WithdrawAppName,
 } from "@connext/types";
 import {
+  delay,
   getRandomBytes32,
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
@@ -154,7 +154,7 @@ export class ConnextClient implements IConnextClient {
           return chan && chan.available;
         };
         while (!(await channelIsAvailable())) {
-          await new Promise((res: any): any => setTimeout((): void => res(), 100));
+          await delay(100);
         }
         resolve();
       },
@@ -605,16 +605,17 @@ export class ConnextClient implements IConnextClient {
       action,
       appIdentityHash,
       stateTimeout,
+      multisigAddress: this.multisigAddress,
     } as MethodParams.TakeAction);
   };
 
   public proposeInstallApp = async (
     params: MethodParams.ProposeInstall,
   ): Promise<MethodResults.ProposeInstall> => {
-    return this.channelProvider.send(
-      MethodNames.chan_proposeInstall,
-      params as MethodParams.ProposeInstall,
-    );
+    return this.channelProvider.send(MethodNames.chan_proposeInstall, {
+      ...(params as MethodParams.ProposeInstall),
+      multisigAddress: this.multisigAddress,
+    });
   };
 
   public installApp = async (appIdentityHash: string): Promise<MethodResults.Install> => {
@@ -625,6 +626,7 @@ export class ConnextClient implements IConnextClient {
     }
     return this.channelProvider.send(MethodNames.chan_install, {
       appIdentityHash,
+      multisigAddress: this.multisigAddress,
     } as MethodParams.Install);
   };
 
@@ -637,13 +639,15 @@ export class ConnextClient implements IConnextClient {
     }
     return this.channelProvider.send(MethodNames.chan_uninstall, {
       appIdentityHash,
+      multisigAddress: this.multisigAddress,
     } as MethodParams.Uninstall);
   };
 
   public rejectInstallApp = async (appIdentityHash: string): Promise<MethodResults.Uninstall> => {
     return this.channelProvider.send(MethodNames.chan_rejectInstall, {
       appIdentityHash,
-    });
+      multisigAddress: this.multisigAddress,
+    } as MethodParams.RejectInstall);
   };
 
   ///////////////////////////////////

@@ -80,10 +80,11 @@ export class ConfigService implements OnModuleInit {
     chainId = chainId ? chainId : (await this.getEthNetwork()).chainId.toString();
     const ethAddresses = {} as any;
     const ethAddressBook = this.getEthAddressBook();
-    Object.keys(ethAddressBook[chainId]).map(
+    Object.keys(ethAddressBook[chainId]).forEach(
       (contract: string) =>
         (ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address)),
     );
+    console.log(`Got contract addresses: ${JSON.stringify(ethAddresses)}`);
     return ethAddresses as ContractAddresses;
   }
 
@@ -267,6 +268,30 @@ export class ConfigService implements OnModuleInit {
       id: 0,
       collateralizeThreshold: parseEther(`5`),
       target: parseEther(`20`),
+      reclaimThreshold: Zero,
+    };
+  }
+
+  @Memoize()
+  async getZeroRebalanceProfile(
+    assetId: string = AddressZero,
+  ): Promise<RebalanceProfile | undefined> {
+    if (assetId === AddressZero) {
+      return {
+        assetId: AddressZero,
+        channels: [],
+        id: 0,
+        collateralizeThreshold: Zero,
+        target: Zero,
+        reclaimThreshold: Zero,
+      };
+    }
+    return {
+      assetId,
+      channels: [],
+      id: 0,
+      collateralizeThreshold: Zero,
+      target: Zero,
       reclaimThreshold: Zero,
     };
   }

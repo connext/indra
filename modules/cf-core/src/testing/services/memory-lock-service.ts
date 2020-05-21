@@ -19,7 +19,7 @@ export class MemoryLockService implements ILockService {
       lock = this.locks.get(lockName)!.lock;
     }
     const releaser = await lock.acquire();
-    const timer = setTimeout(() => this.releaseLock(lockName), IO_SEND_AND_WAIT_TIMEOUT + 100);
+    const timer = setTimeout(() => this.releaseLock(lockName), IO_SEND_AND_WAIT_TIMEOUT + 1_000);
     this.locks.set(lockName, { lock, releaser, timer });
   }
 

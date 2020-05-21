@@ -75,7 +75,7 @@ describe("Get State Channel", () => {
 
   beforeEach(async () => {
     clientA = await createClient();
-    tokenAddress = clientA.config.contractAddresses.Token;
+    tokenAddress = clientA.config.contractAddresses.Token!;
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
   });
@@ -145,12 +145,12 @@ describe("Get State Channel", () => {
     const channel = await clientA.store.getStateChannel(clientA.multisigAddress);
 
     expect(channel).to.be.ok;
-    expect(channel!.addresses.proxyFactory).to.be.eq(
-      (await clientA.getStateChannel()).data.addresses.proxyFactory,
+    expect(channel!.addresses.ProxyFactory).to.be.eq(
+      (await clientA.getStateChannel()).data.addresses.ProxyFactory,
     );
 
-    (channel as any).addresses.proxyFactory = null;
-    expect(channel!.addresses.proxyFactory).to.not.be.ok;
+    (channel as any).addresses.ProxyFactory = null;
+    expect(channel!.addresses.ProxyFactory).to.not.be.ok;
     await clientA.store.createStateChannel(
       channel!,
       TEST_STORE_MINIMAL_TX,
