@@ -78,7 +78,7 @@ const recreateClientAndRetryDepositCall = async (
  * point in the protocol.
  */
 
-describe.only("Deposit offline tests", () => {
+describe("Deposit offline tests", () => {
   let client: IConnextClient;
   let signer: IChannelSigner;
   let store: IClientStore;
