@@ -68,20 +68,16 @@ const fundChannelAndSwap = async (opts: {
   await fundChannel(client, input.amount, input.assetId);
   await requestCollateral(client, output.assetId);
   const preSwapFb = await client.getFreeBalance(output.assetId);
-  console.log(`channel funded and collateralized, beginning real test...`);
 
   // check if its a failure case
   if (failsWith) {
     if (!failureEvent) {
-      console.log(`trying to send failing call....`);
       await expect(swapAsset(client, input, output, client.nodeSignerAddress)).to.be.rejectedWith(
         failsWith,
       );
-      console.log(`asserted failure!`);
     } else {
       await new Promise(async (resolve, reject) => {
         client.once(failureEvent as any, (msg) => {
-          console.log(`caught ${failureEvent} with ${stringify(msg)}`);
           try {
             expect(msg).to.containSubset({
               type: failureEvent,
@@ -95,11 +91,9 @@ const fundChannelAndSwap = async (opts: {
           }
         });
         try {
-          console.log(`trying to send failing call....`);
           await expect(
             swapAsset(client, input, output, client.nodeSignerAddress),
           ).to.be.rejectedWith(failsWith);
-          console.log(`asserted failure!`);
         } catch (e) {
           return reject(e);
         }
