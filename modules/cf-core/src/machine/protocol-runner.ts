@@ -20,7 +20,6 @@ import { Context } from "../types";
 import { MiddlewareContainer } from "./middleware";
 import { StateChannel } from "../models";
 import RpcRouter from "../rpc-router";
-import { stringify } from "@connext/utils";
 
 function firstRecipientFromProtocolName(protocolName: ProtocolName) {
   if (Object.values(ProtocolNames).includes(protocolName)) {
@@ -75,7 +74,7 @@ export class ProtocolRunner {
     preProtocolStateChannel?: StateChannel,
   ) {
     try {
-      const protocolRet = this.runProtocol(
+      const protocolRet = await this.runProtocol(
         getProtocolFromName(protocolName)[0],
         {
           params,
@@ -89,7 +88,6 @@ export class ProtocolRunner {
       );
       return protocolRet;
     } catch (error) {
-      console.log(`CAUGHT ERROR RUNNING PROTOCOL, EMITTING EVENT`);
       const outgoingData = getOutgoingEventFailureDataFromProtocol(protocolName, params, error);
       await emitOutgoingMessage(router, outgoingData);
       throw error;
@@ -203,6 +201,5 @@ export function getOutgoingEventFailureDataFromProtocol(
 }
 
 export function emitOutgoingMessage(router: RpcRouter, msg: Message) {
-  console.error(`protocol runner emitting: ${stringify(msg)}`);
   return router.emit(msg["type"], msg, "outgoing");
 }
