@@ -1,5 +1,5 @@
 import { AssetId, CONVENTION_FOR_ETH_ASSET_ID, EventNames, IConnextClient } from "@connext/types";
-import { ColorfulLogger, getAddressFromAssetId, delayAndThrow } from "@connext/utils";
+import { ColorfulLogger, getAddressFromAssetId, delayAndThrow, stringify } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 
 import { env, expect } from "../";
@@ -19,10 +19,20 @@ export const fundChannel = async (
       const expected = prevFreeBalance[client.signerAddress].add(amount);
       expect(freeBalance[client.signerAddress]).to.equal(expected);
       log.info(`Got deposit confirmed event, helper wrapper is returning`);
-      resolve();
+      return resolve();
     });
+    // register failure listeners
     client.once(EventNames.DEPOSIT_FAILED_EVENT, async (msg: any) => {
-      reject(new Error(JSON.stringify(msg)));
+      return reject(new Error(`Failed deposit: ${stringify(msg)}`));
+    });
+    client.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async (msg: any) => {
+      return reject(new Error(`Failed to propose deposit app: ${stringify(msg)}`));
+    });
+    client.once(EventNames.INSTALL_FAILED_EVENT, async (msg: any) => {
+      return reject(new Error(`Failed to install deposit: ${stringify(msg)}`));
+    });
+    client.once(EventNames.UNINSTALL_FAILED_EVENT, async (msg: any) => {
+      return reject(new Error(`Failed to uninstall deposit: ${stringify(msg)}`));
     });
 
     try {
