@@ -61,11 +61,21 @@ export abstract class AbstractController {
       // 1676 ms TODO: why does this step take so long?
       await Promise.race([
         new Promise((resolve, reject) => {
-          boundInstallFailed = this.rejectInstall.bind(null, reject, appIdentityHash);
+          boundInstallFailed = this.rejectInstall.bind(
+            null,
+            reject,
+            appIdentityHash,
+            `Install protocol failed`,
+          );
           this.listener.on(EventNames.INSTALL_FAILED_EVENT, boundInstallFailed);
         }),
         new Promise((resolve, reject) => {
-          boundReject = this.rejectInstall.bind(null, reject, appIdentityHash);
+          boundReject = this.rejectInstall.bind(
+            null,
+            reject,
+            appIdentityHash,
+            `Proposal was rejected`,
+          );
           this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
         }),
         new Promise((resolve) => {
@@ -95,12 +105,13 @@ export abstract class AbstractController {
   private rejectInstall = (
     rej: (message?: Error) => void,
     appIdentityHash: string,
+    prefix: string,
     message: any,
   ): void => {
     // check app id
     const data = message.data && message.data.data ? message.data.data : message.data || message;
     if (data.appIdentityHash === appIdentityHash) {
-      return rej(new Error(`Install failed. Event data: ${stringify(message)}`));
+      return rej(new Error(`${prefix}. Event data: ${stringify(message)}`));
     }
     return;
   };
