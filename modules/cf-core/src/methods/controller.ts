@@ -57,6 +57,7 @@ export abstract class NodeController extends Controller {
       logTime(log, substart, "After execution complete");
       substart = Date.now();
     } catch (e) {
+      console.error(`caught error in abstract controller: ${e.message || e.stack}`);
       throw e;
     } finally {
       if (lockName !== "") {

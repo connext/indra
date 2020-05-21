@@ -21,6 +21,7 @@ import { Context } from "../types";
 import { MiddlewareContainer } from "./middleware";
 import { StateChannel } from "../models";
 import RpcRouter from "../rpc-router";
+import { stringify } from "@connext/utils";
 
 function firstRecipientFromProtocolName(protocolName: ProtocolName) {
   if (Object.values(ProtocolNames).includes(protocolName)) {
@@ -198,11 +199,12 @@ function getOutgoingEventFailureDataFromProtocol(
     }
     default: {
       const unexpected: never = protocol;
-      throw new Error(`[getOutgoingEventFailureDataFromProtocol] Unexpected case: ${unexpected}`);
+      throw new Error(`Unexpected case: ${unexpected}`);
     }
   }
 }
 
 function emitOutgoingMessage(router: RpcRouter, msg: Message) {
+  console.error(`protocol runner emitting: ${stringify(msg)}`);
   return router.emit(msg["type"], msg, "outgoing");
 }

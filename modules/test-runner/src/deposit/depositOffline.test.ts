@@ -1,4 +1,11 @@
-import { IConnextClient, IChannelSigner, IClientStore, ProtocolNames } from "@connext/types";
+import {
+  IConnextClient,
+  IChannelSigner,
+  IClientStore,
+  ProtocolNames,
+  EventNames,
+  CONVENTION_FOR_ETH_ASSET_ID,
+} from "@connext/types";
 import { getMemoryStore } from "@connext/store";
 import * as lolex from "lolex";
 
@@ -22,7 +29,7 @@ import {
 } from "../util";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
-import { getRandomChannelSigner } from "@connext/utils";
+import { getRandomChannelSigner, stringify } from "@connext/utils";
 import { addressBook } from "@connext/contracts";
 
 const makeDepositCall = async (opts: {
@@ -89,7 +96,7 @@ const recreateClientAndRetryDepositCall = async (
  * point in the protocol.
  */
 
-describe("Deposit offline tests", () => {
+describe.only("Deposit offline tests", () => {
   let clock: any;
   let client: IConnextClient;
   let signer: IChannelSigner;
@@ -149,7 +156,7 @@ describe("Deposit offline tests", () => {
     await recreateClientAndRetryDepositCall(signer, client, store);
   });
 
-  it("client proposes deposit, but node only receives the NATS message after timeout is over", async () => {
+  it.only("client tries to propose deposit, but first message in propose protocol fails", async () => {
     // cf method timeout is 90s, client will send any messages with a
     // preconfigured delay
     client = await createClientWithMessagingLimits({
@@ -158,14 +165,25 @@ describe("Deposit offline tests", () => {
       params: { appDefinition: addressBook[4447].DepositApp.address },
       signer,
     });
+    // await fundChannel(client, ETH_AMOUNT_SM, CONVENTION_FOR_ETH_ASSET_ID);
 
-    await makeDepositCall({
-      client,
-      clock,
-      failsWith: `App proposal took longer than 90 seconds`,
-      subjectToFastforward: SEND,
-      protocol: ProtocolNames.propose,
+    const failureEvent = await new Promise(async (resolve, reject) => {
+      client.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT, (msg) => {
+        console.log(`got propose failed event`);
+        return resolve(msg);
+      });
+      console.log(`making deposit call`);
+      await makeDepositCall({
+        client,
+        clock,
+        failsWith: `Error`,
+        subjectToFastforward: SEND,
+        protocol: ProtocolNames.propose,
+      });
+      console.log(`failed, waiting for event`);
     });
+    console.log(`failureEvent: ${stringify(failureEvent)}`);
+    expect(failureEvent).to.be.ok;
 
     const messaging = client.messaging! as TestMessagingService;
     expect(messaging.proposeCount[SEND]).to.be.eq(0);
