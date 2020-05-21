@@ -143,7 +143,6 @@ export class ConnextListener extends ConnextEventEmitter {
       this.emitAndLog(PROPOSE_INSTALL_EVENT, msg.data);
     },
     PROPOSE_INSTALL_FAILED_EVENT: (data: EventPayloads.ProposeFailed): void => {
-      console.log(`got proposal failed event: ${stringify(data)}`);
       this.emitAndLog(PROPOSE_INSTALL_FAILED_EVENT, data);
     },
     PROTOCOL_MESSAGE_EVENT: (msg: ProtocolMessage): void => {
