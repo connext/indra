@@ -78,7 +78,6 @@ export abstract class AbstractController {
       this.log.info(`Installed app with id: ${appIdentityHash}`);
       return appIdentityHash;
     } catch (e) {
-      console.error(`caught error: ${e.message}`);
       this.log.error(`Error installing app: ${e.stack || e.message}`);
       throw e;
     } finally {
