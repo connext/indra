@@ -15,9 +15,9 @@ import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { env } from "../setup";
 import { Node } from "../../node";
 import { createChannel, assertMessage, makeProposeCall } from "../utils";
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Sync", () => {
   let nodeA: Node;
