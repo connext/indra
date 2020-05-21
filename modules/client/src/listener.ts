@@ -164,12 +164,12 @@ export class ConnextListener extends ConnextEventEmitter {
       this.emitAndLog(UNINSTALL_FAILED_EVENT, data);
     },
     UPDATE_STATE_EVENT: async (msg: UpdateStateMessage): Promise<void> => {
-      this.emitAndLog(UPDATE_STATE_EVENT, msg.data);
       await this.handleAppUpdate(
         msg.data.appIdentityHash,
         msg.data.newState as AppState,
         msg.data.action as AppAction,
       );
+      this.emitAndLog(UPDATE_STATE_EVENT, msg.data);
     },
     UPDATE_STATE_FAILED_EVENT: (data: EventPayloads.UpdateStateFailed): void => {
       this.emitAndLog(UPDATE_STATE_FAILED_EVENT, data);
