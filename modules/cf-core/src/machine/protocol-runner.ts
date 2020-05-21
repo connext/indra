@@ -10,7 +10,6 @@ import {
   ProtocolParam,
   ProtocolParams,
 } from "@connext/types";
-import { JsonRpcProvider } from "ethers/providers";
 import { v4 as uuid } from "uuid";
 
 import { getProtocolFromName } from "../protocol";
@@ -31,11 +30,9 @@ export class ProtocolRunner {
 
   constructor(
     public readonly network: NetworkContext,
-    public readonly provider: JsonRpcProvider,
     public readonly store: IStoreService,
     public readonly log: ILoggerService,
   ) {
-    this.network.provider = network.provider || provider;
     this.middlewares = new MiddlewareContainer();
   }
 

@@ -2,7 +2,7 @@ import { StateChannelJSON } from "@connext/types";
 import { bigNumberifyJson, getRandomAddress, getRandomBytes32, toBN } from "@connext/utils";
 import { getAddress, BigNumberish } from "ethers/utils";
 
-import { generateRandomNetworkContext } from "../../testing/mocks";
+import { getRandomContractAddresses } from "../../testing/mocks";
 
 import { StateChannel } from "../state-channel";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
@@ -15,11 +15,11 @@ describe("StateChannel", () => {
     const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
 
-    const { ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
+    const { ProxyFactory, MinimumViableMultisig } = getRandomContractAddresses();
 
     const sc = new StateChannel(
       multisigAddress,
-      { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
+      { ProxyFactory, MinimumViableMultisig },
       initiator,
       responder,
     );
@@ -36,7 +36,7 @@ describe("StateChannel", () => {
   describe("addActiveAppAndIncrementFreeBalance", () => {
     const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
-    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
+    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = getRandomContractAddresses();
     const tokenAddress = getAddress(getRandomAddress());
     const identityHash = getRandomBytes32();
     const channelInitialDeposit = toBN(15);
@@ -52,7 +52,7 @@ describe("StateChannel", () => {
     beforeEach(() => {
       const init = StateChannel.setupChannel(
         IdentityApp,
-        { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
+        { ProxyFactory, MinimumViableMultisig },
         multisigAddress,
         initiator,
         responder,
@@ -146,13 +146,13 @@ describe("StateChannel", () => {
     let sc: StateChannel;
     let json: StateChannelJSON;
 
-    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
+    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = getRandomContractAddresses();
 
     beforeAll(() => {
       // NOTE: this functionality is tested in `setup-channel.spec`
       sc = StateChannel.setupChannel(
         IdentityApp,
-        { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
+        { ProxyFactory, MinimumViableMultisig },
         multisigAddress,
         initiator,
         responder,
@@ -182,10 +182,10 @@ describe("StateChannel", () => {
     });
 
     test("should have the correct critical state channel addresses", () => {
-      expect(json.addresses.proxyFactory).toEqual(sc.addresses.proxyFactory);
-      expect(sc.addresses.proxyFactory).toEqual(ProxyFactory);
-      expect(json.addresses.multisigMastercopy).toEqual(sc.addresses.multisigMastercopy);
-      expect(sc.addresses.multisigMastercopy).toEqual(MinimumViableMultisig);
+      expect(json.addresses.ProxyFactory).toEqual(sc.addresses.ProxyFactory);
+      expect(sc.addresses.ProxyFactory).toEqual(ProxyFactory);
+      expect(json.addresses.MinimumViableMultisig).toEqual(sc.addresses.MinimumViableMultisig);
+      expect(sc.addresses.MinimumViableMultisig).toEqual(MinimumViableMultisig);
     });
   });
 
@@ -193,7 +193,9 @@ describe("StateChannel", () => {
     const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
 
-    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
+    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = getRandomContractAddresses();
+
+    console.log(`IdentityApp address: ${IdentityApp}`);
 
     let sc: StateChannel;
     let json: StateChannelJSON;
@@ -203,7 +205,7 @@ describe("StateChannel", () => {
       // NOTE: this functionality is tested in `setup-channel.spec`
       sc = StateChannel.setupChannel(
         IdentityApp,
-        { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
+        { ProxyFactory, MinimumViableMultisig },
         multisigAddress,
         initiator,
         responder,

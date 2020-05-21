@@ -1,30 +1,26 @@
-import AppWithAction from "@connext/contracts/build/AppWithAction.json";
-import ChallengeRegistry from "@connext/contracts/build/ChallengeRegistry.json";
-import CounterfactualApp from "@connext/contracts/build/CounterfactualApp.json";
-import SimpleTransferApp from "@connext/contracts/build/SimpleTransferApp.json";
-import TicTacToeApp from "@connext/contracts/build/TicTacToeApp.json";
-import UnidirectionalLinkedTransferApp from "@connext/contracts/build/UnidirectionalLinkedTransferApp.json";
-import UnidirectionalTransferApp from "@connext/contracts/build/UnidirectionalTransferApp.json";
-import DepositApp from "@connext/contracts/build/DepositApp.json";
-import WithdrawApp from "@connext/contracts/build/WithdrawApp.json";
-import ConditionalTransactionDelegateTarget from "@connext/contracts/build/ConditionalTransactionDelegateTarget.json";
-import DolphinCoin from "@connext/contracts/build/DolphinCoin.json";
-import ERC20 from "@connext/contracts/build/ERC20.json";
-import IdentityApp from "@connext/contracts/build/IdentityApp.json";
-import MinimumViableMultisig from "@connext/contracts/build/MinimumViableMultisig.json";
-import MultiAssetMultiPartyCoinTransferInterpreter from "@connext/contracts/build/MultiAssetMultiPartyCoinTransferInterpreter.json";
-import Proxy from "@connext/contracts/build/Proxy.json";
-import ProxyFactory from "@connext/contracts/build/ProxyFactory.json";
-import SingleAssetTwoPartyCoinTransferInterpreter from "@connext/contracts/build/SingleAssetTwoPartyCoinTransferInterpreter.json";
-import TimeLockedPassThrough from "@connext/contracts/build/TimeLockedPassThrough.json";
-import TwoPartyFixedOutcomeApp from "@connext/contracts/build/TwoPartyFixedOutcomeApp.json";
-import TwoPartyFixedOutcomeInterpreter from "@connext/contracts/build/TwoPartyFixedOutcomeInterpreter.json";
-import { NetworkContext } from "@connext/types";
+import {
+  ChallengeRegistry,
+  ConditionalTransactionDelegateTarget,
+  DepositApp,
+  DolphinCoin,
+  IdentityApp,
+  MinimumViableMultisig,
+  MultiAssetMultiPartyCoinTransferInterpreter,
+  ProxyFactory,
+  SimpleTransferApp,
+  SingleAssetTwoPartyCoinTransferInterpreter,
+  TicTacToeApp,
+  TimeLockedPassThrough,
+  TwoPartyFixedOutcomeInterpreter,
+  UnidirectionalLinkedTransferApp,
+  UnidirectionalTransferApp,
+  WithdrawApp,
+} from "@connext/contracts";
+import { ContractAddresses } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 
-export type NetworkContextForTestSuite = NetworkContext & {
-  provider: JsonRpcProvider;
+export type TestContractAddresses = ContractAddresses & {
   TicTacToeApp: string;
   DolphinCoin: string;
   UnidirectionalTransferApp: string;
@@ -34,7 +30,15 @@ export type NetworkContextForTestSuite = NetworkContext & {
   DepositApp: string;
 };
 
-export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> => {
+export type TestNetworkContext = {
+  provider: JsonRpcProvider;
+  contractAddresses: TestContractAddresses;
+};
+
+export const deployTestArtifactsToChain = async (
+  wallet: Wallet,
+): Promise<TestContractAddresses> => {
+
   const depositAppContract = await new ContractFactory(
     DepositApp.abi,
     DepositApp.bytecode,
@@ -132,7 +136,6 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> =
   ).deploy();
 
   return {
-    provider: wallet.provider as JsonRpcProvider,
     ChallengeRegistry: challengeRegistry.address,
     ConditionalTransactionDelegateTarget: conditionalTransactionDelegateTarget.address,
     DolphinCoin: dolphinCoin.address,
@@ -149,19 +152,5 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> =
     UnidirectionalLinkedTransferApp: linkContract.address,
     UnidirectionalTransferApp: transferContract.address,
     WithdrawApp: withdrawAppContract.address,
-  } as NetworkContextForTestSuite;
-};
-
-export {
-  AppWithAction,
-  ChallengeRegistry,
-  ConditionalTransactionDelegateTarget,
-  CounterfactualApp,
-  DolphinCoin,
-  ERC20,
-  IdentityApp,
-  MinimumViableMultisig,
-  Proxy,
-  ProxyFactory,
-  TwoPartyFixedOutcomeApp,
+  };
 };

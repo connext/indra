@@ -13,7 +13,7 @@ import {
 import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
 import { deBigNumberifyJson, ChannelSigner, delay } from "@connext/utils";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import {
   MethodParams,
   JsonRpcProvider,
@@ -29,7 +29,7 @@ import { EventEmitter } from "events";
 import { validAction } from "../tic-tac-toe";
 import { isHexString } from "ethers/utils";
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Sync", () => {
   let multisigAddress: string;
@@ -53,7 +53,7 @@ describe("Sync", () => {
   beforeEach(async () => {
     // test global fixtures
     sharedEventEmitter = new EventEmitter();
-    ethUrl = global["network"]["provider"].connection.url;
+    ethUrl = global["wallet"]["provider"].connection.url;
     provider = new JsonRpcProvider(ethUrl);
     nodeConfig = { STORE_KEY_PREFIX: "test" };
     lockService = new MemoryLockService();
@@ -77,7 +77,7 @@ describe("Sync", () => {
     nodeB = await Node.create(
       messagingServiceB,
       storeServiceB,
-      global["network"],
+      global["contracts"],
       nodeConfig,
       provider,
       channelSignerB,
@@ -95,7 +95,7 @@ describe("Sync", () => {
       nodeA = await Node.create(
         messagingServiceA,
         storeServiceA,
-        global["network"],
+        global["contracts"],
         nodeConfig,
         provider,
         channelSignerA,
@@ -146,7 +146,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerA,
@@ -163,7 +163,6 @@ describe("Sync", () => {
         data: { syncedChannel: expectedChannel },
       });
       expect(syncedChannel).toMatchObject(expectedChannel!);
-
       await (newNodeA as Node).rpcRouter.dispatch(
         constructInstallRpc(identityHash, multisigAddress),
       );
@@ -191,7 +190,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerB,
@@ -208,7 +207,6 @@ describe("Sync", () => {
         data: { syncedChannel: expectedChannel },
       });
       expect(syncedChannel).toMatchObject(expectedChannel!);
-
       await (newNodeB as Node).rpcRouter.dispatch(
         constructInstallRpc(identityHash, multisigAddress),
       );
@@ -240,7 +238,7 @@ describe("Sync", () => {
       nodeA = await Node.create(
         messagingServiceA,
         storeServiceA,
-        global["network"],
+        global["contracts"],
         nodeConfig,
         provider,
         channelSignerA,
@@ -288,7 +286,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerA,
@@ -326,7 +324,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerB,
@@ -366,7 +364,7 @@ describe("Sync", () => {
       nodeA = await Node.create(
         messagingServiceA,
         storeServiceA,
-        global["network"],
+        global["contracts"],
         nodeConfig,
         provider,
         channelSignerA,
@@ -409,7 +407,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerA,
@@ -454,7 +452,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerB,
@@ -502,7 +500,7 @@ describe("Sync", () => {
       nodeA = await Node.create(
         messagingServiceA,
         storeServiceA,
-        global["network"],
+        global["contracts"],
         nodeConfig,
         provider,
         channelSignerA,
@@ -552,7 +550,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerA,
@@ -590,7 +588,7 @@ describe("Sync", () => {
         Node.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
-          global["network"],
+          global["contracts"],
           nodeConfig,
           provider,
           channelSignerB,

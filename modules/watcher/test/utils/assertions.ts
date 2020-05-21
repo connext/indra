@@ -20,7 +20,7 @@ import { Zero, HashZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { ChannelSigner, toBN } from "@connext/utils";
 import { AppWithCounterClass } from "./appWithCounter";
-import { NetworkContextForTestSuite } from "./contracts";
+import { TestNetworkContext } from "./contracts";
 
 /////////////////////////////
 //// Assertions
@@ -55,7 +55,7 @@ export const verifyOnchainBalancesPostChallenge = async (
 export const verifyStateProgressedEvent = async (
   app: AppWithCounterClass,
   event: StateProgressedEventData,
-  networkContext: NetworkContextForTestSuite,
+  networkContext: TestNetworkContext,
 ) => {
   const setState = await app.getSingleSignedSetState(networkContext.ChallengeRegistry);
   expect(event).to.containSubset({

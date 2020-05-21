@@ -5,10 +5,10 @@ import {
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, maxBN, stringify } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
-import { AddressZero, Zero } from "ethers/constants";
+import { AddressZero } from "ethers/constants";
 import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";

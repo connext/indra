@@ -14,7 +14,7 @@ import { Wallet } from "ethers";
 import {
   setupContext,
   expect,
-  NetworkContextForTestSuite,
+  TestNetworkContext,
   MiniFreeBalance,
   AppWithCounterClass,
   verifyOnchainBalancesPostChallenge,
@@ -70,7 +70,7 @@ describe("Watcher.initiate", () => {
   let app: AppWithCounterClass;
   let signers: ChannelSigner[];
 
-  let networkContext: NetworkContextForTestSuite;
+  let networkContext: TestNetworkContext;
 
   let watcher: Watcher;
   let wallet: Wallet;
@@ -182,7 +182,7 @@ describe("Watcher.cancel", () => {
   let watcher: Watcher;
   let app: AppWithCounterClass;
   let freeBalance: MiniFreeBalance;
-  let networkContext: NetworkContextForTestSuite;
+  let networkContext: TestNetworkContext;
 
   beforeEach(async () => {
     const context = await setupContext(true, [{ defaultTimeout: toBN(2) }]);
@@ -276,7 +276,7 @@ describe("Watcher responses", () => {
   let watcher: Watcher;
   let app: AppWithCounterClass;
   let freeBalance: MiniFreeBalance;
-  let networkContext: NetworkContextForTestSuite;
+  let networkContext: TestNetworkContext;
 
   let setState: (app: AppWithCounterClass, commitment: SetStateCommitmentJSON) => Promise<void>;
   let addActionToAppInStore: (

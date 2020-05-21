@@ -28,7 +28,6 @@ import {
   bigNumberifyJson,
   deBigNumberifyJson,
   getAddressFromAssetId,
-  getRandomChannelSigner,
   getSignerAddressFromPublicIdentifier,
   toBN,
 } from "@connext/utils";
@@ -41,12 +40,9 @@ import { JsonRpcResponse, Rpc } from "rpc-server";
 import { Node } from "../node";
 import { AppInstance, StateChannel } from "../models";
 import { CONTRACT_NOT_DEPLOYED } from "../errors";
-import {
-  getRandomPublicIdentifier,
-  getRandomPublicIdentifiers,
-} from "../testing/random-signing-keys";
+import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
 
-import { DolphinCoin, NetworkContextForTestSuite } from "./contracts";
+import { TestContractAddresses } from "./contracts";
 import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
 import { initialSimpleTransferState, simpleTransferAbiEncodings } from "./simple-transfer";
 import { initialEmptyTTTState, tttAbiEncodings } from "./tic-tac-toe";
@@ -64,11 +60,12 @@ interface AppContext {
 
 const {
   DepositApp,
+  DolphinCoin,
   TicTacToeApp,
   SimpleTransferApp,
   UnidirectionalLinkedTransferApp,
   UnidirectionalTransferApp,
-} = global[`network`] as NetworkContextForTestSuite;
+} = global[`contracts`] as TestContractAddresses;
 
 export const newWallet = (wallet: Wallet) =>
   new Wallet(
@@ -175,17 +172,17 @@ export async function rescindDepositRights(
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ) {
   const apps = await getInstalledAppInstances(node, multisigAddress);
-  const depositApp = apps.filter(
+  const depositAppInstance = apps.filter(
     (app) =>
-      app.appInterface.addr === global[`network`][`DepositApp`] &&
+      app.appInterface.addr === DepositApp &&
       (app.latestState as DepositAppState).assetId === getAddressFromAssetId(assetId),
   )[0];
-  if (!depositApp) {
+  if (!depositAppInstance) {
     // no apps to uninstall, return
     return;
   }
   // uninstall
-  await uninstallApp(node, counterparty, depositApp.identityHash, multisigAddress);
+  await uninstallApp(node, counterparty, depositAppInstance.identityHash, multisigAddress);
 }
 
 export async function getDepositApps(
@@ -198,7 +195,7 @@ export async function getDepositApps(
     return [];
   }
   const depositApps = apps.filter(
-    (app) => app.appInterface.addr === global[`network`][`DepositApp`],
+    (app) => app.appInterface.addr === DepositApp,
   );
   if (tokenAddresses.length === 0) {
     return depositApps;
@@ -952,8 +949,8 @@ export async function makeAndSendProposeCall(
  */
 export async function transferERC20Tokens(
   toAddress: string,
-  tokenAddress: string = global[`network`][`DolphinCoin`],
-  contractABI: ContractABI = DolphinCoin.abi,
+  tokenAddress: string = DolphinCoin,
+  contractABI: ContractABI = ERC20.abi,
   amount: BigNumber = One,
 ): Promise<BigNumber> {
   const deployerAccount = global["wallet"];

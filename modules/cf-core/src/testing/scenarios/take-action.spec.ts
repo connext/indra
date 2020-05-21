@@ -4,7 +4,7 @@ import { Zero, Two } from "ethers/constants";
 import { Node } from "../../node";
 import { NO_MULTISIG_IN_PARAMS, NO_APP_INSTANCE_FOR_GIVEN_HASH } from "../../errors";
 
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import { validAction } from "../tic-tac-toe";
 import {
@@ -16,7 +16,7 @@ import {
 } from "../utils";
 import { toBN, deBigNumberifyJson } from "@connext/utils";
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 // NOTE: no initiator events
 function confirmMessages(

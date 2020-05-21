@@ -5,12 +5,12 @@ import { AppType } from "../appInstance/appInstance.entity";
 
 export const convertConditionalCommitmentToJson = (
   commitment: ConditionalTransactionCommitment,
-  networkContext: ContractAddresses,
+  contractAddresses: ContractAddresses,
 ): ConditionalTransactionCommitmentJSON => {
   return {
     appIdentityHash: commitment.app.identityHash,
     freeBalanceAppIdentityHash: commitment.freeBalanceAppIdentityHash,
-    networkContext,
+    contractAddresses,
     signatures: commitment.signatures,
     interpreterAddr: commitment.interpreterAddr,
     interpreterParams: commitment.interpreterParams,

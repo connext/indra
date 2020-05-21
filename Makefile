@@ -40,7 +40,7 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 
 default: dev
 all: dev staging release
-dev: database proxy node test-runner
+dev: bot database proxy node test-runner
 staging: database ethprovider proxy node-staging test-runner-staging webserver
 release: database ethprovider proxy node-release test-runner-release webserver
 
@@ -64,6 +64,12 @@ start-test-release:
 
 start-prod:
 	bash ops/start-prod.sh
+
+start-bot: bot
+	bash ops/test/bot.sh 1 -1
+
+start-bot-farm: bot
+	bash ops/test/bot.sh 3 -1
 
 stop:
 	bash ops/stop.sh
@@ -150,6 +156,12 @@ watch: watch-integration
 
 test-backwards-compatibility: pull-backwards-compatible
 	bash ops/test/integration.sh $(backwards_compatible_version)
+
+test-bot: bot
+	bash ops/test/bot.sh 1 3
+
+test-bot-farm: bot
+	bash ops/test/bot.sh 3 3
 
 test-cf: cf-core
 	bash ops/test/cf.sh
@@ -273,6 +285,11 @@ apps: types utils contracts cf-core $(shell find modules/apps $(find_options))
 client: types utils channel-provider messaging store contracts cf-core apps $(shell find modules/client $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+bot: types utils channel-provider messaging store contracts cf-core apps $(shell find modules/bot $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/bot && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 node: types utils messaging store contracts cf-core apps client $(shell find modules/node $(find_options))

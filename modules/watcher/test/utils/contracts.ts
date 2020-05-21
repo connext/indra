@@ -46,7 +46,7 @@ export const mineBlock = (provider: JsonRpcProvider) => {
 };
 
 
-export type NetworkContextForTestSuite = NetworkContext & {
+export type TestNetworkContext = NetworkContext & {
   provider: JsonRpcProvider;
   WithdrawApp: string;
   DepositApp: string;
@@ -56,7 +56,7 @@ export type NetworkContextForTestSuite = NetworkContext & {
 
 export const deployTestArtifactsToChain = async (
   wallet: Wallet,
-): Promise<NetworkContextForTestSuite> => {
+): Promise<TestNetworkContext> => {
   const depositAppContract = await new ContractFactory(
     DepositApp.abi,
     DepositApp.bytecode,

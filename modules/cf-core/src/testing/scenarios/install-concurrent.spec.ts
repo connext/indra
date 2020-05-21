@@ -5,7 +5,7 @@ import { parseEther } from "ethers/utils";
 import { Node } from "../../node";
 
 import { toBeLt } from "../bignumber-jest-matcher";
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import { collateralizeChannel, createChannel, makeInstallCall, makeProposeCall } from "../utils";
 
@@ -13,7 +13,7 @@ expect.extend({ toBeLt });
 
 jest.setTimeout(7_500);
 
-const { TicTacToeApp } = global[`network`] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global[`contracts`] as TestContractAddresses;
 
 describe(`Node method follows spec - install`, () => {
   let multisigAddress: string;

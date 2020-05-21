@@ -12,7 +12,6 @@ import {
   ILockService,
 } from "@connext/types";
 import { bigNumberifyJson, logTime } from "@connext/utils";
-import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 
 import { eventNameToImplementation, methodNameToImplementation } from "./methods";
@@ -37,7 +36,6 @@ export class RequestHandler {
     readonly messagingService: IMessagingService,
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,
-    readonly provider: JsonRpcProvider,
     readonly signer: IChannelSigner,
     readonly blocksNeededForConfirmation: number,
     readonly lockService: ILockService,

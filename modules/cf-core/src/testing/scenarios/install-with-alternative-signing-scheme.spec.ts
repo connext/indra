@@ -7,7 +7,7 @@ import { BigNumber } from "ethers/utils";
 import { Node } from "../../node";
 
 import { toBeLt } from "../bignumber-jest-matcher";
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { MemoryLockService, MemoryMessagingService, MemoryStoreServiceFactory } from "../services";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import {
@@ -46,7 +46,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         nodeA = await Node.create(
           messagingService,
           storeServiceA,
-          global[`network`],
+          global[`contracts`],
           nodeConfig,
           provider,
           new ChannelSigner(A_PRIVATE_KEY),
@@ -58,7 +58,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         nodeB = await Node.create(
           messagingService,
           storeServiceB,
-          global[`network`],
+          global[`contracts`],
           nodeConfig,
           provider,
           new ChannelSigner(B_PRIVATE_KEY),
@@ -109,7 +109,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         nodeA.rpcRouter.dispatch(
           await makeProposeCall(
             nodeB,
-            (global[`network`] as NetworkContextForTestSuite).TicTacToeApp,
+            (global[`contracts`] as TestContractAddresses).TicTacToeApp,
             multisigAddress,
             undefined,
             One,
