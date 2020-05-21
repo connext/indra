@@ -137,9 +137,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
 
     // 200ms
-    console.error(`trying to send m1 and waiting for m2....`);
     const m2 = yield [IO_SEND_AND_WAIT, m1];
-    console.error(`got m2: ${stringify(m2)}`);
     logTime(log, substart, `[${processID}] Received responder's m2`);
     substart = Date.now();
 
