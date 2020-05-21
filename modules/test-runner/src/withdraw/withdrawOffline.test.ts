@@ -5,6 +5,7 @@ import {
   CF_METHOD_TIMEOUT,
   IClientStore,
   ProtocolNames,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { delay, getRandomChannelSigner } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
@@ -27,6 +28,7 @@ import {
   ZERO_ZERO_ZERO_FIVE_ETH,
   env,
   getParamsFromData,
+  APP_PROTOCOL_TOO_LONG,
 } from "../util";
 import { addressBook } from "@connext/contracts";
 import { getMemoryStore } from "@connext/store";
@@ -99,8 +101,29 @@ describe("Withdraw offline tests", () => {
       }
     });
 
-    // TODO: assert by error message
-    await expect(withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero)).to.be.rejected;
+    await new Promise(async (resolve, reject) => {
+      client.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT as any, (msg) => {
+        try {
+          expect(msg).to.containSubset({
+            type: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
+            from: client.publicIdentifier,
+          });
+          expect(msg.data.params).to.be.an("object");
+          expect(msg.data.error).to.include(APP_PROTOCOL_TOO_LONG(ProtocolNames.propose));
+          return resolve(msg);
+        } catch (e) {
+          return reject(e.message);
+        }
+      });
+
+      try {
+        await expect(
+          withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, CONVENTION_FOR_ETH_ASSET_ID),
+        ).to.be.rejectedWith(APP_PROTOCOL_TOO_LONG(ProtocolNames.propose));
+      } catch (e) {
+        return reject(e.message);
+      }
+    });
 
     await recreateClientAndRetryWithdraw(client, store, {
       amount: ZERO_ZERO_ZERO_FIVE_ETH,
@@ -108,17 +131,28 @@ describe("Withdraw offline tests", () => {
     });
   });
 
-  it.skip("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
+  it.only("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
     await createAndFundChannel();
 
-    await new Promise((resolve) => {
+    await new Promise((resolve, reject) => {
       client.once(EventNames.UPDATE_STATE_EVENT, async () => {
+        // TODO: I DIDNT ADDRESS THIS COMMENT YET, we should be able to get an event though
         // wait for the value to actually be written to the store,
         // takes longer than the `disconnect` call
-        await delay(500);
         await client.messaging.disconnect();
-        clock.tick(89_000);
-        resolve();
+        client.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT as any, (msg) => {
+          try {
+            expect(msg).to.containSubset({
+              type: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
+              from: client.publicIdentifier,
+            });
+            expect(msg.data.params).to.be.an("object");
+            expect(msg.data.error).to.include(APP_PROTOCOL_TOO_LONG(ProtocolNames.propose));
+            return resolve(msg);
+          } catch (e) {
+            return reject(e.message);
+          }
+        });
       });
       withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero);
     });
