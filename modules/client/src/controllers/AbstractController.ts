@@ -64,20 +64,21 @@ export abstract class AbstractController {
           boundInstallFailed = this.rejectInstall.bind(null, reject, appIdentityHash);
           this.listener.on(EventNames.INSTALL_FAILED_EVENT, boundInstallFailed);
         }),
-        new Promise((res: () => any, rej: () => any): void => {
-          boundReject = this.rejectInstall.bind(null, rej, appIdentityHash);
-
+        new Promise((resolve, reject) => {
+          boundReject = this.rejectInstall.bind(null, reject, appIdentityHash);
+          this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
+        }),
+        new Promise((resolve) => {
           // set up install nats subscription
           const subject = `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`;
-          this.connext.node.messaging.subscribe(subject, res);
-
-          this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
+          this.connext.node.messaging.subscribe(subject, resolve);
         }),
       ]);
 
       this.log.info(`Installed app with id: ${appIdentityHash}`);
       return appIdentityHash;
     } catch (e) {
+      console.error(`caught error: ${e.message}`);
       this.log.error(`Error installing app: ${e.stack || e.message}`);
       throw e;
     } finally {
