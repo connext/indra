@@ -51,6 +51,10 @@ export abstract class AbstractController {
 
     // if propose protocol fails on the initiator side, this will hard error
     // so no need to wait for event
+    const registryInfo = this.connext.appRegistry.find(
+      (a) => a.appDefinitionAddress === params.appDefinition,
+    );
+    this.log.debug(`Proposing install of ${registryInfo.name}`);
     const { appIdentityHash } = await this.connext.proposeInstallApp(params);
     this.log.debug(`App instance successfully proposed`);
 
