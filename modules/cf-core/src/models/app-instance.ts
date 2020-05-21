@@ -19,6 +19,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   stringify,
   appIdentityToHash,
+  isBigNumber,
 } from "@connext/utils";
 import { Contract, BigNumber, constants, utils, providers } from "ethers";
 import { Memoize } from "typescript-memoize";
@@ -326,7 +327,7 @@ export class AppInstance {
       let template = key ? templateObj[key] : templateObj;
       let data = key ? dataObj[key] : dataObj;
       let output;
-      if (BigNumber.isBigNumber(template) || typeof template !== "object") {
+      if (isBigNumber(template) || typeof template !== "object") {
         output = data;
       } else if (typeof template === "object" && typeof template.length === "number") {
         output = [];

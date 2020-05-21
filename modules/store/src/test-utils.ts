@@ -16,7 +16,7 @@ import {
   StorePair,
   StoredAppChallengeStatus,
 } from "@connext/types";
-import { ColorfulLogger, getRandomBytes32, toBigNumberJson } from "@connext/utils";
+import { ColorfulLogger, getRandomBytes32, toBigNumberJson, isBigNumber } from "@connext/utils";
 import { expect, use } from "chai";
 import { BigNumber, constants, utils } from "ethers";
 import MockAsyncStorage from "mock-async-storage";
@@ -213,7 +213,7 @@ export const setAndGet = async (
 ): Promise<void> => {
   await store.setItem(pair.path, pair.value);
   const value = await store.getItem(pair.path);
-  if (typeof pair.value === "object" && !BigNumber.isBigNumber(pair.value)) {
+  if (typeof pair.value === "object" && !isBigNumber(pair.value)) {
     expect(value).to.be.deep.equal(pair.value);
     return;
   }

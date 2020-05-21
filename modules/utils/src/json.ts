@@ -1,16 +1,16 @@
 import { BigNumber } from "ethers";
+import { isBigNumberJson, isBigNumber } from "./bigNumbers";
 
 export const bigNumberifyJson = (json: any): any =>
   typeof json === "string"
     ? json
     : JSON.parse(JSON.stringify(json), (key: string, value: any): any =>
-        value && value._hex ? BigNumber.from(value._hex) : value,
+        value && isBigNumberJson(value) ? BigNumber.from(value) : value,
       );
 
 export const deBigNumberifyJson = (json: any): any =>
   JSON.parse(JSON.stringify(json), (key: string, value: any) =>
-    // TODO: added check for toHexString temporarily
-    value && BigNumber.isBigNumber(value) && value.toHexString ? value.toHexString() : value,
+    value && isBigNumber(value) ? value.toHexString() : value,
   );
 
 // Give abrv = true to abbreviate hex strings and addresss to look like "0x6FEC..kuQk"
@@ -18,7 +18,7 @@ export const stringify = (value: any, abrv: boolean = false): string =>
   JSON.stringify(
     value,
     (key: string, value: any): any =>
-      value && value._hex
+      value && isBigNumberJson(value)
         ? BigNumber.from(value).toString()
         : abrv && value && typeof value === "string" && value.startsWith("indra")
         ? `${value.substring(0, 9)}..${value.substring(value.length - 4)}`

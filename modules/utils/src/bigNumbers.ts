@@ -1,12 +1,17 @@
 import { BigNumberJson } from "@connext/types";
 import { BigNumber, BigNumberish } from "ethers";
 
+export const isBigNumber = (value: any): boolean =>
+  !!BigNumber.isBigNumber(value) && !!value.toHexString;
+
+export const isBigNumberJson = (value: any): boolean => !isBigNumber(value) && !!value._hex;
+
 export function toBigNumberJson(n: BigNumberish | BigNumberJson): BigNumberJson {
   return JSON.parse(JSON.stringify(n));
 }
 
 export const getBigNumberError = (value: any): string | undefined =>
-  BigNumber.isBigNumber(value) ? undefined : `Value "${value}" is not a BigNumber`;
+  isBigNumber(value) ? undefined : `Value "${value}" is not a BigNumber`;
 
 export const getBigNumberishError = (value: any): string | undefined => {
   try {
