@@ -2,15 +2,13 @@ import {
   EventNames,
   IConnextClient,
   IChannelSigner,
-  CF_METHOD_TIMEOUT,
-  IClientStore,
   ProtocolNames,
   CONVENTION_FOR_ETH_ASSET_ID,
+  ProtocolParams,
 } from "@connext/types";
-import { delay, getRandomChannelSigner } from "@connext/utils";
+import { getRandomChannelSigner } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
-import * as lolex from "lolex";
 import {
   ClientTestMessagingInputOpts,
   createClient,
@@ -19,97 +17,55 @@ import {
   ethProvider,
   expect,
   fundChannel,
-  getProtocolFromData,
-  MessagingEventData,
-  RECEIVED,
   SEND,
-  TestMessagingService,
   withdrawFromChannel,
   ZERO_ZERO_ZERO_FIVE_ETH,
   env,
-  getParamsFromData,
   APP_PROTOCOL_TOO_LONG,
+  CLIENT_INSTALL_FAILED,
+  RECEIVED,
 } from "../util";
 import { addressBook } from "@connext/contracts";
-import { getMemoryStore } from "@connext/store";
 
-describe("Withdraw offline tests", () => {
-  let clock: any;
-  let client: IConnextClient;
+describe.only("Withdraw offline tests", () => {
   let signer: IChannelSigner;
-  let store: IClientStore;
+  const addr = addressBook[4447].WithdrawApp.address;
 
   const createAndFundChannel = async (
     messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
     amount: BigNumber = ETH_AMOUNT_SM,
     assetId: string = AddressZero,
   ): Promise<IConnextClient> => {
-    client = await createClientWithMessagingLimits({
+    const client = await createClientWithMessagingLimits({
       signer,
-      store,
       ...messagingConfig,
     });
     await fundChannel(client, amount, assetId);
     return client;
   };
 
-  const recreateClientAndRetryWithdraw = async (
+  const sendFailingWithdrawalCall = async (
     client: IConnextClient,
-    store: IClientStore,
     withdrawParams: any,
+    error: string,
+    event?: EventNames,
   ) => {
     const { amount, assetId, recipient } = withdrawParams;
-    await client.messaging.disconnect();
-    const newClient = await createClient({ signer, store });
-    // Check that client can recover and continue
-    await withdrawFromChannel(newClient, amount, assetId, recipient);
-  };
-
-  beforeEach(async () => {
-    signer = getRandomChannelSigner(env.ethProviderUrl);
-    store = getMemoryStore();
-    // create the clock
-    clock = lolex.install({
-      shouldAdvanceTime: true,
-      advanceTimeDelta: 1,
-      now: Date.now(),
-    });
-  });
-
-  afterEach(async () => {
-    clock && clock.reset && clock.reset();
-    client && (await client.store.clear());
-    client && (await client.messaging.disconnect());
-  });
-
-  it("client proposes withdrawal but doesn't receive a response from node", async () => {
-    const addr = addressBook[4447].WithdrawApp.address;
-    await createAndFundChannel({
-      ceiling: { [SEND]: 0 },
-      protocol: ProtocolNames.propose,
-      params: { appDefinition: addr },
-    });
-
-    (client.messaging as TestMessagingService).on(RECEIVED, (msg: MessagingEventData) => {
-      if (getProtocolFromData(msg) === "propose") {
-        const { appDefinition } = getParamsFromData(msg) || {};
-        if (appDefinition !== addr) {
-          return;
-        }
-        clock.tick(CF_METHOD_TIMEOUT + 15000);
-        return;
-      }
-    });
-
+    if (!event) {
+      await expect(withdrawFromChannel(client, amount, assetId, recipient)).to.be.rejectedWith(
+        error,
+      );
+      return;
+    }
     await new Promise(async (resolve, reject) => {
-      client.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT as any, (msg) => {
+      client.once(event, (msg) => {
         try {
           expect(msg).to.containSubset({
-            type: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
+            type: event,
             from: client.publicIdentifier,
           });
           expect(msg.data.params).to.be.an("object");
-          expect(msg.data.error).to.include(APP_PROTOCOL_TOO_LONG(ProtocolNames.propose));
+          expect(msg.data.error).to.include(error);
           return resolve(msg);
         } catch (e) {
           return reject(e.message);
@@ -117,72 +73,136 @@ describe("Withdraw offline tests", () => {
       });
 
       try {
-        await expect(
-          withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, CONVENTION_FOR_ETH_ASSET_ID),
-        ).to.be.rejectedWith(APP_PROTOCOL_TOO_LONG(ProtocolNames.propose));
+        await expect(withdrawFromChannel(client, amount, assetId, recipient)).to.be.rejectedWith(
+          error,
+        );
       } catch (e) {
         return reject(e.message);
       }
     });
+  };
 
-    await recreateClientAndRetryWithdraw(client, store, {
-      amount: ZERO_ZERO_ZERO_FIVE_ETH,
-      assetId: AddressZero,
-    });
+  const recreateClientAndRetryWithdraw = async (client: IConnextClient, withdrawParams: any) => {
+    const { amount, assetId } = withdrawParams;
+    await client.messaging.disconnect();
+    const newClient = await createClient({ signer, store: client.store });
+    // Check that client can recover and continue
+    await withdrawFromChannel(newClient, amount, assetId);
+  };
+
+  beforeEach(async () => {
+    signer = getRandomChannelSigner(env.ethProviderUrl);
   });
 
-  it.only("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
-    await createAndFundChannel();
+  it("client goes offline during withdrawal app proposal", async () => {
+    const client = await createAndFundChannel({
+      ceiling: { [SEND]: 0 },
+      protocol: ProtocolNames.propose,
+      params: { appDefinition: addr },
+    });
+    const withdrawParams = {
+      amount: ZERO_ZERO_ZERO_FIVE_ETH,
+      assetId: CONVENTION_FOR_ETH_ASSET_ID,
+    };
 
-    await new Promise((resolve, reject) => {
-      client.once(EventNames.UPDATE_STATE_EVENT, async () => {
-        // TODO: I DIDNT ADDRESS THIS COMMENT YET, we should be able to get an event though
-        // wait for the value to actually be written to the store,
-        // takes longer than the `disconnect` call
-        await client.messaging.disconnect();
-        client.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT as any, (msg) => {
-          try {
-            expect(msg).to.containSubset({
-              type: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
-              from: client.publicIdentifier,
-            });
-            expect(msg.data.params).to.be.an("object");
-            expect(msg.data.error).to.include(APP_PROTOCOL_TOO_LONG(ProtocolNames.propose));
-            return resolve(msg);
-          } catch (e) {
-            return reject(e.message);
+    await sendFailingWithdrawalCall(
+      client,
+      withdrawParams,
+      APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
+      EventNames.PROPOSE_INSTALL_FAILED_EVENT,
+    );
+
+    await recreateClientAndRetryWithdraw(client, withdrawParams);
+  });
+
+  it("client goes offline during withdrawal app installation", async () => {
+    const client = await createAndFundChannel({
+      ceiling: { [RECEIVED]: 0 },
+      protocol: ProtocolNames.install,
+      params: ({ appInterface: { addr } } as unknown) as ProtocolParams.Install,
+    });
+    const withdrawParams = {
+      amount: ZERO_ZERO_ZERO_FIVE_ETH,
+      assetId: CONVENTION_FOR_ETH_ASSET_ID,
+    };
+
+    await sendFailingWithdrawalCall(client, withdrawParams, CLIENT_INSTALL_FAILED(true));
+
+    await recreateClientAndRetryWithdraw(client, withdrawParams);
+  });
+
+  // NOTE: because the take-action protocol is only one message and it is always
+  // initiated by the node, there is no way to properly restrict client
+  // messaging in this case unless you error on `send` once the ceiling is hit.
+  // Otherwise, the client will either not know the protocol has begun or not
+  // realize the protocol failed for the node. In the case where the take action
+  // protocol doesn't fail for the client, but does for the node, the double-
+  // signed commitment will not be written to store and the client will hang
+  // for 15 blocks watching the chain
+
+  // TODO: Move this test to the node
+  it.skip("client goes offline after the withdrawal transaction is submitted during the take action protocol", async () => {
+    const client = await createAndFundChannel({
+      ceiling: { [SEND]: 0 },
+      protocol: ProtocolNames.takeAction,
+    });
+    const withdrawParams = {
+      amount: ZERO_ZERO_ZERO_FIVE_ETH,
+      assetId: CONVENTION_FOR_ETH_ASSET_ID,
+    };
+
+    await sendFailingWithdrawalCall(
+      client,
+      withdrawParams,
+      APP_PROTOCOL_TOO_LONG(ProtocolNames.takeAction),
+      EventNames.UPDATE_STATE_FAILED_EVENT,
+    );
+
+    await recreateClientAndRetryWithdraw(client, withdrawParams);
+  });
+
+  it("client goes offline before node finishes submitting withdrawal (commitment is written to store and retried)", async () => {
+    const client = await createAndFundChannel();
+    const withdrawParams = {
+      amount: ZERO_ZERO_ZERO_FIVE_ETH,
+      assetId: CONVENTION_FOR_ETH_ASSET_ID,
+    };
+
+    const startingBalance = await ethProvider.getBalance(client.multisigAddress);
+
+    await Promise.all([
+      new Promise((resolve) => {
+        // disconnect once withdrawal commitment is written to store
+        client.once(EventNames.UPDATE_STATE_EVENT, async () => {
+          await client.messaging.disconnect();
+          resolve();
+        });
+        // promise will not resolve until it fails to find tx, dont await
+        withdrawFromChannel(client, withdrawParams.amount, withdrawParams.assetId);
+      }),
+      // make sure the onchain tx was submitted successfully
+      new Promise(async (resolve) => {
+        ethProvider.on(client.multisigAddress, (balance: BigNumber) => {
+          if (!balance.eq(startingBalance)) {
+            resolve();
           }
         });
-      });
-      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero);
-    });
+      }),
+    ]);
 
     const [val] = await client.store.getUserWithdrawals!();
     expect(val).to.not.be.undefined;
     expect(val.tx).to.not.be.undefined;
     expect(val.retry).to.be.equal(0);
     expect(val.tx).to.be.containSubset({ to: client.multisigAddress, value: 0 });
-
     // restart the client
     const reconnected = await createClient({
       signer,
       store: client.store,
     });
-    expect(reconnected.publicIdentifier).to.be.equal(client.publicIdentifier);
-    expect(reconnected.multisigAddress).to.be.equal(client.multisigAddress);
-    expect(reconnected.signerAddress).to.be.equal(client.signerAddress);
-
-    const startingBalance = await ethProvider.getBalance(client.multisigAddress);
-    await new Promise((resolve: Function) => {
-      ethProvider.on(client.multisigAddress, (balance: BigNumber) => {
-        if (!balance.eq(startingBalance)) {
-          resolve();
-        }
-      });
-    });
 
     // make sure the withdrawal has been handled
-    const [resubmitted] = await client.store.getUserWithdrawals!();
-    expect(resubmitted).to.not.be.ok;
+    const [resubmitted] = await reconnected.store.getUserWithdrawals();
+    expect(resubmitted).to.be.undefined;
   });
 });
