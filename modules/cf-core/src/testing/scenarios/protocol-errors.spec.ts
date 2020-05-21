@@ -6,11 +6,11 @@ import {
   MethodParams,
 } from "@connext/types";
 import { EventEmitter } from "events";
+import { ChannelSigner, deBigNumberifyJson, delay } from "@connext/utils";
+import { getMemoryStore } from "@connext/store";
 import { MemoryLockService } from "../services";
-import { ChannelSigner, deBigNumberifyJson } from "@connext/utils";
 import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
 import { Logger } from "../logger";
-import { getMemoryStore } from "@connext/store";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { env } from "../setup";
 import { Node } from "../../node";
@@ -71,7 +71,7 @@ describe("Sync", () => {
     );
   });
 
-  it("should emit a protocol error if protocol timeout occurs", async () => {
+  it("should emit a protocol error if protocol initiator timeout occurs", async () => {
     messagingServiceA = new MemoryMessagingServiceWithLimits(sharedEventEmitter, 1, "propose");
     nodeA = await Node.create(
       messagingServiceA,
