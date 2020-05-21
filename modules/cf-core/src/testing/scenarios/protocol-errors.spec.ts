@@ -1,25 +1,25 @@
-import {
-  IClientStore,
-  JsonRpcProvider,
-  EventNames,
-  CF_METHOD_TIMEOUT,
-  MethodParams,
-} from "@connext/types";
-import { EventEmitter } from "events";
-import { ChannelSigner, deBigNumberifyJson, delay } from "@connext/utils";
-import { getMemoryStore } from "@connext/store";
-import { MemoryLockService } from "../services";
-import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
-import { Logger } from "../logger";
-import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { env } from "../setup";
 import { Node } from "../../node";
-import { createChannel, assertMessage, makeProposeCall } from "../utils";
+import { createChannel, makeProposeCall, assertMessage } from "../utils";
+import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
+import { deBigNumberifyJson, ChannelSigner } from "@connext/utils";
+import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { TestContractAddresses } from "../contracts";
+import {
+  MethodParams,
+  JsonRpcProvider,
+  IClientStore,
+  EventNames,
+  CF_METHOD_TIMEOUT,
+} from "@connext/types";
+import { getMemoryStore } from "@connext/store";
+import { MemoryLockService } from "../services";
+import { Logger } from "../logger";
+import { EventEmitter } from "events";
 
 const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
-describe("Sync", () => {
+describe("Protocol Errors", () => {
   let nodeA: Node;
   let nodeB: Node;
   let storeServiceA: IClientStore;
@@ -37,7 +37,7 @@ describe("Sync", () => {
   beforeEach(async () => {
     // test global fixtures
     sharedEventEmitter = new EventEmitter();
-    ethUrl = global["network"]["provider"].connection.url;
+    ethUrl = global["wallet"]["provider"].connection.url;
     provider = new JsonRpcProvider(ethUrl);
     nodeConfig = { STORE_KEY_PREFIX: "test" };
     lockService = new MemoryLockService();
@@ -61,7 +61,7 @@ describe("Sync", () => {
     nodeB = await Node.create(
       messagingServiceB,
       storeServiceB,
-      global["network"],
+      global["contracts"],
       nodeConfig,
       provider,
       channelSignerB,
@@ -76,7 +76,7 @@ describe("Sync", () => {
     nodeA = await Node.create(
       messagingServiceA,
       storeServiceA,
-      global["network"],
+      global["contracts"],
       nodeConfig,
       provider,
       channelSignerA,
@@ -114,6 +114,7 @@ describe("Sync", () => {
       }),
       new Promise((resolve) => {
         nodeB.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async (msg) => {
+          console.log("nodeB msg: ", msg);
           assertMessage(
             msg,
             {
@@ -134,6 +135,7 @@ describe("Sync", () => {
       }),
       new Promise((resolve) => {
         nodeA.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async (msg) => {
+          console.log("nodeA msg: ", msg);
           assertMessage(
             msg,
             {
