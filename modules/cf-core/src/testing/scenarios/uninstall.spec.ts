@@ -4,7 +4,7 @@ import { utils, constants } from "ethers";
 import { Node } from "../../node";
 
 import { toBeEq } from "../bignumber-jest-matcher";
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
@@ -21,7 +21,7 @@ const { Zero, One, Two } = constants;
 
 expect.extend({ toBeEq });
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 function assertUninstallMessage(
   senderId: string,
@@ -113,7 +113,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         }),
         new Promise(async (resolve, reject) => {
           try {
-            await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash));
+            await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash, multisigAddress));
 
             const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
             expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(Zero);
@@ -166,7 +166,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         }),
         new Promise(async (resolve, reject) => {
           try {
-            await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash));
+            await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash, multisigAddress));
 
             const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
             expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(Zero);
@@ -218,7 +218,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         }),
         new Promise(async (resolve, reject) => {
           try {
-            await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash));
+            await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash, multisigAddress));
 
             const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
             expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(depositAmount);

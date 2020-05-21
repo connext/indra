@@ -1,5 +1,5 @@
 import { DEFAULT_APP_TIMEOUT, SWAP_STATE_TIMEOUT } from "@connext/apps";
-import { delayAndThrow, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import { delayAndThrow, stringify } from "@connext/utils";
 import {
   CF_METHOD_TIMEOUT,
   DefaultApp,
@@ -20,7 +20,7 @@ import {
 } from "@connext/utils";
 import { BigNumber, constants, utils } from "ethers";
 
-import { AbstractController } from "./AbstractController";
+import { AbstractController, CLIENT_METHOD_TIMEOUT } from "./AbstractController";
 
 const { parseEther, formatEther } = utils;
 const { Zero, AddressZero } = constants;
@@ -77,8 +77,8 @@ export class SwapController extends AbstractController {
     try {
       await Promise.race([
         delayAndThrow(
-          CF_METHOD_TIMEOUT,
-          `App uninstall took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+          CLIENT_METHOD_TIMEOUT,
+          `App uninstall took longer than ${CLIENT_METHOD_TIMEOUT / 1000} seconds`,
         ),
         this.connext.uninstallApp(appIdentityHash),
       ]);
@@ -185,6 +185,7 @@ export class SwapController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositAssetId: fromTokenAddress,
+      multisigAddress: this.connext.multisigAddress,
       outcomeType: appInfo.outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: swappedAmount,

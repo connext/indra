@@ -13,10 +13,8 @@ export const INDRA_PUB_ID_PREFIX = "indra";
 ////////////////////////////////////////
 // Conversions
 
-export const getPublicIdentifierFromPublicKey = (publicKey: PublicKey): PublicIdentifier => {
-  const buf = hexToBuffer(publicKey);
-  return INDRA_PUB_ID_PREFIX + bs58check.encode(compress(buf));
-};
+export const getPublicIdentifierFromPublicKey = (publicKey: PublicKey): PublicIdentifier =>
+  INDRA_PUB_ID_PREFIX + bs58check.encode(compress(hexToBuffer(publicKey)));
 
 export const getPublicKeyFromPublicIdentifier = (publicIdentifier: PublicIdentifier) =>
   `0x${bufferToHex(

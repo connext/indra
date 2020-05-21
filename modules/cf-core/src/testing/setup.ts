@@ -34,7 +34,7 @@ export async function setup(
   const setupContext: SetupContext = {};
 
   const nodeConfig = { STORE_KEY_PREFIX: "test" };
-  const ethUrl = global["network"]["provider"].connection.url;
+  const ethUrl = global["wallet"]["provider"].connection.url;
   const provider = new providers.JsonRpcProvider(ethUrl);
   const prvKeyA = A_PRIVATE_KEY;
   let prvKeyB = B_PRIVATE_KEY;
@@ -56,7 +56,7 @@ export async function setup(
   const nodeA = await Node.create(
     messagingService,
     storeServiceA,
-    global["network"],
+    global["contracts"],
     nodeConfig,
     provider,
     channelSignerA,
@@ -76,7 +76,7 @@ export async function setup(
   const nodeB = await Node.create(
     messagingService,
     storeServiceB,
-    global["network"],
+    global["contracts"],
     nodeConfig,
     provider,
     channelSignerB,
@@ -97,7 +97,7 @@ export async function setup(
     nodeC = await Node.create(
       messagingService,
       storeServiceC,
-      global["network"],
+      global["contracts"],
       nodeConfig,
       provider,
       channelSignerC,

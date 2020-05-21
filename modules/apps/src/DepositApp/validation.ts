@@ -13,9 +13,9 @@ import {
   stringify,
 } from "@connext/utils";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
+import { Contract, providers, constants } from "ethers";
 
 import { baseCoinTransferValidation } from "../shared";
-import { Contract, providers, constants } from "ethers";
 
 const { Zero } = constants;
 
@@ -24,7 +24,7 @@ export const validateDepositApp = async (
   initiatorIdentifier: string,
   responderIdentifier: string,
   multisigAddress: string,
-  provider: providers.BaseProvider,
+  provider: providers.JsonRpcProvider,
 ) => {
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as DepositAppState;
@@ -116,6 +116,16 @@ export const uninstallDepositMiddleware = async (
   provider: providers.JsonRpcProvider,
 ) => {
   const { role, appInstance, stateChannel, params } = context;
+
+  if (!provider || !provider.getBalance) {
+    throw new Error(
+      `Uninstall deposit middleware needs access to a provider, got ${JSON.stringify(
+        provider,
+        null,
+        2,
+      )}`,
+    );
+  }
 
   const latestState = appInstance.latestState as DepositAppState;
   const currentMultisigBalance =

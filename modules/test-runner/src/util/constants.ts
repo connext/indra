@@ -20,12 +20,9 @@ export const APP_PROTOCOL_TOO_LONG = (
       CF_METHOD_TIMEOUT / 1000
     }s`;
   }
-  // controller v. protocol timeouts
-  return isIOSendAndWait
-    ? `Error: IO_SEND_AND_WAIT timed out after ${
-        CF_METHOD_TIMEOUT / 1000
-      }s waiting for counterparty reply in ${protocol}`
-    : `took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`;
+
+  // TODO: fix when adding protocol failure events
+  return `Error: Error sending request`;
 };
 export const MESSAGE_FAILED_TO_SEND = (reason?: string): string =>
   `Failed to send message: ${reason}`;

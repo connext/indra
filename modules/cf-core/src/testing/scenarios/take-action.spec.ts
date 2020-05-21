@@ -2,9 +2,9 @@ import { EventNames, EventPayloads, UpdateStateMessage } from "@connext/types";
 import { constants } from "ethers";
 
 import { Node } from "../../node";
-import { NO_APP_INSTANCE_FOR_TAKE_ACTION } from "../../errors";
+import { NO_MULTISIG_IN_PARAMS, NO_APP_INSTANCE_FOR_GIVEN_HASH } from "../../errors";
 
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import { validAction } from "../tic-tac-toe";
 import {
@@ -16,7 +16,7 @@ import {
 } from "../utils";
 import { deBigNumberifyJson } from "@connext/utils";
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 const { Zero, Two } = constants;
 
@@ -43,7 +43,7 @@ describe("Node method follows spec - takeAction", () => {
   let nodeA: Node;
   let nodeB: Node;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const context: SetupContext = await setup(global);
     nodeA = context["A"].node;
     nodeB = context["B"].node;
@@ -54,10 +54,19 @@ describe("Node method follows spec - takeAction", () => {
       "Node B confirms receipt of state update",
     () => {
       it("sends takeAction with invalid appIdentityHash", async () => {
-        const takeActionReq = constructTakeActionRpc("", validAction);
+        const multisigAddress = await createChannel(nodeA, nodeB);
+        const takeActionReq = constructTakeActionRpc("0xfail", multisigAddress, validAction);
 
         await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(
-          NO_APP_INSTANCE_FOR_TAKE_ACTION,
+          NO_APP_INSTANCE_FOR_GIVEN_HASH,
+        );
+      });
+
+      it("sends takeAction with invalid multisig address", async () => {
+        const takeActionReq = constructTakeActionRpc("", "", validAction);
+
+        await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(
+          NO_MULTISIG_IN_PARAMS(takeActionReq.parameters),
         );
       });
 
@@ -87,7 +96,7 @@ describe("Node method follows spec - takeAction", () => {
           done();
         });
 
-        const takeActionReq = constructTakeActionRpc(appIdentityHash, validAction);
+        const takeActionReq = constructTakeActionRpc(appIdentityHash, multisigAddress, validAction);
 
         /**
          * TEST #1
@@ -112,7 +121,7 @@ describe("Node method follows spec - takeAction", () => {
         // allow nodeA to confirm its messages
         await new Promise((resolve) => {
           nodeA.once(EventNames.UPDATE_STATE_EVENT, () => {
-            setTimeout(resolve, 2000);
+            setTimeout(resolve, 500);
           });
         });
 

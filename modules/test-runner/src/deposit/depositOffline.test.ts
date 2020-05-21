@@ -163,7 +163,7 @@ describe("Deposit offline tests", () => {
     await makeDepositCall({
       client,
       clock,
-      failsWith: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose, false),
+      failsWith: `App proposal took longer than 90 seconds`,
       subjectToFastforward: SEND,
       protocol: ProtocolNames.propose,
     });

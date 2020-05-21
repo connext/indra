@@ -139,7 +139,7 @@ export class LinkedTransferService {
       this.log.warn(`Deposit receipt: ${stringify(depositReceipt)}`);
       if (!depositReceipt) {
         throw new Error(
-          `Could not deposit sufficient collateral to resolve linked transfer for reciever: ${userIdentifier}`,
+          `Could not deposit sufficient collateral to resolve linked transfer for receiver: ${userIdentifier}`,
         );
       }
       // sanity check the post-deposit free balance
@@ -317,11 +317,18 @@ export class LinkedTransferService {
         const preImage: string = senderApp.latestState["preImage"];
         if (preImage === HashZero) {
           // no action has been taken, but is not uninstalled
-          await this.cfCoreService.takeAction(senderApp.identityHash, {
-            preImage,
-          });
+          await this.cfCoreService.takeAction(
+            senderApp.identityHash,
+            senderApp.channel.multisigAddress,
+            {
+              preImage,
+            },
+          );
         }
-        await this.cfCoreService.uninstallApp(senderApp.identityHash);
+        await this.cfCoreService.uninstallApp(
+          senderApp.identityHash,
+          senderApp.channel.multisigAddress,
+        );
         unlockedAppIds.push(senderApp.identityHash);
         this.log.log(`Unlocked transfer from app ${senderApp.identityHash}`);
       }

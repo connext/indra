@@ -1,3 +1,4 @@
+import { DolphinCoin } from "@connext/contracts";
 import { BigNumber, CONVENTION_FOR_ETH_ASSET_ID, DepositAppState } from "@connext/types";
 import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { providers, utils } from "ethers";
@@ -5,7 +6,6 @@ import { providers, utils } from "ethers";
 import { Node } from "../../node";
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
-import { DolphinCoin } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   createChannel,
@@ -101,13 +101,13 @@ describe(`Node method follows spec - install deposit app`, () => {
 
   it(`install app with tokens, sending tokens should increase free balance`, async () => {
     const depositAmt = BigNumber.from(1000);
-    const assetId = getAddressFromAssetId(global[`network`].DolphinCoin);
+    const assetId = getAddressFromAssetId(global[`contracts`].DolphinCoin);
 
     await runUnrolledDepositTest(assetId, depositAmt);
   });
 
   it(`install app with both eth and tokens, sending eth and tokens should increase free balance`, async () => {
-    const erc20AssetId = getAddressFromAssetId(global[`network`].DolphinCoin);
+    const erc20AssetId = getAddressFromAssetId(global[`contracts`].DolphinCoin);
     const depositAmtToken = BigNumber.from(1000);
     const depositAmtEth = BigNumber.from(500);
 

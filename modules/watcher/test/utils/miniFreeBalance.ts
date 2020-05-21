@@ -15,7 +15,7 @@ import { ChannelSigner } from "@connext/utils";
 import { SetStateCommitment, SetupCommitment } from "@connext/contracts";
 
 import { stateToHash } from "./utils";
-import { NetworkContextForTestSuite } from "./contracts";
+import { TestNetworkContext } from "./contracts";
 import { AppWithCounterClass } from "./appWithCounter";
 import { TokenIndexedBalance } from "./context";
 
@@ -39,7 +39,7 @@ export class MiniFreeBalance {
     public readonly signerParticipants: ChannelSigner[],
     public readonly multisigAddress: string,
     private balancesIndexedByToken: TokenIndexedBalance,
-    private readonly networkContext: NetworkContextForTestSuite,
+    private readonly networkContext: TestNetworkContext,
     public versionNumber: BigNumber = One,
     private activeApps: string[] = [],
   ) {}
@@ -116,7 +116,7 @@ export class MiniFreeBalance {
   public static channelFactory(
     signers: ChannelSigner[],
     multisigAddress: string,
-    networkContext: NetworkContextForTestSuite,
+    networkContext: TestNetworkContext,
     activeApps: AppWithCounterClass[],
     remainingBalance: {
       [tokenAddress: string]: CoinTransfer[];
@@ -137,7 +137,7 @@ export class MiniFreeBalance {
       multisigAddress,
       addresses: {
         proxyFactory: networkContext.ProxyFactory,
-        multisigMastercopy: networkContext.MinimumViableMultisig,
+        minimumViableMultisig: networkContext.MinimumViableMultisig,
       },
       userIdentifiers: [signers[0].publicIdentifier, signers[1].publicIdentifier],
       proposedAppInstances: [],

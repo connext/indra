@@ -133,7 +133,7 @@ export class HashLockTransferService {
       const depositReceipt = await this.depositService.deposit(receiverChannel, deposit, assetId);
       if (!depositReceipt) {
         throw new Error(
-          `Could not deposit sufficient collateral to resolve hash lock transfer app for reciever: ${receiverIdentifier}`,
+          `Could not deposit sufficient collateral to resolve hash lock transfer app for receiver: ${receiverIdentifier}`,
         );
       }
     }

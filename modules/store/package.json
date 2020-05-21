@@ -1,6 +1,6 @@
 {
   "name": "@connext/store",
-  "version": "6.5.4",
+  "version": "6.5.7",
   "description": "Store module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -14,9 +14,9 @@
     "test": "ts-mocha --bail --check-leaks --exit src/**/*.spec.ts"
   },
   "dependencies": {
-    "@connext/contracts": "3.0.0",
-    "@connext/types": "6.5.4",
-    "@connext/utils": "6.5.4",
+    "@connext/contracts": "3.1.0",
+    "@connext/types": "6.5.7",
+    "@connext/utils": "6.5.7",
     "ethers": "5.0.0-beta.184",
     "localStorage": "1.0.4",
     "pg": "8.0.3",

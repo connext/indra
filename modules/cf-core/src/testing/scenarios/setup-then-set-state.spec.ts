@@ -1,3 +1,4 @@
+import { ChallengeRegistry, MinimumViableMultisig, ProxyFactory } from "@connext/contracts";
 import { Contract, Wallet, providers, utils, constants, BigNumber } from "ethers";
 
 import { SetStateCommitment, getSetupCommitment } from "../../ethereum";
@@ -6,12 +7,7 @@ import { Context } from "../../types";
 import { getCreate2MultisigAddress } from "../../utils";
 
 import { toBeEq } from "../bignumber-jest-matcher";
-import {
-  ChallengeRegistry,
-  MinimumViableMultisig,
-  NetworkContextForTestSuite,
-  ProxyFactory,
-} from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { getRandomChannelSigners } from "../random-signing-keys";
 
 const { keccak256, Interface } = utils;
@@ -38,39 +34,31 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
   let context: Context;
   let provider: providers.JsonRpcProvider;
   let wallet: Wallet;
-  let network: NetworkContextForTestSuite;
+  let contracts: TestContractAddresses;
   let appRegistry: Contract;
 
   beforeAll(async () => {
     wallet = global["wallet"];
-    network = global["network"];
-    provider = network.provider;
-    context = { network: global["network"] } as Context;
-    appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
+    contracts = global["contracts"];
+    provider = wallet.provider as providers.JsonRpcProvider;
+    context = { network: { contractAddresses: global["contracts"] } } as Context;
+    appRegistry = new Contract(contracts.ChallengeRegistry, ChallengeRegistry.abi, wallet);
   });
 
   it("should distribute funds in ETH free balance when put on chain", async (done) => {
     const [initiator, responder] = getRandomChannelSigners(2);
 
-    const proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
+    const proxyFactory = new Contract(contracts.ProxyFactory, ProxyFactory.abi, wallet);
 
     proxyFactory.once("ProxyCreation", async (proxy) => {
       // TODO: Test this separately
       expect(proxy).toBe(
-        await getCreate2MultisigAddress(
-          initiator.address,
-          responder.address,
-          {
-            proxyFactory: network.ProxyFactory,
-            multisigMastercopy: network.MinimumViableMultisig,
-          },
-          provider,
-        ),
+        await getCreate2MultisigAddress(initiator.address, responder.address, contracts, provider),
       );
 
       const stateChannel = StateChannel.setupChannel(
-        network.IdentityApp,
-        { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
+        contracts.IdentityApp,
+        contracts,
         proxy, // used as multisig
         initiator.publicIdentifier,
         responder.publicIdentifier,
@@ -86,7 +74,7 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       const freeBalance = stateChannel.freeBalance;
 
       const setStateCommitment = new SetStateCommitment(
-        network.ChallengeRegistry,
+        contracts.ChallengeRegistry,
         freeBalance.identity,
         keccak256(freeBalance.encodedLatestState),
         BigNumber.from(freeBalance.versionNumber),
@@ -138,11 +126,11 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       done();
     });
 
-    const iface = new Interface(MinimumViableMultisig.abi);
-
-    await proxyFactory.createProxyWithNonce(
-      network.MinimumViableMultisig,
-      iface.encodeFunctionData("setup", [[initiator, responder].map((x) => x.address)]),
+    await proxyFactory.functions.createProxyWithNonce(
+      contracts.MinimumViableMultisig,
+      new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
+        [initiator, responder].map((x) => x.address),
+      ]),
       0,
       { gasLimit: CREATE_PROXY_AND_SETUP_GAS },
     );

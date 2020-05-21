@@ -1,15 +1,15 @@
 import {
   AppInstanceProposal,
   IChannelSigner,
+  ILoggerService,
   IStoreService,
+  MinimalTransaction,
   NetworkContext,
   Opcode,
   PublicIdentifier,
-  MinimalTransaction,
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
 import { getRandomChannelSigner, nullLogger } from "@connext/utils";
-import { providers } from "ethers";
 
 import { ProtocolRunner } from "../machine";
 import { AppInstance, StateChannel } from "../models";
@@ -37,13 +37,13 @@ export class MiniNode {
 
   constructor(
     readonly networkContext: NetworkContext,
-    readonly provider: providers.JsonRpcProvider,
     readonly store: IStoreService,
+    readonly log: ILoggerService = nullLogger,
   ) {
     this.signer = getRandomChannelSigner();
     this.publicIdentifier = this.signer.publicIdentifier;
     this.address = this.signer.address;
-    this.protocolRunner = new ProtocolRunner(networkContext, provider, store, nullLogger);
+    this.protocolRunner = new ProtocolRunner(networkContext, store, nullLogger);
     this.scm = new Map<string, StateChannel>();
     this.protocolRunner.register(Opcode.OP_SIGN, makeSigner(this.signer));
     this.protocolRunner.register(
@@ -210,7 +210,7 @@ export class MiniNode {
     );
   }
 
-  public async dispatchMessage(message: any) {
-    await this.protocolRunner.runProtocolWithMessage(message);
+  public async dispatchMessage(message: any, channel: StateChannel) {
+    await this.protocolRunner.runProtocolWithMessage(message, channel);
   }
 }

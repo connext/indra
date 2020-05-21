@@ -68,7 +68,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
       const tx = await this.channelService.rebalance(channel, getAddress(data.assetId));
       return tx;
     } catch (e) {
-      this.log.debug(`Failed to collateralize: ${stringify(e)}`);
+      this.log.debug(`Failed to collateralize: ${e.message}`);
       return undefined;
     }
   }

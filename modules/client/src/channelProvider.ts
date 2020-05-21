@@ -31,7 +31,6 @@ import {
 import {
   deBigNumberifyJson,
   stringify,
-  delayAndThrow,
   getPublicKeyFromPublicIdentifier,
   delay,
 } from "@connext/utils";
@@ -55,9 +54,9 @@ export const createCFChannelProvider = async ({
   const contractAddresses = config.contractAddresses;
   const messaging = node.messaging;
   const nodeConfig = { STORE_KEY_PREFIX: ConnextClientStorePrefix };
-  const lockService = { 
+  const lockService = {
     acquireLock: node.acquireLock.bind(node),
-    releaseLock: node.releaseLock.bind(node), 
+    releaseLock: node.releaseLock.bind(node),
   };
   let cfCore;
   try {
@@ -98,7 +97,7 @@ export const createCFChannelProvider = async ({
   // register any default middlewares
   cfCore.injectMiddleware(
     Opcode.OP_VALIDATE,
-    await generateValidationMiddleware(contractAddresses),
+    await generateValidationMiddleware({ provider: ethProvider, contractAddresses }),
   );
 
   const connection = new CFCoreRpcConnection(cfCore, store, signer, node, logger);
@@ -368,7 +367,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
           const creationData = await this.node.createChannel();
           this.logger.debug(`created channel, transaction: ${stringify(creationData)}`);
         } catch (e) {
-          return reject(new Error(stringify(e)));
+          return reject(e);
         }
         await delay(20_000);
         return reject(`Could not create channel within 20s`);

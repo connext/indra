@@ -1,10 +1,11 @@
+import { DolphinCoin } from "@connext/contracts";
 import { DepositConfirmationMessage, MethodParams, DepositStartedMessage } from "@connext/types";
 import { getAddressFromAssetId, deBigNumberifyJson } from "@connext/utils";
 import { BigNumber, Contract, constants, providers } from "ethers";
 
 import { Node } from "../../node";
 
-import { DolphinCoin, NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
 
 import { setup, SetupContext } from "../setup";
@@ -74,7 +75,7 @@ describe("Node method follows spec - deposit", () => {
 
   it("has the right balance before an ERC20 deposit has been made", async () => {
     const erc20AssetId = getAddressFromAssetId(
-      (global["network"] as NetworkContextForTestSuite).DolphinCoin,
+      (global["contracts"] as TestContractAddresses).DolphinCoin,
     );
 
     const freeBalanceState = await getFreeBalanceState(nodeA, multisigAddress, erc20AssetId);
@@ -102,7 +103,7 @@ describe("Node method follows spec - deposit", () => {
 
   it("has the right balance for both parties after erc20 deposits", async () => {
     const erc20AssetId = getAddressFromAssetId(
-      (global["network"] as NetworkContextForTestSuite).DolphinCoin,
+      (global["contracts"] as TestContractAddresses).DolphinCoin,
     );
 
     const tokenAddress = getAddressFromAssetId(erc20AssetId);
@@ -133,7 +134,7 @@ describe("Node method follows spec - deposit", () => {
 
   it("updates balances correctly when depositing both ERC20 tokens and ETH", async () => {
     const erc20AssetId = getAddressFromAssetId(
-      (global["network"] as NetworkContextForTestSuite).DolphinCoin,
+      (global["contracts"] as TestContractAddresses).DolphinCoin,
     );
 
     const tokenAddress = getAddressFromAssetId(erc20AssetId);

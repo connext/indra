@@ -1,10 +1,5 @@
 import { MultisigCommitment, ConditionalTransactionDelegateTarget } from "@connext/contracts";
-import {
-  MultisigTransaction,
-  MultisigOperation,
-  NetworkContext,
-  ContractAddresses,
-} from "@connext/types";
+import { MultisigTransaction, MultisigOperation, ContractAddresses } from "@connext/types";
 import { BigNumberish, utils } from "ethers";
 
 const { Interface } = utils;
@@ -12,7 +7,7 @@ const { Interface } = utils;
 const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 export class WithdrawCommitment extends MultisigCommitment {
   public constructor(
-    public readonly networkContext: NetworkContext | ContractAddresses,
+    public readonly contractAddresses: ContractAddresses,
     public readonly multisigAddress: string,
     public readonly multisigOwners: string[],
     public readonly recipient: string,
@@ -25,7 +20,7 @@ export class WithdrawCommitment extends MultisigCommitment {
 
   public getTransactionDetails(): MultisigTransaction {
     return {
-      to: this.networkContext.ConditionalTransactionDelegateTarget,
+      to: this.contractAddresses.ConditionalTransactionDelegateTarget,
       value: 0,
       data: iface.encodeFunctionData("withdrawWrapper", [
         this.recipient,

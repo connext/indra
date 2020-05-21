@@ -4,7 +4,7 @@ import { utils, constants, BigNumber } from "ethers";
 
 import { HARD_CODED_ASSUMPTIONS } from "../../constants";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
-import { generateRandomNetworkContext } from "../../testing/mocks";
+import { getRandomContractAddresses } from "../../testing/mocks";
 
 import { AppInstance } from "../app-instance";
 import { StateChannel } from "../state-channel";
@@ -18,15 +18,12 @@ describe("StateChannel::setupChannel", () => {
 
   let sc: StateChannel;
 
-  const networkContext = generateRandomNetworkContext();
+  const contractAddresses = getRandomContractAddresses();
 
   beforeAll(() => {
     sc = StateChannel.setupChannel(
-      networkContext.IdentityApp,
-      {
-        proxyFactory: networkContext.ProxyFactory,
-        multisigMastercopy: networkContext.MinimumViableMultisig,
-      },
+      contractAddresses.IdentityApp,
+      contractAddresses,
       multisigAddress,
       ids[0],
       ids[1],
@@ -86,7 +83,7 @@ describe("StateChannel::setupChannel", () => {
     });
 
     it("should use the FreeBalanceAppApp as the app target", () => {
-      expect(fb.appInterface.addr).toBe(networkContext.IdentityApp);
+      expect(fb.appInterface.addr).toBe(contractAddresses.IdentityApp);
       expect(fb.appInterface.actionEncoding).toBe(undefined);
     });
 

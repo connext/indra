@@ -92,6 +92,19 @@ jobs:
     - run: make node
     - run: make test-node
 
+#  test-bot-farm:
+#    runs-on: ubuntu-latest
+#    needs: [build]
+#    steps:
+#    - uses: actions/checkout@v1
+#    - run: make pull-commit
+#    - run: make start-test-staging
+#    - run: sleep 15 && make dls
+#    - run: make test-bot-farm
+#    - name: Print logs
+#      if: failure()
+#      run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
+
   test-integration:
     runs-on: ubuntu-latest
     needs: [build]

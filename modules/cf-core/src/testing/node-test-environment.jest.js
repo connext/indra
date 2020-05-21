@@ -8,7 +8,7 @@ class NodeEnvironment extends NodeJSEnvironment {
   async setup() {
     await super.setup();
     this.global.wallet = global["wallet"];
-    this.global.network = global["network"];
+    this.global.contracts = global["contracts"];
   }
 
   async teardown() {

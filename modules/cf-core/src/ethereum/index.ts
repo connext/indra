@@ -18,24 +18,24 @@ const getConditionalTransactionCommitment = (
   appInstance: AppInstance,
 ): ConditionalTransactionCommitment =>
   new ConditionalTransactionCommitment(
-    context.network,
+    context.network.contractAddresses,
     stateChannel.multisigAddress,
     stateChannel.multisigOwners,
     appInstance.identityHash,
     stateChannel.freeBalance.identityHash,
     appInstance.outcomeType === OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER
-      ? context.network.MultiAssetMultiPartyCoinTransferInterpreter
+      ? context.network.contractAddresses.MultiAssetMultiPartyCoinTransferInterpreter
       : appInstance.outcomeType === OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER
-      ? context.network.SingleAssetTwoPartyCoinTransferInterpreter
+      ? context.network.contractAddresses.SingleAssetTwoPartyCoinTransferInterpreter
       : appInstance.outcomeType === OutcomeType.TWO_PARTY_FIXED_OUTCOME
-      ? context.network.TwoPartyFixedOutcomeInterpreter
+      ? context.network.contractAddresses.TwoPartyFixedOutcomeInterpreter
       : AddressZero,
     appInstance.encodedInterpreterParams,
   );
 
 const getSetStateCommitment = (context: Context, appInstance: AppInstance) =>
   new SetStateCommitment(
-    context.network.ChallengeRegistry,
+    context.network.contractAddresses.ChallengeRegistry,
     appInstance.identity,
     appInstance.hashOfLatestState,
     BigNumber.from(appInstance.versionNumber),
@@ -44,7 +44,7 @@ const getSetStateCommitment = (context: Context, appInstance: AppInstance) =>
 
 const getSetupCommitment = (context: Context, stateChannel: StateChannel): SetupCommitment =>
   new SetupCommitment(
-    context.network,
+    context.network.contractAddresses,
     stateChannel.multisigAddress,
     stateChannel.multisigOwners,
     stateChannel.freeBalance.identity,

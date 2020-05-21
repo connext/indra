@@ -36,26 +36,26 @@ import {
 import { getAddressFromAssetId, stringify } from "@connext/utils";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
-import { BigNumber } from "ethers";
+import { BigNumber, providers } from "ethers";
 
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
+import { CFCoreStore } from "../cfCore/cfCore.store";
+import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { MessagingProviderId } from "../constants";
-import { SwapRateService } from "../swapRate/swapRate.service";
-import { LoggerService } from "../logger/logger.service";
-import { Channel } from "../channel/channel.entity";
-import { WithdrawService } from "../withdraw/withdraw.service";
 import { DepositService } from "../deposit/deposit.service";
 import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.service";
+import { LoggerService } from "../logger/logger.service";
+import { MessagingProviderId } from "../constants";
 import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
-import { CFCoreStore } from "../cfCore/cfCore.store";
-import { AppType } from "../appInstance/appInstance.entity";
+import { SwapRateService } from "../swapRate/swapRate.service";
+import { WithdrawService } from "../withdraw/withdraw.service";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -139,7 +139,10 @@ export class AppRegistryService implements OnModuleInit {
         }
       }
       if (registryAppInfo.name !== HashLockTransferAppName) {
-        ({ appInstance } = await this.cfCoreService.installApp(appIdentityHash));
+        ({ appInstance } = await this.cfCoreService.installApp(
+          appIdentityHash,
+          installerChannel.multisigAddress,
+        ));
       }
       // any tasks that need to happen after install, i.e. DB writes
       await this.runPostInstallTasks(
@@ -154,7 +157,7 @@ export class AppRegistryService implements OnModuleInit {
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.stack || e.message}`);
-      await this.cfCoreService.rejectInstallApp(appIdentityHash);
+      await this.cfCoreService.rejectInstallApp(appIdentityHash, installerChannel.multisigAddress);
       return;
     }
   }
@@ -318,8 +321,8 @@ export class AppRegistryService implements OnModuleInit {
     const contractAddresses = await this.configService.getContractAddresses();
     const provider = this.configService.getEthProvider();
     const defaultValidation = await generateValidationMiddleware({
-      ...contractAddresses,
-      provider: provider as any,
+      contractAddresses,
+      provider: provider as providers.JsonRpcProvider,
     });
 
     return async (protocol: ProtocolName, cxt: MiddlewareContext) => {
@@ -449,7 +452,10 @@ export class AppRegistryService implements OnModuleInit {
     this.log.info(
       `installHashLockTransferMiddleware: Install sender app ${existingSenderApp.identityHash} for user ${appInstance.initiatorIdentifier} started`,
     );
-    const res = await this.cfCoreService.installApp(existingSenderApp.identityHash);
+    const res = await this.cfCoreService.installApp(
+      existingSenderApp.identityHash,
+      existingSenderApp.channel.multisigAddress,
+    );
     const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${existingSenderApp.channel.multisigAddress}.app-instance.${existingSenderApp.identityHash}.install`;
     await this.messagingService.publish(installSubject, appInstance);
     this.log.info(
@@ -490,7 +496,7 @@ export class AppRegistryService implements OnModuleInit {
 
   async onModuleInit() {
     const ethNetwork = await this.configService.getEthNetwork();
-    const addressBook = await this.configService.getContractAddresses();
+    const contractAddresses = await this.configService.getContractAddresses();
     for (const app of RegistryOfApps) {
       let appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
         app.name,
@@ -499,7 +505,7 @@ export class AppRegistryService implements OnModuleInit {
       if (!appRegistry) {
         appRegistry = new AppRegistry();
       }
-      const appDefinitionAddress = addressBook[app.name];
+      const appDefinitionAddress = contractAddresses[app.name];
       this.log.info(
         `Creating ${app.name} app on chain ${ethNetwork.chainId}: ${appDefinitionAddress}`,
       );

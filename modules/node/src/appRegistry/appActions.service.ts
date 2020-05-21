@@ -23,7 +23,6 @@ import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
 import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.service";
 import { AppInstance } from "../appInstance/appInstance.entity";
-import { getRandomBytes32, stringify } from "@connext/utils";
 
 const { soliditySha256 } = utils;
 
@@ -137,7 +136,14 @@ export class AppActionsService {
     senderApp: AppInstance<any>,
     action: AppAction,
   ): Promise<void> {
-    await this.cfCoreService.takeAction(senderApp.identityHash, action);
-    await this.cfCoreService.uninstallApp(senderApp.identityHash);
+    await this.cfCoreService.takeAction(
+      senderApp.identityHash,
+      senderApp.channel.multisigAddress,
+      action,
+    );
+    await this.cfCoreService.uninstallApp(
+      senderApp.identityHash,
+      senderApp.channel.multisigAddress,
+    );
   }
 }

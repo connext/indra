@@ -2,7 +2,7 @@ import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext
 import { constants, utils } from "ethers";
 
 import { createAppInstanceForTest, createAppInstanceProposalForTest } from "../../testing/utils";
-import { generateRandomNetworkContext } from "../../testing/mocks";
+import { getRandomContractAddresses } from "../../testing/mocks";
 
 import { StateChannel } from "../state-channel";
 import { FreeBalanceClass } from "../free-balance";
@@ -12,7 +12,7 @@ const { getAddress } = utils;
 const { WeiPerEther, AddressZero, Zero } = constants;
 
 describe("StateChannel::uninstallApp", () => {
-  const networkContext = generateRandomNetworkContext();
+  const contractAddresses = getRandomContractAddresses();
 
   let sc1: StateChannel;
   let sc2: StateChannel;
@@ -24,11 +24,8 @@ describe("StateChannel::uninstallApp", () => {
     const ids = getRandomPublicIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
-      networkContext.IdentityApp,
-      {
-        proxyFactory: networkContext.ProxyFactory,
-        multisigMastercopy: networkContext.MinimumViableMultisig,
-      },
+      contractAddresses.IdentityApp,
+      contractAddresses,
       multisigAddress,
       ids[0],
       ids[1],

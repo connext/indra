@@ -3,7 +3,7 @@ import { utils, constants } from "ethers";
 
 import { createAppInstanceForTest, createAppInstanceProposalForTest } from "../../testing/utils";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
-import { generateRandomNetworkContext } from "../../testing/mocks";
+import { getRandomContractAddresses } from "../../testing/mocks";
 
 import { AppInstance } from "../app-instance";
 import { StateChannel } from "../state-channel";
@@ -17,7 +17,7 @@ const APP_STATE = {
 };
 
 describe("StateChannel::setState", () => {
-  const networkContext = generateRandomNetworkContext();
+  const contractAddresses = getRandomContractAddresses();
 
   let sc1: StateChannel;
   let sc2: StateChannel;
@@ -28,11 +28,8 @@ describe("StateChannel::setState", () => {
     const ids = getRandomPublicIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
-      networkContext.IdentityApp,
-      {
-        proxyFactory: networkContext.ProxyFactory,
-        multisigMastercopy: networkContext.MinimumViableMultisig,
-      },
+      contractAddresses.IdentityApp,
+      contractAddresses,
       multisigAddress,
       ids[0],
       ids[1],

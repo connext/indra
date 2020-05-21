@@ -2,7 +2,7 @@ import {
   AppIdentity,
   MultisigOperation,
   MultisigTransaction,
-  NetworkContext,
+  ContractAddresses,
 } from "@connext/types";
 import { utils } from "ethers";
 import { appIdentityToHash } from "@connext/utils";
@@ -16,7 +16,7 @@ const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 
 export class SetupCommitment extends MultisigCommitment {
   public constructor(
-    public readonly networkContext: NetworkContext,
+    public readonly contractAddresses: ContractAddresses,
     public readonly multisigAddress: string,
     public readonly multisigOwners: string[],
     public readonly freeBalanceAppIdentity: AppIdentity,
@@ -27,12 +27,12 @@ export class SetupCommitment extends MultisigCommitment {
   public getTransactionDetails(): MultisigTransaction {
     return {
       data: iface.encodeFunctionData("executeEffectOfFreeBalance", [
-        this.networkContext.ChallengeRegistry,
+        this.contractAddresses.ChallengeRegistry,
         appIdentityToHash(this.freeBalanceAppIdentity),
-        this.networkContext.MultiAssetMultiPartyCoinTransferInterpreter,
+        this.contractAddresses.MultiAssetMultiPartyCoinTransferInterpreter,
       ]),
       operation: MultisigOperation.DelegateCall,
-      to: this.networkContext.ConditionalTransactionDelegateTarget,
+      to: this.contractAddresses.ConditionalTransactionDelegateTarget,
       value: 0,
     };
   }

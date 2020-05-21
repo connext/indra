@@ -14,6 +14,8 @@ import {
   stringify,
   getSignerAddressFromPublicIdentifier,
   recoverAddressFromChannelMessage,
+  ColorfulLogger,
+  delay,
 } from "@connext/utils";
 import { utils, BigNumber } from "ethers";
 
@@ -104,14 +106,16 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     } = m2!;
 
     const responderChannel = StateChannel.fromJson(responderChannelJson);
+    let postSyncStateChannel = StateChannel.fromJson(preProtocolStateChannel.toJson());
 
     const syncType = needsSyncFromCounterparty(preProtocolStateChannel, responderChannel);
+    log.debug(`[${processID}] Syncing channel with type: ${syncType}`);
     substart = Date.now();
     switch (syncType) {
       case PersistStateChannelType.SyncProposal: {
         // sync and save all proposals
         const proposalSync = await syncUntrackedProposals(
-          preProtocolStateChannel,
+          postSyncStateChannel,
           responderChannel,
           responderSetStateCommitments,
           context,
@@ -123,12 +127,13 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           proposalSync!.updatedChannel,
           proposalSync!.commitments,
         ];
+        postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
         logTime(log, substart, `[${processID}] Synced proposals with responder`);
         break;
       }
       case PersistStateChannelType.SyncFreeBalance: {
         const freeBalanceSync = await syncFreeBalanceState(
-          preProtocolStateChannel,
+          postSyncStateChannel,
           setStateCommitments,
           responderChannel,
           responderSetStateCommitments,
@@ -141,18 +146,24 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           freeBalanceSync!.updatedChannel,
           freeBalanceSync!.commitments,
         ];
+        postSyncStateChannel = StateChannel.fromJson(freeBalanceSync!.updatedChannel.toJson());
         logTime(log, substart, `[${processID}] Synced free balance with responder`);
         break;
       }
       case PersistStateChannelType.SyncAppInstances: {
         const appSync = await syncAppStates(
-          preProtocolStateChannel,
+          postSyncStateChannel,
           responderChannel,
           responderSetStateCommitments,
           ourIdentifier,
         );
 
         const { commitments, updatedChannel } = appSync!;
+
+        // update the channel with any double signed commitments
+        if (updatedChannel) {
+          postSyncStateChannel = StateChannel.fromJson(updatedChannel.toJson());
+        }
 
         let doubleSigned: SetStateCommitment[] = [];
         // process single-signed commitments
@@ -163,7 +174,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           }
 
           const responderApp = responderChannel.appInstances.get(commitment.appIdentityHash)!;
-          const app = updatedChannel!.appInstances.get(commitment.appIdentityHash)!;
+          const app = postSyncStateChannel.appInstances.get(commitment.appIdentityHash)!;
 
           // signature has been validated, add our signature
           yield [
@@ -173,7 +184,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
               params: {
                 initiatorIdentifier: responderIdentifier, // from *this* protocol
                 responderIdentifier: ourIdentifier,
-                multisigAddress: updatedChannel!.multisigAddress,
+                multisigAddress: postSyncStateChannel.multisigAddress,
                 appIdentityHash: app.identityHash,
                 action: responderApp.latestAction,
                 stateTimeout: commitment.stateTimeout,
@@ -184,7 +195,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           ];
 
           // update the app
-          updatedChannel!.setState(
+          postSyncStateChannel.setState(
             app,
             await app.computeStateTransition(responderApp!.latestAction, provider),
             commitment.stateTimeout,
@@ -204,7 +215,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         yield [
           PERSIST_STATE_CHANNEL,
           PersistStateChannelType.SyncAppInstances,
-          updatedChannel!,
+          postSyncStateChannel,
           doubleSigned,
         ];
 
@@ -212,11 +223,10 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         break;
       }
       case PersistStateChannelType.NoChange: {
-        log.debug(`No sync from counterparty needed, completing.`);
         // use yield syntax to properly return values from the protocol
         // to the controllers
-        yield [PERSIST_STATE_CHANNEL, PersistStateChannelType.NoChange, preProtocolStateChannel];
-        logTime(log, start, `[${processID}] Initiation finished`);
+        yield [PERSIST_STATE_CHANNEL, PersistStateChannelType.NoChange, postSyncStateChannel];
+        logTime(log, start, `[${processID}] No sync from counterparty needed`);
         break;
       }
       case PersistStateChannelType.CreateChannel: {
@@ -283,6 +293,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     };
 
     const syncType = needsSyncFromCounterparty(preProtocolStateChannel, initiatorChannel);
+    log.debug(`[${processID}] Syncing channel with type: ${syncType}`);
     substart = Date.now();
     switch (syncType) {
       case PersistStateChannelType.SyncProposal: {
@@ -392,15 +403,14 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           doubleSigned,
         ];
 
-        logTime(log, substart, `[${processID}] Synced app states with responder`);
+        logTime(log, substart, `[${processID}] Synced app states with initiator`);
         break;
       }
       case PersistStateChannelType.NoChange: {
-        log.debug(`No sync from counterparty needed, completing.`);
         // use yield syntax to properly return values from the protocol
         // to the controllers
-        yield [PERSIST_STATE_CHANNEL, PersistStateChannelType.NoChange, preProtocolStateChannel];
-        logTime(log, start, `[${processID}] Initiation finished`);
+        yield [PERSIST_STATE_CHANNEL, PersistStateChannelType.NoChange, postSyncStateChannel];
+        logTime(log, substart, `[${processID}] No sync from counterparty needed`);
         break;
       }
       case PersistStateChannelType.CreateChannel: {
@@ -411,7 +421,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         log.error(`Unreachable: ${c}`);
     }
 
-    logTime(log, substart, `[${processID}] Synced app states with responder`);
+    logTime(log, substart, `[${processID}] Synced channel with initator`);
 
     yield [IO_SEND, messageToSend, postSyncStateChannel];
     logTime(log, start, `[${processID}] Response finished`);

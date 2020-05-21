@@ -48,7 +48,7 @@ async function runDirectInstallUninstallTest(
   }
 }
 
-describe("Install-then-uninstall in a direct channel", () => {
+describe.skip("Install-then-uninstall in a direct channel", () => {
   for (const outcomeType of [
     OutcomeType.TWO_PARTY_FIXED_OUTCOME,
     OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,

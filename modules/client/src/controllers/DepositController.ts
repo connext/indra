@@ -267,6 +267,7 @@ export class DepositController extends AbstractController {
       initialState,
       initiatorDeposit: Zero,
       initiatorDepositAssetId: assetId,
+      multisigAddress: this.connext.multisigAddress,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: Zero,

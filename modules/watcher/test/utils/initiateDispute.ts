@@ -18,7 +18,7 @@ import { constants, BigNumber } from "ethers";
 import { expect } from ".";
 import { AppWithCounterClass } from "./appWithCounter";
 import { MiniFreeBalance } from "./miniFreeBalance";
-import { NetworkContextForTestSuite } from "./contracts";
+import { TestNetworkContext } from "./contracts";
 import { verifyChallengeProgressedEvent } from "./assertions";
 
 const { Zero } = constants;
@@ -37,7 +37,7 @@ export const initiateDispute = async (
   freeBalance: MiniFreeBalance,
   watcher: Watcher,
   store: IWatcherStoreService,
-  networkContext: NetworkContextForTestSuite,
+  networkContext: TestNetworkContext,
   shouldCallSetAndProgress: boolean = false,
 ) => {
   // before starting, verify empty store

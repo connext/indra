@@ -1,8 +1,7 @@
 import { IConnextClient, PublicParams } from "@connext/types";
-import { calculateExchange } from "@connext/utils";
 import { utils, constants } from "ethers";
 
-import { expect, COLLATERAL_AMOUNT_TOKEN, ONE_ETH } from "../util";
+import { expect, ONE_ETH } from "../util";
 import {
   AssetOptions,
   createClient,
@@ -27,7 +26,7 @@ describe("Swaps", () => {
 
   beforeEach(async () => {
     client = await createClient();
-    tokenAddress = client.config.contractAddresses.Token;
+    tokenAddress = client.config.contractAddresses.Token!;
     nodeSignerAddress = client.nodeSignerAddress;
   });
 

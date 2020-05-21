@@ -3,7 +3,7 @@ import { BigNumber, constants } from "ethers";
 
 import { Node } from "../node";
 
-import { NetworkContextForTestSuite } from "./contracts";
+import { TestContractAddresses } from "./contracts";
 import { getAppInstance, getApps, installApp, takeAppAction, uninstallApp } from "./utils";
 
 const { Zero } = constants;
@@ -28,7 +28,7 @@ type CoinTransfer = {
   amount: BigNumber;
 };
 
-const { UnidirectionalLinkedTransferApp } = global["network"] as NetworkContextForTestSuite;
+const { UnidirectionalLinkedTransferApp } = global["contracts"] as TestContractAddresses;
 
 export async function installLink(
   funder: Node,
@@ -67,13 +67,14 @@ export async function redeemLink(
   redeemer: Node,
   funder: Node,
   appIdentityHash: string,
+  multisigAddress: string,
   action: UnidirectionalLinkedTransferAppAction,
 ): Promise<string> {
   // take action to finalize state and claim funds from intermediary
-  await takeAppAction(redeemer, appIdentityHash, action);
+  await takeAppAction(redeemer, appIdentityHash, multisigAddress, action);
   const redeemerApp = await getAppInstance(redeemer, appIdentityHash);
   assertLinkRedemption(redeemerApp, action.amount);
-  return uninstallApp(redeemer, funder, appIdentityHash);
+  return uninstallApp(redeemer, funder, appIdentityHash, multisigAddress);
 }
 
 /**
@@ -126,8 +127,20 @@ export async function installAndRedeemLink(
   );
 
   // redeemer take action to finalize state and claim funds from intermediary
-  await redeemLink(redeemer, intermediary, redeemerAppId, action);
+  await redeemLink(
+    redeemer,
+    intermediary,
+    redeemerAppId,
+    multisigAddressIntermediaryRedeemer,
+    action,
+  );
 
   // intermediary takes action to finalize state and claim funds from creator
-  await redeemLink(intermediary, funder, matchedApp!.identityHash, action);
+  await redeemLink(
+    intermediary,
+    funder,
+    matchedApp!.identityHash,
+    multisigAddressFunderIntermediary,
+    action,
+  );
 }

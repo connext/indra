@@ -10,7 +10,7 @@ import { BigNumber, utils, constants } from "ethers";
 import { Node } from "../../node";
 import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
 
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
 
 import { setup, SetupContext } from "../setup";
@@ -34,7 +34,7 @@ const { One } = constants;
 
 expect.extend({ toBeLt, toBeEq });
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - install", () => {
   let multisigAddress: string;
@@ -76,7 +76,7 @@ describe("Node method follows spec - install", () => {
             CONVENTION_FOR_ETH_ASSET_ID,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
-          await makeInstallCall(nodeB, msg.data.appIdentityHash);
+          await makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress);
         });
 
         nodeA.on("INSTALL_EVENT", async (msg: InstallMessage) => {
@@ -122,7 +122,7 @@ describe("Node method follows spec - install", () => {
         await transferERC20Tokens(await nodeA.signerAddress);
         await transferERC20Tokens(await nodeB.signerAddress);
 
-        const erc20TokenAddress = (global["network"] as NetworkContextForTestSuite).DolphinCoin;
+        const erc20TokenAddress = (global["contracts"] as TestContractAddresses).DolphinCoin;
         const assetId = getAddressFromAssetId(erc20TokenAddress);
 
         await collateralizeChannel(multisigAddress, nodeA, nodeB, One, assetId);
@@ -144,7 +144,7 @@ describe("Node method follows spec - install", () => {
             assetId,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
-          makeInstallCall(nodeB, msg.data.appIdentityHash);
+          makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress);
         });
 
         nodeA.on("INSTALL_EVENT", async (msg: InstallMessage) => {

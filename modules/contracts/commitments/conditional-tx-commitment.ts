@@ -1,7 +1,7 @@
 import {
   ConditionalTransactionCommitmentJSON,
   MultisigOperation,
-  NetworkContext,
+  ContractAddresses,
 } from "@connext/types";
 
 import { utils, constants } from "ethers";
@@ -19,7 +19,7 @@ const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 // to the ConditionalTransactionDelegateTarget contract.
 export class ConditionalTransactionCommitment extends MultisigCommitment {
   constructor(
-    public readonly networkContext: NetworkContext,
+    public readonly contractAddresses: ContractAddresses,
     public readonly multisig: string,
     public readonly multisigOwners: string[],
     public readonly appIdentityHash: string,
@@ -36,7 +36,6 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
   }
 
   toJson(): ConditionalTransactionCommitmentJSON {
-    const { provider, ...networkContext } = this.networkContext;
     return {
       appIdentityHash: this.appIdentityHash,
       freeBalanceAppIdentityHash: this.freeBalanceAppIdentityHash,
@@ -44,14 +43,14 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
       interpreterParams: this.interpreterParams,
       multisigAddress: this.multisigAddress,
       multisigOwners: this.multisigOwners,
-      networkContext: networkContext,
+      contractAddresses: this.contractAddresses,
       signatures: this.signatures,
     };
   }
 
   public static fromJson(json: ConditionalTransactionCommitmentJSON) {
     return new ConditionalTransactionCommitment(
-      json.networkContext,
+      json.contractAddresses,
       json.multisigAddress,
       json.multisigOwners,
       json.appIdentityHash,
@@ -72,10 +71,10 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
    */
   public getTransactionDetails() {
     return {
-      to: this.networkContext.ConditionalTransactionDelegateTarget,
+      to: this.contractAddresses.ConditionalTransactionDelegateTarget,
       value: 0,
       data: iface.encodeFunctionData("executeEffectOfInterpretedAppOutcome", [
-        this.networkContext.ChallengeRegistry,
+        this.contractAddresses.ChallengeRegistry,
         this.freeBalanceAppIdentityHash,
         this.appIdentityHash,
         this.interpreterAddr,

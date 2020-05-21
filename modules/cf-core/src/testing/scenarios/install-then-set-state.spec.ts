@@ -1,3 +1,9 @@
+import {
+  ChallengeRegistry,
+  DolphinCoin,
+  MinimumViableMultisig,
+  ProxyFactory,
+} from "@connext/contracts";
 import { MultiAssetMultiPartyCoinTransferInterpreterParams, OutcomeType } from "@connext/types";
 import { Contract, Wallet, providers, constants, utils } from "ethers";
 
@@ -9,13 +15,7 @@ import {
 import { AppInstance, FreeBalanceClass, StateChannel } from "../../models";
 import { Context } from "../../types";
 
-import {
-  ChallengeRegistry,
-  DolphinCoin,
-  MinimumViableMultisig,
-  NetworkContextForTestSuite,
-  ProxyFactory,
-} from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { transferERC20Tokens, newWallet } from "../utils";
 
 import { toBeEq } from "../bignumber-jest-matcher";
@@ -49,27 +49,27 @@ const CONDITIONAL_TX_DELEGATECALL_GAS = 1e6;
 describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
   let context: Context;
   let wallet: Wallet;
-  let network: NetworkContextForTestSuite;
+  let contracts: TestContractAddresses;
   let appRegistry: Contract;
 
   beforeAll(() => {
     jest.setTimeout(20000);
-    network = global["network"];
+    contracts = global["contracts"];
     wallet = newWallet(global["wallet"]);
-    context = { network: global["network"] } as Context;
-    appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
+    context = { network: { contractAddresses: global["contracts"] } } as Context;
+    appRegistry = new Contract(contracts.ChallengeRegistry, ChallengeRegistry.abi, wallet);
   });
 
   it("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async (done) => {
     const signers = getRandomChannelSigners(2);
     const ids = signers.map((s) => s.publicIdentifier);
-    const erc20TokenAddress = network.DolphinCoin;
-    const proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
+    const erc20TokenAddress = contracts.DolphinCoin;
+    const proxyFactory = new Contract(contracts.ProxyFactory, ProxyFactory.abi, wallet);
 
     proxyFactory.once("ProxyCreation", async (proxyAddress: string) => {
       let stateChannel = StateChannel.setupChannel(
-        network.IdentityApp,
-        { proxyFactory: proxyFactory.address, multisigMastercopy: network.MinimumViableMultisig },
+        contracts.IdentityApp,
+        contracts,
         proxyAddress, // used as multisigAddress
         ids[0],
         ids[1],
@@ -89,7 +89,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         signers[1].address,
         stateChannel.freeBalance.defaultTimeout, // Re-use ETH FreeBalance timeout
         {
-          addr: network.IdentityApp,
+          addr: contracts.IdentityApp,
           stateEncoding: "tuple(address to, uint256 amount)[][]",
           actionEncoding: undefined,
         },
@@ -241,11 +241,11 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       done();
     });
 
-    const iface = new Interface(MinimumViableMultisig.abi);
-
-    await proxyFactory.createProxyWithNonce(
-      network.MinimumViableMultisig,
-      iface.encodeFunctionData("setup", [signers.map((x) => x.address)]),
+    await proxyFactory.functions.createProxyWithNonce(
+      contracts.MinimumViableMultisig,
+      new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
+        signers.map((x) => x.address),
+      ]),
       0,
       { gasLimit: CREATE_PROXY_AND_SETUP_GAS },
     );

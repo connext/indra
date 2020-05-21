@@ -45,7 +45,7 @@ export const createClient = async (
     value: ETH_AMOUNT_LG,
   });
   if (fund) {
-    const token = new Contract(client.config.contractAddresses.Token, ERC20.abi, ethWallet);
+    const token = new Contract(client.config.contractAddresses.Token!, ERC20.abi, ethWallet);
     const tokenTx = await token.transfer(client.signerAddress, TOKEN_AMOUNT);
     await Promise.all([ethTx.wait(), tokenTx.wait()]);
   }

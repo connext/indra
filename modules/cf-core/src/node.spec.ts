@@ -18,7 +18,7 @@ describe("Node", () => {
     const node = await Node.create(
       memoryMessagingService,
       store,
-      global["network"],
+      global["contracts"],
       { STORE_KEY_PREFIX: "./node.spec.ts-test-file" },
       provider,
       getRandomChannelSigner(),

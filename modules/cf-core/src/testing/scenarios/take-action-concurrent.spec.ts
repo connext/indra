@@ -9,7 +9,7 @@ import { utils, constants } from "ethers";
 import { Node } from "../../node";
 
 import { toBeLt } from "../bignumber-jest-matcher";
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import { validAction } from "../tic-tac-toe";
 import {
@@ -27,7 +27,7 @@ expect.extend({ toBeLt });
 
 jest.setTimeout(7500);
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - toke action", () => {
   let multisigAddress: string;
@@ -54,7 +54,7 @@ describe("Node method follows spec - toke action", () => {
       );
 
       nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
-        makeInstallCall(nodeB, msg.data.appIdentityHash);
+        makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress);
       });
 
       nodeA.on("INSTALL_EVENT", (msg: InstallMessage) => {
@@ -86,8 +86,12 @@ describe("Node method follows spec - toke action", () => {
         if (appsTakenActionOn === 2) done();
       });
 
-      nodeA.rpcRouter.dispatch(constructTakeActionRpc(appIdentityHashes[0], validAction));
-      nodeA.rpcRouter.dispatch(constructTakeActionRpc(appIdentityHashes[1], validAction));
+      nodeA.rpcRouter.dispatch(
+        constructTakeActionRpc(appIdentityHashes[0], multisigAddress, validAction),
+      );
+      nodeA.rpcRouter.dispatch(
+        constructTakeActionRpc(appIdentityHashes[1], multisigAddress, validAction),
+      );
     });
   });
 });

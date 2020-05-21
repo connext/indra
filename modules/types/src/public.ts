@@ -26,10 +26,10 @@ type CheckDepositRightsResponse = {
   appIdentityHash: Bytes32;
 };
 
-type RequestDepositRightsParameters = MethodParams.RequestDepositRights;
+type RequestDepositRightsParameters = Omit<MethodParams.RequestDepositRights, "multisigAddress">;
 type RequestDepositRightsResponse = MethodResults.RequestDepositRights;
 
-type RescindDepositRightsParameters = MethodParams.RescindDepositRights;
+type RescindDepositRightsParameters = Omit<MethodParams.RescindDepositRights, "multisigAddress">;
 type RescindDepositRightsResponse = MethodResults.RescindDepositRights;
 
 ////////////////////////////////////////

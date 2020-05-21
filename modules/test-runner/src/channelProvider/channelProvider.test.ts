@@ -29,7 +29,7 @@ describe("ChannelProvider", () => {
     remoteClient = await createRemoteClient(await createChannelProvider(client));
     nodeIdentifier = client.config.nodeIdentifier;
     nodeSignerAddress = client.nodeSignerAddress;
-    tokenAddress = client.config.contractAddresses.Token;
+    tokenAddress = client.config.contractAddresses.Token!;
   });
 
   afterEach(async () => {
@@ -37,7 +37,7 @@ describe("ChannelProvider", () => {
   });
 
   it("Happy case: remote client can be instantiated with a channelProvider", async () => {
-    const _tokenAddress = remoteClient.config.contractAddresses.Token;
+    const _tokenAddress = remoteClient.config.contractAddresses.Token!;
     const _nodeIdentifier = remoteClient.config.nodeIdentifier;
     const _nodeSignerAddress = getSignerAddressFromPublicIdentifier(nodeIdentifier);
     expect(_tokenAddress).to.be.eq(tokenAddress);

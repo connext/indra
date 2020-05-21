@@ -3,7 +3,7 @@ import { delay } from "@connext/utils";
 
 import { Node } from "../../node";
 
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { SetupContext, setup } from "../setup";
 import {
   constructUninstallRpc,
@@ -12,7 +12,7 @@ import {
   installApp,
 } from "../utils";
 
-const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - uninstall", () => {
   let nodeA: Node;
@@ -25,7 +25,7 @@ describe("Node method follows spec - uninstall", () => {
   });
 
   describe("Node A and B install TTT, then uninstall it", () => {
-    it("sends proposal with non-null initial state", async done => {
+    it("sends proposal with non-null initial state", async (done) => {
       const initialState = {
         versionNumber: 1,
         winner: 1, // Hard-coded winner for test
@@ -59,7 +59,7 @@ describe("Node method follows spec - uninstall", () => {
         done();
       });
 
-      await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash));
+      await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash, multisigAddess));
 
       expect(await getInstalledAppInstances(nodeA, multisigAddess)).toEqual([]);
     });

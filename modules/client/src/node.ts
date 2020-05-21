@@ -61,6 +61,7 @@ export class NodeApiClient implements INodeApiClient {
       messaging: providedMessaging,
       messagingUrl,
     } = opts;
+    const log = logger.newContext("NodeApiClient");
 
     if (signer) {
       getSignature = (msg: string) => signer.signMessage(msg);
@@ -81,7 +82,7 @@ export class NodeApiClient implements INodeApiClient {
       messaging = new MessagingService(
         {
           messagingUrl: messagingUrl || formatMessagingUrl(nodeUrl),
-          logger,
+          logger: log,
         },
         "INDRA",
         () => NodeApiClient.getBearerToken(nodeUrl, userIdentifier, getSignature),
@@ -111,10 +112,10 @@ export class NodeApiClient implements INodeApiClient {
         ethProvider,
         signer,
         node,
-        logger,
+        logger: log,
         store: opts.store,
       });
-      logger.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
+      log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
       node.channelProvider = channelProvider;
     }
     return node;

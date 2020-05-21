@@ -173,6 +173,7 @@ export class WithdrawalController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositAssetId: assetId,
+      multisigAddress: this.connext.multisigAddress,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: Zero,

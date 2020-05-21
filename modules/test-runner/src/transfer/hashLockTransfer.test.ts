@@ -23,7 +23,7 @@ import {
 } from "../util";
 
 const { soliditySha256 } = utils;
-const { AddressZero } = constants;
+const { AddressZero, HashZero } = constants;
 
 describe("HashLock Transfers", () => {
   let clientA: IConnextClient;
@@ -48,7 +48,7 @@ describe("HashLock Transfers", () => {
   beforeEach(async () => {
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
-    tokenAddress = clientA.config.contractAddresses.Token;
+    tokenAddress = clientA.config.contractAddresses.Token!;
   });
 
   afterEach(async () => {
@@ -243,6 +243,7 @@ describe("HashLock Transfers", () => {
       receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.PENDING,
       meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
+      preImage: HashZero,
     } as NodeResponses.GetHashLockTransfer);
   });
 
@@ -283,6 +284,7 @@ describe("HashLock Transfers", () => {
       senderIdentifier: clientA.publicIdentifier,
       receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.COMPLETED,
+      preImage,
       meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
     } as NodeResponses.GetHashLockTransfer);
   });
