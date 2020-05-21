@@ -272,5 +272,29 @@ export class ConfigService implements OnModuleInit {
     };
   }
 
+  @Memoize()
+  async getZeroRebalanceProfile(
+    assetId: string = AddressZero,
+  ): Promise<RebalanceProfile | undefined> {
+    if (assetId === AddressZero) {
+      return {
+        assetId: AddressZero,
+        channels: [],
+        id: 0,
+        collateralizeThreshold: Zero,
+        target: Zero,
+        reclaimThreshold: Zero,
+      };
+    }
+    return {
+      assetId,
+      channels: [],
+      id: 0,
+      collateralizeThreshold: Zero,
+      target: Zero,
+      reclaimThreshold: Zero,
+    };
+  }
+
   async onModuleInit(): Promise<void> {}
 }

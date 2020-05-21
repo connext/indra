@@ -197,8 +197,8 @@ export class ChannelService {
     }
 
     if (!targets) {
-      this.log.debug(`No profile for this channel and asset, falling back to default profile`);
-      targets = await this.configService.getDefaultRebalanceProfile(assetId);
+      this.log.debug(`No profile for this channel and asset, falling back to zero profile`);
+      targets = await this.configService.getZeroRebalanceProfile(assetId);
     }
 
     if (!targets) {
