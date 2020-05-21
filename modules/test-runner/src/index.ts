@@ -19,7 +19,7 @@ import "./swap/swapOffline.test";
 import "./transfer/asyncTransfer.test";
 import "./transfer/asyncTransferOffline.test";
 import "./transfer/concurrentTransfers.test";
-import "./transfer/getLinkedTransfer.test";
+import "./transfer/linkedTransfer.test";
 import "./transfer/hashLockTransfer.test";
 import "./transfer/signedTransfer.test";
 import "./withdraw/withdraw.test";

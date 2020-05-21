@@ -1,11 +1,11 @@
-import { IConnextClient, ConditionalTransferTypes } from "@connext/types";
+import { IConnextClient, ConditionalTransferTypes, PublicResults } from "@connext/types";
 import { getRandomBytes32 } from "@connext/utils";
 import { AddressZero, One } from "ethers/constants";
 
 import { expect } from "../util";
 import { AssetOptions, createClient, fundChannel } from "../util";
 
-describe("Get Linked Transfer", () => {
+describe("Linked Transfer", () => {
   let clientA: IConnextClient;
 
   beforeEach(async () => {
@@ -14,6 +14,25 @@ describe("Get Linked Transfer", () => {
 
   afterEach(async () => {
     await clientA.messaging.disconnect();
+  });
+
+  // un-skip this once issue 1145 is fixed
+  it.skip("happy case: a user can redeem their own link payment", async () => {
+    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+    const linkedTransfer = (await clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      assetId: AddressZero,
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      paymentId: getRandomBytes32(),
+      preImage: getRandomBytes32(),
+    })) as PublicResults.LinkedTransfer;
+    const res = await clientA.resolveCondition({
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      paymentId: linkedTransfer.paymentId,
+      preImage: linkedTransfer.preImage,
+    });
+    console.log(`Resolve result: ${JSON.stringify(res)}`);
   });
 
   it.skip("happy case: get linked transfer by payment id", async () => {
@@ -49,7 +68,6 @@ describe("Get Linked Transfer", () => {
     const preImage = getRandomBytes32();
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
