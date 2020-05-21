@@ -90,7 +90,7 @@ describe("Sync", () => {
 
     const initiatorFailure = `IO_SEND_AND_WAIT timed out after ${
       CF_METHOD_TIMEOUT / 1000
-    }s waiting for counterparty reply in setup`;
+    }s waiting for counterparty reply in propose`;
 
     // load stores with proposal
     const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
