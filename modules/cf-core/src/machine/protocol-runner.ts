@@ -75,7 +75,7 @@ export class ProtocolRunner {
     preProtocolStateChannel?: StateChannel,
   ) {
     try {
-      const protocolRet = this.runProtocol(
+      const protocolRet = await this.runProtocol(
         getProtocolFromName(protocolName)[0],
         {
           params,
@@ -89,7 +89,6 @@ export class ProtocolRunner {
       );
       return protocolRet;
     } catch (error) {
-      console.log(`CAUGHT ERROR RUNNING PROTOCOL, EMITTING EVENT`);
       const outgoingData = getOutgoingEventFailureDataFromProtocol(protocolName, params, error);
       await emitOutgoingMessage(router, outgoingData);
       throw error;
