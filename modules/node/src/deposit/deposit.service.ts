@@ -104,7 +104,7 @@ export class DepositService {
     } catch (e) {
       throw e;
     } finally {
-      await this.rescindDepositRights(appIdentityHash);
+      await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
       await this.channelRepository.setInflightCollateralization(channel, assetId, false);
     }
     this.log.info(`Deposit complete: ${JSON.stringify(receipt)}`);
@@ -124,9 +124,9 @@ export class DepositService {
     return appIdentityHash;
   }
 
-  async rescindDepositRights(appIdentityHash: string): Promise<void> {
+  async rescindDepositRights(appIdentityHash: string, multisigAddress: string): Promise<void> {
     this.log.debug(`Uninstalling deposit app`);
-    await this.cfCoreService.uninstallApp(appIdentityHash);
+    await this.cfCoreService.uninstallApp(appIdentityHash, multisigAddress);
   }
 
   async findCollateralizationByHash(hash: string): Promise<OnchainTransaction | undefined> {

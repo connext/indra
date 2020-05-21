@@ -11,7 +11,7 @@ import {
   uninstallApp,
 } from "../utils";
 import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
-import { deBigNumberifyJson, ChannelSigner, stringify, delay } from "@connext/utils";
+import { deBigNumberifyJson, ChannelSigner, delay } from "@connext/utils";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { TestContractAddresses } from "../contracts";
 import {
@@ -27,6 +27,7 @@ import { MemoryLockService } from "../services";
 import { Logger } from "../logger";
 import { EventEmitter } from "events";
 import { validAction } from "../tic-tac-toe";
+import { isHexString } from "ethers/utils";
 
 const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
@@ -43,7 +44,7 @@ describe("Sync", () => {
   let lockService: MemoryLockService;
   let channelSignerA: ChannelSigner;
   let channelSignerB: ChannelSigner;
-  let expectedChannel: StateChannelJSON;
+  let expectedChannel: StateChannelJSON | undefined;
   let messagingServiceA: MemoryMessagingServiceWithLimits;
   let messagingServiceB: MemoryMessagingServiceWithLimits;
 
@@ -110,7 +111,7 @@ describe("Sync", () => {
       const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const params = {
         ...(rpc.parameters as MethodParams.ProposeInstall),
-        multisigAddress: undefined,
+        multisigAddress,
         meta: {
           info: "Provided meta",
         },
@@ -123,14 +124,16 @@ describe("Sync", () => {
             parameters: deBigNumberifyJson(params),
           });
         } catch (e) {
-          log.info(`Caught error sending rpc: ${stringify(e)}`);
+          log.info(`Caught error sending rpc: ${e.message}`);
         }
       });
 
       // get expected channel from nodeB
-      expectedChannel = (await storeServiceB.getStateChannel(multisigAddress))!;
-      identityHash = expectedChannel.proposedAppInstances[0][0];
-      expect(expectedChannel.proposedAppInstances.length).toBe(1);
+      expect(isHexString(multisigAddress)).toBe(true);
+      expectedChannel = await storeServiceB.getStateChannel(multisigAddress);
+      expect(expectedChannel).toBeDefined();
+      identityHash = expectedChannel!.proposedAppInstances[0][0];
+      expect(expectedChannel!.proposedAppInstances.length).toBe(1);
       const unsynced = await storeServiceA.getStateChannel(multisigAddress);
       expect(unsynced?.proposedAppInstances.length).toBe(0);
     });
@@ -159,9 +162,10 @@ describe("Sync", () => {
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).toMatchObject(expectedChannel);
-
-      await (newNodeA as Node).rpcRouter.dispatch(constructInstallRpc(identityHash));
+      expect(syncedChannel).toMatchObject(expectedChannel!);
+      await (newNodeA as Node).rpcRouter.dispatch(
+        constructInstallRpc(identityHash, multisigAddress),
+      );
       const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
       const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
@@ -202,9 +206,10 @@ describe("Sync", () => {
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).toMatchObject(expectedChannel);
-
-      await (newNodeB as Node).rpcRouter.dispatch(constructInstallRpc(identityHash));
+      expect(syncedChannel).toMatchObject(expectedChannel!);
+      await (newNodeB as Node).rpcRouter.dispatch(
+        constructInstallRpc(identityHash, multisigAddress),
+      );
       const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
       const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
@@ -259,7 +264,7 @@ describe("Sync", () => {
         nodeB.once(EventNames.INSTALL_EVENT, () => reject("NodeB caught install event"));
         nodeA.once(EventNames.INSTALL_EVENT, () => reject("NodeA caught install event"));
         try {
-          await nodeB.rpcRouter.dispatch(constructInstallRpc(appIdentityHash));
+          await nodeB.rpcRouter.dispatch(constructInstallRpc(appIdentityHash, multisigAddress));
           return reject(`Initiator should not be able to complete the installation`);
         } catch (e) {
           return resolve();
@@ -297,9 +302,9 @@ describe("Sync", () => {
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).toMatchObject(expectedChannel);
+      expect(syncedChannel).toMatchObject(expectedChannel!);
 
-      await uninstallApp(newNodeA as Node, nodeB, appIdentityHash);
+      await uninstallApp(newNodeA as Node, nodeB, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
       expect(newChannelA!).toMatchObject(newChannelB!);
@@ -335,9 +340,9 @@ describe("Sync", () => {
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).toMatchObject(expectedChannel);
+      expect(syncedChannel).toMatchObject(expectedChannel!);
 
-      await uninstallApp(nodeA, newNodeB as Node, appIdentityHash);
+      await uninstallApp(nodeA, newNodeB as Node, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
       expect(newChannelA!).toMatchObject(newChannelB!);
@@ -380,7 +385,7 @@ describe("Sync", () => {
         nodeA.once(EventNames.UNINSTALL_EVENT, () => reject("NodeA caught uninstall event"));
         nodeB.once(EventNames.UNINSTALL_EVENT, () => resolve);
         try {
-          await nodeA.rpcRouter.dispatch(constructUninstallRpc(identityHash));
+          await nodeA.rpcRouter.dispatch(constructUninstallRpc(identityHash, multisigAddress));
           return reject(`Initiator should be able to complete uninstall`);
         } catch (e) {
           return resolve();
@@ -419,7 +424,7 @@ describe("Sync", () => {
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).toMatchObject(expectedChannel);
+      expect(syncedChannel).toMatchObject(expectedChannel!);
 
       // create new app
       [identityHash] = await installApp(newNodeA as Node, nodeB, multisigAddress, TicTacToeApp);
@@ -463,7 +468,7 @@ describe("Sync", () => {
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).toMatchObject(expectedChannel);
+      expect(syncedChannel).toMatchObject(expectedChannel!);
 
       // create new app
       [identityHash] = await installApp(nodeA, newNodeB as Node, multisigAddress, TicTacToeApp);
@@ -513,9 +518,11 @@ describe("Sync", () => {
       await new Promise(async (resolve, reject) => {
         nodeB.once(EventNames.UPDATE_STATE_EVENT, () => resolve());
         try {
-          await nodeA.rpcRouter.dispatch(constructTakeActionRpc(appIdentityHash, validAction));
+          await nodeA.rpcRouter.dispatch(
+            constructTakeActionRpc(appIdentityHash, multisigAddress, validAction),
+          );
         } catch (e) {
-          console.log(`Caught error sending rpc: ${stringify(e)}`);
+          log.info(`Caught error sending rpc: ${e.message}`);
         }
       });
 
@@ -559,10 +566,10 @@ describe("Sync", () => {
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).toMatchObject(expectedChannel);
+      expect(syncedChannel).toMatchObject(expectedChannel!);
 
       //attempt to uninstall
-      await uninstallApp(newNodeA as Node, nodeB, appIdentityHash);
+      await uninstallApp(newNodeA as Node, nodeB, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
       expect(newChannelA!).toMatchObject(newChannelB!);
@@ -597,10 +604,10 @@ describe("Sync", () => {
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).toMatchObject(expectedChannel);
+      expect(syncedChannel).toMatchObject(expectedChannel!);
 
       //attempt to uninstall
-      await uninstallApp(nodeA, newNodeB as Node, appIdentityHash);
+      await uninstallApp(nodeA, newNodeB as Node, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
       expect(newChannelA!).toMatchObject(newChannelB!);

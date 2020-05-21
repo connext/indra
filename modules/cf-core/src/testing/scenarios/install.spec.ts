@@ -74,7 +74,7 @@ describe("Node method follows spec - install", () => {
             CONVENTION_FOR_ETH_ASSET_ID,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
-          await makeInstallCall(nodeB, msg.data.appIdentityHash);
+          await makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress);
         });
 
         nodeA.on("INSTALL_EVENT", async (msg: InstallMessage) => {
@@ -93,13 +93,9 @@ describe("Node method follows spec - install", () => {
             CONVENTION_FOR_ETH_ASSET_ID,
           );
 
-          expect(postInstallETHBalanceNodeA).toBeEq(
-            preInstallETHBalanceNodeA.sub(appDeposit),
-          );
+          expect(postInstallETHBalanceNodeA).toBeEq(preInstallETHBalanceNodeA.sub(appDeposit));
 
-          expect(postInstallETHBalanceNodeB).toBeEq(
-            preInstallETHBalanceNodeB.sub(appDeposit),
-          );
+          expect(postInstallETHBalanceNodeB).toBeEq(preInstallETHBalanceNodeB.sub(appDeposit));
 
           // assert install message
           assertInstallMessage(nodeB.publicIdentifier, msg, appInstanceNodeA.identityHash);
@@ -146,7 +142,7 @@ describe("Node method follows spec - install", () => {
             assetId,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
-          makeInstallCall(nodeB, msg.data.appIdentityHash);
+          makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress);
         });
 
         nodeA.on("INSTALL_EVENT", async (msg: InstallMessage) => {

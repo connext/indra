@@ -10,7 +10,7 @@ import {
 } from "@connext/types";
 import { getRandomBytes32 } from "@connext/utils";
 import { providers } from "ethers";
-import { AddressZero } from "ethers/constants";
+import { AddressZero, HashZero } from "ethers/constants";
 import { soliditySha256, bigNumberify } from "ethers/utils";
 
 import {
@@ -242,6 +242,7 @@ describe("HashLock Transfers", () => {
       receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.PENDING,
       meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
+      preImage: HashZero,
     } as NodeResponses.GetHashLockTransfer);
   });
 
@@ -282,6 +283,7 @@ describe("HashLock Transfers", () => {
       senderIdentifier: clientA.publicIdentifier,
       receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.COMPLETED,
+      preImage,
       meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
     } as NodeResponses.GetHashLockTransfer);
   });

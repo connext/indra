@@ -21,12 +21,13 @@ import {
   STATE_OBJECT_NOT_ENCODABLE,
   NO_APP_INSTANCE_FOR_GIVEN_HASH,
   NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
+  NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
 
 import { NodeController } from "../controller";
-import { AppInstance } from "../../models";
+import { StateChannel } from "../../models/state-channel";
 
 export class TakeActionController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_takeAction)
@@ -36,29 +37,31 @@ export class TakeActionController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
   ): Promise<string> {
-    const app = await requestHandler.store.getAppInstance(params.appIdentityHash);
-    if (!app) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
+    if (!params.multisigAddress) {
+      throw new Error(NO_MULTISIG_IN_PARAMS(params));
     }
-    return app.multisigAddress;
+    return params.multisigAddress;
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
+    preProtocolStateChannel: StateChannel | undefined,
   ): Promise<void> {
-    const { store } = requestHandler;
     const { appIdentityHash, action } = params;
 
     if (!appIdentityHash) {
       throw new Error(NO_APP_INSTANCE_FOR_TAKE_ACTION);
     }
 
-    const json = await store.getAppInstance(appIdentityHash);
-    if (!json) {
+    if (!preProtocolStateChannel) {
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
+    }
+
+    const appInstance = preProtocolStateChannel.appInstances.get(appIdentityHash);
+    if (!appInstance) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
-    const appInstance = AppInstance.fromJson(json);
 
     try {
       appInstance.encodeAction(action);
@@ -73,25 +76,19 @@ export class TakeActionController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
+    preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.TakeAction> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appIdentityHash, action, stateTimeout } = params;
 
-    const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-    if (!sc) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
-    }
-    const app = await store.getAppInstance(appIdentityHash);
-    if (!app) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
-    }
+    const app = preProtocolStateChannel!.appInstances.get(appIdentityHash)!;
 
     const { channel } = await runTakeActionProtocol(
       appIdentityHash,
       store,
       protocolRunner,
       publicIdentifier,
-      sc.userIdentifiers.find((id) => id !== publicIdentifier)!,
+      preProtocolStateChannel!.userIdentifiers.find((id) => id !== publicIdentifier)!,
       action,
       stateTimeout || toBN(app.defaultTimeout),
     );
@@ -109,18 +106,13 @@ export class TakeActionController extends NodeController {
     params: MethodParams.TakeAction,
     returnValue: MethodResults.TakeAction,
   ): Promise<void> {
-    const { store, router, publicIdentifier } = requestHandler;
+    const { router, publicIdentifier } = requestHandler;
     const { appIdentityHash, action } = params;
-
-    const appInstance = await store.getAppInstance(appIdentityHash);
-    if (!appInstance) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
-    }
 
     const msg = {
       from: publicIdentifier,
       type: EventNames.UPDATE_STATE_EVENT,
-      data: { appIdentityHash, action, newState: AppInstance.fromJson(appInstance).state },
+      data: { appIdentityHash, action, newState: returnValue.newState },
     } as UpdateStateMessage;
 
     await router.emit(msg.type, msg, `outgoing`);

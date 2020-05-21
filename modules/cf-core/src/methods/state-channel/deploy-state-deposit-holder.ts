@@ -177,8 +177,9 @@ async function sendMultisigDeployTx(
     } catch (e) {
       error = e;
       log.error(
-        `Channel creation attempt ${tryCount} failed: ${e}.\n Retrying ${retryCount -
-          tryCount} more times`,
+        `Channel creation attempt ${tryCount} failed: ${e}.\n Retrying ${
+          retryCount - tryCount
+        } more times`,
       );
     }
   }

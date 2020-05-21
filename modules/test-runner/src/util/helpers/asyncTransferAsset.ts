@@ -71,7 +71,6 @@ export async function asyncTransferAsset(
     recipient: clientB.publicIdentifier,
     paymentId,
   });
-  console.log(`[${paymentId.substring(0, 7)}] sender appIdentityHash: ${appIdentityHash}`);
   log.info(`transfer() returned in ${Date.now() - start}ms`);
 
   await transferFinished();
