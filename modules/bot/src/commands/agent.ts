@@ -16,12 +16,12 @@ import { Argv } from "yargs";
 import { createClient } from "../helpers/client";
 
 export default {
-  command: "sender",
-  describe: "Start the sender service",
+  command: "agent",
+  describe: "Start the agent",
   builder: (yargs: Argv) => {
     return yargs
       .option("concurrency-index", {
-        description: "Number that identifies this bot when many are running in parallel",
+        description: "Number that identifies this agent when many are running in parallel",
         type: "string",
         default: "1",
       })
@@ -30,28 +30,16 @@ export default {
         type: "number",
         default: 1,
       })
-      .option("payment-limit", {
-        description: "Exit after sending this number of payments (defaults to -1 for no limit)",
+      .option("interval", {
+        describe: "The time interval between consecutive payments from this agent (in ms)",
         type: "number",
-        default: -1,
-      })
-      .option("private-key", {
-        describe: "Ethereum Private Key",
-        type: "string",
-      })
-      .option("receiver-identifier", {
-        description: "Receiver identifier",
-        type: "string",
-      })
-      .option("receiver-public-key", {
-        description: "Receiver public key",
-        type: "string",
+        default: 1000
       })
       .demandOption(["private-key"]);
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
-    const NAME = "Sender";
-    const TRANSFER_AMT = parseEther("0.01");
+    const NAME = "Agent";
+    const TRANSFER_AMT = parseEther("0.001");
     const ethUrl = process.env.INDRA_ETH_RPC_URL;
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
@@ -70,17 +58,6 @@ export default {
       argv.logLevel,
     );
 
-    // Verify/calculate provided receiver public identifier
-    const idError = getPublicIdentifierError(argv.receiverIdentifier);
-    if (argv.receiverIdentifier && idError) {
-      log.error(idError);
-      return;
-    }
-    const keyError = getPublicKeyError(argv.receiverPublicKey);
-    if (argv.receiverPublicKey && keyError) {
-      log.error(keyError);
-      return;
-    }
 
     let receiverIdentifier =
       argv.receiverIdentifier || (

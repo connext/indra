@@ -44,7 +44,7 @@ export default {
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
 
-    const log = new ColorfulLogger(NAME, 3, true, argv.concurrencyIndex);
+    const log = new ColorfulLogger(NAME, 1, true, argv.concurrencyIndex);
     log.info(JSON.stringify(argv));
 
     const client = await createClient(
