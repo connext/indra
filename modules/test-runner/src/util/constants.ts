@@ -11,9 +11,6 @@ export const WRONG_ADDRESS = "0xdeadbeef";
 // error messages
 export const APP_PROTOCOL_TOO_LONG = (protocol: ProtocolName): string => {
   const base = `IO_SEND_AND_WAIT timed out after ${CF_METHOD_TIMEOUT / 1000}s`;
-  if (protocol === `takeAction`) {
-    return `Couldn't run TakeAction protocol: ${base}`;
-  }
   return `Error: ${base} waiting for counterparty reply in ${protocol}`;
 };
 export const CLIENT_INSTALL_FAILED = (wasRejected: boolean = false): string => {
