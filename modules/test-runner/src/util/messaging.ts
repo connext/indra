@@ -302,7 +302,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       // check if there is a high level limit on messages received
       if (!shouldContinue) {
         log.warn(
-          `Reached API ceiling, refusing to process any more messages. Received ${this.apiCounter[RECEIVED]} total messages`,
+          `Reached API ceiling, refusing to process any more messages. Received ${this.apiCounter[RECEIVED]} total message`,
         );
         return Promise.resolve();
       }
@@ -315,7 +315,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       }
       const canContinue = this.incrementProtocolCount(protocol, msg, RECEIVED);
       if (!canContinue) {
-        const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${stringify(
+        const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached (received). ${stringify(
           this.protocolCounter[protocol],
         )}`;
         log.warn(msg);
@@ -335,7 +335,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     // check if there is a high level limit on messages received
     if (!shouldContinue) {
       log.warn(
-        `Reached API ceiling, refusing to process any more messages. Seny ${this.apiCounter[SEND]} total messages`,
+        `Reached API ceiling, refusing to process any more messages. Sent ${this.apiCounter[SEND]} total messages`,
       );
       return Promise.resolve();
     }
@@ -349,7 +349,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     }
     const canContinue = this.incrementProtocolCount(protocol, msg, SEND);
     if (!canContinue) {
-      const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${stringify(
+      const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached (send). ${stringify(
         this.protocolCounter[protocol],
       )}`;
       log.warn(msg);
@@ -421,7 +421,13 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     protocol: ProtocolName,
     msg: Message,
     apiType: typeof SEND | typeof RECEIVED,
+    shouldLog: boolean = false,
   ): boolean {
+    const logIf = (msg: string) => {
+      if (shouldLog) {
+        log.info(msg);
+      }
+    };
     // get the params from the message and our limits
     const msgParams = getParamsFromData(msg);
     const { ceiling: indexedCeiling, params } = this.protocolLimits[protocol];
@@ -439,9 +445,20 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       return this.protocolCounter[protocol][apiType] < ceiling;
     };
 
-    if (!params || !msgParams) {
+    logIf(`protocol: ${protocol}`);
+    logIf(`ceiling: ${ceiling}`);
+    logIf(`params: ${stringify(params)}`);
+    logIf(`msg: ${stringify(msg)}`);
+
+    if (!params) {
       // nothing specified, applies to all
       return evaluateCeiling();
+    }
+
+    if (params && !msgParams) {
+      // params specified but none in message, dont evaluate
+      // ceiling and continue execution. dont increment counts.
+      return true;
     }
 
     let containsVal = false;

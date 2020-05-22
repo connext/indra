@@ -102,8 +102,8 @@ export class Node {
     public readonly log: ILoggerService = nullLogger,
     private readonly lockService: ILockService,
   ) {
-    this.log = log.newContext("CF-Node");
-    this.networkContext = { contractAddresses, provider };
+    this.log = this.log.newContext("CF-Node");
+    this.networkContext = { contractAddresses: this.contractAddresses, provider: this.provider };
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
     this.protocolRunner = this.buildProtocolRunner();
@@ -163,7 +163,8 @@ export class Node {
     }
     this.protocolRunner.register(opcode, async (args: [ProtocolName, MiddlewareContext]) => {
       const [protocol, context] = args;
-      return middleware(protocol, context);
+      await middleware(protocol, context);
+      return undefined;
     });
   }
 

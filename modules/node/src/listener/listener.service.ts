@@ -14,6 +14,7 @@ import {
   UninstallMessage,
   UpdateStateMessage,
   SyncMessage,
+  EventPayloads,
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
@@ -26,7 +27,6 @@ import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId } from "../constants";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { AppActionsService } from "../appRegistry/appActions.service";
-import { AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { ChannelRepository } from "../channel/channel.repository";
 
@@ -34,20 +34,26 @@ const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
   CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
   CONDITIONAL_TRANSFER_FAILED_EVENT,
+  WITHDRAWAL_CONFIRMED_EVENT,
+  WITHDRAWAL_FAILED_EVENT,
+  WITHDRAWAL_STARTED_EVENT,
   CREATE_CHANNEL_EVENT,
+  SETUP_FAILED_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DEPOSIT_STARTED_EVENT,
   INSTALL_EVENT,
+  INSTALL_FAILED_EVENT,
   PROPOSE_INSTALL_EVENT,
+  PROPOSE_INSTALL_FAILED_EVENT,
   PROTOCOL_MESSAGE_EVENT,
   REJECT_INSTALL_EVENT,
   SYNC,
+  SYNC_FAILED_EVENT,
   UNINSTALL_EVENT,
+  UNINSTALL_FAILED_EVENT,
   UPDATE_STATE_EVENT,
-  WITHDRAWAL_CONFIRMED_EVENT,
-  WITHDRAWAL_FAILED_EVENT,
-  WITHDRAWAL_STARTED_EVENT,
+  UPDATE_STATE_FAILED_EVENT,
 } = EventNames;
 
 type CallbackStruct = {
@@ -93,6 +99,9 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(CREATE_CHANNEL_EVENT, data);
         this.channelService.makeAvailable(data);
       },
+      SETUP_FAILED_EVENT: (data): void => {
+        this.logEvent(SETUP_FAILED_EVENT, data);
+      },
       DEPOSIT_CONFIRMED_EVENT: (data: DepositConfirmationMessage): void => {
         this.logEvent(DEPOSIT_CONFIRMED_EVENT, data);
       },
@@ -104,6 +113,9 @@ export default class ListenerService implements OnModuleInit {
       },
       INSTALL_EVENT: async (data: InstallMessage): Promise<void> => {
         this.logEvent(INSTALL_EVENT, data);
+      },
+      INSTALL_FAILED_EVENT: (data): void => {
+        this.logEvent(INSTALL_FAILED_EVENT, data);
       },
       PROPOSE_INSTALL_EVENT: (data: ProposeMessage): void => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
@@ -117,6 +129,9 @@ export default class ListenerService implements OnModuleInit {
           data.from,
         );
       },
+      PROPOSE_INSTALL_FAILED_EVENT: (data): void => {
+        this.logEvent(PROPOSE_INSTALL_FAILED_EVENT, data);
+      },
       PROTOCOL_MESSAGE_EVENT: (data: ProtocolMessage): void => {
         this.logEvent(PROTOCOL_MESSAGE_EVENT, data);
       },
@@ -126,6 +141,9 @@ export default class ListenerService implements OnModuleInit {
       },
       SYNC: (data: SyncMessage): void => {
         this.logEvent(SYNC, data);
+      },
+      SYNC_FAILED_EVENT: (data): void => {
+        this.logEvent(SYNC_FAILED_EVENT, data);
       },
       UNINSTALL_EVENT: async (data: UninstallMessage): Promise<void> => {
         if (!data.data.multisigAddress) {
@@ -147,6 +165,9 @@ export default class ListenerService implements OnModuleInit {
           );
         });
         this.logEvent(UNINSTALL_EVENT, data);
+      },
+      UNINSTALL_FAILED_EVENT: (data): void => {
+        this.logEvent(UNINSTALL_FAILED_EVENT, data);
       },
       UPDATE_STATE_EVENT: async (data: UpdateStateMessage): Promise<void> => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
@@ -171,6 +192,9 @@ export default class ListenerService implements OnModuleInit {
           newState as any, // AppState (excluding simple swap app)
           action as AppAction,
         );
+      },
+      UPDATE_STATE_FAILED_EVENT: (data): void => {
+        this.logEvent(UPDATE_STATE_FAILED_EVENT, data);
       },
       WITHDRAWAL_FAILED_EVENT: (data: DepositFailedMessage): void => {
         this.logEvent(WITHDRAWAL_FAILED_EVENT, data);
