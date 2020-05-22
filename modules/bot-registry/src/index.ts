@@ -36,6 +36,6 @@ app.delete("/", async (req, res) => {
 
 const start = async () => {
   await init();
-  app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`));
+  app.listen(port, () => console.log(`Bot registry listening at http://localhost:${port}`));
 };
 start();

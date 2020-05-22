@@ -32,7 +32,14 @@ function cleanup {
       docker container rm ${agent_name}_$n &> /dev/null || true
     fi
   done
-  exit $exit_code
+  if [[ -n "`docker container ls -a | grep bot-registry`" ]]
+  then
+    echo "Stopping bot-registry $n.."
+    docker container stop bot-registry &> /dev/null || true
+    agent_code="`docker container inspect bot-registry | jq '.[0].State.ExitCode'`"
+    docker container rm bot-registry &> /dev/null || true
+  fi
+exit $exit_code
 }
 trap cleanup EXIT SIGINT
 
@@ -41,13 +48,14 @@ then interactive="--interactive --tty"
 else echo "Running in non-interactive mode"
 fi
 
+echo "Starting bot registry container"
 docker run \
   --detach \
   --entrypoint="bash" \
   $interactive \
   --name="bot-registry" \
   --volume="`pwd`:/root" \
-  --port="3333:3333" \
+  --expose="3333" \
   ${project}_builder -c '
     set -e
     echo "Bot registry container launched!"
@@ -60,6 +68,7 @@ docker run \
     echo "Launching agent!";echo
     npm run start
   '
+  docker logs --follow bot-registry &
 
 for (( n=1; n<=$agents; n++ ))
 do
