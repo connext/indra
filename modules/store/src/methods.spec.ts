@@ -23,6 +23,11 @@ import { StoreTypes } from "./types";
 
 export const storeTypes = Object.keys(StoreTypes);
 
+const clearAndClose = async (store) => {
+  await store.clear();
+  await store.close();
+};
+
 describe("ConnextStore", () => {
   const fileDir = "./.test-store";
 
@@ -35,6 +40,7 @@ describe("ConnextStore", () => {
         await store.updateSchemaVersion();
         const updated = await store.getSchemaVersion();
         expect(updated).to.be.eq(STORE_SCHEMA_VERSION);
+        await clearAndClose(store);
       });
     });
   });
@@ -68,7 +74,7 @@ describe("ConnextStore", () => {
           expect(setState[0]).to.containSubset(TEST_STORE_SET_STATE_COMMITMENT);
         }
 
-        await store.clear();
+        await clearAndClose(store);
       });
     });
   });
@@ -89,7 +95,7 @@ describe("ConnextStore", () => {
         );
         const retrieved = await store.getStateChannelByOwners(owners);
         expect(retrieved).to.deep.eq(channel);
-        await store.clear();
+        await clearAndClose(store);
       });
     });
   });
@@ -110,7 +116,7 @@ describe("ConnextStore", () => {
         );
         const retrieved = await store.getStateChannelByAppIdentityHash(appIdentityHash);
         expect(retrieved).to.deep.eq(channel);
-        await store.clear();
+        await clearAndClose(store);
       });
     });
   });
@@ -177,7 +183,7 @@ describe("ConnextStore", () => {
           const chan = await store.getStateChannel(multisigAddress);
           expect(chan.appInstances).to.deep.eq([[app.identityHash, edited]]);
         }
-        await store.clear();
+        await clearAndClose(store);
       });
     });
   });
@@ -239,7 +245,7 @@ describe("ConnextStore", () => {
           expect(freeBalance.length).to.be.eq(1);
           expect(freeBalance[0]).to.containSubset(freeBalanceSetState2);
         }
-        await store.clear();
+        await clearAndClose(store);
       });
     });
   });
@@ -270,7 +276,7 @@ describe("ConnextStore", () => {
           expect(chan.monotonicNumProposedApps).to.be.eq(channel.monotonicNumProposedApps);
           expect(chan.proposedAppInstances).to.deep.eq([[proposal.identityHash, proposal]]);
         }
-        await store.clear();
+        await clearAndClose(store);
       });
     });
   });
@@ -301,7 +307,7 @@ describe("ConnextStore", () => {
           const chan = await store.getStateChannel(multisigAddress);
           expect(chan.proposedAppInstances).to.deep.eq([]);
         }
-        await store.clear();
+        await clearAndClose(store);
       });
     });
   });
@@ -324,7 +330,7 @@ describe("ConnextStore", () => {
         expect(retrieved).to.deep.eq(freeBalance);
         const chan = await store.getStateChannel(multisigAddress);
         expect(chan.freeBalanceAppInstance).to.deep.eq(freeBalance);
-        await store.clear();
+        await clearAndClose(store);
       });
     });
   });
@@ -344,6 +350,7 @@ describe("ConnextStore", () => {
         expect(retrieved).to.containSubset(TEST_STORE_CHANNEL);
         await store.clear();
         expect(await store.getStateChannel(multisigAddress)).to.containSubset(undefined);
+        await clearAndClose(store);
       });
     });
   });
@@ -364,7 +371,7 @@ describe("ConnextStore", () => {
 
         await expect(store.restore()).to.be.rejectedWith(`No backup provided, store cleared`);
         expect(await store.getStateChannel(multisigAddress)).to.containSubset(undefined);
-        await store.clear();
+        await clearAndClose(store);
       });
 
       it(`${type} - should backup state when provided with a backup service`, async () => {
@@ -383,7 +390,7 @@ describe("ConnextStore", () => {
         expect(retrieved).to.containSubset(TEST_STORE_CHANNEL);
         await store.restore();
         expect(await store.getStateChannel(multisigAddress)).to.containSubset(TEST_STORE_CHANNEL);
-        await store.clear();
+        await clearAndClose(store);
       });
     });
   });
@@ -403,7 +410,7 @@ describe("ConnextStore", () => {
           await store.saveAppChallenge(value);
           expect(await store.getAppChallenge(value.identityHash)).to.containSubset(value);
         }
-        await store.clear();
+        await clearAndClose(store);
       });
     });
 
@@ -414,7 +421,6 @@ describe("ConnextStore", () => {
         const value2 = { ...value0, status: StoredAppChallengeStatus.IN_ONCHAIN_PROGRESSION };
         const value3 = { ...value0, identityHash: getRandomBytes32() };
         const store = await createConnextStore(type as StoreTypes, { fileDir });
-        await store.clear();
         // write all values concurrently
         await Promise.all([
           store.createChallengeUpdatedEvent(value0 as any),
@@ -425,15 +431,19 @@ describe("ConnextStore", () => {
           store.createChallengeUpdatedEvent(value3 as any),
           store.saveAppChallenge(value3),
         ]);
-        // assert final stored is value with highest nonce
-        expect(await store.getAppChallenge(value0.identityHash)).to.containSubset(value1);
-        expect(await store.getAppChallenge(value3.identityHash)).to.containSubset(value3);
-        expect(await store.getChallengeUpdatedEvents(value3.identityHash)).to.containSubset([
-          value3,
+        const [retrieved0, retrieved3, events0, events3] = await Promise.all([
+          store.getAppChallenge(value0.identityHash),
+          store.getAppChallenge(value3.identityHash),
+          store.getChallengeUpdatedEvents(value0.identityHash),
+          store.getChallengeUpdatedEvents(value3.identityHash),
         ]);
-        const events = await store.getChallengeUpdatedEvents(value0.identityHash);
-        expect(events.sort()).to.containSubset([value0, value1].sort());
-        await store.clear();
+
+        // assert final stored is value with highest nonce
+        expect(retrieved0).to.containSubset(value1);
+        expect(retrieved3).to.containSubset(value3);
+        expect(events3).to.containSubset([value3]);
+        expect(events0.sort()).to.containSubset([value0, value1].sort());
+        await clearAndClose(store);
       });
     });
   });
@@ -442,7 +452,6 @@ describe("ConnextStore", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should be able to retrieve active challenges for a channel`, async () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
-        await store.clear();
         const challenge = {
           ...TEST_STORE_APP_CHALLENGE,
           status: StoredAppChallengeStatus.IN_DISPUTE,
@@ -455,7 +464,7 @@ describe("ConnextStore", () => {
         const vals = await store.getActiveChallenges();
         expect(vals.length).to.be.eq(1);
         expect(vals[0]).to.containSubset(challenge);
-        await store.clear();
+        await clearAndClose(store);
       });
     });
   });
@@ -469,7 +478,7 @@ describe("ConnextStore", () => {
         expect(await store.getLatestProcessedBlock()).to.be.eq(0);
         await store.updateLatestProcessedBlock(block);
         expect(await store.getLatestProcessedBlock()).to.be.eq(block);
-        await store.clear();
+        await clearAndClose(store);
       });
     });
   });
@@ -487,7 +496,7 @@ describe("ConnextStore", () => {
         const vals = await store.getStateProgressedEvents(value.identityHash);
         expect(vals.length).to.be.eq(1);
         expect(vals[0]).to.containSubset(value);
-        await store.clear();
+        await clearAndClose(store);
       });
     });
   });
@@ -505,7 +514,7 @@ describe("ConnextStore", () => {
         const vals = await store.getChallengeUpdatedEvents(value.identityHash);
         expect(vals.length).to.be.eq(1);
         expect(vals[0]).to.containSubset(value);
-        await store.clear();
+        await clearAndClose(store);
       });
     });
   });
