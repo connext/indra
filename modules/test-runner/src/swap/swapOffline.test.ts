@@ -27,7 +27,7 @@ import {
   CLIENT_INSTALL_FAILED,
 } from "../util";
 import { addressBook } from "@connext/contracts";
-import { getRandomChannelSigner, stringify } from "@connext/utils";
+import { getRandomChannelSigner } from "@connext/utils";
 
 const fundChannelAndSwap = async (opts: {
   messagingConfig?: Partial<ClientTestMessagingInputOpts>;
@@ -116,7 +116,7 @@ const fundChannelAndSwap = async (opts: {
   await swapAsset(client, input, output, client.nodeSignerAddress);
 };
 
-describe("Swap offline", () => {
+describe.only("Swap offline", () => {
   const swapAppAddr = addressBook[4447].SimpleTwoPartySwapApp.address;
   it("Bot A tries to propose swap app, but gets no response from the node", async () => {
     const messagingConfig = {
