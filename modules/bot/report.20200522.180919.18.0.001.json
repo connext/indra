@@ -1,0 +1,444 @@
+
+{
+  "header": {
+    "reportVersion": 1,
+    "event": "Allocation failed - JavaScript heap out of memory",
+    "trigger": "FatalError",
+    "filename": "report.20200522.180919.18.0.001.json",
+    "dumpEventTime": "2020-05-22T18:09:19Z",
+    "dumpEventTimeStamp": "1590170959025",
+    "processId": 18,
+    "cwd": "/root/modules/bot",
+    "commandLine": [
+      "node",
+      "dist/src/index.js",
+      "bot",
+      "--private-key",
+      "0xeb1718fe6c450c93443622cefb1e0f32ca6a8990f0b109e15ccac00b4d280f3e",
+      "--agents",
+      "1",
+      "--interval"
+    ],
+    "nodejsVersion": "v12.13.0",
+    "wordSize": 64,
+    "arch": "x64",
+    "platform": "linux",
+    "componentVersions": {
+      "node": "12.13.0",
+      "v8": "7.7.299.13-node.12",
+      "uv": "1.32.0",
+      "zlib": "1.2.11",
+      "brotli": "1.0.7",
+      "ares": "1.15.0",
+      "modules": "72",
+      "nghttp2": "1.39.2",
+      "napi": "5",
+      "llhttp": "1.1.4",
+      "http_parser": "2.8.0",
+      "openssl": "1.1.1d",
+      "cldr": "35.1",
+      "icu": "64.2",
+      "tz": "2019a",
+      "unicode": "12.1"
+    },
+    "release": {
+      "name": "node",
+      "lts": "Erbium",
+      "headersUrl": "https://unofficial-builds.nodejs.org/download/release/v12.13.0/node-v12.13.0-headers.tar.gz",
+      "sourceUrl": "https://unofficial-builds.nodejs.org/download/release/v12.13.0/node-v12.13.0.tar.gz"
+    },
+    "osName": "Linux",
+    "osRelease": "4.19.76-linuxkit",
+    "osVersion": "#1 SMP Fri Apr 3 15:53:26 UTC 2020",
+    "osMachine": "x86_64",
+    "cpus": [
+      {
+        "model": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+        "speed": 2600,
+        "user": 12282500,
+        "nice": 0,
+        "sys": 13227500,
+        "idle": 784498400,
+        "irq": 0
+      },
+      {
+        "model": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+        "speed": 2600,
+        "user": 9278100,
+        "nice": 0,
+        "sys": 14683100,
+        "idle": 773825300,
+        "irq": 0
+      },
+      {
+        "model": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+        "speed": 2600,
+        "user": 9504600,
+        "nice": 0,
+        "sys": 11112800,
+        "idle": 771915600,
+        "irq": 0
+      },
+      {
+        "model": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+        "speed": 2600,
+        "user": 13204800,
+        "nice": 0,
+        "sys": 13567300,
+        "idle": 783073500,
+        "irq": 0
+      },
+      {
+        "model": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+        "speed": 2600,
+        "user": 12481600,
+        "nice": 0,
+        "sys": 13619800,
+        "idle": 782365900,
+        "irq": 0
+      },
+      {
+        "model": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+        "speed": 2600,
+        "user": 12025400,
+        "nice": 0,
+        "sys": 13749000,
+        "idle": 783413100,
+        "irq": 0
+      }
+    ],
+    "networkInterfaces": [
+      {
+        "name": "lo",
+        "internal": true,
+        "mac": "00:00:00:00:00:00",
+        "address": "127.0.0.1",
+        "netmask": "255.0.0.0",
+        "family": "IPv4"
+      },
+      {
+        "name": "eth0",
+        "internal": false,
+        "mac": "02:42:ac:11:00:03",
+        "address": "172.17.0.3",
+        "netmask": "255.255.0.0",
+        "family": "IPv4"
+      }
+    ],
+    "host": "bf45124fb924"
+  },
+  "javascriptStack": {
+    "message": "No stack.",
+    "stack": [
+      "Unavailable."
+    ]
+  },
+  "nativeStack": [
+  ],
+  "javascriptHeap": {
+    "totalMemory": 2185347072,
+    "totalCommittedMemory": 2157918928,
+    "usedMemory": 2146728720,
+    "availableMemory": 47778136,
+    "memoryLimit": 2197815296,
+    "heapSpaces": {
+      "read_only_space": {
+        "memorySize": 262144,
+        "committedMemory": 32568,
+        "capacity": 261872,
+        "used": 32296,
+        "available": 229576
+      },
+      "new_space": {
+        "memorySize": 33554432,
+        "committedMemory": 7536960,
+        "capacity": 16759808,
+        "used": 32424,
+        "available": 16727384
+      },
+      "old_space": {
+        "memorySize": 2147332096,
+        "committedMemory": 2146394248,
+        "capacity": 2144942280,
+        "used": 2143349136,
+        "available": 1593144
+      },
+      "code_space": {
+        "memorySize": 688128,
+        "committedMemory": 579776,
+        "capacity": 508384,
+        "used": 508384,
+        "available": 0
+      },
+      "map_space": {
+        "memorySize": 1576960,
+        "committedMemory": 1442064,
+        "capacity": 935680,
+        "used": 935680,
+        "available": 0
+      },
+      "large_object_space": {
+        "memorySize": 1884160,
+        "committedMemory": 1884160,
+        "capacity": 1867248,
+        "used": 1867248,
+        "available": 0
+      },
+      "code_large_object_space": {
+        "memorySize": 49152,
+        "committedMemory": 49152,
+        "capacity": 3552,
+        "used": 3552,
+        "available": 0
+      },
+      "new_large_object_space": {
+        "memorySize": 0,
+        "committedMemory": 0,
+        "capacity": 16759808,
+        "used": 0,
+        "available": 16759808
+      }
+    }
+  },
+  "resourceUsage": {
+    "userCpuSeconds": 38.9469,
+    "kernelCpuSeconds": 3.6539,
+    "cpuConsumptionPercent": 118.336,
+    "maxRss": 2263445504,
+    "pageFaults": {
+      "IORequired": 13,
+      "IONotRequired": 588194
+    },
+    "fsActivity": {
+      "reads": 23888,
+      "writes": 0
+    }
+  },
+  "uvthreadResourceUsage": {
+    "userCpuSeconds": 12.5633,
+    "kernelCpuSeconds": 2.11498,
+    "cpuConsumptionPercent": 40.773,
+    "fsActivity": {
+      "reads": 21368,
+      "writes": 0
+    }
+  },
+  "libuv": [
+  ],
+  "environmentVariables": {
+    "npm_package_devDependencies_ts_node": "8.10.1",
+    "npm_config_cache_lock_stale": "60000",
+    "npm_config_ham_it_up": "",
+    "npm_config_legacy_bundling": "",
+    "npm_config_sign_git_tag": "",
+    "LOG_LEVEL": "",
+    "npm_config_user_agent": "npm/6.14.4 node/v12.13.0 linux x64",
+    "npm_config_always_auth": "",
+    "NODE_VERSION": "12.13.0",
+    "npm_config_bin_links": "true",
+    "npm_config_key": "",
+    "HOSTNAME": "bf45124fb924",
+    "YARN_VERSION": "1.19.1",
+    "npm_config_allow_same_version": "",
+    "npm_config_description": "true",
+    "npm_config_fetch_retries": "2",
+    "npm_config_heading": "npm",
+    "npm_config_if_present": "",
+    "npm_config_init_version": "1.0.0",
+    "npm_config_user": "",
+    "npm_node_execpath": "/usr/local/bin/node",
+    "SHLVL": "2",
+    "npm_config_prefer_online": "",
+    "npm_config_noproxy": "",
+    "HOME": "/root",
+    "OLDPWD": "/root",
+    "npm_package_dependencies_ethers": "4.0.47",
+    "npm_config_force": "",
+    "npm_config_only": "",
+    "npm_config_read_only": "",
+    "npm_config_cache_min": "10",
+    "npm_config_init_license": "ISC",
+    "npm_config_editor": "vi",
+    "npm_config_rollback": "true",
+    "npm_config_tag_version_prefix": "v",
+    "npm_config_cache_max": "Infinity",
+    "npm_config_timing": "",
+    "npm_config_userconfig": "/root/.npmrc",
+    "BOT_REGISTRY_URL": "http://172.17.0.1:3333",
+    "npm_package_dependencies__connext_store": "6.5.7",
+    "npm_config_engine_strict": "",
+    "npm_config_init_author_name": "",
+    "npm_config_init_author_url": "",
+    "npm_config_preid": "",
+    "npm_config_tmp": "/tmp",
+    "npm_package_description": "",
+    "npm_package_devDependencies_typescript": "3.8.3",
+    "npm_config_depth": "Infinity",
+    "npm_config_package_lock_only": "",
+    "npm_config_save_dev": "",
+    "npm_config_usage": "",
+    "npm_config_metrics_registry": "https://registry.npmjs.org/",
+    "npm_config_cafile": "",
+    "npm_config_otp": "",
+    "npm_config_package_lock": "true",
+    "npm_config_progress": "true",
+    "npm_config_https_proxy": "",
+    "npm_config_save_prod": "",
+    "npm_config_audit": "true",
+    "npm_config_cidr": "",
+    "npm_config_onload_script": "",
+    "npm_config_sso_type": "oauth",
+    "INDRA_NATS_URL": "nats://172.17.0.1:4222",
+    "npm_package_dependencies__connext_client": "6.5.7",
+    "npm_package_dependencies__connext_utils": "6.5.7",
+    "npm_config_rebuild_bundle": "true",
+    "npm_config_save_bundle": "",
+    "npm_config_shell": "bash",
+    "_": "/usr/local/bin/npm",
+    "npm_config_dry_run": "",
+    "npm_config_format_package_lock": "true",
+    "npm_config_prefix": "/usr/local",
+    "npm_config_scope": "",
+    "npm_config_browser": "",
+    "npm_config_cache_lock_wait": "10000",
+    "npm_config_ignore_prepublish": "",
+    "npm_config_registry": "https://registry.npmjs.org/",
+    "npm_config_save_optional": "",
+    "npm_config_searchopts": "",
+    "npm_config_versions": "",
+    "TERM": "xterm",
+    "npm_config_cache": "/root/.npm",
+    "npm_config_proxy": "",
+    "npm_config_send_metrics": "",
+    "npm_package_scripts_start": "node dist/src/index.js \"bot\" \"--private-key\" \"0xeb1718fe6c450c93443622cefb1e0f32ca6a8990f0b109e15ccac00b4d280f3e\" \"--agents\" \"1\" \"--interval\"",
+    "npm_package_dependencies__connext_types": "6.5.7",
+    "npm_config_global_style": "",
+    "npm_config_ignore_scripts": "",
+    "npm_config_version": "",
+    "INDRA_ETH_RPC_URL": "http://172.17.0.1:3000/api/ethprovider",
+    "npm_package_dependencies_axios": "^0.19.2",
+    "npm_config_local_address": "",
+    "npm_config_viewer": "man",
+    "npm_config_node_gyp": "/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js",
+    "PATH": "/usr/local/lib/node_modules/npm/node_modules/npm-lifecycle/node-gyp-bin:/root/modules/bot/node_modules/.bin:./node_modules/.bin:./node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "npm_package_name": "bots",
+    "npm_config_audit_level": "low",
+    "npm_config_prefer_offline": "",
+    "NODE": "/usr/local/bin/node",
+    "npm_package_dependencies_yargs": "15.3.1",
+    "npm_config_color": "true",
+    "npm_config_sign_git_commit": "",
+    "npm_config_fetch_retry_mintimeout": "10000",
+    "npm_config_maxsockets": "50",
+    "npm_config_offline": "",
+    "npm_config_sso_poll_frequency": "500",
+    "npm_config_umask": "0022",
+    "npm_package_main": "dist/src/index.js",
+    "npm_config_fund": "true",
+    "npm_config_fetch_retry_maxtimeout": "60000",
+    "npm_config_loglevel": "notice",
+    "npm_config_logs_max": "10",
+    "npm_config_message": "%s",
+    "npm_lifecycle_script": "node dist/src/index.js \"bot\" \"--private-key\" \"0xeb1718fe6c450c93443622cefb1e0f32ca6a8990f0b109e15ccac00b4d280f3e\" \"--agents\" \"1\" \"--interval\"",
+    "npm_config_ca": "",
+    "npm_config_cert": "",
+    "npm_config_global": "",
+    "npm_config_link": "",
+    "npm_package_version": "0.0.1",
+    "npm_config_access": "",
+    "npm_config_also": "",
+    "npm_config_save": "true",
+    "npm_config_unicode": "",
+    "npm_lifecycle_event": "start",
+    "npm_package_scripts_build": "rm -rf dist && tsc --project tsconfig.json",
+    "npm_config_argv": "{\"remain\":[\"bot\",\"--private-key\",\"0xeb1718fe6c450c93443622cefb1e0f32ca6a8990f0b109e15ccac00b4d280f3e\",\"--agents\",\"1\",\"--interval\"],\"cooked\":[\"run\",\"start\",\"--\",\"bot\",\"--private-key\",\"0xeb1718fe6c450c93443622cefb1e0f32ca6a8990f0b109e15ccac00b4d280f3e\",\"--agents\",\"1\",\"--interval\"],\"original\":[\"run\",\"start\",\"--\",\"bot\",\"--private-key\",\"0xeb1718fe6c450c93443622cefb1e0f32ca6a8990f0b109e15ccac00b4d280f3e\",\"--agents\",\"1\",\"--interval\"]}",
+    "npm_config_before": "",
+    "npm_config_long": "",
+    "npm_config_production": "",
+    "npm_config_searchlimit": "20",
+    "npm_config_unsafe_perm": "",
+    "npm_config_update_notifier": "true",
+    "npm_package_author": "",
+    "npm_config_auth_type": "legacy",
+    "npm_config_node_version": "12.13.0",
+    "npm_config_tag": "latest",
+    "npm_config_git_tag_version": "true",
+    "npm_config_commit_hooks": "true",
+    "npm_config_script_shell": "",
+    "npm_config_shrinkwrap": "true",
+    "npm_package_license": "ISC",
+    "npm_config_fetch_retry_factor": "10",
+    "npm_config_save_exact": "",
+    "npm_config_strict_ssl": "true",
+    "npm_config_dev": "",
+    "npm_config_globalconfig": "/usr/local/etc/npmrc",
+    "npm_config_init_module": "/root/.npm-init.js",
+    "npm_config_parseable": "",
+    "PWD": "/root/modules/bot",
+    "npm_config_globalignorefile": "/usr/local/etc/npmignore",
+    "npm_execpath": "/usr/local/lib/node_modules/npm/bin/npm-cli.js",
+    "npm_config_cache_lock_retries": "10",
+    "npm_config_searchstaleness": "900",
+    "npm_config_node_options": "",
+    "npm_config_save_prefix": "^",
+    "npm_config_scripts_prepend_node_path": "warn-only",
+    "npm_config_group": "",
+    "npm_config_init_author_email": "",
+    "npm_config_searchexclude": "",
+    "npm_config_git": "git",
+    "npm_config_optional": "true",
+    "INDRA_NODE_URL": "http://172.17.0.1:3000/api",
+    "npm_config_json": "",
+    "INIT_CWD": "/root/modules/bot"
+  },
+  "userLimits": {
+    "core_file_size_blocks": {
+      "soft": 0,
+      "hard": "unlimited"
+    },
+    "data_seg_size_kbytes": {
+      "soft": "unlimited",
+      "hard": "unlimited"
+    },
+    "file_size_blocks": {
+      "soft": "unlimited",
+      "hard": "unlimited"
+    },
+    "max_locked_memory_bytes": {
+      "soft": 83968000,
+      "hard": 83968000
+    },
+    "max_memory_size_kbytes": {
+      "soft": "unlimited",
+      "hard": "unlimited"
+    },
+    "open_files": {
+      "soft": 1048576,
+      "hard": 1048576
+    },
+    "stack_size_bytes": {
+      "soft": 8388608,
+      "hard": "unlimited"
+    },
+    "cpu_time_seconds": {
+      "soft": "unlimited",
+      "hard": "unlimited"
+    },
+    "max_user_processes": {
+      "soft": "unlimited",
+      "hard": "unlimited"
+    },
+    "virtual_memory_kbytes": {
+      "soft": "unlimited",
+      "hard": "unlimited"
+    }
+  },
+  "sharedObjects": [
+    "/usr/local/bin/node",
+    "/usr/lib/libstdc++.so.6",
+    "/usr/lib/libgcc_s.so.1",
+    "/lib/ld-musl-x86_64.so.1",
+    "/root/node_modules/secp256k1/build/Release/secp256k1.node",
+    "/root/node_modules/sqlite3/lib/binding/node-v72-linux-x64/node_sqlite3.node"
+  ]
+}

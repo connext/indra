@@ -14,6 +14,7 @@
     "@connext/store": "6.5.7",
     "@connext/types": "6.5.7",
     "@connext/utils": "6.5.7",
+    "axios": "^0.19.2",
     "ethers": "4.0.47",
     "yargs": "15.3.1"
   },

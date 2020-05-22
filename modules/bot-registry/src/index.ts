@@ -1,42 +1,37 @@
 import express from "express";
-import { keys, setItem, clear, removeItem, init, getItem } from "node-persist";
 import bodyParser from "body-parser";
+
+let bots = new Set();
 
 const app = express();
 app.use(bodyParser.json());
 const port = 3333;
 
 app.get("/", async (req, res) => {
-  const bots = await keys();
-  res.json(bots);
+  res.json(Array.from(bots));
 });
 
-app.post("/", async (req, res) => {
-  console.log("req.body: ", req.body);
+app.post("/agent", async (req, res) => {
   const signerAddress = req.body.signerAddress;
   if (!signerAddress) {
     return res.status(400).send("No signer specified");
   }
-  const existing = await getItem(signerAddress);
-  if (!existing) {
-    await setItem(signerAddress, true);
-  }
+  bots.add(signerAddress);
+
   return res.send(signerAddress);
 });
 
-app.delete("/", async (req, res) => {
+app.delete("/agent", async (req, res) => {
   const signerAddress = req.body.signerAddress;
   if (!signerAddress) {
-    await clear();
+    bots.clear();
     return res.send();
   }
-  await removeItem(signerAddress);
+  bots.delete(signerAddress);
   return res.send(signerAddress);
 });
 
 const start = async () => {
-  await init();
-  await clear();
   app.listen(port, () => console.log(`Bot registry listening at http://localhost:${port}`));
 };
 start();

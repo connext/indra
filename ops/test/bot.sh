@@ -10,6 +10,7 @@ project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' 
 INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:3000/api/ethprovider}"
 INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:3000/api}"
 INDRA_NATS_URL="${INDRA_NATS_URL:-nats://172.17.0.1:4222}"
+BOT_REGISTRY_URL="${BOT_REGISTRY_URL:-http://172.17.0.1:3333}"
 
 agent_name="${project}_bot"
 
@@ -55,7 +56,7 @@ docker run \
   $interactive \
   --name="bot-registry" \
   --volume="`pwd`:/root" \
-  --expose="3333" \
+  -p 3333:3333 \
   ${project}_builder -c '
     set -e
     echo "Bot registry container launched!"
@@ -91,6 +92,7 @@ do
     --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
     --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
     --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
+    --env="BOT_REGISTRY_URL"="$BOT_REGISTRY_URL" \
     $interactive \
     --name="$agent" \
     --volume="`pwd`:/root" \
@@ -104,7 +106,7 @@ do
       }
       trap finish SIGTERM SIGINT
       echo "Launching agent!";echo
-      npm run start -- agent --private-key '$agent_key' --agents '$n' --interval '$interval'
+      npm run start -- bot --private-key '$agent_key' --agents '$n' --interval '$interval'
     '
 
   docker logs --follow $agent &

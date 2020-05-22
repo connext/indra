@@ -5,7 +5,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   stringify,
 } from "@connext/utils";
-import { utils, Wallet } from "ethers";
+import { utils } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { parseEther, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { Argv } from "yargs";
@@ -31,7 +31,7 @@ export default {
       .option("interval", {
         describe: "The time interval between consecutive payments from this agent (in ms)",
         type: "number",
-        default: 1000
+        default: 1000,
       })
       .option("private-key", {
         describe: "Ethereum Private Key",
@@ -47,7 +47,7 @@ export default {
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
 
-    const log = new ColorfulLogger(NAME, 1, true, argv.concurrencyIndex);
+    const log = new ColorfulLogger(NAME, 3, true, argv.concurrencyIndex);
 
     // Create agent client
     const client = await createClient(
@@ -68,14 +68,13 @@ export default {
     client.on(
       EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
       async (eventData: EventPayloads.SignedTransferCreated) => {
-
         // ignore transfers from self
         if (eventData.sender === client.publicIdentifier) {
           return;
         }
 
         log.info(`Received transfer: ${stringify(eventData)}`);
-        
+
         if (client.signerAddress !== eventData.transferMeta.signer) {
           log.error(
             `Transfer's specified signer ${eventData.transferMeta.signer} does not match our signer ${client.signerAddress}`,
@@ -100,40 +99,48 @@ export default {
       },
     );
 
+    // Deposit if agent is out of funds
+    const balance = await client.getFreeBalance(AddressZero);
+    if (balance[client.signerAddress].lt(TRANSFER_AMT)) {
+      log.info(`Balance too low, depositing...`);
+      await client.deposit({ amount: DEPOSIT_AMT, assetId: AddressZero });
+      log.info(`Finished depositing`);
+    }
+
     // Setup agent logic to transfer on an interval
-    while(true) {
-      // Deposit if agent is out of funds
-      const balance = await client.getFreeBalance(AddressZero)
-      if (balance[client.publicIdentifier].lt(TRANSFER_AMT)) {
-        await client.deposit({ amount: DEPOSIT_AMT, assetId: AddressZero });
-      }
-      
-      // Get random agent from registry and setup params
-      const receiverIdentifier = await getRandomAgentAddressFromIndex()
-      
-      // If this is the first bot, dont transfer and instead wait for the others to come up
-      if(receiverIdentifier) {
+    while (true) {
+      setInterval(async () => {
+        // Get random agent from registry and setup params
+        const receiverIdentifier = await getRandomAgentAddressFromIndex();
+
+        // If this is the first bot, dont transfer and instead wait for the others to come up
+        if (!receiverIdentifier) {
+          return;
+        }
         const receiverSigner = getSignerAddressFromPublicIdentifier(receiverIdentifier);
         const paymentId = getRandomBytes32();
         log.info(
-          `Send conditional transfer ${paymentId} for ${utils.formatEther(TRANSFER_AMT)} ETH to ${
-            receiverIdentifier
-          } (${receiverSigner})`,
+          `Send conditional transfer ${paymentId} for ${utils.formatEther(
+            TRANSFER_AMT,
+          )} ETH to ${receiverIdentifier} (${receiverSigner})`,
         );
-    
-        // Send transfer
-        await client.conditionalTransfer({
-          paymentId,
-          amount: TRANSFER_AMT,
-          conditionType: ConditionalTransferTypes.SignedTransfer,
-          signer: receiverSigner,
-          assetId: AddressZero,
-          recipient: receiverIdentifier,
-          meta: { info: "Bootstrap payment" },
-        });
-        log.info(`Conditional transfer ${paymentId} sent`);
-      }
-      setInterval(argv.interval)
+
+        try {
+          // Send transfer
+          await client.conditionalTransfer({
+            paymentId,
+            amount: TRANSFER_AMT,
+            conditionType: ConditionalTransferTypes.SignedTransfer,
+            signer: receiverSigner,
+            assetId: AddressZero,
+            recipient: receiverIdentifier,
+            meta: { info: "Bootstrap payment" },
+          });
+          log.info(`Conditional transfer ${paymentId} sent`);
+        } catch (err) {
+          console.error(`Error sending tranfer: ${err.message}`);
+        }
+      }, argv.interval);
     }
   },
 };
