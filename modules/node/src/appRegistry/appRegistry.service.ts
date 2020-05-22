@@ -414,7 +414,11 @@ export class AppRegistryService implements OnModuleInit {
     }
     // node is sender, make sure app doesnt already exist
     const receiverApp = await this.signedTransferService.findReceiverAppByPaymentId(paymentId);
-    if (receiverApp) {
+    if (
+      receiverApp &&
+      receiverApp.type !== AppType.REJECTED &&
+      receiverApp.type !== AppType.UNINSTALLED
+    ) {
       throw new Error(
         `Found existing app for ${paymentId}, aborting signed transfer proposal. App: ${stringify(
           receiverApp,
