@@ -66,10 +66,10 @@ start-prod:
 	bash ops/start-prod.sh
 
 start-bot: bot
-	bash ops/test/bot.sh 1 -1
+	bash ops/test/bot.sh 2 1000
 
 start-bot-farm: bot
-	bash ops/test/bot.sh 3 -1
+	bash ops/test/bot.sh 5 1000
 
 stop:
 	bash ops/stop.sh

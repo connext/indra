@@ -31,10 +31,6 @@ export const createClient = async (
       signer: ${client.signerAddress}
       nodeIdentifier: ${client.nodeIdentifier}
       nodeSignerAddress: ${client.nodeSignerAddress}`);
-
-  log.info(`Depositing....`);
-  await client.deposit({ amount: depositAmount, assetId: AddressZero });
-  log.info(`Finished depositing!`);
   
   return client;
 };
