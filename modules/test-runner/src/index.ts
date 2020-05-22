@@ -22,5 +22,6 @@ import "./transfer/concurrentTransfers.test";
 import "./transfer/getLinkedTransfer.test";
 import "./transfer/hashLockTransfer.test";
 import "./transfer/signedTransfer.test";
+import "./transfer/signedTransferOffline.test";
 import "./withdraw/withdraw.test";
 import "./withdraw/withdrawOffline.test";
