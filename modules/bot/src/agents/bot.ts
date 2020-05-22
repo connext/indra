@@ -40,19 +40,18 @@ export default {
       .demandOption(["private-key"]);
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
-    const NAME = "Bot";
+    const NAME = `Bot #${argv.concurrencyIndex}`;
     const TRANSFER_AMT = parseEther("0.001");
     const DEPOSIT_AMT = parseEther("0.01");
     const ethUrl = process.env.INDRA_ETH_RPC_URL;
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
-    const privateKey = Wallet.createRandom().privateKey;
 
     const log = new ColorfulLogger(NAME, 1, true, argv.concurrencyIndex);
 
     // Create agent client
     const client = await createClient(
-      privateKey,
+      argv.privateKey,
       NAME,
       log,
       DEPOSIT_AMT,
