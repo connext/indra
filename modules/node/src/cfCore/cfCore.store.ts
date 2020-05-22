@@ -83,6 +83,10 @@ export class CFCoreStore implements IStoreService {
     return Promise.resolve();
   }
 
+  close(): Promise<void> {
+    return Promise.resolve();
+  }
+
   getSchemaVersion(): Promise<number> {
     return Promise.resolve(this.schemaVersion);
   }
@@ -904,17 +908,17 @@ export class CFCoreStore implements IStoreService {
     await getManager().transaction(async (transactionalEntityManager) => {
       // insert event
       await transactionalEntityManager
-      .createQueryBuilder()
-      .insert()
-      .into(ChallengeUpdatedEvent)
-      .values({
-        status: status as ChallengeStatus,
-        appStateHash,
-        versionNumber,
-        finalizesAt,
-        challenge,
-      })
-      .execute();
+        .createQueryBuilder()
+        .insert()
+        .into(ChallengeUpdatedEvent)
+        .values({
+          status: status as ChallengeStatus,
+          appStateHash,
+          versionNumber,
+          finalizesAt,
+          challenge,
+        })
+        .execute();
     });
   }
 
