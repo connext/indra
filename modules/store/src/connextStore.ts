@@ -121,6 +121,10 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.init();
   }
 
+  close(): Promise<void> {
+    return this.internalStore.close();
+  }
+
   getSchemaVersion(): Promise<number> {
     return this.internalStore.getSchemaVersion();
   }
@@ -305,13 +309,7 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.createChallengeUpdatedEvent(event);
   }
 
-  addOnchainAction(
-    appIdentityHash: Bytes32,
-    provider: JsonRpcProvider,
-  ): Promise<void> {
-    return this.internalStore.addOnchainAction(
-      appIdentityHash,
-      provider,
-    );
+  addOnchainAction(appIdentityHash: Bytes32, provider: JsonRpcProvider): Promise<void> {
+    return this.internalStore.addOnchainAction(appIdentityHash, provider);
   }
 }
