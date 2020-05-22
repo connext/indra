@@ -1,4 +1,4 @@
-import { DataTypes, Op, Sequelize, Transaction } from "sequelize";
+import { DataTypes, Op, Sequelize } from "sequelize";
 import { mkdirSync } from "fs";
 import { dirname } from "path";
 

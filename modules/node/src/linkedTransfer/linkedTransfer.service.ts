@@ -201,9 +201,6 @@ export class LinkedTransferService {
       assetId,
     };
 
-    // kick off a rebalance before finishing
-    this.channelService.rebalance(receiverChannel, assetId);
-
     this.log.info(
       `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId}} complete ${JSON.stringify(
         returnRes,

@@ -14,7 +14,6 @@ import {
   UninstallMessage,
   UpdateStateMessage,
   SyncMessage,
-  EventPayloads,
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
@@ -22,7 +21,7 @@ import { AddressZero } from "ethers/constants";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { ChannelService } from "../channel/channel.service";
+import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId } from "../constants";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -146,25 +145,8 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(SYNC_FAILED_EVENT, data);
       },
       UNINSTALL_EVENT: async (data: UninstallMessage): Promise<void> => {
-        if (!data.data.multisigAddress) {
-          this.log.error(
-            `Unexpected error - no multisigAddress found in uninstall event data: ${data.data.appIdentityHash}`,
-          );
-          return;
-        }
-        const channel = await this.channelRepository.findByMultisigAddressOrThrow(
-          data.data.multisigAddress,
-        );
-        const assetIdResponder = (
-          await this.appInstanceRepository.findByIdentityHashOrThrow(data.data.appIdentityHash)
-        ).responderDepositAssetId;
-        // attempt a rebalance without blocking
-        this.channelService.rebalance(channel, assetIdResponder).catch((e) => {
-          this.log.error(
-            `Caught error rebalancing channel ${channel.multisigAddress}: ${e.stack || e.message}`,
-          );
-        });
         this.logEvent(UNINSTALL_EVENT, data);
+        await this.handleUninstall(data);
       },
       UNINSTALL_FAILED_EVENT: (data): void => {
         this.logEvent(UNINSTALL_FAILED_EVENT, data);
@@ -206,6 +188,26 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(WITHDRAWAL_STARTED_EVENT, data);
       },
     };
+  }
+
+  async handleUninstall(data: UninstallMessage) {
+    if (!data.data.multisigAddress) {
+      this.log.error(
+        `Unexpected error - no multisigAddress found in uninstall event data: ${data.data.appIdentityHash}`,
+      );
+      return;
+    }
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(
+      data.data.multisigAddress,
+    );
+    const assetIdResponder = (
+      await this.appInstanceRepository.findByIdentityHashOrThrow(data.data.appIdentityHash)
+    ).responderDepositAssetId;
+    try {
+      await this.channelService.rebalance(channel, assetIdResponder, RebalanceType.RECLAIM);
+    } catch (e) {
+      this.log.error(`Caught error rebalancing channel ${channel.multisigAddress}: ${e.message}`);
+    }
   }
 
   onModuleInit(): void {

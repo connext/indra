@@ -182,6 +182,7 @@ export const createKeyValueStore = async (
 ): Promise<KeyValueStorage> => {
   const cStore = await createConnextStore(type, opts);
   await cStore.internalStore.init();
+  await cStore.internalStore.clear();
   return cStore.internalStore;
 };
 
@@ -194,9 +195,7 @@ export const createConnextStore = async (
   }
   opts.logger = new ColorfulLogger(`ConnextStore_${type}`, env.logLevel, true);
   if (type === StoreTypes.Postgres) {
-    opts.sequelize =
-      opts.sequelize ||
-      postgresConnectionUri;
+    opts.sequelize = opts.sequelize || postgresConnectionUri;
   } else if (type === StoreTypes.AsyncStorage) {
     opts.storage = new MockAsyncStorage();
   }
