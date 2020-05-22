@@ -128,14 +128,10 @@ export class HashLockTransferService {
         receiverFreeBal[freeBalanceAddr],
       );
       // request collateral and wait for deposit to come through
-      const depositReceipt = await this.depositService.deposit(
-        receiverChannel,
-        deposit,
-        assetId,
-      );
+      const depositReceipt = await this.depositService.deposit(receiverChannel, deposit, assetId);
       if (!depositReceipt) {
         throw new Error(
-          `Could not deposit sufficient collateral to resolve hash lock transfer app for reciever: ${receiverIdentifier}`,
+          `Could not deposit sufficient collateral to resolve hash lock transfer app for receiver: ${receiverIdentifier}`,
         );
       }
     }
@@ -176,9 +172,6 @@ export class HashLockTransferService {
     const response = {
       appIdentityHash: receiverAppInstallRes.appIdentityHash,
     };
-
-    // kick off a rebalance before finishing
-    this.channelService.rebalance(receiverChannel, assetId);
 
     this.log.info(
       `installHashLockTransferReceiverApp from ${senderIdentifier} to ${receiverIdentifier} assetId ${assetId} completed: ${JSON.stringify(

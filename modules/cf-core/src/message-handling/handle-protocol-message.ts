@@ -43,12 +43,13 @@ export async function handleReceivedProtocolMessage(
   ]);
   try {
     const { channel } = await protocolRunner.runProtocolWithMessage(
+      router,
       data,
       json && StateChannel.fromJson(json),
     );
     postProtocolStateChannel = channel;
   } catch (e) {
-    log.error(`Caught error running protocol, aborting. Error: ${e.stack || e.message}`);
+    log.error(`Caught error running protocol, aborting. Error: ${e.stack}`);
     return;
   }
 
@@ -151,7 +152,7 @@ async function getOutgoingEventDataFromProtocol(
     }
     default:
       throw new Error(
-        `handleReceivedProtocolMessage received invalid protocol message: ${protocol}`,
+        `[getOutgoingEventDataFromProtocol] handleReceivedProtocolMessage received invalid protocol message: ${protocol}`,
       );
   }
 }

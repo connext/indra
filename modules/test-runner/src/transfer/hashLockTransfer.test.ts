@@ -47,7 +47,7 @@ describe("HashLock Transfers", () => {
   beforeEach(async () => {
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
-    tokenAddress = clientA.config.contractAddresses.Token;
+    tokenAddress = clientA.config.contractAddresses.Token!;
   });
 
   afterEach(async () => {
@@ -371,11 +371,14 @@ describe("HashLock Transfers", () => {
     ).to.eventually.be.rejectedWith(/Hashlock app has not been installed/);
   });
 
+  // NOTE: if the node tries to collateralize or send a transaction during
+  // this test, it will likely pass due to the 1 block margin of error in the
+  // timelock variable
   it("cannot resolve a hashlock if timelock is expired", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelock = 102;
+    const timelock = 101;
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await new Promise((resolve, reject) => {
@@ -421,7 +424,7 @@ describe("HashLock Transfers", () => {
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer)
       .catch((e) => {
-        console.log("Expected this error: ", e);
+        console.log("Expected this error: ", e.message);
       });
 
     await expect(

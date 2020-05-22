@@ -137,7 +137,7 @@ export class LinkedTransferService {
       this.log.warn(`Deposit receipt: ${stringify(depositReceipt)}`);
       if (!depositReceipt) {
         throw new Error(
-          `Could not deposit sufficient collateral to resolve linked transfer for reciever: ${userIdentifier}`,
+          `Could not deposit sufficient collateral to resolve linked transfer for receiver: ${userIdentifier}`,
         );
       }
       // sanity check the post-deposit free balance
@@ -200,9 +200,6 @@ export class LinkedTransferService {
       amount,
       assetId,
     };
-
-    // kick off a rebalance before finishing
-    this.channelService.rebalance(receiverChannel, assetId);
 
     this.log.info(
       `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId}} complete ${JSON.stringify(

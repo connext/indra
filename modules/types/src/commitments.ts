@@ -1,5 +1,5 @@
 import { Address, BigNumberish, BigNumberJson, Bytes32, HexString } from "./basic";
-import { AppIdentity, MultisigOperation, NetworkContext } from "./contracts";
+import { AppIdentity, MultisigOperation, ContractAddresses } from "./contracts";
 import { enumify } from "./utils";
 
 // This is used instead of the ethers `Transaction` because that type
@@ -43,11 +43,11 @@ export type SetStateCommitmentJSON = {
 
 export type ConditionalTransactionCommitmentJSON = {
   readonly appIdentityHash: HexString;
+  readonly contractAddresses: ContractAddresses;
   readonly freeBalanceAppIdentityHash: HexString;
   readonly interpreterAddr: Address;
   readonly interpreterParams: HexString; // ?
   readonly multisigAddress: Address;
   readonly multisigOwners: Address[];
-  readonly networkContext: any;
   readonly signatures: string[];
 };

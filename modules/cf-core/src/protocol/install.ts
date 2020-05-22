@@ -98,7 +98,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // safe to do here, nothing is signed or written to store
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
@@ -108,6 +108,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.initiator,
       } as InstallMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
     logTime(log, substart, `[${processID}] Validated app ${newAppInstance.identityHash}`);
     substart = Date.now();
 
@@ -149,7 +152,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 7ms
     // free balance addr signs conditional transactions
-    const { networkContext, ...toLog } = conditionalTxCommitment.toJson();
+    const { contractAddresses, ...toLog } = conditionalTxCommitment.toJson();
     await assertIsValidSignature(
       responderSignerAddress,
       conditionalTxCommitmentHash,
@@ -297,7 +300,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // safe to do here, nothing is signed or written to store
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
@@ -307,6 +310,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.responder,
       } as InstallMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
     logTime(log, substart, `[${processID}] Validated app ${newAppInstance.identityHash}`);
     substart = Date.now();
 
@@ -319,7 +325,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 7ms
     // multisig owner always signs conditional tx
-    const { networkContext, ...toLog } = conditionalTxCommitment.toJson();
+    const { contractAddresses, ...toLog } = conditionalTxCommitment.toJson();
     await assertIsValidSignature(
       initiatorSignerAddress,
       conditionalTxCommitmentHash,
@@ -583,8 +589,10 @@ export function computeInterpreterParameters(
   disableLimit: boolean,
 ): {
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?:
+    MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?:
+    SingleAssetTwoPartyCoinTransferInterpreterParams;
 } {
   const initiatorDepositAssetId = getAddressFromAssetId(initiatorAssetId);
   const responderDepositAssetId = getAddressFromAssetId(responderAssetId);

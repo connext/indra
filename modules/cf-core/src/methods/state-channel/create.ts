@@ -63,10 +63,7 @@ export class CreateChannelController extends NodeController {
       (await getCreate2MultisigAddress(
         requestHandler.publicIdentifier,
         owners.find((id) => id !== requestHandler.publicIdentifier)!,
-        {
-          proxyFactory: networkContext.ProxyFactory,
-          multisigMastercopy: networkContext.MinimumViableMultisig,
-        },
+        networkContext.contractAddresses,
         networkContext.provider,
       ));
     // Check if the database has stored the relevant data for this state channel
@@ -83,11 +80,11 @@ export class CreateChannelController extends NodeController {
     params: MethodParams.CreateChannel,
   ) {
     const { owners } = params;
-    const { publicIdentifier, protocolRunner, outgoing } = requestHandler;
+    const { publicIdentifier, protocolRunner, outgoing, router } = requestHandler;
 
     const [responderIdentifier] = owners.filter((x) => x !== publicIdentifier);
 
-    await protocolRunner.runSetupProtocol({
+    await protocolRunner.runSetupProtocol(router, {
       multisigAddress,
       responderIdentifier,
       initiatorIdentifier: publicIdentifier,

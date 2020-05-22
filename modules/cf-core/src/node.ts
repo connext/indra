@@ -1,5 +1,7 @@
 import {
+  Address,
   AppInstanceProposal,
+  ContractAddresses,
   EventNames,
   IChannelSigner,
   ILockService,
@@ -8,6 +10,8 @@ import {
   IStoreService,
   Message,
   MethodName,
+  MethodNames,
+  MethodParams,
   MiddlewareContext,
   MinimalTransaction,
   NetworkContext,
@@ -15,12 +19,9 @@ import {
   ProtocolMessage,
   ProtocolMessageData,
   ProtocolName,
+  PublicIdentifier,
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
-  Address,
-  PublicIdentifier,
-  MethodNames,
-  MethodParams,
 } from "@connext/types";
 import { delay, nullLogger } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
@@ -48,10 +49,10 @@ const REASONABLE_NUM_BLOCKS_TO_WAIT = 1;
 export class Node {
   private readonly incoming: EventEmitter;
   private readonly outgoing: EventEmitter;
-
+  private readonly ioSendDeferrals = new Map<string, Deferred<ProtocolMessage>>();
   private readonly protocolRunner: ProtocolRunner;
 
-  private readonly ioSendDeferrals = new Map<string, Deferred<ProtocolMessage>>();
+  public readonly networkContext: NetworkContext;
 
   /**
    * These properties don't have initializers in the constructor, since they must be initialized
@@ -66,7 +67,7 @@ export class Node {
   static create(
     messagingService: IMessagingService,
     storeService: IStoreService,
-    networkContext: NetworkContext,
+    contractAddresses: ContractAddresses,
     nodeConfig: NodeConfig,
     provider: JsonRpcProvider,
     signer: IChannelSigner,
@@ -81,7 +82,7 @@ export class Node {
       storeService,
       nodeConfig,
       provider,
-      networkContext,
+      contractAddresses,
       blocksNeededForConfirmation,
       logger,
       lockService,
@@ -96,13 +97,13 @@ export class Node {
     private readonly storeService: IStoreService,
     private readonly nodeConfig: NodeConfig,
     private readonly provider: JsonRpcProvider,
-    public readonly networkContext: NetworkContext,
+    public readonly contractAddresses: ContractAddresses,
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
     public readonly log: ILoggerService = nullLogger,
     private readonly lockService: ILockService,
   ) {
-    this.log = log.newContext("CF-Node");
-    this.networkContext.provider = this.provider;
+    this.log = this.log.newContext("CF-Node");
+    this.networkContext = { contractAddresses: this.contractAddresses, provider: this.provider };
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
     this.protocolRunner = this.buildProtocolRunner();
@@ -128,15 +129,7 @@ export class Node {
       this.messagingService,
       this.protocolRunner,
       this.networkContext,
-      this.provider,
       this.signer,
-      // // TODO: should the below be replaced by signer?
-      // new AutoNonceWallet(
-      //   this.signer.privateKey,
-      //   // Creating copy of the provider fixes a mysterious big, details:
-      //   // https://github.com/ethers-io/ethers.js/issues/761
-      //   new JsonRpcProvider(this.provider.connection.url),
-      // ),
       this.blocksNeededForConfirmation!,
       this.lockService,
       this.log,
@@ -170,7 +163,8 @@ export class Node {
     }
     this.protocolRunner.register(opcode, async (args: [ProtocolName, MiddlewareContext]) => {
       const [protocol, context] = args;
-      return middleware(protocol, context);
+      await middleware(protocol, context);
+      return undefined;
     });
   }
 
@@ -181,7 +175,6 @@ export class Node {
   private buildProtocolRunner(): ProtocolRunner {
     const protocolRunner = new ProtocolRunner(
       this.networkContext,
-      this.provider,
       this.storeService,
       this.log.newContext("CF-ProtocolRunner"),
     );

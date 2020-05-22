@@ -5,11 +5,11 @@ import {
   AppInstanceJson,
   AppInstanceProposal,
   AppRegistry,
-  AppState,
   AssetId,
   ChannelMethods,
   ChannelProviderConfig,
   ConditionalTransferTypes,
+  CONVENTION_FOR_ETH_ASSET_ID,
   DefaultApp,
   DepositAppName,
   DepositAppState,
@@ -19,6 +19,7 @@ import {
   IClientStore,
   IConnextClient,
   ILoggerService,
+  IMessagingService,
   INodeApiClient,
   MethodNames,
   MethodParams,
@@ -30,12 +31,11 @@ import {
   RebalanceProfile,
   SimpleLinkedTransferAppName,
   SimpleTwoPartySwapAppName,
-  WithdrawAppName,
-  CONVENTION_FOR_ETH_ASSET_ID,
-  IMessagingService,
   WithdrawalMonitorObject,
+  WithdrawAppName,
 } from "@connext/types";
 import {
+  delay,
   getRandomBytes32,
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
@@ -154,7 +154,7 @@ export class ConnextClient implements IConnextClient {
           return chan && chan.available;
         };
         while (!(await channelIsAvailable())) {
-          await new Promise((res: any): any => setTimeout((): void => res(), 100));
+          await delay(100);
         }
         resolve();
       },
@@ -492,6 +492,10 @@ export class ConnextClient implements IConnextClient {
 
   public once = (event: EventNames, callback: (...args: any[]) => void): ConnextListener => {
     return this.listener.once(event, callback);
+  };
+
+  public removeAllListeners = (event?: EventNames): ConnextListener => {
+    return this.listener.removeAllListeners(event);
   };
 
   public emit = (event: EventNames, data: any): boolean => {

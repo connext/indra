@@ -97,7 +97,7 @@ export const createCFChannelProvider = async ({
   // register any default middlewares
   cfCore.injectMiddleware(
     Opcode.OP_VALIDATE,
-    await generateValidationMiddleware(contractAddresses),
+    await generateValidationMiddleware({ provider: ethProvider, contractAddresses }),
   );
 
   const connection = new CFCoreRpcConnection(cfCore, store, signer, node, logger);
@@ -361,17 +361,19 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
           return resolve(data.data);
         });
 
+        this.cfCore.once(EventNames.SETUP_FAILED_EVENT, (msg): void => {
+          return reject(new Error(msg.data.error));
+        });
+
         try {
           const creationData = await this.node.createChannel();
           this.logger.debug(`created channel, transaction: ${stringify(creationData)}`);
         } catch (e) {
           return reject(e);
         }
-        await delay(20_000);
-        return reject(`Could not create channel within 20s`);
       });
       if (!creationEventData) {
-        throw new Error(`Could not create channel within 20s`);
+        throw new Error(`Could not create channel`);
       }
       multisigAddress = (creationEventData as MethodResults.CreateChannel).multisigAddress;
     }

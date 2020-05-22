@@ -27,9 +27,8 @@ import {
 } from "../setupCommitment/setupCommitment.repository";
 
 import { ChannelRepository } from "./channel.repository";
-import { ChannelService } from "./channel.service";
+import { ChannelService, RebalanceType } from "./channel.service";
 import { TransactionReceipt } from "ethers/providers";
-import { stringify } from "@connext/utils";
 
 class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
@@ -64,10 +63,14 @@ class ChannelMessaging extends AbstractMessagingProvider {
       userPublicIdentifier,
     );
     try {
-      const tx = await this.channelService.rebalance(channel, getAddress(data.assetId));
+      const tx = await this.channelService.rebalance(
+        channel,
+        getAddress(data.assetId),
+        RebalanceType.COLLATERALIZE,
+      );
       return tx;
     } catch (e) {
-      this.log.debug(`Failed to collateralize: ${stringify(e)}`);
+      this.log.debug(`Failed to collateralize: ${e.message}`);
       return undefined;
     }
   }

@@ -4,16 +4,16 @@ import {
   ProtocolName,
   MiddlewareContext,
   UninstallMiddlewareContext,
-  ContractAddresses,
+  NetworkContext,
   ProposeMiddlewareContext,
 } from "@connext/types";
 import { uninstallDepositMiddleware, proposeDepositMiddleware } from "./DepositApp";
 
 // add any validation middlewares
 export const generateValidationMiddleware = async (
-  contracts: ContractAddresses,
+  network: NetworkContext,
 ): Promise<ValidationMiddleware> => {
-  if (!contracts.provider) {
+  if (!network.provider) {
     throw new Error(`Validation middleware needs access to a provider`);
   }
 
@@ -29,12 +29,12 @@ export const generateValidationMiddleware = async (
       }
 
       case ProtocolNames.propose: {
-        await proposeMiddleware(contracts, middlewareContext as ProposeMiddlewareContext);
+        await proposeMiddleware(network, middlewareContext as ProposeMiddlewareContext);
         break;
       }
 
       case ProtocolNames.uninstall: {
-        await uninstallMiddleware(contracts, middlewareContext as UninstallMiddlewareContext);
+        await uninstallMiddleware(network, middlewareContext as UninstallMiddlewareContext);
         break;
       }
 
@@ -47,14 +47,14 @@ export const generateValidationMiddleware = async (
 };
 
 const uninstallMiddleware = async (
-  contracts: ContractAddresses,
+  network: NetworkContext,
   middlewareContext: UninstallMiddlewareContext,
 ) => {
   const { appInstance } = middlewareContext;
   const appDef = appInstance.appInterface.addr;
   switch (appDef) {
-    case contracts.DepositApp: {
-      await uninstallDepositMiddleware(middlewareContext, contracts.provider);
+    case network.contractAddresses.DepositApp: {
+      await uninstallDepositMiddleware(middlewareContext, network.provider);
       break;
     }
     default: {
@@ -64,14 +64,14 @@ const uninstallMiddleware = async (
 };
 
 const proposeMiddleware = async (
-  contracts: ContractAddresses,
+  network: NetworkContext,
   middlewareContext: ProposeMiddlewareContext,
 ) => {
   const { proposal } = middlewareContext;
   const appDef = proposal.appDefinition;
   switch (appDef) {
-    case contracts.DepositApp: {
-      await proposeDepositMiddleware(middlewareContext, contracts.depositApp);
+    case network.contractAddresses.DepositApp: {
+      await proposeDepositMiddleware(middlewareContext, network.contractAddresses.DepositApp);
       break;
     }
     default: {

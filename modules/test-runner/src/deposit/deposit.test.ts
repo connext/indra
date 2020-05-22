@@ -1,4 +1,10 @@
-import { IConnextClient, BigNumberish, BigNumber, DepositAppState } from "@connext/types";
+import {
+  IConnextClient,
+  BigNumberish,
+  BigNumber,
+  DepositAppState,
+  EventNames,
+} from "@connext/types";
 import { delay, toBN } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero, One } from "ethers/constants";
@@ -53,7 +59,7 @@ describe("Deposits", () => {
 
   beforeEach(async () => {
     client = await createClient();
-    tokenAddress = client.config.contractAddresses.Token;
+    tokenAddress = client.config.contractAddresses.Token!;
     nodeSignerAddress = client.nodeSignerAddress;
   });
 
@@ -100,7 +106,7 @@ describe("Deposits", () => {
     await expect(
       client.deposit({
         amount: (await getOnchainBalance(client.signerAddress, tokenAddress)).add(1).toString(),
-        assetId: client.config.contractAddresses.Token,
+        assetId: client.config.contractAddresses.Token!,
       }),
     ).to.be.rejectedWith("is not less than or equal to");
   });
@@ -116,7 +122,7 @@ describe("Deposits", () => {
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
     const { appIdentityHash } = await client.checkDepositRights({
-      assetId: client.config.contractAddresses.Token,
+      assetId: client.config.contractAddresses.Token!,
     });
     expect(appIdentityHash).to.be.undefined;
   });
@@ -188,9 +194,20 @@ describe("Deposits", () => {
       client: ONE,
       assetId: AddressZero,
     };
-    await client.deposit({ amount: TWO, assetId: expected.assetId });
-    await client.withdraw({ amount: TWO, assetId: expected.assetId });
-    await client.deposit({ amount: expected.client, assetId: expected.assetId });
+    await new Promise(async (resolve, reject) => {
+      client.once(EventNames.WITHDRAWAL_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      client.once(EventNames.DEPOSIT_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      client.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT, (msg) =>
+        reject(new Error(msg.data.error)),
+      );
+      client.once(EventNames.INSTALL_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      client.once(EventNames.UPDATE_STATE_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      client.once(EventNames.UNINSTALL_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      await client.deposit({ amount: TWO, assetId: expected.assetId });
+      await client.withdraw({ amount: TWO, assetId: expected.assetId });
+      await client.deposit({ amount: expected.client, assetId: expected.assetId });
+      resolve();
+    });
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
   });

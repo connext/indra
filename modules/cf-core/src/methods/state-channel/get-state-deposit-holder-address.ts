@@ -35,10 +35,7 @@ export class GetStateDepositHolderAddressController extends NodeController {
       (await getCreate2MultisigAddress(
         owners[0],
         owners[1],
-        {
-          proxyFactory: networkContext.ProxyFactory,
-          multisigMastercopy: networkContext.MinimumViableMultisig,
-        },
+        networkContext.contractAddresses,
         networkContext.provider,
       ));
 
