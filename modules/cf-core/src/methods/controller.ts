@@ -12,7 +12,12 @@ export abstract class NodeController extends Controller {
     requestHandler: RequestHandler,
     params: MethodParam,
   ): Promise<MethodResult | undefined> {
-    const log = new ColorfulLogger(`MethodController`, 1, true);
+    const log = new ColorfulLogger(
+      `MethodController`,
+      1,
+      true,
+      requestHandler.signer.address.substring(0, 7),
+    );
     const start = Date.now();
     let substart = start;
     let lockValue: string = "";
