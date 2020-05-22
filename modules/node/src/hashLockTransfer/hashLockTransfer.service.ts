@@ -109,8 +109,31 @@ export class HashLockTransferService {
     const existing = await this.findReceiverAppByLockHashAndAssetId(appState.lockHash, assetId);
     if (existing) {
       const result = { appIdentityHash: existing.identityHash };
-      this.log.warn(`Found existing hashlock transfer app, returning: ${stringify(result)}`);
-      return result;
+      switch (existing.type) {
+        case AppType.INSTANCE: {
+          this.log.warn(
+            `Found existing hashlock transfer app for lockhash ${
+              appState.lockHash
+            }, returning: ${stringify(result)}`,
+          );
+          return result;
+        }
+        case AppType.PROPOSAL: {
+          this.log.warn(
+            `Found existing hashlock transfer app proposal for lockhash ${appState.lockHash}: ${existing.identityHash}, rejecting and continuing`,
+          );
+          await this.cfCoreService.rejectInstallApp(
+            existing.identityHash,
+            receiverChannel.multisigAddress,
+          );
+          break;
+        }
+        default: {
+          this.log.warn(
+            `Found existing app with with incorrect type: ${existing.type}, proceeding to propose new app`,
+          );
+        }
+      }
     }
 
     const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
@@ -128,11 +151,7 @@ export class HashLockTransferService {
         receiverFreeBal[freeBalanceAddr],
       );
       // request collateral and wait for deposit to come through
-      const depositReceipt = await this.depositService.deposit(
-        receiverChannel,
-        deposit,
-        assetId,
-      );
+      const depositReceipt = await this.depositService.deposit(receiverChannel, deposit, assetId);
       if (!depositReceipt) {
         throw new Error(
           `Could not deposit sufficient collateral to resolve hash lock transfer app for receiver: ${receiverIdentifier}`,
