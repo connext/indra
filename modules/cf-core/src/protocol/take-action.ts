@@ -47,15 +47,19 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 8ms
     const preAppInstance = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
         params,
         appInstance: preAppInstance.toJson(),
         role: ProtocolRoles.initiator,
+        stateChannel: preProtocolStateChannel.toJson(),
       } as TakeActionMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
     logTime(log, substart, `[${processID}] Validated action`);
     substart = Date.now();
 
@@ -178,15 +182,19 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 9ms
     const preAppInstance = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
         params,
         appInstance: preAppInstance.toJson(),
         role: ProtocolRoles.responder,
+        stateChannel: preProtocolStateChannel.toJson(),
       } as TakeActionMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
     logTime(log, substart, `[${processID}] Validated action`);
     substart = Date.now();
 

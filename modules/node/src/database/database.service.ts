@@ -52,6 +52,7 @@ import { renameIdentifiers1586509706761 } from "../../migrations/1586509706761-r
 import { addLatestAction1587492602160 } from "../../migrations/1587492602160-add-latest-action";
 import { initWatcherMethods1587505874044 } from "../../migrations/1587505874044-init-watcher-methods";
 import { changePrimaryKeys1588583967151 } from "../../migrations/1588583967151-change-primary-keys";
+import { rebalanceTargets1589792004077 } from "../../migrations/1589792004077-rebalance-targets";
 
 export const entities = [
   AppInstance,
@@ -103,6 +104,7 @@ export const migrations = [
   addLatestAction1587492602160,
   initWatcherMethods1587505874044,
   changePrimaryKeys1588583967151,
+  rebalanceTargets1589792004077,
 ];
 
 @Injectable()

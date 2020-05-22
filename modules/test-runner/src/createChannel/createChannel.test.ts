@@ -1,4 +1,4 @@
-import { IConnextClient } from "@connext/types";
+import { IConnextClient, ProtocolNames } from "@connext/types";
 import { Wallet } from "ethers";
 
 import {
@@ -9,12 +9,14 @@ import {
   SETUP_RESPONDER_RECEIVED_COUNT,
   SETUP_RESPONDER_SENT_COUNT,
   TestMessagingService,
+  SEND,
+  RECEIVED,
 } from "../util";
 
 describe("Create Channel", () => {
   let client: IConnextClient;
   afterEach(async () => {
-    await client.messaging.disconnect();
+    client && (await client.messaging.disconnect());
   });
 
   it("Happy case: user creates channel with mainnet network string", async () => {
@@ -32,17 +34,15 @@ describe("Create Channel", () => {
     expect(client.multisigAddress).to.be.ok;
   });
 
-  it.skip("Happy case: user creates channel with client and is given multisig address using test messaging service", async () => {
+  it("Happy case: user creates channel with client and is given multisig address using test messaging service", async () => {
     client = await createClientWithMessagingLimits();
     expect(client.multisigAddress).to.be.ok;
     const messaging = client.messaging as TestMessagingService;
     expect(messaging).to.be.ok;
-    expect(messaging!.count.sent).to.be.gte(SETUP_RESPONDER_SENT_COUNT);
-    expect(messaging!.count.received).to.be.gte(SETUP_RESPONDER_RECEIVED_COUNT);
-    expect(messaging!.setup.received).to.be.equal(SETUP_RESPONDER_RECEIVED_COUNT);
-    expect(messaging!.setup.sent).to.be.equal(SETUP_RESPONDER_SENT_COUNT);
-    expect(messaging!.installVirtual.received).to.be.equal(0);
-    expect(messaging!.installVirtual.sent).to.be.equal(0);
+    expect(messaging.apiCount[SEND]).to.be.at.least(SETUP_RESPONDER_SENT_COUNT);
+    expect(messaging.apiCount[RECEIVED]).to.be.at.least(SETUP_RESPONDER_RECEIVED_COUNT);
+    expect(messaging.setupCount[SEND]).to.be.eq(SETUP_RESPONDER_SENT_COUNT);
+    expect(messaging.setupCount[RECEIVED]).to.be.eq(SETUP_RESPONDER_RECEIVED_COUNT);
   });
 
   it("Creating a channel with mainnet network string fails if no signer is provided", async () => {
@@ -60,12 +60,14 @@ describe("Create Channel", () => {
     );
   });
 
-  it.skip("should fail if the client goes offline", async () => {
+  it("should fail if the client goes offline", async () => {
     await expect(
       createClientWithMessagingLimits({
-        ceiling: { received: 0 },
-        protocol: "setup",
+        ceiling: { [RECEIVED]: 0 },
+        protocol: ProtocolNames.setup,
       }),
-    ).to.be.rejectedWith("Create channel event not fired within 30s");
+    ).to.be.rejectedWith("Could not enable channel");
+    const client = await createClientWithMessagingLimits();
+    expect(client.multisigAddress).to.be.ok;
   });
 });

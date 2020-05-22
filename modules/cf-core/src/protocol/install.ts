@@ -88,15 +88,17 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderBalanceDecrement,
     );
 
-    let stateChannelAfter = computeStateChannelTransition(
+    let stateChannelAfter = computeInstallStateChannelTransition(
       stateChannelBefore,
       params as ProtocolParams.Install,
     );
 
-    const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
+    const newAppInstance = stateChannelAfter.getAppInstanceByAppSeqNo(
+      (params as ProtocolParams.Install).appSeqNo,
+    );
 
     // safe to do here, nothing is signed or written to store
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
@@ -106,7 +108,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.initiator,
       } as InstallMiddlewareContext,
     ];
-    logTime(log, substart, `[${processID}] Validated app instance`);
+    if (!!error) {
+      throw new Error(error);
+    }
+    logTime(log, substart, `[${processID}] Validated app ${newAppInstance.identityHash}`);
     substart = Date.now();
 
     const conditionalTxCommitment = getConditionalTransactionCommitment(
@@ -147,7 +152,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 7ms
     // free balance addr signs conditional transactions
-    const { networkContext, ...toLog } = conditionalTxCommitment.toJson();
+    const { contractAddresses, ...toLog } = conditionalTxCommitment.toJson();
     await assertIsValidSignature(
       responderSignerAddress,
       conditionalTxCommitmentHash,
@@ -198,8 +203,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         ? counterpartySignatureOnFreeBalanceStateUpdate
         : (mySignatureOnFreeBalanceStateUpdate as any),
     );
-
-    stateChannelAfter = stateChannelAfter.removeProposal(newAppInstance.identityHash);
 
     yield [
       PERSIST_APP_INSTANCE,
@@ -284,7 +287,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderBalanceDecrement,
     );
 
-    const stateChannelAfter = computeStateChannelTransition(
+    const stateChannelAfter = computeInstallStateChannelTransition(
       stateChannelBefore,
       params as ProtocolParams.Install,
     );
@@ -292,10 +295,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
 
-    const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
+    const newAppInstance = stateChannelAfter.getAppInstanceByAppSeqNo(
+      (params as ProtocolParams.Install).appSeqNo,
+    );
 
     // safe to do here, nothing is signed or written to store
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
@@ -305,7 +310,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.responder,
       } as InstallMiddlewareContext,
     ];
-    logTime(log, substart, `[${processID}] Validated app instance`);
+    if (!!error) {
+      throw new Error(error);
+    }
+    logTime(log, substart, `[${processID}] Validated app ${newAppInstance.identityHash}`);
     substart = Date.now();
 
     const conditionalTxCommitment = getConditionalTransactionCommitment(
@@ -317,7 +325,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 7ms
     // multisig owner always signs conditional tx
-    const { networkContext, ...toLog } = conditionalTxCommitment.toJson();
+    const { contractAddresses, ...toLog } = conditionalTxCommitment.toJson();
     await assertIsValidSignature(
       initiatorSignerAddress,
       conditionalTxCommitmentHash,
@@ -429,7 +437,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
  *
  * @returns {Promise<StateChannel>} - The post-protocol state of the channel
  */
-function computeStateChannelTransition(
+function computeInstallStateChannelTransition(
   stateChannel: StateChannel,
   params: ProtocolParams.Install,
 ): StateChannel {
@@ -438,8 +446,6 @@ function computeStateChannelTransition(
     responderBalanceDecrement,
     initiatorDepositAssetId,
     responderDepositAssetId,
-    initiatorIdentifier,
-    responderIdentifier,
     initialState,
     appInterface,
     defaultTimeout,
@@ -450,10 +456,28 @@ function computeStateChannelTransition(
     meta,
     appInitiatorIdentifier,
     appResponderIdentifier,
+    initiatorIdentifier,
   } = params;
 
-  const initiatorFbAddress = stateChannel.getFreeBalanceAddrOf(initiatorIdentifier);
-  const responderFbAddress = stateChannel.getFreeBalanceAddrOf(responderIdentifier);
+  // initiator in params context corr to protocol initiator
+  // retrieve app-specific values for interpreter params, etc.
+  const appInitiatorFbAddress = stateChannel.getFreeBalanceAddrOf(appInitiatorIdentifier);
+  const appResponderFbAddress = stateChannel.getFreeBalanceAddrOf(appResponderIdentifier);
+  const isSame = appInitiatorIdentifier === initiatorIdentifier;
+  const appInitiatorAssetId = isSame ? initiatorDepositAssetId : responderDepositAssetId;
+  const appResponderAssetId = isSame ? responderDepositAssetId : initiatorDepositAssetId;
+  const appInitiatorBalanceDecrement = isSame
+    ? initiatorBalanceDecrement
+    : responderBalanceDecrement;
+  const appResponderBalanceDecrement = isSame
+    ? responderBalanceDecrement
+    : initiatorBalanceDecrement;
+
+  // make sure the addresses mirror the free balance addresses of
+  // the channel
+  const channelInitiatorFbAddress = stateChannel.multisigOwners[0];
+  const channelResponderFbAddress = stateChannel.multisigOwners[1];
+  const sameChannelAndAppOrdering = channelInitiatorFbAddress === appInitiatorFbAddress;
 
   const {
     multiAssetMultiPartyCoinTransferInterpreterParams,
@@ -461,12 +485,14 @@ function computeStateChannelTransition(
     singleAssetTwoPartyCoinTransferInterpreterParams,
   } = computeInterpreterParameters(
     outcomeType,
-    initiatorDepositAssetId,
-    responderDepositAssetId,
-    initiatorBalanceDecrement,
-    responderBalanceDecrement,
-    initiatorFbAddress,
-    responderFbAddress,
+    // make sure the asset id array is returned in same order
+    // as channel since interpreter is multisig fn
+    sameChannelAndAppOrdering ? appInitiatorAssetId : appResponderAssetId,
+    sameChannelAndAppOrdering ? appResponderAssetId : appInitiatorAssetId,
+    appInitiatorBalanceDecrement,
+    appResponderBalanceDecrement,
+    appInitiatorFbAddress,
+    appResponderFbAddress,
     disableLimit,
   );
 
@@ -488,17 +514,26 @@ function computeStateChannelTransition(
     singleAssetTwoPartyCoinTransferInterpreterParams,
   );
 
-  const initiatorDepositTokenAddress = getAddressFromAssetId(initiatorDepositAssetId);
-  const responderDepositTokenAddress = getAddressFromAssetId(responderDepositAssetId);
+  // does not matter for asset ids
+  const initiatorDepositTokenAddress = getAddressFromAssetId(appInitiatorAssetId);
+  const responderDepositTokenAddress = getAddressFromAssetId(appResponderAssetId);
 
   let tokenIndexedBalanceDecrement: TokenIndexedCoinTransferMap;
   if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
+    const keys = [
+      sameChannelAndAppOrdering ? initiatorDepositTokenAddress : responderDepositTokenAddress,
+      sameChannelAndAppOrdering ? responderDepositTokenAddress : initiatorDepositTokenAddress,
+    ];
     tokenIndexedBalanceDecrement = {
-      [initiatorDepositTokenAddress]: {
-        [initiatorFbAddress]: initiatorBalanceDecrement,
+      [keys[0]]: {
+        [channelInitiatorFbAddress]: sameChannelAndAppOrdering
+          ? appInitiatorBalanceDecrement
+          : appResponderBalanceDecrement,
       },
-      [responderDepositTokenAddress]: {
-        [responderFbAddress]: responderBalanceDecrement,
+      [keys[1]]: {
+        [channelResponderFbAddress]: sameChannelAndAppOrdering
+          ? appResponderBalanceDecrement
+          : appInitiatorBalanceDecrement,
       },
     };
   } else {
@@ -507,8 +542,12 @@ function computeStateChannelTransition(
     // `initiatingFbAddress` would get overwritten
     tokenIndexedBalanceDecrement = {
       [initiatorDepositTokenAddress]: {
-        [initiatorFbAddress]: initiatorBalanceDecrement,
-        [responderFbAddress]: responderBalanceDecrement,
+        [channelInitiatorFbAddress]: sameChannelAndAppOrdering
+          ? appInitiatorBalanceDecrement
+          : appResponderBalanceDecrement,
+        [channelResponderFbAddress]: sameChannelAndAppOrdering
+          ? appResponderBalanceDecrement
+          : appInitiatorBalanceDecrement,
       },
     };
   }
@@ -539,7 +578,7 @@ function computeStateChannelTransition(
  * will be undefined and the other will be a correctly structured POJO. The AppInstance
  * object currently accepts both in its constructor and internally manages them.
  */
-function computeInterpreterParameters(
+export function computeInterpreterParameters(
   outcomeType: OutcomeType,
   initiatorAssetId: AssetId,
   responderAssetId: AssetId,
@@ -550,8 +589,10 @@ function computeInterpreterParameters(
   disableLimit: boolean,
 ): {
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?:
+    MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?:
+    SingleAssetTwoPartyCoinTransferInterpreterParams;
 } {
   const initiatorDepositAssetId = getAddressFromAssetId(initiatorAssetId);
   const responderDepositAssetId = getAddressFromAssetId(responderAssetId);

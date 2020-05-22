@@ -18,6 +18,7 @@ import { CollateralModule } from "./collateral/collateral.module";
 import { LinkedTransferModule } from "./linkedTransfer/linkedTransfer.module";
 import { HashLockTransferModule } from "./hashLockTransfer/hashLockTransfer.module";
 import { SignedTransferModule } from "./signedTransfer/signedTransfer.module";
+import { DepositModule } from "./deposit/deposit.module";
 
 @Module({
   exports: [ConfigModule, LoggerModule, AuthModule],
@@ -30,6 +31,7 @@ import { SignedTransferModule } from "./signedTransfer/signedTransfer.module";
     CollateralModule,
     ConfigModule,
     DatabaseModule,
+    DepositModule,
     HashLockTransferModule,
     ListenerModule,
     LinkedTransferModule,

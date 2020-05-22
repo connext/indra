@@ -1,5 +1,4 @@
 import {
-  IStoreService,
   MethodNames,
   MethodParams,
   MethodResults,
@@ -11,58 +10,56 @@ import {
 import { jsonRpcMethod } from "rpc-server";
 
 import {
-  APP_ALREADY_UNINSTALLED,
   CANNOT_UNINSTALL_FREE_BALANCE,
   NO_APP_IDENTITY_HASH_TO_UNINSTALL,
   NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
   NO_APP_INSTANCE_FOR_GIVEN_HASH,
+  NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
+import RpcRouter from "../../rpc-router";
 
 export class UninstallController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_uninstall)
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockNames(
+  protected async getRequiredLockName(
     requestHandler: RequestHandler,
     params: MethodParams.Uninstall,
-  ): Promise<string[]> {
-    const { store } = requestHandler;
-    const { appIdentityHash } = params;
-
-    const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-    if (!sc) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
+  ): Promise<string> {
+    if (!params.multisigAddress) {
+      throw new Error(NO_MULTISIG_IN_PARAMS(params));
     }
-
-    return [sc.multisigAddress, appIdentityHash];
+    return params.multisigAddress;
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.Uninstall,
+    preProtocolStateChannel: StateChannel | undefined,
   ) {
-    const { store } = requestHandler;
     const { appIdentityHash } = params;
 
     if (!appIdentityHash) {
       throw new Error(NO_APP_IDENTITY_HASH_TO_UNINSTALL);
     }
 
-    const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-    if (!sc) {
+    if (!preProtocolStateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
-    if (sc.freeBalanceAppInstance && sc.freeBalanceAppInstance!.identityHash === appIdentityHash) {
-      throw new Error(CANNOT_UNINSTALL_FREE_BALANCE(sc.multisigAddress));
+    if (
+      preProtocolStateChannel.freeBalance &&
+      preProtocolStateChannel.freeBalance.identityHash === appIdentityHash
+    ) {
+      throw new Error(CANNOT_UNINSTALL_FREE_BALANCE(preProtocolStateChannel.multisigAddress));
     }
 
     // check if its the balance refund app
-    const app = await store.getAppInstance(appIdentityHash);
+    const app = preProtocolStateChannel.appInstances.get(appIdentityHash);
     if (!app) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
@@ -71,47 +68,36 @@ export class UninstallController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.Uninstall,
+    preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.Uninstall> {
-    const { store, protocolRunner, publicIdentifier } = requestHandler;
+    const { protocolRunner, publicIdentifier, router } = requestHandler;
     const { appIdentityHash } = params;
 
-    if (!appIdentityHash) {
-      throw new Error(NO_APP_IDENTITY_HASH_TO_UNINSTALL);
-    }
-
-    const app = await store.getAppInstance(appIdentityHash);
-    if (!app) {
-      throw new Error(APP_ALREADY_UNINSTALLED(appIdentityHash));
-    }
-
-    const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-
-    if (!stateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
-    }
-
-    await uninstallAppInstanceFromChannel(
-      StateChannel.fromJson(stateChannel),
+    const updatedChannel = await uninstallAppInstanceFromChannel(
+      preProtocolStateChannel!,
+      router,
       protocolRunner,
       publicIdentifier,
-      stateChannel.userIdentifiers.find(id => id !== publicIdentifier)!,
+      preProtocolStateChannel!.userIdentifiers.find((id) => id !== publicIdentifier)!,
       appIdentityHash,
     );
 
-    return { appIdentityHash };
+    return { appIdentityHash, multisigAddress: updatedChannel.multisigAddress };
   }
 
   protected async afterExecution(
     requestHandler: RequestHandler,
-    params: MethodParams.TakeAction,
+    params: MethodParams.Uninstall,
+    returnValue: MethodResults.Uninstall,
   ): Promise<void> {
     const { router, publicIdentifier } = requestHandler;
     const { appIdentityHash } = params;
+    const { multisigAddress } = returnValue;
 
     const msg = {
       from: publicIdentifier,
       type: EventNames.UNINSTALL_EVENT,
-      data: { appIdentityHash },
+      data: { appIdentityHash, multisigAddress },
     } as UninstallMessage;
 
     await router.emit(msg.type, msg, `outgoing`);
@@ -120,17 +106,23 @@ export class UninstallController extends NodeController {
 
 export async function uninstallAppInstanceFromChannel(
   stateChannel: StateChannel,
+  router: RpcRouter,
   protocolRunner: ProtocolRunner,
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
   appIdentityHash: string,
-): Promise<void> {
+): Promise<StateChannel> {
   const appInstance = stateChannel.getAppInstance(appIdentityHash);
 
-  await protocolRunner.initiateProtocol(ProtocolNames.uninstall, {
-    initiatorIdentifier,
-    responderIdentifier,
-    multisigAddress: stateChannel.multisigAddress,
-    appIdentityHash: appInstance.identityHash,
-  });
+  const { channel: updatedChannel } = await protocolRunner.initiateProtocol(
+    router,
+    ProtocolNames.uninstall,
+    {
+      initiatorIdentifier,
+      responderIdentifier,
+      multisigAddress: stateChannel.multisigAddress,
+      appIdentityHash: appInstance.identityHash,
+    },
+  );
+  return updatedChannel;
 }

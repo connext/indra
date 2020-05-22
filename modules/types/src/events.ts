@@ -18,6 +18,7 @@ import { ProtocolMessageData } from "./messaging";
 import { PublicParams } from "./public";
 import { MinimalTransaction } from "./commitments";
 import { TransactionResponse } from "ethers/providers";
+import { StateChannelJSON } from "./state";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
@@ -81,6 +82,13 @@ type CreateMultisigEventData = {
   counterpartyIdentifier?: PublicIdentifier;
 };
 
+const SETUP_FAILED_EVENT = "SETUP_FAILED_EVENT";
+
+type SetupFailedEventData = {
+  params: ProtocolParams.Setup;
+  error: string;
+};
+
 ////////////////////////////////////////
 const DEPOSIT_CONFIRMED_EVENT = "DEPOSIT_CONFIRMED_EVENT";
 type DepositConfirmedEventData = {
@@ -112,12 +120,26 @@ type InstallEventData = {
   appIdentityHash: Bytes32;
 };
 
+const INSTALL_FAILED_EVENT = "INSTALL_FAILED_EVENT";
+
+type InstallFailedEventData = {
+  params: ProtocolParams.Install;
+  error: string;
+};
+
 ////////////////////////////////////////
 const PROPOSE_INSTALL_EVENT = "PROPOSE_INSTALL_EVENT";
 
 type ProposeEventData = {
   params: ProtocolParams.Propose;
   appInstanceId: string;
+};
+
+const PROPOSE_INSTALL_FAILED_EVENT = "PROPOSE_INSTALL_FAILED_EVENT";
+
+type ProposeFailedEventData = {
+  params: ProtocolParams.Propose;
+  error: string;
 };
 
 ////////////////////////////////////////
@@ -135,6 +157,14 @@ const UNINSTALL_EVENT = "UNINSTALL_EVENT";
 
 type UninstallEventData = {
   appIdentityHash: Bytes32;
+  multisigAddress: string;
+};
+
+const UNINSTALL_FAILED_EVENT = "UNINSTALL_FAILED_EVENT";
+
+type UninstallFailedEventData = {
+  params: ProtocolParams.Uninstall;
+  error: string;
 };
 
 ////////////////////////////////////////
@@ -144,6 +174,13 @@ type UpdateStateEventData = {
   appIdentityHash: Bytes32;
   newState: SolidityValueType;
   action?: SolidityValueType;
+};
+
+const UPDATE_STATE_FAILED_EVENT = "UPDATE_STATE_FAILED_EVENT";
+
+type UpdateStateFailedEventData = {
+  params: ProtocolParams.TakeAction;
+  error: string;
 };
 
 ////////////////////////////////////////
@@ -170,21 +207,42 @@ type WithdrawalStartedEventData = {
 };
 
 ////////////////////////////////////////
+const SYNC_EVENT = "SYNC";
+
+type SyncEventData = {
+  syncedChannel: StateChannelJSON;
+};
+
+const SYNC_FAILED_EVENT = "SYNC_FAILED_EVENT";
+
+type SyncFailedEventData = {
+  params: ProtocolParams.Sync;
+  error: string;
+};
+
+////////////////////////////////////////
 // Exports
 export const EventNames = enumify({
   [CONDITIONAL_TRANSFER_CREATED_EVENT]: CONDITIONAL_TRANSFER_CREATED_EVENT,
   [CONDITIONAL_TRANSFER_UNLOCKED_EVENT]: CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
   [CONDITIONAL_TRANSFER_FAILED_EVENT]: CONDITIONAL_TRANSFER_FAILED_EVENT,
   [CREATE_CHANNEL_EVENT]: CREATE_CHANNEL_EVENT,
+  [SETUP_FAILED_EVENT]: SETUP_FAILED_EVENT,
   [DEPOSIT_CONFIRMED_EVENT]: DEPOSIT_CONFIRMED_EVENT,
   [DEPOSIT_FAILED_EVENT]: DEPOSIT_FAILED_EVENT,
   [DEPOSIT_STARTED_EVENT]: DEPOSIT_STARTED_EVENT,
   [INSTALL_EVENT]: INSTALL_EVENT,
+  [INSTALL_FAILED_EVENT]: INSTALL_FAILED_EVENT,
   [PROPOSE_INSTALL_EVENT]: PROPOSE_INSTALL_EVENT,
+  [PROPOSE_INSTALL_FAILED_EVENT]: PROPOSE_INSTALL_FAILED_EVENT,
   [PROTOCOL_MESSAGE_EVENT]: PROTOCOL_MESSAGE_EVENT,
   [REJECT_INSTALL_EVENT]: REJECT_INSTALL_EVENT,
+  [SYNC_EVENT]: SYNC_EVENT,
+  [SYNC_FAILED_EVENT]: SYNC_FAILED_EVENT,
   [UNINSTALL_EVENT]: UNINSTALL_EVENT,
+  [UNINSTALL_FAILED_EVENT]: UNINSTALL_FAILED_EVENT,
   [UPDATE_STATE_EVENT]: UPDATE_STATE_EVENT,
+  [UPDATE_STATE_FAILED_EVENT]: UPDATE_STATE_FAILED_EVENT,
   [WITHDRAWAL_CONFIRMED_EVENT]: WITHDRAWAL_CONFIRMED_EVENT,
   [WITHDRAWAL_FAILED_EVENT]: WITHDRAWAL_FAILED_EVENT,
   [WITHDRAWAL_STARTED_EVENT]: WITHDRAWAL_STARTED_EVENT,
@@ -222,12 +280,25 @@ export namespace EventPayloads {
 
   // protocol events
   export type CreateMultisig = CreateMultisigEventData;
+  export type CreateMultisigFailed = SetupFailedEventData;
+
   export type Install = InstallEventData;
+  export type InstallFailed = InstallFailedEventData;
+
   export type Propose = ProposeEventData;
-  export type RejectInstall = RejectInstallEventData;
+  export type ProposeFailed = ProposeFailedEventData;
+
   export type Uninstall = UninstallEventData;
+  export type UninstallFailed = UninstallFailedEventData;
+
   export type UpdateState = UpdateStateEventData;
+  export type UpdateStateFailed = UpdateStateFailedEventData;
+
+  export type Sync = SyncEventData;
+  export type SyncFailed = SyncFailedEventData;
+
   export type ProtocolMessage = ProtocolMessageData;
+  export type RejectInstall = RejectInstallEventData;
 
   // TODO: chain listener events
 

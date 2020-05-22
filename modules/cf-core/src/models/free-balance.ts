@@ -107,7 +107,7 @@ export class FreeBalanceClass {
       tokenAddresses.reduce(
         (balancesIndexedByToken, tokenAddress) => ({
           ...balancesIndexedByToken,
-          [tokenAddress]: addresses.map(to => ({ to, amount })),
+          [tokenAddress]: addresses.map((to) => ({ to, amount })),
         }),
         {} as { [tokenAddress: string]: CoinTransfer[] },
       ),
@@ -134,16 +134,12 @@ export class FreeBalanceClass {
 
   public withTokenAddress(tokenAddress: string): CoinTransferMap {
     let balances: CoinTransferMap = {};
-    balances = convertCoinTransfersToCoinTransfersMap(
-      this.balancesIndexedByToken[tokenAddress],
-    );
+    balances = convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress]);
     if (Object.keys(balances).length === 0) {
       // get addresses from default token mapping and
       // return 0 values
       const addresses = Object.keys(
-        convertCoinTransfersToCoinTransfersMap(
-          this.balancesIndexedByToken[AddressZero],
-        ),
+        convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[AddressZero]),
       );
       for (const address of addresses) {
         balances[address] = Zero;
@@ -162,6 +158,10 @@ export class FreeBalanceClass {
     return this;
   }
 
+  public hasActiveApp(activeApp: string) {
+    return !!this.activeAppsMap[activeApp];
+  }
+
   public prettyPrint() {
     const balances = this.balancesIndexedByToken;
     const ret = {} as any;
@@ -178,7 +178,6 @@ export class FreeBalanceClass {
     for (const tokenAddress of Object.keys(increments)) {
       const t1 = convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress]);
       const t2 = merge(t1, increments[tokenAddress]);
-
       for (const val of Object.values(t2)) {
         if (val.lt(Zero)) {
           throw new Error(
@@ -259,7 +258,7 @@ function serializeFreeBalanceState(freeBalanceState: FreeBalanceState): FreeBala
   return {
     activeApps: Object.keys(freeBalanceState.activeAppsMap),
     tokenAddresses: Object.keys(freeBalanceState.balancesIndexedByToken),
-    balances: Object.values(freeBalanceState.balancesIndexedByToken).map(balances =>
+    balances: Object.values(freeBalanceState.balancesIndexedByToken).map((balances) =>
       balances.map(({ to, amount }) => ({
         to,
         amount: {

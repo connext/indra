@@ -40,7 +40,7 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 
 default: dev
 all: dev staging release
-dev: database proxy node test-runner
+dev: bot database proxy node test-runner
 staging: database ethprovider proxy node-staging test-runner-staging webserver
 release: database ethprovider proxy node-release test-runner-release webserver
 
@@ -64,6 +64,12 @@ start-test-release:
 
 start-prod:
 	bash ops/start-prod.sh
+
+start-bot: bot
+	bash ops/test/bot.sh 1 -1
+
+start-bot-farm: bot
+	bash ops/test/bot.sh 3 -1
 
 stop:
 	bash ops/stop.sh
@@ -151,6 +157,12 @@ watch: watch-integration
 test-backwards-compatibility: pull-backwards-compatible
 	bash ops/test/integration.sh $(backwards_compatible_version)
 
+test-bot: bot
+	bash ops/test/bot.sh 1 3
+
+test-bot-farm: bot
+	bash ops/test/bot.sh 3 3
+
 test-cf: cf-core
 	bash ops/test/cf.sh
 
@@ -207,8 +219,6 @@ builder: $(shell find ops/builder)
 node-modules: builder package.json $(shell ls modules/*/package.json)
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist --no-progress"
-	# rm below hack once this PR gets merged: https://github.com/EthWorks/Waffle/pull/205
-	$(docker_run) "sed -i 's|{ input }|{ input, maxBuffer: 1024 * 1024 * 4 }|' node_modules/@ethereum-waffle/compiler/dist/cjs/compileNative.js"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 py-requirements: builder docs/requirements.txt
@@ -252,14 +262,14 @@ messaging: types utils $(shell find modules/messaging $(find_options))
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-store: types utils $(shell find modules/store $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/store && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
 contracts: types utils $(shell find modules/contracts $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+store: types utils contracts $(shell find modules/store $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/store && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 cf-core: types utils store contracts $(shell find modules/cf-core $(find_options))
@@ -277,6 +287,11 @@ client: types utils channel-provider messaging store contracts cf-core apps $(sh
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
+bot: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/bot $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/bot && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
 node: types utils messaging store contracts cf-core apps client $(shell find modules/node $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
@@ -292,7 +307,7 @@ test-runner: types utils channel-provider messaging store contracts cf-core apps
 	$(docker_run) "cd modules/test-runner && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-watcher: types utils contracts $(shell find modules/watcher $(find_options))
+watcher: types utils contracts store $(shell find modules/watcher $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/watcher && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@

@@ -28,6 +28,7 @@ export async function handleReceivedProtocolMessage(
   msg: ProtocolMessage,
 ) {
   const { protocolRunner, store, router } = requestHandler;
+  const log = requestHandler.log.newContext("CF-handleReceivedProtocolMessage");
 
   const { data } = bigNumberifyJson(msg) as ProtocolMessage;
 
@@ -35,9 +36,22 @@ export async function handleReceivedProtocolMessage(
 
   if (seq === UNASSIGNED_SEQ_NO) return;
 
-  const {
-    channel: postProtocolStateChannel,
-  }: { channel: StateChannel } = await protocolRunner.runProtocolWithMessage(data);
+  let postProtocolStateChannel: StateChannel;
+  const json = await store.getStateChannelByOwners([
+    params!.initiatorIdentifier,
+    params!.responderIdentifier,
+  ]);
+  try {
+    const { channel } = await protocolRunner.runProtocolWithMessage(
+      router,
+      data,
+      json && StateChannel.fromJson(json),
+    );
+    postProtocolStateChannel = channel;
+  } catch (e) {
+    log.error(`Caught error running protocol, aborting. Error: ${e.stack}`);
+    return;
+  }
 
   const outgoingEventData = await getOutgoingEventDataFromProtocol(
     protocol,
@@ -48,38 +62,6 @@ export async function handleReceivedProtocolMessage(
   if (!outgoingEventData) {
     return;
   }
-
-  if (protocol !== ProtocolNames.install) {
-    await emitOutgoingMessage(router, outgoingEventData);
-    return;
-  }
-
-  const appIdentityHash =
-    outgoingEventData!.data["appIdentityHash"] ||
-    (outgoingEventData!.data as any).params["appIdentityHash"];
-
-  if (!appIdentityHash) {
-    await emitOutgoingMessage(router, outgoingEventData);
-    return;
-  }
-
-  const proposal = await store.getAppProposal(appIdentityHash);
-  if (!proposal) {
-    await emitOutgoingMessage(router, outgoingEventData);
-    return;
-  }
-
-  // remove proposal from channel and store
-  const json = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-  if (!json) {
-    throw new Error(
-      `Could not find channel for app instance ${appIdentityHash} when processing install protocol message`,
-    );
-  }
-  const channel = StateChannel.fromJson(json).removeProposal(proposal.identityHash);
-  await store.removeAppProposal(channel.multisigAddress, proposal.identityHash);
-
-  // finally, emit message
   await emitOutgoingMessage(router, outgoingEventData);
 }
 
@@ -98,7 +80,6 @@ async function getOutgoingEventDataFromProtocol(
   switch (protocol) {
     case ProtocolNames.propose: {
       const {
-        multisigAddress,
         initiatorIdentifier,
         responderIdentifier,
         ...emittedParams
@@ -124,8 +105,9 @@ async function getOutgoingEventDataFromProtocol(
           // TODO: It is weird that `params` is in the event data, we should
           // remove it, but after telling all consumers about this change
           params: {
-            appIdentityHash: postProtocolStateChannel.mostRecentlyInstalledAppInstance()
-              .identityHash,
+            appIdentityHash: postProtocolStateChannel.getAppInstanceByAppSeqNo(
+              (params as ProtocolParams.Install).appSeqNo,
+            ).identityHash,
           },
         },
       };
@@ -149,6 +131,13 @@ async function getOutgoingEventDataFromProtocol(
         },
       };
     }
+    case ProtocolNames.sync: {
+      return {
+        ...baseEvent,
+        type: EventNames.SYNC,
+        data: { syncedChannel: postProtocolStateChannel.toJson() },
+      };
+    }
     case ProtocolNames.takeAction: {
       return {
         ...baseEvent,
@@ -163,7 +152,7 @@ async function getOutgoingEventDataFromProtocol(
     }
     default:
       throw new Error(
-        `handleReceivedProtocolMessage received invalid protocol message: ${protocol}`,
+        `[getOutgoingEventDataFromProtocol] handleReceivedProtocolMessage received invalid protocol message: ${protocol}`,
       );
   }
 }
@@ -173,8 +162,8 @@ function getStateUpdateEventData(params: ProtocolParams.TakeAction, newState: So
   return { newState, appIdentityHash, action };
 }
 
-function getUninstallEventData({ appIdentityHash }: ProtocolParams.Uninstall) {
-  return { appIdentityHash };
+function getUninstallEventData({ appIdentityHash, multisigAddress }: ProtocolParams.Uninstall) {
+  return { appIdentityHash, multisigAddress };
 }
 
 function getSetupEventData(

@@ -13,8 +13,13 @@ import {
   StateProgressedEventPayload,
   ChallengeUpdatedEventPayload,
   AppState,
+  StoredAppChallengeStatus,
+  ChallengeStatus,
+  JsonRpcProvider,
+  Contract,
+  ChallengeEvents,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
+import { toBN, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Zero, AddressZero } from "ethers/constants";
 import { getManager } from "typeorm";
 import { bigNumberify, defaultAbiCoder } from "ethers/utils";
@@ -52,6 +57,7 @@ import {
   ChallengeUpdatedEvent,
 } from "../challengeUpdatedEvent/challengeUpdatedEvent.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
+import { ChallengeRegistry } from "@connext/contracts";
 import { LoggerService } from "../logger/logger.service";
 
 @Injectable()
@@ -74,6 +80,10 @@ export class CFCoreStore implements IStoreService {
   }
 
   init(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  close(): Promise<void> {
     return Promise.resolve();
   }
 
@@ -671,51 +681,34 @@ export class CFCoreStore implements IStoreService {
     return challenge ? entityToStoredChallenge(challenge) : undefined;
   }
 
-  async createAppChallenge(
-    appIdentityHash: string,
-    appChallenge: StoredAppChallenge,
-  ): Promise<void> {
-    const app = await this.appInstanceRepository.findByIdentityHashOrThrow(appIdentityHash);
+  async saveAppChallenge(data: ChallengeUpdatedEventPayload | StoredAppChallenge): Promise<void> {
+    const { appStateHash, versionNumber, finalizesAt, status, identityHash } = data;
+    const app = await this.appInstanceRepository.findByIdentityHashOrThrow(identityHash);
 
-    const channel = await this.channelRepository.findByAppIdentityHashOrThrow(appIdentityHash);
+    const channel = await this.channelRepository.findByAppIdentityHashOrThrow(identityHash);
 
-    const existing = await this.challengeRepository.findByIdentityHash(appIdentityHash);
-    if (existing) {
-      throw new Error(`Found existing app challenge for app ${appIdentityHash}`);
+    let challenge = await this.challengeRepository.findByIdentityHash(identityHash);
+    if (!challenge) {
+      // create new challenge
+      challenge = new Challenge();
+      challenge.app = app;
+      challenge.channel = channel;
+      challenge.challengeUpdatedEvents = [];
+      challenge.stateProgressedEvents = [];
     }
 
-    const { appStateHash, versionNumber, finalizesAt, status } = appChallenge;
-
-    const challenge = new Challenge();
-    challenge.app = app;
-    challenge.channel = channel;
-    challenge.challengeUpdatedEvents = [];
-    challenge.stateProgressedEvents = [];
-    challenge.status = status;
+    challenge.status = status as StoredAppChallengeStatus;
     challenge.appStateHash = appStateHash;
     challenge.versionNumber = versionNumber;
     challenge.finalizesAt = finalizesAt;
-    await this.challengeRepository.save(challenge);
+
+    await getManager().transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager.save(challenge);
+    });
   }
 
-  async updateAppChallenge(
-    appIdentityHash: string,
-    appChallenge: StoredAppChallenge,
-  ): Promise<void> {
-    const existing = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
-    if (!existing) {
-      throw new Error(`Could not find existing app challenge for app ${appIdentityHash}`);
-    }
-    const { appStateHash, versionNumber, finalizesAt, status } = appChallenge;
-    existing.status = status;
-    existing.appStateHash = appStateHash;
-    existing.versionNumber = versionNumber;
-    existing.finalizesAt = finalizesAt;
-    await this.challengeRepository.save(existing);
-  }
-
-  async getActiveChallenges(multisigAddress: string): Promise<StoredAppChallenge[]> {
-    const active = await this.challengeRepository.findActiveChallengesByMultisig(multisigAddress);
+  async getActiveChallenges(): Promise<StoredAppChallenge[]> {
+    const active = await this.challengeRepository.findActiveChallenges();
     return active.map(entityToStoredChallenge);
   }
 
@@ -742,14 +735,151 @@ export class CFCoreStore implements IStoreService {
     );
   }
 
-  async createStateProgressedEvent(
-    appIdentityHash: string,
-    event: StateProgressedEventPayload,
-  ): Promise<void> {
-    const { signature, action, timeout, turnTaker, versionNumber } = event;
+  async addOnchainAction(appIdentityHash: string, provider: JsonRpcProvider): Promise<void> {
+    const channel = await this.channelRepository.findByAppIdentityHashOrThrow(appIdentityHash);
+    const app = channel.appInstances.find((a) => a.identityHash === appIdentityHash);
+    const latestSetState = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
+      appIdentityHash,
+      toBN(app.latestVersionNumber),
+    );
+    // fetch onchain data
+    const registry = new Contract(
+      latestSetState.challengeRegistryAddress,
+      ChallengeRegistry.abi,
+      provider,
+    );
+    const onchainChallenge = await registry.functions.getAppChallenge(appIdentityHash);
+    if (onchainChallenge.versionNumber.eq(latestSetState.versionNumber)) {
+      return;
+    }
+
+    // only need state progressed events because challenge should contain
+    // all relevant information from challenge updated events
+    const fromBlock = (await provider.getBlockNumber()) - 8640; // last 24h
+    const rawProgressedLogs = await provider.getLogs({
+      // TODO: filter state progressed by appID
+      ...registry.filters[ChallengeEvents.StateProgressed](),
+      fromBlock: fromBlock < 0 ? 0 : fromBlock,
+    });
+    const onchainProgressedLogs = rawProgressedLogs
+      .map((log) => {
+        const {
+          identityHash,
+          action,
+          versionNumber,
+          timeout,
+          turnTaker,
+          signature,
+        } = registry.interface.parseLog(log).values;
+        return { identityHash, action, versionNumber, timeout, turnTaker, signature };
+      })
+      .sort((a, b) => b.versionNumber.sub(a.versionNumber).toNumber());
+    const {
+      action: encodedAction,
+      versionNumber,
+      timeout,
+      turnTaker,
+      signature,
+    } = onchainProgressedLogs[0];
+
+    // ensure action from event can be applied on top of our app
+    if (!versionNumber.eq(app.latestVersionNumber + 1)) {
+      throw new Error(
+        `Action cannot be applied directly onto our record of app. Record has nonce of ${
+          app.latestVersionNumber
+        }, and action results in nonce ${versionNumber.toString()}`,
+      );
+    }
+
+    // generate set state commitment + update app instance
+    // we CANNOT generate any signatures here, and instead will save the
+    // app as a single signed update. (i.e. as in the take-action protocol
+    // for the initiator). This means there will NOT be an app instance
+    // saved at the same nonce as the most recent single signed set-state
+    // commitment
+    const appSigners = [app.initiatorIdentifier, app.responderIdentifier].map(
+      getSignerAddressFromPublicIdentifier,
+    );
+    const turnTakerIdx = appSigners.findIndex((signer) => signer === turnTaker);
+    const signatures = turnTakerIdx === 0 ? [signature, undefined] : [undefined, signature];
+
+    const exists = !!(await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
+      appIdentityHash,
+      onchainChallenge.versionNumber,
+    ));
+    await getManager().transaction(async (transactionalEntityManager) => {
+      // update challenge
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(Challenge)
+        .set({
+          ...onchainChallenge,
+        })
+        .where("challenge.identityHash = :appIdentityHash", {
+          appIdentityHash,
+        })
+        .execute();
+
+      // update app
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(AppInstance)
+        .set({
+          latestAction: defaultAbiCoder.decode([app.actionEncoding], encodedAction),
+        })
+        .where("app.identityHash = :appIdentityHash", {
+          appIdentityHash,
+        })
+        .execute();
+
+      // update or create set state
+      if (exists) {
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .update(SetStateCommitment)
+          .set({
+            signatures,
+            stateTimeout: timeout.toString(),
+            appStateHash: onchainChallenge.appStateHash,
+          })
+          .where("app.identityHash = :appIdentityHash", {
+            appIdentityHash,
+          })
+          .andWhere("app.versionNumber = :versionNumner", {
+            versionNumber: versionNumber.toNumber(),
+          })
+          .execute();
+      } else {
+        // create new
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .insert()
+          .into(SetStateCommitment)
+          .values({
+            app,
+            signatures,
+            appIdentity: {
+              channelNonce: toBN(app.appSeqNo),
+              participants: appSigners,
+              multisigAddress: channel.multisigAddress,
+              appDefinition: app.appDefinition,
+              defaultTimeout: toBN(app.defaultTimeout),
+            },
+            appStateHash: onchainChallenge.appStateHash,
+            versionNumber: onchainChallenge.versionNumber,
+            stateTimeout: timeout.toString(),
+            challengeRegistryAddress: latestSetState.challengeRegistryAddress,
+          })
+          .execute();
+      }
+    });
+  }
+
+  async createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void> {
+    const { signature, action, timeout, turnTaker, versionNumber, identityHash } = event;
     // safe to throw here because challenges should never be created from a
     // `StateProgressed` event, must always go through the set state game
-    const challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
+    const challenge = await this.challengeRepository.findByIdentityHashOrThrow(identityHash);
     const entity = new StateProgressedEvent();
     entity.action = defaultAbiCoder.decode([challenge.app.actionEncoding!], action);
     entity.challenge = challenge;
@@ -772,6 +902,26 @@ export class CFCoreStore implements IStoreService {
     });
   }
 
+  async createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
+    const { versionNumber, identityHash, status, appStateHash, finalizesAt } = event;
+    const challenge = await this.challengeRepository.findByIdentityHashOrThrow(identityHash);
+    await getManager().transaction(async (transactionalEntityManager) => {
+      // insert event
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .insert()
+        .into(ChallengeUpdatedEvent)
+        .values({
+          status: status as ChallengeStatus,
+          appStateHash,
+          versionNumber,
+          finalizesAt,
+          challenge,
+        })
+        .execute();
+    });
+  }
+
   async getChallengeUpdatedEvents(
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]> {
@@ -780,46 +930,5 @@ export class CFCoreStore implements IStoreService {
     return challenge.challengeUpdatedEvents.map((event) =>
       entityToChallengeUpdatedPayload(event, challenge),
     );
-  }
-
-  async createChallengeUpdatedEvent(
-    appIdentityHash: string,
-    event: ChallengeUpdatedEventPayload,
-  ): Promise<void> {
-    const { appStateHash, versionNumber, finalizesAt, status } = event;
-    // safe to throw here because challenges should never be created from a
-    // `StateProgressed` event, must always go through the set state game
-    let challenge = await this.challengeRepository.findByIdentityHash(appIdentityHash);
-    if (!challenge) {
-      // could be catching event that creates a challenge
-      const storedChallenge: StoredAppChallenge = {
-        identityHash: appIdentityHash,
-        appStateHash,
-        versionNumber,
-        finalizesAt,
-        status,
-      };
-      await this.createAppChallenge(appIdentityHash, storedChallenge);
-      challenge = await this.challengeRepository.findByIdentityHashOrThrow(appIdentityHash);
-    }
-    const entity = new ChallengeUpdatedEvent();
-    entity.appStateHash = appStateHash;
-    entity.challenge = challenge;
-    entity.finalizesAt = finalizesAt;
-    entity.status = status;
-    entity.versionNumber = versionNumber;
-
-    await getManager().transaction(async (transactionalEntityManager) => {
-      await transactionalEntityManager.save(entity);
-
-      // all contracts emit a `ChallengeUpdated` event, so update any
-      // challenge fields using data from that event, not this one
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .relation(Challenge, "stateProgressedEvents")
-        .of(challenge.id)
-        .add(entity.id);
-    });
   }
 }

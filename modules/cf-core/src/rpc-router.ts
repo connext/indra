@@ -25,7 +25,7 @@ export default class RpcRouter extends Router {
   async dispatch(rpc: Rpc): Promise<JsonRpcResponse> {
     const start = Date.now();
     const controller = Object.values(Controller.rpcMethods).find(
-      mapping => mapping.method === rpc.methodName,
+      (mapping) => mapping.method === rpc.methodName,
     );
 
     if (!controller) {

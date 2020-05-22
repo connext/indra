@@ -29,25 +29,31 @@ import {
   InstallMiddlewareContext,
   DepositAppState,
   ProtocolRoles,
+  SimpleLinkedTransferAppState,
+  ProposeMiddlewareContext,
+  AppInstanceProposal,
 } from "@connext/types";
-import { getAddressFromAssetId } from "@connext/utils";
+import { getAddressFromAssetId, stringify } from "@connext/utils";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
+import { JsonRpcProvider } from "ethers/providers";
 import { bigNumberify } from "ethers/utils";
 
-import { CFCoreService } from "../cfCore/cfCore.service";
-import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelService, RebalanceType } from "../channel/channel.service";
-import { ConfigService } from "../config/config.service";
-import { MessagingProviderId } from "../constants";
-import { SwapRateService } from "../swapRate/swapRate.service";
-import { LoggerService } from "../logger/logger.service";
-import { Channel } from "../channel/channel.entity";
-import { WithdrawService } from "../withdraw/withdraw.service";
-import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.service";
-import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
-import { CFCoreStore } from "../cfCore/cfCore.store";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { AppType } from "../appInstance/appInstance.entity";
+import { CFCoreService } from "../cfCore/cfCore.service";
+import { CFCoreStore } from "../cfCore/cfCore.store";
+import { Channel } from "../channel/channel.entity";
+import { ChannelRepository } from "../channel/channel.repository";
+import { ChannelService } from "../channel/channel.service";
+import { ConfigService } from "../config/config.service";
+import { DepositService } from "../deposit/deposit.service";
+import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.service";
+import { LoggerService } from "../logger/logger.service";
+import { MessagingProviderId } from "../constants";
+import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
+import { SwapRateService } from "../swapRate/swapRate.service";
+import { WithdrawService } from "../withdraw/withdraw.service";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -65,8 +71,10 @@ export class AppRegistryService implements OnModuleInit {
     private readonly swapRateService: SwapRateService,
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly withdrawService: WithdrawService,
+    private readonly depositService: DepositService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("AppRegistryService");
   }
@@ -97,7 +105,12 @@ export class AppRegistryService implements OnModuleInit {
         throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
       }
 
-      await this.runPreInstallValidation(registryAppInfo, proposeInstallParams, from);
+      await this.runPreInstallValidation(
+        registryAppInfo,
+        proposeInstallParams,
+        from,
+        installerChannel,
+      );
 
       // check if we need to collateralize, only for swap app
       if (registryAppInfo.name === SimpleTwoPartySwapAppName) {
@@ -108,11 +121,16 @@ export class AppRegistryService implements OnModuleInit {
         );
         const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
         if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
-          const depositReceipt = await this.channelService.rebalance(
+          const amount = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
             from,
-            getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
-            RebalanceType.COLLATERALIZE,
+            proposeInstallParams.responderDepositAssetId,
             responderDepositBigNumber,
+            freeBal[this.cfCoreService.cfCore.signerAddress],
+          );
+          const depositReceipt = await this.depositService.deposit(
+            installerChannel,
+            amount,
+            proposeInstallParams.responderDepositAssetId,
           );
           if (!depositReceipt) {
             throw new Error(
@@ -121,22 +139,26 @@ export class AppRegistryService implements OnModuleInit {
           }
         }
       }
-
-      if (registryAppInfo.name === HashLockTransferAppName) {
-        // install is done through middleware
-        this.log.info(`Hashlock transfer sender app is installed through middleware`);
-        return;
+      if (registryAppInfo.name !== HashLockTransferAppName) {
+        ({ appInstance } = await this.cfCoreService.installApp(
+          appIdentityHash,
+          installerChannel.multisigAddress,
+        ));
       }
-      // collateralized in post-install tasks
-      ({ appInstance } = await this.cfCoreService.installApp(appIdentityHash));
       // any tasks that need to happen after install, i.e. DB writes
-      await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams, from);
-      const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstance.identityHash}.install`;
+      await this.runPostInstallTasks(
+        registryAppInfo,
+        appIdentityHash,
+        proposeInstallParams,
+        from,
+        installerChannel,
+      );
+      const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appIdentityHash}.install`;
       await this.messagingService.publish(installSubject, appInstance);
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.stack || e.message}`);
-      await this.cfCoreService.rejectInstallApp(appIdentityHash);
+      await this.cfCoreService.rejectInstallApp(appIdentityHash, installerChannel.multisigAddress);
       return;
     }
   }
@@ -145,6 +167,7 @@ export class AppRegistryService implements OnModuleInit {
     registryAppInfo: AppRegistry,
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
+    channel: Channel,
   ): Promise<void> {
     this.log.info(`runPreInstallValidation for app name ${registryAppInfo.name} started`);
     const supportedAddresses = this.configService.getSupportedTokenAddresses();
@@ -178,6 +201,18 @@ export class AppRegistryService implements OnModuleInit {
         break;
       }
       case DepositAppName: {
+        const appInstances = await this.cfCoreService.getAppInstances(channel.multisigAddress);
+        const depositApp = appInstances.find(
+          (appInstance) =>
+            appInstance.appInterface.addr === registryAppInfo.appDefinitionAddress &&
+            (appInstance.latestState as DepositAppState).assetId ===
+              proposeInstallParams.initiatorDepositAssetId,
+        );
+        if (depositApp) {
+          throw new Error(
+            `Deposit app already installed for this assetId, rejecting (${depositApp.identityHash})`,
+          );
+        }
         await validateDepositApp(
           proposeInstallParams,
           from,
@@ -230,6 +265,7 @@ export class AppRegistryService implements OnModuleInit {
     appIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
+    channel: Channel,
   ): Promise<void> {
     this.log.info(
       `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} started`,
@@ -276,14 +312,8 @@ export class AppRegistryService implements OnModuleInit {
       default:
         this.log.debug(`No post-install actions configured.`);
     }
-    // rebalance at the end without blocking
-    this.channelService.rebalance(
-      from,
-      getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
-      RebalanceType.RECLAIM,
-    );
     this.log.info(
-      `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} completed`,
+      `runPostInstallTasks for app ${registryAppInfo.name} ${appIdentityHash} completed`,
     );
   }
 
@@ -292,17 +322,20 @@ export class AppRegistryService implements OnModuleInit {
     const contractAddresses = await this.configService.getContractAddresses();
     const provider = this.configService.getEthProvider();
     const defaultValidation = await generateValidationMiddleware({
-      ...contractAddresses,
-      provider: provider as any,
+      contractAddresses,
+      provider: provider as JsonRpcProvider,
     });
 
     return async (protocol: ProtocolName, cxt: MiddlewareContext) => {
       await defaultValidation(protocol, cxt);
       switch (protocol) {
         case ProtocolNames.setup:
-        case ProtocolNames.propose:
-        case ProtocolNames.takeAction: {
+        case ProtocolNames.takeAction:
+        case ProtocolNames.sync: {
           return;
+        }
+        case ProtocolNames.propose: {
+          return await this.proposeMiddleware(cxt as ProposeMiddlewareContext);
         }
         case ProtocolNames.install: {
           return await this.installMiddleware(cxt as InstallMiddlewareContext);
@@ -332,6 +365,61 @@ export class AppRegistryService implements OnModuleInit {
         // middleware for app not configured
         return;
       }
+    }
+  };
+
+  private proposeMiddleware = async (cxt: ProposeMiddlewareContext) => {
+    const { proposal } = cxt;
+    const contractAddresses = await this.configService.getContractAddresses();
+
+    switch (proposal.appDefinition) {
+      case contractAddresses.SimpleLinkedTransferApp: {
+        return await this.proposeLinkedTransferMiddleware(proposal);
+      }
+      case contractAddresses.SimpleSignedTransferApp: {
+        return await this.proposeSignedTransferMiddleware(proposal);
+      }
+      default: {
+        // middleware for app not configured
+        return;
+      }
+    }
+  };
+
+  private proposeLinkedTransferMiddleware = async (proposal: AppInstanceProposal) => {
+    const { paymentId, coinTransfers } = proposal.initialState as SimpleLinkedTransferAppState;
+    // if node is the receiver, ignore
+    if (coinTransfers[0].to !== this.cfCoreService.cfCore.signerAddress) {
+      return;
+    }
+    // node is sender, make sure app doesnt already exist
+    const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
+      paymentId,
+      this.cfCoreService.cfCore.signerAddress,
+    );
+    if (receiverApp && receiverApp.type !== AppType.REJECTED) {
+      throw new Error(
+        `Found existing app for ${paymentId}, aborting linked transfer proposal. App: ${stringify(
+          receiverApp,
+        )}`,
+      );
+    }
+  };
+
+  private proposeSignedTransferMiddleware = async (proposal: AppInstanceProposal) => {
+    const { paymentId, coinTransfers } = proposal.initialState as SimpleSignedTransferAppState;
+    // if node is the receiver, ignore
+    if (coinTransfers[0].to !== this.cfCoreService.cfCore.signerAddress) {
+      return;
+    }
+    // node is sender, make sure app doesnt already exist
+    const receiverApp = await this.signedTransferService.findReceiverAppByPaymentId(paymentId);
+    if (receiverApp && receiverApp.type !== AppType.REJECTED) {
+      throw new Error(
+        `Found existing app for ${paymentId}, aborting signed transfer proposal. App: ${stringify(
+          receiverApp,
+        )}`,
+      );
     }
   };
 
@@ -365,7 +453,10 @@ export class AppRegistryService implements OnModuleInit {
     this.log.info(
       `installHashLockTransferMiddleware: Install sender app ${existingSenderApp.identityHash} for user ${appInstance.initiatorIdentifier} started`,
     );
-    const res = await this.cfCoreService.installApp(existingSenderApp.identityHash);
+    const res = await this.cfCoreService.installApp(
+      existingSenderApp.identityHash,
+      existingSenderApp.channel.multisigAddress,
+    );
     const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${existingSenderApp.channel.multisigAddress}.app-instance.${existingSenderApp.identityHash}.install`;
     await this.messagingService.publish(installSubject, appInstance);
     this.log.info(
@@ -406,7 +497,7 @@ export class AppRegistryService implements OnModuleInit {
 
   async onModuleInit() {
     const ethNetwork = await this.configService.getEthNetwork();
-    const addressBook = await this.configService.getContractAddresses();
+    const contractAddresses = await this.configService.getContractAddresses();
     for (const app of RegistryOfApps) {
       let appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
         app.name,
@@ -415,7 +506,7 @@ export class AppRegistryService implements OnModuleInit {
       if (!appRegistry) {
         appRegistry = new AppRegistry();
       }
-      const appDefinitionAddress = addressBook[app.name];
+      const appDefinitionAddress = contractAddresses[app.name];
       this.log.info(
         `Creating ${app.name} app on chain ${ethNetwork.chainId}: ${appDefinitionAddress}`,
       );

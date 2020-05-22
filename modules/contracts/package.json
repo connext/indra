@@ -1,6 +1,6 @@
 {
   "name": "@connext/contracts",
-  "version": "2.0.6",
+  "version": "3.1.0",
   "description": "Smart contracts that power a Counterfactual State Channel platform",
   "license": "ISC",
   "files": [
@@ -29,10 +29,10 @@
     "transpile": "./node_modules/.bin/tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@connext/utils": "6.3.12",
-    "@connext/types": "6.3.12",
+    "@connext/utils": "6.6.0",
+    "@connext/types": "6.6.0",
     "ethers": "4.0.47",
-    "@openzeppelin/contracts": "2.5.0",
+    "@openzeppelin/contracts": "3.0.1",
     "ganache-cli": "6.9.1",
     "solc": "0.5.11",
     "eventemitter3": "4.0.0"

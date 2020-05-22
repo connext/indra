@@ -2,9 +2,9 @@ import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext
 import { AddressZero, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 
-import { createAppInstanceForTest } from "../../testing/utils";
+import { createAppInstanceForTest, createAppInstanceProposalForTest } from "../../testing/utils";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
-import { generateRandomNetworkContext } from "../../testing/mocks";
+import { getRandomContractAddresses } from "../../testing/mocks";
 
 import { AppInstance } from "../app-instance";
 import { StateChannel } from "../state-channel";
@@ -15,37 +15,35 @@ const APP_STATE = {
 };
 
 describe("StateChannel::setState", () => {
-  const networkContext = generateRandomNetworkContext();
+  const contractAddresses = getRandomContractAddresses();
 
   let sc1: StateChannel;
   let sc2: StateChannel;
-  let testApp: AppInstance;
+  let appInstance: AppInstance;
 
   beforeAll(() => {
     const multisigAddress = getAddress(getRandomAddress());
     const ids = getRandomPublicIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
-      networkContext.IdentityApp,
-      {
-        proxyFactory: networkContext.ProxyFactory,
-        multisigMastercopy: networkContext.MinimumViableMultisig,
-      },
+      contractAddresses.IdentityApp,
+      contractAddresses,
       multisigAddress,
       ids[0],
       ids[1],
     );
 
-    testApp = createAppInstanceForTest(sc1);
+    appInstance = createAppInstanceForTest(sc1);
+    sc1 = sc1.addProposal(createAppInstanceProposalForTest(appInstance.identityHash, sc1));
 
-    sc1 = sc1.installApp(testApp, {
+    sc1 = sc1.installApp(appInstance, {
       [AddressZero]: {
         [getSignerAddressFromPublicIdentifier(ids[0])]: Zero,
         [getSignerAddressFromPublicIdentifier(ids[1])]: Zero,
       },
     });
 
-    sc2 = sc1.setState(testApp, APP_STATE);
+    sc2 = sc1.setState(appInstance, APP_STATE);
   });
 
   it("should not alter any of the base properties", () => {
@@ -61,7 +59,7 @@ describe("StateChannel::setState", () => {
     let app: AppInstance;
 
     beforeAll(() => {
-      app = sc2.getAppInstance(testApp.identityHash)!;
+      app = sc2.getAppInstance(appInstance.identityHash)!;
     });
 
     it("should have the new state", () => {
@@ -69,7 +67,7 @@ describe("StateChannel::setState", () => {
     });
 
     it("should have bumped the versionNumber", () => {
-      expect(app.versionNumber).toBe(testApp.versionNumber + 1);
+      expect(app.versionNumber).toBe(appInstance.versionNumber + 1);
     });
 
     it("should have used the default timeout", () => {

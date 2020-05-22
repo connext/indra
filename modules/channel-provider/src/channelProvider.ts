@@ -29,19 +29,24 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     return new Promise(
       async (resolve, reject): Promise<void> => {
         await this.connection.open();
-        const config: ChannelProviderConfig = await this._send(ChannelMethods.chan_enable);
+        let config;
+        try {
+          config = await this._send(ChannelMethods.chan_enable);
+        } catch (e) {
+          return reject(`Could not enable channel: ${e.message}`);
+        }
         if (Object.keys(config).length > 0) {
           this.connected = true;
           this._config = config;
           this._multisigAddress = config.multisigAddress;
           this.emit("connect");
-          resolve(config);
+          return resolve(config);
         } else {
           const err: any = new Error("User Denied Channel Config");
           err.code = 4001;
           this.connected = false;
           await this.connection.close();
-          reject(err);
+          return reject(err);
         }
       },
     );

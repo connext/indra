@@ -5,12 +5,16 @@ import {
   ProtocolRoles,
   SetupMiddlewareContext,
   ValidationMiddleware,
+  CF_METHOD_TIMEOUT,
+  EventNames,
 } from "@connext/types";
 import { Node } from "../../node";
 import { getCreate2MultisigAddress } from "../../utils";
 
 import { SetupContext, setup } from "../setup";
-import { createChannel } from "../utils";
+import { createChannel, assertMessage } from "../utils";
+
+jest.setTimeout(15_000);
 
 describe("injected validation middleware", () => {
   let nodeA: Node;
@@ -26,10 +30,7 @@ describe("injected validation middleware", () => {
     multisigAddress = await getCreate2MultisigAddress(
       nodeA.publicIdentifier,
       nodeB.publicIdentifier,
-      {
-        proxyFactory: nodeA.networkContext.ProxyFactory,
-        multisigMastercopy: nodeA.networkContext.MinimumViableMultisig,
-      },
+      nodeA.networkContext.contractAddresses,
       nodeA.networkContext.provider,
     );
   });
@@ -58,11 +59,58 @@ describe("injected validation middleware", () => {
   });
 
   it("protocol will fail if the validation middleware errors", async () => {
+    const initiatorFailure = `IO_SEND_AND_WAIT timed out after ${
+      CF_METHOD_TIMEOUT / 1000
+    }s waiting for counterparty reply in setup`;
     const FAILURE_MESSAGE = "Middleware failed";
-    const middleware: ValidationMiddleware = (protocol, context) => {
-      return Promise.reject(FAILURE_MESSAGE);
+    const middleware: any = (protocol: any, context: any) => {
+      throw new Error(FAILURE_MESSAGE);
     };
-    nodeA.injectMiddleware(Opcode.OP_VALIDATE, middleware);
-    await expect(createChannel(nodeA, nodeB)).rejects.toEqual(FAILURE_MESSAGE);
+    nodeB.injectMiddleware(Opcode.OP_VALIDATE, middleware);
+    await Promise.all([
+      new Promise(async (resolve) => {
+        await expect(createChannel(nodeA, nodeB)).rejects.toThrowError(initiatorFailure);
+        resolve();
+      }),
+      new Promise((resolve) => {
+        nodeB.once(EventNames.SETUP_FAILED_EVENT, async (msg) => {
+          assertMessage(
+            msg,
+            {
+              from: nodeA.publicIdentifier,
+              data: {
+                params: {
+                  responderIdentifier: nodeB.publicIdentifier,
+                  initiatorIdentifier: nodeA.publicIdentifier,
+                },
+              },
+              type: EventNames.SETUP_FAILED_EVENT,
+            },
+            ["data.params.multisigAddress", "data.error"],
+          );
+          expect(msg.data.error.includes(FAILURE_MESSAGE)).toBe(true);
+          resolve();
+        });
+      }),
+      new Promise((resolve) => {
+        nodeA.once(EventNames.SETUP_FAILED_EVENT, async (msg) => {
+          assertMessage(
+            msg,
+            {
+              from: nodeA.publicIdentifier,
+              data: {
+                params: {
+                  responderIdentifier: nodeB.publicIdentifier,
+                  initiatorIdentifier: nodeA.publicIdentifier,
+                },
+              },
+            },
+            ["data.params.multisigAddress", "data.error"],
+          );
+          expect(msg.data.error.includes(initiatorFailure)).toBe(true);
+          resolve();
+        });
+      }),
+    ]);
   });
 });

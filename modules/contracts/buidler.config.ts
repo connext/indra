@@ -18,8 +18,7 @@ const config: BuidlerConfig = {
     artifacts: "./build",
   },
   solc: {
-    version: "0.5.11", // Note that this only has the version number
-    evmVersion: "constantinople",
+    version: "0.6.7", // Note that this only has the version number
   },
   defaultNetwork: "buidlerevm",
   networks: {

@@ -6,8 +6,11 @@ import {
   Message,
   VerifyNonceDtoType,
   IChannelSigner,
+  ProtocolParam,
+  ProtocolName,
+  ProtocolNames,
 } from "@connext/types";
-import { ChannelSigner, ColorfulLogger, delay } from "@connext/utils";
+import { ChannelSigner, ColorfulLogger, stringify, isBN } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { Wallet } from "ethers";
 
@@ -16,27 +19,13 @@ import { combineObjects } from "./misc";
 
 const log = new ColorfulLogger("Messaging", env.logLevel);
 
+// set an artificially high limit to effectively prevent any
+// messaging limits by default (and easily allow for 0)
+export const NO_LIMIT = 100_000_000;
+
 // TYPES
-export type MessageCounter = {
-  sent: number;
-  received: number;
-};
 
-type DetailedMessageCounter = MessageCounter & {
-  ceiling?: Partial<MessageCounter>;
-  delay?: Partial<MessageCounter>;
-};
-
-export type TestMessagingConfig = {
-  nodeUrl: string;
-  messagingConfig: MessagingConfig;
-  protocolDefaults: {
-    [protocol: string]: DetailedMessageCounter;
-  };
-  count: DetailedMessageCounter;
-  signer: IChannelSigner;
-};
-
+// Messaging events emitted by the class when that fn is called
 export const RECEIVED = "RECEIVED";
 export const SEND = "SEND";
 export const CONNECT = "CONNECT";
@@ -65,10 +54,67 @@ export type MessagingEventData = {
   data?: any;
 };
 
+export type SendReceiveCounter = {
+  [SEND]: number;
+  [RECEIVED]: number;
+};
+
+// used internally to track information about messages sent
+// within a protocol, indexed by protocol name
+type ProtocolMessageCounter = {
+  [k: string]: SendReceiveCounter;
+};
+
+// used internally to track protocol limits, indexed by protocol name
+type UnindexedLimit = {
+  ceiling: SendReceiveCounter;
+  params?: Partial<ProtocolParam>;
+};
+type InternalProtocolLimits = {
+  [k: string]: UnindexedLimit;
+};
+
+// user-supplied messaging limits at protocol level, indexed by protocol name
+type ProtocolMessageLimitInputs = Partial<{
+  [k: string]: {
+    ceiling: Partial<SendReceiveCounter>;
+    params?: Partial<ProtocolParam>;
+  };
+}>;
+
+// used to track all types of messages sent/received.
+// keys in this object are type MessageEvent
+type ApiCounter = {
+  [key: string]: number;
+};
+
+// used internally to track messaging limits, indexed by MessageEvent
+type ApiLimits = {
+  [k: string]: { ceiling: number };
+  // can add more filtering options if needed
+};
+
+// all user-supplied config options
+export type TestMessagingConfig = {
+  nodeUrl: string;
+  messagingConfig: MessagingConfig;
+  protocolLimits: ProtocolMessageLimitInputs;
+  apiLimits: ApiLimits;
+  signer: IChannelSigner;
+};
+
+type InternalMessagingConfig = Omit<TestMessagingConfig, "protocolLimits"> & {
+  protocolLimits: InternalProtocolLimits;
+};
+
+// Helpers for parsing protocol data from messages
 export const getProtocolFromData = (msg: MessagingEventData) => {
-  const { subject, data } = msg;
-  if (!data || !subject) {
+  const { data } = msg;
+  if (!data) {
     return;
+  }
+  if (data.protocol) {
+    return data.protocol;
   }
   if (data.data && data.data.protocol) {
     // fast forward
@@ -76,79 +122,91 @@ export const getProtocolFromData = (msg: MessagingEventData) => {
   }
 };
 
-const defaultCount = (details: string[] = []): MessageCounter | DetailedMessageCounter => {
-  if (details.includes("delay") && details.includes("ceiling")) {
-    return {
-      ...zeroCounter(),
-      ceiling: undefined,
-      delay: zeroCounter(),
-    };
+export const getParamsFromData = (msg: MessagingEventData) => {
+  const { data } = msg;
+  if (!data) {
+    return;
   }
-
-  if (details.includes("delay")) {
-    return {
-      ...zeroCounter(),
-      delay: zeroCounter(),
-    };
+  if (data.params) {
+    return data.params;
   }
-  return {
-    ...zeroCounter(),
-    ceiling: undefined,
-  };
+  if (data.data && data.data.params) {
+    // fast forward
+    return data.data.params;
+  }
 };
 
-const zeroCounter = (): MessageCounter => {
-  return { sent: 0, received: 0 };
+// generate default config options
+const getDefaultApiLimits = (): ApiLimits => {
+  const ret = {};
+  Object.keys(MessagingEvents).forEach((event) => {
+    ret[event] = { ceiling: NO_LIMIT };
+  });
+  return ret;
+};
+
+const getDefaultProtocolLimits = (): InternalProtocolLimits => {
+  const ret = {};
+  Object.keys(ProtocolNames).forEach((event) => {
+    ret[event] = {
+      ceiling: { [SEND]: NO_LIMIT, [RECEIVED]: NO_LIMIT },
+      params: undefined,
+    };
+  });
+  return ret;
 };
 
 const defaultOpts = (): TestMessagingConfig => {
   return {
     nodeUrl: env.nodeUrl,
     messagingConfig: {
-      // TODO:
-      messagingUrl: "nats://172.17.0.1:4222",
+      messagingUrl: env.natsUrl,
     },
-    protocolDefaults: {
-      install: defaultCount(),
-      "install-virtual-app": defaultCount(),
-      setup: defaultCount(),
-      propose: defaultCount(),
-      takeAction: defaultCount(),
-      uninstall: defaultCount(),
-      "uninstall-virtual-app": defaultCount(),
-      update: defaultCount(),
-      withdraw: defaultCount(),
-    },
-    count: defaultCount(),
-    signer: new ChannelSigner(
-      Wallet.createRandom().privateKey,
-      env.ethProviderUrl,
-    ),
+    apiLimits: getDefaultApiLimits(),
+    protocolLimits: getDefaultProtocolLimits(),
+    signer: new ChannelSigner(Wallet.createRandom().privateKey, env.ethProviderUrl),
   };
+};
+
+export const initApiCounter = (): ApiCounter => {
+  let ret = {};
+  Object.keys(MessagingEvents).forEach((key) => {
+    ret[key] = 0;
+  });
+  return ret;
+};
+
+export const initProtocolCounter = (): ProtocolMessageCounter => {
+  let ret = {};
+  Object.keys(ProtocolNames).forEach((key) => {
+    ret[key] = { [SEND]: 0, [RECEIVED]: 0 };
+  });
+  return ret;
 };
 
 export class TestMessagingService extends ConnextEventEmitter implements IMessagingService {
   private connection: MessagingService;
-  private protocolDefaults: {
-    [protocol: string]: DetailedMessageCounter;
-  };
-  private countInternal: DetailedMessageCounter;
-  public options: TestMessagingConfig;
+  // key is ProtocolName, and this tracks all messages sent / received
+  // by protocol
+  private protocolCounter: ProtocolMessageCounter = initProtocolCounter();
+  // keys are of type MessageEvent, tracks all message action
+  // across the functions
+  private apiCounter: ApiCounter = initApiCounter();
+  public providedOptions: Partial<TestMessagingConfig>;
+  public options: InternalMessagingConfig;
 
   constructor(opts: Partial<TestMessagingConfig>) {
     super();
-    const defaults = defaultOpts();
-    opts.signer = opts.signer || defaults.signer;
     // create options
+    this.providedOptions = opts;
+    const defaults = defaultOpts();
     this.options = {
-      nodeUrl: opts.nodeUrl || defaults.nodeUrl,
-      messagingConfig: combineObjects(opts.messagingConfig, defaults.messagingConfig),
-      count: combineObjects(opts.count, defaults.count),
-      protocolDefaults: combineObjects(opts.protocolDefaults, defaults.protocolDefaults),
-      signer: typeof opts.signer === "string" 
-        ? new ChannelSigner(opts.signer) 
-        : opts.signer,
-    };
+      ...combineObjects(opts, defaults),
+      signer:
+        opts.signer && typeof opts.signer === "string"
+          ? new ChannelSigner(opts.signer, env.ethProviderUrl)
+          : opts.signer || defaults.signer,
+    } as InternalMessagingConfig;
     const getSignature = (msg: string) => this.options.signer.signMessage(msg);
 
     const getBearerToken = async (
@@ -176,237 +234,252 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     this.connection = new MessagingService(this.options.messagingConfig, key, () =>
       getBearerToken(this.options.signer.publicIdentifier, getSignature),
     );
-    this.protocolDefaults = this.options.protocolDefaults;
-    this.countInternal = this.options.count;
   }
 
   ////////////////////////////////////////
   // Getters / setters
 
-  get setup(): DetailedMessageCounter {
-    return this.protocolDefaults.setup;
+  // top level
+  get protocolLimits() {
+    return this.options.protocolLimits;
+  }
+  get protocolCount() {
+    return this.protocolCounter;
   }
 
-  get install(): DetailedMessageCounter {
-    return this.protocolDefaults.install;
+  get apiLimits() {
+    return this.options.apiLimits;
+  }
+  get apiCount() {
+    return this.apiCounter;
   }
 
-  get installVirtual(): DetailedMessageCounter {
-    return this.protocolDefaults["install-virtual-app"];
+  // by protocol
+  get setupLimit(): UnindexedLimit {
+    return this.protocolLimits[ProtocolNames.setup];
+  }
+  get setupCount(): SendReceiveCounter {
+    return this.protocolCounter[ProtocolNames.setup];
   }
 
-  get propose(): DetailedMessageCounter {
-    return this.protocolDefaults.propose;
+  get proposeLimit(): UnindexedLimit {
+    return this.protocolLimits[ProtocolNames.propose];
+  }
+  get proposeCount(): SendReceiveCounter {
+    return this.protocolCounter[ProtocolNames.propose];
   }
 
-  get takeAction(): DetailedMessageCounter {
-    return this.protocolDefaults.takeAction;
+  get installLimit(): UnindexedLimit {
+    return this.protocolLimits[ProtocolNames.install];
+  }
+  get installCount(): SendReceiveCounter {
+    return this.protocolCounter[ProtocolNames.install];
   }
 
-  get uninstall(): DetailedMessageCounter {
-    return this.protocolDefaults.uninstall;
+  get takeActionLimit(): UnindexedLimit {
+    return this.protocolLimits[ProtocolNames.takeAction];
+  }
+  get takeActionCount(): SendReceiveCounter {
+    return this.protocolCounter[ProtocolNames.takeAction];
   }
 
-  get uninstallVirtual(): DetailedMessageCounter {
-    return this.protocolDefaults["uninstall-virtual-app"];
+  get uninstallLimit(): UnindexedLimit {
+    return this.protocolLimits[ProtocolNames.uninstall];
   }
-
-  get update(): DetailedMessageCounter {
-    return this.protocolDefaults.update;
-  }
-
-  get withdraw(): DetailedMessageCounter {
-    return this.protocolDefaults.withdraw;
-  }
-
-  get count(): DetailedMessageCounter {
-    return this.countInternal;
+  get uninstallCount(): SendReceiveCounter {
+    return this.protocolCounter[ProtocolNames.uninstall];
   }
 
   ////////////////////////////////////////
   // IMessagingService Methods
-  async onReceive(subject: string, callback: (msg: Message) => void): Promise<void> {
+  onReceive(subject: string, callback: (msg: Message) => void): Promise<void> {
     // return connection callback
-    return this.connection.onReceive(subject, async (msg: Message) => {
-      this.emit(RECEIVED, { subject, data: msg } as MessagingEventData);
-      // wait out delay
-      await this.awaitDelay();
-      if (
-        this.hasCeiling({ type: "received" }) &&
-        this.count.ceiling!.received! <= this.count.received
-      ) {
+    return this.connection.onReceive(subject, (msg: Message) => {
+      const shouldContinue = this.emitEventAndIncrementApiCount(RECEIVED, {
+        subject,
+        data: msg,
+      } as MessagingEventData);
+      // check if there is a high level limit on messages received
+      if (!shouldContinue) {
         log.warn(
-          `Reached ceiling (${
-            this.count.ceiling!.received
-          }), refusing to process any more messages. Received ${this.count.received} messages`,
+          `Reached API ceiling, refusing to process any more messages. Received ${this.apiCounter[RECEIVED]} total message`,
         );
-        return;
+        return Promise.resolve();
       }
-      // handle overall protocol count
-      this.count.received += 1;
-
       // check if any protocol messages are increased
-      const protocol = this.getProtocol(msg);
-      if (!protocol || !this.protocolDefaults[protocol]) {
+      const protocol = getProtocolFromData(msg);
+      if (!protocol) {
         // Could not find protocol corresponding to received message,
         // proceeding with callback
         return callback(msg);
       }
-      // wait out delay
-      await this.awaitDelay(false, protocol);
-      // verify ceiling exists and has not been reached
-      if (
-        this.hasCeiling({ protocol, type: "received" }) &&
-        this.protocolDefaults[protocol].ceiling!.received! <=
-          this.protocolDefaults[protocol].received
-      ) {
-        const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${
-          this.protocolDefaults[protocol].received
-        } received, ceiling: ${this.protocolDefaults[protocol].ceiling!.received!}`;
+      const canContinue = this.incrementProtocolCount(protocol, msg, RECEIVED);
+      if (!canContinue) {
+        const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached (received). ${stringify(
+          this.protocolCounter[protocol],
+        )}`;
         log.warn(msg);
-        return;
+        return Promise.resolve();
       }
-      this.protocolDefaults[protocol].received += 1;
-      // perform callback
+      // has params specified, but not included in this message.
+      // so return callback
       return callback(msg);
     });
   }
 
-  async send(to: string, msg: Message): Promise<void> {
-    this.emit(SEND, { subject: to, data: msg } as MessagingEventData);
-    // wait out delay
-    await this.awaitDelay(true);
-    if (this.hasCeiling({ type: "sent" }) && this.count.sent >= this.count.ceiling!.sent!) {
+  send(to: string, msg: Message): Promise<void> {
+    const shouldContinue = this.emitEventAndIncrementApiCount(SEND, {
+      subject: to,
+      data: msg,
+    } as MessagingEventData);
+    // check if there is a high level limit on messages received
+    if (!shouldContinue) {
       log.warn(
-        `Reached ceiling (${this.count.ceiling!.sent!}), refusing to send any more messages. Sent ${
-          this.count.sent
-        } messages`,
+        `Reached API ceiling, refusing to process any more messages. Sent ${this.apiCounter[SEND]} total messages`,
       );
-      return;
+      return Promise.resolve();
     }
 
     // check protocol ceiling
-    const protocol = this.getProtocol(msg);
-    if (!protocol || !this.protocolDefaults[protocol]) {
+    const protocol = getProtocolFromData(msg);
+    if (!protocol) {
       // Could not find protocol corresponding to received message,
       // proceeding with sending
       return this.connection.send(to, msg);
     }
-    // wait out delay
-    await this.awaitDelay(true, protocol);
-    if (
-      this.hasCeiling({ type: "sent", protocol }) &&
-      this.protocolDefaults[protocol].sent >= this.protocolDefaults[protocol].ceiling!.sent!
-    ) {
-      const msg = `Refusing to send any more messages, ceiling for ${protocol} has been reached. ${
-        this.protocolDefaults[protocol].sent
-      } sent, ceiling: ${this.protocolDefaults[protocol].ceiling!.sent!}`;
+    const canContinue = this.incrementProtocolCount(protocol, msg, SEND);
+    if (!canContinue) {
+      const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached (send). ${stringify(
+        this.protocolCounter[protocol],
+      )}`;
       log.warn(msg);
-      return;
+      return Promise.resolve();
     }
-    // handle counts
-    this.count.sent += 1;
-    this.protocolDefaults[protocol].sent += 1;
 
-    // send message, if its a stale connection, retry
     return this.connection.send(to, msg);
   }
-
-  private awaitDelay = async (isSend: boolean = false, protocol?: string): Promise<any> => {
-    const key = isSend ? "sent" : "received";
-    if (!protocol) {
-      if (!this.count.delay) {
-        return;
-      }
-      return delay(this.count.delay[key] || 0);
-    }
-    if (!this.protocolDefaults[protocol] || !this.protocolDefaults[protocol]["delay"]) {
-      return;
-    }
-    return delay(this.protocolDefaults[protocol]!.delay![key] || 0);
-  };
 
   ////////////////////////////////////////
   // More generic methods
 
-  async connect(): Promise<void> {
-    this.emit(CONNECT, {} as MessagingEventData);
-    await this.connection.connect();
+  connect(): Promise<void> {
+    this.emitEventAndIncrementApiCount(CONNECT, {} as MessagingEventData);
+    return this.connection.connect();
   }
 
-  async disconnect(): Promise<void> {
-    this.emit(DISCONNECT, {} as MessagingEventData);
-    await this.connection.disconnect();
+  disconnect(): Promise<void> {
+    this.emitEventAndIncrementApiCount(DISCONNECT, {} as MessagingEventData);
+    return this.connection.disconnect();
   }
 
-  async flush(): Promise<void> {
-    this.emit(FLUSH, {} as MessagingEventData);
+  flush(): Promise<void> {
+    this.emitEventAndIncrementApiCount(FLUSH, {} as MessagingEventData);
     return this.connection.flush();
   }
 
-  async publish(subject: string, data: any): Promise<void> {
+  publish(subject: string, data: any): Promise<void> {
     // make sure that client is allowed to send message
-    this.emit(PUBLISH, { data, subject } as MessagingEventData);
+    this.emitEventAndIncrementApiCount(PUBLISH, { data, subject } as MessagingEventData);
     return this.connection.publish(subject, data);
   }
 
-  async request(
-    subject: string,
-    timeout: number,
-    data: object,
-    callback?: (response: any) => any,
-  ): Promise<any> {
+  request(subject: string, timeout: number, data: object): Promise<any> {
     // make sure that client is allowed to send message
     // note: when sending via node.ts uses request
     // make sure that client is allowed to send message
 
-    this.emit(REQUEST, { data, subject } as MessagingEventData);
+    this.emitEventAndIncrementApiCount(REQUEST, { data, subject } as MessagingEventData);
     return this.connection.request(subject, timeout, data);
   }
 
-  async subscribe(subject: string, callback: (msg: Message) => void): Promise<void> {
-    return this.connection.subscribe(subject, callback);
+  subscribe(subject: string, callback: (msg: Message) => void): Promise<void> {
+    return this.connection.subscribe(subject, (msg: Message) => {
+      this.emitEventAndIncrementApiCount(SUBSCRIBE, { subject, data: msg } as MessagingEventData);
+      return callback(msg);
+    });
   }
 
-  async unsubscribe(subject: string): Promise<void> {
+  unsubscribe(subject: string): Promise<void> {
+    this.emitEventAndIncrementApiCount(UNSUBSCRIBE, { subject } as MessagingEventData);
     return this.connection.unsubscribe(subject);
   }
 
   ////////////////////////////////////////
   // Private methods
-  private getProtocol(msg: any): string | undefined {
-    if (!msg.data) {
-      // no .data field found, cannot find protocol of msg
-      return undefined;
-    }
-    const protocol = msg.data.protocol;
-    if (!protocol) {
-      // no .data.protocol field found, cannot find protocol of msg
-      return undefined;
-    }
 
-    return protocol;
+  // returns true if the message should continue, false if the message
+  // has reached its ceiling
+  private emitEventAndIncrementApiCount(event: MessagingEvent, data: MessagingEventData): boolean {
+    this.emit(event, data);
+    this.apiCounter[event]++;
+    return this.apiCounter[event] < this.apiLimits[event].ceiling;
   }
 
-  private hasCeiling(opts: Partial<{ type: "sent" | "received"; protocol: string }> = {}): boolean {
-    const { type, protocol } = opts;
-    const exists = (value: any | undefined | null): boolean => {
-      // will return true if value is null, and will
-      // return false if value is 0
-      return value !== undefined && value !== null;
-    };
-    if (!protocol) {
-      if (!type) {
-        return exists(this.count.ceiling);
+  // returns true if the callback should continue, false if the protocol
+  // messaging limits have been reached.
+  private incrementProtocolCount(
+    protocol: ProtocolName,
+    msg: Message,
+    apiType: typeof SEND | typeof RECEIVED,
+    shouldLog: boolean = false,
+  ): boolean {
+    const logIf = (msg: string) => {
+      if (shouldLog) {
+        log.info(msg);
       }
-      return exists(this.count.ceiling) && exists(this.count.ceiling![type]);
+    };
+    // get the params from the message and our limits
+    const msgParams = getParamsFromData(msg);
+    const { ceiling: indexedCeiling, params } = this.protocolLimits[protocol];
+
+    const ceiling =
+      (indexedCeiling || {})[apiType] === undefined || (indexedCeiling || {})[apiType] === null
+        ? NO_LIMIT
+        : indexedCeiling[apiType];
+
+    const evaluateCeiling = () => {
+      if (this.protocolCounter[protocol][apiType] >= ceiling) {
+        return false;
+      }
+      this.protocolCounter[protocol][apiType]++;
+      return this.protocolCounter[protocol][apiType] < ceiling;
+    };
+
+    logIf(`protocol: ${protocol}`);
+    logIf(`ceiling: ${ceiling}`);
+    logIf(`params: ${stringify(params)}`);
+    logIf(`msg: ${stringify(msg)}`);
+
+    if (!params) {
+      // nothing specified, applies to all
+      return evaluateCeiling();
     }
-    if (!type) {
-      return exists(this.protocolDefaults[protocol].ceiling);
+
+    if (params && !msgParams) {
+      // params specified but none in message, dont evaluate
+      // ceiling and continue execution. dont increment counts.
+      return true;
     }
-    return (
-      exists(this.protocolDefaults[protocol].ceiling) &&
-      exists(this.protocolDefaults[protocol].ceiling![type!])
-    );
+
+    let containsVal = false;
+    Object.entries(msgParams).forEach(([key, value]) => {
+      if (!params[key]) {
+        return;
+      }
+      let unnestedVal = value as any;
+      let unnestedComp = params[key];
+      while (typeof unnestedVal === "object" && !isBN(unnestedVal)) {
+        const [key] = Object.entries(unnestedVal as object).pop() as any;
+        unnestedVal = unnestedVal[key];
+        unnestedComp = unnestedComp[key];
+      }
+      containsVal = unnestedVal.toString() === unnestedComp.toString();
+    });
+    if (containsVal) {
+      return evaluateCeiling();
+    }
+    // otherwise dont count and return true (msg does not include)
+    // user-specificed params
+    return true;
   }
 }

@@ -4,6 +4,8 @@ import {
   UninstallMiddlewareContext,
   ProtocolRoles,
   CONVENTION_FOR_ETH_ASSET_ID,
+  ProposeMiddlewareContext,
+  Address,
 } from "@connext/types";
 import {
   getAddressFromAssetId,
@@ -11,18 +13,19 @@ import {
   stringify,
 } from "@connext/utils";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
+import { Contract } from "ethers";
+import { Zero } from "ethers/constants";
+import { JsonRpcProvider } from "ethers/providers";
 
 import { baseCoinTransferValidation } from "../shared";
-import { Zero } from "ethers/constants";
-import { Contract } from "ethers";
-import { BaseProvider, JsonRpcProvider } from "ethers/providers";
+
 
 export const validateDepositApp = async (
   params: MethodParams.ProposeInstall,
   initiatorIdentifier: string,
   responderIdentifier: string,
   multisigAddress: string,
-  provider: BaseProvider,
+  provider: JsonRpcProvider,
 ) => {
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as DepositAppState;
@@ -119,6 +122,10 @@ export const uninstallDepositMiddleware = async (
 ) => {
   const { role, appInstance, stateChannel, params } = context;
 
+  if (!provider || !provider.getBalance) {
+    throw new Error(`Uninstall deposit middleware needs access to a provider, got ${JSON.stringify(provider, null, 2)}`);
+  }
+
   const latestState = appInstance.latestState as DepositAppState;
   const currentMultisigBalance =
     latestState.assetId === CONVENTION_FOR_ETH_ASSET_ID
@@ -141,4 +148,22 @@ export const uninstallDepositMiddleware = async (
   }
 
   // TODO: withdrawal amount validation?
+};
+
+export const proposeDepositMiddleware = async (
+  context: ProposeMiddlewareContext,
+  appDefinitionAddress: Address,
+) => {
+  const { proposal, stateChannel } = context;
+  const depositApp = stateChannel.appInstances.find(([id, app]) => {
+    return (
+      app.appInterface.addr === appDefinitionAddress &&
+      app.latestState["assetId"] === proposal.initialState["assetId"]
+    );
+  });
+  if (depositApp) {
+    throw new Error(
+      `Cannot install two deposit apps with the same asset id simultaneously. Existing app: ${depositApp[0]}`,
+    );
+  }
 };

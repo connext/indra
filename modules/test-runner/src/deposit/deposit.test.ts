@@ -1,4 +1,10 @@
-import { IConnextClient, BigNumberish, BigNumber, DepositAppState } from "@connext/types";
+import {
+  IConnextClient,
+  BigNumberish,
+  BigNumber,
+  DepositAppState,
+  EventNames,
+} from "@connext/types";
 import { delay, toBN } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero, One } from "ethers/constants";
@@ -53,7 +59,7 @@ describe("Deposits", () => {
 
   beforeEach(async () => {
     client = await createClient();
-    tokenAddress = client.config.contractAddresses.Token;
+    tokenAddress = client.config.contractAddresses.Token!;
     nodeSignerAddress = client.nodeSignerAddress;
   });
 
@@ -100,7 +106,7 @@ describe("Deposits", () => {
     await expect(
       client.deposit({
         amount: (await getOnchainBalance(client.signerAddress, tokenAddress)).add(1).toString(),
-        assetId: client.config.contractAddresses.Token,
+        assetId: client.config.contractAddresses.Token!,
       }),
     ).to.be.rejectedWith("is not less than or equal to");
   });
@@ -116,12 +122,14 @@ describe("Deposits", () => {
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
     const { appIdentityHash } = await client.checkDepositRights({
-      assetId: client.config.contractAddresses.Token,
+      assetId: client.config.contractAddresses.Token!,
     });
     expect(appIdentityHash).to.be.undefined;
   });
 
-  it("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {
+  // TODO: move this test case to the node unit tests where the deposit app
+  // flow of the node can be more granularly controlled
+  it.skip("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {
     // send a payment to a receiver client to
     // trigger collateral event
     const expected = {
@@ -140,7 +148,7 @@ describe("Deposits", () => {
     // for nodes proposed deposit app and install event will not be
     // emitted
     await new Promise(async (resolve, reject) => {
-      receiver.on("PROPOSE_INSTALL_EVENT", msg => {
+      receiver.on("PROPOSE_INSTALL_EVENT", (msg) => {
         if (msg.params.appDefinition === receiver.config.contractAddresses.DepositApp) {
           resolve();
         }
@@ -155,7 +163,7 @@ describe("Deposits", () => {
     const getDepositApps = async () => {
       const apps = await receiver.getAppInstances();
       return apps.filter(
-        app => app.appInterface.addr === client.config.contractAddresses.DepositApp,
+        (app) => app.appInterface.addr === client.config.contractAddresses.DepositApp,
       )[0];
     };
     while (!(await getDepositApps())) {
@@ -186,9 +194,20 @@ describe("Deposits", () => {
       client: ONE,
       assetId: AddressZero,
     };
-    await client.deposit({ amount: TWO, assetId: expected.assetId });
-    await client.withdraw({ amount: TWO, assetId: expected.assetId });
-    await client.deposit({ amount: expected.client, assetId: expected.assetId });
+    await new Promise(async (resolve, reject) => {
+      client.once(EventNames.WITHDRAWAL_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      client.once(EventNames.DEPOSIT_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      client.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT, (msg) =>
+        reject(new Error(msg.data.error)),
+      );
+      client.once(EventNames.INSTALL_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      client.once(EventNames.UPDATE_STATE_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      client.once(EventNames.UNINSTALL_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      await client.deposit({ amount: TWO, assetId: expected.assetId });
+      await client.withdraw({ amount: TWO, assetId: expected.assetId });
+      await client.deposit({ amount: expected.client, assetId: expected.assetId });
+      resolve();
+    });
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
   });

@@ -42,10 +42,12 @@ describe("WithdrawApp", async () => {
   // test constants
   const withdrawerWallet = Wallet.createRandom();
   const counterpartyWallet = Wallet.createRandom();
+  const bystanderWallet = Wallet.createRandom();
   const amount = new BigNumber(10000);
   const data = mkHash("0xa"); // TODO: test this with real withdrawal commitment hash?
   const withdrawerSigningKey = new SigningKey(withdrawerWallet.privateKey);
   const counterpartySigningKey = new SigningKey(counterpartyWallet.privateKey);
+  const bystanderSigningKey = new SigningKey(bystanderWallet.privateKey);
 
   before(async () => {
     wallet = (await provider.getWallets())[2];
@@ -74,7 +76,7 @@ describe("WithdrawApp", async () => {
         },
       ],
       signatures: [
-        await (new ChannelSigner(withdrawerSigningKey.privateKey).signMessage(data)),
+        await new ChannelSigner(withdrawerSigningKey.privateKey).signMessage(data),
         HashZero,
       ],
       signers: [withdrawerWallet.address, counterpartyWallet.address],
@@ -86,7 +88,7 @@ describe("WithdrawApp", async () => {
 
   const createAction = async (): Promise<WithdrawAppAction> => {
     return {
-      signature: await (new ChannelSigner(counterpartySigningKey.privateKey).signMessage(data)),
+      signature: await new ChannelSigner(counterpartySigningKey.privateKey).signMessage(data),
     };
   };
 
@@ -139,7 +141,7 @@ describe("WithdrawApp", async () => {
     let initialState = await createInitialState();
     let action = await createAction();
 
-    initialState.signatures[0] = mkHash("0x0");
+    initialState.signatures[0] = await new ChannelSigner(bystanderSigningKey.privateKey).signMessage(data);
     await expect(applyAction(initialState, action)).revertedWith("invalid withdrawer signature");
   });
 
@@ -147,7 +149,7 @@ describe("WithdrawApp", async () => {
     let initialState = await createInitialState();
     let action = await createAction();
 
-    action.signature = HashZero;
+    action.signature = await new ChannelSigner(bystanderSigningKey.privateKey).signMessage(data);
     await expect(applyAction(initialState, action)).revertedWith("invalid counterparty signature");
   });
 });

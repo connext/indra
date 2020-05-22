@@ -4,14 +4,15 @@ import {
   ChallengeStatus,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
+  ContractAddresses,
   IBackupServiceAPI,
   MinimalTransaction,
-  NetworkContext,
   OutcomeType,
   SetStateCommitmentJSON,
   StateChannelJSON,
   StateProgressedEventPayload,
   StoredAppChallenge,
+  StoredAppChallengeStatus,
   StoreFactoryOptions,
   StorePair,
 } from "@connext/types";
@@ -45,7 +46,7 @@ export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" 
 export const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
 
 export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
-  identityHash: "identityHashApp",
+  identityHash: getRandomBytes32(),
   multisigAddress: TEST_STORE_ETH_ADDRESS,
   initiatorIdentifier: "sender",
   responderIdentifier: "receiver",
@@ -76,7 +77,7 @@ export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
   },
   appDefinition: TEST_STORE_ETH_ADDRESS,
   appSeqNo: 1,
-  identityHash: "identityHashProposal",
+  identityHash: getRandomBytes32(),
   initialState: {
     counter: 4,
   },
@@ -99,13 +100,13 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
   schemaVersion: 1,
   multisigAddress: TEST_STORE_ETH_ADDRESS,
   addresses: {
-    multisigMastercopy: TEST_STORE_ETH_ADDRESS,
-    proxyFactory: TEST_STORE_ETH_ADDRESS,
+    MinimumViableMultisig: TEST_STORE_ETH_ADDRESS,
+    ProxyFactory: TEST_STORE_ETH_ADDRESS,
   },
   userIdentifiers: ["address1", "address2"],
   proposedAppInstances: [[TEST_STORE_PROPOSAL.identityHash, TEST_STORE_PROPOSAL]],
   appInstances: [[TEST_STORE_APP_INSTANCE.identityHash, TEST_STORE_APP_INSTANCE]],
-  freeBalanceAppInstance: TEST_STORE_APP_INSTANCE,
+  freeBalanceAppInstance: { ...TEST_STORE_APP_INSTANCE, identityHash: getRandomBytes32() },
   monotonicNumProposedApps: 2,
 };
 
@@ -136,12 +137,12 @@ export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
 
 export const TEST_STORE_CONDITIONAL_COMMITMENT: ConditionalTransactionCommitmentJSON = {
   appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
+  contractAddresses: {} as ContractAddresses,
   freeBalanceAppIdentityHash: "conditionalFreeBalance",
   interpreterAddr: TEST_STORE_ETH_ADDRESS,
   interpreterParams: "conditionalInterpreter",
   multisigAddress: TEST_STORE_ETH_ADDRESS,
   multisigOwners: TEST_STORE_CHANNEL.userIdentifiers,
-  networkContext: {} as NetworkContext,
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
 
@@ -150,7 +151,7 @@ export const TEST_STORE_APP_CHALLENGE: StoredAppChallenge = {
   appStateHash: getRandomBytes32(),
   versionNumber: toBN(1),
   finalizesAt: toBN(3),
-  status: ChallengeStatus.IN_DISPUTE,
+  status: StoredAppChallengeStatus.IN_DISPUTE,
 };
 
 export const TEST_STORE_STATE_PROGRESSED_EVENT: StateProgressedEventPayload = {
@@ -181,6 +182,7 @@ export const createKeyValueStore = async (
 ): Promise<KeyValueStorage> => {
   const cStore = await createConnextStore(type, opts);
   await cStore.internalStore.init();
+  await cStore.internalStore.clear();
   return cStore.internalStore;
 };
 
@@ -193,9 +195,7 @@ export const createConnextStore = async (
   }
   opts.logger = new ColorfulLogger(`ConnextStore_${type}`, env.logLevel, true);
   if (type === StoreTypes.Postgres) {
-    opts.sequelize =
-      opts.sequelize ||
-      postgresConnectionUri;
+    opts.sequelize = opts.sequelize || postgresConnectionUri;
   } else if (type === StoreTypes.AsyncStorage) {
     opts.storage = new MockAsyncStorage();
   }

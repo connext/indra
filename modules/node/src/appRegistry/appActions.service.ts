@@ -3,10 +3,6 @@ import {
   AppState,
   HashLockTransferAppAction,
   HashLockTransferAppName,
-  HashLockTransferAppState,
-  SimpleSignedTransferAppAction,
-  SimpleSignedTransferAppState,
-  SimpleLinkedTransferAppAction,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   SimpleSignedTransferAppName,
@@ -54,7 +50,8 @@ export class AppActionsService {
       )} started`,
     );
     switch (appName) {
-      case WithdrawAppName: { // Special case
+      case WithdrawAppName: {
+        // Special case
         await this.handleWithdrawAppAction(
           app,
           action as WithdrawAppAction,
@@ -67,7 +64,7 @@ export class AppActionsService {
           (newState as SimpleLinkedTransferAppState).paymentId,
           this.cfCoreService.cfCore.signerAddress,
         );
-        await this.handleTransferAppAction(senderApp, action)
+        await this.handleTransferAppAction(senderApp, action);
         break;
       }
       case HashLockTransferAppName: {
@@ -80,17 +77,19 @@ export class AppActionsService {
             `Action taken on HashLockTransferApp without corresponding sender app! ${app.identityHash}`,
           );
         }
-        await this.handleTransferAppAction(senderApp, action)
+        await this.handleTransferAppAction(senderApp, action);
         break;
       }
       case SimpleSignedTransferAppName: {
-        const senderApp = await this.signedTransferService.findSenderAppByPaymentId((newState as SimpleLinkedTransferAppState).paymentId);
+        const senderApp = await this.signedTransferService.findSenderAppByPaymentId(
+          (newState as SimpleLinkedTransferAppState).paymentId,
+        );
         if (!senderApp) {
           throw new Error(
             `Action taken on HashLockTransferApp without corresponding sender app! ${app.identityHash}`,
           );
         }
-        await this.handleTransferAppAction(senderApp, action)
+        await this.handleTransferAppAction(senderApp, action);
         break;
       }
     }
@@ -118,10 +117,11 @@ export class AppActionsService {
         amount: state.transfers[0].amount,
         assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
         recipient: this.cfCoreService.cfCore.signerAddress,
+        nonce: state.nonce,
       },
       appInstance.multisigAddress,
     );
-    commitment.signatures = state.signatures as string[];
+    await commitment.addSignatures(state.signatures[0], state.signatures[1]);
     const tx = await commitment.getSignedTransaction();
 
     this.log.debug(
@@ -134,7 +134,14 @@ export class AppActionsService {
     senderApp: AppInstance<any>,
     action: AppAction,
   ): Promise<void> {
-    await this.cfCoreService.takeAction(senderApp.identityHash, action);
-    await this.cfCoreService.uninstallApp(senderApp.identityHash);
+    await this.cfCoreService.takeAction(
+      senderApp.identityHash,
+      senderApp.channel.multisigAddress,
+      action,
+    );
+    await this.cfCoreService.uninstallApp(
+      senderApp.identityHash,
+      senderApp.channel.multisigAddress,
+    );
   }
 }

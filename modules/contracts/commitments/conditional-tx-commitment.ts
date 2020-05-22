@@ -1,7 +1,7 @@
 import {
   ConditionalTransactionCommitmentJSON,
   MultisigOperation,
-  NetworkContext,
+  ContractAddresses,
 } from "@connext/types";
 
 import { AddressZero } from "ethers/constants";
@@ -17,7 +17,7 @@ const iface = new Interface(ConditionalTransactionDelegateTarget.abi as any);
 // to the ConditionalTransactionDelegateTarget contract.
 export class ConditionalTransactionCommitment extends MultisigCommitment {
   constructor(
-    public readonly networkContext: NetworkContext,
+    public readonly contractAddresses: ContractAddresses,
     public readonly multisig: string,
     public readonly multisigOwners: string[],
     public readonly appIdentityHash: string,
@@ -41,14 +41,14 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
       interpreterParams: this.interpreterParams,
       multisigAddress: this.multisigAddress,
       multisigOwners: this.multisigOwners,
-      networkContext: this.networkContext,
+      contractAddresses: this.contractAddresses,
       signatures: this.signatures,
     };
   }
 
   public static fromJson(json: ConditionalTransactionCommitmentJSON) {
     return new ConditionalTransactionCommitment(
-      json.networkContext,
+      json.contractAddresses,
       json.multisigAddress,
       json.multisigOwners,
       json.appIdentityHash,
@@ -69,10 +69,10 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
    */
   public getTransactionDetails() {
     return {
-      to: this.networkContext.ConditionalTransactionDelegateTarget,
+      to: this.contractAddresses.ConditionalTransactionDelegateTarget,
       value: 0,
       data: iface.functions.executeEffectOfInterpretedAppOutcome.encode([
-        this.networkContext.ChallengeRegistry,
+        this.contractAddresses.ChallengeRegistry,
         this.freeBalanceAppIdentityHash,
         this.appIdentityHash,
         this.interpreterAddr,

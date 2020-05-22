@@ -6,7 +6,6 @@ import {
   bufferToHex,
   compress,
   decompress,
-  isCompressed,
 } from "eccrypto-js";
 
 import { getAddressError } from "./hexStrings";
@@ -17,11 +16,8 @@ export const INDRA_PUB_ID_PREFIX = "indra";
 ////////////////////////////////////////
 // Conversions
 
-export const getPublicIdentifierFromPublicKey = (publicKey: PublicKey): PublicIdentifier => {
-  const buf = hexToBuffer(publicKey);
-  // TODO: compress util should return same result even if already compressed
-  return INDRA_PUB_ID_PREFIX + bs58check.encode(isCompressed(buf) ? buf : compress(buf));
-};
+export const getPublicIdentifierFromPublicKey = (publicKey: PublicKey): PublicIdentifier =>
+  INDRA_PUB_ID_PREFIX + bs58check.encode(compress(hexToBuffer(publicKey)));
 
 export const getPublicKeyFromPublicIdentifier = (publicIdentifier: PublicIdentifier) =>
   `0x${bufferToHex(decompress(bs58check.decode(

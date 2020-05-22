@@ -26,6 +26,11 @@ const getConnextClientDataInitParams = (dialect: SupportedDialects) => {
 export class WrappedSequelizeStorage implements WrappedStorage {
   public sequelize: Sequelize;
   private ConnextClientData: any;
+  // FIXME: Using transactions in the memory store passes the store tests
+  // but fails in the integration tests. This only happens for memory store,
+  // and there are similarly reported issues. See:
+  // https://github.com/sequelize/sequelize/issues/8759
+  private shouldUseTransaction: boolean = true;
 
   constructor(
     _sequelize: string | Sequelize,
@@ -39,9 +44,12 @@ export class WrappedSequelizeStorage implements WrappedStorage {
         if (dbPath !== storeDefaults.SQLITE_MEMORY_STORE_STRING) {
           const dir = dirname(dbPath);
           mkdirSync(dir, { recursive: true });
+        } else {
+          // see comments in prop declaration
+          this.shouldUseTransaction = false;
         }
       }
-      this.sequelize = new Sequelize((_sequelize as string), { logging: false });
+      this.sequelize = new Sequelize(_sequelize as string, { logging: false });
     } else {
       this.sequelize = _sequelize as Sequelize;
     }
@@ -58,25 +66,45 @@ export class WrappedSequelizeStorage implements WrappedStorage {
   }
 
   async setItem(key: string, value: any): Promise<void> {
-    await this.ConnextClientData.upsert({
-      key: `${this.prefix}${this.separator}${key}`,
-      value,
+    const execute = async (options = {}) => {
+      await this.ConnextClientData.upsert(
+        {
+          key: `${this.prefix}${this.separator}${key}`,
+          value,
+        },
+        options,
+      );
+    };
+    if (!this.shouldUseTransaction) {
+      return execute();
+    }
+    return this.sequelize.transaction(async (t) => {
+      await execute({ transaction: t, lock: true });
     });
   }
 
   async removeItem(key: string): Promise<void> {
-    await this.ConnextClientData.destroy({
-      where: {
-        key: `${this.prefix}${this.separator}${key}`,
-      },
+    const execute = async (options = {}) => {
+      await this.ConnextClientData.destroy(
+        {
+          where: {
+            key: `${this.prefix}${this.separator}${key}`,
+          },
+        },
+        options,
+      );
+    };
+    if (!this.shouldUseTransaction) {
+      return execute();
+    }
+    return this.sequelize.transaction(async (t) => {
+      await execute({ transaction: t, lock: true });
     });
   }
 
   async getKeys(): Promise<string[]> {
     const relevantItems = await this.getRelevantItems();
-    return relevantItems.map(
-      (item: any) => item.key.split(`${this.prefix}${this.separator}`)[1],
-    );
+    return relevantItems.map((item: any) => item.key.split(`${this.prefix}${this.separator}`)[1]);
   }
 
   async getEntries(): Promise<[string, any][]> {
@@ -98,17 +126,32 @@ export class WrappedSequelizeStorage implements WrappedStorage {
   }
 
   async clear(): Promise<void> {
-    await this.ConnextClientData.destroy({
-      where: {
-        key: {
-          [Op.startsWith]: `${this.prefix}${this.separator}`,
+    const execute = async (options = {}) => {
+      await this.ConnextClientData.destroy(
+        {
+          where: {
+            key: {
+              [Op.startsWith]: `${this.prefix}${this.separator}`,
+            },
+          },
         },
-      },
+        options,
+      );
+    };
+    if (!this.shouldUseTransaction) {
+      return execute();
+    }
+    return this.sequelize.transaction(async (t) => {
+      await execute({ transaction: t, lock: true });
     });
   }
 
   async init(): Promise<void> {
     await this.syncModels(false);
+  }
+
+  close(): Promise<void> {
+    return this.sequelize.close();
   }
 
   async syncModels(force: boolean = false): Promise<void> {

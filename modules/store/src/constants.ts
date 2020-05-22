@@ -25,7 +25,7 @@ export const storeKeys = {
   STORE: "STORE",
   STORE_SCHEMA_VERSION: "version",
   WITHDRAWAL_COMMITMENT: "withdrawal_commitment",
-};
+} as const;
 
 export const storePaths = {
   CHANNEL: "channel",

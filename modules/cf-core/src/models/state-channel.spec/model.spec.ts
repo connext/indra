@@ -1,22 +1,25 @@
 import { StateChannelJSON } from "@connext/types";
-import { bigNumberifyJson, getRandomAddress } from "@connext/utils";
-import { getAddress } from "ethers/utils";
+import { bigNumberifyJson, getRandomAddress, getRandomBytes32, toBN } from "@connext/utils";
+import { getAddress, BigNumberish } from "ethers/utils";
 
-import { generateRandomNetworkContext } from "../../testing/mocks";
+import { getRandomContractAddresses } from "../../testing/mocks";
 
 import { StateChannel } from "../state-channel";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
+import { AddressZero } from "ethers/constants";
+import { FreeBalanceClass } from "../free-balance";
+import { flipTokenIndexedBalances } from "../utils";
 
 describe("StateChannel", () => {
-  it("should be able to instantiate", () => {
+  test("should be able to instantiate", () => {
     const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
 
-    const { ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
+    const { ProxyFactory, MinimumViableMultisig } = getRandomContractAddresses();
 
     const sc = new StateChannel(
       multisigAddress,
-      { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
+      { ProxyFactory, MinimumViableMultisig },
       initiator,
       responder,
     );
@@ -29,6 +32,113 @@ describe("StateChannel", () => {
     expect(sc.numProposedApps).toBe(0);
   });
 
+  // TODO: moar tests!
+  describe("addActiveAppAndIncrementFreeBalance", () => {
+    const multisigAddress = getAddress(getRandomAddress());
+    const [initiator, responder] = getRandomPublicIdentifiers(2);
+    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = getRandomContractAddresses();
+    const tokenAddress = getAddress(getRandomAddress());
+    const identityHash = getRandomBytes32();
+    const channelInitialDeposit = toBN(15);
+
+    let sc: StateChannel;
+
+    // app specific stuff
+    let appInitiator;
+    let appResponder;
+    let appInitiatorAssetId;
+    let appResponderAssetId;
+
+    beforeEach(() => {
+      const init = StateChannel.setupChannel(
+        IdentityApp,
+        { ProxyFactory, MinimumViableMultisig },
+        multisigAddress,
+        initiator,
+        responder,
+      );
+
+      // update free balance with initial deposit values
+      const freeBalance = FreeBalanceClass.createWithFundedTokenAmounts(
+        init.multisigOwners,
+        channelInitialDeposit,
+        [AddressZero, tokenAddress],
+      );
+      sc = init.setFreeBalance(freeBalance);
+      expect(sc).toBeDefined();
+      const freeBalanceClass = sc.getFreeBalanceClass();
+      [...init.multisigOwners].forEach((addr) => {
+        const eth = freeBalanceClass.getBalance(AddressZero, addr);
+        const token = freeBalanceClass.getBalance(tokenAddress, addr);
+        expect(eth.toString()).toBe(channelInitialDeposit.toString());
+        expect(token.toString()).toBe(channelInitialDeposit.toString());
+      });
+    });
+
+    describe("channel{initiator,responder} !== app{initiator,responder}", () => {
+      beforeEach(() => {
+        expect(sc).toBeDefined();
+        appInitiator = sc.multisigOwners[1];
+        appResponder = sc.multisigOwners[0];
+      });
+
+      describe("app deposit asset id is not the same for initiator and responder", () => {
+        beforeEach(() => {
+          expect(sc).toBeDefined();
+          appInitiatorAssetId = tokenAddress; // channel responder
+          appResponderAssetId = AddressZero; // channel initiator
+        });
+
+        const runTest = (initiatorDeposit: BigNumberish, responderDeposit: BigNumberish) => {
+          const balanceDecrements = {
+            [appInitiatorAssetId]: {
+              [appInitiator]: toBN(initiatorDeposit),
+            },
+            [appResponderAssetId]: {
+              [appResponder]: toBN(responderDeposit),
+            },
+          };
+          // app initiator is channel responder:
+          // channel responder token balance decreases
+          // channel initiator eth balance decreases
+          const expected = {
+            [AddressZero]: {
+              [sc.multisigOwners[0]]: channelInitialDeposit.sub(responderDeposit),
+              [sc.multisigOwners[1]]: channelInitialDeposit,
+            },
+            [tokenAddress]: {
+              [sc.multisigOwners[0]]: channelInitialDeposit,
+              [sc.multisigOwners[1]]: channelInitialDeposit.sub(initiatorDeposit),
+            },
+          };
+
+          const installed = sc.addActiveAppAndIncrementFreeBalance(
+            identityHash,
+            flipTokenIndexedBalances(balanceDecrements),
+          );
+
+          const balancesIndexedByToken = installed
+            .getFreeBalanceClass()
+            .toTokenIndexedCoinTransferMap();
+          // check token address coin transfers
+          expect(balancesIndexedByToken).toMatchObject(expected);
+        };
+
+        test("should work when responder has no balance change", () => {
+          runTest(7, 0);
+        });
+
+        test("should work when initiator has no balance change", () => {
+          runTest(0, 3);
+        });
+
+        test("should work when both initiator and responder have balance changes", async () => {
+          runTest(7, 3);
+        });
+      });
+    });
+  });
+
   describe("should be able to write a channel to a json", () => {
     const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
@@ -36,13 +146,13 @@ describe("StateChannel", () => {
     let sc: StateChannel;
     let json: StateChannelJSON;
 
-    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
+    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = getRandomContractAddresses();
 
     beforeAll(() => {
       // NOTE: this functionality is tested in `setup-channel.spec`
       sc = StateChannel.setupChannel(
         IdentityApp,
-        { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
+        { ProxyFactory, MinimumViableMultisig },
         multisigAddress,
         initiator,
         responder,
@@ -50,32 +160,32 @@ describe("StateChannel", () => {
       json = sc.toJson();
     });
 
-    it("it should have app instance arrays", () => {
+    test("it should have app instance arrays", () => {
       expect(json.appInstances).toEqual([]);
     });
 
-    it("should have proposed app instance array", () => {
+    test("should have proposed app instance array", () => {
       expect(json.proposedAppInstances).toEqual([]);
     });
 
-    it("should have a free balance app instance", () => {
+    test("should have a free balance app instance", () => {
       expect(json.freeBalanceAppInstance).toBeDefined();
     });
 
-    it("should not change the user addresss", () => {
+    test("should not change the user addresss", () => {
       expect(json.userIdentifiers[0]).toEqual(initiator);
       expect(json.userIdentifiers[1]).toEqual(responder);
     });
 
-    it("should not change the multisig address", () => {
+    test("should not change the multisig address", () => {
       expect(json.multisigAddress).toEqual(multisigAddress);
     });
 
-    it("should have the correct critical state channel addresses", () => {
-      expect(json.addresses.proxyFactory).toEqual(sc.addresses.proxyFactory);
-      expect(sc.addresses.proxyFactory).toEqual(ProxyFactory);
-      expect(json.addresses.multisigMastercopy).toEqual(sc.addresses.multisigMastercopy);
-      expect(sc.addresses.multisigMastercopy).toEqual(MinimumViableMultisig);
+    test("should have the correct critical state channel addresses", () => {
+      expect(json.addresses.ProxyFactory).toEqual(sc.addresses.ProxyFactory);
+      expect(sc.addresses.ProxyFactory).toEqual(ProxyFactory);
+      expect(json.addresses.MinimumViableMultisig).toEqual(sc.addresses.MinimumViableMultisig);
+      expect(sc.addresses.MinimumViableMultisig).toEqual(MinimumViableMultisig);
     });
   });
 
@@ -83,7 +193,9 @@ describe("StateChannel", () => {
     const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
 
-    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
+    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = getRandomContractAddresses();
+
+    console.log(`IdentityApp address: ${IdentityApp}`);
 
     let sc: StateChannel;
     let json: StateChannelJSON;
@@ -93,7 +205,7 @@ describe("StateChannel", () => {
       // NOTE: this functionality is tested in `setup-channel.spec`
       sc = StateChannel.setupChannel(
         IdentityApp,
-        { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
+        { ProxyFactory, MinimumViableMultisig },
         multisigAddress,
         initiator,
         responder,
@@ -102,7 +214,7 @@ describe("StateChannel", () => {
       rehydrated = StateChannel.fromJson(json);
     });
 
-    it("should work", () => {
+    test("should work", () => {
       for (const prop of Object.keys(sc)) {
         if (typeof sc[prop] === "function" || prop === "freeBalanceAppInstance") {
           // skip fns
@@ -113,25 +225,25 @@ describe("StateChannel", () => {
       }
     });
 
-    it("should have app instance maps", () => {
+    test("should have app instance maps", () => {
       expect(rehydrated.appInstances).toEqual(sc.appInstances);
     });
 
-    it("should have proposed app instance maps", () => {
+    test("should have proposed app instance maps", () => {
       expect(rehydrated.proposedAppInstances).toEqual(sc.proposedAppInstances);
     });
 
-    it("should have a free balance app instance", () => {
+    test("should have a free balance app instance", () => {
       // will fail because of { _hex: "" } vs BigNumber comparison
       expect(rehydrated.freeBalance).toMatchObject(bigNumberifyJson(sc.freeBalance));
     });
 
-    it("should not change the user addresss", () => {
+    test("should not change the user addresss", () => {
       expect(rehydrated.userIdentifiers[0]).toEqual(initiator);
       expect(rehydrated.userIdentifiers[1]).toEqual(responder);
     });
 
-    it("should not change the multisig address", () => {
+    test("should not change the multisig address", () => {
       expect(rehydrated.multisigAddress).toEqual(sc.multisigAddress);
     });
   });

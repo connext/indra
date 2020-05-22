@@ -9,10 +9,8 @@ import {
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   DefaultApp,
-  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import {
-  getAddressFromAssetId,
   getBytes32Error,
   getAddressError,
   getPublicIdentifierError,
@@ -30,10 +28,7 @@ export class LinkedTransferController extends AbstractController {
   ): Promise<PublicResults.LinkedTransfer> => {
     this.log.info(`linkedTransfer started: ${stringify(params)}`);
     const amount = toBN(params.amount);
-    const { paymentId, preImage, meta, recipient } = params;
-    const assetId = params.assetId
-      ? getAddressFromAssetId(params.assetId)
-      : CONVENTION_FOR_ETH_ASSET_ID;
+    const { paymentId, preImage, meta, recipient, assetId } = params;
 
     this.throwIfAny(
       getAddressError(assetId),
@@ -97,6 +92,7 @@ export class LinkedTransferController extends AbstractController {
       initiatorDeposit: amount,
       initiatorDepositAssetId: assetId,
       meta: submittedMeta,
+      multisigAddress: this.connext.multisigAddress,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: Zero,

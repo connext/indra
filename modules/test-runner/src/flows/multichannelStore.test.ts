@@ -152,6 +152,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     );
 
     // call transfers on interval
+    const start = Date.now();
     const interval = setInterval(async () => {
       intervals += 1;
       if (intervals > MIN_TRANSFERS) {
@@ -195,6 +196,10 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
         }
       }, 250);
     });
+    const end = Date.now();
+    console.log(
+      `Average latency of ${MIN_TRANSFERS} transfers: ${(end - start) / MIN_TRANSFERS}ms`,
+    );
 
     expect(receivedTransfers).to.be.eq(MIN_TRANSFERS);
     const finalSenderFb = await sender.getFreeBalance(ASSET);

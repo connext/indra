@@ -1,6 +1,6 @@
 {
   "name": "@connext/cf-core",
-  "version": "6.3.12",
+  "version": "6.6.0",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
@@ -18,11 +18,12 @@
     "test:coverage": "jest --runInBand --detectOpenHandles --bail --coverage"
   },
   "dependencies": {
-    "@connext/contracts": "2.0.6",
-    "@connext/utils": "6.3.12",
-    "@connext/types": "6.3.12",
+    "@connext/contracts": "3.1.0",
+    "@connext/utils": "6.6.0",
+    "@connext/types": "6.6.0",
+    "async-mutex": "0.2.2",
     "ethers": "4.0.47",
-    "@openzeppelin/contracts": "2.5.0",
+    "@openzeppelin/contracts": "3.0.1",
     "eventemitter3": "4.0.0",
     "memoizee": "0.4.14",
     "p-queue": "6.4.0",
@@ -33,7 +34,7 @@
   "devDependencies": {
     "@babel/core": "7.9.0",
     "@babel/plugin-proposal-object-rest-spread": "7.9.5",
-    "@connext/store": "6.3.12",
+    "@connext/store": "6.6.0",
     "@types/chai": "4.2.11",
     "@types/dotenv-safe": "8.1.0",
     "@types/jest": "25.2.1",

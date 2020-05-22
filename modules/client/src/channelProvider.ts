@@ -30,9 +30,9 @@ import {
 import {
   deBigNumberifyJson,
   stringify,
-  delayAndThrow,
   getPublicKeyFromPublicIdentifier,
   toBN,
+  delay,
 } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -54,23 +54,50 @@ export const createCFChannelProvider = async ({
   const contractAddresses = config.contractAddresses;
   const messaging = node.messaging;
   const nodeConfig = { STORE_KEY_PREFIX: ConnextClientStorePrefix };
-  const lockService = { acquireLock: node.acquireLock.bind(node) };
-  const cfCore = await CFCore.create(
-    messaging,
-    store,
-    contractAddresses,
-    nodeConfig,
-    ethProvider,
-    signer,
-    lockService,
-    undefined,
-    logger,
-  );
+  const lockService = {
+    acquireLock: node.acquireLock.bind(node),
+    releaseLock: node.releaseLock.bind(node),
+  };
+  let cfCore;
+  try {
+    cfCore = await CFCore.create(
+      messaging,
+      store,
+      contractAddresses,
+      nodeConfig,
+      ethProvider,
+      signer,
+      lockService,
+      undefined,
+      logger,
+      true, // sync all client channels on start up
+    );
+  } catch (e) {
+    console.error(
+      `Could not setup cf-core with sync protocol on, Error: ${stringify(
+        e,
+      )}. Trying again without syncing on start...`,
+    );
+  }
+  if (!cfCore) {
+    cfCore = await CFCore.create(
+      messaging,
+      store,
+      contractAddresses,
+      nodeConfig,
+      ethProvider,
+      signer,
+      lockService,
+      undefined,
+      logger,
+      false, // sync all client channels on start up
+    );
+  }
 
   // register any default middlewares
   cfCore.injectMiddleware(
     Opcode.OP_VALIDATE,
-    await generateValidationMiddleware(contractAddresses),
+    await generateValidationMiddleware({ provider: ethProvider, contractAddresses }),
   );
 
   const connection = new CFCoreRpcConnection(cfCore, store, signer, node, logger);
@@ -215,10 +242,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         value: toBN(params.amount),
       });
       hash = tx.hash;
+      await tx.wait();
     } else {
       const erc20 = new Contract(params.assetId, tokenAbi, this.signer);
       const tx = await erc20.transfer(recipient, toBN(params.amount));
       hash = tx.hash;
+      await tx.wait();
     }
     return hash;
   };
@@ -248,11 +277,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     // save the channel + setup commitment + latest free balance set state
     const freeBalanceSetStates = setStateCommitments
       .filter(([id, json]) => id === channel.freeBalanceAppInstance.identityHash)
-      .sort((a, b) =>
-        toBN(b[1].versionNumber)
-          .sub(toBN(a[1].versionNumber))
-          .toNumber(),
-      );
+      .sort((a, b) => toBN(b[1].versionNumber).sub(toBN(a[1].versionNumber)).toNumber());
 
     if (!freeBalanceSetStates[0]) {
       throw new Error(
@@ -330,24 +355,26 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       multisigAddress = channel.multisigAddress;
     } else {
       this.logger.debug("no channel detected, creating channel..");
-      const creationEventData = await Promise.race([
-        delayAndThrow(30_000, "Create channel event not fired within 30s"),
-        new Promise(
-          async (res: any): Promise<any> => {
-            this.cfCore.once(
-              EventNames.CREATE_CHANNEL_EVENT,
-              (data: CreateChannelMessage): void => {
-                this.logger.debug(`Received CREATE_CHANNEL_EVENT`);
-                res(data.data);
-              },
-            );
+      const creationEventData = await new Promise(async (resolve, reject) => {
+        this.cfCore.once(EventNames.CREATE_CHANNEL_EVENT, (data: CreateChannelMessage): void => {
+          this.logger.debug(`Received CREATE_CHANNEL_EVENT`);
+          return resolve(data.data);
+        });
 
-            // FYI This continues async in the background after CREATE_CHANNEL_EVENT is recieved
-            const creationData = await this.node.createChannel();
-            this.logger.debug(`created channel, transaction: ${stringify(creationData)}`);
-          },
-        ),
-      ]);
+        this.cfCore.once(EventNames.SETUP_FAILED_EVENT, (msg): void => {
+          return reject(new Error(msg.data.error));
+        });
+
+        try {
+          const creationData = await this.node.createChannel();
+          this.logger.debug(`created channel, transaction: ${stringify(creationData)}`);
+        } catch (e) {
+          return reject(e);
+        }
+      });
+      if (!creationEventData) {
+        throw new Error(`Could not create channel`);
+      }
       multisigAddress = (creationEventData as MethodResults.CreateChannel).multisigAddress;
     }
 

@@ -1,9 +1,19 @@
 import { getLocalStore } from "@connext/store";
 import { IConnextClient, IChannelSigner, EventNames, EventPayloads } from "@connext/types";
-import { getRandomChannelSigner, stringify } from "@connext/utils";
+import { getRandomChannelSigner, stringify, toBN } from "@connext/utils";
 import { AddressZero, Zero } from "ethers/constants";
 
-import { expect, TOKEN_AMOUNT, createClient, ETH_AMOUNT_SM, fundChannel, TOKEN_AMOUNT_SM, env } from "../util";
+import {
+  expect,
+  TOKEN_AMOUNT,
+  createClient,
+  ETH_AMOUNT_SM,
+  fundChannel,
+  TOKEN_AMOUNT_SM,
+  env,
+  getNatsClient,
+} from "../util";
+import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 
 describe("Restore State", () => {
   let clientA: IConnextClient;
@@ -12,10 +22,21 @@ describe("Restore State", () => {
   let signerA: IChannelSigner;
 
   beforeEach(async () => {
+    const nats = getNatsClient();
     signerA = getRandomChannelSigner(env.ethProviderUrl);
     clientA = await createClient({ signer: signerA, store: getLocalStore() });
-    tokenAddress = clientA.config.contractAddresses.Token;
+    tokenAddress = clientA.config.contractAddresses.Token!;
     nodeSignerAddress = clientA.nodeSignerAddress;
+
+    const REBALANCE_PROFILE = {
+      assetId: AddressZero,
+      collateralizeThreshold: toBN("0"),
+      target: toBN("0"),
+      reclaimThreshold: toBN("0"),
+    };
+
+    // set rebalancing profile to reclaim collateral
+    await addRebalanceProfile(nats, clientA, REBALANCE_PROFILE);
   });
 
   afterEach(async () => {
@@ -79,7 +100,7 @@ describe("Restore State", () => {
           return reject();
         });
       }),
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         const result = await senderClient.transfer({
           amount: transferAmount,
           assetId,
@@ -96,12 +117,13 @@ describe("Restore State", () => {
     // bring clientA back online
     await new Promise(async (resolve, reject) => {
       clientA.on(
-        EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, 
+        EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT,
         (msg: EventPayloads.LinkedTransferFailed) => {
           return reject(`${clientA.publicIdentifier} failed to transfer: ${stringify(msg)}`);
-      });
-      clientA = await createClient({ 
-        signer: signerA, 
+        },
+      );
+      clientA = await createClient({
+        signer: signerA,
         store: getLocalStore(),
       });
       expect(clientA.signerAddress).to.be.eq(signerA.address);

@@ -9,7 +9,7 @@ import {
   STORE_SCHEMA_VERSION,
   IChannelSigner,
 } from "@connext/types";
-import { ChannelSigner, ConsoleLogger, delayAndThrow, logTime, stringify } from "@connext/utils";
+import { ChannelSigner, ConsoleLogger, logTime, stringify, delay } from "@connext/utils";
 
 import { Contract, providers } from "ethers";
 import tokenAbi from "human-standard-token-abi";
@@ -50,11 +50,12 @@ export const connect = async (
         ? `provided channel provider`
         : `signer ${
             typeof opts.signer === "string"
-              ? `using pk: ${opts.signer}`
-              : `with id: ${opts.signer!.publicIdentifier}`
+              ? `using private key`
+              : `with injected signer`
           }`
     }`,
   );
+
   // setup ethProvider + network information
   logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
@@ -149,22 +150,26 @@ export const connect = async (
   }
 
   // waits until the setup protocol or create channel call is completed
-  await Promise.race([
-    new Promise(
-      async (resolve: any, reject: any): Promise<any> => {
-        // Wait for channel to be available
-        const channelIsAvailable = async (): Promise<boolean> => {
-          const chan = await client.node.getChannel();
-          return chan && chan.available;
-        };
-        while (!(await channelIsAvailable())) {
-          await new Promise((res: any): any => setTimeout((): void => res(), 1000));
-        }
-        resolve();
-      },
-    ),
-    delayAndThrow(30_000, "Channel was not available after 30 seconds."),
-  ]);
+  await new Promise(async (resolve, reject) => {
+    // Wait for channel to be available
+    const channelIsAvailable = async (): Promise<boolean> => {
+      try {
+        const chan = await client.node.getChannel();
+        return chan && chan.available;
+      } catch (e) {
+        return false;
+      }
+    };
+    const start = Date.now();
+    const MAX_WAIT = 20_000;
+    while (!(await channelIsAvailable())) {
+      if (Date.now() - start >= MAX_WAIT) {
+        return reject(`Could not create channel within ${MAX_WAIT / 1000}s`);
+      }
+      await delay(MAX_WAIT / 10);
+    }
+    return resolve();
+  });
 
   logger.info(`Channel is available`);
 
@@ -183,7 +188,9 @@ export const connect = async (
     await client.getFreeBalance();
   } catch (e) {
     if (e.message.includes("StateChannel does not exist yet")) {
-      logger.info(`Our store does not contain channel, attempting to restore: ${e.stack || e.message}`);
+      logger.info(
+        `Our store does not contain channel, attempting to restore: ${e.stack || e.message}`,
+      );
       await client.restoreState();
       logger.info(`State restored successfully`);
     } else {
@@ -209,8 +216,9 @@ export const connect = async (
     await client.cleanupRegistryApps();
   } catch (e) {
     logger.error(
-      `Could not clean up registry: ${e.stack ||
-        e.message}... will attempt again on next connection`,
+      `Could not clean up registry: ${
+        e.stack || e.message
+      }... will attempt again on next connection`,
     );
   }
   logger.info("Cleaned up registry apps");
@@ -227,8 +235,9 @@ export const connect = async (
     await client.reclaimPendingAsyncTransfers();
   } catch (e) {
     logger.error(
-      `Could not reclaim pending async transfers: ${e.stack ||
-        e.message}... will attempt again on next connection`,
+      `Could not reclaim pending async transfers: ${
+        e.stack || e.message
+      }... will attempt again on next connection`,
     );
   }
   logger.info("Reclaimed pending async transfers");
@@ -239,8 +248,9 @@ export const connect = async (
     await client.clientCheckIn();
   } catch (e) {
     logger.error(
-      `Could not complete node check-in: ${e.stack ||
-        e.message}... will attempt again on next connection`,
+      `Could not complete node check-in: ${
+        e.stack || e.message
+      }... will attempt again on next connection`,
     );
   }
   logger.info("Checked in with node");
@@ -258,12 +268,13 @@ export const connect = async (
     logger.info(`Watching for user withdrawals`);
     const transactions = await client.watchForUserWithdrawal();
     if (transactions.length > 0) {
-      logger.info(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
+      logger.info(`Found node submitted user withdrawals: ${transactions.map((tx) => tx.hash)}`);
     }
   } catch (e) {
     logger.error(
-      `Could not complete watching for user withdrawals: ${e.stack ||
-        e.message}... will attempt again on next connection`,
+      `Could not complete watching for user withdrawals: ${
+        e.stack || e.message
+      }... will attempt again on next connection`,
     );
   }
 
