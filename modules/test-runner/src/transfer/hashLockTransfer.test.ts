@@ -421,7 +421,7 @@ describe("HashLock Transfers", () => {
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer)
       .catch((e) => {
-        console.log("Expected this error: ", e);
+        console.log("Expected this error: ", e.message);
       });
 
     await expect(
