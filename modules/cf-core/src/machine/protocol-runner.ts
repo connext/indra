@@ -9,6 +9,8 @@ import {
   ProtocolNames,
   ProtocolParam,
   ProtocolParams,
+  EventNames,
+  Message,
 } from "@connext/types";
 import { v4 as uuid } from "uuid";
 
@@ -17,6 +19,7 @@ import { Context } from "../types";
 
 import { MiddlewareContainer } from "./middleware";
 import { StateChannel } from "../models";
+import RpcRouter from "../rpc-router";
 
 function firstRecipientFromProtocolName(protocolName: ProtocolName) {
   if (Object.values(ProtocolNames).includes(protocolName)) {
@@ -44,6 +47,7 @@ export class ProtocolRunner {
   /// function should not be called with messages that are waited for by
   /// `IO_SEND_AND_WAIT`
   public async runProtocolWithMessage(
+    router: RpcRouter,
     msg: ProtocolMessageData,
     preProtocolStateChannel?: StateChannel,
   ) {
@@ -52,42 +56,65 @@ export class ProtocolRunner {
     if (typeof step === "undefined") {
       throw new Error(`Received invalid seq ${msg.seq} for protocol ${msg.protocol}`);
     }
-    return this.runProtocol(step, msg, preProtocolStateChannel);
+    try {
+      const protocolRet = await this.runProtocol(step, msg, preProtocolStateChannel);
+      return protocolRet;
+    } catch (error) {
+      const { protocol, params } = msg;
+      const outgoingData = getOutgoingEventFailureDataFromProtocol(protocol, params!, error);
+      await emitOutgoingMessage(router, outgoingData);
+      throw error;
+    }
   }
 
   public async initiateProtocol(
+    router: RpcRouter,
     protocolName: ProtocolName,
     params: ProtocolParam,
     preProtocolStateChannel?: StateChannel,
   ) {
-    return this.runProtocol(
-      getProtocolFromName(protocolName)[0],
-      {
-        params,
-        protocol: protocolName,
-        processID: uuid(),
-        seq: 0,
-        to: params[firstRecipientFromProtocolName(protocolName)],
-        customData: {},
-      },
-      preProtocolStateChannel,
-    );
+    try {
+      const protocolRet = await this.runProtocol(
+        getProtocolFromName(protocolName)[0],
+        {
+          params,
+          protocol: protocolName,
+          processID: uuid(),
+          seq: 0,
+          to: params[firstRecipientFromProtocolName(protocolName)],
+          customData: {},
+        },
+        preProtocolStateChannel,
+      );
+      return protocolRet;
+    } catch (error) {
+      const outgoingData = getOutgoingEventFailureDataFromProtocol(protocolName, params, error);
+      await emitOutgoingMessage(router, outgoingData);
+      throw error;
+    }
   }
 
-  public async runSetupProtocol(params: ProtocolParams.Setup) {
+  public async runSetupProtocol(router: RpcRouter, params: ProtocolParams.Setup) {
     const protocol = ProtocolNames.setup;
-    return this.runProtocol(
-      getProtocolFromName(protocol)[0],
-      {
-        protocol,
-        params,
-        processID: uuid(),
-        seq: 0,
-        to: params[firstRecipientFromProtocolName(protocol)],
-        customData: {},
-      },
-      {} as any,
-    );
+    try {
+      const protocolRet = await this.runProtocol(
+        getProtocolFromName(protocol)[0],
+        {
+          protocol,
+          params,
+          processID: uuid(),
+          seq: 0,
+          to: params[firstRecipientFromProtocolName(protocol)],
+          customData: {},
+        },
+        {} as any,
+      );
+      return protocolRet;
+    } catch (error) {
+      const outgoingData = getOutgoingEventFailureDataFromProtocol(protocol, params, error);
+      await emitOutgoingMessage(router, outgoingData);
+      throw error;
+    }
   }
 
   private async runProtocol(
@@ -115,4 +142,64 @@ export class ProtocolRunner {
     }
     return lastMiddlewareRet;
   }
+}
+
+export function getOutgoingEventFailureDataFromProtocol(
+  protocol: ProtocolName,
+  params: ProtocolParam,
+  error: Error,
+): Message {
+  const baseEvent = {
+    from: params.initiatorIdentifier,
+    data: {
+      params,
+      error: error.stack || error.message,
+    },
+  };
+  switch (protocol) {
+    case ProtocolNames.setup: {
+      return {
+        ...baseEvent,
+        type: EventNames.SETUP_FAILED_EVENT,
+      };
+    }
+    case ProtocolNames.sync: {
+      return {
+        ...baseEvent,
+        type: EventNames.SYNC_FAILED_EVENT,
+      };
+    }
+    case ProtocolNames.propose: {
+      return {
+        ...baseEvent,
+        type: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
+      };
+    }
+    case ProtocolNames.install: {
+      return {
+        ...baseEvent,
+        type: EventNames.INSTALL_FAILED_EVENT,
+      };
+    }
+    case ProtocolNames.takeAction: {
+      return {
+        ...baseEvent,
+        type: EventNames.UPDATE_STATE_FAILED_EVENT,
+      };
+    }
+    case ProtocolNames.uninstall: {
+      return {
+        ...baseEvent,
+        type: EventNames.UNINSTALL_FAILED_EVENT,
+      };
+    }
+    default: {
+      const unexpected: never = protocol;
+      throw new Error(`Unexpected case: ${unexpected}`);
+    }
+  }
+}
+
+export function emitOutgoingMessage(router: RpcRouter, msg: Message) {
+  return router.emit(msg["type"], msg, "outgoing");
 }

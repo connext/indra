@@ -43,6 +43,7 @@ export async function handleReceivedProtocolMessage(
   ]);
   try {
     const { channel } = await protocolRunner.runProtocolWithMessage(
+      router,
       data,
       json && StateChannel.fromJson(json),
     );
@@ -151,7 +152,7 @@ async function getOutgoingEventDataFromProtocol(
     }
     default:
       throw new Error(
-        `handleReceivedProtocolMessage received invalid protocol message: ${protocol}`,
+        `[getOutgoingEventDataFromProtocol] handleReceivedProtocolMessage received invalid protocol message: ${protocol}`,
       );
   }
 }

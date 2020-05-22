@@ -12,7 +12,7 @@ export class LockService {
   ) {
     this.log.setContext("LockService");
   }
-  
+
   async acquireLock(lockName: string): Promise<string> {
     const hardcodedTTL = LOCK_SERVICE_TTL;
     this.log.debug(`Using lock ttl of ${hardcodedTTL / 1000} seconds`);
@@ -25,7 +25,7 @@ export class LockService {
           resolve(lock.value);
         })
         .catch((e: any) => {
-          this.log.error(`Caught error locking resource ${lockName}`, e.stack);
+          this.log.error(`Caught error locking resource ${lockName}`);
           reject(e);
         });
     });
@@ -43,7 +43,7 @@ export class LockService {
           resolve();
         })
         .catch((e: any) => {
-          this.log.error(`Caught error unlocking resource ${lockName}: ${e.message}`, e.stack);
+          this.log.error(`Caught error unlocking resource ${lockName}: ${e.message}`);
           reject(e);
         });
     });
