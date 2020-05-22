@@ -15,6 +15,10 @@ export class WrappedMemoryStorage implements WrappedStorage {
     return Promise.resolve();
   }
 
+  close(): Promise<void> {
+    return Promise.resolve();
+  }
+
   async getItem<T>(key: string): Promise<T | undefined> {
     const path = `${this.prefix}${this.separator}${key}`;
     if (!this.storage.has(path)) {
