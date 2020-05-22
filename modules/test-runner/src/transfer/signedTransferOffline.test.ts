@@ -27,7 +27,7 @@ import { addressBook } from "@connext/contracts";
 import { Zero } from "ethers/constants";
 import { hexlify, solidityKeccak256 } from "ethers/utils";
 
-describe.only("Signed Transfer Offline", () => {
+describe("Signed Transfer Offline", () => {
   const tokenAddress = addressBook[4447].Token.address;
   const addr = addressBook[4447].SimpleSignedTransferApp.address;
 
