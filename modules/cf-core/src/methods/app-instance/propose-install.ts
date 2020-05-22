@@ -73,11 +73,12 @@ export class ProposeInstallAppInstanceController extends NodeController {
     params: MethodParams.ProposeInstall,
     preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.ProposeInstall> {
-    const { protocolRunner, publicIdentifier } = requestHandler;
+    const { protocolRunner, publicIdentifier, router } = requestHandler;
 
     const { responderIdentifier, stateTimeout, defaultTimeout } = params;
 
     const { channel: updated }: { channel: StateChannel } = await protocolRunner.initiateProtocol(
+      router,
       ProtocolNames.propose,
       {
         ...params,
@@ -87,7 +88,6 @@ export class ProposeInstallAppInstanceController extends NodeController {
       },
       preProtocolStateChannel!,
     );
-
     return { appIdentityHash: updated.mostRecentlyProposedAppInstance().identityHash };
   }
 }

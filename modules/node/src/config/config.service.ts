@@ -84,7 +84,6 @@ export class ConfigService implements OnModuleInit {
       (contract: string) =>
         (ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address)),
     );
-    console.log(`Got contract addresses: ${JSON.stringify(ethAddresses)}`);
     return ethAddresses as ContractAddresses;
   }
 

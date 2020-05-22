@@ -9,18 +9,13 @@ export const FUNDED_MNEMONICS = [
 export const WRONG_ADDRESS = "0xdeadbeef";
 
 // error messages
-export const APP_PROTOCOL_TOO_LONG = (
-  protocol: ProtocolName,
-  isIOSendAndWait: boolean = true,
-): string => {
-  if (protocol === `takeAction`) {
-    return `Couldn't run TakeAction protocol: IO_SEND_AND_WAIT timed out after ${
-      CF_METHOD_TIMEOUT / 1000
-    }s`;
-  }
-
-  // TODO: fix when adding protocol failure events
-  return `Error: Error sending request`;
+export const APP_PROTOCOL_TOO_LONG = (protocol: ProtocolName): string => {
+  const base = `IO_SEND_AND_WAIT timed out after ${CF_METHOD_TIMEOUT / 1000}s`;
+  return `Error: ${base} waiting for counterparty reply in ${protocol}`;
+};
+export const CLIENT_INSTALL_FAILED = (wasRejected: boolean = false): string => {
+  const prefix = wasRejected ? `Proposal was rejected` : `Install protocol failed`;
+  return `${prefix}. Event data:`;
 };
 export const MESSAGE_FAILED_TO_SEND = (reason?: string): string =>
   `Failed to send message: ${reason}`;

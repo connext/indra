@@ -12,7 +12,12 @@ export abstract class NodeController extends Controller {
     requestHandler: RequestHandler,
     params: MethodParam,
   ): Promise<MethodResult | undefined> {
-    const log = new ColorfulLogger(`MethodController`, 1, true);
+    const log = new ColorfulLogger(
+      `MethodController`,
+      1,
+      true,
+      requestHandler.signer.address.substring(0, 7),
+    );
     const start = Date.now();
     let substart = start;
     let lockValue: string = "";
@@ -29,6 +34,7 @@ export abstract class NodeController extends Controller {
     }
 
     let ret: MethodResult | undefined;
+    let error: Error | undefined;
     try {
       // GET CHANNEL BEFORE EXECUTION
       let preProtocolStateChannel: StateChannel | undefined;
@@ -57,13 +63,23 @@ export abstract class NodeController extends Controller {
       logTime(log, substart, "After execution complete");
       substart = Date.now();
     } catch (e) {
-      throw e;
-    } finally {
-      if (lockName !== "") {
+      log.error(`caught error in node controller: ${e.message}`);
+      error = e;
+    }
+    // don't do this in a finally to ensure any errors with releasing the
+    // lock do not swallow any protocol or controller errors
+    if (lockName !== "") {
+      try {
         await requestHandler.lockService.releaseLock(lockName, lockValue);
-        logTime(log, substart, "Released lock");
-        substart = Date.now();
+      } catch (e) {
+        log.error(`Caught error trying to release lock: ${e.message}`);
+        error = error || e;
       }
+      logTime(log, substart, "Released lock");
+      substart = Date.now();
+    }
+    if (error) {
+      throw error;
     }
 
     return ret;

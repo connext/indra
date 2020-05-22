@@ -59,7 +59,11 @@ export class WithdrawalController extends AbstractController {
       );
 
       this.log.debug(`Installing withdrawal app`);
-      await this.proposeWithdrawApp(params, hash, withdrawerSignatureOnWithdrawCommitment);
+      const withdrawAppId = await this.proposeWithdrawApp(
+        params,
+        hash,
+        withdrawerSignatureOnWithdrawCommitment,
+      );
       this.log.debug(`Successfully installed!`);
 
       this.connext.listener.emit(EventNames.WITHDRAWAL_STARTED_EVENT, {
@@ -69,8 +73,17 @@ export class WithdrawalController extends AbstractController {
       });
 
       this.log.debug(`Watching chain for user withdrawal`);
-      [transaction] = await this.connext.watchForUserWithdrawal();
-      this.log.debug(`Node put withdrawal onchain: ${transaction.hash}`);
+      transaction = await new Promise(async (resolve, reject) => {
+        this.listener.on(EventNames.UPDATE_STATE_FAILED_EVENT, (msg) => {
+          const { params, error } = msg.data;
+          if (params.appIdentityHash === withdrawAppId) {
+            return reject(new Error(error));
+          }
+        });
+        const [tx] = await this.connext.watchForUserWithdrawal();
+        return resolve(tx);
+      });
+      this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
       this.log.debug(`Transaction details: ${stringify(transaction)}`);
 
       this.connext.listener.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction });

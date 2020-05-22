@@ -34,7 +34,7 @@ export class SyncController extends NodeController {
     params: MethodParams.Sync,
     preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.Sync> {
-    const { protocolRunner, publicIdentifier } = requestHandler;
+    const { protocolRunner, publicIdentifier, router } = requestHandler;
     const { multisigAddress } = params;
     if (!preProtocolStateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
@@ -50,6 +50,7 @@ export class SyncController extends NodeController {
     }
 
     const { channel: updated }: { channel: StateChannel } = await protocolRunner.initiateProtocol(
+      router,
       ProtocolNames.sync,
       {
         multisigAddress,
