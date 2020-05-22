@@ -116,7 +116,7 @@ const fundChannelAndSwap = async (opts: {
   await swapAsset(client, input, output, client.nodeSignerAddress);
 };
 
-describe.only("Swap offline", () => {
+describe.skip("Swap offline", () => {
   const swapAppAddr = addressBook[4447].SimpleTwoPartySwapApp.address;
   it("Bot A tries to propose swap app, but gets no response from the node", async () => {
     const messagingConfig = {
