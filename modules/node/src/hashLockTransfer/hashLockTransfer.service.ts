@@ -196,9 +196,6 @@ export class HashLockTransferService {
       appIdentityHash: receiverAppInstallRes.appIdentityHash,
     };
 
-    // kick off a rebalance before finishing
-    this.channelService.rebalance(receiverChannel, assetId);
-
     this.log.info(
       `installHashLockTransferReceiverApp from ${senderIdentifier} to ${receiverIdentifier} assetId ${assetId} completed: ${JSON.stringify(
         response,

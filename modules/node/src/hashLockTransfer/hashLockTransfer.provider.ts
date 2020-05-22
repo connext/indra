@@ -49,15 +49,21 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       return undefined;
     }
 
-    const latestState = bigNumberifyJson(senderApp.latestState) as HashLockTransferAppState;
-    const { encryptedPreImage, recipient, ...meta } = senderApp.meta || ({} as any);
+    // try using the requesters app if both are defined, but if there
+    // is a sender app and not a receiver app and the request was sent by the
+    // receiver, default to the sender app values
+    const userApp =
+      (pubId === senderApp.channel.userIdentifier ? senderApp : receiverApp) || senderApp;
+
+    const latestState = bigNumberifyJson(userApp.latestState) as HashLockTransferAppState;
+    const { encryptedPreImage, recipient, ...meta } = userApp.meta || ({} as any);
     const amount = latestState.coinTransfers[0].amount.isZero()
       ? latestState.coinTransfers[1].amount
       : latestState.coinTransfers[0].amount;
     return {
       receiverIdentifier: receiverApp ? receiverApp.responderIdentifier : undefined,
       senderIdentifier: senderApp.initiatorIdentifier,
-      assetId: senderApp.initiatorDepositAssetId,
+      assetId: userApp.initiatorDepositAssetId,
       amount: amount.toString(),
       lockHash: latestState.lockHash,
       status: status,
