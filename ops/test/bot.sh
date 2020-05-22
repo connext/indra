@@ -41,6 +41,26 @@ then interactive="--interactive --tty"
 else echo "Running in non-interactive mode"
 fi
 
+docker run \
+  --detach \
+  --entrypoint="bash" \
+  $interactive \
+  --name="bot-registry" \
+  --volume="`pwd`:/root" \
+  --port="3333:3333" \
+  ${project}_builder -c '
+    set -e
+    echo "Bot registry container launched!"
+    cd modules/bot-registry
+    export PATH=./node_modules/.bin:$PATH
+    function finish {
+      echo && echo "Bot container exiting.." && exit
+    }
+    trap finish SIGTERM SIGINT
+    echo "Launching agent!";echo
+    npm run start
+  '
+
 for (( n=1; n<=$agents; n++ ))
 do
   agent="${agent_name}_$n"
