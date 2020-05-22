@@ -23,16 +23,16 @@ export const fundChannel = async (
     });
     // register failure listeners
     client.once(EventNames.DEPOSIT_FAILED_EVENT, async (msg: any) => {
-      return reject(new Error(`Failed deposit: ${stringify(msg)}`));
+      return reject(new Error(msg.data.error));
     });
     client.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async (msg: any) => {
-      return reject(new Error(`Failed to propose deposit app: ${stringify(msg)}`));
+      return reject(new Error(msg.data.error));
     });
     client.once(EventNames.INSTALL_FAILED_EVENT, async (msg: any) => {
-      return reject(new Error(`Failed to install deposit: ${stringify(msg)}`));
+      return reject(new Error(msg.data.error));
     });
     client.once(EventNames.UNINSTALL_FAILED_EVENT, async (msg: any) => {
-      return reject(new Error(`Failed to uninstall deposit: ${stringify(msg)}`));
+      return reject(new Error(msg.data.error));
     });
 
     try {

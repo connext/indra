@@ -112,7 +112,6 @@ describe("Deposit offline tests", () => {
     client = await createClientWithMessagingLimits({
       ceiling: { [RECEIVED]: 0 },
       protocol: ProtocolNames.propose,
-      params: { appDefinition: addressBook[4447].DepositApp.address },
       signer,
       store,
     });
@@ -135,7 +134,6 @@ describe("Deposit offline tests", () => {
     client = await createClientWithMessagingLimits({
       protocol: ProtocolNames.propose,
       ceiling: { [SEND]: 0 },
-      params: { appDefinition: addressBook[4447].DepositApp.address },
       signer,
     });
 
@@ -182,7 +180,7 @@ describe("Deposit offline tests", () => {
 
     await makeFailingDepositCall({
       client,
-      error: CLIENT_INSTALL_FAILED(true),
+      error: APP_PROTOCOL_TOO_LONG(ProtocolNames.install),
     });
     const messaging = client.messaging! as TestMessagingService;
     expect(messaging.installCount[SEND]).to.be.eq(0);
