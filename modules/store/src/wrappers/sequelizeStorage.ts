@@ -1,4 +1,4 @@
-import { DataTypes, Op, Sequelize } from "sequelize";
+import { DataTypes, Op, Sequelize, Transaction } from "sequelize";
 import { mkdirSync } from "fs";
 import { dirname } from "path";
 
@@ -41,7 +41,7 @@ export class WrappedSequelizeStorage implements WrappedStorage {
           mkdirSync(dir, { recursive: true });
         }
       }
-      this.sequelize = new Sequelize((_sequelize as string), { logging: false });
+      this.sequelize = new Sequelize(_sequelize as string, { logging: false });
     } else {
       this.sequelize = _sequelize as Sequelize;
     }
@@ -58,25 +58,33 @@ export class WrappedSequelizeStorage implements WrappedStorage {
   }
 
   async setItem(key: string, value: any): Promise<void> {
-    await this.ConnextClientData.upsert({
-      key: `${this.prefix}${this.separator}${key}`,
-      value,
+    return this.sequelize.transaction(async (t) => {
+      await this.ConnextClientData.upsert(
+        {
+          key: `${this.prefix}${this.separator}${key}`,
+          value,
+        },
+        { transaction: t, lock: true },
+      );
     });
   }
 
   async removeItem(key: string): Promise<void> {
-    await this.ConnextClientData.destroy({
-      where: {
-        key: `${this.prefix}${this.separator}${key}`,
-      },
+    return this.sequelize.transaction(async (t) => {
+      await this.ConnextClientData.destroy(
+        {
+          where: {
+            key: `${this.prefix}${this.separator}${key}`,
+          },
+        },
+        { transaction: t, lock: true },
+      );
     });
   }
 
   async getKeys(): Promise<string[]> {
     const relevantItems = await this.getRelevantItems();
-    return relevantItems.map(
-      (item: any) => item.key.split(`${this.prefix}${this.separator}`)[1],
-    );
+    return relevantItems.map((item: any) => item.key.split(`${this.prefix}${this.separator}`)[1]);
   }
 
   async getEntries(): Promise<[string, any][]> {
@@ -98,17 +106,26 @@ export class WrappedSequelizeStorage implements WrappedStorage {
   }
 
   async clear(): Promise<void> {
-    await this.ConnextClientData.destroy({
-      where: {
-        key: {
-          [Op.startsWith]: `${this.prefix}${this.separator}`,
+    return this.sequelize.transaction(async (t) => {
+      await this.ConnextClientData.destroy(
+        {
+          where: {
+            key: {
+              [Op.startsWith]: `${this.prefix}${this.separator}`,
+            },
+          },
         },
-      },
+        { transaction: t, lock: true },
+      );
     });
   }
 
   async init(): Promise<void> {
     await this.syncModels(false);
+  }
+
+  close(): Promise<void> {
+    return this.sequelize.close();
   }
 
   async syncModels(force: boolean = false): Promise<void> {
