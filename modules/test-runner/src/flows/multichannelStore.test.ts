@@ -277,7 +277,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
   it("should work when clients share the same sequelize instance with a different prefix (many payments sent)", async () => {
     // establish tests constants
     const TRANSFER_AMT = toBN(100);
-    const MIN_TRANSFERS = 5;
+    const MIN_TRANSFERS = 25;
     const TRANSFER_INTERVAL = 500; // ms between consecutive transfer calls
 
     let receivedTransfers = 0;
