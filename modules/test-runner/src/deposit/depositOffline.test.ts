@@ -22,7 +22,6 @@ import {
   CLIENT_INSTALL_FAILED,
 } from "../util";
 import { getRandomChannelSigner } from "@connext/utils";
-import { addressBook } from "@connext/contracts";
 
 const makeFailingDepositCall = async (opts: {
   client: IConnextClient;

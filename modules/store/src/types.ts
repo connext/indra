@@ -11,6 +11,7 @@ export type StoreTypes = typeof StoreTypes[keyof typeof StoreTypes];
 
 export interface WrappedStorage {
   init(): Promise<void>;
+  close(): Promise<void>;
   getItem<T = any>(key: string): Promise<T | undefined>;
   setItem<T = any>(key: string, value: T): Promise<void>;
   removeItem(key: string): Promise<void>;

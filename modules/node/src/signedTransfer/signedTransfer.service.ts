@@ -193,9 +193,6 @@ export class SignedTransferService {
       assetId,
     };
 
-    // kick off a rebalance before finishing
-    this.channelService.rebalance(receiverChannel, assetId);
-
     this.log.info(
       `installSignedTransferReceiverApp for ${userIdentifier} paymentId ${paymentId} complete: ${JSON.stringify(
         result,

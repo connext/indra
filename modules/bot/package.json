@@ -10,10 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@connext/client": "6.5.7",
-    "@connext/store": "6.5.7",
-    "@connext/types": "6.5.7",
-    "@connext/utils": "6.5.7",
+    "@connext/client": "6.6.0",
+    "@connext/store": "6.6.0",
+    "@connext/types": "6.6.0",
+    "@connext/utils": "6.6.0",
     "axios": "^0.19.2",
     "ethers": "4.0.47",
     "yargs": "15.3.1"
