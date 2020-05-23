@@ -87,26 +87,44 @@ export class LinkedTransferService {
     const { assetId, linkedHash } = latestState;
 
     // check if receiver app exists
-    const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
+    const existing = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
       paymentId,
       getSignerAddressFromPublicIdentifier(userIdentifier),
     );
-    if (receiverApp) {
-      // dont need to validate anything here
-      const returnRes: NodeResponses.ResolveLinkedTransfer = {
-        appIdentityHash: receiverApp.identityHash,
-        sender: senderApp.channel.userIdentifier,
-        meta: senderApp.meta,
-        paymentId,
-        amount,
-        assetId,
-      };
-      this.log.info(
-        `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId}} complete ${JSON.stringify(
-          returnRes,
-        )}`,
-      );
-      return returnRes;
+    if (existing) {
+      switch (existing.type) {
+        case AppType.INSTANCE: {
+          const returnRes: NodeResponses.ResolveLinkedTransfer = {
+            appIdentityHash: existing.identityHash,
+            sender: senderApp.channel.userIdentifier,
+            meta: senderApp.meta,
+            paymentId,
+            amount,
+            assetId,
+          };
+          this.log.info(
+            `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId}} complete ${JSON.stringify(
+              returnRes,
+            )}`,
+          );
+          return returnRes;
+        }
+        case AppType.PROPOSAL: {
+          this.log.warn(
+            `Found existing linked transfer app proposal for paymentId: ${paymentId}: ${existing.identityHash}, rejecting and continuing`,
+          );
+          await this.cfCoreService.rejectInstallApp(
+            existing.identityHash,
+            receiverChannel.multisigAddress,
+          );
+          break;
+        }
+        default: {
+          this.log.warn(
+            `Found existing app with with incorrect type: ${existing.type} for paymentId: ${paymentId}, proceeding to propose new app`,
+          );
+        }
+      }
     }
 
     this.log.debug(`Found linked transfer in our database, attempting to install...`);
