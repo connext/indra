@@ -58,7 +58,7 @@ export abstract class AbstractController {
     );
     this.log.debug(`Proposing install of ${registryInfo.name}`);
     const { appIdentityHash } = await this.connext.proposeInstallApp(params);
-    this.log.debug(`App instance successfully proposed`);
+    this.log.debug(`App instance successfully proposed: ${appIdentityHash}`);
 
     let boundReject: (reason?: any) => void;
     let boundInstallFailed: (reason?: any) => void;
