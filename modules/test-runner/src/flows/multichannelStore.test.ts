@@ -117,12 +117,12 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     );
   });
 
-  it("should work when clients share the same sequelize instance with a different prefix (many payments sent)", async () => {
+  it.only("should work when clients share the same sequelize instance with a different prefix (many payments sent)", async () => {
     // establish tests constants
     const DEPOSIT_AMT = ETH_AMOUNT_MD;
     const ASSET = CONVENTION_FOR_ETH_ASSET_ID;
     const TRANSFER_AMT = toBN(100);
-    const MIN_TRANSFERS = 25;
+    const MIN_TRANSFERS = 5;
     const TRANSFER_INTERVAL = 500; // ms between consecutive transfer calls
 
     await fundChannel(sender, DEPOSIT_AMT, ASSET);
@@ -137,7 +137,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     recipient.on(
       EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
       async (payload: EventPayloads.SignedTransferCreated) => {
-        console.log(`Created signed transfer: ${JSON.stringify(payload)}`);
+        console.log(`Got signed transfer event: ${payload.paymentId}`);
         const data = hexlify(randomBytes(32));
         const digest = solidityKeccak256(["bytes32", "bytes32"], [data, payload.paymentId]);
         const signature = await recipient.signer.signMessage(digest);
@@ -147,7 +147,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
           paymentId: payload.paymentId,
           signature,
         } as PublicParams.ResolveSignedTransfer);
-        console.log(`Resolved signed transfer: ${JSON.stringify(res)}`);
+        console.log(`Resolved signed transfer: ${payload.paymentId}`);
       },
     );
 
@@ -161,9 +161,11 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       }
       let error: any = undefined;
       try {
+        const paymentId = getRandomBytes32();
+        console.log(`[${intervals}/${MIN_TRANSFERS}] creating transfer with ${paymentId}`);
         const transferRes = await sender.conditionalTransfer({
           amount: TRANSFER_AMT,
-          paymentId: getRandomBytes32(),
+          paymentId,
           conditionType: ConditionalTransferTypes.SignedTransfer,
           signer: recipient.signerAddress,
           assetId: ASSET,
@@ -180,12 +182,21 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     // will also periodically check if a poller error has been set and reject
     await new Promise((resolve, reject) => {
       // setup listeners (increment on reclaim)
-      recipient.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, () => {
+      recipient.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (msg) => {
         receivedTransfers += 1;
+        console.log(`received ${receivedTransfers}/${MIN_TRANSFERS}: ${msg.paymentId}`);
         if (receivedTransfers >= MIN_TRANSFERS) {
           resolve();
         }
       });
+      recipient.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, reject);
+      sender.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, reject);
+      recipient.on(EventNames.INSTALL_FAILED_EVENT, reject);
+      sender.on(EventNames.INSTALL_FAILED_EVENT, reject);
+      recipient.on(EventNames.UPDATE_STATE_FAILED_EVENT, reject);
+      sender.on(EventNames.UPDATE_STATE_FAILED_EVENT, reject);
+      recipient.on(EventNames.UNINSTALL_FAILED_EVENT, reject);
+      sender.on(EventNames.UNINSTALL_FAILED_EVENT, reject);
       recipient.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
       sender.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
 
