@@ -110,18 +110,21 @@ export default {
 
       // Deposit if agent is out of funds
       const balance = await client.getFreeBalance(AddressZero);
-      log.info(`Bot balance: ${balance[client.signerAddress]}`);
+      log.debug(`Bot balance: ${balance[client.signerAddress]}`);
       if (balance[client.signerAddress].lt(TRANSFER_AMT)) {
-        log.info(`Balance too low, depositing...`);
+        log.info(
+          `Balance too low: ${balance[
+            client.signerAddress
+          ].toString()} < ${TRANSFER_AMT.toString()}, depositing...`,
+        );
         await client.deposit({ amount: DEPOSIT_AMT, assetId: AddressZero });
         log.info(`Finished depositing`);
         const balanceAfterDeposit = await client.getFreeBalance(AddressZero);
-        log.info(`Bot balance after deposit: ${balance[client.signerAddress]}`);
+        log.info(`Bot balance after deposit: ${balanceAfterDeposit[client.signerAddress]}`);
       }
 
       // Get random agent from registry and setup params
       const receiverIdentifier = await getRandomAgentIdentifierFromIndex(client.publicIdentifier);
-      log.debug(`receiverIdentifier: ${receiverIdentifier}`);
 
       // If this is the first bot, dont transfer and instead wait for the others to come up
       if (!receiverIdentifier) {
