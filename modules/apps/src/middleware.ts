@@ -8,6 +8,10 @@ import {
   ProposeMiddlewareContext,
 } from "@connext/types";
 import { uninstallDepositMiddleware, proposeDepositMiddleware } from "./DepositApp";
+import { proposeLinkedTransferMiddleware } from "./SimpleLinkedTransferApp";
+import { proposeHashLockTransferMiddleware } from "./HashLockTransferApp";
+import { proposeSignedTransferMiddleware } from "./SimpleSignedTransferApp";
+import { proposeWithdrawMiddleware } from "./WithdrawApp";
 
 // add any validation middlewares
 export const generateValidationMiddleware = async (
@@ -67,11 +71,28 @@ const proposeMiddleware = async (
   network: NetworkContext,
   middlewareContext: ProposeMiddlewareContext,
 ) => {
+  const { contractAddresses } = network;
   const { proposal } = middlewareContext;
   const appDef = proposal.appDefinition;
   switch (appDef) {
-    case network.contractAddresses.DepositApp: {
-      await proposeDepositMiddleware(middlewareContext, network.contractAddresses.DepositApp);
+    case contractAddresses.SimpleLinkedTransferApp: {
+      await proposeLinkedTransferMiddleware(middlewareContext, contractAddresses.DepositApp);
+      break;
+    }
+    case contractAddresses.HashLockTransferApp: {
+      await proposeHashLockTransferMiddleware(middlewareContext, contractAddresses.DepositApp);
+      break;
+    }
+    case contractAddresses.SimpleSignedTransferApp: {
+      await proposeSignedTransferMiddleware(middlewareContext, contractAddresses.DepositApp);
+      break;
+    }
+    case contractAddresses.DepositApp: {
+      await proposeDepositMiddleware(middlewareContext, contractAddresses.DepositApp);
+      break;
+    }
+    case contractAddresses.WithdrawApp: {
+      await proposeWithdrawMiddleware(middlewareContext, contractAddresses.DepositApp);
       break;
     }
     default: {
