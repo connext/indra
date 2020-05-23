@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-agents="${1:-1}"
-interval="${2:1000}"
+agents="$1"
+interval="$2"
+echo "Starting bot test with $agents agents and interval $interval"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
@@ -106,7 +107,7 @@ do
       }
       trap finish SIGTERM SIGINT
       echo "Launching agent!";echo
-      npm run start -- bot --private-key '$agent_key' --agents '$n' --interval '$interval'
+      npm run start -- bot --private-key '$agent_key' --concurrency-index '$n' --interval '$interval'
     '
 
   docker logs --follow $agent &

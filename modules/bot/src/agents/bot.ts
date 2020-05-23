@@ -44,20 +44,19 @@ export default {
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
     const NAME = `Bot #${argv.concurrencyIndex}`;
+    const log = new ColorfulLogger(NAME, 4, true, argv.concurrencyIndex);
+    log.info(`Launched bot ${NAME}`);
     const TRANSFER_AMT = parseEther("0.001");
     const DEPOSIT_AMT = parseEther("0.01");
     const ethUrl = process.env.INDRA_ETH_RPC_URL;
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
 
-    const log = new ColorfulLogger(NAME, 4, true, argv.concurrencyIndex);
-
     // Create agent client
     const client = await createClient(
       argv.privateKey,
       NAME,
       log,
-      DEPOSIT_AMT,
       nodeUrl!,
       ethUrl!,
       messagingUrl!,
