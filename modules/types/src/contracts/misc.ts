@@ -34,6 +34,7 @@ export type ContractAddresses = CriticalStateChannelAddresses & {
   ChallengeRegistry: Address;
   ConditionalTransactionDelegateTarget: Address;
   DepositApp: Address;
+  WithdrawApp: Address;
   HashLockTransferApp?: Address;
   IdentityApp: Address;
   MultiAssetMultiPartyCoinTransferInterpreter: Address;
@@ -65,7 +66,7 @@ export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "TwoPartyFixedOutcomeInterpreter",
 ];
 
-//////////////////////////////////////// 
+////////////////////////////////////////
 // Mixins, etc
 
 export const singleAssetTwoPartyCoinTransferEncoding = tidy(`tuple(
@@ -86,7 +87,7 @@ export const OutcomeType = enumify({
   // CoinTransfer[2]
   SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: "SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER",
 });
-export type OutcomeType = (typeof OutcomeType)[keyof typeof OutcomeType];
+export type OutcomeType = typeof OutcomeType[keyof typeof OutcomeType];
 
 // Commitment targets
 export const CommitmentTarget = enumify({
@@ -94,4 +95,3 @@ export const CommitmentTarget = enumify({
   SET_STATE: "1",
   CANCEL_DISPUTE: "2",
 });
-
