@@ -180,7 +180,6 @@ export class SignedTransferService {
       SIGNED_TRANSFER_STATE_TIMEOUT,
     );
 
-    this.log.error(`**** receiverAppInstallRes: ${stringify(receiverAppInstallRes)}`);
     if (!receiverAppInstallRes || !receiverAppInstallRes.appIdentityHash) {
       throw new Error(`Could not install app on receiver side.`);
     }
