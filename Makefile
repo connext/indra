@@ -252,6 +252,11 @@ utils: types $(shell find modules/utils $(find_options))
 	$(docker_run) "cd modules/utils && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
+bot-registry: types utils $(shell find modules/bot-registry $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/bot-registry && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
 channel-provider: types $(shell find modules/channel-provider $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/channel-provider && npm run build"
@@ -287,7 +292,7 @@ client: types utils channel-provider messaging store contracts cf-core apps $(sh
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-bot: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/bot $(find_options))
+bot: types utils bot-registry channel-provider messaging store contracts cf-core apps client $(shell find modules/bot $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/bot && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@

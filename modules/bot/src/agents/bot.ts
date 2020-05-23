@@ -11,7 +11,10 @@ import { parseEther, hexlify, randomBytes, solidityKeccak256 } from "ethers/util
 import { Argv } from "yargs";
 
 import { createClient } from "../helpers/client";
-import { addAgentAddressToIndex, getRandomAgentAddressFromIndex } from "../helpers/agentIndex";
+import {
+  addAgentIdentifierToIndex,
+  getRandomAgentIdentifierFromIndex,
+} from "../helpers/agentIndex";
 
 export default {
   command: "bot",
@@ -47,7 +50,7 @@ export default {
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
 
-    const log = new ColorfulLogger(NAME, 3, true, argv.concurrencyIndex);
+    const log = new ColorfulLogger(NAME, 4, true, argv.concurrencyIndex);
 
     // Create agent client
     const client = await createClient(
@@ -61,8 +64,9 @@ export default {
       argv.logLevel,
     );
 
+    log.info(`Registering address ${client.publicIdentifier}`);
     // Register agent in environment
-    await addAgentAddressToIndex(client.publicIdentifier);
+    await addAgentIdentifierToIndex(client.publicIdentifier);
 
     // Setup agent logic to respond to other agents' payments
     client.on(
@@ -88,6 +92,7 @@ export default {
           [mockAttestation, eventData.paymentId],
         );
         const signature = await client.channelProvider.signMessage(attestationHash);
+        log.info(`Unlocking transfer with signature ${signature}`);
         await client.resolveCondition({
           conditionType: ConditionalTransferTypes.SignedTransfer,
           paymentId: eventData.paymentId,
@@ -99,19 +104,23 @@ export default {
       },
     );
 
-    // Deposit if agent is out of funds
-    const balance = await client.getFreeBalance(AddressZero);
-    if (balance[client.signerAddress].lt(TRANSFER_AMT)) {
-      log.info(`Balance too low, depositing...`);
-      await client.deposit({ amount: DEPOSIT_AMT, assetId: AddressZero });
-      log.info(`Finished depositing`);
-    }
-
     // Setup agent logic to transfer on an interval
     setInterval(async () => {
       log.debug(`Started interval`);
+
+      // Deposit if agent is out of funds
+      const balance = await client.getFreeBalance(AddressZero);
+      log.info(`Bot balance: ${balance[client.signerAddress]}`);
+      if (balance[client.signerAddress].lt(TRANSFER_AMT)) {
+        log.info(`Balance too low, depositing...`);
+        await client.deposit({ amount: DEPOSIT_AMT, assetId: AddressZero });
+        log.info(`Finished depositing`);
+        const balanceAfterDeposit = await client.getFreeBalance(AddressZero);
+        log.info(`Bot balance after deposit: ${balance[client.signerAddress]}`);
+      }
+
       // Get random agent from registry and setup params
-      const receiverIdentifier = await getRandomAgentAddressFromIndex();
+      const receiverIdentifier = await getRandomAgentIdentifierFromIndex(client.publicIdentifier);
       log.debug(`receiverIdentifier: ${receiverIdentifier}`);
 
       // If this is the first bot, dont transfer and instead wait for the others to come up
@@ -119,6 +128,7 @@ export default {
         log.debug(`No receiver identifier received`);
         return;
       }
+
       const receiverSigner = getSignerAddressFromPublicIdentifier(receiverIdentifier);
       const paymentId = getRandomBytes32();
       log.info(
@@ -129,6 +139,7 @@ export default {
 
       try {
         // Send transfer
+        log.debug(`Starting transfer to ${receiverIdentifier} with signer ${receiverSigner}`);
         await client.conditionalTransfer({
           paymentId,
           amount: TRANSFER_AMT,
@@ -136,7 +147,7 @@ export default {
           signer: receiverSigner,
           assetId: AddressZero,
           recipient: receiverIdentifier,
-          meta: { info: "Bootstrap payment" },
+          meta: { info: `Transfer from ${NAME}` },
         });
         log.info(`Conditional transfer ${paymentId} sent`);
       } catch (err) {

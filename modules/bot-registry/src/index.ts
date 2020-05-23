@@ -17,26 +17,26 @@ app.get("/agent", async (req, res) => {
 });
 
 app.post("/agent", async (req, res) => {
-  const signerAddress = req.body.signerAddress;
-  log.info(`Registering signerAddress: ${signerAddress}`);
-  if (!signerAddress) {
+  const identifier = req.body.identifier;
+  log.info(`Registering identifier: ${identifier}`);
+  if (!identifier) {
     return res.status(400).send("No signer specified");
   }
-  bots.add(signerAddress);
+  bots.add(identifier);
 
-  return res.send(signerAddress);
+  return res.send(identifier);
 });
 
 app.delete("/agent", async (req, res) => {
-  const signerAddress = req.body.signerAddress;
-  if (!signerAddress) {
+  const identifier = req.body.identifier;
+  if (!identifier) {
     log.info(`Clearing registry`);
     bots.clear();
     return res.send();
   }
-  log.info(`Removing signerAddress: ${signerAddress}`);
-  bots.delete(signerAddress);
-  return res.send(signerAddress);
+  log.info(`Removing identifier: ${identifier}`);
+  bots.delete(identifier);
+  return res.send(identifier);
 });
 
 const start = async () => {
