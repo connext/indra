@@ -3,11 +3,14 @@ import { BigNumber, BigNumberish, bigNumberify } from "ethers/utils";
 
 export const isBN = BigNumber.isBigNumber;
 
-export const toBN = (n: BigNumberish | BigNumberJson): BigNumber =>
-  bigNumberify((n && (n as BigNumberJson)._hex) ? (n as BigNumberJson)._hex : n.toString());
+export const isBNJson = (value: any): boolean => !isBN(value) && !!value._hex;
 
-export const toBNJson = (n: BigNumberish | BigNumberJson): BigNumberJson =>
-  ({ _hex: toBN(n).toHexString() });
+export const toBN = (n: BigNumberish | BigNumberJson): BigNumber =>
+  bigNumberify(n && (n as BigNumberJson)._hex ? (n as BigNumberJson)._hex : n.toString());
+
+export const toBNJson = (n: BigNumberish | BigNumberJson): BigNumberJson => ({
+  _hex: toBN(n).toHexString(),
+});
 
 export const getBigNumberError = (value: any): string | undefined =>
   isBN(value) ? undefined : `Value "${value}" is not a BigNumber`;
