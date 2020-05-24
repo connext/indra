@@ -129,6 +129,7 @@ export interface IStoreService extends IWatcherStoreService {
   restore(): Promise<void>;
 
   init(): Promise<void>;
+  close(): Promise<void>;
 }
 
 // TODO: merge with IStoreService

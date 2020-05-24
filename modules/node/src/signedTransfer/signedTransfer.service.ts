@@ -76,11 +76,10 @@ export class SignedTransferService {
       userIdentifier,
     );
 
-    // TODO: could there be more than 1? how to handle that case?
-    let [senderAppBadType] = await this.signedTransferRepository.findSignedTransferAppsByPaymentId(
+    let senderAppBadType = await this.signedTransferRepository.findInstalledSignedTransferAppsByPaymentId(
       paymentId,
     );
-    if (!senderAppBadType) {
+    if (!senderAppBadType || senderAppBadType.type === AppType.REJECTED) {
       throw new Error(`No sender app installed for paymentId: ${paymentId}`);
     }
 
@@ -103,8 +102,27 @@ export class SignedTransferService {
         amount,
         assetId,
       };
-      this.log.warn(`Found existing signed transfer app, returning: ${stringify(result)}`);
-      return result;
+      switch (existing.type) {
+        case AppType.INSTANCE: {
+          this.log.warn(`Found existing signed transfer app, returning: ${stringify(result)}`);
+          return result;
+        }
+        case AppType.PROPOSAL: {
+          this.log.warn(
+            `Found existing signed transfer app proposal ${existing.identityHash}, rejecting and continuing`,
+          );
+          await this.cfCoreService.rejectInstallApp(
+            existing.identityHash,
+            receiverChannel.multisigAddress,
+          );
+          break;
+        }
+        default: {
+          this.log.warn(
+            `Found existing app with payment id with incorrect type: ${existing.type}, proceeding to propose new app`,
+          );
+        }
+      }
     }
 
     const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
@@ -117,6 +135,9 @@ export class SignedTransferService {
 
     if (freeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
+      this.log.warn(
+        `Collateralizing ${userIdentifier} before proceeding with signed transfer payment`,
+      );
       const deposit = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
         userIdentifier,
         assetId,
@@ -172,9 +193,6 @@ export class SignedTransferService {
       amount,
       assetId,
     };
-
-    // kick off a rebalance before finishing
-    this.channelService.rebalance(receiverChannel, assetId);
 
     this.log.info(
       `installSignedTransferReceiverApp for ${userIdentifier} paymentId ${paymentId} complete: ${JSON.stringify(

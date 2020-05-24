@@ -1,4 +1,10 @@
-import { IConnextClient, BigNumberish, BigNumber, DepositAppState } from "@connext/types";
+import {
+  IConnextClient,
+  BigNumberish,
+  BigNumber,
+  DepositAppState,
+  EventNames,
+} from "@connext/types";
 import { ERC20 } from "@connext/contracts";
 import { delay } from "@connext/utils";
 import { Contract, constants } from "ethers";
@@ -189,9 +195,20 @@ describe("Deposits", () => {
       client: ONE,
       assetId: AddressZero,
     };
-    await client.deposit({ amount: TWO, assetId: expected.assetId });
-    await client.withdraw({ amount: TWO, assetId: expected.assetId });
-    await client.deposit({ amount: expected.client, assetId: expected.assetId });
+    await new Promise(async (resolve, reject) => {
+      client.once(EventNames.WITHDRAWAL_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      client.once(EventNames.DEPOSIT_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      client.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT, (msg) =>
+        reject(new Error(msg.data.error)),
+      );
+      client.once(EventNames.INSTALL_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      client.once(EventNames.UPDATE_STATE_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      client.once(EventNames.UNINSTALL_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      await client.deposit({ amount: TWO, assetId: expected.assetId });
+      await client.withdraw({ amount: TWO, assetId: expected.assetId });
+      await client.deposit({ amount: expected.client, assetId: expected.assetId });
+      resolve();
+    });
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
   });

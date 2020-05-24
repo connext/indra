@@ -98,7 +98,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // safe to do here, nothing is signed or written to store
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
@@ -108,6 +108,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.initiator,
       } as InstallMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
     logTime(log, substart, `[${processID}] Validated app ${newAppInstance.identityHash}`);
     substart = Date.now();
 
@@ -297,7 +300,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // safe to do here, nothing is signed or written to store
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
@@ -307,6 +310,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.responder,
       } as InstallMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
     logTime(log, substart, `[${processID}] Validated app ${newAppInstance.identityHash}`);
     substart = Date.now();
 

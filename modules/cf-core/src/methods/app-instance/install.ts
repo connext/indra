@@ -19,6 +19,7 @@ import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
+import RpcRouter from "../../rpc-router";
 
 /**
  * This converts a proposed app instance to an installed app instance while
@@ -65,10 +66,11 @@ export class InstallAppInstanceController extends NodeController {
     params: MethodParams.Install,
     preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.Install> {
-    const { protocolRunner, publicIdentifier } = requestHandler;
+    const { protocolRunner, publicIdentifier, router } = requestHandler;
 
     const postProtocolChannel = await install(
       preProtocolStateChannel!,
+      router,
       protocolRunner,
       params,
       publicIdentifier,
@@ -89,6 +91,7 @@ export class InstallAppInstanceController extends NodeController {
 
 export async function install(
   preProtocolStateChannel: StateChannel,
+  router: RpcRouter,
   protocolRunner: ProtocolRunner,
   params: MethodParams.Install,
   initiatorIdentifier: PublicIdentifier,
@@ -97,6 +100,7 @@ export async function install(
   const isSame = initiatorIdentifier === proposal.initiatorIdentifier;
 
   const { channel: postProtocolChannel } = await protocolRunner.initiateProtocol(
+    router,
     ProtocolNames.install,
     {
       appInitiatorIdentifier: proposal.initiatorIdentifier,

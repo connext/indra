@@ -20,6 +20,7 @@ import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
+import RpcRouter from "../../rpc-router";
 
 export class UninstallController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_uninstall)
@@ -69,11 +70,12 @@ export class UninstallController extends NodeController {
     params: MethodParams.Uninstall,
     preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.Uninstall> {
-    const { protocolRunner, publicIdentifier } = requestHandler;
+    const { protocolRunner, publicIdentifier, router } = requestHandler;
     const { appIdentityHash } = params;
 
     const updatedChannel = await uninstallAppInstanceFromChannel(
       preProtocolStateChannel!,
+      router,
       protocolRunner,
       publicIdentifier,
       preProtocolStateChannel!.userIdentifiers.find((id) => id !== publicIdentifier)!,
@@ -104,6 +106,7 @@ export class UninstallController extends NodeController {
 
 export async function uninstallAppInstanceFromChannel(
   stateChannel: StateChannel,
+  router: RpcRouter,
   protocolRunner: ProtocolRunner,
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
@@ -112,6 +115,7 @@ export async function uninstallAppInstanceFromChannel(
   const appInstance = stateChannel.getAppInstance(appIdentityHash);
 
   const { channel: updatedChannel } = await protocolRunner.initiateProtocol(
+    router,
     ProtocolNames.uninstall,
     {
       initiatorIdentifier,

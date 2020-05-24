@@ -85,7 +85,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       meta,
     };
 
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
@@ -95,6 +95,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         stateChannel: preProtocolStateChannel!.toJson(),
       } as ProposeMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
     logTime(log, substart, `[${processID}] Validated proposal`);
     substart = Date.now();
 
@@ -245,7 +248,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderDepositAssetId: responderDepositAssetId || CONVENTION_FOR_ETH_ASSET_ID,
     };
 
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
@@ -255,6 +258,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         stateChannel: preProtocolStateChannel!.toJson(),
       } as ProposeMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
     logTime(log, substart, `[${processID}] Validated proposal`);
     substart = Date.now();
 

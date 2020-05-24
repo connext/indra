@@ -1,7 +1,6 @@
 import { DEFAULT_APP_TIMEOUT, SWAP_STATE_TIMEOUT } from "@connext/apps";
-import { delayAndThrow, stringify } from "@connext/utils";
+import { stringify } from "@connext/utils";
 import {
-  CF_METHOD_TIMEOUT,
   DefaultApp,
   MethodParams,
   PublicParams,
@@ -20,7 +19,7 @@ import {
 } from "@connext/utils";
 import { BigNumber, constants, utils } from "ethers";
 
-import { AbstractController, CLIENT_METHOD_TIMEOUT } from "./AbstractController";
+import { AbstractController } from "./AbstractController";
 
 const { parseEther, formatEther } = utils;
 const { Zero, AddressZero } = constants;
@@ -74,14 +73,9 @@ export class SwapController extends AbstractController {
     this.log.debug(`Swap app installed: ${appIdentityHash}, uninstalling`);
 
     // if app installed, that means swap was accepted now uninstall
+
     try {
-      await Promise.race([
-        delayAndThrow(
-          CLIENT_METHOD_TIMEOUT,
-          `App uninstall took longer than ${CLIENT_METHOD_TIMEOUT / 1000} seconds`,
-        ),
-        this.connext.uninstallApp(appIdentityHash),
-      ]);
+      await this.connext.uninstallApp(appIdentityHash);
     } catch (e) {
       const msg = `Failed to uninstall swap: ${e.stack || e.message}`;
       this.log.error(msg);

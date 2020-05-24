@@ -126,7 +126,7 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       done();
     });
 
-    await proxyFactory.functions.createProxyWithNonce(
+    await proxyFactory.createProxyWithNonce(
       contracts.MinimumViableMultisig,
       new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
         [initiator, responder].map((x) => x.address),

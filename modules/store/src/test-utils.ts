@@ -184,6 +184,7 @@ export const createKeyValueStore = async (
 ): Promise<KeyValueStorage> => {
   const cStore = await createConnextStore(type, opts);
   await cStore.internalStore.init();
+  await cStore.internalStore.clear();
   return cStore.internalStore;
 };
 

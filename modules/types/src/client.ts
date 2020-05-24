@@ -57,6 +57,7 @@ export interface IConnextClient {
   once(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
   emit(event: EventNames | MethodName, data: any): boolean;
   removeListener(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
+  removeAllListeners(event?: EventNames | MethodName): void;
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS

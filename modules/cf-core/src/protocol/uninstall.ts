@@ -50,7 +50,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
@@ -60,6 +60,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         stateChannel: preProtocolStateChannel.toJson(),
       } as UninstallMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
     logTime(log, substart, `[${processID}] Validated uninstall request`);
     substart = Date.now();
 
@@ -155,7 +158,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
@@ -165,6 +168,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         stateChannel: preProtocolStateChannel.toJson(),
       } as UninstallMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
     logTime(log, substart, `[${processID}] Validated uninstall request`);
     substart = Date.now();
 

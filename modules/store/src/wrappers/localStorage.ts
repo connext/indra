@@ -16,6 +16,10 @@ export class WrappedLocalStorage implements WrappedStorage {
     return Promise.resolve();
   }
 
+  close(): Promise<void> {
+    return Promise.resolve();
+  }
+
   async getItem<T>(key: string): Promise<T | undefined> {
     const item = this.localStorage.getItem(`${this.prefix}${this.separator}${key}`);
     return safeJsonParse(item);
@@ -30,8 +34,10 @@ export class WrappedLocalStorage implements WrappedStorage {
   }
 
   async getKeys(): Promise<string[]> {
-    const relevantKeys = Object.keys(this.localStorage).filter(key => key.startsWith(this.prefix));
-    return relevantKeys.map(key => key.split(`${this.prefix}${this.separator}`)[1]);
+    const relevantKeys = Object.keys(this.localStorage).filter((key) =>
+      key.startsWith(this.prefix),
+    );
+    return relevantKeys.map((key) => key.split(`${this.prefix}${this.separator}`)[1]);
   }
 
   async getEntries(): Promise<[string, any][]> {

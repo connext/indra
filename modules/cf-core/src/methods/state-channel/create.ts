@@ -80,11 +80,11 @@ export class CreateChannelController extends NodeController {
     params: MethodParams.CreateChannel,
   ) {
     const { owners } = params;
-    const { publicIdentifier, protocolRunner, outgoing } = requestHandler;
+    const { publicIdentifier, protocolRunner, outgoing, router } = requestHandler;
 
     const [responderIdentifier] = owners.filter((x) => x !== publicIdentifier);
 
-    await protocolRunner.runSetupProtocol({
+    await protocolRunner.runSetupProtocol(router, {
       multisigAddress,
       responderIdentifier,
       initiatorIdentifier: publicIdentifier,

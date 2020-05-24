@@ -111,8 +111,31 @@ export class HashLockTransferService {
     const existing = await this.findReceiverAppByLockHashAndAssetId(appState.lockHash, assetId);
     if (existing) {
       const result = { appIdentityHash: existing.identityHash };
-      this.log.warn(`Found existing hashlock transfer app, returning: ${stringify(result)}`);
-      return result;
+      switch (existing.type) {
+        case AppType.INSTANCE: {
+          this.log.warn(
+            `Found existing hashlock transfer app for lockhash ${
+              appState.lockHash
+            }, returning: ${stringify(result)}`,
+          );
+          return result;
+        }
+        case AppType.PROPOSAL: {
+          this.log.warn(
+            `Found existing hashlock transfer app proposal for lockhash ${appState.lockHash}: ${existing.identityHash}, rejecting and continuing`,
+          );
+          await this.cfCoreService.rejectInstallApp(
+            existing.identityHash,
+            receiverChannel.multisigAddress,
+          );
+          break;
+        }
+        default: {
+          this.log.warn(
+            `Found existing app with with incorrect type: ${existing.type}, proceeding to propose new app`,
+          );
+        }
+      }
     }
 
     const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
@@ -174,9 +197,6 @@ export class HashLockTransferService {
     const response = {
       appIdentityHash: receiverAppInstallRes.appIdentityHash,
     };
-
-    // kick off a rebalance before finishing
-    this.channelService.rebalance(receiverChannel, assetId);
 
     this.log.info(
       `installHashLockTransferReceiverApp from ${senderIdentifier} to ${receiverIdentifier} assetId ${assetId} completed: ${JSON.stringify(

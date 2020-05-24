@@ -241,7 +241,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       done();
     });
 
-    await proxyFactory.functions.createProxyWithNonce(
+    await proxyFactory.createProxyWithNonce(
       contracts.MinimumViableMultisig,
       new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
         signers.map((x) => x.address),

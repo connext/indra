@@ -92,7 +92,7 @@ describe("Sync", () => {
   });
 
   describe("Sync::propose", () => {
-    let identityHash;
+    let identityHash: string;
     beforeEach(async () => {
       // propose-specific setup
       messagingServiceA = new MemoryMessagingServiceWithLimits(sharedEventEmitter, 1, "propose");
