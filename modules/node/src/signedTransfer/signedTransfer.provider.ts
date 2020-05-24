@@ -1,5 +1,9 @@
 import { MessagingService } from "@connext/messaging";
-import { NodeResponses, SimpleSignedTransferAppState } from "@connext/types";
+import {
+  NodeResponses,
+  SimpleSignedTransferAppState,
+  SimpleSignedTransferAppName,
+} from "@connext/types";
 import { bigNumberifyJson } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
@@ -10,6 +14,7 @@ import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
+import { TransferService } from "../transfer/transfer.service";
 
 import { SignedTransferService } from "./signedTransfer.service";
 
@@ -19,6 +24,7 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
     log: LoggerService,
     messaging: MessagingService,
     private readonly signedTransferService: SignedTransferService,
+    private readonly transferService: TransferService,
   ) {
     super(log, messaging);
     log.setContext("LinkedTransferMessaging");
@@ -32,9 +38,11 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
     this.log.info(`Got resolve signed transfer request with paymentId: ${data.paymentId}`);
-    const response = await this.signedTransferService.installSignedTransferReceiverApp(
+
+    const response = await this.transferService.resolveByPaymentId(
       pubId,
       data.paymentId,
+      SimpleSignedTransferAppName,
     );
     return {
       ...response,

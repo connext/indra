@@ -152,10 +152,19 @@ type ResolveConditionParameters =
   | ResolveLinkedTransferParameters
   | ResolveSignedTransferParameters;
 
-type ResolveConditionResponse =
-  | ResolveHashLockTransferResponse
-  | ResolveLinkedTransferResponse
-  | ResolveSignedTransferResponse;
+// type ResolveConditionResponse =
+//   | ResolveHashLockTransferResponse
+//   | ResolveLinkedTransferResponse
+//   | ResolveSignedTransferResponse;
+
+type ResolveConditionResponse = {
+  appIdentityHash: Bytes32;
+  assetId: Address;
+  amount: BigNumber;
+  paymentId: Bytes32;
+  sender: PublicIdentifier;
+  meta?: any;
+};
 
 ////////////////////////////////////////
 // swap

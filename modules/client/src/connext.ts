@@ -40,10 +40,9 @@ import {
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
   stringify,
-  toBN,
 } from "@connext/utils";
 import { Contract, providers } from "ethers";
-import { AddressZero } from "ethers/constants";
+import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
@@ -349,10 +348,12 @@ export class ConnextClient implements IConnextClient {
       }
       case ConditionalTransferTypes.HashLockTransfer: {
         params.assetId = params.assetId ? params.assetId : AddressZero;
-        return this.resolveHashLockTransferController.resolveHashLockTransfer(params);
+        const res = await this.resolveHashLockTransferController.resolveHashLockTransfer(params);
+        return { ...res, paymentId: HashZero };
       }
       case ConditionalTransferTypes.SignedTransfer: {
-        return this.resolveSignedTransferController.resolveSignedTransfer(params);
+        const res = await this.resolveSignedTransferController.resolveSignedTransfer(params);
+        return { ...res, paymentId: params.paymentId };
       }
       default:
         throw new Error(`Condition type ${(params as any).conditionType} invalid`);
