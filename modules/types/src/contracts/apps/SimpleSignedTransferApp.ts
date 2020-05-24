@@ -31,6 +31,8 @@ export type SimpleSignedTransferAppAction = {
 };
 
 export const SimpleSignedTransferAppActionEncoding = tidy(`tuple(
-  bytes32 data,
+  bytes32 requestCID,
+  bytes32 responseCID,
+  bytes32 subgraphID,
   bytes signature
 )`);
