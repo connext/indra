@@ -1,12 +1,4 @@
-import {
-  MethodParams,
-  DepositAppState,
-  UninstallMiddlewareContext,
-  ProtocolRoles,
-  CONVENTION_FOR_ETH_ASSET_ID,
-  ProposeMiddlewareContext,
-  Address,
-} from "@connext/types";
+import { MethodParams, DepositAppState, CONVENTION_FOR_ETH_ASSET_ID } from "@connext/types";
 import {
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
