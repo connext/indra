@@ -27,12 +27,19 @@ contract SimpleSignedTransferApp is CounterfactualApp {
         bytes signature;
     }
 
+    // EIP-712 DOMAIN SEPERATOR CONSTANTS
+ 
     bytes32 private constant DOMAIN_TYPE_HASH = keccak256(
         "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)"
     );
     bytes32 private constant DOMAIN_NAME_HASH = keccak256("Graph Protocol");
     bytes32 private constant DOMAIN_VERSION_HASH = keccak256("0");
     bytes32 private constant DOMAIN_SALT = 0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188679b9c2;
+    address private constant DOMAIN_DISPUTE_MANAGER_ADDRESS = 0xe1213b37ef8367aad687a493eff4b3637318fc23; // TODO: Needs to be updated
+
+
+    // EIP-712 RECEIPT HASH CONSTANT
+    
     bytes32 private constant RECEIPT_TYPE_HASH = keccak256(
         "Receipt(bytes32 requestCID,bytes32 responseCID,bytes32 subgraphID)"
     );
@@ -52,7 +59,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
                 DOMAIN_NAME_HASH,
                 DOMAIN_VERSION_HASH,
                 _getChainID(),
-                address(this),
+                DOMAIN_DISPUTE_MANAGER_ADDRESS,
                 DOMAIN_SALT
             )
        );
