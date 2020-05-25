@@ -46,8 +46,8 @@ export default {
     const NAME = `Bot #${argv.concurrencyIndex}`;
     const log = new ColorfulLogger(NAME, 4, true, argv.concurrencyIndex);
     log.info(`Launched bot ${NAME}`);
-    const TRANSFER_AMT = parseEther("0.001");
-    const DEPOSIT_AMT = parseEther("0.01");
+    const TRANSFER_AMT = parseEther("0.0001");
+    const DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 0.05 eth
     const ethUrl = process.env.INDRA_ETH_RPC_URL;
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
@@ -103,6 +103,8 @@ export default {
       },
     );
 
+    let depositLock;
+
     // Setup agent logic to transfer on an interval
     setInterval(async () => {
       log.debug(`Started interval`);
@@ -110,14 +112,22 @@ export default {
       // Deposit if agent is out of funds
       const balance = await client.getFreeBalance(AddressZero);
       log.debug(`Bot balance: ${balance[client.signerAddress]}`);
-      if (balance[client.signerAddress].lt(TRANSFER_AMT)) {
+      if (balance[client.signerAddress].lt(TRANSFER_AMT) && !depositLock) {
+        // set lock to avoid concurrent deposits on a loop
+        depositLock = true;
         log.info(
           `Balance too low: ${balance[
             client.signerAddress
           ].toString()} < ${TRANSFER_AMT.toString()}, depositing...`,
         );
-        await client.deposit({ amount: DEPOSIT_AMT, assetId: AddressZero });
-        log.info(`Finished depositing`);
+        try {
+          await client.deposit({ amount: DEPOSIT_AMT, assetId: AddressZero });
+          log.info(`Finished depositing`);
+        } catch (e) {
+          throw e
+        } finally {
+          depositLock = false;
+        }
         const balanceAfterDeposit = await client.getFreeBalance(AddressZero);
         log.info(`Bot balance after deposit: ${balanceAfterDeposit[client.signerAddress]}`);
       }
@@ -126,35 +136,34 @@ export default {
       const receiverIdentifier = await getRandomAgentIdentifierFromIndex(client.publicIdentifier);
 
       // If this is the first bot, dont transfer and instead wait for the others to come up
-      if (!receiverIdentifier) {
-        log.debug(`No receiver identifier received`);
-        return;
-      }
+      if (receiverIdentifier) {
+        const receiverSigner = getSignerAddressFromPublicIdentifier(receiverIdentifier);
+        const paymentId = getRandomBytes32();
+        log.info(
+          `Send conditional transfer ${paymentId} for ${utils.formatEther(
+            TRANSFER_AMT,
+          )} ETH to ${receiverIdentifier} (${receiverSigner})`,
+        );
 
-      const receiverSigner = getSignerAddressFromPublicIdentifier(receiverIdentifier);
-      const paymentId = getRandomBytes32();
-      log.info(
-        `Send conditional transfer ${paymentId} for ${utils.formatEther(
-          TRANSFER_AMT,
-        )} ETH to ${receiverIdentifier} (${receiverSigner})`,
-      );
-
-      try {
-        // Send transfer
-        log.debug(`Starting transfer to ${receiverIdentifier} with signer ${receiverSigner}`);
-        await client.conditionalTransfer({
-          paymentId,
-          amount: TRANSFER_AMT,
-          conditionType: ConditionalTransferTypes.SignedTransfer,
-          signer: receiverSigner,
-          assetId: AddressZero,
-          recipient: receiverIdentifier,
-          meta: { info: `Transfer from ${NAME}` },
-        });
-        log.info(`Conditional transfer ${paymentId} sent`);
-      } catch (err) {
-        console.error(`Error sending tranfer: ${err.message}`);
+        try {
+          // Send transfer
+          log.debug(`Starting transfer to ${receiverIdentifier} with signer ${receiverSigner}`);
+          await client.conditionalTransfer({
+            paymentId,
+            amount: TRANSFER_AMT,
+            conditionType: ConditionalTransferTypes.SignedTransfer,
+            signer: receiverSigner,
+            assetId: AddressZero,
+            recipient: receiverIdentifier,
+            meta: { info: `Transfer from ${NAME}` },
+          });
+          log.info(`Conditional transfer ${paymentId} sent`);
+        } catch (err) {
+          console.error(`Error sending tranfer: ${err.message}`);
+        }
       }
-    }, argv.interval);
+      // add slight randomness to interval so that it's somewhere between 
+      // 75% and 125% of inputted argument
+    }, (argv.interval*0.75) + (Math.random()*(argv.interval*0.5)));
   },
 };
