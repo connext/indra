@@ -49,6 +49,8 @@ export class LinkedTransferController extends AbstractController {
       submittedMeta.sender = this.connext.publicIdentifier;
     }
 
+    submittedMeta.paymentId = paymentId;
+
     const linkedHash = solidityKeccak256(
       ["uint256", "address", "bytes32", "bytes32"],
       [amount, assetId, paymentId, preImage],

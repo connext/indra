@@ -1,8 +1,5 @@
 import { getLocalStore } from "@connext/store";
-import {
-  ConditionalTransferTypes,
-  IConnextClient,
-} from "@connext/types";
+import { ConditionalTransferTypes, IConnextClient } from "@connext/types";
 import { ChannelSigner, getRandomBytes32 } from "@connext/utils";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -28,7 +25,7 @@ import {
 } from "../util";
 import { getNatsClient } from "../util/nats";
 
-describe("Async Transfers", () => {
+describe.only("Async Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;

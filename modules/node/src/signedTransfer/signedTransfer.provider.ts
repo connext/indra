@@ -12,9 +12,6 @@ import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
-import { CFCoreService } from "../cfCore/cfCore.service";
-import { ChannelRepository } from "../channel/channel.repository";
-import { TransferService } from "../transfer/transfer.service";
 
 import { SignedTransferService } from "./signedTransfer.service";
 
@@ -24,30 +21,9 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
     log: LoggerService,
     messaging: MessagingService,
     private readonly signedTransferService: SignedTransferService,
-    private readonly transferService: TransferService,
   ) {
     super(log, messaging);
     log.setContext("LinkedTransferMessaging");
-  }
-
-  async resolveSignedTransfer(
-    pubId: string,
-    data: { paymentId: string },
-  ): Promise<NodeResponses.ResolveSignedTransfer> {
-    if (!data.paymentId) {
-      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
-    }
-    this.log.info(`Got resolve signed transfer request with paymentId: ${data.paymentId}`);
-
-    const response = await this.transferService.resolveByPaymentId(
-      pubId,
-      data.paymentId,
-      SimpleSignedTransferAppName,
-    );
-    return {
-      ...response,
-      amount: response.amount,
-    };
   }
 
   async getSignedTransferByPaymentId(
@@ -89,11 +65,6 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "*.transfer.install-signed",
-      this.authService.parseIdentifier(this.resolveSignedTransfer.bind(this)),
-    );
-
-    await super.connectRequestReponse(
       "*.transfer.get-signed",
       this.authService.parseIdentifier(this.getSignedTransferByPaymentId.bind(this)),
     );
@@ -101,26 +72,19 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
 }
 
 export const signedTransferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [
-    AuthService,
-    LoggerService,
-    MessagingProviderId,
-    SignedTransferService,
-    CFCoreService,
-    ChannelRepository,
-  ],
+  inject: [AuthService, LoggerService, MessagingProviderId, SignedTransferService],
   provide: LinkedTransferProviderId,
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
     messaging: MessagingService,
-    SignedTransferService: SignedTransferService,
+    signedTransferService: SignedTransferService,
   ): Promise<void> => {
     const transfer = new SignedTransferMessaging(
       authService,
       logging,
       messaging,
-      SignedTransferService,
+      signedTransferService,
     );
     await transfer.setupSubscriptions();
   },

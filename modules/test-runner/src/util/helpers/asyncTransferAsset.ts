@@ -111,7 +111,7 @@ export async function asyncTransferAsset(
     receiverIdentifier: clientB.publicIdentifier,
     senderIdentifier: clientA.publicIdentifier,
     status: LinkedTransferStatus.COMPLETED,
-    meta: { ...SENDER_INPUT_META, sender: clientA.publicIdentifier },
+    meta: { ...SENDER_INPUT_META, sender: clientA.publicIdentifier, paymentId },
   });
   expect(paymentA.encryptedPreImage).to.be.ok;
 

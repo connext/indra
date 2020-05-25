@@ -82,37 +82,54 @@ export class TransferService {
     installerChannel: Channel,
     transferType: ConditionalTransferAppNames,
   ): Promise<void> {
-    let paymentId: string;
+    this.log.info(
+      `Start transferAppInstallFlow with params ${stringify({
+        appIdentityHash,
+        registryAppInfo,
+        proposeInstallParams,
+        from,
+        installerChannel,
+        transferType,
+      })}`,
+    );
     const supportedAddresses = this.configService.getSupportedTokenAddresses();
 
     try {
+      this.log.debug(`Start commonAppProposalValidation`);
       commonAppProposalValidation(proposeInstallParams, registryAppInfo, supportedAddresses);
+      this.log.debug(`Finish commonAppProposalValidation`);
 
       switch (transferType) {
         case ConditionalTransferAppNames.HashLockTransferApp: {
           const blockNumber = await this.configService.getEthProvider().getBlockNumber();
+          this.log.debug(`Start validateHashLockTransferApp`);
           validateHashLockTransferApp(
             proposeInstallParams,
             blockNumber,
             from,
             this.cfCoreService.cfCore.publicIdentifier,
           );
+          this.log.debug(`Finish validateHashLockTransferApp`);
           break;
         }
         case ConditionalTransferAppNames.SimpleLinkedTransferApp: {
+          this.log.debug(`Start validateSimpleLinkedTransferApp`);
           validateSimpleLinkedTransferApp(
             proposeInstallParams,
             from,
             this.cfCoreService.cfCore.publicIdentifier,
           );
+          this.log.debug(`Finish validateSimpleLinkedTransferApp`);
           break;
         }
         case ConditionalTransferAppNames.SimpleSignedTransferApp: {
+          this.log.debug(`Start validateSignedTransferApp`);
           validateSignedTransferApp(
             proposeInstallParams,
             from,
             this.cfCoreService.cfCore.publicIdentifier,
           );
+          this.log.debug(`Finish validateSignedTransferApp`);
           break;
         }
         default: {
@@ -123,7 +140,9 @@ export class TransferService {
 
       // install for receiver or error
       // https://github.com/ConnextProject/indra/issues/942
+      const paymentId = proposeInstallParams.meta.paymentId;
       try {
+        this.log.info(`Start installReceiverAppByPaymentId for paymentId ${paymentId}`);
         await this.installReceiverAppByPaymentId(
           from,
           proposeInstallParams.meta["recipient"],
@@ -133,6 +152,7 @@ export class TransferService {
           proposeInstallParams.meta,
           transferType,
         );
+        this.log.info(`Finish installReceiverAppByPaymentId for paymentId ${paymentId}`);
       } catch (e) {
         this.log.error(`Caught error in transferAppInstallFlow: ${e.message}`);
         const allowed = getTransferTypeFromAppName(transferType);
@@ -141,10 +161,12 @@ export class TransferService {
         }
       }
 
+      this.log.info(`Start install sender app for paymentId ${paymentId}`);
       const { appInstance } = await this.cfCoreService.installApp(
         appIdentityHash,
         installerChannel.multisigAddress,
       );
+      this.log.info(`Finish install sender app for paymentId ${paymentId}`);
 
       const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appIdentityHash}.install`;
       await this.messagingService.publish(installSubject, appInstance);

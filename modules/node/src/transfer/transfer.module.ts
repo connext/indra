@@ -10,6 +10,7 @@ import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
+import { DepositModule } from "../deposit/deposit.module";
 
 import { transferProviderFactory } from "./transfer.provider";
 import { TransferService } from "./transfer.service";
@@ -23,6 +24,7 @@ import { TransferRepository } from "./transfer.repository";
     CFCoreModule,
     ChannelModule,
     ConfigModule,
+    DepositModule,
     LoggerModule,
     LinkedTransferModule,
     MessagingModule,
