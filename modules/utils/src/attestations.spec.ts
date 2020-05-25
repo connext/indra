@@ -1,6 +1,5 @@
 import { signReceipt, getTestVerifyingContract, getTestReceiptToSign } from "./attestations";
 import { Wallet } from "ethers";
-import { joinSignature } from "ethers/utils";
 
 describe("Attestations", () => {
   test("attestations are correct", async () => {
@@ -22,11 +21,8 @@ describe("Attestations", () => {
       requestCID: receipt.requestCID,
       responseCID: receipt.responseCID,
       subgraphID: receipt.subgraphID,
-      signature: joinSignature({
-        v: 28,
-        r: "0x5eb1e2428518b5fac8904e3239b6bda39cd52ecd054b271b94ae6145976c4ef3",
-        s: "0x38f0f5c725bef4c799d440a2b846d09ab268b23fd363964445643267d789cfd2",
-      }),
+      signature:
+        "0xeeed4eda0dbe4adcd28fb2d810b4255ffe9aaf7ceb23a42026e885fad89ae1db2ec2a74e59151a2d91f986e9b1a45c9d6c5afa82f6eec0ea9e8f8fc486715bb61b",
     });
   });
 });
