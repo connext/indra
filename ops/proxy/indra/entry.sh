@@ -69,7 +69,7 @@ done
 # Kill the loading message server
 kill "$loading_pid" && pkill nc
 
-if [[ -z "$DOMAINNAME" || "$DOMAINNAME" == "localhost" ]]
+if [[ -z "$DOMAINNAME" ]]
 then
   echo "Entrypoint finished, executing haproxy..."; echo
   exec haproxy -db -f http.cfg
