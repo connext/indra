@@ -1,9 +1,8 @@
 import PQueue from "p-queue";
-import { Wallet } from "ethers";
 import * as utils from "ethers/utils";
-import { ConditionalTransferTypes, IConnextClient, BigNumber } from "@connext/types";
-import { delay, getPublicIdentifierFromPublicKey, stringify, ColorfulLogger } from "@connext/utils";
-import { AddressZero, Zero } from "ethers/constants";
+import { ConditionalTransferTypes, IConnextClient, BigNumber, PublicParams } from "@connext/types";
+import { delay, ColorfulLogger, getTestVerifyingContract } from "@connext/utils";
+import { AddressZero } from "ethers/constants";
 import { createClient, fundChannel } from "../util";
 
 const generatePaymentId = () => utils.hexlify(utils.randomBytes(32));
@@ -12,13 +11,13 @@ const TRANSFER_AMOUNT = utils.parseEther("0.00001");
 const DEPOSIT_AMOUNT = utils.parseEther("0.1");
 
 describe("Concurrent transfers", async () => {
-  let privateKey;
+  // let privateKey;
   let channel;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
   let subgraphChannels;
 
-  before(async () => {
+  beforeEach(async () => {
     // let wallet = Wallet.fromMnemonic(
     //   "favorite plunge fatigue crucial decorate bottom hour veteran embark gravity devote business",
     // );
@@ -73,6 +72,7 @@ describe("Concurrent transfers", async () => {
           let paymentId = generatePaymentId();
 
           // Send payment and query
+          // eslint-disable-next-line no-loop-func
           queue.add(async () => {
             console.log(paymentId, "Send payment");
             try {
@@ -81,10 +81,11 @@ describe("Concurrent transfers", async () => {
                 amount: TRANSFER_AMOUNT,
                 conditionType: ConditionalTransferTypes.SignedTransfer,
                 signer: subgraphChannel.signer,
+                verifyingContract: getTestVerifyingContract(),
                 recipient,
                 assetId: AddressZero,
                 meta: { info: "Query payment" },
-              });
+              } as PublicParams.SignedTransfer);
             } catch (e) {
               console.error(`Failed to send payment: ${e}`);
             }

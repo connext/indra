@@ -1,5 +1,11 @@
 import { EventNames, EventPayloads, ConditionalTransferTypes, PublicParams } from "@connext/types";
-import { ColorfulLogger, stringify, ChannelSigner } from "@connext/utils";
+import {
+  ColorfulLogger,
+  stringify,
+  ChannelSigner,
+  getTestVerifyingContract,
+  getTestReceiptToSign,
+} from "@connext/utils";
 import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 import { Argv } from "yargs";
@@ -83,12 +89,8 @@ export default {
           return;
         }
         const signer = new ChannelSigner(argv.privateKey, ethUrl);
-        const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
-        const receipt = {
-          requestCID: "",
-          responseCID: "",
-          subgraphID: "",
-        };
+        const verifyingContract = getTestVerifyingContract();
+        const receipt = getTestReceiptToSign();
         const signature = await signer.signReceipt(receipt, verifyingContract);
         const attestation = {
           ...receipt,

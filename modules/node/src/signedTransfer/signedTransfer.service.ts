@@ -7,9 +7,14 @@ import {
   SimpleSignedTransferAppState,
   Address,
 } from "@connext/types";
-import { bigNumberifyJson, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import {
+  bigNumberifyJson,
+  getSignerAddressFromPublicIdentifier,
+  stringify,
+  getTestVerifyingContract,
+} from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { Zero, AddressZero } from "ethers/constants";
+import { Zero } from "ethers/constants";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -164,7 +169,7 @@ export class SignedTransferService {
       ],
       paymentId,
       signer: senderApp.latestState.signer,
-      verifyingContract: "0x1d85568eeabad713fbb5293b45ea066e552a90de",
+      verifyingContract: getTestVerifyingContract(),
       finalized: false,
     };
 

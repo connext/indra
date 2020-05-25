@@ -8,7 +8,11 @@ import {
   SignedTransferStatus,
   EventPayloads,
 } from "@connext/types";
-import { getRandomChannelSigner } from "@connext/utils";
+import {
+  getRandomChannelSigner,
+  getTestVerifyingContract,
+  getTestReceiptToSign,
+} from "@connext/utils";
 import { AddressZero } from "ethers/constants";
 import { hexlify, randomBytes } from "ethers/utils";
 import { providers } from "ethers";
@@ -68,6 +72,7 @@ describe("Signed Transfers", () => {
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
         signer: signerAddress,
+        verifyingContract: getTestVerifyingContract(),
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -99,12 +104,8 @@ describe("Signed Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
 
-    const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
-    const receipt = {
-      requestCID: "",
-      responseCID: "",
-      subgraphID: "",
-    };
+    const verifyingContract = getTestVerifyingContract();
+    const receipt = getTestReceiptToSign();
     const signature = await signer.signReceipt(receipt, verifyingContract);
     const attestation = {
       ...receipt,
@@ -167,6 +168,7 @@ describe("Signed Transfers", () => {
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
         signer: signerAddress,
+        verifyingContract: getTestVerifyingContract(),
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -197,12 +199,8 @@ describe("Signed Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
 
-    const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
-    const receipt = {
-      requestCID: "",
-      responseCID: "",
-      subgraphID: "",
-    };
+    const verifyingContract = getTestVerifyingContract();
+    const receipt = getTestReceiptToSign();
     const signature = await signer.signReceipt(receipt, verifyingContract);
     const attestation = {
       ...receipt,
@@ -242,6 +240,7 @@ describe("Signed Transfers", () => {
       conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       signer: signerAddress,
+      verifyingContract: getTestVerifyingContract(),
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
@@ -269,18 +268,15 @@ describe("Signed Transfers", () => {
       conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       signer: signerAddress,
+      verifyingContract: getTestVerifyingContract(),
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
     // disconnect so that it cant be unlocked
     await clientA.messaging.disconnect();
 
-    const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
-    const receipt = {
-      requestCID: "",
-      responseCID: "",
-      subgraphID: "",
-    };
+    const verifyingContract = getTestVerifyingContract();
+    const receipt = getTestReceiptToSign();
     const signature = await signer.signReceipt(receipt, verifyingContract);
     const attestation = {
       ...receipt,
@@ -320,16 +316,13 @@ describe("Signed Transfers", () => {
       conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       signer: signerAddress,
+      verifyingContract: getTestVerifyingContract(),
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
 
     const badSig = hexlify(randomBytes(65));
-    const receipt = {
-      requestCID: "",
-      responseCID: "",
-      subgraphID: "",
-    };
+    const receipt = getTestReceiptToSign();
     const attestation = {
       ...receipt,
       signature: badSig,
@@ -369,6 +362,7 @@ describe("Signed Transfers", () => {
       const start = Date.now();
 
       // TODO: what are these errors
+      // eslint-disable-next-line no-loop-func
       await new Promise(async (res) => {
         clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (data) => {
           res();
@@ -378,7 +372,7 @@ describe("Signed Transfers", () => {
           conditionType: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
           paymentId,
           signer: signerAddress,
-          verifyingContract: "0x1d85568eeabad713fbb5293b45ea066e552a90de",
+          verifyingContract: getTestVerifyingContract(),
           assetId: transfer.assetId,
           meta: { foo: "bar", sender: clientA.publicIdentifier },
           recipient: clientB.publicIdentifier,
@@ -386,17 +380,14 @@ describe("Signed Transfers", () => {
       });
 
       // Including recipient signing in test to match real conditions
-      const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
-      const receipt = {
-        requestCID: "",
-        responseCID: "",
-        subgraphID: "",
-      };
+      const verifyingContract = getTestVerifyingContract();
+      const receipt = getTestReceiptToSign();
       const signature = await signer.signReceipt(receipt, verifyingContract);
       const attestation = {
         ...receipt,
         signature,
       };
+      // eslint-disable-next-line no-loop-func
       await new Promise(async (res) => {
         clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
           res();

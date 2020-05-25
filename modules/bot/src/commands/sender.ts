@@ -7,6 +7,7 @@ import {
   getPublicKeyError,
   getPublicIdentifierError,
   stringify,
+  getTestVerifyingContract,
 } from "@connext/utils";
 import { utils } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -130,6 +131,7 @@ export default {
           amount: TRANSFER_AMT,
           conditionType: ConditionalTransferTypes.SignedTransfer,
           signer: senderSigner,
+          verifyingContract: getTestVerifyingContract(),
           recipient: eventData.sender,
           assetId: AddressZero,
           meta: { info: "Response payment" },
@@ -150,7 +152,7 @@ export default {
       amount: TRANSFER_AMT,
       conditionType: ConditionalTransferTypes.SignedTransfer,
       signer: receiverSigner,
-      verifyingContract: "0x1d85568eeabad713fbb5293b45ea066e552a90de",
+      verifyingContract: getTestVerifyingContract(),
       assetId: AddressZero,
       recipient: receiverIdentifier,
       meta: { info: "Bootstrap payment" },

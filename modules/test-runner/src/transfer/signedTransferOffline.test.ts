@@ -11,7 +11,13 @@ import {
   SEND,
   CLIENT_INSTALL_FAILED,
 } from "../util";
-import { getRandomChannelSigner, toBN, getRandomBytes32 } from "@connext/utils";
+import {
+  getRandomChannelSigner,
+  toBN,
+  getRandomBytes32,
+  getTestVerifyingContract,
+  getTestReceiptToSign,
+} from "@connext/utils";
 import {
   IChannelSigner,
   IConnextClient,
@@ -24,8 +30,7 @@ import {
   ProtocolParams,
 } from "@connext/types";
 import { addressBook } from "@connext/contracts";
-import { Zero, AddressZero } from "ethers/constants";
-import { hexlify, solidityKeccak256 } from "ethers/utils";
+import { Zero } from "ethers/constants";
 
 describe("Signed Transfer Offline", () => {
   const tokenAddress = addressBook[4447].Token.address;
@@ -80,12 +85,8 @@ describe("Signed Transfer Offline", () => {
     resolves: boolean = true,
   ) => {
     const preTransferBalance = await receiver.getFreeBalance(tokenAddress);
-    const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
-    const receipt = {
-      requestCID: "",
-      responseCID: "",
-      subgraphID: "",
-    };
+    const verifyingContract = getTestVerifyingContract();
+    const receipt = getTestReceiptToSign();
     const signature = await receiverSigner.signReceipt(receipt, verifyingContract);
     const attestation = {
       ...receipt,
@@ -170,7 +171,7 @@ describe("Signed Transfer Offline", () => {
       conditionType: ConditionalTransferTypes.SignedTransfer,
       assetId: tokenAddress,
       signer: receiver.signerAddress,
-      verifyingContract: "0x1d85568eeabad713fbb5293b45ea066e552a90de",
+      verifyingContract: getTestVerifyingContract(),
       recipient: receiver.publicIdentifier,
     });
     const postTransferSenderBalance = await sender.getFreeBalance(tokenAddress);

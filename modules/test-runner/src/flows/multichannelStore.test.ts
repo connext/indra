@@ -5,15 +5,20 @@ import {
   PublicParams,
   EventPayloads,
   ConditionalTransferTypes,
+  Address,
 } from "@connext/types";
 import { getPostgresStore } from "@connext/store";
 import { ConnextClient } from "@connext/client";
-import { toBN, getRandomBytes32 } from "@connext/utils";
+import {
+  toBN,
+  getRandomBytes32,
+  getTestVerifyingContract,
+  getTestReceiptToSign,
+} from "@connext/utils";
 import { Sequelize } from "sequelize";
 
 import { createClient, fundChannel, ETH_AMOUNT_MD, expect, env } from "../util";
-import { BigNumber, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
-import { AddressZero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
 
 // NOTE: only groups correct number of promises associated with a payment.
 // there is no validation done to ensure the events correspond to the payments,
@@ -38,11 +43,22 @@ const performConditionalTransfer = async (params: {
   conditionType: ConditionalTransferTypes;
   sender: IConnextClient;
   recipient: IConnextClient;
+  verifyingContract?: Address;
   paymentId?: string;
   secret?: string; // preimage for linked
   meta?: any;
 }): Promise<[string, string]> => {
-  const { ASSET, TRANSFER_AMT, sender, recipient, conditionType, paymentId, secret, meta } = params;
+  const {
+    ASSET,
+    TRANSFER_AMT,
+    sender,
+    recipient,
+    conditionType,
+    verifyingContract,
+    paymentId,
+    secret,
+    meta,
+  } = params;
   let TRANSFER_PARAMS;
   const baseParams = {
     conditionType,
@@ -54,7 +70,10 @@ const performConditionalTransfer = async (params: {
   };
   switch (conditionType) {
     case ConditionalTransferTypes.LinkedTransfer: {
-      TRANSFER_PARAMS = { ...baseParams, preImage: secret || getRandomBytes32() };
+      TRANSFER_PARAMS = {
+        ...baseParams,
+        preImage: secret || getRandomBytes32(),
+      } as PublicParams.LinkedTransfer;
       break;
     }
     case ConditionalTransferTypes.HashLockTransfer: {
@@ -64,7 +83,8 @@ const performConditionalTransfer = async (params: {
       TRANSFER_PARAMS = {
         ...baseParams,
         signer: recipient.signerAddress,
-      };
+        verifyingContract: verifyingContract || getTestVerifyingContract(),
+      } as PublicParams.SignedTransfer;
       break;
     }
   }
@@ -164,17 +184,13 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
   it("should work when clients share the same sequelize instance with a different prefix (1 signed transfer payment sent)", async () => {
     // establish tests constants
     const TRANSFER_AMT = toBN(100);
+    const verifyingContract = getTestVerifyingContract();
 
     // register listener to resolve payment
     recipient.once(
       EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
       async (payload: EventPayloads.SignedTransferCreated) => {
-        const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
-        const receipt = {
-          requestCID: "",
-          responseCID: "",
-          subgraphID: "",
-        };
+        const receipt = getTestReceiptToSign();
         const signature = await recipient.signer.signReceipt(receipt, verifyingContract);
         const attestation = {
           ...receipt,
@@ -191,6 +207,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     await performConditionalTransfer({
       conditionType: ConditionalTransferTypes.SignedTransfer,
       sender,
+      meta: { verifyingContract },
       recipient,
       ASSET,
       TRANSFER_AMT,
@@ -296,12 +313,8 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
       async (payload: EventPayloads.SignedTransferCreated) => {
         console.log(`Got signed transfer event: ${payload.paymentId}`);
-        const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
-        const receipt = {
-          requestCID: "",
-          responseCID: "",
-          subgraphID: "",
-        };
+        const verifyingContract = getTestVerifyingContract();
+        const receipt = getTestReceiptToSign();
         const signature = await recipient.signer.signReceipt(receipt, verifyingContract);
         const attestation = {
           ...receipt,
@@ -333,6 +346,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
           paymentId,
           conditionType: ConditionalTransferTypes.SignedTransfer,
           signer: recipient.signerAddress,
+          verifyingContract: getTestVerifyingContract(),
           assetId: ASSET,
           recipient: recipient.publicIdentifier,
         } as PublicParams.SignedTransfer);
