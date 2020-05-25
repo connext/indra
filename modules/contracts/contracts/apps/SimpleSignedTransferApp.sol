@@ -2,6 +2,7 @@ pragma solidity 0.6.7;
 pragma experimental "ABIEncoderV2";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "../adjudicator/interfaces/CounterfactualApp.sol";
 import "../funding/libs/LibOutcome.sol";
 
@@ -35,7 +36,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
     bytes32 private constant DOMAIN_NAME_HASH = keccak256("Graph Protocol");
     bytes32 private constant DOMAIN_VERSION_HASH = keccak256("0");
     bytes32 private constant DOMAIN_SALT = 0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188679b9c2;
-    address private constant DOMAIN_DISPUTE_MANAGER_ADDRESS = 0xe1213b37ef8367aad687a493eff4b3637318fc23; // TODO: Needs to be updated
+    address private constant DOMAIN_DISPUTE_MANAGER_ADDRESS = 0xe1213B37EF8367aaD687a493EFF4b3637318fc23; // TODO: Needs to be updated
 
 
     // EIP-712 RECEIPT HASH CONSTANT
@@ -53,21 +54,20 @@ contract SimpleSignedTransferApp is CounterfactualApp {
     }
 
     function encodeHashReceipt(bytes memory receipt) public view returns (bytes32) {
-       bytes32 memory domainSeparator = keccak256(
-            abi.encode(
-                DOMAIN_TYPE_HASH,
-                DOMAIN_NAME_HASH,
-                DOMAIN_VERSION_HASH,
-                _getChainID(),
-                DOMAIN_DISPUTE_MANAGER_ADDRESS,
-                DOMAIN_SALT
-            )
-       );
        return
           keccak256(
               abi.encodePacked(
                   "\x19\x01", // EIP-191 encoding pad, EIP-712 version 1
-                  domainSeparator,
+                  keccak256(
+                      abi.encode(
+                          DOMAIN_TYPE_HASH,
+                          DOMAIN_NAME_HASH,
+                          DOMAIN_VERSION_HASH,
+                          getChainID(),
+                          DOMAIN_DISPUTE_MANAGER_ADDRESS,
+                          DOMAIN_SALT
+                      )
+                  ),
                   keccak256(
                       abi.encode(RECEIPT_TYPE_HASH, receipt) // EIP 712-encoded message hash
                   )
@@ -86,7 +86,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
 
         // Obtain the signer of the fully-encoded EIP-712 message hash
         // NOTE: The signer of the attestation is the indexer that served the request
-        return ECDSA.recover(digest, action.signature);
+        return ECDSA.recover(messageHash, action.signature);
     }
 
 
@@ -105,8 +105,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
 
         require(!state.finalized, "Cannot take action on finalized state");
         
-        address memory attestationSigner = recoverAttestationSigner(action)
-        require(state.signer == attestationSigner, "Incorrect signer recovered from signature");
+        require(state.signer == recoverAttestationSigner(action), "Incorrect signer recovered from signature");
 
         state.coinTransfers[1].amount = state.coinTransfers[0].amount;
         state.coinTransfers[0].amount = 0;
