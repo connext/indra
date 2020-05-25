@@ -83,7 +83,7 @@ export default {
           return;
         }
         const signer = new ChannelSigner(argv.privateKey, ethUrl);
-        const verifyingContract = AddressZero;
+        const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
         const receipt = {
           requestCID: "",
           responseCID: "",

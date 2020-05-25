@@ -80,7 +80,7 @@ describe("Signed Transfer Offline", () => {
     resolves: boolean = true,
   ) => {
     const preTransferBalance = await receiver.getFreeBalance(tokenAddress);
-    const verifyingContract = AddressZero;
+    const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
     const receipt = {
       requestCID: "",
       responseCID: "",
@@ -170,7 +170,7 @@ describe("Signed Transfer Offline", () => {
       conditionType: ConditionalTransferTypes.SignedTransfer,
       assetId: tokenAddress,
       signer: receiver.signerAddress,
-      verifyingContract: AddressZero,
+      verifyingContract: "0x1d85568eeabad713fbb5293b45ea066e552a90de",
       recipient: receiver.publicIdentifier,
     });
     const postTransferSenderBalance = await sender.getFreeBalance(tokenAddress);

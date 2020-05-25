@@ -169,7 +169,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     recipient.once(
       EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
       async (payload: EventPayloads.SignedTransferCreated) => {
-        const verifyingContract = AddressZero;
+        const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
         const receipt = {
           requestCID: "",
           responseCID: "",
@@ -296,7 +296,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
       async (payload: EventPayloads.SignedTransferCreated) => {
         console.log(`Got signed transfer event: ${payload.paymentId}`);
-        const verifyingContract = AddressZero;
+        const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
         const receipt = {
           requestCID: "",
           responseCID: "",

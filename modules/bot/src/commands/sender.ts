@@ -150,7 +150,7 @@ export default {
       amount: TRANSFER_AMT,
       conditionType: ConditionalTransferTypes.SignedTransfer,
       signer: receiverSigner,
-      verifyingContract: AddressZero,
+      verifyingContract: "0x1d85568eeabad713fbb5293b45ea066e552a90de",
       assetId: AddressZero,
       recipient: receiverIdentifier,
       meta: { info: "Bootstrap payment" },

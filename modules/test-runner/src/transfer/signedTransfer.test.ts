@@ -99,7 +99,7 @@ describe("Signed Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
 
-    const verifyingContract = AddressZero;
+    const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
     const receipt = {
       requestCID: "",
       responseCID: "",
@@ -197,7 +197,7 @@ describe("Signed Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
 
-    const verifyingContract = AddressZero;
+    const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
     const receipt = {
       requestCID: "",
       responseCID: "",
@@ -275,7 +275,7 @@ describe("Signed Transfers", () => {
     // disconnect so that it cant be unlocked
     await clientA.messaging.disconnect();
 
-    const verifyingContract = AddressZero;
+    const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
     const receipt = {
       requestCID: "",
       responseCID: "",
@@ -378,7 +378,7 @@ describe("Signed Transfers", () => {
           conditionType: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
           paymentId,
           signer: signerAddress,
-          verifyingContract: AddressZero,
+          verifyingContract: "0x1d85568eeabad713fbb5293b45ea066e552a90de",
           assetId: transfer.assetId,
           meta: { foo: "bar", sender: clientA.publicIdentifier },
           recipient: clientB.publicIdentifier,
@@ -386,7 +386,7 @@ describe("Signed Transfers", () => {
       });
 
       // Including recipient signing in test to match real conditions
-      const verifyingContract = AddressZero;
+      const verifyingContract = "0x1d85568eeabad713fbb5293b45ea066e552a90de";
       const receipt = {
         requestCID: "",
         responseCID: "",
