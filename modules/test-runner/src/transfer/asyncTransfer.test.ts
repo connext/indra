@@ -25,7 +25,7 @@ import {
 } from "../util";
 import { getNatsClient } from "../util/nats";
 
-describe.only("Async Transfers", () => {
+describe("Async Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
