@@ -1,6 +1,6 @@
 import { EventNames, ProposeMessage, RejectProposalMessage } from "@connext/types";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
@@ -17,8 +17,8 @@ import {
 const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - rejectInstall", () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   beforeEach(async () => {
     const context: SetupContext = await setup(global);
