@@ -1,7 +1,7 @@
 import { CONVENTION_FOR_ETH_ASSET_ID, EventNames, UninstallMessage } from "@connext/types";
 import { utils, constants } from "ethers";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { toBeEq } from "../bignumber-jest-matcher";
 import { TestContractAddresses } from "../contracts";
@@ -40,8 +40,8 @@ function assertUninstallMessage(
 }
 
 describe("Node A and B install apps of different outcome types, then uninstall them to test outcomes types and interpreters", () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   describe("Tests for different outcomes of the TwoPartyFixedOutcome type", () => {
     let appIdentityHash: string;

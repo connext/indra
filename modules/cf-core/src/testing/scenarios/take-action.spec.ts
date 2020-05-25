@@ -1,7 +1,7 @@
 import { EventNames, EventPayloads, UpdateStateMessage } from "@connext/types";
 import { constants } from "ethers";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 import { NO_MULTISIG_IN_PARAMS, NO_APP_INSTANCE_FOR_GIVEN_HASH } from "../../errors";
 
 import { TestContractAddresses } from "../contracts";
@@ -22,8 +22,8 @@ const { Zero, Two } = constants;
 
 // NOTE: no initiator events
 function confirmMessages(
-  initiator: Node,
-  responder: Node,
+  initiator: CFCore,
+  responder: CFCore,
   expectedData: EventPayloads.UpdateState,
 ) {
   const expected = {
@@ -40,8 +40,8 @@ function confirmMessages(
 }
 
 describe("Node method follows spec - takeAction", () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   beforeEach(async () => {
     const context: SetupContext = await setup(global);

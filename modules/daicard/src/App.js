@@ -1,5 +1,5 @@
 import * as connext from "@connext/client";
-import { getLocalStore, PisaClientBackupAPI } from "@connext/store";
+import { getLocalStore, PisaBackupService } from "@connext/store";
 import { ConnextClientStorePrefix, EventNames } from "@connext/types";
 import { Currency, minBN, tokenToWei, weiToToken } from "@connext/utils";
 import { ERC20 } from "@connext/contracts";
@@ -7,7 +7,6 @@ import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth, constants, utils, BigNumber } from "ethers";
 import interval from "interval-promise";
-import { PisaClient } from "pisa-client";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import { interpret } from "xstate";
@@ -213,14 +212,7 @@ class App extends React.Component {
       const pisaUrl = urls.pisaUrl(network.chainId);
       if (pisaUrl) {
         console.log(`Using external state backup service: ${pisaUrl}`);
-        const backupService = new PisaClientBackupAPI({
-          wallet,
-          pisaClient: new PisaClient(
-            pisaUrl,
-            "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
-          ),
-        });
-        store = getLocalStore(backupService);
+        store = getLocalStore(new PisaBackupService({ pisaUrl, wallet }));
       } else {
         store = getLocalStore();
       }

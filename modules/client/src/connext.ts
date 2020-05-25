@@ -17,7 +17,7 @@ import {
   EventNames,
   IChannelProvider,
   IChannelSigner,
-  IClientStore,
+  IStoreService,
   IConnextClient,
   ILoggerService,
   IMessagingService,
@@ -77,7 +77,7 @@ export class ConnextClient implements IConnextClient {
   public publicIdentifier: string;
   public signer: IChannelSigner;
   public signerAddress: string;
-  public store: IClientStore;
+  public store: IStoreService;
   public token: Contract;
 
   private opts: InternalClientOptions;

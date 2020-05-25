@@ -1,5 +1,6 @@
 import { BigNumber } from "ethers";
 import { isBigNumberJson, isBigNumber } from "./bigNumbers";
+import { abbreviate } from "./hexStrings";
 
 export const bigNumberifyJson = (json: any): any =>
   typeof json === "string"
@@ -21,9 +22,9 @@ export const stringify = (value: any, abrv: boolean = false): string =>
       value && isBigNumberJson(value)
         ? BigNumber.from(value).toString()
         : abrv && value && typeof value === "string" && value.startsWith("indra")
-        ? `${value.substring(0, 9)}..${value.substring(value.length - 4)}`
+        ? abbreviate(value, 5)
         : abrv && value && typeof value === "string" && value.startsWith("0x") && value.length > 12
-        ? `${value.substring(0, 6)}..${value.substring(value.length - 4)}`
+        ? abbreviate(value)
         : value,
     2,
   );

@@ -2,8 +2,7 @@ import { DolphinCoin } from "@connext/contracts";
 import { BigNumber, CONVENTION_FOR_ETH_ASSET_ID, DepositAppState } from "@connext/types";
 import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { providers, utils } from "ethers";
-
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
 import { setup, SetupContext } from "../setup";
@@ -23,8 +22,8 @@ expect.extend({ toBeLt, toBeEq });
 
 describe(`Node method follows spec - install deposit app`, () => {
   let multisigAddress: string;
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
   let provider: providers.JsonRpcProvider;
 
   beforeEach(async () => {

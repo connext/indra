@@ -2,22 +2,23 @@ import { Injectable } from "@nestjs/common";
 import {
   AppInstanceJson,
   AppInstanceProposal,
+  AppState,
+  ChallengeEvents,
+  ChallengeStatus,
+  ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
+  Contract,
   IStoreService,
+  JsonRpcProvider,
   MinimalTransaction,
+  OutcomeType,
   SetStateCommitmentJSON,
   StateChannelJSON,
-  STORE_SCHEMA_VERSION,
-  OutcomeType,
-  StoredAppChallenge,
   StateProgressedEventPayload,
-  ChallengeUpdatedEventPayload,
-  AppState,
+  STORE_SCHEMA_VERSION,
+  StoredAppChallenge,
   StoredAppChallengeStatus,
-  ChallengeStatus,
-  JsonRpcProvider,
-  Contract,
-  ChallengeEvents,
+  WithdrawalMonitorObject,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { getManager } from "typeorm";
@@ -209,6 +210,7 @@ export class CFCoreStore implements IStoreService {
       freeBalanceApp.identityHash,
       BigNumber.from(signedFreeBalanceUpdate.versionNumber),
     );
+
     if (!freeBalanceUpdateCommitment) {
       freeBalanceUpdateCommitment = new SetStateCommitment();
     }
@@ -499,6 +501,7 @@ export class CFCoreStore implements IStoreService {
       appProposal.identityHash,
       BigNumber.from(signedSetStateCommitment.versionNumber),
     );
+
     if (!setStateCommitment) {
       setStateCommitment = new SetStateCommitment();
     }
@@ -678,6 +681,18 @@ export class CFCoreStore implements IStoreService {
   }
 
   restore(): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
+  getUserWithdrawals(): Promise<WithdrawalMonitorObject[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  saveUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
+  removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void> {
     throw new Error("Method not implemented.");
   }
 

@@ -1,6 +1,6 @@
 import { constants, providers } from "ethers";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { toBeEq } from "../bignumber-jest-matcher";
 import { setup, SetupContext } from "../setup";
@@ -11,8 +11,8 @@ const { HashZero, One } = constants;
 expect.extend({ toBeEq });
 
 describe("Node method follows spec - deploy state deposit holder", () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
   let provider: providers.JsonRpcProvider;
   let multisigAddress: string;
 

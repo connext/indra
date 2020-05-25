@@ -2,7 +2,7 @@ import { BigNumber, constants } from "ethers";
 import {
   IConnextClient,
   IChannelSigner,
-  IClientStore,
+  IStoreService,
   ProtocolNames,
   EventNames,
   CONVENTION_FOR_ETH_ASSET_ID,
@@ -66,7 +66,7 @@ const makeFailingDepositCall = async (opts: {
 const recreateClientAndRetryDepositCall = async (
   signer: IChannelSigner,
   client: IConnextClient,
-  store: IClientStore,
+  store: IStoreService,
 ) => {
   await client.messaging.disconnect();
   const newClient = await createClient({ signer, store });
@@ -83,7 +83,7 @@ const recreateClientAndRetryDepositCall = async (
 describe("Deposit offline tests", () => {
   let client: IConnextClient;
   let signer: IChannelSigner;
-  let store: IClientStore;
+  let store: IStoreService;
 
   beforeEach(() => {
     signer = getRandomChannelSigner(env.ethProviderUrl);

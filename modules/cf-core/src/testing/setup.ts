@@ -3,7 +3,7 @@ import { ChannelSigner } from "@connext/utils";
 import { Wallet } from "ethers";
 import { providers, utils } from "ethers";
 
-import { Node } from "../node";
+import { CFCore } from "../cfCore";
 
 import { MemoryLockService, MemoryMessagingService, MemoryStoreServiceFactory } from "./services";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY, C_PRIVATE_KEY } from "./test-constants.jest";
@@ -16,7 +16,7 @@ export const env = {
 };
 
 export interface NodeContext {
-  node: Node;
+  node: CFCore;
   store: IStoreService;
 }
 
@@ -53,7 +53,7 @@ export async function setup(
 
   const storeServiceA = storeServiceFactory.createStoreService();
   await storeServiceA.init();
-  const nodeA = await Node.create(
+  const nodeA = await CFCore.create(
     messagingService,
     storeServiceA,
     global["contracts"],
@@ -73,7 +73,7 @@ export async function setup(
   const channelSignerB = new ChannelSigner(prvKeyB, ethUrl);
   const storeServiceB = storeServiceFactory.createStoreService();
   await storeServiceB.init();
-  const nodeB = await Node.create(
+  const nodeB = await CFCore.create(
     messagingService,
     storeServiceB,
     global["contracts"],
@@ -89,12 +89,12 @@ export async function setup(
     store: storeServiceB,
   };
 
-  let nodeC: Node;
+  let nodeC: CFCore;
   if (nodeCPresent) {
     const channelSignerC = new ChannelSigner(C_PRIVATE_KEY, ethUrl);
     const storeServiceC = storeServiceFactory.createStoreService();
     await storeServiceC.init();
-    nodeC = await Node.create(
+    nodeC = await CFCore.create(
       messagingService,
       storeServiceC,
       global["contracts"],

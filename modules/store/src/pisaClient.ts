@@ -1,16 +1,16 @@
-import { IBackupServiceAPI, StorePair } from "@connext/types";
+import { IBackupService, StorePair } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
 import { Wallet, utils } from "ethers";
-import { PisaClient as IPisaClient } from "pisa-client";
+import { PisaClient } from "pisa-client";
 
 const { toUtf8Bytes, toUtf8String, hexlify, keccak256, arrayify } = utils;
 
-export class PisaClientBackupAPI implements IBackupServiceAPI {
-  private pisaClient: IPisaClient;
+export class PisaBackupService implements IBackupService {
+  private pisaClient: PisaClient;
   private wallet: Wallet;
 
-  constructor(pisaClient: IPisaClient, wallet: Wallet) {
-    this.pisaClient = pisaClient;
+  constructor(pisaUrl: string, wallet: Wallet) {
+    this.pisaClient = new PisaClient(pisaUrl, wallet.address);
     this.wallet = wallet;
   }
 

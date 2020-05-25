@@ -3,7 +3,7 @@ import {
   IConnextClient,
   LinkedTransferStatus,
   IChannelSigner,
-  IClientStore,
+  IStoreService,
   ProtocolNames,
   CF_METHOD_TIMEOUT,
 } from "@connext/types";
@@ -62,7 +62,7 @@ const recreateReceiverAndRetryTransfer = async (
   receiverSigner: IChannelSigner,
   senderClient: IConnextClient,
   receiverClient: IConnextClient,
-  receiverStore: IClientStore,
+  receiverStore: IStoreService,
   transferParams: any,
 ) => {
   const { amount, assetId, nats } = transferParams;
@@ -79,7 +79,7 @@ describe("Async transfer offline tests", () => {
   let receiverClient: IConnextClient;
   let nats: Client;
   let signer: IChannelSigner;
-  let store: IClientStore;
+  let store: IStoreService;
 
   before(async () => {
     nats = getNatsClient();

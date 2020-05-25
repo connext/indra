@@ -3,7 +3,7 @@ import {
   Contract,
   IChannelProvider,
   IChannelSigner,
-  IClientStore,
+  IStoreService,
   ILoggerService,
   INodeApiClient,
   Network,
@@ -22,6 +22,6 @@ export type InternalClientOptions = {
   network: Network;
   node: INodeApiClient;
   signer: IChannelSigner;
-  store: IClientStore;
+  store: IStoreService;
   token: Contract;
 };

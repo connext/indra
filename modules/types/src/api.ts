@@ -15,13 +15,13 @@ import { IChannelSigner } from "./crypto";
 import { NodeResponses } from "./node";
 import { IMessagingService } from "./messaging";
 import { ILoggerService } from "./logger";
-import { IClientStore } from "./store";
+import { IStoreService } from "./store";
 
 export interface AsyncNodeInitializationParameters extends NodeInitializationParameters {
   ethProvider: providers.JsonRpcProvider;
   messaging: IMessagingService;
   messagingUrl?: string;
-  store?: IClientStore;
+  store?: IStoreService;
   signer?: IChannelSigner;
   channelProvider?: IChannelProvider;
 }

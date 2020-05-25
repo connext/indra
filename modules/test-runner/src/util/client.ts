@@ -8,7 +8,7 @@ import {
   IConnextClient,
   ProtocolParam,
   ProtocolNames,
-  IClientStore,
+  IStoreService,
 } from "@connext/types";
 import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
 import { expect } from "chai";
@@ -102,7 +102,7 @@ export type ClientTestMessagingInputOpts = {
   protocol: keyof typeof ProtocolNames | "any"; // use "any" to limit any messages by count
   signer: IChannelSigner;
   params: Partial<ProtocolParam>;
-  store?: IClientStore;
+  store?: IStoreService;
 };
 
 export const createClientWithMessagingLimits = async (

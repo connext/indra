@@ -3,7 +3,7 @@ import { DepositConfirmationMessage, MethodParams, DepositStartedMessage } from 
 import { getAddressFromAssetId, deBigNumberifyJson } from "@connext/utils";
 import { BigNumber, Contract, constants, providers } from "ethers";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { TestContractAddresses } from "../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
@@ -24,8 +24,8 @@ expect.extend({ toBeEq });
 
 // NOTE: no deposit started event emitted for responder
 export function confirmDepositMessages(
-  initiator: Node,
-  responder: Node,
+  initiator: CFCore,
+  responder: CFCore,
   params: MethodParams.Deposit,
 ) {
   const startedMsg = {
@@ -56,8 +56,8 @@ export function confirmDepositMessages(
 }
 
 describe("Node method follows spec - deposit", () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
   let provider: providers.JsonRpcProvider;
   let multisigAddress: string;
 
@@ -188,8 +188,8 @@ describe("Node method follows spec - deposit", () => {
 });
 
 async function confirmEthAndERC20FreeBalances(
-  channelInitiator: Node,
-  channelResponder: Node,
+  channelInitiator: CFCore,
+  channelResponder: CFCore,
   multisigAddress: string,
   tokenAddress: string,
   ethExpected: [BigNumber, BigNumber] = [Zero, Zero],

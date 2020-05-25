@@ -6,7 +6,7 @@ import {
 } from "@connext/types";
 import { utils, constants } from "ethers";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { TestContractAddresses } from "../contracts";
 import { toBeLt } from "../bignumber-jest-matcher";
@@ -31,8 +31,8 @@ const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - uninstall", () => {
   let multisigAddress: string;
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   describe("Should be able to successfully uninstall apps concurrently", () => {
     beforeEach(async () => {

@@ -1,4 +1,4 @@
-import { Node as CFCore } from "@connext/cf-core";
+import { CFCore } from "@connext/cf-core";
 import { DEFAULT_APP_TIMEOUT, SupportedApplications, WithdrawCommitment } from "@connext/apps";
 import {
   AppAction,

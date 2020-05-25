@@ -6,7 +6,7 @@ import {
   ChallengeUpdatedEventData,
   ChallengeProgressedEventData,
   ChallengeProgressionFailedEventData,
-  IClientStore,
+  IStoreService,
 } from "@connext/types";
 import { ChannelSigner, getRandomAddress, ColorfulLogger } from "@connext/utils";
 import { Wallet, providers, constants } from "ethers";
@@ -63,7 +63,7 @@ describe("Watcher.init", () => {
 
 describe("Watcher.initiate", () => {
   let provider: providers.JsonRpcProvider;
-  let store: IClientStore;
+  let store: IStoreService;
   let multisigAddress: string;
   let channelBalances: { [k: string]: BigNumber };
   let freeBalance: MiniFreeBalance;
@@ -171,7 +171,7 @@ describe("Watcher.initiate", () => {
 
 describe("Watcher.cancel", () => {
   let provider: providers.JsonRpcProvider;
-  let store: IClientStore;
+  let store: IStoreService;
   let watcher: Watcher;
   let app: AppWithCounterClass;
   let freeBalance: MiniFreeBalance;
@@ -265,7 +265,7 @@ describe("Watcher.cancel", () => {
 
 describe("Watcher responses", () => {
   let provider: providers.JsonRpcProvider;
-  let store: IClientStore;
+  let store: IStoreService;
   let watcher: Watcher;
   let app: AppWithCounterClass;
   let freeBalance: MiniFreeBalance;
@@ -273,7 +273,7 @@ describe("Watcher responses", () => {
 
   let setState: (app: AppWithCounterClass, commitment: SetStateCommitmentJSON) => Promise<void>;
   let addActionToAppInStore: (
-    store: IClientStore,
+    store: IStoreService,
     appPriorToAction: AppWithCounterClass,
     action?: AppWithCounterAction,
   ) => Promise<AppWithCounterClass>;

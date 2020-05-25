@@ -1,7 +1,7 @@
 import { CONVENTION_FOR_ETH_ASSET_ID, InstallMessage, ProposeMessage } from "@connext/types";
 import { utils, constants } from "ethers";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { TestContractAddresses } from "../contracts";
 import { toBeLt } from "../bignumber-jest-matcher";
@@ -26,8 +26,8 @@ const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec when happening concurrently - install / uninstall", () => {
   let multisigAddress: string;
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
   let installedAppIdentityHash: string;
   let installCall;
 

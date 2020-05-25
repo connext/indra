@@ -19,7 +19,7 @@ import {
   ConditionalTransferTypes,
   EventNames,
   ProtocolNames,
-  IClientStore,
+  IStoreService,
   PublicParams,
   ProtocolParams,
 } from "@connext/types";
@@ -181,7 +181,7 @@ describe("Signed Transfer Offline", () => {
     toRecreate: "sender" | "receiver",
     counterparty: IConnextClient,
     signer: IChannelSigner,
-    store: IClientStore,
+    store: IStoreService,
     paymentId?: string, // if supplied, will only resolve
   ): Promise<void> => {
     let sender;
