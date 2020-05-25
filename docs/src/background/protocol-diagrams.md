@@ -1,4 +1,5 @@
-## Diagrams
+
+# Protocol Diagrams
 
 These diagrams are available to help you understand the underlying architecture of the Node.
 

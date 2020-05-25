@@ -1,5 +1,7 @@
 # Workflow Protocols
 
+These are guidelines that the Connext team uses internally to coordinate our development. Suggestions for improvements are welcome!
+
 ## Goals
 
 Coordinate several devs working across several time zones to maximize energy spent on useful stuff & minimize wasted work.

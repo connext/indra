@@ -6,7 +6,7 @@ import {
 } from "@connext/types";
 import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
 import { setup, SetupContext } from "../setup";
@@ -24,8 +24,8 @@ expect.extend({ toBeLt, toBeEq });
 
 describe(`Node method follows spec - install deposit app`, () => {
   let multisigAddress: string;
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
   let provider: JsonRpcProvider;
 
   beforeEach(async () => {

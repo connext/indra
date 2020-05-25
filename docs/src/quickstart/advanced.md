@@ -96,7 +96,7 @@ export type StorePair = {
   value: any;
 };
 
-export interface IBackupServiceAPI {
+export interface IBackupService {
   restore(): Promise<StorePair[]>;
   backup(pair: StorePair): Promise<void>;
 }
@@ -119,10 +119,10 @@ To use a backup service with the client, simply instantiate the client with the 
   */
 
 import { connect } from "@connext/client";
-import { ClientOptions, IBackupServiceAPI, StorePair } from "@connext/types";
+import { ClientOptions, IBackupService, StorePair } from "@connext/types";
 import * as axios from "axios";
 
-class BackupService implements IBackupServiceAPI {
+class BackupService implements IBackupService {
   private client: any;
   constructor(
     private readonly baseUrl: string,

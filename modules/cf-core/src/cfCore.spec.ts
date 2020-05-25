@@ -3,19 +3,20 @@ import { getRandomChannelSigner } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 import { MemoryLockService } from "./testing/services/memory-lock-service";
 
-import { Node } from "./node";
+import { CFCore } from "./cfCore";
 import { memoryMessagingService } from "./testing/services";
 
-describe("Node", () => {
+describe("CFCore", () => {
   it("is defined", () => {
-    expect(Node).toBeDefined();
+    expect(CFCore).toBeDefined();
   });
 
   it("can be created", async () => {
     const provider = new JsonRpcProvider(global["wallet"].provider.connection.url);
+    // TODO: getMemoryStore should run init() internally
     const store = getMemoryStore();
     await store.init();
-    const node = await Node.create(
+    const node = await CFCore.create(
       memoryMessagingService,
       store,
       global["contracts"],

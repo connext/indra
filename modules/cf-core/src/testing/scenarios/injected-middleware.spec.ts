@@ -8,7 +8,7 @@ import {
   CF_METHOD_TIMEOUT,
   EventNames,
 } from "@connext/types";
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 import { getCreate2MultisigAddress } from "../../utils";
 
 import { SetupContext, setup } from "../setup";
@@ -17,8 +17,8 @@ import { createChannel, assertMessage } from "../utils";
 jest.setTimeout(15_000);
 
 describe("injected validation middleware", () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   let multisigAddress: string;
 

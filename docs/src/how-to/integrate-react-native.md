@@ -1,4 +1,5 @@
-# Wallet Integrations
+
+# How To Integrate With React Native
 
 The Connext client assumes that it runs in a trusted environment because it needs to control the ability to automatically sign messages and transactions on behalf of a user. To ensure that user funds remain secure, it is recommended that implementers carefully read through all of the following sections:
 
@@ -16,7 +17,7 @@ Instantiating the client requires providing the following:
 | store | Store | Module for storing local state | yes |
 | logLevel | number | Depth of logging | yes |
 | asyncStorage | AsyncStorage | AsyncStorage module for react-native | yes |
-| backupService | IBackupServiceAPI | Backup service module to store state remotely | yes |
+| backupService | IBackupService | Backup service module to store state remotely | yes |
 
 ## Compatibility and React Native
 
@@ -75,31 +76,6 @@ import * as connext from "@connext/client"
 const channel = await connext.connect("rinkeby", { asyncStorage: AsyncStorage })
 ```
 
-
-## Managing Mnemonics and the KeyGen Function
-
-Connext is opinionated in that all channels are associated with a BIP32 mnemonic, xpriv, or HDWallet rather than a simple private key. This is done as part of the core protocols in order to protect against replay attacks on the channel's state. When making updates to the state, the protocol generates a new ephemeral key for each interaction, where the generated key is the `nth` key along a custom state-channel-specific path.
-
-`const CF_PATH = "m/44'/60'/0'/25446";`
-
-This has a couple of consequences:
-
-First, wallets will need to create and safely store a mnemonic, xpriv, or HDWallet for the user - even if they are building on contract wallet infrastructure that uses randomized keys. The mnemonic itself can be completely channel-specific and, because channels can be disputed if the mnemonic is lost, should still be able to conform to existing contract wallet recovery patterns.
-
-Second, wallets should consider how they wish to expose the client to the mnemonic. For simplicity, it is possible to pass in the mnemonic directly into the client. However, this is an **unsafe** pattern and should not be used in production, particularly if the user's funds are also tied to the same mnemonic. 
-
-Ideally, the master key is hosted outside of the client. The wallet can then derive the `xpub` associated with the mnemonic,
-```javascript
-const hdWallet = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
-const xpub = hdNode.neuter().extendedKey;
-```
-And then pass it in along with a wrapper function to derive ephemeral keys as needed:
-```javascript
-  keyGen: function(index) => {
-    return Promise.resolve(hdNode.derivePath(index).privateKey);
-  }
-```
-
 ## Backing up State
 
 The store module will save all the state channel state locally but it's recommended that Wallets will backup this state remotely in a secure environment so that user's could restore it easily with their mnemonic.
@@ -112,7 +88,7 @@ type StorePair = {
   value: any;
 };
 
-interface IBackupServiceAPI {
+interface IBackupService {
   restore(): Promise<StorePair[]>;
   backup(pair: StorePair): Promise<void>;
 }

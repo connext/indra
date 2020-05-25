@@ -4,8 +4,8 @@ import {
   AppInstanceProposal,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
-  IBackupServiceAPI,
-  IClientStore,
+  IBackupService,
+  IStoreService,
   MinimalTransaction,
   SetStateCommitmentJSON,
   StateChannelJSON,
@@ -28,12 +28,12 @@ import {
 } from "./wrappers";
 import { StoreTypes, WrappedStorage } from "./types";
 
-export class ConnextStore implements IClientStore {
+export class ConnextStore implements IStoreService {
   public internalStore: KeyValueStorage;
 
   private prefix: string = storeDefaults.PREFIX;
   private separator: string = storeDefaults.SEPARATOR;
-  private backupService: IBackupServiceAPI | null = null;
+  private backupService: IBackupService | null = null;
 
   constructor(storageType: StoreTypes, opts: StoreFactoryOptions = {}) {
     this.prefix = opts.prefix || storeDefaults.PREFIX;

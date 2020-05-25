@@ -23,9 +23,9 @@ ClientOptions = {
   ethProviderUrl: string;
   nodeUrl?: string; // node's HTTP endpoint
   signer?: string | IChannelSigner;
-  store?: IClientStore;
+  store?: IStoreService;
   storeType?: StoreTypes;
-  backupService?: IBackupServiceAPI;
+  backupService?: IBackupService;
   channelProvider?: IChannelProvider;
   loggerService?: ILoggerService;
   logLevel?: number;
@@ -125,7 +125,7 @@ type StorePair = {
   value: any;
 };
 
-interface IBackupServiceAPI {
+interface IBackupService {
   restore(): Promise<StorePair[]>;
   backup(pair: StorePair): Promise<void>;
 }

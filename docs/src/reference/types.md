@@ -1,12 +1,4 @@
-<!-- 
-### Interfaces
-
-*   [ClientOptions](interfaces/clientoptions.html)
-*   [ConnextStore](interfaces/connextstore.html)
-*   [INodeApiClient](interfaces/inodeapiclient.html)
-*   [NodeInitializationParameters](interfaces/nodeinitializationparameters.html) -->
-
-# Types
+# @connext/types
 
 ## ClientOptions
 
