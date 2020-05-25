@@ -1,6 +1,6 @@
 import { MethodName, MethodParam, MethodResult } from "@connext/types";
 import { Controller } from "rpc-server";
-import { ColorfulLogger, logTime } from "@connext/utils";
+import { logTime } from "@connext/utils";
 
 import { RequestHandler } from "../request-handler";
 import { StateChannel } from "../models/state-channel";
@@ -12,12 +12,7 @@ export abstract class NodeController extends Controller {
     requestHandler: RequestHandler,
     params: MethodParam,
   ): Promise<MethodResult | undefined> {
-    const log = new ColorfulLogger(
-      `MethodController`,
-      1,
-      true,
-      requestHandler.signer.address.substring(0, 7),
-    );
+    const log = requestHandler.log.newContext("MethodController");
     const start = Date.now();
     let substart = start;
     let lockValue: string = "";
