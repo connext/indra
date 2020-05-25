@@ -1,7 +1,7 @@
 import { EventNames, EventPayloads, ConditionalTransferTypes, PublicParams } from "@connext/types";
-import { ColorfulLogger, stringify } from "@connext/utils";
+import { ColorfulLogger, stringify, ChannelSigner } from "@connext/utils";
 import { AddressZero } from "ethers/constants";
-import { parseEther, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
+import { parseEther } from "ethers/utils";
 import { Argv } from "yargs";
 
 import { createClient } from "../helpers/client";
@@ -62,7 +62,6 @@ export default {
     client.on(
       EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
       async (eventData: EventPayloads.SignedTransferCreated) => {
-
         // ignore transfers from self
         if (eventData.sender === client.publicIdentifier) {
           return;
@@ -83,17 +82,22 @@ export default {
           );
           return;
         }
-        const mockAttestation = hexlify(randomBytes(32));
-        const attestationHash = solidityKeccak256(
-          ["bytes32", "bytes32"],
-          [mockAttestation, eventData.paymentId],
-        );
-        const signature = await client.channelProvider.signMessage(attestationHash);
+        const signer = new ChannelSigner(argv.privateKey, ethUrl);
+        const verifyingContract = AddressZero;
+        const receipt = {
+          requestCID: "",
+          responseCID: "",
+          subgraphID: "",
+        };
+        const signature = await signer.signReceipt(receipt, verifyingContract);
+        const attestation = {
+          ...receipt,
+          signature,
+        };
         await client.resolveCondition({
           conditionType: ConditionalTransferTypes.SignedTransfer,
           paymentId: eventData.paymentId,
-          data: mockAttestation,
-          signature,
+          attestation,
         } as PublicParams.ResolveSignedTransfer);
 
         log.info(`Unlocked transfer ${eventData.paymentId} for (${eventData.amount} ETH)`);
@@ -120,7 +124,6 @@ export default {
         } else if (argv.paymentLimit >= 0) {
           log.info(`${argv.paymentLimit - paymentCount} payments to go`);
         }
-
       },
     );
 

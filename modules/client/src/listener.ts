@@ -587,7 +587,9 @@ export class ConnextListener extends ConnextEventEmitter {
           meta: appInstance.meta,
           transferMeta: {
             signature: transferAction.signature,
-            data: transferAction.data,
+            requestCID: transferAction.requestCID,
+            responseCID: transferAction.responseCID,
+            subgraphID: transferAction.subgraphID,
           } as UnlockedSignedTransferMeta,
         } as EventPayloads.SignedTransferUnlocked);
         break;

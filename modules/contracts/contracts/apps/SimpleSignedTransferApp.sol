@@ -17,6 +17,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
     struct AppState {
         LibOutcome.CoinTransfer[2] coinTransfers;
         address signer;
+        address verifyingContract;
         bytes32 paymentId;
         bool finalized;
     }
@@ -28,22 +29,20 @@ contract SimpleSignedTransferApp is CounterfactualApp {
         bytes signature;
     }
 
-    // EIP-712 DOMAIN SEPERATOR CONSTANTS
- 
+    // EIP-712 TYPE HASHES
+
     bytes32 private constant DOMAIN_TYPE_HASH = keccak256(
         "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)"
     );
-    bytes32 private constant DOMAIN_NAME_HASH = keccak256("Graph Protocol");
-    bytes32 private constant DOMAIN_VERSION_HASH = keccak256("0");
-    bytes32 private constant DOMAIN_SALT = 0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188679b9c2;
-    address private constant DOMAIN_DISPUTE_MANAGER_ADDRESS = 0xe1213B37EF8367aaD687a493EFF4b3637318fc23; // TODO: Needs to be updated
-
-
-    // EIP-712 RECEIPT HASH CONSTANT
-    
     bytes32 private constant RECEIPT_TYPE_HASH = keccak256(
         "Receipt(bytes32 requestCID,bytes32 responseCID,bytes32 subgraphID)"
     );
+
+    // EIP-712 DOMAIN SEPARATOR CONSTANTS
+ 
+    bytes32 private constant DOMAIN_NAME_HASH = keccak256("Graph Protocol");
+    bytes32 private constant DOMAIN_VERSION_HASH = keccak256("0");
+    bytes32 private constant DOMAIN_SALT = 0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188679b9c2;
 
     function getChainID() public pure returns (uint256) {
         uint256 id;
@@ -53,7 +52,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
         return id;
     }
 
-    function encodeHashReceipt(bytes memory receipt) public view returns (bytes32) {
+    function encodeHashReceipt(bytes memory receipt, address verifyingContract) public view returns (bytes32) {
        return
           keccak256(
               abi.encodePacked(
@@ -64,7 +63,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
                           DOMAIN_NAME_HASH,
                           DOMAIN_VERSION_HASH,
                           getChainID(),
-                          DOMAIN_DISPUTE_MANAGER_ADDRESS,
+                          verifyingContract,
                           DOMAIN_SALT
                       )
                   ),
@@ -75,14 +74,14 @@ contract SimpleSignedTransferApp is CounterfactualApp {
           );
     }
 
-    function recoverAttestationSigner(Action memory action) public view returns (address) {
+    function recoverAttestationSigner(Action memory action, address verifyingContract) public view returns (address) {
         // Obtain the hash of the fully-encoded message, per EIP-712 encoding
         bytes memory receipt = abi.encode(
             action.requestCID,
             action.responseCID,
             action.subgraphID
         );
-        bytes32 messageHash = encodeHashReceipt(receipt);
+        bytes32 messageHash = encodeHashReceipt(receipt, verifyingContract);
 
         // Obtain the signer of the fully-encoded EIP-712 message hash
         // NOTE: The signer of the attestation is the indexer that served the request
@@ -105,7 +104,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
 
         require(!state.finalized, "Cannot take action on finalized state");
         
-        require(state.signer == recoverAttestationSigner(action), "Incorrect signer recovered from signature");
+        require(state.signer == recoverAttestationSigner(action, state.verifyingContract), "Incorrect signer recovered from signature");
 
         state.coinTransfers[1].amount = state.coinTransfers[0].amount;
         state.coinTransfers[0].amount = 0;

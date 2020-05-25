@@ -1,6 +1,6 @@
-import { createAttestation } from "./attestations";
+import { signReceipt } from "./attestations";
 import { Wallet } from "ethers";
-import { hexlify } from "ethers/utils";
+import { hexlify, joinSignature } from "ethers/utils";
 import * as bs58 from "bs58";
 
 describe("Attestations", () => {
@@ -14,20 +14,22 @@ describe("Attestations", () => {
     };
 
     let signer = Wallet.fromMnemonic(mnemonic);
-    let attestation = await createAttestation(
-      signer.privateKey,
+    let attestation = await signReceipt(
+      receipt,
       1,
       "0x0000000000000000000000000000000000000000",
-      receipt,
+      signer.privateKey,
     );
 
     expect(attestation).toStrictEqual({
       requestCID: receipt.requestCID,
       responseCID: receipt.responseCID,
       subgraphID: receipt.subgraphID,
-      v: 28,
-      r: "0x5eb1e2428518b5fac8904e3239b6bda39cd52ecd054b271b94ae6145976c4ef3",
-      s: "0x38f0f5c725bef4c799d440a2b846d09ab268b23fd363964445643267d789cfd2",
+      signature: joinSignature({
+        v: 28,
+        r: "0x5eb1e2428518b5fac8904e3239b6bda39cd52ecd054b271b94ae6145976c4ef3",
+        s: "0x38f0f5c725bef4c799d440a2b846d09ab268b23fd363964445643267d789cfd2",
+      }),
     });
   });
 });

@@ -13,6 +13,7 @@ import { Sequelize } from "sequelize";
 
 import { createClient, fundChannel, ETH_AMOUNT_MD, expect, env } from "../util";
 import { BigNumber, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
+import { AddressZero } from "ethers/constants";
 
 // NOTE: only groups correct number of promises associated with a payment.
 // there is no validation done to ensure the events correspond to the payments,
@@ -168,14 +169,21 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     recipient.once(
       EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
       async (payload: EventPayloads.SignedTransferCreated) => {
-        const data = hexlify(randomBytes(32));
-        const digest = solidityKeccak256(["bytes32", "bytes32"], [data, payload.paymentId]);
-        const signature = await recipient.signer.signMessage(digest);
+        const verifyingContract = AddressZero;
+        const receipt = {
+          requestCID: "",
+          responseCID: "",
+          subgraphID: "",
+        };
+        const signature = await recipient.signer.signReceipt(receipt, verifyingContract);
+        const attestation = {
+          ...receipt,
+          signature,
+        };
         await recipient.resolveCondition({
           conditionType: ConditionalTransferTypes.SignedTransfer,
-          data,
           paymentId: payload.paymentId,
-          signature,
+          attestation,
         } as PublicParams.ResolveSignedTransfer);
       },
     );
@@ -288,14 +296,21 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
       async (payload: EventPayloads.SignedTransferCreated) => {
         console.log(`Got signed transfer event: ${payload.paymentId}`);
-        const data = hexlify(randomBytes(32));
-        const digest = solidityKeccak256(["bytes32", "bytes32"], [data, payload.paymentId]);
-        const signature = await recipient.signer.signMessage(digest);
+        const verifyingContract = AddressZero;
+        const receipt = {
+          requestCID: "",
+          responseCID: "",
+          subgraphID: "",
+        };
+        const signature = await recipient.signer.signReceipt(receipt, verifyingContract);
+        const attestation = {
+          ...receipt,
+          signature,
+        };
         await recipient.resolveCondition({
           conditionType: ConditionalTransferTypes.SignedTransfer,
-          data,
           paymentId: payload.paymentId,
-          signature,
+          attestation,
         } as PublicParams.ResolveSignedTransfer);
         console.log(`Resolved signed transfer: ${payload.paymentId}`);
       },

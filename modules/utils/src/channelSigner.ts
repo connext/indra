@@ -7,6 +7,7 @@ import {
   PublicIdentifier,
   SignatureString,
   UrlString,
+  Receipt,
 } from "@connext/types";
 import { Wallet } from "ethers";
 import { TransactionResponse, TransactionRequest, JsonRpcProvider } from "ethers/providers";
@@ -20,6 +21,7 @@ import {
   signChannelMessage,
 } from "./crypto";
 import { getPublicIdentifierFromPublicKey } from "./identifiers";
+import { signReceipt } from "./attestations";
 
 export const getRandomChannelSigner = (ethProviderUrl?: UrlString) =>
   new ChannelSigner(getRandomPrivateKey(), ethProviderUrl);
@@ -56,6 +58,16 @@ export class ChannelSigner implements IChannelSigner {
 
   public async signMessage(message: string): Promise<SignatureString> {
     return signChannelMessage(message, this.privateKey);
+  }
+
+  public async signReceipt(receipt: Receipt, verifyingContract: Address): Promise<string> {
+    if (!this.provider) {
+      throw new Error(
+        `ChannelSigner can't sign attestations without being connected to a provider`,
+      );
+    }
+    const { chainId } = await this.provider.getNetwork();
+    return signReceipt(receipt, chainId, verifyingContract, this.privateKey);
   }
 
   public async sendTransaction(transaction: TransactionRequest): Promise<TransactionResponse> {

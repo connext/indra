@@ -24,7 +24,7 @@ import {
   ProtocolParams,
 } from "@connext/types";
 import { addressBook } from "@connext/contracts";
-import { Zero } from "ethers/constants";
+import { Zero, AddressZero } from "ethers/constants";
 import { hexlify, solidityKeccak256 } from "ethers/utils";
 
 describe("Signed Transfer Offline", () => {
@@ -80,9 +80,17 @@ describe("Signed Transfer Offline", () => {
     resolves: boolean = true,
   ) => {
     const preTransferBalance = await receiver.getFreeBalance(tokenAddress);
-    const data = hexlify(getRandomBytes32());
-    const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = await receiverSigner.signMessage(digest);
+    const verifyingContract = AddressZero;
+    const receipt = {
+      requestCID: "",
+      responseCID: "",
+      subgraphID: "",
+    };
+    const signature = await receiverSigner.signReceipt(receipt, verifyingContract);
+    const attestation = {
+      ...receipt,
+      signature,
+    };
     // node reclaims from sender
     const amount = await new Promise(async (resolve, reject) => {
       // register event listeners
@@ -132,8 +140,7 @@ describe("Signed Transfer Offline", () => {
         await receiver.resolveCondition({
           conditionType: ConditionalTransferTypes.SignedTransfer,
           paymentId,
-          data,
-          signature,
+          attestation,
         } as PublicParams.ResolveSignedTransfer);
         if (!resolves) {
           return reject(new Error(`Signed transfer successfully resolved`));
@@ -163,6 +170,7 @@ describe("Signed Transfer Offline", () => {
       conditionType: ConditionalTransferTypes.SignedTransfer,
       assetId: tokenAddress,
       signer: receiver.signerAddress,
+      verifyingContract: AddressZero,
       recipient: receiver.publicIdentifier,
     });
     const postTransferSenderBalance = await sender.getFreeBalance(tokenAddress);

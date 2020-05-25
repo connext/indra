@@ -83,9 +83,8 @@ export default {
     }
 
     let receiverIdentifier =
-      argv.receiverIdentifier || (
-        argv.receiverPublicKey ? getPublicIdentifierFromPublicKey(argv.receiverPublicKey) : null
-      );
+      argv.receiverIdentifier ||
+      (argv.receiverPublicKey ? getPublicIdentifierFromPublicKey(argv.receiverPublicKey) : null);
 
     if (!receiverIdentifier) {
       log.warn(`No receiver identifier or public key was provided, returning`);
@@ -97,7 +96,6 @@ export default {
     client.on(
       EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
       async (eventData: EventPayloads.LinkedTransferUnlocked) => {
-
         // ignore transfers from self
         if (eventData.sender === client.publicIdentifier) {
           return;
@@ -136,16 +134,15 @@ export default {
           assetId: AddressZero,
           meta: { info: "Response payment" },
         } as PublicParams.SignedTransfer);
-
       },
     );
 
     const receiverSigner = getSignerAddressFromPublicIdentifier(receiverIdentifier);
     const paymentId = getRandomBytes32();
     log.info(
-      `Send conditional transfer ${paymentId} for ${utils.formatEther(TRANSFER_AMT)} ETH to ${
-        receiverIdentifier
-      } (${receiverSigner})`,
+      `Send conditional transfer ${paymentId} for ${utils.formatEther(
+        TRANSFER_AMT,
+      )} ETH to ${receiverIdentifier} (${receiverSigner})`,
     );
 
     await client.conditionalTransfer({
@@ -153,6 +150,7 @@ export default {
       amount: TRANSFER_AMT,
       conditionType: ConditionalTransferTypes.SignedTransfer,
       signer: receiverSigner,
+      verifyingContract: AddressZero,
       assetId: AddressZero,
       recipient: receiverIdentifier,
       meta: { info: "Bootstrap payment" },
