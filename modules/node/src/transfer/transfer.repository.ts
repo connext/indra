@@ -36,7 +36,6 @@ export class TransferRepository extends Repository<
   ): Promise<AppInstance<T> | undefined> {
     return this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleSignedTransferAppName })
       .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`,
