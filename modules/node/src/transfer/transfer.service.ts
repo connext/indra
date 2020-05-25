@@ -355,12 +355,12 @@ export class TransferService {
     transferType: ConditionalTransferAppNames,
   ): Promise<PublicResults.ResolveCondition> {
     const senderApp = await this.findSenderAppByPaymentId(paymentId);
-    if (!senderApp) {
+    if (!senderApp || senderApp.type !== AppType.INSTANCE) {
       throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
     }
 
     const latestState = senderApp.latestState as SimpleLinkedTransferAppState;
-    if (latestState.preImage !== HashZero) {
+    if (latestState.preImage && latestState.preImage !== HashZero) {
       throw new Error(`Sender app has action, refusing to redeem`);
     }
 
