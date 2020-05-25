@@ -18,6 +18,10 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve();
   }
 
+  close(): Promise<void> {
+    return Promise.resolve();
+  }
+
   getSchemaVersion(): Promise<number> {
     return Promise.resolve(STORE_SCHEMA_VERSION);
   }
@@ -159,16 +163,11 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve([]);
   }
 
-  createStateProgressedEvent(
-    event: StateProgressedEventPayload,
-  ): Promise<void> {
+  createStateProgressedEvent(event: StateProgressedEventPayload): Promise<void> {
     return Promise.resolve();
   }
 
-  addOnchainAction(
-    appIdentityHash: string,
-    provider: JsonRpcProvider,
-  ): Promise<void> {
+  addOnchainAction(appIdentityHash: string, provider: JsonRpcProvider): Promise<void> {
     return Promise.resolve();
   }
 
@@ -178,9 +177,7 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve([]);
   }
 
-  createChallengeUpdatedEvent(
-    event: ChallengeUpdatedEventPayload,
-  ): Promise<void> {
+  createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void> {
     return Promise.resolve();
   }
 }

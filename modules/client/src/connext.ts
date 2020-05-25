@@ -494,6 +494,10 @@ export class ConnextClient implements IConnextClient {
     return this.listener.once(event, callback);
   };
 
+  public removeAllListeners = (event?: EventNames): ConnextListener => {
+    return this.listener.removeAllListeners(event);
+  };
+
   public emit = (event: EventNames, data: any): boolean => {
     return this.listener.emit(event, data);
   };

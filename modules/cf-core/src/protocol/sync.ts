@@ -15,8 +15,6 @@ import {
   toBN,
   getSignerAddressFromPublicIdentifier,
   recoverAddressFromChannelMessage,
-  ColorfulLogger,
-  delay,
 } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -176,7 +174,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           const app = postSyncStateChannel.appInstances.get(commitment.appIdentityHash)!;
 
           // signature has been validated, add our signature
-          yield [
+          const error = yield [
             OP_VALIDATE,
             ProtocolNames.takeAction,
             {
@@ -192,6 +190,9 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
               role: ProtocolRoles.responder,
             },
           ];
+          if (!!error) {
+            throw new Error(error);
+          }
 
           // update the app
           postSyncStateChannel.setState(
@@ -360,7 +361,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           const app = postSyncStateChannel.appInstances.get(commitment.appIdentityHash)!;
 
           // signature has been validated, add our signature
-          yield [
+          const error = yield [
             OP_VALIDATE,
             ProtocolNames.takeAction,
             {
@@ -376,6 +377,9 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
               role: ProtocolRoles.responder,
             },
           ];
+          if (!!error) {
+            throw new Error(error);
+          }
 
           // update the app
           postSyncStateChannel.setState(

@@ -6,7 +6,7 @@ import {
   ProtocolRoles,
   SetupMiddlewareContext,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime, stringify, delay } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment, getSetStateCommitment } from "../ethereum";
@@ -39,11 +39,14 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       initiatorIdentifier,
     } = params as ProtocolParams.Setup;
 
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       { params, role: ProtocolRoles.initiator } as SetupMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
 
     // 56 ms
     const stateChannel = StateChannel.setupChannel(
@@ -147,11 +150,14 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
     } = params as ProtocolParams.Setup;
 
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       { params, role: ProtocolRoles.responder } as SetupMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
 
     // 73 ms
     const stateChannel = StateChannel.setupChannel(

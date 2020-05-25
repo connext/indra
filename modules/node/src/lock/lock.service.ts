@@ -36,7 +36,7 @@ export class LockService {
           resolve(lock.value);
         })
         .catch((e: any) => {
-          this.log.error(`Failed to lock ${lockName}`, e.stack);
+          this.log.error(`Failed to lock resource ${lockName}: ${e.message}`);
           reject(e);
         });
     });
