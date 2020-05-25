@@ -26,7 +26,6 @@ echo "ETH_PROVIDER_PATH=$ETH_PROVIDER_PATH"
 echo "ETH_PROVIDER_URL=$ETH_PROVIDER_URL"
 echo "MESSAGING_TCP_URL=$MESSAGING_TCP_URL"
 echo "MESSAGING_WS_URL=$MESSAGING_WS_URL"
-echo "MODE=$MODE"
 echo "NODE_URL=$NODE_URL"
 echo "WEBSERVER_URL=$WEBSERVER_URL"
 
@@ -69,6 +68,12 @@ done
 
 # Kill the loading message server
 kill "$loading_pid" && pkill nc
+
+if [[ -z "$DOMAINNAME" || "$DOMAINNAME" == "localhost" ]]
+then
+  echo "Entrypoint finished, executing haproxy..."; echo
+  exec haproxy -db -f http.cfg
+fi
 
 ########################################
 # Setup SSL Certs
@@ -113,12 +118,9 @@ function renewcerts {
     sleep 48h
   done
 }
-
-if [[ "$DOMAINNAME" != "localhost" ]]
-then renewcerts &
-fi
+renewcerts &
 
 cp /etc/ssl/cert.pem ca-certs.pem
 
 echo "Entrypoint finished, executing haproxy..."; echo
-exec haproxy -db -f $MODE.cfg
+exec haproxy -db -f https.cfg

@@ -243,7 +243,6 @@ services:
       ETH_PROVIDER_URL: '$INDRA_ETH_PROVIDER'
       MESSAGING_TCP_URL: 'nats:4222'
       MESSAGING_WS_URL: 'nats:4221'
-      MODE: 'prod'
       NODE_URL: 'node:8080'
       WEBSERVER_URL: 'webserver:80'
     logging:
