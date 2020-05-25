@@ -1,5 +1,5 @@
 import { env } from "../setup";
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 import {
   createChannel,
   makeProposeCall,
@@ -17,7 +17,7 @@ import { TestContractAddresses } from "../contracts";
 import {
   MethodParams,
   JsonRpcProvider,
-  IClientStore,
+  IStoreService,
   EventNames,
   StateChannelJSON,
   ProtocolNames,
@@ -33,10 +33,10 @@ const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Sync", () => {
   let multisigAddress: string;
-  let nodeA: Node;
-  let nodeB: Node;
-  let storeServiceA: IClientStore;
-  let storeServiceB: IClientStore;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
+  let storeServiceA: IStoreService;
+  let storeServiceB: IStoreService;
   let sharedEventEmitter: EventEmitter;
   let ethUrl: string;
   let provider: JsonRpcProvider;
@@ -74,7 +74,7 @@ describe("Sync", () => {
     storeServiceB = getMemoryStore();
     channelSignerB = new ChannelSigner(B_PRIVATE_KEY, ethUrl);
     await storeServiceB.init();
-    nodeB = await Node.create(
+    nodeB = await CFCore.create(
       messagingServiceB,
       storeServiceB,
       global["contracts"],
@@ -92,7 +92,7 @@ describe("Sync", () => {
     beforeEach(async () => {
       // propose-specific setup
       messagingServiceA = new MemoryMessagingServiceWithLimits(sharedEventEmitter, 1, "propose");
-      nodeA = await Node.create(
+      nodeA = await CFCore.create(
         messagingServiceA,
         storeServiceA,
         global["contracts"],
@@ -143,7 +143,7 @@ describe("Sync", () => {
         new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
         }),
-        Node.create(
+        CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
           global["contracts"],
@@ -163,7 +163,7 @@ describe("Sync", () => {
         data: { syncedChannel: expectedChannel },
       });
       expect(syncedChannel).toMatchObject(expectedChannel!);
-      await (newNodeA as Node).rpcRouter.dispatch(
+      await (newNodeA as CFCore).rpcRouter.dispatch(
         constructInstallRpc(identityHash, multisigAddress),
       );
       const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
@@ -187,7 +187,7 @@ describe("Sync", () => {
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
         }),
-        Node.create(
+        CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
           global["contracts"],
@@ -207,7 +207,7 @@ describe("Sync", () => {
         data: { syncedChannel: expectedChannel },
       });
       expect(syncedChannel).toMatchObject(expectedChannel!);
-      await (newNodeB as Node).rpcRouter.dispatch(
+      await (newNodeB as CFCore).rpcRouter.dispatch(
         constructInstallRpc(identityHash, multisigAddress),
       );
       const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
@@ -235,7 +235,7 @@ describe("Sync", () => {
         1,
         ProtocolNames.install,
       );
-      nodeA = await Node.create(
+      nodeA = await CFCore.create(
         messagingServiceA,
         storeServiceA,
         global["contracts"],
@@ -283,7 +283,7 @@ describe("Sync", () => {
         new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
         }),
-        Node.create(
+        CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
           global["contracts"],
@@ -304,7 +304,7 @@ describe("Sync", () => {
       });
       expect(syncedChannel).toMatchObject(expectedChannel!);
 
-      await uninstallApp(newNodeA as Node, nodeB, appIdentityHash, multisigAddress);
+      await uninstallApp(newNodeA as CFCore, nodeB, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
       expect(newChannelA!).toMatchObject(newChannelB!);
@@ -321,7 +321,7 @@ describe("Sync", () => {
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
         }),
-        Node.create(
+        CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
           global["contracts"],
@@ -342,7 +342,7 @@ describe("Sync", () => {
       });
       expect(syncedChannel).toMatchObject(expectedChannel!);
 
-      await uninstallApp(nodeA, newNodeB as Node, appIdentityHash, multisigAddress);
+      await uninstallApp(nodeA, newNodeB as CFCore, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
       expect(newChannelA!).toMatchObject(newChannelB!);
@@ -361,7 +361,7 @@ describe("Sync", () => {
         1,
         ProtocolNames.uninstall,
       );
-      nodeA = await Node.create(
+      nodeA = await CFCore.create(
         messagingServiceA,
         storeServiceA,
         global["contracts"],
@@ -404,7 +404,7 @@ describe("Sync", () => {
         new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
         }),
-        Node.create(
+        CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
           global["contracts"],
@@ -427,7 +427,7 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel!);
 
       // create new app
-      [identityHash] = await installApp(newNodeA as Node, nodeB, multisigAddress, TicTacToeApp);
+      [identityHash] = await installApp(newNodeA as CFCore, nodeB, multisigAddress, TicTacToeApp);
       const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
       const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
@@ -449,7 +449,7 @@ describe("Sync", () => {
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
         }),
-        Node.create(
+        CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
           global["contracts"],
@@ -471,7 +471,7 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel!);
 
       // create new app
-      [identityHash] = await installApp(nodeA, newNodeB as Node, multisigAddress, TicTacToeApp);
+      [identityHash] = await installApp(nodeA, newNodeB as CFCore, multisigAddress, TicTacToeApp);
       const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
       const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
@@ -497,7 +497,7 @@ describe("Sync", () => {
         ProtocolNames.takeAction,
         "NodeA",
       );
-      nodeA = await Node.create(
+      nodeA = await CFCore.create(
         messagingServiceA,
         storeServiceA,
         global["contracts"],
@@ -547,7 +547,7 @@ describe("Sync", () => {
         new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
         }),
-        Node.create(
+        CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
           global["contracts"],
@@ -569,7 +569,7 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel!);
 
       //attempt to uninstall
-      await uninstallApp(newNodeA as Node, nodeB, appIdentityHash, multisigAddress);
+      await uninstallApp(newNodeA as CFCore, nodeB, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
       expect(newChannelA!).toMatchObject(newChannelB!);
@@ -585,7 +585,7 @@ describe("Sync", () => {
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
         }),
-        Node.create(
+        CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
           global["contracts"],
@@ -607,7 +607,7 @@ describe("Sync", () => {
       expect(syncedChannel).toMatchObject(expectedChannel!);
 
       //attempt to uninstall
-      await uninstallApp(nodeA, newNodeB as Node, appIdentityHash, multisigAddress);
+      await uninstallApp(nodeA, newNodeB as CFCore, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
       expect(newChannelA!).toMatchObject(newChannelB!);

@@ -83,10 +83,6 @@ class AdminMessaging extends AbstractMessagingProvider {
     return this.adminService.getChannelsForMerging();
   }
 
-  async repairCriticalStateChannelAddresses(): Promise<RepairCriticalAddressesResponse> {
-    return this.adminService.repairCriticalStateChannelAddresses();
-  }
-
   async addRebalanceProfile(subject: string, data: { profile: RebalanceProfile }): Promise<void> {
     const address = subject.split(".")[1];
     const profile = bigNumberifyJson(data.profile) as RebalanceProfile;
@@ -124,11 +120,6 @@ class AdminMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "admin.get-channels-for-merging",
       this.getChannelsForMerging.bind(this),
-    );
-
-    await super.connectRequestReponse(
-      "admin.repair-critical-addresses",
-      this.repairCriticalStateChannelAddresses.bind(this),
     );
 
     await super.connectRequestReponse(

@@ -1,13 +1,13 @@
 import { MethodNames } from "@connext/types";
 import { jsonRpcDeserialize } from "rpc-server";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { setup, SetupContext } from "../setup";
 
 describe(`Node method follows spec - getStateDepositHolderAddress`, () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   beforeAll(async () => {
     const context: SetupContext = await setup(global);

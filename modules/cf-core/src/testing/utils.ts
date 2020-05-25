@@ -37,7 +37,7 @@ import { AddressZero, One, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
 import { JsonRpcResponse, Rpc } from "rpc-server";
 
-import { Node } from "../node";
+import { CFCore } from "../cfCore";
 import { AppInstance, StateChannel } from "../models";
 import { CONTRACT_NOT_DEPLOYED } from "../errors";
 import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
@@ -138,8 +138,8 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
 }
 
 export async function requestDepositRights(
-  depositor: Node,
-  counterparty: Node,
+  depositor: CFCore,
+  counterparty: CFCore,
   multisigAddress: string,
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ) {
@@ -166,8 +166,8 @@ export async function requestDepositRights(
 }
 
 export async function rescindDepositRights(
-  node: Node,
-  counterparty: Node,
+  node: CFCore,
+  counterparty: CFCore,
   multisigAddress: string,
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ) {
@@ -186,7 +186,7 @@ export async function rescindDepositRights(
 }
 
 export async function getDepositApps(
-  node: Node,
+  node: CFCore,
   multisigAddr: string,
   tokenAddresses: string[] = [],
 ): Promise<AppInstanceJson[]> {
@@ -276,7 +276,7 @@ export function assertInstallMessage(
  * ensure a channel has been instantiated and to get its multisig address
  * back in the event data.
  */
-export async function getMultisigCreationAddress(node: Node, addresss: string[]): Promise<string> {
+export async function getMultisigCreationAddress(node: CFCore, addresss: string[]): Promise<string> {
   const {
     result: {
       result: { multisigAddress },
@@ -301,7 +301,7 @@ export function constructChannelCreationRpc(owners: string[]) {
  * @param node
  * @returns list of multisig addresses
  */
-export async function getChannelAddresses(node: Node): Promise<Set<string>> {
+export async function getChannelAddresses(node: CFCore): Promise<Set<string>> {
   const {
     result: {
       result: { multisigAddresses },
@@ -316,7 +316,7 @@ export async function getChannelAddresses(node: Node): Promise<Set<string>> {
 }
 
 export async function getAppInstance(
-  node: Node,
+  node: CFCore,
   appIdentityHash: string,
 ): Promise<AppInstanceJson> {
   const {
@@ -335,7 +335,7 @@ export async function getAppInstance(
 }
 
 export async function getAppInstanceProposal(
-  node: Node,
+  node: CFCore,
   appIdentityHash: string,
   multisigAddress: string,
 ): Promise<AppInstanceProposal> {
@@ -354,7 +354,7 @@ export async function getAppInstanceProposal(
 }
 
 export async function getFreeBalanceState(
-  node: Node,
+  node: CFCore,
   multisigAddress: string,
   assetId: string = CONVENTION_FOR_ETH_ASSET_ID,
 ): Promise<MethodResults.GetFreeBalanceState> {
@@ -373,7 +373,7 @@ export async function getFreeBalanceState(
 }
 
 export async function getTokenIndexedFreeBalanceStates(
-  node: Node,
+  node: CFCore,
   multisigAddress: string,
 ): Promise<MethodResults.GetTokenIndexedFreeBalanceStates> {
   const {
@@ -390,7 +390,7 @@ export async function getTokenIndexedFreeBalanceStates(
 }
 
 export async function getInstalledAppInstances(
-  node: Node,
+  node: CFCore,
   multisigAddress: string,
 ): Promise<AppInstanceJson[]> {
   const rpc = {
@@ -404,7 +404,7 @@ export async function getInstalledAppInstances(
 }
 
 export async function getProposedAppInstances(
-  node: Node,
+  node: CFCore,
   multisigAddress: string,
 ): Promise<AppInstanceProposal[]> {
   const rpc = {
@@ -497,10 +497,10 @@ export async function getProposeDepositAppParams(
 }
 
 export async function deposit(
-  node: Node,
+  node: CFCore,
   multisigAddress: string,
   amount: BigNumber = One,
-  responderNode: Node,
+  responderNode: CFCore,
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ) {
   // get rights
@@ -522,7 +522,7 @@ export async function deposit(
   await rescindDepositRights(node, responderNode, multisigAddress, assetId);
 }
 
-export async function deployStateDepositHolder(node: Node, multisigAddress: string) {
+export async function deployStateDepositHolder(node: CFCore, multisigAddress: string) {
   const response = await node.rpcRouter.dispatch({
     methodName: MethodNames.chan_deployStateDepositHolder,
     parameters: {
@@ -674,8 +674,8 @@ export function constructUninstallRpc(appIdentityHash: string, multisigAddress: 
 
 export async function collateralizeChannel(
   multisigAddress: string,
-  node1: Node,
-  node2: Node,
+  node1: CFCore,
+  node2: CFCore,
   amount: BigNumber = One,
   assetId: string = CONVENTION_FOR_ETH_ASSET_ID,
   collateralizeNode2: boolean = true,
@@ -686,7 +686,7 @@ export async function collateralizeChannel(
   }
 }
 
-export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
+export async function createChannel(nodeA: CFCore, nodeB: CFCore): Promise<string> {
   const sortedOwners = [nodeA.signerAddress, nodeB.signerAddress];
   const [multisigAddress]: any = await Promise.all([
     new Promise(async (resolve) => {
@@ -732,8 +732,8 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
 
 // NOTE: Do not run this concurrently, it won't work
 export async function installApp(
-  nodeA: Node,
-  nodeB: Node,
+  nodeA: CFCore,
+  nodeB: CFCore,
   multisigAddress: string,
   appDefinition: string,
   initialState?: SolidityValueType,
@@ -847,8 +847,8 @@ export async function installApp(
 }
 
 export async function confirmChannelCreation(
-  nodeA: Node,
-  nodeB: Node,
+  nodeA: CFCore,
+  nodeB: CFCore,
   data: MethodResults.CreateChannel,
   owners: Address[], // free balance addr[]
 ) {
@@ -876,7 +876,7 @@ export async function confirmAppInstanceInstallation(
 }
 
 export async function makeInstallCall(
-  node: Node,
+  node: CFCore,
   appIdentityHash: string,
   multisigAddress: string,
 ) {
@@ -884,7 +884,7 @@ export async function makeInstallCall(
 }
 
 export function makeProposeCall(
-  nodeB: Node,
+  nodeB: CFCore,
   appDefinition: string,
   multisigAddress: string,
   initialState?: SolidityValueType,
@@ -908,8 +908,8 @@ export function makeProposeCall(
 }
 
 export async function makeAndSendProposeCall(
-  nodeA: Node,
-  nodeB: Node,
+  nodeA: CFCore,
+  nodeB: CFCore,
   appDefinition: string,
   multisigAddress: string,
   initialState?: SolidityValueType,
@@ -1039,7 +1039,7 @@ export function getAppContext(
 }
 
 export async function takeAppAction(
-  node: Node,
+  node: CFCore,
   appIdentityHash: string,
   multisigAddress: string,
   action: any,
@@ -1051,8 +1051,8 @@ export async function takeAppAction(
 }
 
 export async function uninstallApp(
-  node: Node,
-  counterparty: Node,
+  node: CFCore,
+  counterparty: CFCore,
   appIdentityHash: string,
   multisigAddress: string,
 ): Promise<string> {
@@ -1068,14 +1068,14 @@ export async function uninstallApp(
   return appIdentityHash;
 }
 
-export async function getApps(node: Node, multisigAddress: string): Promise<AppInstanceJson[]> {
+export async function getApps(node: CFCore, multisigAddress: string): Promise<AppInstanceJson[]> {
   return (await node.rpcRouter.dispatch(constructGetAppsRpc(multisigAddress))).result.result
     .appInstances;
 }
 
 export async function getBalances(
-  nodeA: Node,
-  nodeB: Node,
+  nodeA: CFCore,
+  nodeB: CFCore,
   multisigAddress: string,
   assetId: AssetId,
 ): Promise<[BigNumber, BigNumber]> {

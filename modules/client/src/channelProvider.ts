@@ -1,6 +1,6 @@
 import { generateValidationMiddleware } from "@connext/apps";
 import { ChannelProvider } from "@connext/channel-provider";
-import { Node as CFCore } from "@connext/cf-core";
+import { CFCore } from "@connext/cf-core";
 import {
   CFChannelProviderOptions,
   ChannelMethods,
@@ -11,7 +11,7 @@ import {
   EventNames,
   IChannelProvider,
   IChannelSigner,
-  IClientStore,
+  IStoreService,
   ILoggerService,
   INodeApiClient,
   IRpcConnection,
@@ -109,7 +109,7 @@ export const createCFChannelProvider = async ({
 export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConnection {
   public connected: boolean = true;
   public cfCore: CFCore;
-  public store: IClientStore;
+  public store: IStoreService;
 
   private signer: IChannelSigner;
   private node: INodeApiClient;
@@ -118,7 +118,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   constructor(
     cfCore: CFCore,
-    store: IClientStore,
+    store: IStoreService,
     signer: IChannelSigner,
     node: INodeApiClient,
     logger: ILoggerService,

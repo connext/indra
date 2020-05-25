@@ -1,4 +1,4 @@
-import { IBackupServiceAPI, StorePair } from "@connext/types";
+import { IBackupService, StorePair } from "@connext/types";
 
 /**
  * Class simply holds all the states in memory that would otherwise get
@@ -11,7 +11,7 @@ import { IBackupServiceAPI, StorePair } from "@connext/types";
  * store refactor, and it is not clear how this would impact backwards
  * compatability of custom stores.
  */
-export class MockBackupService implements IBackupServiceAPI {
+export class MockBackupService implements IBackupService {
   private prefix: string;
   private storage = new Map<string, any>();
 
