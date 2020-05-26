@@ -6,6 +6,7 @@ import {
   UninstallMiddlewareContext,
   NetworkContext,
   ProposeMiddlewareContext,
+  Address,
 } from "@connext/types";
 import { uninstallDepositMiddleware, proposeDepositMiddleware } from "./DepositApp";
 import { proposeLinkedTransferMiddleware } from "./SimpleLinkedTransferApp";
@@ -19,6 +20,7 @@ import { sharedProposalMiddleware } from "./shared/middleware";
 // add any validation middlewares
 export const generateValidationMiddleware = async (
   network: NetworkContext,
+  supportedTokenAddresses: Address[],
 ): Promise<ValidationMiddleware> => {
   if (!network.provider) {
     throw new Error(`Validation middleware needs access to a provider`);
@@ -30,7 +32,11 @@ export const generateValidationMiddleware = async (
   ) => {
     switch (protocol) {
       case ProtocolNames.propose: {
-        await proposeMiddleware(network, middlewareContext as ProposeMiddlewareContext);
+        await proposeMiddleware(
+          network,
+          middlewareContext as ProposeMiddlewareContext,
+          supportedTokenAddresses,
+        );
         break;
       }
       case ProtocolNames.uninstall: {
@@ -71,10 +77,11 @@ const uninstallMiddleware = async (
 const proposeMiddleware = async (
   network: NetworkContext,
   middlewareContext: ProposeMiddlewareContext,
+  supportedTokenAddresses: Address[],
 ) => {
   const { contractAddresses } = network;
   const { proposal } = middlewareContext;
-  sharedProposalMiddleware(middlewareContext, contractAddresses);
+  sharedProposalMiddleware(middlewareContext, contractAddresses, supportedTokenAddresses);
   const appDef = proposal.appDefinition;
   switch (appDef) {
     case contractAddresses.DepositApp: {

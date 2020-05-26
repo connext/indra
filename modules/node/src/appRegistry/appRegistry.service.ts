@@ -208,10 +208,13 @@ export class AppRegistryService implements OnModuleInit {
   public generateMiddleware = async () => {
     const contractAddresses = await this.configService.getContractAddresses();
     const provider = this.configService.getEthProvider();
-    const defaultValidation = await generateValidationMiddleware({
-      contractAddresses,
-      provider: provider as JsonRpcProvider,
-    });
+    const defaultValidation = await generateValidationMiddleware(
+      {
+        contractAddresses,
+        provider: provider as JsonRpcProvider,
+      },
+      this.configService.getSupportedTokens(),
+    );
 
     return async (protocol: ProtocolName, cxt: MiddlewareContext) => {
       await defaultValidation(protocol, cxt);
