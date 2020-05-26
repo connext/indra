@@ -687,12 +687,6 @@
       "runtimeCodeHash": "0xa52e3215610f412638ecf812b04abc3a1f261048fa0bb9b891a8237a448eeb61",
       "txHash": "0x31264950c9a34456d63239ced81d24bb9b61dd0efc958ac30a03c222cd0da38d"
     },
-    "FastSignedTransferApp": {
-      "address": "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF",
-      "creationCodeHash": "0x162ed036e23b9689060bdafbdabfa612cf90a1e219db48746003dcb2300891e4",
-      "runtimeCodeHash": "0x2e5450dfe398f0095bd2b44555904e521921bf48171626ae7db420631d705242",
-      "txHash": "0xa570e5c54728d7ff50df93af7becaca3227ec6e9927597f649a2d3385c5024a5"
-    },
     "HashLockTransferApp": {
       "address": "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF",
       "creationCodeHash": "0x5d24c735feef7af1df51587caefdbac66481455b37d81a6440ac37d65f7ae0aa",
