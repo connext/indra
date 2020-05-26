@@ -190,14 +190,6 @@ export class AppRegistryService implements OnModuleInit {
         break;
       }
       case HashLockTransferAppName: {
-        const blockNumber = await this.configService.getEthProvider().getBlockNumber();
-        validateHashLockTransferApp(
-          proposeInstallParams,
-          blockNumber,
-          from,
-          this.cfCoreService.cfCore.publicIdentifier,
-        );
-
         // install for receiver or error
         // https://github.com/ConnextProject/indra/issues/942
         const recipient = proposeInstallParams.meta["recipient"];

@@ -125,10 +125,7 @@ const proposeMiddleware = async (
       break;
     }
     case contractAddresses.HashLockTransferApp: {
-      await proposeHashLockTransferMiddleware(
-        middlewareContext,
-        contractAddresses.HashLockTransferApp!,
-      );
+      await proposeHashLockTransferMiddleware(middlewareContext, network.provider);
       break;
     }
     case contractAddresses.WithdrawApp: {

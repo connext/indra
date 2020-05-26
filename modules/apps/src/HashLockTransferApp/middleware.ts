@@ -1,8 +1,11 @@
-import { ProposeMiddlewareContext } from "@connext/types";
+import { ProposeMiddlewareContext, JsonRpcProvider } from "@connext/types";
+import { validateHashLockTransferApp } from ".";
 
 export const proposeHashLockTransferMiddleware = async (
   cxt: ProposeMiddlewareContext,
-  addr: string,
+  provider: JsonRpcProvider,
 ) => {
-  throw new Error("proposeHashLockTransferMiddleware not implemented");
+  const { params } = cxt;
+  const blockNumber = await provider.getBlockNumber();
+  return validateHashLockTransferApp(params, blockNumber);
 };

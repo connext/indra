@@ -328,8 +328,6 @@ export class ConnextListener extends ConnextEventEmitter {
           break;
         }
         case HashLockTransferAppName: {
-          const blockNumber = await this.connext.ethProvider.getBlockNumber();
-          validateHashLockTransferApp(params, blockNumber, from, this.connext.publicIdentifier);
           break;
         }
         case SimpleSignedTransferAppName: {
