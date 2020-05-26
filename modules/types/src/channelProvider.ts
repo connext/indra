@@ -6,7 +6,8 @@ import { IChannelSigner } from "./crypto";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
 import { MethodNames } from "./methods";
-import { WithdrawalMonitorObject, IClientStore } from "./store";
+import { JsonRpcRequest } from "./rpc";
+import { WithdrawalMonitorObject, IStoreService } from "./store";
 import { StateChannelJSON } from "./state";
 import { enumify } from "./utils";
 import {
@@ -45,15 +46,8 @@ export interface CFChannelProviderOptions {
   signer: IChannelSigner;
   node: INodeApiClient;
   logger?: ILoggerService;
-  store: IClientStore;
+  store: IStoreService;
 }
-
-export type JsonRpcRequest = {
-  id: number;
-  jsonrpc: "2.0";
-  method: string; // MethodNames?
-  params: any;
-};
 
 export type WalletDepositParams = {
   amount: DecString;

@@ -13,7 +13,7 @@ import {
   SetStateCommitmentJSON,
   ChallengeEvents,
   ChallengeStatus,
-  IClientStore,
+  IStoreService,
 } from "@connext/types";
 import { toBN, getRandomChannelSigner } from "@connext/utils";
 import { Wallet, Contract } from "ethers";
@@ -38,7 +38,7 @@ const MAX_FUNDING_RETRIES = 3;
 /////////////////////////////
 // Context
 
-export const getAndInitStore = async (): Promise<IClientStore> => {
+export const getAndInitStore = async (): Promise<IStoreService> => {
   const store = getMemoryStore();
   await store.init();
   await store.clear();
@@ -273,7 +273,7 @@ export const setupContext = async (
 
   /////////////////////////////////////////
   // store helper functions
-  const loadStore = async (store: IClientStore) => {
+  const loadStore = async (store: IStoreService) => {
     // create the channel
     await store.createStateChannel(
       channel,
@@ -314,7 +314,7 @@ export const setupContext = async (
   }
 
   const addActionToAppInStore = async (
-    store: IClientStore,
+    store: IStoreService,
     appPriorToAction: AppWithCounterClass,
     action: AppWithCounterAction = {
       increment: One,

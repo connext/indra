@@ -124,12 +124,9 @@ else
   proxy:
     image: '$proxy_image'
     environment:
-      DOMAINNAME: 'localhost'
-      EMAIL: 'noreply@gmail.com'
       ETH_PROVIDER_URL: '$INDRA_ETH_PROVIDER'
       MESSAGING_TCP_URL: 'nats:4222'
       MESSAGING_WS_URL: 'nats:4221'
-      MODE: 'dev'
       NODE_URL: 'node:8080'
       WEBSERVER_URL: 'webserver:3000'
     networks:

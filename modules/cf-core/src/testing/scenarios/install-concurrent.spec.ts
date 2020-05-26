@@ -2,7 +2,7 @@ import { CONVENTION_FOR_ETH_ASSET_ID, ProposeMessage } from "@connext/types";
 import { One } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { toBeLt } from "../bignumber-jest-matcher";
 import { TestContractAddresses } from "../contracts";
@@ -17,8 +17,8 @@ const { TicTacToeApp } = global[`contracts`] as TestContractAddresses;
 
 describe(`Node method follows spec - install`, () => {
   let multisigAddress: string;
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   describe(
     `Node A gets app install proposal, sends to node B, B approves it, installs it, ` +

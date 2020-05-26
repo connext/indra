@@ -7,7 +7,6 @@ import {
   PublicIdentifier,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { jsonRpcMethod } from "rpc-server";
 
 import {
   NO_APP_IDENTITY_HASH_TO_INSTALL,
@@ -16,18 +15,20 @@ import {
   NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
-import { RequestHandler } from "../../request-handler";
-import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
-import RpcRouter from "../../rpc-router";
+import { RequestHandler } from "../../request-handler";
+import { RpcRouter } from "../../rpc-router";
+
+import { MethodController } from "../controller";
 
 /**
  * This converts a proposed app instance to an installed app instance while
  * sending an approved ack to the proposer.
  * @param params
  */
-export class InstallAppInstanceController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_install)
+export class InstallAppInstanceController extends MethodController {
+  public readonly methodName = MethodNames.chan_install;
+
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockName(

@@ -1,7 +1,7 @@
 import { EventNames, EventPayloads, UpdateStateMessage } from "@connext/types";
 import { Zero, Two } from "ethers/constants";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 import { NO_MULTISIG_IN_PARAMS, NO_APP_INSTANCE_FOR_GIVEN_HASH } from "../../errors";
 
 import { TestContractAddresses } from "../contracts";
@@ -20,8 +20,8 @@ const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 // NOTE: no initiator events
 function confirmMessages(
-  initiator: Node,
-  responder: Node,
+  initiator: CFCore,
+  responder: CFCore,
   expectedData: EventPayloads.UpdateState,
 ) {
   const expected = {
@@ -38,8 +38,8 @@ function confirmMessages(
 }
 
 describe("Node method follows spec - takeAction", () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   beforeEach(async () => {
     const context: SetupContext = await setup(global);
@@ -56,7 +56,7 @@ describe("Node method follows spec - takeAction", () => {
         const takeActionReq = constructTakeActionRpc("0xfail", multisigAddress, validAction);
 
         await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(
-          NO_APP_INSTANCE_FOR_GIVEN_HASH,
+          NO_APP_INSTANCE_FOR_GIVEN_HASH("0xfail"),
         );
       });
 
