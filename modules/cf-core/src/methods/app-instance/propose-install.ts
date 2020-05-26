@@ -14,7 +14,7 @@ import {
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
 
-import { NodeController } from "../controller";
+import { MethodController } from "../controller";
 
 /**
  * This creates an entry of a proposed AppInstance while sending the proposal
@@ -22,7 +22,7 @@ import { NodeController } from "../controller";
  *
  * @returns The appIdentityHash for the proposed AppInstance
  */
-export class ProposeInstallAppInstanceController extends NodeController {
+export class ProposeInstallAppInstanceController extends MethodController {
   public readonly methodName = MethodNames.chan_proposeInstall;
 
   public executeMethod = super.executeMethod;

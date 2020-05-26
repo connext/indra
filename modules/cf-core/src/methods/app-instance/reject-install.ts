@@ -14,9 +14,9 @@ import {
 import { StateChannel } from "../../models/state-channel";
 import { RequestHandler } from "../../request-handler";
 
-import { NodeController } from "../controller";
+import { MethodController } from "../controller";
 
-export class RejectInstallController extends NodeController {
+export class RejectInstallController extends MethodController {
   public readonly methodName = MethodNames.chan_rejectInstall;
 
   public executeMethod = super.executeMethod;

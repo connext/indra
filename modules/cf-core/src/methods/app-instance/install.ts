@@ -19,14 +19,14 @@ import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
 import { RpcRouter } from "../../rpc-router";
 
-import { NodeController } from "../controller";
+import { MethodController } from "../controller";
 
 /**
  * This converts a proposed app instance to an installed app instance while
  * sending an approved ack to the proposer.
  * @param params
  */
-export class InstallAppInstanceController extends NodeController {
+export class InstallAppInstanceController extends MethodController {
   public readonly methodName = MethodNames.chan_install;
 
   public executeMethod = super.executeMethod;

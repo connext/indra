@@ -11,7 +11,7 @@ import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
 import { RequestHandler } from "../../request-handler";
 import { getCreate2MultisigAddress } from "../../utils";
 
-import { NodeController } from "../controller";
+import { MethodController } from "../controller";
 
 /**
  * This instantiates a StateChannel object to encapsulate the "channel"
@@ -24,7 +24,7 @@ import { NodeController } from "../controller";
  * is owned and the multisig's _address_ is sent as an event
  * to whoever subscribed to the `CREATE_CHANNEL_EVENT` event on the Node.
  */
-export class CreateChannelController extends NodeController {
+export class CreateChannelController extends MethodController {
   public readonly methodName = MethodNames.chan_create || "unknown";
 
   public executeMethod = super.executeMethod;

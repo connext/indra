@@ -27,9 +27,9 @@ import { StateChannel } from "../../models/state-channel";
 import { RequestHandler } from "../../request-handler";
 import { RpcRouter } from "../../rpc-router";
 
-import { NodeController } from "../controller";
+import { MethodController } from "../controller";
 
-export class TakeActionController extends NodeController {
+export class TakeActionController extends MethodController {
   public readonly methodName = MethodNames.chan_takeAction;
 
   public executeMethod = super.executeMethod;

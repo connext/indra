@@ -11,11 +11,11 @@ import {
   PublicIdentifier,
   ILockService,
 } from "@connext/types";
-import { bigNumberifyJson, logTime } from "@connext/utils";
+import { logTime } from "@connext/utils";
 import EventEmitter from "eventemitter3";
 
-import { eventNameToImplementation } from "./message-handling";
-import { methodNameToImplementation } from "./methods";
+import { eventImplementations } from "./message-handling";
+import { methodImplementations } from "./methods";
 import { ProtocolRunner } from "./machine";
 import { RpcRouter } from "./rpc-router";
 import { MethodRequest, MethodResponse } from "./types";
@@ -24,10 +24,7 @@ import { MethodRequest, MethodResponse } from "./types";
  * about app instances and channels for this Node and any relevant peer Nodes.
  */
 export class RequestHandler {
-  private readonly methods = new Map();
-  private readonly events = new Map();
-
-  router!: RpcRouter;
+  public router!: RpcRouter;
 
   constructor(
     readonly publicIdentifier: PublicIdentifier,
@@ -48,26 +45,25 @@ export class RequestHandler {
   injectRouter(router: RpcRouter) {
     this.router = router;
     this.mapPublicApiMethods();
-    this.mapEventHandlers();
   }
 
   /**
    * In some use cases, waiting for the response of a method call is easier
    * and cleaner than wrangling through callback hell.
-   * @param method
+   * @param methodName
    * @param req
    */
-  public async callMethod(method: MethodName, req: MethodRequest): Promise<MethodResponse> {
-    if (!this.methods.has(method)) {
-      throw new Error(`No implementation available for method ${method}`);
+  public async callMethod(methodName: MethodName, req: MethodRequest): Promise<MethodResponse> {
+    if (!methodImplementations[methodName]) {
+      throw new Error(`No implementation available for method ${methodName}`);
     }
     const start = Date.now();
     const result: MethodResponse = {
       type: req.type,
       requestId: req.requestId,
-      result: await this.methods.get(method)(this, req.params),
+      result: await methodImplementations[methodName](this, req.params),
     };
-    logTime(this.log, start, `Method ${method} was executed`);
+    logTime(this.log, start, `Method ${methodName} was executed`);
     return result;
   }
 
@@ -75,26 +71,15 @@ export class RequestHandler {
    * This registers all of the methods the Node is expected to have
    */
   private mapPublicApiMethods() {
-    for (const methodName in methodNameToImplementation) {
-      this.methods.set(methodName, methodNameToImplementation[methodName]);
+    for (const methodName of Object.keys(methodImplementations)) {
       this.incoming.on(methodName, async (req: MethodRequest) => {
         const res: MethodResponse = {
           type: req.type,
           requestId: req.requestId,
-          result: await this.methods.get(methodName)(this, bigNumberifyJson(req.params)),
+          result: await methodImplementations[methodName](this, req.params),
         };
         this.router.emit((req as any).methodName, res, "outgoing");
       });
-    }
-  }
-
-  /**
-   * This maps the Node event names to their respective handlers.
-   * These are the events being listened on to detect requests from peer Nodes.
-   */
-  private mapEventHandlers() {
-    for (const eventName of Object.values(EventNames)) {
-      this.events.set(eventName, eventNameToImplementation[eventName]);
     }
   }
 
@@ -106,7 +91,7 @@ export class RequestHandler {
    */
   public async callEvent(event: EventNames, msg: Message) {
     const start = Date.now();
-    const controllerExecutionMethod = this.events.get(event);
+    const controllerExecutionMethod = eventImplementations[event];
     const controllerCount = this.router.eventListenerCount(event);
 
     if (!controllerExecutionMethod && controllerCount === 0) {
@@ -140,7 +125,7 @@ export class RequestHandler {
   }
 
   public async isLegacyEvent(event: EventNames) {
-    return this.events.has(event);
+    return Object.keys(eventImplementations).includes(event);
   }
 
   public getSigner(): IChannelSigner {

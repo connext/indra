@@ -2,9 +2,9 @@ import { MethodNames, MethodResults } from "@connext/types";
 
 import { RequestHandler } from "../../request-handler";
 
-import { NodeController } from "../controller";
+import { MethodController } from "../controller";
 
-export class GetAllChannelAddressesController extends NodeController {
+export class GetAllChannelAddressesController extends MethodController {
   public readonly methodName = MethodNames.chan_getChannelAddresses;
 
   public executeMethod = super.executeMethod;

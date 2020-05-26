@@ -20,9 +20,9 @@ import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
 import { RpcRouter } from "../../rpc-router";
 
-import { NodeController } from "../controller";
+import { MethodController } from "../controller";
 
-export class UninstallController extends NodeController {
+export class UninstallController extends MethodController {
   public readonly methodName = MethodNames.chan_uninstall;
 
   public executeMethod = super.executeMethod;

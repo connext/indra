@@ -4,9 +4,9 @@ import { NO_NETWORK_PROVIDER_CREATE2, NO_MULTISIG_FOR_COUNTERPARTIES } from "../
 import { RequestHandler } from "../../request-handler";
 import { getCreate2MultisigAddress } from "../../utils";
 
-import { NodeController } from "../controller";
+import { MethodController } from "../controller";
 
-export class GetStateDepositHolderAddressController extends NodeController {
+export class GetStateDepositHolderAddressController extends MethodController {
   public readonly methodName = MethodNames.chan_getStateDepositHolderAddress;
 
   public executeMethod = super.executeMethod;

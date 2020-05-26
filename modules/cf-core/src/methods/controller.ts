@@ -4,7 +4,7 @@ import { logTime } from "@connext/utils";
 import { RequestHandler } from "../request-handler";
 import { StateChannel } from "../models/state-channel";
 
-export abstract class NodeController {
+export abstract class MethodController {
   public abstract methodName: MethodName;
 
   public async executeMethod(

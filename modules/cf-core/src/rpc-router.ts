@@ -1,7 +1,7 @@
 import { ILoggerService, JsonRpcResponse, Rpc } from "@connext/types";
 import { bigNumberifyJson, logTime } from "@connext/utils";
 
-import { methodNameToImplementation } from "./methods";
+import { methodImplementations } from "./methods";
 import { RequestHandler } from "./request-handler";
 
 type AsyncCallback = (...args: any) => Promise<any>;
@@ -16,18 +16,17 @@ export class RpcRouter {
   }
 
   async dispatch(rpc: Rpc): Promise<JsonRpcResponse> {
-    const start = Date.now();
-    const implementation = methodNameToImplementation[rpc.methodName];
-
-    if (!implementation) {
-      throw new Error(`Cannot execute ${rpc.methodName}: no implementation`);
+    if (!methodImplementations[rpc.methodName]) {
+      throw new Error(`Cannot execute ${rpc.methodName}: no implementation. Available methods: ${Object.keys(methodImplementations)}`);
     }
+
+    const start = Date.now();
 
     const response = {
       id: rpc.id as number,
       jsonrpc: "2.0",
       result: {
-        result: await implementation(
+        result: await methodImplementations[rpc.methodName](
           this.requestHandler,
           bigNumberifyJson(rpc.parameters),
         ),

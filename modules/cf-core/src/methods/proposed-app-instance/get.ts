@@ -4,9 +4,9 @@ import { bigNumberifyJson } from "@connext/utils";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH } from "../../errors";
 import { RequestHandler } from "../../request-handler";
 
-import { NodeController } from "../controller";
+import { MethodController } from "../controller";
 
-export class GetProposedAppInstanceController extends NodeController {
+export class GetProposedAppInstanceController extends MethodController {
   public readonly methodName = MethodNames.chan_getProposedAppInstance;
 
   protected async executeMethodImplementation(
