@@ -15,7 +15,7 @@ import { bigNumberifyJson } from "@connext/utils";
 import { UNASSIGNED_SEQ_NO } from "../constants";
 
 import { RequestHandler } from "../request-handler";
-import RpcRouter from "../rpc-router";
+import { RpcRouter } from "../rpc-router";
 import { StateChannel } from "../models";
 
 /**

@@ -82,7 +82,7 @@ type GetFreeBalanceStateParams = {
 };
 
 type GetFreeBalanceStateResult = {
-  [s: string]: BigNumber;
+  [signerAddress: string]: BigNumber;
 };
 
 ////////////////////////////////////////

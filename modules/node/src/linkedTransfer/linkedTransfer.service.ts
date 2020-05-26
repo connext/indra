@@ -56,11 +56,11 @@ export class LinkedTransferService {
     this.log.info(`findSenderAndReceiverAppsWithStatus ${paymentId} started`);
     const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
       paymentId,
-      this.cfCoreService.cfCore.signerAddress,
+      this.cfCoreService.cfCore.publicIdentifier,
     );
     const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
       paymentId,
-      this.cfCoreService.cfCore.signerAddress,
+      this.cfCoreService.cfCore.publicIdentifier,
     );
     // if sender app is uninstalled, transfer has been unlocked by node
     const status = appStatusesToLinkedTransferStatus(
@@ -93,7 +93,7 @@ export class LinkedTransferService {
           async (transfer) =>
             await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
               transfer.latestState["paymentId"],
-              this.cfCoreService.cfCore.signerAddress,
+              this.cfCoreService.cfCore.publicIdentifier,
             ),
         ),
       )

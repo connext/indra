@@ -1,13 +1,14 @@
 import { MethodNames, MethodParams, MethodResults } from "@connext/types";
-import { jsonRpcMethod } from "rpc-server";
-
-import { RequestHandler } from "../../request-handler";
-import { NodeController } from "../controller";
-import { NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH } from "../../errors";
 import { bigNumberifyJson } from "@connext/utils";
 
-export class GetProposedAppInstanceController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_getProposedAppInstance)
+import { NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH } from "../../errors";
+import { RequestHandler } from "../../request-handler";
+
+import { MethodController } from "../controller";
+
+export class GetProposedAppInstanceController extends MethodController {
+  public readonly methodName = MethodNames.chan_getProposedAppInstance;
+
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.GetProposedAppInstance,
