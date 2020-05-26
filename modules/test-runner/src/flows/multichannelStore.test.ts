@@ -101,8 +101,8 @@ const performConditionalTransfer = async (params: {
 describe("Full Flow: Multichannel stores (clients share single sequelize instance)", () => {
   let sender: ConnextClient;
   let recipient: ConnextClient;
-  let initialSenderFb;
-  let initialRecipientFb;
+  let initialSenderFb: { [x: string]: string | BigNumber };
+  let initialRecipientFb: { [x: string]: BigNumber };
 
   const DEPOSIT_AMT = ETH_AMOUNT_MD;
   const ASSET = CONVENTION_FOR_ETH_ASSET_ID;
@@ -203,11 +203,11 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     // establish tests constants
     const TRANSFER_AMT = toBN(100);
     const MIN_TRANSFERS = 25;
-    const TRANSFER_INTERVAL = 500; // ms between consecutive transfer calls
+    const TRANSFER_INTERVAL = 1000; // ms between consecutive transfer calls
 
     let receivedTransfers = 0;
     let intervals = 0;
-    let pollerError;
+    let pollerError: string | undefined;
 
     // call transfers on interval
     const start = Date.now();
@@ -219,7 +219,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       }
       let error: any = undefined;
       try {
-        const preImage = await performConditionalTransfer({
+        const [, preImage] = await performConditionalTransfer({
           conditionType: ConditionalTransferTypes.LinkedTransfer,
           sender,
           recipient,
@@ -232,8 +232,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       }
       if (error) {
         clearInterval(interval);
-        pollerError = error.stack || error.message;
-        throw new Error(pollerError);
+        throw error;
       }
     }, TRANSFER_INTERVAL);
 
@@ -244,6 +243,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       // setup listeners (increment on reclaim)
       recipient.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, () => {
         receivedTransfers += 1;
+        console.log(`[${receivedTransfers}/${MIN_TRANSFERS}] redeemed`);
         if (receivedTransfers >= MIN_TRANSFERS) {
           resolve();
         }
