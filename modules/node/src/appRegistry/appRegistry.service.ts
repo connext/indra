@@ -216,11 +216,6 @@ export class AppRegistryService implements OnModuleInit {
         break;
       }
       case SimpleSignedTransferAppName: {
-        validateSignedTransferApp(
-          proposeInstallParams,
-          from,
-          this.cfCoreService.cfCore.publicIdentifier,
-        );
         break;
       }
       default: {

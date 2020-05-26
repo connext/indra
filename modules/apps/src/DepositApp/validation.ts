@@ -1,5 +1,4 @@
 import {
-  MethodParams,
   DepositAppState,
   CONVENTION_FOR_ETH_ASSET_ID,
   ProtocolParams,

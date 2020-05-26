@@ -334,7 +334,6 @@ export class ConnextListener extends ConnextEventEmitter {
           break;
         }
         case SimpleSignedTransferAppName: {
-          validateSignedTransferApp(params, from, this.connext.publicIdentifier);
           break;
         }
         case DepositAppName: {

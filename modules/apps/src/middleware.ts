@@ -113,14 +113,11 @@ const proposeMiddleware = async (
       break;
     }
     case contractAddresses.SimpleTwoPartySwapApp: {
-      await proposeSwapMiddleware(middlewareContext, contractAddresses.SimpleTwoPartySwapApp!);
+      proposeSwapMiddleware(middlewareContext);
       break;
     }
     case contractAddresses.SimpleSignedTransferApp: {
-      await proposeSignedTransferMiddleware(
-        middlewareContext,
-        contractAddresses.SimpleSignedTransferApp!,
-      );
+      proposeSignedTransferMiddleware(middlewareContext);
       break;
     }
     case contractAddresses.SimpleLinkedTransferApp: {
