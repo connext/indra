@@ -16,7 +16,7 @@ export const deBigNumberifyJson = (json: any): any =>
   );
 
 // Give abrv = true to abbreviate hex strings and addresss to look like "0x6FEC..kuQk"
-export const stringify = (value: any, abrv: boolean = false): string =>
+export const stringify = (value: any, abrv = false, spaces = 2): string =>
   JSON.stringify(
     value,
     (key: string, value: any): any =>
@@ -27,7 +27,7 @@ export const stringify = (value: any, abrv: boolean = false): string =>
         : abrv && value && typeof value === "string" && value.startsWith("0x") && value.length > 12
         ? abbreviate(value)
         : value,
-    2,
+    spaces,
   );
 
 const nullify = (key: string, value: any) => typeof value === "undefined" ? null : value;
