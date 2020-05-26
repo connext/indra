@@ -24,7 +24,7 @@ import {
 import { MinimumViableMultisig, ProxyFactory } from "../../contracts";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod } from "../../rpc-server";
+import { jsonRpcMethod } from "../../rpc-router";
 import { getCreate2MultisigAddress } from "../../utils";
 
 import { NodeController } from "../controller";

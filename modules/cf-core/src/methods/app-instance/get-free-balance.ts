@@ -10,7 +10,7 @@ import { getAddress } from "ethers/utils";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod } from "../../rpc-server";
+import { jsonRpcMethod } from "../../rpc-router";
 
 import { NodeController } from "../controller";
 

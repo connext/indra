@@ -1,7 +1,7 @@
 import { MethodNames, MethodResults } from "@connext/types";
 
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod } from "../../rpc-server";
+import { jsonRpcMethod } from "../../rpc-router";
 
 import { NodeController } from "../controller";
 

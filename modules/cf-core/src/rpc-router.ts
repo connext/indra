@@ -1,14 +1,36 @@
 import { ILoggerService, JsonRpcResponse, Rpc } from "@connext/types";
 import { bigNumberifyJson, logTime } from "@connext/utils";
 
-import { Controller, jsonRpcSerializeAsResponse, Router } from "./rpc-server";
 import { RequestHandler } from "./request-handler";
 
 type AsyncCallback = (...args: any) => Promise<any>;
 
-export class RpcRouter extends Router {
+const jsonRpcSerializeAsResponse = (result: any, id: number): JsonRpcResponse => {
+  return { jsonrpc: "2.0", result, id };
+};
+
+export class Controller {
+  static jsonapiType: string;
+  static rpcMethods: {
+    [key: string]: { method: string; callback: string; type: typeof Controller };
+  } = {};
+}
+
+export const jsonRpcMethod = (name: string) => {
+  return (target: Controller, propertyKey: string) => {
+    const constructor = target.constructor as typeof Controller;
+    constructor.rpcMethods[`${constructor.name}:${name}`] = {
+      method: name,
+      callback: propertyKey,
+      type: constructor,
+    };
+  };
+};
+
+export class RpcRouter {
   private readonly requestHandler: RequestHandler;
   private readonly log: ILoggerService;
+  private controllers: Array<typeof Controller>;
 
   constructor({
     controllers,
@@ -17,7 +39,7 @@ export class RpcRouter extends Router {
     controllers: typeof Controller[];
     requestHandler: RequestHandler;
   }) {
-    super({ controllers });
+    this.controllers = controllers;
     this.requestHandler = requestHandler;
     this.log = requestHandler.log.newContext("CF-RpcRouter");
   }

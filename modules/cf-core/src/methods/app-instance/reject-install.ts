@@ -13,7 +13,7 @@ import {
 } from "../../errors";
 import { StateChannel } from "../../models/state-channel";
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod } from "../../rpc-server";
+import { jsonRpcMethod } from "../../rpc-router";
 
 import { NodeController } from "../controller";
 

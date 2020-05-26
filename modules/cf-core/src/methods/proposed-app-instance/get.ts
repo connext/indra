@@ -3,7 +3,7 @@ import { bigNumberifyJson } from "@connext/utils";
 
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH } from "../../errors";
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod } from "../../rpc-server";
+import { jsonRpcMethod } from "../../rpc-router";
 
 import { NodeController } from "../controller";
 

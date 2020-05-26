@@ -25,8 +25,7 @@ import {
 import { ProtocolRunner } from "../../machine";
 import { StateChannel } from "../../models/state-channel";
 import { RequestHandler } from "../../request-handler";
-import { RpcRouter } from "../../rpc-router";
-import { jsonRpcMethod } from "../../rpc-server";
+import { jsonRpcMethod, RpcRouter } from "../../rpc-router";
 
 import { NodeController } from "../controller";
 

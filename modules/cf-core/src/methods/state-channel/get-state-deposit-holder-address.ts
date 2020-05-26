@@ -2,7 +2,7 @@ import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 
 import { NO_NETWORK_PROVIDER_CREATE2, NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod } from "../../rpc-server";
+import { jsonRpcMethod } from "../../rpc-router";
 import { getCreate2MultisigAddress } from "../../utils";
 
 import { NodeController } from "../controller";

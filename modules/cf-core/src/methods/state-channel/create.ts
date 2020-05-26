@@ -9,7 +9,7 @@ import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils"
 
 import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod } from "../../rpc-server";
+import { jsonRpcMethod } from "../../rpc-router";
 import { getCreate2MultisigAddress } from "../../utils";
 
 import { NodeController } from "../controller";
