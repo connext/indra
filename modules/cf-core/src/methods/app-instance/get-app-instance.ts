@@ -26,7 +26,7 @@ export class GetAppInstanceController extends NodeController {
 
     const appInstance = await store.getAppInstance(appIdentityHash);
     if (!appInstance) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(appIdentityHash));
     }
     return { appInstance };
   }

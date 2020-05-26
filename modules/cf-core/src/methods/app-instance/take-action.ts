@@ -61,7 +61,7 @@ export class TakeActionController extends NodeController {
 
     const appInstance = preProtocolStateChannel.appInstances.get(appIdentityHash);
     if (!appInstance) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(appIdentityHash));
     }
 
     try {
@@ -97,7 +97,7 @@ export class TakeActionController extends NodeController {
 
     const appInstance = channel.getAppInstance(appIdentityHash);
     if (!appInstance) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(appIdentityHash));
     }
 
     return { newState: appInstance.state };

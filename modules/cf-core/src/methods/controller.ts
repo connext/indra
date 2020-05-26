@@ -12,19 +12,18 @@ export abstract class NodeController extends Controller {
     requestHandler: RequestHandler,
     params: MethodParam,
   ): Promise<MethodResult | undefined> {
-    const log = requestHandler.log.newContext("MethodController");
+    // TODO: we should add methodName to log context, but how do we access it?
+    const log = requestHandler.log.newContext(`CF-Controller`);
     const start = Date.now();
     let substart = start;
     let lockValue: string = "";
 
     const lockName = await this.getRequiredLockName(requestHandler, params);
-    logTime(log, substart, "Got lockname");
-    substart = Date.now();
 
     // Dont lock for static functions
     if (lockName !== "") {
       lockValue = await requestHandler.lockService.acquireLock(lockName);
-      logTime(log, substart, "Got lock");
+      logTime(log, substart, `Got lock ${lockName}`);
       substart = Date.now();
     }
 
@@ -58,9 +57,10 @@ export abstract class NodeController extends Controller {
       logTime(log, substart, "After execution complete");
       substart = Date.now();
     } catch (e) {
-      log.error(`caught error in node controller: ${e.message}`);
+      log.error(`Caught error in node controller: ${e.message}`);
       error = e;
     }
+
     // don't do this in a finally to ensure any errors with releasing the
     // lock do not swallow any protocol or controller errors
     if (lockName !== "") {
@@ -73,6 +73,7 @@ export abstract class NodeController extends Controller {
       logTime(log, substart, "Released lock");
       substart = Date.now();
     }
+
     if (error) {
       throw error;
     }
@@ -105,3 +106,4 @@ export abstract class NodeController extends Controller {
     returnValue: MethodResult,
   ): Promise<void> {}
 }
+

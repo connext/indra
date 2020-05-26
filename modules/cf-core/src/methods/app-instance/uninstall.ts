@@ -61,7 +61,7 @@ export class UninstallController extends NodeController {
     // check if its the balance refund app
     const app = preProtocolStateChannel.appInstances.get(appIdentityHash);
     if (!app) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(appIdentityHash));
     }
   }
 

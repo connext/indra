@@ -373,7 +373,7 @@ export class NodeApiClient implements INodeApiClient {
     logTime(
       this.log,
       start,
-      `Node responded to ${subject.split(".").slice(0, 2).join(".")} request`, // prettier-ignore
+      `Node responded to ${subject} request`,
     );
     return !response || isEmptyObj ? undefined : bigNumberifyJson(response);
   }
