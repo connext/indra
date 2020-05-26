@@ -10,12 +10,12 @@ import {
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR, NO_MULTISIG_IN_PARAMS } from "../../errors";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod } from "../../rpc-router";
 
 import { NodeController } from "../controller";
 
 export class SyncController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_sync)
+  public readonly methodName = MethodNames.chan_sync;
+
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockName(

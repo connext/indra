@@ -795,23 +795,21 @@ export async function installApp(
     nodeB.once(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
       // assert message
       assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
-      const {
-        data: { appIdentityHash },
-      } = msg;
       // Sanity-check
       confirmProposedAppInstance(
         installationProposalRpc.parameters,
-        await getAppInstanceProposal(nodeB, appIdentityHash, multisigAddress),
+        await getAppInstanceProposal(nodeB, msg.data.appIdentityHash, multisigAddress),
       );
       resolve(msg.data.appIdentityHash);
     });
 
     await nodeA.rpcRouter.dispatch(installationProposalRpc);
-    confirmProposedAppInstance(
-      installationProposalRpc.parameters,
-      await getAppInstanceProposal(nodeA, appIdentityHash, multisigAddress),
-    );
   });
+
+  confirmProposedAppInstance(
+    installationProposalRpc.parameters,
+    await getAppInstanceProposal(nodeA, appIdentityHash, multisigAddress),
+  );
 
   // send nodeB install call
   await Promise.all([

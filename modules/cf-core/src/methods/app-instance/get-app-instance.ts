@@ -2,7 +2,6 @@ import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 
 import { NO_APP_IDENTITY_HASH_TO_GET_DETAILS, NO_APP_INSTANCE_FOR_GIVEN_HASH } from "../../errors";
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod } from "../../rpc-router";
 
 import { NodeController } from "../controller";
 
@@ -12,7 +11,8 @@ import { NodeController } from "../controller";
  * @param params
  */
 export class GetAppInstanceController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_getAppInstance)
+  public readonly methodName = MethodNames.chan_getAppInstance;
+
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.GetAppInstanceDetails,

@@ -18,12 +18,13 @@ import {
 import { ProtocolRunner } from "../../machine";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod, RpcRouter } from "../../rpc-router";
+import { RpcRouter } from "../../rpc-router";
 
 import { NodeController } from "../controller";
 
 export class UninstallController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_uninstall)
+  public readonly methodName = MethodNames.chan_uninstall;
+
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockName(

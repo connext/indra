@@ -25,12 +25,13 @@ import {
 import { ProtocolRunner } from "../../machine";
 import { StateChannel } from "../../models/state-channel";
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod, RpcRouter } from "../../rpc-router";
+import { RpcRouter } from "../../rpc-router";
 
 import { NodeController } from "../controller";
 
 export class TakeActionController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_takeAction)
+  public readonly methodName = MethodNames.chan_takeAction;
+
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockName(

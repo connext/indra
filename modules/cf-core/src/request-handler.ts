@@ -76,7 +76,6 @@ export class RequestHandler {
    */
   private mapPublicApiMethods() {
     for (const methodName in methodNameToImplementation) {
-      console.log(`Mapping method name ${methodName} to implementation`);
       this.methods.set(methodName, methodNameToImplementation[methodName]);
       this.incoming.on(methodName, async (req: MethodRequest) => {
         const res: MethodResponse = {

@@ -55,13 +55,13 @@ const controllers = [
  * controllers overlap (should be caught by compiler anyway).
  */
 export const methodNameToImplementation = controllers.reduce((acc, controller) => {
-  if (!controller.methodName) {
+  const instance = new controller();
+  if (!instance.methodName) {
     return acc;
   }
-  if (acc[controller.methodName]) {
-    throw new Error(`Fatal: Multiple controllers connected to ${controller.methodName}`);
+  if (acc[instance.methodName]) {
+    throw new Error(`Fatal: Multiple controllers connected to ${instance.methodName}`);
   }
-  const handler = new controller();
-  acc[controller.methodName] = handler.executeMethod.bind(handler);
+  acc[instance.methodName] = instance.executeMethod.bind(instance);
   return acc;
 }, {});

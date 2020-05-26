@@ -24,7 +24,6 @@ import {
 import { MinimumViableMultisig, ProxyFactory } from "../../contracts";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod } from "../../rpc-router";
 import { getCreate2MultisigAddress } from "../../utils";
 
 import { NodeController } from "../controller";
@@ -34,7 +33,8 @@ import { NodeController } from "../controller";
 const CREATE_PROXY_AND_SETUP_GAS = 500_000;
 
 export class DeployStateDepositController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_deployStateDepositHolder)
+  public readonly methodName = MethodNames.chan_deployStateDepositHolder;
+
   public executeMethod = super.executeMethod;
 
   protected async beforeExecution(

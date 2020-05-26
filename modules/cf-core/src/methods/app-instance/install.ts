@@ -17,7 +17,7 @@ import {
 import { ProtocolRunner } from "../../machine";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod, RpcRouter } from "../../rpc-router";
+import { RpcRouter } from "../../rpc-router";
 
 import { NodeController } from "../controller";
 
@@ -27,7 +27,8 @@ import { NodeController } from "../controller";
  * @param params
  */
 export class InstallAppInstanceController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_install)
+  public readonly methodName = MethodNames.chan_install;
+
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockName(

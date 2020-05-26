@@ -1,26 +1,10 @@
 import { ILoggerService, JsonRpcResponse, Rpc } from "@connext/types";
 import { bigNumberifyJson, logTime } from "@connext/utils";
 
+import { methodNameToImplementation } from "./methods";
 import { RequestHandler } from "./request-handler";
 
 type AsyncCallback = (...args: any) => Promise<any>;
-
-export class Controller {
-  static rpcMethods: {
-    [key: string]: { method: string; callback: string; type: typeof Controller };
-  } = {};
-}
-
-export const jsonRpcMethod = (name: string) => {
-  return (target: Controller, propertyKey: string) => {
-    const constructor = target.constructor as typeof Controller;
-    constructor.rpcMethods[name] = {
-      method: name,
-      callback: propertyKey,
-      type: constructor,
-    };
-  };
-};
 
 export class RpcRouter {
   private readonly requestHandler: RequestHandler;
@@ -33,19 +17,17 @@ export class RpcRouter {
 
   async dispatch(rpc: Rpc): Promise<JsonRpcResponse> {
     const start = Date.now();
-    const controller = Object.values(Controller.rpcMethods).find(
-      (mapping) => mapping.method === rpc.methodName,
-    );
+    const implementation = methodNameToImplementation[rpc.methodName];
 
-    if (!controller) {
-      throw new Error(`Cannot execute ${rpc.methodName}: no controller`);
+    if (!implementation) {
+      throw new Error(`Cannot execute ${rpc.methodName}: no implementation`);
     }
 
     const response = {
       id: rpc.id as number,
       jsonrpc: "2.0",
       result: {
-        result: await new controller.type()[controller.callback](
+        result: await implementation(
           this.requestHandler,
           bigNumberifyJson(rpc.parameters),
         ),

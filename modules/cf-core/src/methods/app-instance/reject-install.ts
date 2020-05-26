@@ -13,12 +13,12 @@ import {
 } from "../../errors";
 import { StateChannel } from "../../models/state-channel";
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod } from "../../rpc-router";
 
 import { NodeController } from "../controller";
 
 export class RejectInstallController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_rejectInstall)
+  public readonly methodName = MethodNames.chan_rejectInstall;
+
   public executeMethod = super.executeMethod;
   protected async getRequiredLockName(
     requestHandler: RequestHandler,

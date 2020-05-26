@@ -13,7 +13,6 @@ import {
 } from "../../errors";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
-import { jsonRpcMethod } from "../../rpc-router";
 
 import { NodeController } from "../controller";
 
@@ -24,7 +23,8 @@ import { NodeController } from "../controller";
  * @returns The appIdentityHash for the proposed AppInstance
  */
 export class ProposeInstallAppInstanceController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_proposeInstall)
+  public readonly methodName = MethodNames.chan_proposeInstall;
+
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockName(

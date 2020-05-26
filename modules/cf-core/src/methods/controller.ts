@@ -1,19 +1,17 @@
 import { MethodName, MethodParam, MethodResult } from "@connext/types";
 import { logTime } from "@connext/utils";
 
-import { Controller } from "../rpc-router";
 import { RequestHandler } from "../request-handler";
 import { StateChannel } from "../models/state-channel";
 
-export abstract class NodeController extends Controller {
-  public static readonly methodName: MethodName;
+export abstract class NodeController {
+  public abstract methodName: MethodName;
 
   public async executeMethod(
     requestHandler: RequestHandler,
     params: MethodParam,
   ): Promise<MethodResult | undefined> {
-    // TODO: we should add methodName to log context, but how do we access it?
-    const log = requestHandler.log.newContext(`CF-Controller`);
+    const log = requestHandler.log.newContext(`CF-Controller-${this.methodName}`);
     const start = Date.now();
     let substart = start;
     let lockValue: string = "";
