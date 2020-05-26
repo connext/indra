@@ -296,6 +296,12 @@ export class ConnextListener extends ConnextEventEmitter {
         const time = () => `in ${Date.now() - start} ms`;
 
         if (payload.type === ConditionalTransferTypes.LinkedTransfer) {
+          if (
+            (payload as EventPayloads.LinkedTransferCreated).recipient !==
+            this.connext.publicIdentifier
+          ) {
+            return;
+          }
           try {
             const {
               paymentId,
@@ -308,6 +314,7 @@ export class ConnextListener extends ConnextEventEmitter {
                 `Unable to parse transfer details from message ${stringify(payload)}`,
               );
             }
+            this.log.info(`Redeeming transfer with paymentId: ${paymentId}`);
             await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
             this.log.info(`Successfully redeemed transfer with paymentId: ${paymentId}`);
           } catch (e) {
