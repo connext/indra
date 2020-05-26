@@ -1,7 +1,7 @@
 import { MethodName, MethodParam, MethodResult } from "@connext/types";
-import { Controller } from "rpc-server";
 import { logTime } from "@connext/utils";
 
+import { Controller } from "../rpc-server";
 import { RequestHandler } from "../request-handler";
 import { StateChannel } from "../models/state-channel";
 

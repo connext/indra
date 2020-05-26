@@ -7,13 +7,12 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
-import { jsonRpcMethod } from "rpc-server";
-
+import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
 import { RequestHandler } from "../../request-handler";
+import { jsonRpcMethod } from "../../rpc-server";
+import { getCreate2MultisigAddress } from "../../utils";
 
 import { NodeController } from "../controller";
-import { getCreate2MultisigAddress } from "../../utils";
-import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
 
 /**
  * This instantiates a StateChannel object to encapsulate the "channel"

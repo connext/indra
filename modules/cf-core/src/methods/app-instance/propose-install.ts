@@ -5,17 +5,17 @@ import {
   ProtocolNames,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { jsonRpcMethod } from "rpc-server";
 
 import {
   NULL_INITIAL_STATE_FOR_PROPOSAL,
   NO_STATE_CHANNEL_FOR_OWNERS,
   NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
+import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
+import { jsonRpcMethod } from "../../rpc-server";
 
 import { NodeController } from "../controller";
-import { StateChannel } from "../../models";
 
 /**
  * This creates an entry of a proposed AppInstance while sending the proposal

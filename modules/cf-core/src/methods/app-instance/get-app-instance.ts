@@ -1,8 +1,8 @@
 import { MethodNames, MethodParams, MethodResults } from "@connext/types";
-import { jsonRpcMethod } from "rpc-server";
 
 import { NO_APP_IDENTITY_HASH_TO_GET_DETAILS, NO_APP_INSTANCE_FOR_GIVEN_HASH } from "../../errors";
 import { RequestHandler } from "../../request-handler";
+import { jsonRpcMethod } from "../../rpc-server";
 
 import { NodeController } from "../controller";
 

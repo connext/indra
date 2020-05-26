@@ -7,13 +7,12 @@ import {
   SyncMessage,
 } from "@connext/types";
 
-import { jsonRpcMethod } from "rpc-server";
-
-import { RequestHandler } from "../../request-handler";
-
-import { NodeController } from "../controller";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR, NO_MULTISIG_IN_PARAMS } from "../../errors";
 import { StateChannel } from "../../models";
+import { RequestHandler } from "../../request-handler";
+import { jsonRpcMethod } from "../../rpc-server";
+
+import { NodeController } from "../controller";
 
 export class SyncController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_sync)

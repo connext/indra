@@ -1,7 +1,8 @@
 import { MethodNames, MethodResults } from "@connext/types";
-import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
+import { jsonRpcMethod } from "../../rpc-server";
+
 import { NodeController } from "../controller";
 
 export class GetAllChannelAddressesController extends NodeController {

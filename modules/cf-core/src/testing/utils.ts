@@ -12,6 +12,7 @@ import {
   DepositAppStateEncoding,
   EventNames,
   InstallMessage,
+  JsonRpcResponse,
   Message,
   MethodNames,
   MethodParam,
@@ -21,6 +22,7 @@ import {
   ProposeMessage,
   ProtocolParams,
   PublicIdentifier,
+  Rpc,
   SolidityValueType,
   UninstallMessage,
 } from "@connext/types";
@@ -35,7 +37,6 @@ import { Contract, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import { AddressZero, One, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
-import { JsonRpcResponse, Rpc } from "rpc-server";
 
 import { CFCore } from "../cfCore";
 import { AppInstance, StateChannel } from "../models";
@@ -276,14 +277,17 @@ export function assertInstallMessage(
  * ensure a channel has been instantiated and to get its multisig address
  * back in the event data.
  */
-export async function getMultisigCreationAddress(node: CFCore, addresss: string[]): Promise<string> {
+export const getMultisigCreationAddress = async (
+  node: CFCore,
+  addresss: string[],
+): Promise<string> => {
   const {
     result: {
       result: { multisigAddress },
     },
   } = await node.rpcRouter.dispatch(constructChannelCreationRpc(addresss));
   return multisigAddress;
-}
+};
 
 export function constructChannelCreationRpc(owners: string[]) {
   return {

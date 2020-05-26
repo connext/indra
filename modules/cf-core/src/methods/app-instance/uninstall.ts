@@ -7,7 +7,6 @@ import {
   EventNames,
   UninstallMessage,
 } from "@connext/types";
-import { jsonRpcMethod } from "rpc-server";
 
 import {
   CANNOT_UNINSTALL_FREE_BALANCE,
@@ -17,10 +16,12 @@ import {
   NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
-import { RequestHandler } from "../../request-handler";
-import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
-import RpcRouter from "../../rpc-router";
+import { RequestHandler } from "../../request-handler";
+import { RpcRouter } from "../../rpc-router";
+import { jsonRpcMethod } from "../../rpc-server";
+
+import { NodeController } from "../controller";
 
 export class UninstallController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_uninstall)

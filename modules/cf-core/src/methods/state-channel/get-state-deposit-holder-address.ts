@@ -1,10 +1,11 @@
 import { MethodNames, MethodParams, MethodResults } from "@connext/types";
-import { jsonRpcMethod } from "rpc-server";
 
 import { NO_NETWORK_PROVIDER_CREATE2, NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
 import { RequestHandler } from "../../request-handler";
-import { NodeController } from "../controller";
+import { jsonRpcMethod } from "../../rpc-server";
 import { getCreate2MultisigAddress } from "../../utils";
+
+import { NodeController } from "../controller";
 
 export class GetStateDepositHolderAddressController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_getStateDepositHolderAddress)

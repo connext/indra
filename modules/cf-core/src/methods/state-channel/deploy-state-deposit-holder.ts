@@ -8,12 +8,10 @@ import {
   PublicIdentifier,
 } from "@connext/types";
 import { delay, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
-
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import { Interface, solidityKeccak256 } from "ethers/utils";
-import { jsonRpcMethod } from "rpc-server";
 
 import {
   CHANNEL_CREATION_FAILED,
@@ -26,6 +24,7 @@ import {
 import { MinimumViableMultisig, ProxyFactory } from "../../contracts";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
+import { jsonRpcMethod } from "../../rpc-server";
 import { getCreate2MultisigAddress } from "../../utils";
 
 import { NodeController } from "../controller";

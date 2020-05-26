@@ -1,12 +1,12 @@
-import { ILoggerService } from "@connext/types";
+import { ILoggerService, JsonRpcResponse, Rpc } from "@connext/types";
 import { bigNumberifyJson, logTime } from "@connext/utils";
-import { Controller, JsonRpcResponse, jsonRpcSerializeAsResponse, Router, Rpc } from "rpc-server";
 
+import { Controller, jsonRpcSerializeAsResponse, Router } from "./rpc-server";
 import { RequestHandler } from "./request-handler";
 
 type AsyncCallback = (...args: any) => Promise<any>;
 
-export default class RpcRouter extends Router {
+export class RpcRouter extends Router {
   private readonly requestHandler: RequestHandler;
   private readonly log: ILoggerService;
 
@@ -78,3 +78,5 @@ export default class RpcRouter extends Router {
       : 0;
   }
 }
+
+export default RpcRouter;
