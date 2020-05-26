@@ -1,18 +1,10 @@
-import {
-  MethodParams,
-  CoinTransfer,
-  SimpleLinkedTransferAppState,
-} from "@connext/types";
+import { CoinTransfer, SimpleLinkedTransferAppState, ProtocolParams } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 
-export const validateSimpleLinkedTransferApp = (
-  params: MethodParams.ProposeInstall,
-  initiatorIdentifier: string,
-  responderIdentifier: string,
-) => {
-  const { responderDeposit, initiatorDeposit } = params;
+export const validateSimpleLinkedTransferApp = (params: ProtocolParams.Propose) => {
+  const { responderDeposit, initiatorDeposit, initiatorIdentifier, responderIdentifier } = params;
   const initialState = params.initialState as SimpleLinkedTransferAppState;
 
   const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);

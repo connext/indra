@@ -1,8 +1,7 @@
 import { ProposeMiddlewareContext } from "@connext/types";
+import { validateSimpleLinkedTransferApp } from ".";
 
-export const proposeLinkedTransferMiddleware = async (
-  cxt: ProposeMiddlewareContext,
-  addr: string,
-) => {
-  throw new Error("proposeLinkedTransferMiddleware not implemented");
+export const proposeLinkedTransferMiddleware = (cxt: ProposeMiddlewareContext) => {
+  const { params } = cxt;
+  return validateSimpleLinkedTransferApp(params);
 };

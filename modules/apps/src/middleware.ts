@@ -121,10 +121,7 @@ const proposeMiddleware = async (
       break;
     }
     case contractAddresses.SimpleLinkedTransferApp: {
-      await proposeLinkedTransferMiddleware(
-        middlewareContext,
-        contractAddresses.SimpleLinkedTransferApp!,
-      );
+      proposeLinkedTransferMiddleware(middlewareContext);
       break;
     }
     case contractAddresses.HashLockTransferApp: {

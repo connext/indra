@@ -321,7 +321,6 @@ export class ConnextListener extends ConnextEventEmitter {
     try {
       switch (registryAppInfo.name) {
         case SimpleLinkedTransferAppName: {
-          validateSimpleLinkedTransferApp(params, from, this.connext.publicIdentifier);
           break;
         }
         case WithdrawAppName: {

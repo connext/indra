@@ -173,11 +173,6 @@ export class AppRegistryService implements OnModuleInit {
     this.log.info(`runPreInstallValidation for app name ${registryAppInfo.name} started`);
     switch (registryAppInfo.name) {
       case SimpleLinkedTransferAppName: {
-        validateSimpleLinkedTransferApp(
-          proposeInstallParams,
-          from,
-          this.cfCoreService.cfCore.publicIdentifier,
-        );
         break;
       }
       case SimpleTwoPartySwapAppName: {
