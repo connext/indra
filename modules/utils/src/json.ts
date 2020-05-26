@@ -1,7 +1,7 @@
 import { bigNumberify } from "ethers/utils";
 
 import { isBN, toBN } from "./bigNumbers";
-import { abbreviate } from "./hexStrings";
+import { abbreviate } from "./strings";
 
 export const bigNumberifyJson = (json: any): any =>
   typeof json === "string"

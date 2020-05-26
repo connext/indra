@@ -1,5 +1,5 @@
 import { MethodName, MethodParam, MethodResult } from "@connext/types";
-import { logTime } from "@connext/utils";
+import { capitalize, logTime, stringify } from "@connext/utils";
 
 import { RequestHandler } from "../request-handler";
 import { StateChannel } from "../models/state-channel";
@@ -11,21 +11,25 @@ export abstract class MethodController {
     requestHandler: RequestHandler,
     params: MethodParam,
   ): Promise<MethodResult | undefined> {
-    const log = requestHandler.log.newContext(`CF-Controller-${this.methodName}`);
+    const log = requestHandler.log.newContext(
+      `CF-${capitalize(this.methodName.replace(/^chan_/, ""))}`,
+    );
     const start = Date.now();
     let substart = start;
     let lockValue: string = "";
+
+    log.info(`Executing with params: ${stringify(params, true, 0)}`);
 
     const lockName = await this.getRequiredLockName(requestHandler, params);
 
     // Dont lock for static functions
     if (lockName !== "") {
       lockValue = await requestHandler.lockService.acquireLock(lockName);
-      logTime(log, substart, `Got lock ${lockName}`);
+      logTime(log, substart, `Acquired lock ${lockName}`);
       substart = Date.now();
     }
 
-    let ret: MethodResult | undefined;
+    let result: MethodResult | undefined;
     let error: Error | undefined;
     try {
       // GET CHANNEL BEFORE EXECUTION
@@ -46,12 +50,16 @@ export abstract class MethodController {
       substart = Date.now();
 
       // GET UPDATED CHANNEL FROM EXECUTION
-      ret = await this.executeMethodImplementation(requestHandler, params, preProtocolStateChannel);
+      result = await this.executeMethodImplementation(
+        requestHandler,
+        params,
+        preProtocolStateChannel,
+      );
       logTime(log, substart, "Executed method implementation");
       substart = Date.now();
 
       // USE RETURNED VALUE IN AFTER EXECUTION
-      await this.afterExecution(requestHandler, params, ret);
+      await this.afterExecution(requestHandler, params, result);
       logTime(log, substart, "After execution complete");
       substart = Date.now();
     } catch (e) {
@@ -76,7 +84,9 @@ export abstract class MethodController {
       throw error;
     }
 
-    return ret;
+    log.debug(`Finished executing with result: ${stringify(result, true, 0)}`);
+
+    return result;
   }
 
   protected async getRequiredLockName(
