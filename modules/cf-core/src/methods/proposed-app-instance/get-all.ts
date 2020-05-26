@@ -1,12 +1,13 @@
 import { MethodNames, MethodParams, MethodResults } from "@connext/types";
-import { jsonRpcMethod } from "rpc-server";
 
-import { RequestHandler } from "../../request-handler";
-import { NodeController } from "../controller";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
+import { RequestHandler } from "../../request-handler";
 
-export class GetProposedAppInstancesController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_getProposedAppInstances)
+import { MethodController } from "../controller";
+
+export class GetProposedAppInstancesController extends MethodController {
+  public readonly methodName = MethodNames.chan_getProposedAppInstances;
+
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.GetProposedAppInstances,

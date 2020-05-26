@@ -23,6 +23,7 @@ type GetHashLockTransferResponse =
       status: HashLockTransferStatus;
       meta?: any;
       preImage: Bytes32;
+      expiry: BigNumber;
     }
   | undefined;
 

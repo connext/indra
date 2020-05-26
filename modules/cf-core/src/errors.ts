@@ -94,7 +94,8 @@ export const NO_ACTION_ENCODING_FOR_APP_INSTANCE =
 
 export const NO_APP_CONTRACT_ADDR = "The App Contract address is empty";
 
-export const NO_APP_INSTANCE_FOR_GIVEN_HASH = "No appInstance exists for the given identity hash";
+export const NO_APP_INSTANCE_FOR_GIVEN_HASH = (identityHash: string): string =>
+  `No appInstance exists for identity hash ${identityHash}`;
 
 export const NO_APP_INSTANCE_FOR_TAKE_ACTION = "No appIdentityHash specified to takeAction on";
 

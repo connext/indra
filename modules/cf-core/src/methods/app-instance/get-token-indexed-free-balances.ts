@@ -1,13 +1,14 @@
 import { MethodNames, MethodParams, MethodResults } from "@connext/types";
-import { jsonRpcMethod } from "rpc-server";
 
-import { RequestHandler } from "../../request-handler";
-import { NodeController } from "../controller";
-import { StateChannel } from "../../models";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
+import { StateChannel } from "../../models";
+import { RequestHandler } from "../../request-handler";
 
-export class GetTokenIndexedFreeBalancesController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_getTokenIndexedFreeBalanceStates)
+import { MethodController } from "../controller";
+
+export class GetTokenIndexedFreeBalancesController extends MethodController {
+  public readonly methodName = MethodNames.chan_getTokenIndexedFreeBalanceStates;
+
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(

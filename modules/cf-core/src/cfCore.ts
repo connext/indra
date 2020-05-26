@@ -28,14 +28,13 @@ import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
 
-import { createRpcRouter } from "./methods";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
 import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 import { ProtocolRunner } from "./machine";
 import { StateChannel, AppInstance } from "./models";
 import { RequestHandler } from "./request-handler";
-import RpcRouter from "./rpc-router";
+import { RpcRouter } from "./rpc-router";
 import { MethodRequest, MethodResponse, PersistAppType, PersistStateChannelType } from "./types";
 
 export interface NodeConfig {
@@ -133,7 +132,7 @@ export class CFCore {
       this.log,
     );
     this.registerMessagingConnection();
-    this.rpcRouter = createRpcRouter(this.requestHandler);
+    this.rpcRouter = new RpcRouter(this.requestHandler);
     this.requestHandler.injectRouter(this.rpcRouter);
     if (!syncOnStart) {
       return this;
