@@ -1,6 +1,6 @@
 import { generateValidationMiddleware } from "@connext/apps";
 import { ChannelProvider } from "@connext/channel-provider";
-import { Node as CFCore } from "@connext/cf-core";
+import { CFCore } from "@connext/cf-core";
 import {
   CFChannelProviderOptions,
   ChannelMethods,
@@ -11,7 +11,7 @@ import {
   EventNames,
   IChannelProvider,
   IChannelSigner,
-  IClientStore,
+  IStoreService,
   ILoggerService,
   INodeApiClient,
   IRpcConnection,
@@ -109,7 +109,7 @@ export const createCFChannelProvider = async ({
 export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConnection {
   public connected: boolean = true;
   public cfCore: CFCore;
-  public store: IClientStore;
+  public store: IStoreService;
 
   private signer: IChannelSigner;
   private node: INodeApiClient;
@@ -118,7 +118,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   constructor(
     cfCore: CFCore,
-    store: IClientStore,
+    store: IStoreService,
     signer: IChannelSigner,
     node: INodeApiClient,
     logger: ILoggerService,
@@ -361,17 +361,19 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
           return resolve(data.data);
         });
 
+        this.cfCore.once(EventNames.SETUP_FAILED_EVENT, (msg): void => {
+          return reject(new Error(msg.data.error));
+        });
+
         try {
           const creationData = await this.node.createChannel();
           this.logger.debug(`created channel, transaction: ${stringify(creationData)}`);
         } catch (e) {
           return reject(e);
         }
-        await delay(20_000);
-        return reject(`Could not create channel within 20s`);
       });
       if (!creationEventData) {
-        throw new Error(`Could not create channel within 20s`);
+        throw new Error(`Could not create channel`);
       }
       multisigAddress = (creationEventData as MethodResults.CreateChannel).multisigAddress;
     }

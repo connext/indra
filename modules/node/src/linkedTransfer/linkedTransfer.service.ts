@@ -73,7 +73,7 @@ export class LinkedTransferService {
 
     const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
       paymentId,
-      this.cfCoreService.cfCore.signerAddress,
+      this.cfCoreService.cfCore.publicIdentifier,
     );
     if (!senderApp) {
       throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
@@ -87,26 +87,44 @@ export class LinkedTransferService {
     const { assetId, linkedHash } = latestState;
 
     // check if receiver app exists
-    const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
+    const existing = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
       paymentId,
-      getSignerAddressFromPublicIdentifier(userIdentifier),
+      userIdentifier,
     );
-    if (receiverApp) {
-      // dont need to validate anything here
-      const returnRes: NodeResponses.ResolveLinkedTransfer = {
-        appIdentityHash: receiverApp.identityHash,
-        sender: senderApp.channel.userIdentifier,
-        meta: senderApp.meta,
-        paymentId,
-        amount,
-        assetId,
-      };
-      this.log.info(
-        `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId}} complete ${JSON.stringify(
-          returnRes,
-        )}`,
-      );
-      return returnRes;
+    if (existing) {
+      switch (existing.type) {
+        case AppType.INSTANCE: {
+          const returnRes: NodeResponses.ResolveLinkedTransfer = {
+            appIdentityHash: existing.identityHash,
+            sender: senderApp.channel.userIdentifier,
+            meta: senderApp.meta,
+            paymentId,
+            amount,
+            assetId,
+          };
+          this.log.info(
+            `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId}} complete ${JSON.stringify(
+              returnRes,
+            )}`,
+          );
+          return returnRes;
+        }
+        case AppType.PROPOSAL: {
+          this.log.warn(
+            `Found existing linked transfer app proposal for paymentId: ${paymentId}: ${existing.identityHash}, rejecting and continuing`,
+          );
+          await this.cfCoreService.rejectInstallApp(
+            existing.identityHash,
+            receiverChannel.multisigAddress,
+          );
+          break;
+        }
+        default: {
+          this.log.warn(
+            `Found existing app with with incorrect type: ${existing.type} for paymentId: ${paymentId}, proceeding to propose new app`,
+          );
+        }
+      }
     }
 
     this.log.debug(`Found linked transfer in our database, attempting to install...`);
@@ -201,9 +219,6 @@ export class LinkedTransferService {
       assetId,
     };
 
-    // kick off a rebalance before finishing
-    this.channelService.rebalance(receiverChannel, assetId);
-
     this.log.info(
       `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId}} complete ${JSON.stringify(
         returnRes,
@@ -221,11 +236,11 @@ export class LinkedTransferService {
     this.log.info(`findSenderAndReceiverAppsWithStatus ${paymentId} started`);
     const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
       paymentId,
-      this.cfCoreService.cfCore.signerAddress,
+      this.cfCoreService.cfCore.publicIdentifier,
     );
     const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
       paymentId,
-      this.cfCoreService.cfCore.signerAddress,
+      this.cfCoreService.cfCore.publicIdentifier,
     );
     // if sender app is uninstalled, transfer has been unlocked by node
     const status = appStatusesToLinkedTransferStatus(
@@ -258,7 +273,7 @@ export class LinkedTransferService {
           async (transfer) =>
             await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
               transfer.latestState["paymentId"],
-              this.cfCoreService.cfCore.signerAddress,
+              this.cfCoreService.cfCore.publicIdentifier,
             ),
         ),
       )

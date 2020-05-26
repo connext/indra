@@ -234,7 +234,7 @@ docs: documentation
 documentation: py-requirements $(shell find docs $(find_options))
 	$(log_start)
 	$(docker_run) "rm -rf docs/build"
-	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b html -d build/doctrees . build/html"
+	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b html -d build/doctrees ./src build/html"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ########################################
@@ -287,7 +287,7 @@ client: types utils channel-provider messaging store contracts cf-core apps $(sh
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-bot: types utils channel-provider messaging store contracts cf-core apps $(shell find modules/bot $(find_options))
+bot: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/bot $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/bot && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@

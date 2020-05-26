@@ -395,9 +395,9 @@ export class AppRegistryService implements OnModuleInit {
     // node is sender, make sure app doesnt already exist
     const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
       paymentId,
-      this.cfCoreService.cfCore.signerAddress,
+      this.cfCoreService.cfCore.publicIdentifier,
     );
-    if (receiverApp) {
+    if (receiverApp && receiverApp.type !== AppType.REJECTED) {
       throw new Error(
         `Found existing app for ${paymentId}, aborting linked transfer proposal. App: ${stringify(
           receiverApp,
@@ -414,7 +414,7 @@ export class AppRegistryService implements OnModuleInit {
     }
     // node is sender, make sure app doesnt already exist
     const receiverApp = await this.signedTransferService.findReceiverAppByPaymentId(paymentId);
-    if (receiverApp) {
+    if (receiverApp && receiverApp.type !== AppType.REJECTED) {
       throw new Error(
         `Found existing app for ${paymentId}, aborting signed transfer proposal. App: ${stringify(
           receiverApp,

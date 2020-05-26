@@ -7,7 +7,7 @@ import {
   IConnextClient,
   ProtocolParam,
   ProtocolNames,
-  IClientStore,
+  IStoreService,
 } from "@connext/types";
 import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
 import { expect } from "chai";
@@ -39,15 +39,19 @@ export const createClient = async (
   const client = await connect(clientOpts);
   log.info(`connect() returned after ${Date.now() - start}ms`);
   start = Date.now();
-
-  const ethTx = await ethWallet.sendTransaction({
-    to: client.signerAddress,
-    value: ETH_AMOUNT_LG,
-  });
   if (fund) {
+    log.info(`sending client eth`);
+    const ethTx = await ethWallet.sendTransaction({
+      to: client.signerAddress,
+      value: ETH_AMOUNT_LG,
+    });
+    log.debug(`transaction sent ${ethTx.hash}, waiting...`);
+    await ethTx.wait();
     const token = new Contract(client.config.contractAddresses.Token!, tokenAbi, ethWallet);
+    log.info(`sending client tokens`);
     const tokenTx = await token.functions.transfer(client.signerAddress, TOKEN_AMOUNT);
-    await Promise.all([ethTx.wait(), tokenTx.wait()]);
+    log.debug(`transaction sent ${tokenTx.hash}, waiting...`);
+    await tokenTx.wait();
   }
   expect(client.signerAddress).to.be.ok;
   expect(client.publicIdentifier).to.be.ok;
@@ -98,7 +102,7 @@ export type ClientTestMessagingInputOpts = {
   protocol: keyof typeof ProtocolNames | "any"; // use "any" to limit any messages by count
   signer: IChannelSigner;
   params: Partial<ProtocolParam>;
-  store?: IClientStore;
+  store?: IStoreService;
 };
 
 export const createClientWithMessagingLimits = async (

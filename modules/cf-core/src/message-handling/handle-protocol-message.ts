@@ -15,7 +15,7 @@ import { bigNumberifyJson } from "@connext/utils";
 import { UNASSIGNED_SEQ_NO } from "../constants";
 
 import { RequestHandler } from "../request-handler";
-import RpcRouter from "../rpc-router";
+import { RpcRouter } from "../rpc-router";
 import { StateChannel } from "../models";
 
 /**
@@ -43,6 +43,7 @@ export async function handleReceivedProtocolMessage(
   ]);
   try {
     const { channel } = await protocolRunner.runProtocolWithMessage(
+      router,
       data,
       json && StateChannel.fromJson(json),
     );
@@ -151,7 +152,7 @@ async function getOutgoingEventDataFromProtocol(
     }
     default:
       throw new Error(
-        `handleReceivedProtocolMessage received invalid protocol message: ${protocol}`,
+        `[getOutgoingEventDataFromProtocol] handleReceivedProtocolMessage received invalid protocol message: ${protocol}`,
       );
   }
 }

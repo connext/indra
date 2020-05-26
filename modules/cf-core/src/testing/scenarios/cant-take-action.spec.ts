@@ -1,4 +1,4 @@
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 import { INVALID_ACTION } from "../../errors";
 
 import { TestContractAddresses } from "../contracts";
@@ -8,8 +8,8 @@ import { setup, SetupContext } from "../setup";
 const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 describe("Node method follows spec - fails with improper action taken", () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   beforeAll(async () => {
     const context: SetupContext = await setup(global);

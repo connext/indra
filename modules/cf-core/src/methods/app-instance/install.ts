@@ -7,7 +7,6 @@ import {
   PublicIdentifier,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { jsonRpcMethod } from "rpc-server";
 
 import {
   NO_APP_IDENTITY_HASH_TO_INSTALL,
@@ -16,17 +15,20 @@ import {
   NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
-import { RequestHandler } from "../../request-handler";
-import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
+import { RequestHandler } from "../../request-handler";
+import { RpcRouter } from "../../rpc-router";
+
+import { MethodController } from "../controller";
 
 /**
  * This converts a proposed app instance to an installed app instance while
  * sending an approved ack to the proposer.
  * @param params
  */
-export class InstallAppInstanceController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_install)
+export class InstallAppInstanceController extends MethodController {
+  public readonly methodName = MethodNames.chan_install;
+
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockName(
@@ -65,10 +67,11 @@ export class InstallAppInstanceController extends NodeController {
     params: MethodParams.Install,
     preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.Install> {
-    const { protocolRunner, publicIdentifier } = requestHandler;
+    const { protocolRunner, publicIdentifier, router } = requestHandler;
 
     const postProtocolChannel = await install(
       preProtocolStateChannel!,
+      router,
       protocolRunner,
       params,
       publicIdentifier,
@@ -89,6 +92,7 @@ export class InstallAppInstanceController extends NodeController {
 
 export async function install(
   preProtocolStateChannel: StateChannel,
+  router: RpcRouter,
   protocolRunner: ProtocolRunner,
   params: MethodParams.Install,
   initiatorIdentifier: PublicIdentifier,
@@ -97,6 +101,7 @@ export async function install(
   const isSame = initiatorIdentifier === proposal.initiatorIdentifier;
 
   const { channel: postProtocolChannel } = await protocolRunner.initiateProtocol(
+    router,
     ProtocolNames.install,
     {
       appInitiatorIdentifier: proposal.initiatorIdentifier,

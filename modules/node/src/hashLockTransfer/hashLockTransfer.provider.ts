@@ -49,20 +49,34 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       return undefined;
     }
 
-    const latestState = bigNumberifyJson(senderApp.latestState) as HashLockTransferAppState;
-    const { encryptedPreImage, recipient, ...meta } = senderApp.meta || ({} as any);
+    let userApp;
+    if (pubId === senderApp.initiatorIdentifier) {
+      userApp = senderApp;
+    } else if (pubId == receiverApp.responderIdentifier) {
+      userApp = receiverApp;
+    } else {
+      this.log.error(
+        `Cannot get hashlock transfer app for third party. Requestor pubId: ${pubId}, 
+        sender pubId: ${senderApp.initiatorIdentifier}, receiver pubId: ${receiverApp.responderIdentifier}`,
+      );
+      return undefined;
+    }
+
+    const latestState = bigNumberifyJson(userApp.latestState) as HashLockTransferAppState;
+    const { encryptedPreImage, recipient, ...meta } = userApp.meta || ({} as any);
     const amount = latestState.coinTransfers[0].amount.isZero()
       ? latestState.coinTransfers[1].amount
       : latestState.coinTransfers[0].amount;
     return {
       receiverIdentifier: receiverApp ? receiverApp.responderIdentifier : undefined,
       senderIdentifier: senderApp.initiatorIdentifier,
-      assetId: senderApp.initiatorDepositAssetId,
+      assetId: userApp.initiatorDepositAssetId,
       amount: amount.toString(),
       lockHash: latestState.lockHash,
       status: status,
       meta,
       preImage: latestState.preImage,
+      expiry: latestState.expiry,
     };
   }
 

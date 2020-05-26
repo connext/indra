@@ -16,7 +16,7 @@ import {
   EventNames,
   IChannelProvider,
   IChannelSigner,
-  IClientStore,
+  IStoreService,
   IConnextClient,
   ILoggerService,
   IMessagingService,
@@ -79,7 +79,7 @@ export class ConnextClient implements IConnextClient {
   public publicIdentifier: string;
   public signer: IChannelSigner;
   public signerAddress: string;
-  public store: IClientStore;
+  public store: IStoreService;
   public token: Contract;
 
   private opts: InternalClientOptions;
@@ -492,6 +492,10 @@ export class ConnextClient implements IConnextClient {
 
   public once = (event: EventNames, callback: (...args: any[]) => void): ConnextListener => {
     return this.listener.once(event, callback);
+  };
+
+  public removeAllListeners = (event?: EventNames): ConnextListener => {
+    return this.listener.removeAllListeners(event);
   };
 
   public emit = (event: EventNames, data: any): boolean => {

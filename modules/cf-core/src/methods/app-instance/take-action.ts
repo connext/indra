@@ -12,7 +12,6 @@ import {
 import { toBN } from "@connext/utils";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { BigNumber } from "ethers/utils";
-import { jsonRpcMethod } from "rpc-server";
 
 import {
   IMPROPERLY_FORMATTED_STRUCT,
@@ -24,13 +23,15 @@ import {
   NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
-import { RequestHandler } from "../../request-handler";
-
-import { NodeController } from "../controller";
 import { StateChannel } from "../../models/state-channel";
+import { RequestHandler } from "../../request-handler";
+import { RpcRouter } from "../../rpc-router";
 
-export class TakeActionController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_takeAction)
+import { MethodController } from "../controller";
+
+export class TakeActionController extends MethodController {
+  public readonly methodName = MethodNames.chan_takeAction;
+
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockName(
@@ -60,7 +61,7 @@ export class TakeActionController extends NodeController {
 
     const appInstance = preProtocolStateChannel.appInstances.get(appIdentityHash);
     if (!appInstance) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(appIdentityHash));
     }
 
     try {
@@ -78,7 +79,7 @@ export class TakeActionController extends NodeController {
     params: MethodParams.TakeAction,
     preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.TakeAction> {
-    const { store, publicIdentifier, protocolRunner } = requestHandler;
+    const { store, publicIdentifier, protocolRunner, router } = requestHandler;
     const { appIdentityHash, action, stateTimeout } = params;
 
     const app = preProtocolStateChannel!.appInstances.get(appIdentityHash)!;
@@ -86,6 +87,7 @@ export class TakeActionController extends NodeController {
     const { channel } = await runTakeActionProtocol(
       appIdentityHash,
       store,
+      router,
       protocolRunner,
       publicIdentifier,
       preProtocolStateChannel!.userIdentifiers.find((id) => id !== publicIdentifier)!,
@@ -95,7 +97,7 @@ export class TakeActionController extends NodeController {
 
     const appInstance = channel.getAppInstance(appIdentityHash);
     if (!appInstance) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(appIdentityHash));
     }
 
     return { newState: appInstance.state };
@@ -122,6 +124,7 @@ export class TakeActionController extends NodeController {
 async function runTakeActionProtocol(
   appIdentityHash: string,
   store: IStoreService,
+  router: RpcRouter,
   protocolRunner: ProtocolRunner,
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
@@ -134,7 +137,7 @@ async function runTakeActionProtocol(
   }
 
   try {
-    return await protocolRunner.initiateProtocol(ProtocolNames.takeAction, {
+    return await protocolRunner.initiateProtocol(router, ProtocolNames.takeAction, {
       initiatorIdentifier,
       responderIdentifier,
       appIdentityHash,

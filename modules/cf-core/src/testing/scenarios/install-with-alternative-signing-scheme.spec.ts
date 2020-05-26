@@ -4,7 +4,7 @@ import { One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { toBeLt } from "../bignumber-jest-matcher";
 import { TestContractAddresses } from "../contracts";
@@ -25,8 +25,8 @@ expect.extend({ toBeLt });
 describe(`Uses a provided signing key generation function to sign channel state updates`, () => {
   let multisigAddress: string;
   jest.setTimeout(10000);
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   describe(
     `Node A gets app install proposal, sends to node B, B approves it, installs it, ` +
@@ -43,7 +43,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         const storeServiceA = new MemoryStoreServiceFactory().createStoreService();
         await storeServiceA.init();
 
-        nodeA = await Node.create(
+        nodeA = await CFCore.create(
           messagingService,
           storeServiceA,
           global[`contracts`],
@@ -55,7 +55,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
 
         const storeServiceB = new MemoryStoreServiceFactory().createStoreService();
         await storeServiceB.init();
-        nodeB = await Node.create(
+        nodeB = await CFCore.create(
           messagingService,
           storeServiceB,
           global[`contracts`],

@@ -5,17 +5,16 @@ import {
   ProtocolNames,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { jsonRpcMethod } from "rpc-server";
 
 import {
   NULL_INITIAL_STATE_FOR_PROPOSAL,
   NO_STATE_CHANNEL_FOR_OWNERS,
   NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
+import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
 
-import { NodeController } from "../controller";
-import { StateChannel } from "../../models";
+import { MethodController } from "../controller";
 
 /**
  * This creates an entry of a proposed AppInstance while sending the proposal
@@ -23,8 +22,9 @@ import { StateChannel } from "../../models";
  *
  * @returns The appIdentityHash for the proposed AppInstance
  */
-export class ProposeInstallAppInstanceController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_proposeInstall)
+export class ProposeInstallAppInstanceController extends MethodController {
+  public readonly methodName = MethodNames.chan_proposeInstall;
+
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockName(
@@ -73,11 +73,12 @@ export class ProposeInstallAppInstanceController extends NodeController {
     params: MethodParams.ProposeInstall,
     preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.ProposeInstall> {
-    const { protocolRunner, publicIdentifier } = requestHandler;
+    const { protocolRunner, publicIdentifier, router } = requestHandler;
 
     const { responderIdentifier, stateTimeout, defaultTimeout } = params;
 
     const { channel: updated }: { channel: StateChannel } = await protocolRunner.initiateProtocol(
+      router,
       ProtocolNames.propose,
       {
         ...params,
@@ -87,7 +88,6 @@ export class ProposeInstallAppInstanceController extends NodeController {
       },
       preProtocolStateChannel!,
     );
-
     return { appIdentityHash: updated.mostRecentlyProposedAppInstance().identityHash };
   }
 }

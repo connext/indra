@@ -5,8 +5,8 @@ import {
   Bytes32,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
-  IBackupServiceAPI,
-  IClientStore,
+  IBackupService,
+  IStoreService,
   ILoggerService,
   MinimalTransaction,
   SetStateCommitmentJSON,
@@ -42,16 +42,20 @@ const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
  * This class wraps a general key value storage service to become an `IStoreService`
  */
 
-export class KeyValueStorage implements WrappedStorage, IClientStore {
+export class KeyValueStorage implements WrappedStorage, IStoreService {
   private deferred: ((store: any) => Promise<any>)[] = [];
   constructor(
     private readonly storage: WrappedStorage,
-    private readonly backupService?: IBackupServiceAPI,
+    private readonly backupService?: IBackupService,
     private readonly log: ILoggerService = nullLogger,
   ) {}
 
   init(): Promise<void> {
     return this.storage.init();
+  }
+
+  close(): Promise<void> {
+    return this.storage.close();
   }
 
   async getSchemaVersion(): Promise<number> {
