@@ -1,5 +1,5 @@
 import { getLocalStore } from "@connext/store";
-import { ConditionalTransferTypes, IConnextClient } from "@connext/types";
+import { ConditionalTransferTypes, IConnextClient, EventNames } from "@connext/types";
 import {
   getRandomBytes32,
   getRandomPrivateKey,
@@ -81,6 +81,7 @@ describe("Async Transfers", () => {
     let receiver = await createClient({ id: "C", signer: receiverPk });
     await requestCollateral(receiver, transfer.assetId);
     await receiver.messaging.disconnect();
+    receiver.removeAllListeners(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT);
     const paymentId = getRandomBytes32();
     await clientA.transfer({
       amount: transfer.amount.toString(),
