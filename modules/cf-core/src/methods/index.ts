@@ -1,1 +1,1 @@
-export { createRpcRouter, eventNameToImplementation, methodNameToImplementation } from "./api";
+export { methodNameToImplementation } from "./api";

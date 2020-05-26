@@ -14,9 +14,10 @@ import {
 import { bigNumberifyJson, logTime } from "@connext/utils";
 import EventEmitter from "eventemitter3";
 
-import { eventNameToImplementation, methodNameToImplementation } from "./methods";
+import { eventNameToImplementation } from "./message-handling";
+import { methodNameToImplementation } from "./methods";
 import { ProtocolRunner } from "./machine";
-import RpcRouter from "./rpc-router";
+import { RpcRouter } from "./rpc-router";
 import { MethodRequest, MethodResponse } from "./types";
 /**
  * This class registers handlers for requests to get or set some information
@@ -57,6 +58,9 @@ export class RequestHandler {
    * @param req
    */
   public async callMethod(method: MethodName, req: MethodRequest): Promise<MethodResponse> {
+    if (!this.methods.has(method)) {
+      throw new Error(`No implementation available for method ${method}`);
+    }
     const start = Date.now();
     const result: MethodResponse = {
       type: req.type,
@@ -72,6 +76,7 @@ export class RequestHandler {
    */
   private mapPublicApiMethods() {
     for (const methodName in methodNameToImplementation) {
+      console.log(`Mapping method name ${methodName} to implementation`);
       this.methods.set(methodName, methodNameToImplementation[methodName]);
       this.incoming.on(methodName, async (req: MethodRequest) => {
         const res: MethodResponse = {

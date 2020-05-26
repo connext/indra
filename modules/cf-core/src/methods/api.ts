@@ -1,9 +1,3 @@
-import { EventNames } from "@connext/types";
-
-import { handleRejectProposalMessage, handleReceivedProtocolMessage } from "../message-handling";
-import { RequestHandler } from "../request-handler";
-import RpcRouter from "../rpc-router";
-
 import {
   GetInstalledAppInstancesController,
   GetAppInstanceController,
@@ -64,22 +58,10 @@ export const methodNameToImplementation = controllers.reduce((acc, controller) =
   if (!controller.methodName) {
     return acc;
   }
-
   if (acc[controller.methodName]) {
     throw new Error(`Fatal: Multiple controllers connected to ${controller.methodName}`);
   }
-
   const handler = new controller();
-
   acc[controller.methodName] = handler.executeMethod.bind(handler);
-
   return acc;
 }, {});
-
-export const createRpcRouter = (requestHandler: RequestHandler) =>
-  new RpcRouter({ controllers, requestHandler });
-
-export const eventNameToImplementation = {
-  [EventNames.PROTOCOL_MESSAGE_EVENT]: handleReceivedProtocolMessage,
-  [EventNames.REJECT_INSTALL_EVENT]: handleRejectProposalMessage,
-};

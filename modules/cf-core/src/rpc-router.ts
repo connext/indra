@@ -5,12 +5,7 @@ import { RequestHandler } from "./request-handler";
 
 type AsyncCallback = (...args: any) => Promise<any>;
 
-const jsonRpcSerializeAsResponse = (result: any, id: number): JsonRpcResponse => {
-  return { jsonrpc: "2.0", result, id };
-};
-
 export class Controller {
-  static jsonapiType: string;
   static rpcMethods: {
     [key: string]: { method: string; callback: string; type: typeof Controller };
   } = {};
@@ -19,7 +14,7 @@ export class Controller {
 export const jsonRpcMethod = (name: string) => {
   return (target: Controller, propertyKey: string) => {
     const constructor = target.constructor as typeof Controller;
-    constructor.rpcMethods[`${constructor.name}:${name}`] = {
+    constructor.rpcMethods[name] = {
       method: name,
       callback: propertyKey,
       type: constructor,
@@ -30,16 +25,8 @@ export const jsonRpcMethod = (name: string) => {
 export class RpcRouter {
   private readonly requestHandler: RequestHandler;
   private readonly log: ILoggerService;
-  private controllers: Array<typeof Controller>;
 
-  constructor({
-    controllers,
-    requestHandler,
-  }: {
-    controllers: typeof Controller[];
-    requestHandler: RequestHandler;
-  }) {
-    this.controllers = controllers;
+  constructor(requestHandler: RequestHandler) {
     this.requestHandler = requestHandler;
     this.log = requestHandler.log.newContext("CF-RpcRouter");
   }
@@ -54,21 +41,22 @@ export class RpcRouter {
       throw new Error(`Cannot execute ${rpc.methodName}: no controller`);
     }
 
-    const result = jsonRpcSerializeAsResponse(
-      {
+    const response = {
+      id: rpc.id as number,
+      jsonrpc: "2.0",
+      result: {
         result: await new controller.type()[controller.callback](
           this.requestHandler,
           bigNumberifyJson(rpc.parameters),
         ),
         type: rpc.methodName,
       },
-      rpc.id as number,
-    );
+    } as JsonRpcResponse;
 
-    this.requestHandler.outgoing.emit(rpc.methodName, result);
+    this.requestHandler.outgoing.emit(rpc.methodName, response);
 
     logTime(this.log, start, `Processed ${rpc.methodName} method`);
-    return result;
+    return response;
   }
 
   async subscribe(event: string, callback: AsyncCallback) {
@@ -88,7 +76,11 @@ export class RpcRouter {
 
     if (!eventData["jsonrpc"]) {
       // It's a legacy message. Reformat it to JSONRPC.
-      eventData = jsonRpcSerializeAsResponse(eventData, Date.now());
+      eventData = {
+        id: Date.now(),
+        jsonrpc: "2.0",
+        result: eventData,
+      };
     }
 
     this.requestHandler[emitter].emit(event, eventData.result);
@@ -100,5 +92,3 @@ export class RpcRouter {
       : 0;
   }
 }
-
-export default RpcRouter;
