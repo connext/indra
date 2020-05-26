@@ -6,12 +6,20 @@ import {
   UninstallMiddlewareContext,
   NetworkContext,
   ProposeMiddlewareContext,
+  InstallMiddlewareContext,
+  TakeActionMiddlewareContext,
+  CONVENTION_FOR_ETH_ASSET_ID,
+  ContractAddresses,
+  Address,
 } from "@connext/types";
 import { uninstallDepositMiddleware, proposeDepositMiddleware } from "./DepositApp";
 import { proposeLinkedTransferMiddleware } from "./SimpleLinkedTransferApp";
 import { proposeHashLockTransferMiddleware } from "./HashLockTransferApp";
 import { proposeSignedTransferMiddleware } from "./SimpleSignedTransferApp";
 import { proposeWithdrawMiddleware } from "./WithdrawApp";
+import { proposeSwapMiddleware } from "./SimpleTwoPartySwapApp";
+import { commonAppProposalValidation, AppRegistry } from ".";
+import { stringify } from "@connext/utils";
 
 // add any validation middlewares
 export const generateValidationMiddleware = async (
@@ -26,17 +34,21 @@ export const generateValidationMiddleware = async (
     middlewareContext: MiddlewareContext,
   ) => {
     switch (protocol) {
-      case ProtocolNames.setup:
-      case ProtocolNames.install:
-      case ProtocolNames.takeAction: {
+      case ProtocolNames.setup: {
         break;
       }
-
       case ProtocolNames.propose: {
         await proposeMiddleware(network, middlewareContext as ProposeMiddlewareContext);
         break;
       }
-
+      case ProtocolNames.install: {
+        await installMiddleware(network, middlewareContext as InstallMiddlewareContext);
+        break;
+      }
+      case ProtocolNames.takeAction: {
+        await takeActionMiddleware(network, middlewareContext as TakeActionMiddlewareContext);
+        break;
+      }
       case ProtocolNames.uninstall: {
         await uninstallMiddleware(network, middlewareContext as UninstallMiddlewareContext);
         break;
@@ -67,36 +79,108 @@ const uninstallMiddleware = async (
   }
 };
 
+const getNameFromAddress = (contractAddress: ContractAddresses, appDefinition: Address) => {
+  const [name] =
+    Object.entries(contractAddress).find(([name, addr]) => addr === appDefinition) || [];
+  return name;
+};
+
 const proposeMiddleware = async (
   network: NetworkContext,
   middlewareContext: ProposeMiddlewareContext,
 ) => {
   const { contractAddresses } = network;
-  const { proposal } = middlewareContext;
+  const { proposal, params } = middlewareContext;
+  const name = getNameFromAddress(contractAddresses, proposal.appDefinition);
+  // get registry information
+  const registryAppInfo = AppRegistry.find((app) => app.name === name);
+  if (!registryAppInfo) {
+    throw new Error(
+      `Refusing proposal of unsupported application. Cxt: ${stringify(middlewareContext)}`,
+    );
+  }
+  // check based on supported applications
+  commonAppProposalValidation(
+    params,
+    registryAppInfo,
+    [CONVENTION_FOR_ETH_ASSET_ID, contractAddresses.Token!],
+    // TODO: ^ better way to get supported token addresses?
+  );
   const appDef = proposal.appDefinition;
   switch (appDef) {
-    case contractAddresses.SimpleLinkedTransferApp: {
-      await proposeLinkedTransferMiddleware(middlewareContext, contractAddresses.DepositApp);
+    case contractAddresses.DepositApp: {
+      await proposeDepositMiddleware(middlewareContext, network.provider);
       break;
     }
-    case contractAddresses.HashLockTransferApp: {
-      await proposeHashLockTransferMiddleware(middlewareContext, contractAddresses.DepositApp);
+    case contractAddresses.SimpleTwoPartySwapApp: {
+      await proposeSwapMiddleware(middlewareContext, contractAddresses.SimpleTwoPartySwapApp!);
       break;
     }
     case contractAddresses.SimpleSignedTransferApp: {
-      await proposeSignedTransferMiddleware(middlewareContext, contractAddresses.DepositApp);
+      await proposeSignedTransferMiddleware(
+        middlewareContext,
+        contractAddresses.SimpleSignedTransferApp!,
+      );
       break;
     }
-    case contractAddresses.DepositApp: {
-      await proposeDepositMiddleware(middlewareContext, contractAddresses.DepositApp);
+    case contractAddresses.SimpleLinkedTransferApp: {
+      await proposeLinkedTransferMiddleware(
+        middlewareContext,
+        contractAddresses.SimpleLinkedTransferApp!,
+      );
+      break;
+    }
+    case contractAddresses.HashLockTransferApp: {
+      await proposeHashLockTransferMiddleware(
+        middlewareContext,
+        contractAddresses.HashLockTransferApp!,
+      );
       break;
     }
     case contractAddresses.WithdrawApp: {
-      await proposeWithdrawMiddleware(middlewareContext, contractAddresses.DepositApp);
+      await proposeWithdrawMiddleware(middlewareContext, contractAddresses.WithdrawApp);
       break;
     }
     default: {
       return;
+    }
+  }
+};
+
+const installMiddleware = async (
+  network: NetworkContext,
+  middlewareContext: InstallMiddlewareContext,
+) => {
+  const { contractAddresses } = network;
+  const { appInstance } = middlewareContext;
+  switch (appInstance.appInterface.addr) {
+    case contractAddresses.DepositApp:
+    case contractAddresses.SimpleTwoPartySwapApp:
+    case contractAddresses.SimpleSignedTransferApp:
+    case contractAddresses.SimpleLinkedTransferApp:
+    case contractAddresses.HashLockTransferApp:
+    case contractAddresses.WithdrawApp:
+    default: {
+      throw new Error("installMiddleware not implemented");
+    }
+  }
+};
+
+const takeActionMiddleware = async (
+  network: NetworkContext,
+  middlewareContext: TakeActionMiddlewareContext,
+) => {
+  const { contractAddresses } = network;
+  const { appInstance } = middlewareContext;
+  switch (appInstance.appInterface.addr) {
+    case contractAddresses.DepositApp:
+    case contractAddresses.SimpleTwoPartySwapApp:
+    case contractAddresses.SimpleSignedTransferApp:
+    case contractAddresses.SimpleLinkedTransferApp:
+    case contractAddresses.HashLockTransferApp:
+    case contractAddresses.WithdrawApp:
+    default: {
+      throw new Error("takeActionMiddleware not implemented");
     }
   }
 };

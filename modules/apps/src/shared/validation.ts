@@ -1,8 +1,4 @@
-import {
-  CoinTransfer,
-  MethodParams,
-  DepositAppName,
-} from "@connext/types";
+import { CoinTransfer, DepositAppName, ProtocolParams } from "@connext/types";
 import { getAddressFromAssetId, stringify } from "@connext/utils";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -10,16 +6,13 @@ import { BigNumber } from "ethers/utils";
 import { AppRegistryInfo } from "./registry";
 
 const appProposalMatchesRegistry = (
-  proposal: MethodParams.ProposeInstall,
+  proposal: ProtocolParams.Propose,
   appRegistryInfo: AppRegistryInfo,
 ): void => {
   if (
     !(
-      // proposal.appDefinition === appRegistryInfo.appDefinitionAddress &&
-      (
-        proposal.abiEncodings.actionEncoding === appRegistryInfo.actionEncoding &&
-        proposal.abiEncodings.stateEncoding === appRegistryInfo.stateEncoding
-      )
+      proposal.abiEncodings.actionEncoding === appRegistryInfo.actionEncoding &&
+      proposal.abiEncodings.stateEncoding === appRegistryInfo.stateEncoding
     )
   ) {
     throw new Error(
@@ -107,7 +100,7 @@ export const unidirectionalCoinTransferValidation = (
 };
 
 export const commonAppProposalValidation = (
-  params: MethodParams.ProposeInstall,
+  params: ProtocolParams.Propose,
   appRegistryInfo: AppRegistryInfo,
   supportedTokenAddresses: string[],
 ): void => {
@@ -120,10 +113,8 @@ export const commonAppProposalValidation = (
 
   appProposalMatchesRegistry(params, appRegistryInfo);
 
-  const initiatorDepositTokenAddress = 
-    getAddressFromAssetId(initiatorDepositAssetId);
-  const responderDepositTokenAddress = 
-    getAddressFromAssetId(responderDepositAssetId);
+  const initiatorDepositTokenAddress = getAddressFromAssetId(initiatorDepositAssetId);
+  const responderDepositTokenAddress = getAddressFromAssetId(responderDepositAssetId);
 
   if (!supportedTokenAddresses.includes(initiatorDepositTokenAddress)) {
     throw new Error(`Unsupported initiatorDepositTokenAddress: ${initiatorDepositTokenAddress}`);
@@ -136,11 +127,7 @@ export const commonAppProposalValidation = (
   // NOTE: may need to remove this condition if we start working
   // with games
   const isDeposit = appRegistryInfo.name === DepositAppName;
-  if (
-    responderDeposit.isZero() &&
-    initiatorDeposit.isZero() &&
-    !isDeposit
-  ) {
+  if (responderDeposit.isZero() && initiatorDeposit.isZero() && !isDeposit) {
     throw new Error(
       `Cannot install an app with zero valued deposits for both initiator and responder.`,
     );
