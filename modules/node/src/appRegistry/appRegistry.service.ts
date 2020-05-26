@@ -32,6 +32,7 @@ import {
   SimpleLinkedTransferAppState,
   ProposeMiddlewareContext,
   AppInstanceProposal,
+  ProtocolParams,
 } from "@connext/types";
 import { getAddressFromAssetId, stringify } from "@connext/utils";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
@@ -180,14 +181,6 @@ export class AppRegistryService implements OnModuleInit {
         break;
       }
       case SimpleTwoPartySwapAppName: {
-        validateSimpleSwapApp(
-          proposeInstallParams,
-          this.configService.getAllowedSwaps(),
-          await this.swapRateService.getOrFetchRate(
-            getAddressFromAssetId(proposeInstallParams.initiatorDepositAssetId),
-            getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
-          ),
-        );
         break;
       }
       case WithdrawAppName: {
@@ -348,7 +341,7 @@ export class AppRegistryService implements OnModuleInit {
   };
 
   private proposeMiddleware = async (cxt: ProposeMiddlewareContext) => {
-    const { proposal } = cxt;
+    const { proposal, params } = cxt;
     const contractAddresses = await this.configService.getContractAddresses();
 
     switch (proposal.appDefinition) {
@@ -358,11 +351,25 @@ export class AppRegistryService implements OnModuleInit {
       case contractAddresses.SimpleSignedTransferApp: {
         return await this.proposeSignedTransferMiddleware(proposal);
       }
+      case contractAddresses.SimpleTwoPartySwapApp: {
+        return this.proposeSimpleSwapMiddleware(params);
+      }
       default: {
         // middleware for app not configured
         return;
       }
     }
+  };
+
+  private proposeSimpleSwapMiddleware = async (params: ProtocolParams.Propose) => {
+    validateSimpleSwapApp(
+      params,
+      this.configService.getAllowedSwaps(),
+      await this.swapRateService.getOrFetchRate(
+        getAddressFromAssetId(params.initiatorDepositAssetId),
+        getAddressFromAssetId(params.responderDepositAssetId),
+      ),
+    );
   };
 
   private proposeLinkedTransferMiddleware = async (proposal: AppInstanceProposal) => {
