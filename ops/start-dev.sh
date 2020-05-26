@@ -75,6 +75,8 @@ fi
 token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.address' | tr -d '"'`"
 allowed_swaps='[{"from":"'"$token_address"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"HARDCODED"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address"'","priceOracleType":"HARDCODED"}]'
 
+supported_tokens="$token_address,0x0000000000000000000000000000000000000000"
+
 if [[ -z "$chainId" || "$chainId" == "null" ]]
 then echo "Failed to fetch chainId from provider ${INDRA_ETH_PROVIDER}" && exit 1;
 else echo "Got chainId $chainId, using token $token_address"
@@ -208,6 +210,7 @@ services:
     environment:
       INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
       INDRA_ALLOWED_SWAPS: '$allowed_swaps'
+      INDRA_SUPPORTED_TOKENS: '$supported_tokens'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC: '$eth_mnemonic'
       INDRA_ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
