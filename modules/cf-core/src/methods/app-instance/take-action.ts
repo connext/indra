@@ -12,7 +12,6 @@ import {
 import { toBN } from "@connext/utils";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { BigNumber } from "ethers/utils";
-import { jsonRpcMethod } from "rpc-server";
 
 import {
   IMPROPERLY_FORMATTED_STRUCT,
@@ -24,14 +23,15 @@ import {
   NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
-import { RequestHandler } from "../../request-handler";
-
-import { NodeController } from "../controller";
 import { StateChannel } from "../../models/state-channel";
-import RpcRouter from "../../rpc-router";
+import { RequestHandler } from "../../request-handler";
+import { RpcRouter } from "../../rpc-router";
 
-export class TakeActionController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_takeAction)
+import { MethodController } from "../controller";
+
+export class TakeActionController extends MethodController {
+  public readonly methodName = MethodNames.chan_takeAction;
+
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockName(
@@ -61,7 +61,7 @@ export class TakeActionController extends NodeController {
 
     const appInstance = preProtocolStateChannel.appInstances.get(appIdentityHash);
     if (!appInstance) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(appIdentityHash));
     }
 
     try {
@@ -97,7 +97,7 @@ export class TakeActionController extends NodeController {
 
     const appInstance = channel.getAppInstance(appIdentityHash);
     if (!appInstance) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(appIdentityHash));
     }
 
     return { newState: appInstance.state };

@@ -7,13 +7,11 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
-import { jsonRpcMethod } from "rpc-server";
-
-import { RequestHandler } from "../../request-handler";
-
-import { NodeController } from "../controller";
-import { getCreate2MultisigAddress } from "../../utils";
 import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
+import { RequestHandler } from "../../request-handler";
+import { getCreate2MultisigAddress } from "../../utils";
+
+import { MethodController } from "../controller";
 
 /**
  * This instantiates a StateChannel object to encapsulate the "channel"
@@ -26,8 +24,9 @@ import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
  * is owned and the multisig's _address_ is sent as an event
  * to whoever subscribed to the `CREATE_CHANNEL_EVENT` event on the Node.
  */
-export class CreateChannelController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_create)
+export class CreateChannelController extends MethodController {
+  public readonly methodName = MethodNames.chan_create || "unknown";
+
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockName(
@@ -49,7 +48,7 @@ export class CreateChannelController extends NodeController {
 
     // safe to use network context proxy factory address directly here
     // using the assumption that `create` is only called for new state
-    // channels. also because the `getMultisigAddressWithCounterparty` function
+    // channels. also because the `getMultisigAddressWithCounterparty` const
     // will default to using any existing multisig address for the provided
     // owners before creating one
     const { multisigAddress: storedMultisig } = (await store.getStateChannelByOwners(owners)) || {
