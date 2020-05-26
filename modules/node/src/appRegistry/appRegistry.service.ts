@@ -123,20 +123,14 @@ export class AppRegistryService implements OnModuleInit {
           }
         }
       }
-      if (registryAppInfo.name !== HashLockTransferAppName) {
-        ({ appInstance } = await this.cfCoreService.installApp(
-          appIdentityHash,
-          installerChannel.multisigAddress,
-        ));
-      }
-      // any tasks that need to happen after install, i.e. DB writes
-      await this.runPostInstallTasks(
-        registryAppInfo,
+      // safe to install hashlock transfer app here. if propose event is fired,
+      // node was able to install app with receiver via middleware
+      ({ appInstance } = await this.cfCoreService.installApp(
         appIdentityHash,
-        proposeInstallParams,
-        from,
-        installerChannel,
-      );
+        installerChannel.multisigAddress,
+      ));
+      // any tasks that need to happen after install, i.e. DB writes
+      await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams);
       const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appIdentityHash}.install`;
       await this.messagingService.publish(installSubject, appInstance);
     } catch (e) {
@@ -151,8 +145,6 @@ export class AppRegistryService implements OnModuleInit {
     registryAppInfo: AppRegistry,
     appIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
-    from: string,
-    channel: Channel,
   ): Promise<void> {
     this.log.info(
       `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} started`,
@@ -349,31 +341,12 @@ export class AppRegistryService implements OnModuleInit {
       appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
     );
 
-    if (!existingSenderApp) {
-      throw new Error(`Sender app has not been proposed for lockhash ${latestState.lockHash}`);
+    // receiver app is installed in propose middleware by the sender, if there
+    // is an existing app for the lockhash (that has not been rejected), do not
+    // install
+    if (existingSenderApp && existingSenderApp.type !== AppType.REJECTED) {
+      throw new Error(`Sender app has been proposed for lockhash ${latestState.lockHash}`);
     }
-    if (existingSenderApp.type !== AppType.PROPOSAL) {
-      this.log.warn(
-        `Sender app already exists for lockhash ${latestState.lockHash}, will not install`,
-      );
-      return;
-    }
-
-    // install sender app
-    this.log.info(
-      `installHashLockTransferMiddleware: Install sender app ${existingSenderApp.identityHash} for user ${appInstance.initiatorIdentifier} started`,
-    );
-    const res = await this.cfCoreService.installApp(
-      existingSenderApp.identityHash,
-      existingSenderApp.channel.multisigAddress,
-    );
-    const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${existingSenderApp.channel.multisigAddress}.app-instance.${existingSenderApp.identityHash}.install`;
-    await this.messagingService.publish(installSubject, appInstance);
-    this.log.info(
-      `installHashLockTransferMiddleware: Install sender app ${
-        res.appInstance.identityHash
-      } for user ${appInstance.initiatorIdentifier} complete: ${JSON.stringify(res)}`,
-    );
   };
 
   private uninstallMiddleware = async (cxt: UninstallMiddlewareContext) => {
