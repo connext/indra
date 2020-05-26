@@ -81,13 +81,13 @@ export const unidirectionalCoinTransferValidation = (
   );
   if (!responderDeposit.eq(Zero)) {
     throw new Error(
-      `Will not accept transfer install where responder deposit is != 0 ${responderDeposit.toString()}`,
+      `Will not accept transfer install where responder deposit is != 0. Responder deposit: ${responderDeposit.toString()}`,
     );
   }
 
   if (initiatorDeposit.lte(Zero)) {
     throw new Error(
-      `Will not accept transfer install where initiator deposit is <=0 ${initiatorDeposit.toString()}`,
+      `Will not accept transfer install where initiator deposit is <= 0. Initiator deposit: ${initiatorDeposit.toString()}`,
     );
   }
 
