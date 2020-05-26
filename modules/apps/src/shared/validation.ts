@@ -10,15 +10,20 @@ const appProposalMatchesRegistry = (
   appRegistryInfo: AppRegistryInfo,
 ): void => {
   if (
-    !(
-      proposal.abiEncodings.actionEncoding === appRegistryInfo.actionEncoding &&
-      proposal.abiEncodings.stateEncoding === appRegistryInfo.stateEncoding
-    )
+    proposal.abiEncodings.actionEncoding &&
+    proposal.abiEncodings.actionEncoding !== appRegistryInfo.actionEncoding
   ) {
     throw new Error(
-      `Proposed app details ${stringify(proposal)} do not match registry ${stringify(
-        appRegistryInfo,
-      )}`,
+      `Proposal action encoding does not match registry. Proposal: ${stringify(
+        proposal,
+      )}, registry ${stringify(appRegistryInfo)}`,
+    );
+  }
+  if (proposal.abiEncodings.stateEncoding !== appRegistryInfo.stateEncoding) {
+    throw new Error(
+      `Proposal state encoding does not match registry. Proposal: ${stringify(
+        proposal,
+      )}, registry ${stringify(appRegistryInfo)}`,
     );
   }
 };
@@ -117,11 +122,19 @@ export const commonAppProposalValidation = (
   const responderDepositTokenAddress = getAddressFromAssetId(responderDepositAssetId);
 
   if (!supportedTokenAddresses.includes(initiatorDepositTokenAddress)) {
-    throw new Error(`Unsupported initiatorDepositTokenAddress: ${initiatorDepositTokenAddress}`);
+    throw new Error(
+      `Unsupported initiatorDepositTokenAddress: ${initiatorDepositTokenAddress}, supported addresses: ${stringify(
+        supportedTokenAddresses,
+      )}`,
+    );
   }
 
   if (!supportedTokenAddresses.includes(responderDepositTokenAddress)) {
-    throw new Error(`Unsupported responderDepositAssetId: ${responderDepositTokenAddress}`);
+    throw new Error(
+      `Unsupported responderDepositAssetId: ${responderDepositTokenAddress}, supported addresses: ${stringify(
+        supportedTokenAddresses,
+      )}`,
+    );
   }
 
   // NOTE: may need to remove this condition if we start working
