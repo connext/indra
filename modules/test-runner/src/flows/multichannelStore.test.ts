@@ -278,7 +278,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     // establish tests constants
     const TRANSFER_AMT = toBN(100);
     const MIN_TRANSFERS = 25;
-    const TRANSFER_INTERVAL = 500; // ms between consecutive transfer calls
+    const TRANSFER_INTERVAL = 1000; // ms between consecutive transfer calls
 
     let receivedTransfers = 0;
     let intervals = 0;
