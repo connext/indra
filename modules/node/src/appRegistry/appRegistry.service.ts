@@ -1,12 +1,6 @@
 import {
   AppRegistry as RegistryOfApps, // TODO: fix collision
-  commonAppProposalValidation,
-  validateSimpleLinkedTransferApp,
   validateSimpleSwapApp,
-  validateWithdrawApp,
-  validateHashLockTransferApp,
-  validateSignedTransferApp,
-  validateDepositApp,
   generateValidationMiddleware,
 } from "@connext/apps";
 import {
@@ -106,12 +100,7 @@ export class AppRegistryService implements OnModuleInit {
         throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
       }
 
-      await this.runPreInstallValidation(
-        registryAppInfo,
-        proposeInstallParams,
-        from,
-        installerChannel,
-      );
+      await this.runPreInstallTasks(registryAppInfo, proposeInstallParams, from);
 
       // check if we need to collateralize, only for swap app
       if (registryAppInfo.name === SimpleTwoPartySwapAppName) {
@@ -164,28 +153,17 @@ export class AppRegistryService implements OnModuleInit {
     }
   }
 
-  private async runPreInstallValidation(
+  private async runPreInstallTasks(
     registryAppInfo: AppRegistry,
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
-    channel: Channel,
   ): Promise<void> {
-    this.log.info(`runPreInstallValidation for app name ${registryAppInfo.name} started`);
+    this.log.info(`runPreInstallTasks for app name ${registryAppInfo.name} started`);
     switch (registryAppInfo.name) {
-      case SimpleLinkedTransferAppName: {
-        break;
-      }
-      case SimpleTwoPartySwapAppName: {
-        break;
-      }
-      case WithdrawAppName: {
-        await validateWithdrawApp(
-          proposeInstallParams,
-          from,
-          this.cfCoreService.cfCore.publicIdentifier,
-        );
-        break;
-      }
+      case SimpleSignedTransferAppName:
+      case SimpleLinkedTransferAppName:
+      case SimpleTwoPartySwapAppName:
+      case WithdrawAppName:
       case DepositAppName: {
         break;
       }
@@ -200,9 +178,6 @@ export class AppRegistryService implements OnModuleInit {
           proposeInstallParams.initiatorDepositAssetId,
           proposeInstallParams.meta,
         );
-        break;
-      }
-      case SimpleSignedTransferAppName: {
         break;
       }
       default: {

@@ -129,7 +129,7 @@ const proposeMiddleware = async (
       break;
     }
     case contractAddresses.WithdrawApp: {
-      await proposeWithdrawMiddleware(middlewareContext, contractAddresses.WithdrawApp);
+      await proposeWithdrawMiddleware(middlewareContext);
       break;
     }
     default: {

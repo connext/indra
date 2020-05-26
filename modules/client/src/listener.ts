@@ -1,13 +1,4 @@
 import {
-  commonAppProposalValidation,
-  SupportedApplications,
-  validateSimpleLinkedTransferApp,
-  validateWithdrawApp,
-  validateHashLockTransferApp,
-  validateSignedTransferApp,
-  validateDepositApp,
-} from "@connext/apps";
-import {
   ConditionalTransferTypes,
   ConnextEventEmitter,
   CreateChannelMessage,
@@ -136,7 +127,7 @@ export class ConnextListener extends ConnextEventEmitter {
         return;
       }
       this.log.info(`Processing proposal for ${appIdentityHash}`);
-      await this.handleAppProposal(params, appIdentityHash, from);
+      await this.handleAppProposal(params, appIdentityHash);
       this.log.info(`Done processing propose install event ${time()}`);
       // validate and automatically install for the known and supported
       // applications
@@ -303,7 +294,6 @@ export class ConnextListener extends ConnextEventEmitter {
   private handleAppProposal = async (
     params: MethodParams.ProposeInstall,
     appIdentityHash: string,
-    from: string,
   ): Promise<void> => {
     // get supported apps
     const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
@@ -320,19 +310,10 @@ export class ConnextListener extends ConnextEventEmitter {
     // validate or reject app
     try {
       switch (registryAppInfo.name) {
-        case SimpleLinkedTransferAppName: {
-          break;
-        }
-        case WithdrawAppName: {
-          await validateWithdrawApp(params, from, this.connext.publicIdentifier);
-          break;
-        }
-        case HashLockTransferAppName: {
-          break;
-        }
-        case SimpleSignedTransferAppName: {
-          break;
-        }
+        case SimpleLinkedTransferAppName:
+        case WithdrawAppName:
+        case HashLockTransferAppName:
+        case SimpleSignedTransferAppName:
         case DepositAppName: {
           break;
         }
