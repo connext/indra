@@ -58,7 +58,7 @@ describe("Node method follows spec - takeAction", () => {
         const takeActionReq = constructTakeActionRpc("0xfail", multisigAddress, validAction);
 
         await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(
-          NO_APP_INSTANCE_FOR_GIVEN_HASH,
+          NO_APP_INSTANCE_FOR_GIVEN_HASH("0xfail"),
         );
       });
 

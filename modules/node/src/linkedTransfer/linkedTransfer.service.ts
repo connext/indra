@@ -75,7 +75,7 @@ export class LinkedTransferService {
 
     const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
       paymentId,
-      this.cfCoreService.cfCore.signerAddress,
+      this.cfCoreService.cfCore.publicIdentifier,
     );
     if (!senderApp) {
       throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
@@ -91,7 +91,7 @@ export class LinkedTransferService {
     // check if receiver app exists
     const existing = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
       paymentId,
-      getSignerAddressFromPublicIdentifier(userIdentifier),
+      userIdentifier,
     );
     if (existing) {
       switch (existing.type) {
@@ -238,11 +238,11 @@ export class LinkedTransferService {
     this.log.info(`findSenderAndReceiverAppsWithStatus ${paymentId} started`);
     const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
       paymentId,
-      this.cfCoreService.cfCore.signerAddress,
+      this.cfCoreService.cfCore.publicIdentifier,
     );
     const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
       paymentId,
-      this.cfCoreService.cfCore.signerAddress,
+      this.cfCoreService.cfCore.publicIdentifier,
     );
     // if sender app is uninstalled, transfer has been unlocked by node
     const status = appStatusesToLinkedTransferStatus(
@@ -275,7 +275,7 @@ export class LinkedTransferService {
           async (transfer) =>
             await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
               transfer.latestState["paymentId"],
-              this.cfCoreService.cfCore.signerAddress,
+              this.cfCoreService.cfCore.publicIdentifier,
             ),
         ),
       )

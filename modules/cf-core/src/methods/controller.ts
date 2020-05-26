@@ -1,34 +1,35 @@
 import { MethodName, MethodParam, MethodResult } from "@connext/types";
-import { Controller } from "rpc-server";
-import { logTime } from "@connext/utils";
+import { capitalize, logTime, stringify } from "@connext/utils";
 
 import { RequestHandler } from "../request-handler";
 import { StateChannel } from "../models/state-channel";
 
-export abstract class NodeController extends Controller {
-  public static readonly methodName: MethodName;
+export abstract class MethodController {
+  public abstract methodName: MethodName;
 
   public async executeMethod(
     requestHandler: RequestHandler,
     params: MethodParam,
   ): Promise<MethodResult | undefined> {
-    const log = requestHandler.log.newContext("MethodController");
+    const log = requestHandler.log.newContext(
+      `CF-${capitalize(this.methodName.replace(/^chan_/, ""))}`,
+    );
     const start = Date.now();
     let substart = start;
     let lockValue: string = "";
 
+    log.info(`Executing with params: ${stringify(params, true, 0)}`);
+
     const lockName = await this.getRequiredLockName(requestHandler, params);
-    logTime(log, substart, "Got lockname");
-    substart = Date.now();
 
     // Dont lock for static functions
     if (lockName !== "") {
       lockValue = await requestHandler.lockService.acquireLock(lockName);
-      logTime(log, substart, "Got lock");
+      logTime(log, substart, `Acquired lock ${lockName}`);
       substart = Date.now();
     }
 
-    let ret: MethodResult | undefined;
+    let result: MethodResult | undefined;
     let error: Error | undefined;
     try {
       // GET CHANNEL BEFORE EXECUTION
@@ -49,18 +50,23 @@ export abstract class NodeController extends Controller {
       substart = Date.now();
 
       // GET UPDATED CHANNEL FROM EXECUTION
-      ret = await this.executeMethodImplementation(requestHandler, params, preProtocolStateChannel);
+      result = await this.executeMethodImplementation(
+        requestHandler,
+        params,
+        preProtocolStateChannel,
+      );
       logTime(log, substart, "Executed method implementation");
       substart = Date.now();
 
       // USE RETURNED VALUE IN AFTER EXECUTION
-      await this.afterExecution(requestHandler, params, ret);
+      await this.afterExecution(requestHandler, params, result);
       logTime(log, substart, "After execution complete");
       substart = Date.now();
     } catch (e) {
-      log.error(`caught error in node controller: ${e.message}`);
+      log.error(`Caught error in node controller: ${e.message}`);
       error = e;
     }
+
     // don't do this in a finally to ensure any errors with releasing the
     // lock do not swallow any protocol or controller errors
     if (lockName !== "") {
@@ -73,11 +79,14 @@ export abstract class NodeController extends Controller {
       logTime(log, substart, "Released lock");
       substart = Date.now();
     }
+
     if (error) {
       throw error;
     }
 
-    return ret;
+    log.debug(`Finished executing with result: ${stringify(result, true, 0)}`);
+
+    return result;
   }
 
   protected async getRequiredLockName(
@@ -105,3 +114,4 @@ export abstract class NodeController extends Controller {
     returnValue: MethodResult,
   ): Promise<void> {}
 }
+

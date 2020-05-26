@@ -51,11 +51,18 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       return undefined;
     }
 
-    // try using the requesters app if both are defined, but if there
-    // is a sender app and not a receiver app and the request was sent by the
-    // receiver, default to the sender app values
-    const userApp =
-      (pubId === senderApp.channel.userIdentifier ? senderApp : receiverApp) || senderApp;
+    let userApp;
+    if (pubId === senderApp.initiatorIdentifier) {
+      userApp = senderApp;
+    } else if (pubId == receiverApp.responderIdentifier) {
+      userApp = receiverApp;
+    } else {
+      this.log.error(
+        `Cannot get hashlock transfer app for third party. Requestor pubId: ${pubId}, 
+        sender pubId: ${senderApp.initiatorIdentifier}, receiver pubId: ${receiverApp.responderIdentifier}`,
+      );
+      return undefined;
+    }
 
     const latestState = bigNumberifyJson(userApp.latestState) as HashLockTransferAppState;
     const { encryptedPreImage, recipient, ...meta } = userApp.meta || ({} as any);
@@ -71,6 +78,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       status: status,
       meta,
       preImage: latestState.preImage,
+      expiry: latestState.expiry,
     };
   }
 

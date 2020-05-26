@@ -8,9 +8,7 @@ import {
   PublicIdentifier,
 } from "@connext/types";
 import { delay, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
-
 import { Contract, Signer, constants, utils, providers } from "ethers";
-import { jsonRpcMethod } from "rpc-server";
 
 import {
   CHANNEL_CREATION_FAILED,
@@ -25,7 +23,7 @@ import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
 import { getCreate2MultisigAddress } from "../../utils";
 
-import { NodeController } from "../controller";
+import { MethodController } from "../controller";
 
 const { Interface, solidityKeccak256 } = utils;
 const { HashZero } = constants;
@@ -34,8 +32,9 @@ const { HashZero } = constants;
 // 0xaac429aac389b6fccc7702c8ad5415248a5add8e8e01a09a42c4ed9733086bec
 const CREATE_PROXY_AND_SETUP_GAS = 500_000;
 
-export class DeployStateDepositController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_deployStateDepositHolder)
+export class DeployStateDepositController extends MethodController {
+  public readonly methodName = MethodNames.chan_deployStateDepositHolder;
+
   public executeMethod = super.executeMethod;
 
   protected async beforeExecution(

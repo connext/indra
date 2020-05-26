@@ -12,6 +12,7 @@ import {
   DepositAppStateEncoding,
   EventNames,
   InstallMessage,
+  JsonRpcResponse,
   Message,
   MethodNames,
   MethodParam,
@@ -21,6 +22,7 @@ import {
   ProposeMessage,
   ProtocolParams,
   PublicIdentifier,
+  Rpc,
   SolidityValueType,
   UninstallMessage,
 } from "@connext/types";
@@ -31,7 +33,6 @@ import {
   getSignerAddressFromPublicIdentifier,
 } from "@connext/utils";
 import { Contract, Wallet, BigNumber, constants, utils, providers } from "ethers";
-import { JsonRpcResponse, Rpc } from "rpc-server";
 
 import { CFCore } from "../cfCore";
 import { AppInstance, StateChannel } from "../models";
@@ -273,14 +274,17 @@ export function assertInstallMessage(
  * ensure a channel has been instantiated and to get its multisig address
  * back in the event data.
  */
-export async function getMultisigCreationAddress(node: CFCore, addresss: string[]): Promise<string> {
+export const getMultisigCreationAddress = async (
+  node: CFCore,
+  addresss: string[],
+): Promise<string> => {
   const {
     result: {
       result: { multisigAddress },
     },
   } = await node.rpcRouter.dispatch(constructChannelCreationRpc(addresss));
   return multisigAddress;
-}
+};
 
 export function constructChannelCreationRpc(owners: string[]) {
   return {
@@ -790,23 +794,21 @@ export async function installApp(
     nodeB.once(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
       // assert message
       assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
-      const {
-        data: { appIdentityHash },
-      } = msg;
       // Sanity-check
       confirmProposedAppInstance(
         installationProposalRpc.parameters,
-        await getAppInstanceProposal(nodeB, appIdentityHash, multisigAddress),
+        await getAppInstanceProposal(nodeB, msg.data.appIdentityHash, multisigAddress),
       );
       resolve(msg.data.appIdentityHash);
     });
 
     await nodeA.rpcRouter.dispatch(installationProposalRpc);
-    confirmProposedAppInstance(
-      installationProposalRpc.parameters,
-      await getAppInstanceProposal(nodeA, appIdentityHash, multisigAddress),
-    );
   });
+
+  confirmProposedAppInstance(
+    installationProposalRpc.parameters,
+    await getAppInstanceProposal(nodeA, appIdentityHash, multisigAddress),
+  );
 
   // send nodeB install call
   await Promise.all([

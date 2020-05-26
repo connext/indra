@@ -9,19 +9,22 @@ const { One, AddressZero } = constants;
 
 describe("Linked Transfer", () => {
   let clientA: IConnextClient;
+  let clientB: IConnextClient;
 
   beforeEach(async () => {
     clientA = await createClient();
+    clientB = await createClient();
   });
 
   afterEach(async () => {
     await clientA.messaging.disconnect();
+    await clientB.messaging.disconnect();
   });
 
-  // un-skip this once issue 1145 is fixed
-  it.skip("happy case: a user can redeem their own link payment", async () => {
+  it("happy case: a user can redeem their own link payment", async () => {
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
+    const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
     const linkedTransfer = (await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
@@ -29,15 +32,40 @@ describe("Linked Transfer", () => {
       paymentId: getRandomBytes32(),
       preImage: getRandomBytes32(),
     })) as PublicResults.LinkedTransfer;
-    const res = await clientA.resolveCondition({
+    const balMiddle = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
+    expect((balBefore.sub(transfer.amount)).toString()).to.be.equal(balMiddle.toString());
+    await clientA.resolveCondition({
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId: linkedTransfer.paymentId,
       preImage: linkedTransfer.preImage,
     });
-    console.log(`Resolve result: ${JSON.stringify(res)}`);
+    const balAfter = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
+    expect(balBefore.toString()).to.be.equal(balAfter.toString());
   });
 
-  it.skip("happy case: get linked transfer by payment id", async () => {
+  it("happy case: a user can redeem someone else's link payment", async () => {
+    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+    const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
+    const linkedTransfer = (await clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      assetId: AddressZero,
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      paymentId: getRandomBytes32(),
+      preImage: getRandomBytes32(),
+    })) as PublicResults.LinkedTransfer;
+    const balMiddle = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
+    expect((balBefore.sub(transfer.amount)).toString()).to.be.equal(balMiddle.toString());
+    await clientB.resolveCondition({
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      paymentId: linkedTransfer.paymentId,
+      preImage: linkedTransfer.preImage,
+    });
+    const balAfter = (await clientB.getFreeBalance(transfer.assetId))[clientB.signerAddress];
+    expect(transfer.amount.toString()).to.be.equal(balAfter.toString());
+  });
+
+  it("happy case: get linked transfer by payment id", async () => {
     const paymentId = getRandomBytes32();
     const preImage = getRandomBytes32();
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
@@ -52,14 +80,11 @@ describe("Linked Transfer", () => {
     });
     const linkedTransfer = await clientA.getLinkedTransfer(paymentId);
 
-    // TODO: fix race condition, the following assertion randomly fails
     expect(linkedTransfer).to.be.ok;
-
     expect(linkedTransfer).to.deep.include({
       amount: transfer.amount,
       assetId: AddressZero,
       paymentId,
-      receiverIdentifier: null,
       senderIdentifier: clientA.publicIdentifier,
     });
   });

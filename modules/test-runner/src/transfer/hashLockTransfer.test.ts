@@ -216,12 +216,16 @@ describe("HashLock Transfers", () => {
   });
 
   it("gets a pending hashlock transfer by lock hash", async () => {
+    const TIMEOUT_BUFFER = 100; // This currently isn't exported by the node so must be hardcoded
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
+    const expiry = BigNumber.from(await provider.getBlockNumber())
+      .add(timelock)
+      .sub(TIMEOUT_BUFFER);
     // both sender + receiver apps installed, sender took action
     clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
@@ -244,14 +248,19 @@ describe("HashLock Transfers", () => {
       status: HashLockTransferStatus.PENDING,
       meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
       preImage: HashZero,
+      expiry,
     } as NodeResponses.GetHashLockTransfer);
   });
 
   it("gets a completed hashlock transfer by lock hash", async () => {
+    const TIMEOUT_BUFFER = 100; // This currently isn't exported by the node so must be hardcoded
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
+    const expiry = BigNumber.from(await provider.getBlockNumber())
+      .add(timelock)
+      .sub(TIMEOUT_BUFFER);
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     // both sender + receiver apps installed, sender took action
@@ -268,7 +277,10 @@ describe("HashLock Transfers", () => {
 
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
-      clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve);
+      // Note: MUST wait for uninstall, bc UNLOCKED gets thrown on takeAction
+      // at the moment, there's no way to filter the uninstalled app here so we're just gonna
+      // resolve and hope for the best
+      clientB.on(EventNames.UNINSTALL_EVENT, resolve);
       clientB.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
@@ -276,6 +288,7 @@ describe("HashLock Transfers", () => {
         assetId: transfer.assetId,
       });
     });
+
     const retrievedTransfer = await clientB.getHashLockTransfer(lockHash, transfer.assetId);
     expect(retrievedTransfer).to.deep.equal({
       amount: transfer.amount.toString(),
@@ -285,6 +298,7 @@ describe("HashLock Transfers", () => {
       receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.COMPLETED,
       preImage,
+      expiry,
       meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
     } as NodeResponses.GetHashLockTransfer);
   });
@@ -475,6 +489,7 @@ describe("HashLock Transfers", () => {
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer);
+      // eslint-disable-next-line no-loop-func
       await new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res));
 
       // eslint-disable-next-line no-loop-func
