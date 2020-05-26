@@ -153,7 +153,7 @@ export function getOutgoingEventFailureDataFromProtocol(
     from: params.initiatorIdentifier,
     data: {
       params,
-      error: error.stack || error.message,
+      error: error.message,
     },
   };
   switch (protocol) {
