@@ -4,7 +4,7 @@ import { CFCore } from "../../cfCore";
 
 import { setup, SetupContext } from "../setup";
 
-describe.only(`Node method follows spec - getStateDepositHolderAddress`, () => {
+describe(`Node method follows spec - getStateDepositHolderAddress`, () => {
   let nodeA: CFCore;
   let nodeB: CFCore;
 
