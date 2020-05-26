@@ -22,9 +22,9 @@ export type AddressHistory = {
 };
 
 // Contract addresses that must be provided to withdraw funds from a channel
-// Losing track of a critical address means losing access to the funds in that channel
-// Each channel must track it's own critical addresses because there's no
-//   guarantee that these addresses will be the same across different channels
+// Losing track of a critical address means losing access to the funds in that
+// channel. Each channel must track it's own critical addresses because there's
+// no guarantee that these addresses will be the same across different channels
 export type CriticalStateChannelAddresses = {
   ProxyFactory: Address;
   MinimumViableMultisig: Address;
