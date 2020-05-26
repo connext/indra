@@ -4,7 +4,7 @@ import {
   OutcomeType,
   SimpleLinkedTransferAppName,
 } from "@connext/types";
-import { safeJsonParse } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, safeJsonParse } from "@connext/utils";
 import { EntityRepository, Repository } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
@@ -199,8 +199,9 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   async findLinkedTransferAppByPaymentIdAndSender(
     paymentId: string,
-    senderSignerAddress: string,
+    senderPublicIdentifier: string,
   ): Promise<AppInstance> {
+    const address = getSignerAddressFromPublicIdentifier(senderPublicIdentifier);
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
         AppRegistry,
@@ -211,7 +212,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`,
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${address}"'`,
       )
       .getOne();
     return res;

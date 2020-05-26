@@ -62,7 +62,7 @@ export class AppActionsService {
       case SimpleLinkedTransferAppName: {
         const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
           (newState as SimpleLinkedTransferAppState).paymentId,
-          this.cfCoreService.cfCore.signerAddress,
+          this.cfCoreService.cfCore.publicIdentifier,
         );
         await this.handleTransferAppAction(senderApp, action);
         break;
