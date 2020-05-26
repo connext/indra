@@ -330,13 +330,6 @@ export class AppRegistryService implements OnModuleInit {
         );
         break;
       }
-
-      default: {
-        // middleware for app not configured
-        throw new Error(
-          `Will not install app without configured validation: ${proposal.appDefinition}`,
-        );
-      }
     }
   };
 
