@@ -6,7 +6,6 @@ import {
   CreatedLinkedTransferMeta,
   CreatedSignedTransferMeta,
   DefaultApp,
-  DepositAppName,
   DepositConfirmationMessage,
   DepositFailedMessage,
   DepositStartedMessage,
@@ -307,27 +306,13 @@ export class ConnextListener extends ConnextEventEmitter {
     if (!registryAppInfo) {
       throw new Error(`Could not find registry info for app ${params.appDefinition}`);
     }
-    // validate or reject app
+    // install or reject app
     try {
-      switch (registryAppInfo.name) {
-        case SimpleLinkedTransferAppName:
-        case WithdrawAppName:
-        case HashLockTransferAppName:
-        case SimpleSignedTransferAppName:
-        case DepositAppName: {
-          break;
-        }
-        default: {
-          throw new Error(
-            `Not installing app without configured validation: ${registryAppInfo.name}`,
-          );
-        }
-      }
       // NOTE: by trying to install here, if the installation fails,
       // the proposal is automatically removed from the store
-      this.log.info(`app ${appIdentityHash} validated, installing`);
+      this.log.info(`Installing ${registryAppInfo.name} with id: ${appIdentityHash}`);
       await this.connext.installApp(appIdentityHash);
-      this.log.info(`app ${appIdentityHash} installed`);
+      this.log.info(`App ${appIdentityHash} installed`);
     } catch (e) {
       // TODO: first proposal after reset is responded to
       // twice

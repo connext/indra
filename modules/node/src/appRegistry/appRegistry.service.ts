@@ -7,14 +7,12 @@ import {
   AppInstanceJson,
   HashLockTransferAppName,
   MethodParams,
-  SimpleLinkedTransferAppName,
   SimpleSignedTransferAppName,
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   WithdrawAppState,
   HashLockTransferAppState,
   SimpleSignedTransferAppState,
-  DepositAppName,
   Opcode,
   UninstallMiddlewareContext,
   ProtocolName,
@@ -25,8 +23,6 @@ import {
   ProtocolRoles,
   SimpleLinkedTransferAppState,
   ProposeMiddlewareContext,
-  AppInstanceProposal,
-  ProtocolParams,
 } from "@connext/types";
 import { getAddressFromAssetId, stringify } from "@connext/utils";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
@@ -74,13 +70,13 @@ export class AppRegistryService implements OnModuleInit {
     this.log.setContext("AppRegistryService");
   }
 
-  async validateAndInstallOrReject(
+  async installOrReject(
     appIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
     this.log.info(
-      `validateAndInstallOrReject for app ${appIdentityHash} with params ${JSON.stringify(
+      `installOrReject for app ${appIdentityHash} with params ${JSON.stringify(
         proposeInstallParams,
       )} from ${from} started`,
     );
@@ -99,8 +95,6 @@ export class AppRegistryService implements OnModuleInit {
       if (!registryAppInfo.allowNodeInstall) {
         throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
       }
-
-      await this.runPreInstallTasks(registryAppInfo, proposeInstallParams, from);
 
       // check if we need to collateralize, only for swap app
       if (registryAppInfo.name === SimpleTwoPartySwapAppName) {
@@ -151,42 +145,6 @@ export class AppRegistryService implements OnModuleInit {
       await this.cfCoreService.rejectInstallApp(appIdentityHash, installerChannel.multisigAddress);
       return;
     }
-  }
-
-  private async runPreInstallTasks(
-    registryAppInfo: AppRegistry,
-    proposeInstallParams: MethodParams.ProposeInstall,
-    from: string,
-  ): Promise<void> {
-    this.log.info(`runPreInstallTasks for app name ${registryAppInfo.name} started`);
-    switch (registryAppInfo.name) {
-      case SimpleSignedTransferAppName:
-      case SimpleLinkedTransferAppName:
-      case SimpleTwoPartySwapAppName:
-      case WithdrawAppName:
-      case DepositAppName: {
-        break;
-      }
-      case HashLockTransferAppName: {
-        // install for receiver or error
-        // https://github.com/ConnextProject/indra/issues/942
-        const recipient = proposeInstallParams.meta["recipient"];
-        await this.hashlockTransferService.installHashLockTransferReceiverApp(
-          from,
-          recipient,
-          proposeInstallParams.initialState as HashLockTransferAppState,
-          proposeInstallParams.initiatorDepositAssetId,
-          proposeInstallParams.meta,
-        );
-        break;
-      }
-      default: {
-        throw new Error(
-          `Will not install app without configured validation: ${registryAppInfo.name}`,
-        );
-      }
-    }
-    this.log.info(`runPreInstallValidation for app name ${registryAppInfo.name} completed`);
   }
 
   private async runPostInstallTasks(
@@ -302,67 +260,80 @@ export class AppRegistryService implements OnModuleInit {
     const contractAddresses = await this.configService.getContractAddresses();
 
     switch (proposal.appDefinition) {
+      case contractAddresses.HashLockTransferApp: {
+        // do nothing if we initiated
+        if (params.initiatorIdentifier === this.configService.getPublicIdentifier()) {
+          break;
+        }
+        // install for receiver or error
+        // https://github.com/ConnextProject/indra/issues/942
+        const recipient = params.meta["recipient"];
+        await this.hashlockTransferService.installHashLockTransferReceiverApp(
+          params.initiatorIdentifier,
+          recipient,
+          params.initialState as HashLockTransferAppState,
+          params.initiatorDepositAssetId,
+          params.meta,
+        );
+        break;
+      }
       case contractAddresses.SimpleLinkedTransferApp: {
-        return await this.proposeLinkedTransferMiddleware(proposal);
+        const { paymentId, coinTransfers } = proposal.initialState as SimpleLinkedTransferAppState;
+        // if node is the receiver, ignore
+        if (coinTransfers[0].to !== this.cfCoreService.cfCore.signerAddress) {
+          return;
+        }
+        // node is sender, make sure app doesnt already exist
+        const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
+          paymentId,
+          this.cfCoreService.cfCore.publicIdentifier,
+        );
+        if (receiverApp && receiverApp.type !== AppType.REJECTED) {
+          throw new Error(
+            `Found existing app for ${paymentId}, aborting linked transfer proposal. App: ${stringify(
+              receiverApp,
+            )}`,
+          );
+        }
+        break;
       }
+
       case contractAddresses.SimpleSignedTransferApp: {
-        return await this.proposeSignedTransferMiddleware(proposal);
+        const { paymentId, coinTransfers } = proposal.initialState as SimpleSignedTransferAppState;
+        // if node is the receiver, ignore
+        if (coinTransfers[0].to !== this.cfCoreService.cfCore.signerAddress) {
+          return;
+        }
+        // node is sender, make sure app doesnt already exist
+        const receiverApp = await this.signedTransferService.findReceiverAppByPaymentId(paymentId);
+        if (receiverApp && receiverApp.type !== AppType.REJECTED) {
+          throw new Error(
+            `Found existing app for ${paymentId}, aborting signed transfer proposal. App: ${stringify(
+              receiverApp,
+            )}`,
+          );
+        }
+        break;
       }
+
       case contractAddresses.SimpleTwoPartySwapApp: {
-        return this.proposeSimpleSwapMiddleware(params);
+        validateSimpleSwapApp(
+          params as any,
+          this.configService.getAllowedSwaps(),
+          await this.swapRateService.getOrFetchRate(
+            getAddressFromAssetId(params.initiatorDepositAssetId),
+            getAddressFromAssetId(params.responderDepositAssetId),
+          ),
+        );
+        break;
       }
+
       default: {
         // middleware for app not configured
-        return;
+        throw new Error(
+          `Will not install app without configured validation: ${proposal.appDefinition}`,
+        );
       }
-    }
-  };
-
-  private proposeSimpleSwapMiddleware = async (params: ProtocolParams.Propose) => {
-    validateSimpleSwapApp(
-      params,
-      this.configService.getAllowedSwaps(),
-      await this.swapRateService.getOrFetchRate(
-        getAddressFromAssetId(params.initiatorDepositAssetId),
-        getAddressFromAssetId(params.responderDepositAssetId),
-      ),
-    );
-  };
-
-  private proposeLinkedTransferMiddleware = async (proposal: AppInstanceProposal) => {
-    const { paymentId, coinTransfers } = proposal.initialState as SimpleLinkedTransferAppState;
-    // if node is the receiver, ignore
-    if (coinTransfers[0].to !== this.cfCoreService.cfCore.signerAddress) {
-      return;
-    }
-    // node is sender, make sure app doesnt already exist
-    const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
-      paymentId,
-      this.cfCoreService.cfCore.publicIdentifier,
-    );
-    if (receiverApp && receiverApp.type !== AppType.REJECTED) {
-      throw new Error(
-        `Found existing app for ${paymentId}, aborting linked transfer proposal. App: ${stringify(
-          receiverApp,
-        )}`,
-      );
-    }
-  };
-
-  private proposeSignedTransferMiddleware = async (proposal: AppInstanceProposal) => {
-    const { paymentId, coinTransfers } = proposal.initialState as SimpleSignedTransferAppState;
-    // if node is the receiver, ignore
-    if (coinTransfers[0].to !== this.cfCoreService.cfCore.signerAddress) {
-      return;
-    }
-    // node is sender, make sure app doesnt already exist
-    const receiverApp = await this.signedTransferService.findReceiverAppByPaymentId(paymentId);
-    if (receiverApp && receiverApp.type !== AppType.REJECTED) {
-      throw new Error(
-        `Found existing app for ${paymentId}, aborting signed transfer proposal. App: ${stringify(
-          receiverApp,
-        )}`,
-      );
     }
   };
 
