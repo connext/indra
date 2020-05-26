@@ -1,4 +1,4 @@
-import { signReceipt, getTestVerifyingContract, getTestReceiptToSign } from "./attestations";
+import { signReceiptMessage, getTestReceiptToSign, getTestVerifyingContract } from "./attestations";
 import { Wallet } from "ethers";
 
 describe("Attestations", () => {
@@ -10,7 +10,12 @@ describe("Attestations", () => {
     const verifyingContract = getTestVerifyingContract();
 
     const signer = Wallet.fromMnemonic(mnemonic);
-    const signature = await signReceipt(receipt, chainId, verifyingContract, signer.privateKey);
+    const signature = await signReceiptMessage(
+      receipt,
+      chainId,
+      verifyingContract,
+      signer.privateKey,
+    );
 
     const attestation = {
       ...receipt,

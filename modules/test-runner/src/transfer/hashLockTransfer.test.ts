@@ -222,7 +222,9 @@ describe("HashLock Transfers", () => {
     const timelock = (5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
-    const expiry = bigNumberify(await provider.getBlockNumber()).add(timelock).sub(TIMEOUT_BUFFER);
+    const expiry = bigNumberify(await provider.getBlockNumber())
+      .add(timelock)
+      .sub(TIMEOUT_BUFFER);
     // both sender + receiver apps installed, sender took action
     clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
@@ -245,7 +247,7 @@ describe("HashLock Transfers", () => {
       status: HashLockTransferStatus.PENDING,
       meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
       preImage: HashZero,
-      expiry
+      expiry,
     } as NodeResponses.GetHashLockTransfer);
   });
 
@@ -255,7 +257,9 @@ describe("HashLock Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
-    const expiry = bigNumberify(await provider.getBlockNumber()).add(timelock).sub(TIMEOUT_BUFFER);
+    const expiry = bigNumberify(await provider.getBlockNumber())
+      .add(timelock)
+      .sub(TIMEOUT_BUFFER);
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     // both sender + receiver apps installed, sender took action
@@ -273,16 +277,16 @@ describe("HashLock Transfers", () => {
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
       // Note: MUST wait for uninstall, bc UNLOCKED gets thrown on takeAction
-      // at the moment, there's no way to filter the uninstalled app here so we're just gonna 
+      // at the moment, there's no way to filter the uninstalled app here so we're just gonna
       // resolve and hope for the best
-      clientB.on(EventNames.UNINSTALL_EVENT,resolve);
+      clientB.on(EventNames.UNINSTALL_EVENT, resolve);
       clientB.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage,
         assetId: transfer.assetId,
       });
-    })
+    });
 
     const retrievedTransfer = await clientB.getHashLockTransfer(lockHash, transfer.assetId);
     expect(retrievedTransfer).to.deep.equal({

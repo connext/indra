@@ -5,7 +5,6 @@ import {
   PublicKey,
   PrivateKey,
   SignatureString,
-  Receipt,
 } from "@connext/types";
 import { arrayify, getAddress, hexlify, randomBytes, toUtf8String } from "ethers/utils";
 import {

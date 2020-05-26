@@ -191,7 +191,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
       async (payload: EventPayloads.SignedTransferCreated) => {
         const receipt = getTestReceiptToSign();
-        const signature = await recipient.signer.signReceipt(receipt, verifyingContract);
+        const signature = await recipient.signer.signReceiptMessage(receipt, verifyingContract);
         const attestation = {
           ...receipt,
           signature,
@@ -315,7 +315,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
         console.log(`Got signed transfer event: ${payload.paymentId}`);
         const verifyingContract = getTestVerifyingContract();
         const receipt = getTestReceiptToSign();
-        const signature = await recipient.signer.signReceipt(receipt, verifyingContract);
+        const signature = await recipient.signer.signReceiptMessage(receipt, verifyingContract);
         const attestation = {
           ...receipt,
           signature,

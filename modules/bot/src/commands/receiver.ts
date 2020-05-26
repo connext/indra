@@ -91,7 +91,7 @@ export default {
         const signer = new ChannelSigner(argv.privateKey, ethUrl);
         const verifyingContract = getTestVerifyingContract();
         const receipt = getTestReceiptToSign();
-        const signature = await signer.signReceipt(receipt, verifyingContract);
+        const signature = await signer.signReceiptMessage(receipt, verifyingContract);
         const attestation = {
           ...receipt,
           signature,

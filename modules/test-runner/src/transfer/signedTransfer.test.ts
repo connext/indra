@@ -59,7 +59,7 @@ describe("Signed Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
+  it.only("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
@@ -106,7 +106,7 @@ describe("Signed Transfers", () => {
 
     const verifyingContract = getTestVerifyingContract();
     const receipt = getTestReceiptToSign();
-    const signature = await signer.signReceipt(receipt, verifyingContract);
+    const signature = await signer.signReceiptMessage(receipt, verifyingContract);
     const attestation = {
       ...receipt,
       signature,
@@ -201,7 +201,7 @@ describe("Signed Transfers", () => {
 
     const verifyingContract = getTestVerifyingContract();
     const receipt = getTestReceiptToSign();
-    const signature = await signer.signReceipt(receipt, verifyingContract);
+    const signature = await signer.signReceiptMessage(receipt, verifyingContract);
     const attestation = {
       ...receipt,
       signature,
@@ -277,7 +277,7 @@ describe("Signed Transfers", () => {
 
     const verifyingContract = getTestVerifyingContract();
     const receipt = getTestReceiptToSign();
-    const signature = await signer.signReceipt(receipt, verifyingContract);
+    const signature = await signer.signReceiptMessage(receipt, verifyingContract);
     const attestation = {
       ...receipt,
       signature,
@@ -382,7 +382,7 @@ describe("Signed Transfers", () => {
       // Including recipient signing in test to match real conditions
       const verifyingContract = getTestVerifyingContract();
       const receipt = getTestReceiptToSign();
-      const signature = await signer.signReceipt(receipt, verifyingContract);
+      const signature = await signer.signReceiptMessage(receipt, verifyingContract);
       const attestation = {
         ...receipt,
         signature,

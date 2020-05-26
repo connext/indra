@@ -7,7 +7,7 @@ export interface IChannelSigner extends Signer {
   decrypt(message: string): Promise<string>;
   encrypt(message: string, publicKey: string): Promise<string>;
   signMessage(message: string): Promise<string>;
-  signReceipt(receipt: Receipt, verifyingContract: Address): Promise<string>;
+  signReceiptMessage(receipt: Receipt, verifyingContract: Address): Promise<string>;
   publicKey: PublicKey;
   publicIdentifier: PublicIdentifier;
 }

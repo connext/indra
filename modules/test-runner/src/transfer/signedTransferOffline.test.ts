@@ -87,7 +87,7 @@ describe("Signed Transfer Offline", () => {
     const preTransferBalance = await receiver.getFreeBalance(tokenAddress);
     const verifyingContract = getTestVerifyingContract();
     const receipt = getTestReceiptToSign();
-    const signature = await receiverSigner.signReceipt(receipt, verifyingContract);
+    const signature = await receiverSigner.signReceiptMessage(receipt, verifyingContract);
     const attestation = {
       ...receipt,
       signature,

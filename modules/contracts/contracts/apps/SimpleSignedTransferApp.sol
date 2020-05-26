@@ -29,7 +29,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
         bytes signature;
     }
 
-    // EIP-712 TYPE HASHES
+    // EIP-712 TYPE HASH CONSTANTS
 
     bytes32 private constant DOMAIN_TYPE_HASH = keccak256(
         "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)"
@@ -40,9 +40,11 @@ contract SimpleSignedTransferApp is CounterfactualApp {
 
     // EIP-712 DOMAIN SEPARATOR CONSTANTS
  
-    bytes32 private constant DOMAIN_NAME_HASH = keccak256("Graph Protocol");
-    bytes32 private constant DOMAIN_VERSION_HASH = keccak256("0");
+    string private constant DOMAIN_NAME = "Graph Protocol";
+    string private constant DOMAIN_VERSION = "0";
     bytes32 private constant DOMAIN_SALT = 0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188679b9c2;
+
+    // GET CHAIN ID
 
     function getChainID() public pure returns (uint256) {
         uint256 id;
@@ -52,39 +54,58 @@ contract SimpleSignedTransferApp is CounterfactualApp {
         return id;
     }
 
-    function encodeHashReceipt(bytes memory receipt, address verifyingContract) public view returns (bytes32) {
-       return
-          keccak256(
-              abi.encodePacked(
-                  "\x19\x01", // EIP-191 encoding pad, EIP-712 version 1
-                  keccak256(
-                      abi.encode(
-                          DOMAIN_TYPE_HASH,
-                          DOMAIN_NAME_HASH,
-                          DOMAIN_VERSION_HASH,
-                          getChainID(),
-                          verifyingContract,
-                          DOMAIN_SALT
-                      )
-                  ),
-                  keccak256(
-                      abi.encode(RECEIPT_TYPE_HASH, receipt) // EIP 712-encoded message hash
-                  )
-              )
-          );
+    // EIP-712 TYPE DATA METHODS
+
+    function hashStruct(bytes32 typeHash, bytes memory values) public view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                typeHash,
+                values
+            )
+        );
+    }
+
+    function hashTypedMessage(bytes32 domainSeparator, bytes32 message) public view returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    domainSeparator,
+                    message
+                )
+            );
+    }
+
+    // ATTESTATION ENCODING METHODS
+
+    function encodeDomainSeparator(address verifyingContract) public view returns(bytes32) {
+        return
+            hashStruct(
+                DOMAIN_TYPE_HASH,
+                abi.encode(
+                    DOMAIN_NAME,
+                    DOMAIN_VERSION,
+                    getChainID(),
+                    verifyingContract,
+                    DOMAIN_SALT
+                )
+            );
+    }
+
+    function encodeReceiptData(Action memory action) public view returns(bytes32) {
+        return
+            hashStruct(
+                RECEIPT_TYPE_HASH,
+                abi.encode(action.requestCID, action.responseCID, action.subgraphID)
+            );
     }
 
     function recoverAttestationSigner(Action memory action, address verifyingContract) public view returns (address) {
-        // Obtain the hash of the fully-encoded message, per EIP-712 encoding
-        bytes memory receipt = abi.encode(
-            action.requestCID,
-            action.responseCID,
-            action.subgraphID
+        bytes32 messageHash = hashTypedMessage(
+            encodeDomainSeparator(verifyingContract),
+            encodeReceiptData(action)
         );
-        bytes32 messageHash = encodeHashReceipt(receipt, verifyingContract);
 
-        // Obtain the signer of the fully-encoded EIP-712 message hash
-        // NOTE: The signer of the attestation is the indexer that served the request
         return ECDSA.recover(messageHash, action.signature);
     }
 
