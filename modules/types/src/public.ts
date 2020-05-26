@@ -43,7 +43,7 @@ type HashLockTransferParameters = {
   lockHash: Bytes32;
   recipient: PublicIdentifier;
   assetId?: Address;
-  meta?: object;
+  meta?: any;
 };
 
 type HashLockTransferResponse = {
@@ -61,7 +61,7 @@ type ResolveHashLockTransferResponse = {
   sender: PublicIdentifier;
   amount: BigNumber;
   assetId: Address;
-  meta?: object;
+  meta?: any;
 };
 
 ////////////////////////////////////////
@@ -74,7 +74,7 @@ type LinkedTransferParameters = {
   paymentId: Bytes32;
   preImage: Bytes32;
   recipient?: PublicIdentifier;
-  meta?: object;
+  meta?: any;
 };
 
 type LinkedTransferResponse = {
@@ -95,7 +95,7 @@ type ResolveLinkedTransferResponse = {
   paymentId: Bytes32;
   amount: BigNumber;
   assetId: Address;
-  meta?: object;
+  meta?: any;
 };
 
 ////////////////////////////////////////
@@ -204,7 +204,7 @@ type WithdrawResponse = {
 
 type TransferParameters = MethodParams.Deposit & {
   recipient: PublicIdentifier;
-  meta?: object;
+  meta?: any;
   paymentId?: Bytes32;
 };
 
