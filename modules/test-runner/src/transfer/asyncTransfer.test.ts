@@ -186,7 +186,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`invalid number value`);
+    ).to.be.rejectedWith(`Will not accept transfer install where initiator deposit is <= 0`);
   });
 
   it("Bot A tries to transfer with an invalid token address", async () => {

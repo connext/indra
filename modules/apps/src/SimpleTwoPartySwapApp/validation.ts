@@ -1,15 +1,11 @@
-import {
-  MethodParams,
-  AllowedSwap,
-  SwapRate,
-} from "@connext/types";
+import { AllowedSwap, SwapRate, ProtocolParams } from "@connext/types";
 import { calculateExchange, getAddressFromAssetId, stringify } from "@connext/utils";
 import { bigNumberify } from "ethers/utils";
 
 const ALLOWED_DISCREPANCY_PCT = 5;
 
 export const validateSimpleSwapApp = (
-  params: MethodParams.ProposeInstall,
+  params: ProtocolParams.Propose,
   allowedSwaps: SwapRate[],
   ourRate: string,
 ) => {
@@ -20,10 +16,8 @@ export const validateSimpleSwapApp = (
     responderDepositAssetId,
   } = params;
 
-  const initiatorDepositTokenAddress = 
-    getAddressFromAssetId(initiatorDepositAssetId);
-  const responderDepositTokenAddress = 
-    getAddressFromAssetId(responderDepositAssetId);
+  const initiatorDepositTokenAddress = getAddressFromAssetId(initiatorDepositAssetId);
+  const responderDepositTokenAddress = getAddressFromAssetId(responderDepositAssetId);
 
   if (
     !allowedSwaps.find(
