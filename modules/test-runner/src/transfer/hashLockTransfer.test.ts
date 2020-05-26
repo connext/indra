@@ -243,6 +243,7 @@ describe("HashLock Transfers", () => {
     const timelock = (5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
+    const paymentId = soliditySha256(["address", "bytes32"], [transfer.assetId, lockHash]);
     // both sender + receiver apps installed, sender took action
     clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
@@ -263,7 +264,7 @@ describe("HashLock Transfers", () => {
       senderIdentifier: clientA.publicIdentifier,
       receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.PENDING,
-      meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
+      meta: { foo: "bar", sender: clientA.publicIdentifier, timelock, paymentId },
       preImage: HashZero,
     } as NodeResponses.GetHashLockTransfer);
   });
@@ -275,6 +276,8 @@ describe("HashLock Transfers", () => {
     const timelock = (5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
+    const paymentId = soliditySha256(["address", "bytes32"], [transfer.assetId, lockHash]);
+
     // both sender + receiver apps installed, sender took action
     clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
@@ -306,7 +309,7 @@ describe("HashLock Transfers", () => {
       receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.COMPLETED,
       preImage,
-      meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
+      meta: { foo: "bar", sender: clientA.publicIdentifier, timelock, paymentId },
     } as NodeResponses.GetHashLockTransfer);
   });
 
