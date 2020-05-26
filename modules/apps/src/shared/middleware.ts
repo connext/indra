@@ -19,7 +19,11 @@ export const sharedProposalMiddleware = (
   // get registry information
   const registryAppInfo = AppRegistry.find((app) => app.name === name);
   if (!registryAppInfo) {
-    throw new Error(`Refusing proposal of unsupported application. Cxt: ${stringify(cxt)}`);
+    throw new Error(
+      `Refusing proposal of unsupported application (detected: ${name}, appDef: ${
+        proposal.appDefinition
+      }). Cxt: ${stringify(cxt)}`,
+    );
   }
   return commonAppProposalValidation(params, registryAppInfo, supportedTokenAddresses);
 };
