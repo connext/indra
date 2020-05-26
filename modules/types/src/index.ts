@@ -30,6 +30,7 @@ export {
 } from "./protocol";
 export * from "./middleware";
 export * from "./public";
+export * from "./rpc";
 export * from "./state";
 export * from "./store";
 export * from "./transfers";

@@ -44,9 +44,3 @@ export const isValidBytes32 = (value: any): boolean => !getBytes32Error(value);
 
 export const getRandomAddress = () => hexlify(randomBytes(20));
 export const getRandomBytes32 = () => hexlify(randomBytes(32));
-
-////////////////////////////////////////
-// Misc
-
-export const abbreviate = (str: string, prefixLen: number = 2, len: number = 4): string =>
-  `${str.substring(0, prefixLen + len)}..${str.substring(str.length - len)}`;

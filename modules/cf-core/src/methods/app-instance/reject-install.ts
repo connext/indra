@@ -5,20 +5,20 @@ import {
   MethodResults,
   RejectProposalMessage,
 } from "@connext/types";
-import { jsonRpcMethod } from "rpc-server";
 
-import { RequestHandler } from "../../request-handler";
-
-import { NodeController } from "../controller";
 import {
   NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
   NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH,
   NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
 import { StateChannel } from "../../models/state-channel";
+import { RequestHandler } from "../../request-handler";
 
-export class RejectInstallController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_rejectInstall)
+import { MethodController } from "../controller";
+
+export class RejectInstallController extends MethodController {
+  public readonly methodName = MethodNames.chan_rejectInstall;
+
   public executeMethod = super.executeMethod;
   protected async getRequiredLockName(
     requestHandler: RequestHandler,

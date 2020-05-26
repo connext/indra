@@ -12,4 +12,5 @@ export * from "./identifiers";
 export * from "./json";
 export * from "./logger";
 export * from "./math";
+export * from "./strings";
 export * from "./url";

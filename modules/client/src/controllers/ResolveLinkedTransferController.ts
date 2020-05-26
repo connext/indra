@@ -6,9 +6,9 @@ import {
   SimpleLinkedTransferAppState,
   SimpleLinkedTransferAppName,
 } from "@connext/types";
+import { stringify } from "@connext/utils";
 
 import { AbstractController } from "./AbstractController";
-import { stringify } from "@connext/utils";
 
 export class ResolveLinkedTransferController extends AbstractController {
   // properly logs error and emits a receive transfer failed event
@@ -30,19 +30,18 @@ export class ResolveLinkedTransferController extends AbstractController {
     this.log.info(`Resolving link transfer with params: ${stringify(params)}`);
 
     const installed = await this.connext.getAppInstances();
-    const existing = installed.find(
-      (app) =>
-        (
-          app.appInterface.addr ===
-            this.connext.appRegistry.find((app) => app.name === SimpleLinkedTransferAppName)
-              .appDefinitionAddress && (app.latestState as SimpleLinkedTransferAppState)
-        ).paymentId === paymentId,
+    const existing = installed.find((app) =>
+      app.appInterface.addr === this.connext.appRegistry.find(
+        (app) => app.name === SimpleLinkedTransferAppName,
+      ).appDefinitionAddress &&
+      (app.latestState as SimpleLinkedTransferAppState).paymentId === paymentId &&
+      app.initiatorIdentifier !== this.connext.publicIdentifier,
     );
     let resolveRes: PublicResults.ResolveLinkedTransfer;
     try {
       // node installs app, validation happens in listener
       if (existing) {
-        this.log.debug(`[${paymentId}] Found installed transfer app: ${existing.identityHash}`);
+        this.log.info(`[${paymentId}] Found installed transfer app: ${existing.identityHash}`);
         resolveRes = {
           paymentId,
           appIdentityHash: existing.identityHash,
@@ -52,7 +51,7 @@ export class ResolveLinkedTransferController extends AbstractController {
           meta: existing.meta,
         };
       } else {
-        this.log.debug(`[${paymentId}] Requesting node installs app`);
+        this.log.info(`[${paymentId}] Requesting node to install app`);
         resolveRes = await this.connext.node.resolveLinkedTransfer(paymentId);
       }
       this.log.debug(
@@ -65,9 +64,7 @@ export class ResolveLinkedTransferController extends AbstractController {
       throw e;
     }
 
-    this.log.info(
-      `Successfully redeemed linked transfer with id: ${paymentId} using preimage: ${preImage}`,
-    );
+    this.log.info(`Successfully redeemed linked transfer ${paymentId} using secret ${preImage}`);
     return resolveRes;
   };
 }

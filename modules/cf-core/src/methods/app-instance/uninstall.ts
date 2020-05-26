@@ -7,7 +7,6 @@ import {
   EventNames,
   UninstallMessage,
 } from "@connext/types";
-import { jsonRpcMethod } from "rpc-server";
 
 import {
   CANNOT_UNINSTALL_FREE_BALANCE,
@@ -17,13 +16,15 @@ import {
   NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
-import { RequestHandler } from "../../request-handler";
-import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
-import RpcRouter from "../../rpc-router";
+import { RequestHandler } from "../../request-handler";
+import { RpcRouter } from "../../rpc-router";
 
-export class UninstallController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_uninstall)
+import { MethodController } from "../controller";
+
+export class UninstallController extends MethodController {
+  public readonly methodName = MethodNames.chan_uninstall;
+
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockName(
@@ -61,7 +62,7 @@ export class UninstallController extends NodeController {
     // check if its the balance refund app
     const app = preProtocolStateChannel.appInstances.get(appIdentityHash);
     if (!app) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(appIdentityHash));
     }
   }
 
