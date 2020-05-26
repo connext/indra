@@ -5,23 +5,14 @@ import {
   ConditionalTransferAppNames,
   AppStates,
   PublicResults,
-  HashLockTransferAppName,
-  SimpleLinkedTransferAppName,
-  SimpleSignedTransferAppName,
-  SimpleSignedTransferAppState,
   SimpleLinkedTransferAppState,
   HashLockTransferAppState,
   MethodParams,
+  EventNames,
+  CoinTransfer,
 } from "@connext/types";
 import { stringify, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import {
-  TRANSFER_TIMEOUT,
-  validateHashLockTransferApp,
-  SupportedApplications,
-  commonAppProposalValidation,
-  validateSimpleLinkedTransferApp,
-  validateSignedTransferApp,
-} from "@connext/apps";
+import { TRANSFER_TIMEOUT, SupportedApplications } from "@connext/apps";
 import { MessagingService } from "@connext/messaging";
 import { Zero, HashZero } from "ethers/constants";
 
@@ -33,7 +24,6 @@ import { ChannelService } from "../channel/channel.service";
 import { DepositService } from "../deposit/deposit.service";
 import { TIMEOUT_BUFFER, MessagingProviderId } from "../constants";
 import { ConfigService } from "../config/config.service";
-import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { Channel } from "../channel/channel.entity";
 
 import { TransferRepository } from "./transfer.repository";
@@ -76,74 +66,34 @@ export class TransferService {
 
   async transferAppInstallFlow(
     appIdentityHash: string,
-    registryAppInfo: AppRegistry,
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
     installerChannel: Channel,
     transferType: ConditionalTransferAppNames,
   ): Promise<void> {
-    this.log.info(
-      `Start transferAppInstallFlow with params ${stringify({
-        appIdentityHash,
-        registryAppInfo,
-        proposeInstallParams,
-        from,
-        installerChannel,
-        transferType,
-      })}`,
-    );
-    const supportedAddresses = this.configService.getSupportedTokenAddresses();
+    this.log.info(`Start transferAppInstallFlow for appIdentityHash ${appIdentityHash}`);
 
+    // install for receiver or error
+    // https://github.com/ConnextProject/indra/issues/942
+    const paymentId = proposeInstallParams.meta.paymentId;
+    const allowed = getTransferTypeFromAppName(transferType);
     try {
-      this.log.debug(`Start commonAppProposalValidation`);
-      commonAppProposalValidation(proposeInstallParams, registryAppInfo, supportedAddresses);
-      this.log.debug(`Finish commonAppProposalValidation`);
-
-      switch (transferType) {
-        case ConditionalTransferAppNames.HashLockTransferApp: {
-          const blockNumber = await this.configService.getEthProvider().getBlockNumber();
-          this.log.debug(`Start validateHashLockTransferApp`);
-          validateHashLockTransferApp(
-            proposeInstallParams,
-            blockNumber,
-            from,
-            this.cfCoreService.cfCore.publicIdentifier,
-          );
-          this.log.debug(`Finish validateHashLockTransferApp`);
-          break;
-        }
-        case ConditionalTransferAppNames.SimpleLinkedTransferApp: {
-          this.log.debug(`Start validateSimpleLinkedTransferApp`);
-          validateSimpleLinkedTransferApp(
-            proposeInstallParams,
-            from,
-            this.cfCoreService.cfCore.publicIdentifier,
-          );
-          this.log.debug(`Finish validateSimpleLinkedTransferApp`);
-          break;
-        }
-        case ConditionalTransferAppNames.SimpleSignedTransferApp: {
-          this.log.debug(`Start validateSignedTransferApp`);
-          validateSignedTransferApp(
-            proposeInstallParams,
-            from,
-            this.cfCoreService.cfCore.publicIdentifier,
-          );
-          this.log.debug(`Finish validateSignedTransferApp`);
-          break;
-        }
-        default: {
-          const c: never = transferType;
-          throw new Error(`Unreachable: ${c}`);
-        }
-      }
-
-      // install for receiver or error
-      // https://github.com/ConnextProject/indra/issues/942
-      const paymentId = proposeInstallParams.meta.paymentId;
-      try {
-        this.log.info(`Start installReceiverAppByPaymentId for paymentId ${paymentId}`);
-        await this.installReceiverAppByPaymentId(
+      this.log.info(`Start installReceiverAppByPaymentId for paymentId ${paymentId}`);
+      // TODO: CLEAN UP LISTENERS
+      await new Promise(async (resolve, reject) => {
+        this.cfCoreService.cfCore.on(
+          EventNames.PROPOSE_INSTALL_FAILED_EVENT,
+          (ctx: { data: { error: any } }) => {
+            reject(new Error(ctx.data.error));
+          },
+        );
+        this.cfCoreService.cfCore.on(
+          EventNames.INSTALL_FAILED_EVENT,
+          (ctx: { data: { error: any } }) => {
+            reject(new Error(ctx.data.error));
+          },
+        );
+        const installRes = await this.installReceiverAppByPaymentId(
           from,
           proposeInstallParams.meta["recipient"],
           paymentId,
@@ -151,31 +101,30 @@ export class TransferService {
           proposeInstallParams.initialState as AppStates[typeof transferType],
           proposeInstallParams.meta,
           transferType,
-        );
-        this.log.info(`Finish installReceiverAppByPaymentId for paymentId ${paymentId}`);
-      } catch (e) {
-        this.log.error(`Caught error in transferAppInstallFlow: ${e.message}`);
-        const allowed = getTransferTypeFromAppName(transferType);
-        if (allowed === "RequireOnline") {
-          throw e;
-        }
+        ).catch((e) => {
+          reject(e);
+        });
+        resolve(installRes);
+      });
+      this.log.info(`Finish installReceiverAppByPaymentId for paymentId ${paymentId}`);
+    } catch (e) {
+      this.log.error(`Caught error in transferAppInstallFlow: ${e.message}`);
+      if (allowed === "RequireOnline") {
+        throw e;
       }
 
-      this.log.info(`Start install sender app for paymentId ${paymentId}`);
+      // install sender app anyways
+      this.log.info(`Start install sender app for paymentId ${paymentId} after receiver error`);
       const { appInstance } = await this.cfCoreService.installApp(
         appIdentityHash,
         installerChannel.multisigAddress,
       );
-      this.log.info(`Finish install sender app for paymentId ${paymentId}`);
-
+      this.log.info(`Finish install sender app for paymentId ${paymentId} after receiver error`);
       const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appIdentityHash}.install`;
       await this.messagingService.publish(installSubject, appInstance);
-    } catch (e) {
-      // reject if error
-      this.log.warn(`App install failed: ${e.stack || e.message}`);
-      await this.cfCoreService.rejectInstallApp(appIdentityHash, installerChannel.multisigAddress);
-      return;
     }
+
+    // in the happy case, the app is installed by the middleware
   }
 
   async installReceiverAppByPaymentId(
@@ -241,7 +190,7 @@ export class TransferService {
     if (freeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
       this.log.warn(
-        `Collateralizing ${receiverIdentifier} before proceeding with signed transfer payment`,
+        `Collateralizing ${receiverIdentifier} before proceeding with transfer payment`,
       );
       const deposit = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
         receiverIdentifier,
@@ -253,67 +202,32 @@ export class TransferService {
       const depositReceipt = await this.depositService.deposit(receiverChannel, deposit, assetId);
       if (!depositReceipt) {
         throw new Error(
-          `Could not deposit sufficient collateral to resolve linked transfer for receiver: ${receiverIdentifier}`,
+          `Could not deposit sufficient collateral to resolve transfer for receiver: ${receiverIdentifier}`,
         );
       }
     }
 
-    const baseInitialState: Partial<AppStates[typeof transferType]> = {
-      coinTransfers: [
-        {
-          amount,
-          to: freeBalanceAddr,
-        },
-        {
-          amount: Zero,
-          to: getSignerAddressFromPublicIdentifier(receiverIdentifier),
-        },
-      ],
-      paymentId,
+    const receiverCoinTransfers: CoinTransfer[] = [
+      {
+        amount,
+        to: freeBalanceAddr,
+      },
+      {
+        amount: Zero,
+        to: getSignerAddressFromPublicIdentifier(receiverIdentifier),
+      },
+    ];
+
+    const initialState: AppStates[typeof transferType] = {
+      ...senderAppState,
+      coinTransfers: receiverCoinTransfers,
     };
 
-    let initialState: AppStates[typeof transferType];
-    switch (transferType) {
-      case HashLockTransferAppName: {
-        const expiry = (senderAppState as HashLockTransferAppState).expiry.sub(TIMEOUT_BUFFER);
-        const provider = this.configService.getEthProvider();
-        const currBlock = await provider.getBlockNumber();
-        if (expiry.lt(currBlock)) {
-          throw new Error(
-            `Cannot resolve hash lock transfer with expired expiry: ${expiry.toString()}, block: ${currBlock}`,
-          );
-        }
-        initialState = {
-          ...baseInitialState,
-          lockHash: (senderAppState as HashLockTransferAppState).lockHash,
-          preImage: HashZero,
-          expiry,
-          finalized: false,
-        } as HashLockTransferAppState;
-        break;
-      }
-      case SimpleLinkedTransferAppName: {
-        initialState = {
-          ...baseInitialState,
-          amount,
-          assetId,
-          linkedHash: (senderAppState as SimpleLinkedTransferAppState).linkedHash,
-          paymentId,
-          preImage: HashZero,
-        } as SimpleLinkedTransferAppState;
-        break;
-      }
-      case SimpleSignedTransferAppName: {
-        initialState = {
-          ...baseInitialState,
-          finalized: false,
-          signer: (senderAppState as SimpleSignedTransferAppState).signer,
-        } as SimpleSignedTransferAppState;
-        break;
-      }
-      default:
-        const c: never = transferType;
-        throw new Error(`Unreachable: ${c}`);
+    // special case for expiry in initial state, receiver app must always expire first
+    if ((initialState as HashLockTransferAppState).expiry) {
+      (initialState as HashLockTransferAppState).expiry = (initialState as HashLockTransferAppState).expiry.sub(
+        TIMEOUT_BUFFER,
+      );
     }
 
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(

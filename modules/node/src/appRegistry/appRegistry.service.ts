@@ -5,6 +5,9 @@ import {
   validateWithdrawApp,
   validateDepositApp,
   generateValidationMiddleware,
+  validateHashLockTransferApp,
+  validateSimpleLinkedTransferApp,
+  validateSignedTransferApp,
 } from "@connext/apps";
 import {
   AppInstanceJson,
@@ -26,6 +29,9 @@ import {
   ProposeMiddlewareContext,
   AppInstanceProposal,
   ConditionalTransferAppNames,
+  HashLockTransferAppState,
+  SimpleLinkedTransferAppName,
+  SimpleSignedTransferAppName,
 } from "@connext/types";
 import { getAddressFromAssetId, stringify } from "@connext/utils";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
@@ -101,6 +107,13 @@ export class AppRegistryService implements OnModuleInit {
         throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
       }
 
+      await this.runPreInstallValidation(
+        registryAppInfo,
+        proposeInstallParams,
+        from,
+        installerChannel,
+      );
+
       // TODO: break into flows for deposit, withdraw, swap, and transfers
       if (
         Object.values(ConditionalTransferAppNames).includes(
@@ -109,7 +122,6 @@ export class AppRegistryService implements OnModuleInit {
       ) {
         await this.transferService.transferAppInstallFlow(
           appIdentityHash,
-          registryAppInfo,
           proposeInstallParams,
           from,
           installerChannel,
@@ -117,13 +129,6 @@ export class AppRegistryService implements OnModuleInit {
         );
         return;
       }
-
-      await this.runPreInstallValidation(
-        registryAppInfo,
-        proposeInstallParams,
-        from,
-        installerChannel,
-      );
 
       // check if we need to collateralize, only for swap app
       if (registryAppInfo.name === SimpleTwoPartySwapAppName) {
@@ -184,6 +189,38 @@ export class AppRegistryService implements OnModuleInit {
     const supportedAddresses = this.configService.getSupportedTokenAddresses();
     commonAppProposalValidation(proposeInstallParams, registryAppInfo, supportedAddresses);
     switch (registryAppInfo.name) {
+      case ConditionalTransferAppNames.HashLockTransferApp: {
+        const blockNumber = await this.configService.getEthProvider().getBlockNumber();
+        this.log.debug(`Start validateHashLockTransferApp`);
+        validateHashLockTransferApp(
+          proposeInstallParams,
+          blockNumber,
+          from,
+          this.cfCoreService.cfCore.publicIdentifier,
+        );
+        this.log.debug(`Finish validateHashLockTransferApp`);
+        break;
+      }
+      case ConditionalTransferAppNames.SimpleLinkedTransferApp: {
+        this.log.debug(`Start validateSimpleLinkedTransferApp`);
+        validateSimpleLinkedTransferApp(
+          proposeInstallParams,
+          from,
+          this.cfCoreService.cfCore.publicIdentifier,
+        );
+        this.log.debug(`Finish validateSimpleLinkedTransferApp`);
+        break;
+      }
+      case ConditionalTransferAppNames.SimpleSignedTransferApp: {
+        this.log.debug(`Start validateSignedTransferApp`);
+        validateSignedTransferApp(
+          proposeInstallParams,
+          from,
+          this.cfCoreService.cfCore.publicIdentifier,
+        );
+        this.log.debug(`Finish validateSignedTransferApp`);
+        break;
+      }
       case SimpleTwoPartySwapAppName: {
         validateSimpleSwapApp(
           proposeInstallParams,
@@ -306,27 +343,71 @@ export class AppRegistryService implements OnModuleInit {
     };
   };
 
+  private installTransferMiddleware = async (appInstance: AppInstanceJson) => {
+    const latestState = appInstance.latestState as HashLockTransferAppState;
+    const senderAddress = latestState.coinTransfers[0].to;
+
+    const nodeSignerAddress = await this.configService.getSignerAddress();
+
+    if (senderAddress !== nodeSignerAddress) {
+      // node is not sending funds, we dont need to do anything
+      return;
+    }
+
+    const existingSenderAppProposal = await this.transferService.findSenderAppByPaymentId(
+      appInstance.meta.paymentId,
+    );
+
+    if (!existingSenderAppProposal) {
+      throw new Error(`Sender app has not been proposed for lockhash ${latestState.lockHash}`);
+    }
+    if (existingSenderAppProposal.type !== AppType.PROPOSAL) {
+      this.log.warn(
+        `Sender app already exists for lockhash ${latestState.lockHash}, will not install`,
+      );
+      return;
+    }
+
+    // install sender app
+    this.log.info(
+      `installTransferMiddleware: Install sender app ${existingSenderAppProposal.identityHash} for user ${appInstance.initiatorIdentifier} started`,
+    );
+    const res = await this.cfCoreService.installApp(
+      existingSenderAppProposal.identityHash,
+      existingSenderAppProposal.channel.multisigAddress,
+    );
+    const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${existingSenderAppProposal.channel.multisigAddress}.app-instance.${existingSenderAppProposal.identityHash}.install`;
+    await this.messagingService.publish(installSubject, appInstance);
+    this.log.info(
+      `installHashLockTransferMiddleware: Install sender app ${
+        res.appInstance.identityHash
+      } for user ${appInstance.initiatorIdentifier} complete: ${JSON.stringify(res)}`,
+    );
+  };
+
   private installMiddleware = async (cxt: InstallMiddlewareContext) => {
     const { appInstance } = cxt;
     const appDef = appInstance.appInterface.addr;
 
-    switch (appDef) {
-      default: {
-        // middleware for app not configured
-        return;
-      }
+    const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
+
+    if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo.name)) {
+      await this.installTransferMiddleware(appInstance);
     }
   };
 
   private proposeMiddleware = async (cxt: ProposeMiddlewareContext) => {
     const { proposal } = cxt;
-    const contractAddresses = await this.configService.getContractAddresses();
 
-    switch (proposal.appDefinition) {
-      case contractAddresses.SimpleLinkedTransferApp: {
+    const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+      proposal.appDefinition,
+    );
+
+    switch (appRegistryInfo.name) {
+      case SimpleLinkedTransferAppName: {
         return await this.proposeLinkedTransferMiddleware(proposal);
       }
-      case contractAddresses.SimpleSignedTransferApp: {
+      case SimpleSignedTransferAppName: {
         return await this.proposeSignedTransferMiddleware(proposal);
       }
       default: {
