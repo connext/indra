@@ -319,13 +319,6 @@ export class ConnextListener extends ConnextEventEmitter {
     }
     // validate or reject app
     try {
-      // check based on supported applications
-      commonAppProposalValidation(
-        params,
-        // types weirdness
-        { ...registryAppInfo, name: registryAppInfo.name as SupportedApplications },
-        this.connext.config.supportedTokenAddresses,
-      );
       switch (registryAppInfo.name) {
         case SimpleLinkedTransferAppName: {
           validateSimpleLinkedTransferApp(params, from, this.connext.publicIdentifier);
@@ -345,21 +338,6 @@ export class ConnextListener extends ConnextEventEmitter {
           break;
         }
         case DepositAppName: {
-          const { appIdentityHash } = await this.connext.checkDepositRights({
-            assetId: params.initiatorDepositAssetId,
-          });
-          if (appIdentityHash) {
-            throw new Error(
-              `Deposit app already installed in client for ${params.initiatorDepositAssetId}, rejecting.`,
-            );
-          }
-          await validateDepositApp(
-            params,
-            from,
-            this.connext.publicIdentifier,
-            this.connext.multisigAddress,
-            this.connext.ethProvider,
-          );
           break;
         }
         default: {

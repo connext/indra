@@ -1,4 +1,10 @@
-import { MethodParams, DepositAppState, CONVENTION_FOR_ETH_ASSET_ID } from "@connext/types";
+import {
+  MethodParams,
+  DepositAppState,
+  CONVENTION_FOR_ETH_ASSET_ID,
+  ProtocolParams,
+  StateChannelJSON,
+} from "@connext/types";
 import {
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
@@ -12,13 +18,12 @@ import { JsonRpcProvider } from "ethers/providers";
 import { baseCoinTransferValidation } from "../shared";
 
 export const validateDepositApp = async (
-  params: MethodParams.ProposeInstall,
-  initiatorIdentifier: string,
-  responderIdentifier: string,
-  multisigAddress: string,
+  params: ProtocolParams.Propose,
+  channel: StateChannelJSON,
   provider: JsonRpcProvider,
 ) => {
-  const { responderDeposit, initiatorDeposit } = params;
+  const { responderDeposit, initiatorDeposit, initiatorIdentifier, responderIdentifier } = params;
+  const { multisigAddress } = channel;
   const initialState = params.initialState as DepositAppState;
 
   const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);

@@ -170,8 +170,6 @@ export class AppRegistryService implements OnModuleInit {
     channel: Channel,
   ): Promise<void> {
     this.log.info(`runPreInstallValidation for app name ${registryAppInfo.name} started`);
-    const supportedAddresses = this.configService.getSupportedTokenAddresses();
-    commonAppProposalValidation(proposeInstallParams, registryAppInfo, supportedAddresses);
     switch (registryAppInfo.name) {
       case SimpleLinkedTransferAppName: {
         validateSimpleLinkedTransferApp(
@@ -201,25 +199,6 @@ export class AppRegistryService implements OnModuleInit {
         break;
       }
       case DepositAppName: {
-        const appInstances = await this.cfCoreService.getAppInstances(channel.multisigAddress);
-        const depositApp = appInstances.find(
-          (appInstance) =>
-            appInstance.appInterface.addr === registryAppInfo.appDefinitionAddress &&
-            (appInstance.latestState as DepositAppState).assetId ===
-              proposeInstallParams.initiatorDepositAssetId,
-        );
-        if (depositApp) {
-          throw new Error(
-            `Deposit app already installed for this assetId, rejecting (${depositApp.identityHash})`,
-          );
-        }
-        await validateDepositApp(
-          proposeInstallParams,
-          from,
-          this.cfCoreService.cfCore.publicIdentifier,
-          (await this.channelRepository.findByUserPublicIdentifierOrThrow(from)).multisigAddress,
-          this.configService.getEthProvider(),
-        );
         break;
       }
       case HashLockTransferAppName: {

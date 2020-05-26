@@ -4,12 +4,12 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   ProtocolRoles,
   ProposeMiddlewareContext,
-  Address,
   UninstallMiddlewareContext,
   JsonRpcProvider,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { ERC20 } from "@connext/contracts";
+import { validateDepositApp } from ".";
 
 export const uninstallDepositMiddleware = async (
   context: UninstallMiddlewareContext,
@@ -53,12 +53,12 @@ export const uninstallDepositMiddleware = async (
 
 export const proposeDepositMiddleware = async (
   context: ProposeMiddlewareContext,
-  appDefinitionAddress: Address,
+  provider: JsonRpcProvider,
 ) => {
-  const { proposal, stateChannel } = context;
+  const { proposal, stateChannel, params } = context;
   const depositApp = stateChannel.appInstances.find(([id, app]) => {
     return (
-      app.appInterface.addr === appDefinitionAddress &&
+      app.appInterface.addr === proposal.appDefinition &&
       app.latestState["assetId"] === proposal.initialState["assetId"]
     );
   });
@@ -67,4 +67,5 @@ export const proposeDepositMiddleware = async (
       `Cannot install two deposit apps with the same asset id simultaneously. Existing app: ${depositApp[0]}`,
     );
   }
+  await validateDepositApp(params, stateChannel, provider);
 };
