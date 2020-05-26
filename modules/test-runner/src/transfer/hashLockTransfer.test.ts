@@ -7,9 +7,8 @@ import {
   NodeResponses,
   PublicParams,
   EventPayloads,
-  HashLockTransferAppState,
 } from "@connext/types";
-import { getRandomBytes32, ConsoleLogger, stringify } from "@connext/utils";
+import { getRandomBytes32 } from "@connext/utils";
 import { providers } from "ethers";
 import { AddressZero, HashZero } from "ethers/constants";
 import { soliditySha256, bigNumberify } from "ethers/utils";
