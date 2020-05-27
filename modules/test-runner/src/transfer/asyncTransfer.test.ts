@@ -1,8 +1,5 @@
 import { getLocalStore } from "@connext/store";
-import {
-  ConditionalTransferTypes,
-  IConnextClient,
-} from "@connext/types";
+import { ConditionalTransferTypes, IConnextClient } from "@connext/types";
 import { ChannelSigner, getRandomBytes32 } from "@connext/utils";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -160,7 +157,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`invalid number value`);
+    ).to.be.rejectedWith(`Will not accept transfer install where initiator deposit is <= 0`);
   });
 
   it("Bot A tries to transfer with an invalid token address", async () => {

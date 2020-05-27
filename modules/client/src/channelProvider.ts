@@ -51,7 +51,7 @@ export const createCFChannelProvider = async ({
   } else {
     config = node.config;
   }
-  const contractAddresses = config.contractAddresses;
+  const { contractAddresses, supportedTokenAddresses } = config;
   const messaging = node.messaging;
   const nodeConfig = { STORE_KEY_PREFIX: ConnextClientStorePrefix };
   const lockService = {
@@ -97,7 +97,10 @@ export const createCFChannelProvider = async ({
   // register any default middlewares
   cfCore.injectMiddleware(
     Opcode.OP_VALIDATE,
-    await generateValidationMiddleware({ provider: ethProvider, contractAddresses }),
+    await generateValidationMiddleware(
+      { provider: ethProvider, contractAddresses },
+      supportedTokenAddresses,
+    ),
   );
 
   const connection = new CFCoreRpcConnection(cfCore, store, signer, node, logger);

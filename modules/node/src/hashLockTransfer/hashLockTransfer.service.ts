@@ -25,15 +25,15 @@ const appStatusesToHashLockTransferStatus = (
   senderApp: AppInstance<typeof HashLockTransferAppName>,
   receiverApp?: AppInstance<typeof HashLockTransferAppName>,
 ): HashLockTransferStatus | undefined => {
-  if (!senderApp) {
+  if (!receiverApp) {
     return undefined;
   }
-  const latestState = bigNumberifyJson(senderApp.latestState) as HashLockTransferAppState;
+  const latestState = bigNumberifyJson(receiverApp.latestState) as HashLockTransferAppState;
   const { expiry: senderExpiry } = latestState;
   const isSenderExpired = senderExpiry.lt(currentBlockNumber);
-  const isReceiverExpired = !receiverApp ? false : latestState.expiry.lt(currentBlockNumber);
+  const isReceiverExpired = !senderApp ? false : latestState.expiry.lt(currentBlockNumber);
   // pending iff no receiver app + not expired
-  if (!receiverApp) {
+  if (!senderApp) {
     return isSenderExpired ? HashLockTransferStatus.EXPIRED : HashLockTransferStatus.PENDING;
   } else if (
     senderApp.latestState.preImage !== HashZero ||
