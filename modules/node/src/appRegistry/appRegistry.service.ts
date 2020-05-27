@@ -39,7 +39,7 @@ import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
-import { TransferService } from "../transfer/transfer.service";
+import { TransferService, getTransferTypeFromAppName } from "../transfer/transfer.service";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -231,8 +231,17 @@ export class AppRegistryService implements OnModuleInit {
 
     const nodeSignerAddress = await this.configService.getSignerAddress();
 
+    // if node is not sending funds, we dont need to do anything
     if (senderAddress !== nodeSignerAddress) {
-      // node is not sending funds, we dont need to do anything
+      return;
+    }
+
+    const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+      appInstance.appInterface.addr,
+    );
+
+    // this middleware is only relevant for require online
+    if (getTransferTypeFromAppName(registryAppInfo.name) === "AllowOffline") {
       return;
     }
 
