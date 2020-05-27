@@ -79,57 +79,37 @@ export class TransferService {
 
     const paymentId = proposeInstallParams.meta["paymentId"];
     const allowed = getTransferTypeFromAppName(transferType);
-    this.log.info(`Start installReceiverAppByPaymentId for paymentId ${paymentId}`);
-    // TODO: CLEAN UP LISTENERS
-    await new Promise(async (resolve, reject) => {
-      this.cfCoreService.cfCore.on(
-        EventNames.PROPOSE_INSTALL_FAILED_EVENT,
-        (ctx: { data: { error: any } }) => {
-          reject(new Error(ctx.data.error));
-        },
-      );
-      this.cfCoreService.cfCore.on(
-        EventNames.INSTALL_FAILED_EVENT,
-        (ctx: { data: { error: any } }) => {
-          reject(new Error(ctx.data.error));
-        },
-      );
-
-      // install for receiver or error
-      // https://github.com/ConnextProject/indra/issues/942
-      this.installReceiverAppByPaymentId(
-        from,
-        proposeInstallParams.meta["recipient"],
-        paymentId,
-        proposeInstallParams.initiatorDepositAssetId,
-        proposeInstallParams.initialState as AppStates[typeof transferType],
-        proposeInstallParams.meta,
-        transferType,
-      )
-        .then(() => {
-          if (allowed === "RequireOnline") {
-            resolve();
-          }
-        })
-        .catch((e) => {
-          if (allowed === "RequireOnline") {
-            reject(e);
-          }
-        });
-      // in the allow offline case, we want both receiver and sender apps to install in parallel
-      // if allow offline, resolve after sender app install
-      // if not, will be installed in middleware
-      if (allowed === "AllowOffline") {
-        this.cfCoreService
-          .installApp(appIdentityHash, installerChannel.multisigAddress)
-          .then(async (appInstance) => {
-            const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appIdentityHash}.install`;
-            await this.messagingService.publish(installSubject, appInstance);
-            resolve();
-          })
-          .catch((e) => reject(e));
+    // in the allow offline case, we want both receiver and sender apps to install in parallel
+    // if allow offline, resolve after sender app install
+    // if not, will be installed in middleware
+    if (allowed === "AllowOffline") {
+      try {
+        await this.cfCoreService.installApp(appIdentityHash, installerChannel.multisigAddress);
+      } catch (e) {
+        throw e;
       }
-    });
+    }
+
+    // install for receiver or error
+    // https://github.com/ConnextProject/indra/issues/942
+    this.installReceiverAppByPaymentId(
+      from,
+      proposeInstallParams.meta["recipient"],
+      paymentId,
+      proposeInstallParams.initiatorDepositAssetId,
+      proposeInstallParams.initialState as AppStates[typeof transferType],
+      proposeInstallParams.meta,
+      transferType,
+    )
+      .then((receiverInstall) => {
+        this.log.info(`Installed receiver app ${receiverInstall.appIdentityHash}`);
+      })
+      .catch((e) => {
+        if (allowed === "RequireOnline") {
+          throw e;
+        }
+      });
+    this.log.info(`TransferAppInstallFlow for appIdentityHash ${appIdentityHash} complete`);
   }
 
   async installReceiverAppByPaymentId(
