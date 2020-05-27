@@ -29,7 +29,10 @@ const appStatusesToLinkedTransferStatus = (
     return LinkedTransferStatus.FAILED;
   }
 
-  if (senderAppType === AppType.INSTANCE && receiverAppType === AppType.INSTANCE) {
+  if (
+    (senderAppType === AppType.INSTANCE || senderAppType === AppType.PROPOSAL) &&
+    (receiverAppType === AppType.INSTANCE || receiverAppType === AppType.PROPOSAL)
+  ) {
     return LinkedTransferStatus.PENDING;
   }
 
