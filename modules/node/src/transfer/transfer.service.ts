@@ -55,8 +55,6 @@ export const getTransferTypeFromAppName = (
 export class TransferService {
   constructor(
     private readonly log: LoggerService,
-    private readonly configService: ConfigService,
-    @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly depositService: DepositService,

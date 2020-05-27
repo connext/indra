@@ -22,8 +22,7 @@ import {
   HashLockTransferAppState,
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
-import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
-import { MessagingService } from "@connext/messaging";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 import { bigNumberify } from "ethers/utils";
 
@@ -36,7 +35,6 @@ import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { DepositService } from "../deposit/deposit.service";
 import { LoggerService } from "../logger/logger.service";
-import { MessagingProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { TransferService, getTransferTypeFromAppName } from "../transfer/transfer.service";
@@ -54,7 +52,6 @@ export class AppRegistryService implements OnModuleInit {
     private readonly log: LoggerService,
     private readonly transferService: TransferService,
     private readonly swapRateService: SwapRateService,
-    @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly withdrawService: WithdrawService,
     private readonly depositService: DepositService,
     private readonly appRegistryRepository: AppRegistryRepository,
@@ -142,8 +139,6 @@ export class AppRegistryService implements OnModuleInit {
       ));
       // any tasks that need to happen after install, i.e. DB writes
       await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams);
-      const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appIdentityHash}.install`;
-      await this.messagingService.publish(installSubject, appInstance);
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.stack || e.message}`);
@@ -263,8 +258,6 @@ export class AppRegistryService implements OnModuleInit {
         existingSenderApp.identityHash,
         existingSenderApp.channel.multisigAddress,
       );
-      const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${existingSenderApp.channel.multisigAddress}.app-instance.${existingSenderApp.identityHash}.install`;
-      await this.messagingService.publish(installSubject, appInstance);
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.stack || e.message}`);
