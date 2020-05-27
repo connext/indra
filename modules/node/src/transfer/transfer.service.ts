@@ -1,4 +1,4 @@
-import { Injectable, Inject } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import {
   Address,
   Bytes32,
@@ -7,13 +7,11 @@ import {
   PublicResults,
   SimpleLinkedTransferAppState,
   HashLockTransferAppState,
-  EventNames,
   CoinTransfer,
   MethodParams,
 } from "@connext/types";
 import { stringify, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { TRANSFER_TIMEOUT, SupportedApplications } from "@connext/apps";
-import { MessagingService } from "@connext/messaging";
 import { Zero, HashZero } from "ethers/constants";
 
 import { LoggerService } from "../logger/logger.service";
@@ -22,8 +20,7 @@ import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService } from "../channel/channel.service";
 import { DepositService } from "../deposit/deposit.service";
-import { TIMEOUT_BUFFER, MessagingProviderId } from "../constants";
-import { ConfigService } from "../config/config.service";
+import { TIMEOUT_BUFFER } from "../constants";
 import { Channel } from "../channel/channel.entity";
 
 import { TransferRepository } from "./transfer.repository";
