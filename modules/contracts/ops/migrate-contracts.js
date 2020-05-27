@@ -25,7 +25,7 @@ const appContracts = [
   "WithdrawApp",
 ];
 
-const hash = input => eth.utils.keccak256(`0x${input.replace(/^0x/, "")}`);
+const hash = (input) => eth.utils.keccak256(`0x${input.replace(/^0x/, "")}`);
 
 const artifacts = {};
 for (const contract of coreContracts) {
@@ -50,9 +50,7 @@ const ganacheId = 4447;
 const addressBookPath = "./address-book.json";
 const addressBook = JSON.parse(fs.readFileSync(addressBookPath, "utf8") || "{}");
 
-const classicProviders = [
-  "https://www.ethercluster.com/etc",
-];
+const classicProviders = ["https://www.ethercluster.com/etc"];
 
 // Global scope vars
 let chainId;
@@ -71,7 +69,7 @@ const getSavedData = (contractName, property) => {
 };
 
 // Write addressBook to disk
-const saveAddressBook = addressBook => {
+const saveAddressBook = (addressBook) => {
   try {
     fs.writeFileSync(addressBookPath, JSON.stringify(addressBook, null, 2));
   } catch (e) {
@@ -114,7 +112,7 @@ const deployContract = async (name, artifacts, args) => {
     return new eth.Contract(savedAddress, artifacts.abi, wallet);
   }
   const factory = eth.ContractFactory.fromSolidity(artifacts);
-  const contract = await factory.connect(wallet).deploy(...args.map(a => a.value));
+  const contract = await factory.connect(wallet).deploy(...args.map((a) => a.value));
   const txHash = contract.deployTransaction.hash;
   console.log(`Sent transaction to deploy ${name}, txHash: ${txHash}`);
   await wallet.provider.waitForTransaction(txHash);
@@ -124,7 +122,7 @@ const deployContract = async (name, artifacts, args) => {
   const creationCodeHash = hash(artifacts.bytecode);
   // Update address-book w new address + the args we deployed with
   const saveArgs = {};
-  args.forEach(a => (saveArgs[a.name] = a.value));
+  args.forEach((a) => (saveArgs[a.name] = a.value));
   if (!addressBook[chainId]) addressBook[chainId] = {};
   if (!addressBook[chainId][name]) addressBook[chainId][name] = {};
   addressBook[chainId][name] = { address, creationCodeHash, runtimeCodeHash, txHash, ...saveArgs };
@@ -164,7 +162,7 @@ const sendGift = async (address, token) => {
 // Begin executing main migration script in async wrapper function
 // First, setup signer & connect to eth provider
 
-(async function() {
+const migrate = async () => {
   let provider, balance, nonce, token;
 
   if (!process.env.ETH_PROVIDER) {
@@ -205,7 +203,7 @@ const sendGift = async (address, token) => {
   // if args are provided, only deploy given contracts
   const args = process.argv.slice(2);
   if (args.length > 0) {
-    args.forEach(contractName => {
+    args.forEach((contractName) => {
       if (!knownContracts.includes(contractName)) {
         console.error(`Unknown contract name: ${contractName}`);
         return;
@@ -251,4 +249,8 @@ const sendGift = async (address, token) => {
   const spent = balance - formatEther(await wallet.getBalance());
   const nTx = (await wallet.getTransactionCount()) - nonce;
   console.log(`Sent ${nTx} transaction${nTx === 1 ? "" : "s"} & spent ${EtherSymbol} ${spent}`);
-})();
+};
+
+migrate();
+
+module.exports = migrate;
