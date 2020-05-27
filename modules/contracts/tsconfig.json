@@ -5,7 +5,8 @@
     "noImplicitAny": true,
     "outDir": "dist",
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "allowJs": true
   },
   "exclude": ["dist", "node_modules"],
   "include": [
@@ -14,6 +15,7 @@
     "./buidler.config.ts",
     "./index.ts",
     "./commitments/*.ts",
-    "./test/**/*.spec.ts"
+    "./test/**/*.spec.ts",
+    "./ops/migrate-contracts.js"
   ]
 }

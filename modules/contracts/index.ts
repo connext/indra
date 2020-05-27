@@ -25,6 +25,8 @@ import * as UnidirectionalLinkedTransferApp from "./build/UnidirectionalLinkedTr
 import * as UnidirectionalTransferApp from "./build/UnidirectionalTransferApp.json";
 import * as WithdrawApp from "./build/WithdrawApp.json";
 
+const migrate = require("./ops/migrate-contracts.js");
+
 export * from "./commitments";
 export {
   addressBook,
@@ -50,4 +52,5 @@ export {
   UnidirectionalLinkedTransferApp,
   UnidirectionalTransferApp,
   WithdrawApp,
+  migrate,
 };

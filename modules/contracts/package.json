@@ -1,6 +1,6 @@
 {
   "name": "@connext/contracts",
-  "version": "3.1.0",
+  "version": "3.1.2",
   "description": "Smart contracts that power a Counterfactual State Channel platform",
   "license": "ISC",
   "files": [
@@ -10,7 +10,8 @@
     "dist/commitments",
     "dist/contracts",
     "dist/index.js",
-    "dist/index.d.ts"
+    "dist/index.d.ts",
+    "dist/ops/migrate-contracts.js"
   ],
   "main": "./dist/index.js",
   "keywords": [
