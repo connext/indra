@@ -9,7 +9,6 @@ import {
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   WithdrawAppState,
-  SimpleSignedTransferAppState,
   Opcode,
   UninstallMiddlewareContext,
   ProtocolName,
@@ -18,18 +17,16 @@ import {
   InstallMiddlewareContext,
   DepositAppState,
   ProtocolRoles,
-  SimpleLinkedTransferAppState,
   ProposeMiddlewareContext,
   ConditionalTransferAppNames,
   HashLockTransferAppState,
 } from "@connext/types";
-import { getAddressFromAssetId, stringify } from "@connext/utils";
+import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
 import { JsonRpcProvider } from "ethers/providers";
 import { bigNumberify } from "ethers/utils";
 
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { CFCoreStore } from "../cfCore/cfCore.store";
@@ -38,10 +35,8 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { DepositService } from "../deposit/deposit.service";
-import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId } from "../constants";
-import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { TransferService } from "../transfer/transfer.service";
@@ -58,15 +53,12 @@ export class AppRegistryService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly log: LoggerService,
     private readonly transferService: TransferService,
-    private readonly hashlockTransferService: HashLockTransferService,
-    private readonly signedTransferService: SignedTransferService,
     private readonly swapRateService: SwapRateService,
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly withdrawService: WithdrawService,
     private readonly depositService: DepositService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
-    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("AppRegistryService");
   }
