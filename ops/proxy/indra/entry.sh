@@ -119,7 +119,6 @@ function copycerts {
   fi
 }
 
-
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
   sleep 3 # give proxy a sec to wake up before attempting first renewal
