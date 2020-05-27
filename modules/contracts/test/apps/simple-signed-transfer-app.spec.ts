@@ -122,14 +122,6 @@ describe("SimpleSignedTransferApp", () => {
     chainId = (await wallet.provider.getNetwork()).chainId;
     receipt = getTestReceiptToSign();
     verifyingContract = getTestVerifyingContract();
-
-    const domainSeparatorOnChain = await simpleSignedTransferApp.functions.encodeDomainSeparator(
-      verifyingContract,
-    );
-    console.log("domainSeparatorOnChain", domainSeparatorOnChain);
-    const domainSeparatorOffChain = encodeDomainSeparator(chainId, verifyingContract);
-    console.log("domainSeparatorOffChain", domainSeparatorOffChain);
-
     goodSig = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
     badSig = getRandomBytes32();
     paymentId = getRandomBytes32();
