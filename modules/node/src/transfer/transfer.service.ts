@@ -7,7 +7,6 @@ import {
   PublicResults,
   SimpleLinkedTransferAppState,
   HashLockTransferAppState,
-  MethodParams,
   EventNames,
   CoinTransfer,
   ProtocolParams,
@@ -113,19 +112,11 @@ export class TransferService {
       if (allowed === "RequireOnline") {
         throw e;
       }
-
-      // install sender app anyways
-      this.log.info(`Start install sender app for paymentId ${paymentId} after receiver error`);
-      const { appInstance } = await this.cfCoreService.installApp(
-        appIdentityHash,
-        installerChannel.multisigAddress,
-      );
-      this.log.info(`Finish install sender app for paymentId ${paymentId} after receiver error`);
-      const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appIdentityHash}.install`;
-      await this.messagingService.publish(installSubject, appInstance);
     }
 
-    // in the happy case, the app is installed by the middleware
+    // this is called in the proposal middleware. the sender app is installed
+    // once the proposal event is thrown (which will not happen if this fn
+    // errors)
   }
 
   async installReceiverAppByPaymentId(
