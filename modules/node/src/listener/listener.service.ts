@@ -122,7 +122,7 @@ export default class ListenerService implements OnModuleInit {
           return;
         }
         this.logEvent(PROPOSE_INSTALL_EVENT, data);
-        this.appRegistryService.validateAndInstallOrReject(
+        this.appRegistryService.installOrReject(
           data.data.appIdentityHash,
           data.data.params,
           data.from,

@@ -1,11 +1,8 @@
 import {
-  MethodParams,
   DepositAppState,
-  UninstallMiddlewareContext,
-  ProtocolRoles,
   CONVENTION_FOR_ETH_ASSET_ID,
-  ProposeMiddlewareContext,
-  Address,
+  ProtocolParams,
+  StateChannelJSON,
 } from "@connext/types";
 import {
   getAddressFromAssetId,
@@ -19,15 +16,13 @@ import { JsonRpcProvider } from "ethers/providers";
 
 import { baseCoinTransferValidation } from "../shared";
 
-
 export const validateDepositApp = async (
-  params: MethodParams.ProposeInstall,
-  initiatorIdentifier: string,
-  responderIdentifier: string,
-  multisigAddress: string,
+  params: ProtocolParams.Propose,
+  channel: StateChannelJSON,
   provider: JsonRpcProvider,
 ) => {
-  const { responderDeposit, initiatorDeposit } = params;
+  const { responderDeposit, initiatorDeposit, initiatorIdentifier, responderIdentifier } = params;
+  const { multisigAddress } = channel;
   const initialState = params.initialState as DepositAppState;
 
   const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
@@ -112,58 +107,6 @@ export const validateDepositApp = async (
   if (!initialState.startingMultisigBalance.eq(startingMultisigBalance)) {
     throw new Error(
       `Cannot install deposit app with invalid startingMultisigBalance. Expected ${startingMultisigBalance}, got ${initialState.startingMultisigBalance}`,
-    );
-  }
-};
-
-export const uninstallDepositMiddleware = async (
-  context: UninstallMiddlewareContext,
-  provider: JsonRpcProvider,
-) => {
-  const { role, appInstance, stateChannel, params } = context;
-
-  if (!provider || !provider.getBalance) {
-    throw new Error(`Uninstall deposit middleware needs access to a provider, got ${JSON.stringify(provider, null, 2)}`);
-  }
-
-  const latestState = appInstance.latestState as DepositAppState;
-  const currentMultisigBalance =
-    latestState.assetId === CONVENTION_FOR_ETH_ASSET_ID
-      ? await provider.getBalance(stateChannel.multisigAddress)
-      : await new Contract(latestState.assetId, ERC20.abi as any, provider).functions.balanceOf(
-          stateChannel.multisigAddress,
-        );
-
-  if (currentMultisigBalance.lt(latestState.startingMultisigBalance)) {
-    throw new Error(
-      `Refusing to uninstall, current multisig balance (${currentMultisigBalance.toString()}) is less than starting multsig balance (${latestState.startingMultisigBalance.toString()})`,
-    );
-  }
-
-  if (
-    role === ProtocolRoles.initiator &&
-    latestState.transfers[0].to !== getSignerAddressFromPublicIdentifier(params.initiatorIdentifier)
-  ) {
-    throw new Error(`Cannot uninstall deposit app without being the initiator`);
-  }
-
-  // TODO: withdrawal amount validation?
-};
-
-export const proposeDepositMiddleware = async (
-  context: ProposeMiddlewareContext,
-  appDefinitionAddress: Address,
-) => {
-  const { proposal, stateChannel } = context;
-  const depositApp = stateChannel.appInstances.find(([id, app]) => {
-    return (
-      app.appInterface.addr === appDefinitionAddress &&
-      app.latestState["assetId"] === proposal.initialState["assetId"]
-    );
-  });
-  if (depositApp) {
-    throw new Error(
-      `Cannot install two deposit apps with the same asset id simultaneously. Existing app: ${depositApp[0]}`,
     );
   }
 };

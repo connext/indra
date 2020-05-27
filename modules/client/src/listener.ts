@@ -1,13 +1,4 @@
 import {
-  commonAppProposalValidation,
-  SupportedApplications,
-  validateSimpleLinkedTransferApp,
-  validateWithdrawApp,
-  validateHashLockTransferApp,
-  validateSignedTransferApp,
-  validateDepositApp,
-} from "@connext/apps";
-import {
   ConditionalTransferTypes,
   ConnextEventEmitter,
   CreateChannelMessage,
@@ -15,7 +6,6 @@ import {
   CreatedLinkedTransferMeta,
   CreatedSignedTransferMeta,
   DefaultApp,
-  DepositAppName,
   DepositConfirmationMessage,
   DepositFailedMessage,
   DepositStartedMessage,
@@ -136,7 +126,7 @@ export class ConnextListener extends ConnextEventEmitter {
         return;
       }
       this.log.info(`Processing proposal for ${appIdentityHash}`);
-      await this.handleAppProposal(params, appIdentityHash, from);
+      await this.handleAppProposal(params, appIdentityHash);
       this.log.info(`Done processing propose install event ${time()}`);
       // validate and automatically install for the known and supported
       // applications
@@ -303,7 +293,6 @@ export class ConnextListener extends ConnextEventEmitter {
   private handleAppProposal = async (
     params: MethodParams.ProposeInstall,
     appIdentityHash: string,
-    from: string,
   ): Promise<void> => {
     // get supported apps
     const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
@@ -317,62 +306,13 @@ export class ConnextListener extends ConnextEventEmitter {
     if (!registryAppInfo) {
       throw new Error(`Could not find registry info for app ${params.appDefinition}`);
     }
-    // validate or reject app
+    // install or reject app
     try {
-      // check based on supported applications
-      commonAppProposalValidation(
-        params,
-        // types weirdness
-        { ...registryAppInfo, name: registryAppInfo.name as SupportedApplications },
-        this.connext.config.supportedTokenAddresses,
-      );
-      switch (registryAppInfo.name) {
-        case SimpleLinkedTransferAppName: {
-          validateSimpleLinkedTransferApp(params, from, this.connext.publicIdentifier);
-          break;
-        }
-        case WithdrawAppName: {
-          await validateWithdrawApp(params, from, this.connext.publicIdentifier);
-          break;
-        }
-        case HashLockTransferAppName: {
-          const blockNumber = await this.connext.ethProvider.getBlockNumber();
-          validateHashLockTransferApp(params, blockNumber, from, this.connext.publicIdentifier);
-          break;
-        }
-        case SimpleSignedTransferAppName: {
-          validateSignedTransferApp(params, from, this.connext.publicIdentifier);
-          break;
-        }
-        case DepositAppName: {
-          const { appIdentityHash } = await this.connext.checkDepositRights({
-            assetId: params.initiatorDepositAssetId,
-          });
-          if (appIdentityHash) {
-            throw new Error(
-              `Deposit app already installed in client for ${params.initiatorDepositAssetId}, rejecting.`,
-            );
-          }
-          await validateDepositApp(
-            params,
-            from,
-            this.connext.publicIdentifier,
-            this.connext.multisigAddress,
-            this.connext.ethProvider,
-          );
-          break;
-        }
-        default: {
-          throw new Error(
-            `Not installing app without configured validation: ${registryAppInfo.name}`,
-          );
-        }
-      }
       // NOTE: by trying to install here, if the installation fails,
       // the proposal is automatically removed from the store
-      this.log.info(`app ${appIdentityHash} validated, installing`);
+      this.log.info(`Installing ${registryAppInfo.name} with id: ${appIdentityHash}`);
       await this.connext.installApp(appIdentityHash);
-      this.log.info(`app ${appIdentityHash} installed`);
+      this.log.info(`App ${appIdentityHash} installed`);
     } catch (e) {
       // TODO: first proposal after reset is responded to
       // twice
