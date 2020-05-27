@@ -97,6 +97,25 @@ export class AppRegistryService implements OnModuleInit {
         throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
       }
 
+      // begin transfer flow in middleware. if the transfer type requires that a
+      // recipient is online, it will error here. Otherwise, it will return
+      // without erroring and wait for the recipient to come online and reclaim
+      // TODO: break into flows for deposit, withdraw, swap, and transfers
+      if (
+        Object.values(ConditionalTransferAppNames).includes(
+          registryAppInfo.name as ConditionalTransferAppNames,
+        )
+      ) {
+        await this.transferService.transferAppInstallFlow(
+          appIdentityHash,
+          proposeInstallParams,
+          from,
+          installerChannel,
+          registryAppInfo.name as ConditionalTransferAppNames,
+        );
+        return;
+      }
+
       // TODO: break into flows for deposit, withdraw, swap, and transfers
       // check if we need to collateralize, only for swap app
       if (registryAppInfo.name === SimpleTwoPartySwapAppName) {
@@ -125,8 +144,6 @@ export class AppRegistryService implements OnModuleInit {
           }
         }
       }
-      // safe to install hashlock transfer app here. if propose event is fired,
-      // node was able to install app with receiver via middleware
       ({ appInstance } = await this.cfCoreService.installApp(
         appIdentityHash,
         installerChannel.multisigAddress,
@@ -231,11 +248,30 @@ export class AppRegistryService implements OnModuleInit {
       appInstance.meta.paymentId,
     );
 
-    // receiver app is installed in propose middleware by the sender, if there
-    // is an existing app for the lockhash (that has not been rejected), do not
-    // install
-    if (existingSenderApp && existingSenderApp.type !== AppType.REJECTED) {
-      throw new Error(`Sender app has been proposed for lockhash ${latestState.lockHash}`);
+    if (existingSenderApp.type === AppType.INSTANCE) {
+      this.log.info(`Sender app was already installed, doing nothing.`);
+      return;
+    }
+
+    if (existingSenderApp.type !== AppType.PROPOSAL) {
+      throw new Error(`Sender app has not been proposed: ${appInstance.identityHash}`);
+    }
+
+    try {
+      await this.cfCoreService.installApp(
+        existingSenderApp.identityHash,
+        existingSenderApp.channel.multisigAddress,
+      );
+      const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${existingSenderApp.channel.multisigAddress}.app-instance.${existingSenderApp.identityHash}.install`;
+      await this.messagingService.publish(installSubject, appInstance);
+    } catch (e) {
+      // reject if error
+      this.log.warn(`App install failed: ${e.stack || e.message}`);
+      await this.cfCoreService.rejectInstallApp(
+        existingSenderApp.identityHash,
+        existingSenderApp.channel.multisigAddress,
+      );
+      return;
     }
   };
 
@@ -252,58 +288,9 @@ export class AppRegistryService implements OnModuleInit {
 
   private proposeMiddleware = async (cxt: ProposeMiddlewareContext) => {
     const { proposal, params } = cxt;
-    const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
-      proposal.appDefinition,
-    );
     const contractAddresses = await this.configService.getContractAddresses();
 
     switch (proposal.appDefinition) {
-      case contractAddresses.HashLockTransferApp: {
-        // do nothing if we initiated
-        if (params.initiatorIdentifier === this.configService.getPublicIdentifier()) {
-          break;
-        }
-        break;
-      }
-      case contractAddresses.SimpleLinkedTransferApp: {
-        const { paymentId, coinTransfers } = proposal.initialState as SimpleLinkedTransferAppState;
-        // if node is the receiver, ignore
-        if (coinTransfers[0].to !== this.cfCoreService.cfCore.signerAddress) {
-          break;
-        }
-        // node is sender, make sure app doesnt already exist
-        const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
-          paymentId,
-          this.cfCoreService.cfCore.publicIdentifier,
-        );
-        if (receiverApp && receiverApp.type !== AppType.REJECTED) {
-          throw new Error(
-            `Found existing app for ${paymentId}, aborting linked transfer proposal. App: ${stringify(
-              receiverApp,
-            )}`,
-          );
-        }
-        break;
-      }
-
-      case contractAddresses.SimpleSignedTransferApp: {
-        const { paymentId, coinTransfers } = proposal.initialState as SimpleSignedTransferAppState;
-        // if node is the receiver, ignore
-        if (coinTransfers[0].to !== this.cfCoreService.cfCore.signerAddress) {
-          break;
-        }
-        // node is sender, make sure app doesnt already exist
-        const receiverApp = await this.signedTransferService.findReceiverAppByPaymentId(paymentId);
-        if (receiverApp && receiverApp.type !== AppType.REJECTED) {
-          throw new Error(
-            `Found existing app for ${paymentId}, aborting signed transfer proposal. App: ${stringify(
-              receiverApp,
-            )}`,
-          );
-        }
-        break;
-      }
-
       case contractAddresses.SimpleTwoPartySwapApp: {
         validateSimpleSwapApp(
           params as any,
@@ -315,31 +302,6 @@ export class AppRegistryService implements OnModuleInit {
         );
         break;
       }
-    }
-
-    // begin transfer flow in middleware. if the transfer type requires that a
-    // recipient is online, it will error here. Otherwise, it will return
-    // without erroring and wait for the recipient to come online and reclaim
-    // TODO: break into flows for deposit, withdraw, swap, and transfers
-    if (proposal.initiatorIdentifier === this.configService.getPublicIdentifier()) {
-      return;
-    }
-    const installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      proposal.initiatorIdentifier,
-    );
-    if (
-      Object.values(ConditionalTransferAppNames).includes(
-        registryAppInfo.name as ConditionalTransferAppNames,
-      )
-    ) {
-      await this.transferService.transferAppInstallFlow(
-        proposal.identityHash,
-        params,
-        proposal.initiatorIdentifier,
-        installerChannel,
-        registryAppInfo.name as ConditionalTransferAppNames,
-      );
-      return;
     }
   };
 
