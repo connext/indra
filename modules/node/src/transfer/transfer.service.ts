@@ -28,8 +28,10 @@ import { Channel } from "../channel/channel.entity";
 
 import { TransferRepository } from "./transfer.repository";
 
-type TransferType = "RequireOnline" | "AllowOffline";
-const getTransferTypeFromAppName = (name: SupportedApplications): TransferType | undefined => {
+export type TransferType = "RequireOnline" | "AllowOffline";
+export const getTransferTypeFromAppName = (
+  name: SupportedApplications,
+): TransferType | undefined => {
   switch (name) {
     case SupportedApplications.DepositApp:
     case SupportedApplications.SimpleTwoPartySwapApp:
@@ -64,8 +66,8 @@ export class TransferService {
     this.log.setContext("TransferService");
   }
 
-  // NOTE: designed to be called from the proposal middleware to enforce
-  // receivers are online
+  // NOTE: designed to be called from the proposal event handler to enforce
+  // receivers are online if needed
   async transferAppInstallFlow(
     appIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
@@ -75,61 +77,59 @@ export class TransferService {
   ): Promise<void> {
     this.log.info(`Start transferAppInstallFlow for appIdentityHash ${appIdentityHash}`);
 
-    // install for receiver or error
-    // https://github.com/ConnextProject/indra/issues/942
     const paymentId = proposeInstallParams.meta["paymentId"];
     const allowed = getTransferTypeFromAppName(transferType);
     this.log.info(`Start installReceiverAppByPaymentId for paymentId ${paymentId}`);
     // TODO: CLEAN UP LISTENERS
-    try {
-      await new Promise(async (resolve, reject) => {
-        this.cfCoreService.cfCore.on(
-          EventNames.PROPOSE_INSTALL_FAILED_EVENT,
-          (ctx: { data: { error: any } }) => {
-            reject(new Error(ctx.data.error));
-          },
-        );
-        this.cfCoreService.cfCore.on(
-          EventNames.INSTALL_FAILED_EVENT,
-          (ctx: { data: { error: any } }) => {
-            reject(new Error(ctx.data.error));
-          },
-        );
-        try {
-          const installRes = await this.installReceiverAppByPaymentId(
-            from,
-            proposeInstallParams.meta["recipient"],
-            paymentId,
-            proposeInstallParams.initiatorDepositAssetId,
-            proposeInstallParams.initialState as AppStates[typeof transferType],
-            proposeInstallParams.meta,
-            transferType,
-          );
-          resolve(installRes);
-        } catch (e) {
-          reject(e);
-        }
-      });
-    } catch (e) {
-      if (allowed === "RequireOnline") {
-        throw e;
-      }
-      this.log.warn(
-        `Caught error when installing receiver app: ${e.message}, continuing sender app install`,
+    await new Promise(async (resolve, reject) => {
+      this.cfCoreService.cfCore.on(
+        EventNames.PROPOSE_INSTALL_FAILED_EVENT,
+        (ctx: { data: { error: any } }) => {
+          reject(new Error(ctx.data.error));
+        },
       );
-      const { appInstance } = await this.cfCoreService.installApp(
-        appIdentityHash,
-        installerChannel.multisigAddress,
+      this.cfCoreService.cfCore.on(
+        EventNames.INSTALL_FAILED_EVENT,
+        (ctx: { data: { error: any } }) => {
+          reject(new Error(ctx.data.error));
+        },
       );
-      // any tasks that need to happen after install, i.e. DB writes
-      const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appIdentityHash}.install`;
-      await this.messagingService.publish(installSubject, appInstance);
-    }
-    this.log.info(`Finish installReceiverAppByPaymentId for paymentId ${paymentId}`);
 
-    // this is called in the proposal event handler. the sender app is installed
-    // once the install event is thrown (which will not happen if this fn
-    // errors)
+      // install for receiver or error
+      // https://github.com/ConnextProject/indra/issues/942
+      this.installReceiverAppByPaymentId(
+        from,
+        proposeInstallParams.meta["recipient"],
+        paymentId,
+        proposeInstallParams.initiatorDepositAssetId,
+        proposeInstallParams.initialState as AppStates[typeof transferType],
+        proposeInstallParams.meta,
+        transferType,
+      )
+        .then(() => {
+          if (allowed === "RequireOnline") {
+            resolve();
+          }
+        })
+        .catch((e) => {
+          if (allowed === "RequireOnline") {
+            reject(e);
+          }
+        });
+      // in the allow offline case, we want both receiver and sender apps to install in parallel
+      // if allow offline, resolve after sender app install
+      // if not, will be installed in middleware
+      if (allowed === "AllowOffline") {
+        this.cfCoreService
+          .installApp(appIdentityHash, installerChannel.multisigAddress)
+          .then(async (appInstance) => {
+            const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appIdentityHash}.install`;
+            await this.messagingService.publish(installSubject, appInstance);
+            resolve();
+          })
+          .catch((e) => reject(e));
+      }
+    });
   }
 
   async installReceiverAppByPaymentId(
