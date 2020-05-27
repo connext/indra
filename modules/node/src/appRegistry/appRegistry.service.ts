@@ -103,13 +103,8 @@ export class AppRegistryService implements OnModuleInit {
           registryAppInfo.name as ConditionalTransferAppNames,
         )
       ) {
-        await this.transferService.transferAppInstallFlow(
-          appIdentityHash,
-          proposeInstallParams,
-          from,
-          installerChannel,
-          registryAppInfo.name as ConditionalTransferAppNames,
-        );
+        // install was already tried + enforced in proposal middleware,
+        // ignore these applications
         return;
       }
 
@@ -294,16 +289,6 @@ export class AppRegistryService implements OnModuleInit {
         if (params.initiatorIdentifier === this.configService.getPublicIdentifier()) {
           break;
         }
-        // install for receiver or error
-        // https://github.com/ConnextProject/indra/issues/942
-        const recipient = params.meta["recipient"];
-        await this.hashlockTransferService.installHashLockTransferReceiverApp(
-          params.initiatorIdentifier,
-          recipient,
-          params.initialState as HashLockTransferAppState,
-          params.initiatorDepositAssetId,
-          params.meta,
-        );
         break;
       }
       case contractAddresses.SimpleLinkedTransferApp: {
@@ -356,6 +341,34 @@ export class AppRegistryService implements OnModuleInit {
         );
         break;
       }
+    }
+
+    // begin transfer flow in middleware. if the transfer type requires that a
+    // recipient is online, it will error here. Otherwise, it will return
+    // without erroring and wait for the recipient to come online and reclaim
+    // TODO: break into flows for deposit, withdraw, swap, and transfers
+    if (proposal.initiatorIdentifier === this.configService.getPublicIdentifier()) {
+      return;
+    }
+    const installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      proposal.initiatorIdentifier,
+    );
+    const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+      proposal.appDefinition,
+    );
+    if (
+      Object.values(ConditionalTransferAppNames).includes(
+        registryAppInfo.name as ConditionalTransferAppNames,
+      )
+    ) {
+      await this.transferService.transferAppInstallFlow(
+        proposal.identityHash,
+        params,
+        proposal.initiatorIdentifier,
+        installerChannel,
+        registryAppInfo.name as ConditionalTransferAppNames,
+      );
+      return;
     }
   };
 

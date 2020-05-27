@@ -10,6 +10,7 @@ import {
   MethodParams,
   EventNames,
   CoinTransfer,
+  ProtocolParams,
 } from "@connext/types";
 import { stringify, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { TRANSFER_TIMEOUT, SupportedApplications } from "@connext/apps";
@@ -66,7 +67,7 @@ export class TransferService {
 
   async transferAppInstallFlow(
     appIdentityHash: string,
-    proposeInstallParams: MethodParams.ProposeInstall,
+    proposeInstallParams: ProtocolParams.Propose,
     from: string,
     installerChannel: Channel,
     transferType: ConditionalTransferAppNames,
@@ -75,7 +76,7 @@ export class TransferService {
 
     // install for receiver or error
     // https://github.com/ConnextProject/indra/issues/942
-    const paymentId = proposeInstallParams.meta.paymentId;
+    const paymentId = proposeInstallParams.meta["paymentId"];
     const allowed = getTransferTypeFromAppName(transferType);
     try {
       this.log.info(`Start installReceiverAppByPaymentId for paymentId ${paymentId}`);
