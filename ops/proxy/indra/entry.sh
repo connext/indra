@@ -94,13 +94,31 @@ if [[ ! -f "$certsdir/privkey.pem" ]]
 then
   echo "Couldn't find certs for $DOMAINNAME, using certbot to initialize those now.."
   certbot certonly --standalone -m $EMAIL --agree-tos --no-eff-email -d $DOMAINNAME -n
-  [[ $? -eq 0 ]] || sleep 9999 # FREEZE! Don't pester eff & get throttled
+  if [[ $? -eq 0 ]]
+  then
+    echo "Failed to get certs, freezing to debug (and so we don't get throttle)"
+    sleep 9999 # FREEZE! Don't pester eff & get throttled
+    exit 1;
+  fi
 fi
 
 echo "Using certs for $DOMAINNAME"
-cat $certsdir/fullchain.pem $certsdir/privkey.pem > $DOMAINNAME.pem
 
 export CERTBOT_PORT=31820
+
+function copycerts {
+  if [[ -f $certsdir/fullchain.pem && -f $certsdir/privkey.pem ]]
+  then cat $certsdir/fullchain.pem $certsdir/privkey.pem > "$DOMAINNAME.pem"
+  elif [[ -f "$certsdir-0001/fullchain.pem" && -f "$certsdir-0001/privkey.pem" ]]
+  then cat "$certsdir-0001/fullchain.pem" "$certsdir-0001/privkey.pem" > "$DOMAINNAME.pem"
+  else
+    echo "Couldn't find certs, freezing to debug"
+    sleep 9999;
+    exit 1
+  fi
+}
+
+copycerts
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
@@ -112,7 +130,7 @@ function renewcerts {
     then
       echo -n "Found certs to renew for $DOMAINNAME... "
       certbot renew -n --standalone --http-01-port=$CERTBOT_PORT
-      cat $certsdir/fullchain.pem $certsdir/privkey.pem > $DOMAINNAME.pem
+      copycerts
       echo "Done!"
     fi
     sleep 48h
