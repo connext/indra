@@ -95,9 +95,9 @@ then
   echo "Couldn't find certs for $DOMAINNAME, using certbot to initialize those now.."
   certbot certonly --standalone -m $EMAIL --agree-tos --no-eff-email -d $DOMAINNAME -n
   code=$?
-  if [[ "$code" -gt 0 ]]
+  if [[ "$code" -ne 0 ]]
   then
-    echo "certbot exited with code $code, freezing to debug (and so we don't get throttle)"
+    echo "certbot exited with code $code, freezing to debug (and so we don't get throttled)"
     sleep 9999 # FREEZE! Don't pester eff & get throttled
     exit 1;
   fi
