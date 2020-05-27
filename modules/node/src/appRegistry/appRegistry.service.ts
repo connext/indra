@@ -98,16 +98,6 @@ export class AppRegistryService implements OnModuleInit {
       }
 
       // TODO: break into flows for deposit, withdraw, swap, and transfers
-      if (
-        Object.values(ConditionalTransferAppNames).includes(
-          registryAppInfo.name as ConditionalTransferAppNames,
-        )
-      ) {
-        // install was already tried + enforced in proposal middleware,
-        // ignore these applications
-        return;
-      }
-
       // check if we need to collateralize, only for swap app
       if (registryAppInfo.name === SimpleTwoPartySwapAppName) {
         const freeBal = await this.cfCoreService.getFreeBalance(
