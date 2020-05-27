@@ -227,35 +227,16 @@ export class AppRegistryService implements OnModuleInit {
       return;
     }
 
-    const existingSenderAppProposal = await this.transferService.findSenderAppByPaymentId(
+    const existingSenderApp = await this.transferService.findSenderAppByPaymentId(
       appInstance.meta.paymentId,
     );
 
-    if (!existingSenderAppProposal) {
-      throw new Error(`Sender app has not been proposed for lockhash ${latestState.lockHash}`);
+    // receiver app is installed in propose middleware by the sender, if there
+    // is an existing app for the lockhash (that has not been rejected), do not
+    // install
+    if (existingSenderApp && existingSenderApp.type !== AppType.REJECTED) {
+      throw new Error(`Sender app has been proposed for lockhash ${latestState.lockHash}`);
     }
-    if (existingSenderAppProposal.type !== AppType.PROPOSAL) {
-      this.log.warn(
-        `Sender app already exists for lockhash ${latestState.lockHash}, will not install`,
-      );
-      return;
-    }
-
-    // install sender app
-    this.log.info(
-      `installTransferMiddleware: Install sender app ${existingSenderAppProposal.identityHash} for user ${appInstance.initiatorIdentifier} started`,
-    );
-    const res = await this.cfCoreService.installApp(
-      existingSenderAppProposal.identityHash,
-      existingSenderAppProposal.channel.multisigAddress,
-    );
-    const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${existingSenderAppProposal.channel.multisigAddress}.app-instance.${existingSenderAppProposal.identityHash}.install`;
-    await this.messagingService.publish(installSubject, appInstance);
-    this.log.info(
-      `installHashLockTransferMiddleware: Install sender app ${
-        res.appInstance.identityHash
-      } for user ${appInstance.initiatorIdentifier} complete: ${JSON.stringify(res)}`,
-    );
   };
 
   private installMiddleware = async (cxt: InstallMiddlewareContext) => {
@@ -271,6 +252,9 @@ export class AppRegistryService implements OnModuleInit {
 
   private proposeMiddleware = async (cxt: ProposeMiddlewareContext) => {
     const { proposal, params } = cxt;
+    const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+      proposal.appDefinition,
+    );
     const contractAddresses = await this.configService.getContractAddresses();
 
     switch (proposal.appDefinition) {
@@ -285,7 +269,7 @@ export class AppRegistryService implements OnModuleInit {
         const { paymentId, coinTransfers } = proposal.initialState as SimpleLinkedTransferAppState;
         // if node is the receiver, ignore
         if (coinTransfers[0].to !== this.cfCoreService.cfCore.signerAddress) {
-          return;
+          break;
         }
         // node is sender, make sure app doesnt already exist
         const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
@@ -306,7 +290,7 @@ export class AppRegistryService implements OnModuleInit {
         const { paymentId, coinTransfers } = proposal.initialState as SimpleSignedTransferAppState;
         // if node is the receiver, ignore
         if (coinTransfers[0].to !== this.cfCoreService.cfCore.signerAddress) {
-          return;
+          break;
         }
         // node is sender, make sure app doesnt already exist
         const receiverApp = await this.signedTransferService.findReceiverAppByPaymentId(paymentId);
@@ -342,9 +326,6 @@ export class AppRegistryService implements OnModuleInit {
     }
     const installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       proposal.initiatorIdentifier,
-    );
-    const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
-      proposal.appDefinition,
     );
     if (
       Object.values(ConditionalTransferAppNames).includes(

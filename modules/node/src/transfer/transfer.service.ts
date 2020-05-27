@@ -93,7 +93,7 @@ export class TransferService {
             reject(new Error(ctx.data.error));
           },
         );
-        const installRes = await this.installReceiverAppByPaymentId(
+        const installRes = this.installReceiverAppByPaymentId(
           from,
           proposeInstallParams.meta["recipient"],
           paymentId,
@@ -101,10 +101,9 @@ export class TransferService {
           proposeInstallParams.initialState as AppStates[typeof transferType],
           proposeInstallParams.meta,
           transferType,
-        ).catch((e) => {
-          reject(e);
-        });
-        resolve(installRes);
+        )
+          .catch((e) => reject(e))
+          .then(() => resolve(installRes));
       });
       this.log.info(`Finish installReceiverAppByPaymentId for paymentId ${paymentId}`);
     } catch (e) {
