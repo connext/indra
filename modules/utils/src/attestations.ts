@@ -26,7 +26,9 @@ const DOMAIN_SALT = "0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188
 // EIP-712 TYPE DATA METHODS
 
 export const hashStruct = (typeHash: string, types: string[], values: any[]): string =>
-  solidityKeccak256(["bytes32", "bytes"], [typeHash, defaultAbiCoder.encode(types, values)]);
+  keccak256(
+    defaultAbiCoder.encode(["bytes32", "bytes"], [typeHash, defaultAbiCoder.encode(types, values)]),
+  );
 
 export const hashTypedMessage = (domainSeparator: string, message: string): string =>
   keccak256(concatBuffers(bufferify("\x19\x01"), bufferify(domainSeparator), bufferify(message)));
