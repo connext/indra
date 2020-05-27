@@ -80,13 +80,13 @@ fi
 
 letsencrypt=/etc/letsencrypt/live
 certsdir=$letsencrypt/$DOMAINNAME
-mkdir -p $certsdir
 mkdir -p /etc/haproxy/certs
 mkdir -p /var/www/letsencrypt
 
 if [[ "$DOMAINNAME" == "localhost" && ! -f "$certsdir/privkey.pem" ]]
 then
   echo "Developing locally, generating self-signed certs"
+  mkdir -p $certsdir
   openssl req -x509 -newkey rsa:4096 -keyout $certsdir/privkey.pem -out $certsdir/fullchain.pem -days 365 -nodes -subj '/CN=localhost'
 fi
 
@@ -94,9 +94,10 @@ if [[ ! -f "$certsdir/privkey.pem" ]]
 then
   echo "Couldn't find certs for $DOMAINNAME, using certbot to initialize those now.."
   certbot certonly --standalone -m $EMAIL --agree-tos --no-eff-email -d $DOMAINNAME -n
-  if [[ $? -eq 0 ]]
+  code=$?
+  if [[ "$code" -gt 0 ]]
   then
-    echo "Failed to get certs, freezing to debug (and so we don't get throttle)"
+    echo "certbot exited with code $code, freezing to debug (and so we don't get throttle)"
     sleep 9999 # FREEZE! Don't pester eff & get throttled
     exit 1;
   fi
@@ -118,7 +119,6 @@ function copycerts {
   fi
 }
 
-copycerts
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
@@ -136,7 +136,10 @@ function renewcerts {
     sleep 48h
   done
 }
+
 renewcerts &
+
+copycerts
 
 cp /etc/ssl/cert.pem ca-certs.pem
 
