@@ -37,7 +37,7 @@ export const uninstallDepositMiddleware = async (
 
   if (currentMultisigBalance.lt(latestState.startingMultisigBalance)) {
     throw new Error(
-      `Refusing to uninstall, current multisig balance (${currentMultisigBalance.toString()}) is less than starting multsig balance (${latestState.startingMultisigBalance.toString()})`,
+      `Refusing to uninstall, current multisig balance (${currentMultisigBalance.toString()}) is less than starting multisig balance (${latestState.startingMultisigBalance.toString()})`,
     );
   }
 
