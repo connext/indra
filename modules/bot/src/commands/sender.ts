@@ -118,6 +118,7 @@ export default {
         }
 
         const paymentId = getRandomBytes32();
+        const verifyingContract = getTestVerifyingContract();
         const senderSigner = getSignerAddressFromPublicIdentifier(eventData.sender);
 
         log.info(
@@ -131,7 +132,7 @@ export default {
           amount: TRANSFER_AMT,
           conditionType: ConditionalTransferTypes.SignedTransfer,
           signerAddress: senderSigner,
-          verifyingContract: getTestVerifyingContract(),
+          verifyingContract,
           recipient: eventData.sender,
           assetId: AddressZero,
           meta: { info: "Response payment" },
@@ -152,7 +153,7 @@ export default {
       amount: TRANSFER_AMT,
       conditionType: ConditionalTransferTypes.SignedTransfer,
       signerAddress: receiverSigner,
-      verifyingContract: getTestVerifyingContract(),
+      verifyingContract,
       assetId: AddressZero,
       recipient: receiverIdentifier,
       meta: { info: "Bootstrap payment" },
