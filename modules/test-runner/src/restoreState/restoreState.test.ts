@@ -78,7 +78,7 @@ describe("Restore State", () => {
     expect(freeBalanceTokenPost[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
   });
 
-  it.skip("happy case: client can delete its store, restore from a node backup, and receive any pending transfers", async () => {
+  it("happy case: client can delete its store, restore from a node backup, and receive any pending transfers", async () => {
     const transferAmount = TOKEN_AMOUNT_SM;
     const assetId = tokenAddress;
     const recipient = clientA.publicIdentifier;
@@ -122,8 +122,7 @@ describe("Restore State", () => {
       );
       clientA = await createClient({
         signer: signerA,
-        logLevel: 4,
-        id: "A",
+        id: "A2",
       });
       expect(clientA.signerAddress).to.be.eq(signerA.address);
       expect(clientA.publicIdentifier).to.be.eq(signerA.publicIdentifier);
