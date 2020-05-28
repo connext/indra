@@ -4,6 +4,10 @@ set -e
 package="$1"
 version="$2"
 
+if [[ -z "$version" ]]
+then version="`npm info $package version`"
+fi
+
 if [[ -z "$package" || -z "$version" || -n "$3" ]]
 then echo "Usage: bash ops/set-dependency-version.sh <package> <version>" && exit 1
 else echo "Setting package $package to version $version in all modules that depend on it"
