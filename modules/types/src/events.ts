@@ -310,9 +310,11 @@ export interface IBasicEventEmitter {
   // Creates a new void context for easy listener detachment
   createContext(): Ctx<[EventName, EventPayload[EventName]]>;
 
-  // Returns a promise once matching event is emitted
+  // Returns a promise once matching event is emitted that resolves with the
+  // event data
   waitFor<T extends EventName>(
     event: T,
+    timeout: number, // time in MS before rejecting
     filter?: (payload: EventPayload[T]) => boolean,
-  ): Promise<void>;
+  ): Promise<EventPayload[T]>;
 }
