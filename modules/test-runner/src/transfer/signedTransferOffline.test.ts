@@ -12,11 +12,13 @@ import {
   CLIENT_INSTALL_FAILED,
 } from "../util";
 import {
-  getRandomChannelSigner,
   toBN,
   getRandomBytes32,
   getTestVerifyingContract,
   getTestReceiptToSign,
+  getRandomPrivateKey,
+  ChannelSigner,
+  signReceiptMessage,
 } from "@connext/utils";
 import {
   IChannelSigner,
@@ -28,6 +30,8 @@ import {
   IStoreService,
   PublicParams,
   ProtocolParams,
+  PrivateKey,
+  JsonRpcProvider,
 } from "@connext/types";
 import { addressBook } from "@connext/contracts";
 import { Zero } from "ethers/constants";
@@ -36,12 +40,18 @@ describe("Signed Transfer Offline", () => {
   const tokenAddress = addressBook[4447].Token.address;
   const addr = addressBook[4447].SimpleSignedTransferApp.address;
 
+  let senderPrivateKey: PrivateKey;
   let senderSigner: IChannelSigner;
+
+  let receiverPrivateKey: PrivateKey;
   let receiverSigner: IChannelSigner;
 
   beforeEach(async () => {
-    senderSigner = getRandomChannelSigner(env.ethProviderUrl);
-    receiverSigner = getRandomChannelSigner(env.ethProviderUrl);
+    senderPrivateKey = getRandomPrivateKey();
+    senderSigner = new ChannelSigner(senderPrivateKey, env.ethProviderUrl);
+
+    receiverPrivateKey = getRandomPrivateKey();
+    receiverSigner = new ChannelSigner(receiverPrivateKey, env.ethProviderUrl);
   });
 
   const createAndFundSender = async (
@@ -87,7 +97,13 @@ describe("Signed Transfer Offline", () => {
     const preTransferBalance = await receiver.getFreeBalance(tokenAddress);
     const verifyingContract = getTestVerifyingContract();
     const receipt = getTestReceiptToSign();
-    const signature = await receiverSigner.signReceiptMessage(receipt, verifyingContract);
+    const { chainId } = await new JsonRpcProvider(env.ethProviderUrl).getNetwork();
+    const signature = await signReceiptMessage(
+      receipt,
+      chainId,
+      verifyingContract,
+      receiverPrivateKey,
+    );
     const attestation = {
       ...receipt,
       signature,

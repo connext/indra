@@ -6,6 +6,7 @@ import {
   EventPayloads,
   ConditionalTransferTypes,
   Address,
+  PrivateKey,
 } from "@connext/types";
 import { getPostgresStore } from "@connext/store";
 import { ConnextClient } from "@connext/client";
@@ -14,6 +15,8 @@ import {
   getRandomBytes32,
   getTestVerifyingContract,
   getTestReceiptToSign,
+  getRandomPrivateKey,
+  signReceiptMessage,
 } from "@connext/utils";
 import { Sequelize } from "sequelize";
 
@@ -120,7 +123,9 @@ const performConditionalTransfer = async (params: {
 };
 
 describe("Full Flow: Multichannel stores (clients share single sequelize instance)", () => {
+  let senderPrivateKey: PrivateKey;
   let sender: ConnextClient;
+  let recipientPrivateKey: PrivateKey;
   let recipient: ConnextClient;
   let initialSenderFb;
   let initialRecipientFb;
@@ -143,8 +148,18 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     const senderStore = getPostgresStore(sequelize, "sender");
     const recipientStore = getPostgresStore(sequelize, "recipient");
     // create clients with shared store
-    sender = (await createClient({ store: senderStore, id: "S" })) as ConnextClient;
-    recipient = (await createClient({ store: recipientStore, id: "R" })) as ConnextClient;
+    senderPrivateKey = getRandomPrivateKey();
+    sender = (await createClient({
+      signer: senderPrivateKey,
+      store: senderStore,
+      id: "S",
+    })) as ConnextClient;
+    recipientPrivateKey = getRandomPrivateKey();
+    recipient = (await createClient({
+      signer: recipientPrivateKey,
+      store: recipientStore,
+      id: "R",
+    })) as ConnextClient;
     await fundChannel(sender, DEPOSIT_AMT, ASSET);
     initialSenderFb = await sender.getFreeBalance(ASSET);
     initialRecipientFb = await recipient.getFreeBalance(ASSET);
@@ -191,7 +206,13 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
       async (payload: EventPayloads.SignedTransferCreated) => {
         const receipt = getTestReceiptToSign();
-        const signature = await recipient.signer.signReceiptMessage(receipt, verifyingContract);
+        const { chainId } = await recipient.ethProvider.getNetwork();
+        const signature = await signReceiptMessage(
+          receipt,
+          chainId,
+          verifyingContract,
+          recipientPrivateKey,
+        );
         const attestation = {
           ...receipt,
           signature,
@@ -315,7 +336,13 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
         console.log(`Got signed transfer event: ${payload.paymentId}`);
         const verifyingContract = getTestVerifyingContract();
         const receipt = getTestReceiptToSign();
-        const signature = await recipient.signer.signReceiptMessage(receipt, verifyingContract);
+        const { chainId } = await recipient.ethProvider.getNetwork();
+        const signature = await signReceiptMessage(
+          receipt,
+          chainId,
+          verifyingContract,
+          recipientPrivateKey,
+        );
         const attestation = {
           ...receipt,
           signature,

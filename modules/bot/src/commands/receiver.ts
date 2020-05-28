@@ -1,10 +1,16 @@
-import { EventNames, EventPayloads, ConditionalTransferTypes, PublicParams } from "@connext/types";
+import {
+  EventNames,
+  EventPayloads,
+  ConditionalTransferTypes,
+  PublicParams,
+  JsonRpcProvider,
+} from "@connext/types";
 import {
   ColorfulLogger,
   stringify,
-  ChannelSigner,
   getTestVerifyingContract,
   getTestReceiptToSign,
+  signReceiptMessage,
 } from "@connext/utils";
 import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
@@ -88,10 +94,15 @@ export default {
           );
           return;
         }
-        const signer = new ChannelSigner(argv.privateKey, ethUrl);
         const verifyingContract = getTestVerifyingContract();
         const receipt = getTestReceiptToSign();
-        const signature = await signer.signReceiptMessage(receipt, verifyingContract);
+        const { chainId } = await new JsonRpcProvider(ethUrl).getNetwork();
+        const signature = await signReceiptMessage(
+          receipt,
+          chainId,
+          verifyingContract,
+          argv.privateKey,
+        );
         const attestation = {
           ...receipt,
           signature,

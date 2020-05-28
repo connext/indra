@@ -7,11 +7,14 @@ import {
   PublicParams,
   SignedTransferStatus,
   EventPayloads,
+  JsonRpcProvider,
 } from "@connext/types";
 import {
-  getRandomChannelSigner,
   getTestVerifyingContract,
   getTestReceiptToSign,
+  getRandomPrivateKey,
+  ChannelSigner,
+  signReceiptMessage,
 } from "@connext/utils";
 import { AddressZero } from "ethers/constants";
 import { hexlify, randomBytes } from "ethers/utils";
@@ -63,7 +66,8 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = getRandomChannelSigner(env.ethProviderUrl);
+    const privateKey = getRandomPrivateKey();
+    const signer = new ChannelSigner(privateKey, env.ethProviderUrl);
     const signerAddress = await signer.getAddress();
 
     const [, installed] = await Promise.all([
@@ -106,7 +110,8 @@ describe("Signed Transfers", () => {
 
     const verifyingContract = getTestVerifyingContract();
     const receipt = getTestReceiptToSign();
-    const signature = await signer.signReceiptMessage(receipt, verifyingContract);
+    const { chainId } = await new JsonRpcProvider(env.ethProviderUrl).getNetwork();
+    const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
     const attestation = {
       ...receipt,
       signature,
@@ -159,7 +164,8 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = getRandomChannelSigner(env.ethProviderUrl);
+    const privateKey = getRandomPrivateKey();
+    const signer = new ChannelSigner(privateKey, env.ethProviderUrl);
     const signerAddress = await signer.getAddress();
 
     const promises = await Promise.all([
@@ -201,7 +207,8 @@ describe("Signed Transfers", () => {
 
     const verifyingContract = getTestVerifyingContract();
     const receipt = getTestReceiptToSign();
-    const signature = await signer.signReceiptMessage(receipt, verifyingContract);
+    const { chainId } = await new JsonRpcProvider(env.ethProviderUrl).getNetwork();
+    const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
     const attestation = {
       ...receipt,
       signature,
@@ -232,7 +239,8 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = getRandomChannelSigner(env.ethProviderUrl);
+    const privateKey = getRandomPrivateKey();
+    const signer = new ChannelSigner(privateKey, env.ethProviderUrl);
     const signerAddress = await signer.getAddress();
 
     await clientA.conditionalTransfer({
@@ -260,7 +268,8 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = getRandomChannelSigner(env.ethProviderUrl);
+    const privateKey = getRandomPrivateKey();
+    const signer = new ChannelSigner(privateKey, env.ethProviderUrl);
     const signerAddress = await signer.getAddress();
 
     await clientA.conditionalTransfer({
@@ -277,7 +286,8 @@ describe("Signed Transfers", () => {
 
     const verifyingContract = getTestVerifyingContract();
     const receipt = getTestReceiptToSign();
-    const signature = await signer.signReceiptMessage(receipt, verifyingContract);
+    const { chainId } = await new JsonRpcProvider(env.ethProviderUrl).getNetwork();
+    const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
     const attestation = {
       ...receipt,
       signature,
@@ -308,7 +318,8 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = getRandomChannelSigner(env.ethProviderUrl);
+    const privateKey = getRandomPrivateKey();
+    const signer = new ChannelSigner(privateKey, env.ethProviderUrl);
     const signerAddress = await signer.getAddress();
 
     await clientA.conditionalTransfer({
@@ -342,7 +353,8 @@ describe("Signed Transfers", () => {
     let sum = 0;
     const numberOfRuns = 5;
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-    const signer = getRandomChannelSigner(env.ethProviderUrl);
+    const privateKey = getRandomPrivateKey();
+    const signer = new ChannelSigner(privateKey, env.ethProviderUrl);
     const signerAddress = signer.address;
 
     await fundChannel(clientA, transfer.amount.mul(25), transfer.assetId);
@@ -382,7 +394,8 @@ describe("Signed Transfers", () => {
       // Including recipient signing in test to match real conditions
       const verifyingContract = getTestVerifyingContract();
       const receipt = getTestReceiptToSign();
-      const signature = await signer.signReceiptMessage(receipt, verifyingContract);
+      const { chainId } = await new JsonRpcProvider(env.ethProviderUrl).getNetwork();
+      const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
       const attestation = {
         ...receipt,
         signature,
