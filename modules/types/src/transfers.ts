@@ -1,5 +1,6 @@
 import { Address, BigNumber, Bytes32 } from "./basic";
 import { enumify } from "./utils";
+import { Attestation } from "./contracts";
 
 ////////////////////////////////////////
 // Types
@@ -9,8 +10,7 @@ export const ConditionalTransferTypes = enumify({
   LinkedTransfer: "LinkedTransfer",
   SignedTransfer: "SignedTransfer",
 });
-export type ConditionalTransferTypes =
-  (typeof ConditionalTransferTypes)[keyof typeof ConditionalTransferTypes];
+export type ConditionalTransferTypes = typeof ConditionalTransferTypes[keyof typeof ConditionalTransferTypes];
 
 ////////////////////////////////////////
 // Metadata
@@ -27,6 +27,7 @@ export type CreatedHashLockTransferMeta = {
 
 export type CreatedSignedTransferMeta = {
   signer: Address;
+  verifyingContract: Address;
 };
 
 export type UnlockedLinkedTransferMeta = {
@@ -38,7 +39,7 @@ export type UnlockedHashLockTransferMeta = {
   preImage: Bytes32;
 };
 
-export type UnlockedSignedTransferMeta = {};
+export type UnlockedSignedTransferMeta = Attestation;
 
 ////////////////////////////////////////
 // Statuses
@@ -48,8 +49,7 @@ export const LinkedTransferStatus = enumify({
   COMPLETED: "COMPLETED",
   FAILED: "FAILED",
 });
-export type LinkedTransferStatus =
-  (typeof LinkedTransferStatus)[keyof typeof LinkedTransferStatus];
+export type LinkedTransferStatus = typeof LinkedTransferStatus[keyof typeof LinkedTransferStatus];
 
 export const HashLockTransferStatus = enumify({
   PENDING: "PENDING",
@@ -57,16 +57,14 @@ export const HashLockTransferStatus = enumify({
   COMPLETED: "COMPLETED",
   FAILED: "FAILED",
 });
-export type HashLockTransferStatus =
-  (typeof HashLockTransferStatus)[keyof typeof HashLockTransferStatus];
+export type HashLockTransferStatus = typeof HashLockTransferStatus[keyof typeof HashLockTransferStatus];
 
 export const SignedTransferStatus = enumify({
   PENDING: "PENDING",
   COMPLETED: "COMPLETED",
   FAILED: "FAILED",
 });
-export type SignedTransferStatus =
-  (typeof SignedTransferStatus)[keyof typeof SignedTransferStatus];
+export type SignedTransferStatus = typeof SignedTransferStatus[keyof typeof SignedTransferStatus];
 
 ////////////////////////////////////////
 // Misc

@@ -97,7 +97,7 @@ describe("Signed Transfer Offline", () => {
     const preTransferBalance = await receiver.getFreeBalance(tokenAddress);
     const verifyingContract = getTestVerifyingContract();
     const receipt = getTestReceiptToSign();
-    const { chainId } = await new JsonRpcProvider(env.ethProviderUrl).getNetwork();
+    const { chainId } = await receiver.ethProvider.getNetwork();
     const signature = await signReceiptMessage(
       receipt,
       chainId,

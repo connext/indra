@@ -7,7 +7,6 @@ import {
   PublicParams,
   SignedTransferStatus,
   EventPayloads,
-  JsonRpcProvider,
 } from "@connext/types";
 import {
   getTestVerifyingContract,
@@ -36,6 +35,7 @@ describe("Signed Transfers", () => {
   let clientB: IConnextClient;
   let tokenAddress: string;
   const provider = new providers.JsonRpcProvider(env.ethProviderUrl);
+  const verifyingContract = getTestVerifyingContract();
 
   before(async () => {
     const currBlock = await provider.getBlockNumber();
@@ -62,7 +62,7 @@ describe("Signed Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it.only("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
+  it("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
@@ -76,7 +76,7 @@ describe("Signed Transfers", () => {
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
         signer: signerAddress,
-        verifyingContract: getTestVerifyingContract(),
+        verifyingContract,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -98,7 +98,7 @@ describe("Signed Transfers", () => {
       type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
       paymentId,
       sender: clientA.publicIdentifier,
-      transferMeta: { signer: signerAddress },
+      transferMeta: { signer: signerAddress, verifyingContract },
       meta: { foo: "bar", recipient: clientB.publicIdentifier, sender: clientA.publicIdentifier },
     } as EventPayloads.SignedTransferCreated);
 
@@ -108,9 +108,8 @@ describe("Signed Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
 
-    const verifyingContract = getTestVerifyingContract();
     const receipt = getTestReceiptToSign();
-    const { chainId } = await new JsonRpcProvider(env.ethProviderUrl).getNetwork();
+    const { chainId } = await provider.getNetwork();
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
     const attestation = {
       ...receipt,
@@ -174,7 +173,7 @@ describe("Signed Transfers", () => {
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
         signer: signerAddress,
-        verifyingContract: getTestVerifyingContract(),
+        verifyingContract,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -195,7 +194,7 @@ describe("Signed Transfers", () => {
       assetId: transfer.assetId,
       type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
       paymentId,
-      transferMeta: { signer: signerAddress },
+      transferMeta: { signer: signerAddress, verifyingContract },
       meta: { foo: "bar", recipient: clientB.publicIdentifier, sender: clientA.publicIdentifier },
     } as Partial<EventPayloads.SignedTransferCreated>);
 
@@ -205,9 +204,8 @@ describe("Signed Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
 
-    const verifyingContract = getTestVerifyingContract();
     const receipt = getTestReceiptToSign();
-    const { chainId } = await new JsonRpcProvider(env.ethProviderUrl).getNetwork();
+    const { chainId } = await provider.getNetwork();
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
     const attestation = {
       ...receipt,
@@ -248,7 +246,7 @@ describe("Signed Transfers", () => {
       conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       signer: signerAddress,
-      verifyingContract: getTestVerifyingContract(),
+      verifyingContract,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
@@ -277,16 +275,15 @@ describe("Signed Transfers", () => {
       conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       signer: signerAddress,
-      verifyingContract: getTestVerifyingContract(),
+      verifyingContract,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
     // disconnect so that it cant be unlocked
     await clientA.messaging.disconnect();
 
-    const verifyingContract = getTestVerifyingContract();
     const receipt = getTestReceiptToSign();
-    const { chainId } = await new JsonRpcProvider(env.ethProviderUrl).getNetwork();
+    const { chainId } = await provider.getNetwork();
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
     const attestation = {
       ...receipt,
@@ -327,7 +324,7 @@ describe("Signed Transfers", () => {
       conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       signer: signerAddress,
-      verifyingContract: getTestVerifyingContract(),
+      verifyingContract,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
@@ -384,7 +381,7 @@ describe("Signed Transfers", () => {
           conditionType: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
           paymentId,
           signer: signerAddress,
-          verifyingContract: getTestVerifyingContract(),
+          verifyingContract,
           assetId: transfer.assetId,
           meta: { foo: "bar", sender: clientA.publicIdentifier },
           recipient: clientB.publicIdentifier,
@@ -392,9 +389,8 @@ describe("Signed Transfers", () => {
       });
 
       // Including recipient signing in test to match real conditions
-      const verifyingContract = getTestVerifyingContract();
       const receipt = getTestReceiptToSign();
-      const { chainId } = await new JsonRpcProvider(env.ethProviderUrl).getNetwork();
+      const { chainId } = await provider.getNetwork();
       const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
       const attestation = {
         ...receipt,
