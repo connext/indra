@@ -53,6 +53,7 @@ export default {
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
     const NAME = "Sender";
     const TRANSFER_AMT = parseEther("0.01");
+    const verifyingContract = getTestVerifyingContract();
     const ethUrl = process.env.INDRA_ETH_RPC_URL;
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
@@ -118,7 +119,6 @@ export default {
         }
 
         const paymentId = getRandomBytes32();
-        const verifyingContract = getTestVerifyingContract();
         const senderSigner = getSignerAddressFromPublicIdentifier(eventData.sender);
 
         log.info(
