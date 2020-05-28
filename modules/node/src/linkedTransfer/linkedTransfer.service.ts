@@ -1,18 +1,9 @@
-import { LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
-import {
-  LinkedTransferStatus,
-  NodeResponses,
-  SimpleLinkedTransferAppName,
-  SimpleLinkedTransferAppState,
-} from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, toBN, stringify } from "@connext/utils";
+import { LinkedTransferStatus } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { HashZero, Zero } from "ethers/constants";
+import { HashZero } from "ethers/constants";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { ChannelRepository } from "../channel/channel.repository";
-import { DepositService } from "../deposit/deposit.service";
-import { ChannelService } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
@@ -38,7 +29,10 @@ const appStatusesToLinkedTransferStatus = (
     return LinkedTransferStatus.FAILED;
   }
 
-  if (senderAppType === AppType.INSTANCE && receiverAppType === AppType.INSTANCE) {
+  if (
+    (senderAppType === AppType.INSTANCE || senderAppType === AppType.PROPOSAL) &&
+    (receiverAppType === AppType.INSTANCE || receiverAppType === AppType.PROPOSAL)
+  ) {
     return LinkedTransferStatus.PENDING;
   }
 
@@ -51,181 +45,10 @@ const appStatusesToLinkedTransferStatus = (
 export class LinkedTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
-    private readonly channelService: ChannelService,
-    private readonly depositService: DepositService,
     private readonly log: LoggerService,
-    private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("LinkedTransferService");
-  }
-
-  async installLinkedTransferReceiverApp(
-    userIdentifier: string,
-    paymentId: string,
-  ): Promise<NodeResponses.ResolveLinkedTransfer> {
-    this.log.info(
-      `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId} started`,
-    );
-    let receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      userIdentifier,
-    );
-
-    const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
-      paymentId,
-      this.cfCoreService.cfCore.publicIdentifier,
-    );
-    if (!senderApp) {
-      throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
-    }
-
-    const latestState = senderApp.latestState as SimpleLinkedTransferAppState;
-    if (latestState.preImage !== HashZero) {
-      throw new Error(`Sender app has action, refusing to redeem`);
-    }
-    const amount = toBN(latestState.amount);
-    const { assetId, linkedHash } = latestState;
-
-    // check if receiver app exists
-    const existing = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
-      paymentId,
-      userIdentifier,
-    );
-    if (existing) {
-      switch (existing.type) {
-        case AppType.INSTANCE: {
-          const returnRes: NodeResponses.ResolveLinkedTransfer = {
-            appIdentityHash: existing.identityHash,
-            sender: senderApp.channel.userIdentifier,
-            meta: senderApp.meta,
-            paymentId,
-            amount,
-            assetId,
-          };
-          this.log.info(
-            `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId}} complete ${JSON.stringify(
-              returnRes,
-            )}`,
-          );
-          return returnRes;
-        }
-        case AppType.PROPOSAL: {
-          this.log.warn(
-            `Found existing linked transfer app proposal for paymentId: ${paymentId}: ${existing.identityHash}, rejecting and continuing`,
-          );
-          await this.cfCoreService.rejectInstallApp(
-            existing.identityHash,
-            receiverChannel.multisigAddress,
-          );
-          break;
-        }
-        default: {
-          this.log.warn(
-            `Found existing app with with incorrect type: ${existing.type} for paymentId: ${paymentId}, proceeding to propose new app`,
-          );
-        }
-      }
-    }
-
-    this.log.debug(`Found linked transfer in our database, attempting to install...`);
-
-    const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
-
-    const freeBal = await this.cfCoreService.getFreeBalance(
-      userIdentifier,
-      receiverChannel.multisigAddress,
-      assetId,
-    );
-
-    if (freeBal[freeBalanceAddr].lt(amount)) {
-      // to avoid unnecessary small collateralizations, choose the max
-      // of the payment and the upper bound for deposit efficiency
-      const deposit = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
-        userIdentifier,
-        assetId,
-        amount,
-        freeBal[freeBalanceAddr],
-      );
-      this.log.warn(
-        `Depositing ${deposit.toString()} of ${assetId} into channel with user ${userIdentifier}`,
-      );
-
-      // request collateral and wait for deposit to come through
-      const depositReceipt = await this.depositService.deposit(receiverChannel, deposit, assetId);
-      this.log.warn(`Deposit receipt: ${stringify(depositReceipt)}`);
-      if (!depositReceipt) {
-        throw new Error(
-          `Could not deposit sufficient collateral to resolve linked transfer for receiver: ${userIdentifier}`,
-        );
-      }
-      // sanity check the post-deposit free balance
-      receiverChannel = await this.channelRepository.findByMultisigAddressOrThrow(
-        receiverChannel.multisigAddress,
-      );
-      const postDeposit = await this.cfCoreService.getFreeBalance(
-        userIdentifier,
-        receiverChannel.multisigAddress,
-        assetId,
-      );
-      if (postDeposit[freeBalanceAddr].lt(amount)) {
-        throw new Error(
-          `Post deposit collateral is insufficient to forward a payment for ${amount.toString()} of ${assetId}. Post-deposit collateral: ${postDeposit[
-            freeBalanceAddr
-          ].toString()}, pre-deposit collateral: ${freeBal[freeBalanceAddr].toString()}`,
-        );
-      }
-    }
-
-    const initialState: SimpleLinkedTransferAppState = {
-      amount,
-      assetId,
-      coinTransfers: [
-        {
-          amount,
-          to: freeBalanceAddr, // sender
-        },
-        {
-          amount: Zero, // receiver
-          to: getSignerAddressFromPublicIdentifier(userIdentifier),
-        },
-      ],
-      linkedHash,
-      paymentId,
-      preImage: HashZero,
-    };
-
-    const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
-      receiverChannel,
-      initialState,
-      amount,
-      assetId,
-      Zero,
-      assetId,
-      SimpleLinkedTransferAppName,
-      senderApp.meta,
-      LINKED_TRANSFER_STATE_TIMEOUT,
-    );
-
-    if (!receiverAppInstallRes || !receiverAppInstallRes.appIdentityHash) {
-      throw new Error(`Could not install app on receiver side for payment ${paymentId}`);
-    }
-
-    const returnRes: NodeResponses.ResolveLinkedTransfer = {
-      appIdentityHash: receiverAppInstallRes.appIdentityHash,
-      sender: senderApp.channel.userIdentifier,
-      meta: senderApp.meta,
-      paymentId,
-      amount,
-      assetId,
-    };
-
-    this.log.info(
-      `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId}} complete ${JSON.stringify(
-        returnRes,
-      )}`,
-    );
-
-    return returnRes;
   }
 
   async findSenderAndReceiverAppsWithStatus(

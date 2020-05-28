@@ -24,19 +24,21 @@ import { BigNumber } from "ethers/utils";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
-import { CFCoreProviderId } from "../constants";
+import { CFCoreProviderId, MessagingProviderId } from "../constants";
 import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
 import { AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { MessagingService } from "@connext/messaging";
 
 Injectable();
 export class CFCoreService {
   constructor(
-    @Inject(CFCoreProviderId) public readonly cfCore: CFCore,
+    @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly log: LoggerService,
     private readonly configService: ConfigService,
+    @Inject(CFCoreProviderId) public readonly cfCore: CFCore,
     private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
@@ -251,6 +253,8 @@ export class CFCoreService {
       parameters,
     });
     this.logCfCoreMethodResult(MethodNames.chan_install, installRes.result.result);
+    const installSubject = `${this.cfCore.publicIdentifier}.channel.${multisigAddress}.app-instance.${appIdentityHash}.install`;
+    await this.messagingService.publish(installSubject, installRes.result.result.appInstance);
     return installRes.result.result as MethodResults.Install;
   }
 
