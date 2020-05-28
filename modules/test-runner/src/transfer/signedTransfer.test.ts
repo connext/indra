@@ -9,8 +9,14 @@ import {
   EventPayloads,
   PrivateKey,
   Address,
+  Receipt,
 } from "@connext/types";
-import { getTestVerifyingContract, getTestReceiptToSign, signReceiptMessage } from "@connext/utils";
+import {
+  getTestVerifyingContract,
+  getTestReceiptToSign,
+  signReceiptMessage,
+  getRandomPrivateKey,
+} from "@connext/utils";
 import { AddressZero } from "ethers/constants";
 import { hexlify, randomBytes } from "ethers/utils";
 import { providers } from "ethers";
@@ -32,6 +38,7 @@ describe("Signed Transfers", () => {
   let privateKeyB: PrivateKey;
   let clientB: IConnextClient;
   let tokenAddress: Address;
+  let receipt: Receipt;
   let verifyingContract: Address;
   const provider = new providers.JsonRpcProvider(env.ethProviderUrl);
 
@@ -50,9 +57,12 @@ describe("Signed Transfers", () => {
   });
 
   beforeEach(async () => {
+    privateKeyA = getRandomPrivateKey();
     clientA = await createClient({ signer: privateKeyA, id: "A" });
+    privateKeyB = getRandomPrivateKey();
     clientB = await createClient({ signer: privateKeyB, id: "B" });
     tokenAddress = clientA.config.contractAddresses.Token!;
+    receipt = getTestReceiptToSign();
     verifyingContract = getTestVerifyingContract();
   });
 
@@ -104,7 +114,6 @@ describe("Signed Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
 
-    const receipt = getTestReceiptToSign();
     const { chainId } = await clientA.ethProvider.getNetwork();
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
     const attestation = {
@@ -197,7 +206,6 @@ describe("Signed Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
 
-    const receipt = getTestReceiptToSign();
     const { chainId } = await clientA.ethProvider.getNetwork();
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
     const attestation = {
@@ -269,7 +277,6 @@ describe("Signed Transfers", () => {
     // disconnect so that it cant be unlocked
     await clientA.messaging.disconnect();
 
-    const receipt = getTestReceiptToSign();
     const { chainId } = await clientA.ethProvider.getNetwork();
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
     const attestation = {
@@ -314,7 +321,6 @@ describe("Signed Transfers", () => {
     } as PublicParams.SignedTransfer);
 
     const badSig = hexlify(randomBytes(65));
-    const receipt = getTestReceiptToSign();
     const attestation = {
       ...receipt,
       signature: badSig,
@@ -370,7 +376,6 @@ describe("Signed Transfers", () => {
       });
 
       // Including recipient signing in test to match real conditions
-      const receipt = getTestReceiptToSign();
       const { chainId } = await clientA.ethProvider.getNetwork();
       const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
       const attestation = {
