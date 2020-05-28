@@ -7,17 +7,13 @@ import {
   singleAssetTwoPartyCoinTransferEncoding,
   PrivateKey,
   Receipt,
-  tidy,
 } from "@connext/types";
 import {
   signReceiptMessage,
   getTestReceiptToSign,
   getTestVerifyingContract,
-  getPublicKeyFromPrivateKey,
-  getAddressFromPublicKey,
   getRandomBytes32,
-  encodeDomainSeparator,
-  encodeReceiptData,
+  getAddressFromPrivateKey,
 } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
 import { Zero } from "ethers/constants";
@@ -29,10 +25,6 @@ import { expect, provider } from "../utils";
 
 function mkAddress(prefix: string = "0xa"): string {
   return prefix.padEnd(42, "0");
-}
-
-function mkHash(prefix: string = "0xa"): string {
-  return prefix.padEnd(66, "0");
 }
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
@@ -52,19 +44,6 @@ const encodeAppState = (
 
 function encodeAppAction(state: SimpleSignedTransferAppAction): string {
   return defaultAbiCoder.encode([SimpleSignedTransferAppActionEncoding], [state]);
-}
-
-function encodeReceipt(receipt: Receipt): string {
-  return defaultAbiCoder.encode(
-    [
-      tidy(`tuple(
-    bytes32 requestCID,
-    bytes32 responseCID,
-    bytes32 subgraphID,
-  )`),
-    ],
-    [receipt],
-  );
 }
 
 describe("SimpleSignedTransferApp", () => {
@@ -117,7 +96,7 @@ describe("SimpleSignedTransferApp", () => {
     ).deploy();
 
     privateKey = wallet.privateKey;
-    signer = getAddressFromPublicKey(getPublicKeyFromPrivateKey(privateKey));
+    signer = getAddressFromPrivateKey(privateKey);
 
     chainId = (await wallet.provider.getNetwork()).chainId;
     receipt = getTestReceiptToSign();

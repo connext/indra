@@ -228,7 +228,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     await performConditionalTransfer({
       conditionType: ConditionalTransferTypes.SignedTransfer,
       sender,
-      meta: { verifyingContract },
+      verifyingContract,
       recipient,
       ASSET,
       TRANSFER_AMT,

@@ -96,7 +96,7 @@ export default {
         }
         const verifyingContract = getTestVerifyingContract();
         const receipt = getTestReceiptToSign();
-        const { chainId } = await new JsonRpcProvider(ethUrl).getNetwork();
+        const { chainId } = await client.ethProvider.getNetwork();
         const signature = await signReceiptMessage(
           receipt,
           chainId,

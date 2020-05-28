@@ -14,6 +14,7 @@ import {
   getRandomPrivateKey,
   ChannelSigner,
   signReceiptMessage,
+  getAddressFromPrivateKey,
 } from "@connext/utils";
 import { AddressZero } from "ethers/constants";
 import { hexlify, randomBytes } from "ethers/utils";
@@ -62,13 +63,12 @@ describe("Signed Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
+  it.only("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
     const privateKey = getRandomPrivateKey();
-    const signer = new ChannelSigner(privateKey, env.ethProviderUrl);
-    const signerAddress = await signer.getAddress();
+    const signerAddress = getAddressFromPrivateKey(privateKey);
 
     const [, installed] = await Promise.all([
       clientA.conditionalTransfer({
@@ -109,7 +109,7 @@ describe("Signed Transfers", () => {
     expect(clientAPostTransferBal).to.eq(0);
 
     const receipt = getTestReceiptToSign();
-    const { chainId } = await provider.getNetwork();
+    const { chainId } = await clientA.ethProvider.getNetwork();
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
     const attestation = {
       ...receipt,
@@ -164,8 +164,7 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
     const privateKey = getRandomPrivateKey();
-    const signer = new ChannelSigner(privateKey, env.ethProviderUrl);
-    const signerAddress = await signer.getAddress();
+    const signerAddress = getAddressFromPrivateKey(privateKey);
 
     const promises = await Promise.all([
       clientA.conditionalTransfer({
@@ -205,7 +204,7 @@ describe("Signed Transfers", () => {
     expect(clientAPostTransferBal).to.eq(0);
 
     const receipt = getTestReceiptToSign();
-    const { chainId } = await provider.getNetwork();
+    const { chainId } = await clientA.ethProvider.getNetwork();
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
     const attestation = {
       ...receipt,
@@ -238,8 +237,7 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
     const privateKey = getRandomPrivateKey();
-    const signer = new ChannelSigner(privateKey, env.ethProviderUrl);
-    const signerAddress = await signer.getAddress();
+    const signerAddress = getAddressFromPrivateKey(privateKey);
 
     await clientA.conditionalTransfer({
       amount: transfer.amount,
@@ -267,8 +265,7 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
     const privateKey = getRandomPrivateKey();
-    const signer = new ChannelSigner(privateKey, env.ethProviderUrl);
-    const signerAddress = await signer.getAddress();
+    const signerAddress = getAddressFromPrivateKey(privateKey);
 
     await clientA.conditionalTransfer({
       amount: transfer.amount,
@@ -283,7 +280,7 @@ describe("Signed Transfers", () => {
     await clientA.messaging.disconnect();
 
     const receipt = getTestReceiptToSign();
-    const { chainId } = await provider.getNetwork();
+    const { chainId } = await clientA.ethProvider.getNetwork();
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
     const attestation = {
       ...receipt,
@@ -316,8 +313,7 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
     const privateKey = getRandomPrivateKey();
-    const signer = new ChannelSigner(privateKey, env.ethProviderUrl);
-    const signerAddress = await signer.getAddress();
+    const signerAddress = getAddressFromPrivateKey(privateKey);
 
     await clientA.conditionalTransfer({
       amount: transfer.amount,
@@ -351,8 +347,7 @@ describe("Signed Transfers", () => {
     const numberOfRuns = 5;
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const privateKey = getRandomPrivateKey();
-    const signer = new ChannelSigner(privateKey, env.ethProviderUrl);
-    const signerAddress = signer.address;
+    const signerAddress = getAddressFromPrivateKey(privateKey);
 
     await fundChannel(clientA, transfer.amount.mul(25), transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
@@ -390,7 +385,7 @@ describe("Signed Transfers", () => {
 
       // Including recipient signing in test to match real conditions
       const receipt = getTestReceiptToSign();
-      const { chainId } = await provider.getNetwork();
+      const { chainId } = await clientA.ethProvider.getNetwork();
       const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
       const attestation = {
         ...receipt,
