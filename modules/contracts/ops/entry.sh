@@ -37,7 +37,7 @@ then
   fi
   echo "Deploying contracts.."
   touch $dir/address-book.json
-  node $dir/ops/migrate-contracts.js
+  node <<<"require('$dir/ops/migrate-contracts.js').migrate()"
 else
   echo "Exiting. No command given, expected: start or deploy"
 fi

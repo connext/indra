@@ -159,7 +159,7 @@ const sendGift = async (address, token) => {
 };
 
 ////////////////////////////////////////
-// Begin executing main migration script in async wrapper function
+// Main migration script
 // First, setup signer & connect to eth provider
 
 const migrate = async () => {
@@ -251,6 +251,4 @@ const migrate = async () => {
   console.log(`Sent ${nTx} transaction${nTx === 1 ? "" : "s"} & spent ${EtherSymbol} ${spent}`);
 };
 
-migrate();
-
-module.exports = migrate;
+module.exports = { migrate };
