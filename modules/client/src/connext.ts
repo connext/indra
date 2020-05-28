@@ -664,10 +664,14 @@ export class ConnextClient implements IConnextClient {
 
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
     const pendingTransfers = await this.node.getPendingAsyncTransfers();
-    this.log.debug(`Found ${pendingTransfers.length} transfers to reclaim`);
+    this.log.info(`Found ${pendingTransfers.length} transfers to reclaim`);
     for (const transfer of pendingTransfers) {
       const { encryptedPreImage, paymentId } = transfer;
-      await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+      try {
+        await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+      } catch (e) {
+        this.log.error(`Could not reclaim transfer ${paymentId}, will try again on next connect`);
+      }
     }
   };
 
@@ -682,13 +686,18 @@ export class ConnextClient implements IConnextClient {
       encryptedPreImage,
     });
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
-    const response = await this.resolveLinkedTransferController.resolveLinkedTransfer({
-      conditionType: ConditionalTransferTypes.LinkedTransfer,
-      paymentId,
-      preImage,
-    });
-    this.log.debug(`Reclaimed transfer ${paymentId} using preImage: ${preImage}`);
-    return response;
+    try {
+      const response = await this.resolveLinkedTransferController.resolveLinkedTransfer({
+        conditionType: ConditionalTransferTypes.LinkedTransfer,
+        paymentId,
+        preImage,
+      });
+      this.log.debug(`Reclaimed transfer ${paymentId} using preImage: ${preImage}`);
+      return response;
+    } catch (e) {
+      this.log.error(`Error in reclaimPendingAsyncTransfer: ${e.message}`);
+      throw e;
+    }
   };
 
   ///////////////////////////////////
