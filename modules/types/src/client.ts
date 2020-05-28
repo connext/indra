@@ -4,7 +4,7 @@ import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
 import { Address, Bytes32, DecString, PublicIdentifier } from "./basic";
 import { ChannelProviderConfig, IChannelProvider } from "./channelProvider";
 import { IChannelSigner } from "./crypto";
-import { EventNames } from "./events";
+import { EventName } from "./events";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import { NodeResponses } from "./node";
@@ -53,11 +53,11 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // LISTENER METHODS
-  on(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
-  once(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
-  emit(event: EventNames | MethodName, data: any): boolean;
-  removeListener(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
-  removeAllListeners(event?: EventNames | MethodName): void;
+  on(event: EventName | MethodName, callback: (...args: any[]) => void): void;
+  once(event: EventName | MethodName, callback: (...args: any[]) => void): void;
+  emit(event: EventName | MethodName, data: any): boolean;
+  removeListener(event: EventName | MethodName, callback: (...args: any[]) => void): void;
+  removeAllListeners(event?: EventName | MethodName): void;
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS
