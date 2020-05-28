@@ -7,24 +7,22 @@ import {
   AssetId,
   ContractABI,
   CONVENTION_FOR_ETH_ASSET_ID,
-  CreateChannelMessage,
   DepositAppState,
   DepositAppStateEncoding,
   EventNames,
-  InstallMessage,
   JsonRpcResponse,
-  Message,
   MethodNames,
   MethodParam,
   MethodParams,
   MethodResults,
   OutcomeType,
-  ProposeMessage,
   ProtocolParams,
   PublicIdentifier,
   Rpc,
   SolidityValueType,
   UninstallMessage,
+  EventName,
+  ProtocolEventMessage,
 } from "@connext/types";
 import {
   bigNumberifyJson,
@@ -195,9 +193,7 @@ export async function getDepositApps(
   if (apps.length === 0) {
     return [];
   }
-  const depositApps = apps.filter(
-    (app) => app.appInterface.addr === DepositApp,
-  );
+  const depositApps = apps.filter((app) => app.appInterface.addr === DepositApp);
   if (tokenAddresses.length === 0) {
     return depositApps;
   }
@@ -215,8 +211,8 @@ export async function getDepositApps(
  * @param shouldExist array of keys to check existence of if value not known
  * for `expected` (e.g `appIdentityHash`s)
  */
-export function assertMessage(
-  msg: Message,
+export function assertMessage<T extends EventName>(
+  msg: ProtocolEventMessage<T>,
   expected: any, // should be partial of nested types
   shouldExist: string[] = [],
 ): void {
@@ -235,11 +231,11 @@ export function assertMessage(
 
 export function assertProposeMessage(
   senderId: string,
-  msg: ProposeMessage,
+  msg: ProtocolEventMessage<"PROPOSE_INSTALL_EVENT">,
   params: ProtocolParams.Propose,
 ) {
   const { multisigAddress, initiatorIdentifier, responderIdentifier, ...emittedParams } = params;
-  assertMessage(
+  assertMessage<"PROPOSE_INSTALL_EVENT">(
     msg,
     {
       from: senderId,
@@ -251,22 +247,20 @@ export function assertProposeMessage(
         },
       },
     },
-    [`data.appIdentityHash`],
+    [`data.appInstanceId`],
   );
 }
 
 export function assertInstallMessage(
   senderId: string,
-  msg: InstallMessage,
+  msg: ProtocolEventMessage<"INSTALL_EVENT">,
   appIdentityHash: string,
 ) {
-  assertMessage(msg, {
+  assertMessage<"INSTALL_EVENT">(msg, {
     from: senderId,
     type: `INSTALL_EVENT`,
     data: {
-      params: {
-        appIdentityHash,
-      },
+      appIdentityHash,
     },
   });
 }
@@ -694,8 +688,8 @@ export async function createChannel(nodeA: CFCore, nodeB: CFCore): Promise<strin
   const sortedOwners = [nodeA.signerAddress, nodeB.signerAddress];
   const [multisigAddress]: any = await Promise.all([
     new Promise(async (resolve) => {
-      nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
-        assertMessage(
+      nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg) => {
+        assertMessage<typeof EventNames.CREATE_CHANNEL_EVENT>(
           msg,
           {
             from: nodeA.publicIdentifier,
@@ -711,8 +705,8 @@ export async function createChannel(nodeA: CFCore, nodeB: CFCore): Promise<strin
       });
     }),
     new Promise((resolve) => {
-      nodeA.once(EventNames.CREATE_CHANNEL_EVENT, (msg: CreateChannelMessage) => {
-        assertMessage(
+      nodeA.once(EventNames.CREATE_CHANNEL_EVENT, (msg) => {
+        assertMessage<typeof EventNames.CREATE_CHANNEL_EVENT>(
           msg,
           {
             from: nodeA.publicIdentifier,
@@ -792,15 +786,15 @@ export async function installApp(
   };
 
   const appIdentityHash: string = await new Promise(async (resolve) => {
-    nodeB.once(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
+    nodeB.once(`PROPOSE_INSTALL_EVENT`, async (msg) => {
       // assert message
       assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
       // Sanity-check
       confirmProposedAppInstance(
         installationProposalRpc.parameters,
-        await getAppInstanceProposal(nodeB, msg.data.appIdentityHash, multisigAddress),
+        await getAppInstanceProposal(nodeB, msg.data.appInstanceId, multisigAddress),
       );
-      resolve(msg.data.appIdentityHash);
+      resolve(msg.data.appInstanceId);
     });
 
     await nodeA.rpcRouter.dispatch(installationProposalRpc);
@@ -815,8 +809,8 @@ export async function installApp(
   await Promise.all([
     nodeB.rpcRouter.dispatch(constructInstallRpc(appIdentityHash, multisigAddress)),
     new Promise(async (resolve) => {
-      nodeA.on(EventNames.INSTALL_EVENT, async (msg: InstallMessage) => {
-        if (msg.data.params.appIdentityHash === appIdentityHash) {
+      nodeA.on(EventNames.INSTALL_EVENT, async (msg) => {
+        if (msg.data.appIdentityHash === appIdentityHash) {
           // assert message
           assertInstallMessage(nodeB.publicIdentifier, msg, appIdentityHash);
           const appInstanceNodeA = await getAppInstance(nodeA, appIdentityHash);
