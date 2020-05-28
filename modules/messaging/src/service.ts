@@ -1,9 +1,4 @@
-import {
-  Message,
-  ILoggerService,
-  IMessagingService,
-  MessagingConfig,
-} from "@connext/types";
+import { GenericMessage, ILoggerService, IMessagingService, MessagingConfig } from "@connext/types";
 import { nullLogger } from "@connext/utils";
 import * as natsutil from "ts-natsutil";
 
@@ -59,22 +54,19 @@ export class MessagingService implements IMessagingService {
   ////////////////////////////////////////
   // IMessagingService Methods
 
-  async onReceive(
-    subject: string,
-    callback: (msg: Message) => void,
-  ): Promise<void> {
+  async onReceive(subject: string, callback: (msg: GenericMessage) => void): Promise<void> {
     await this.service!.subscribe(this.prependKey(`${subject}.>`), (msg: any, err?: any): void => {
       if (err || !msg || !msg.data) {
         this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
       } else {
         const data = typeof msg.data === `string` ? JSON.parse(msg.data) : msg.data;
         this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
-        callback(data as Message);
+        callback(data as GenericMessage);
       }
     });
   }
 
-  async send(to: string, msg: Message): Promise<void> {
+  async send(to: string, msg: GenericMessage): Promise<void> {
     this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
     return this.service!.publish(this.prependKey(`${to}.${msg.from}`), JSON.stringify(msg));
   }
@@ -94,10 +86,7 @@ export class MessagingService implements IMessagingService {
     return response;
   }
 
-  async subscribe(
-    subject: string,
-    callback: (msg: Message) => void,
-  ): Promise<void> {
+  async subscribe(subject: string, callback: (msg: GenericMessage) => void): Promise<void> {
     await this.service!.subscribe(subject, (msg: any, err?: any): void => {
       if (err || !msg || !msg.data) {
         this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
@@ -106,14 +95,14 @@ export class MessagingService implements IMessagingService {
         const parsedData = typeof msg.data === `string` ? JSON.parse(msg.data) : msg.data;
         parsedMsg.data = parsedData;
         this.log.debug(`Subscription for ${subject}: ${JSON.stringify(parsedMsg)}`);
-        callback(parsedMsg as Message);
+        callback(parsedMsg as GenericMessage);
       }
     });
   }
 
   async unsubscribe(subject: string): Promise<void> {
     const unsubscribeFrom = this.getSubjectsToUnsubscribeFrom(subject);
-    unsubscribeFrom.forEach(sub => {
+    unsubscribeFrom.forEach((sub) => {
       this.service!.unsubscribe(sub);
     });
   }
@@ -139,9 +128,9 @@ export class MessagingService implements IMessagingService {
     // `*` represents any set of characters
     // if no match for split, will return [subject]
     const substrsToMatch = subject.split(`>`)[0].split(`*`);
-    subscribedTo.forEach(subscribedSubject => {
+    subscribedTo.forEach((subscribedSubject) => {
       let subjectIncludesAllSubstrings = true;
-      substrsToMatch.forEach(match => {
+      substrsToMatch.forEach((match) => {
         if (!subscribedSubject.includes(match) && match !== ``) {
           subjectIncludesAllSubstrings = false;
         }
