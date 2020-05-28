@@ -15,7 +15,7 @@ import {
 } from "@connext/utils";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
 
-import * as ChallengeRegistry from "../artifacts/ChallengeRegistry.json";
+import * as ChallengeRegistry from "../../artifacts/ChallengeRegistry.json";
 
 const iface = new Interface(ChallengeRegistry.abi as any);
 

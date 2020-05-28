@@ -7,7 +7,7 @@ import {
 import { AddressZero } from "ethers/constants";
 import { Interface } from "ethers/utils";
 
-import * as ConditionalTransactionDelegateTarget from "../artifacts/ConditionalTransactionDelegateTarget.json";
+import * as ConditionalTransactionDelegateTarget from "../../artifacts/ConditionalTransactionDelegateTarget.json";
 
 import { MultisigCommitment } from "./multisig-commitment";
 

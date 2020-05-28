@@ -11,7 +11,7 @@
     "src.sol",
     "src.ts"
   ],
-  "main": "./dist/index.js",
+  "main": "./dist/src.ts/index.js",
   "keywords": [
     "ethereum",
     "counterfactual",
