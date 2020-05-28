@@ -10,6 +10,7 @@ import * as CounterfactualApp from "../artifacts/CounterfactualApp.json";
 import * as DepositApp from "../artifacts/DepositApp.json";
 import * as DolphinCoin from "../artifacts/DolphinCoin.json";
 import * as ERC20 from "../artifacts/ERC20.json";
+import * as HashLockTransferApp from "../artifacts/HashLockTransferApp.json";
 import * as IdentityApp from "../artifacts/IdentityApp.json";
 import * as MinimumViableMultisig from "../artifacts/MinimumViableMultisig.json";
 import * as MultiAssetMultiPartyCoinTransferInterpreter from "../artifacts/MultiAssetMultiPartyCoinTransferInterpreter.json";
@@ -26,7 +27,6 @@ import * as UnidirectionalLinkedTransferApp from "../artifacts/UnidirectionalLin
 import * as UnidirectionalTransferApp from "../artifacts/UnidirectionalTransferApp.json";
 import * as WithdrawApp from "../artifacts/WithdrawApp.json";
 
-export { migrate } from "./migrate";
 export * from "./commitments";
 
 export {
@@ -39,6 +39,7 @@ export {
   DepositApp,
   DolphinCoin,
   ERC20,
+  HashLockTransferApp,
   IdentityApp,
   MinimumViableMultisig,
   MultiAssetMultiPartyCoinTransferInterpreter,

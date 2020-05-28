@@ -36,11 +36,17 @@ then
     wait-for localhost:8545
   fi
   echo "Deploying contracts.."
+
   touch $dir/address-book.json
+
   node dist/src.ts/cli.js migrate \
-    --mnemonic "$ETH_MNEMONIC" \
+    --address-book "$dir/address-book.json" \
     --eth-provider "$ETH_PROVIDER" \
-    --address-book "$dir/address-book.json"
+    --mnemonic "$ETH_MNEMONIC"
+
+  node dist/src.ts/cli.js snapshot \
+    --eth-provider "$ETH_PROVIDER"
+
 else
   echo "Exiting. No command given, expected: start or deploy"
 fi

@@ -1,27 +1,30 @@
 import * as tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
 import { Contract, ContractFactory, Wallet } from "ethers";
-import { EtherSymbol, Zero } from "ethers/constants";
+import { EtherSymbol } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { keccak256, formatEther, parseEther } from "ethers/utils";
+import { keccak256, formatEther } from "ethers/utils";
 import fs from "fs";
 import { Argv } from "yargs";
 
-import * as ChallengeRegistry from "../artifacts/ChallengeRegistry.json";
-import * as ConditionalTransactionDelegateTarget from "../artifacts/ConditionalTransactionDelegateTarget.json";
-import * as DepositApp from "../artifacts/DepositApp.json";
-import * as HashLockTransferApp from "../artifacts/HashLockTransferApp.json";
-import * as IdentityApp from "../artifacts/IdentityApp.json";
-import * as MinimumViableMultisig from "../artifacts/MinimumViableMultisig.json";
-import * as MultiAssetMultiPartyCoinTransferInterpreter from "../artifacts/MultiAssetMultiPartyCoinTransferInterpreter.json";
-import * as ProxyFactory from "../artifacts/ProxyFactory.json";
-import * as SimpleLinkedTransferApp from "../artifacts/SimpleLinkedTransferApp.json";
-import * as SimpleSignedTransferApp from "../artifacts/SimpleSignedTransferApp.json";
-import * as SimpleTransferApp from "../artifacts/SimpleTransferApp.json";
-import * as SimpleTwoPartySwapApp from "../artifacts/SimpleTwoPartySwapApp.json";
-import * as SingleAssetTwoPartyCoinTransferInterpreter from "../artifacts/SingleAssetTwoPartyCoinTransferInterpreter.json";
-import * as TimeLockedPassThrough from "../artifacts/TimeLockedPassThrough.json";
-import * as TwoPartyFixedOutcomeInterpreter from "../artifacts/TwoPartyFixedOutcomeInterpreter.json";
-import * as WithdrawApp from "../artifacts/WithdrawApp.json";
+import { classicProviders, ganacheId } from "../constants";
+import {
+  ChallengeRegistry,
+  ConditionalTransactionDelegateTarget,
+  DepositApp,
+  HashLockTransferApp,
+  IdentityApp,
+  MinimumViableMultisig,
+  MultiAssetMultiPartyCoinTransferInterpreter,
+  ProxyFactory,
+  SimpleLinkedTransferApp,
+  SimpleSignedTransferApp,
+  SimpleTransferApp,
+  SimpleTwoPartySwapApp,
+  SingleAssetTwoPartyCoinTransferInterpreter,
+  TimeLockedPassThrough,
+  TwoPartyFixedOutcomeInterpreter,
+  WithdrawApp,
+} from "../index";
 
 const artifacts = {
   ChallengeRegistry,
@@ -42,16 +45,7 @@ const artifacts = {
   WithdrawApp,
 };
 
-const classicProviders = ["https://www.ethercluster.com/etc"];
-
-const botMnemonics = [
-  "humble sense shrug young vehicle assault destroy cook property average silent travel",
-  "roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult",
-];
-
-const ganacheId = 4447;
-
-type AddressBook = {
+export type AddressBook = {
   [chainId: string]: {
     [contractName: string]: {
       address: string;
@@ -71,8 +65,6 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
   const balance = await wallet.getBalance();
   const chainId = (await wallet.provider.getNetwork()).chainId; // saved to global scope
   const nonce = await wallet.getTransactionCount();
-
-  let token: Contract | undefined;
 
   console.log(`\nPreparing to migrate contracts to chain w id: ${chainId}`);
   console.log(`Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${formatEther(balance)}`);
@@ -167,34 +159,6 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
     return contract;
   };
 
-  const sendGift = async (address: string, token?: Contract): Promise<void> => {
-    const ethGift = "100000"; // 1mil eth by default
-    const tokenGift = "1000000";
-    const ethBalance = await wallet.provider.getBalance(address);
-    if (ethBalance.eq(Zero)) {
-      console.log(`\nSending ${EtherSymbol} ${ethGift} to ${address}`);
-      const tx = await wallet.sendTransaction({
-        to: address,
-        value: parseEther(ethGift),
-      });
-      await wallet.provider.waitForTransaction(tx.hash!);
-      console.log(`Transaction mined! Hash: ${tx.hash}`);
-    } else {
-      console.log(`\nAccount ${address} already has ${EtherSymbol} ${formatEther(ethBalance)}`);
-    }
-    if (token) {
-      const tokenBalance = await token.balanceOf(address);
-      if (tokenBalance.eq(Zero)) {
-        console.log(`Minting ${tokenGift} tokens for ${address}`);
-        const tx = await token.mint(address, parseEther(tokenGift));
-        await wallet.provider.waitForTransaction(tx.hash);
-        console.log(`Transaction mined! Hash: ${tx.hash}`);
-      } else {
-        console.log(`\nAccount ${address} already has ${formatEther(tokenBalance)} tokens`);
-      }
-    }
-  };
-
   ////////////////////////////////////////
   // Deploy contracts
 
@@ -204,24 +168,7 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
 
   // If this network has no token yet, deploy one
   if (chainId === ganacheId || !getSavedData("Token", "address")) {
-    token = await deployContract("Token", tokenArtifacts, []);
-  }
-
-  ////////////////////////////////////////
-  // On testnet, give relevant accounts a healthy starting balance
-
-  if (chainId === ganacheId) {
-    for (const botMnemonic of botMnemonics) {
-      await sendGift(Wallet.fromMnemonic(botMnemonic).address, token);
-    }
-  }
-
-  ////////////////////////////////////////
-  // Take a snapshot of this state
-
-  if (chainId === ganacheId) {
-    const snapshotId = await (wallet.provider as JsonRpcProvider).send("evm_snapshot", []);
-    console.log(`Took an EVM snapshot, id: ${snapshotId}`);
+    await deployContract("Token", tokenArtifacts, []);
   }
 
   ////////////////////////////////////////
