@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@connext/types": "6.6.2",
+    "evt": "1.7.11",
     "bs58check": "2.1.2",
     "eccrypto-js": "4.5.4"
   },
