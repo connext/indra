@@ -2,167 +2,179 @@ const fs = require("fs");
 const eth = require("ethers");
 const tokenArtifacts = require("@openzeppelin/contracts/build/contracts/ERC20Mintable.json");
 
-const coreContracts = [
-  "ChallengeRegistry",
-  "ConditionalTransactionDelegateTarget",
-  "IdentityApp",
-  "MinimumViableMultisig",
-  "MultiAssetMultiPartyCoinTransferInterpreter",
-  "ProxyFactory",
-  "SingleAssetTwoPartyCoinTransferInterpreter",
-  "TimeLockedPassThrough",
-  "TwoPartyFixedOutcomeInterpreter",
-];
+module.exports.migrate = async () => {
 
-const appContracts = [
-  "DepositApp",
-  "HashLockTransferApp",
-  "SimpleLinkedTransferApp",
-  "SimpleSignedTransferApp",
-  "SimpleTransferApp",
-  "SimpleTwoPartySwapApp",
-  "DepositApp",
-  "WithdrawApp",
-];
+  ////////////////////////////////////////
+  // Import required contract artifacts
 
-const hash = (input) => eth.utils.keccak256(`0x${input.replace(/^0x/, "")}`);
+  const coreContracts = [
+    "ChallengeRegistry",
+    "ConditionalTransactionDelegateTarget",
+    "IdentityApp",
+    "MinimumViableMultisig",
+    "MultiAssetMultiPartyCoinTransferInterpreter",
+    "ProxyFactory",
+    "SingleAssetTwoPartyCoinTransferInterpreter",
+    "TimeLockedPassThrough",
+    "TwoPartyFixedOutcomeInterpreter",
+  ];
 
-const artifacts = {};
-for (const contract of coreContracts) {
-  artifacts[contract] = require(`../build/${contract}.json`);
-}
+  const appContracts = [
+    "DepositApp",
+    "HashLockTransferApp",
+    "SimpleLinkedTransferApp",
+    "SimpleSignedTransferApp",
+    "SimpleTransferApp",
+    "SimpleTwoPartySwapApp",
+    "DepositApp",
+    "WithdrawApp",
+  ];
 
-for (const contract of appContracts) {
-  artifacts[contract] = require(`../build/${contract}.json`);
-}
+  const hash = (input) => eth.utils.keccak256(`0x${input.replace(/^0x/, "")}`);
 
-const { EtherSymbol, Zero } = eth.constants;
-const { formatEther, parseEther } = eth.utils;
-
-////////////////////////////////////////
-// Environment Setup
-
-const botMnemonics = [
-  "humble sense shrug young vehicle assault destroy cook property average silent travel",
-  "roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult",
-];
-const ganacheId = 4447;
-const addressBookPath = "./address-book.json";
-const addressBook = JSON.parse(fs.readFileSync(addressBookPath, "utf8") || "{}");
-
-const classicProviders = ["https://www.ethercluster.com/etc"];
-
-// Global scope vars
-let chainId;
-let wallet;
-let mnemonic;
-
-////////////////////////////////////////
-// Helper Functions
-
-const getSavedData = (contractName, property) => {
-  try {
-    return addressBook[chainId][contractName][property];
-  } catch (e) {
-    return undefined;
+  const artifacts = {};
+  for (const contract of coreContracts) {
+    artifacts[contract] = require(`../build/${contract}.json`);
   }
-};
 
-// Write addressBook to disk
-const saveAddressBook = (addressBook) => {
-  try {
-    fs.writeFileSync(addressBookPath, JSON.stringify(addressBook, null, 2));
-  } catch (e) {
-    console.log(`Error saving artifacts: ${e}`);
+  for (const contract of appContracts) {
+    artifacts[contract] = require(`../build/${contract}.json`);
   }
-};
 
-// Simple sanity checks to make sure contracts from our address book have been deployed
-const contractIsDeployed = async (name, address, artifacts) => {
-  if (!address || address === "") {
-    console.log("This contract is not in our address book.");
-    return false;
-  }
-  const savedCreationCodeHash = getSavedData(name, "creationCodeHash");
-  const creationCodeHash = hash(artifacts.bytecode);
-  if (!savedCreationCodeHash || savedCreationCodeHash !== creationCodeHash) {
-    console.log(`creationCodeHash in our address book doen't match ${name} artifacts`);
-    console.log(`${savedCreationCodeHash} !== ${creationCodeHash}`);
-    return false;
-  }
-  const savedRuntimeCodeHash = getSavedData(name, "runtimeCodeHash");
-  const runtimeCodeHash = hash(await wallet.provider.getCode(address));
-  if (runtimeCodeHash === hash("0x00") || runtimeCodeHash === hash("0x")) {
-    console.log("No runtimeCode exists at the address in our address book");
-    return false;
-  }
-  if (savedRuntimeCodeHash !== runtimeCodeHash) {
-    console.log(`runtimeCodeHash for ${address} does not match what's in our address book`);
-    console.log(`${savedRuntimeCodeHash} !== ${runtimeCodeHash}`);
-    return false;
-  }
-  return true;
-};
+  const { EtherSymbol, Zero } = eth.constants;
+  const { formatEther, parseEther } = eth.utils;
 
-const deployContract = async (name, artifacts, args) => {
-  console.log(`\nChecking for valid ${name} contract...`);
-  const savedAddress = getSavedData(name, "address");
-  if (await contractIsDeployed(name, savedAddress, artifacts)) {
-    console.log(`${name} is up to date, no action required\nAddress: ${savedAddress}`);
-    return new eth.Contract(savedAddress, artifacts.abi, wallet);
-  }
-  const factory = eth.ContractFactory.fromSolidity(artifacts);
-  const contract = await factory.connect(wallet).deploy(...args.map((a) => a.value));
-  const txHash = contract.deployTransaction.hash;
-  console.log(`Sent transaction to deploy ${name}, txHash: ${txHash}`);
-  await wallet.provider.waitForTransaction(txHash);
-  const address = contract.address;
-  console.log(`${name} has been deployed to address: ${address}`);
-  const runtimeCodeHash = hash(await wallet.provider.getCode(address));
-  const creationCodeHash = hash(artifacts.bytecode);
-  // Update address-book w new address + the args we deployed with
-  const saveArgs = {};
-  args.forEach((a) => (saveArgs[a.name] = a.value));
-  if (!addressBook[chainId]) addressBook[chainId] = {};
-  if (!addressBook[chainId][name]) addressBook[chainId][name] = {};
-  addressBook[chainId][name] = { address, creationCodeHash, runtimeCodeHash, txHash, ...saveArgs };
-  saveAddressBook(addressBook);
-  return contract;
-};
+  ////////////////////////////////////////
+  // Environment Setup
 
-const sendGift = async (address, token) => {
-  const ethGift = "100000"; // 1mil eth by default
-  const tokenGift = "1000000";
-  const ethBalance = await wallet.provider.getBalance(address);
-  if (ethBalance.eq(Zero)) {
-    console.log(`\nSending ${EtherSymbol} ${ethGift} to ${address}`);
-    const tx = await wallet.sendTransaction({
-      to: address,
-      value: parseEther(ethGift),
-    });
-    await wallet.provider.waitForTransaction(tx.hash);
-    console.log(`Transaction mined! Hash: ${tx.hash}`);
-  } else {
-    console.log(`\nAccount ${address} already has ${EtherSymbol} ${formatEther(ethBalance)}`);
-  }
-  if (token) {
-    const tokenBalance = await token.balanceOf(address);
-    if (tokenBalance.eq(Zero)) {
-      console.log(`Minting ${tokenGift} tokens for ${address}`);
-      const tx = await token.mint(address, parseEther(tokenGift));
+  const botMnemonics = [
+    "humble sense shrug young vehicle assault destroy cook property average silent travel",
+    "roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult",
+  ];
+  const ganacheId = 4447;
+
+  console.log(`cwd: ${process.cwd()}`);
+  const addressBookPath = "../address-book.json";
+
+  const addressBook = JSON.parse(fs.readFileSync(addressBookPath, "utf8") || "{}");
+
+  const classicProviders = ["https://www.ethercluster.com/etc"];
+
+  // Global scope vars
+  let chainId;
+  let wallet;
+  let mnemonic;
+
+  ////////////////////////////////////////
+  // Helper Functions
+
+  const getSavedData = (contractName, property) => {
+    try {
+      return addressBook[chainId][contractName][property];
+    } catch (e) {
+      return undefined;
+    }
+  };
+
+  // Write addressBook to disk
+  const saveAddressBook = (addressBook) => {
+    try {
+      fs.writeFileSync(addressBookPath, JSON.stringify(addressBook, null, 2));
+    } catch (e) {
+      console.log(`Error saving artifacts: ${e}`);
+    }
+  };
+
+  // Simple sanity checks to make sure contracts from our address book have been deployed
+  const contractIsDeployed = async (name, address, artifacts) => {
+    if (!address || address === "") {
+      console.log("This contract is not in our address book.");
+      return false;
+    }
+    const savedCreationCodeHash = getSavedData(name, "creationCodeHash");
+    const creationCodeHash = hash(artifacts.bytecode);
+    if (!savedCreationCodeHash || savedCreationCodeHash !== creationCodeHash) {
+      console.log(`creationCodeHash in our address book doen't match ${name} artifacts`);
+      console.log(`${savedCreationCodeHash} !== ${creationCodeHash}`);
+      return false;
+    }
+    const savedRuntimeCodeHash = getSavedData(name, "runtimeCodeHash");
+    const runtimeCodeHash = hash(await wallet.provider.getCode(address));
+    if (runtimeCodeHash === hash("0x00") || runtimeCodeHash === hash("0x")) {
+      console.log("No runtimeCode exists at the address in our address book");
+      return false;
+    }
+    if (savedRuntimeCodeHash !== runtimeCodeHash) {
+      console.log(`runtimeCodeHash for ${address} does not match what's in our address book`);
+      console.log(`${savedRuntimeCodeHash} !== ${runtimeCodeHash}`);
+      return false;
+    }
+    return true;
+  };
+
+  const deployContract = async (name, artifacts, args) => {
+    console.log(`\nChecking for valid ${name} contract...`);
+    const savedAddress = getSavedData(name, "address");
+    if (await contractIsDeployed(name, savedAddress, artifacts)) {
+      console.log(`${name} is up to date, no action required\nAddress: ${savedAddress}`);
+      return new eth.Contract(savedAddress, artifacts.abi, wallet);
+    }
+    const factory = eth.ContractFactory.fromSolidity(artifacts);
+    const contract = await factory.connect(wallet).deploy(...args.map((a) => a.value));
+    const txHash = contract.deployTransaction.hash;
+    console.log(`Sent transaction to deploy ${name}, txHash: ${txHash}`);
+    await wallet.provider.waitForTransaction(txHash);
+    const address = contract.address;
+    console.log(`${name} has been deployed to address: ${address}`);
+    const runtimeCodeHash = hash(await wallet.provider.getCode(address));
+    const creationCodeHash = hash(artifacts.bytecode);
+    // Update address-book w new address + the args we deployed with
+    const saveArgs = {};
+    args.forEach((a) => (saveArgs[a.name] = a.value));
+    if (!addressBook[chainId]) addressBook[chainId] = {};
+    if (!addressBook[chainId][name]) addressBook[chainId][name] = {};
+    addressBook[chainId][name] = {
+      address,
+      creationCodeHash,
+      runtimeCodeHash,
+      txHash,
+      ...saveArgs,
+    };
+    saveAddressBook(addressBook);
+    return contract;
+  };
+
+  const sendGift = async (address, token) => {
+    const ethGift = "100000"; // 1mil eth by default
+    const tokenGift = "1000000";
+    const ethBalance = await wallet.provider.getBalance(address);
+    if (ethBalance.eq(Zero)) {
+      console.log(`\nSending ${EtherSymbol} ${ethGift} to ${address}`);
+      const tx = await wallet.sendTransaction({
+        to: address,
+        value: parseEther(ethGift),
+      });
       await wallet.provider.waitForTransaction(tx.hash);
       console.log(`Transaction mined! Hash: ${tx.hash}`);
     } else {
-      console.log(`\nAccount ${address} already has ${formatEther(tokenBalance)} tokens`);
+      console.log(`\nAccount ${address} already has ${EtherSymbol} ${formatEther(ethBalance)}`);
     }
-  }
-};
+    if (token) {
+      const tokenBalance = await token.balanceOf(address);
+      if (tokenBalance.eq(Zero)) {
+        console.log(`Minting ${tokenGift} tokens for ${address}`);
+        const tx = await token.mint(address, parseEther(tokenGift));
+        await wallet.provider.waitForTransaction(tx.hash);
+        console.log(`Transaction mined! Hash: ${tx.hash}`);
+      } else {
+        console.log(`\nAccount ${address} already has ${formatEther(tokenBalance)} tokens`);
+      }
+    }
+  };
 
-////////////////////////////////////////
-// Main migration script
-// First, setup signer & connect to eth provider
+  ////////////////////////////////////////
+  // Start executing the migration script
 
-const migrate = async () => {
   let provider, balance, nonce, token;
 
   if (!process.env.ETH_PROVIDER) {
@@ -250,5 +262,3 @@ const migrate = async () => {
   const nTx = (await wallet.getTransactionCount()) - nonce;
   console.log(`Sent ${nTx} transaction${nTx === 1 ? "" : "s"} & spent ${EtherSymbol} ${spent}`);
 };
-
-module.exports = { migrate };
