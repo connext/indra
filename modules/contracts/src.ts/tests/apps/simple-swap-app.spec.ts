@@ -2,7 +2,7 @@
 import { Contract, ContractFactory } from "ethers";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
-import SimpleTwoPartySwapApp from "../../artifacts/SimpleTwoPartySwapApp.json";
+import { SimpleTwoPartySwapApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 

@@ -3,7 +3,7 @@ import { Contract, ContractFactory } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
-import SimpleTransferApp from "../../artifacts/SimpleTransferApp.json";
+import { SimpleTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 

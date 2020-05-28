@@ -9,10 +9,10 @@ import {
 } from "@connext/types";
 import { ChannelSigner } from "@connext/utils";
 import { Wallet, ContractFactory, Contract } from "ethers";
+import { Zero, HashZero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, hexlify, randomBytes, SigningKey } from "ethers/utils";
 
-import WithdrawApp from "../../artifacts/WithdrawApp.json";
-import { Zero, HashZero } from "ethers/constants";
+import { WithdrawApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 

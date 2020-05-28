@@ -4,7 +4,7 @@ import { Contract, ContractFactory } from "ethers";
 import { HashZero } from "ethers/constants";
 import { defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
 
-import HighRollerApp from "../../artifacts/HighRollerApp.json";
+import { HighRollerApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 

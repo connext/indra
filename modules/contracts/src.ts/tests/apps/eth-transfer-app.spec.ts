@@ -3,7 +3,7 @@ import { Contract, ContractFactory } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, BigNumberish, defaultAbiCoder } from "ethers/utils";
 
-import UnidirectionalTransferApp from "../../artifacts/UnidirectionalTransferApp.json";
+import { UnidirectionalTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 

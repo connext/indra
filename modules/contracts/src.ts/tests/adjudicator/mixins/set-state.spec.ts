@@ -4,6 +4,8 @@ import { ChannelSigner, toBN } from "@connext/utils";
 import { One } from "ethers/constants";
 import { Contract, Wallet, ContractFactory } from "ethers";
 
+import { AppWithAction, ChallengeRegistry }  from "../../../artifacts";
+
 import {
   randomState,
   appStateToHash,
@@ -17,9 +19,6 @@ import {
   provider,
   sortSignaturesBySignerAddress,
 } from "../utils";
-
-import AppWithAction from "../../../artifacts/AppWithAction.json";
-import ChallengeRegistry from "../../../artifacts/ChallengeRegistry.json";
 
 describe("setState", () => {
   let wallet: Wallet;

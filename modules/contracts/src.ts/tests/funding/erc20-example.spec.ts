@@ -2,7 +2,7 @@
 import { Contract, Wallet, ContractFactory } from "ethers";
 import { bigNumberify } from "ethers/utils";
 
-import DolphinCoin from "../../artifacts/DolphinCoin.json";
+import { DolphinCoin } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 

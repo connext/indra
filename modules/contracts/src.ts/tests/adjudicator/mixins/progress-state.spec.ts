@@ -2,6 +2,8 @@
 import { AppChallenge } from "@connext/types";
 import { Wallet, Contract, ContractFactory } from "ethers";
 
+import { AppApplyActionFails, AppWithAction, ChallengeRegistry }  from "../../../artifacts";
+
 import {
   expect,
   AppWithCounterState,
@@ -14,10 +16,6 @@ import {
   EMPTY_CHALLENGE,
   provider,
 } from "../utils";
-
-import AppWithAction from "../../../artifacts/AppWithAction.json";
-import AppApplyActionFails from "../../../artifacts/AppApplyActionFails.json";
-import ChallengeRegistry from "../../../artifacts/ChallengeRegistry.json";
 
 describe("progressState", () => {
   let appRegistry: Contract;

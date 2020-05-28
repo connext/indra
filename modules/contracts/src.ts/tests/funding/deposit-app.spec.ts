@@ -6,13 +6,10 @@ import {
   DepositAppStateEncoding,
 } from "@connext/types";
 import { Wallet, ContractFactory, Contract } from "ethers";
+import { Zero, AddressZero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
-import DepositApp from "../../artifacts/DepositApp.json";
-import DelegateProxy from "../../artifacts/DelegateProxy.json";
-import DolphinCoin from "../../artifacts/DolphinCoin.json";
-
-import { Zero, AddressZero } from "ethers/constants";
+import { DepositApp, DelegateProxy, DolphinCoin } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 const MAX_INT = new BigNumber(2).pow(256).sub(1);

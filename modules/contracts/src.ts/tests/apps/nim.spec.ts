@@ -3,7 +3,7 @@ import { SolidityValueType } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
-import NimApp from "../../artifacts/NimApp.json";
+import { NimApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 

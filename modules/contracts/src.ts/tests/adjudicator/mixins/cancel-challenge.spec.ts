@@ -2,6 +2,8 @@
 import { ChannelSigner, toBN } from "@connext/utils";
 import { Contract, Wallet, ContractFactory } from "ethers";
 
+import { AppWithAction, ChallengeRegistry }  from "../../../artifacts";
+
 import {
   expect,
   restore,
@@ -13,9 +15,6 @@ import {
   AppWithCounterClass,
   sortSignaturesBySignerAddress,
 } from "../utils";
-
-import AppWithAction from "../../../artifacts/AppWithAction.json";
-import ChallengeRegistry from "../../../artifacts/ChallengeRegistry.json";
 
 describe("cancelDispute", () => {
   let appRegistry: Contract;

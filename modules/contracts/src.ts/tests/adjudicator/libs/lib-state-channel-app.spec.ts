@@ -2,12 +2,11 @@
 import { AppChallenge, ChallengeStatus } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { Contract, Wallet, ContractFactory } from "ethers";
+import { BigNumberish } from "ethers/utils";
+
+import { AppWithAction, ChallengeRegistry } from "../../../artifacts";
 
 import { provider, snapshot, setupContext, restore, expect, moveToBlock, AppWithCounterAction, ActionType } from "../utils";
-
-import AppWithAction from "../../../artifacts/AppWithAction.json";
-import ChallengeRegistry from "../../../artifacts/ChallengeRegistry.json";
-import { BigNumberish } from "ethers/utils";
 
 describe("LibStateChannelApp", () => {
 

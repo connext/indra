@@ -24,7 +24,7 @@ import {
   TimeLockedPassThrough,
   TwoPartyFixedOutcomeInterpreter,
   WithdrawApp,
-} from "../index";
+} from "../artifacts";
 
 const artifacts = {
   ChallengeRegistry,
@@ -95,14 +95,14 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
   const contractIsDeployed = async (
     name: string,
     address: string | undefined,
-    artifacts: any,
+    artifact: any,
   ): Promise<boolean> => {
     if (!address || address === "") {
       console.log("This contract is not in our address book.");
       return false;
     }
     const savedCreationCodeHash = getSavedData(name, "creationCodeHash");
-    const creationCodeHash = hash(artifacts.bytecode);
+    const creationCodeHash = hash(artifact.bytecode);
     if (!savedCreationCodeHash || savedCreationCodeHash !== creationCodeHash) {
       console.log(`creationCodeHash in our address book doen't match ${name} artifacts`);
       console.log(`${savedCreationCodeHash} !== ${creationCodeHash}`);
@@ -124,16 +124,16 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
 
   const deployContract = async (
     name: string,
-    artifacts: any,
+    artifact: any,
     args: Array<{ name: string; value: string }>,
   ): Promise<Contract> => {
     console.log(`\nChecking for valid ${name} contract...`);
     const savedAddress = getSavedData(name, "address");
-    if (await contractIsDeployed(name, savedAddress, artifacts)) {
+    if (await contractIsDeployed(name, savedAddress, artifact)) {
       console.log(`${name} is up to date, no action required\nAddress: ${savedAddress}`);
-      return new Contract(savedAddress!, artifacts.abi, wallet);
+      return new Contract(savedAddress!, artifact.abi, wallet);
     }
-    const factory = ContractFactory.fromSolidity(artifacts);
+    const factory = ContractFactory.fromSolidity(artifact);
     const contract = await factory.connect(wallet).deploy(...args.map((a) => a.value));
     const txHash = contract.deployTransaction.hash;
     console.log(`Sent transaction to deploy ${name}, txHash: ${txHash}`);
@@ -141,7 +141,7 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
     const address = contract.address;
     console.log(`${name} has been deployed to address: ${address}`);
     const runtimeCodeHash = hash(await wallet.provider.getCode(address));
-    const creationCodeHash = hash(artifacts.bytecode);
+    const creationCodeHash = hash(artifact.bytecode);
     // Update address-book w new address + the args we deployed with
     const saveArgs = {} as any;
     args.forEach((a) => (saveArgs[a.name] = a.value));

@@ -5,7 +5,7 @@ import { Contract, ContractFactory } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
 
-import UnidirectionalLinkedTransferApp from "../../artifacts/UnidirectionalLinkedTransferApp.json";
+import { UnidirectionalLinkedTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 
