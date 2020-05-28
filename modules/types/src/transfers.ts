@@ -26,7 +26,7 @@ export type CreatedHashLockTransferMeta = {
 };
 
 export type CreatedSignedTransferMeta = {
-  signer: Address;
+  signerAddress: Address;
   verifyingContract: Address;
 };
 

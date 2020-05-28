@@ -168,7 +168,7 @@ export class SignedTransferService {
         },
       ],
       paymentId,
-      signer: senderApp.latestState.signer,
+      signerAddress: senderApp.latestState.signerAddress,
       verifyingContract: getTestVerifyingContract(),
       finalized: false,
     };

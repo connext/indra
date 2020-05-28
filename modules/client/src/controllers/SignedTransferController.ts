@@ -22,7 +22,7 @@ export class SignedTransferController extends AbstractController {
     this.log.info(`signedTransfer started: ${stringify(params)}`);
     // convert params + validate
     const amount = toBN(params.amount);
-    const { meta, paymentId, signer, verifyingContract, assetId, recipient } = params;
+    const { meta, paymentId, signerAddress, verifyingContract, assetId, recipient } = params;
     const submittedMeta = { ...(meta || {}) } as any;
     submittedMeta.recipient = recipient;
     submittedMeta.sender = this.connext.publicIdentifier;
@@ -39,7 +39,7 @@ export class SignedTransferController extends AbstractController {
         },
       ],
       paymentId,
-      signer,
+      signerAddress,
       verifyingContract,
       finalized: false,
     };
@@ -87,7 +87,7 @@ export class SignedTransferController extends AbstractController {
       sender: this.connext.publicIdentifier,
       meta: submittedMeta,
       transferMeta: {
-        signer,
+        signerAddress,
         verifyingContract,
       },
     } as EventPayloads.SignedTransferCreated;

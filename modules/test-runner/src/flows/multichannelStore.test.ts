@@ -85,7 +85,7 @@ const performConditionalTransfer = async (params: {
     case ConditionalTransferTypes.SignedTransfer: {
       TRANSFER_PARAMS = {
         ...baseParams,
-        signer: recipient.signerAddress,
+        signerAddress: recipient.signerAddress,
         verifyingContract: verifyingContract || getTestVerifyingContract(),
       } as PublicParams.SignedTransfer;
       break;
@@ -372,7 +372,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
           amount: TRANSFER_AMT,
           paymentId,
           conditionType: ConditionalTransferTypes.SignedTransfer,
-          signer: recipient.signerAddress,
+          signerAddress: recipient.signerAddress,
           verifyingContract: getTestVerifyingContract(),
           assetId: ASSET,
           recipient: recipient.publicIdentifier,

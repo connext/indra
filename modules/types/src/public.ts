@@ -107,7 +107,7 @@ type SignedTransferParameters = {
   amount: BigNumber;
   assetId: Address;
   paymentId: Bytes32;
-  signer: Address;
+  signerAddress: Address;
   verifyingContract: Address;
   recipient?: PublicIdentifier;
   meta?: any;

@@ -88,9 +88,9 @@ export default {
 
         log.info(`Unlocking transfer...`);
 
-        if (client.signerAddress !== eventData.transferMeta.signer) {
+        if (client.signerAddress !== eventData.transferMeta.signerAddress) {
           log.error(
-            `Transfer's specified signer ${eventData.transferMeta.signer} does not match our signer ${client.signerAddress}`,
+            `Transfer's specified signer ${eventData.transferMeta.signerAddress} does not match our signer ${client.signerAddress}`,
           );
           return;
         }

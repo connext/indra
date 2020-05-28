@@ -22,7 +22,7 @@ export interface Attestation extends Receipt {
 // ABI Encoding TS Typess
 export type SimpleSignedTransferAppState = {
   coinTransfers: CoinTransfer[];
-  signer: Address;
+  signerAddress: Address;
   verifyingContract: Address;
   paymentId: Bytes32;
   finalized: boolean;
@@ -31,7 +31,7 @@ export type SimpleSignedTransferAppState = {
 // ABI Encodings
 export const SimpleSignedTransferAppStateEncoding = tidy(`tuple(
   ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
-  address signer,
+  address signerAddress,
   address verifyingContract,
   bytes32 paymentId,
   bool finalized

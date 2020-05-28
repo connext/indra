@@ -48,7 +48,7 @@ function encodeAppAction(state: SimpleSignedTransferAppAction): string {
 
 describe("SimpleSignedTransferApp", () => {
   let privateKey: PrivateKey;
-  let signer: string;
+  let signerAddress: string;
   let chainId: number;
   let verifyingContract: string;
   let receipt: Receipt;
@@ -96,7 +96,7 @@ describe("SimpleSignedTransferApp", () => {
     ).deploy();
 
     privateKey = wallet.privateKey;
-    signer = getAddressFromPrivateKey(privateKey);
+    signerAddress = getAddressFromPrivateKey(privateKey);
 
     chainId = (await wallet.provider.getNetwork()).chainId;
     receipt = getTestReceiptToSign();
@@ -121,7 +121,7 @@ describe("SimpleSignedTransferApp", () => {
       ],
       finalized: false,
       paymentId,
-      signer,
+      signerAddress,
       verifyingContract,
     };
   });
@@ -148,7 +148,7 @@ describe("SimpleSignedTransferApp", () => {
           },
         ],
         paymentId,
-        signer,
+        signerAddress,
         verifyingContract,
         finalized: true,
       };

@@ -80,7 +80,7 @@ describe("Concurrent transfers", async () => {
                 paymentId,
                 amount: TRANSFER_AMOUNT,
                 conditionType: ConditionalTransferTypes.SignedTransfer,
-                signer: subgraphChannel.signer,
+                signerAddress: subgraphChannel.signer,
                 verifyingContract: getTestVerifyingContract(),
                 recipient,
                 assetId: AddressZero,

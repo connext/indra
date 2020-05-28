@@ -361,7 +361,7 @@ export class ConnextListener extends ConnextEventEmitter {
           meta,
           sender: meta["sender"],
           transferMeta: {
-            signer: initalState.signer,
+            signerAddress: initalState.signerAddress,
             verifyingContract: initalState.verifyingContract,
           } as CreatedSignedTransferMeta,
           type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],

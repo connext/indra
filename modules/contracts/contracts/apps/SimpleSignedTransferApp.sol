@@ -16,7 +16,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
 
     struct AppState {
         LibOutcome.CoinTransfer[2] coinTransfers;
-        address signer;
+        address signerAddress;
         address verifyingContract;
         bytes32 paymentId;
         bool finalized;
@@ -125,7 +125,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
 
         require(!state.finalized, "Cannot take action on finalized state");
         
-        require(state.signer == recoverAttestationSigner(action, state.verifyingContract), "Incorrect signer recovered from signature");
+        require(state.signerAddress == recoverAttestationSigner(action, state.verifyingContract), "Incorrect signer recovered from signature");
 
         state.coinTransfers[1].amount = state.coinTransfers[0].amount;
         state.coinTransfers[0].amount = 0;

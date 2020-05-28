@@ -186,7 +186,7 @@ describe("Signed Transfer Offline", () => {
       paymentId,
       conditionType: ConditionalTransferTypes.SignedTransfer,
       assetId: tokenAddress,
-      signer: receiver.signerAddress,
+      signerAddress: receiver.signerAddress,
       verifyingContract: getTestVerifyingContract(),
       recipient: receiver.publicIdentifier,
     });
