@@ -1,7 +1,6 @@
 import { EventName, EventNames, EventPayload } from "./events";
-import { Address, Bytes32, PublicIdentifier } from "./basic";
+import { Address, PublicIdentifier } from "./basic";
 import { ILoggerService } from "./logger";
-import { MethodParams } from "./methods";
 import { ProtocolName, ProtocolParam } from "./protocol";
 
 ////////////////////////////////////////
@@ -14,7 +13,7 @@ export type GenericMessage<T = any> = {
   type: EventName;
 };
 
-type EventMessage<T extends EventName> = {
+export type ProtocolEventMessage<T extends EventName> = {
   data: EventPayload[T];
   from: Address;
   type: T;
@@ -31,22 +30,21 @@ export type ProtocolMessageData = {
   customData: { [key: string]: any };
 };
 
-type ProposeInstallMessageData = {
-  params: MethodParams.ProposeInstall;
-  appIdentityHash: Bytes32;
-};
-
-export type CreateChannelMessage = EventMessage<typeof EventNames["CREATE_CHANNEL_EVENT"]>;
-export type DepositConfirmationMessage = EventMessage<typeof EventNames["DEPOSIT_CONFIRMED_EVENT"]>;
-export type DepositFailedMessage = EventMessage<typeof EventNames["DEPOSIT_FAILED_EVENT"]>;
-export type DepositStartedMessage = EventMessage<typeof EventNames["DEPOSIT_STARTED_EVENT"]>;
-export type InstallMessage = EventMessage<typeof EventNames["INSTALL_EVENT"]>;
-export type ProtocolMessage = EventMessage<typeof EventNames["PROTOCOL_MESSAGE_EVENT"]>;
-export type ProposeMessage = EventMessage<typeof EventNames["PROPOSE_INSTALL_EVENT"]>;
-export type RejectProposalMessage = EventMessage<typeof EventNames["REJECT_INSTALL_EVENT"]>;
-export type SyncMessage = EventMessage<typeof EventNames["SYNC"]>;
-export type UninstallMessage = EventMessage<typeof EventNames["UNINSTALL_EVENT"]>;
-export type UpdateStateMessage = EventMessage<typeof EventNames["UPDATE_STATE_EVENT"]>;
+export type CreateChannelMessage = ProtocolEventMessage<typeof EventNames["CREATE_CHANNEL_EVENT"]>;
+export type DepositConfirmationMessage = ProtocolEventMessage<
+  typeof EventNames["DEPOSIT_CONFIRMED_EVENT"]
+>;
+export type DepositFailedMessage = ProtocolEventMessage<typeof EventNames["DEPOSIT_FAILED_EVENT"]>;
+export type DepositStartedMessage = ProtocolEventMessage<
+  typeof EventNames["DEPOSIT_STARTED_EVENT"]
+>;
+export type InstallMessage = ProtocolEventMessage<typeof EventNames["INSTALL_EVENT"]>;
+export type ProtocolMessage = ProtocolEventMessage<typeof EventNames["PROTOCOL_MESSAGE_EVENT"]>;
+export type ProposeMessage = ProtocolEventMessage<typeof EventNames["PROPOSE_INSTALL_EVENT"]>;
+export type RejectProposalMessage = ProtocolEventMessage<typeof EventNames["REJECT_INSTALL_EVENT"]>;
+export type SyncMessage = ProtocolEventMessage<typeof EventNames["SYNC"]>;
+export type UninstallMessage = ProtocolEventMessage<typeof EventNames["UNINSTALL_EVENT"]>;
+export type UpdateStateMessage = ProtocolEventMessage<typeof EventNames["UPDATE_STATE_EVENT"]>;
 
 ////////////////////////////////////////
 // Messaging Service
