@@ -8,10 +8,10 @@ then echo "Exactly two args required: bash ops/replace.sh <replace_this> <with_t
 fi
 
 echo "Before:"
-bash ops/search.sh $old
+bash ops/search.sh "$old"
 echo
 echo "After:"
-bash ops/search.sh $old | sed "s|$old|$new|g" | grep --color=always "$new"
+bash ops/search.sh "$old" | sed "s|$old|$new|g" | grep --color=always "$new"
 echo
 echo "Does the above replacement look good? (y/n)"
 echo -n "> "
