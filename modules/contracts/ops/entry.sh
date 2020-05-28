@@ -37,7 +37,10 @@ then
   fi
   echo "Deploying contracts.."
   touch $dir/address-book.json
-  node <<<"require('$dir/ops/migrate-contracts.js').migrate()"
+  node dist/src.ts/cli.js migrate \
+    --mnemonic "$ETH_MNEMONIC" \
+    --eth-provider "$ETH_PROVIDER" \
+    --address-book "$dir/address-book.json"
 else
   echo "Exiting. No command given, expected: start or deploy"
 fi

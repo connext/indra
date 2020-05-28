@@ -12,6 +12,9 @@
     "src.ts"
   ],
   "main": "./dist/src.ts/index.js",
+  "bin": {
+    "connext-contracts": "./dist/src.ts/cli.js"
+  },
   "keywords": [
     "ethereum",
     "counterfactual",

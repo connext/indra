@@ -254,13 +254,13 @@ export const migrateCommand = {
       .demandOption(["mnemonic", "eth-provider"]);
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
-    const provider = new JsonRpcProvider(
-      argv.ethProvider,
-      classicProviders.includes(argv.ethProvider) ? "classic" : undefined,
-    );
-
     await migrate(
-      Wallet.fromMnemonic(argv.menmonic).connect(provider),
+      Wallet.fromMnemonic(argv.mnemonic).connect(
+        new JsonRpcProvider(
+          argv.ethProvider,
+          classicProviders.includes(argv.ethProvider) ? "classic" : undefined,
+        ),
+      ),
       argv.addressBook,
     );
   },
