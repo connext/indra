@@ -43,7 +43,7 @@
     "xstate": "4.9.1"
   },
   "devDependencies": {
-    "bn.js": "5.1.1",
+    "bn.js": "5.1.2",
     "chai-bn": "0.2.1"
   },
   "browserslist": [
