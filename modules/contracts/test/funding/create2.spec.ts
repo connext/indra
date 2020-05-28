@@ -3,9 +3,9 @@ import { Contract, Event, Wallet, ContractFactory } from "ethers";
 import { TransactionResponse } from "ethers/providers";
 import { getAddress, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
 
-import Echo from "../../build/Echo.json";
-import Proxy from "../../build/Proxy.json";
-import ProxyFactory from "../../build/ProxyFactory.json";
+import Echo from "../../artifacts/Echo.json";
+import Proxy from "../../artifacts/Proxy.json";
+import ProxyFactory from "../../artifacts/ProxyFactory.json";
 
 import { expect, provider } from "../utils";
 

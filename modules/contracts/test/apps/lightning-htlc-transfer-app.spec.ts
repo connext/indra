@@ -11,7 +11,7 @@ import { Contract, ContractFactory } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, soliditySha256, bigNumberify } from "ethers/utils";
 
-import LightningHTLCTransferApp from "../../build/HashLockTransferApp.json";
+import LightningHTLCTransferApp from "../../artifacts/HashLockTransferApp.json";
 
 import { expect, provider } from "../utils";
 

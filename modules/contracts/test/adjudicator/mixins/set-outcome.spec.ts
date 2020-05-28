@@ -3,9 +3,9 @@ import { Contract, Wallet, ContractFactory } from "ethers";
 
 import { setupContext, snapshot, provider, restore, AppWithCounterState, moveToBlock, expect, encodeState } from "../utils";
 
-import AppWithAction from "../../../build/AppWithAction.json";
-import AppComputeOutcomeFails from "../../../build/AppComputeOutcomeFails.json";
-import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
+import AppWithAction from "../../../artifacts/AppWithAction.json";
+import AppComputeOutcomeFails from "../../../artifacts/AppComputeOutcomeFails.json";
+import ChallengeRegistry from "../../../artifacts/ChallengeRegistry.json";
 
 describe("setOutcome", () => {
 

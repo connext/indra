@@ -3,7 +3,7 @@ import { SolidityValueType } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { defaultAbiCoder } from "ethers/utils";
 
-import TicTacToeApp from "../../build/TicTacToeApp.json";
+import TicTacToeApp from "../../artifacts/TicTacToeApp.json";
 
 import { expect, provider } from "../utils";
 

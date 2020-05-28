@@ -4,7 +4,7 @@ import { Contract, ContractFactory } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
 
-import SimpleLinkedTransferApp from "../../build/SimpleLinkedTransferApp.json";
+import SimpleLinkedTransferApp from "../../artifacts/SimpleLinkedTransferApp.json";
 
 import { expect, provider } from "../utils";
 

@@ -7,8 +7,8 @@ import { keccak256 } from "ethers/utils";
 
 import { expect, provider, restore, setupContext, snapshot, moveToBlock, encodeState, AppWithCounterState, AppWithCounterAction } from "../utils";
 
-import AppWithAction from "../../../build/AppWithAction.json";
-import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
+import AppWithAction from "../../../artifacts/AppWithAction.json";
+import ChallengeRegistry from "../../../artifacts/ChallengeRegistry.json";
 
 describe("MChallengeRegistryCore", () => {
 

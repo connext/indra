@@ -322,7 +322,7 @@ database: $(shell find ops/database $(find_options))
 
 ethprovider: contracts $(shell find modules/contracts/ops $(find_options))
 	$(log_start)
-	docker build --file modules/contracts/ops/Dockerfile $(image_cache) --tag $(project)_ethprovider .
+	docker build --file modules/contracts/ops/Dockerfile $(image_cache) --tag $(project)_ethprovider modules/contracts
 	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 

@@ -15,9 +15,9 @@ import {
   provider,
 } from "../utils";
 
-import AppWithAction from "../../../build/AppWithAction.json";
-import AppApplyActionFails from "../../../build/AppApplyActionFails.json";
-import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
+import AppWithAction from "../../../artifacts/AppWithAction.json";
+import AppApplyActionFails from "../../../artifacts/AppApplyActionFails.json";
+import ChallengeRegistry from "../../../artifacts/ChallengeRegistry.json";
 
 describe("progressState", () => {
   let appRegistry: Contract;

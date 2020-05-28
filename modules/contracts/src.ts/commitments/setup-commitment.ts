@@ -7,7 +7,7 @@ import {
 import { Interface } from "ethers/utils";
 import { appIdentityToHash } from "@connext/utils";
 
-import * as ConditionalTransactionDelegateTarget from "../build/ConditionalTransactionDelegateTarget.json";
+import * as ConditionalTransactionDelegateTarget from "../artifacts/ConditionalTransactionDelegateTarget.json";
 
 
 import { MultisigCommitment } from "./multisig-commitment";

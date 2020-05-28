@@ -5,8 +5,8 @@ import { Contract, Wallet, ContractFactory } from "ethers";
 
 import { provider, snapshot, setupContext, restore, expect, moveToBlock, AppWithCounterAction, ActionType } from "../utils";
 
-import AppWithAction from "../../../build/AppWithAction.json";
-import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
+import AppWithAction from "../../../artifacts/AppWithAction.json";
+import ChallengeRegistry from "../../../artifacts/ChallengeRegistry.json";
 import { BigNumberish } from "ethers/utils";
 
 describe("LibStateChannelApp", () => {

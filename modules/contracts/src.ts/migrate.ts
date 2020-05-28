@@ -34,11 +34,11 @@ module.exports.migrate = async () => {
 
   const artifacts = {};
   for (const contract of coreContracts) {
-    artifacts[contract] = require(`../build/${contract}.json`);
+    artifacts[contract] = require(`../artifacts/${contract}.json`);
   }
 
   for (const contract of appContracts) {
-    artifacts[contract] = require(`../build/${contract}.json`);
+    artifacts[contract] = require(`../artifacts/${contract}.json`);
   }
 
   const { EtherSymbol, Zero } = eth.constants;

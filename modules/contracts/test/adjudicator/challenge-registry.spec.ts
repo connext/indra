@@ -4,8 +4,8 @@ import { toBN } from "@connext/utils";
 import { Contract, Wallet, ContractFactory } from "ethers";
 import { keccak256 } from "ethers/utils";
 
-import AppWithAction from "../../build/AppWithAction.json";
-import ChallengeRegistry from "../../build/ChallengeRegistry.json";
+import AppWithAction from "../../artifacts/AppWithAction.json";
+import ChallengeRegistry from "../../artifacts/ChallengeRegistry.json";
 
 import {
   expect,

@@ -8,9 +8,9 @@ import {
 import { Wallet, ContractFactory, Contract } from "ethers";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
-import DepositApp from "../../build/DepositApp.json";
-import DelegateProxy from "../../build/DelegateProxy.json";
-import DolphinCoin from "../../build/DolphinCoin.json";
+import DepositApp from "../../artifacts/DepositApp.json";
+import DelegateProxy from "../../artifacts/DelegateProxy.json";
+import DolphinCoin from "../../artifacts/DolphinCoin.json";
 
 import { Zero, AddressZero } from "ethers/constants";
 

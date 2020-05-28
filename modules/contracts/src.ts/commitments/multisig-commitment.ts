@@ -7,7 +7,7 @@ import {
 import { recoverAddressFromChannelMessage } from "@connext/utils";
 import { Interface, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
 
-import * as MinimumViableMultisig from "../build/MinimumViableMultisig.json";
+import * as MinimumViableMultisig from "../artifacts/MinimumViableMultisig.json";
 
 // A commitment to make MinimumViableMultisig perform a message call
 export abstract class MultisigCommitment implements EthereumCommitment {

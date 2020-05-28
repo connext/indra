@@ -14,8 +14,8 @@ import {
   sortSignaturesBySignerAddress,
 } from "../utils";
 
-import AppWithAction from "../../../build/AppWithAction.json";
-import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
+import AppWithAction from "../../../artifacts/AppWithAction.json";
+import ChallengeRegistry from "../../../artifacts/ChallengeRegistry.json";
 
 describe("cancelDispute", () => {
   let appRegistry: Contract;

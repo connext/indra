@@ -3,8 +3,8 @@ import { Contract, Wallet, ContractFactory } from "ethers";
 import { AddressZero, One } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
-import DolphinCoin from "../../build/DolphinCoin.json";
-import MultiAssetMultiPartyCoinTransferInterpreter from "../../build/MultiAssetMultiPartyCoinTransferInterpreter.json";
+import DolphinCoin from "../../artifacts/DolphinCoin.json";
+import MultiAssetMultiPartyCoinTransferInterpreter from "../../artifacts/MultiAssetMultiPartyCoinTransferInterpreter.json";
 
 import { expect, provider } from "../utils";
 
