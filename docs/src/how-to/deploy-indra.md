@@ -5,7 +5,7 @@ Lets say you want to deploy an Indra payment node to `https://indra.example.com`
 
 First step: get a server via AWS or DigitalOcean or hardware at home. For best results, use the most recent LTS version of Ubuntu. If using DigitalOcean, make sure you toggle on the VPC network when instantiating a droplet. Note this new server's IP address (we'll call it `$SERVER_IP`). Make sure it's able to connect to the internet via ports 80, 443, 4221, and 4222 (no action required on DigitalOcean, Security Group config needs to be setup properly on AWS).
 
-Set up DNS so that `$DOMAINNAME` points to this server's IP address. If you're using CloudFlare name servers, turn on CloudFlare's built-in SSL support.
+Set up DNS so that `$DOMAINNAME` points to this server's IP address. If you're using CloudFlare name servers, turn on CloudFlare's built-in SSL support & make sure it's set to "Full (strict)".
 
 Every Indra node needs access to a hot wallet, you should generate a fresh mnemonic for your node's wallet that isn't used anywhere else. You can generate a new mnemonic from a node console with ethers by doing something like this: `require('ethers').Wallet.createRandom()`.
 
@@ -47,7 +47,7 @@ We need to add a couple env vars before launching our indra node. We'll be pulli
 cp prod.env .env
 ```
 
-Ensure you've added correct values for two important env vars: `INDRA_DOMAINNAME` and `INDRA_ETH_PROVIDER`. If you're using CloudFlare's built-in SSL support, make sure `INDRA_DOMAINNAME` is empty, this will disable ssl entirely.
+Ensure you've added correct values for two important env vars: `INDRA_DOMAINNAME` and `INDRA_ETH_PROVIDER`.
 
 Upload the prod env vars to the indra server. If you're using a custom address book, upload that too:
 

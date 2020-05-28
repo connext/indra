@@ -80,13 +80,13 @@ fi
 
 letsencrypt=/etc/letsencrypt/live
 certsdir=$letsencrypt/$DOMAINNAME
-mkdir -p $certsdir
 mkdir -p /etc/haproxy/certs
 mkdir -p /var/www/letsencrypt
 
 if [[ "$DOMAINNAME" == "localhost" && ! -f "$certsdir/privkey.pem" ]]
 then
   echo "Developing locally, generating self-signed certs"
+  mkdir -p $certsdir
   openssl req -x509 -newkey rsa:4096 -keyout $certsdir/privkey.pem -out $certsdir/fullchain.pem -days 365 -nodes -subj '/CN=localhost'
 fi
 
@@ -94,13 +94,30 @@ if [[ ! -f "$certsdir/privkey.pem" ]]
 then
   echo "Couldn't find certs for $DOMAINNAME, using certbot to initialize those now.."
   certbot certonly --standalone -m $EMAIL --agree-tos --no-eff-email -d $DOMAINNAME -n
-  [[ $? -eq 0 ]] || sleep 9999 # FREEZE! Don't pester eff & get throttled
+  code=$?
+  if [[ "$code" -ne 0 ]]
+  then
+    echo "certbot exited with code $code, freezing to debug (and so we don't get throttled)"
+    sleep 9999 # FREEZE! Don't pester eff & get throttled
+    exit 1;
+  fi
 fi
 
 echo "Using certs for $DOMAINNAME"
-cat $certsdir/fullchain.pem $certsdir/privkey.pem > $DOMAINNAME.pem
 
 export CERTBOT_PORT=31820
+
+function copycerts {
+  if [[ -f $certsdir/fullchain.pem && -f $certsdir/privkey.pem ]]
+  then cat $certsdir/fullchain.pem $certsdir/privkey.pem > "$DOMAINNAME.pem"
+  elif [[ -f "$certsdir-0001/fullchain.pem" && -f "$certsdir-0001/privkey.pem" ]]
+  then cat "$certsdir-0001/fullchain.pem" "$certsdir-0001/privkey.pem" > "$DOMAINNAME.pem"
+  else
+    echo "Couldn't find certs, freezing to debug"
+    sleep 9999;
+    exit 1
+  fi
+}
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
@@ -112,13 +129,16 @@ function renewcerts {
     then
       echo -n "Found certs to renew for $DOMAINNAME... "
       certbot renew -n --standalone --http-01-port=$CERTBOT_PORT
-      cat $certsdir/fullchain.pem $certsdir/privkey.pem > $DOMAINNAME.pem
+      copycerts
       echo "Done!"
     fi
     sleep 48h
   done
 }
+
 renewcerts &
+
+copycerts
 
 cp /etc/ssl/cert.pem ca-certs.pem
 
