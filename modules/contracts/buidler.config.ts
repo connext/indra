@@ -20,7 +20,7 @@ const config: BuidlerConfig = {
     artifacts: "./build",
   },
   solc: {
-    version: packageJson.dependencies.solc,
+    version: packageJson.devDependencies.solc,
   },
   defaultNetwork: "buidlerevm",
   networks: {
