@@ -24,7 +24,7 @@
     "pg-hstore": "2.3.3",
     "pisa-client": "0.1.5",
     "sequelize": "5.21.11",
-    "sqlite3": "^4.2.0",
+    "sqlite3": "4.2.0",
     "uuid": "8.1.0"
   },
   "devDependencies": {
