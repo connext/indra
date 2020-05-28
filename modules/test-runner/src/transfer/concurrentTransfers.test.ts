@@ -1,9 +1,10 @@
 import PQueue from "p-queue";
-import { Wallet } from "ethers";
 import * as utils from "ethers/utils";
 import { ConditionalTransferTypes, IConnextClient, BigNumber } from "@connext/types";
-import { delay, getPublicIdentifierFromPublicKey, stringify, ColorfulLogger } from "@connext/utils";
-import { AddressZero, Zero } from "ethers/constants";
+import { delay, ColorfulLogger } from "@connext/utils";
+import { AddressZero } from "ethers/constants";
+import { before } from "mocha";
+
 import { createClient, fundChannel } from "../util";
 
 const generatePaymentId = () => utils.hexlify(utils.randomBytes(32));
@@ -12,11 +13,10 @@ const TRANSFER_AMOUNT = utils.parseEther("0.00001");
 const DEPOSIT_AMOUNT = utils.parseEther("0.1");
 
 describe("Concurrent transfers", async () => {
-  let privateKey;
-  let channel;
+  let channel: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
-  let subgraphChannels;
+  let subgraphChannels: { signer: string; publicIdentifier: string }[];
 
   before(async () => {
     // let wallet = Wallet.fromMnemonic(

@@ -156,9 +156,6 @@ describe("HashLock Transfers", () => {
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     // both sender + receiver apps installed, sender took action
-    clientA.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, (msg) => {
-      console.log(`client A conditional transfer created`);
-    });
     await Promise.all([
       clientA.conditionalTransfer({
         amount: transfer.amount.toString(),
@@ -170,10 +167,29 @@ describe("HashLock Transfers", () => {
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
       new Promise((res) => {
+        clientA.on(
+          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
+          (eventPayload: EventPayloads.HashLockTransferCreated) => {
+            expect(eventPayload).to.deep.contain({
+              amount: transfer.amount,
+              assetId: transfer.assetId,
+              type: ConditionalTransferTypes.HashLockTransfer,
+              paymentId: lockHash,
+              recipient: clientB.publicIdentifier,
+            } as EventPayloads.HashLockTransferCreated);
+            expect(eventPayload.transferMeta).to.deep.eq({
+              timelock,
+              lockHash,
+              expiry,
+            });
+            res();
+          },
+        );
+      }),
+      new Promise((res) => {
         clientB.on(
           EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
           (eventPayload: EventPayloads.HashLockTransferCreated) => {
-            console.log(`client b conditional transfer created`);
             expect(eventPayload).to.deep.contain({
               amount: transfer.amount,
               assetId: transfer.assetId,
@@ -228,6 +244,7 @@ describe("HashLock Transfers", () => {
     const timelock = (5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
+    const paymentId = soliditySha256(["address", "bytes32"], [transfer.assetId, lockHash]);
     const expiry = bigNumberify(await provider.getBlockNumber())
       .add(timelock)
       .sub(TIMEOUT_BUFFER);
@@ -251,7 +268,7 @@ describe("HashLock Transfers", () => {
       senderIdentifier: clientA.publicIdentifier,
       receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.PENDING,
-      meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
+      meta: { foo: "bar", sender: clientA.publicIdentifier, timelock, paymentId },
       preImage: HashZero,
       expiry,
     } as NodeResponses.GetHashLockTransfer);
@@ -268,6 +285,8 @@ describe("HashLock Transfers", () => {
       .sub(TIMEOUT_BUFFER);
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
+    const paymentId = soliditySha256(["address", "bytes32"], [transfer.assetId, lockHash]);
+
     // both sender + receiver apps installed, sender took action
     clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
@@ -304,7 +323,7 @@ describe("HashLock Transfers", () => {
       status: HashLockTransferStatus.COMPLETED,
       preImage,
       expiry,
-      meta: { foo: "bar", sender: clientA.publicIdentifier, timelock },
+      meta: { foo: "bar", sender: clientA.publicIdentifier, timelock, paymentId },
     } as NodeResponses.GetHashLockTransfer);
   });
 
