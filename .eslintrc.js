@@ -10,6 +10,7 @@ module.exports = {
     "no-var": ["error"],
     "object-curly-spacing": ["error", "always"],
     "quotes": ["error", "double", { allowTemplateLiterals: true, avoidEscape: true }],
+    "react-hooks/rules-of-hooks": ["off"],
     "react/display-name": ["off"],
     "react/no-unescaped-entities": ["off"],
     "react/prop-types": ["off"],

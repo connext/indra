@@ -1,3 +1,7 @@
+import { HexString } from "@connext/types";
+import * as Token from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
+import { FunctionFragment, EventFragment, ParamType } from "ethers/utils";
+
 import * as AppApplyActionFails from "../artifacts/AppApplyActionFails.json";
 import * as AppComputeOutcomeFails from "../artifacts/AppComputeOutcomeFails.json";
 import * as AppWithAction from "../artifacts/AppWithAction.json";
@@ -29,6 +33,51 @@ import * as UnidirectionalLinkedTransferApp from "../artifacts/UnidirectionalLin
 import * as UnidirectionalTransferApp from "../artifacts/UnidirectionalTransferApp.json";
 import * as WithdrawApp from "../artifacts/WithdrawApp.json";
 
+type Abi = Array<string | FunctionFragment | EventFragment | ParamType>;
+
+type Artifact = {
+  contractName: string,
+  abi: Abi,
+  bytecode: HexString,
+  deployedBytecode: HexString,
+};
+
+type Artifacts = { [contractName: string]: Artifact };
+
+export const artifacts = {
+  AppApplyActionFails,
+  AppComputeOutcomeFails,
+  AppWithAction,
+  ChallengeRegistry,
+  ConditionalTransactionDelegateTarget,
+  CounterfactualApp,
+  DelegateProxy,
+  DepositApp,
+  DolphinCoin,
+  Echo,
+  ERC20,
+  HashLockTransferApp,
+  HighRollerApp,
+  IdentityApp,
+  MinimumViableMultisig,
+  MultiAssetMultiPartyCoinTransferInterpreter,
+  NimApp,
+  Proxy,
+  ProxyFactory,
+  SimpleLinkedTransferApp,
+  SimpleSignedTransferApp,
+  SimpleTransferApp,
+  SimpleTwoPartySwapApp,
+  SingleAssetTwoPartyCoinTransferInterpreter,
+  TicTacToeApp,
+  TimeLockedPassThrough,
+  Token,
+  TwoPartyFixedOutcomeInterpreter,
+  UnidirectionalLinkedTransferApp,
+  UnidirectionalTransferApp,
+  WithdrawApp,
+} as Artifacts;
+
 export {
   AppApplyActionFails,
   AppComputeOutcomeFails,
@@ -56,6 +105,7 @@ export {
   SingleAssetTwoPartyCoinTransferInterpreter,
   TicTacToeApp,
   TimeLockedPassThrough,
+  Token,
   TwoPartyFixedOutcomeInterpreter,
   UnidirectionalLinkedTransferApp,
   UnidirectionalTransferApp,

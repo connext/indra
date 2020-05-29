@@ -1,13 +1,12 @@
 import { Wallet } from "ethers";
 import { EtherSymbol } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
 import { formatEther } from "ethers/utils";
 import { Argv } from "yargs";
 
 import { getAddressBook } from "../address-book";
-import { classicProviders, defaults } from "../constants";
-import * as artifacts from "../artifacts";
-import { deployContract } from "../utils";
+import { cliOpts } from "../constants";
+import { deployContract } from "../deploy";
+import { getProvider } from "../utils";
 
 const coreContracts = [
   "ChallengeRegistry",
@@ -34,7 +33,7 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
   // Environment Setup
 
   const balance = await wallet.getBalance();
-  const chainId = (await wallet.provider.getNetwork()).chainId; // saved to global scope
+  const chainId = (await wallet.provider.getNetwork()).chainId;
   const nonce = await wallet.getTransactionCount();
 
   console.log(`\nPreparing to migrate contracts to chain w id: ${chainId}`);
@@ -46,7 +45,7 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
   // Deploy contracts
 
   for (const name of coreContracts) {
-    await deployContract(name, artifacts[name], [], wallet, addressBook);
+    await deployContract(name, [], wallet, addressBook);
   }
 
   ////////////////////////////////////////
@@ -63,30 +62,13 @@ export const migrateCommand = {
   describe: "Migrate contracts",
   builder: (yargs: Argv) => {
     return yargs
-      .option("mnemonic", {
-        description: "The mnemonic for an account which will pay gas costs",
-        type: "string",
-        default: defaults.mnemonic,
-      })
-      .option("eth-provider", {
-        description: "The URL of a provider for the target Ethereum network",
-        type: "string",
-        default: defaults.providerUrl,
-      })
-      .option("address-book", {
-        description: "The path to your address-book.json file",
-        type: "string",
-        default: defaults.addressBookPath,
-      });
+      .option("a", cliOpts.addressBook)
+      .option("m", cliOpts.mnemonic)
+      .option("p", cliOpts.ethProvider);
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
     await migrate(
-      Wallet.fromMnemonic(argv.mnemonic).connect(
-        new JsonRpcProvider(
-          argv.ethProvider,
-          classicProviders.includes(argv.ethProvider) ? "classic" : undefined,
-        ),
-      ),
+      Wallet.fromMnemonic(argv.mnemonic).connect(getProvider(argv.ethProvider)),
       argv.addressBook,
     );
   },

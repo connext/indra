@@ -1,3 +1,5 @@
+import { Options } from "yargs";
+
 export const botMnemonics = [
   "humble sense shrug young vehicle assault destroy cook property average silent travel",
   "roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult",
@@ -12,3 +14,46 @@ export const defaults = {
 };
 
 export const ganacheId = 4447;
+
+export const cliOpts = {
+  ethProvider: {
+    alias: "eth-provider",
+    description: "The URL of an Ethereum provider",
+    type: "string",
+    default: defaults.providerUrl,
+  },
+  addressBook: {
+    alias: "address-book",
+    description: "The path to your address book file",
+    type: "string",
+    default: defaults.addressBookPath,
+  },
+  mnemonic: {
+    alias: "memonic",
+    description: "The mnemonic for an account which will pay for gas",
+    type: "string",
+    default: defaults.mnemonic,
+  },
+  fromMnemonic: {
+    alias: "from-mnemonic", 
+    description: "The mnemonic for an account which will send funds",
+    type: "string",
+    default: defaults.mnemonic,
+  },
+  toAddress: {
+    alias: "to-address",
+    description: "The address to which funds will be sent",
+    type: "string",
+  },
+  amount: {
+    alias: "amount",
+    description: "The amount of tokens or ETH to send",
+    type: "string",
+    default: "1000000",
+  },
+  tokenAddress: {
+    alias: "token-address",
+    description: "The address of the token",
+    type: "string",
+  },
+} as { [key: string]: Options };

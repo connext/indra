@@ -3,6 +3,7 @@ import { AddressZero } from "ethers/constants";
 
 type AddressBookEntry = {
   address: string;
+  constructorArgs?: Array<{ name: string, value: string }>;
   creationCodeHash?: string;
   runtimeCodeHash?: string;
   txHash?: string;
