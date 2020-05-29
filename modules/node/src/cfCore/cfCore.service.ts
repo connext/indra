@@ -40,6 +40,7 @@ import { MessagingService } from "@connext/messaging";
 
 Injectable();
 export class CFCoreService {
+  public emitter: TypedEmitter;
   constructor(
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly log: LoggerService,
@@ -48,7 +49,6 @@ export class CFCoreService {
     private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
-    private readonly emitter: TypedEmitter,
   ) {
     this.emitter = new TypedEmitter();
     this.cfCore = cfCore;
