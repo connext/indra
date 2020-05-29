@@ -9,9 +9,7 @@ import {
   MinimalTransaction,
   TransactionReceipt,
   EventNames,
-  EventPayloads,
   Bytes32,
-  ProtocolEventMessage,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
