@@ -41,6 +41,7 @@
     "dotenv": "8.2.0",
     "eccrypto-js": "4.5.4",
     "ethers": "4.0.47",
+    "evt": "1.7.11",
     "human-standard-token-abi": "2.0.0",
     "ioredis": "4.16.3",
     "nats": "1.4.8",
