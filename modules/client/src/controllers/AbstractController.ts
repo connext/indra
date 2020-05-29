@@ -6,6 +6,7 @@ import {
   MethodParams,
   CF_METHOD_TIMEOUT,
   EventPayloads,
+  GenericMessage,
 } from "@connext/types";
 import { stringify } from "@connext/utils";
 import { providers } from "ethers";
@@ -74,10 +75,10 @@ export abstract class AbstractController {
       ),
       new Promise((resolve) => {
         const subject = `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`;
-        this.connext.node.messaging.subscribe(subject, resolve);
+        this.connext.node.messaging.subscribe(subject, (msg: GenericMessage) => resolve(undefined));
       }),
     ])) as undefined | EventPayloads.InstallFailed | EventPayloads.RejectInstall;
-    if (res) {
+    if (!!res) {
       throw new Error(
         `Failed to install app: ${
           res["error"] || "Node rejected install"
