@@ -14,8 +14,8 @@ import {
   PublicParams,
   StateChannelJSON,
   EventName,
-  EventPayload,
   CF_METHOD_TIMEOUT,
+  ProtocolEventMessage,
 } from "@connext/types";
 import {
   getSignerAddressFromPublicIdentifier,
@@ -436,12 +436,12 @@ export class CFCoreService {
 
   registerCfCoreListener<T extends EventName>(
     event: T,
-    callback: (data: EventPayload[T]) => void | Promise<void>,
+    callback: (data: ProtocolEventMessage<T>) => void | Promise<void>,
   ): void {
     this.log.info(`Registering cfCore callback for event ${event}`);
-    this.cfCore.on(event, (data) => {
+    this.cfCore.on(event, (data: ProtocolEventMessage<any>) => {
       // parrot event with typed emitter
-      this.emitter.post(event, data);
+      this.emitter.post(event, data.data);
       return callback(data);
     });
   }
