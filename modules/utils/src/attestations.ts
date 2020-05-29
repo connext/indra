@@ -1,4 +1,4 @@
-import { PrivateKey, Receipt, Address, SignatureString } from "@connext/types";
+import { PrivateKey, Receipt, Address, SignatureString, Attestation } from "@connext/types";
 import { hexlify, keccak256, toUtf8Bytes, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
 import { sign, recover } from "eccrypto-js";
 import * as bs58 from "bs58";

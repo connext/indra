@@ -10,11 +10,13 @@ import * as CounterfactualApp from "./build/CounterfactualApp.json";
 import * as DepositApp from "./build/DepositApp.json";
 import * as DolphinCoin from "./build/DolphinCoin.json";
 import * as ERC20 from "./build/ERC20.json";
+import * as HashLockTransferApp from "./build/HashLockTransferApp.json";
 import * as IdentityApp from "./build/IdentityApp.json";
 import * as MinimumViableMultisig from "./build/MinimumViableMultisig.json";
 import * as MultiAssetMultiPartyCoinTransferInterpreter from "./build/MultiAssetMultiPartyCoinTransferInterpreter.json";
 import * as ProxyFactory from "./build/ProxyFactory.json";
 import * as SimpleLinkedTransferApp from "./build/SimpleLinkedTransferApp.json";
+import * as SimpleSignedTransferApp from "./build/SimpleSignedTransferApp.json";
 import * as SimpleTransferApp from "./build/SimpleTransferApp.json";
 import * as SimpleTwoPartySwapApp from "./build/SimpleTwoPartySwapApp.json";
 import * as SingleAssetTwoPartyCoinTransferInterpreter from "./build/SingleAssetTwoPartyCoinTransferInterpreter.json";
@@ -36,11 +38,13 @@ export {
   DepositApp,
   DolphinCoin,
   ERC20,
+  HashLockTransferApp,
   IdentityApp,
   MinimumViableMultisig,
   MultiAssetMultiPartyCoinTransferInterpreter,
   ProxyFactory,
   SimpleLinkedTransferApp,
+  SimpleSignedTransferApp,
   SimpleTransferApp,
   SimpleTwoPartySwapApp,
   SingleAssetTwoPartyCoinTransferInterpreter,
