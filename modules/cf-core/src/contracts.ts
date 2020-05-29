@@ -1,7 +1,6 @@
 import * as ERC20 from "@openzeppelin/contracts/build/contracts/ERC20.json";
 export {
   addressBook,
-  addressHistory,
   ChallengeRegistry,
   ConditionalTransactionDelegateTarget,
   CounterfactualApp,
