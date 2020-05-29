@@ -61,7 +61,7 @@ export const deployContract = async (
   const creationCodeHash = hash(artifacts[name].bytecode);
   addressBook.setEntry(name, {
     address,
-    constructorArgs: args,
+    constructorArgs: args.length === 0 ? undefined : args,
     creationCodeHash,
     runtimeCodeHash,
     txHash,

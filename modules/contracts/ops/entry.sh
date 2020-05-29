@@ -45,8 +45,10 @@ then
     --eth-provider "$ETH_PROVIDER" \
     --mnemonic "$ETH_MNEMONIC"
 
-  node dist/src.ts/cli.js snapshot \
-    --eth-provider "$ETH_PROVIDER"
+  node dist/src.ts/cli.js new-token \
+    --address-book "$address_book" \
+    --eth-provider "$ETH_PROVIDER" \
+    --mnemonic "$ETH_MNEMONIC"
 
 else
   echo "Exiting. No command given, expected: start or deploy"

@@ -15,7 +15,8 @@ const newToken = async (
 ) => {
   const chainId = (await wallet.provider.getNetwork()).chainId;
   const addressBook = getAddressBook(addressBookPath, chainId.toString());
-  await deployContract(
+  console.log(`\nPreparing to deploy new token to chain w id: ${chainId}`);
+  const tokenAddress = await deployContract(
     "Token", [
       { name: "name", value: "TestToken" },
       { name: "symbol", value: "TEST" },
@@ -23,6 +24,7 @@ const newToken = async (
     wallet,
     addressBook,
   );
+  console.log(`Success! New token deployed to address ${tokenAddress}`);
 };
 
 export const newTokenCommand = {
