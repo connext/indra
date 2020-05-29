@@ -110,6 +110,7 @@ export async function install(
       appSeqNo: proposal.appSeqNo,
       defaultTimeout: toBN(proposal.defaultTimeout),
       disableLimit: false,
+      identityHash: proposal.identityHash,
       initialState: proposal.initialState,
       initiatorBalanceDecrement: isSame
         ? toBN(proposal.initiatorDeposit)
