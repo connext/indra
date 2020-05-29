@@ -5,7 +5,7 @@ import { Argv } from "yargs";
 
 import { getAddressBook } from "../address-book";
 import { cliOpts } from "../constants";
-import { deployContract } from "../deploy";
+import { isContractDeployed, deployContract } from "../deploy";
 import { getProvider } from "../utils";
 
 const coreContracts = [
@@ -37,7 +37,7 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
   const nonce = await wallet.getTransactionCount();
 
   console.log(`\nPreparing to migrate contracts to chain w id: ${chainId}`);
-  console.log(`Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${formatEther(balance)}`);
+  console.log(`Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${formatEther(balance)}\n`);
 
   const addressBook = getAddressBook(addressBookPath, chainId.toString());
 
@@ -45,13 +45,19 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
   // Deploy contracts
 
   for (const name of coreContracts) {
-    await deployContract(name, [], wallet, addressBook);
+    const savedAddress = addressBook.getEntry(name).address;
+    if (await isContractDeployed(name, savedAddress, addressBook, wallet.provider)) {
+      console.log(`${name} is up to date, no action required`);
+      console.log(`Address: ${savedAddress}\n`);
+    } else {
+      await deployContract(name, [], wallet, addressBook);
+    }
   }
 
   ////////////////////////////////////////
   // Print summary
 
-  console.log("\nAll done!");
+  console.log("All done!");
   const spent = formatEther(balance.sub(await wallet.getBalance()));
   const nTx = (await wallet.getTransactionCount()) - nonce;
   console.log(`Sent ${nTx} transaction${nTx === 1 ? "" : "s"} & spent ${EtherSymbol} ${spent}`);

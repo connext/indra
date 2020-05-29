@@ -20,6 +20,7 @@ then
     --networkId="4447" \
     --port="8545" \
     --defaultBalanceEther="1000000000"
+
 elif [[ "$1" == "deploy" ]]
 then
   if [[ "${ETH_PROVIDER#*://}" == "localhost"* ]]
@@ -37,14 +38,15 @@ then
     wait-for localhost:8545
   fi
 
-  echo "Deploying contracts.."
   touch $address_book
 
+  echo "Deploying contracts.."
   node dist/src.ts/cli.js migrate \
     --address-book "$address_book" \
     --eth-provider "$ETH_PROVIDER" \
     --mnemonic "$ETH_MNEMONIC"
 
+  echo "Deploying testnet token.."
   node dist/src.ts/cli.js new-token \
     --address-book "$address_book" \
     --eth-provider "$ETH_PROVIDER" \

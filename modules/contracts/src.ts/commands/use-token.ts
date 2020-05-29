@@ -16,12 +16,14 @@ const useToken = async (
 };
 
 export const useTokenCommand = {
-  command: "new-token",
-  describe: "Deploy a new ERC20 token contract",
+  command: "use-token",
+  describe: "Set some tokenAddress",
   builder: (yargs: Argv) => {
     return yargs
       .option("a", cliOpts.addressBook)
-      .option("p", cliOpts.ethProvider);
+      .option("p", cliOpts.ethProvider)
+      .option("t", cliOpts.tokenAddress)
+      .demandOption(["t"]);
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
     await useToken(

@@ -1,4 +1,5 @@
 import { Wallet } from "ethers";
+import { parseEther } from "ethers/utils";
 import { Argv } from "yargs";
 
 import { getAddressBook } from "../address-book";
@@ -9,22 +10,15 @@ import { getProvider } from "../utils";
 const newToken = async (
   wallet: Wallet,
   addressBookPath: string,
-  name: string,
-  symbol: string,
-  decimals: string,
 ) => {
   const chainId = (await wallet.provider.getNetwork()).chainId;
   const addressBook = getAddressBook(addressBookPath, chainId.toString());
-  console.log(`\nPreparing to deploy new token to chain w id: ${chainId}`);
-  const tokenAddress = await deployContract(
-    "Token", [
-      { name: "name", value: "TestToken" },
-      { name: "symbol", value: "TEST" },
-    ],
-    wallet,
-    addressBook,
-  );
-  console.log(`Success! New token deployed to address ${tokenAddress}`);
+  console.log(`Preparing to deploy new token to chain w id: ${chainId}\n`);
+  const token = await deployContract("Token", [], wallet, addressBook);
+  console.log(`Success!`);
+  const initalSupply = "10000000";
+  await token.mint(wallet.address, parseEther(initalSupply));
+  console.log(`Minted ${initalSupply} tokens & gave them all to ${wallet.address}`);
 };
 
 export const newTokenCommand = {
@@ -38,11 +32,8 @@ export const newTokenCommand = {
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
     await newToken(
-      Wallet.fromMnemonic(argv.fromMnemonic).connect(getProvider(argv.ethProvider)),
+      Wallet.fromMnemonic(argv.mnemonic).connect(getProvider(argv.ethProvider)),
       argv.addressBook,
-      argv.tokenName,
-      argv.tokenSymbol,
-      argv.tokenDecimals,
     );
   },
 };

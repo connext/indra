@@ -16,23 +16,23 @@ export const defaults = {
 export const ganacheId = 4447;
 
 export const cliOpts = {
-  ethProvider: {
-    alias: "eth-provider",
-    description: "The URL of an Ethereum provider",
-    type: "string",
-    default: defaults.providerUrl,
-  },
   addressBook: {
     alias: "address-book",
     description: "The path to your address book file",
     type: "string",
     default: defaults.addressBookPath,
   },
-  mnemonic: {
-    alias: "memonic",
-    description: "The mnemonic for an account which will pay for gas",
+  amount: {
+    alias: "amount",
+    description: "The amount of tokens or ETH to send",
     type: "string",
-    default: defaults.mnemonic,
+    default: "1",
+  },
+  ethProvider: {
+    alias: "eth-provider",
+    description: "The URL of an Ethereum provider",
+    type: "string",
+    default: defaults.providerUrl,
   },
   fromMnemonic: {
     alias: "from-mnemonic", 
@@ -40,16 +40,16 @@ export const cliOpts = {
     type: "string",
     default: defaults.mnemonic,
   },
+  mnemonic: {
+    alias: "mnemonic",
+    description: "The mnemonic for an account which will pay for gas",
+    type: "string",
+    default: defaults.mnemonic,
+  },
   toAddress: {
     alias: "to-address",
     description: "The address to which funds will be sent",
     type: "string",
-  },
-  amount: {
-    alias: "amount",
-    description: "The amount of tokens or ETH to send",
-    type: "string",
-    default: "1000000",
   },
   tokenAddress: {
     alias: "token-address",
