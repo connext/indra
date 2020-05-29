@@ -1,5 +1,6 @@
 import {
   EventNames,
+  EventName,
   IConnextClient,
   IChannelSigner,
   ProtocolNames,
@@ -48,7 +49,7 @@ describe("Withdraw offline tests", () => {
     client: IConnextClient,
     withdrawParams: any,
     error: string,
-    event?: EventNames,
+    event?: EventName,
   ) => {
     const { amount, assetId, recipient } = withdrawParams;
     if (!event) {
