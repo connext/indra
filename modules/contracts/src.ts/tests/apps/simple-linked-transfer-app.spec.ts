@@ -1,5 +1,5 @@
-/* global before */
 import { SolidityValueType } from "@connext/types";
+import { getRandomAddress } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
@@ -44,10 +44,6 @@ const linkedTransferAppActionEncoding = `
     bytes32 preImage
   )
 `;
-
-const mkAddress = (prefix: string = "0xa"): string => {
-  return prefix.padEnd(42, "0");
-};
 
 const mkHash = (prefix: string = "0xa"): string => {
   return prefix.padEnd(66, "0");
@@ -108,8 +104,8 @@ describe("SimpleLinkedTransferApp", () => {
 
   describe("update state", () => {
     it("can redeem a payment with correct hash", async () => {
-      const senderAddr = mkAddress("0xa");
-      const receiverAddr = mkAddress("0xB");
+      const senderAddr = getRandomAddress();
+      const receiverAddr = getRandomAddress();
       const transferAmount = new BigNumber(10000);
       const paymentId = mkHash("0xa");
       const preImage = mkHash("0xb");

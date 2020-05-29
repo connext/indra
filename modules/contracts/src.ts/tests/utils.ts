@@ -9,14 +9,6 @@ import { Wallet } from "ethers";
 use(require("chai-subset"));
 use(solidity);
 
-export const mkXpub = (prefix: string = "xpub"): string => {
-  return prefix.padEnd(111, "0");
-};
-
-export const mkAddress = (prefix: string = "0x"): string => {
-  return prefix.padEnd(42, "0");
-};
-
 export const mkHash = (prefix: string = "0x"): string => {
   return prefix.padEnd(66, "0");
 };

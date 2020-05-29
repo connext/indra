@@ -1,4 +1,4 @@
-/* global before */
+import { getRandomAddress } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, BigNumberish, defaultAbiCoder } from "ethers/utils";
@@ -33,10 +33,6 @@ enum ActionType {
 type UnidirectionalTransferAppAction = {
   actionType: ActionType;
   amount: BigNumber;
-};
-
-const mkAddress = (prefix: string = "0xa"): string => {
-  return prefix.padEnd(42, "0");
 };
 
 const singleAssetTwoPartyCoinTransferEncoding = `
@@ -85,8 +81,8 @@ describe("UnidirectionalTransferApp", () => {
   });
 
   it("can make transfers", async () => {
-    const senderAddr = mkAddress("0xa");
-    const receiverAddr = mkAddress("0xb");
+    const senderAddr = getRandomAddress();
+    const receiverAddr = getRandomAddress();
 
     const senderAmt = new BigNumber(10000);
     const amount = new BigNumber(10);
@@ -115,8 +111,8 @@ describe("UnidirectionalTransferApp", () => {
   });
 
   it("can finalize the state by calling END_CHANNEL", async () => {
-    const senderAddr = mkAddress("0xa");
-    const receiverAddr = mkAddress("0xb");
+    const senderAddr = getRandomAddress();
+    const receiverAddr = getRandomAddress();
 
     const senderAmt = new BigNumber(10000);
 

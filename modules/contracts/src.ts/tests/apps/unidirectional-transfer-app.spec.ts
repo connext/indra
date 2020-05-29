@@ -1,8 +1,8 @@
-/* global before */
 import { SolidityValueType } from "@connext/types";
+import { getRandomAddress } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
 import { One, Zero } from "ethers/constants";
-import { BigNumber, BigNumberish, defaultAbiCoder, getAddress } from "ethers/utils";
+import { BigNumber, BigNumberish, defaultAbiCoder } from "ethers/utils";
 
 import { UnidirectionalTransferApp } from "../../artifacts";
 
@@ -34,10 +34,6 @@ enum ActionType {
 type UnidirectionalTransferAppAction = {
   actionType: ActionType;
   amount: BigNumberish;
-};
-
-const mkAddress = (prefix: string = "0xa"): string => {
-  return getAddress(prefix.padEnd(42, "0"));
 };
 
 const singleAssetTwoPartyCoinTransferEncoding = `
@@ -89,8 +85,8 @@ describe("UnidirectionalTransferApp", () => {
     const initialState: UnidirectionalTransferAppState = {
       stage: AppStage.POST_FUND,
       transfers: [
-        { to: mkAddress("0xa"), amount: One.mul(2) },
-        { to: mkAddress("0xb"), amount: Zero },
+        { to: getRandomAddress(), amount: One.mul(2) },
+        { to: getRandomAddress(), amount: Zero },
       ],
       turnNum: 0,
       finalized: false,
@@ -164,8 +160,8 @@ describe("UnidirectionalTransferApp", () => {
     });
 
     it("can finalize the state by calling END_CHANNEL", async () => {
-      const senderAddr = mkAddress("0xa");
-      const receiverAddr = mkAddress("0xb");
+      const senderAddr = getRandomAddress();
+      const receiverAddr = getRandomAddress();
 
       const senderAmt = new BigNumber(10000);
 

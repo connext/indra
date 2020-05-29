@@ -1,4 +1,3 @@
-/* global before */
 import { SolidityValueType } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { defaultAbiCoder } from "ethers/utils";

@@ -1,3 +1,4 @@
+import { getRandomAddress } from "@connext/utils";
 import {
   CoinTransfer,
   HashLockTransferAppAction,
@@ -14,11 +15,6 @@ import { BigNumber, defaultAbiCoder, soliditySha256, bigNumberify } from "ethers
 import { HashLockTransferApp as LightningHTLCTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
-
-
-const mkAddress = (prefix: string = "0xa"): string => {
-  return prefix.padEnd(42, "0");
-};
 
 const mkHash = (prefix: string = "0xa"): string => {
   return prefix.padEnd(66, "0");
@@ -88,8 +84,8 @@ describe("LightningHTLCTransferApp", () => {
       wallet,
     ).deploy();
 
-    senderAddr = mkAddress("0xa");
-    receiverAddr = mkAddress("0xB");
+    senderAddr = getRandomAddress();
+    receiverAddr = getRandomAddress();
     transferAmount = new BigNumber(10000);
     preImage = mkHash("0xb");
     lockHash = createLockHash(preImage);

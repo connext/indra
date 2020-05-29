@@ -1,6 +1,6 @@
 /* global before */
 import { Address, SolidityValueType } from "@connext/types";
-import { getRandomBytes32 } from "@connext/utils";
+import { getRandomAddress, getRandomBytes32 } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
@@ -57,10 +57,6 @@ const unidirectionalLinkedTransferAppActionEncoding = `
     bytes32 preImage
   )
 `;
-
-const mkAddress = (prefix: string = "0xa"): string => {
-  return prefix.padEnd(42, "0");
-};
 
 const decodeAppState = (encodedAppState: string): UnidirectionalLinkedTransferAppState => {
   return defaultAbiCoder.decode([unidirectionalLinkedTransferAppStateEncoding], encodedAppState)[0];
@@ -142,8 +138,8 @@ describe("LinkedUnidirectionalTransferApp", () => {
   });
 
   it("can redeem a payment with correct hash", async () => {
-    const senderAddr = mkAddress("0xa"); // e.g node
-    const redeemerAddr = mkAddress("0xb");
+    const senderAddr = getRandomAddress(); // e.g node
+    const redeemerAddr = getRandomAddress();
 
     const amount = new BigNumber(10);
 
@@ -202,8 +198,8 @@ describe("LinkedUnidirectionalTransferApp", () => {
   });
 
   it("can revert the transfers if the provided secret is not correct", async () => {
-    const senderAddr = mkAddress("0xa"); // e.g node
-    const redeemerAddr = mkAddress("0xb");
+    const senderAddr = getRandomAddress(); // e.g node
+    const redeemerAddr = getRandomAddress();
 
     const amount = new BigNumber(10);
 

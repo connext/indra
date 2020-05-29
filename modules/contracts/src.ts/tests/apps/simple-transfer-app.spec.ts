@@ -1,4 +1,4 @@
-/* global before */
+import { getRandomAddress } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
@@ -23,10 +23,6 @@ const multiAssetMultiPartyCoinTransferEncoding = `
 const transferAppStateEncoding = `tuple(
   ${multiAssetMultiPartyCoinTransferEncoding} coinTransfers
 )`;
-
-const mkAddress = (prefix: string = "0xa"): string => {
-  return prefix.padEnd(42, "0");
-};
 
 // FIXME: why does this have to use the multiAsset one?
 const decodeAppState = (encodedAppState: string): CoinTransfer[] =>
@@ -58,8 +54,8 @@ describe("SimpleTransferApp", () => {
 
   describe("update state", () => {
     it("can compute outcome with update", async () => {
-      const senderAddr = mkAddress("0xa");
-      const receiverAddr = mkAddress("0xB");
+      const senderAddr = getRandomAddress();
+      const receiverAddr = getRandomAddress();
       const transferAmount = new BigNumber(10000);
 
       const preState: SimpleTransferAppState = {
