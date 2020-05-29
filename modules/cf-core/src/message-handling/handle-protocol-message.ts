@@ -79,20 +79,12 @@ async function getOutgoingEventDataFromProtocol(
 
   switch (protocol) {
     case ProtocolNames.propose: {
-      const {
-        initiatorIdentifier,
-        responderIdentifier,
-        ...emittedParams
-      } = params as ProtocolParams.Propose;
       const app = postProtocolStateChannel.mostRecentlyProposedAppInstance();
       return {
         ...baseEvent,
         type: EventNames.PROPOSE_INSTALL_EVENT,
         data: {
-          params: {
-            ...emittedParams,
-            responderIdentifier,
-          },
+          params,
           appInstanceId: app.identityHash,
         },
       } as ProtocolEventMessage<typeof EventNames.PROPOSE_INSTALL_EVENT>;
