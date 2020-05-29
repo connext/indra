@@ -25,7 +25,7 @@ type LinkedTransfer = typeof ConditionalTransferTypes.LinkedTransfer;
 ////////////////////////////////////////
 const CONDITIONAL_TRANSFER_CREATED_EVENT = "CONDITIONAL_TRANSFER_CREATED_EVENT";
 
-type ConditionalTransferCreatedEventData<T extends ConditionalTransferTypes> = {
+export type ConditionalTransferCreatedEventData<T extends ConditionalTransferTypes> = {
   amount: BigNumber;
   assetId: Address;
   paymentId?: Bytes32;
@@ -109,6 +109,7 @@ type DepositStartedEventData = {
   amount: BigNumber;
   assetId: Address;
   appIdentityHash: string;
+  hash: string;
 };
 
 ////////////////////////////////////////
@@ -218,34 +219,6 @@ type SyncFailedEventData = {
   error: string;
 };
 
-////////////////////////////////////////
-// Exports
-export const EventNames = {
-  [CONDITIONAL_TRANSFER_CREATED_EVENT]: CONDITIONAL_TRANSFER_CREATED_EVENT,
-  [CONDITIONAL_TRANSFER_UNLOCKED_EVENT]: CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
-  [CONDITIONAL_TRANSFER_FAILED_EVENT]: CONDITIONAL_TRANSFER_FAILED_EVENT,
-  [CREATE_CHANNEL_EVENT]: CREATE_CHANNEL_EVENT,
-  [SETUP_FAILED_EVENT]: SETUP_FAILED_EVENT,
-  [DEPOSIT_CONFIRMED_EVENT]: DEPOSIT_CONFIRMED_EVENT,
-  [DEPOSIT_FAILED_EVENT]: DEPOSIT_FAILED_EVENT,
-  [DEPOSIT_STARTED_EVENT]: DEPOSIT_STARTED_EVENT,
-  [INSTALL_EVENT]: INSTALL_EVENT,
-  [INSTALL_FAILED_EVENT]: INSTALL_FAILED_EVENT,
-  [PROPOSE_INSTALL_EVENT]: PROPOSE_INSTALL_EVENT,
-  [PROPOSE_INSTALL_FAILED_EVENT]: PROPOSE_INSTALL_FAILED_EVENT,
-  [PROTOCOL_MESSAGE_EVENT]: PROTOCOL_MESSAGE_EVENT,
-  [REJECT_INSTALL_EVENT]: REJECT_INSTALL_EVENT,
-  [SYNC_EVENT]: SYNC_EVENT,
-  [SYNC_FAILED_EVENT]: SYNC_FAILED_EVENT,
-  [UNINSTALL_EVENT]: UNINSTALL_EVENT,
-  [UNINSTALL_FAILED_EVENT]: UNINSTALL_FAILED_EVENT,
-  [UPDATE_STATE_EVENT]: UPDATE_STATE_EVENT,
-  [UPDATE_STATE_FAILED_EVENT]: UPDATE_STATE_FAILED_EVENT,
-  [WITHDRAWAL_CONFIRMED_EVENT]: WITHDRAWAL_CONFIRMED_EVENT,
-  [WITHDRAWAL_FAILED_EVENT]: WITHDRAWAL_FAILED_EVENT,
-  [WITHDRAWAL_STARTED_EVENT]: WITHDRAWAL_STARTED_EVENT,
-} as const;
-export type EventName = keyof typeof EventNames;
 interface EventPayloadMap {
   [CONDITIONAL_TRANSFER_CREATED_EVENT]: ConditionalTransferCreatedEventData<
     HashLockTransfer | LinkedTransfer | SignedTransfer
@@ -277,6 +250,35 @@ interface EventPayloadMap {
   [WITHDRAWAL_FAILED_EVENT]: WithdrawalFailedEventData;
   [WITHDRAWAL_STARTED_EVENT]: WithdrawalStartedEventData;
 }
+
+////////////////////////////////////////
+// Exports
+export const EventNames = {
+  [CONDITIONAL_TRANSFER_CREATED_EVENT]: CONDITIONAL_TRANSFER_CREATED_EVENT,
+  [CONDITIONAL_TRANSFER_UNLOCKED_EVENT]: CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+  [CONDITIONAL_TRANSFER_FAILED_EVENT]: CONDITIONAL_TRANSFER_FAILED_EVENT,
+  [CREATE_CHANNEL_EVENT]: CREATE_CHANNEL_EVENT,
+  [SETUP_FAILED_EVENT]: SETUP_FAILED_EVENT,
+  [DEPOSIT_CONFIRMED_EVENT]: DEPOSIT_CONFIRMED_EVENT,
+  [DEPOSIT_FAILED_EVENT]: DEPOSIT_FAILED_EVENT,
+  [DEPOSIT_STARTED_EVENT]: DEPOSIT_STARTED_EVENT,
+  [INSTALL_EVENT]: INSTALL_EVENT,
+  [INSTALL_FAILED_EVENT]: INSTALL_FAILED_EVENT,
+  [PROPOSE_INSTALL_EVENT]: PROPOSE_INSTALL_EVENT,
+  [PROPOSE_INSTALL_FAILED_EVENT]: PROPOSE_INSTALL_FAILED_EVENT,
+  [PROTOCOL_MESSAGE_EVENT]: PROTOCOL_MESSAGE_EVENT,
+  [REJECT_INSTALL_EVENT]: REJECT_INSTALL_EVENT,
+  [SYNC_EVENT]: SYNC_EVENT,
+  [SYNC_FAILED_EVENT]: SYNC_FAILED_EVENT,
+  [UNINSTALL_EVENT]: UNINSTALL_EVENT,
+  [UNINSTALL_FAILED_EVENT]: UNINSTALL_FAILED_EVENT,
+  [UPDATE_STATE_EVENT]: UPDATE_STATE_EVENT,
+  [UPDATE_STATE_FAILED_EVENT]: UPDATE_STATE_FAILED_EVENT,
+  [WITHDRAWAL_CONFIRMED_EVENT]: WITHDRAWAL_CONFIRMED_EVENT,
+  [WITHDRAWAL_FAILED_EVENT]: WITHDRAWAL_FAILED_EVENT,
+  [WITHDRAWAL_STARTED_EVENT]: WITHDRAWAL_STARTED_EVENT,
+} as const;
+export type EventName = keyof typeof EventNames;
 export type EventPayload = {
   [P in keyof EventPayloadMap]: EventPayloadMap[P];
 };
@@ -317,4 +319,61 @@ export interface IBasicEventEmitter {
     timeout: number, // time in MS before rejecting
     filter?: (payload: EventPayload[T]) => boolean,
   ): Promise<EventPayload[T]>;
+}
+
+// Namespace used for easy consumer typing (we use fancy types within our
+// modules, and it has more complex syntax than below)
+export namespace EventPayloads {
+  // client/node specific
+  export type HashLockTransferCreated = ConditionalTransferCreatedEventData<HashLockTransfer>;
+  export type LinkedTransferCreated = ConditionalTransferCreatedEventData<LinkedTransfer>;
+  export type SignedTransferCreated = ConditionalTransferCreatedEventData<SignedTransfer>;
+  export type HashLockTransferUnlocked = ConditionalTransferUnlockedEventData<HashLockTransfer>;
+  export type LinkedTransferUnlocked = ConditionalTransferUnlockedEventData<LinkedTransfer>;
+  export type SignedTransferUnlocked = ConditionalTransferUnlockedEventData<SignedTransfer>;
+  export type HashLockTransferFailed = ConditionalTransferFailedEventData<HashLockTransfer>;
+  export type LinkedTransferFailed = ConditionalTransferFailedEventData<LinkedTransfer>;
+  export type SignedTransferFailed = ConditionalTransferFailedEventData<SignedTransfer>;
+  export type ConditionalTransferCreated<T> = ConditionalTransferCreatedEventData<
+    HashLockTransfer | LinkedTransfer | SignedTransfer
+  >;
+  export type ConditionalTransferUnlocked<T> = ConditionalTransferUnlockedEventData<
+    HashLockTransfer | LinkedTransfer | SignedTransfer
+  >;
+  export type ConditionalTransferFailed<T> = ConditionalTransferFailedEventData<
+    HashLockTransfer | LinkedTransfer | SignedTransfer
+  >;
+  export type DepositStarted = DepositStartedEventData;
+  export type DepositConfirmed = DepositConfirmedEventData;
+  export type DepositFailed = DepositFailedEventData;
+
+  export type WithdrawalStarted = WithdrawalStartedEventData;
+  export type WithdrawalConfirmed = WithdrawalConfirmedEventData;
+  export type WithdrawalFailed = WithdrawalFailedEventData;
+
+  // protocol events
+  export type CreateMultisig = CreateMultisigEventData;
+  export type CreateMultisigFailed = SetupFailedEventData;
+
+  export type Install = InstallEventData;
+  export type InstallFailed = InstallFailedEventData;
+
+  export type Propose = ProposeEventData;
+  export type ProposeFailed = ProposeFailedEventData;
+
+  export type Uninstall = UninstallEventData;
+  export type UninstallFailed = UninstallFailedEventData;
+
+  export type UpdateState = UpdateStateEventData;
+  export type UpdateStateFailed = UpdateStateFailedEventData;
+
+  export type Sync = SyncEventData;
+  export type SyncFailed = SyncFailedEventData;
+
+  export type ProtocolMessage = ProtocolMessageData;
+  export type RejectInstall = RejectInstallEventData;
+
+  // TODO: chain listener events
+
+  // TODO: chain watcher events
 }
