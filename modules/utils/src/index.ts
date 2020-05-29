@@ -13,6 +13,6 @@ export * from "./json";
 export * from "./logger";
 export * from "./math";
 export * from "./strings";
-// TODO: why does this break cf tests, but ours are functional?
+// TODO: why does this break cf tests, but utils are functional?
 export * from "./typedEmitter";
 export * from "./url";
