@@ -54,7 +54,10 @@ log "Good morning"
 # Start temp database & wait until it wakes up
 log "Starting temp database for initialization & backup recovery.."
 unlock fast
-/docker-entrypoint.sh postgres &
+ls /
+ll /docker-entrypoint.sh || true
+which docker-entrypoint.sh || true
+docker-entrypoint.sh postgres &
 PID=$!
 while ! psql -U $POSTGRES_USER -d $POSTGRES_DB -c "select 1" > /dev/null 2>&1
 do log "Waiting for db to wake up.." && sleep 1
@@ -92,6 +95,6 @@ done &
 
 # Start database to serve requests from clients
 log "===> Starting new database.."
-/docker-entrypoint.sh postgres &
+docker-entrypoint.sh postgres &
 db_pid=$!
 wait "$db_pid"
