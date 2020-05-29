@@ -7,15 +7,13 @@ import { Echo, Proxy, ProxyFactory } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 
-describe("ProxyFactory with CREATE2", function() {
-  this.timeout(5000);
-
+describe("ProxyFactory with CREATE2", () => {
   let wallet: Wallet;
 
   let pf: Contract;
   let echo: Contract;
 
-  function create2(initcode: string, saltNonce: number = 0, initializer: string = "0x") {
+  const create2 = (initcode: string, saltNonce: number = 0, initializer: string = "0x") => {
     return getAddress(
       solidityKeccak256(
         ["bytes1", "address", "uint256", "bytes32"],
@@ -27,7 +25,7 @@ describe("ProxyFactory with CREATE2", function() {
         ],
       ).slice(-40),
     );
-  }
+  };
 
   before(async () => {
     wallet = (await provider.getWallets())[0];

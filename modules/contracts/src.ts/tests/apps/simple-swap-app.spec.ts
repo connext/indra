@@ -23,9 +23,9 @@ const swapAppStateEncoding = `tuple(
   ${multiAssetMultiPartyCoinTransferEncoding} coinTransfers
 )`;
 
-function mkAddress(prefix: string = "0xa"): string {
+const mkAddress = (prefix: string = "0xa"): string => {
   return prefix.padEnd(42, "0");
-}
+};
 
 // FIXME: why does this have to use the multiAsset one?
 const decodeAppState = (encodedAppState: string): CoinTransfer[][] =>
@@ -39,9 +39,9 @@ const encodeAppState = (state: SimpleSwapAppState, onlyCoinTransfers: boolean = 
 describe("SimpleTwoPartySwapApp", () => {
   let simpleSwapApp: Contract;
 
-  async function computeOutcome(state: SimpleSwapAppState): Promise<string> {
+  const computeOutcome = async (state: SimpleSwapAppState): Promise<string> => {
     return simpleSwapApp.functions.computeOutcome(encodeAppState(state));
-  }
+  };
 
   before(async () => {
     const wallet = (await provider.getWallets())[0];

@@ -4,9 +4,9 @@ import { toBN } from "@connext/utils";
 import { Contract, Wallet, ContractFactory } from "ethers";
 import { BigNumberish } from "ethers/utils";
 
-import { AppWithAction, ChallengeRegistry } from "../../../artifacts";
+import { AppWithAction, ChallengeRegistry } from "../../artifacts";
 
-import { provider, snapshot, setupContext, restore, expect, moveToBlock, AppWithCounterAction, ActionType } from "../utils";
+import { provider, snapshot, setupContext, restore, expect, moveToBlock, AppWithCounterAction, ActionType } from "./utils";
 
 describe("LibStateChannelApp", () => {
 

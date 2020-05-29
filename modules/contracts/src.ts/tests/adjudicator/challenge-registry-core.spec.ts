@@ -5,9 +5,9 @@ import { ChallengeStatus, AppChallenge } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { keccak256 } from "ethers/utils";
 
-import { AppWithAction, ChallengeRegistry }  from "../../../artifacts";
+import { AppWithAction, ChallengeRegistry }  from "../../artifacts";
 
-import { expect, provider, restore, setupContext, snapshot, moveToBlock, encodeState, AppWithCounterState, AppWithCounterAction } from "../utils";
+import { expect, provider, restore, setupContext, snapshot, moveToBlock, encodeState, AppWithCounterState, AppWithCounterAction } from "./utils";
 
 describe("MChallengeRegistryCore", () => {
 

@@ -58,30 +58,30 @@ const unidirectionalLinkedTransferAppActionEncoding = `
   )
 `;
 
-function mkAddress(prefix: string = "0xa"): string {
+const mkAddress = (prefix: string = "0xa"): string => {
   return prefix.padEnd(42, "0");
-}
+};
 
-function decodeAppState(encodedAppState: string): UnidirectionalLinkedTransferAppState {
+const decodeAppState = (encodedAppState: string): UnidirectionalLinkedTransferAppState => {
   return defaultAbiCoder.decode([unidirectionalLinkedTransferAppStateEncoding], encodedAppState)[0];
-}
+};
 
-function encodeAppState(state: SolidityValueType): string {
+const encodeAppState = (state: SolidityValueType): string => {
   return defaultAbiCoder.encode([unidirectionalLinkedTransferAppStateEncoding], [state]);
-}
+};
 
-function encodeAppAction(state: SolidityValueType): string {
+const encodeAppAction = (state: SolidityValueType): string => {
   return defaultAbiCoder.encode([unidirectionalLinkedTransferAppActionEncoding], [state]);
-}
+};
 
-function createLinkedHash(action: UnidirectionalLinkedTransferAppAction): string {
+const createLinkedHash = (action: UnidirectionalLinkedTransferAppAction): string => {
   return solidityKeccak256(
     ["uint256", "address", "bytes32", "bytes32"],
     [action.amount, action.assetId, action.paymentId, action.preImage],
   );
-}
+};
 
-function assertRedeemed(
+const assertRedeemed = (
   state: UnidirectionalLinkedTransferAppState,
   params: {
     senderAddr: string;
@@ -91,7 +91,7 @@ function assertRedeemed(
     turnNum: BigNumber;
   },
   valid: boolean = true,
-): void {
+): void => {
   const { senderAddr, redeemerAddr, linkedHash, amount, turnNum } = params;
   // assert transfer addresses
   expect(state.transfers[0].to.toLowerCase()).to.eq(senderAddr.toLowerCase());
@@ -118,7 +118,7 @@ function assertRedeemed(
   // assert transfer amounts
   expect(state.transfers[0].amount.toString()).to.eq("0"); // sender
   expect(state.transfers[1].amount.toString()).to.eq(amount.toString()); // redeemer
-}
+};
 
 describe("LinkedUnidirectionalTransferApp", () => {
   let unidirectionalLinkedTransferApp: Contract;

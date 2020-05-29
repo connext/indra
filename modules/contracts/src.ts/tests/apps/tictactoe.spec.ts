@@ -13,21 +13,21 @@ type TicTacToeAppState = {
   board: number[][];
 };
 
-function decodeBytesToAppState(encodedAppState: string): TicTacToeAppState {
+const decodeBytesToAppState = (encodedAppState: string): TicTacToeAppState => {
   return defaultAbiCoder.decode(
     ["tuple(uint256 versionNumber, uint256 winner, uint256[3][3] board)"],
     encodedAppState,
   )[0];
-}
+};
 
 describe("TicTacToeApp", () => {
   let ticTacToe: Contract;
 
-  async function computeOutcome(state: SolidityValueType) {
+  const computeOutcome = async (state: SolidityValueType) => {
     return ticTacToe.functions.computeOutcome(encodeState(state));
-  }
+  };
 
-  function encodeState(state: SolidityValueType) {
+  const encodeState = (state: SolidityValueType) => {
     return defaultAbiCoder.encode(
       [
         `
@@ -40,9 +40,9 @@ describe("TicTacToeApp", () => {
       ],
       [state],
     );
-  }
+  };
 
-  function encodeAction(state: SolidityValueType) {
+  const encodeAction = (state: SolidityValueType) => {
     return defaultAbiCoder.encode(
       [
         `
@@ -59,11 +59,11 @@ describe("TicTacToeApp", () => {
       ],
       [state],
     );
-  }
+  };
 
-  async function applyAction(state: SolidityValueType, action: SolidityValueType) {
+  const applyAction = async (state: SolidityValueType, action: SolidityValueType) => {
     return ticTacToe.functions.applyAction(encodeState(state), encodeAction(action));
-  }
+  };
 
   before(async () => {
     const wallet = (await provider.getWallets())[0];

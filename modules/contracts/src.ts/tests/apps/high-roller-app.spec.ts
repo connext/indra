@@ -10,9 +10,9 @@ import { expect, provider } from "../utils";
 
 /// Returns the commit hash that can be used to commit to chosenNumber
 /// using appSalt
-function computeCommitHash(appSalt: string, chosenNumber: number) {
+const computeCommitHash = (appSalt: string, chosenNumber: number) => {
   return solidityKeccak256(["bytes32", "uint256"], [appSalt, chosenNumber]);
-}
+};
 
 enum HighRollerStage {
   WAITING_FOR_P1_COMMITMENT,
@@ -62,32 +62,32 @@ const rlpActionEncoding = `
   )
 `;
 
-function decodeBytesToAppState(encodedAppState: string): HighRollerAppState {
+const decodeBytesToAppState = (encodedAppState: string): HighRollerAppState => {
   return defaultAbiCoder.decode([rlpAppStateEncoding], encodedAppState)[0];
-}
+};
 
-function encodeState(state: SolidityValueType) {
+const encodeState = (state: SolidityValueType) => {
   return defaultAbiCoder.encode([rlpAppStateEncoding], [state]);
-}
+};
 
-function encodeAction(state: SolidityValueType) {
+const encodeAction = (state: SolidityValueType) => {
   return defaultAbiCoder.encode([rlpActionEncoding], [state]);
-}
+};
 
 describe("HighRollerApp", () => {
   let highRollerApp: Contract;
 
-  async function computeStateTransition(state: SolidityValueType, action: SolidityValueType) {
+  const computeStateTransition = async (state: SolidityValueType, action: SolidityValueType) => {
     return highRollerApp.functions.applyAction(encodeState(state), encodeAction(action));
-  }
+  };
 
-  async function computeOutcome(state: SolidityValueType) {
+  const computeOutcome = async (state: SolidityValueType) => {
     const [decodedResult] = defaultAbiCoder.decode(
       ["uint256"],
       await highRollerApp.functions.computeOutcome(encodeState(state)),
     );
     return decodedResult;
-  }
+  };
 
   before(async () => {
     const wallet = (await provider.getWallets())[0];

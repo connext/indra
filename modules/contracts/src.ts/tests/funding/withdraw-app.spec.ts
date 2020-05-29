@@ -16,9 +16,9 @@ import { WithdrawApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 
-function mkHash(prefix: string = "0xa"): string {
+const mkHash = (prefix: string = "0xa"): string => {
   return prefix.padEnd(66, "0");
-}
+};
 
 const decodeTransfers = (encodedTransfers: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedTransfers)[0];

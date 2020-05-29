@@ -36,9 +36,9 @@ type UnidirectionalTransferAppAction = {
   amount: BigNumberish;
 };
 
-function mkAddress(prefix: string = "0xa"): string {
+const mkAddress = (prefix: string = "0xa"): string => {
   return getAddress(prefix.padEnd(42, "0"));
-}
+};
 
 const singleAssetTwoPartyCoinTransferEncoding = `
   tuple(address to, uint256 amount)[2]

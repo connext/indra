@@ -12,11 +12,11 @@ type CoinTransfer = {
   amount: BigNumber;
 };
 
-function encodeParams(params: { limit: BigNumber[]; tokenAddresses: string[] }) {
+const encodeParams = (params: { limit: BigNumber[]; tokenAddresses: string[] }) => {
   return defaultAbiCoder.encode([`tuple(uint256[] limit, address[] tokenAddresses)`], [params]);
-}
+};
 
-function encodeOutcome(state: CoinTransfer[][]) {
+const encodeOutcome = (state: CoinTransfer[][]) => {
   return defaultAbiCoder.encode(
     [
       `
@@ -28,30 +28,30 @@ function encodeOutcome(state: CoinTransfer[][]) {
     ],
     [state],
   );
-}
+};
 
 describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   let wallet: Wallet;
   let erc20: Contract;
   let multiAssetMultiPartyCoinTransferInterpreter: Contract;
 
-  async function interpretOutcomeAndExecuteEffect(
+  const interpretOutcomeAndExecuteEffect = async (
     state: CoinTransfer[][],
     params: { limit: BigNumber[]; tokenAddresses: string[] },
-  ) {
+  ) => {
     return multiAssetMultiPartyCoinTransferInterpreter
       .functions
       .interpretOutcomeAndExecuteEffect(
         encodeOutcome(state),
         encodeParams(params),
       );
-  }
+  };
 
-  async function getTotalAmountWithdrawn(assetId: string) {
+  const getTotalAmountWithdrawn = async (assetId: string) => {
     return multiAssetMultiPartyCoinTransferInterpreter
       .functions
       .totalAmountWithdrawn(assetId);
-  }
+  };
 
   beforeEach(async () => {
     wallet = (await provider.getWallets())[0];

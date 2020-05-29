@@ -6,21 +6,24 @@ import { use } from "chai";
 import { BigNumber, BigNumberish, parseEther } from "ethers/utils";
 import { Wallet } from "ethers";
 
-export function mkXpub(prefix: string = "xpub"): string {
+use(require("chai-subset"));
+use(solidity);
+
+export const mkXpub = (prefix: string = "xpub"): string => {
   return prefix.padEnd(111, "0");
-}
+};
 
-export function mkAddress(prefix: string = "0x"): string {
+export const mkAddress = (prefix: string = "0x"): string => {
   return prefix.padEnd(42, "0");
-}
+};
 
-export function mkHash(prefix: string = "0x"): string {
+export const mkHash = (prefix: string = "0x"): string => {
   return prefix.padEnd(66, "0");
-}
+};
 
-export function mkSig(prefix: string = "0x"): string {
+export const mkSig = (prefix: string = "0x"): string => {
   return prefix.padEnd(132, "0");
-}
+};
 
 // ETH helpers
 export const provider = buidler.provider;
@@ -47,8 +50,6 @@ export const moveToBlock = async (blockNumber: BigNumberish) => {
   expect(final).to.be.eq(desired);
 };
 
-use(require("chai-subset"));
-use(solidity);
 export const expect = chai.use(solidity).expect;
 
 // funds recipient with a given amount of eth from other provider accounts
@@ -87,23 +88,25 @@ export const fund = async (amount: BigNumber, recipient: Wallet) => {
   }
 };
 
-export function sortByAddress(a: string, b: string) {
+export const sortByAddress = (a: string, b: string) => {
   return toBN(a).lt(toBN(b)) ? -1 : 1;
-}
+};
 
-export function sortAddresses(addrs: string[]) {
+export const sortAddresses = (addrs: string[]) => {
   return addrs.sort(sortByAddress);
-}
+};
 
-export async function sortSignaturesBySignerAddress(
+export const sortSignaturesBySignerAddress = async (
   digest: string,
   signatures: string[],
-): Promise<string[]> {
+): Promise<string[]> => {
   return (
     await Promise.all(
-      signatures.map(async sig => ({ sig, addr: await recoverAddressFromChannelMessage(digest, sig) })),
+      signatures.map(
+        async sig => ({ sig, addr: await recoverAddressFromChannelMessage(digest, sig) }),
+      ),
     )
   )
     .sort((a, b) => sortByAddress(a.addr, b.addr))
     .map(x => x.sig);
-}
+};

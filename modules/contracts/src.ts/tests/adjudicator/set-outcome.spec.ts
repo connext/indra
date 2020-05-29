@@ -1,9 +1,9 @@
 /* global before */
 import { Contract, Wallet, ContractFactory } from "ethers";
 
-import { AppComputeOutcomeFails, AppWithAction, ChallengeRegistry }  from "../../../artifacts";
+import { AppComputeOutcomeFails, AppWithAction, ChallengeRegistry }  from "../../artifacts";
 
-import { setupContext, snapshot, provider, restore, AppWithCounterState, moveToBlock, expect, encodeState } from "../utils";
+import { setupContext, snapshot, provider, restore, AppWithCounterState, moveToBlock, expect, encodeState } from "./utils";
 
 describe("setOutcome", () => {
 

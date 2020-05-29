@@ -45,13 +45,13 @@ const linkedTransferAppActionEncoding = `
   )
 `;
 
-function mkAddress(prefix: string = "0xa"): string {
+const mkAddress = (prefix: string = "0xa"): string => {
   return prefix.padEnd(42, "0");
-}
+};
 
-function mkHash(prefix: string = "0xa"): string {
+const mkHash = (prefix: string = "0xa"): string => {
   return prefix.padEnd(66, "0");
-}
+};
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
@@ -67,35 +67,35 @@ const encodeAppState = (
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
 };
 
-function encodeAppAction(state: SolidityValueType): string {
+const encodeAppAction = (state: SolidityValueType): string => {
   return defaultAbiCoder.encode([linkedTransferAppActionEncoding], [state]);
-}
+};
 
-function createLinkedHash(
+const createLinkedHash = (
   amount: BigNumber,
   assetId: string,
   paymentId: string,
   preImage: string,
-): string {
+): string => {
   return solidityKeccak256(
     ["uint256", "address", "bytes32", "bytes32"],
     [amount, assetId, paymentId, preImage],
   );
-}
+};
 
 describe("SimpleLinkedTransferApp", () => {
   let simpleLinkedTransferApp: Contract;
 
-  async function computeOutcome(state: SimpleLinkedTransferAppState): Promise<string> {
+  const computeOutcome = async (state: SimpleLinkedTransferAppState): Promise<string> => {
     return simpleLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
-  }
+  };
 
-  async function applyAction(state: any, action: SolidityValueType): Promise<string> {
+  const applyAction = async (state: any, action: SolidityValueType): Promise<string> => {
     return simpleLinkedTransferApp.functions.applyAction(
       encodeAppState(state),
       encodeAppAction(action),
     );
-  }
+  };
 
   before(async () => {
     const wallet = (await provider.getWallets())[0];

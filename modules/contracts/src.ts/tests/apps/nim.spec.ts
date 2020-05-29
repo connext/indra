@@ -12,17 +12,17 @@ type NimAppState = {
   pileHeights: BigNumber[];
 };
 
-function decodeBytesToAppState(encodedAppState: string): NimAppState {
+const decodeBytesToAppState = (encodedAppState: string): NimAppState => {
   return defaultAbiCoder.decode(
     ["tuple(uint256 versionNumber, uint256[3] pileHeights)"],
     encodedAppState,
   )[0];
-}
+};
 
 describe("Nim", () => {
   let nim: Contract;
 
-  function encodeState(state: SolidityValueType) {
+  const encodeState = (state: SolidityValueType) => {
     return defaultAbiCoder.encode(
       [
         `
@@ -34,9 +34,9 @@ describe("Nim", () => {
       ],
       [state],
     );
-  }
+  };
 
-  function encodeAction(state: SolidityValueType) {
+  const encodeAction = (state: SolidityValueType) => {
     return defaultAbiCoder.encode(
       [
         `
@@ -48,15 +48,15 @@ describe("Nim", () => {
       ],
       [state],
     );
-  }
+  };
 
-  async function applyAction(state: SolidityValueType, action: SolidityValueType) {
+  const applyAction = async (state: SolidityValueType, action: SolidityValueType) => {
     return nim.functions.applyAction(encodeState(state), encodeAction(action));
-  }
+  };
 
-  async function isStateTerminal(state: SolidityValueType) {
+  const isStateTerminal = async (state: SolidityValueType) => {
     return nim.functions.isStateTerminal(encodeState(state));
-  }
+  };
 
   before(async () => {
     const wallet = (await provider.getWallets())[0];

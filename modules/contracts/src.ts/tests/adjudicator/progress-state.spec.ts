@@ -2,7 +2,7 @@
 import { AppChallenge } from "@connext/types";
 import { Wallet, Contract, ContractFactory } from "ethers";
 
-import { AppApplyActionFails, AppWithAction, ChallengeRegistry }  from "../../../artifacts";
+import { AppApplyActionFails, AppWithAction, ChallengeRegistry }  from "../../artifacts";
 
 import {
   expect,
@@ -15,7 +15,7 @@ import {
   setupContext,
   EMPTY_CHALLENGE,
   provider,
-} from "../utils";
+} from "./utils";
 
 describe("progressState", () => {
   let appRegistry: Contract;

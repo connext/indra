@@ -16,13 +16,13 @@ import { HashLockTransferApp as LightningHTLCTransferApp } from "../../artifacts
 import { expect, provider } from "../utils";
 
 
-function mkAddress(prefix: string = "0xa"): string {
+const mkAddress = (prefix: string = "0xa"): string => {
   return prefix.padEnd(42, "0");
-}
+};
 
-function mkHash(prefix: string = "0xa"): string {
+const mkHash = (prefix: string = "0xa"): string => {
   return prefix.padEnd(66, "0");
-}
+};
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
@@ -39,13 +39,13 @@ const encodeAppState = (
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
 };
 
-function encodeAppAction(state: SolidityValueType): string {
+const encodeAppAction = (state: SolidityValueType): string => {
   return defaultAbiCoder.encode([HashLockTransferAppActionEncoding], [state]);
-}
+};
 
-function createLockHash(preImage: string): string {
+const createLockHash = (preImage: string): string => {
   return soliditySha256(["bytes32"], [preImage]);
-}
+};
 
 describe("LightningHTLCTransferApp", () => {
   let lightningHTLCTransferApp: Contract;
@@ -57,28 +57,28 @@ describe("LightningHTLCTransferApp", () => {
   let expiry: BigNumber;
   let preState: HashLockTransferAppState;
 
-  async function computeOutcome(state: HashLockTransferAppState): Promise<string> {
+  const computeOutcome = async (state: HashLockTransferAppState): Promise<string> => {
     return lightningHTLCTransferApp.functions.computeOutcome(encodeAppState(state));
-  }
+  };
 
-  async function applyAction(state: any, action: SolidityValueType): Promise<string> {
+  const applyAction = async (state: any, action: SolidityValueType): Promise<string> => {
     return lightningHTLCTransferApp.functions.applyAction(
       encodeAppState(state),
       encodeAppAction(action),
     );
-  }
+  };
 
-  async function validateOutcome(
+  const validateOutcome = async (
     encodedTransfers: string,
     postState: HashLockTransferAppState,
-  ) {
+  ) => {
     const decoded = decodeTransfers(encodedTransfers);
     expect(encodedTransfers).to.eq(encodeAppState(postState, true));
     expect(decoded[0].to).eq(postState.coinTransfers[0].to);
     expect(decoded[0].amount.toString()).eq(postState.coinTransfers[0].amount.toString());
     expect(decoded[1].to).eq(postState.coinTransfers[1].to);
     expect(decoded[1].amount.toString()).eq(postState.coinTransfers[1].amount.toString());
-  }
+  };
 
   beforeEach(async () => {
     const wallet = (await provider.getWallets())[0];
@@ -190,7 +190,7 @@ describe("LightningHTLCTransferApp", () => {
 
     it("will refund payment that is not finalized with expired expiry", async () => {
       preState.expiry = bigNumberify(await provider.getBlockNumber());
-      let ret = await computeOutcome(preState);
+      const ret = await computeOutcome(preState);
 
       validateOutcome(ret, preState);
     });
