@@ -11,6 +11,8 @@ import {
   WithdrawAppName,
   WithdrawAppState,
   DefaultApp,
+  CF_METHOD_TIMEOUT,
+  EventPayloads,
 } from "@connext/types";
 import {
   getSignerAddressFromPublicIdentifier,
@@ -66,32 +68,50 @@ export class WithdrawalController extends AbstractController {
       );
       this.log.debug(`Successfully installed!`);
 
-      this.connext.listener.emit(EventNames.WITHDRAWAL_STARTED_EVENT, {
+      this.connext.emit(EventNames.WITHDRAWAL_STARTED_EVENT, {
         params,
         withdrawCommitment,
         withdrawerSignatureOnWithdrawCommitment,
       });
 
       this.log.debug(`Watching chain for user withdrawal`);
-      transaction = await new Promise(async (resolve, reject) => {
-        this.listener.on(EventNames.UPDATE_STATE_FAILED_EVENT, (msg) => {
-          const { params, error } = msg.data;
-          if (params.appIdentityHash === withdrawAppId) {
-            return reject(new Error(error));
+      const raceRes = (await Promise.race([
+        this.listener.waitFor(
+          EventNames.UPDATE_STATE_FAILED_EVENT,
+          CF_METHOD_TIMEOUT * 3,
+          (msg) => msg.params.appIdentityHash === withdrawAppId,
+        ),
+        new Promise(async (resolve, reject) => {
+          try {
+            const [tx] = await this.connext.watchForUserWithdrawal();
+            return resolve(tx);
+          } catch (e) {
+            return reject(new Error(e));
           }
-        });
+        }),
+      ])) as EventPayloads.UpdateStateFailed | TransactionResponse;
+      if ((raceRes as EventPayloads.UpdateStateFailed).error) {
+        throw new Error((raceRes as EventPayloads.UpdateStateFailed).error);
+      }
+      transaction = raceRes as TransactionResponse;
+      transaction = await new Promise(async (resolve, reject) => {
+        this.listener.attachOnce(
+          EventNames.UPDATE_STATE_FAILED_EVENT,
+          (payload) => reject(new Error(payload.error)),
+          (msg) => msg.params.appIdentityHash === withdrawAppId,
+        );
         const [tx] = await this.connext.watchForUserWithdrawal();
         return resolve(tx);
       });
       this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
       this.log.debug(`Transaction details: ${stringify(transaction)}`);
 
-      this.connext.listener.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction });
+      this.connext.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction });
 
       this.log.debug(`Removing withdraw commitment`);
       await this.removeWithdrawCommitmentFromStore(transaction);
     } catch (e) {
-      this.connext.listener.emit(EventNames.WITHDRAWAL_FAILED_EVENT, {
+      this.connext.emit(EventNames.WITHDRAWAL_FAILED_EVENT, {
         params,
         withdrawCommitment,
         withdrawerSignatureOnWithdrawCommitment,
