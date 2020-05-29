@@ -1,6 +1,9 @@
 import { IBasicEventEmitter, EventName, EventPayload } from "@connext/types";
 import { Evt, to, Ctx } from "evt";
 
+// Disable max handlers warnings
+Evt.setDefaultMaxHandlers(0);
+
 export class TypedEmitter implements IBasicEventEmitter {
   private evt: Evt<[EventName, EventPayload[EventName]]>;
   constructor() {
