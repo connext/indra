@@ -26,6 +26,6 @@ module.exports = {
   testRegex: "\\.spec\\.(jsx?|tsx?)$",
   testURL: "http://localhost/",
   transform: { "^.+(?!\\.d)\\.ts$": "ts-jest" },
-  transformIgnorePatterns: [".*\\.d\\.ts$", "node_modules/(?!@counterfactual)"],
+  transformIgnorePatterns: [".*\\.d\\.ts$"],
   verbose: true,
 };
