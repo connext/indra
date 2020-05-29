@@ -48,11 +48,7 @@ export const connect = async (
     `Called connect with ${stringify({ nodeUrl, ethProviderUrl, messagingUrl })}, and ${
       providedChannelProvider!!
         ? `provided channel provider`
-        : `signer ${
-            typeof opts.signer === "string"
-              ? `using private key`
-              : `with injected signer`
-          }`
+        : `signer ${typeof opts.signer === "string" ? `using private key` : `with injected signer`}`
     }`,
   );
 
@@ -226,20 +222,7 @@ export const connect = async (
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting
   logger.info("Reclaiming pending async transfers");
-  // NOTE: Removing the following await results in a subtle race condition during bot tests.
-  //       Don't remove this await again unless you really know what you're doing & bot tests pass
-  // no need to await this if it needs collateral
-  // TODO: without await causes race conditions in bot, refactor to
-  // use events
-  try {
-    await client.reclaimPendingAsyncTransfers();
-  } catch (e) {
-    logger.error(
-      `Could not reclaim pending async transfers: ${
-        e.stack || e.message
-      }... will attempt again on next connection`,
-    );
-  }
+  await client.reclaimPendingAsyncTransfers();
   logger.info("Reclaimed pending async transfers");
 
   // check in with node to do remaining work

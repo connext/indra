@@ -38,6 +38,7 @@ import {
   UnlockedHashLockTransferMeta,
   UnlockedSignedTransferMeta,
   SyncMessage,
+  Message,
 } from "@connext/types";
 import { bigNumberifyJson, stringify } from "@connext/utils";
 
@@ -88,8 +89,15 @@ export class ConnextListener extends ConnextEventEmitter {
     SETUP_FAILED_EVENT: (data: EventPayloads.CreateMultisigFailed): void => {
       this.emitAndLog(SETUP_FAILED_EVENT, data);
     },
-    CONDITIONAL_TRANSFER_CREATED_EVENT: (msg: any): void => {
-      this.emitAndLog(CONDITIONAL_TRANSFER_CREATED_EVENT, msg.data);
+    CONDITIONAL_TRANSFER_CREATED_EVENT: async (
+      msg: Message<
+        | EventPayloads.SignedTransferCreated
+        | EventPayloads.LinkedTransferCreated
+        | EventPayloads.HashLockTransferCreated
+      >,
+    ): Promise<void> => {
+      const { data } = msg;
+      this.emitAndLog(CONDITIONAL_TRANSFER_CREATED_EVENT, data);
     },
     CONDITIONAL_TRANSFER_UNLOCKED_EVENT: (msg: any): void => {
       this.emitAndLog(CONDITIONAL_TRANSFER_UNLOCKED_EVENT, msg.data);
@@ -186,7 +194,7 @@ export class ConnextListener extends ConnextEventEmitter {
     this.log.debug(`Registering default listeners`);
     await this.registerAvailabilitySubscription();
     this.registerDefaultListeners();
-    await this.registerLinkedTransferSubscription();
+    this.registerLinkedTranferSubscription();
     this.log.debug(`Registered default listeners`);
     return;
   };
@@ -264,30 +272,50 @@ export class ConnextListener extends ConnextEventEmitter {
     this.log.debug(`Connected message pattern "${subject}"`);
   };
 
-  private registerLinkedTransferSubscription = async (): Promise<void> => {
-    const subject = `*.channel.*.transfer.linked.to.${this.connext.publicIdentifier}`;
-    await this.connext.node.messaging.subscribe(subject, async (msg: any) => {
-      this.log.debug(`Received message for ${subject} subscription`);
-      if (!msg.paymentId && !msg.data) {
-        throw new Error(`Could not parse data from message: ${stringify(msg)}`);
-      }
-      let data = msg.paymentId ? msg : msg.data;
-      if (typeof data === `string`) {
-        data = JSON.parse(data);
-      }
-      this.log.debug(`Message data: ${JSON.stringify(data, null, 2)}`);
-      const {
-        paymentId,
-        transferMeta: { encryptedPreImage },
-        amount,
-        assetId,
-      }: EventPayloads.LinkedTransferCreated = data;
-      if (!paymentId || !encryptedPreImage || !amount || !assetId) {
-        throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
-      }
-      await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
-      this.log.info(`Successfully redeemed transfer with paymentId: ${paymentId}`);
-    });
+  private registerLinkedTranferSubscription = async (): Promise<void> => {
+    this.on(
+      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
+      async (
+        payload:
+          | EventPayloads.SignedTransferCreated
+          | EventPayloads.LinkedTransferCreated
+          | EventPayloads.HashLockTransferCreated,
+      ) => {
+        this.log.info(`Received event CONDITIONAL_TRANSFER_CREATED_EVENT: ${stringify(payload)}`);
+        const start = Date.now();
+        const time = () => `in ${Date.now() - start} ms`;
+
+        if (payload.type === ConditionalTransferTypes.LinkedTransfer) {
+          if (
+            (payload as EventPayloads.LinkedTransferCreated).recipient !==
+            this.connext.publicIdentifier
+          ) {
+            return;
+          }
+          try {
+            const {
+              paymentId,
+              transferMeta: { encryptedPreImage },
+              amount,
+              assetId,
+            } = payload as EventPayloads.LinkedTransferCreated;
+            if (!paymentId || !encryptedPreImage || !amount || !assetId) {
+              throw new Error(
+                `Unable to parse transfer details from message ${stringify(payload)}`,
+              );
+            }
+            this.log.info(`Redeeming transfer with paymentId: ${paymentId}`);
+            await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+            this.log.info(`Successfully redeemed transfer with paymentId: ${paymentId}`);
+          } catch (e) {
+            this.log.error(
+              `Error in event handler for CONDITIONAL_TRANSFER_CREATED_EVENT: ${e.message}`,
+            );
+          }
+        }
+        this.log.info(`Finished processing CONDITIONAL_TRANSFER_CREATED_EVENT ${time}`);
+      },
+    );
   };
 
   private handleAppProposal = async (
@@ -364,7 +392,7 @@ export class ConnextListener extends ConnextEventEmitter {
             signerAddress: initalState.signerAddress,
             verifyingContract: initalState.verifyingContract,
           } as CreatedSignedTransferMeta,
-          type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+          type: ConditionalTransferTypes.SignedTransfer,
           paymentId: initalState.paymentId,
           recipient: meta["recipient"],
         } as EventPayloads.SignedTransferCreated);
@@ -385,7 +413,7 @@ export class ConnextListener extends ConnextEventEmitter {
             expiry: initalState.expiry,
             timelock: meta["timelock"],
           } as CreatedHashLockTransferMeta,
-          type: ConditionalTransferTypes[ConditionalTransferTypes.HashLockTransfer],
+          type: ConditionalTransferTypes.HashLockTransfer,
           paymentId: initalState.lockHash,
           recipient: meta["recipient"],
         } as EventPayloads.HashLockTransferCreated);
@@ -395,6 +423,9 @@ export class ConnextListener extends ConnextEventEmitter {
         const initalState = params.initialState as SimpleLinkedTransferAppState;
         const { initiatorDepositAssetId: assetId, meta } = params;
         const amount = initalState.coinTransfers[0].amount;
+        this.log.info(
+          `Emitting event CONDITIONAL_TRANSFER_CREATED_EVENT for paymentId ${initalState.paymentId}`,
+        );
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
           appIdentityHash,
@@ -404,7 +435,7 @@ export class ConnextListener extends ConnextEventEmitter {
           transferMeta: {
             encryptedPreImage: meta["encryptedPreImage"],
           } as CreatedLinkedTransferMeta,
-          type: ConditionalTransferTypes[ConditionalTransferTypes.LinkedTransfer],
+          type: ConditionalTransferTypes.LinkedTransfer,
           paymentId: initalState.paymentId,
           recipient: meta["recipient"],
         } as EventPayloads.LinkedTransferCreated);

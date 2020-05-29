@@ -1,6 +1,11 @@
 import { Address, BigNumber, Bytes32 } from "./basic";
 import { enumify } from "./utils";
-import { Attestation } from "./contracts";
+import {
+  HashLockTransferAppName,
+  SimpleLinkedTransferAppName,
+  SimpleSignedTransferAppName,
+  Attestation,
+} from "./contracts";
 
 ////////////////////////////////////////
 // Types
@@ -11,6 +16,13 @@ export const ConditionalTransferTypes = enumify({
   SignedTransfer: "SignedTransfer",
 });
 export type ConditionalTransferTypes = typeof ConditionalTransferTypes[keyof typeof ConditionalTransferTypes];
+
+export const ConditionalTransferAppNames = enumify({
+  [HashLockTransferAppName]: HashLockTransferAppName,
+  [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
+  [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
+});
+export type ConditionalTransferAppNames = typeof ConditionalTransferAppNames[keyof typeof ConditionalTransferAppNames];
 
 ////////////////////////////////////////
 // Metadata

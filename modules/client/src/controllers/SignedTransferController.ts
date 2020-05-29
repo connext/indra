@@ -26,6 +26,7 @@ export class SignedTransferController extends AbstractController {
     const submittedMeta = { ...(meta || {}) } as any;
     submittedMeta.recipient = recipient;
     submittedMeta.sender = this.connext.publicIdentifier;
+    submittedMeta.paymentId = paymentId;
 
     const initialState: SimpleSignedTransferAppState = {
       coinTransfers: [

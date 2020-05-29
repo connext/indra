@@ -3,6 +3,7 @@ import * as utils from "ethers/utils";
 import { ConditionalTransferTypes, IConnextClient, BigNumber, PublicParams } from "@connext/types";
 import { delay, ColorfulLogger, getTestVerifyingContract } from "@connext/utils";
 import { AddressZero } from "ethers/constants";
+
 import { createClient, fundChannel } from "../util";
 
 const generatePaymentId = () => utils.hexlify(utils.randomBytes(32));
@@ -11,11 +12,10 @@ const TRANSFER_AMOUNT = utils.parseEther("0.00001");
 const DEPOSIT_AMOUNT = utils.parseEther("0.1");
 
 describe("Concurrent transfers", async () => {
-  // let privateKey;
-  let channel;
+  let channel: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
-  let subgraphChannels;
+  let subgraphChannels: { signer: string; publicIdentifier: string }[];
 
   beforeEach(async () => {
     // let wallet = Wallet.fromMnemonic(

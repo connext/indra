@@ -5,6 +5,7 @@ import { SimpleLinkedTransferAppRegistryInfo } from "./SimpleLinkedTransferApp";
 import { SimpleSignedTransferAppRegistryInfo } from "./SimpleSignedTransferApp";
 import { SimpleTwoPartySwapAppRegistryInfo } from "./SimpleTwoPartySwapApp";
 import { WithdrawAppRegistryInfo } from "./WithdrawApp";
+import { Zero } from "ethers/constants";
 
 export const AppRegistry: AppRegistryType = [
   SimpleLinkedTransferAppRegistryInfo,
@@ -14,6 +15,8 @@ export const AppRegistry: AppRegistryType = [
   HashLockTransferAppRegistryInfo,
   DepositAppRegistryInfo,
 ];
+
+export const TRANSFER_TIMEOUT = Zero;
 
 export * from "./shared";
 export * from "./HashLockTransferApp";
