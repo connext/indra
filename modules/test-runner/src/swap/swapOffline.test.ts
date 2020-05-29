@@ -80,12 +80,8 @@ const fundChannelAndSwap = async (opts: {
       await new Promise(async (resolve, reject) => {
         client.once(failureEvent as any, (msg) => {
           try {
-            expect(msg).to.containSubset({
-              type: failureEvent,
-              from: client.publicIdentifier,
-            });
-            expect(msg.data.params).to.be.an("object");
-            expect(msg.data.error).to.include(failsWith);
+            expect(msg.params).to.be.an("object");
+            expect(msg.error).to.include(failsWith);
             return resolve(msg);
           } catch (e) {
             return reject(e.message);
