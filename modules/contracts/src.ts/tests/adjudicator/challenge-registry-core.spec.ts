@@ -1,21 +1,22 @@
-/* global before */
-import { Contract, Wallet, ContractFactory } from "ethers";
+import { Wallet } from "ethers";
 import { One } from "ethers/constants";
 import { ChallengeStatus, AppChallenge } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { keccak256 } from "ethers/utils";
 
-import { AppWithAction, ChallengeRegistry }  from "../../artifacts";
-
-import { expect, mineBlocks, provider, restore, snapshot } from "../utils";
-
-import { setupContext, encodeState, AppWithCounterState, AppWithCounterAction } from "./utils";
+import { setupContext } from "../context";
+import {
+  AppWithCounterAction,
+  AppWithCounterState,
+  encodeState,
+  expect,
+  mineBlocks,
+  provider,
+  restore,
+  snapshot,
+} from "../utils";
 
 describe("MChallengeRegistryCore", () => {
-
-  let appRegistry: Contract;
-  let appDefinition: Contract;
-
   let wallet: Wallet;
 
   let snapshotId: any;
@@ -37,22 +38,11 @@ describe("MChallengeRegistryCore", () => {
   before(async () => {
     wallet = (await provider.getWallets())[0];
     await wallet.getTransactionCount();
-
-    appRegistry = await new ContractFactory(
-      ChallengeRegistry.abi as any,
-      ChallengeRegistry.bytecode,
-      wallet,
-    ).deploy();
-    appDefinition = await new ContractFactory(
-      AppWithAction.abi as any,
-      AppWithAction.bytecode,
-      wallet,
-    ).deploy();
   });
 
   beforeEach(async () => {
     snapshotId = await snapshot();
-    const context = await setupContext(appRegistry, appDefinition);
+    const context = await setupContext();
 
     ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];
     alice = context["alice"];

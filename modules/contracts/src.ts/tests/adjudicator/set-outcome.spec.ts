@@ -1,16 +1,19 @@
-/* global before */
-import { Contract, Wallet, ContractFactory } from "ethers";
+import { Wallet, ContractFactory } from "ethers";
 
-import { AppComputeOutcomeFails, AppWithAction, ChallengeRegistry }  from "../../artifacts";
+import { AppComputeOutcomeFails }  from "../../artifacts";
 
-import { expect, mineBlocks, provider, restore, snapshot } from "../utils";
-
-import { setupContext, AppWithCounterState, encodeState } from "./utils";
+import { setupContext } from "../context";
+import {
+  AppWithCounterState,
+  encodeState,
+  expect,
+  mineBlocks,
+  provider,
+  restore,
+  snapshot,
+} from "../utils";
 
 describe("setOutcome", () => {
-
-  let appRegistry: Contract;
-  let appDefinition: Contract;
   let wallet: Wallet;
 
   let snapshotId: any;
@@ -33,22 +36,11 @@ describe("setOutcome", () => {
   before(async () => {
     wallet = (await provider.getWallets())[0];
     await wallet.getTransactionCount();
-
-    appRegistry = await new ContractFactory(
-      ChallengeRegistry.abi as any,
-      ChallengeRegistry.bytecode,
-      wallet,
-    ).deploy();
-    appDefinition = await new ContractFactory(
-      AppWithAction.abi as any,
-      AppWithAction.bytecode,
-      wallet,
-    ).deploy();
   });
 
   beforeEach(async () => {
     snapshotId = await snapshot();
-    const context = await setupContext(appRegistry, appDefinition);
+    const context = await setupContext();
 
     // apps/constants
     ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];
@@ -110,7 +102,7 @@ describe("setOutcome", () => {
       AppComputeOutcomeFails.bytecode,
       wallet,
     ).deploy();
-    const context = await setupContext(appRegistry, failingApp);
+    const context = await setupContext(failingApp);
 
     await context["setAndProgressStateAndVerify"](
       1, // nonce

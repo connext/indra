@@ -1,20 +1,20 @@
-/* global before */
 import { ChallengeStatus, AppChallenge } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { Contract, Wallet, ContractFactory } from "ethers";
+import { Wallet } from "ethers";
 import { keccak256 } from "ethers/utils";
 
-import { AppWithAction, ChallengeRegistry }  from "../../artifacts";
-
-import { expect, mineBlocks, provider, restore, snapshot } from "../utils";
-
-import { setupContext, AppWithCounterState, AppWithCounterAction, encodeState } from "./utils";
+import { setupContext } from "../context";
+import {
+  AppWithCounterAction,
+  AppWithCounterState,
+  encodeState,
+  expect,
+  mineBlocks,
+  restore,
+  snapshot,
+} from "../utils";
 
 describe("ChallengeRegistry", () => {
-  let appRegistry: Contract;
-  let appDefinition: Contract;
-  let wallet: Wallet;
-
   let snapshotId: any;
 
   let ONCHAIN_CHALLENGE_TIMEOUT: number;
@@ -46,30 +46,9 @@ describe("ChallengeRegistry", () => {
   let verifyChallenge: (expected: Partial<AppChallenge>) => Promise<void>;
   let isProgressable: () => Promise<boolean>;
 
-  before(async () => {
-    // TODO: sometimes using the [0] indexed wallet will fail to deploy the
-    // contracts in the first test suite (almost like a promised tx isnt
-    // completed). Hacky fix -- use a different wallet
-    wallet = (await provider.getWallets())[2];
-
-    appRegistry = await new ContractFactory(
-      ChallengeRegistry.abi as any,
-      ChallengeRegistry.bytecode,
-      wallet,
-    ).deploy();
-    appRegistry = await appRegistry.deployed();
-
-    appDefinition = await new ContractFactory(
-      AppWithAction.abi as any,
-      AppWithAction.bytecode,
-      wallet,
-    ).deploy();
-    appDefinition = await appDefinition.deployed();
-  });
-
   beforeEach(async () => {
     snapshotId = await snapshot();
-    const context = await setupContext(appRegistry, appDefinition, wallet);
+    const context = await setupContext();
 
     // apps / constants
     ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];

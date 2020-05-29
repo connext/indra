@@ -1,30 +1,32 @@
-/* global before */
 import { AppChallenge, ChallengeStatus } from "@connext/types";
-import { ChannelSigner, toBN } from "@connext/utils";
-import { One } from "ethers/constants";
-import { Contract, Wallet, ContractFactory } from "ethers";
-
-import { AppWithAction, ChallengeRegistry }  from "../../artifacts";
-
-import { expect, mineBlocks, provider, restore, snapshot } from "../utils";
-
 import {
-  randomState,
+  ChannelSigner,
   appStateToHash,
-  setupContext,
   computeAppChallengeHash,
+  getRandomBytes32,
+  toBN,
+} from "@connext/utils";
+import { One } from "ethers/constants";
+import { Contract, Wallet } from "ethers";
+
+import { setupContext } from "../context";
+import {
   AppWithCounterClass,
+  expect,
+  mineBlocks,
+  provider,
+  restore,
+  snapshot,
   sortSignaturesBySignerAddress,
-} from "./utils";
+} from "../utils";
 
 describe("setState", () => {
   let wallet: Wallet;
   let snapshotId: number;
 
   let bob: Wallet;
-
   let appRegistry: Contract;
-  let appDefinition: Contract;
+
   let ONCHAIN_CHALLENGE_TIMEOUT: number;
   let appInstance: AppWithCounterClass;
 
@@ -35,22 +37,12 @@ describe("setState", () => {
   before(async () => {
     wallet = (await provider.getWallets())[0];
     await wallet.getTransactionCount();
-
-    appRegistry = await new ContractFactory(
-      ChallengeRegistry.abi as any,
-      ChallengeRegistry.bytecode,
-      wallet,
-    ).deploy();
-    appDefinition = await new ContractFactory(
-      AppWithAction.abi as any,
-      AppWithAction.bytecode,
-      wallet,
-    ).deploy();
   });
 
   beforeEach(async () => {
     snapshotId = await snapshot();
-    const context = await setupContext(appRegistry, appDefinition);
+    const context = await setupContext();
+    appRegistry = context["appRegistry"];
     setState = context["setState"];
     verifyChallenge = context["verifyChallenge"];
     verifyEmptyChallenge = context["verifyEmptyChallenge"];
@@ -68,7 +60,7 @@ describe("setState", () => {
       await verifyEmptyChallenge();
 
       const versionNumber = 3;
-      const state = randomState();
+      const state = getRandomBytes32();
       const timeout = 4;
 
       await setState(versionNumber, state, timeout);
@@ -83,7 +75,7 @@ describe("setState", () => {
 
     it("should work when a challenge with a higher version number is submmitted", async () => {
       const versionNumber = 3;
-      const state = randomState();
+      const state = getRandomBytes32();
       const timeout = 4;
 
       await setState(versionNumber, state, timeout);
@@ -96,7 +88,7 @@ describe("setState", () => {
       });
 
       const newVersionNumber = 10;
-      const newState = randomState();
+      const newState = getRandomBytes32();
       const newTimeout = 2;
 
       await setState(newVersionNumber, newState, newTimeout);
@@ -110,7 +102,7 @@ describe("setState", () => {
     });
 
     it("fails if not disputable", async () => {
-      const state = randomState();
+      const state = getRandomBytes32();
       await setState(1, state);
       await verifyChallenge({
         status: ChallengeStatus.IN_DISPUTE,
@@ -120,13 +112,13 @@ describe("setState", () => {
 
       await mineBlocks(100);
 
-      await expect(setState(2, randomState())).to.be.revertedWith(
+      await expect(setState(2, getRandomBytes32())).to.be.revertedWith(
         "setState was called on an app that cannot be disputed anymore",
       );
     });
 
     it("fails if incorrect signers", async () => {
-      const state = randomState();
+      const state = getRandomBytes32();
       const thingToSign = computeAppChallengeHash(
         appInstance.identityHash,
         appStateToHash(state),
@@ -147,7 +139,7 @@ describe("setState", () => {
     });
 
     it("fails if called with the same versioned state", async () => {
-      const state = randomState();
+      const state = getRandomBytes32();
       await setState(1, state);
       await verifyChallenge({
         status: ChallengeStatus.IN_DISPUTE,
@@ -161,7 +153,7 @@ describe("setState", () => {
     });
 
     it("fails if called with a stale state", async () => {
-      const state = randomState();
+      const state = getRandomBytes32();
       await setState(20, state);
       await verifyChallenge({
         status: ChallengeStatus.IN_DISPUTE,

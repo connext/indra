@@ -1,23 +1,22 @@
-/* global before */
 import { AppChallenge } from "@connext/types";
-import { Wallet, Contract, ContractFactory } from "ethers";
+import { Wallet, ContractFactory } from "ethers";
 
-import { AppApplyActionFails, AppWithAction, ChallengeRegistry }  from "../../artifacts";
+import { AppApplyActionFails }  from "../../artifacts";
 
-import { expect, mineBlocks, provider, restore, snapshot } from "../utils";
-
+import { setupContext } from "../context";
 import {
-  AppWithCounterState,
   AppWithCounterAction,
+  AppWithCounterState,
+  emptyChallenge,
   encodeState,
-  setupContext,
-  EMPTY_CHALLENGE,
-} from "./utils";
+  expect,
+  mineBlocks,
+  provider,
+  restore,
+  snapshot,
+} from "../utils";
 
 describe("progressState", () => {
-  let appRegistry: Contract;
-  let appDefinition: Contract;
-
   let wallet: Wallet;
   let ALICE: Wallet;
   let BOB: Wallet;
@@ -50,22 +49,11 @@ describe("progressState", () => {
   before(async () => {
     wallet = (await provider.getWallets())[0];
     await wallet.getTransactionCount();
-
-    appRegistry = await new ContractFactory(
-      ChallengeRegistry.abi as any,
-      ChallengeRegistry.bytecode,
-      wallet,
-    ).deploy();
-    appDefinition = await new ContractFactory(
-      AppWithAction.abi as any,
-      AppWithAction.bytecode,
-      wallet,
-    ).deploy();
   });
 
   beforeEach(async () => {
     snapshotId = await snapshot();
-    const context = await setupContext(appRegistry, appDefinition);
+    const context = await setupContext();
 
     // apps
     ALICE = context["alice"];
@@ -89,7 +77,7 @@ describe("progressState", () => {
   });
 
   it("Can call progressState", async () => {
-    await verifyChallenge(EMPTY_CHALLENGE);
+    await verifyChallenge(emptyChallenge);
 
     await setState(1, encodeState(PRE_STATE));
 
@@ -160,7 +148,7 @@ describe("progressState", () => {
       AppApplyActionFails.bytecode,
       wallet,
     ).deploy();
-    const context = await setupContext(appRegistry, failingApp);
+    const context = await setupContext(failingApp);
 
     await context["setStateAndVerify"](1, encodeState(context["state0"]));
 

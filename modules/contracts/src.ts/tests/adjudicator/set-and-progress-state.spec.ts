@@ -1,16 +1,16 @@
-/* global before */
-import { Contract, Wallet, ContractFactory } from "ethers";
+import { Wallet } from "ethers";
 
-import { AppWithAction, ChallengeRegistry }  from "../../artifacts";
-
-import { expect, provider, restore, snapshot } from "../utils";
-
-import { setupContext, AppWithCounterState, AppWithCounterAction } from "./utils";
+import { setupContext } from "../context";
+import {
+  AppWithCounterAction,
+  AppWithCounterState,
+  expect,
+  provider,
+  restore,
+  snapshot,
+} from "../utils";
 
 describe("setAndProgressState", () => {
-
-  let appRegistry: Contract;
-  let appDefinition: Contract;
   let wallet: Wallet;
   let snapshotId: any;
 
@@ -25,22 +25,11 @@ describe("setAndProgressState", () => {
   before(async () => {
     wallet = (await provider.getWallets())[0];
     await wallet.getTransactionCount();
-
-    appRegistry = await new ContractFactory(
-      ChallengeRegistry.abi as any,
-      ChallengeRegistry.bytecode,
-      wallet,
-    ).deploy();
-    appDefinition = await new ContractFactory(
-      AppWithAction.abi as any,
-      AppWithAction.bytecode,
-      wallet,
-    ).deploy();
   });
 
   beforeEach(async () => {
     snapshotId = await snapshot();
-    const context = await setupContext(appRegistry, appDefinition);
+    const context = await setupContext();
 
     // get constants
     state0 = context["state0"];

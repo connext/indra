@@ -1,30 +1,22 @@
-/* global before */
-import { ChannelSigner, toBN } from "@connext/utils";
-import { Contract, Wallet, ContractFactory } from "ethers";
+import { ChannelSigner, computeCancelDisputeHash, getRandomPrivateKey, toBN } from "@connext/utils";
+import { Wallet } from "ethers";
 
-import { AppWithAction, ChallengeRegistry }  from "../../artifacts";
-
-import { expect, provider, restore, snapshot } from "../utils";
-
+import { setupContext } from "../context";
 import {
-  setupContext,
-  AppWithCounterState,
-  computeCancelDisputeHash,
   AppWithCounterClass,
+  AppWithCounterState,
+  expect,
+  restore,
+  snapshot,
   sortSignaturesBySignerAddress,
-} from "./utils";
+} from "../utils";
 
 describe("cancelDispute", () => {
-  let appRegistry: Contract;
-  let appDefinition: Contract;
-  let wallet: Wallet;
   let snapshotId: number;
 
-  // app instance
   let appInstance: AppWithCounterClass;
   let bob: Wallet;
 
-  // helpers
   let isDisputable: () => Promise<boolean>;
   let isProgressable: () => Promise<boolean>;
 
@@ -37,25 +29,9 @@ describe("cancelDispute", () => {
   let cancelDispute: (versionNumber: number, signatures?: string[]) => Promise<void>;
   let cancelDisputeAndVerify: (versionNumber: number, signatures?: string[]) => Promise<void>;
 
-  before(async () => {
-    wallet = (await provider.getWallets())[0];
-    await wallet.getTransactionCount();
-
-    appRegistry = await new ContractFactory(
-      ChallengeRegistry.abi as any,
-      ChallengeRegistry.bytecode,
-      wallet,
-    ).deploy();
-    appDefinition = await new ContractFactory(
-      AppWithAction.abi as any,
-      AppWithAction.bytecode,
-      wallet,
-    ).deploy();
-  });
-
   beforeEach(async () => {
     snapshotId = await snapshot();
-    const context = await setupContext(appRegistry, appDefinition);
+    const context = await setupContext();
 
     // app instance
     appInstance = context["appInstance"];
@@ -116,7 +92,7 @@ describe("cancelDispute", () => {
     const signatures = await sortSignaturesBySignerAddress(
       digest,
       [
-        await (new ChannelSigner(wallet.privateKey).signMessage(digest)),
+        await (new ChannelSigner(getRandomPrivateKey()).signMessage(digest)),
         await (new ChannelSigner(bob.privateKey).signMessage(digest)),
       ],
     );

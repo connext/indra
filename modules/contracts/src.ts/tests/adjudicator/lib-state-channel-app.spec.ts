@@ -1,19 +1,20 @@
-/* global before */
 import { AppChallenge, ChallengeStatus } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { Contract, Wallet, ContractFactory } from "ethers";
+import { Wallet } from "ethers";
 import { BigNumberish } from "ethers/utils";
 
-import { AppWithAction, ChallengeRegistry } from "../../artifacts";
-
-import { expect, mineBlocks, provider, restore, snapshot } from "../utils";
-
-import { setupContext, AppWithCounterAction, ActionType } from "./utils";
+import { setupContext } from "../context";
+import {
+  ActionType,
+  AppWithCounterAction,
+  expect,
+  mineBlocks,
+  provider,
+  restore,
+  snapshot,
+} from "../utils";
 
 describe("LibStateChannelApp", () => {
-
-  let appRegistry: Contract;
-  let appDefinition: Contract;
 
   let wallet: Wallet;
 
@@ -37,22 +38,11 @@ describe("LibStateChannelApp", () => {
   before(async () => {
     wallet = (await provider.getWallets())[0];
     await wallet.getTransactionCount();
-
-    appRegistry = await new ContractFactory(
-      ChallengeRegistry.abi as any,
-      ChallengeRegistry.bytecode,
-      wallet,
-    ).deploy();
-    appDefinition = await new ContractFactory(
-      AppWithAction.abi as any,
-      AppWithAction.bytecode,
-      wallet,
-    ).deploy();
   });
 
   beforeEach(async () => {
     snapshotId = await snapshot();
-    const context = await setupContext(appRegistry, appDefinition);
+    const context = await setupContext();
 
     // apps/constants
     ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];

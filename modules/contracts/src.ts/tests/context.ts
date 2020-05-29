@@ -1,176 +1,89 @@
 import {
   AppChallenge,
-  AppIdentity,
   ChallengeEvents,
   ChallengeStatus,
-  CommitmentTarget,
 } from "@connext/types";
 import {
   ChannelSigner,
+  computeAppChallengeHash,
+  computeCancelDisputeHash,
   getRandomAddress,
   getRandomBytes32,
-  recoverAddressFromChannelMessage,
   toBN,
 } from "@connext/utils";
-import { Wallet, Contract } from "ethers";
+import { Contract, ContractFactory, Wallet } from "ethers";
 import { Zero, One, HashZero } from "ethers/constants";
+import { BigNumberish, keccak256 } from "ethers/utils";
+
+import { AppWithAction, ChallengeRegistry }  from "../artifacts";
+
 import {
-  BigNumberish,
-  defaultAbiCoder,
-  keccak256,
-  hexlify,
-  randomBytes,
-  solidityPack,
-  BigNumber,
-} from "ethers/utils";
+  ActionType,
+  AppWithCounterAction,
+  AppWithCounterClass,
+  AppWithCounterState,
+  encodeAction,
+  encodeOutcome,
+  encodeState,
+  emptyChallenge,
+  expect,
+  provider,
+  sortSignaturesBySignerAddress,
+} from "./utils";
 
-import { expect, provider } from "../utils";
-
-export const sortSignaturesBySignerAddress = async (
-  digest: string,
-  signatures: string[],
-): Promise<string[]> => {
-  return (
-    await Promise.all(
-      signatures.map(
-        async sig => ({ sig, addr: await recoverAddressFromChannelMessage(digest, sig) }),
-      ),
-    )
-  )
-    .sort((a, b) => toBN(a.addr).lt(toBN(b.addr)) ? -1 : 1)
-    .map(x => x.sig);
-};
-
-export const randomState = (numBytes: number = 64) => hexlify(randomBytes(numBytes));
-
-// App State With Action types for testing
-export type AppWithCounterState = {
-  counter: BigNumber;
-};
-
-export enum ActionType {
-  SUBMIT_COUNTER_INCREMENT,
-  ACCEPT_INCREMENT,
-}
-
-export enum TwoPartyFixedOutcome {
-  SEND_TO_ADDR_ONE,
-  SEND_TO_ADDR_TWO,
-  SPLIT_AND_SEND_TO_BOTH_ADDRS,
-}
-
-export type AppWithCounterAction = {
-  actionType: ActionType;
-  increment: BigNumber;
-};
-
-export const encodeState = (state: AppWithCounterState) => {
-  return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
-};
-
-export const encodeAction = (action: AppWithCounterAction) => {
-  return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
-};
-
-export const encodeOutcome = () => {
-  return defaultAbiCoder.encode([`uint`], [TwoPartyFixedOutcome.SEND_TO_ADDR_ONE]);
-};
-
-// TS version of MChallengeRegistryCore::computeCancelDisputeHash
-export const computeCancelDisputeHash = (identityHash: string, versionNumber: BigNumber) =>
-  keccak256(
-    solidityPack(
-      ["uint8", "bytes32", "uint256"],
-      [CommitmentTarget.CANCEL_DISPUTE, identityHash, versionNumber],
-    ),
-  );
-
-// TS version of MChallengeRegistryCore::appStateToHash
-export const appStateToHash = (state: string) => keccak256(state);
-
-// TS version of MChallengeRegistryCore::computeAppChallengeHash
-export const computeAppChallengeHash = (
-  id: string,
-  appStateHash: string,
-  versionNumber: BigNumberish,
-  timeout: number,
-) =>
-  keccak256(
-    solidityPack(
-      ["uint8", "bytes32", "bytes32", "uint256", "uint256"],
-      [CommitmentTarget.SET_STATE, id, appStateHash, versionNumber, timeout],
-    ),
-  );
-
-export class AppWithCounterClass {
-  get identityHash(): string {
-    return keccak256(
-      solidityPack(
-        ["address", "uint256", "bytes32", "address", "uint256"],
-        [
-          this.multisigAddress,
-          this.channelNonce,
-          keccak256(solidityPack(["address[]"], [this.participants])),
-          this.appDefinition,
-          this.defaultTimeout,
-        ],
-      ),
-    );
-  }
-
-  get appIdentity(): AppIdentity {
-    return {
-      participants: this.participants,
-      multisigAddress: this.multisigAddress,
-      appDefinition: this.appDefinition,
-      defaultTimeout: toBN(this.defaultTimeout),
-      channelNonce: toBN(this.channelNonce),
-    };
-  }
-
-  constructor(
-    readonly participants: string[],
-    readonly multisigAddress: string,
-    readonly appDefinition: string,
-    readonly defaultTimeout: number,
-    readonly channelNonce: number,
-  ) {}
-}
-
-export const EMPTY_CHALLENGE = {
-  versionNumber: Zero,
-  appStateHash: HashZero,
-  status: ChallengeStatus.NO_CHALLENGE,
-  finalizesAt: Zero,
-};
-
-export const setupContext = async (
-  appRegistry: Contract,
-  appDefinition: Contract,
-  providedWallet?: Wallet,
-) => {
+export const setupContext = async (givenAppDefinition?: Contract) => {
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
   const alice = new Wallet("0x3570f77380e22f8dc2274d8fd33e7830cc2d29cf76804e8c21f4f7a6cc571d27");
   // 0xb37e49bFC97A948617bF3B63BC6942BB15285715
   const bob = new Wallet("0x4ccac8b1e81fb18a98bbaf29b9bfe307885561f71b76bd4680d7aec9d0ddfcfd");
 
+  // NOTE: sometimes using the [0] indexed wallet will fail to deploy the
+  // contracts in the first test suite (almost like a promised tx isnt
+  // completed). Hacky fix: use a different wallet
+  const deployer = (await provider.getWallets())[2];
+
   // app helpers
   const ONCHAIN_CHALLENGE_TIMEOUT = 30;
   const DEFAULT_TIMEOUT = 10;
-  const CHANNEL_NONCE = parseInt((Math.random() * 100).toString().split(".")[0]);
+  const CHANNEL_NONCE = 42;
 
-  // multisig address helpers
-  const multisigAddress = getRandomAddress(); // doesn't matter exactly what this is
+  // We don't compute or verify the multisig address
+  const multisigAddress = getRandomAddress();
+
+  ////////////////////////////////////////
+  // Internal Helpers
+
+  const appRegistry = await new ContractFactory(
+    ChallengeRegistry.abi as any,
+    ChallengeRegistry.bytecode,
+    deployer,
+  ).deploy();
+  await appRegistry.deployed();
+
+  const appDefinition = givenAppDefinition || await new ContractFactory(
+    AppWithAction.abi as any,
+    AppWithAction.bytecode,
+    deployer,
+  ).deploy();
+  await appDefinition.deployed();
 
   const appInstance = new AppWithCounterClass(
     [alice.address, bob.address],
     multisigAddress,
     appDefinition.address,
-    DEFAULT_TIMEOUT, // default timeout
-    CHANNEL_NONCE, // channel nonce
+    DEFAULT_TIMEOUT,
+    CHANNEL_NONCE,
   );
 
-  // Contract helpers
+  const getSignatures = async (digest: string): Promise<string[]> =>
+    await sortSignaturesBySignerAddress(digest, [
+      await (new ChannelSigner(bob.privateKey).signMessage(digest)),
+      await (new ChannelSigner(alice.privateKey).signMessage(digest)),
+    ]);
+
+  ////////////////////////////////////////
+  // Exported Methods
+
   const getChallenge = async (): Promise<AppChallenge> => {
     const [
       status,
@@ -178,70 +91,44 @@ export const setupContext = async (
       versionNumber,
       finalizesAt,
     ] = await appRegistry.functions.getAppChallenge(appInstance.identityHash);
-    return {
-      status,
-      appStateHash,
-      versionNumber,
-      finalizesAt,
-    };
+    return { status, appStateHash, versionNumber, finalizesAt };
   };
 
-  const getOutcome = async (): Promise<string> => {
-    const outcome = await appRegistry.functions.getOutcome(appInstance.identityHash);
-    return outcome;
-  };
+  const getOutcome = async (): Promise<string> =>
+    appRegistry.functions.getOutcome(appInstance.identityHash);
 
   const verifyChallenge = async (expected: Partial<AppChallenge>) => {
-    const challenge = await getChallenge();
-    expect(challenge).to.containSubset(expected);
+    expect(await getChallenge()).to.containSubset(expected);
   };
 
-  const isProgressable = async () => {
-    const challenge = await getChallenge();
-    return appRegistry.functions.isProgressable(challenge, appInstance.defaultTimeout);
-  };
+  const isProgressable = async () =>
+    appRegistry.functions.isProgressable(await getChallenge(), appInstance.defaultTimeout);
 
-  const isDisputable = async (challenge?: AppChallenge) => {
-    if (!challenge) {
-      challenge = await getChallenge();
-    }
-    return appRegistry.functions.isDisputable(challenge);
-  };
+  const isDisputable = async (challenge?: AppChallenge) =>
+    appRegistry.functions.isDisputable(challenge || await getChallenge());
 
-  const isFinalized = async () => {
-    const challenge = await getChallenge();
-    return appRegistry.functions.isFinalized(challenge, appInstance.defaultTimeout);
-  };
+  const isFinalized = async () =>
+    appRegistry.functions.isFinalized(await getChallenge(), appInstance.defaultTimeout);
 
-  const isCancellable = async (challenge?: AppChallenge) => {
-    if (!challenge) {
-      challenge = await getChallenge();
-    }
-    return appRegistry.functions.isCancellable(challenge, appInstance.defaultTimeout);
-  };
+  const isCancellable = async (challenge?: AppChallenge) =>
+    appRegistry.functions.isCancellable(
+      challenge || await getChallenge(),
+      appInstance.defaultTimeout,
+    );
 
-  const hasPassed = (timeout: BigNumberish) => {
-    return appRegistry.functions.hasPassed(toBN(timeout));
-  };
+  const hasPassed = (timeout: BigNumberish) =>
+    appRegistry.functions.hasPassed(toBN(timeout));
 
   const verifySignatures = async (
     digest: string = getRandomBytes32(),
     signatures?: string[],
     signers?: string[],
-  ) => {
-    if (!signatures) {
-      signatures = await sortSignaturesBySignerAddress(digest, [
-        await (new ChannelSigner(bob.privateKey).signMessage(digest)),
-        await (new ChannelSigner(alice.privateKey).signMessage(digest)),
-      ]);
-    }
-
-    if (!signers) {
-      signers = [alice.address, bob.address];
-    }
-
-    return appRegistry.functions.verifySignatures(signatures, digest, signers);
-  };
+  ) =>
+    appRegistry.functions.verifySignatures(
+      signatures || await getSignatures(digest),
+      digest,
+      signers || [alice.address, bob.address],
+    );
 
   const wrapInEventVerification = async (
     contractCall: any,
@@ -260,17 +147,15 @@ export const setupContext = async (
   };
 
   // State Progression methods
-  const setOutcome = async (encodedFinalState?: string): Promise<void> => {
-    await wrapInEventVerification(
+  const setOutcome = async (encodedFinalState?: string): Promise<void> =>
+    wrapInEventVerification(
       appRegistry.functions.setOutcome(appInstance.appIdentity, encodedFinalState || HashZero),
       { status: ChallengeStatus.OUTCOME_SET },
     );
-  };
 
   const setOutcomeAndVerify = async (encodedFinalState?: string): Promise<void> => {
     await setOutcome(encodedFinalState);
-    const outcome = await getOutcome();
-    expect(outcome).to.eq(encodeOutcome());
+    expect(await getOutcome()).to.eq(encodeOutcome());
     await verifyChallenge({ status: ChallengeStatus.OUTCOME_SET });
   };
 
@@ -290,10 +175,7 @@ export const setupContext = async (
       versionNumber,
       appStateHash: stateHash,
       timeout,
-      signatures: await sortSignaturesBySignerAddress(digest, [
-        await (new ChannelSigner(alice.privateKey).signMessage(digest)),
-        await (new ChannelSigner(bob.privateKey).signMessage(digest)),
-      ]),
+      signatures: await getSignatures(digest),
     });
     await wrapInEventVerification(call, {
       status: ChallengeStatus.IN_DISPUTE,
@@ -325,7 +207,6 @@ export const setupContext = async (
     resultingStateVersionNumber?: BigNumberish,
     resultingStateTimeout?: number,
   ) => {
-    const existingChallenge = await getChallenge();
     resultingState = resultingState ?? {
       counter:
         action.actionType === ActionType.ACCEPT_INCREMENT
@@ -334,7 +215,7 @@ export const setupContext = async (
     };
     const resultingStateHash = keccak256(encodeState(resultingState));
     resultingStateVersionNumber =
-      resultingStateVersionNumber ?? existingChallenge.versionNumber.add(One);
+      resultingStateVersionNumber ?? (await getChallenge()).versionNumber.add(One);
     resultingStateTimeout = resultingStateTimeout ?? 0;
     const digest = computeAppChallengeHash(
       appInstance.identityHash,
@@ -455,13 +336,7 @@ export const setupContext = async (
       versionNumber,
       appStateHash: stateHash,
       timeout,
-      signatures: await sortSignaturesBySignerAddress(
-        stateDigest,
-        [
-          await (new ChannelSigner(alice.privateKey).signMessage(stateDigest)),
-          await (new ChannelSigner(bob.privateKey).signMessage(stateDigest)),
-        ],
-      ),
+      signatures: await getSignatures(stateDigest),
     };
     const req2 = {
       versionNumber: One.add(versionNumber),
@@ -480,22 +355,14 @@ export const setupContext = async (
     );
   };
 
+  // TODO: why does event verification fail?
+  // await wrapInEventVerification(
   const cancelDispute = async (versionNumber: number, signatures?: string[]): Promise<void> => {
     const digest = computeCancelDisputeHash(appInstance.identityHash, toBN(versionNumber));
-    if (!signatures) {
-      signatures = await sortSignaturesBySignerAddress(digest, [
-        await (new ChannelSigner(alice.privateKey).signMessage(digest)),
-        await (new ChannelSigner(bob.privateKey).signMessage(digest)),
-      ]);
-    }
-    // TODO: why does event verification fail?
-    // await wrapInEventVerification(
     await appRegistry.functions.cancelDispute(appInstance.appIdentity, {
       versionNumber: toBN(versionNumber),
-      signatures,
+      signatures: signatures || await getSignatures(digest),
     });
-    //   { ...EMPTY_CHALLENGE },
-    // );
   };
 
   const cancelDisputeAndVerify = async (
@@ -503,19 +370,17 @@ export const setupContext = async (
     signatures?: string[],
   ): Promise<void> => {
     await cancelDispute(versionNumber, signatures);
-    await verifyChallenge(EMPTY_CHALLENGE);
+    await verifyChallenge(emptyChallenge);
   };
 
   return {
     // app defaults
     alice,
+    appRegistry,
     bob,
     state0: { counter: Zero },
     state1: { counter: toBN(2) },
-    action: {
-      actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
-      increment: toBN(2),
-    },
+    action: { actionType: ActionType.SUBMIT_COUNTER_INCREMENT, increment: toBN(2) },
     explicitlyFinalizingAction: {
       actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
       increment: toBN(6),
@@ -526,7 +391,7 @@ export const setupContext = async (
     // helper fns
     getChallenge,
     verifyChallenge,
-    verifyEmptyChallenge: () => verifyChallenge(EMPTY_CHALLENGE),
+    verifyEmptyChallenge: () => verifyChallenge(emptyChallenge),
     isProgressable,
     isFinalized,
     isCancellable,
