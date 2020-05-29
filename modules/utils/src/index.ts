@@ -13,4 +13,5 @@ export * from "./json";
 export * from "./logger";
 export * from "./math";
 export * from "./strings";
+export * from "./typedEmitter";
 export * from "./url";
