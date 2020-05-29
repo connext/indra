@@ -11,7 +11,7 @@ import {
   EventNames,
   EventPayloads,
   Bytes32,
-  Message,
+  ProtocolEventMessage,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
@@ -111,7 +111,7 @@ export class DepositService {
 
       const cfCore = this.cfCoreService.cfCore;
       cfCore.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async function handler(
-        data: Message<EventPayloads.ProposeFailed>,
+        data: ProtocolEventMessage<typeof EventNames.PROPOSE_INSTALL_FAILED_EVENT>,
       ) {
         await cleanUpDepositRights();
         // TODO: not sure if this works

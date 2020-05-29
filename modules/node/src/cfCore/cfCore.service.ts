@@ -15,6 +15,7 @@ import {
   PublicParams,
   RejectProposalMessage,
   StateChannelJSON,
+  EventName,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
@@ -415,7 +416,7 @@ export class CFCoreService {
     appIdentityHash: string,
     message: InstallMessage,
   ): InstallMessage => {
-    if (appIdentityHash === message.data.params.appIdentityHash) {
+    if (appIdentityHash === message.data.appIdentityHash) {
       res(message);
     }
     return message;
@@ -433,7 +434,7 @@ export class CFCoreService {
     this.cfCore.off(EventNames.REJECT_INSTALL_EVENT, boundReject);
   };
 
-  registerCfCoreListener(event: EventNames, callback: (data: any) => any): void {
+  registerCfCoreListener(event: EventName, callback: (data: any) => any): void {
     this.log.info(`Registering cfCore callback for event ${event}`);
     this.cfCore.on(event, callback);
   }
