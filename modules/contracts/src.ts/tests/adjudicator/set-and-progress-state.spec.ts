@@ -3,7 +3,9 @@ import { Contract, Wallet, ContractFactory } from "ethers";
 
 import { AppWithAction, ChallengeRegistry }  from "../../artifacts";
 
-import { expect, provider, snapshot, setupContext, AppWithCounterState, AppWithCounterAction, restore } from "./utils";
+import { expect, provider, restore, snapshot } from "../utils";
+
+import { setupContext, AppWithCounterState, AppWithCounterAction } from "./utils";
 
 describe("setAndProgressState", () => {
 

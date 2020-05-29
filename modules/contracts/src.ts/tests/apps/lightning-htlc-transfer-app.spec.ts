@@ -1,4 +1,4 @@
-import { getRandomAddress } from "@connext/utils";
+import { getRandomAddress, getRandomBytes32 } from "@connext/utils";
 import {
   CoinTransfer,
   HashLockTransferAppAction,
@@ -15,10 +15,6 @@ import { BigNumber, defaultAbiCoder, soliditySha256, bigNumberify } from "ethers
 import { HashLockTransferApp as LightningHTLCTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
-
-const mkHash = (prefix: string = "0xa"): string => {
-  return prefix.padEnd(66, "0");
-};
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
@@ -87,7 +83,7 @@ describe("LightningHTLCTransferApp", () => {
     senderAddr = getRandomAddress();
     receiverAddr = getRandomAddress();
     transferAmount = new BigNumber(10000);
-    preImage = mkHash("0xb");
+    preImage = getRandomBytes32();
     lockHash = createLockHash(preImage);
     expiry = bigNumberify(await provider.getBlockNumber()).add(100);
     preState = {
@@ -103,7 +99,7 @@ describe("LightningHTLCTransferApp", () => {
       ],
       lockHash,
       expiry,
-      preImage: mkHash("0x0"),
+      preImage: getRandomBytes32(),
       finalized: false,
     };
   });
@@ -148,7 +144,7 @@ describe("LightningHTLCTransferApp", () => {
 
     it("will revert action with incorrect hash", async () => {
       const action: HashLockTransferAppAction = {
-        preImage: mkHash("0xc"), // incorrect hash
+        preImage: getRandomBytes32(),
       };
 
       await expect(applyAction(preState, action)).revertedWith(

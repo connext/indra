@@ -6,17 +6,14 @@ import { Contract, Wallet, ContractFactory } from "ethers";
 
 import { AppWithAction, ChallengeRegistry }  from "../../artifacts";
 
+import { expect, mineBlocks, provider, restore, snapshot } from "../utils";
+
 import {
   randomState,
   appStateToHash,
   setupContext,
-  expect,
-  moveToBlock,
   computeAppChallengeHash,
   AppWithCounterClass,
-  restore,
-  snapshot,
-  provider,
   sortSignaturesBySignerAddress,
 } from "./utils";
 
@@ -121,7 +118,7 @@ describe("setState", () => {
         versionNumber: toBN(1),
       });
 
-      await moveToBlock(100);
+      await mineBlocks(100);
 
       await expect(setState(2, randomState())).to.be.revertedWith(
         "setState was called on an app that cannot be disputed anymore",

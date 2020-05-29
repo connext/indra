@@ -6,7 +6,9 @@ import { BigNumberish } from "ethers/utils";
 
 import { AppWithAction, ChallengeRegistry } from "../../artifacts";
 
-import { provider, snapshot, setupContext, restore, expect, moveToBlock, AppWithCounterAction, ActionType } from "./utils";
+import { expect, mineBlocks, provider, restore, snapshot } from "../utils";
+
+import { setupContext, AppWithCounterAction, ActionType } from "./utils";
 
 describe("LibStateChannelApp", () => {
 
@@ -107,7 +109,7 @@ describe("LibStateChannelApp", () => {
 
     it("should return false once the IN_DISPUTE phase elapses", async () => {
       await setState(1);
-      await moveToBlock(45);
+      await mineBlocks(45);
       expect(await isDisputable()).to.be.false;
     });
 
@@ -121,7 +123,7 @@ describe("LibStateChannelApp", () => {
     it("should return true if challenge is in dispute, and the progress state period has not elapsed, but the set state period has", async () => {
       await setState(1);
 
-      await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+      await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
       expect(await isProgressable()).to.be.true;
     });
@@ -133,7 +135,7 @@ describe("LibStateChannelApp", () => {
         status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
       });
 
-      await moveToBlock(await provider.getBlockNumber() + 2);
+      await mineBlocks(2);
 
       expect(await isProgressable()).to.be.true;
     });
@@ -141,7 +143,7 @@ describe("LibStateChannelApp", () => {
     it("should return false if progress state period has elapsed", async () => {
       await setAndProgressState(1);
 
-      await moveToBlock(await provider.getBlockNumber() + 100);
+      await mineBlocks(100);
 
       expect(await isProgressable()).to.be.false;
     });
@@ -180,7 +182,7 @@ describe("LibStateChannelApp", () => {
 
     it("should return false if the progress state period has elapsed", async () => {
       await setAndProgressState(1);
-      await moveToBlock(await provider.getBlockNumber() + 100);
+      await mineBlocks(100);
       expect(await isCancellable()).to.be.false;
     });
 

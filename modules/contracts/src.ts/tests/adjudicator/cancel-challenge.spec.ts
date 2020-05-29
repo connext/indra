@@ -4,12 +4,10 @@ import { Contract, Wallet, ContractFactory } from "ethers";
 
 import { AppWithAction, ChallengeRegistry }  from "../../artifacts";
 
+import { expect, provider, restore, snapshot } from "../utils";
+
 import {
-  expect,
-  restore,
-  snapshot,
   setupContext,
-  provider,
   AppWithCounterState,
   computeCancelDisputeHash,
   AppWithCounterClass,

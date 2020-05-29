@@ -3,7 +3,9 @@ import { Contract, Wallet, ContractFactory } from "ethers";
 
 import { AppComputeOutcomeFails, AppWithAction, ChallengeRegistry }  from "../../artifacts";
 
-import { setupContext, snapshot, provider, restore, AppWithCounterState, moveToBlock, expect, encodeState } from "./utils";
+import { expect, mineBlocks, provider, restore, snapshot } from "../utils";
+
+import { setupContext, AppWithCounterState, encodeState } from "./utils";
 
 describe("setOutcome", () => {
 
@@ -20,7 +22,11 @@ describe("setOutcome", () => {
 
   // helpers
   let setOutcome: (finalState?: string) => Promise<void>;
-  let setAndProgressState: (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => Promise<void>;
+  let setAndProgressState: (
+    versionNumber: number,
+    state?: AppWithCounterState,
+    turnTaker?: Wallet,
+  ) => Promise<void>;
 
   let isFinalized: () => Promise<boolean>;
 
@@ -72,7 +78,7 @@ describe("setOutcome", () => {
 
     // must have passed:
     // appChallenge.finalizesAt
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
     expect(await isFinalized()).to.be.true;
 
@@ -84,7 +90,7 @@ describe("setOutcome", () => {
 
     // must have passed:
     // appChallenge.finalizesAt
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
     expect(await isFinalized()).to.be.true;
 
@@ -116,7 +122,7 @@ describe("setOutcome", () => {
 
     // must have passed:
     // appChallenge.finalizesAt
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
     expect(await context["isFinalized"]()).to.be.true;
 

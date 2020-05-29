@@ -4,17 +4,14 @@ import { Wallet, Contract, ContractFactory } from "ethers";
 
 import { AppApplyActionFails, AppWithAction, ChallengeRegistry }  from "../../artifacts";
 
+import { expect, mineBlocks, provider, restore, snapshot } from "../utils";
+
 import {
-  expect,
   AppWithCounterState,
   AppWithCounterAction,
-  snapshot,
-  restore,
-  moveToBlock,
   encodeState,
   setupContext,
   EMPTY_CHALLENGE,
-  provider,
 } from "./utils";
 
 describe("progressState", () => {
@@ -97,7 +94,7 @@ describe("progressState", () => {
     await setState(1, encodeState(PRE_STATE));
 
     expect(await isProgressable()).to.be.false;
-    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 3);
     expect(await isProgressable()).to.be.true;
 
     await progressStateAndVerify(PRE_STATE, ACTION);
@@ -107,7 +104,7 @@ describe("progressState", () => {
     await setState(1, encodeState(PRE_STATE));
 
     expect(await isProgressable()).to.be.false;
-    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 3);
     expect(await isProgressable()).to.be.true;
 
     await progressStateAndVerify(PRE_STATE, EXPLICITLY_FINALIZING_ACTION);
@@ -117,7 +114,7 @@ describe("progressState", () => {
     await setState(1, encodeState(PRE_STATE));
 
     expect(await isProgressable()).to.be.false;
-    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 3);
     await progressStateAndVerify(PRE_STATE, ACTION);
 
     await progressState(POST_STATE, ACTION, ALICE);
@@ -135,7 +132,7 @@ describe("progressState", () => {
   it("progressState should fail if incorrect state submitted", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 3);
 
     await expect(progressStateAndVerify(POST_STATE, ACTION)).to.be.revertedWith(
       "progressState called with oldAppState that does not match stored challenge",
@@ -145,7 +142,7 @@ describe("progressState", () => {
   it("progressState should fail with incorrect turn taker", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 3);
 
     await expect(progressStateAndVerify(PRE_STATE, ACTION, ALICE)).to.be.revertedWith(
       /*
@@ -167,7 +164,7 @@ describe("progressState", () => {
 
     await context["setStateAndVerify"](1, encodeState(context["state0"]));
 
-    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 3);
     expect(await context["isProgressable"]()).to.be.true;
 
     await expect(
@@ -178,7 +175,7 @@ describe("progressState", () => {
   it("progressState should fail if applying action to old state does not match new state", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 3);
 
     await expect(progressState(PRE_STATE, ACTION, BOB, PRE_STATE)).to.be.revertedWith(
       "progressState: applying action to old state does not match new state",
@@ -188,7 +185,7 @@ describe("progressState", () => {
   it("progressState should fail if versionNumber of new state is not that of stored state plus 1", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 3);
 
     await expect(progressState(PRE_STATE, ACTION, BOB, POST_STATE, 1)).to.be.revertedWith(
       "progressState: versionNumber of new state is not that of stored state plus 1",

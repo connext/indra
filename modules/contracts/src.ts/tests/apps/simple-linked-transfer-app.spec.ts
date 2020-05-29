@@ -1,5 +1,5 @@
 import { SolidityValueType } from "@connext/types";
-import { getRandomAddress } from "@connext/utils";
+import { getRandomAddress, getRandomBytes32 } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
@@ -44,10 +44,6 @@ const linkedTransferAppActionEncoding = `
     bytes32 preImage
   )
 `;
-
-const mkHash = (prefix: string = "0xa"): string => {
-  return prefix.padEnd(66, "0");
-};
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
@@ -107,8 +103,8 @@ describe("SimpleLinkedTransferApp", () => {
       const senderAddr = getRandomAddress();
       const receiverAddr = getRandomAddress();
       const transferAmount = new BigNumber(10000);
-      const paymentId = mkHash("0xa");
-      const preImage = mkHash("0xb");
+      const paymentId = getRandomBytes32();
+      const preImage = getRandomBytes32();
       const assetId = AddressZero;
 
       const linkedHash = createLinkedHash(transferAmount, assetId, paymentId, preImage);
@@ -128,7 +124,7 @@ describe("SimpleLinkedTransferApp", () => {
         ],
         linkedHash,
         paymentId,
-        preImage: mkHash("0x0"),
+        preImage: getRandomBytes32(),
       };
 
       const action: SimpleLinkedTransferAppAction = {

@@ -7,7 +7,9 @@ import { keccak256 } from "ethers/utils";
 
 import { AppWithAction, ChallengeRegistry }  from "../../artifacts";
 
-import { expect, provider, restore, setupContext, snapshot, moveToBlock, encodeState, AppWithCounterState, AppWithCounterAction } from "./utils";
+import { expect, mineBlocks, provider, restore, snapshot } from "../utils";
+
+import { setupContext, encodeState, AppWithCounterState, AppWithCounterAction } from "./utils";
 
 describe("MChallengeRegistryCore", () => {
 
@@ -100,9 +102,7 @@ describe("MChallengeRegistryCore", () => {
 
       // must have passed:
       // appChallenge.finalizesAt.add(defaultTimeout))
-      await moveToBlock(
-        await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + ONCHAIN_CHALLENGE_TIMEOUT + 2,
-      );
+      await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
       expect(await isFinalized()).to.be.true;
     });
@@ -116,7 +116,7 @@ describe("MChallengeRegistryCore", () => {
 
       // must have passed:
       // appChallenge.finalizesAt
-      await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+      await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
       expect(await isFinalized()).to.be.true;
     });

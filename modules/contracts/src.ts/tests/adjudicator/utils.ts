@@ -9,6 +9,7 @@ import {
   ChannelSigner,
   getRandomAddress,
   getRandomBytes32,
+  recoverAddressFromChannelMessage,
   toBN,
 } from "@connext/utils";
 import { Wallet, Contract } from "ethers";
@@ -23,10 +24,22 @@ import {
   BigNumber,
 } from "ethers/utils";
 
-import { expect, provider, sortSignaturesBySignerAddress } from "../utils";
+import { expect, provider } from "../utils";
 
-export * from "../utils";
-export * from "../../utils";
+export const sortSignaturesBySignerAddress = async (
+  digest: string,
+  signatures: string[],
+): Promise<string[]> => {
+  return (
+    await Promise.all(
+      signatures.map(
+        async sig => ({ sig, addr: await recoverAddressFromChannelMessage(digest, sig) }),
+      ),
+    )
+  )
+    .sort((a, b) => toBN(a.addr).lt(toBN(b.addr)) ? -1 : 1)
+    .map(x => x.sig);
+};
 
 export const randomState = (numBytes: number = 64) => hexlify(randomBytes(numBytes));
 

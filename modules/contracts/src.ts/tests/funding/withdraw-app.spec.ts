@@ -7,7 +7,7 @@ import {
   WithdrawAppState,
   WithdrawAppStateEncoding,
 } from "@connext/types";
-import { ChannelSigner } from "@connext/utils";
+import { ChannelSigner, getRandomBytes32 } from "@connext/utils";
 import { Wallet, ContractFactory, Contract } from "ethers";
 import { Zero, HashZero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, hexlify, randomBytes, SigningKey } from "ethers/utils";
@@ -15,10 +15,6 @@ import { BigNumber, defaultAbiCoder, hexlify, randomBytes, SigningKey } from "et
 import { WithdrawApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
-
-const mkHash = (prefix: string = "0xa"): string => {
-  return prefix.padEnd(66, "0");
-};
 
 const decodeTransfers = (encodedTransfers: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedTransfers)[0];
@@ -44,7 +40,7 @@ describe("WithdrawApp", async () => {
   const counterpartyWallet = Wallet.createRandom();
   const bystanderWallet = Wallet.createRandom();
   const amount = new BigNumber(10000);
-  const data = mkHash("0xa"); // TODO: test this with real withdrawal commitment hash?
+  const data = getRandomBytes32(); // TODO: test this with real withdrawal commitment hash?
   const withdrawerSigningKey = new SigningKey(withdrawerWallet.privateKey);
   const counterpartySigningKey = new SigningKey(counterpartyWallet.privateKey);
   const bystanderSigningKey = new SigningKey(bystanderWallet.privateKey);
@@ -93,8 +89,8 @@ describe("WithdrawApp", async () => {
   };
 
   it("It zeroes withdrawer balance if state is finalized (w/ valid signatures)", async () => {
-    let initialState = await createInitialState();
-    let action = await createAction();
+    const initialState = await createInitialState();
+    const action = await createAction();
 
     let ret = await applyAction(initialState, action);
     const afterActionState = decodeAppState(ret);
@@ -111,10 +107,10 @@ describe("WithdrawApp", async () => {
   });
 
   it("It cancels the withdrawal if state is not finalized", async () => {
-    let initialState = await createInitialState();
+    const initialState = await createInitialState();
 
     // Compute outcome without taking action
-    let ret = await computeOutcome(initialState);
+    const ret = await computeOutcome(initialState);
     const decoded = decodeTransfers(ret);
 
     expect(decoded[0].to).eq(initialState.transfers[0].to);
@@ -124,10 +120,10 @@ describe("WithdrawApp", async () => {
   });
 
   it("It reverts the action if state is finalized", async () => {
-    let initialState = await createInitialState();
-    let action = await createAction();
+    const initialState = await createInitialState();
+    const action = await createAction();
 
-    let ret = await applyAction(initialState, action);
+    const ret = await applyAction(initialState, action);
     const afterActionState = decodeAppState(ret);
     expect(afterActionState.signatures[1]).to.eq(action.signature);
     expect(afterActionState.finalized).to.be.true;
@@ -138,16 +134,18 @@ describe("WithdrawApp", async () => {
   });
 
   it("It reverts the action if withdrawer signature is invalid", async () => {
-    let initialState = await createInitialState();
-    let action = await createAction();
+    const initialState = await createInitialState();
+    const action = await createAction();
 
-    initialState.signatures[0] = await new ChannelSigner(bystanderSigningKey.privateKey).signMessage(data);
+    initialState.signatures[0] = await new ChannelSigner(
+      bystanderSigningKey.privateKey,
+    ).signMessage(data);
     await expect(applyAction(initialState, action)).revertedWith("invalid withdrawer signature");
   });
 
   it("It reverts the action if counterparty signature is invalid", async () => {
-    let initialState = await createInitialState();
-    let action = await createAction();
+    const initialState = await createInitialState();
+    const action = await createAction();
 
     action.signature = await new ChannelSigner(bystanderSigningKey.privateKey).signMessage(data);
     await expect(applyAction(initialState, action)).revertedWith("invalid counterparty signature");

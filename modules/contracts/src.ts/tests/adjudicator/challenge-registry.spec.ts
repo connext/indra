@@ -6,17 +6,9 @@ import { keccak256 } from "ethers/utils";
 
 import { AppWithAction, ChallengeRegistry }  from "../../artifacts";
 
-import {
-  expect,
-  provider,
-  restore,
-  setupContext,
-  snapshot,
-  AppWithCounterState,
-  AppWithCounterAction,
-  encodeState,
-  moveToBlock,
-} from "./utils";
+import { expect, mineBlocks, provider, restore, snapshot } from "../utils";
+
+import { setupContext, AppWithCounterState, AppWithCounterAction, encodeState } from "./utils";
 
 describe("ChallengeRegistry", () => {
   let appRegistry: Contract;
@@ -141,7 +133,7 @@ describe("ChallengeRegistry", () => {
 
     await setState(15, encodeState(state0));
 
-    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 15);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 15);
 
     await setOutcome(encodeState(state0));
   });
@@ -153,13 +145,13 @@ describe("ChallengeRegistry", () => {
 
     await setState(15, encodeState(state0));
 
-    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 2);
     expect(await isProgressable()).to.be.true;
 
     await progressStateAndVerify(state0, action);
     await progressStateAndVerify(state1, action, alice);
 
-    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 15);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 15);
     expect(await isProgressable()).to.be.false;
 
     await setOutcome(
@@ -193,7 +185,7 @@ describe("ChallengeRegistry", () => {
   it("Cannot cancel challenge after outcome set", async () => {
     await setState(1, encodeState(state0));
 
-    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 15);
+    await mineBlocks(ONCHAIN_CHALLENGE_TIMEOUT + 15);
 
     await setOutcome(encodeState(state0));
     await expect(cancelDisputeAndVerify(1)).to.be.revertedWith(
