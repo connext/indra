@@ -682,10 +682,10 @@
       "txHash": "0xd7b6502d7f3ef8d8179fdbd7b6dec6b9cb484e2b36caabe4fff591e0f2e2657d"
     },
     "Token": {
-      "address": "0x8e4C131B37383E431B9cd0635D3cF9f3F628EDae",
+      "address": "0xEcFcaB0A285d3380E488A39B4BB21e777f8A4EaC",
       "creationCodeHash": "0x0f5a7fec416c49bd9ff2c93dc9deaecefd6920a95c33c1a19013887603a40a80",
       "runtimeCodeHash": "0xa52e3215610f412638ecf812b04abc3a1f261048fa0bb9b891a8237a448eeb61",
-      "txHash": "0xb174da1b4a85c8660f8a28f7e92eef4603988d86e8f498125d4ef12e1889cf21"
+      "txHash": "0x31264950c9a34456d63239ced81d24bb9b61dd0efc958ac30a03c222cd0da38d"
     },
     "HashLockTransferApp": {
       "address": "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF",
