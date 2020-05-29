@@ -18,6 +18,7 @@ import {
   BigNumber,
   ConditionalTransferTypes,
   EventNames,
+  EventName,
   ProtocolNames,
   IStoreService,
   PublicParams,
@@ -210,7 +211,7 @@ describe("Signed Transfer Offline", () => {
     receiver: IConnextClient;
     whichFails: "sender" | "receiver";
     error: string;
-    event?: EventNames;
+    event?: EventName;
     amount?: BigNumber;
     paymentId?: string;
   }): Promise<void> => {
@@ -253,7 +254,7 @@ describe("Signed Transfer Offline", () => {
     paymentId: string;
     whichFails: "sender" | "receiver";
     error: string;
-    event?: EventNames;
+    event?: EventName;
   }): Promise<void> => {
     const { sender, receiver, whichFails, error, event, paymentId } = opts;
     if (!event) {
@@ -300,7 +301,7 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       event: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
     });
-    await sender.removeAllListeners();
+    await sender.off();
     await sender.messaging.disconnect();
 
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
@@ -319,7 +320,7 @@ describe("Signed Transfer Offline", () => {
       whichFails: "sender",
       error: CLIENT_INSTALL_FAILED(true),
     });
-    await sender.removeAllListeners();
+    await sender.off();
     await sender.messaging.disconnect();
 
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
@@ -344,7 +345,7 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       event: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
     });
-    await receiver.removeAllListeners();
+    await receiver.off();
     await receiver.messaging.disconnect();
 
     await recreateClientAndRetryTransfer(
@@ -380,7 +381,7 @@ describe("Signed Transfer Offline", () => {
         reject(err);
       }
     });
-    await receiver.removeAllListeners();
+    await receiver.off();
     await receiver.messaging.disconnect();
 
     await recreateClientAndRetryTransfer(
@@ -408,7 +409,7 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.takeAction),
       event: EventNames.UPDATE_STATE_FAILED_EVENT,
     });
-    await receiver.removeAllListeners();
+    await receiver.off();
     await receiver.messaging.disconnect();
 
     await recreateClientAndRetryTransfer(
@@ -436,7 +437,7 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.uninstall),
       event: EventNames.UNINSTALL_FAILED_EVENT,
     });
-    await receiver.removeAllListeners();
+    await receiver.off();
     await receiver.messaging.disconnect();
 
     await recreateClientAndRetryTransfer("receiver", sender, receiverSigner, receiver.store);

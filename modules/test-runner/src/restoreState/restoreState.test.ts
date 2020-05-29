@@ -89,7 +89,7 @@ describe("Restore State", () => {
     // first clear the client store and take client offline
     await clientA.store.clear();
     await clientA.messaging.disconnect();
-    clientA.removeAllListeners(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT);
+    clientA.off();
 
     // send the transfer
     await Promise.all([

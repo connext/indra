@@ -3,6 +3,7 @@ import {
   ProtocolNames,
   ProtocolParams,
   IChannelSigner,
+  EventName,
   EventNames,
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";
@@ -35,7 +36,7 @@ const fundChannelAndSwap = async (opts: {
   outputAmount: BigNumber;
   tokenToEth?: boolean;
   failsWith?: string;
-  failureEvent?: EventNames;
+  failureEvent?: EventName;
   client?: IConnextClient;
   signer?: IChannelSigner;
   balanceUpdatedWithoutRetry?: boolean;
