@@ -5,4 +5,10 @@ export const botMnemonics = [
 
 export const classicProviders = ["https://www.ethercluster.com/etc"];
 
+export const defaults = {
+  mnemonic: "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat",
+  providerUrl: "http://localhost:8545",
+  addressBookPath: "./address-book.json",
+};
+
 export const ganacheId = 4447;

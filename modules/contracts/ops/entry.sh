@@ -5,6 +5,7 @@ echo "Ethprovider entrypoint activated!"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/.."
 ganache="$dir/node_modules/.bin/ganache-cli"
+address_book="$dir/address-book.json"
 
 mkdir -p /data
 
@@ -35,12 +36,12 @@ then
        > $dir/.ganache.log &
     wait-for localhost:8545
   fi
-  echo "Deploying contracts.."
 
-  touch $dir/address-book.json
+  echo "Deploying contracts.."
+  touch $address_book
 
   node dist/src.ts/cli.js migrate \
-    --address-book "$dir/address-book.json" \
+    --address-book "$address_book" \
     --eth-provider "$ETH_PROVIDER" \
     --mnemonic "$ETH_MNEMONIC"
 

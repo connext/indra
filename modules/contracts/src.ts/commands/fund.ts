@@ -13,7 +13,6 @@ export const fund = async (
   recipient: Address,
   tokenAddress?: Address,
 ): Promise<void> => {
-
   const ethGift = "100000"; // 1mil eth by default
   const tokenGift = "1000000";
   const ethBalance = await sender.provider.getBalance(recipient);
@@ -40,7 +39,6 @@ export const fund = async (
       console.log(`Account ${recipient} already has ${formatEther(tokenBalance)} tokens`);
     }
   }
-
 };
 
 export const fundCommand = {
