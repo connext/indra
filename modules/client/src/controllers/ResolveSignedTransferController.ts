@@ -46,9 +46,10 @@ export class ResolveSignedTransferController extends AbstractController {
       }
       if (!alreadyFinalized) {
         this.log.debug(`Taking action on signed transfer app ${resolveRes.appIdentityHash}`);
-        await this.connext.takeAction(resolveRes.appIdentityHash, {
-          ...attestation,
-        } as SimpleSignedTransferAppAction);
+        await this.connext.takeAction(
+          resolveRes.appIdentityHash,
+          attestation as SimpleSignedTransferAppAction,
+        );
       }
       this.log.debug(`Uninstalling signed transfer app ${resolveRes.appIdentityHash}`);
       await this.connext.uninstallApp(resolveRes.appIdentityHash);

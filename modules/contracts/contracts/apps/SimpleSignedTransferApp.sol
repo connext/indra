@@ -40,11 +40,9 @@ contract SimpleSignedTransferApp is CounterfactualApp {
 
     // EIP-712 DOMAIN SEPARATOR CONSTANTS
  
-    string private constant DOMAIN_NAME = "Graph Protocol";
-    string private constant DOMAIN_VERSION = "0";
+    bytes32 private constant DOMAIN_NAME_HASH = keccak256("Graph Protocol");
+    bytes32 private constant DOMAIN_VERSION_HASH = keccak256("0");
     bytes32 private constant DOMAIN_SALT = 0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188679b9c2;
-
-    // GET CHAIN ID
 
     function getChainID() public pure returns (uint256) {
         uint256 id;
@@ -54,61 +52,34 @@ contract SimpleSignedTransferApp is CounterfactualApp {
         return id;
     }
 
-    // EIP-712 TYPE DATA METHODS
-
-    function hashStruct(bytes32 typeHash, bytes memory values) public view returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                typeHash,
-                values
-            )
-        );
-    }
-
-    function hashTypedMessage(bytes32 domainSeparator, bytes32 message) public view returns (bytes32) {
-        return
+    function recoverAttestationSigner(Action memory action, address verifyingContract) public pure returns (address) {
+        return ECDSA.recover(
             keccak256(
                 abi.encodePacked(
                     "\x19\x01",
-                    domainSeparator,
-                    message
+                    keccak256(
+                        abi.encode(
+                            DOMAIN_TYPE_HASH,
+                            DOMAIN_NAME_HASH,
+                            DOMAIN_VERSION_HASH,
+                            getChainID(),
+                            verifyingContract,
+                            DOMAIN_SALT
+                        )
+                    ),
+                    keccak256(
+                        abi.encode(
+                            RECEIPT_TYPE_HASH,
+                            action.requestCID,
+                            action.responseCID,
+                            action.subgraphID
+                        )
+                    )
                 )
-            );
-    }
-
-    // ATTESTATION ENCODING METHODS
-
-    function encodeDomainSeparator(address verifyingContract) public view returns(bytes32) {
-        return
-            hashStruct(
-                DOMAIN_TYPE_HASH,
-                abi.encode(
-                    DOMAIN_NAME,
-                    DOMAIN_VERSION,
-                    getChainID(),
-                    verifyingContract,
-                    DOMAIN_SALT
-                )
-            );
-    }
-
-    function encodeReceiptData(Action memory action) public view returns(bytes32) {
-        return
-            hashStruct(
-                RECEIPT_TYPE_HASH,
-                abi.encode(action.requestCID, action.responseCID, action.subgraphID)
-            );
-    }
-
-    function recoverAttestationSigner(Action memory action, address verifyingContract) public view returns (address) {
-        bytes32 messageHash = hashTypedMessage(
-            encodeDomainSeparator(verifyingContract),
-            encodeReceiptData(action)
+            ),
+            action.signature
         );
-
-        return ECDSA.recover(messageHash, action.signature);
     }
-
 
 
     function applyAction(

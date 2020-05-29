@@ -27,7 +27,7 @@ describe("Attestations", () => {
       responseCID: receipt.responseCID,
       subgraphID: receipt.subgraphID,
       signature:
-        "0xd970042dba310ed8f2e91e626dfb8568249af29cfe8aef89519cd0d3eda48f380b4eccca31636a2010e12b711fcdb2824c2bbf7c034dbb5369d5a3250c3e9acf1c",
+        "0xb5e828b4a8acdf0f616e309a4cb41557283e20f1e6f70185473dba430048e5bd300f7026b2c150a4ec5545434f5bf190039f807e72ce848779f4453e6a8bb4ff1b",
     });
   });
 });
