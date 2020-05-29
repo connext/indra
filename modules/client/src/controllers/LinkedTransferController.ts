@@ -49,6 +49,8 @@ export class LinkedTransferController extends AbstractController {
       submittedMeta.sender = this.connext.publicIdentifier;
     }
 
+    submittedMeta.paymentId = paymentId;
+
     const linkedHash = solidityKeccak256(
       ["uint256", "address", "bytes32", "bytes32"],
       [amount, assetId, paymentId, preImage],
@@ -102,11 +104,11 @@ export class LinkedTransferController extends AbstractController {
     };
     this.log.debug(`Installing linked transfer app`);
     const appIdentityHash = await this.proposeAndInstallLedgerApp(proposeInstallParams);
-    this.log.debug(`Installed: ${appIdentityHash}`);
 
     if (!appIdentityHash) {
       throw new Error(`App was not installed`);
     }
+    this.log.debug(`Installed: ${appIdentityHash}`);
 
     const eventData = {
       type: ConditionalTransferTypes.LinkedTransfer,

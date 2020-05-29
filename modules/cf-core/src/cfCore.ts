@@ -160,8 +160,12 @@ export class CFCore {
     }
     this.protocolRunner.register(opcode, async (args: [ProtocolName, MiddlewareContext]) => {
       const [protocol, context] = args;
-      await middleware(protocol, context);
-      return undefined;
+      try {
+        await middleware(protocol, context);
+        return undefined;
+      } catch (e) {
+        return e.stack || e.message;
+      }
     });
   }
 

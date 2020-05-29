@@ -92,7 +92,6 @@ describe("Node method follows spec - rejectInstall", () => {
       });
 
       await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
-      expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(1);
     });
   });
 });

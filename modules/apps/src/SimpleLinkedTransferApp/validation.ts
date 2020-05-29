@@ -1,5 +1,5 @@
 import { CoinTransfer, SimpleLinkedTransferAppState, ProtocolParams } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 
@@ -23,8 +23,4 @@ export const validateSimpleLinkedTransferApp = (params: ProtocolParams.Propose) 
     initiatorTransfer,
     responderTransfer,
   );
-
-  if (!initialState.amount.eq(initiatorDeposit)) {
-    throw new Error(`Payment amount bust be the same as initiator deposit ${stringify(params)}`);
-  }
 };

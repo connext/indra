@@ -33,7 +33,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const start = Date.now();
     let substart = start;
     const { processID, params } = message;
-    log.info(`[${processID}] Initiation started: ${stringify(params)}`);
+    log.info(`[${processID}] Initiation started`);
+    log.debug(`[${processID}] Initiation started: ${stringify(params)}`);
 
     const {
       abiEncodings,

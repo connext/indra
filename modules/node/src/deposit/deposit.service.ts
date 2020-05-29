@@ -11,6 +11,7 @@ import {
   EventNames,
   EventPayloads,
   Bytes32,
+  Message,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
@@ -28,7 +29,6 @@ import {
   TransactionReason,
 } from "../onchainTransactions/onchainTransaction.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 @Injectable()
 export class DepositService {
@@ -39,7 +39,6 @@ export class DepositService {
     private readonly log: LoggerService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
-    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("DepositService");
   }
@@ -95,19 +94,44 @@ export class DepositService {
     // send deposit to chain
     let appIdentityHash: Bytes32;
     let receipt: TransactionReceipt;
-    try {
-      await this.channelRepository.setInflightCollateralization(channel, assetId, true);
-      this.log.info(`Requesting deposit rights before depositing`);
-      appIdentityHash = await this.requestDepositRights(channel, assetId);
-      this.log.info(`Requested deposit rights`);
-      receipt = await this.sendDepositToChain(channel, amount, assetId);
-    } catch (e) {
-      throw e;
-    } finally {
-      await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
+
+    const cleanUpDepositRights = async () => {
+      this.log.info(`Releasing in flight collateralization`);
       await this.channelRepository.setInflightCollateralization(channel, assetId, false);
+      this.log.info(`Released in flight collateralization`);
+      if (appIdentityHash) {
+        this.log.info(`Releasing deposit rights`);
+        await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
+        this.log.info(`Released deposit rights`);
+      }
+    };
+
+    try {
+      this.log.info(`Requesting deposit rights before depositing`);
+
+      const cfCore = this.cfCoreService.cfCore;
+      cfCore.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async function handler(
+        data: Message<EventPayloads.ProposeFailed>,
+      ) {
+        await cleanUpDepositRights();
+        // TODO: not sure if this works
+        if (data.data.params.multisigAddress === channel.multisigAddress) {
+          cfCore.off(EventNames.PROPOSE_INSTALL_FAILED_EVENT, handler);
+        }
+      });
+
+      this.log.info(`Setting in flight collateralization`);
+      await this.channelRepository.setInflightCollateralization(channel, assetId, true);
+      this.log.info(`Set in flight collateralization`);
+      appIdentityHash = await this.requestDepositRights(channel, assetId);
+      this.log.info(`Requested deposit rights, sending deposit to chain`);
+      receipt = await this.sendDepositToChain(channel, amount, assetId);
+      this.log.info(`Finished sending deposit to chain`);
+    } catch (e) {
+      this.log.error(`Caught error collateralizing: ${e.message}`);
+    } finally {
+      await cleanUpDepositRights();
     }
-    this.log.info(`Deposit complete: ${JSON.stringify(receipt)}`);
     return receipt;
   }
 
