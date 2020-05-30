@@ -1,5 +1,5 @@
 import { parseEther } from "ethers/utils";
-import { CF_METHOD_TIMEOUT, ProtocolName } from "@connext/types";
+import { ProtocolName } from "@connext/types";
 
 export const FUNDED_MNEMONICS = [
   "humble sense shrug young vehicle assault destroy cook property average silent travel",
@@ -10,7 +10,7 @@ export const WRONG_ADDRESS = "0xdeadbeef";
 
 // error messages
 export const APP_PROTOCOL_TOO_LONG = (protocol: ProtocolName): string => {
-  const base = `IO_SEND_AND_WAIT timed out after ${CF_METHOD_TIMEOUT / 1000}s`;
+  const base = `IO_SEND_AND_WAIT timed out after 5s`;
   return `${base} waiting for counterparty reply in ${protocol}`;
 };
 export const CLIENT_INSTALL_FAILED = (wasRejected: boolean = false): string => {
