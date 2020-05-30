@@ -62,7 +62,7 @@ export class RejectInstallController extends MethodController {
       from: publicIdentifier,
       type: EventNames.REJECT_INSTALL_EVENT,
       data: {
-        appIdentityHash,
+        appInstance: proposal!,
       },
     };
 

@@ -58,12 +58,12 @@ describe("Node method follows spec when happening concurrently - install / unins
       // install the first app
       installedAppIdentityHash = await new Promise(async (resolve) => {
         nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
-          makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress);
+          makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress);
         });
 
         nodeA.once("INSTALL_EVENT", (msg: InstallMessage) => {
           // save the first installed appId
-          resolve(msg.data.params.appIdentityHash);
+          resolve(msg.data.appIdentityHash);
         });
 
         await nodeA.rpcRouter.dispatch(installCall);
@@ -74,7 +74,7 @@ describe("Node method follows spec when happening concurrently - install / unins
       let completedActions = 0;
 
       nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) =>
-        makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress),
+        makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress),
       );
 
       nodeA.once("INSTALL_EVENT", () => {
@@ -107,7 +107,7 @@ describe("Node method follows spec when happening concurrently - install / unins
       let completedActions = 0;
 
       nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) =>
-        makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress),
+        makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress),
       );
 
       nodeA.once("INSTALL_EVENT", () => {

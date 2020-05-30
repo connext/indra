@@ -90,7 +90,12 @@ describe("Signed Transfers", () => {
       paymentId,
       sender: clientA.publicIdentifier,
       transferMeta: { signer: signerAddress },
-      meta: { foo: "bar", recipient: clientB.publicIdentifier, sender: clientA.publicIdentifier },
+      meta: {
+        foo: "bar",
+        recipient: clientB.publicIdentifier,
+        sender: clientA.publicIdentifier,
+        paymentId,
+      },
     } as EventPayloads.SignedTransferCreated);
 
     const {
@@ -136,6 +141,7 @@ describe("Signed Transfers", () => {
         foo: "bar",
         recipient: clientB.publicIdentifier,
         sender: clientA.publicIdentifier,
+        paymentId,
       },
     } as EventPayloads.SignedTransferUnlocked);
 
@@ -185,7 +191,12 @@ describe("Signed Transfers", () => {
       type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
       paymentId,
       transferMeta: { signer: signerAddress },
-      meta: { foo: "bar", recipient: clientB.publicIdentifier, sender: clientA.publicIdentifier },
+      meta: {
+        foo: "bar",
+        recipient: clientB.publicIdentifier,
+        sender: clientA.publicIdentifier,
+        paymentId,
+      },
     } as Partial<EventPayloads.SignedTransferCreated>);
 
     const {
@@ -244,7 +255,7 @@ describe("Signed Transfers", () => {
       paymentId,
       senderIdentifier: clientA.publicIdentifier,
       status: SignedTransferStatus.PENDING,
-      meta: { foo: "bar", sender: clientA.publicIdentifier },
+      meta: { foo: "bar", sender: clientA.publicIdentifier, paymentId },
     } as NodeResponses.GetSignedTransfer);
   });
 
@@ -289,7 +300,7 @@ describe("Signed Transfers", () => {
       senderIdentifier: clientA.publicIdentifier,
       receiverIdentifier: clientB.publicIdentifier,
       status: SignedTransferStatus.COMPLETED,
-      meta: { foo: "bar", sender: clientA.publicIdentifier },
+      meta: { foo: "bar", sender: clientA.publicIdentifier, paymentId },
     } as NodeResponses.GetSignedTransfer);
   });
 

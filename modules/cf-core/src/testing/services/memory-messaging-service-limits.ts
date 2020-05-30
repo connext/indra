@@ -1,4 +1,4 @@
-import { IMessagingService, Message, ProtocolName } from "@connext/types";
+import { IMessagingService, GenericMessage, ProtocolName } from "@connext/types";
 import { EventEmitter } from "events";
 import { Logger } from "../logger";
 import { env } from "../setup";
@@ -23,7 +23,7 @@ export class MemoryMessagingServiceWithLimits implements IMessagingService {
     this.logger = new Logger("CreateClient", env.logLevel, true, this.name);
   }
 
-  async send(to: string, msg: Message): Promise<void> {
+  async send(to: string, msg: GenericMessage): Promise<void> {
     if (!this.connected) {
       this.logger.info(`Messaging service disconnected, not sending message`);
       return;
@@ -38,7 +38,7 @@ export class MemoryMessagingServiceWithLimits implements IMessagingService {
     }
   }
 
-  async onReceive(address: string, callback: (msg: Message) => void) {
+  async onReceive(address: string, callback: (msg: GenericMessage) => void) {
     this.eventEmitter.on(address, (msg) => {
       if (!this.connected) {
         this.logger.info(`Messaging service disconnected, not responding to message`);
@@ -62,6 +62,6 @@ export class MemoryMessagingServiceWithLimits implements IMessagingService {
     data: object,
     callback?: (response: any) => any,
   ) {}
-  async subscribe(subject: string, callback: (msg: Message) => void) {}
+  async subscribe(subject: string, callback: (msg: GenericMessage) => void) {}
   async unsubscribe(subject: string) {}
 }

@@ -1,31 +1,29 @@
-import {
-  CoinTransfer,
-  MethodParams,
-  DepositAppName,
-} from "@connext/types";
+import { CoinTransfer, DepositAppName, ProtocolParams } from "@connext/types";
 import { getAddressFromAssetId, stringify } from "@connext/utils";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { AppRegistryInfo } from "./registry";
+import { AppRegistryInfo, DEFAULT_APP_TIMEOUT, MINIMUM_APP_TIMEOUT } from "./registry";
 
 const appProposalMatchesRegistry = (
-  proposal: MethodParams.ProposeInstall,
+  proposal: ProtocolParams.Propose,
   appRegistryInfo: AppRegistryInfo,
 ): void => {
   if (
-    !(
-      // proposal.appDefinition === appRegistryInfo.appDefinitionAddress &&
-      (
-        proposal.abiEncodings.actionEncoding === appRegistryInfo.actionEncoding &&
-        proposal.abiEncodings.stateEncoding === appRegistryInfo.stateEncoding
-      )
-    )
+    proposal.abiEncodings.actionEncoding &&
+    proposal.abiEncodings.actionEncoding !== appRegistryInfo.actionEncoding
   ) {
     throw new Error(
-      `Proposed app details ${stringify(proposal)} do not match registry ${stringify(
-        appRegistryInfo,
-      )}`,
+      `Proposal action encoding does not match registry. Proposal: ${stringify(
+        proposal,
+      )}, registry ${stringify(appRegistryInfo)}`,
+    );
+  }
+  if (proposal.abiEncodings.stateEncoding !== appRegistryInfo.stateEncoding) {
+    throw new Error(
+      `Proposal state encoding does not match registry. Proposal: ${stringify(
+        proposal,
+      )}, registry ${stringify(appRegistryInfo)}`,
     );
   }
 };
@@ -83,13 +81,13 @@ export const unidirectionalCoinTransferValidation = (
   );
   if (!responderDeposit.eq(Zero)) {
     throw new Error(
-      `Will not accept transfer install where responder deposit is != 0 ${responderDeposit.toString()}`,
+      `Will not accept transfer install where responder deposit is != 0. Responder deposit: ${responderDeposit.toString()}`,
     );
   }
 
   if (initiatorDeposit.lte(Zero)) {
     throw new Error(
-      `Will not accept transfer install where initiator deposit is <=0 ${initiatorDeposit.toString()}`,
+      `Will not accept transfer install where initiator deposit is <= 0. Initiator deposit: ${initiatorDeposit.toString()}`,
     );
   }
 
@@ -107,7 +105,7 @@ export const unidirectionalCoinTransferValidation = (
 };
 
 export const commonAppProposalValidation = (
-  params: MethodParams.ProposeInstall,
+  params: ProtocolParams.Propose,
   appRegistryInfo: AppRegistryInfo,
   supportedTokenAddresses: string[],
 ): void => {
@@ -120,27 +118,42 @@ export const commonAppProposalValidation = (
 
   appProposalMatchesRegistry(params, appRegistryInfo);
 
-  const initiatorDepositTokenAddress = 
-    getAddressFromAssetId(initiatorDepositAssetId);
-  const responderDepositTokenAddress = 
-    getAddressFromAssetId(responderDepositAssetId);
+  const initiatorDepositTokenAddress = getAddressFromAssetId(initiatorDepositAssetId);
+  const responderDepositTokenAddress = getAddressFromAssetId(responderDepositAssetId);
 
   if (!supportedTokenAddresses.includes(initiatorDepositTokenAddress)) {
-    throw new Error(`Unsupported initiatorDepositTokenAddress: ${initiatorDepositTokenAddress}`);
+    throw new Error(
+      `Unsupported initiatorDepositTokenAddress: ${initiatorDepositTokenAddress}, supported addresses: ${stringify(
+        supportedTokenAddresses,
+      )}`,
+    );
   }
 
   if (!supportedTokenAddresses.includes(responderDepositTokenAddress)) {
-    throw new Error(`Unsupported responderDepositAssetId: ${responderDepositTokenAddress}`);
+    throw new Error(
+      `Unsupported responderDepositAssetId: ${responderDepositTokenAddress}, supported addresses: ${stringify(
+        supportedTokenAddresses,
+      )}`,
+    );
+  }
+
+  // Validate that the timeouts make sense
+  if (params.defaultTimeout.lt(MINIMUM_APP_TIMEOUT)) {
+    throw new Error(
+      `Cannot install an app with default timeout: ${params.defaultTimeout}, less than minimum timeout: ${MINIMUM_APP_TIMEOUT})`
+    )
+  }
+
+  if (params.defaultTimeout.gt(DEFAULT_APP_TIMEOUT)) {
+    throw new Error(
+      `Cannot install an app with default timeout: ${params.defaultTimeout}, greater than max timeout: ${DEFAULT_APP_TIMEOUT}`
+    )
   }
 
   // NOTE: may need to remove this condition if we start working
   // with games
   const isDeposit = appRegistryInfo.name === DepositAppName;
-  if (
-    responderDeposit.isZero() &&
-    initiatorDeposit.isZero() &&
-    !isDeposit
-  ) {
+  if (responderDeposit.isZero() && initiatorDeposit.isZero() && !isDeposit) {
     throw new Error(
       `Cannot install an app with zero valued deposits for both initiator and responder.`,
     );

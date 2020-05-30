@@ -51,14 +51,15 @@ export class DepositController extends AbstractController {
     let transactionHash: string;
     try {
       this.log.debug(`Starting deposit`);
+      transactionHash = await this.connext.channelProvider.walletDeposit({
+        amount: amount.toString(),
+        assetId: tokenAddress,
+      });
       this.connext.emit(EventNames.DEPOSIT_STARTED_EVENT, {
         amount: amount,
         assetId: tokenAddress,
         appIdentityHash,
-      } as EventPayloads.DepositStarted);
-      transactionHash = await this.connext.channelProvider.walletDeposit({
-        amount: amount.toString(),
-        assetId: tokenAddress,
+        hash: transactionHash,
       });
       this.log.info(`Sent deposit transaction to chain: ${transactionHash}`);
       const tx = await this.ethProvider.getTransaction(transactionHash);

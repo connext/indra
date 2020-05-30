@@ -8,15 +8,21 @@ import {
   ConnextNodeStorePrefix,
   CONVENTION_FOR_ETH_ASSET_ID,
   EventNames,
-  InstallMessage,
   MethodNames,
   MethodParams,
   MethodResults,
   PublicParams,
-  RejectProposalMessage,
   StateChannelJSON,
+  EventName,
+  CF_METHOD_TIMEOUT,
+  ProtocolEventMessage,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
+import {
+  getSignerAddressFromPublicIdentifier,
+  stringify,
+  toBN,
+  TypedEmitter,
+} from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -24,23 +30,27 @@ import { BigNumber } from "ethers/utils";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
-import { CFCoreProviderId } from "../constants";
+import { CFCoreProviderId, MessagingProviderId, TIMEOUT_BUFFER } from "../constants";
 import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
 import { AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { MessagingService } from "@connext/messaging";
 
 Injectable();
 export class CFCoreService {
+  public emitter: TypedEmitter;
   constructor(
-    @Inject(CFCoreProviderId) public readonly cfCore: CFCore,
+    @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly log: LoggerService,
     private readonly configService: ConfigService,
+    @Inject(CFCoreProviderId) public readonly cfCore: CFCore,
     private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
   ) {
+    this.emitter = new TypedEmitter();
     this.cfCore = cfCore;
     this.log.setContext("CFCoreService");
   }
@@ -179,12 +189,13 @@ export class CFCoreService {
     meta: object = {},
     stateTimeout: BigNumber = Zero,
   ): Promise<MethodResults.ProposeInstall | undefined> {
-    let boundReject: (reason?: any) => void;
-    let boundResolve: (reason?: any) => void;
-
     const network = await this.configService.getEthNetwork();
 
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(app, network.chainId);
+
+    // Decrement timeout so that receiver app MUST finalize before sender app
+    // See: https://github.com/connext/indra/issues/1046
+    const timeout = DEFAULT_APP_TIMEOUT.sub(TIMEOUT_BUFFER)
 
     const {
       actionEncoding,
@@ -207,33 +218,52 @@ export class CFCoreService {
       responderIdentifier: channel.userIdentifier,
       responderDeposit,
       responderDepositAssetId,
-      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      defaultTimeout: timeout,
       stateTimeout,
     };
     this.log.info(`Attempting to install ${appInfo.name} in channel ${channel.multisigAddress}`);
 
-    let proposeRes: MethodResults.ProposeInstall;
+    let proposeRes;
     try {
-      await new Promise(
-        async (res: () => any, rej: (msg: string) => any): Promise<void> => {
-          proposeRes = await this.proposeInstallApp(params);
-          boundResolve = this.resolveInstallTransfer.bind(null, res, proposeRes.appIdentityHash);
-          boundReject = this.rejectInstallTransfer.bind(null, rej);
-          this.cfCore.on(EventNames.INSTALL_EVENT, boundResolve);
-          this.cfCore.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
-        },
-      );
-      this.log.info(
-        `App ${appInfo.name} was installed successfully: ${proposeRes.appIdentityHash}`,
-      );
-      this.log.debug(`App install result: ${stringify(proposeRes)}`);
-      return proposeRes;
-    } catch (e) {
-      this.log.error(`Error installing app: ${e}`);
+      proposeRes = await this.proposeInstallApp(params);
+    } catch (err) {
+      this.log.error(`Error installing app, proposal failed. Params: ${JSON.stringify(params)}`);
       return undefined;
-    } finally {
-      this.cleanupInstallListeners(boundReject, boundResolve);
     }
+
+    const raceRes = await Promise.race([
+      new Promise(async (resolve, reject) => {
+        try {
+          await this.emitter.waitFor(
+            EventNames.INSTALL_EVENT,
+            CF_METHOD_TIMEOUT * 3,
+            (msg) => msg.appIdentityHash === proposeRes.appIdentityHash,
+          );
+          resolve(undefined);
+        } catch (e) {
+          reject(new Error(e.message));
+        }
+      }),
+      this.emitter.waitFor(
+        EventNames.INSTALL_FAILED_EVENT,
+        CF_METHOD_TIMEOUT * 3,
+        (msg) => msg.params.identityHash === proposeRes.appIdentityHash,
+      ),
+      this.emitter.waitFor(
+        EventNames.REJECT_INSTALL_EVENT,
+        CF_METHOD_TIMEOUT * 3,
+        (msg) => msg.appInstance.identityHash === proposeRes.appIdentityHash,
+      ),
+    ]);
+    if (raceRes) {
+      this.log.error(
+        `Error installing app: ${
+          raceRes["error"] ? raceRes["error"] : "proposal rejected by client"
+        }.`,
+      );
+      return undefined;
+    }
+    return proposeRes as MethodResults.ProposeInstall;
   }
 
   async installApp(
@@ -251,6 +281,8 @@ export class CFCoreService {
       parameters,
     });
     this.logCfCoreMethodResult(MethodNames.chan_install, installRes.result.result);
+    const installSubject = `${this.cfCore.publicIdentifier}.channel.${multisigAddress}.app-instance.${appIdentityHash}.install`;
+    await this.messagingService.publish(installSubject, installRes.result.result.appInstance);
     return installRes.result.result as MethodResults.Install;
   }
 
@@ -406,31 +438,15 @@ export class CFCoreService {
     return this.cfCoreRepository.get(path);
   }
 
-  private resolveInstallTransfer = (
-    res: (value?: unknown) => void,
-    appIdentityHash: string,
-    message: InstallMessage,
-  ): InstallMessage => {
-    if (appIdentityHash === message.data.params.appIdentityHash) {
-      res(message);
-    }
-    return message;
-  };
-
-  private rejectInstallTransfer = (
-    rej: (reason?: string) => void,
-    msg: RejectProposalMessage,
-  ): any => {
-    return rej(`Install failed. Event data: ${stringify(msg)}`);
-  };
-
-  private cleanupInstallListeners = (boundReject: any, boundResolve: any): void => {
-    this.cfCore.off(EventNames.INSTALL_EVENT, boundResolve);
-    this.cfCore.off(EventNames.REJECT_INSTALL_EVENT, boundReject);
-  };
-
-  registerCfCoreListener(event: EventNames, callback: (data: any) => any): void {
+  registerCfCoreListener<T extends EventName>(
+    event: T,
+    callback: (data: ProtocolEventMessage<T>) => void | Promise<void>,
+  ): void {
     this.log.info(`Registering cfCore callback for event ${event}`);
-    this.cfCore.on(event, callback);
+    this.cfCore.on(event, (data: ProtocolEventMessage<any>) => {
+      // parrot event with typed emitter
+      this.emitter.post(event, data.data);
+      return callback(data);
+    });
   }
 }

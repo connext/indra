@@ -56,3 +56,4 @@ ops/database/snapshots
 # Http files
 ganache.http
 modules/bot/.connext-store/
+modules/bot-registry/.node-persist/

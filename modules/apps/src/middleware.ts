@@ -6,12 +6,21 @@ import {
   UninstallMiddlewareContext,
   NetworkContext,
   ProposeMiddlewareContext,
+  Address,
 } from "@connext/types";
 import { uninstallDepositMiddleware, proposeDepositMiddleware } from "./DepositApp";
+import { proposeLinkedTransferMiddleware } from "./SimpleLinkedTransferApp";
+import { proposeHashLockTransferMiddleware } from "./HashLockTransferApp";
+import { proposeSignedTransferMiddleware } from "./SimpleSignedTransferApp";
+import { proposeWithdrawMiddleware } from "./WithdrawApp";
+import { proposeSwapMiddleware } from "./SimpleTwoPartySwapApp";
+import { stringify } from "@connext/utils";
+import { sharedProposalMiddleware } from "./shared/middleware";
 
 // add any validation middlewares
 export const generateValidationMiddleware = async (
   network: NetworkContext,
+  supportedTokenAddresses: Address[],
 ): Promise<ValidationMiddleware> => {
   if (!network.provider) {
     throw new Error(`Validation middleware needs access to a provider`);
@@ -22,19 +31,21 @@ export const generateValidationMiddleware = async (
     middlewareContext: MiddlewareContext,
   ) => {
     switch (protocol) {
+      case ProtocolNames.propose: {
+        await proposeMiddleware(
+          network,
+          middlewareContext as ProposeMiddlewareContext,
+          supportedTokenAddresses,
+        );
+        break;
+      }
+      case ProtocolNames.uninstall: {
+        await uninstallMiddleware(network, middlewareContext as UninstallMiddlewareContext);
+        break;
+      }
       case ProtocolNames.setup:
       case ProtocolNames.install:
       case ProtocolNames.takeAction: {
-        break;
-      }
-
-      case ProtocolNames.propose: {
-        await proposeMiddleware(network, middlewareContext as ProposeMiddlewareContext);
-        break;
-      }
-
-      case ProtocolNames.uninstall: {
-        await uninstallMiddleware(network, middlewareContext as UninstallMiddlewareContext);
         break;
       }
 
@@ -66,16 +77,41 @@ const uninstallMiddleware = async (
 const proposeMiddleware = async (
   network: NetworkContext,
   middlewareContext: ProposeMiddlewareContext,
+  supportedTokenAddresses: Address[],
 ) => {
+  const { contractAddresses } = network;
   const { proposal } = middlewareContext;
+  sharedProposalMiddleware(middlewareContext, contractAddresses, supportedTokenAddresses);
   const appDef = proposal.appDefinition;
   switch (appDef) {
-    case network.contractAddresses.DepositApp: {
-      await proposeDepositMiddleware(middlewareContext, network.contractAddresses.DepositApp);
+    case contractAddresses.DepositApp: {
+      await proposeDepositMiddleware(middlewareContext, network.provider);
+      break;
+    }
+    case contractAddresses.SimpleTwoPartySwapApp: {
+      proposeSwapMiddleware(middlewareContext);
+      break;
+    }
+    case contractAddresses.SimpleSignedTransferApp: {
+      proposeSignedTransferMiddleware(middlewareContext);
+      break;
+    }
+    case contractAddresses.SimpleLinkedTransferApp: {
+      proposeLinkedTransferMiddleware(middlewareContext);
+      break;
+    }
+    case contractAddresses.HashLockTransferApp: {
+      await proposeHashLockTransferMiddleware(middlewareContext, network.provider);
+      break;
+    }
+    case contractAddresses.WithdrawApp: {
+      await proposeWithdrawMiddleware(middlewareContext);
       break;
     }
     default: {
-      return;
+      throw new Error(
+        `Not installing app without configured validation. Cxt: ${stringify(middlewareContext)}`,
+      );
     }
   }
 };

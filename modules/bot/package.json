@@ -10,11 +10,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@connext/client": "6.6.2",
-    "@connext/store": "6.6.2",
-    "@connext/types": "6.6.2",
-    "@connext/utils": "6.6.2",
+    "@connext/client": "6.6.3",
+    "@connext/store": "6.6.3",
+    "@connext/types": "6.6.3",
+    "@connext/utils": "6.6.3",
+    "axios": "^0.19.2",
     "ethers": "4.0.47",
+    "interval-promise": "^1.4.0",
     "yargs": "15.3.1"
   },
   "devDependencies": {
