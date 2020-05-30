@@ -1,4 +1,4 @@
-import { CONVENTION_FOR_ETH_ASSET_ID, EventNames, UninstallMessage } from "@connext/types";
+import { CONVENTION_FOR_ETH_ASSET_ID, EventNames, ProtocolEventMessage } from "@connext/types";
 import { One, Two, Zero } from "ethers/constants";
 
 import { CFCore } from "../../cfCore";
@@ -25,9 +25,9 @@ function assertUninstallMessage(
   senderId: string,
   multisigAddress: string,
   appIdentityHash: string,
-  msg: UninstallMessage,
+  msg: ProtocolEventMessage<"UNINSTALL_EVENT">,
 ) {
-  assertMessage(msg, {
+  assertMessage<typeof EventNames.UNINSTALL_EVENT>(msg, {
     from: senderId,
     type: EventNames.UNINSTALL_EVENT,
     data: {
@@ -92,7 +92,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
 
       await Promise.all([
         new Promise(async (resolve, reject) => {
-          nodeB.on(EventNames.UNINSTALL_EVENT, async (msg: UninstallMessage) => {
+          nodeB.on(EventNames.UNINSTALL_EVENT, async (msg) => {
             if (msg.data.appIdentityHash !== appIdentityHash) {
               return;
             }
@@ -145,7 +145,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
 
       await Promise.all([
         new Promise(async (resolve, reject) => {
-          nodeB.on(EventNames.UNINSTALL_EVENT, async (msg: UninstallMessage) => {
+          nodeB.on(EventNames.UNINSTALL_EVENT, async (msg) => {
             if (msg.data.appIdentityHash !== appIdentityHash) {
               return;
             }
@@ -197,7 +197,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
 
       await Promise.all([
         new Promise(async (resolve, reject) => {
-          nodeB.on(EventNames.UNINSTALL_EVENT, async (msg: UninstallMessage) => {
+          nodeB.on(EventNames.UNINSTALL_EVENT, async (msg) => {
             if (msg.data.appIdentityHash !== appIdentityHash) {
               return;
             }

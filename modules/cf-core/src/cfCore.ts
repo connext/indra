@@ -8,7 +8,7 @@ import {
   ILoggerService,
   IMessagingService,
   IStoreService,
-  Message,
+  ProtocolEventMessage,
   MethodName,
   MethodNames,
   MethodParams,
@@ -22,6 +22,7 @@ import {
   PublicIdentifier,
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
+  EventName,
 } from "@connext/types";
 import { delay, nullLogger } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
@@ -417,7 +418,7 @@ export class CFCore {
    * @param event
    * @param callback
    */
-  on(event: EventNames | MethodName, callback: (res: any) => void) {
+  on(event: EventName | MethodName, callback: (res: any) => void) {
     this.rpcRouter.subscribe(event, async (res: any) => callback(res));
   }
 
@@ -428,7 +429,7 @@ export class CFCore {
    * @param event
    * @param [callback]
    */
-  off(event: EventNames | MethodName, callback?: (res: any) => void) {
+  off(event: EventName | MethodName, callback?: (res: any) => void) {
     this.rpcRouter.unsubscribe(event, callback ? async (res: any) => callback(res) : undefined);
   }
 
@@ -440,7 +441,7 @@ export class CFCore {
    * @param event
    * @param [callback]
    */
-  once(event: EventNames | MethodName, callback: (res: any) => void) {
+  once(event: EventName | MethodName, callback: (res: any) => void) {
     this.rpcRouter.subscribeOnce(event, async (res: any) => callback(res));
   }
 
@@ -449,7 +450,7 @@ export class CFCore {
    * @param event
    * @param req
    */
-  emit(event: EventNames | MethodName, req: MethodRequest) {
+  emit(event: EventName | MethodName, req: MethodRequest) {
     this.rpcRouter.emit(event, req);
   }
 
@@ -469,10 +470,13 @@ export class CFCore {
    * subscribed (i.e. consumers of CFCore).
    */
   private registerMessagingConnection() {
-    this.messagingService.onReceive(this.publicIdentifier, async (msg: Message) => {
-      await this.handleReceivedMessage(msg);
-      this.rpcRouter.emit(msg.type, msg, "outgoing");
-    });
+    this.messagingService.onReceive(
+      this.publicIdentifier,
+      async (msg: ProtocolEventMessage<any>) => {
+        await this.handleReceivedMessage(msg);
+        this.rpcRouter.emit(msg.type, msg, "outgoing");
+      },
+    );
   }
 
   /**
@@ -491,12 +495,13 @@ export class CFCore {
    *     _does have_ an _ioSendDeferral_, in which case the message is dispatched
    *     solely to the deffered promise's resolve callback.
    */
-  private async handleReceivedMessage(msg: Message) {
+  private async handleReceivedMessage(msg: ProtocolEventMessage<any>) {
     if (!Object.values(EventNames).includes(msg.type)) {
       this.log.error(`Received message with unknown event type: ${msg.type}`);
     }
 
-    const isProtocolMessage = (msg: Message) => msg.type === EventNames.PROTOCOL_MESSAGE_EVENT;
+    const isProtocolMessage = (msg: ProtocolEventMessage<any>) =>
+      msg.type === EventNames.PROTOCOL_MESSAGE_EVENT;
 
     const isExpectingResponse = (msg: ProtocolMessage) =>
       this.ioSendDeferrals.has(msg.data.processID);

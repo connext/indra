@@ -1,8 +1,7 @@
-import EventEmitter from "eventemitter3";
+import { Ctx } from "evt";
 
 import { AppInstanceProposal } from "./app";
 import { Address, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
-import { ChannelMethods } from "./channelProvider";
 import {
   ConditionalTransferTypes,
   CreatedHashLockTransferMeta,
@@ -12,7 +11,6 @@ import {
   UnlockedHashLockTransferMeta,
   UnlockedSignedTransferMeta,
 } from "./transfers";
-import { enumify } from "./utils";
 import { ProtocolParams } from "./protocol";
 import { ProtocolMessageData } from "./messaging";
 import { PublicParams } from "./public";
@@ -27,7 +25,7 @@ type LinkedTransfer = typeof ConditionalTransferTypes.LinkedTransfer;
 ////////////////////////////////////////
 const CONDITIONAL_TRANSFER_CREATED_EVENT = "CONDITIONAL_TRANSFER_CREATED_EVENT";
 
-type ConditionalTransferCreatedEventData<T extends ConditionalTransferTypes> = {
+export type ConditionalTransferCreatedEventData<T extends ConditionalTransferTypes> = {
   amount: BigNumber;
   assetId: Address;
   paymentId?: Bytes32;
@@ -111,6 +109,7 @@ type DepositStartedEventData = {
   amount: BigNumber;
   assetId: Address;
   appIdentityHash: string;
+  hash: string;
 };
 
 ////////////////////////////////////////
@@ -220,9 +219,41 @@ type SyncFailedEventData = {
   error: string;
 };
 
+interface EventPayloadMap {
+  [CONDITIONAL_TRANSFER_CREATED_EVENT]: ConditionalTransferCreatedEventData<
+    HashLockTransfer | LinkedTransfer | SignedTransfer
+  >;
+  [CONDITIONAL_TRANSFER_UNLOCKED_EVENT]: ConditionalTransferUnlockedEventData<
+    HashLockTransfer | LinkedTransfer | SignedTransfer
+  >;
+  [CONDITIONAL_TRANSFER_FAILED_EVENT]: ConditionalTransferFailedEventData<
+    HashLockTransfer | LinkedTransfer | SignedTransfer
+  >;
+  [CREATE_CHANNEL_EVENT]: CreateMultisigEventData;
+  [SETUP_FAILED_EVENT]: SetupFailedEventData;
+  [DEPOSIT_CONFIRMED_EVENT]: DepositConfirmedEventData;
+  [DEPOSIT_FAILED_EVENT]: DepositFailedEventData;
+  [DEPOSIT_STARTED_EVENT]: DepositStartedEventData;
+  [INSTALL_EVENT]: InstallEventData;
+  [INSTALL_FAILED_EVENT]: InstallFailedEventData;
+  [PROPOSE_INSTALL_EVENT]: ProposeEventData;
+  [PROPOSE_INSTALL_FAILED_EVENT]: ProposeFailedEventData;
+  [PROTOCOL_MESSAGE_EVENT]: ProtocolMessageData;
+  [REJECT_INSTALL_EVENT]: RejectInstallEventData;
+  [SYNC_EVENT]: SyncEventData;
+  [SYNC_FAILED_EVENT]: SyncFailedEventData;
+  [UNINSTALL_EVENT]: UninstallEventData;
+  [UNINSTALL_FAILED_EVENT]: UninstallFailedEventData;
+  [UPDATE_STATE_EVENT]: UpdateStateEventData;
+  [UPDATE_STATE_FAILED_EVENT]: UpdateStateFailedEventData;
+  [WITHDRAWAL_CONFIRMED_EVENT]: WithdrawalConfirmedEventData;
+  [WITHDRAWAL_FAILED_EVENT]: WithdrawalFailedEventData;
+  [WITHDRAWAL_STARTED_EVENT]: WithdrawalStartedEventData;
+}
+
 ////////////////////////////////////////
 // Exports
-export const EventNames = enumify({
+export const EventNames = {
   [CONDITIONAL_TRANSFER_CREATED_EVENT]: CONDITIONAL_TRANSFER_CREATED_EVENT,
   [CONDITIONAL_TRANSFER_UNLOCKED_EVENT]: CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
   [CONDITIONAL_TRANSFER_FAILED_EVENT]: CONDITIONAL_TRANSFER_FAILED_EVENT,
@@ -246,10 +277,52 @@ export const EventNames = enumify({
   [WITHDRAWAL_CONFIRMED_EVENT]: WITHDRAWAL_CONFIRMED_EVENT,
   [WITHDRAWAL_FAILED_EVENT]: WITHDRAWAL_FAILED_EVENT,
   [WITHDRAWAL_STARTED_EVENT]: WITHDRAWAL_STARTED_EVENT,
-});
-export type EventNames = typeof EventNames[keyof typeof EventNames];
+} as const;
+export type EventName = keyof typeof EventNames;
+export type EventPayload = {
+  [P in keyof EventPayloadMap]: EventPayloadMap[P];
+};
 
-// ALL events -- both protocol and client/node specific
+// NOTE: this typing will restrict events and payloads to only those in the
+// EventName types
+export interface IBasicEventEmitter {
+  // Attaches a callback to a specified event, with an optional filter.
+  // Callbacks registered using this handler should be removed intenitionally
+  attach<T extends EventName>(
+    event: T,
+    callback: (payload: EventPayload[T]) => void | Promise<void>,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ): void;
+
+  // Attaches a callback to a specified event, with an optional filter
+  // Callbacks registered using this handler DO NOT have to be
+  // removed.
+  attachOnce<T extends EventName>(
+    event: T,
+    callback: (payload: EventPayload[T]) => void | Promise<void>,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ): void;
+
+  // Emits an event with a given payload
+  post<T extends EventName>(event: T, payload: EventPayload[T]): void;
+
+  // Detaches all listners, or all in context if specified
+  detach(ctx?: Ctx<[EventName, EventPayload[EventName]]>): void;
+
+  // Creates a new void context for easy listener detachment
+  createContext(): Ctx<[EventName, EventPayload[EventName]]>;
+
+  // Returns a promise once matching event is emitted that resolves with the
+  // event data
+  waitFor<T extends EventName>(
+    event: T,
+    timeout: number, // time in MS before rejecting
+    filter?: (payload: EventPayload[T]) => boolean,
+  ): Promise<EventPayload[T]>;
+}
+
+// Namespace used for easy consumer typing (we use fancy types within our
+// modules, and it has more complex syntax than below)
 export namespace EventPayloads {
   // client/node specific
   export type HashLockTransferCreated = ConditionalTransferCreatedEventData<HashLockTransfer>;
@@ -304,5 +377,3 @@ export namespace EventPayloads {
 
   // TODO: chain watcher events
 }
-
-export class ConnextEventEmitter extends EventEmitter<string | ChannelMethods | EventNames> {}

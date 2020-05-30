@@ -9,9 +9,7 @@ import {
   MinimalTransaction,
   TransactionReceipt,
   EventNames,
-  EventPayloads,
   Bytes32,
-  Message,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
@@ -108,18 +106,6 @@ export class DepositService {
 
     try {
       this.log.info(`Requesting deposit rights before depositing`);
-
-      const cfCore = this.cfCoreService.cfCore;
-      cfCore.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async function handler(
-        data: Message<EventPayloads.ProposeFailed>,
-      ) {
-        await cleanUpDepositRights();
-        // TODO: not sure if this works
-        if (data.data.params.multisigAddress === channel.multisigAddress) {
-          cfCore.off(EventNames.PROPOSE_INSTALL_FAILED_EVENT, handler);
-        }
-      });
-
       this.log.info(`Setting in flight collateralization`);
       await this.channelRepository.setInflightCollateralization(channel, assetId, true);
       this.log.info(`Set in flight collateralization`);
@@ -184,28 +170,37 @@ export class DepositService {
       })
       .map((app) => app.identityHash);
 
-    let resolvedDepositAppIds = [];
-    const result = await new Promise((resolve) => {
-      this.cfCoreService.cfCore.on(
-        EventNames.UNINSTALL_EVENT,
-        async (data: { data: EventPayloads.Uninstall }) => {
-          const { appIdentityHash } = data.data;
-          if (ourDepositAppIds.find((id) => id === appIdentityHash)) {
-            resolvedDepositAppIds.push(appIdentityHash);
-          }
-          if (resolvedDepositAppIds.length === ourDepositAppIds.length) {
-            return resolve(resolvedDepositAppIds);
-          }
-        },
-      );
-
-      // only wait for 5 blocks
-      ethProvider.on("block", async (blockNumber: number) => {
-        if (blockNumber - startingBlock > BLOCKS_TO_WAIT) {
-          return resolve(undefined);
-        }
+    let resolvedDepositAppIds: string[] = [];
+    const depositIdPromises = ourDepositAppIds.map((appId) => {
+      return new Promise((resolve, reject) => {
+        this.cfCoreService.emitter.attachOnce(
+          EventNames.UNINSTALL_EVENT,
+          (data) => {
+            resolvedDepositAppIds.push(data.appIdentityHash);
+            return resolve(data.appIdentityHash);
+          },
+          (data) => data.appIdentityHash === appId,
+        );
+        this.cfCoreService.emitter.attachOnce(
+          EventNames.UNINSTALL_FAILED_EVENT,
+          (data) => reject(data.error),
+          (data) => data.params.appIdentityHash === appId,
+        );
       });
     });
+
+    const result = await Promise.race([
+      Promise.all(depositIdPromises),
+      new Promise((resolve) => {
+        // only wait for 5 blocks
+        ethProvider.on("block", async (blockNumber: number) => {
+          if (blockNumber - startingBlock > BLOCKS_TO_WAIT) {
+            return resolve(undefined);
+          }
+        });
+      }),
+    ]);
+
     if (!result) {
       this.log.warn(
         `Only resolved ${resolvedDepositAppIds.length}/${

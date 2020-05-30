@@ -1,5 +1,11 @@
-import { AssetId, CONVENTION_FOR_ETH_ASSET_ID, EventNames, IConnextClient } from "@connext/types";
-import { ColorfulLogger, getAddressFromAssetId, delayAndThrow, stringify } from "@connext/utils";
+import {
+  AssetId,
+  CONVENTION_FOR_ETH_ASSET_ID,
+  EventNames,
+  IConnextClient,
+  EventPayloads,
+} from "@connext/types";
+import { ColorfulLogger, getAddressFromAssetId, delayAndThrow } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 
 import { env, expect } from "../";
@@ -22,17 +28,20 @@ export const fundChannel = async (
       return resolve();
     });
     // register failure listeners
-    client.once(EventNames.DEPOSIT_FAILED_EVENT, async (msg: any) => {
-      return reject(new Error(msg.data.error));
+    client.once(EventNames.DEPOSIT_FAILED_EVENT, async (msg: EventPayloads.DepositFailed) => {
+      return reject(new Error(msg.error));
     });
-    client.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async (msg: any) => {
-      return reject(new Error(msg.data.error));
+    client.once(
+      EventNames.PROPOSE_INSTALL_FAILED_EVENT,
+      async (msg: EventPayloads.ProposeFailed) => {
+        return reject(new Error(msg.error));
+      },
+    );
+    client.once(EventNames.INSTALL_FAILED_EVENT, async (msg: EventPayloads.InstallFailed) => {
+      return reject(new Error(msg.error));
     });
-    client.once(EventNames.INSTALL_FAILED_EVENT, async (msg: any) => {
-      return reject(new Error(msg.data.error));
-    });
-    client.once(EventNames.UNINSTALL_FAILED_EVENT, async (msg: any) => {
-      return reject(new Error(msg.data.error));
+    client.once(EventNames.UNINSTALL_FAILED_EVENT, async (msg: EventPayloads.UninstallFailed) => {
+      return reject(new Error(msg.error));
     });
 
     try {
