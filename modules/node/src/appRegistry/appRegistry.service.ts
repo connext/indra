@@ -5,6 +5,7 @@ import {
 } from "@connext/apps";
 import {
   AppInstanceJson,
+  MethodParams,
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   WithdrawAppState,
@@ -19,7 +20,7 @@ import {
   ProposeMiddlewareContext,
   ConditionalTransferAppNames,
   HashLockTransferAppState,
-  ProtocolParams,
+  DepositAppName,
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
@@ -62,7 +63,7 @@ export class AppRegistryService implements OnModuleInit {
 
   async installOrReject(
     appIdentityHash: string,
-    proposeInstallParams: ProtocolParams.Propose,
+    proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
     this.log.info(
@@ -150,7 +151,7 @@ export class AppRegistryService implements OnModuleInit {
   private async runPostInstallTasks(
     registryAppInfo: AppRegistry,
     appIdentityHash: string,
-    proposeInstallParams: ProtocolParams.Propose,
+    proposeInstallParams: MethodParams.ProposeInstall,
   ): Promise<void> {
     this.log.info(
       `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} started`,
@@ -286,7 +287,7 @@ export class AppRegistryService implements OnModuleInit {
 
     switch (proposal.appDefinition) {
       case contractAddresses.SimpleTwoPartySwapApp: {
-        validateSimpleSwapApp(
+        return validateSimpleSwapApp(
           params as any,
           this.configService.getAllowedSwaps(),
           await this.swapRateService.getOrFetchRate(
@@ -294,7 +295,6 @@ export class AppRegistryService implements OnModuleInit {
             getAddressFromAssetId(params.responderDepositAssetId),
           ),
         );
-        break;
       }
     }
   };
@@ -303,28 +303,27 @@ export class AppRegistryService implements OnModuleInit {
     const { appInstance, role } = cxt;
     const appDef = appInstance.appInterface.addr;
 
-    const contractAddresses = await this.configService.getContractAddresses();
     const nodeSignerAddress = await this.configService.getSignerAddress();
 
-    switch (appDef) {
-      case contractAddresses.DepositApp: {
-        // do not respond to user requests to uninstall deposit
-        // apps if node is depositor and there is an active collateralization
-        const latestState = appInstance.latestState as DepositAppState;
-        if (latestState.transfers[0].to !== nodeSignerAddress || role === ProtocolRoles.initiator) {
-          return;
-        }
+    const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
 
-        const channel = await this.cfCoreStore.getChannel(appInstance.multisigAddress);
-        if (channel.activeCollateralizations[latestState.assetId]) {
-          throw new Error(`Cannot uninstall deposit app with active collateralization`);
-        }
+    if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo.name)) {
+      return await this.uninstallTransferMiddleware(appInstance);
+    }
+
+    if (DepositAppName) {
+      // do not respond to user requests to uninstall deposit
+      // apps if node is depositor and there is an active collateralization
+      const latestState = appInstance.latestState as DepositAppState;
+      if (latestState.transfers[0].to !== nodeSignerAddress || role === ProtocolRoles.initiator) {
         return;
       }
-      default: {
-        // middleware for app not configured
-        return;
+
+      const channel = await this.cfCoreStore.getChannel(appInstance.multisigAddress);
+      if (channel.activeCollateralizations[latestState.assetId]) {
+        throw new Error(`Cannot uninstall deposit app with active collateralization`);
       }
+      return;
     }
   };
 
