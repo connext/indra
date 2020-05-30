@@ -45,7 +45,9 @@ export abstract class AbstractController {
     const freeBalance = await this.connext.getFreeBalance(params.initiatorDepositAssetId);
     if (params.initiatorDeposit.gt(freeBalance[this.connext.signerAddress])) {
       throw new Error(
-        `Insufficient funds. Free balance: ${freeBalance.toString()}, Required balance: ${params.initiatorDeposit.toString()}`,
+        `Insufficient funds. Free balance: ${freeBalance[
+          this.connext.signerAddress
+        ].toString()}, Required balance: ${params.initiatorDeposit.toString()}`,
       );
     }
 
