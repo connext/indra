@@ -38,7 +38,7 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
         bytes32 generatedHash = sha256(abi.encode(action.preImage));
 
         require(!state.finalized, "Cannot take action on finalized state");
-        require(state.lockHash == generatedHash, "Hash generated from preimage does not match hash in state");
+        require(state.linkedHash == generatedHash, "Hash generated from preimage does not match hash in state");
 
         state.coinTransfers[1].amount = state.coinTransfers[0].amount;
         state.coinTransfers[0].amount = 0;
