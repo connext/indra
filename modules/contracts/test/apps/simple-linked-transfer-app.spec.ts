@@ -1,22 +1,19 @@
 /* global before */
 import {
-  SolidityValueType,
   CoinTransfer,
   singleAssetTwoPartyCoinTransferEncoding,
   SimpleLinkedTransferAppState,
   SimpleLinkedTransferAppAction,
   SimpleLinkedTransferAppStateEncoding,
-  DepositAppState,
   SimpleLinkedTransferAppActionEncoding,
 } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
-import { AddressZero, Zero } from "ethers/constants";
+import {  Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, soliditySha256 } from "ethers/utils";
 
 import SimpleLinkedTransferApp from "../../build/SimpleLinkedTransferApp.json";
 
 import { expect, provider } from "../utils";
-import { stringify } from "@connext/utils";
 
 function mkAddress(prefix: string = "0xa"): string {
   return prefix.padEnd(42, "0");
@@ -50,7 +47,7 @@ function createLinkedHash(preImage: string): string {
   return soliditySha256(["bytes32"], [preImage]);
 }
 
-describe("SimpleLinkedTransferApp", () => {
+describe.only("SimpleLinkedTransferApp", () => {
   let simpleLinkedTransferApp: Contract;
 
   async function computeOutcome(state: SimpleLinkedTransferAppState): Promise<CoinTransfer[]> {
@@ -135,4 +132,34 @@ describe("SimpleLinkedTransferApp", () => {
     const outcome = await computeOutcome(afterActionState);
     await validateOutcome(afterActionState, outcome);
   });
+
+  it("refunds a payment if app state is not finalized", async () => {
+    const preImage = mkHash("0xb");
+    const initialState = await createInitialState(preImage);
+    const outcome = await computeOutcome(initialState);
+    await validateOutcome(initialState, outcome);
+  })
+
+  it("reverts action if state is already finalized", async () => {
+    const preImage = mkHash("0xb");
+    const initialState = await createInitialState(preImage);
+    const action: SimpleLinkedTransferAppAction = { preImage };
+
+    const finalizedState = {
+      ...initialState,
+      finalized: true
+    }
+
+    await expect(applyAction(finalizedState, action)).revertedWith("Cannot take action on finalized state");
+  })
+
+  it("reverts action if incorrect preimage", async () => {
+    const preImage = mkHash("0xb");
+    const initialState = await createInitialState(preImage);
+    
+    // incorrect preimage
+    const action: SimpleLinkedTransferAppAction = { preImage: mkHash("0xc") };
+
+    await expect(applyAction(initialState, action)).revertedWith("Hash generated from preimage does not match hash in state");
+  })
 });
