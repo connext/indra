@@ -1,12 +1,8 @@
 import { MinimumViableMultisig } from "@connext/contracts";
 import {
   IConnextClient,
-  EventNames,
   BigNumberish,
   CONVENTION_FOR_ETH_ASSET_ID,
-  RebalanceProfile,
-  EventPayloads,
-  DepositAppState,
 } from "@connext/types";
 import { Wallet, Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -24,13 +20,10 @@ import {
   requestCollateral,
   getNatsClient,
 } from "../util";
-import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 import { Client } from "ts-nats";
 
-// TODO: multiple withdrawal tests are skipped because there are issues where
-// the TX is sent before the client can subscribe. need to fix by possibly increasing block
-// time
-describe.only("Withdrawal", () => {
+// TODO: some withdrawal tests are skipped because of this issue: https://github.com/connext/indra/issues/1186
+describe("Withdrawal", () => {
   let client: IConnextClient;
   let tokenAddress: string;
   let nats: Client;
@@ -39,22 +32,6 @@ describe.only("Withdrawal", () => {
     client = await createClient();
     nats = getNatsClient();
     tokenAddress = client.config.contractAddresses.Token!;
-
-    // const REBALANCE_PROFILE_ETH: RebalanceProfile = {
-    //   assetId: AddressZero,
-    //   collateralizeThreshold: Zero,
-    //   target: Zero,
-    //   reclaimThreshold: Zero,
-    // };
-    // await addRebalanceProfile(nats, client, REBALANCE_PROFILE_ETH, false);
-
-    // const REBALANCE_PROFILE_TOKEN: RebalanceProfile = {
-    //   assetId: tokenAddress,
-    //   collateralizeThreshold: Zero,
-    //   target: Zero,
-    //   reclaimThreshold: Zero,
-    // };
-    // await addRebalanceProfile(nats, client, REBALANCE_PROFILE_TOKEN, false);
   });
 
   it("happy case: client successfully withdraws eth and node submits the tx", async () => {
