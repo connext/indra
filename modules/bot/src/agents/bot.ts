@@ -9,6 +9,7 @@ import { utils } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { parseEther, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { Argv } from "yargs";
+import intervalPromise from "interval-promise";
 
 import { createClient } from "../helpers/client";
 import {
@@ -44,13 +45,16 @@ export default {
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
     const NAME = `Bot #${argv.concurrencyIndex}`;
-    const log = new ColorfulLogger(NAME, 4, true, argv.concurrencyIndex);
+    const log = new ColorfulLogger(NAME, 3, true, argv.concurrencyIndex);
     log.info(`Launched bot ${NAME}`);
     const TRANSFER_AMT = parseEther("0.0001");
     const DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 0.05 eth
     const ethUrl = process.env.INDRA_ETH_RPC_URL;
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
+
+    const randomInterval = Math.round(argv.interval * 0.75 + Math.random() * (argv.interval * 0.5));
+    log.info(`Using random inteval: ${randomInterval}`);
 
     // Create agent client
     const client = await createClient(
@@ -76,7 +80,7 @@ export default {
           return;
         }
 
-        log.info(`Received transfer: ${stringify(eventData)}`);
+        log.debug(`Received transfer: ${stringify(eventData)}`);
 
         if (client.signerAddress !== eventData.transferMeta.signer) {
           log.error(
@@ -103,10 +107,10 @@ export default {
       },
     );
 
-    let depositLock;
+    let depositLock: boolean;
 
     // Setup agent logic to transfer on an interval
-    setInterval(async () => {
+    intervalPromise(async () => {
       log.debug(`Started interval`);
 
       // Deposit if agent is out of funds
@@ -115,7 +119,7 @@ export default {
       if (balance[client.signerAddress].lt(TRANSFER_AMT) && !depositLock) {
         // set lock to avoid concurrent deposits on a loop
         depositLock = true;
-        log.info(
+        log.warn(
           `Balance too low: ${balance[
             client.signerAddress
           ].toString()} < ${TRANSFER_AMT.toString()}, depositing...`,
@@ -124,7 +128,7 @@ export default {
           await client.deposit({ amount: DEPOSIT_AMT, assetId: AddressZero });
           log.info(`Finished depositing`);
         } catch (e) {
-          throw e
+          throw e;
         } finally {
           depositLock = false;
         }
@@ -139,7 +143,7 @@ export default {
       if (receiverIdentifier) {
         const receiverSigner = getSignerAddressFromPublicIdentifier(receiverIdentifier);
         const paymentId = getRandomBytes32();
-        log.info(
+        log.debug(
           `Send conditional transfer ${paymentId} for ${utils.formatEther(
             TRANSFER_AMT,
           )} ETH to ${receiverIdentifier} (${receiverSigner})`,
@@ -147,7 +151,7 @@ export default {
 
         try {
           // Send transfer
-          log.debug(`Starting transfer to ${receiverIdentifier} with signer ${receiverSigner}`);
+          log.info(`Starting transfer to ${receiverIdentifier} with signer ${receiverSigner}`);
           await client.conditionalTransfer({
             paymentId,
             amount: TRANSFER_AMT,
@@ -162,8 +166,8 @@ export default {
           console.error(`Error sending tranfer: ${err.message}`);
         }
       }
-      // add slight randomness to interval so that it's somewhere between 
+      // add slight randomness to interval so that it's somewhere between
       // 75% and 125% of inputted argument
-    }, (argv.interval*0.75) + (Math.random()*(argv.interval*0.5)));
+    }, randomInterval);
   },
 };

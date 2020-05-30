@@ -36,7 +36,7 @@ function cleanup {
   done
   if [[ -n "`docker container ls -a | grep bot-registry`" ]]
   then
-    echo "Stopping bot-registry $n.."
+    echo "Stopping bot-registry.."
     docker container stop bot-registry &> /dev/null || true
     agent_code="`docker container inspect bot-registry | jq '.[0].State.ExitCode'`"
     docker container rm bot-registry &> /dev/null || true
