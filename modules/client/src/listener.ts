@@ -423,7 +423,7 @@ export class ConnextListener extends ConnextEventEmitter {
         const { initiatorDepositAssetId: assetId, meta } = params;
         const amount = initalState.coinTransfers[0].amount;
         this.log.info(
-          `Emitting event CONDITIONAL_TRANSFER_CREATED_EVENT for paymentId ${initalState.paymentId}`,
+          `Emitting event CONDITIONAL_TRANSFER_CREATED_EVENT for paymentId ${meta["paymentId"]}`,
         );
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
@@ -435,7 +435,7 @@ export class ConnextListener extends ConnextEventEmitter {
             encryptedPreImage: meta["encryptedPreImage"],
           } as CreatedLinkedTransferMeta,
           type: ConditionalTransferTypes.LinkedTransfer,
-          paymentId: initalState.paymentId,
+          paymentId: meta["paymentId"],
           recipient: meta["recipient"],
         } as EventPayloads.LinkedTransferCreated);
         break;
@@ -507,7 +507,7 @@ export class ConnextListener extends ConnextEventEmitter {
           type: ConditionalTransferTypes.LinkedTransfer,
           amount: transferAmount,
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
-          paymentId: transferState.paymentId,
+          paymentId: appInstance.meta["paymentId"],
           sender: appInstance.meta ? appInstance.meta["sender"] : undefined, // https://github.com/ConnextProject/indra/issues/1054
           recipient: appInstance.meta ? appInstance.meta["recipient"] : undefined,
           meta: appInstance.meta,
