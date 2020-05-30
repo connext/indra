@@ -24,7 +24,7 @@ import { BigNumber } from "ethers/utils";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
-import { CFCoreProviderId, MessagingProviderId } from "../constants";
+import { CFCoreProviderId, MessagingProviderId, TIMEOUT_BUFFER } from "../constants";
 import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
@@ -188,6 +188,10 @@ export class CFCoreService {
 
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(app, network.chainId);
 
+    // Decrement timeout so that receiver app MUST finalize before sender app
+    // See: https://github.com/connext/indra/issues/1046
+    const timeout = DEFAULT_APP_TIMEOUT.sub(TIMEOUT_BUFFER)
+
     const {
       actionEncoding,
       appDefinitionAddress: appDefinition,
@@ -209,7 +213,7 @@ export class CFCoreService {
       responderIdentifier: channel.userIdentifier,
       responderDeposit,
       responderDepositAssetId,
-      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      defaultTimeout: timeout,
       stateTimeout,
     };
     this.log.info(`Attempting to install ${appInfo.name} in channel ${channel.multisigAddress}`);
