@@ -48,7 +48,7 @@ export default {
     const log = new ColorfulLogger(NAME, 3, true, argv.concurrencyIndex);
     log.info(`Launched bot ${NAME}`);
     const TRANSFER_AMT = parseEther("0.0001");
-    const DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 0.05 eth
+    const DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 1 eth
     const ethUrl = process.env.INDRA_ETH_RPC_URL;
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;

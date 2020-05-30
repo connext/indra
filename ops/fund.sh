@@ -13,5 +13,5 @@ node <<EOF
   const mnemonic = "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
   const provider = new eth.providers.JsonRpcProvider("http://localhost:8545");
   const wallet = eth.Wallet.fromMnemonic(mnemonic).connect(provider);
-  wallet.sendTransaction({ to: recipient, value: eth.utils.parseEther("0.05") }).then(console.log);
+  wallet.sendTransaction({ to: recipient, value: eth.utils.parseEther("1") }).then(console.log);
 EOF
