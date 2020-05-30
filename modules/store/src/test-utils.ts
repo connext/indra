@@ -5,7 +5,7 @@ import {
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
   ContractAddresses,
-  IBackupServiceAPI,
+  IBackupService,
   MinimalTransaction,
   OutcomeType,
   SetStateCommitmentJSON,
@@ -256,7 +256,7 @@ export const testAsyncStorageKey = async (
  * store refactor, and it is not clear how this would impact backwards
  * compatability of custom stores.
  */
-export class MockBackupService implements IBackupServiceAPI {
+export class MockBackupService implements IBackupService {
   private prefix: string;
   private storage = new Map<string, any>();
 

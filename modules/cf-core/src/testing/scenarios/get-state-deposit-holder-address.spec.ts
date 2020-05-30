@@ -1,13 +1,12 @@
 import { MethodNames } from "@connext/types";
-import { jsonRpcDeserialize } from "rpc-server";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { setup, SetupContext } from "../setup";
 
 describe(`Node method follows spec - getStateDepositHolderAddress`, () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   beforeAll(async () => {
     const context: SetupContext = await setup(global);
@@ -22,14 +21,11 @@ describe(`Node method follows spec - getStateDepositHolderAddress`, () => {
       result: {
         result: { address },
       },
-    } = await nodeA.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        method: MethodNames.chan_getStateDepositHolderAddress,
-        params: { owners },
-        jsonrpc: `2.0`,
-      }),
-    );
+    } = await nodeA.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: MethodNames.chan_getStateDepositHolderAddress,
+      parameters: { owners },
+    });
 
     expect(address.length).toBe(42);
   });

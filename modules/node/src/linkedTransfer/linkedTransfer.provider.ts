@@ -1,6 +1,6 @@
 import { MessagingService } from "@connext/messaging";
 import { LinkedTransferStatus, NodeResponses, SimpleLinkedTransferAppState } from "@connext/types";
-import { bigNumberifyJson, stringify } from "@connext/utils";
+import { bigNumberifyJson } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
@@ -57,24 +57,6 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     };
   }
 
-  async resolveLinkedTransfer(
-    pubId: string,
-    { paymentId }: { paymentId: string },
-  ): Promise<NodeResponses.ResolveLinkedTransfer> {
-    this.log.debug(`Got resolve link request with data: ${stringify(paymentId)}`);
-    if (!paymentId) {
-      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(paymentId)}`);
-    }
-    const response = await this.linkedTransferService.installLinkedTransferReceiverApp(
-      pubId,
-      paymentId,
-    );
-    return {
-      ...response,
-      amount: response.amount,
-    };
-  }
-
   async getPendingTransfers(
     userIdentifier: string,
   ): Promise<NodeResponses.GetPendingAsyncTransfers> {
@@ -101,10 +83,6 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "*.transfer.get-linked",
       this.authService.parseIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
-    );
-    await super.connectRequestReponse(
-      "*.transfer.install-linked",
-      this.authService.parseIdentifier(this.resolveLinkedTransfer.bind(this)),
     );
     await super.connectRequestReponse(
       "*.transfer.get-pending",

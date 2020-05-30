@@ -89,6 +89,7 @@ describe("Restore State", () => {
     // first clear the client store and take client offline
     await clientA.store.clear();
     await clientA.messaging.disconnect();
+    clientA.removeAllListeners(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT);
 
     // send the transfer
     await Promise.all([
@@ -100,13 +101,10 @@ describe("Restore State", () => {
           return reject();
         });
       }),
-      new Promise(async (resolve) => {
-        const result = await senderClient.transfer({
-          amount: transferAmount,
-          assetId,
-          recipient,
-        });
-        return resolve(result);
+      senderClient.transfer({
+        amount: transferAmount,
+        assetId,
+        recipient,
       }),
     ]);
     const freeBalanceSender = await senderClient.getFreeBalance(assetId);
@@ -124,7 +122,7 @@ describe("Restore State", () => {
       );
       clientA = await createClient({
         signer: signerA,
-        store: getLocalStore(),
+        id: "A2",
       });
       expect(clientA.signerAddress).to.be.eq(signerA.address);
       expect(clientA.publicIdentifier).to.be.eq(signerA.publicIdentifier);

@@ -7,7 +7,7 @@ import {
   IConnextClient,
   ProtocolParam,
   ProtocolNames,
-  IClientStore,
+  IStoreService,
 } from "@connext/types";
 import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
 import { expect } from "chai";
@@ -20,15 +20,15 @@ import { ethWallet } from "./ethprovider";
 import { TestMessagingService, SendReceiveCounter, RECEIVED, SEND, NO_LIMIT } from "./messaging";
 
 export const createClient = async (
-  opts: Partial<ClientOptions & { id: string }> = {},
+  opts: Partial<ClientOptions & { id: string; logLevel: number }> = {},
   fund: boolean = true,
 ): Promise<IConnextClient> => {
   const store = opts.store || getMemoryStore();
   const wallet = Wallet.createRandom();
-  const log = new ColorfulLogger("CreateClient", env.logLevel);
+  const log = new ColorfulLogger("CreateClient", opts.logLevel || env.logLevel);
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
-    loggerService: new ColorfulLogger("Client", env.logLevel, true, opts.id),
+    loggerService: new ColorfulLogger("Client", opts.logLevel || env.logLevel, true, opts.id),
     signer: opts.signer || wallet.privateKey,
     nodeUrl: env.nodeUrl,
     store,
@@ -102,7 +102,7 @@ export type ClientTestMessagingInputOpts = {
   protocol: keyof typeof ProtocolNames | "any"; // use "any" to limit any messages by count
   signer: IChannelSigner;
   params: Partial<ProtocolParam>;
-  store?: IClientStore;
+  store?: IStoreService;
 };
 
 export const createClientWithMessagingLimits = async (

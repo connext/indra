@@ -16,7 +16,7 @@ import {
   EventNames,
   IChannelProvider,
   IChannelSigner,
-  IClientStore,
+  IStoreService,
   IConnextClient,
   ILoggerService,
   IMessagingService,
@@ -40,10 +40,9 @@ import {
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
   stringify,
-  toBN,
 } from "@connext/utils";
 import { Contract, providers } from "ethers";
-import { AddressZero } from "ethers/constants";
+import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
@@ -79,7 +78,7 @@ export class ConnextClient implements IConnextClient {
   public publicIdentifier: string;
   public signer: IChannelSigner;
   public signerAddress: string;
-  public store: IClientStore;
+  public store: IStoreService;
   public token: Contract;
 
   private opts: InternalClientOptions;
@@ -349,10 +348,12 @@ export class ConnextClient implements IConnextClient {
       }
       case ConditionalTransferTypes.HashLockTransfer: {
         params.assetId = params.assetId ? params.assetId : AddressZero;
-        return this.resolveHashLockTransferController.resolveHashLockTransfer(params);
+        const res = await this.resolveHashLockTransferController.resolveHashLockTransfer(params);
+        return { ...res, paymentId: HashZero };
       }
       case ConditionalTransferTypes.SignedTransfer: {
-        return this.resolveSignedTransferController.resolveSignedTransfer(params);
+        const res = await this.resolveSignedTransferController.resolveSignedTransfer(params);
+        return { ...res, paymentId: params.paymentId };
       }
       default:
         throw new Error(`Condition type ${(params as any).conditionType} invalid`);
@@ -663,10 +664,14 @@ export class ConnextClient implements IConnextClient {
 
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
     const pendingTransfers = await this.node.getPendingAsyncTransfers();
-    this.log.debug(`Found ${pendingTransfers.length} transfers to reclaim`);
+    this.log.info(`Found ${pendingTransfers.length} transfers to reclaim`);
     for (const transfer of pendingTransfers) {
       const { encryptedPreImage, paymentId } = transfer;
-      await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+      try {
+        await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+      } catch (e) {
+        this.log.error(`Could not reclaim transfer ${paymentId}, will try again on next connect`);
+      }
     }
   };
 
@@ -681,13 +686,18 @@ export class ConnextClient implements IConnextClient {
       encryptedPreImage,
     });
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
-    const response = await this.resolveLinkedTransferController.resolveLinkedTransfer({
-      conditionType: ConditionalTransferTypes.LinkedTransfer,
-      paymentId,
-      preImage,
-    });
-    this.log.debug(`Reclaimed transfer ${paymentId} using preImage: ${preImage}`);
-    return response;
+    try {
+      const response = await this.resolveLinkedTransferController.resolveLinkedTransfer({
+        conditionType: ConditionalTransferTypes.LinkedTransfer,
+        paymentId,
+        preImage,
+      });
+      this.log.debug(`Reclaimed transfer ${paymentId} using preImage: ${preImage}`);
+      return response;
+    } catch (e) {
+      this.log.error(`Error in reclaimPendingAsyncTransfer: ${e.message}`);
+      throw e;
+    }
   };
 
   ///////////////////////////////////

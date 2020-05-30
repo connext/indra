@@ -4,7 +4,7 @@ import {
   OutcomeType,
   SimpleLinkedTransferAppName,
 } from "@connext/types";
-import { safeJsonParse } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, safeJsonParse } from "@connext/utils";
 import { EntityRepository, Repository } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
@@ -199,9 +199,10 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   async findLinkedTransferAppByPaymentIdAndSender(
     paymentId: string,
-    senderSignerAddress: string,
+    senderIdentifier: string,
   ): Promise<AppInstance> {
-    const res = await this.createQueryBuilder("app_instance")
+    const senderAddress = getSignerAddressFromPublicIdentifier(senderIdentifier);
+    return await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
         AppRegistry,
         "app_registry",
@@ -211,17 +212,16 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`,
-      )
-      .getOne();
-    return res;
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderAddress}"'`,
+      ).getOne();
   }
 
   async findLinkedTransferAppByPaymentIdAndReceiver(
     paymentId: string,
-    receiverSignerAddress: string,
+    receiverIdentifier: string,
   ): Promise<AppInstance> {
-    const res = await this.createQueryBuilder("app_instance")
+    const receiverAddress = getSignerAddressFromPublicIdentifier(receiverIdentifier);
+    return await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
         AppRegistry,
         "app_registry",
@@ -232,10 +232,8 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       // receiver is recipient
       .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`,
-      )
-      .getOne();
-    return res;
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverAddress}"'`,
+      ).getOne();
   }
 
   async findRedeemedLinkedTransferAppByPaymentIdFromNode(

@@ -1,9 +1,11 @@
 import { getLocalStore } from "@connext/store";
+import { ConditionalTransferTypes, IConnextClient, EventNames } from "@connext/types";
 import {
-  ConditionalTransferTypes,
-  IConnextClient,
-} from "@connext/types";
-import { ChannelSigner, getRandomBytes32 } from "@connext/utils";
+  getRandomBytes32,
+  getRandomPrivateKey,
+  getPublicKeyFromPrivateKey,
+  getPublicIdentifierFromPublicKey,
+} from "@connext/utils";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
@@ -71,19 +73,43 @@ describe("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });
 
+  it("happy case: client A transfers eth to offline client through node", async () => {
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+
+    const receiverPk = getRandomPrivateKey();
+    let receiver = await createClient({ id: "C", signer: receiverPk });
+    await requestCollateral(receiver, transfer.assetId);
+    await receiver.messaging.disconnect();
+    receiver.removeAllListeners(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT);
+    const paymentId = getRandomBytes32();
+    await clientA.transfer({
+      amount: transfer.amount.toString(),
+      assetId: transfer.assetId,
+      recipient: receiver.publicIdentifier,
+      paymentId,
+    });
+    receiver = await createClient({ id: "C", signer: receiverPk });
+
+    const { [receiver.signerAddress]: receiverFreeBalance } = await receiver.getFreeBalance(
+      transfer.assetId,
+    );
+    expect(receiverFreeBalance).to.eq(transfer.amount);
+  });
+
   it("happy case: client A successfully transfers to an address that doesn’t have a channel", async () => {
-    const receiverSigner = new ChannelSigner(
-      Wallet.createRandom().privateKey,
-      ethProvider.connection.url,
+    const receiverPk = getRandomPrivateKey();
+    const receiverIdentifier = getPublicIdentifierFromPublicKey(
+      getPublicKeyFromPrivateKey(receiverPk),
     );
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
     await clientA.transfer({
       amount: ETH_AMOUNT_SM.toString(),
       assetId: tokenAddress,
-      recipient: receiverSigner.publicIdentifier,
+      recipient: receiverIdentifier,
     });
-    const receiverClient = await createClient({ signer: receiverSigner }, false);
-    expect(receiverClient.publicIdentifier).to.eq(receiverSigner.publicIdentifier);
+    const receiverClient = await createClient({ signer: receiverPk }, false);
+    expect(receiverClient.publicIdentifier).to.eq(receiverIdentifier);
     const freeBalance = await receiverClient.getFreeBalance(tokenAddress);
     expect(freeBalance[receiverClient.signerAddress]).to.be.above(0);
     receiverClient.messaging.disconnect();
@@ -160,7 +186,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`invalid number value`);
+    ).to.be.rejectedWith(`Will not accept transfer install where initiator deposit is <= 0`);
   });
 
   it("Bot A tries to transfer with an invalid token address", async () => {

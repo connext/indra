@@ -19,7 +19,7 @@ import { Context } from "../types";
 
 import { MiddlewareContainer } from "./middleware";
 import { StateChannel } from "../models";
-import RpcRouter from "../rpc-router";
+import { RpcRouter } from "../rpc-router";
 
 function firstRecipientFromProtocolName(protocolName: ProtocolName) {
   if (Object.values(ProtocolNames).includes(protocolName)) {
@@ -153,7 +153,7 @@ export function getOutgoingEventFailureDataFromProtocol(
     from: params.initiatorIdentifier,
     data: {
       params,
-      error: error.stack || error.message,
+      error: error.message,
     },
   };
   switch (protocol) {

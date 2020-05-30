@@ -82,7 +82,7 @@ type GetFreeBalanceStateParams = {
 };
 
 type GetFreeBalanceStateResult = {
-  [s: string]: BigNumber;
+  [signerAddress: string]: BigNumber;
 };
 
 ////////////////////////////////////////
@@ -159,7 +159,7 @@ type ProposeInstallParams = {
   initialState: AppState;
   initiatorDeposit: BigNumber;
   initiatorDepositAssetId: AssetId;
-  meta?: Object;
+  meta?: any;
   multisigAddress: Address;
   outcomeType: OutcomeType;
   responderIdentifier: PublicIdentifier;
