@@ -19,4 +19,4 @@ export const HARD_CODED_ASSUMPTIONS = {
 
 // 1 messaging timeout there, 1 messaging timeout back
 // assume messaging timeout of 5s
-export const IO_SEND_AND_WAIT_TIMEOUT = 10_000;
+export const IO_SEND_AND_WAIT_TIMEOUT = 5_000;
