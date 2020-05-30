@@ -10,6 +10,7 @@ import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { LinkedTransferService } from "./linkedTransfer.service";
+import { Zero } from "ethers/constants";
 
 export class LinkedTransferMessaging extends AbstractMessagingProvider {
   constructor(
@@ -45,12 +46,12 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     const latestState = bigNumberifyJson(senderApp.latestState) as SimpleLinkedTransferAppState;
     const { encryptedPreImage, recipient, ...meta } = senderApp.meta || ({} as any);
     return {
-      amount: latestState.amount,
-      assetId: latestState.assetId,
+      amount: latestState.coinTransfers[0].amount !== Zero ? latestState.coinTransfers[0].amount : latestState.coinTransfers[1].amount,
+      assetId: senderApp.initiatorDepositAssetId,
       createdAt: senderApp.createdAt,
       encryptedPreImage: encryptedPreImage,
       meta: meta || {},
-      paymentId: latestState.paymentId,
+      paymentId: paymentId,
       receiverIdentifier: recipient,
       senderIdentifier: senderApp.initiatorIdentifier,
       status,
@@ -66,10 +67,10 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     return transfers.map((transfer) => {
       const state = bigNumberifyJson(transfer.latestState) as SimpleLinkedTransferAppState;
       return {
-        paymentId: state.paymentId,
+        paymentId: transfer.meta["paymentId"],
         createdAt: transfer.createdAt,
-        amount: state.amount,
-        assetId: state.assetId,
+        amount: transfer.initialState.coinTransfers[0].amount,
+        assetId: transfer.initiatorDepositAssetId,
         senderIdentifier: transfer.channel.userIdentifier,
         receiverIdentifier: transfer.meta["recipient"],
         status: LinkedTransferStatus.PENDING,
