@@ -63,9 +63,6 @@ const {
   DepositApp,
   DolphinCoin,
   TicTacToeApp,
-  SimpleTransferApp,
-  UnidirectionalLinkedTransferApp,
-  UnidirectionalTransferApp,
 } = global[`contracts`] as TestContractAddresses;
 
 export const newWallet = (wallet: Wallet) =>
@@ -991,36 +988,6 @@ export function getAppContext(
         abiEncodings: tttAbiEncodings,
         initialState: initialState || initialEmptyTTTState(),
         outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-      };
-
-    case UnidirectionalTransferApp:
-      checkForAddresses();
-      return {
-        appDefinition,
-        initialState: initialState || initialTransferState(senderAddress!, receiverAddress!),
-        abiEncodings: transferAbiEncodings,
-        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-      };
-
-    case UnidirectionalLinkedTransferApp:
-      checkForAddresses();
-      // TODO: need a better way to return the action info that generated
-      // the linked hash as well
-      const { state } = initialLinkedState(senderAddress!, receiverAddress!);
-      return {
-        appDefinition,
-        initialState: initialState || state,
-        abiEncodings: linkedAbiEncodings,
-        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-      };
-
-    case SimpleTransferApp:
-      checkForAddresses();
-      return {
-        appDefinition,
-        initialState: initialState || initialSimpleTransferState(senderAddress!, receiverAddress!),
-        abiEncodings: simpleTransferAbiEncodings,
-        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
       };
 
     case DepositApp:

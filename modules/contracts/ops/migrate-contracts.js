@@ -19,7 +19,6 @@ const appContracts = [
   "HashLockTransferApp",
   "SimpleLinkedTransferApp",
   "SimpleSignedTransferApp",
-  "SimpleTransferApp",
   "SimpleTwoPartySwapApp",
   "DepositApp",
   "WithdrawApp",
