@@ -33,6 +33,7 @@ import {
   SimpleTwoPartySwapAppName,
   WithdrawalMonitorObject,
   WithdrawAppName,
+  EventName,
 } from "@connext/types";
 import {
   delay,
@@ -487,27 +488,28 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // EVENT METHODS
 
-  public on = (event: EventNames, callback: (...args: any[]) => void): ConnextListener => {
-    return this.listener.on(event, callback);
+  public on = (event: EventName, callback: (...args: any[]) => void) => {
+    this.listener.attach(event, callback);
   };
 
-  public once = (event: EventNames, callback: (...args: any[]) => void): ConnextListener => {
-    return this.listener.once(event, callback);
+  public once = (event: EventName, callback: (...args: any[]) => void) => {
+    this.listener.attachOnce(event, callback);
   };
 
-  public removeAllListeners = (event?: EventNames): ConnextListener => {
-    return this.listener.removeAllListeners(event);
+  // TODO: allow for removing listeners attached via a specific event
+  // by manipulating the context of the events
+
+  public off = () => {
+    this.listener.detach();
   };
 
-  public emit = (event: EventNames, data: any): boolean => {
-    return this.listener.emit(event, data);
-  };
-
-  public removeListener = (
-    event: EventNames,
-    callback: (...args: any[]) => void,
-  ): ConnextListener => {
-    return this.listener.removeListener(event, callback);
+  public emit = (event: EventName, data: any): boolean => {
+    try {
+      this.listener.post(event, data);
+      return true;
+    } catch (e) {
+      return false;
+    }
   };
 
   ///////////////////////////////////

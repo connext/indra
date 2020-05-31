@@ -1,13 +1,13 @@
 import {
   EventNames,
-  Message,
+  ProtocolEventMessage,
   ProtocolMessage,
   ProtocolName,
   ProtocolNames,
   ProtocolParam,
   ProtocolParams,
   SolidityValueType,
-  EventPayloads,
+  EventPayload,
   Address,
 } from "@connext/types";
 import { bigNumberifyJson } from "@connext/utils";
@@ -65,7 +65,7 @@ export async function handleReceivedProtocolMessage(
   await emitOutgoingMessage(router, outgoingEventData);
 }
 
-function emitOutgoingMessage(router: RpcRouter, msg: Message) {
+function emitOutgoingMessage(router: RpcRouter, msg: ProtocolEventMessage<any>) {
   return router.emit(msg["type"], msg, "outgoing");
 }
 
@@ -73,51 +73,39 @@ async function getOutgoingEventDataFromProtocol(
   protocol: ProtocolName,
   params: ProtocolParam,
   postProtocolStateChannel: StateChannel,
-): Promise<Message | undefined> {
+): Promise<ProtocolEventMessage<any> | undefined> {
   // default to the pubId that initiated the protocol
   const baseEvent = { from: params.initiatorIdentifier };
 
   switch (protocol) {
     case ProtocolNames.propose: {
-      const {
-        initiatorIdentifier,
-        responderIdentifier,
-        ...emittedParams
-      } = params as ProtocolParams.Propose;
       const app = postProtocolStateChannel.mostRecentlyProposedAppInstance();
       return {
         ...baseEvent,
         type: EventNames.PROPOSE_INSTALL_EVENT,
         data: {
-          params: {
-            ...emittedParams,
-            responderIdentifier,
-          },
-          appIdentityHash: app.identityHash,
+          params,
+          appInstanceId: app.identityHash,
         },
-      };
+      } as ProtocolEventMessage<typeof EventNames.PROPOSE_INSTALL_EVENT>;
     }
     case ProtocolNames.install: {
       return {
         ...baseEvent,
         type: EventNames.INSTALL_EVENT,
         data: {
-          // TODO: It is weird that `params` is in the event data, we should
-          // remove it, but after telling all consumers about this change
-          params: {
-            appIdentityHash: postProtocolStateChannel.getAppInstanceByAppSeqNo(
-              (params as ProtocolParams.Install).appSeqNo,
-            ).identityHash,
-          },
+          appIdentityHash: postProtocolStateChannel.getAppInstanceByAppSeqNo(
+            (params as ProtocolParams.Install).appSeqNo,
+          ).identityHash,
         },
-      };
+      } as ProtocolEventMessage<typeof EventNames.INSTALL_EVENT>;
     }
     case ProtocolNames.uninstall: {
       return {
         ...baseEvent,
         type: EventNames.UNINSTALL_EVENT,
         data: getUninstallEventData(params as ProtocolParams.Uninstall),
-      };
+      } as ProtocolEventMessage<typeof EventNames.UNINSTALL_EVENT>;
     }
     case ProtocolNames.setup: {
       return {
@@ -129,14 +117,14 @@ async function getOutgoingEventDataFromProtocol(
             postProtocolStateChannel.multisigOwners,
           ),
         },
-      };
+      } as ProtocolEventMessage<typeof EventNames.CREATE_CHANNEL_EVENT>;
     }
     case ProtocolNames.sync: {
       return {
         ...baseEvent,
         type: EventNames.SYNC,
         data: { syncedChannel: postProtocolStateChannel.toJson() },
-      };
+      } as ProtocolEventMessage<typeof EventNames.SYNC>;
     }
     case ProtocolNames.takeAction: {
       return {
@@ -148,7 +136,7 @@ async function getOutgoingEventDataFromProtocol(
             (params as ProtocolParams.TakeAction).appIdentityHash,
           ).state,
         ),
-      };
+      } as ProtocolEventMessage<typeof EventNames.UPDATE_STATE_EVENT>;
     }
     default:
       throw new Error(
@@ -169,6 +157,6 @@ function getUninstallEventData({ appIdentityHash, multisigAddress }: ProtocolPar
 function getSetupEventData(
   { multisigAddress }: ProtocolParams.Setup,
   owners: Address[],
-): Omit<EventPayloads.CreateMultisig, "counterpartyIdentifier"> {
+): Omit<EventPayload["CREATE_CHANNEL_EVENT"], "counterpartyIdentifier"> {
   return { multisigAddress, owners };
 }

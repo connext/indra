@@ -195,14 +195,12 @@ describe("Deposits", () => {
       assetId: AddressZero,
     };
     await new Promise(async (resolve, reject) => {
-      client.once(EventNames.WITHDRAWAL_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
-      client.once(EventNames.DEPOSIT_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
-      client.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT, (msg) =>
-        reject(new Error(msg.data.error)),
-      );
-      client.once(EventNames.INSTALL_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
-      client.once(EventNames.UPDATE_STATE_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
-      client.once(EventNames.UNINSTALL_FAILED_EVENT, (msg) => reject(new Error(msg.data.error)));
+      client.once(EventNames.WITHDRAWAL_FAILED_EVENT, (msg) => reject(new Error(msg.error)));
+      client.once(EventNames.DEPOSIT_FAILED_EVENT, (msg) => reject(new Error(msg.error)));
+      client.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT, (msg) => reject(new Error(msg.error)));
+      client.once(EventNames.INSTALL_FAILED_EVENT, (msg) => reject(new Error(msg.error)));
+      client.once(EventNames.UPDATE_STATE_FAILED_EVENT, (msg) => reject(new Error(msg.error)));
+      client.once(EventNames.UNINSTALL_FAILED_EVENT, (msg) => reject(new Error(msg.error)));
       await client.deposit({ amount: TWO, assetId: expected.assetId });
       await client.withdraw({ amount: TWO, assetId: expected.assetId });
       await client.deposit({ amount: expected.client, assetId: expected.assetId });

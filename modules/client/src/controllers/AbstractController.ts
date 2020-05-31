@@ -4,6 +4,9 @@ import {
   ILoggerService,
   INodeApiClient,
   MethodParams,
+  CF_METHOD_TIMEOUT,
+  EventPayloads,
+  GenericMessage,
 } from "@connext/types";
 import { stringify } from "@connext/utils";
 import { providers } from "ethers";
@@ -60,45 +63,32 @@ export abstract class AbstractController {
     const { appIdentityHash } = await this.connext.proposeInstallApp(params);
     this.log.debug(`App instance successfully proposed: ${appIdentityHash}`);
 
-    let boundReject: (reason?: any) => void;
-    let boundInstallFailed: (reason?: any) => void;
-
-    try {
-      // 1676 ms TODO: why does this step take so long?
-      await Promise.race([
-        new Promise((resolve, reject) => {
-          boundInstallFailed = this.rejectInstall.bind(
-            null,
-            reject,
-            appIdentityHash,
-            `Install protocol failed`,
-          );
-          this.listener.on(EventNames.INSTALL_FAILED_EVENT, boundInstallFailed);
-        }),
-        new Promise((resolve, reject) => {
-          boundReject = this.rejectInstall.bind(
-            null,
-            reject,
-            appIdentityHash,
-            `Proposal was rejected`,
-          );
-          this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
-        }),
-        new Promise((resolve) => {
-          // set up install nats subscription
-          const subject = `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`;
-          this.connext.node.messaging.subscribe(subject, resolve);
-        }),
-      ]);
-
-      this.log.info(`Installed app with id: ${appIdentityHash}`);
-      return appIdentityHash;
-    } catch (e) {
-      this.log.error(`Error installing app: ${e.stack || e.message}`);
-      throw e;
-    } finally {
-      this.cleanupInstallListeners(boundReject, boundInstallFailed, appIdentityHash);
+    // wait for reject/install message from node, or protocol failures
+    const res = (await Promise.race([
+      this.listener.waitFor(
+        EventNames.INSTALL_FAILED_EVENT,
+        CF_METHOD_TIMEOUT * 3,
+        (msg) => msg.params.identityHash === appIdentityHash,
+      ),
+      this.listener.waitFor(
+        EventNames.REJECT_INSTALL_EVENT,
+        CF_METHOD_TIMEOUT * 3,
+        (msg) => msg.appInstance.identityHash === appIdentityHash,
+      ),
+      new Promise((resolve) => {
+        const subject = `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`;
+        this.connext.node.messaging.subscribe(subject, (msg: GenericMessage) => resolve(undefined));
+      }),
+    ])) as undefined | EventPayloads.InstallFailed | EventPayloads.RejectInstall;
+    if (!!res) {
+      throw new Error(
+        `Failed to install app: ${
+          res["error"] || "Node rejected install"
+        }. Identity hash: ${appIdentityHash}`,
+      );
     }
+    this.log.info(`Installed app with id: ${appIdentityHash}`);
+    return appIdentityHash;
   };
 
   public throwIfAny = (...maybeErrorMessages: Array<string | undefined>): void => {
@@ -106,31 +96,5 @@ export abstract class AbstractController {
     if (errors.length > 0) {
       throw new Error(errors.join(", "));
     }
-  };
-
-  private rejectInstall = (
-    rej: (message?: Error) => void,
-    appIdentityHash: string,
-    prefix: string,
-    message: any,
-  ): void => {
-    // check app id
-    const data = message.data && message.data.data ? message.data.data : message.data || message;
-    if (data.appIdentityHash === appIdentityHash) {
-      return rej(new Error(`${prefix}. Event data: ${stringify(message)}`));
-    }
-    return;
-  };
-
-  private cleanupInstallListeners = (
-    boundReject: any,
-    boundInstallFailed: any,
-    appIdentityHash: string,
-  ): void => {
-    this.connext.node.messaging.unsubscribe(
-      `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
-    );
-    this.listener.removeCfListener(EventNames.REJECT_INSTALL_EVENT, boundReject);
-    this.listener.removeCfListener(EventNames.INSTALL_FAILED_EVENT, boundInstallFailed);
   };
 }

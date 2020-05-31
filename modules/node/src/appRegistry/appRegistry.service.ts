@@ -5,7 +5,6 @@ import {
 } from "@connext/apps";
 import {
   AppInstanceJson,
-  MethodParams,
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   WithdrawAppState,
@@ -20,6 +19,7 @@ import {
   ProposeMiddlewareContext,
   ConditionalTransferAppNames,
   HashLockTransferAppState,
+  ProtocolParams,
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
@@ -62,7 +62,7 @@ export class AppRegistryService implements OnModuleInit {
 
   async installOrReject(
     appIdentityHash: string,
-    proposeInstallParams: MethodParams.ProposeInstall,
+    proposeInstallParams: ProtocolParams.Propose,
     from: string,
   ): Promise<void> {
     this.log.info(
@@ -150,7 +150,7 @@ export class AppRegistryService implements OnModuleInit {
   private async runPostInstallTasks(
     registryAppInfo: AppRegistry,
     appIdentityHash: string,
-    proposeInstallParams: MethodParams.ProposeInstall,
+    proposeInstallParams: ProtocolParams.Propose,
   ): Promise<void> {
     this.log.info(
       `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} started`,

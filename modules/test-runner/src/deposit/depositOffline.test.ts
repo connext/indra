@@ -38,12 +38,8 @@ const makeFailingDepositCall = async (opts: {
   await new Promise(async (resolve, reject) => {
     client.once(event as any, (msg) => {
       try {
-        expect(msg).to.containSubset({
-          type: event,
-          from: client.publicIdentifier,
-        });
-        expect(msg.data.params).to.be.an("object");
-        expect(msg.data.error).to.include(error);
+        expect(msg.params).to.be.an("object");
+        expect(msg.error).to.include(error);
         return resolve(msg);
       } catch (e) {
         return reject(e.message);

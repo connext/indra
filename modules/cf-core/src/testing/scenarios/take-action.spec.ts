@@ -1,4 +1,4 @@
-import { EventNames, EventPayloads, UpdateStateMessage } from "@connext/types";
+import { EventNames, UpdateStateMessage, EventPayload } from "@connext/types";
 import { Zero, Two } from "ethers/constants";
 
 import { CFCore } from "../../cfCore";
@@ -22,7 +22,7 @@ const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 function confirmMessages(
   initiator: CFCore,
   responder: CFCore,
-  expectedData: EventPayloads.UpdateState,
+  expectedData: EventPayload[typeof EventNames.UPDATE_STATE_EVENT],
 ) {
   const expected = {
     from: initiator.publicIdentifier,
@@ -32,8 +32,8 @@ function confirmMessages(
   // initiator.once(EventNames.UPDATE_STATE_EVENT, (msg: UpdateStateMessage) => {
   //   assertMessage(msg, expected);
   // });
-  responder.once(EventNames.UPDATE_STATE_EVENT, (msg: UpdateStateMessage) => {
-    assertMessage(msg, expected);
+  responder.once(EventNames.UPDATE_STATE_EVENT, (msg) => {
+    assertMessage<typeof EventNames.UPDATE_STATE_EVENT>(msg, expected);
   });
 }
 
