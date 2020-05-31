@@ -21,6 +21,7 @@ import { RequestHandler } from "../../request-handler";
 import { RpcRouter } from "../../rpc-router";
 
 import { MethodController } from "../controller";
+import { toBN } from "@connext/utils";
 
 export class UninstallController extends MethodController {
   public readonly methodName = MethodNames.chan_uninstall;
@@ -80,7 +81,7 @@ export class UninstallController extends MethodController {
       protocolRunner,
       publicIdentifier,
       preProtocolStateChannel!.userIdentifiers.find((id) => id !== publicIdentifier)!,
-      appIdentityHash,
+      params,
     );
 
     return { appIdentityHash, multisigAddress: updatedChannel.multisigAddress };
@@ -111,9 +112,9 @@ export async function uninstallAppInstanceFromChannel(
   protocolRunner: ProtocolRunner,
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
-  appIdentityHash: string,
+  params: MethodParams.Uninstall
 ): Promise<StateChannel> {
-  const appInstance = stateChannel.getAppInstance(appIdentityHash);
+  const appInstance = stateChannel.getAppInstance(params.appIdentityHash);
 
   const { channel: updatedChannel } = await protocolRunner.initiateProtocol(
     router,
@@ -123,6 +124,8 @@ export async function uninstallAppInstanceFromChannel(
       responderIdentifier,
       multisigAddress: stateChannel.multisigAddress,
       appIdentityHash: appInstance.identityHash,
+      action: params.action,
+      stateTimeout: params.stateTimeout || toBN(appInstance.defaultTimeout)
     },
   );
   return updatedChannel;
