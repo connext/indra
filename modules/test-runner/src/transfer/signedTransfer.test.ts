@@ -8,7 +8,7 @@ import {
   SignedTransferStatus,
   EventPayloads,
 } from "@connext/types";
-import { getRandomChannelSigner } from "@connext/utils";
+import { getRandomChannelSigner, delay } from "@connext/utils";
 import { AddressZero } from "ethers/constants";
 import { hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { providers } from "ethers";
@@ -317,7 +317,7 @@ describe("Signed Transfers", () => {
     ).to.eventually.be.rejectedWith(/VM Exception while processing transaction/);
   });
 
-  it.only("if sender uninstalls, node should force uninstall receiver first", async () => {
+  it("if sender uninstalls, node should force uninstall receiver first", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -325,32 +325,118 @@ describe("Signed Transfers", () => {
     const signer = getRandomChannelSigner();
     const signerAddress = await signer.getAddress();
 
-    const transferRes = await clientA.conditionalTransfer({
-      amount: transfer.amount,
-      conditionType: ConditionalTransferTypes.SignedTransfer,
-      paymentId,
-      signer: signerAddress,
-      assetId: transfer.assetId,
-      meta: { foo: "bar", sender: clientA.publicIdentifier },
-      recipient: clientB.publicIdentifier,
-    } as PublicParams.SignedTransfer);
+    const [transferRes, receiverRes] = await Promise.all([
+      clientA.conditionalTransfer({
+        amount: transfer.amount,
+        conditionType: ConditionalTransferTypes.SignedTransfer,
+        paymentId,
+        signer: signerAddress,
+        assetId: transfer.assetId,
+        recipient: clientB.publicIdentifier,
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
+      } as PublicParams.SignedTransfer),
+      new Promise((res, rej) => {
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
+        clientA.once(EventNames.REJECT_INSTALL_EVENT, rej);
+      }),
+    ]);
 
-    await clientA.uninstallApp(transferRes.appIdentityHash);
-
+    clientA.uninstallApp((transferRes as any).appIdentityHash);
     const winner = await Promise.race([
       new Promise<EventPayloads.Uninstall>((res) => {
         clientA.once(
           EventNames.UNINSTALL_EVENT,
           res,
-          (data) => data.appIdentityHash === transferRes.appIdentityHash,
+          (data) => data.appIdentityHash === (transferRes as any).appIdentityHash,
         );
       }),
       new Promise<EventPayloads.Uninstall>((res) => {
         clientB.once(EventNames.UNINSTALL_EVENT, res);
       }),
     ]);
-    console.log(winner);
-    expect(winner).to.be.ok;
+    expect(winner.appIdentityHash).to.be.eq(
+      (receiverRes as EventPayloads.SignedTransferCreated).appIdentityHash,
+    );
+  });
+
+  it("sender cannot uninstall before receiver", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+
+    const paymentId = hexlify(randomBytes(32));
+    const signer = getRandomChannelSigner();
+    const signerAddress = await signer.getAddress();
+
+    const [transferRes] = await Promise.all([
+      clientA.conditionalTransfer({
+        amount: transfer.amount,
+        conditionType: ConditionalTransferTypes.SignedTransfer,
+        paymentId,
+        signer: signerAddress,
+        assetId: transfer.assetId,
+        recipient: clientB.publicIdentifier,
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
+      } as PublicParams.SignedTransfer),
+      new Promise((res, rej) => {
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
+        clientA.once(EventNames.REJECT_INSTALL_EVENT, rej);
+      }),
+    ]);
+
+    // disconnect so receiver cannot uninstall
+    clientB.messaging.disconnect();
+    clientB.off();
+
+    await expect(clientA.uninstallApp((transferRes as any).appIdentityHash)).to.eventually.be
+      .rejected;
+  });
+
+  it("sender cannot uninstall unfinalized app when receiver is finalized", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+
+    const paymentId = hexlify(randomBytes(32));
+    const signer = getRandomChannelSigner();
+    const signerAddress = await signer.getAddress();
+
+    const [transferRes] = await Promise.all([
+      clientA.conditionalTransfer({
+        amount: transfer.amount,
+        conditionType: ConditionalTransferTypes.SignedTransfer,
+        paymentId,
+        signer: signerAddress,
+        assetId: transfer.assetId,
+        recipient: clientB.publicIdentifier,
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
+      } as PublicParams.SignedTransfer),
+      new Promise((res, rej) => {
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
+        clientA.once(EventNames.REJECT_INSTALL_EVENT, rej);
+      }),
+    ]);
+
+    const data = hexlify(randomBytes(32));
+    const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
+    const signature = await signer.signMessage(digest);
+
+    // disconnect so sender cannot unlock
+    clientA.messaging.disconnect();
+
+    await Promise.all([
+      new Promise((res) => {
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, res);
+      }),
+      clientB.resolveCondition({
+        conditionType: ConditionalTransferTypes.SignedTransfer,
+        paymentId,
+        data,
+        signature,
+      } as PublicParams.ResolveSignedTransfer),
+    ]);
+
+    clientA.messaging.connect();
+    await expect(clientA.uninstallApp((transferRes as any).appIdentityHash)).to.eventually.be
+      .rejected;
   });
 
   // average time in multichannel test
