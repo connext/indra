@@ -4,6 +4,7 @@ import { OutcomeType } from "./contracts";
 import { enumify } from "./utils";
 
 type InstallProtocolParams = {
+  identityHash: Bytes32;
   initiatorIdentifier: PublicIdentifier;
   initiatorDepositAssetId: Address;
   responderIdentifier: PublicIdentifier;
@@ -104,7 +105,7 @@ export const ProtocolNames = enumify({
   takeAction: "takeAction",
   uninstall: "uninstall",
 });
-export type ProtocolNames = (typeof ProtocolNames)[keyof typeof ProtocolNames];
+export type ProtocolNames = typeof ProtocolNames[keyof typeof ProtocolNames];
 export type ProtocolName = keyof typeof ProtocolNames;
 
 export namespace ProtocolParams {

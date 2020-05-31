@@ -4,12 +4,13 @@ import {
   ILoggerService,
   IMessagingService,
   IStoreService,
-  Message,
   MethodName,
   NetworkContext,
   ProtocolMessage,
   PublicIdentifier,
   ILockService,
+  EventName,
+  ProtocolEventMessage,
 } from "@connext/types";
 import { logTime } from "@connext/utils";
 import EventEmitter from "eventemitter3";
@@ -89,9 +90,9 @@ export class RequestHandler {
    * @param event
    * @param msg
    */
-  public async callEvent(event: EventNames, msg: Message) {
+  public async callEvent<T extends EventName>(event: T, msg: ProtocolEventMessage<T>) {
     const start = Date.now();
-    const controllerExecutionMethod = eventImplementations[event];
+    const controllerExecutionMethod = eventImplementations[event as string];
     const controllerCount = this.router.eventListenerCount(event);
 
     if (!controllerExecutionMethod && controllerCount === 0) {
@@ -124,7 +125,7 @@ export class RequestHandler {
     this.router.emit(event, msg);
   }
 
-  public async isLegacyEvent(event: EventNames) {
+  public async isLegacyEvent(event: EventName) {
     return Object.keys(eventImplementations).includes(event);
   }
 

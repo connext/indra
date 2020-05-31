@@ -102,7 +102,7 @@ export class CreateChannelController extends MethodController {
         multisigAddress,
         owners: addressOwners,
         counterpartyIdentifier: responderIdentifier,
-      } as MethodResults.CreateChannel,
+      },
     };
 
     outgoing.emit(EventNames.CREATE_CHANNEL_EVENT, msg);

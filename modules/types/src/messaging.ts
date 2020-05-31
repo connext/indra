@@ -1,16 +1,22 @@
-import { EventNames, EventPayloads } from "./events";
-import { Address, Bytes32, DecString, PublicIdentifier } from "./basic";
+import { EventName, EventNames, EventPayload } from "./events";
+import { Address, PublicIdentifier } from "./basic";
 import { ILoggerService } from "./logger";
-import { MethodResults, MethodParams } from "./methods";
 import { ProtocolName, ProtocolParam } from "./protocol";
 
 ////////////////////////////////////////
 // Message Contents
 
-export type Message<T = any> = {
+// TODO: does this have to include a type
+export type GenericMessage<T = any> = {
   data: T;
   from: Address;
-  type: EventNames;
+  type: EventName;
+};
+
+export type ProtocolEventMessage<T extends EventName> = {
+  data: EventPayload[T];
+  from: Address;
+  type: T;
 };
 
 export type ProtocolMessageData = {
@@ -24,22 +30,21 @@ export type ProtocolMessageData = {
   customData: { [key: string]: any };
 };
 
-type ProposeInstallMessageData = {
-  params: MethodParams.ProposeInstall;
-  appIdentityHash: Bytes32;
-};
-
-export type CreateChannelMessage = Message<MethodResults.CreateChannel>;
-export type DepositConfirmationMessage = Message<MethodParams.Deposit>;
-export type DepositFailedMessage = Message<{ params: MethodParams.Deposit; errors: string[] }>;
-export type DepositStartedMessage = Message<{ value: DecString; txHash: Bytes32 }>;
-export type InstallMessage = Message<{ params: MethodParams.Install }>;
-export type ProtocolMessage = Message<ProtocolMessageData>;
-export type ProposeMessage = Message<ProposeInstallMessageData>;
-export type RejectProposalMessage = Message<{ appIdentityHash: Bytes32 }>;
-export type SyncMessage = Message<EventPayloads.Sync>;
-export type UninstallMessage = Message<EventPayloads.Uninstall>;
-export type UpdateStateMessage = Message<EventPayloads.UpdateState>;
+export type CreateChannelMessage = ProtocolEventMessage<typeof EventNames["CREATE_CHANNEL_EVENT"]>;
+export type DepositConfirmationMessage = ProtocolEventMessage<
+  typeof EventNames["DEPOSIT_CONFIRMED_EVENT"]
+>;
+export type DepositFailedMessage = ProtocolEventMessage<typeof EventNames["DEPOSIT_FAILED_EVENT"]>;
+export type DepositStartedMessage = ProtocolEventMessage<
+  typeof EventNames["DEPOSIT_STARTED_EVENT"]
+>;
+export type InstallMessage = ProtocolEventMessage<typeof EventNames["INSTALL_EVENT"]>;
+export type ProtocolMessage = ProtocolEventMessage<typeof EventNames["PROTOCOL_MESSAGE_EVENT"]>;
+export type ProposeMessage = ProtocolEventMessage<typeof EventNames["PROPOSE_INSTALL_EVENT"]>;
+export type RejectProposalMessage = ProtocolEventMessage<typeof EventNames["REJECT_INSTALL_EVENT"]>;
+export type SyncMessage = ProtocolEventMessage<typeof EventNames["SYNC"]>;
+export type UninstallMessage = ProtocolEventMessage<typeof EventNames["UNINSTALL_EVENT"]>;
+export type UpdateStateMessage = ProtocolEventMessage<typeof EventNames["UPDATE_STATE_EVENT"]>;
 
 ////////////////////////////////////////
 // Messaging Service
@@ -58,7 +63,7 @@ export interface IMessagingService {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   flush(): Promise<void>;
-  onReceive(subject: string, callback: (msg: Message) => void): Promise<void>;
+  onReceive(subject: string, callback: (msg: GenericMessage) => void): Promise<void>;
   publish(subject: string, data: any): Promise<void>;
   request(
     subject: string,
@@ -66,7 +71,7 @@ export interface IMessagingService {
     data: object,
     callback?: (response: any) => any,
   ): Promise<any>;
-  send(to: string, msg: Message): Promise<void>;
-  subscribe(subject: string, callback: (msg: Message) => void): Promise<void>;
+  send(to: string, msg: GenericMessage): Promise<void>;
+  subscribe(subject: string, callback: (msg: GenericMessage) => void): Promise<void>;
   unsubscribe(subject: string): Promise<void>;
 }

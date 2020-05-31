@@ -1,5 +1,5 @@
 import { DolphinCoin } from "@connext/contracts";
-import { DepositConfirmationMessage, MethodParams, DepositStartedMessage } from "@connext/types";
+import { MethodParams, EventNames } from "@connext/types";
 import { getAddressFromAssetId, deBigNumberifyJson } from "@connext/utils";
 import { Contract } from "ethers";
 import { One, Two, Zero, AddressZero } from "ethers/constants";
@@ -43,16 +43,16 @@ export function confirmDepositMessages(
     data: params,
   };
 
-  initiator.once("DEPOSIT_STARTED_EVENT", (msg: DepositStartedMessage) => {
-    assertMessage(msg, startedMsg, ["data.txHash"]);
+  initiator.once("DEPOSIT_STARTED_EVENT", (msg) => {
+    assertMessage<typeof EventNames.DEPOSIT_STARTED_EVENT>(msg, startedMsg, ["data.txHash"]);
   });
 
-  initiator.once("DEPOSIT_CONFIRMED_EVENT", (msg: DepositConfirmationMessage) => {
-    assertMessage(msg, confirmMsg);
+  initiator.once("DEPOSIT_CONFIRMED_EVENT", (msg) => {
+    assertMessage<typeof EventNames.DEPOSIT_CONFIRMED_EVENT>(msg, confirmMsg);
   });
 
-  responder.once("DEPOSIT_CONFIRMED_EVENT", (msg: DepositConfirmationMessage) => {
-    assertMessage(msg, confirmMsg);
+  responder.once("DEPOSIT_CONFIRMED_EVENT", (msg) => {
+    assertMessage<typeof EventNames.DEPOSIT_CONFIRMED_EVENT>(msg, confirmMsg);
   });
 }
 

@@ -81,7 +81,7 @@ describe("Async Transfers", () => {
     let receiver = await createClient({ id: "C", signer: receiverPk });
     await requestCollateral(receiver, transfer.assetId);
     await receiver.messaging.disconnect();
-    receiver.removeAllListeners(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT);
+    receiver.off();
     const paymentId = getRandomBytes32();
     await clientA.transfer({
       amount: transfer.amount.toString(),

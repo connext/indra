@@ -1,5 +1,5 @@
-import { ProposeMessage, MethodParams } from "@connext/types";
-import { deBigNumberifyJson, stringify } from "@connext/utils";
+import { MethodParams } from "@connext/types";
+import { deBigNumberifyJson } from "@connext/utils";
 
 import { CFCore } from "../../cfCore";
 
@@ -8,7 +8,6 @@ import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
-  collateralizeChannel,
   createChannel,
   getAppInstanceProposal,
   getProposedAppInstances,
@@ -71,11 +70,11 @@ describe("Node method follows spec - propose install", () => {
       const appId = await new Promise(async (resolve, reject) => {
         let identityHash: string = "";
         let dispatched = false;
-        nodeB.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
+        nodeB.once("PROPOSE_INSTALL_EVENT", async (msg) => {
           // make sure message has the right structure
-          assertMessage(msg, expectedMessageB, ["data.appIdentityHash"]);
+          assertMessage<"PROPOSE_INSTALL_EVENT">(msg, expectedMessageB, ["data.appInstanceId"]);
           // both nodes should have 1 app, they should be the same
-          identityHash = msg.data.appIdentityHash;
+          identityHash = msg.data.appInstanceId;
           if (dispatched) resolve(identityHash);
         });
 

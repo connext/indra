@@ -8,6 +8,7 @@ import {
   ConnextClientStorePrefix,
   ConnextEventEmitter,
   CreateChannelMessage,
+  EventName,
   EventNames,
   IChannelProvider,
   IChannelSigner,
@@ -32,7 +33,6 @@ import {
   stringify,
   getPublicKeyFromPublicIdentifier,
   toBN,
-  delay,
 } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -194,16 +194,13 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     return result;
   }
 
-  public on = (
-    event: string | EventNames | MethodName,
-    listener: (...args: any[]) => void,
-  ): any => {
+  public on = (event: string | EventName | MethodName, listener: (...args: any[]) => void): any => {
     this.cfCore.on(event as any, listener);
     return this.cfCore;
   };
 
   public once = (
-    event: string | EventNames | MethodName,
+    event: string | EventName | MethodName,
     listener: (...args: any[]) => void,
   ): any => {
     this.cfCore.once(event as any, listener);
