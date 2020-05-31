@@ -311,10 +311,10 @@ export class AppRegistryService implements OnModuleInit {
    */
   private uninstallTransferMiddleware = async (appInstance: AppInstanceJson) => {
     const nodeSignerAddress = await this.configService.getSignerAddress();
-    const latestState = appInstance.latestState as GenericConditionalTransferAppState;
+    const senderAppLatestState = appInstance.latestState as GenericConditionalTransferAppState;
 
     // only run validation against sender app uninstall
-    if (latestState.coinTransfers[1].to !== nodeSignerAddress) {
+    if (senderAppLatestState.coinTransfers[1].to !== nodeSignerAddress) {
       return;
     }
 
@@ -340,7 +340,8 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    if (receiverApp.latestState.finalized) {
+    if (!senderAppLatestState.finalized && receiverApp.latestState.finalized) {
+      throw new Error(`Cannot uninstall unfinalized sender app, receiver app has been finalized`);
     }
   };
 
