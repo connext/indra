@@ -97,14 +97,10 @@ export class AppActionsService {
     senderApp: AppInstance<any>,
     action: AppAction,
   ): Promise<void> {
-    await this.cfCoreService.takeAction(
-      senderApp.identityHash,
-      senderApp.channel.multisigAddress,
-      action,
-    );
     await this.cfCoreService.uninstallApp(
       senderApp.identityHash,
       senderApp.channel.multisigAddress,
+      action
     );
   }
 }
