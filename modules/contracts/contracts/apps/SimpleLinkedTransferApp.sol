@@ -13,23 +13,11 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
 
     using SafeMath for uint256;
 
-    /**
-    * Assume the app is funded with the money already owed to receiver,
-    * as in the SimpleTwoPartySwapApp.
-    *
-    * This app can also not be used to send _multiple_ linked payments,
-    * only one can be redeemed with the preImage.
-    *
-    */
-
     struct AppState {
         LibOutcome.CoinTransfer[2] coinTransfers;
         bytes32 linkedHash;
-        // need these for computing outcome
-        uint256 amount;
-        address assetId;
-        bytes32 paymentId;
         bytes32 preImage;
+        bool finalized;
     }
 
     struct Action {
@@ -47,8 +35,15 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
     {
         AppState memory state = abi.decode(encodedState, (AppState));
         Action memory action = abi.decode(encodedAction, (Action));
+        bytes32 generatedHash = sha256(abi.encode(action.preImage));
 
+        require(!state.finalized, "Cannot take action on finalized state");
+        require(state.linkedHash == generatedHash, "Hash generated from preimage does not match hash in state");
+
+        state.coinTransfers[1].amount = state.coinTransfers[0].amount;
+        state.coinTransfers[0].amount = 0;
         state.preImage = action.preImage;
+        state.finalized = true;
 
         return abi.encode(state);
     }
@@ -60,49 +55,29 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
         returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
-        // TODO: whats the protection against passing a different hash?
+        // Revert payment if it's uninstalled before being finalized
+        return abi.encode(state.coinTransfers);
+    }
 
-        bytes32 generatedHash = keccak256(
-            abi.encodePacked(
-                state.amount,
-                state.assetId,
-                state.paymentId,
-                state.preImage
-            )
-        );
+    function getTurnTaker(
+        bytes calldata /* encodedState */,
+        address[] calldata participants
+    )
+        override
+        external
+        view
+        returns (address)
+    {
+        return participants[1]; // receiver should always be indexed at [1]
+    }
 
-        LibOutcome.CoinTransfer[2] memory transfers;
-        if (generatedHash == state.linkedHash) {
-            /**
-             * If the hash is correct, finalize the state with provided transfers.
-             */
-            transfers = LibOutcome.CoinTransfer[2]([
-                LibOutcome.CoinTransfer(
-                    state.coinTransfers[0].to,
-                    /* should always be 0 */
-                    0
-                ),
-                LibOutcome.CoinTransfer(
-                    state.coinTransfers[1].to,
-                    /* should always be full value of linked payment */
-                    state.coinTransfers[0].amount
-                )
-            ]);
-        } else {
-            /**
-             * If the hash is not correct, finalize the state with reverted transfers.
-             */
-            transfers = LibOutcome.CoinTransfer[2]([
-                LibOutcome.CoinTransfer(
-                    state.coinTransfers[0].to,
-                    state.coinTransfers[0].amount
-                ),
-                LibOutcome.CoinTransfer(
-                    state.coinTransfers[1].to,
-                    0
-                )
-            ]);
-        }
-        return abi.encode(transfers);
+    function isStateTerminal(bytes calldata encodedState)
+        override
+        external
+        view
+        returns (bool)
+    {
+        AppState memory state = abi.decode(encodedState, (AppState));
+        return state.finalized;
     }
 }
