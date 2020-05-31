@@ -45,14 +45,15 @@ export class ResolveSignedTransferController extends AbstractController {
         resolveRes = await this.connext.node.resolveSignedTransfer(paymentId);
       }
       if (!alreadyFinalized) {
-        this.log.debug(`Taking action on signed transfer app ${resolveRes.appIdentityHash}`);
-        await this.connext.takeAction(resolveRes.appIdentityHash, {
+        this.log.debug(`Uninstalling with action on signed transfer app ${resolveRes.appIdentityHash}`);
+        await this.connext.uninstallApp(resolveRes.appIdentityHash, {
           data,
           signature,
         } as SimpleSignedTransferAppAction);
+      } else {
+        this.log.debug(`Uninstalling signed transfer app ${resolveRes.appIdentityHash}`);
+        await this.connext.uninstallApp(resolveRes.appIdentityHash);
       }
-      this.log.debug(`Uninstalling signed transfer app ${resolveRes.appIdentityHash}`);
-      await this.connext.uninstallApp(resolveRes.appIdentityHash);
     } catch (e) {
       this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
         error: e.stack || e.message,

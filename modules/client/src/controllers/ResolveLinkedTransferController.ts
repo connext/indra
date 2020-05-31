@@ -57,8 +57,11 @@ export class ResolveLinkedTransferController extends AbstractController {
       this.log.debug(
         `[${paymentId}] Installed linked transfer app ${resolveRes.appIdentityHash}. Taking action with preImage: ${preImage}`,
       );
-      await this.connext.takeAction(resolveRes.appIdentityHash, { preImage });
-      await this.connext.uninstallApp(resolveRes.appIdentityHash);
+      if (!(existing.latestState as SimpleLinkedTransferAppState).finalized) {
+        await this.connext.uninstallApp(resolveRes.appIdentityHash, { preImage });
+      } else {
+        await this.connext.uninstallApp(resolveRes.appIdentityHash);
+      }
     } catch (e) {
       this.handleResolveErr(paymentId, e);
       throw e;

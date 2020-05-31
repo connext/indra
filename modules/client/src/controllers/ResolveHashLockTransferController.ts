@@ -38,10 +38,13 @@ export class ResolveHashLockTransferController extends AbstractController {
 
     try {
       // node installs app, validation happens in listener
-      this.log.debug(`Taking action on transfer app ${hashlockApp.identityHash}`);
-      await this.connext.takeAction(hashlockApp.identityHash, { preImage });
-      this.log.debug(`Uninstalling hashlock transfer app ${hashlockApp.identityHash}`);
-      await this.connext.uninstallApp(hashlockApp.identityHash);
+      if (!(hashlockApp.latestState as HashLockTransferAppState).finalized) {
+        this.log.debug(`Uninstall with action on transfer app ${hashlockApp.identityHash}`);
+        await this.connext.uninstallApp(hashlockApp.identityHash, { preImage });
+      } else {
+        this.log.debug(`Uninstalling hashlock transfer app ${hashlockApp.identityHash}`);
+        await this.connext.uninstallApp(hashlockApp.identityHash); 
+      }
     } catch (e) {
       this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
         error: e.stack || e.message,
