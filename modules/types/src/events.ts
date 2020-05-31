@@ -2,7 +2,11 @@ import { Ctx } from "evt";
 
 import { AppInstanceProposal } from "./app";
 import { Address, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
-import { ConditionalTransferTypes, CreatedConditionalTransferMetaMap } from "./transfers";
+import {
+  ConditionalTransferTypes,
+  CreatedConditionalTransferMetaMap,
+  UnlockedConditionalTransferMetaMap,
+} from "./transfers";
 import { ProtocolParams } from "./protocol";
 import { ProtocolMessageData } from "./messaging";
 import { PublicParams } from "./public";
@@ -40,7 +44,7 @@ export type ConditionalTransferUnlockedEventData<T extends ConditionalTransferTy
   recipient?: PublicIdentifier;
   meta: any;
   type: T;
-  transferMeta: CreatedConditionalTransferMetaMap[T];
+  transferMeta: UnlockedConditionalTransferMetaMap[T];
 };
 
 ////////////////////////////////////////
