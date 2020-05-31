@@ -42,6 +42,8 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
       appIdentityHash,
       multisigAddress,
+      action,
+      stateTimeout
     } = params as ProtocolParams.Uninstall;
 
     const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
@@ -66,11 +68,29 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `[${processID}] Validated uninstall request`);
     substart = Date.now();
 
+    let preUninstallStateChannel: StateChannel;
+    if (action) {
+      if (!stateTimeout) {
+        // TODO: Is this actually required? If state is finalized, we dont need it
+        throw new Error("A state timeout is required if uninstalling with action")
+      }
+      log.info(`Action provided. Finalizing app before uninstall!`)
+      preUninstallStateChannel = preProtocolStateChannel.setState(
+        appToUninstall,
+        await appToUninstall.computeStateTransition(action, network.provider),
+        stateTimeout,
+      );
+      log.warn(`isFinalized check not yet implemented here - TODO!!`)
+      // TODO: check that state is finalized here?
+    } else {
+      preUninstallStateChannel = preProtocolStateChannel;
+    }
+
     // 47ms
     const postProtocolStateChannel = await computeStateTransition(
       params as ProtocolParams.Uninstall,
       network.provider,
-      preProtocolStateChannel,
+      preUninstallStateChannel,
       appToUninstall,
       log,
     );
@@ -150,6 +170,8 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorIdentifier,
       appIdentityHash,
       multisigAddress,
+      action,
+      stateTimeout
     } = params as ProtocolParams.Uninstall;
 
     const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
@@ -174,11 +196,29 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `[${processID}] Validated uninstall request`);
     substart = Date.now();
 
+    let preUninstallStateChannel: StateChannel;
+    if (action) {
+      if (!stateTimeout) {
+        // TODO: Is this actually required? If state is finalized, we dont need it
+        throw new Error("A state timeout is required if uninstalling with action")
+      }
+      log.info(`Action provided. Finalizing app before uninstall!`)
+      preUninstallStateChannel = preProtocolStateChannel.setState(
+        appToUninstall,
+        await appToUninstall.computeStateTransition(action, network.provider),
+        stateTimeout,
+      );
+      log.warn(`isFinalized check not yet implemented here - TODO!!`)
+      // TODO: check that state is finalized here?
+    } else {
+      preUninstallStateChannel = preProtocolStateChannel;
+    }
+
     // 40ms
     const postProtocolStateChannel = await computeStateTransition(
       params as ProtocolParams.Uninstall,
       network.provider,
-      preProtocolStateChannel,
+      preUninstallStateChannel,
       appToUninstall,
       log,
     );
