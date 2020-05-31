@@ -4,6 +4,7 @@ import {
   HashLockTransferAppName,
   SimpleLinkedTransferAppName,
   SimpleSignedTransferAppName,
+  CoinTransfer,
 } from "./contracts";
 
 ////////////////////////////////////////
@@ -22,6 +23,12 @@ export const ConditionalTransferAppNames = enumify({
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
 });
 export type ConditionalTransferAppNames = typeof ConditionalTransferAppNames[keyof typeof ConditionalTransferAppNames];
+
+export type ConditionalTransferBaseAppState = {
+  coinTransfers: CoinTransfer[];
+  finalized: boolean;
+  [x: string]: any;
+};
 
 ////////////////////////////////////////
 // Metadata
