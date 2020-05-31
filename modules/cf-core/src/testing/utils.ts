@@ -44,10 +44,7 @@ import { CONTRACT_NOT_DEPLOYED } from "../errors";
 import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
 
 import { TestContractAddresses } from "./contracts";
-import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
-import { initialSimpleTransferState, simpleTransferAbiEncodings } from "./simple-transfer";
 import { initialEmptyTTTState, tttAbiEncodings } from "./tic-tac-toe";
-import { initialTransferState, transferAbiEncodings } from "./unidirectional-transfer";
 import { toBeEq } from "./bignumber-jest-matcher";
 
 expect.extend({ toBeEq });
