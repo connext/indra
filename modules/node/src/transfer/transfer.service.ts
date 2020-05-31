@@ -5,11 +5,10 @@ import {
   ConditionalTransferAppNames,
   AppStates,
   PublicResults,
-  SimpleLinkedTransferAppState,
   HashLockTransferAppState,
   CoinTransfer,
-  ProtocolParams,
   GenericConditionalTransferAppName,
+  MethodParams,
 } from "@connext/types";
 import { stringify, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { TRANSFER_TIMEOUT, SupportedApplications } from "@connext/apps";
@@ -66,7 +65,7 @@ export class TransferService {
   // receivers are online if needed
   async transferAppInstallFlow(
     appIdentityHash: string,
-    proposeInstallParams: ProtocolParams.Propose,
+    proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
     installerChannel: Channel,
     transferType: ConditionalTransferAppNames,
@@ -74,7 +73,7 @@ export class TransferService {
     this.log.info(`Start transferAppInstallFlow for appIdentityHash ${appIdentityHash}`);
 
     const paymentId = proposeInstallParams.meta["paymentId"];
-    const allowed = getTransferTypeFromAppName(transferType);
+    const allowed = getTransferTypeFromAppName(transferType as SupportedApplications);
     // in the allow offline case, we want both receiver and sender apps to install in parallel
     // if allow offline, resolve after sender app install
     // if not, will be installed in middleware

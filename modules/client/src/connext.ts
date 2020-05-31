@@ -13,7 +13,6 @@ import {
   DefaultApp,
   DepositAppName,
   DepositAppState,
-  EventNames,
   IChannelProvider,
   IChannelSigner,
   IStoreService,
@@ -34,6 +33,7 @@ import {
   WithdrawalMonitorObject,
   WithdrawAppName,
   EventName,
+  EventPayload,
 } from "@connext/types";
 import {
   delay,
@@ -488,11 +488,17 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // EVENT METHODS
 
-  public on = (event: EventName, callback: (...args: any[]) => void) => {
+  public on = <T extends EventName>(
+    event: T,
+    callback: (payload: EventPayload[T]) => void | Promise<void>,
+  ) => {
     this.listener.attach(event, callback);
   };
 
-  public once = (event: EventName, callback: (...args: any[]) => void) => {
+  public once = <T extends EventName>(
+    event: T,
+    callback: (payload: EventPayload[T]) => void | Promise<void>,
+  ) => {
     this.listener.attachOnce(event, callback);
   };
 
@@ -503,9 +509,9 @@ export class ConnextClient implements IConnextClient {
     this.listener.detach();
   };
 
-  public emit = (event: EventName, data: any): boolean => {
+  public emit = <T extends EventName>(event: T, payload: EventPayload[T]): boolean => {
     try {
-      this.listener.post(event, data);
+      this.listener.post(event, payload);
       return true;
     } catch (e) {
       return false;

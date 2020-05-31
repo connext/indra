@@ -74,7 +74,6 @@ export class AppRegistryService implements OnModuleInit {
     );
 
     let registryAppInfo: AppRegistry;
-    let appInstance: AppInstanceJson;
 
     // if error, reject install
     let installerChannel: Channel;
@@ -135,10 +134,7 @@ export class AppRegistryService implements OnModuleInit {
           }
         }
       }
-      ({ appInstance } = await this.cfCoreService.installApp(
-        appIdentityHash,
-        installerChannel.multisigAddress,
-      ));
+      await this.cfCoreService.installApp(appIdentityHash, installerChannel.multisigAddress);
       // any tasks that need to happen after install, i.e. DB writes
       await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams);
     } catch (e) {

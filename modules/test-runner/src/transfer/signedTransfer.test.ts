@@ -332,6 +332,34 @@ describe("Signed Transfers", () => {
     ).to.eventually.be.rejectedWith(/VM Exception while processing transaction/);
   });
 
+  it("if sender uninstalls, node should force uninstall receiver first", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+
+    const paymentId = hexlify(randomBytes(32));
+    const signer = getRandomChannelSigner();
+    const signerAddress = await signer.getAddress();
+
+    const transferRes = await clientA.conditionalTransfer({
+      amount: transfer.amount,
+      conditionType: ConditionalTransferTypes.SignedTransfer,
+      paymentId,
+      signer: signerAddress,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
+    } as PublicParams.SignedTransfer);
+
+    await clientA.uninstallApp(transferRes.appIdentityHash);
+
+    const winner = Promise.race([
+      new Promise((res) => {
+        clientA.on(EventNames.UNINSTALL_EVENT, (data) => {
+          data;
+        });
+      }),
+    ]);
+  });
+
   // average time in multichannel test
   it.skip("Experimental: Average latency of 5 signed transfers with Eth", async () => {
     let runTime: number[] = [];
