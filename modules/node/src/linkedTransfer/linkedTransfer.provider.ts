@@ -10,7 +10,6 @@ import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { LinkedTransferService } from "./linkedTransfer.service";
-import { Zero } from "ethers/constants";
 
 export class LinkedTransferMessaging extends AbstractMessagingProvider {
   constructor(
@@ -46,7 +45,9 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     const latestState = bigNumberifyJson(senderApp.latestState) as SimpleLinkedTransferAppState;
     const { encryptedPreImage, recipient, ...meta } = senderApp.meta || ({} as any);
     return {
-      amount: latestState.coinTransfers[0].amount !== Zero ? latestState.coinTransfers[0].amount : latestState.coinTransfers[1].amount,
+      amount: latestState.coinTransfers[0].amount.isZero()
+        ? latestState.coinTransfers[1].amount
+        : latestState.coinTransfers[0].amount,
       assetId: senderApp.initiatorDepositAssetId,
       createdAt: senderApp.createdAt,
       encryptedPreImage: encryptedPreImage,
