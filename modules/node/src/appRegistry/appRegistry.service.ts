@@ -375,7 +375,7 @@ export class AppRegistryService implements OnModuleInit {
       return this.uninstallTransferMiddleware(appInstance);
     }
 
-    if (DepositAppName) {
+    if (appRegistryInfo.name === DepositAppName) {
       return this.uninstallDepositMiddleware(appInstance, role);
     }
   };
