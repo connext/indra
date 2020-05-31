@@ -79,7 +79,13 @@ export class TransferService {
     // if not, will be installed in middleware
     if (allowed === "AllowOffline") {
       try {
+        this.log.info(
+          `Installing sender app ${appIdentityHash} in channel ${installerChannel.multisigAddress}`,
+        );
         await this.cfCoreService.installApp(appIdentityHash, installerChannel.multisigAddress);
+        this.log.info(
+          `Sender app ${appIdentityHash} in channel ${installerChannel.multisigAddress} installed`,
+        );
       } catch (e) {
         throw e;
       }
@@ -89,7 +95,7 @@ export class TransferService {
     // https://github.com/ConnextProject/indra/issues/942
     this.installReceiverAppByPaymentId(
       from,
-      proposeInstallParams.meta["recipient"],
+      proposeInstallParams.meta.recipient,
       paymentId,
       proposeInstallParams.initiatorDepositAssetId,
       proposeInstallParams.initialState as AppStates[typeof transferType],
@@ -284,13 +290,13 @@ export class TransferService {
   async findReceiverAppByPaymentId<
     T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
   >(paymentId: string): Promise<AppInstance<T>> {
-    this.log.info(`findReceiverAppByPaymentId ${paymentId} started`);
+    this.log.debug(`findReceiverAppByPaymentId ${paymentId} started`);
     // node sends to receiver
     const app = await this.transferRepository.findTransferAppByPaymentIdAndSender<T>(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
     );
-    this.log.info(`findReceiverAppByPaymentId ${paymentId} completed: ${JSON.stringify(app)}`);
+    this.log.debug(`findReceiverAppByPaymentId ${paymentId} completed: ${JSON.stringify(app)}`);
     return app;
   }
 }
