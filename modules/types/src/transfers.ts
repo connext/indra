@@ -10,6 +10,8 @@ import {
 ////////////////////////////////////////
 // Types
 
+export const GenericConditionalTransferAppName = "GenericConditionalTransferApp";
+
 export const ConditionalTransferTypes = enumify({
   HashLockTransfer: "HashLockTransfer",
   LinkedTransfer: "LinkedTransfer",
@@ -21,10 +23,11 @@ export const ConditionalTransferAppNames = enumify({
   [HashLockTransferAppName]: HashLockTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
+  [GenericConditionalTransferAppName]: GenericConditionalTransferAppName,
 });
 export type ConditionalTransferAppNames = typeof ConditionalTransferAppNames[keyof typeof ConditionalTransferAppNames];
 
-export type ConditionalTransferBaseAppState = {
+export type GenericConditionalTransferAppState = {
   coinTransfers: CoinTransfer[];
   finalized: boolean;
   [x: string]: any;

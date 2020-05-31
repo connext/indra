@@ -21,6 +21,7 @@ import {
   ConditionalTransferAppNames,
   HashLockTransferAppState,
   DepositAppName,
+  GenericConditionalTransferAppState,
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
@@ -185,7 +186,9 @@ export class AppRegistryService implements OnModuleInit {
   }
 
   // APP SPECIFIC MIDDLEWARE
-  public generateMiddleware = async () => {
+  public generateMiddleware = async (): Promise<
+    (protocol: ProtocolName, cxt: MiddlewareContext) => Promise<void>
+  > => {
     const contractAddresses = await this.configService.getContractAddresses();
     const provider = this.configService.getEthProvider();
     const defaultValidation = await generateValidationMiddleware(
@@ -196,7 +199,7 @@ export class AppRegistryService implements OnModuleInit {
       this.configService.getSupportedTokens(),
     );
 
-    return async (protocol: ProtocolName, cxt: MiddlewareContext) => {
+    return async (protocol: ProtocolName, cxt: MiddlewareContext): Promise<void> => {
       await defaultValidation(protocol, cxt);
       switch (protocol) {
         case ProtocolNames.setup:
@@ -205,13 +208,13 @@ export class AppRegistryService implements OnModuleInit {
           return;
         }
         case ProtocolNames.propose: {
-          return await this.proposeMiddleware(cxt as ProposeMiddlewareContext);
+          return this.proposeMiddleware(cxt as ProposeMiddlewareContext);
         }
         case ProtocolNames.install: {
-          return await this.installMiddleware(cxt as InstallMiddlewareContext);
+          return this.installMiddleware(cxt as InstallMiddlewareContext);
         }
         case ProtocolNames.uninstall: {
-          return await this.uninstallMiddleware(cxt as UninstallMiddlewareContext);
+          return this.uninstallMiddleware(cxt as UninstallMiddlewareContext);
         }
         default: {
           const unexpected: never = protocol;
@@ -299,31 +302,79 @@ export class AppRegistryService implements OnModuleInit {
     }
   };
 
-  private uninstallMiddleware = async (cxt: UninstallMiddlewareContext) => {
+  /**
+   * https://github.com/connext/indra/issues/863
+   * The node must not allow a sender's transfer app to be uninstalled before the receiver.
+   * If the sender app is installed, the node will try to uninstall the receiver app. If the
+   * receiver app is uninstalled, it must be checked for the following case:
+   * if !senderApp.latestState.finalized && receiverApp.latestState.finalized, then ERROR
+   */
+  private uninstallTransferMiddleware = async (appInstance: AppInstanceJson) => {
+    const nodeSignerAddress = await this.configService.getSignerAddress();
+    const latestState = appInstance.latestState as GenericConditionalTransferAppState;
+
+    // only run validation against sender app uninstall
+    if (latestState.coinTransfers[1].to !== nodeSignerAddress) {
+      return;
+    }
+
+    let receiverApp = await this.transferService.findReceiverAppByPaymentId(
+      appInstance.meta.paymentId,
+    );
+
+    // TODO: VERIFY THIS
+    // okay to allow uninstall if receiver app was not installed ever
+    if (!receiverApp) {
+      return;
+    }
+
+    if (receiverApp.type !== AppType.UNINSTALLED) {
+      await this.cfCoreService.uninstallApp(
+        receiverApp.identityHash,
+        receiverApp.channel.multisigAddress,
+      );
+      // TODO: can we optimize?
+      // get new instance from store
+      receiverApp = await this.transferService.findReceiverAppByPaymentId(
+        appInstance.meta.paymentId,
+      );
+    }
+
+    if (receiverApp.latestState.finalized) {
+    }
+  };
+
+  private uninstallDepositMiddleware = async (
+    appInstance: AppInstanceJson,
+    role: ProtocolRoles,
+  ): Promise<void> => {
+    const nodeSignerAddress = await this.configService.getSignerAddress();
+    // do not respond to user requests to uninstall deposit
+    // apps if node is depositor and there is an active collateralization
+    const latestState = appInstance.latestState as DepositAppState;
+    if (latestState.transfers[0].to !== nodeSignerAddress || role === ProtocolRoles.initiator) {
+      return;
+    }
+
+    const channel = await this.cfCoreStore.getChannel(appInstance.multisigAddress);
+    if (channel.activeCollateralizations[latestState.assetId]) {
+      throw new Error(`Cannot uninstall deposit app with active collateralization`);
+    }
+    return;
+  };
+
+  private uninstallMiddleware = async (cxt: UninstallMiddlewareContext): Promise<void> => {
     const { appInstance, role } = cxt;
     const appDef = appInstance.appInterface.addr;
-
-    const nodeSignerAddress = await this.configService.getSignerAddress();
 
     const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
 
     if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo.name)) {
-      return await this.uninstallTransferMiddleware(appInstance);
+      return this.uninstallTransferMiddleware(appInstance);
     }
 
     if (DepositAppName) {
-      // do not respond to user requests to uninstall deposit
-      // apps if node is depositor and there is an active collateralization
-      const latestState = appInstance.latestState as DepositAppState;
-      if (latestState.transfers[0].to !== nodeSignerAddress || role === ProtocolRoles.initiator) {
-        return;
-      }
-
-      const channel = await this.cfCoreStore.getChannel(appInstance.multisigAddress);
-      if (channel.activeCollateralizations[latestState.assetId]) {
-        throw new Error(`Cannot uninstall deposit app with active collateralization`);
-      }
-      return;
+      return this.uninstallDepositMiddleware(appInstance, role);
     }
   };
 

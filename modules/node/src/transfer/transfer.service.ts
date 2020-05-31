@@ -9,6 +9,7 @@ import {
   HashLockTransferAppState,
   CoinTransfer,
   ProtocolParams,
+  GenericConditionalTransferAppName,
 } from "@connext/types";
 import { stringify, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { TRANSFER_TIMEOUT, SupportedApplications } from "@connext/apps";
@@ -253,8 +254,7 @@ export class TransferService {
       throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
     }
 
-    const latestState = senderApp.latestState as SimpleLinkedTransferAppState;
-    if (latestState.preImage && latestState.preImage !== HashZero) {
+    if (senderApp.latestState.preImage && senderApp.latestState.preImage !== HashZero) {
       throw new Error(`Sender app has action, refusing to redeem`);
     }
 
@@ -263,16 +263,18 @@ export class TransferService {
       receiverIdentifier,
       paymentId,
       senderApp.initiatorDepositAssetId,
-      latestState,
+      senderApp.latestState,
       senderApp.meta,
       transferType,
     );
   }
 
-  async findSenderAppByPaymentId(paymentId: string): Promise<AppInstance> {
+  async findSenderAppByPaymentId<
+    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
+  >(paymentId: string): Promise<AppInstance<T>> {
     this.log.info(`findSenderAppByPaymentId ${paymentId} started`);
     // node receives from sender
-    const app = await this.transferRepository.findTransferAppByPaymentIdAndReceiver(
+    const app = await this.transferRepository.findTransferAppByPaymentIdAndReceiver<T>(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
     );
@@ -280,10 +282,12 @@ export class TransferService {
     return app;
   }
 
-  async findReceiverAppByPaymentId(paymentId: string): Promise<AppInstance> {
+  async findReceiverAppByPaymentId<
+    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
+  >(paymentId: string): Promise<AppInstance<T>> {
     this.log.info(`findReceiverAppByPaymentId ${paymentId} started`);
     // node sends to receiver
-    const app = await this.transferRepository.findTransferAppByPaymentIdAndSender(
+    const app = await this.transferRepository.findTransferAppByPaymentIdAndSender<T>(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
     );
