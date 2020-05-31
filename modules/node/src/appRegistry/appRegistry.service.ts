@@ -324,6 +324,8 @@ export class AppRegistryService implements OnModuleInit {
       return;
     }
 
+    this.log.info(`Starting uninstallTransferMiddleware for ${appInstance.identityHash}`);
+
     if (receiverApp.type !== AppType.UNINSTALLED) {
       await this.cfCoreService.uninstallApp(
         receiverApp.identityHash,
@@ -344,6 +346,7 @@ export class AppRegistryService implements OnModuleInit {
     if (!senderAppLatestState.finalized && receiverApp.latestState.finalized) {
       throw new Error(`Cannot uninstall unfinalized sender app, receiver app has been finalized`);
     }
+    this.log.info(`Finished uninstallTransferMiddleware for ${appInstance.identityHash}`);
   };
 
   private uninstallDepositMiddleware = async (
