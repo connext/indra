@@ -332,7 +332,7 @@ describe("Signed Transfers", () => {
     ).to.eventually.be.rejectedWith(/VM Exception while processing transaction/);
   });
 
-  it("if sender uninstalls, node should force uninstall receiver first", async () => {
+  it.only("if sender uninstalls, node should force uninstall receiver first", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -347,17 +347,25 @@ describe("Signed Transfers", () => {
       signer: signerAddress,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
+      recipient: clientB.publicIdentifier,
     } as PublicParams.SignedTransfer);
 
     await clientA.uninstallApp(transferRes.appIdentityHash);
 
     const winner = Promise.race([
       new Promise((res) => {
-        clientA.on(EventNames.UNINSTALL_EVENT, (data) => {
-          data;
-        });
+        clientA.once(
+          EventNames.UNINSTALL_EVENT,
+          res,
+          (data) => data.appIdentityHash === transferRes.appIdentityHash,
+        );
+      }),
+      new Promise((res) => {
+        clientB.once(EventNames.UNINSTALL_EVENT, res);
       }),
     ]);
+    console.log(winner);
+    expect(winner).to.be.ok;
   });
 
   // average time in multichannel test

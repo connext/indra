@@ -491,15 +491,17 @@ export class ConnextClient implements IConnextClient {
   public on = <T extends EventName>(
     event: T,
     callback: (payload: EventPayload[T]) => void | Promise<void>,
+    filter?: (payload: EventPayload[T]) => boolean,
   ) => {
-    this.listener.attach(event, callback);
+    this.listener.attach(event, callback, filter);
   };
 
   public once = <T extends EventName>(
     event: T,
     callback: (payload: EventPayload[T]) => void | Promise<void>,
+    filter?: (payload: EventPayload[T]) => boolean,
   ) => {
-    this.listener.attachOnce(event, callback);
+    this.listener.attachOnce(event, callback, filter);
   };
 
   // TODO: allow for removing listeners attached via a specific event
