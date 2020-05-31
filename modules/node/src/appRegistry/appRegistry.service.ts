@@ -340,6 +340,11 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
+    // double check that the app was uninstalled
+    if (receiverApp.type !== AppType.UNINSTALLED) {
+      throw new Error(`Receiver app was unable to be uninstalled`);
+    }
+
     if (!senderAppLatestState.finalized && receiverApp.latestState.finalized) {
       throw new Error(`Cannot uninstall unfinalized sender app, receiver app has been finalized`);
     }
