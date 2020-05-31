@@ -199,6 +199,8 @@ type TakeActionResult = {
 type UninstallParams = {
   appIdentityHash: Bytes32;
   multisigAddress: Address;
+  action?: SolidityValueType;
+  stateTimeout?: BigNumber;
 };
 
 type UninstallResult = {
