@@ -3,7 +3,6 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   EventNames,
   PublicParams,
-  EventPayloads,
   ConditionalTransferTypes,
 } from "@connext/types";
 import { getPostgresStore } from "@connext/store";

@@ -73,12 +73,7 @@ describe("Signed Transfers", () => {
         meta: { foo: "bar", sender: clientA.publicIdentifier },
       } as PublicParams.SignedTransfer),
       new Promise((res, rej) => {
-        clientB.once(
-          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-          (data: EventPayloads.SignedTransferCreated) => {
-            res(data);
-          },
-        );
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
         clientA.once(EventNames.REJECT_INSTALL_EVENT, rej);
       }),
     ]);
@@ -110,12 +105,7 @@ describe("Signed Transfers", () => {
 
     const [eventData] = await Promise.all([
       new Promise(async (res) => {
-        clientA.once(
-          EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
-          (eventData: EventPayloads.SignedTransferCreated) => {
-            res(eventData);
-          },
-        );
+        clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, res);
       }),
       new Promise((res) => {
         clientA.once(EventNames.UNINSTALL_EVENT, res);
@@ -175,12 +165,7 @@ describe("Signed Transfers", () => {
         meta: { foo: "bar", sender: clientA.publicIdentifier },
       } as PublicParams.SignedTransfer),
       new Promise(async (res) => {
-        clientB.once(
-          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-          (data: EventPayloads.SignedTransferCreated) => {
-            res(data);
-          },
-        );
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
       }),
     ]);
 
@@ -352,15 +337,15 @@ describe("Signed Transfers", () => {
 
     await clientA.uninstallApp(transferRes.appIdentityHash);
 
-    const winner = Promise.race([
-      new Promise((res) => {
+    const winner = await Promise.race([
+      new Promise<EventPayloads.Uninstall>((res) => {
         clientA.once(
           EventNames.UNINSTALL_EVENT,
           res,
           (data) => data.appIdentityHash === transferRes.appIdentityHash,
         );
       }),
-      new Promise((res) => {
+      new Promise<EventPayloads.Uninstall>((res) => {
         clientB.once(EventNames.UNINSTALL_EVENT, res);
       }),
     ]);
