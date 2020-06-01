@@ -5,7 +5,6 @@ import {
 } from "@connext/types";
 import { bigNumberifyJson } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { LoggerService } from "../logger/logger.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";

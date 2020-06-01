@@ -4,10 +4,13 @@ import {
   getRandomBytes32,
   getSignerAddressFromPublicIdentifier,
   stringify,
+  getTestReceiptToSign,
+  getTestVerifyingContract,
+  signReceiptMessage,
 } from "@connext/utils";
 import { utils } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { parseEther, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
+import { parseEther } from "ethers/utils";
 import { Argv } from "yargs";
 import intervalPromise from "interval-promise";
 
@@ -49,6 +52,8 @@ export default {
     log.info(`Launched bot ${NAME}`);
     const TRANSFER_AMT = parseEther("0.0001");
     const DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 1 eth
+    const receipt = getTestReceiptToSign();
+    const verifyingContract = getTestVerifyingContract();
     const ethUrl = process.env.INDRA_ETH_RPC_URL;
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
@@ -67,6 +72,8 @@ export default {
       argv.logLevel,
     );
 
+    const { chainId } = await client.ethProvider.getNetwork();
+
     log.info(`Registering address ${client.publicIdentifier}`);
     // Register agent in environment
     await addAgentIdentifierToIndex(client.publicIdentifier);
@@ -81,25 +88,25 @@ export default {
 
       log.debug(`Received transfer: ${stringify(eventData)}`);
 
-      if (client.signerAddress !== eventData.transferMeta.signer) {
+      if (client.signerAddress !== eventData.transferMeta.signerAddress) {
         log.error(
-          `Transfer's specified signer ${eventData.transferMeta.signer} does not match our signer ${client.signerAddress}`,
+          `Transfer's specified signer ${eventData.transferMeta.signerAddress} does not match our signer ${client.signerAddress}`,
         );
         return;
       }
 
-      const mockAttestation = hexlify(randomBytes(32));
-      const attestationHash = solidityKeccak256(
-        ["bytes32", "bytes32"],
-        [mockAttestation, eventData.paymentId],
+      const signature = await signReceiptMessage(
+        receipt,
+        chainId,
+        verifyingContract,
+        argv.privateKey,
       );
-      const signature = await client.channelProvider.signMessage(attestationHash);
+      const attestation = { ...receipt, signature };
       log.info(`Unlocking transfer with signature ${signature}`);
       await client.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId: eventData.paymentId,
-        data: mockAttestation,
-        signature,
+        attestation,
       } as PublicParams.ResolveSignedTransfer);
 
       log.info(`Unlocked transfer ${eventData.paymentId} for (${eventData.amount} ETH)`);
@@ -154,7 +161,9 @@ export default {
             paymentId,
             amount: TRANSFER_AMT,
             conditionType: ConditionalTransferTypes.SignedTransfer,
-            signer: receiverSigner,
+            signerAddress: receiverSigner,
+            chainId,
+            verifyingContract,
             assetId: AddressZero,
             recipient: receiverIdentifier,
             meta: { info: `Transfer from ${NAME}` },
