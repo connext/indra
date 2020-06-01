@@ -23,14 +23,11 @@ import * as Proxy from "../artifacts/Proxy.json";
 import * as ProxyFactory from "../artifacts/ProxyFactory.json";
 import * as SimpleLinkedTransferApp from "../artifacts/SimpleLinkedTransferApp.json";
 import * as SimpleSignedTransferApp from "../artifacts/SimpleSignedTransferApp.json";
-import * as SimpleTransferApp from "../artifacts/SimpleTransferApp.json";
 import * as SimpleTwoPartySwapApp from "../artifacts/SimpleTwoPartySwapApp.json";
 import * as SingleAssetTwoPartyCoinTransferInterpreter from "../artifacts/SingleAssetTwoPartyCoinTransferInterpreter.json";
 import * as TicTacToeApp from "../artifacts/TicTacToeApp.json";
 import * as TimeLockedPassThrough from "../artifacts/TimeLockedPassThrough.json";
 import * as TwoPartyFixedOutcomeInterpreter from "../artifacts/TwoPartyFixedOutcomeInterpreter.json";
-import * as UnidirectionalLinkedTransferApp from "../artifacts/UnidirectionalLinkedTransferApp.json";
-import * as UnidirectionalTransferApp from "../artifacts/UnidirectionalTransferApp.json";
 import * as WithdrawApp from "../artifacts/WithdrawApp.json";
 
 type Abi = Array<string | FunctionFragment | EventFragment | ParamType>;
@@ -66,15 +63,12 @@ export const artifacts = {
   ProxyFactory,
   SimpleLinkedTransferApp,
   SimpleSignedTransferApp,
-  SimpleTransferApp,
   SimpleTwoPartySwapApp,
   SingleAssetTwoPartyCoinTransferInterpreter,
   TicTacToeApp,
   TimeLockedPassThrough,
   Token,
   TwoPartyFixedOutcomeInterpreter,
-  UnidirectionalLinkedTransferApp,
-  UnidirectionalTransferApp,
   WithdrawApp,
 } as Artifacts;
 
@@ -100,14 +94,11 @@ export {
   ProxyFactory,
   SimpleLinkedTransferApp,
   SimpleSignedTransferApp,
-  SimpleTransferApp,
   SimpleTwoPartySwapApp,
   SingleAssetTwoPartyCoinTransferInterpreter,
   TicTacToeApp,
   TimeLockedPassThrough,
   Token,
   TwoPartyFixedOutcomeInterpreter,
-  UnidirectionalLinkedTransferApp,
-  UnidirectionalTransferApp,
   WithdrawApp,
 };
