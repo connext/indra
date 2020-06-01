@@ -20,7 +20,6 @@ import { HashLockTransferModule } from "./hashLockTransfer/hashLockTransfer.modu
 import { SignedTransferModule } from "./signedTransfer/signedTransfer.module";
 import { DepositModule } from "./deposit/deposit.module";
 import {CacheModule} from './caching/cache.module';
-import {AppInstanceModule} from './appInstance/appInstance.module';
 
 @Module({
   exports: [ConfigModule, LoggerModule, AuthModule],
@@ -28,7 +27,6 @@ import {AppInstanceModule} from './appInstance/appInstance.module';
     AdminModule,
     AppRegistryModule,
     AuthModule,
-    AppInstanceModule,
     CFCoreModule,
     ChannelModule,
     CollateralModule,
