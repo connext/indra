@@ -14,6 +14,7 @@ import {
   twoPartyFixedOutcomeInterpreterParamsEncoding,
 } from "@connext/types";
 import {
+  appIdentityToHash,
   bigNumberifyJson,
   deBigNumberifyJson,
   getSignerAddressFromPublicIdentifier,
@@ -28,7 +29,6 @@ import { defaultAbiCoder, keccak256, BigNumber } from "ethers/utils";
 import { Memoize } from "typescript-memoize";
 
 import { CounterfactualApp } from "../contracts";
-import { appIdentityToHash } from "../utils";
 
 /**
  * Representation of an AppInstance.

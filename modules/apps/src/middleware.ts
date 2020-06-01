@@ -1,21 +1,49 @@
 import {
-  ValidationMiddleware,
-  ProtocolNames,
-  ProtocolName,
+  Address,
+  ContractAddresses,
   MiddlewareContext,
-  UninstallMiddlewareContext,
   NetworkContext,
   ProposeMiddlewareContext,
-  Address,
+  ProtocolName,
+  ProtocolNames,
+  UninstallMiddlewareContext,
+  ValidationMiddleware,
 } from "@connext/types";
+import { stringify } from "@connext/utils";
+
 import { uninstallDepositMiddleware, proposeDepositMiddleware } from "./DepositApp";
 import { proposeLinkedTransferMiddleware } from "./SimpleLinkedTransferApp";
 import { proposeHashLockTransferMiddleware } from "./HashLockTransferApp";
 import { proposeSignedTransferMiddleware } from "./SimpleSignedTransferApp";
 import { proposeWithdrawMiddleware } from "./WithdrawApp";
 import { proposeSwapMiddleware } from "./SimpleTwoPartySwapApp";
-import { stringify } from "@connext/utils";
-import { sharedProposalMiddleware } from "./shared/middleware";
+import { commonAppProposalValidation } from "./shared/validation";
+import { AppRegistry } from "./registry";
+
+const getNameFromAddress = (contractAddress: ContractAddresses, appDefinition: Address) => {
+  const [name] =
+    Object.entries(contractAddress).find(([name, addr]) => addr === appDefinition) || [];
+  return name;
+};
+
+export const sharedProposalMiddleware = (
+  cxt: ProposeMiddlewareContext,
+  contractAddresses: ContractAddresses,
+  supportedTokenAddresses: Address[],
+) => {
+  const { params, proposal } = cxt;
+  const name = getNameFromAddress(contractAddresses, proposal.appDefinition);
+  // get registry information
+  const registryAppInfo = AppRegistry.find((app) => app.name === name);
+  if (!registryAppInfo) {
+    throw new Error(
+      `Refusing proposal of unsupported application (detected: ${name}, appDef: ${
+        proposal.appDefinition
+      }). Cxt: ${stringify(cxt)}`,
+    );
+  }
+  return commonAppProposalValidation(params, registryAppInfo, supportedTokenAddresses);
+};
 
 // add any validation middlewares
 export const generateValidationMiddleware = async (

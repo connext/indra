@@ -1,11 +1,12 @@
 # Build Output
-**/tsconfig.tsbuildinfo
 **/*.0x
 **/.flags
 **/_build/**
+**/artifacts/**
 **/build/**
 **/dist/**
 **/node_modules/**
+**/tsconfig.tsbuildinfo
 modules/*/package-lock.json
 
 # Cache
