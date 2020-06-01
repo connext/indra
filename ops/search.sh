@@ -10,8 +10,8 @@ fi
 grep "$@" --exclude=*.swp --exclude=*.pdf --color=auto -r "$target" \
   ops \
   docs \
-  modules/*/contracts \
-  modules/*/commitments \
+  modules/*/src.ts \
+  modules/*/src.sol \
   modules/*/ops \
   modules/*/src \
   modules/*/test
