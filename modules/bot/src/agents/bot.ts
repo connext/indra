@@ -72,6 +72,8 @@ export default {
       argv.logLevel,
     );
 
+    const { chainId } = await client.ethProvider.getNetwork();
+
     log.info(`Registering address ${client.publicIdentifier}`);
     // Register agent in environment
     await addAgentIdentifierToIndex(client.publicIdentifier);
@@ -93,17 +95,13 @@ export default {
         return;
       }
 
-      const { chainId } = await client.ethProvider.getNetwork();
       const signature = await signReceiptMessage(
         receipt,
         chainId,
         verifyingContract,
         argv.privateKey,
       );
-      const attestation = {
-        ...receipt,
-        signature,
-      };
+      const attestation = { ...receipt, signature };
       log.info(`Unlocking transfer with signature ${signature}`);
       await client.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
@@ -164,6 +162,7 @@ export default {
             amount: TRANSFER_AMT,
             conditionType: ConditionalTransferTypes.SignedTransfer,
             signerAddress: receiverSigner,
+            chainId,
             verifyingContract,
             assetId: AddressZero,
             recipient: receiverIdentifier,

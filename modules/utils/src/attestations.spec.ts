@@ -1,13 +1,13 @@
 import {
-  signReceiptMessage,
   getTestReceiptToSign,
   getTestVerifyingContract,
   recoverAttestationSigner,
+  signReceiptMessage,
 } from "./attestations";
 import { Wallet } from "ethers";
 
 describe("Attestations", () => {
-  test("attestations are correct", async () => {
+  test("sign receipt and create attestation", async () => {
     const mnemonic = "coyote tattoo slush ball cluster culture bleak news when action cover effort";
 
     const receipt = getTestReceiptToSign();
@@ -21,12 +21,7 @@ describe("Attestations", () => {
       verifyingContract,
       signer.privateKey,
     );
-
-    const attestation = {
-      ...receipt,
-      signature,
-    };
-
+    const attestation = { ...receipt, signature };
     expect(attestation).toStrictEqual({
       requestCID: receipt.requestCID,
       responseCID: receipt.responseCID,

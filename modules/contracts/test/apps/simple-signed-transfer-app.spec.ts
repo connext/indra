@@ -122,6 +122,7 @@ describe("SimpleSignedTransferApp", () => {
       finalized: false,
       paymentId,
       signerAddress,
+      chainId,
       verifyingContract,
     };
   });
@@ -149,6 +150,7 @@ describe("SimpleSignedTransferApp", () => {
         ],
         paymentId,
         signerAddress,
+        chainId,
         verifyingContract,
         finalized: true,
       };

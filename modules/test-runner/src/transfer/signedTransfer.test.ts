@@ -39,6 +39,7 @@ describe("Signed Transfers", () => {
   let clientB: IConnextClient;
   let tokenAddress: Address;
   let receipt: Receipt;
+  let chainId: number;
   let verifyingContract: Address;
   const provider = new providers.JsonRpcProvider(env.ethProviderUrl);
 
@@ -63,6 +64,7 @@ describe("Signed Transfers", () => {
     clientB = await createClient({ signer: privateKeyB, id: "B" });
     tokenAddress = clientA.config.contractAddresses.Token!;
     receipt = getTestReceiptToSign();
+    chainId = (await clientA.ethProvider.getNetwork()).chainId;
     verifyingContract = getTestVerifyingContract();
   });
 
@@ -71,7 +73,7 @@ describe("Signed Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it.only("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
+  it("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
@@ -82,6 +84,7 @@ describe("Signed Transfers", () => {
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
         signerAddress: clientB.signerAddress,
+        chainId,
         verifyingContract,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
@@ -99,7 +102,7 @@ describe("Signed Transfers", () => {
       type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
       paymentId,
       sender: clientA.publicIdentifier,
-      transferMeta: { signerAddress: clientB.signerAddress, verifyingContract },
+      transferMeta: { signerAddress: clientB.signerAddress, chainId, verifyingContract },
       meta: {
         foo: "bar",
         recipient: clientB.publicIdentifier,
@@ -114,7 +117,6 @@ describe("Signed Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
 
-    const { chainId } = await clientA.ethProvider.getNetwork();
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
     const attestation = {
       ...receipt,
@@ -187,7 +189,7 @@ describe("Signed Transfers", () => {
       assetId: transfer.assetId,
       type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
       paymentId,
-      transferMeta: { signerAddress: clientB.signerAddress, verifyingContract },
+      transferMeta: { signerAddress: clientB.signerAddress, chainId, verifyingContract },
       meta: {
         foo: "bar",
         recipient: clientB.publicIdentifier,
@@ -202,7 +204,6 @@ describe("Signed Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
 
-    const { chainId } = await clientA.ethProvider.getNetwork();
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
     const attestation = {
       ...receipt,
@@ -240,6 +241,7 @@ describe("Signed Transfers", () => {
       conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       signerAddress: clientB.signerAddress,
+      chainId,
       verifyingContract,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -266,6 +268,7 @@ describe("Signed Transfers", () => {
       conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       signerAddress: clientB.signerAddress,
+      chainId,
       verifyingContract,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -273,7 +276,6 @@ describe("Signed Transfers", () => {
     // disconnect so that it cant be unlocked
     await clientA.messaging.disconnect();
 
-    const { chainId } = await clientA.ethProvider.getNetwork();
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
     const attestation = {
       ...receipt,
@@ -311,6 +313,7 @@ describe("Signed Transfers", () => {
       conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       signerAddress: clientB.signerAddress,
+      chainId,
       verifyingContract,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -342,6 +345,7 @@ describe("Signed Transfers", () => {
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
         signerAddress: clientB.signerAddress,
+        chainId,
         verifyingContract,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
@@ -376,12 +380,11 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const paymentId = hexlify(randomBytes(32));
-    const { chainId } = await clientA.ethProvider.getNetwork();
-    const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
-    const attestation = {
-      ...receipt,
-      signature,
-    };
+    // const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
+    // const attestation = {
+    //   ...receipt,
+    //   signature,
+    // };
 
     const [transferRes] = await Promise.all([
       clientA.conditionalTransfer({
@@ -389,6 +392,7 @@ describe("Signed Transfers", () => {
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
         signerAddress: clientB.signerAddress,
+        chainId,
         verifyingContract,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
@@ -413,7 +417,6 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const paymentId = hexlify(randomBytes(32));
-    const { chainId } = await clientA.ethProvider.getNetwork();
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
     const attestation = {
       ...receipt,
@@ -426,6 +429,7 @@ describe("Signed Transfers", () => {
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
         signerAddress: clientB.signerAddress,
+        chainId,
         verifyingContract,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
@@ -490,6 +494,7 @@ describe("Signed Transfers", () => {
           conditionType: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
           paymentId,
           signerAddress: clientB.signerAddress,
+          chainId,
           verifyingContract,
           assetId: transfer.assetId,
           meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -498,7 +503,6 @@ describe("Signed Transfers", () => {
       });
 
       // Including recipient signing in test to match real conditions
-      const { chainId } = await clientA.ethProvider.getNetwork();
       const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
       const attestation = {
         ...receipt,

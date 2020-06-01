@@ -108,6 +108,7 @@ type SignedTransferParameters = {
   assetId: Address;
   paymentId: Bytes32;
   signerAddress: Address;
+  chainId: number;
   verifyingContract: Address;
   recipient?: PublicIdentifier;
   meta?: any;

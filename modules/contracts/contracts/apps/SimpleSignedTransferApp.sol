@@ -17,6 +17,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
     struct AppState {
         LibOutcome.CoinTransfer[2] coinTransfers;
         address signerAddress;
+        uint256 chainId;
         address verifyingContract;
         bytes32 paymentId;
         bool finalized;
@@ -44,15 +45,8 @@ contract SimpleSignedTransferApp is CounterfactualApp {
     bytes32 private constant DOMAIN_VERSION_HASH = keccak256("0");
     bytes32 private constant DOMAIN_SALT = 0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188679b9c2;
 
-    function getChainID() public pure returns (uint256) {
-        uint256 id;
-        assembly {
-            id := chainid()
-        }
-        return id;
-    }
 
-    function recoverAttestationSigner(Action memory action, address verifyingContract) public pure returns (address) {
+    function recoverAttestationSigner(Action memory action, AppState memory state) public pure returns (address) {
         return ECDSA.recover(
             keccak256(
                 abi.encodePacked(
@@ -62,8 +56,8 @@ contract SimpleSignedTransferApp is CounterfactualApp {
                             DOMAIN_TYPE_HASH,
                             DOMAIN_NAME_HASH,
                             DOMAIN_VERSION_HASH,
-                            getChainID(),
-                            verifyingContract,
+                            state.chainId,
+                            state.verifyingContract,
                             DOMAIN_SALT
                         )
                     ),
@@ -96,7 +90,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
 
         require(!state.finalized, "Cannot take action on finalized state");
         
-        require(state.signerAddress == recoverAttestationSigner(action, state.verifyingContract), "Incorrect signer recovered from signature");
+        require(state.signerAddress == recoverAttestationSigner(action, state), "Incorrect signer recovered from signature");
 
         state.coinTransfers[1].amount = state.coinTransfers[0].amount;
         state.coinTransfers[0].amount = 0;

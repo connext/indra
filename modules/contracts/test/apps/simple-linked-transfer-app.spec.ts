@@ -8,7 +8,7 @@ import {
   SimpleLinkedTransferAppActionEncoding,
 } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
-import {  Zero } from "ethers/constants";
+import { Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, soliditySha256 } from "ethers/utils";
 
 import SimpleLinkedTransferApp from "../../build/SimpleLinkedTransferApp.json";
@@ -47,7 +47,7 @@ function createLinkedHash(preImage: string): string {
   return soliditySha256(["bytes32"], [preImage]);
 }
 
-describe.only("SimpleLinkedTransferApp", () => {
+describe("SimpleLinkedTransferApp", () => {
   let simpleLinkedTransferApp: Contract;
 
   async function computeOutcome(state: SimpleLinkedTransferAppState): Promise<CoinTransfer[]> {
@@ -138,7 +138,7 @@ describe.only("SimpleLinkedTransferApp", () => {
     const initialState = await createInitialState(preImage);
     const outcome = await computeOutcome(initialState);
     await validateOutcome(initialState, outcome);
-  })
+  });
 
   it("reverts action if state is already finalized", async () => {
     const preImage = mkHash("0xb");
@@ -147,19 +147,23 @@ describe.only("SimpleLinkedTransferApp", () => {
 
     const finalizedState = {
       ...initialState,
-      finalized: true
-    }
+      finalized: true,
+    };
 
-    await expect(applyAction(finalizedState, action)).revertedWith("Cannot take action on finalized state");
-  })
+    await expect(applyAction(finalizedState, action)).revertedWith(
+      "Cannot take action on finalized state",
+    );
+  });
 
   it("reverts action if incorrect preimage", async () => {
     const preImage = mkHash("0xb");
     const initialState = await createInitialState(preImage);
-    
+
     // incorrect preimage
     const action: SimpleLinkedTransferAppAction = { preImage: mkHash("0xc") };
 
-    await expect(applyAction(initialState, action)).revertedWith("Hash generated from preimage does not match hash in state");
-  })
+    await expect(applyAction(initialState, action)).revertedWith(
+      "Hash generated from preimage does not match hash in state",
+    );
+  });
 });

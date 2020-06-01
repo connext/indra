@@ -182,12 +182,14 @@ describe("Signed Transfer Offline", () => {
     paymentId: string = getRandomBytes32(),
   ) => {
     const preTransferSenderBalance = await sender.getFreeBalance(tokenAddress);
+    const { chainId } = await sender.ethProvider.getNetwork();
     await sender.conditionalTransfer({
       amount,
       paymentId,
       conditionType: ConditionalTransferTypes.SignedTransfer,
       assetId: tokenAddress,
       signerAddress: receiver.signerAddress,
+      chainId,
       verifyingContract: getTestVerifyingContract(),
       recipient: receiver.publicIdentifier,
     });

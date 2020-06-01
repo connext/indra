@@ -6,6 +6,7 @@ import {
   ConditionalTransferTypes,
   Address,
   PrivateKey,
+  Receipt,
 } from "@connext/types";
 import { getPostgresStore } from "@connext/store";
 import { ConnextClient } from "@connext/client";
@@ -45,6 +46,7 @@ const performConditionalTransfer = async (params: {
   conditionType: ConditionalTransferTypes;
   sender: IConnextClient;
   recipient: IConnextClient;
+  chainId?: number;
   verifyingContract?: Address;
   paymentId?: string;
   secret?: string; // preimage for linked
@@ -56,6 +58,7 @@ const performConditionalTransfer = async (params: {
     sender,
     recipient,
     conditionType,
+    chainId,
     verifyingContract,
     paymentId,
     secret,
@@ -70,6 +73,7 @@ const performConditionalTransfer = async (params: {
     recipient: recipient.publicIdentifier,
     meta,
   };
+  const networkContext = await sender.ethProvider.getNetwork();
   switch (conditionType) {
     case ConditionalTransferTypes.LinkedTransfer: {
       TRANSFER_PARAMS = {
@@ -85,6 +89,7 @@ const performConditionalTransfer = async (params: {
       TRANSFER_PARAMS = {
         ...baseParams,
         signerAddress: recipient.signerAddress,
+        chainId: chainId || networkContext.chainId,
         verifyingContract: verifyingContract || getTestVerifyingContract(),
       } as PublicParams.SignedTransfer;
       break;
@@ -126,6 +131,9 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
   let sender: ConnextClient;
   let recipientPrivateKey: PrivateKey;
   let recipient: ConnextClient;
+  let receipt: Receipt;
+  let chainId: number;
+  let verifyingContract: Address;
   let initialSenderFb: { [x: string]: string | BigNumber };
   let initialRecipientFb: { [x: string]: BigNumber };
 
@@ -159,6 +167,9 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       store: recipientStore,
       id: "R",
     })) as ConnextClient;
+    receipt = getTestReceiptToSign();
+    chainId = (await sender.ethProvider.getNetwork()).chainId;
+    verifyingContract = getTestVerifyingContract();
     await fundChannel(sender, DEPOSIT_AMT, ASSET);
     initialSenderFb = await sender.getFreeBalance(ASSET);
     initialRecipientFb = await recipient.getFreeBalance(ASSET);
@@ -198,12 +209,9 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
   it("should work when clients share the same sequelize instance with a different prefix (1 signed transfer payment sent)", async () => {
     // establish tests constants
     const TRANSFER_AMT = toBN(100);
-    const verifyingContract = getTestVerifyingContract();
 
     // register listener to resolve payment
     recipient.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
-      const receipt = getTestReceiptToSign();
-      const { chainId } = await recipient.ethProvider.getNetwork();
       const signature = await signReceiptMessage(
         receipt,
         chainId,
@@ -224,6 +232,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     await performConditionalTransfer({
       conditionType: ConditionalTransferTypes.SignedTransfer,
       sender,
+      chainId,
       verifyingContract,
       recipient,
       ASSET,
@@ -326,11 +335,10 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     let intervals = 0;
     let pollerError: any;
 
+    const { chainId } = await sender.ethProvider.getNetwork();
+
     recipient.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
       console.log(`Got signed transfer event: ${payload.paymentId}`);
-      const verifyingContract = getTestVerifyingContract();
-      const receipt = getTestReceiptToSign();
-      const { chainId } = await recipient.ethProvider.getNetwork();
       const signature = await signReceiptMessage(
         receipt,
         chainId,
@@ -366,7 +374,8 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
           paymentId,
           conditionType: ConditionalTransferTypes.SignedTransfer,
           signerAddress: recipient.signerAddress,
-          verifyingContract: getTestVerifyingContract(),
+          chainId,
+          verifyingContract,
           assetId: ASSET,
           recipient: recipient.publicIdentifier,
         } as PublicParams.SignedTransfer);

@@ -68,6 +68,7 @@ export type CreatedHashLockTransferMeta = {
 export type CreatedSignedTransferMeta = {
   signerAddress: Address;
   verifyingContract: Address;
+  chainId: number;
 };
 
 export type UnlockedLinkedTransferMeta = {
