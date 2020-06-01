@@ -173,6 +173,7 @@ describe("Signed Transfers", () => {
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
         signerAddress: clientB.signerAddress,
+        chainId,
         verifyingContract,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
@@ -462,7 +463,7 @@ describe("Signed Transfers", () => {
 
   // average time in multichannel test
   it.skip("Experimental: Average latency of 5 signed transfers with Eth", async () => {
-    let runTime: number[] = [];
+    const runTime: number[] = [];
     let sum = 0;
     const numberOfRuns = 5;
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
