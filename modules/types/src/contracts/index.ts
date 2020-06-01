@@ -1,4 +1,4 @@
-import { 
+import {
   DepositAppState,
   HashLockTransferAppAction,
   HashLockTransferAppState,
@@ -16,12 +16,15 @@ import {
   DepositAppName,
   SimpleTwoPartySwapAppName,
 } from "./apps";
+import {
+  GenericConditionalTransferAppState,
+  GenericConditionalTransferAppName,
+} from "../transfers";
 
 export * from "./adjudicator";
 export * from "./apps";
 export * from "./funding";
 export * from "./misc";
-
 
 export const AppNames = {
   [DepositAppName]: DepositAppName,
@@ -30,6 +33,7 @@ export const AppNames = {
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
   [WithdrawAppName]: WithdrawAppName,
+  [GenericConditionalTransferAppName]: GenericConditionalTransferAppName,
 } as const;
 export type AppName = keyof typeof AppNames;
 
@@ -40,10 +44,11 @@ interface AppActionMap {
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppAction;
   [SimpleTwoPartySwapAppName]: {}; // no action
   [WithdrawAppName]: WithdrawAppAction;
+  [GenericConditionalTransferAppName]: any;
 }
 export type AppActions = {
   [P in keyof AppActionMap]: AppActionMap[P];
-}
+};
 
 interface AppStateMap {
   [DepositAppName]: DepositAppState;
@@ -52,10 +57,11 @@ interface AppStateMap {
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppState;
   [SimpleTwoPartySwapAppName]: SimpleSwapAppState;
   [WithdrawAppName]: WithdrawAppState;
+  [GenericConditionalTransferAppName]: GenericConditionalTransferAppState;
 }
 export type AppStates = {
   [P in keyof AppStateMap]: AppStateMap[P];
-}
+};
 
 export type AppAction =
   | HashLockTransferAppAction
@@ -63,10 +69,11 @@ export type AppAction =
   | SimpleSignedTransferAppAction
   | WithdrawAppAction;
 
-export type AppState = 
+export type AppState =
   | DepositAppState
   | HashLockTransferAppState
   | SimpleLinkedTransferAppState
   | SimpleSignedTransferAppState
   | SimpleSwapAppState
-  | WithdrawAppState;
+  | WithdrawAppState
+  | GenericConditionalTransferAppState;

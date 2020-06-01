@@ -70,6 +70,7 @@ export class WithdrawalController extends AbstractController {
 
       this.connext.emit(EventNames.WITHDRAWAL_STARTED_EVENT, {
         params,
+        // @ts-ignore
         withdrawCommitment,
         withdrawerSignatureOnWithdrawCommitment,
       });
@@ -104,6 +105,7 @@ export class WithdrawalController extends AbstractController {
     } catch (e) {
       this.connext.emit(EventNames.WITHDRAWAL_FAILED_EVENT, {
         params,
+        // @ts-ignore
         withdrawCommitment,
         withdrawerSignatureOnWithdrawCommitment,
         error: e.stack || e.message,

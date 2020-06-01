@@ -4,10 +4,13 @@ import {
   HashLockTransferAppName,
   SimpleLinkedTransferAppName,
   SimpleSignedTransferAppName,
+  CoinTransfer,
 } from "./contracts";
 
 ////////////////////////////////////////
 // Types
+
+export const GenericConditionalTransferAppName = "GenericConditionalTransferApp";
 
 export const ConditionalTransferTypes = enumify({
   HashLockTransfer: "HashLockTransfer",
@@ -20,11 +23,36 @@ export const ConditionalTransferAppNames = enumify({
   [HashLockTransferAppName]: HashLockTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
+  [GenericConditionalTransferAppName]: GenericConditionalTransferAppName,
 });
 export type ConditionalTransferAppNames = typeof ConditionalTransferAppNames[keyof typeof ConditionalTransferAppNames];
 
+export type GenericConditionalTransferAppState = {
+  coinTransfers: CoinTransfer[];
+  finalized: boolean;
+  [x: string]: any;
+};
+
 ////////////////////////////////////////
 // Metadata
+
+export interface CreatedConditionalTransferMetaMap {
+  [ConditionalTransferTypes.HashLockTransfer]: CreatedHashLockTransferMeta;
+  [ConditionalTransferTypes.SignedTransfer]: CreatedSignedTransferMeta;
+  [ConditionalTransferTypes.LinkedTransfer]: CreatedLinkedTransferMeta;
+}
+export type CreatedConditionalTransferMeta = {
+  [P in keyof CreatedConditionalTransferMetaMap]: CreatedConditionalTransferMetaMap[P];
+};
+
+export interface UnlockedConditionalTransferMetaMap {
+  [ConditionalTransferTypes.HashLockTransfer]: UnlockedHashLockTransferMeta;
+  [ConditionalTransferTypes.SignedTransfer]: UnlockedSignedTransferMeta;
+  [ConditionalTransferTypes.LinkedTransfer]: UnlockedLinkedTransferMeta;
+}
+export type UnlockedConditionalTransferMeta = {
+  [P in keyof UnlockedConditionalTransferMetaMap]: UnlockedConditionalTransferMetaMap[P];
+};
 
 export type CreatedLinkedTransferMeta = {
   encryptedPreImage?: string;

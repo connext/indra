@@ -61,8 +61,8 @@ describe("Withdraw offline tests", () => {
     await new Promise(async (resolve, reject) => {
       client.once(event, (msg) => {
         try {
-          expect(msg.params).to.be.an("object");
-          expect(msg.error).to.include(error);
+          expect((msg as any).params).to.be.an("object");
+          expect((msg as any).error).to.include(error);
           return resolve(msg);
         } catch (e) {
           return reject(e.message);

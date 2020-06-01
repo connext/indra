@@ -83,6 +83,7 @@ export class SignedTransferController extends AbstractController {
     const eventData = {
       type: ConditionalTransferTypes.SignedTransfer,
       amount,
+      appIdentityHash,
       assetId,
       sender: this.connext.publicIdentifier,
       meta: submittedMeta,

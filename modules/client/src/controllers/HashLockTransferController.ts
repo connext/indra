@@ -90,6 +90,7 @@ export class HashLockTransferController extends AbstractController {
     const eventData = {
       type: ConditionalTransferTypes.HashLockTransfer,
       amount,
+      appIdentityHash,
       assetId,
       sender: this.connext.publicIdentifier,
       meta: submittedMeta,

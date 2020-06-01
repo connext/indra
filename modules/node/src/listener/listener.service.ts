@@ -116,7 +116,7 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(PROPOSE_INSTALL_EVENT, data);
         await this.appRegistryService.installOrReject(
           data.data.appInstanceId,
-          data.data.params,
+          data.data.params as any,
           data.from,
         );
       },

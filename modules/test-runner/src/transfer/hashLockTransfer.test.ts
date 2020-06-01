@@ -66,24 +66,21 @@ describe("HashLock Transfers", () => {
 
     await Promise.all([
       new Promise(async (res) => {
-        clientA.once(
-          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-          (eventPayload: EventPayloads.HashLockTransferCreated) => {
-            expect(eventPayload).to.deep.contain({
-              amount: transfer.amount,
-              assetId: transfer.assetId,
-              type: ConditionalTransferTypes.HashLockTransfer,
-              paymentId: lockHash,
-              recipient: clientB.publicIdentifier,
-            } as EventPayloads.HashLockTransferCreated);
-            expect(eventPayload.transferMeta).to.deep.eq({
-              timelock,
-              lockHash,
-              expiry,
-            });
-            res();
-          },
-        );
+        clientA.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, (eventPayload) => {
+          expect(eventPayload).to.deep.contain({
+            amount: transfer.amount,
+            assetId: transfer.assetId,
+            type: ConditionalTransferTypes.HashLockTransfer,
+            paymentId: lockHash,
+            recipient: clientB.publicIdentifier,
+          } as EventPayloads.HashLockTransferCreated);
+          expect(eventPayload.transferMeta).to.deep.eq({
+            timelock,
+            lockHash,
+            expiry,
+          });
+          res();
+        });
         await clientA.conditionalTransfer({
           amount: transfer.amount.toString(),
           conditionType: ConditionalTransferTypes.HashLockTransfer,
@@ -95,24 +92,21 @@ describe("HashLock Transfers", () => {
         } as PublicParams.HashLockTransfer);
       }),
       new Promise((res) =>
-        clientB.once(
-          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-          (eventPayload: EventPayloads.HashLockTransferCreated) => {
-            expect(eventPayload).to.deep.contain({
-              amount: transfer.amount,
-              assetId: transfer.assetId,
-              type: ConditionalTransferTypes.HashLockTransfer,
-              paymentId: lockHash,
-              recipient: clientB.publicIdentifier,
-            } as EventPayloads.HashLockTransferCreated);
-            expect(eventPayload.transferMeta).to.deep.eq({
-              timelock,
-              lockHash,
-              expiry: expiry.sub(100),
-            });
-            res();
-          },
-        ),
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, (eventPayload) => {
+          expect(eventPayload).to.deep.contain({
+            amount: transfer.amount,
+            assetId: transfer.assetId,
+            type: ConditionalTransferTypes.HashLockTransfer,
+            paymentId: lockHash,
+            recipient: clientB.publicIdentifier,
+          } as EventPayloads.HashLockTransferCreated);
+          expect(eventPayload.transferMeta).to.deep.eq({
+            timelock,
+            lockHash,
+            expiry: expiry.sub(100),
+          });
+          res();
+        }),
       ),
     ]);
 
@@ -167,44 +161,38 @@ describe("HashLock Transfers", () => {
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
       new Promise((res) => {
-        clientA.on(
-          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-          (eventPayload: EventPayloads.HashLockTransferCreated) => {
-            expect(eventPayload).to.deep.contain({
-              amount: transfer.amount,
-              assetId: transfer.assetId,
-              type: ConditionalTransferTypes.HashLockTransfer,
-              paymentId: lockHash,
-              recipient: clientB.publicIdentifier,
-            } as EventPayloads.HashLockTransferCreated);
-            expect(eventPayload.transferMeta).to.deep.eq({
-              timelock,
-              lockHash,
-              expiry,
-            });
-            res();
-          },
-        );
+        clientA.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, (eventPayload) => {
+          expect(eventPayload).to.deep.contain({
+            amount: transfer.amount,
+            assetId: transfer.assetId,
+            type: ConditionalTransferTypes.HashLockTransfer,
+            paymentId: lockHash,
+            recipient: clientB.publicIdentifier,
+          } as EventPayloads.HashLockTransferCreated);
+          expect(eventPayload.transferMeta).to.deep.eq({
+            timelock,
+            lockHash,
+            expiry,
+          });
+          res();
+        });
       }),
       new Promise((res) => {
-        clientB.on(
-          EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-          (eventPayload: EventPayloads.HashLockTransferCreated) => {
-            expect(eventPayload).to.deep.contain({
-              amount: transfer.amount,
-              assetId: transfer.assetId,
-              type: ConditionalTransferTypes.HashLockTransfer,
-              paymentId: lockHash,
-              recipient: clientB.publicIdentifier,
-            } as EventPayloads.HashLockTransferCreated);
-            expect(eventPayload.transferMeta).to.deep.eq({
-              timelock,
-              lockHash,
-              expiry: expiry.sub(100),
-            });
-            res();
-          },
-        );
+        clientB.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, (eventPayload) => {
+          expect(eventPayload).to.deep.contain({
+            amount: transfer.amount,
+            assetId: transfer.assetId,
+            type: ConditionalTransferTypes.HashLockTransfer,
+            paymentId: lockHash,
+            recipient: clientB.publicIdentifier,
+          } as EventPayloads.HashLockTransferCreated);
+          expect(eventPayload.transferMeta).to.deep.eq({
+            timelock,
+            lockHash,
+            expiry: expiry.sub(100),
+          });
+          res();
+        });
       }),
     ]);
 

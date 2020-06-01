@@ -4,7 +4,7 @@ import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
 import { Address, Bytes32, DecString, PublicIdentifier } from "./basic";
 import { ChannelProviderConfig, IChannelProvider } from "./channelProvider";
 import { IChannelSigner } from "./crypto";
-import { EventName } from "./events";
+import { EventName, EventPayload } from "./events";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import { NodeResponses } from "./node";
@@ -53,9 +53,17 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // LISTENER METHODS
-  on(event: EventName | MethodName, callback: (...args: any[]) => void): void;
-  once(event: EventName | MethodName, callback: (...args: any[]) => void): void;
-  emit(event: EventName | MethodName, data: any): boolean;
+  on<T extends EventName>(
+    event: T,
+    callback: (payload: EventPayload[T]) => void | Promise<void>,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ): void;
+  once<T extends EventName>(
+    event: T,
+    callback: (payload: EventPayload[T]) => void | Promise<void>,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ): void;
+  emit<T extends EventName>(event: T, payload: EventPayload[T]): boolean;
   off(): void;
 
   ///////////////////////////////////
