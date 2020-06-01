@@ -12,7 +12,7 @@ import { Contract, ContractFactory } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, soliditySha256, bigNumberify } from "ethers/utils";
 
-import { HashLockTransferApp as LightningHTLCTransferApp } from "../../artifacts";
+import { HashLockTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 
@@ -39,8 +39,8 @@ const createLockHash = (preImage: string): string => {
   return soliditySha256(["bytes32"], [preImage]);
 };
 
-describe("LightningHTLCTransferApp", () => {
-  let lightningHTLCTransferApp: Contract;
+describe("HashLockTransferApp", () => {
+  let hashLockTransferApp: Contract;
   let senderAddr: string;
   let receiverAddr: string;
   let transferAmount: BigNumber;
@@ -50,11 +50,11 @@ describe("LightningHTLCTransferApp", () => {
   let preState: HashLockTransferAppState;
 
   const computeOutcome = async (state: HashLockTransferAppState): Promise<string> => {
-    return lightningHTLCTransferApp.functions.computeOutcome(encodeAppState(state));
+    return hashLockTransferApp.functions.computeOutcome(encodeAppState(state));
   };
 
   const applyAction = async (state: any, action: SolidityValueType): Promise<string> => {
-    return lightningHTLCTransferApp.functions.applyAction(
+    return hashLockTransferApp.functions.applyAction(
       encodeAppState(state),
       encodeAppAction(action),
     );
@@ -74,9 +74,9 @@ describe("LightningHTLCTransferApp", () => {
 
   beforeEach(async () => {
     const wallet = (await provider.getWallets())[0];
-    lightningHTLCTransferApp = await new ContractFactory(
-      LightningHTLCTransferApp.abi,
-      LightningHTLCTransferApp.bytecode,
+    hashLockTransferApp = await new ContractFactory(
+      HashLockTransferApp.abi,
+      HashLockTransferApp.bytecode,
       wallet,
     ).deploy();
 
@@ -144,7 +144,7 @@ describe("LightningHTLCTransferApp", () => {
 
     it("will revert action with incorrect hash", async () => {
       const action: HashLockTransferAppAction = {
-        preImage: getRandomBytes32(),
+        preImage: getRandomBytes32(), // incorrect hash
       };
 
       await expect(applyAction(preState, action)).revertedWith(
@@ -183,7 +183,6 @@ describe("LightningHTLCTransferApp", () => {
     it("will refund payment that is not finalized with expired expiry", async () => {
       preState.expiry = bigNumberify(await provider.getBlockNumber());
       const ret = await computeOutcome(preState);
-
       validateOutcome(ret, preState);
     });
   });

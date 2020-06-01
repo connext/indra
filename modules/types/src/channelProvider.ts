@@ -1,9 +1,10 @@
 import { JsonRpcProvider } from "ethers/providers";
+import EventEmitter from "eventemitter3";
 
 import { INodeApiClient } from "./api";
 import { Address, DecString, PublicIdentifier, PublicKey, UrlString } from "./basic";
 import { IChannelSigner } from "./crypto";
-import { ConnextEventEmitter } from "./events";
+import { EventName } from "./events";
 import { ILoggerService } from "./logger";
 import { MethodNames } from "./methods";
 import { JsonRpcRequest } from "./rpc";
@@ -54,6 +55,8 @@ export type WalletDepositParams = {
   assetId: Address;
 };
 
+// TODO: replace with IBasicEventEmitter
+export class ConnextEventEmitter extends EventEmitter<string | ChannelMethods | EventName> {}
 export interface IRpcConnection extends ConnextEventEmitter {
   ////////////////////////////////////////
   // Properties

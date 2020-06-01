@@ -59,7 +59,6 @@ export async function asyncTransferAsset(
           if (data.paymentId === paymentId) {
             return resolve();
           }
-          // TODO: Sender/recipient are undefined here because https://github.com/ConnextProject/indra/issues/1054
         });
       }),
     ]);

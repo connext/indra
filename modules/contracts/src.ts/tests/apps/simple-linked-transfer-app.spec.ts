@@ -1,93 +1,109 @@
-import { SolidityValueType } from "@connext/types";
+import {
+  CoinTransfer,
+  singleAssetTwoPartyCoinTransferEncoding,
+  SimpleLinkedTransferAppState,
+  SimpleLinkedTransferAppAction,
+  SimpleLinkedTransferAppStateEncoding,
+  SimpleLinkedTransferAppActionEncoding,
+} from "@connext/types";
 import { getRandomAddress, getRandomBytes32 } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
-import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
+import { Zero } from "ethers/constants";
+import { BigNumber, defaultAbiCoder, soliditySha256 } from "ethers/utils";
 
 import { SimpleLinkedTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 
-type CoinTransfer = {
-  to: string;
-  amount: BigNumber;
-};
-
-type SimpleLinkedTransferAppState = {
-  coinTransfers: CoinTransfer[];
-  linkedHash: string;
-  amount: BigNumber;
-  assetId: string;
-  paymentId: string;
-  preImage: string;
-};
-
-type SimpleLinkedTransferAppAction = {
-  preImage: string;
-};
-
-const singleAssetTwoPartyCoinTransferEncoding = `
-  tuple(address to, uint256 amount)[2]
-`;
-
-const linkedTransferAppStateEncoding = `tuple(
-  ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
-  bytes32 linkedHash,
-  uint256 amount,
-  address assetId,
-  bytes32 paymentId,
-  bytes32 preImage
-)`;
-
-const linkedTransferAppActionEncoding = `
-  tuple(
-    bytes32 preImage
-  )
-`;
-
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
 
 const decodeAppState = (encodedAppState: string): SimpleLinkedTransferAppState =>
-  defaultAbiCoder.decode([linkedTransferAppStateEncoding], encodedAppState)[0];
+  defaultAbiCoder.decode([SimpleLinkedTransferAppStateEncoding], encodedAppState)[0];
 
 const encodeAppState = (
   state: SimpleLinkedTransferAppState,
   onlyCoinTransfers: boolean = false,
 ): string => {
-  if (!onlyCoinTransfers) return defaultAbiCoder.encode([linkedTransferAppStateEncoding], [state]);
+  if (!onlyCoinTransfers) {
+    return defaultAbiCoder.encode([SimpleLinkedTransferAppStateEncoding], [state]);
+  }
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
 };
 
-const encodeAppAction = (state: SolidityValueType): string => {
-  return defaultAbiCoder.encode([linkedTransferAppActionEncoding], [state]);
-};
+function encodeAppAction(state: SimpleLinkedTransferAppAction): string {
+  return defaultAbiCoder.encode([SimpleLinkedTransferAppActionEncoding], [state]);
+}
 
-const createLinkedHash = (
-  amount: BigNumber,
-  assetId: string,
-  paymentId: string,
-  preImage: string,
-): string => {
-  return solidityKeccak256(
-    ["uint256", "address", "bytes32", "bytes32"],
-    [amount, assetId, paymentId, preImage],
-  );
-};
+function createLinkedHash(preImage: string): string {
+  return soliditySha256(["bytes32"], [preImage]);
+}
 
 describe("SimpleLinkedTransferApp", () => {
   let simpleLinkedTransferApp: Contract;
 
-  const computeOutcome = async (state: SimpleLinkedTransferAppState): Promise<string> => {
-    return simpleLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
-  };
+  async function computeOutcome(state: SimpleLinkedTransferAppState): Promise<CoinTransfer[]> {
+    const result = await simpleLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
+    return decodeTransfers(result);
+  }
 
-  const applyAction = async (state: any, action: SolidityValueType): Promise<string> => {
-    return simpleLinkedTransferApp.functions.applyAction(
+  async function applyAction(
+    state: SimpleLinkedTransferAppState,
+    action: SimpleLinkedTransferAppAction,
+  ): Promise<SimpleLinkedTransferAppState> {
+    const result = await simpleLinkedTransferApp.functions.applyAction(
       encodeAppState(state),
       encodeAppAction(action),
     );
-  };
+    return decodeAppState(result);
+  }
+
+  async function createInitialState(preImage: string): Promise<SimpleLinkedTransferAppState> {
+    const senderAddr = getRandomAddress();
+    const receiverAddr = getRandomAddress();
+    const transferAmount = new BigNumber(10000);
+    const linkedHash = createLinkedHash(preImage);
+
+    return {
+      coinTransfers: [
+        {
+          amount: transferAmount,
+          to: senderAddr,
+        },
+        {
+          amount: Zero,
+          to: receiverAddr,
+        },
+      ],
+      linkedHash,
+      preImage: getRandomBytes32(),
+      finalized: false,
+    };
+  }
+
+  async function validateOutcome(
+    state: SimpleLinkedTransferAppState,
+    outcome: CoinTransfer[],
+  ): Promise<void> {
+    expect(outcome[0].to).eq(state.coinTransfers[0].to);
+    expect(outcome[0].amount.toString()).eq(state.coinTransfers[0].amount.toString());
+    expect(outcome[1].to).eq(state.coinTransfers[1].to);
+    expect(outcome[1].amount.toString()).eq(state.coinTransfers[1].amount.toString());
+  }
+
+  async function validateAction(
+    pre: SimpleLinkedTransferAppState,
+    post: SimpleLinkedTransferAppState,
+    action: SimpleLinkedTransferAppAction,
+  ) {
+    expect(post.preImage).to.eq(action.preImage);
+    expect(post.finalized).to.be.true;
+    expect(post.linkedHash).to.eq(pre.linkedHash);
+    expect(post.coinTransfers[0].amount).to.eq(Zero);
+    expect(post.coinTransfers[0].to).to.eq(pre.coinTransfers[0].to);
+    expect(post.coinTransfers[1].amount).to.eq(pre.coinTransfers[0].amount);
+    expect(post.coinTransfers[1].to).to.eq(pre.coinTransfers[1].to);
+  }
 
   before(async () => {
     const wallet = (await provider.getWallets())[0];
@@ -98,69 +114,44 @@ describe("SimpleLinkedTransferApp", () => {
     ).deploy();
   });
 
-  describe("update state", () => {
-    it("can redeem a payment with correct hash", async () => {
-      const senderAddr = getRandomAddress();
-      const receiverAddr = getRandomAddress();
-      const transferAmount = new BigNumber(10000);
-      const paymentId = getRandomBytes32();
-      const preImage = getRandomBytes32();
-      const assetId = AddressZero;
+  it("can redeem a payment with correct hash", async () => {
+    const preImage = getRandomBytes32();
+    const initialState = await createInitialState(preImage);
+    const action: SimpleLinkedTransferAppAction = { preImage };
 
-      const linkedHash = createLinkedHash(transferAmount, assetId, paymentId, preImage);
+    const afterActionState = await applyAction(initialState, action);
+    await validateAction(initialState, afterActionState, action);
+    const outcome = await computeOutcome(afterActionState);
+    await validateOutcome(afterActionState, outcome);
+  });
 
-      const preState: SimpleLinkedTransferAppState = {
-        amount: transferAmount,
-        assetId,
-        coinTransfers: [
-          {
-            amount: transferAmount,
-            to: senderAddr,
-          },
-          {
-            amount: Zero,
-            to: receiverAddr,
-          },
-        ],
-        linkedHash,
-        paymentId,
-        preImage: getRandomBytes32(),
-      };
+  it("refunds a payment if app state is not finalized", async () => {
+    const preImage = getRandomBytes32();
+    const initialState = await createInitialState(preImage);
+    const outcome = await computeOutcome(initialState);
+    await validateOutcome(initialState, outcome);
+  });
 
-      const action: SimpleLinkedTransferAppAction = {
-        preImage,
-      };
+  it("reverts action if state is already finalized", async () => {
+    const preImage = getRandomBytes32();
+    const initialState = await createInitialState(preImage);
+    const action: SimpleLinkedTransferAppAction = { preImage };
 
-      let ret = await applyAction(preState, action);
-      const afterActionState = decodeAppState(ret);
-      expect(afterActionState.preImage).eq(preImage);
+    const finalizedState = {
+      ...initialState,
+      finalized: true,
+    };
 
-      const postState: SimpleLinkedTransferAppState = {
-        amount: transferAmount,
-        assetId,
-        coinTransfers: [
-          {
-            amount: Zero,
-            to: senderAddr,
-          },
-          {
-            amount: transferAmount,
-            to: receiverAddr,
-          },
-        ],
-        linkedHash,
-        paymentId,
-        preImage,
-      };
+    await expect(applyAction(finalizedState, action)).revertedWith("Cannot take action on finalized state");
+  });
 
-      ret = await computeOutcome(afterActionState);
-      const decoded = decodeTransfers(ret);
+  it("reverts action if incorrect preimage", async () => {
+    const preImage = getRandomBytes32();
+    const initialState = await createInitialState(preImage);
+    
+    // incorrect preimage
+    const action: SimpleLinkedTransferAppAction = { preImage: getRandomBytes32() };
 
-      expect(ret).to.eq(encodeAppState(postState, true));
-      expect(decoded[0].to).eq(postState.coinTransfers[0].to);
-      expect(decoded[0].amount.toString()).eq(postState.coinTransfers[0].amount.toString());
-      expect(decoded[1].to).eq(postState.coinTransfers[1].to);
-      expect(decoded[1].amount.toString()).eq(postState.coinTransfers[1].amount.toString());
-    });
+    await expect(applyAction(initialState, action)).revertedWith("Hash generated from preimage does not match hash in state");
   });
 });

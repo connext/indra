@@ -8,7 +8,7 @@ import {
   SimpleLinkedTransferAppState,
   HashLockTransferAppState,
   CoinTransfer,
-  MethodParams,
+  ProtocolParams,
 } from "@connext/types";
 import { stringify, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { TRANSFER_TIMEOUT, SupportedApplications } from "@connext/apps";
@@ -65,7 +65,7 @@ export class TransferService {
   // receivers are online if needed
   async transferAppInstallFlow(
     appIdentityHash: string,
-    proposeInstallParams: MethodParams.ProposeInstall,
+    proposeInstallParams: ProtocolParams.Propose,
     from: string,
     installerChannel: Channel,
     transferType: ConditionalTransferAppNames,

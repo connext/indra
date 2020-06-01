@@ -7,13 +7,10 @@ import {
   MinimumViableMultisig,
   MultiAssetMultiPartyCoinTransferInterpreter,
   ProxyFactory,
-  SimpleTransferApp,
   SingleAssetTwoPartyCoinTransferInterpreter,
   TicTacToeApp,
   TimeLockedPassThrough,
   TwoPartyFixedOutcomeInterpreter,
-  UnidirectionalLinkedTransferApp,
-  UnidirectionalTransferApp,
   WithdrawApp,
 } from "@connext/contracts";
 import { ContractAddresses } from "@connext/types";
@@ -23,9 +20,6 @@ import { JsonRpcProvider } from "ethers/providers";
 export type TestContractAddresses = ContractAddresses & {
   TicTacToeApp: string;
   DolphinCoin: string;
-  UnidirectionalTransferApp: string;
-  UnidirectionalLinkedTransferApp: string;
-  SimpleTransferApp: string;
   WithdrawApp: string;
   DepositApp: string;
 };
@@ -105,23 +99,6 @@ export const deployTestArtifactsToChain = async (
     wallet,
   ).deploy();
 
-  const transferContract = await new ContractFactory(
-    UnidirectionalTransferApp.abi,
-    UnidirectionalTransferApp.bytecode,
-    wallet,
-  ).deploy();
-
-  const simpleTransferContract = await new ContractFactory(
-    SimpleTransferApp.abi,
-    SimpleTransferApp.bytecode,
-    wallet,
-  ).deploy();
-
-  const linkContract = await new ContractFactory(
-    UnidirectionalLinkedTransferApp.abi,
-    UnidirectionalLinkedTransferApp.bytecode,
-    wallet,
-  ).deploy();
 
   const timeLockedPassThrough = await new ContractFactory(
     TimeLockedPassThrough.abi,
@@ -144,13 +121,10 @@ export const deployTestArtifactsToChain = async (
     MinimumViableMultisig: mvmContract.address,
     MultiAssetMultiPartyCoinTransferInterpreter: coinTransferETHInterpreter.address,
     ProxyFactory: proxyFactoryContract.address,
-    SimpleTransferApp: simpleTransferContract.address,
     SingleAssetTwoPartyCoinTransferInterpreter: singleAssetTwoPartyCoinTransferInterpreter.address,
     TicTacToeApp: tttContract.address,
     TimeLockedPassThrough: timeLockedPassThrough.address,
     TwoPartyFixedOutcomeInterpreter: twoPartyFixedOutcomeInterpreter.address,
-    UnidirectionalLinkedTransferApp: linkContract.address,
-    UnidirectionalTransferApp: transferContract.address,
     WithdrawApp: withdrawAppContract.address,
   };
 };

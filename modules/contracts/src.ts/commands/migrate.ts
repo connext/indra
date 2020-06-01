@@ -19,7 +19,6 @@ const coreContracts = [
   "ProxyFactory",
   "SimpleLinkedTransferApp",
   "SimpleSignedTransferApp",
-  "SimpleTransferApp",
   "SimpleTwoPartySwapApp",
   "SingleAssetTwoPartyCoinTransferInterpreter",
   "TimeLockedPassThrough",
