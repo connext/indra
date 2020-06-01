@@ -29,7 +29,7 @@
     "ethers": "4.0.47",
     "human-standard-token-abi": "2.0.0",
     "interval-promise": "1.4.0",
-    "mdi-material-ui": "6.15.0",
+    "mdi-material-ui": "6.16.0",
     "pisa-client": "0.1.5",
     "prop-types": "15.7.2",
     "qrcode.react": "1.0.0",
