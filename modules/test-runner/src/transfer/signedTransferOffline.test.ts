@@ -19,6 +19,7 @@ import {
   getRandomPrivateKey,
   ChannelSigner,
   signReceiptMessage,
+  delay,
 } from "@connext/utils";
 import {
   IChannelSigner,
@@ -32,7 +33,6 @@ import {
   PublicParams,
   ProtocolParams,
   PrivateKey,
-  JsonRpcProvider,
 } from "@connext/types";
 import { addressBook } from "@connext/contracts";
 import { Zero } from "ethers/constants";
@@ -322,6 +322,8 @@ describe("Signed Transfer Offline", () => {
     });
     await sender.off();
     await sender.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
 
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
   });
@@ -341,6 +343,8 @@ describe("Signed Transfer Offline", () => {
     });
     await sender.off();
     await sender.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
 
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
   });
@@ -366,6 +370,8 @@ describe("Signed Transfer Offline", () => {
     });
     await receiver.off();
     await receiver.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
 
     await recreateClientAndRetryTransfer(
       "receiver",
@@ -402,6 +408,8 @@ describe("Signed Transfer Offline", () => {
     });
     await receiver.off();
     await receiver.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
 
     await recreateClientAndRetryTransfer(
       "receiver",
@@ -430,6 +438,8 @@ describe("Signed Transfer Offline", () => {
     });
     await receiver.off();
     await receiver.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
 
     await recreateClientAndRetryTransfer(
       "receiver",
@@ -458,6 +468,8 @@ describe("Signed Transfer Offline", () => {
     });
     await receiver.off();
     await receiver.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
 
     await recreateClientAndRetryTransfer("receiver", sender, receiverSigner, receiver.store);
   });
@@ -491,6 +503,8 @@ describe("Signed Transfer Offline", () => {
     console.log(`correctly asserted failure!`);
     // recreate client, node should reclaim
     await sender.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
     const recreatedSender = await createClient({ signer: senderSigner, store: sender.store });
     const postReclaim = await recreatedSender.getFreeBalance(tokenAddress);
     expect(postReclaim[recreatedSender.nodeSignerAddress]).to.be.greaterThan(
