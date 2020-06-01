@@ -31,39 +31,38 @@ const encodeAppState = (
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
 };
 
-function encodeAppAction(state: SimpleLinkedTransferAppAction): string {
+const encodeAppAction = (state: SimpleLinkedTransferAppAction): string => {
   return defaultAbiCoder.encode([SimpleLinkedTransferAppActionEncoding], [state]);
-}
+};
 
-function createLinkedHash(preImage: string): string {
+const createLinkedHash = (preImage: string): string => {
   return soliditySha256(["bytes32"], [preImage]);
-}
+};
 
 describe("SimpleLinkedTransferApp", () => {
   let simpleLinkedTransferApp: Contract;
 
-  async function computeOutcome(state: SimpleLinkedTransferAppState): Promise<CoinTransfer[]> {
+  const computeOutcome = async (state: SimpleLinkedTransferAppState): Promise<CoinTransfer[]> => {
     const result = await simpleLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
     return decodeTransfers(result);
-  }
+  };
 
-  async function applyAction(
+  const applyAction = async (
     state: SimpleLinkedTransferAppState,
     action: SimpleLinkedTransferAppAction,
-  ): Promise<SimpleLinkedTransferAppState> {
+  ): Promise<SimpleLinkedTransferAppState> => {
     const result = await simpleLinkedTransferApp.functions.applyAction(
       encodeAppState(state),
       encodeAppAction(action),
     );
     return decodeAppState(result);
-  }
+  };
 
-  async function createInitialState(preImage: string): Promise<SimpleLinkedTransferAppState> {
+  const createInitialState = async (preImage: string): Promise<SimpleLinkedTransferAppState> => {
     const senderAddr = getRandomAddress();
     const receiverAddr = getRandomAddress();
     const transferAmount = new BigNumber(10000);
     const linkedHash = createLinkedHash(preImage);
-
     return {
       coinTransfers: [
         {
@@ -79,23 +78,23 @@ describe("SimpleLinkedTransferApp", () => {
       preImage: getRandomBytes32(),
       finalized: false,
     };
-  }
+  };
 
-  async function validateOutcome(
+  const validateOutcome = async (
     state: SimpleLinkedTransferAppState,
     outcome: CoinTransfer[],
-  ): Promise<void> {
+  ): Promise<void> => {
     expect(outcome[0].to).eq(state.coinTransfers[0].to);
     expect(outcome[0].amount.toString()).eq(state.coinTransfers[0].amount.toString());
     expect(outcome[1].to).eq(state.coinTransfers[1].to);
     expect(outcome[1].amount.toString()).eq(state.coinTransfers[1].amount.toString());
-  }
+  };
 
-  async function validateAction(
+  const validateAction = async (
     pre: SimpleLinkedTransferAppState,
     post: SimpleLinkedTransferAppState,
     action: SimpleLinkedTransferAppAction,
-  ) {
+  ) => {
     expect(post.preImage).to.eq(action.preImage);
     expect(post.finalized).to.be.true;
     expect(post.linkedHash).to.eq(pre.linkedHash);
@@ -103,7 +102,7 @@ describe("SimpleLinkedTransferApp", () => {
     expect(post.coinTransfers[0].to).to.eq(pre.coinTransfers[0].to);
     expect(post.coinTransfers[1].amount).to.eq(pre.coinTransfers[0].amount);
     expect(post.coinTransfers[1].to).to.eq(pre.coinTransfers[1].to);
-  }
+  };
 
   before(async () => {
     const wallet = (await provider.getWallets())[0];
