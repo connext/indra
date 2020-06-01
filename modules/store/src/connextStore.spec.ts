@@ -395,7 +395,7 @@ describe("ConnextStore", () => {
     });
   });
 
-  describe("getAppChallenge / saveAppChallenge", () => {
+  describe.only("getAppChallenge / saveAppChallenge", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should be able to create, get, and update app challenges`, async () => {
         const value = { ...TEST_STORE_APP_CHALLENGE };
