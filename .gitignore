@@ -58,3 +58,5 @@ ops/database/snapshots
 ganache.http
 modules/bot/.connext-store/
 modules/bot-registry/.node-persist/
+
+.secret

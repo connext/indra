@@ -49,7 +49,7 @@ export async function handleReceivedProtocolMessage(
     );
     postProtocolStateChannel = channel;
   } catch (e) {
-    log.error(`Caught error running protocol, aborting. Error: ${e.message}`);
+    log.error(`Caught error running protocol, aborting. Error: ${e.message}\n${e.stack}`);
     return;
   }
 

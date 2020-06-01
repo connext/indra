@@ -1,6 +1,6 @@
-import { utils } from "ethers";
+import { utils, BigNumber } from "ethers";
 
-import { bigNumberifyJson, deBigNumberifyJson, safeJsonStringify, safeJsonParse } from "./json";
+import { bigNumberifyJson, deBigNumberifyJson, safeJsonParse, safeJsonStringify } from "./json";
 
 const TEST_JSON = { test: "something", nullfied: undefined };
 const TEST_JSON_WITH_NULL = { test: "something", nullfied: null };
@@ -11,6 +11,70 @@ const TEST_JSON_WITH_BN_OBJ = { amount: new utils.BigNumber(1) };
 const TEST_JSON_WITH_BN_JSON = { amount: { _hex: "0x01" } };
 // const TEST_JSON_WITH_BN_JSON = { amount: { _hex: "0x01", _isBigNumber: true } };
 
+const TEST_JSON_WITH_BN_OBJECT_DEPTH = {
+  amount: new BigNumber(1),
+  otherStuff: {
+    amount: new BigNumber(1),
+    deeper: {
+      amount: new BigNumber(1),
+      deepProp: "hello",
+      evenDeeper: {
+        value: new BigNumber(2),
+      },
+    },
+  },
+  arrayStuff: [
+    new BigNumber(1),
+    "not bignum",
+    {
+      deepBignum: new BigNumber(1),
+      superDeepBignum: {
+        soDeep: new BigNumber(1),
+      },
+    },
+  ],
+  nullProp: null,
+  undefProp: undefined,
+  someOtherProp: 1,
+};
+
+const TEST_JSON_WITH_BN_JSON_DEPTH = {
+  amount: {
+    _hex: "0x01",
+  },
+  otherStuff: {
+    amount: {
+      _hex: "0x01",
+    },
+    deeper: {
+      amount: {
+        _hex: "0x01",
+      },
+      deepProp: "hello",
+      evenDeeper: {
+        value: new BigNumber(2),
+      },
+    },
+  },
+  arrayStuff: [
+    {
+      _hex: "0x01",
+    },
+    "not bignum",
+    {
+      deepBignum: {
+        _hex: "0x01",
+      },
+      superDeepBignum: {
+        soDeep: new BigNumber(1),
+      },
+    },
+  ],
+  nullProp: null,
+  undefProp: undefined,
+  someOtherProp: 1,
+};
+
 describe("JSON", () => {
   describe("bigNumberifyJson", () => {
     it("return json with BigNumber values", () => {
@@ -19,11 +83,23 @@ describe("JSON", () => {
       const result = bigNumberifyJson(input);
       expect(result).toEqual(expected);
     });
+    it("handles depths", () => {
+      const input = TEST_JSON_WITH_BN_JSON_DEPTH;
+      const expected = TEST_JSON_WITH_BN_OBJECT_DEPTH;
+      const result = bigNumberifyJson(input);
+      expect(result).toEqual(expected);
+    });
   });
   describe("deBigNumberifyJson", () => {
     it("return json with BigNumberJson values", () => {
       const input = TEST_JSON_WITH_BN_OBJ;
       const expected = TEST_JSON_WITH_BN_JSON;
+      const result = deBigNumberifyJson(input);
+      expect(result).toEqual(expected);
+    });
+    it("handles depths", () => {
+      const input = TEST_JSON_WITH_BN_OBJECT_DEPTH;
+      const expected = TEST_JSON_WITH_BN_JSON_DEPTH;
       const result = deBigNumberifyJson(input);
       expect(result).toEqual(expected);
     });

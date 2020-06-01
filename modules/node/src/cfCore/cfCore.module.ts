@@ -20,6 +20,7 @@ import { CFCoreRecordRepository } from "./cfCore.repository";
 import { CFCoreService } from "./cfCore.service";
 import { CFCoreStore } from "./cfCore.store";
 import { ChallengeRepository, ProcessedBlockRepository } from "../challenge/challenge.repository";
+import { CacheModule } from "../caching/cache.module";
 
 @Module({
   exports: [cfCoreProviderFactory, CFCoreService, CFCoreStore],
@@ -41,6 +42,7 @@ import { ChallengeRepository, ProcessedBlockRepository } from "../challenge/chal
       ChallengeRepository,
       ProcessedBlockRepository,
     ]),
+    CacheModule,
   ],
   providers: [cfCoreProviderFactory, CFCoreService, CFCoreStore],
 })

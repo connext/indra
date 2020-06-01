@@ -128,7 +128,7 @@ export default {
         log.warn(
           `Balance too low: ${balance[
             client.signerAddress
-          ].toString()} < ${TRANSFER_AMT.toString()}, depositing...`,
+            ].toString()} < ${TRANSFER_AMT.toString()}, depositing...`,
         );
         try {
           await client.deposit({ amount: DEPOSIT_AMT, assetId: AddressZero });
@@ -172,8 +172,8 @@ export default {
           log.info(`Conditional transfer ${paymentId} sent`);
         } catch (err) {
           console.error(`Error sending tranfer: ${err.message}`);
-        }
       }
+    }
       // add slight randomness to interval so that it's somewhere between
       // 75% and 125% of inputted argument
     }, randomInterval);

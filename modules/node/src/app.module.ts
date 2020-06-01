@@ -19,6 +19,7 @@ import { LinkedTransferModule } from "./linkedTransfer/linkedTransfer.module";
 import { HashLockTransferModule } from "./hashLockTransfer/hashLockTransfer.module";
 import { SignedTransferModule } from "./signedTransfer/signedTransfer.module";
 import { DepositModule } from "./deposit/deposit.module";
+import {CacheModule} from './caching/cache.module';
 
 @Module({
   exports: [ConfigModule, LoggerModule, AuthModule],
@@ -39,6 +40,7 @@ import { DepositModule } from "./deposit/deposit.module";
     LoggerModule,
     MessagingModule,
     RedisModule,
+    CacheModule,
     SignedTransferModule,
     SwapRateModule,
     TransferModule,

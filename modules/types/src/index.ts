@@ -36,3 +36,4 @@ export * from "./store";
 export * from "./transfers";
 export * from "./utils";
 export * from "./watcher";
+export * from "./json";
