@@ -21,11 +21,12 @@ import {
   toBN,
   delayAndThrow,
 } from "@connext/utils";
-import { Contract } from "ethers";
-import { AddressZero, Zero } from "ethers/constants";
+import { Contract, constants } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
 import { AbstractController } from "./AbstractController";
+
+const { AddressZero, Zero } = constants;
 
 export class DepositController extends AbstractController {
   public deposit = async (params: PublicParams.Deposit): Promise<PublicResults.Deposit> => {

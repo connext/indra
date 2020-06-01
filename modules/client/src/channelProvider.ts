@@ -34,9 +34,10 @@ import {
   getPublicKeyFromPublicIdentifier,
   toBN,
 } from "@connext/utils";
-import { Contract } from "ethers";
-import { AddressZero } from "ethers/constants";
+import { Contract, constants } from "ethers";
 import tokenAbi from "human-standard-token-abi";
+
+const { AddressZero } = constants;
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -231,7 +232,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   }
 
   private walletDeposit = async (params: WalletDepositParams): Promise<string> => {
-    let recipient = this.config.multisigAddress;
+    const recipient = this.config.multisigAddress;
     if (!recipient) {
       throw new Error(`Cannot make deposit without channel created - missing multisigAddress`);
     }

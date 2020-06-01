@@ -1,4 +1,6 @@
-import { Zero } from "ethers/constants";
+import { constants } from "ethers";
+
+const { Zero } = constants;
 
 export const TRANSFER_TIMEOUT = Zero;
 

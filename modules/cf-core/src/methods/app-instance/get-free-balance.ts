@@ -5,13 +5,15 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
-import { getAddress } from "ethers/utils";
+import { utils } from "ethers";
 
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
 
 import { MethodController } from "../controller";
+
+const { getAddress } = utils;
 
 export class GetFreeBalanceStateController extends MethodController {
   public readonly methodName = MethodNames.chan_getFreeBalanceState;

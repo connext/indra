@@ -22,13 +22,13 @@ import {
   stringify,
   toBN,
 } from "@connext/utils";
-import { Contract } from "ethers";
-import { Zero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
-import { defaultAbiCoder, keccak256, BigNumber } from "ethers/utils";
+import { Contract, constants, utils, providers } from "ethers";
 import { Memoize } from "typescript-memoize";
 
 import { CounterfactualApp } from "../contracts";
+
+const { Zero } = constants;
+const { defaultAbiCoder, keccak256 } = utils;
 
 /**
  * Representation of an AppInstance.
@@ -248,7 +248,7 @@ export class AppInstance {
     return this.stateTimeout;
   }
 
-  public setState(newState: SolidityValueType, stateTimeout: BigNumber = Zero) {
+  public setState(newState: SolidityValueType, stateTimeout: utils.BigNumber = Zero) {
     try {
       defaultAbiCoder.encode([this.appInterface.stateEncoding], [newState]);
     } catch (e) {
@@ -300,18 +300,20 @@ export class AppInstance {
 
   public async computeOutcome(
     state: SolidityValueType,
-    provider: JsonRpcProvider,
+    provider: providers.JsonRpcProvider,
   ): Promise<string> {
     return this.toEthersContract(provider).functions.computeOutcome(this.encodeState(state));
   }
 
-  public async computeOutcomeWithCurrentState(provider: JsonRpcProvider): Promise<string> {
+  public async computeOutcomeWithCurrentState(
+    provider: providers.JsonRpcProvider,
+  ): Promise<string> {
     return this.computeOutcome(this.state, provider);
   }
 
   public async computeStateTransition(
     action: SolidityValueType,
-    provider: JsonRpcProvider,
+    provider: providers.JsonRpcProvider,
   ): Promise<SolidityValueType> {
     const computedNextState = this.decodeAppState(
       await this.toEthersContract(provider).functions.applyAction(
@@ -323,8 +325,8 @@ export class AppInstance {
     // ethers returns an array of [ <each value by index>, <each value by key> ]
     // so we need to recursively clean this response before returning
     const keyify = (templateObj: any, dataObj: any, key?: string): any => {
-      let template = key ? templateObj[key] : templateObj;
-      let data = key ? dataObj[key] : dataObj;
+      const template = key ? templateObj[key] : templateObj;
+      const data = key ? dataObj[key] : dataObj;
       let output;
       if (isBN(template) || typeof template !== "object") {
         output = data;
@@ -359,7 +361,7 @@ export class AppInstance {
     return defaultAbiCoder.decode([this.appInterface.stateEncoding], encodedSolidityValueType)[0];
   }
 
-  public toEthersContract(provider: JsonRpcProvider) {
+  public toEthersContract(provider: providers.JsonRpcProvider) {
     return new Contract(this.appInterface.addr, CounterfactualApp.abi, provider);
   }
 }

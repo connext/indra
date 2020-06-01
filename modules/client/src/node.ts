@@ -15,11 +15,13 @@ import {
 } from "@connext/types";
 import { bigNumberifyJson, logTime, stringify, formatMessagingUrl } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
-import { getAddress, Transaction } from "ethers/utils";
+import { utils } from "ethers";
 import { v4 as uuid } from "uuid";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { MessagingService } from "@connext/messaging";
+
+const { getAddress } = utils;
 
 const sendFailed = "Failed to send message";
 
@@ -324,7 +326,7 @@ export class NodeApiClient implements INodeApiClient {
     return this.send(`${this.userIdentifier}.channel.restore`);
   }
 
-  public async getLatestWithdrawal(): Promise<Transaction> {
+  public async getLatestWithdrawal(): Promise<utils.Transaction> {
     return this.send(`${this.userIdentifier}.channel.latestWithdrawal`);
   }
 
@@ -360,7 +362,13 @@ export class NodeApiClient implements INodeApiClient {
       throw new Error(`${sendFailed}: ${e.message}`);
     }
     const parsedData = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
-    let error = msg ? (parsedData ? (parsedData.response ? parsedData.response.err : "") : "") : "";
+    const error = msg
+      ? parsedData
+        ? parsedData.response
+          ? parsedData.response.err
+          : ""
+        : ""
+      : "";
     if (!parsedData) {
       this.log.info(`Could not parse data, is this message malformed? ${stringify(msg)}`);
       return undefined;
@@ -370,11 +378,7 @@ export class NodeApiClient implements INodeApiClient {
       throw new Error(`Error sending request to subject ${subject}. Message: ${stringify(msg)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
-    logTime(
-      this.log,
-      start,
-      `Node responded to ${subject} request`,
-    );
+    logTime(this.log, start, `Node responded to ${subject} request`);
     return !response || isEmptyObj ? undefined : bigNumberifyJson(response);
   }
 }
