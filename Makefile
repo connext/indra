@@ -93,6 +93,7 @@ clean: stop
 	rm -rf node_modules/@connext modules/*/node_modules/@connext
 	rm -rf node_modules/@walletconnect modules/*/node_modules/@walletconnect
 	rm -rf modules/*/node_modules/*/.git
+	rm -rf modules/*/node_modules/.bin
 	rm -rf modules/*/build modules/*/dist docs/build
 	rm -rf modules/*/.*cache* modules/*/node_modules/.cache modules/contracts/cache/*.json
 

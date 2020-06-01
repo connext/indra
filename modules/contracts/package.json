@@ -5,7 +5,6 @@
   "license": "ISC",
   "files": [
     "address-book.json",
-    "address-history.json",
     "artifacts",
     "dist",
     "src.sol",

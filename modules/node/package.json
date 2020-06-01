@@ -33,7 +33,7 @@
     "@nestjs/core": "7.1.1",
     "@nestjs/microservices": "7.1.1",
     "@nestjs/platform-express": "7.1.1",
-    "@nestjs/typeorm": "7.1.0",
+    "@nestjs/typeorm": "7.0.0",
     "@openzeppelin/contracts": "3.0.1",
     "@uniswap/sdk": "1.0.0-beta.4",
     "bs58check": "2.1.2",
@@ -41,6 +41,7 @@
     "dotenv": "8.2.0",
     "eccrypto-js": "4.5.4",
     "ethers": "4.0.47",
+    "evt": "1.7.11",
     "human-standard-token-abi": "2.0.0",
     "ioredis": "4.17.1",
     "nats": "1.4.9",
@@ -49,7 +50,7 @@
     "reflect-metadata": "0.1.13",
     "rxjs": "6.5.5",
     "ts-natsutil": "1.0.6",
-    "typeorm": "0.2.25",
+    "typeorm": "0.2.24",
     "typescript-memoize": "1.0.0-alpha.3"
   },
   "devDependencies": {

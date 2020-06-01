@@ -197,7 +197,7 @@ export default class ListenerService implements OnModuleInit {
     try {
       await this.channelService.rebalance(channel, assetIdResponder, RebalanceType.RECLAIM);
     } catch (e) {
-      this.log.error(`Caught error rebalancing channel ${channel.multisigAddress}: ${e.message}`);
+      this.log.error(`Caught error rebalancing channel ${channel.multisigAddress}: ${e.stack}`);
     }
   }
 
