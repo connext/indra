@@ -117,7 +117,6 @@ describe("SimpleLinkedTransferApp", () => {
     const preImage = getRandomBytes32();
     const initialState = await createInitialState(preImage);
     const action: SimpleLinkedTransferAppAction = { preImage };
-
     const afterActionState = await applyAction(initialState, action);
     await validateAction(initialState, afterActionState, action);
     const outcome = await computeOutcome(afterActionState);
@@ -135,12 +134,10 @@ describe("SimpleLinkedTransferApp", () => {
     const preImage = getRandomBytes32();
     const initialState = await createInitialState(preImage);
     const action: SimpleLinkedTransferAppAction = { preImage };
-
     const finalizedState = {
       ...initialState,
       finalized: true,
     };
-
     await expect(applyAction(finalizedState, action)).revertedWith("Cannot take action on finalized state");
   });
 
@@ -150,7 +147,6 @@ describe("SimpleLinkedTransferApp", () => {
     
     // incorrect preimage
     const action: SimpleLinkedTransferAppAction = { preImage: getRandomBytes32() };
-
     await expect(applyAction(initialState, action)).revertedWith("Hash generated from preimage does not match hash in state");
   });
 });
