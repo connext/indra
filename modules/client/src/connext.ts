@@ -1,4 +1,3 @@
-import { SupportedApplications } from "@connext/apps";
 import {
   Address,
   AppAction,
@@ -34,6 +33,7 @@ import {
   WithdrawAppName,
   EventName,
   EventPayload,
+  SupportedApplications,
 } from "@connext/types";
 import {
   delay,
@@ -45,23 +45,15 @@ import {
 import { Contract, providers } from "ethers";
 import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
+import { BigNumber, bigNumberify, Network, Transaction, soliditySha256 } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
-import {
-  DepositController,
-  HashLockTransferController,
-  LinkedTransferController,
-  ResolveHashLockTransferController,
-  ResolveLinkedTransferController,
-  ResolveSignedTransferController,
-  SignedTransferController,
-  SwapController,
-  WithdrawalController,
-} from "./controllers";
+import { DepositController, SwapController, WithdrawalController } from "./controllers";
 import { ConnextListener } from "./listener";
 import { InternalClientOptions } from "./types";
 import { NodeApiClient } from "./node";
+import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
+import { ResolveConditionController } from "./controllers/ResolveConditionController";
 
 export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
@@ -85,12 +77,8 @@ export class ConnextClient implements IConnextClient {
   private opts: InternalClientOptions;
 
   private depositController: DepositController;
-  private hashlockTransferController: HashLockTransferController;
-  private linkedTransferController: LinkedTransferController;
-  private resolveHashLockTransferController: ResolveHashLockTransferController;
-  private resolveLinkedTransferController: ResolveLinkedTransferController;
-  private resolveSignedTransferController: ResolveSignedTransferController;
-  private signedTransferController: SignedTransferController;
+  private conditionalTransferController: ConditionalTransferController;
+  private resolveConditionController: ResolveConditionController;
   private swapController: SwapController;
   private withdrawalController: WithdrawalController;
 
@@ -121,22 +109,12 @@ export class ConnextClient implements IConnextClient {
     this.depositController = new DepositController("DepositController", this);
     this.swapController = new SwapController("SwapController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
-    this.linkedTransferController = new LinkedTransferController("LinkedTransferController", this);
-    this.resolveLinkedTransferController = new ResolveLinkedTransferController(
-      "ResolveLinkedTransferController",
+    this.conditionalTransferController = new ConditionalTransferController(
+      "ConditionalTransferController",
       this,
     );
-    this.hashlockTransferController = new HashLockTransferController(
-      "HashLockTransferController",
-      this,
-    );
-    this.resolveHashLockTransferController = new ResolveHashLockTransferController(
-      "ResolveHashLockTransferController",
-      this,
-    );
-    this.signedTransferController = new SignedTransferController("SignedTransferController", this);
-    this.resolveSignedTransferController = new ResolveSignedTransferController(
-      "ResolveSignedTransferController",
+    this.resolveConditionController = new ResolveConditionController(
+      "ResolveConditionController",
       this,
     );
   }
@@ -314,7 +292,7 @@ export class ConnextClient implements IConnextClient {
   public transfer = async (
     params: PublicParams.Transfer,
   ): Promise<PublicResults.LinkedTransfer> => {
-    return this.linkedTransferController.linkedTransfer({
+    return this.conditionalTransfer.conditionalTransfer({
       amount: params.amount,
       assetId: params.assetId || CONVENTION_FOR_ETH_ASSET_ID,
       conditionType: ConditionalTransferTypes.LinkedTransfer,
@@ -343,42 +321,19 @@ export class ConnextClient implements IConnextClient {
   public resolveCondition = async (
     params: PublicParams.ResolveCondition,
   ): Promise<PublicResults.ResolveCondition> => {
-    switch (params.conditionType) {
-      case ConditionalTransferTypes.LinkedTransfer: {
-        return this.resolveLinkedTransferController.resolveLinkedTransfer(params);
-      }
-      case ConditionalTransferTypes.HashLockTransfer: {
-        params.assetId = params.assetId ? params.assetId : AddressZero;
-        const res = await this.resolveHashLockTransferController.resolveHashLockTransfer(params);
-        return { ...res, paymentId: HashZero };
-      }
-      case ConditionalTransferTypes.SignedTransfer: {
-        const res = await this.resolveSignedTransferController.resolveSignedTransfer(params);
-        return { ...res, paymentId: params.paymentId };
-      }
-      default:
-        throw new Error(`Condition type ${(params as any).conditionType} invalid`);
+    if (params.conditionType === ConditionalTransferTypes.HashLockTransfer) {
+      const lockHash = soliditySha256(["bytes32"], [params.preImage]);
+      const paymentId = soliditySha256(["address", "bytes32"], [params.assetId, lockHash]);
+      params.paymentId = paymentId;
     }
+    return this.resolveConditionController.resolveCondition(params);
   };
 
   public conditionalTransfer = async (
     params: PublicParams.ConditionalTransfer,
   ): Promise<PublicResults.ConditionalTransfer> => {
-    params.assetId = params.assetId ? params.assetId : AddressZero;
-    switch (params.conditionType) {
-      case ConditionalTransferTypes.LinkedTransfer: {
-        return this.linkedTransferController.linkedTransfer(params);
-      }
-      case ConditionalTransferTypes.HashLockTransfer: {
-        params.timelock = params.timelock ? params.timelock : 5000;
-        return this.hashlockTransferController.hashLockTransfer(params);
-      }
-      case ConditionalTransferTypes.SignedTransfer: {
-        return this.signedTransferController.signedTransfer(params);
-      }
-      default:
-        throw new Error(`Condition type ${(params as any).conditionType} invalid`);
-    }
+    params.assetId = params.assetId ? params.assetId : CONVENTION_FOR_ETH_ASSET_ID;
+    return this.conditionalTransferController.conditionalTransfer(params);
   };
 
   public getHashLockTransfer = async (

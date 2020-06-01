@@ -3,6 +3,7 @@ import {
   NodeResponses,
   SimpleLinkedTransferAppName,
   SimpleSignedTransferAppName,
+  ConditionalTransferTypes,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
@@ -80,6 +81,26 @@ export class TransferMessaging extends AbstractMessagingProvider {
     };
   }
 
+  async installConditionalTransferReceiverApp(
+    pubId: string,
+    data: { paymentId: string; conditionType: ConditionalTransferTypes },
+  ): Promise<NodeResponses.InstallConditionalTransferReceiverApp> {
+    if (!data.paymentId || !data.conditionType) {
+      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
+    }
+    this.log.info(`Got installReceiverApp request with paymentId: ${data.paymentId}`);
+
+    const response = await this.transferService.resolveByPaymentId(
+      pubId,
+      data.paymentId,
+      data.conditionType,
+    );
+    return {
+      ...response,
+      amount: response.amount,
+    };
+  }
+
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "*.transfer.get-history",
@@ -99,6 +120,11 @@ export class TransferMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "*.client.check-in",
       this.authService.parseIdentifier(this.clientCheckIn.bind(this)),
+    );
+
+    await super.connectRequestReponse(
+      "*.transfer.install-receiver",
+      this.authService.parseIdentifier(this.installConditionalTransferReceiverApp.bind(this)),
     );
   }
 }

@@ -12,6 +12,7 @@ import {
   AsyncNodeInitializationParameters,
   VerifyNonceDtoType,
   Address,
+  ConditionalTransferTypes,
 } from "@connext/types";
 import { bigNumberifyJson, logTime, stringify, formatMessagingUrl } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
@@ -257,6 +258,21 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
+  public async installConditionalTransferReceiverApp(
+    paymentId: string,
+    conditionType: ConditionalTransferTypes,
+  ): Promise<NodeResponses.InstallConditionalTransferReceiverApp> {
+    const extendedTimeout = NATS_TIMEOUT * 5; // 55s
+    return this.send(
+      `${this.userIdentifier}.transfer.install-receiver`,
+      {
+        paymentId,
+        conditionType,
+      },
+      extendedTimeout,
+    );
+  }
+
   public async resolveLinkedTransfer(
     paymentId: string,
   ): Promise<NodeResponses.ResolveLinkedTransfer> {
@@ -370,11 +386,7 @@ export class NodeApiClient implements INodeApiClient {
       throw new Error(`Error sending request to subject ${subject}. Message: ${stringify(msg)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
-    logTime(
-      this.log,
-      start,
-      `Node responded to ${subject} request`,
-    );
+    logTime(this.log, start, `Node responded to ${subject} request`);
     return !response || isEmptyObj ? undefined : bigNumberifyJson(response);
   }
 }

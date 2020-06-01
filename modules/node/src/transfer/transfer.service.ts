@@ -9,9 +9,11 @@ import {
   CoinTransfer,
   GenericConditionalTransferAppName,
   MethodParams,
+  getTransferTypeFromAppName,
+  SupportedApplications,
 } from "@connext/types";
 import { stringify, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { TRANSFER_TIMEOUT, SupportedApplications } from "@connext/apps";
+import { TRANSFER_TIMEOUT } from "@connext/apps";
 import { Zero, HashZero } from "ethers/constants";
 
 import { LoggerService } from "../logger/logger.service";
@@ -24,29 +26,6 @@ import { TIMEOUT_BUFFER } from "../constants";
 import { Channel } from "../channel/channel.entity";
 
 import { TransferRepository } from "./transfer.repository";
-
-export type TransferType = "RequireOnline" | "AllowOffline";
-export const getTransferTypeFromAppName = (
-  name: SupportedApplications,
-): TransferType | undefined => {
-  switch (name) {
-    case SupportedApplications.DepositApp:
-    case SupportedApplications.SimpleTwoPartySwapApp:
-    case SupportedApplications.WithdrawApp: {
-      return undefined;
-    }
-    case SupportedApplications.HashLockTransferApp: {
-      return "RequireOnline";
-    }
-    case SupportedApplications.SimpleLinkedTransferApp:
-    case SupportedApplications.SimpleSignedTransferApp: {
-      return "AllowOffline";
-    }
-    default:
-      const c: never = name;
-      throw new Error(`Unreachable: ${c}`);
-  }
-};
 
 @Injectable()
 export class TransferService {

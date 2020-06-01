@@ -148,7 +148,9 @@ type ConditionalTransferResponse =
 // resolve condition
 
 type ResolveConditionParameters =
-  | ResolveHashLockTransferParameters
+  | (ResolveHashLockTransferParameters & {
+      paymentId: Bytes32;
+    })
   | ResolveLinkedTransferParameters
   | ResolveSignedTransferParameters;
 

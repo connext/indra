@@ -4,18 +4,40 @@ import {
   HashLockTransferAppName,
   SimpleLinkedTransferAppName,
   SimpleSignedTransferAppName,
-  CoinTransfer,
+  SupportedApplications,
+  GenericConditionalTransferAppName,
 } from "./contracts";
 
 ////////////////////////////////////////
 // Types
 
-export const GenericConditionalTransferAppName = "GenericConditionalTransferApp";
+export type TransferType = "RequireOnline" | "AllowOffline";
+export const getTransferTypeFromAppName = (
+  name: SupportedApplications,
+): TransferType | undefined => {
+  switch (name) {
+    case SupportedApplications.DepositApp:
+    case SupportedApplications.SimpleTwoPartySwapApp:
+    case SupportedApplications.WithdrawApp: {
+      return undefined;
+    }
+    case SupportedApplications.HashLockTransferApp: {
+      return "RequireOnline";
+    }
+    case SupportedApplications.SimpleLinkedTransferApp:
+    case SupportedApplications.SimpleSignedTransferApp: {
+      return "AllowOffline";
+    }
+    default:
+      const c: never = name;
+      throw new Error(`Unreachable: ${c}`);
+  }
+};
 
 export const ConditionalTransferTypes = enumify({
-  HashLockTransfer: "HashLockTransfer",
-  LinkedTransfer: "LinkedTransfer",
-  SignedTransfer: "SignedTransfer",
+  HashLockTransfer: HashLockTransferAppName,
+  LinkedTransfer: SimpleLinkedTransferAppName,
+  SignedTransfer: SimpleSignedTransferAppName,
 });
 export type ConditionalTransferTypes = typeof ConditionalTransferTypes[keyof typeof ConditionalTransferTypes];
 
@@ -26,12 +48,6 @@ export const ConditionalTransferAppNames = enumify({
   [GenericConditionalTransferAppName]: GenericConditionalTransferAppName,
 });
 export type ConditionalTransferAppNames = typeof ConditionalTransferAppNames[keyof typeof ConditionalTransferAppNames];
-
-export type GenericConditionalTransferAppState = {
-  coinTransfers: CoinTransfer[];
-  finalized: boolean;
-  [x: string]: any;
-};
 
 ////////////////////////////////////////
 // Metadata
