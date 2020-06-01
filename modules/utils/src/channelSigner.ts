@@ -21,14 +21,14 @@ import {
 } from "./crypto";
 import { getPublicIdentifierFromPublicKey } from "./identifiers";
 
-export const getRandomChannelSigner = (ethProviderUrl?: UrlString) =>
-  new ChannelSigner(getRandomPrivateKey(), ethProviderUrl);
+export const getRandomChannelSigner = (provider?: UrlString | JsonRpcProvider) =>
+  new ChannelSigner(getRandomPrivateKey(), provider);
 
 export class ChannelSigner implements IChannelSigner {
   public address: Address;
   public publicIdentifier: PublicIdentifier;
   public publicKey: PublicKey;
-  public readonly provider?: JsonRpcProvider;
+  public provider?: JsonRpcProvider;
 
   // NOTE: without this property, the Signer.isSigner
   // function will not return true, even though this class
@@ -36,12 +36,12 @@ export class ChannelSigner implements IChannelSigner {
   // https://github.com/ethers-io/ethers.js/issues/779
   private readonly _ethersType = "Signer";
 
-  constructor(private readonly privateKey: PrivateKey, ethProviderUrl?: UrlString) {
-    this.provider = !!ethProviderUrl ? new JsonRpcProvider(ethProviderUrl) : undefined;
+  constructor(private readonly privateKey: PrivateKey, provider?: UrlString | JsonRpcProvider) {
     this.privateKey = privateKey;
     this.publicKey = getPublicKeyFromPrivateKey(privateKey);
     this.address = getAddressFromPublicKey(this.publicKey);
     this.publicIdentifier = getPublicIdentifierFromPublicKey(this.publicKey);
+    this.connect(provider);
   }
 
   public async getAddress(): Promise<Address> {
@@ -49,6 +49,10 @@ export class ChannelSigner implements IChannelSigner {
   }
 
   public encrypt = encrypt;
+
+  public connect(provider?: UrlString | JsonRpcProvider): void {
+    this.provider = typeof provider === "string" ? new JsonRpcProvider(provider) : provider;
+  }
 
   public async decrypt(message: string): Promise<HexString> {
     return decrypt(message, this.privateKey);
