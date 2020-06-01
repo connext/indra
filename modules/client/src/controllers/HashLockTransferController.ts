@@ -14,6 +14,7 @@ import { toBN, stringify } from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
 
 import { AbstractController } from "./AbstractController";
+import { soliditySha256 } from "ethers/utils";
 
 export class HashLockTransferController extends AbstractController {
   public hashLockTransfer = async (
@@ -44,6 +45,8 @@ export class HashLockTransferController extends AbstractController {
       finalized: false,
     };
 
+    const paymentId = soliditySha256(["address", "bytes32"], [assetId, lockHash]);
+    submittedMeta.paymentId = paymentId;
     submittedMeta.recipient = recipient;
     submittedMeta.sender = this.connext.publicIdentifier;
     submittedMeta.timelock = timelock;
@@ -87,6 +90,7 @@ export class HashLockTransferController extends AbstractController {
     const eventData = {
       type: ConditionalTransferTypes.HashLockTransfer,
       amount,
+      appIdentityHash,
       assetId,
       sender: this.connext.publicIdentifier,
       meta: submittedMeta,

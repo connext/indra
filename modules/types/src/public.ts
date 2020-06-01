@@ -4,6 +4,7 @@ import { BigNumberish } from "ethers/utils";
 import { Address, BigNumber, Bytes32, HexString, PublicIdentifier } from "./basic";
 import { ConditionalTransferTypes } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
+import { Attestation } from "./contracts";
 
 ////////////////////////////////////////
 // deposit
@@ -43,7 +44,7 @@ type HashLockTransferParameters = {
   lockHash: Bytes32;
   recipient: PublicIdentifier;
   assetId?: Address;
-  meta?: object;
+  meta?: any;
 };
 
 type HashLockTransferResponse = {
@@ -61,7 +62,7 @@ type ResolveHashLockTransferResponse = {
   sender: PublicIdentifier;
   amount: BigNumber;
   assetId: Address;
-  meta?: object;
+  meta?: any;
 };
 
 ////////////////////////////////////////
@@ -74,7 +75,7 @@ type LinkedTransferParameters = {
   paymentId: Bytes32;
   preImage: Bytes32;
   recipient?: PublicIdentifier;
-  meta?: object;
+  meta?: any;
 };
 
 type LinkedTransferResponse = {
@@ -95,7 +96,7 @@ type ResolveLinkedTransferResponse = {
   paymentId: Bytes32;
   amount: BigNumber;
   assetId: Address;
-  meta?: object;
+  meta?: any;
 };
 
 ////////////////////////////////////////
@@ -106,7 +107,9 @@ type SignedTransferParameters = {
   amount: BigNumber;
   assetId: Address;
   paymentId: Bytes32;
-  signer: Address;
+  signerAddress: Address;
+  chainId: number;
+  verifyingContract: Address;
   recipient?: PublicIdentifier;
   meta?: any;
 };
@@ -119,8 +122,7 @@ type SignedTransferResponse = {
 type ResolveSignedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.SignedTransfer;
   paymentId: Bytes32;
-  data: Bytes32;
-  signature: HexString;
+  attestation: Attestation;
 };
 
 type ResolveSignedTransferResponse = {
@@ -152,10 +154,19 @@ type ResolveConditionParameters =
   | ResolveLinkedTransferParameters
   | ResolveSignedTransferParameters;
 
-type ResolveConditionResponse =
-  | ResolveHashLockTransferResponse
-  | ResolveLinkedTransferResponse
-  | ResolveSignedTransferResponse;
+// type ResolveConditionResponse =
+//   | ResolveHashLockTransferResponse
+//   | ResolveLinkedTransferResponse
+//   | ResolveSignedTransferResponse;
+
+type ResolveConditionResponse = {
+  appIdentityHash: Bytes32;
+  assetId: Address;
+  amount: BigNumber;
+  paymentId: Bytes32;
+  sender: PublicIdentifier;
+  meta?: any;
+};
 
 ////////////////////////////////////////
 // swap
@@ -195,7 +206,7 @@ type WithdrawResponse = {
 
 type TransferParameters = MethodParams.Deposit & {
   recipient: PublicIdentifier;
-  meta?: object;
+  meta?: any;
   paymentId?: Bytes32;
 };
 

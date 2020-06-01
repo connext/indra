@@ -1,19 +1,11 @@
 import {
   AppAction,
-  CreateChannelMessage,
-  DepositConfirmationMessage,
-  DepositFailedMessage,
-  DepositStartedMessage,
   EventNames,
-  InstallMessage,
-  Message,
   MethodNames,
-  ProposeMessage,
-  ProtocolMessage,
-  RejectProposalMessage,
   UninstallMessage,
-  UpdateStateMessage,
   SyncMessage,
+  ProtocolEventMessage,
+  EventName,
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
@@ -56,7 +48,7 @@ const {
 } = EventNames;
 
 type CallbackStruct = {
-  [index in EventNames]: (data: any) => Promise<any> | void;
+  [index in keyof typeof EventNames]: (data: ProtocolEventMessage<index>) => Promise<any> | void;
 };
 
 @Injectable()
@@ -75,7 +67,7 @@ export default class ListenerService implements OnModuleInit {
     this.log.setContext("ListenerService");
   }
 
-  logEvent(event: EventNames, res: Message & { data: any }): void {
+  logEvent<T extends EventName>(event: T, res: ProtocolEventMessage<T>): void {
     this.log.debug(
       `${event} event fired from ${res && res.from ? res.from : null}, data: ${
         res ? JSON.stringify(res.data) : `event did not have a result`
@@ -85,58 +77,57 @@ export default class ListenerService implements OnModuleInit {
 
   getEventListeners(): CallbackStruct {
     return {
-      CONDITIONAL_TRANSFER_CREATED_EVENT: (data: DepositConfirmationMessage): void => {
+      CONDITIONAL_TRANSFER_CREATED_EVENT: (data): void => {
         this.logEvent(CONDITIONAL_TRANSFER_CREATED_EVENT, data);
       },
-      CONDITIONAL_TRANSFER_UNLOCKED_EVENT: (data: DepositConfirmationMessage): void => {
+      CONDITIONAL_TRANSFER_UNLOCKED_EVENT: (data): void => {
         this.logEvent(CONDITIONAL_TRANSFER_UNLOCKED_EVENT, data);
       },
-      CONDITIONAL_TRANSFER_FAILED_EVENT: (data: DepositConfirmationMessage): void => {
+      CONDITIONAL_TRANSFER_FAILED_EVENT: (data): void => {
         this.logEvent(CONDITIONAL_TRANSFER_FAILED_EVENT, data);
       },
-      CREATE_CHANNEL_EVENT: async (data: CreateChannelMessage): Promise<void> => {
+      CREATE_CHANNEL_EVENT: async (data): Promise<void> => {
         this.logEvent(CREATE_CHANNEL_EVENT, data);
-        this.channelService.makeAvailable(data);
+        await this.channelService.makeAvailable(data);
       },
       SETUP_FAILED_EVENT: (data): void => {
         this.logEvent(SETUP_FAILED_EVENT, data);
       },
-      DEPOSIT_CONFIRMED_EVENT: (data: DepositConfirmationMessage): void => {
+      DEPOSIT_CONFIRMED_EVENT: (data): void => {
         this.logEvent(DEPOSIT_CONFIRMED_EVENT, data);
       },
-      DEPOSIT_FAILED_EVENT: (data: DepositFailedMessage): void => {
+      DEPOSIT_FAILED_EVENT: (data): void => {
         this.logEvent(DEPOSIT_FAILED_EVENT, data);
       },
-      DEPOSIT_STARTED_EVENT: (data: DepositStartedMessage): void => {
+      DEPOSIT_STARTED_EVENT: (data): void => {
         this.logEvent(DEPOSIT_STARTED_EVENT, data);
       },
-      INSTALL_EVENT: async (data: InstallMessage): Promise<void> => {
+      INSTALL_EVENT: async (data): Promise<void> => {
         this.logEvent(INSTALL_EVENT, data);
       },
       INSTALL_FAILED_EVENT: (data): void => {
         this.logEvent(INSTALL_FAILED_EVENT, data);
       },
-      PROPOSE_INSTALL_EVENT: (data: ProposeMessage): void => {
+      PROPOSE_INSTALL_EVENT: async (data): Promise<void> => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
           this.log.debug(`Received proposal from our own node. Doing nothing.`);
           return;
         }
         this.logEvent(PROPOSE_INSTALL_EVENT, data);
-        this.appRegistryService.validateAndInstallOrReject(
-          data.data.appIdentityHash,
-          data.data.params,
+        await this.appRegistryService.installOrReject(
+          data.data.appInstanceId,
+          data.data.params as any,
           data.from,
         );
       },
       PROPOSE_INSTALL_FAILED_EVENT: (data): void => {
         this.logEvent(PROPOSE_INSTALL_FAILED_EVENT, data);
       },
-      PROTOCOL_MESSAGE_EVENT: (data: ProtocolMessage): void => {
+      PROTOCOL_MESSAGE_EVENT: (data): void => {
         this.logEvent(PROTOCOL_MESSAGE_EVENT, data);
       },
-      REJECT_INSTALL_EVENT: async (data: RejectProposalMessage): Promise<void> => {
+      REJECT_INSTALL_EVENT: (data): void => {
         this.logEvent(REJECT_INSTALL_EVENT, data);
-        return;
       },
       SYNC: (data: SyncMessage): void => {
         this.logEvent(SYNC, data);
@@ -144,14 +135,14 @@ export default class ListenerService implements OnModuleInit {
       SYNC_FAILED_EVENT: (data): void => {
         this.logEvent(SYNC_FAILED_EVENT, data);
       },
-      UNINSTALL_EVENT: async (data: UninstallMessage): Promise<void> => {
+      UNINSTALL_EVENT: async (data): Promise<void> => {
         this.logEvent(UNINSTALL_EVENT, data);
         await this.handleUninstall(data);
       },
       UNINSTALL_FAILED_EVENT: (data): void => {
         this.logEvent(UNINSTALL_FAILED_EVENT, data);
       },
-      UPDATE_STATE_EVENT: async (data: UpdateStateMessage): Promise<void> => {
+      UPDATE_STATE_EVENT: async (data): Promise<void> => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
           this.log.debug(`Received update state from our own node. Doing nothing.`);
           return;
@@ -178,13 +169,13 @@ export default class ListenerService implements OnModuleInit {
       UPDATE_STATE_FAILED_EVENT: (data): void => {
         this.logEvent(UPDATE_STATE_FAILED_EVENT, data);
       },
-      WITHDRAWAL_FAILED_EVENT: (data: DepositFailedMessage): void => {
+      WITHDRAWAL_FAILED_EVENT: (data): void => {
         this.logEvent(WITHDRAWAL_FAILED_EVENT, data);
       },
-      WITHDRAWAL_CONFIRMED_EVENT: (data: DepositFailedMessage): void => {
+      WITHDRAWAL_CONFIRMED_EVENT: (data): void => {
         this.logEvent(WITHDRAWAL_CONFIRMED_EVENT, data);
       },
-      WITHDRAWAL_STARTED_EVENT: (data: DepositFailedMessage): void => {
+      WITHDRAWAL_STARTED_EVENT: (data): void => {
         this.logEvent(WITHDRAWAL_STARTED_EVENT, data);
       },
     };
@@ -206,13 +197,16 @@ export default class ListenerService implements OnModuleInit {
     try {
       await this.channelService.rebalance(channel, assetIdResponder, RebalanceType.RECLAIM);
     } catch (e) {
-      this.log.error(`Caught error rebalancing channel ${channel.multisigAddress}: ${e.message}`);
+      this.log.error(`Caught error rebalancing channel ${channel.multisigAddress}: ${e.stack}`);
     }
   }
 
   onModuleInit(): void {
     Object.entries(this.getEventListeners()).forEach(
-      ([event, callback]: [EventNames, () => any]): void => {
+      ([event, callback]: [
+        EventName,
+        (data: ProtocolEventMessage<any>) => void | Promise<void>,
+      ]) => {
         this.cfCoreService.registerCfCoreListener(event, callback);
       },
     );

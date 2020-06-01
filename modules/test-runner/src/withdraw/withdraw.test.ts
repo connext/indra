@@ -1,10 +1,8 @@
 import { MinimumViableMultisig } from "@connext/contracts";
 import {
   IConnextClient,
-  EventNames,
   BigNumberish,
   CONVENTION_FOR_ETH_ASSET_ID,
-  RebalanceProfile,
 } from "@connext/types";
 import { Wallet, Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -22,12 +20,9 @@ import {
   requestCollateral,
   getNatsClient,
 } from "../util";
-import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 import { Client } from "ts-nats";
 
-// TODO: multiple withdrawal tests are skipped because there are issues where
-// the TX is sent before the client can subscribe. need to fix by possibly increasing block
-// time
+// TODO: some withdrawal tests are skipped because of this issue: https://github.com/connext/indra/issues/1186
 describe("Withdrawal", () => {
   let client: IConnextClient;
   let tokenAddress: string;
@@ -37,22 +32,6 @@ describe("Withdrawal", () => {
     client = await createClient();
     nats = getNatsClient();
     tokenAddress = client.config.contractAddresses.Token!;
-
-    const REBALANCE_PROFILE_ETH: RebalanceProfile = {
-      assetId: AddressZero,
-      collateralizeThreshold: Zero,
-      target: Zero,
-      reclaimThreshold: Zero,
-    };
-    await addRebalanceProfile(nats, client, REBALANCE_PROFILE_ETH, false);
-
-    const REBALANCE_PROFILE_TOKEN: RebalanceProfile = {
-      assetId: tokenAddress,
-      collateralizeThreshold: Zero,
-      target: Zero,
-      reclaimThreshold: Zero,
-    };
-    await addRebalanceProfile(nats, client, REBALANCE_PROFILE_TOKEN, false);
   });
 
   it("happy case: client successfully withdraws eth and node submits the tx", async () => {
@@ -61,6 +40,7 @@ describe("Withdrawal", () => {
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
   });
 
+  // Currently fails because of this: https://github.com/connext/indra/issues/1186
   it.skip("happy case: client successfully withdraws same amount of eth twice", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
@@ -111,8 +91,7 @@ describe("Withdrawal", () => {
     ).to.be.rejectedWith(`invalid address`);
   });
 
-  // TODO: fix race condition
-  it.skip("client successfully withdraws tokens and eth concurrently", async () => {
+  it("client successfully withdraws tokens and eth concurrently", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
     // withdraw (dont await first for concurrency). Note: don't withdraw
@@ -123,37 +102,13 @@ describe("Withdrawal", () => {
     ]);
   });
 
-  // FIXME: may have race condition! saw intermittent failures, tough to
-  // consistently reproduce. appear as `validating signer` errors.
-  // see issue #705
-  it.skip("client tries to withdraw while node is collateralizing", async (done: any) => {
+  it("client tries to withdraw while node is collateralizing", async () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
 
-    let eventsCaught = 0;
-    client.once("DEPOSIT_CONFIRMED_EVENT", async () => {
-      // make sure node free balance increases
-      const freeBalance = await client.getFreeBalance(AddressZero);
-      expect(freeBalance[client.nodeSignerAddress]).to.be.above(Zero);
-      eventsCaught += 1;
-      if (eventsCaught === 2) {
-        done();
-      }
-    });
-
-    // no withdraw confirmed event thrown here...
-    client.once(EventNames.WITHDRAWAL_CONFIRMED_EVENT, () => {
-      eventsCaught += 1;
-      if (eventsCaught === 2) {
-        done();
-      }
-    });
-
-    // simultaneously request collateral and withdraw
-    client.requestCollateral(AddressZero);
-    // use user-submitted to make sure that the event is properly
-    // thrown
-    withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
-    // TODO: events for withdrawal commitments! issue 698
+    await Promise.all([
+      requestCollateral(client, AddressZero, true),
+      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero)
+    ])
   });
 
   describe("client tries to withdraw while it has active deposit rights", () => {

@@ -1,5 +1,6 @@
 import {
   EventNames,
+  EventName,
   IConnextClient,
   IChannelSigner,
   ProtocolNames,
@@ -48,7 +49,7 @@ describe("Withdraw offline tests", () => {
     client: IConnextClient,
     withdrawParams: any,
     error: string,
-    event?: EventNames,
+    event?: EventName,
   ) => {
     const { amount, assetId, recipient } = withdrawParams;
     if (!event) {
@@ -60,12 +61,8 @@ describe("Withdraw offline tests", () => {
     await new Promise(async (resolve, reject) => {
       client.once(event, (msg) => {
         try {
-          expect(msg).to.containSubset({
-            type: event,
-            from: client.publicIdentifier,
-          });
-          expect(msg.data.params).to.be.an("object");
-          expect(msg.data.error).to.include(error);
+          expect((msg as any).params).to.be.an("object");
+          expect((msg as any).error).to.include(error);
           return resolve(msg);
         } catch (e) {
           return reject(e.message);
@@ -85,6 +82,8 @@ describe("Withdraw offline tests", () => {
   const recreateClientAndRetryWithdraw = async (client: IConnextClient, withdrawParams: any) => {
     const { amount, assetId } = withdrawParams;
     await client.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
     const newClient = await createClient({ signer, store: client.store });
     // Check that client can recover and continue
     await withdrawFromChannel(newClient, amount, assetId);

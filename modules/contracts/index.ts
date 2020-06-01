@@ -10,19 +10,18 @@ import * as CounterfactualApp from "./build/CounterfactualApp.json";
 import * as DepositApp from "./build/DepositApp.json";
 import * as DolphinCoin from "./build/DolphinCoin.json";
 import * as ERC20 from "./build/ERC20.json";
+import * as HashLockTransferApp from "./build/HashLockTransferApp.json";
 import * as IdentityApp from "./build/IdentityApp.json";
 import * as MinimumViableMultisig from "./build/MinimumViableMultisig.json";
 import * as MultiAssetMultiPartyCoinTransferInterpreter from "./build/MultiAssetMultiPartyCoinTransferInterpreter.json";
 import * as ProxyFactory from "./build/ProxyFactory.json";
 import * as SimpleLinkedTransferApp from "./build/SimpleLinkedTransferApp.json";
-import * as SimpleTransferApp from "./build/SimpleTransferApp.json";
+import * as SimpleSignedTransferApp from "./build/SimpleSignedTransferApp.json";
 import * as SimpleTwoPartySwapApp from "./build/SimpleTwoPartySwapApp.json";
 import * as SingleAssetTwoPartyCoinTransferInterpreter from "./build/SingleAssetTwoPartyCoinTransferInterpreter.json";
 import * as TicTacToeApp from "./build/TicTacToeApp.json";
 import * as TimeLockedPassThrough from "./build/TimeLockedPassThrough.json";
 import * as TwoPartyFixedOutcomeInterpreter from "./build/TwoPartyFixedOutcomeInterpreter.json";
-import * as UnidirectionalLinkedTransferApp from "./build/UnidirectionalLinkedTransferApp.json";
-import * as UnidirectionalTransferApp from "./build/UnidirectionalTransferApp.json";
 import * as WithdrawApp from "./build/WithdrawApp.json";
 
 export * from "./commitments";
@@ -36,18 +35,17 @@ export {
   DepositApp,
   DolphinCoin,
   ERC20,
+  HashLockTransferApp,
   IdentityApp,
   MinimumViableMultisig,
   MultiAssetMultiPartyCoinTransferInterpreter,
   ProxyFactory,
   SimpleLinkedTransferApp,
-  SimpleTransferApp,
+  SimpleSignedTransferApp,
   SimpleTwoPartySwapApp,
   SingleAssetTwoPartyCoinTransferInterpreter,
   TicTacToeApp,
   TimeLockedPassThrough,
   TwoPartyFixedOutcomeInterpreter,
-  UnidirectionalLinkedTransferApp,
-  UnidirectionalTransferApp,
   WithdrawApp,
 };

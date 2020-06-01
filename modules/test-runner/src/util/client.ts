@@ -9,7 +9,12 @@ import {
   ProtocolNames,
   IStoreService,
 } from "@connext/types";
-import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
+import {
+  getRandomChannelSigner,
+  ChannelSigner,
+  ColorfulLogger,
+  getRandomPrivateKey,
+} from "@connext/utils";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
@@ -20,16 +25,15 @@ import { ethWallet } from "./ethprovider";
 import { TestMessagingService, SendReceiveCounter, RECEIVED, SEND, NO_LIMIT } from "./messaging";
 
 export const createClient = async (
-  opts: Partial<ClientOptions & { id: string }> = {},
+  opts: Partial<ClientOptions & { id: string; logLevel: number }> = {},
   fund: boolean = true,
 ): Promise<IConnextClient> => {
   const store = opts.store || getMemoryStore();
-  const wallet = Wallet.createRandom();
-  const log = new ColorfulLogger("CreateClient", env.logLevel);
+  const log = new ColorfulLogger("CreateClient", opts.logLevel || env.logLevel);
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
-    loggerService: new ColorfulLogger("Client", env.logLevel, true, opts.id),
-    signer: opts.signer || wallet.privateKey,
+    loggerService: new ColorfulLogger("Client", opts.logLevel || env.logLevel, true, opts.id),
+    signer: opts.signer || getRandomPrivateKey(),
     nodeUrl: env.nodeUrl,
     store,
     ...opts,

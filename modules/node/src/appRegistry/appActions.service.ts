@@ -1,28 +1,21 @@
 import {
   AppAction,
   AppState,
-  HashLockTransferAppAction,
-  HashLockTransferAppName,
-  SimpleLinkedTransferAppName,
-  SimpleLinkedTransferAppState,
-  SimpleSignedTransferAppName,
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
   AppInstanceJson,
+  ConditionalTransferAppNames,
 } from "@connext/types";
 import { SupportedApplications } from "@connext/apps";
 import { Injectable } from "@nestjs/common";
-import { soliditySha256 } from "ethers/utils";
 
 import { LoggerService } from "../logger/logger.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { WithdrawRepository } from "../withdraw/withdraw.repository";
 import { WithdrawService } from "../withdraw/withdraw.service";
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
-import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.service";
 import { AppInstance } from "../appInstance/appInstance.entity";
+import { TransferService } from "../transfer/transfer.service";
 
 @Injectable()
 export class AppActionsService {
@@ -30,10 +23,8 @@ export class AppActionsService {
     private readonly log: LoggerService,
     private readonly withdrawService: WithdrawService,
     private readonly cfCoreService: CFCoreService,
-    private readonly signedTransferService: SignedTransferService,
-    private readonly hashlockTransferService: HashLockTransferService,
+    private readonly transferService: TransferService,
     private readonly withdrawRepository: WithdrawRepository,
-    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("AppRegistryService");
   }
@@ -49,50 +40,21 @@ export class AppActionsService {
         action,
       )} started`,
     );
-    switch (appName) {
-      case WithdrawAppName: {
-        // Special case
-        await this.handleWithdrawAppAction(
-          app,
-          action as WithdrawAppAction,
-          newState as WithdrawAppState,
+
+    if (Object.keys(ConditionalTransferAppNames).includes(appName)) {
+      const senderApp = await this.transferService.findSenderAppByPaymentId(app.meta.paymentId);
+      if (!senderApp) {
+        throw new Error(
+          `Action taken on tranfer app without corresponding sender app! ${app.identityHash}`,
         );
-        break;
       }
-      case SimpleLinkedTransferAppName: {
-        const senderApp =
-          await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
-            (newState as SimpleLinkedTransferAppState).paymentId,
-            this.cfCoreService.cfCore.publicIdentifier,
-          );
-        await this.handleTransferAppAction(senderApp, action);
-        break;
-      }
-      case HashLockTransferAppName: {
-        const senderApp = await this.hashlockTransferService.findSenderAppByLockHashAndAssetId(
-          soliditySha256(["bytes32"], [(action as HashLockTransferAppAction).preImage]),
-          app.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
-        );
-        if (!senderApp) {
-          throw new Error(
-            `Action taken on HashLockTransferApp without corresponding sender app! ${app.identityHash}`,
-          );
-        }
-        await this.handleTransferAppAction(senderApp, action);
-        break;
-      }
-      case SimpleSignedTransferAppName: {
-        const senderApp = await this.signedTransferService.findSenderAppByPaymentId(
-          (newState as SimpleLinkedTransferAppState).paymentId,
-        );
-        if (!senderApp) {
-          throw new Error(
-            `Action taken on HashLockTransferApp without corresponding sender app! ${app.identityHash}`,
-          );
-        }
-        await this.handleTransferAppAction(senderApp, action);
-        break;
-      }
+      await this.handleTransferAppAction(senderApp, action);
+    } else if (appName === WithdrawAppName) {
+      await this.handleWithdrawAppAction(
+        app,
+        action as WithdrawAppAction,
+        newState as WithdrawAppState,
+      );
     }
     this.log.info(`handleAppAction for app name ${appName} ${app.identityHash} complete`);
   }

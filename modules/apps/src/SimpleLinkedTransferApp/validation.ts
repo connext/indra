@@ -1,18 +1,10 @@
-import {
-  MethodParams,
-  CoinTransfer,
-  SimpleLinkedTransferAppState,
-} from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import { CoinTransfer, SimpleLinkedTransferAppState, ProtocolParams } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 
-export const validateSimpleLinkedTransferApp = (
-  params: MethodParams.ProposeInstall,
-  initiatorIdentifier: string,
-  responderIdentifier: string,
-) => {
-  const { responderDeposit, initiatorDeposit } = params;
+export const validateSimpleLinkedTransferApp = (params: ProtocolParams.Propose) => {
+  const { responderDeposit, initiatorDeposit, initiatorIdentifier, responderIdentifier } = params;
   const initialState = params.initialState as SimpleLinkedTransferAppState;
 
   const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
@@ -31,8 +23,4 @@ export const validateSimpleLinkedTransferApp = (
     initiatorTransfer,
     responderTransfer,
   );
-
-  if (!initialState.amount.eq(initiatorDeposit)) {
-    throw new Error(`Payment amount bust be the same as initiator deposit ${stringify(params)}`);
-  }
 };

@@ -1,6 +1,6 @@
 import { MessagingService } from "@connext/messaging";
 import { LinkedTransferStatus, NodeResponses, SimpleLinkedTransferAppState } from "@connext/types";
-import { bigNumberifyJson, stringify } from "@connext/utils";
+import { bigNumberifyJson } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
@@ -45,33 +45,17 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     const latestState = bigNumberifyJson(senderApp.latestState) as SimpleLinkedTransferAppState;
     const { encryptedPreImage, recipient, ...meta } = senderApp.meta || ({} as any);
     return {
-      amount: latestState.amount,
-      assetId: latestState.assetId,
+      amount: latestState.coinTransfers[0].amount.isZero()
+        ? latestState.coinTransfers[1].amount
+        : latestState.coinTransfers[0].amount,
+      assetId: senderApp.initiatorDepositAssetId,
       createdAt: senderApp.createdAt,
       encryptedPreImage: encryptedPreImage,
       meta: meta || {},
-      paymentId: latestState.paymentId,
+      paymentId: paymentId,
       receiverIdentifier: recipient,
       senderIdentifier: senderApp.initiatorIdentifier,
       status,
-    };
-  }
-
-  async resolveLinkedTransfer(
-    pubId: string,
-    { paymentId }: { paymentId: string },
-  ): Promise<NodeResponses.ResolveLinkedTransfer> {
-    this.log.debug(`Got resolve link request with data: ${stringify(paymentId)}`);
-    if (!paymentId) {
-      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(paymentId)}`);
-    }
-    const response = await this.linkedTransferService.installLinkedTransferReceiverApp(
-      pubId,
-      paymentId,
-    );
-    return {
-      ...response,
-      amount: response.amount,
     };
   }
 
@@ -84,10 +68,10 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     return transfers.map((transfer) => {
       const state = bigNumberifyJson(transfer.latestState) as SimpleLinkedTransferAppState;
       return {
-        paymentId: state.paymentId,
+        paymentId: transfer.meta["paymentId"],
         createdAt: transfer.createdAt,
-        amount: state.amount,
-        assetId: state.assetId,
+        amount: transfer.initialState.coinTransfers[0].amount,
+        assetId: transfer.initiatorDepositAssetId,
         senderIdentifier: transfer.channel.userIdentifier,
         receiverIdentifier: transfer.meta["recipient"],
         status: LinkedTransferStatus.PENDING,
@@ -101,10 +85,6 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "*.transfer.get-linked",
       this.authService.parseIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
-    );
-    await super.connectRequestReponse(
-      "*.transfer.install-linked",
-      this.authService.parseIdentifier(this.resolveLinkedTransfer.bind(this)),
     );
     await super.connectRequestReponse(
       "*.transfer.get-pending",

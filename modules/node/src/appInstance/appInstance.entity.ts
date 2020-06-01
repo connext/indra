@@ -112,10 +112,7 @@ export class AppInstance<T extends AppName = any> {
   @Column("jsonb", { nullable: true })
   outcomeInterpreterParameters?: any;
 
-  @ManyToOne(
-    (type: any) => Channel,
-    (channel: Channel) => channel.appInstances,
-  )
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances)
   channel!: Channel;
 
   @CreateDateColumn()

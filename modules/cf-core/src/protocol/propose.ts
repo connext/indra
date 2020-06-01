@@ -8,14 +8,19 @@ import {
   ProtocolRoles,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime, toBN, stringify } from "@connext/utils";
+import {
+  appIdentityToHash,
+  getSignerAddressFromPublicIdentifier,
+  logTime,
+  stringify,
+  toBN,
+} from "@connext/utils";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import { AppInstance } from "../models";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
-import { appIdentityToHash } from "../utils";
 
 import { assertIsValidSignature } from "./utils";
 
@@ -33,7 +38,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const start = Date.now();
     let substart = start;
     const { processID, params } = message;
-    log.info(`[${processID}] Initiation started: ${stringify(params)}`);
+    log.info(`[${processID}] Initiation started`);
+    log.debug(`[${processID}] Initiation started: ${stringify(params)}`);
 
     const {
       abiEncodings,

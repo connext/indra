@@ -13,7 +13,6 @@ registry=$(shell cat $(dir)/package.json | grep '"registry":' | head -n 1 | cut 
 cwd=$(shell pwd)
 commit=$(shell git rev-parse HEAD | head -c 8)
 release=$(shell cat package.json | grep '"version"' | head -n 1 | cut -d '"' -f 4)
-solc_version=$(shell cat modules/contracts/package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # version that will be tested against for backwards compatibility checks
 backwards_compatible_version=$(shell cat package.json | grep '"backwardsCompatibleWith"' | head -n 1 | cut -d '"' -f 4)
@@ -66,10 +65,10 @@ start-prod:
 	bash ops/start-prod.sh
 
 start-bot: bot
-	bash ops/test/bot.sh 1 -1
+	bash ops/test/bot.sh 2 1000
 
 start-bot-farm: bot
-	bash ops/test/bot.sh 3 -1
+	bash ops/test/bot.sh 5 1000
 
 stop:
 	bash ops/stop.sh
@@ -94,7 +93,8 @@ clean: stop
 	rm -rf node_modules/@connext modules/*/node_modules/@connext
 	rm -rf node_modules/@walletconnect modules/*/node_modules/@walletconnect
 	rm -rf modules/*/node_modules/*/.git
-	rm -rf modules/*/build modules/*/dist docs/build
+	rm -rf modules/*/node_modules/.bin
+	rm -rf modules/contracts/artifacts modules/*/build modules/*/dist docs/build
 	rm -rf modules/*/.*cache* modules/*/node_modules/.cache modules/contracts/cache/*.json
 
 quick-reset:
@@ -213,7 +213,7 @@ watch-node: node
 
 builder: $(shell find ops/builder)
 	$(log_start)
-	docker build --file ops/builder/Dockerfile --build-arg SOLC_VERSION=$(solc_version) $(image_cache) --tag $(project)_builder ops/builder
+	docker build --file ops/builder/Dockerfile $(image_cache) --tag $(project)_builder ops/builder
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 node-modules: builder package.json $(shell ls modules/*/package.json)
@@ -252,6 +252,11 @@ utils: types $(shell find modules/utils $(find_options))
 	$(docker_run) "cd modules/utils && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
+bot-registry: types utils $(shell find modules/bot-registry $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/bot-registry && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
 channel-provider: types $(shell find modules/channel-provider $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/channel-provider && npm run build"
@@ -287,7 +292,7 @@ client: types utils channel-provider messaging store contracts cf-core apps $(sh
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-bot: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/bot $(find_options))
+bot: types utils bot-registry channel-provider messaging store contracts cf-core apps client $(shell find modules/bot $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/bot && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
@@ -323,7 +328,7 @@ database: $(shell find ops/database $(find_options))
 
 ethprovider: contracts $(shell find modules/contracts/ops $(find_options))
 	$(log_start)
-	docker build --file modules/contracts/ops/Dockerfile $(image_cache) --tag $(project)_ethprovider .
+	docker build --file modules/contracts/ops/Dockerfile $(image_cache) --tag $(project)_ethprovider modules/contracts
 	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 

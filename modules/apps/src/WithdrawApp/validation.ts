@@ -1,15 +1,15 @@
-import { MethodParams, WithdrawAppState } from "@connext/types";
-import { bigNumberifyJson, getSignerAddressFromPublicIdentifier, recoverAddressFromChannelMessage } from "@connext/utils";
+import { WithdrawAppState, ProtocolParams } from "@connext/types";
+import {
+  bigNumberifyJson,
+  getSignerAddressFromPublicIdentifier,
+  recoverAddressFromChannelMessage,
+} from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 
-export const validateWithdrawApp = async (
-  params: MethodParams.ProposeInstall,
-  initiatorIdentifier: string,
-  responderIdentifier: string,
-) => {
-  const { responderDeposit, initiatorDeposit } = params;
+export const validateWithdrawApp = async (params: ProtocolParams.Propose) => {
+  const { responderDeposit, initiatorDeposit, initiatorIdentifier, responderIdentifier } = params;
   const initialState = bigNumberifyJson(params.initialState) as WithdrawAppState;
 
   const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
@@ -50,7 +50,10 @@ export const validateWithdrawApp = async (
     );
   }
 
-  let recovered = await recoverAddressFromChannelMessage(initialState.data, initialState.signatures[0]);
+  let recovered = await recoverAddressFromChannelMessage(
+    initialState.data,
+    initialState.signatures[0],
+  );
 
   if (recovered !== initialState.signers[0]) {
     throw new Error(

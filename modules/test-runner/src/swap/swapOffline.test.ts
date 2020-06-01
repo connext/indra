@@ -3,6 +3,7 @@ import {
   ProtocolNames,
   ProtocolParams,
   IChannelSigner,
+  EventName,
   EventNames,
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";
@@ -27,7 +28,7 @@ import {
   CLIENT_INSTALL_FAILED,
 } from "../util";
 import { addressBook } from "@connext/contracts";
-import { getRandomChannelSigner } from "@connext/utils";
+import { getRandomChannelSigner, delay } from "@connext/utils";
 
 const fundChannelAndSwap = async (opts: {
   messagingConfig?: Partial<ClientTestMessagingInputOpts>;
@@ -35,7 +36,7 @@ const fundChannelAndSwap = async (opts: {
   outputAmount: BigNumber;
   tokenToEth?: boolean;
   failsWith?: string;
-  failureEvent?: EventNames;
+  failureEvent?: EventName;
   client?: IConnextClient;
   signer?: IChannelSigner;
   balanceUpdatedWithoutRetry?: boolean;
@@ -79,12 +80,8 @@ const fundChannelAndSwap = async (opts: {
       await new Promise(async (resolve, reject) => {
         client.once(failureEvent as any, (msg) => {
           try {
-            expect(msg).to.containSubset({
-              type: failureEvent,
-              from: client.publicIdentifier,
-            });
-            expect(msg.data.params).to.be.an("object");
-            expect(msg.data.error).to.include(failsWith);
+            expect(msg.params).to.be.an("object");
+            expect(msg.error).to.include(failsWith);
             return resolve(msg);
           } catch (e) {
             return reject(e.message);
@@ -100,6 +97,8 @@ const fundChannelAndSwap = async (opts: {
       });
     }
     await client.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
     // recreate client and retry swap after failure
     const recreated = await createClientWithMessagingLimits({ signer, store: client.store });
     if (balanceUpdatedWithoutRetry) {

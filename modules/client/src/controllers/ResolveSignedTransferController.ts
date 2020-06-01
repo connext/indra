@@ -16,7 +16,7 @@ export class ResolveSignedTransferController extends AbstractController {
     params: PublicParams.ResolveSignedTransfer,
   ): Promise<PublicResults.ResolveSignedTransfer> => {
     this.log.info(`resolveSignedTransfer started: ${stringify(params)}`);
-    const { paymentId, data, signature } = params;
+    const { paymentId, attestation } = params;
 
     const installedApps = await this.connext.getAppInstances();
     const existing = installedApps.find(
@@ -46,10 +46,10 @@ export class ResolveSignedTransferController extends AbstractController {
       }
       if (!alreadyFinalized) {
         this.log.debug(`Taking action on signed transfer app ${resolveRes.appIdentityHash}`);
-        await this.connext.takeAction(resolveRes.appIdentityHash, {
-          data,
-          signature,
-        } as SimpleSignedTransferAppAction);
+        await this.connext.takeAction(
+          resolveRes.appIdentityHash,
+          attestation as SimpleSignedTransferAppAction,
+        );
       }
       this.log.debug(`Uninstalling signed transfer app ${resolveRes.appIdentityHash}`);
       await this.connext.uninstallApp(resolveRes.appIdentityHash);

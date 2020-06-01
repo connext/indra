@@ -10,13 +10,13 @@ export async function handleRejectProposalMessage(
 ) {
   const { store } = requestHandler;
   const {
-    data: { appIdentityHash },
+    data: { appInstance },
   } = receivedRejectProposalMessage;
 
-  const json = await store.getStateChannelByAppIdentityHash(appIdentityHash);
+  const json = await store.getStateChannelByAppIdentityHash(appInstance.identityHash);
   if (!json) {
-    throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
+    throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appInstance.identityHash));
   }
-  const stateChannel = StateChannel.fromJson(json).removeProposal(appIdentityHash);
-  await store.removeAppProposal(stateChannel.multisigAddress, appIdentityHash);
+  const stateChannel = StateChannel.fromJson(json).removeProposal(appInstance.identityHash);
+  await store.removeAppProposal(stateChannel.multisigAddress, appInstance.identityHash);
 }

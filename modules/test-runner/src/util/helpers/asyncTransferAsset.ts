@@ -1,5 +1,5 @@
 import { EventNames, IConnextClient, LinkedTransferStatus, Address } from "@connext/types";
-import { ColorfulLogger, getRandomBytes32 } from "@connext/utils";
+import { ColorfulLogger, getRandomBytes32, stringify } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 
@@ -32,6 +32,7 @@ export async function asyncTransferAsset(
     return Promise.all([
       new Promise((resolve, reject) => {
         clientB.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
+          log.debug(`Got recipient transfer unlocked event with ${stringify(data)}`);
           expect(data.paymentId).to.be.ok;
           if (data.paymentId === paymentId) {
             expect(data).to.deep.include({
@@ -44,6 +45,7 @@ export async function asyncTransferAsset(
           }
         });
         clientB.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, (data) => {
+          log.debug(`Got recipient transfer failed event with ${stringify(data)}`);
           expect(data.paymentId).to.be.ok;
           expect(data.error).to.be.ok;
           if (data.paymentId === paymentId) {
@@ -53,10 +55,10 @@ export async function asyncTransferAsset(
       }),
       new Promise((resolve) => {
         clientA.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
+          log.debug(`Got sender transfer unlocked event with ${stringify(data)}`);
           if (data.paymentId === paymentId) {
             return resolve();
           }
-          // TODO: Sender/recipient are undefined here because https://github.com/ConnextProject/indra/issues/1054
         });
       }),
     ]);
@@ -111,7 +113,7 @@ export async function asyncTransferAsset(
     receiverIdentifier: clientB.publicIdentifier,
     senderIdentifier: clientA.publicIdentifier,
     status: LinkedTransferStatus.COMPLETED,
-    meta: { ...SENDER_INPUT_META, sender: clientA.publicIdentifier },
+    meta: { ...SENDER_INPUT_META, sender: clientA.publicIdentifier, paymentId },
   });
   expect(paymentA.encryptedPreImage).to.be.ok;
 

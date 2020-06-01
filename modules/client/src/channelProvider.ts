@@ -8,6 +8,7 @@ import {
   ConnextClientStorePrefix,
   ConnextEventEmitter,
   CreateChannelMessage,
+  EventName,
   EventNames,
   IChannelProvider,
   IChannelSigner,
@@ -32,7 +33,6 @@ import {
   stringify,
   getPublicKeyFromPublicIdentifier,
   toBN,
-  delay,
 } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -51,7 +51,7 @@ export const createCFChannelProvider = async ({
   } else {
     config = node.config;
   }
-  const contractAddresses = config.contractAddresses;
+  const { contractAddresses, supportedTokenAddresses } = config;
   const messaging = node.messaging;
   const nodeConfig = { STORE_KEY_PREFIX: ConnextClientStorePrefix };
   const lockService = {
@@ -97,7 +97,10 @@ export const createCFChannelProvider = async ({
   // register any default middlewares
   cfCore.injectMiddleware(
     Opcode.OP_VALIDATE,
-    await generateValidationMiddleware({ provider: ethProvider, contractAddresses }),
+    await generateValidationMiddleware(
+      { provider: ethProvider, contractAddresses },
+      supportedTokenAddresses,
+    ),
   );
 
   const connection = new CFCoreRpcConnection(cfCore, store, signer, node, logger);
@@ -191,16 +194,13 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     return result;
   }
 
-  public on = (
-    event: string | EventNames | MethodName,
-    listener: (...args: any[]) => void,
-  ): any => {
+  public on = (event: string | EventName | MethodName, listener: (...args: any[]) => void): any => {
     this.cfCore.on(event as any, listener);
     return this.cfCore;
   };
 
   public once = (
-    event: string | EventNames | MethodName,
+    event: string | EventName | MethodName,
     listener: (...args: any[]) => void,
   ): any => {
     this.cfCore.once(event as any, listener);

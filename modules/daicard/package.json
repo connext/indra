@@ -13,11 +13,11 @@
     "format": "prettier --write \"src/**/*.js\""
   },
   "dependencies": {
-    "@connext/client": "6.6.2",
-    "@connext/utils": "6.6.2",
-    "@connext/store": "6.6.2",
-    "@connext/types": "6.6.2",
-    "@material-ui/core": "4.9.11",
+    "@connext/client": "6.6.5",
+    "@connext/utils": "6.6.5",
+    "@connext/store": "6.6.5",
+    "@connext/types": "6.6.5",
+    "@material-ui/core": "4.10.0",
     "@material-ui/icons": "4.9.1",
     "@walletconnect/browser": "1.0.0-beta.47",
     "@walletconnect/channel-provider": "1.0.0-beta.47",
@@ -29,7 +29,7 @@
     "ethers": "4.0.47",
     "human-standard-token-abi": "2.0.0",
     "interval-promise": "1.4.0",
-    "mdi-material-ui": "6.13.2",
+    "mdi-material-ui": "6.15.0",
     "pisa-client": "0.1.5",
     "prop-types": "15.7.2",
     "qrcode.react": "1.0.0",
@@ -38,12 +38,12 @@
     "react-copy-to-clipboard": "5.0.2",
     "react-dom": "16.13.1",
     "react-qr-reader": "2.2.1",
-    "react-router-dom": "5.1.2",
+    "react-router-dom": "5.2.0",
     "react-scripts": "3.4.0",
-    "xstate": "4.9.1"
+    "xstate": "4.10.0"
   },
   "devDependencies": {
-    "bn.js": "5.1.1",
+    "bn.js": "5.1.2",
     "chai-bn": "0.2.1"
   },
   "browserslist": [

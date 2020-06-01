@@ -34,7 +34,7 @@ export class ResolveLinkedTransferController extends AbstractController {
       app.appInterface.addr === this.connext.appRegistry.find(
         (app) => app.name === SimpleLinkedTransferAppName,
       ).appDefinitionAddress &&
-      (app.latestState as SimpleLinkedTransferAppState).paymentId === paymentId &&
+      app.meta["paymentId"] === paymentId &&
       app.initiatorIdentifier !== this.connext.publicIdentifier,
     );
     let resolveRes: PublicResults.ResolveLinkedTransfer;

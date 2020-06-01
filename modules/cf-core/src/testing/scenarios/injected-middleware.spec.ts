@@ -5,7 +5,6 @@ import {
   ProtocolRoles,
   SetupMiddlewareContext,
   ValidationMiddleware,
-  CF_METHOD_TIMEOUT,
   EventNames,
 } from "@connext/types";
 import { CFCore } from "../../cfCore";
@@ -59,9 +58,7 @@ describe("injected validation middleware", () => {
   });
 
   it("protocol will fail if the validation middleware errors", async () => {
-    const initiatorFailure = `IO_SEND_AND_WAIT timed out after ${
-      CF_METHOD_TIMEOUT / 1000
-    }s waiting for counterparty reply in setup`;
+    const initiatorFailure = `IO_SEND_AND_WAIT timed out after 5s waiting for counterparty reply in setup`;
     const FAILURE_MESSAGE = "Middleware failed";
     const middleware: any = (protocol: any, context: any) => {
       throw new Error(FAILURE_MESSAGE);
