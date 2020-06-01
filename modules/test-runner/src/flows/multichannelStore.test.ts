@@ -3,7 +3,6 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   EventNames,
   PublicParams,
-  EventPayloads,
   ConditionalTransferTypes,
 } from "@connext/types";
 import { getPostgresStore } from "@connext/store";
@@ -165,20 +164,17 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     const TRANSFER_AMT = toBN(100);
 
     // register listener to resolve payment
-    recipient.once(
-      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-      async (payload: EventPayloads.SignedTransferCreated) => {
-        const data = hexlify(randomBytes(32));
-        const digest = solidityKeccak256(["bytes32", "bytes32"], [data, payload.paymentId]);
-        const signature = await recipient.signer.signMessage(digest);
-        await recipient.resolveCondition({
-          conditionType: ConditionalTransferTypes.SignedTransfer,
-          data,
-          paymentId: payload.paymentId,
-          signature,
-        } as PublicParams.ResolveSignedTransfer);
-      },
-    );
+    recipient.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
+      const data = hexlify(randomBytes(32));
+      const digest = solidityKeccak256(["bytes32", "bytes32"], [data, payload.paymentId]);
+      const signature = await recipient.signer.signMessage(digest);
+      await recipient.resolveCondition({
+        conditionType: ConditionalTransferTypes.SignedTransfer,
+        data,
+        paymentId: payload.paymentId,
+        signature,
+      } as PublicParams.ResolveSignedTransfer);
+    });
 
     await performConditionalTransfer({
       conditionType: ConditionalTransferTypes.SignedTransfer,
@@ -284,22 +280,19 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     let intervals = 0;
     let pollerError: any;
 
-    recipient.on(
-      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-      async (payload: EventPayloads.SignedTransferCreated) => {
-        console.log(`Got signed transfer event: ${payload.paymentId}`);
-        const data = hexlify(randomBytes(32));
-        const digest = solidityKeccak256(["bytes32", "bytes32"], [data, payload.paymentId]);
-        const signature = await recipient.signer.signMessage(digest);
-        await recipient.resolveCondition({
-          conditionType: ConditionalTransferTypes.SignedTransfer,
-          data,
-          paymentId: payload.paymentId,
-          signature,
-        } as PublicParams.ResolveSignedTransfer);
-        console.log(`Resolved signed transfer: ${payload.paymentId}`);
-      },
-    );
+    recipient.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
+      console.log(`Got signed transfer event: ${payload.paymentId}`);
+      const data = hexlify(randomBytes(32));
+      const digest = solidityKeccak256(["bytes32", "bytes32"], [data, payload.paymentId]);
+      const signature = await recipient.signer.signMessage(digest);
+      await recipient.resolveCondition({
+        conditionType: ConditionalTransferTypes.SignedTransfer,
+        data,
+        paymentId: payload.paymentId,
+        signature,
+      } as PublicParams.ResolveSignedTransfer);
+      console.log(`Resolved signed transfer: ${payload.paymentId}`);
+    });
 
     // call transfers on interval
     const start = Date.now();

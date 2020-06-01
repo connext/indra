@@ -4,12 +4,8 @@ import { AppInstanceProposal } from "./app";
 import { Address, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
 import {
   ConditionalTransferTypes,
-  CreatedHashLockTransferMeta,
-  CreatedLinkedTransferMeta,
-  CreatedSignedTransferMeta,
-  UnlockedLinkedTransferMeta,
-  UnlockedHashLockTransferMeta,
-  UnlockedSignedTransferMeta,
+  CreatedConditionalTransferMetaMap,
+  UnlockedConditionalTransferMetaMap,
 } from "./transfers";
 import { ProtocolParams } from "./protocol";
 import { ProtocolMessageData } from "./messaging";
@@ -27,19 +23,14 @@ const CONDITIONAL_TRANSFER_CREATED_EVENT = "CONDITIONAL_TRANSFER_CREATED_EVENT";
 
 export type ConditionalTransferCreatedEventData<T extends ConditionalTransferTypes> = {
   amount: BigNumber;
+  appIdentityHash: Bytes32;
   assetId: Address;
   paymentId?: Bytes32;
   sender: Address;
   recipient?: Address;
   meta: any;
   type: T;
-  transferMeta: T extends LinkedTransfer
-    ? CreatedLinkedTransferMeta
-    : T extends HashLockTransfer
-    ? CreatedHashLockTransferMeta
-    : T extends SignedTransfer
-    ? CreatedSignedTransferMeta
-    : {};
+  transferMeta: CreatedConditionalTransferMetaMap[T];
 };
 
 ////////////////////////////////////////
@@ -53,13 +44,7 @@ export type ConditionalTransferUnlockedEventData<T extends ConditionalTransferTy
   recipient?: PublicIdentifier;
   meta: any;
   type: T;
-  transferMeta: T extends LinkedTransfer
-    ? UnlockedLinkedTransferMeta
-    : T extends HashLockTransfer
-    ? UnlockedHashLockTransferMeta
-    : T extends SignedTransfer
-    ? UnlockedSignedTransferMeta
-    : {};
+  transferMeta: UnlockedConditionalTransferMetaMap[T];
 };
 
 ////////////////////////////////////////

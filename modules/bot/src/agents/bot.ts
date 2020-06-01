@@ -72,40 +72,38 @@ export default {
     await addAgentIdentifierToIndex(client.publicIdentifier);
 
     // Setup agent logic to respond to other agents' payments
-    client.on(
-      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-      async (eventData: EventPayloads.SignedTransferCreated) => {
-        // ignore transfers from self
-        if (eventData.sender === client.publicIdentifier) {
-          return;
-        }
+    client.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (eData) => {
+      const eventData = eData as EventPayloads.SignedTransferCreated;
+      // ignore transfers from self
+      if (eventData.sender === client.publicIdentifier) {
+        return;
+      }
 
-        log.debug(`Received transfer: ${stringify(eventData)}`);
+      log.debug(`Received transfer: ${stringify(eventData)}`);
 
-        if (client.signerAddress !== eventData.transferMeta.signer) {
-          log.error(
-            `Transfer's specified signer ${eventData.transferMeta.signer} does not match our signer ${client.signerAddress}`,
-          );
-          return;
-        }
-
-        const mockAttestation = hexlify(randomBytes(32));
-        const attestationHash = solidityKeccak256(
-          ["bytes32", "bytes32"],
-          [mockAttestation, eventData.paymentId],
+      if (client.signerAddress !== eventData.transferMeta.signer) {
+        log.error(
+          `Transfer's specified signer ${eventData.transferMeta.signer} does not match our signer ${client.signerAddress}`,
         );
-        const signature = await client.channelProvider.signMessage(attestationHash);
-        log.info(`Unlocking transfer with signature ${signature}`);
-        await client.resolveCondition({
-          conditionType: ConditionalTransferTypes.SignedTransfer,
-          paymentId: eventData.paymentId,
-          data: mockAttestation,
-          signature,
-        } as PublicParams.ResolveSignedTransfer);
+        return;
+      }
 
-        log.info(`Unlocked transfer ${eventData.paymentId} for (${eventData.amount} ETH)`);
-      },
-    );
+      const mockAttestation = hexlify(randomBytes(32));
+      const attestationHash = solidityKeccak256(
+        ["bytes32", "bytes32"],
+        [mockAttestation, eventData.paymentId],
+      );
+      const signature = await client.channelProvider.signMessage(attestationHash);
+      log.info(`Unlocking transfer with signature ${signature}`);
+      await client.resolveCondition({
+        conditionType: ConditionalTransferTypes.SignedTransfer,
+        paymentId: eventData.paymentId,
+        data: mockAttestation,
+        signature,
+      } as PublicParams.ResolveSignedTransfer);
+
+      log.info(`Unlocked transfer ${eventData.paymentId} for (${eventData.amount} ETH)`);
+    });
 
     let depositLock: boolean;
 

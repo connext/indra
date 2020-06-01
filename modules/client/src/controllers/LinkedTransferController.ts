@@ -108,6 +108,7 @@ export class LinkedTransferController extends AbstractController {
     const eventData = {
       type: ConditionalTransferTypes.LinkedTransfer,
       amount,
+      appIdentityHash,
       assetId,
       paymentId,
       sender: this.connext.publicIdentifier,

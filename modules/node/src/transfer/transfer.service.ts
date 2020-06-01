@@ -5,10 +5,10 @@ import {
   ConditionalTransferAppNames,
   AppStates,
   PublicResults,
-  SimpleLinkedTransferAppState,
   HashLockTransferAppState,
   CoinTransfer,
-  ProtocolParams,
+  GenericConditionalTransferAppName,
+  MethodParams,
 } from "@connext/types";
 import { stringify, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { TRANSFER_TIMEOUT, SupportedApplications } from "@connext/apps";
@@ -65,7 +65,7 @@ export class TransferService {
   // receivers are online if needed
   async transferAppInstallFlow(
     appIdentityHash: string,
-    proposeInstallParams: ProtocolParams.Propose,
+    proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
     installerChannel: Channel,
     transferType: ConditionalTransferAppNames,
@@ -73,13 +73,19 @@ export class TransferService {
     this.log.info(`Start transferAppInstallFlow for appIdentityHash ${appIdentityHash}`);
 
     const paymentId = proposeInstallParams.meta["paymentId"];
-    const allowed = getTransferTypeFromAppName(transferType);
+    const allowed = getTransferTypeFromAppName(transferType as SupportedApplications);
     // in the allow offline case, we want both receiver and sender apps to install in parallel
     // if allow offline, resolve after sender app install
     // if not, will be installed in middleware
     if (allowed === "AllowOffline") {
       try {
+        this.log.info(
+          `Installing sender app ${appIdentityHash} in channel ${installerChannel.multisigAddress}`,
+        );
         await this.cfCoreService.installApp(appIdentityHash, installerChannel.multisigAddress);
+        this.log.info(
+          `Sender app ${appIdentityHash} in channel ${installerChannel.multisigAddress} installed`,
+        );
       } catch (e) {
         throw e;
       }
@@ -89,7 +95,7 @@ export class TransferService {
     // https://github.com/ConnextProject/indra/issues/942
     this.installReceiverAppByPaymentId(
       from,
-      proposeInstallParams.meta["recipient"],
+      proposeInstallParams.meta.recipient,
       paymentId,
       proposeInstallParams.initiatorDepositAssetId,
       proposeInstallParams.initialState as AppStates[typeof transferType],
@@ -253,8 +259,7 @@ export class TransferService {
       throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
     }
 
-    const latestState = senderApp.latestState as SimpleLinkedTransferAppState;
-    if (latestState.preImage && latestState.preImage !== HashZero) {
+    if (senderApp.latestState.preImage && senderApp.latestState.preImage !== HashZero) {
       throw new Error(`Sender app has action, refusing to redeem`);
     }
 
@@ -263,16 +268,18 @@ export class TransferService {
       receiverIdentifier,
       paymentId,
       senderApp.initiatorDepositAssetId,
-      latestState,
+      senderApp.latestState,
       senderApp.meta,
       transferType,
     );
   }
 
-  async findSenderAppByPaymentId(paymentId: string): Promise<AppInstance> {
+  async findSenderAppByPaymentId<
+    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
+  >(paymentId: string): Promise<AppInstance<T>> {
     this.log.info(`findSenderAppByPaymentId ${paymentId} started`);
     // node receives from sender
-    const app = await this.transferRepository.findTransferAppByPaymentIdAndReceiver(
+    const app = await this.transferRepository.findTransferAppByPaymentIdAndReceiver<T>(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
     );
@@ -280,14 +287,16 @@ export class TransferService {
     return app;
   }
 
-  async findReceiverAppByPaymentId(paymentId: string): Promise<AppInstance> {
-    this.log.info(`findReceiverAppByPaymentId ${paymentId} started`);
+  async findReceiverAppByPaymentId<
+    T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
+  >(paymentId: string): Promise<AppInstance<T>> {
+    this.log.debug(`findReceiverAppByPaymentId ${paymentId} started`);
     // node sends to receiver
-    const app = await this.transferRepository.findTransferAppByPaymentIdAndSender(
+    const app = await this.transferRepository.findTransferAppByPaymentIdAndSender<T>(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
     );
-    this.log.info(`findReceiverAppByPaymentId ${paymentId} completed: ${JSON.stringify(app)}`);
+    this.log.debug(`findReceiverAppByPaymentId ${paymentId} completed: ${JSON.stringify(app)}`);
     return app;
   }
 }
