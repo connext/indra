@@ -46,6 +46,12 @@ export const cliOpts = {
     description: "The address to which funds will be sent",
     type: "string",
   },
+  force: {
+    alias: "force",
+    description: "Deploy contract even if it's already deployed",
+    type: "boolean",
+    deafult: false,
+  },
   tokenAddress: {
     alias: "token-address",
     description: "The address of the token",
