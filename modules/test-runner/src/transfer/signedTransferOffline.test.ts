@@ -26,6 +26,7 @@ import {
   BigNumber,
   ConditionalTransferTypes,
   EventNames,
+  EventName,
   ProtocolNames,
   IStoreService,
   PublicParams,
@@ -126,16 +127,16 @@ describe("Signed Transfer Offline", () => {
         return reject(new Error(msg.error));
       });
       receiver.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT, (msg) => {
-        return reject(new Error(msg.data.error));
+        return reject(new Error(msg.error));
       });
       receiver.once(EventNames.INSTALL_FAILED_EVENT, (msg) => {
-        return reject(new Error(msg.data.error));
+        return reject(new Error(msg.error));
       });
       receiver.once(EventNames.UPDATE_STATE_FAILED_EVENT, (msg) => {
-        return reject(new Error(msg.data.error));
+        return reject(new Error(msg.error));
       });
       receiver.once(EventNames.UNINSTALL_FAILED_EVENT, (msg) => {
-        return reject(new Error(msg.data.error));
+        return reject(new Error(msg.error));
       });
       if (sender) {
         sender.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (msg) => {
@@ -146,11 +147,11 @@ describe("Signed Transfer Offline", () => {
         });
         // add all sender failure events as well
         sender.once(EventNames.UPDATE_STATE_FAILED_EVENT, (msg) => {
-          return reject(new Error(msg.data.error));
+          return reject(new Error(msg.error));
         });
         sender.once(EventNames.UNINSTALL_FAILED_EVENT, (msg) => {
           console.log(`sender got uninstall failed event, rejecting`);
-          return reject(new Error(msg.data.error));
+          return reject(new Error(msg.error));
         });
       }
       try {
@@ -235,7 +236,7 @@ describe("Signed Transfer Offline", () => {
     receiver: IConnextClient;
     whichFails: "sender" | "receiver";
     error: string;
-    event?: EventNames;
+    event?: EventName;
     amount?: BigNumber;
     paymentId?: string;
   }): Promise<void> => {
@@ -250,12 +251,8 @@ describe("Signed Transfer Offline", () => {
     await new Promise(async (resolve, reject) => {
       failingClient.once(event as any, (msg) => {
         try {
-          expect(msg).to.containSubset({
-            type: event,
-            from: failingClient.publicIdentifier,
-          });
-          expect(msg.data.params).to.be.an("object");
-          expect(msg.data.error).to.include(error);
+          expect(msg.params).to.be.an("object");
+          expect(msg.error).to.include(error);
           return resolve(msg);
         } catch (e) {
           return reject(e.message);
@@ -278,7 +275,7 @@ describe("Signed Transfer Offline", () => {
     paymentId: string;
     whichFails: "sender" | "receiver";
     error: string;
-    event?: EventNames;
+    event?: EventName;
   }): Promise<void> => {
     const { sender, receiver, whichFails, error, event, paymentId } = opts;
     if (!event) {
@@ -289,12 +286,8 @@ describe("Signed Transfer Offline", () => {
     await new Promise(async (resolve, reject) => {
       failingClient.once(event as any, (msg) => {
         try {
-          expect(msg).to.containSubset({
-            type: event,
-            from: failingClient.publicIdentifier,
-          });
-          expect(msg.data.params).to.be.an("object");
-          expect(msg.data.error).to.include(error);
+          expect(msg.params).to.be.an("object");
+          expect(msg.error).to.include(error);
           return resolve(msg);
         } catch (e) {
           return reject(e.message);
@@ -325,7 +318,7 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       event: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
     });
-    await sender.removeAllListeners();
+    await sender.off();
     await sender.messaging.disconnect();
 
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
@@ -344,7 +337,7 @@ describe("Signed Transfer Offline", () => {
       whichFails: "sender",
       error: CLIENT_INSTALL_FAILED(true),
     });
-    await sender.removeAllListeners();
+    await sender.off();
     await sender.messaging.disconnect();
 
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
@@ -369,7 +362,7 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       event: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
     });
-    await receiver.removeAllListeners();
+    await receiver.off();
     await receiver.messaging.disconnect();
 
     await recreateClientAndRetryTransfer(
@@ -405,7 +398,7 @@ describe("Signed Transfer Offline", () => {
         reject(err);
       }
     });
-    await receiver.removeAllListeners();
+    await receiver.off();
     await receiver.messaging.disconnect();
 
     await recreateClientAndRetryTransfer(
@@ -433,7 +426,7 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.takeAction),
       event: EventNames.UPDATE_STATE_FAILED_EVENT,
     });
-    await receiver.removeAllListeners();
+    await receiver.off();
     await receiver.messaging.disconnect();
 
     await recreateClientAndRetryTransfer(
@@ -461,7 +454,7 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.uninstall),
       event: EventNames.UNINSTALL_FAILED_EVENT,
     });
-    await receiver.removeAllListeners();
+    await receiver.off();
     await receiver.messaging.disconnect();
 
     await recreateClientAndRetryTransfer("receiver", sender, receiverSigner, receiver.store);

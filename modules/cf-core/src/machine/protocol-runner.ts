@@ -10,7 +10,7 @@ import {
   ProtocolParam,
   ProtocolParams,
   EventNames,
-  Message,
+  ProtocolEventMessage,
 } from "@connext/types";
 import { v4 as uuid } from "uuid";
 
@@ -148,7 +148,7 @@ export function getOutgoingEventFailureDataFromProtocol(
   protocol: ProtocolName,
   params: ProtocolParam,
   error: Error,
-): Message {
+): ProtocolEventMessage<any> {
   const baseEvent = {
     from: params.initiatorIdentifier,
     data: {
@@ -200,6 +200,6 @@ export function getOutgoingEventFailureDataFromProtocol(
   }
 }
 
-export function emitOutgoingMessage(router: RpcRouter, msg: Message) {
+export function emitOutgoingMessage(router: RpcRouter, msg: ProtocolEventMessage<any>) {
   return router.emit(msg["type"], msg, "outgoing");
 }

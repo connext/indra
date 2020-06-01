@@ -1,9 +1,4 @@
-import {
-  CONVENTION_FOR_ETH_ASSET_ID,
-  InstallMessage,
-  ProposeMessage,
-  ProtocolParams,
-} from "@connext/types";
+import { CONVENTION_FOR_ETH_ASSET_ID, ProtocolParams, ProtocolEventMessage } from "@connext/types";
 import { delay, getAddressFromAssetId } from "@connext/utils";
 import { One } from "ethers/constants";
 import { BigNumber, isHexString } from "ethers/utils";
@@ -64,20 +59,23 @@ describe("Node method follows spec - install", () => {
 
         let proposeInstallParams: ProtocolParams.Propose;
 
-        nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
-          // Delay because propose event fires before params are set
-          await delay(1500);
-          [preInstallETHBalanceNodeA, preInstallETHBalanceNodeB] = await getBalances(
-            nodeA,
-            nodeB,
-            multisigAddress,
-            CONVENTION_FOR_ETH_ASSET_ID,
-          );
-          assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
-          await makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress);
-        });
+        nodeB.on(
+          "PROPOSE_INSTALL_EVENT",
+          async (msg: ProtocolEventMessage<"PROPOSE_INSTALL_EVENT">) => {
+            // Delay because propose event fires before params are set
+            await delay(1500);
+            [preInstallETHBalanceNodeA, preInstallETHBalanceNodeB] = await getBalances(
+              nodeA,
+              nodeB,
+              multisigAddress,
+              CONVENTION_FOR_ETH_ASSET_ID,
+            );
+            assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
+            await makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress);
+          },
+        );
 
-        nodeA.on("INSTALL_EVENT", async (msg: InstallMessage) => {
+        nodeA.on("INSTALL_EVENT", async (msg: ProtocolEventMessage<"INSTALL_EVENT">) => {
           const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
           const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
           expect(appInstanceNodeA).toBeDefined();
@@ -132,7 +130,7 @@ describe("Node method follows spec - install", () => {
 
         let proposedParams: ProtocolParams.Propose;
 
-        nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
+        nodeB.on("PROPOSE_INSTALL_EVENT", async (msg) => {
           // Delay because propose event fires before params are set
           await delay(2000);
           [preInstallERC20BalanceNodeA, preInstallERC20BalanceNodeB] = await getBalances(
@@ -142,10 +140,10 @@ describe("Node method follows spec - install", () => {
             assetId,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
-          makeInstallCall(nodeB, msg.data.appIdentityHash, multisigAddress);
+          makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress);
         });
 
-        nodeA.on("INSTALL_EVENT", async (msg: InstallMessage) => {
+        nodeA.on("INSTALL_EVENT", async (msg) => {
           const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
           const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
           expect(appInstanceNodeA).toEqual(appInstanceNodeB);

@@ -13,7 +13,6 @@ import {
   DefaultApp,
   DepositAppName,
   DepositAppState,
-  EventNames,
   IChannelProvider,
   IChannelSigner,
   IStoreService,
@@ -33,6 +32,8 @@ import {
   SimpleTwoPartySwapAppName,
   WithdrawalMonitorObject,
   WithdrawAppName,
+  EventName,
+  EventPayload,
 } from "@connext/types";
 import {
   delay,
@@ -487,27 +488,36 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // EVENT METHODS
 
-  public on = (event: EventNames, callback: (...args: any[]) => void): ConnextListener => {
-    return this.listener.on(event, callback);
+  public on = <T extends EventName>(
+    event: T,
+    callback: (payload: EventPayload[T]) => void | Promise<void>,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ) => {
+    this.listener.attach(event, callback, filter);
   };
 
-  public once = (event: EventNames, callback: (...args: any[]) => void): ConnextListener => {
-    return this.listener.once(event, callback);
+  public once = <T extends EventName>(
+    event: T,
+    callback: (payload: EventPayload[T]) => void | Promise<void>,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ) => {
+    this.listener.attachOnce(event, callback, filter);
   };
 
-  public removeAllListeners = (event?: EventNames): ConnextListener => {
-    return this.listener.removeAllListeners(event);
+  // TODO: allow for removing listeners attached via a specific event
+  // by manipulating the context of the events
+
+  public off = () => {
+    this.listener.detach();
   };
 
-  public emit = (event: EventNames, data: any): boolean => {
-    return this.listener.emit(event, data);
-  };
-
-  public removeListener = (
-    event: EventNames,
-    callback: (...args: any[]) => void,
-  ): ConnextListener => {
-    return this.listener.removeListener(event, callback);
+  public emit = <T extends EventName>(event: T, payload: EventPayload[T]): boolean => {
+    try {
+      this.listener.post(event, payload);
+      return true;
+    } catch (e) {
+      return false;
+    }
   };
 
   ///////////////////////////////////

@@ -3,7 +3,7 @@ import {
   ConnextEventEmitter,
   IMessagingService,
   MessagingConfig,
-  Message,
+  GenericMessage,
   VerifyNonceDtoType,
   IChannelSigner,
   ProtocolParam,
@@ -292,9 +292,9 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
   ////////////////////////////////////////
   // IMessagingService Methods
-  onReceive(subject: string, callback: (msg: Message) => void): Promise<void> {
+  onReceive(subject: string, callback: (msg: GenericMessage) => void): Promise<void> {
     // return connection callback
-    return this.connection.onReceive(subject, (msg: Message) => {
+    return this.connection.onReceive(subject, (msg: GenericMessage) => {
       const shouldContinue = this.emitEventAndIncrementApiCount(RECEIVED, {
         subject,
         data: msg,
@@ -327,7 +327,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     });
   }
 
-  send(to: string, msg: Message): Promise<void> {
+  send(to: string, msg: GenericMessage): Promise<void> {
     const shouldContinue = this.emitEventAndIncrementApiCount(SEND, {
       subject: to,
       data: msg,
@@ -392,8 +392,8 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     return this.connection.request(subject, timeout, data);
   }
 
-  subscribe(subject: string, callback: (msg: Message) => void): Promise<void> {
-    return this.connection.subscribe(subject, (msg: Message) => {
+  subscribe(subject: string, callback: (msg: GenericMessage) => void): Promise<void> {
+    return this.connection.subscribe(subject, (msg: GenericMessage) => {
       this.emitEventAndIncrementApiCount(SUBSCRIBE, { subject, data: msg } as MessagingEventData);
       return callback(msg);
     });
@@ -419,7 +419,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   // messaging limits have been reached.
   private incrementProtocolCount(
     protocol: ProtocolName,
-    msg: Message,
+    msg: GenericMessage,
     apiType: typeof SEND | typeof RECEIVED,
     shouldLog: boolean = false,
   ): boolean {

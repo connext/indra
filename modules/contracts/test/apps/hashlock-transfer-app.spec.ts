@@ -11,7 +11,7 @@ import { Contract, ContractFactory } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, soliditySha256, bigNumberify } from "ethers/utils";
 
-import LightningHTLCTransferApp from "../../build/HashLockTransferApp.json";
+import HashLockTransferApp from "../../build/HashLockTransferApp.json";
 
 import { expect, provider } from "../utils";
 
@@ -47,8 +47,8 @@ function createLockHash(preImage: string): string {
   return soliditySha256(["bytes32"], [preImage]);
 }
 
-describe("LightningHTLCTransferApp", () => {
-  let lightningHTLCTransferApp: Contract;
+describe("HashLockTransferApp", () => {
+  let HashLockTransferApp: Contract;
   let senderAddr: string;
   let receiverAddr: string;
   let transferAmount: BigNumber;
@@ -58,11 +58,11 @@ describe("LightningHTLCTransferApp", () => {
   let preState: HashLockTransferAppState;
 
   async function computeOutcome(state: HashLockTransferAppState): Promise<string> {
-    return lightningHTLCTransferApp.functions.computeOutcome(encodeAppState(state));
+    return HashLockTransferApp.functions.computeOutcome(encodeAppState(state));
   }
 
   async function applyAction(state: any, action: SolidityValueType): Promise<string> {
-    return lightningHTLCTransferApp.functions.applyAction(
+    return HashLockTransferApp.functions.applyAction(
       encodeAppState(state),
       encodeAppAction(action),
     );
@@ -82,9 +82,9 @@ describe("LightningHTLCTransferApp", () => {
 
   beforeEach(async () => {
     const wallet = (await provider.getWallets())[0];
-    lightningHTLCTransferApp = await new ContractFactory(
-      LightningHTLCTransferApp.abi,
-      LightningHTLCTransferApp.bytecode,
+    HashLockTransferApp = await new ContractFactory(
+      HashLockTransferApp.abi,
+      HashLockTransferApp.bytecode,
       wallet,
     ).deploy();
 

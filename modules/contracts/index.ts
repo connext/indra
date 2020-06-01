@@ -17,14 +17,11 @@ import * as MultiAssetMultiPartyCoinTransferInterpreter from "./build/MultiAsset
 import * as ProxyFactory from "./build/ProxyFactory.json";
 import * as SimpleLinkedTransferApp from "./build/SimpleLinkedTransferApp.json";
 import * as SimpleSignedTransferApp from "./build/SimpleSignedTransferApp.json";
-import * as SimpleTransferApp from "./build/SimpleTransferApp.json";
 import * as SimpleTwoPartySwapApp from "./build/SimpleTwoPartySwapApp.json";
 import * as SingleAssetTwoPartyCoinTransferInterpreter from "./build/SingleAssetTwoPartyCoinTransferInterpreter.json";
 import * as TicTacToeApp from "./build/TicTacToeApp.json";
 import * as TimeLockedPassThrough from "./build/TimeLockedPassThrough.json";
 import * as TwoPartyFixedOutcomeInterpreter from "./build/TwoPartyFixedOutcomeInterpreter.json";
-import * as UnidirectionalLinkedTransferApp from "./build/UnidirectionalLinkedTransferApp.json";
-import * as UnidirectionalTransferApp from "./build/UnidirectionalTransferApp.json";
 import * as WithdrawApp from "./build/WithdrawApp.json";
 
 export * from "./commitments";
@@ -45,13 +42,10 @@ export {
   ProxyFactory,
   SimpleLinkedTransferApp,
   SimpleSignedTransferApp,
-  SimpleTransferApp,
   SimpleTwoPartySwapApp,
   SingleAssetTwoPartyCoinTransferInterpreter,
   TicTacToeApp,
   TimeLockedPassThrough,
   TwoPartyFixedOutcomeInterpreter,
-  UnidirectionalLinkedTransferApp,
-  UnidirectionalTransferApp,
   WithdrawApp,
 };

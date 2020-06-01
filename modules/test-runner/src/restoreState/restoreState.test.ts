@@ -89,7 +89,7 @@ describe("Restore State", () => {
     // first clear the client store and take client offline
     await clientA.store.clear();
     await clientA.messaging.disconnect();
-    clientA.removeAllListeners(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT);
+    clientA.off();
 
     // send the transfer
     await Promise.all([
@@ -114,12 +114,9 @@ describe("Restore State", () => {
 
     // bring clientA back online
     await new Promise(async (resolve, reject) => {
-      clientA.on(
-        EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT,
-        (msg: EventPayloads.LinkedTransferFailed) => {
-          return reject(`${clientA.publicIdentifier} failed to transfer: ${stringify(msg)}`);
-        },
-      );
+      clientA.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, (msg) => {
+        return reject(`${clientA.publicIdentifier} failed to transfer: ${stringify(msg)}`);
+      });
       clientA = await createClient({
         signer: signerA,
         id: "A2",

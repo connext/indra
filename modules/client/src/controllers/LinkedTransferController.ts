@@ -18,7 +18,7 @@ import {
   toBN,
 } from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
-import { solidityKeccak256 } from "ethers/utils";
+import { soliditySha256 } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
 
@@ -51,14 +51,9 @@ export class LinkedTransferController extends AbstractController {
 
     submittedMeta.paymentId = paymentId;
 
-    const linkedHash = solidityKeccak256(
-      ["uint256", "address", "bytes32", "bytes32"],
-      [amount, assetId, paymentId, preImage],
-    );
+    const linkedHash = soliditySha256(["bytes32"], [preImage]);
 
     const initialState: SimpleLinkedTransferAppState = {
-      amount,
-      assetId,
       coinTransfers: [
         {
           amount,
@@ -70,8 +65,8 @@ export class LinkedTransferController extends AbstractController {
         },
       ],
       linkedHash,
-      paymentId,
       preImage: HashZero,
+      finalized: false
     };
 
     const network = await this.ethProvider.getNetwork();
@@ -113,6 +108,7 @@ export class LinkedTransferController extends AbstractController {
     const eventData = {
       type: ConditionalTransferTypes.LinkedTransfer,
       amount,
+      appIdentityHash,
       assetId,
       paymentId,
       sender: this.connext.publicIdentifier,

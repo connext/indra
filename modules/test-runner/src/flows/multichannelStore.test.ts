@@ -3,7 +3,6 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   EventNames,
   PublicParams,
-  EventPayloads,
   ConditionalTransferTypes,
   Address,
   PrivateKey,
@@ -202,28 +201,25 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     const verifyingContract = getTestVerifyingContract();
 
     // register listener to resolve payment
-    recipient.once(
-      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-      async (payload: EventPayloads.SignedTransferCreated) => {
-        const receipt = getTestReceiptToSign();
-        const { chainId } = await recipient.ethProvider.getNetwork();
-        const signature = await signReceiptMessage(
-          receipt,
-          chainId,
-          verifyingContract,
-          recipientPrivateKey,
-        );
-        const attestation = {
-          ...receipt,
-          signature,
-        };
-        await recipient.resolveCondition({
-          conditionType: ConditionalTransferTypes.SignedTransfer,
-          paymentId: payload.paymentId,
-          attestation,
-        } as PublicParams.ResolveSignedTransfer);
-      },
-    );
+    recipient.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
+      const receipt = getTestReceiptToSign();
+      const { chainId } = await recipient.ethProvider.getNetwork();
+      const signature = await signReceiptMessage(
+        receipt,
+        chainId,
+        verifyingContract,
+        recipientPrivateKey,
+      );
+      const attestation = {
+        ...receipt,
+        signature,
+      };
+      await recipient.resolveCondition({
+        conditionType: ConditionalTransferTypes.SignedTransfer,
+        paymentId: payload.paymentId,
+        attestation,
+      } as PublicParams.ResolveSignedTransfer);
+    });
 
     await performConditionalTransfer({
       conditionType: ConditionalTransferTypes.SignedTransfer,
@@ -330,31 +326,28 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     let intervals = 0;
     let pollerError: any;
 
-    recipient.on(
-      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-      async (payload: EventPayloads.SignedTransferCreated) => {
-        console.log(`Got signed transfer event: ${payload.paymentId}`);
-        const verifyingContract = getTestVerifyingContract();
-        const receipt = getTestReceiptToSign();
-        const { chainId } = await recipient.ethProvider.getNetwork();
-        const signature = await signReceiptMessage(
-          receipt,
-          chainId,
-          verifyingContract,
-          recipientPrivateKey,
-        );
-        const attestation = {
-          ...receipt,
-          signature,
-        };
-        await recipient.resolveCondition({
-          conditionType: ConditionalTransferTypes.SignedTransfer,
-          paymentId: payload.paymentId,
-          attestation,
-        } as PublicParams.ResolveSignedTransfer);
-        console.log(`Resolved signed transfer: ${payload.paymentId}`);
-      },
-    );
+    recipient.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
+      console.log(`Got signed transfer event: ${payload.paymentId}`);
+      const verifyingContract = getTestVerifyingContract();
+      const receipt = getTestReceiptToSign();
+      const { chainId } = await recipient.ethProvider.getNetwork();
+      const signature = await signReceiptMessage(
+        receipt,
+        chainId,
+        verifyingContract,
+        recipientPrivateKey,
+      );
+      const attestation = {
+        ...receipt,
+        signature,
+      };
+      await recipient.resolveCondition({
+        conditionType: ConditionalTransferTypes.SignedTransfer,
+        paymentId: payload.paymentId,
+        attestation,
+      } as PublicParams.ResolveSignedTransfer);
+      console.log(`Resolved signed transfer: ${payload.paymentId}`);
+    });
 
     // call transfers on interval
     const start = Date.now();
