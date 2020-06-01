@@ -11,7 +11,15 @@ import {
   SEND,
   CLIENT_INSTALL_FAILED,
 } from "../util";
-import { getRandomChannelSigner, toBN, getRandomBytes32 } from "@connext/utils";
+import {
+  toBN,
+  getRandomBytes32,
+  getTestVerifyingContract,
+  getTestReceiptToSign,
+  getRandomPrivateKey,
+  ChannelSigner,
+  signReceiptMessage,
+} from "@connext/utils";
 import {
   IChannelSigner,
   IConnextClient,
@@ -23,21 +31,28 @@ import {
   IStoreService,
   PublicParams,
   ProtocolParams,
+  PrivateKey,
+  JsonRpcProvider,
 } from "@connext/types";
 import { addressBook } from "@connext/contracts";
 import { Zero } from "ethers/constants";
-import { hexlify, solidityKeccak256 } from "ethers/utils";
 
 describe("Signed Transfer Offline", () => {
   const tokenAddress = addressBook[4447].Token.address;
   const addr = addressBook[4447].SimpleSignedTransferApp.address;
 
+  let senderPrivateKey: PrivateKey;
   let senderSigner: IChannelSigner;
+
+  let receiverPrivateKey: PrivateKey;
   let receiverSigner: IChannelSigner;
 
   beforeEach(async () => {
-    senderSigner = getRandomChannelSigner(env.ethProviderUrl);
-    receiverSigner = getRandomChannelSigner(env.ethProviderUrl);
+    senderPrivateKey = getRandomPrivateKey();
+    senderSigner = new ChannelSigner(senderPrivateKey, env.ethProviderUrl);
+
+    receiverPrivateKey = getRandomPrivateKey();
+    receiverSigner = new ChannelSigner(receiverPrivateKey, env.ethProviderUrl);
   });
 
   const createAndFundSender = async (
@@ -81,9 +96,19 @@ describe("Signed Transfer Offline", () => {
     resolves: boolean = true,
   ) => {
     const preTransferBalance = await receiver.getFreeBalance(tokenAddress);
-    const data = hexlify(getRandomBytes32());
-    const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = await receiverSigner.signMessage(digest);
+    const verifyingContract = getTestVerifyingContract();
+    const receipt = getTestReceiptToSign();
+    const { chainId } = await receiver.ethProvider.getNetwork();
+    const signature = await signReceiptMessage(
+      receipt,
+      chainId,
+      verifyingContract,
+      receiverPrivateKey,
+    );
+    const attestation = {
+      ...receipt,
+      signature,
+    };
     // node reclaims from sender
     const amount = await new Promise(async (resolve, reject) => {
       // register event listeners
@@ -133,8 +158,7 @@ describe("Signed Transfer Offline", () => {
         await receiver.resolveCondition({
           conditionType: ConditionalTransferTypes.SignedTransfer,
           paymentId,
-          data,
-          signature,
+          attestation,
         } as PublicParams.ResolveSignedTransfer);
         if (!resolves) {
           return reject(new Error(`Signed transfer successfully resolved`));
@@ -158,12 +182,15 @@ describe("Signed Transfer Offline", () => {
     paymentId: string = getRandomBytes32(),
   ) => {
     const preTransferSenderBalance = await sender.getFreeBalance(tokenAddress);
+    const { chainId } = await sender.ethProvider.getNetwork();
     await sender.conditionalTransfer({
       amount,
       paymentId,
       conditionType: ConditionalTransferTypes.SignedTransfer,
       assetId: tokenAddress,
-      signer: receiver.signerAddress,
+      signerAddress: receiver.signerAddress,
+      chainId,
+      verifyingContract: getTestVerifyingContract(),
       recipient: receiver.publicIdentifier,
     });
     const postTransferSenderBalance = await sender.getFreeBalance(tokenAddress);

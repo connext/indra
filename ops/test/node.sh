@@ -79,7 +79,7 @@ docker run \
   --network="$network" \
   --rm \
   --tmpfs="/data" \
-  trufflesuite/ganache-cli:v6.4.3 \
+  trufflesuite/ganache-cli:v6.9.1 \
     --db="/data" \
     --mnemonic="$eth_mnemonic" \
     --networkId="4447"

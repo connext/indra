@@ -660,9 +660,9 @@
     },
     "SimpleSignedTransferApp": {
       "address": "0xAa588d3737B611baFD7bD713445b314BD453a5C8",
-      "creationCodeHash": "0x6b439b8901f0f0dbebfa1e8b77642e16cff905ffaa1a8a1bd2168ee9c7697903",
-      "runtimeCodeHash": "0x3c02790a7e80585c9de7874ac18fe3a57acf76c04256d710ae3639dbc636acf3",
-      "txHash": "0xea36e1ddcc7b28993a80a6c0036eae2066bcfeb39d0561b77441902db243f025"
+      "creationCodeHash": "0xbe13da52337fe2ed40583e7dfcf2aaa7396673732dd6ea7d41008847d406fba3",
+      "runtimeCodeHash": "0xafd1e9e837dea718b21ca11f90143d6ab4600f1a750583f1d50ce100875a4823",
+      "txHash": "0xfebb5adbb607716bc98ce81ab7d2e950b5109140de82d123717b93bf53091827"
     },
     "DepositApp": {
       "address": "0x345cA3e014Aaf5dcA488057592ee47305D9B3e10",
