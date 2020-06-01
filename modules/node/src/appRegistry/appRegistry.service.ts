@@ -305,7 +305,15 @@ export class AppRegistryService implements OnModuleInit {
    * receiver app is uninstalled, it must be checked for the following case:
    * if !senderApp.latestState.finalized && receiverApp.latestState.finalized, then ERROR
    */
-  private uninstallTransferMiddleware = async (appInstance: AppInstanceJson) => {
+  private uninstallTransferMiddleware = async (
+    appInstance: AppInstanceJson,
+    role: ProtocolRoles,
+  ) => {
+    // if we initiated the protocol, we dont need to have this check
+    if (role === ProtocolRoles.initiator) {
+      return;
+    }
+
     const nodeSignerAddress = await this.configService.getSignerAddress();
     const senderAppLatestState = appInstance.latestState as GenericConditionalTransferAppState;
 
@@ -327,10 +335,20 @@ export class AppRegistryService implements OnModuleInit {
     this.log.info(`Starting uninstallTransferMiddleware for ${appInstance.identityHash}`);
 
     if (receiverApp.type !== AppType.UNINSTALLED) {
-      await this.cfCoreService.uninstallApp(
-        receiverApp.identityHash,
-        receiverApp.channel.multisigAddress,
+      this.log.info(
+        `Found receiver app ${receiverApp.identityHash} with type ${receiverApp.type}, attempting uninstall`,
       );
+      try {
+        await this.cfCoreService.uninstallApp(
+          receiverApp.identityHash,
+          receiverApp.channel.multisigAddress,
+        );
+        this.log.info(`Receiver app ${receiverApp.identityHash} uninstalled`);
+      } catch (e) {
+        this.log.error(
+          `Caught error uninstalling receiver app ${receiverApp.identityHash}: ${e.message}`,
+        );
+      }
       // TODO: can we optimize?
       // get new instance from store
       receiverApp = await this.transferService.findReceiverAppByPaymentId(
@@ -375,7 +393,7 @@ export class AppRegistryService implements OnModuleInit {
     const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
 
     if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo.name)) {
-      return this.uninstallTransferMiddleware(appInstance);
+      return this.uninstallTransferMiddleware(appInstance, role);
     }
 
     if (appRegistryInfo.name === DepositAppName) {
