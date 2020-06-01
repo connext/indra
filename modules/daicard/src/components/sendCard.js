@@ -123,6 +123,7 @@ export const SendCard = style(
       }
       paymentAction("DONE");
     };
+    window.paymentHandler = paymentHandler;
 
     const linkHandler = async () => {
       if (!channel || !token || amount.error) return;

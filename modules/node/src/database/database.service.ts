@@ -114,11 +114,18 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
     return {
       ...this.config.getPostgresConfig(),
       entities,
-      logging: ["error"],
+      logging: ["info"],
       migrations,
       migrationsRun: true,
       synchronize: false,
       type: "postgres",
+      cache: {
+        type: 'ioredis',
+        options: {
+          host: 'redis',
+          port: 6379
+        }
+      }
     };
   }
 }

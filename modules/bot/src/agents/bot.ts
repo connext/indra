@@ -53,8 +53,8 @@ export default {
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
 
-    const randomInterval = Math.round(argv.interval * 0.75 + Math.random() * (argv.interval * 0.5));
-    log.info(`Using random inteval: ${randomInterval}`);
+    const randomInterval = argv.interval;
+    log.info(`Using random interval: ${randomInterval}`);
 
     // Create agent client
     const client = await createClient(
@@ -96,6 +96,7 @@ export default {
         );
         const signature = await client.channelProvider.signMessage(attestationHash);
         log.info(`Unlocking transfer with signature ${signature}`);
+        const start = Date.now();
         await client.resolveCondition({
           conditionType: ConditionalTransferTypes.SignedTransfer,
           paymentId: eventData.paymentId,
@@ -103,14 +104,17 @@ export default {
           signature,
         } as PublicParams.ResolveSignedTransfer);
 
-        log.info(`Unlocked transfer ${eventData.paymentId} for (${eventData.amount} ETH)`);
+        log.info(`Unlocked transfer ${eventData.paymentId} for (${eventData.amount} ETH). Duration: ${Date.now() - start}`);
       },
     );
 
-    let depositLock: boolean;
+    if (argv.concurrencyIndex === '1') {
+      return;
+    }
 
+    let depositLock: boolean = false;
     // Setup agent logic to transfer on an interval
-    intervalPromise(async () => {
+    for (let i = 0; i < 10; i++) {
       log.debug(`Started interval`);
 
       // Deposit if agent is out of funds
@@ -122,7 +126,7 @@ export default {
         log.warn(
           `Balance too low: ${balance[
             client.signerAddress
-          ].toString()} < ${TRANSFER_AMT.toString()}, depositing...`,
+            ].toString()} < ${TRANSFER_AMT.toString()}, depositing...`,
         );
         try {
           await client.deposit({ amount: DEPOSIT_AMT, assetId: AddressZero });
@@ -151,6 +155,7 @@ export default {
 
         try {
           // Send transfer
+          const start = Date.now();
           log.info(`Starting transfer to ${receiverIdentifier} with signer ${receiverSigner}`);
           await client.conditionalTransfer({
             paymentId,
@@ -161,13 +166,11 @@ export default {
             recipient: receiverIdentifier,
             meta: { info: `Transfer from ${NAME}` },
           });
-          log.info(`Conditional transfer ${paymentId} sent`);
+          log.info(`Conditional transfer ${paymentId} sent. Elapsed: ${Date.now() - start}`);
         } catch (err) {
-          console.error(`Error sending tranfer: ${err.message}`);
+          console.error(`Error sending transfer: ${err.message}`);
         }
       }
-      // add slight randomness to interval so that it's somewhere between
-      // 75% and 125% of inputted argument
-    }, randomInterval);
+    }
   },
 };

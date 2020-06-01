@@ -150,6 +150,6 @@ async function runTakeActionProtocol(
       // TODO: Fetch the revert reason
       throw new Error(`${INVALID_ACTION}: ${e.message}`);
     }
-    throw new Error(`Couldn't run TakeAction protocol: ${e.message}`);
+    throw new Error(`Couldn't run TakeAction protocol: ${e.message}\n${e.stack}`);
   }
 }
