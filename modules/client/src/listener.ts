@@ -276,9 +276,12 @@ export class ConnextListener {
           if (!paymentId || !encryptedPreImage || !amount || !assetId) {
             throw new Error(`Unable to parse transfer details from message ${stringify(payload)}`);
           }
-          this.log.info(`Redeeming transfer with paymentId: ${paymentId}`);
-          await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
-          this.log.info(`Successfully redeemed transfer with paymentId: ${paymentId}`);
+          this.log.info(`Requesting install transfer with paymentId: ${paymentId}`);
+          await this.connext.node.installConditionalTransferReceiverApp(
+            paymentId,
+            ConditionalTransferTypes.LinkedTransfer,
+          );
+          this.log.info(`Successfully installed transfer with paymentId: ${paymentId}`);
         } catch (e) {
           this.log.error(
             `Error in event handler for CONDITIONAL_TRANSFER_CREATED_EVENT: ${e.message}`,

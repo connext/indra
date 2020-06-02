@@ -53,7 +53,7 @@ describe("Async Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it.only("happy case: client A transfers eth to client B through node", async () => {
+  it("happy case: client A transfers eth to client B through node", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
@@ -75,7 +75,7 @@ describe("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });
 
-  it.skip("happy case: client A transfers eth to offline client through node", async () => {
+  it("happy case: client A transfers eth to offline client through node", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -91,8 +91,7 @@ describe("Async Transfers", () => {
       recipient: receiver.publicIdentifier,
       paymentId,
     });
-    receiver = await createClient({ id: "C", signer: receiverPk, logLevel: 3 });
-    await delay(5000);
+    receiver = await createClient({ id: "C", signer: receiverPk });
 
     const { [receiver.signerAddress]: receiverFreeBalance } = await receiver.getFreeBalance(
       transfer.assetId,
@@ -100,7 +99,7 @@ describe("Async Transfers", () => {
     expect(receiverFreeBalance).to.eq(transfer.amount);
   });
 
-  it.only("happy case: client A successfully transfers to an address that doesn’t have a channel", async () => {
+  it("happy case: client A successfully transfers to an address that doesn’t have a channel", async () => {
     const receiverPk = getRandomPrivateKey();
     const receiverIdentifier = getPublicIdentifierFromPublicKey(
       getPublicKeyFromPrivateKey(receiverPk),
@@ -111,8 +110,7 @@ describe("Async Transfers", () => {
       assetId: tokenAddress,
       recipient: receiverIdentifier,
     });
-    const receiverClient = await createClient({ signer: receiverPk, logLevel: 3, id: "R" }, false);
-    await delay(5000);
+    const receiverClient = await createClient({ signer: receiverPk, id: "R" }, false);
     expect(receiverClient.publicIdentifier).to.eq(receiverIdentifier);
     const freeBalance = await receiverClient.getFreeBalance(tokenAddress);
     expect(freeBalance[receiverClient.signerAddress]).to.be.above(0);

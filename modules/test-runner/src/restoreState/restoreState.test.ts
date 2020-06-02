@@ -128,9 +128,6 @@ describe("Restore State", () => {
       return resolve();
     });
 
-    // TODO: we should not have to do this.
-    await delay(5000);
-
     const freeBalanceA = await clientA.getFreeBalance(assetId);
     expect(freeBalanceA[clientA.signerAddress]).to.be.eq(transferAmount);
   });
