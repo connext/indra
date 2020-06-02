@@ -63,6 +63,11 @@ export interface IConnextClient {
     callback: (payload: EventPayload[T]) => void | Promise<void>,
     filter?: (payload: EventPayload[T]) => boolean,
   ): void;
+  waitFor<T extends EventName>(
+    event: T,
+    timeout: number,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ): Promise<EventPayload[T]>;
   emit<T extends EventName>(event: T, payload: EventPayload[T]): boolean;
   off(): void;
 

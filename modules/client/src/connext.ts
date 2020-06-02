@@ -461,6 +461,14 @@ export class ConnextClient implements IConnextClient {
     this.listener.attachOnce(event, callback, filter);
   };
 
+  public waitFor<T extends EventName>(
+    event: T,
+    timeout: number,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ): Promise<EventPayload[T]> {
+    return this.listener.waitFor(event, timeout, filter);
+  }
+
   // TODO: allow for removing listeners attached via a specific event
   // by manipulating the context of the events
 
