@@ -17,9 +17,8 @@ import {
   signReceiptMessage,
   getRandomPrivateKey,
 } from "@connext/utils";
-import { AddressZero } from "ethers/constants";
-import { hexlify, randomBytes } from "ethers/utils";
-import { providers } from "ethers";
+
+import { providers, constants, utils } from "ethers";
 
 import {
   AssetOptions,
@@ -31,6 +30,9 @@ import {
   env,
   requestCollateral,
 } from "../util";
+
+const { AddressZero } = constants;
+const { hexlify, randomBytes } = utils;
 
 describe("Signed Transfers", () => {
   let privateKeyA: PrivateKey;

@@ -1,10 +1,11 @@
 import { getMemoryStore } from "@connext/store";
 import { ClientOptions } from "@connext/types";
-import { Wallet } from "ethers";
-import { AddressZero, One } from "ethers/constants";
+import { Wallet, constants, utils } from "ethers";
 
 import { createClient, expect, sendOnchainValue, env, fundChannel, ETH_AMOUNT_SM } from "../util";
-import { hexlify, randomBytes } from "ethers/utils";
+
+const { AddressZero, One } = constants;
+const { hexlify, randomBytes } = utils;
 
 describe("Client Connect", () => {
   it("Client should not rescind deposit rights if no transfers have been made to the multisig", async () => {
@@ -81,7 +82,7 @@ describe("Client Connect", () => {
     } else {
       messagingUrl = env.nodeUrl.replace("http://", "nats://").split(":8080")[0] + ":4222";
     }
-    let client = await createClient({
+    const client = await createClient({
       messagingUrl,
     });
     expect(client.publicIdentifier).to.be.ok;

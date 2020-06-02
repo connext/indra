@@ -1,11 +1,12 @@
 import { Button, InputAdornment, Modal, TextField, Tooltip } from "@material-ui/core";
-// import { arrayify, isHexString } from "ethers/utils";
 import React, { useEffect, useState } from "react";
 import QRIcon from "mdi-material-ui/QrcodeScan";
+import { utils } from "ethers";
 
 import { resolveAddress } from "../utils";
 import { QRScan } from "./qrCode";
-import { isHexString } from "ethers/utils";
+
+const { isHexString } = utils;
 
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -69,7 +70,7 @@ export const AddressInput = ({ address, setAddress }) => {
         label="Recipient Address"
         type="string"
         value={address.display || ""}
-        onChange={evt => setAddress(evt.target.value)}
+        onChange={(evt) => setAddress(evt.target.value)}
         margin="normal"
         variant="outlined"
         helperText={
@@ -117,7 +118,7 @@ export const AddressInput = ({ address, setAddress }) => {
         }}
       >
         <QRScan
-          handleResult={res => {
+          handleResult={(res) => {
             // Extract the address from a request link if necessary
             const i = res.indexOf("=address");
             if (i !== -1) {
@@ -183,7 +184,7 @@ export const PublicIdentifierInput = ({ address, setAddress }) => {
         label="Recipient Public Identifier"
         type="string"
         value={address.display || ""}
-        onChange={evt => setAddress(evt.target.value)}
+        onChange={(evt) => setAddress(evt.target.value)}
         margin="normal"
         variant="outlined"
         helperText={
@@ -231,7 +232,7 @@ export const PublicIdentifierInput = ({ address, setAddress }) => {
         }}
       >
         <QRScan
-          handleResult={res => {
+          handleResult={(res) => {
             // Extract the address from a request link if necessary
             const i = res.indexOf("=address");
             if (i !== -1) {

@@ -4,12 +4,14 @@ import {
   MultisigTransaction,
   ContractAddresses,
 } from "@connext/types";
-import { Interface } from "ethers/utils";
+import { utils } from "ethers";
 import { appIdentityToHash } from "@connext/utils";
 
 import * as ConditionalTransactionDelegateTarget from "../../artifacts/ConditionalTransactionDelegateTarget.json";
 
 import { MultisigCommitment } from "./multisig-commitment";
+
+const { Interface } = utils;
 
 const iface = new Interface(ConditionalTransactionDelegateTarget.abi as any);
 

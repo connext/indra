@@ -1,4 +1,5 @@
 import { getLocalStore } from "@connext/store";
+import { ERC20 } from "@connext/contracts";
 import {
   ClientOptions,
   IChannelProvider,
@@ -12,7 +13,6 @@ import {
 import { ChannelSigner, ConsoleLogger, logTime, stringify, delay } from "@connext/utils";
 
 import { Contract, providers } from "ethers";
-import tokenAbi from "human-standard-token-abi";
 
 import { ConnextClient } from "./connext";
 import { getDefaultOptions } from "./default";
@@ -114,7 +114,7 @@ export const connect = async (
   }
 
   // create a token contract based on the provided token
-  const token = new Contract(config.contractAddresses.Token, tokenAbi, ethProvider);
+  const token = new Contract(config.contractAddresses.Token, ERC20.abi, ethProvider);
 
   // create appRegistry
   const appRegistry = await node.appRegistry();

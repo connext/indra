@@ -7,10 +7,12 @@ import {
   PublicResults,
   HashLockTransferAppName,
 } from "@connext/types";
-import { soliditySha256 } from "ethers/utils";
+import { utils } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 import { stringify } from "@connext/utils";
+
+const { soliditySha256 } = utils;
 
 export class ResolveHashLockTransferController extends AbstractController {
   public resolveHashLockTransfer = async (

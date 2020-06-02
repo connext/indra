@@ -12,13 +12,16 @@ import {
   StoredAppChallengeStatus,
   StateProgressedEventData,
 } from "@connext/types";
+import { bigNumberifyJson, toBN } from "@connext/utils";
+import { constants } from "ethers";
+
 import { expect } from ".";
 import { AppWithCounterClass } from "./appWithCounter";
 import { MiniFreeBalance } from "./miniFreeBalance";
-import { bigNumberifyJson, toBN } from "@connext/utils";
 import { TestNetworkContext } from "./contracts";
-import { Zero } from "ethers/constants";
 import { verifyChallengeProgressedEvent } from "./assertions";
+
+const { Zero } = constants;
 
 export type OutcomeSetResults = [
   ChallengeOutcomeSetEventData,

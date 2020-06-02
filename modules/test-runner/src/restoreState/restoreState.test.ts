@@ -1,7 +1,7 @@
 import { getLocalStore } from "@connext/store";
-import { IConnextClient, IChannelSigner, EventNames, EventPayloads } from "@connext/types";
+import { IConnextClient, IChannelSigner, EventNames } from "@connext/types";
 import { getRandomChannelSigner, stringify, toBN } from "@connext/utils";
-import { AddressZero, Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import {
   expect,
@@ -14,6 +14,8 @@ import {
   getNatsClient,
 } from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
+
+const { AddressZero, Zero } = constants;
 
 describe("Restore State", () => {
   let clientA: IConnextClient;

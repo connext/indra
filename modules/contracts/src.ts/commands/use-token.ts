@@ -1,12 +1,12 @@
-import { JsonRpcProvider } from "ethers/providers";
 import { Argv } from "yargs";
+import { providers } from "ethers";
 
 import { getAddressBook } from "../address-book";
 import { cliOpts } from "../constants";
 import { getProvider } from "../utils";
 
 const useToken = async (
-  ethProvider: JsonRpcProvider,
+  ethProvider: providers.JsonRpcProvider,
   addressBookPath: string,
   tokenAddress: string,
 ) => {
@@ -26,11 +26,6 @@ export const useTokenCommand = {
       .demandOption(["t"]);
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
-    await useToken(
-      getProvider(argv.ethProvider),
-      argv.addressBook,
-      argv.tokenAddress,
-    );
+    await useToken(getProvider(argv.ethProvider), argv.addressBook, argv.tokenAddress);
   },
 };
-

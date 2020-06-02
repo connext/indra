@@ -1,3 +1,15 @@
+import { EventEmitter } from "events";
+import {
+  MethodParams,
+  JsonRpcProvider,
+  IStoreService,
+  EventNames,
+  StateChannelJSON,
+  ProtocolNames,
+} from "@connext/types";
+import { getMemoryStore } from "@connext/store";
+import { utils } from "ethers";
+
 import { env } from "../setup";
 import { CFCore } from "../../cfCore";
 import {
@@ -14,20 +26,11 @@ import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-s
 import { deBigNumberifyJson, ChannelSigner, delay } from "@connext/utils";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { TestContractAddresses } from "../contracts";
-import {
-  MethodParams,
-  JsonRpcProvider,
-  IStoreService,
-  EventNames,
-  StateChannelJSON,
-  ProtocolNames,
-} from "@connext/types";
-import { getMemoryStore } from "@connext/store";
 import { MemoryLockService } from "../services";
 import { Logger } from "../logger";
-import { EventEmitter } from "events";
 import { validAction } from "../tic-tac-toe";
-import { isHexString } from "ethers/utils";
+
+const { isHexString } = utils;
 
 const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 

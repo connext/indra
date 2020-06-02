@@ -1,5 +1,4 @@
-import { Wallet } from "ethers";
-import { parseEther } from "ethers/utils";
+import { Wallet, utils } from "ethers";
 import { Argv } from "yargs";
 
 import { getAddressBook } from "../address-book";
@@ -7,11 +6,9 @@ import { cliOpts } from "../constants";
 import { isContractDeployed, deployContract } from "../deploy";
 import { getProvider } from "../utils";
 
-const newToken = async (
-  wallet: Wallet,
-  addressBookPath: string,
-  force: boolean,
-) => {
+const { parseEther } = utils;
+
+const newToken = async (wallet: Wallet, addressBookPath: string, force: boolean) => {
   const chainId = (await wallet.provider.getNetwork()).chainId;
   const addressBook = getAddressBook(addressBookPath, chainId.toString());
   const savedAddress = addressBook.getEntry("Token").address;

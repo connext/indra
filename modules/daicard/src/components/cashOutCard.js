@@ -1,7 +1,7 @@
 import { inverse } from "@connext/utils";
 import { Button, CircularProgress, Grid, Typography, withStyles } from "@material-ui/core";
 import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
-import { AddressZero, Zero } from "ethers/constants";
+import { constants } from "ethers";
 import React, { useState } from "react";
 
 import EthIcon from "../assets/Eth.svg";
@@ -9,7 +9,9 @@ import DaiIcon from "../assets/dai.svg";
 
 import { useAddress, AddressInput } from "./input";
 
-const style = withStyles(theme => ({
+const { AddressZero, Zero } = constants;
+
+const style = withStyles((theme) => ({
   icon: {
     width: "40px",
     height: "40px",

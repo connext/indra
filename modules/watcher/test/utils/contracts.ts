@@ -14,15 +14,16 @@ import {
   TwoPartyFixedOutcomeInterpreter,
 } from "@connext/contracts";
 import { NetworkContext } from "@connext/types";
-import { ContractFactory, Wallet } from "ethers";
-import { JsonRpcProvider } from "ethers/providers";
-import { BigNumber, BigNumberish } from "ethers/utils";
+import { ContractFactory, Wallet, providers, utils } from "ethers";
 import { toBN } from "@connext/utils";
 import { expect } from "./assertions";
 
-export const moveToBlock = async (blockNumber: BigNumberish, provider: JsonRpcProvider) => {
-  const desired: BigNumber = toBN(blockNumber);
-  const current: BigNumber = toBN(await provider.getBlockNumber());
+export const moveToBlock = async (
+  blockNumber: utils.BigNumberish,
+  provider: providers.JsonRpcProvider,
+) => {
+  const desired: utils.BigNumber = toBN(blockNumber);
+  const current: utils.BigNumber = toBN(await provider.getBlockNumber());
   if (current.gt(desired)) {
     throw new Error(
       `Already at block ${current.toNumber()}, cannot rewind to ${blockNumber.toString()}`,
@@ -34,29 +35,26 @@ export const moveToBlock = async (blockNumber: BigNumberish, provider: JsonRpcPr
   for (const _ of Array(desired.sub(current).toNumber())) {
     await mineBlock(provider);
   }
-  const final: BigNumber = toBN(await provider.getBlockNumber());
+  const final: utils.BigNumber = toBN(await provider.getBlockNumber());
   expect(final).to.be.eq(desired);
 };
 
-export const mineBlock = (provider: JsonRpcProvider) => {
-  return new Promise(async resolve => {
+export const mineBlock = (provider: providers.JsonRpcProvider) => {
+  return new Promise(async (resolve) => {
     provider.once("block", () => resolve());
     await provider.send("evm_mine", []);
   });
 };
 
-
 export type TestNetworkContext = NetworkContext & {
-  provider: JsonRpcProvider;
+  provider: providers.JsonRpcProvider;
   WithdrawApp: string;
   DepositApp: string;
   AppWithAction: string;
   Token: string;
 };
 
-export const deployTestArtifactsToChain = async (
-  wallet: Wallet,
-): Promise<TestNetworkContext> => {
+export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<TestNetworkContext> => {
   const depositAppContract = await new ContractFactory(
     DepositApp.abi,
     DepositApp.bytecode,
@@ -75,11 +73,7 @@ export const deployTestArtifactsToChain = async (
     wallet,
   ).deploy();
 
-  const token = await new ContractFactory(
-    ERC20.abi,
-    ERC20.bytecode,
-    wallet,
-  ).deploy("", "");
+  const token = await new ContractFactory(ERC20.abi, ERC20.bytecode, wallet).deploy("", "");
 
   const appWithCounter = await new ContractFactory(
     AppWithAction.abi,
@@ -137,7 +131,7 @@ export const deployTestArtifactsToChain = async (
 
   return {
     AppWithAction: appWithCounter.address,
-    provider: wallet.provider as JsonRpcProvider,
+    provider: wallet.provider as providers.JsonRpcProvider,
     ChallengeRegistry: challengeRegistry.address,
     ConditionalTransactionDelegateTarget: conditionalTransactionDelegateTarget.address,
     DepositApp: depositAppContract.address,

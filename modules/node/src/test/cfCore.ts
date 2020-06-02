@@ -13,11 +13,17 @@ import {
   StoredAppChallenge,
   StoredAppChallengeStatus,
 } from "@connext/types";
-import { deBigNumberifyJson, getRandomBytes32, getRandomAddress, getRandomChannelSigner } from "@connext/utils";
-import { AddressZero, HashZero, Zero, One } from "ethers/constants";
-import { Wallet } from "ethers";
-import { hexlify, bigNumberify } from "ethers/utils";
+import {
+  deBigNumberifyJson,
+  getRandomBytes32,
+  getRandomAddress,
+  getRandomChannelSigner,
+} from "@connext/utils";
+import { Wallet, constants, utils } from "ethers";
 import { randomBytes } from "crypto";
+
+const { AddressZero, HashZero, Zero, One } = constants;
+const { hexlify, bigNumberify } = utils;
 
 export const generateRandomAddress = () => Wallet.createRandom().address;
 
@@ -176,7 +182,7 @@ export const createStateProgressedEventPayload = (
 ): StateProgressedEventPayload => {
   return {
     identityHash: getRandomBytes32(),
-    action:"0x",
+    action: "0x",
     versionNumber: One,
     timeout: Zero,
     turnTaker: getRandomAddress(),

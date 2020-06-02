@@ -9,7 +9,7 @@ import {
   ChallengeProgressionFailedEventData,
   IStoreService,
 } from "@connext/types";
-import { Wallet } from "ethers";
+import { Wallet, constants } from "ethers";
 
 import {
   setupContext,
@@ -29,8 +29,9 @@ import {
 import { Watcher } from "../src";
 import { ChannelSigner, getRandomAddress, ColorfulLogger, toBN } from "@connext/utils";
 import { initiateDispute, OutcomeSetResults } from "./utils/initiateDispute";
-import { One } from "ethers/constants";
 import { cancelDispute } from "./utils/cancelDispute";
+
+const { One } = constants;
 
 describe("Watcher.init", () => {
   let provider: JsonRpcProvider;
@@ -146,14 +147,7 @@ describe("Watcher.initiate", () => {
       // logger: new ColorfulLogger("Watcher", 5, true, ""),
     });
     const [initiateRes, contractEvent] = await Promise.all([
-      initiateDispute(
-        activeApps[0],
-        freeBalance,
-        watcher,
-        store,
-        networkContext,
-        true,
-      ),
+      initiateDispute(activeApps[0], freeBalance, watcher, store, networkContext, true),
       new Promise((resolve) =>
         watcher.once(WatcherEvents.StateProgressedEvent, async (data: StateProgressedEventData) =>
           resolve(data),

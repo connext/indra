@@ -1,15 +1,16 @@
 import { ChallengeRegistry } from "@connext/contracts";
 import { ContractAddresses } from "@connext/types";
 import { getRandomAddress, toBN } from "@connext/utils";
-import { Contract, Wallet } from "ethers";
-import { WeiPerEther, AddressZero } from "ethers/constants";
+import { Contract, Wallet, constants, utils } from "ethers";
 
 import { SetStateCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
 
 import { toBeEq } from "../bignumber-jest-matcher";
 import { getRandomChannelSigners } from "../random-signing-keys";
-import { getAddress } from "ethers/utils";
+
+const { WeiPerEther, AddressZero } = constants;
+const { getAddress } = utils;
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
@@ -25,7 +26,9 @@ beforeAll(async () => {
   wallet = global["wallet"];
   contracts = global["contracts"];
   if (!contracts) {
-    throw new Error(`Contracts missing: ${JSON.stringify(global["contracts"])} | ${Object.keys(global)}`);
+    throw new Error(
+      `Contracts missing: ${JSON.stringify(global["contracts"])} | ${Object.keys(global)}`,
+    );
   }
   console.log(``);
   appRegistry = new Contract(contracts.ChallengeRegistry, ChallengeRegistry.abi, wallet);
@@ -35,7 +38,7 @@ beforeAll(async () => {
  * @summary Setup a StateChannel then set state on ETH Free Balance
  */
 describe("set state on free balance", () => {
-  it("should have the correct versionNumber", async done => {
+  it("should have the correct versionNumber", async (done) => {
     const [initiatorNode, responderNode] = getRandomChannelSigners(2);
     // State channel testing values
     let stateChannel = StateChannel.setupChannel(
