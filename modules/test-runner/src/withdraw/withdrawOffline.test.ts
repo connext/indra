@@ -8,8 +8,7 @@ import {
   ProtocolParams,
 } from "@connext/types";
 import { getRandomChannelSigner, delay } from "@connext/utils";
-import { BigNumber } from "ethers/utils";
-import { AddressZero } from "ethers/constants";
+import { constants, utils } from "ethers";
 import {
   ClientTestMessagingInputOpts,
   createClient,
@@ -28,13 +27,15 @@ import {
 } from "../util";
 import { addressBook } from "@connext/contracts";
 
+const { AddressZero } = constants;
+
 describe("Withdraw offline tests", () => {
   let signer: IChannelSigner;
   const addr = addressBook[4447].WithdrawApp.address;
 
   const createAndFundChannel = async (
     messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
-    amount: BigNumber = ETH_AMOUNT_SM,
+    amount: utils.BigNumber = ETH_AMOUNT_SM,
     assetId: string = AddressZero,
   ): Promise<IConnextClient> => {
     const client = await createClientWithMessagingLimits({
@@ -184,7 +185,7 @@ describe("Withdraw offline tests", () => {
       }),
       // make sure the onchain tx was submitted successfully
       new Promise(async (resolve) => {
-        ethProvider.on(client.multisigAddress, (balance: BigNumber) => {
+        ethProvider.on(client.multisigAddress, (balance: utils.BigNumber) => {
           if (!balance.eq(startingBalance)) {
             resolve();
           }

@@ -1,7 +1,6 @@
 import { AppChallenge, ChallengeStatus } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { Wallet } from "ethers";
-import { BigNumberish } from "ethers/utils";
+import { Wallet, utils } from "ethers";
 
 import { setupContext } from "../context";
 import {
@@ -15,7 +14,6 @@ import {
 } from "../utils";
 
 describe("LibStateChannelApp", () => {
-
   let wallet: Wallet;
 
   let snapshotId: any;
@@ -26,7 +24,7 @@ describe("LibStateChannelApp", () => {
   let alice: Wallet;
 
   // helpers
-  let hasPassed: (timeout: BigNumberish) => Promise<boolean>;
+  let hasPassed: (timeout: utils.BigNumberish) => Promise<boolean>;
   let isDisputable: (challenge?: AppChallenge) => Promise<boolean>;
   let setState: (versionNumber: number) => Promise<void>;
   let verifyChallenge: (expected: Partial<AppChallenge>) => Promise<void>;
@@ -56,8 +54,8 @@ describe("LibStateChannelApp", () => {
     isDisputable = context["isDisputable"];
     setState = context["setStateAndVerify"];
     verifyChallenge = context["verifyChallenge"];
-    setAndProgressState = 
-      (versionNumber: number, action?: AppWithCounterAction) => context["setAndProgressStateAndVerify"](
+    setAndProgressState = (versionNumber: number, action?: AppWithCounterAction) =>
+      context["setAndProgressStateAndVerify"](
         versionNumber,
         context["state0"],
         action || context["action"],
@@ -183,32 +181,20 @@ describe("LibStateChannelApp", () => {
 
   describe("verifySignatures", () => {
     it("should fail if signatures.length !== signers.length", async () => {
-      await expect(
-        verifySignatures(
-          undefined,
-          undefined,
-          [alice.address],
-        ),
-      ).to.be.revertedWith("Signers and signatures should be of equal length");
+      await expect(verifySignatures(undefined, undefined, [alice.address])).to.be.revertedWith(
+        "Signers and signatures should be of equal length",
+      );
     });
 
     it("should fail if the signers are not sorted", async () => {
       await expect(
-        verifySignatures(
-          undefined, 
-          undefined, 
-          [bob.address, alice.address],
-        ),
+        verifySignatures(undefined, undefined, [bob.address, alice.address]),
       ).to.be.revertedWith("Invalid signature");
     });
 
     it("should fail if the signer is invalid", async () => {
       await expect(
-        verifySignatures(
-          undefined, 
-          undefined, 
-          [wallet.address, bob.address],
-        ),
+        verifySignatures(undefined, undefined, [wallet.address, bob.address]),
       ).to.be.revertedWith("Invalid signature");
     });
 

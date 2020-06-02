@@ -1,9 +1,9 @@
-import { Contract, ContractFactory, Wallet } from "ethers";
-import { Provider } from "ethers/providers";
-import { keccak256 } from "ethers/utils";
+import { Contract, ContractFactory, Wallet, providers, utils } from "ethers";
 
 import { AddressBook } from "./address-book";
 import { artifacts } from "./artifacts";
+
+const { keccak256 } = utils;
 
 const hash = (input: string): string => keccak256(`0x${input.replace(/^0x/, "")}`);
 
@@ -12,7 +12,7 @@ export const isContractDeployed = async (
   name: string,
   address: string | undefined,
   addressBook: AddressBook,
-  provider: Provider,
+  provider: providers.Provider,
 ): Promise<boolean> => {
   console.log(`Checking for valid ${name} contract...`);
   if (!address || address === "") {

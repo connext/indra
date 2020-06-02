@@ -8,8 +8,7 @@ import {
   SignatureString,
   UrlString,
 } from "@connext/types";
-import { Wallet } from "ethers";
-import { TransactionResponse, TransactionRequest, JsonRpcProvider } from "ethers/providers";
+import { Wallet, providers } from "ethers";
 
 import {
   decrypt,
@@ -28,7 +27,7 @@ export class ChannelSigner implements IChannelSigner {
   public address: Address;
   public publicIdentifier: PublicIdentifier;
   public publicKey: PublicKey;
-  public readonly provider?: JsonRpcProvider;
+  public readonly provider?: providers.JsonRpcProvider;
 
   // NOTE: without this property, the Signer.isSigner
   // function will not return true, even though this class
@@ -37,7 +36,7 @@ export class ChannelSigner implements IChannelSigner {
   private readonly _ethersType = "Signer";
 
   constructor(private readonly privateKey: PrivateKey, ethProviderUrl?: UrlString) {
-    this.provider = !!ethProviderUrl ? new JsonRpcProvider(ethProviderUrl) : undefined;
+    this.provider = !!ethProviderUrl ? new providers.JsonRpcProvider(ethProviderUrl) : undefined;
     this.privateKey = privateKey;
     this.publicKey = getPublicKeyFromPrivateKey(privateKey);
     this.address = getAddressFromPublicKey(this.publicKey);
@@ -58,7 +57,9 @@ export class ChannelSigner implements IChannelSigner {
     return signChannelMessage(message, this.privateKey);
   }
 
-  public async sendTransaction(transaction: TransactionRequest): Promise<TransactionResponse> {
+  public async sendTransaction(
+    transaction: providers.TransactionRequest,
+  ): Promise<providers.TransactionResponse> {
     if (!this.provider) {
       throw new Error(
         `ChannelSigner can't send transactions without being connected to a provider`,

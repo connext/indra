@@ -6,8 +6,7 @@ import {
   EventNames,
 } from "@connext/types";
 import { delay, toBN } from "@connext/utils";
-import { Contract } from "ethers";
-import { AddressZero, Zero, One } from "ethers/constants";
+import { Contract, constants } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
 import {
@@ -21,6 +20,8 @@ import {
 } from "../util";
 import { createClient } from "../util/client";
 import { getOnchainBalance, ethProvider } from "../util/ethprovider";
+
+const { AddressZero, Zero, One } = constants;
 
 describe("Deposits", () => {
   let client: IConnextClient;

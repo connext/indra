@@ -2,7 +2,7 @@
 
 Like [web3.js](https://web3js.readthedocs.io/) or [ethers](https://docs.ethers.io), the Connext client is a collection of libraries that allow you to interact with a local or remote Connext node.
 
-This quickstart will guide you through instantiating the Connext client with a randomly generated private key in a web environment to get basic Connext functionality (deposits, swaps, transfers, withdrawals) working as quickly as possible. 
+This quickstart will guide you through instantiating the Connext client with a randomly generated private key in a web environment to get basic Connext functionality (deposits, swaps, transfers, withdrawals) working as quickly as possible.
 
 Instantiating with a private key _should not_ be used in production environments - once you get through this guide, we recommend looking through the [React Native Integration](../how-to/integrate-react-native) guide for better patterns.
 
@@ -10,7 +10,7 @@ We will connect to a testnet (Rinkeby) node hosted at `https://rinkeby.indra.con
 
 ## Setting up a Channel
 
-First install the client library in your project root directory using  NPM or Yarn:
+First install the client library in your project root directory using NPM or Yarn:
 
 ```sh
 npm install --save @connext/client
@@ -20,15 +20,15 @@ npm install --save @connext/client
 yarn add @connext/client
 ```
 
-
 Then import it and setup a channel by calling `connext.connect()`
 
 ```javascript
 import * as connext from "@connext/client";
 
-const channel = await connext.connect("rinkeby")
+const channel = await connext.connect("rinkeby");
 ```
-This will create a channel for you using a private key randomly generated from inside the client. 
+
+This will create a channel for you using a private key randomly generated from inside the client.
 
 If you're using React, it can be helpful to set up your channel and save the instance to state in `componentDidMount` (or even better, in a [React hook](https://reactjs.org/docs/hooks-intro.html)).
 
@@ -38,12 +38,11 @@ After instantiating and starting Connext, you can deposit into a channel with `c
 
 ```javascript
 // Making a deposit in ETH
-import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 const payload: AssetAmount = {
-  amount: parseEther("0.1").toString(), // in wei/wad (ethers.js methods are very convenient for getting wei amounts)
-  assetId: AddressZero // Use the AddressZero constant from ethers.js to represent ETH, or enter the token address
+  amount: utils.parseEther("0.1").toString(), // in wei/wad
+  assetId: constants.AddressZero, // Use constants.AddressZero to represent ETH or enter the token address
 };
 
 channel.deposit(payload);
@@ -59,13 +58,12 @@ Make an in-channel swap:
 
 ```javascript
 // Exchanging Wei for Dai
-import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { constants, utils } from  "ethers"
 
 const payload: SwapParams = {
-  amount: parseEther("0.1").toString() // in wei (ethers.js methods are very convenient for getting wei amounts)
+  amount: utils.parseEther("0.1").toString() // in wei/wad
   toAssetId: "0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359" // Dai
-  fromAssetId: AddressZero // ETH
+  fromAssetId: constants.AddressZero // ETH
 }
 
 await channel.swap(payload)
@@ -77,14 +75,13 @@ You can now instantly make a transfer to any other client connected to the testn
 
 ```javascript
 // Transferring ETH
-import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 const payload: TransferParams = {
   recipient: "indraZTSVFe...", // counterparty's public identifier
   meta: { value: "Metadata for transfer" }, // any arbitrary JSON data, or omit
-  amount: parseEther("0.1").toString(), // in wei (ethers.js methods are very convenient for getting wei amounts)
-  assetId: AddressZero // ETH
+  amount: utils.parseEther("0.1").toString(), // in wei/wad
+  assetId: constants.AddressZero, // ETH
 };
 
 await channel.transfer(payload);
@@ -96,13 +93,12 @@ Users can withdraw funds to any recipient address with `channel.withdraw()`. The
 
 ```javascript
 // Withdrawing ETH
-import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { constants, utils } from  "ethers"
 
 const payload: WithdrawParams = {
   recipient: // defaults to signer address but can be changed to withdraw to any recipient
-  amount: parseEther("0.1").toString() // in wei (ethers.js methods are very convenient for getting wei amounts)
-  assetId: AddressZero
+  amount: utils.parseEther("0.1").toString() // in wei/wad
+  assetId: constants.AddressZero
 }
 
 await channel.withdraw(payload)

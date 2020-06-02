@@ -22,11 +22,13 @@ import {
 } from "@connext/types";
 import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import pWaterfall from "p-waterfall";
+import { constants, utils } from "ethers";
 
 import { storeKeys } from "../constants";
 import { WrappedStorage } from "../types";
-import { defaultAbiCoder } from "ethers/utils";
-import { Zero } from "ethers/constants";
+
+const { Zero } = constants;
+const { defaultAbiCoder } = utils;
 
 const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
   return {

@@ -1,13 +1,20 @@
-import { AppInstanceJson, IConnextClient, DepositAppState, DepositAppName, DefaultApp } from "@connext/types";
+import {
+  AppInstanceJson,
+  IConnextClient,
+  DepositAppState,
+  DepositAppName,
+  DefaultApp,
+} from "@connext/types";
 import { delay } from "@connext/utils";
-import { Contract } from "ethers";
-import { AddressZero, Zero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import { Contract, constants, utils } from "ethers";
+
 import tokenAbi from "human-standard-token-abi";
 
 import { expect } from "../";
 import { ethProvider } from "../ethprovider";
 
+const { AddressZero, Zero } = constants;
+const { bigNumberify } = utils;
 
 export const requestDepositRights = async (
   client: IConnextClient,
@@ -23,12 +30,10 @@ export const requestDepositRights = async (
         );
   // get coin balance app details
   const network = await ethProvider.getNetwork();
-  const {
-    appDefinitionAddress: appDefinition,
-  } = await client.getAppRegistry({
+  const { appDefinitionAddress: appDefinition } = (await client.getAppRegistry({
     name: DepositAppName,
     chainId: network.chainId,
-  }) as DefaultApp;
+  })) as DefaultApp;
   // install the app and get the state
   let depositApp: DepositAppState;
   if (clientIsRecipient) {
@@ -60,16 +65,14 @@ export const requestDepositRights = async (
       ]),
     ]);
     depositApp = latestState as DepositAppState;
-  };
+  }
   // verify the latest deposit state is correct
   expect(depositApp.multisigAddress).to.be.eq(client.multisigAddress);
   expect(depositApp.assetId).to.be.eq(assetId);
   expect(bigNumberify(depositApp.startingMultisigBalance).toString()).to.be.eq(
     multisigBalance.toString(),
   );
-  expect(bigNumberify(depositApp.startingTotalAmountWithdrawn).toString()).to.be.eq(
-    Zero,
-  );
+  expect(bigNumberify(depositApp.startingTotalAmountWithdrawn).toString()).to.be.eq(Zero);
   const transfers = depositApp.transfers;
   expect(transfers[0].amount).to.be.eq(Zero);
   expect(transfers[1].amount).to.be.eq(Zero);

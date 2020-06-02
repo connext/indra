@@ -1,14 +1,15 @@
 import { getRandomAddress } from "@connext/utils";
-import { Contract, ContractFactory } from "ethers";
-import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { Contract, ContractFactory, utils } from "ethers";
 
 import { SimpleTwoPartySwapApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 
+const { defaultAbiCoder } = utils;
+
 type CoinTransfer = {
   to: string;
-  amount: BigNumber;
+  amount: utils.BigNumber;
 };
 
 type SimpleSwapAppState = {
@@ -52,8 +53,8 @@ describe("SimpleTwoPartySwapApp", () => {
     it("can compute outcome with update", async () => {
       const senderAddr = getRandomAddress();
       const receiverAddr = getRandomAddress();
-      const tokenAmt = new BigNumber(10000);
-      const ethAmt = new BigNumber(500);
+      const tokenAmt = new utils.BigNumber(10000);
+      const ethAmt = new utils.BigNumber(500);
 
       const preState: SimpleSwapAppState = {
         coinTransfers: [

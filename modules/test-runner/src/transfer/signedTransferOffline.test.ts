@@ -32,10 +32,11 @@ import {
   PublicParams,
   ProtocolParams,
   PrivateKey,
-  JsonRpcProvider,
 } from "@connext/types";
 import { addressBook } from "@connext/contracts";
-import { Zero } from "ethers/constants";
+import { constants } from "ethers";
+
+const { Zero } = constants;
 
 describe("Signed Transfer Offline", () => {
   const tokenAddress = addressBook[4447].Token.address;

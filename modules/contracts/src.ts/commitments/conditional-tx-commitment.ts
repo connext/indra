@@ -3,13 +3,14 @@ import {
   MultisigOperation,
   ContractAddresses,
 } from "@connext/types";
-
-import { AddressZero } from "ethers/constants";
-import { Interface } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import * as ConditionalTransactionDelegateTarget from "../../artifacts/ConditionalTransactionDelegateTarget.json";
 
 import { MultisigCommitment } from "./multisig-commitment";
+
+const { AddressZero } = constants;
+const { Interface } = utils;
 
 const iface = new Interface(ConditionalTransactionDelegateTarget.abi as any);
 

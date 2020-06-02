@@ -8,13 +8,14 @@ import {
   singleAssetTwoPartyCoinTransferEncoding,
   SolidityValueType,
 } from "@connext/types";
-import { Contract, ContractFactory } from "ethers";
-import { Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, soliditySha256, bigNumberify } from "ethers/utils";
+import { Contract, ContractFactory, constants, utils } from "ethers";
 
 import { HashLockTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
+
+const { Zero } = constants;
+const { defaultAbiCoder, soliditySha256, bigNumberify } = utils;
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
@@ -43,10 +44,10 @@ describe("HashLockTransferApp", () => {
   let hashLockTransferApp: Contract;
   let senderAddr: string;
   let receiverAddr: string;
-  let transferAmount: BigNumber;
+  let transferAmount: utils.BigNumber;
   let preImage: string;
   let lockHash: string;
-  let expiry: BigNumber;
+  let expiry: utils.BigNumber;
   let preState: HashLockTransferAppState;
 
   const computeOutcome = async (state: HashLockTransferAppState): Promise<string> => {
@@ -60,10 +61,7 @@ describe("HashLockTransferApp", () => {
     );
   };
 
-  const validateOutcome = async (
-    encodedTransfers: string,
-    postState: HashLockTransferAppState,
-  ) => {
+  const validateOutcome = async (encodedTransfers: string, postState: HashLockTransferAppState) => {
     const decoded = decodeTransfers(encodedTransfers);
     expect(encodedTransfers).to.eq(encodeAppState(postState, true));
     expect(decoded[0].to).eq(postState.coinTransfers[0].to);
@@ -82,7 +80,7 @@ describe("HashLockTransferApp", () => {
 
     senderAddr = getRandomAddress();
     receiverAddr = getRandomAddress();
-    transferAmount = new BigNumber(10000);
+    transferAmount = new utils.BigNumber(10000);
     preImage = getRandomBytes32();
     lockHash = createLockHash(preImage);
     expiry = bigNumberify(await provider.getBlockNumber()).add(100);

@@ -1,4 +1,5 @@
 import { Ctx } from "evt";
+import { providers } from "ethers";
 
 import { AppInstanceProposal } from "./app";
 import { Address, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
@@ -11,7 +12,6 @@ import { ProtocolParams } from "./protocol";
 import { ProtocolMessageData } from "./messaging";
 import { PublicParams } from "./public";
 import { MinimalTransaction } from "./commitments";
-import { TransactionResponse } from "ethers/providers";
 import { StateChannelJSON } from "./state";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
@@ -171,7 +171,7 @@ type UpdateStateFailedEventData = {
 const WITHDRAWAL_CONFIRMED_EVENT = "WITHDRAWAL_CONFIRMED_EVENT";
 
 type WithdrawalConfirmedEventData = {
-  transaction: TransactionResponse;
+  transaction: providers.TransactionResponse;
 };
 
 ////////////////////////////////////////
