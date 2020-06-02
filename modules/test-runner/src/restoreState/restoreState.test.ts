@@ -120,7 +120,6 @@ describe("Restore State", () => {
       clientA = await createClient({
         signer: signerA,
         id: "A2",
-        logLevel: 3,
       });
       expect(clientA.signerAddress).to.be.eq(signerA.address);
       expect(clientA.publicIdentifier).to.be.eq(signerA.publicIdentifier);
