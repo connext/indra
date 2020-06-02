@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
-import { BigNumber } from "ethers/utils";
+import { utils } from "ethers";
+
 import { Channel } from "../channel/channel.entity";
 
 @Entity()
@@ -9,11 +10,11 @@ export class WithdrawCommitment {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => new BigNumber(value),
-      to: (value: BigNumber): string => value.toString(),
+      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
+      to: (value: utils.BigNumber): string => value.toString(),
     },
   })
-  value!: BigNumber;
+  value!: utils.BigNumber;
 
   @Column("text")
   to: string;
@@ -21,9 +22,6 @@ export class WithdrawCommitment {
   @Column("text")
   data!: string;
 
-  @ManyToOne(
-    (type: any) => Channel,
-    (channel: Channel) => channel.withdrawalCommitments,
-  )
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.withdrawalCommitments)
   channel!: Channel;
 }

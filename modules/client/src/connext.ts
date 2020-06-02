@@ -1,3 +1,4 @@
+import { ERC20 } from "@connext/contracts";
 import {
   Address,
   AppAction,
@@ -42,11 +43,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   stringify,
 } from "@connext/utils";
-import { Contract, providers } from "ethers";
-import { AddressZero } from "ethers/constants";
-import { TransactionResponse } from "ethers/providers";
-import { BigNumber, bigNumberify, Network, Transaction, soliditySha256 } from "ethers/utils";
-import tokenAbi from "human-standard-token-abi";
+import { Contract, providers, constants, utils } from "ethers";
 
 import {
   DepositController,
@@ -59,6 +56,9 @@ import { ConnextListener } from "./listener";
 import { InternalClientOptions } from "./types";
 import { NodeApiClient } from "./node";
 
+const { AddressZero } = constants;
+const { bigNumberify, soliditySha256 } = utils;
+
 export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
   public channelProvider: IChannelProvider;
@@ -68,7 +68,7 @@ export class ConnextClient implements IConnextClient {
   public log: ILoggerService;
   public messaging: IMessagingService;
   public multisigAddress: Address;
-  public network: Network;
+  public network: utils.Network;
   public node: INodeApiClient;
   public nodeIdentifier: string;
   public nodeSignerAddress: string;
@@ -364,11 +364,11 @@ export class ConnextClient implements IConnextClient {
   // this function should be called when the user knows a withdrawal should
   // be submitted. if there is no withdrawal expected, this promise will last
   // for the duration of the timeout
-  public watchForUserWithdrawal = async (): Promise<TransactionResponse[]> => {
+  public watchForUserWithdrawal = async (): Promise<providers.TransactionResponse[]> => {
     // poll for withdrawal tx submitted to multisig matching tx data
     const maxBlocks = 15;
     const startingBlock = await this.ethProvider.getBlockNumber();
-    const transactions: TransactionResponse[] = [];
+    const transactions: providers.TransactionResponse[] = [];
 
     try {
       await new Promise((resolve: any, reject: any): any => {
@@ -519,8 +519,8 @@ export class ConnextClient implements IConnextClient {
         // but need the nodes free balance
         // address in the multisig
         const obj = {};
-        obj[this.nodeSignerAddress] = new BigNumber(0);
-        obj[this.signerAddress] = new BigNumber(0);
+        obj[this.nodeSignerAddress] = new utils.BigNumber(0);
+        obj[this.signerAddress] = new utils.BigNumber(0);
         return obj;
       }
       throw e;
@@ -559,7 +559,7 @@ export class ConnextClient implements IConnextClient {
   public takeAction = async (
     appIdentityHash: string,
     action: AppAction,
-    stateTimeout?: BigNumber,
+    stateTimeout?: utils.BigNumber,
   ): Promise<MethodResults.TakeAction> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appIdentityHash);
@@ -671,7 +671,7 @@ export class ConnextClient implements IConnextClient {
   // LOW LEVEL METHODS
 
   public matchTx = (
-    givenTransaction: Transaction | undefined,
+    givenTransaction: utils.Transaction | undefined,
     expected: MinimalTransaction,
   ): boolean => {
     return (
@@ -789,7 +789,7 @@ export class ConnextClient implements IConnextClient {
       const currentMultisigBalance =
         assetId === AddressZero
           ? await this.ethProvider.getBalance(this.multisigAddress)
-          : await new Contract(assetId, tokenAbi, this.ethProvider).functions.balanceOf(
+          : await new Contract(assetId, ERC20.abi, this.ethProvider).functions.balanceOf(
               this.multisigAddress,
             );
 
@@ -808,7 +808,7 @@ export class ConnextClient implements IConnextClient {
       // there is still an active deposit, setup a listener to
       // rescind deposit rights when deposit is sent to multisig
       if (assetId === AddressZero) {
-        this.ethProvider.on(this.multisigAddress, async (balance: BigNumber) => {
+        this.ethProvider.on(this.multisigAddress, async (balance: utils.BigNumber) => {
           if (balance.gt((latestState as DepositAppState).startingMultisigBalance)) {
             await this.rescindDepositRights({ assetId, appIdentityHash });
             this.ethProvider.removeAllListeners(this.multisigAddress);
@@ -817,13 +817,15 @@ export class ConnextClient implements IConnextClient {
         continue;
       }
 
-      new Contract(assetId, tokenAbi, this.ethProvider).once(
+      new Contract(assetId, ERC20.abi, this.ethProvider).once(
         "Transfer",
-        async (sender: string, recipient: string, amount: BigNumber) => {
+        async (sender: string, recipient: string, amount: utils.BigNumber) => {
           if (recipient === this.multisigAddress && amount.gt(0)) {
-            const bal = await new Contract(assetId, tokenAbi, this.ethProvider).functions.balanceOf(
-              this.multisigAddress,
-            );
+            const bal = await new Contract(
+              assetId,
+              ERC20.abi,
+              this.ethProvider,
+            ).functions.balanceOf(this.multisigAddress);
             if (bal.gt((latestState as DepositAppState).startingMultisigBalance)) {
               await this.rescindDepositRights({ assetId, appIdentityHash });
             }
@@ -869,7 +871,7 @@ export class ConnextClient implements IConnextClient {
 
   private checkForUserWithdrawals = async (
     inBlock: number,
-  ): Promise<[WithdrawalMonitorObject, TransactionResponse][]> => {
+  ): Promise<[WithdrawalMonitorObject, providers.TransactionResponse][]> => {
     const vals = await this.getUserWithdrawals();
     if (vals.length === 0) {
       this.log.error("No transaction found in store.");
@@ -878,7 +880,7 @@ export class ConnextClient implements IConnextClient {
 
     const getTransactionResponse = async (
       tx: MinimalTransaction,
-    ): Promise<TransactionResponse | undefined> => {
+    ): Promise<providers.TransactionResponse | undefined> => {
       // get the transaction hash that we should be looking for from
       // the contract method
       const txsTo = await this.ethProvider.getTransactionCount(tx.to, inBlock);
@@ -901,7 +903,7 @@ export class ConnextClient implements IConnextClient {
       return undefined;
     };
 
-    let responses = [];
+    const responses = [];
     for (const val of vals) {
       responses.push([val, await getTransactionResponse(val.tx)]);
     }

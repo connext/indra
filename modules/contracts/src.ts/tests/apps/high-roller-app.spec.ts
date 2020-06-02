@@ -1,12 +1,13 @@
 /* global before */
 import { SolidityValueType, TwoPartyFixedOutcome } from "@connext/types";
-import { Contract, ContractFactory } from "ethers";
-import { HashZero } from "ethers/constants";
-import { defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
+import { Contract, ContractFactory, constants, utils } from "ethers";
 
 import { HighRollerApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
+
+const { HashZero } = constants;
+const { defaultAbiCoder, solidityKeccak256 } = utils;
 
 /// Returns the commit hash that can be used to commit to chosenNumber
 /// using appSalt

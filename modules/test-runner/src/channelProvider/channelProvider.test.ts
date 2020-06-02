@@ -1,6 +1,6 @@
 import { EventNames, IConnextClient, CONVENTION_FOR_ETH_ASSET_ID } from "@connext/types";
 import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { AddressZero, One } from "ethers/constants";
+import { constants } from "ethers";
 
 import {
   AssetOptions,
@@ -14,6 +14,8 @@ import {
   TOKEN_AMOUNT,
   withdrawFromChannel,
 } from "../util";
+
+const { AddressZero, One } = constants;
 
 describe("ChannelProvider", () => {
   let client: IConnextClient;

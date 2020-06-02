@@ -1,14 +1,15 @@
 import { IMessagingService, IStoreService } from "@connext/types";
 import { ChannelSigner } from "@connext/utils";
 import { Wallet } from "ethers";
-import { JsonRpcProvider, TransactionRequest } from "ethers/providers";
-import { parseEther } from "ethers/utils";
+import { providers, utils } from "ethers";
 
 import { CFCore } from "../cfCore";
 
 import { MemoryLockService, MemoryMessagingService, MemoryStoreServiceFactory } from "./services";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY, C_PRIVATE_KEY } from "./test-constants.jest";
 import { Logger } from "./logger";
+
+const { parseEther } = utils;
 
 export const env = {
   logLevel: process.env.LOG_LEVEL ? parseInt(process.env.LOG_LEVEL, 10) : 0,
@@ -34,7 +35,7 @@ export async function setup(
 
   const nodeConfig = { STORE_KEY_PREFIX: "test" };
   const ethUrl = global["wallet"]["provider"].connection.url;
-  const provider = new JsonRpcProvider(ethUrl);
+  const provider = new providers.JsonRpcProvider(ethUrl);
   const prvKeyA = A_PRIVATE_KEY;
   let prvKeyB = B_PRIVATE_KEY;
 
@@ -113,11 +114,14 @@ export async function setup(
   return setupContext;
 }
 
-export async function generateNewFundedWallet(fundedPrivateKey: string, provider: JsonRpcProvider) {
+export async function generateNewFundedWallet(
+  fundedPrivateKey: string,
+  provider: providers.JsonRpcProvider,
+) {
   const fundedWallet = new Wallet(fundedPrivateKey, provider);
   const wallet = Wallet.createRandom().connect(provider);
 
-  const transactionToA: TransactionRequest = {
+  const transactionToA: providers.TransactionRequest = {
     to: wallet.address,
     value: parseEther("20").toHexString(),
   };
@@ -127,17 +131,17 @@ export async function generateNewFundedWallet(fundedPrivateKey: string, provider
 
 export async function generateNewFundedExtendedPrvKeys(
   fundedPrivateKey: string,
-  provider: JsonRpcProvider,
+  provider: providers.JsonRpcProvider,
 ) {
   const fundedWallet = new Wallet(fundedPrivateKey, provider);
   const walletA = Wallet.createRandom();
   const walletB = Wallet.createRandom();
 
-  const transactionToA: TransactionRequest = {
+  const transactionToA: providers.TransactionRequest = {
     to: walletA.address,
     value: parseEther("1").toHexString(),
   };
-  const transactionToB: TransactionRequest = {
+  const transactionToB: providers.TransactionRequest = {
     to: walletB.address,
     value: parseEther("1").toHexString(),
   };

@@ -12,8 +12,7 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { HashZero, Zero, AddressZero } from "ethers/constants";
-import { bigNumberify, hexlify, randomBytes } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
@@ -26,6 +25,9 @@ import { OnchainTransactionService } from "../onchainTransactions/onchainTransac
 
 import { WithdrawRepository } from "./withdraw.repository";
 import { Withdraw } from "./withdraw.entity";
+
+const { HashZero, Zero, AddressZero } = constants;
+const { bigNumberify, hexlify, randomBytes } = utils;
 
 @Injectable()
 export class WithdrawService {

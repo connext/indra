@@ -38,13 +38,13 @@
     "yargs": "15.3.1"
   },
   "devDependencies": {
-    "@nomiclabs/buidler": "1.3.4",
+    "@nomiclabs/buidler": "1.3.5",
     "@nomiclabs/buidler-ethers": "1.3.3",
-    "@nomiclabs/buidler-waffle": "1.3.3",
+    "@nomiclabs/buidler-waffle": "1.3.4",
     "@types/chai": "4.2.11",
     "@types/chai-subset": "1.3.3",
     "@types/mocha": "7.0.2",
-    "@types/node": "14.0.6",
+    "@types/node": "14.0.9",
     "@types/sinon-chai": "3.2.4",
     "chai": "4.2.0",
     "ethereum-waffle": "2.5.1",

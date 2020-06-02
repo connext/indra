@@ -15,13 +15,14 @@ import {
   getRandomBytes32,
   getAddressFromPrivateKey,
 } from "@connext/utils";
-import { Contract, ContractFactory } from "ethers";
-import { Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { Contract, ContractFactory, constants, utils } from "ethers";
 
 import { SimpleSignedTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
+
+const { Zero } = constants;
+const { defaultAbiCoder } = utils;
 
 function mkAddress(prefix: string = "0xa"): string {
   return prefix.padEnd(42, "0");
@@ -57,7 +58,7 @@ describe("SimpleSignedTransferApp", () => {
   let simpleSignedTransferApp: Contract;
   let senderAddr: string;
   let receiverAddr: string;
-  let transferAmount: BigNumber;
+  let transferAmount: utils.BigNumber;
   let preState: SimpleSignedTransferAppState;
   let paymentId: string;
 
@@ -107,7 +108,7 @@ describe("SimpleSignedTransferApp", () => {
 
     senderAddr = mkAddress("0xa");
     receiverAddr = mkAddress("0xB");
-    transferAmount = new BigNumber(10000);
+    transferAmount = new utils.BigNumber(10000);
     preState = {
       coinTransfers: [
         {

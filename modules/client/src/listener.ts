@@ -33,9 +33,11 @@ import {
   ProtocolParams,
 } from "@connext/types";
 import { bigNumberifyJson, stringify, TypedEmitter } from "@connext/utils";
+import { constants } from "ethers";
 
 import { ConnextClient } from "./connext";
-import { HashZero } from "ethers/constants";
+
+const { HashZero } = constants;
 
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,

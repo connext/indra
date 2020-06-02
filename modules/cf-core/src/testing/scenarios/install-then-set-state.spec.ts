@@ -5,10 +5,7 @@ import {
   ProxyFactory,
 } from "@connext/contracts";
 import { MultiAssetMultiPartyCoinTransferInterpreterParams, OutcomeType } from "@connext/types";
-import { Contract, Wallet } from "ethers";
-import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
-import { Interface, parseEther } from "ethers/utils";
+import { Contract, Wallet, providers, constants, utils } from "ethers";
 
 import {
   getConditionalTransactionCommitment,
@@ -23,6 +20,9 @@ import { transferERC20Tokens, newWallet } from "../utils";
 
 import { toBeEq } from "../bignumber-jest-matcher";
 import { getRandomChannelSigners } from "../random-signing-keys";
+
+const { WeiPerEther, Zero, AddressZero } = constants;
+const { Interface, parseEther } = utils;
 
 expect.extend({ toBeEq });
 
@@ -60,9 +60,9 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
     appRegistry = new Contract(contracts.ChallengeRegistry, ChallengeRegistry.abi, wallet);
   });
 
-  it("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async done => {
+  it("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async (done) => {
     const signers = getRandomChannelSigners(2);
-    const ids = signers.map(s => s.publicIdentifier);
+    const ids = signers.map((s) => s.publicIdentifier);
     const erc20TokenAddress = contracts.DolphinCoin;
     const proxyFactory = new Contract(contracts.ProxyFactory, ProxyFactory.abi, wallet);
 
@@ -76,7 +76,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         1,
       ).setFreeBalance(
         FreeBalanceClass.createWithFundedTokenAmounts(
-          signers.map(key => key.address),
+          signers.map((key) => key.address),
           WeiPerEther,
           [AddressZero, erc20TokenAddress],
         ),
@@ -164,7 +164,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for (const _ of Array(identityAppInstance.timeout)) {
-        await (wallet.provider as JsonRpcProvider).send("evm_mine", []);
+        await (wallet.provider as providers.JsonRpcProvider).send("evm_mine", []);
       }
 
       await appRegistry.functions.setOutcome(
@@ -209,9 +209,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
 
       expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(WeiPerEther);
       expect(await erc20Contract.functions.balanceOf(signers[0].address)).toBeEq(Zero);
-      expect(await erc20Contract.functions.balanceOf(signers[1].address)).toBeEq(
-        WeiPerEther,
-      );
+      expect(await erc20Contract.functions.balanceOf(signers[1].address)).toBeEq(WeiPerEther);
 
       const freeBalanceConditionalTransaction = getSetupCommitment(context, stateChannel);
 
@@ -220,8 +218,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         await signers[1].signMessage(freeBalanceConditionalTransaction.hashToSign()),
       ];
 
-      const multisigDelegateCallTx2 =
-        await freeBalanceConditionalTransaction.getSignedTransaction();
+      const multisigDelegateCallTx2 = await freeBalanceConditionalTransaction.getSignedTransaction();
 
       await wallet.sendTransaction({
         ...multisigDelegateCallTx2,
@@ -233,12 +230,8 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       expect(await wallet.provider.getBalance(signers[1].address)).toBeEq(WeiPerEther);
 
       expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(Zero);
-      expect(await erc20Contract.functions.balanceOf(signers[0].address)).toBeEq(
-        WeiPerEther,
-      );
-      expect(await erc20Contract.functions.balanceOf(signers[1].address)).toBeEq(
-        WeiPerEther,
-      );
+      expect(await erc20Contract.functions.balanceOf(signers[0].address)).toBeEq(WeiPerEther);
+      expect(await erc20Contract.functions.balanceOf(signers[1].address)).toBeEq(WeiPerEther);
 
       done();
     });
@@ -246,7 +239,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
     await proxyFactory.functions.createProxyWithNonce(
       contracts.MinimumViableMultisig,
       new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-        signers.map(x => x.address),
+        signers.map((x) => x.address),
       ]),
       0,
       { gasLimit: CREATE_PROXY_AND_SETUP_GAS },

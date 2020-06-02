@@ -1,14 +1,13 @@
 /* global before */
-import { Contract, Wallet, ContractFactory } from "ethers";
-import { bigNumberify } from "ethers/utils";
+import { Contract, Wallet, ContractFactory, utils } from "ethers";
 
 import { DolphinCoin } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 
-const DOLPHINCOIN_SUPPLY = bigNumberify(10)
-  .pow(18)
-  .mul(10000);
+const { bigNumberify } = utils;
+
+const DOLPHINCOIN_SUPPLY = bigNumberify(10).pow(18).mul(10000);
 
 describe("DolphinCoin (ERC20) can be created", () => {
   let wallet: Wallet;

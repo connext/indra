@@ -9,9 +9,7 @@ import {
   EventPayloads,
 } from "@connext/types";
 import { getRandomBytes32 } from "@connext/utils";
-import { providers } from "ethers";
-import { AddressZero, HashZero } from "ethers/constants";
-import { soliditySha256, bigNumberify } from "ethers/utils";
+import { providers, constants, utils } from "ethers";
 
 import {
   AssetOptions,
@@ -23,6 +21,9 @@ import {
   env,
   requestCollateral,
 } from "../util";
+
+const { AddressZero, HashZero } = constants;
+const { soliditySha256, bigNumberify } = utils;
 
 describe("HashLock Transfers", () => {
   let clientA: IConnextClient;
@@ -467,7 +468,7 @@ describe("HashLock Transfers", () => {
   });
 
   it.skip("Experimental: Average latency of 5 hashlock transfers with Eth", async () => {
-    let runTime: number[] = [];
+    const runTime: number[] = [];
     let sum = 0;
     const numberOfRuns = 5;
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };

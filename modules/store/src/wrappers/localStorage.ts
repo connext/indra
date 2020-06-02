@@ -2,9 +2,9 @@ import { safeJsonParse, safeJsonStringify } from "@connext/utils";
 import localStorage from "localStorage";
 
 import { storeDefaults } from "../constants";
-import { WrappedStorage } from "../types";
+import { KeyValueStorage } from "../types";
 
-export class WrappedLocalStorage implements WrappedStorage {
+export class WrappedLocalStorage implements KeyValueStorage {
   private localStorage: Storage = localStorage;
 
   constructor(

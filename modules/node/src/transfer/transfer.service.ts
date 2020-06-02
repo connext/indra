@@ -14,7 +14,7 @@ import {
 } from "@connext/types";
 import { stringify, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { TRANSFER_TIMEOUT } from "@connext/apps";
-import { Zero, HashZero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { LoggerService } from "../logger/logger.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -26,6 +26,8 @@ import { TIMEOUT_BUFFER } from "../constants";
 import { Channel } from "../channel/channel.entity";
 
 import { TransferRepository } from "./transfer.repository";
+
+const { Zero, HashZero } = constants;
 
 @Injectable()
 export class TransferService {

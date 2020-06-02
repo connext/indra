@@ -8,8 +8,7 @@ import {
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
-import { AddressZero } from "ethers/constants";
-import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
+import { providers, constants, utils } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -20,7 +19,9 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
-import { TransactionReceipt } from "ethers/providers";
+
+const { AddressZero } = constants;
+const { getAddress, toUtf8Bytes, sha256, bigNumberify } = utils;
 
 export enum RebalanceType {
   COLLATERALIZE = "COLLATERALIZE",
@@ -91,7 +92,7 @@ export class ChannelService {
     channel: Channel,
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
-  ): Promise<TransactionReceipt | undefined> {
+  ): Promise<providers.TransactionReceipt | undefined> {
     this.log.info(
       `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started`,
     );
@@ -125,7 +126,7 @@ export class ChannelService {
       normalizedAssetId,
     );
 
-    let receipt: TransactionReceipt;
+    let receipt: providers.TransactionReceipt;
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // If free balance is too low, collateralize up to upper bound
       if (nodeFreeBalance.lt(collateralizeThreshold)) {
@@ -156,15 +157,15 @@ export class ChannelService {
       }
     }
     this.log.info(`Rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`);
-    return receipt as TransactionReceipt | undefined;
+    return receipt as providers.TransactionReceipt | undefined;
   }
 
   async getCollateralAmountToCoverPaymentAndRebalance(
     userPublicIdentifier: string,
     assetId: string,
-    paymentAmount: BigNumber,
-    currentBalance: BigNumber,
-  ): Promise<BigNumber> {
+    paymentAmount: utils.BigNumber,
+    currentBalance: utils.BigNumber,
+  ): Promise<utils.BigNumber> {
     const { collateralizeThreshold, target } = await this.getRebalancingTargets(
       userPublicIdentifier,
       assetId,
@@ -341,7 +342,7 @@ export class ChannelService {
     assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
     // try to get rebalance profile configured
-    let profile = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
+    const profile = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
       userIdentifier,
       assetId,
     );

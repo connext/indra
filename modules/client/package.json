@@ -28,7 +28,6 @@
     "core-js": "3.6.5",
     "ethers": "4.0.47",
     "evt": "1.7.11",
-    "human-standard-token-abi": "2.0.0",
     "regenerator-runtime": "0.13.5",
     "ts-natsutil": "1.0.6",
     "uuid": "8.1.0"

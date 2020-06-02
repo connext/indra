@@ -1,9 +1,11 @@
 import { IConnextClient, ConditionalTransferTypes, PublicResults } from "@connext/types";
 import { getRandomBytes32 } from "@connext/utils";
-import { AddressZero, One } from "ethers/constants";
+import { constants } from "ethers";
 
 import { expect } from "../util";
 import { AssetOptions, createClient, fundChannel } from "../util";
+
+const { AddressZero, One } = constants;
 
 describe("Linked Transfer", () => {
   let clientA: IConnextClient;

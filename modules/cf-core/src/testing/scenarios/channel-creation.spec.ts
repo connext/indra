@@ -1,5 +1,5 @@
 import { CreateChannelMessage, EventNames } from "@connext/types";
-import { isHexString } from "ethers/utils";
+import { utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
@@ -11,6 +11,8 @@ import {
   getChannelAddresses,
   getMultisigCreationAddress,
 } from "../utils";
+
+const { isHexString } = utils;
 
 describe("Node can create multisig, other owners get notified", () => {
   let nodeA: CFCore;

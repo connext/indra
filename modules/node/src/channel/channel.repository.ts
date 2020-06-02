@@ -1,6 +1,6 @@
 import { StateChannelJSON } from "@connext/types";
 import { NotFoundException } from "@nestjs/common";
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 import { EntityManager, EntityRepository, Repository } from "typeorm";
 
 import {
@@ -12,6 +12,8 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
 import { Channel } from "./channel.entity";
 import { AppType } from "../appInstance/appInstance.entity";
+
+const { AddressZero } = constants;
 
 const log = new LoggerService("ChannelRepository");
 

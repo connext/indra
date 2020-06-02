@@ -13,7 +13,7 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { Zero, AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
@@ -27,6 +27,8 @@ import {
   TransactionReason,
 } from "../onchainTransactions/onchainTransaction.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
+
+const { Zero, AddressZero } = constants;
 
 @Injectable()
 export class DepositService {
@@ -170,7 +172,7 @@ export class DepositService {
       })
       .map((app) => app.identityHash);
 
-    let resolvedDepositAppIds: string[] = [];
+    const resolvedDepositAppIds: string[] = [];
     const depositIdPromises = ourDepositAppIds.map((appId) => {
       return new Promise((resolve, reject) => {
         this.cfCoreService.emitter.attachOnce(
