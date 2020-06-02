@@ -1,4 +1,4 @@
-import { utils, BigNumber } from "ethers";
+import { utils } from "ethers";
 
 import { bigNumberifyJson, deBigNumberifyJson, safeJsonParse, safeJsonStringify } from "./json";
 
@@ -10,6 +10,8 @@ const INVALID_JSON_STRING = VALID_JSON_STRING.replace("{", "");
 const TEST_JSON_WITH_BN_OBJ = { amount: new utils.BigNumber(1) };
 const TEST_JSON_WITH_BN_JSON = { amount: { _hex: "0x01" } };
 // const TEST_JSON_WITH_BN_JSON = { amount: { _hex: "0x01", _isBigNumber: true } };
+
+const BigNumber = utils.BigNumber;
 
 const TEST_JSON_WITH_BN_OBJECT_DEPTH = {
   amount: new BigNumber(1),
