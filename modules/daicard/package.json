@@ -17,7 +17,7 @@
     "@connext/utils": "6.6.5",
     "@connext/store": "6.6.5",
     "@connext/types": "6.6.5",
-    "@material-ui/core": "4.10.0",
+    "@material-ui/core": "4.10.1",
     "@material-ui/icons": "4.9.1",
     "@walletconnect/browser": "1.0.0-beta.47",
     "@walletconnect/channel-provider": "1.0.0-beta.47",
