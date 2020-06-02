@@ -21,12 +21,12 @@ import {
   ChallengeEvents,
 } from "@connext/types";
 import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import { Zero } from "ethers/constants";
+import { defaultAbiCoder } from "ethers/utils";
 import pWaterfall from "p-waterfall";
 
-import { storeKeys } from "../constants";
-import { WrappedStorage } from "../types";
-import { defaultAbiCoder } from "ethers/utils";
-import { Zero } from "ethers/constants";
+import { storeKeys } from "./constants";
+import { KeyValueStorage } from "./types";
 
 const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
   return {
@@ -42,10 +42,10 @@ const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
  * This class wraps a general key value storage service to become an `IStoreService`
  */
 
-export class KeyValueStorage implements WrappedStorage, IStoreService {
+export class StoreService implements IStoreService {
   private deferred: ((store: any) => Promise<any>)[] = [];
   constructor(
-    private readonly storage: WrappedStorage,
+    private readonly storage: KeyValueStorage,
     private readonly backupService?: IBackupService,
     private readonly log: ILoggerService = nullLogger,
   ) {}
@@ -624,7 +624,7 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
     if (!channel) {
       throw new Error(`Could not find channel for app ${appIdentityHash}`);
     }
-    const [_, ourApp] = channel.appInstances.find(([id]) => id === appIdentityHash);
+    const ourApp = channel.appInstances.find(([id]) => id === appIdentityHash)[1];
     const ourLatestSetState = this.getLatestSetStateCommitment(store, appIdentityHash);
     if (!ourApp || !ourLatestSetState) {
       throw new Error(`No record of channel or app associated with ${appIdentityHash}`);
@@ -815,4 +815,4 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
   };
 }
 
-export default KeyValueStorage;
+export default StoreService;
