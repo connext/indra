@@ -262,6 +262,7 @@ export class NodeApiClient implements INodeApiClient {
     paymentId: string,
     conditionType: ConditionalTransferTypes,
   ): Promise<NodeResponses.InstallConditionalTransferReceiverApp> {
+    this.log.info(`Start installConditionalTransferReceiverApp for ${paymentId}: ${conditionType}`);
     const extendedTimeout = NATS_TIMEOUT * 5; // 55s
     return this.send(
       `${this.userIdentifier}.transfer.install-receiver`,

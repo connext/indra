@@ -32,6 +32,7 @@ export class ResolveTransferController extends AbstractController {
       .amount;
     let assetId = existingApp?.singleAssetTwoPartyCoinTransferInterpreterParams?.tokenAddress;
     let finalized = (existingApp?.latestState as GenericConditionalTransferAppState)?.finalized;
+    let meta = existingApp?.meta;
     try {
       const transferType = getTransferTypeFromAppName(conditionType);
       if (!existingApp) {
@@ -46,6 +47,7 @@ export class ResolveTransferController extends AbstractController {
         appIdentityHash = installRes.appIdentityHash;
         amount = installRes.amount;
         assetId = installRes.assetId;
+        meta = installRes.meta;
       } else {
         this.log.info(
           `[${paymentId}] Found existing transfer app, proceeding with ${appIdentityHash}`,
@@ -80,17 +82,13 @@ export class ResolveTransferController extends AbstractController {
 
       // node installs app, validation happens in listener
       if (finalized === false && action) {
-        this.log.info(`[${paymentId}] Taking action on transfer app ${existingApp.identityHash}`);
-        await this.connext.takeAction(existingApp.identityHash, action);
-        this.log.info(
-          `[${paymentId}] Finished taking action on transfer app ${existingApp.identityHash}`,
-        );
+        this.log.info(`[${paymentId}] Taking action on transfer app ${appIdentityHash}`);
+        await this.connext.takeAction(appIdentityHash, action);
+        this.log.info(`[${paymentId}] Finished taking action on transfer app ${appIdentityHash}`);
       }
-      this.log.info(`[${paymentId}] Uninstalling transfer app ${existingApp.identityHash}`);
-      await this.connext.uninstallApp(existingApp.identityHash);
-      this.log.info(
-        `[${paymentId}] Finished uninstalling transfer app ${existingApp.identityHash}`,
-      );
+      this.log.info(`[${paymentId}] Uninstalling transfer app ${appIdentityHash}`);
+      await this.connext.uninstallApp(appIdentityHash);
+      this.log.info(`[${paymentId}] Finished uninstalling transfer app ${appIdentityHash}`);
     } catch (e) {
       this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
         error: e.message,
@@ -99,14 +97,14 @@ export class ResolveTransferController extends AbstractController {
       });
       throw e;
     }
-    const sender = existingApp.meta.sender;
+    const sender = meta.sender;
 
     const result: PublicResults.ResolveCondition = {
       amount,
       appIdentityHash,
       assetId,
       sender,
-      meta: existingApp.meta,
+      meta,
       paymentId,
     };
     this.log.info(`[${paymentId}] resolveCondition complete: ${stringify(result)}`);

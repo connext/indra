@@ -57,17 +57,13 @@ export class TransferService {
     // if allow offline, resolve after sender app install
     // if not, will be installed in middleware
     if (allowed === "AllowOffline") {
-      try {
-        this.log.info(
-          `Installing sender app ${appIdentityHash} in channel ${installerChannel.multisigAddress}`,
-        );
-        await this.cfCoreService.installApp(appIdentityHash, installerChannel.multisigAddress);
-        this.log.info(
-          `Sender app ${appIdentityHash} in channel ${installerChannel.multisigAddress} installed`,
-        );
-      } catch (e) {
-        throw e;
-      }
+      this.log.info(
+        `Installing sender app ${appIdentityHash} in channel ${installerChannel.multisigAddress}`,
+      );
+      await this.cfCoreService.installApp(appIdentityHash, installerChannel.multisigAddress);
+      this.log.info(
+        `Sender app ${appIdentityHash} in channel ${installerChannel.multisigAddress} installed`,
+      );
     }
 
     // install for receiver or error
@@ -85,6 +81,7 @@ export class TransferService {
         this.log.info(`Installed receiver app ${receiverInstall.appIdentityHash}`);
       })
       .catch((e) => {
+        this.log.error(`Error installing receiver app: ${e.message}`);
         if (allowed === "RequireOnline") {
           throw e;
         }
