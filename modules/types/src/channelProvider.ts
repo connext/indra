@@ -57,6 +57,7 @@ export type WalletDepositParams = {
 
 // TODO: replace with IBasicEventEmitter
 export class ConnextEventEmitter extends EventEmitter<string | ChannelMethods | EventName> {}
+
 export interface IRpcConnection extends ConnextEventEmitter {
   ////////////////////////////////////////
   // Properties

@@ -1,9 +1,9 @@
-import { IAsyncStorage, IStoreService } from "@connext/types";
+import { IStoreService } from "@connext/types";
 import { Sequelize } from "sequelize";
 
 import { storeDefaults } from "./constants";
 import { StoreService } from "./store";
-import { StoreOptions } from "./types";
+import { IAsyncStorage, StoreOptions } from "./types";
 import {
   WrappedAsyncStorage,
   WrappedLocalStorage,
@@ -14,8 +14,9 @@ import {
 // @connext/store exports
 // keep synced with indra/docs/reference/store
 
-export { IAsyncStorage, IBackupService, IStoreService } from "@connext/types";
+export { IBackupService, IStoreService } from "@connext/types";
 export { PisaBackupService } from "./pisaClient";
+export { IAsyncStorage } from "./types";
 
 export const getAsyncStore = (
   storage: IAsyncStorage,
@@ -73,17 +74,3 @@ export const getPostgresStore = (
     opts.backupService,
     opts.logger,
   );
-
-////////////////////////////////////////
-// TODO: the following @connext/store interface is depreciated & undocumented
-// remove the following exports during next breaking release
-
-export { storeDefaults, storeKeys, storePaths } from "./constants";
-export { PisaBackupService as PisaClientBackupAPI } from "./pisaClient";
-export { StoreTypes } from "./types";
-export {
-  WrappedAsyncStorage,
-  WrappedLocalStorage,
-  WrappedMemoryStorage,
-  WrappedSequelizeStorage as WrappedPostgresStorage,
-} from "./wrappers";

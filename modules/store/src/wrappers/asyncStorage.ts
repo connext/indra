@@ -1,8 +1,13 @@
-import { AsyncStorageData, IAsyncStorage, InitCallback } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
 
 import { storeDefaults, storeKeys } from "../constants";
-import { KeyValueStorage } from "../types";
+import { IAsyncStorage, KeyValueStorage } from "../types";
+
+interface AsyncStorageData {
+  [key: string]: any;
+}
+
+type InitCallback = (data: AsyncStorageData) => void;
 
 export class WrappedAsyncStorage implements KeyValueStorage {
   private data: AsyncStorageData = {};

@@ -9,6 +9,12 @@ export type StoreOptions = {
   separator?: string,
 };
 
+export interface IAsyncStorage {
+  getItem(key: string): Promise<string | null>;
+  setItem(key: string, value: string): Promise<void>;
+  removeItem(key: string): Promise<void>;
+}
+
 export const StoreTypes = enumify({
   AsyncStorage: "AsyncStorage",
   File: "File",
