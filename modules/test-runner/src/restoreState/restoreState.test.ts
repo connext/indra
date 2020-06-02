@@ -1,6 +1,6 @@
 import { getLocalStore } from "@connext/store";
 import { IConnextClient, IChannelSigner, EventNames, EventPayloads } from "@connext/types";
-import { getRandomChannelSigner, stringify, toBN } from "@connext/utils";
+import { getRandomChannelSigner, stringify, toBN, delay } from "@connext/utils";
 import { AddressZero, Zero } from "ethers/constants";
 
 import {
@@ -120,11 +120,15 @@ describe("Restore State", () => {
       clientA = await createClient({
         signer: signerA,
         id: "A2",
+        logLevel: 3,
       });
       expect(clientA.signerAddress).to.be.eq(signerA.address);
       expect(clientA.publicIdentifier).to.be.eq(signerA.publicIdentifier);
       return resolve();
     });
+
+    // TODO: we should not have to do this.
+    await delay(5000);
 
     const freeBalanceA = await clientA.getFreeBalance(assetId);
     expect(freeBalanceA[clientA.signerAddress]).to.be.eq(transferAmount);
