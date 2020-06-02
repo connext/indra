@@ -350,9 +350,9 @@ export class ConnextListener {
         break;
       }
       case SimpleSignedTransferAppName: {
-        const initalState = params.initialState as SimpleSignedTransferAppState;
+        const initialState = params.initialState as SimpleSignedTransferAppState;
         const { initiatorDepositAssetId: assetId, meta } = params;
-        const amount = initalState.coinTransfers[0].amount;
+        const amount = initialState.coinTransfers[0].amount;
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
           appIdentityHash,
@@ -360,18 +360,20 @@ export class ConnextListener {
           meta,
           sender: meta["sender"],
           transferMeta: {
-            signer: initalState.signer,
+            signerAddress: initialState.signerAddress,
+            chainId: initialState.chainId,
+            verifyingContract: initialState.verifyingContract,
           } as CreatedSignedTransferMeta,
           type: ConditionalTransferTypes.SignedTransfer,
-          paymentId: initalState.paymentId,
+          paymentId: initialState.paymentId,
           recipient: meta["recipient"],
         } as EventPayloads.SignedTransferCreated);
         break;
       }
       case HashLockTransferAppName: {
-        const initalState = params.initialState as HashLockTransferAppState;
+        const initialState = params.initialState as HashLockTransferAppState;
         const { initiatorDepositAssetId: assetId, meta } = params;
-        const amount = initalState.coinTransfers[0].amount;
+        const amount = initialState.coinTransfers[0].amount;
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
           appIdentityHash,
@@ -379,20 +381,20 @@ export class ConnextListener {
           meta,
           sender: meta["sender"],
           transferMeta: {
-            lockHash: initalState.lockHash,
-            expiry: initalState.expiry,
+            lockHash: initialState.lockHash,
+            expiry: initialState.expiry,
             timelock: meta["timelock"],
           } as CreatedHashLockTransferMeta,
           type: ConditionalTransferTypes.HashLockTransfer,
-          paymentId: initalState.lockHash,
+          paymentId: initialState.lockHash,
           recipient: meta["recipient"],
         } as EventPayloads.HashLockTransferCreated);
         break;
       }
       case SimpleLinkedTransferAppName: {
-        const initalState = params.initialState as SimpleLinkedTransferAppState;
+        const initialState = params.initialState as SimpleLinkedTransferAppState;
         const { initiatorDepositAssetId: assetId, meta } = params;
-        const amount = initalState.coinTransfers[0].amount;
+        const amount = initialState.coinTransfers[0].amount;
         this.log.info(
           `Emitting event CONDITIONAL_TRANSFER_CREATED_EVENT for paymentId ${meta["paymentId"]}`,
         );
@@ -529,7 +531,9 @@ export class ConnextListener {
           meta: appInstance.meta,
           transferMeta: {
             signature: transferAction.signature,
-            data: transferAction.data,
+            requestCID: transferAction.requestCID,
+            responseCID: transferAction.responseCID,
+            subgraphID: transferAction.subgraphID,
           } as UnlockedSignedTransferMeta,
         } as EventPayloads.SignedTransferUnlocked);
         break;

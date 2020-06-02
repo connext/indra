@@ -6,6 +6,7 @@ import {
   SimpleSignedTransferAppName,
   SupportedApplications,
   GenericConditionalTransferAppName,
+  Attestation,
 } from "./contracts";
 
 ////////////////////////////////////////
@@ -81,7 +82,9 @@ export type CreatedHashLockTransferMeta = {
 };
 
 export type CreatedSignedTransferMeta = {
-  signer: Address;
+  signerAddress: Address;
+  verifyingContract: Address;
+  chainId: number;
 };
 
 export type UnlockedLinkedTransferMeta = {
@@ -93,7 +96,7 @@ export type UnlockedHashLockTransferMeta = {
   preImage: Bytes32;
 };
 
-export type UnlockedSignedTransferMeta = {};
+export type UnlockedSignedTransferMeta = Attestation;
 
 ////////////////////////////////////////
 // Statuses

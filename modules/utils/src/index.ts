@@ -1,3 +1,4 @@
+export * from "./attestations";
 export * from "./bigNumbers";
 export * from "./channelSigner";
 export * from "./comparisons";

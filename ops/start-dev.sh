@@ -58,19 +58,23 @@ dash_port=9999
 webserver_port=3000
 ganacheId="4447"
 
-# Prefer top-level address-book override otherwise default to one in contracts
-if [[ -f address-book.json ]]
-then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
-else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
-fi
-eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-
 if [[ "$INDRA_ETH_PROVIDER" == "$ganacheProvider" ]]
 then chainId="$ganacheId"
 else
   echo "Fetching chainId from ${INDRA_ETH_PROVIDER}"
   chainId="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_ETH_PROVIDER | jq .result | tr -d '"'`"
 fi
+
+if [[ "$chainId" == "$ganacheId" ]]
+then make deployed-contracts
+fi
+
+# Prefer top-level address-book override otherwise default to one in contracts
+if [[ -f address-book.json ]]
+then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
+fi
+eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
 token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.address' | tr -d '"'`"
 allowed_swaps='[{"from":"'"$token_address"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"HARDCODED"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address"'","priceOracleType":"HARDCODED"}]'
@@ -80,10 +84,6 @@ supported_tokens="$token_address,0x0000000000000000000000000000000000000000"
 if [[ -z "$chainId" || "$chainId" == "null" ]]
 then echo "Failed to fetch chainId from provider ${INDRA_ETH_PROVIDER}" && exit 1;
 else echo "Got chainId $chainId, using token $token_address"
-fi
-
-if [[ "$chainId" == "$ganacheId" ]]
-then make deployed-contracts
 fi
 
 # database connection settings

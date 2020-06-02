@@ -5,17 +5,18 @@ module.exports = {
     "max-len": ["warn", { code: 100, ignoreStrings: true, ignoreTemplateLiterals: true, ignoreComments: true }],
     "no-async-promise-executor": ["off"],
     "no-empty-pattern": ["off"],
+    "no-prototype-builtins": ["off"],
     "no-undef": ["error"],
     "no-var": ["error"],
     "object-curly-spacing": ["error", "always"],
     "quotes": ["error", "double", { allowTemplateLiterals: true, avoidEscape: true }],
-    "semi": ["error", "always"],
-    "spaced-comment": ["off"],
-    "no-prototype-builtins": ["off"],
+    "react-hooks/rules-of-hooks": ["off"],
     "react/display-name": ["off"],
     "react/no-unescaped-entities": ["off"],
     "react/prop-types": ["off"],
+    "semi": ["error", "always"],
     "sort-keys": ["off"],
+    "spaced-comment": ["off"],
   },
   settings: {
     react: {
@@ -25,6 +26,7 @@ module.exports = {
   env: {
     browser: true,
     es6: true,
+    mocha: true,
   },
   extends: [
     "react-app",

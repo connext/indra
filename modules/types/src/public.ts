@@ -4,6 +4,7 @@ import { BigNumberish } from "ethers/utils";
 import { Address, BigNumber, Bytes32, HexString, PublicIdentifier } from "./basic";
 import { ConditionalTransferTypes } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
+import { Attestation } from "./contracts";
 
 ////////////////////////////////////////
 // deposit
@@ -106,7 +107,9 @@ type SignedTransferParameters = {
   amount: BigNumber;
   assetId: Address;
   paymentId: Bytes32;
-  signer: Address;
+  signerAddress: Address;
+  chainId: number;
+  verifyingContract: Address;
   recipient?: PublicIdentifier;
   meta?: any;
 };
@@ -119,8 +122,7 @@ type SignedTransferResponse = {
 type ResolveSignedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.SignedTransfer;
   paymentId: Bytes32;
-  data: Bytes32;
-  signature: HexString;
+  attestation: Attestation;
 };
 
 type ResolveSignedTransferResponse = {

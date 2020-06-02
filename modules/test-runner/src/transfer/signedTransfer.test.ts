@@ -7,10 +7,18 @@ import {
   PublicParams,
   SignedTransferStatus,
   EventPayloads,
+  PrivateKey,
+  Address,
+  Receipt,
 } from "@connext/types";
-import { getRandomChannelSigner, delay } from "@connext/utils";
+import {
+  getTestVerifyingContract,
+  getTestReceiptToSign,
+  signReceiptMessage,
+  getRandomPrivateKey,
+} from "@connext/utils";
 import { AddressZero } from "ethers/constants";
-import { hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
+import { hexlify, randomBytes } from "ethers/utils";
 import { providers } from "ethers";
 
 import {
@@ -25,9 +33,14 @@ import {
 } from "../util";
 
 describe("Signed Transfers", () => {
+  let privateKeyA: PrivateKey;
   let clientA: IConnextClient;
+  let privateKeyB: PrivateKey;
   let clientB: IConnextClient;
-  let tokenAddress: string;
+  let tokenAddress: Address;
+  let receipt: Receipt;
+  let chainId: number;
+  let verifyingContract: Address;
   const provider = new providers.JsonRpcProvider(env.ethProviderUrl);
 
   before(async () => {
@@ -45,9 +58,14 @@ describe("Signed Transfers", () => {
   });
 
   beforeEach(async () => {
-    clientA = await createClient({ id: "A" });
-    clientB = await createClient({ id: "B" });
+    privateKeyA = getRandomPrivateKey();
+    clientA = await createClient({ signer: privateKeyA, id: "A" });
+    privateKeyB = getRandomPrivateKey();
+    clientB = await createClient({ signer: privateKeyB, id: "B" });
     tokenAddress = clientA.config.contractAddresses.Token!;
+    receipt = getTestReceiptToSign();
+    chainId = (await clientA.ethProvider.getNetwork()).chainId;
+    verifyingContract = getTestVerifyingContract();
   });
 
   afterEach(async () => {
@@ -59,15 +77,15 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = getRandomChannelSigner();
-    const signerAddress = await signer.getAddress();
 
     const [, installed] = await Promise.all([
       clientA.conditionalTransfer({
         amount: transfer.amount,
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
-        signer: signerAddress,
+        signerAddress: clientB.signerAddress,
+        chainId,
+        verifyingContract,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -84,7 +102,7 @@ describe("Signed Transfers", () => {
       type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
       paymentId,
       sender: clientA.publicIdentifier,
-      transferMeta: { signer: signerAddress },
+      transferMeta: { signerAddress: clientB.signerAddress, chainId, verifyingContract },
       meta: {
         foo: "bar",
         recipient: clientB.publicIdentifier,
@@ -99,10 +117,11 @@ describe("Signed Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
 
-    const data = hexlify(randomBytes(32));
-    const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = await signer.signMessage(digest);
-
+    const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
+    const attestation = {
+      ...receipt,
+      signature,
+    };
     const [eventData] = await Promise.all([
       new Promise(async (res) => {
         clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, res);
@@ -113,8 +132,7 @@ describe("Signed Transfers", () => {
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
-        data,
-        signature,
+        attestation,
       } as PublicParams.ResolveSignedTransfer),
     ]);
     expect(eventData).to.deep.contain({
@@ -123,10 +141,7 @@ describe("Signed Transfers", () => {
       type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
       paymentId,
       sender: clientA.publicIdentifier,
-      transferMeta: {
-        data,
-        signature,
-      },
+      transferMeta: attestation,
       meta: {
         foo: "bar",
         recipient: clientB.publicIdentifier,
@@ -151,15 +166,15 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = getRandomChannelSigner();
-    const signerAddress = await signer.getAddress();
 
     const promises = await Promise.all([
       clientA.conditionalTransfer({
         amount: transfer.amount,
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
-        signer: signerAddress,
+        signerAddress: clientB.signerAddress,
+        chainId,
+        verifyingContract,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -175,7 +190,7 @@ describe("Signed Transfers", () => {
       assetId: transfer.assetId,
       type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
       paymentId,
-      transferMeta: { signer: signerAddress },
+      transferMeta: { signerAddress: clientB.signerAddress, chainId, verifyingContract },
       meta: {
         foo: "bar",
         recipient: clientB.publicIdentifier,
@@ -190,10 +205,11 @@ describe("Signed Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
 
-    const data = hexlify(randomBytes(32));
-    const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = await signer.signMessage(digest);
-
+    const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
+    const attestation = {
+      ...receipt,
+      signature,
+    };
     await new Promise(async (res) => {
       clientA.on(EventNames.UNINSTALL_EVENT, async (data) => {
         const {
@@ -207,8 +223,7 @@ describe("Signed Transfers", () => {
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
-        data,
-        signature,
+        attestation,
       } as PublicParams.ResolveSignedTransfer);
       const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
         transfer.assetId,
@@ -221,14 +236,14 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = getRandomChannelSigner();
-    const signerAddress = await signer.getAddress();
 
     await clientA.conditionalTransfer({
       amount: transfer.amount,
       conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
-      signer: signerAddress,
+      signerAddress: clientB.signerAddress,
+      chainId,
+      verifyingContract,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
@@ -248,33 +263,33 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = getRandomChannelSigner();
-    const signerAddress = await signer.getAddress();
 
     await clientA.conditionalTransfer({
       amount: transfer.amount,
       conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
-      signer: signerAddress,
+      signerAddress: clientB.signerAddress,
+      chainId,
+      verifyingContract,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
     // disconnect so that it cant be unlocked
     await clientA.messaging.disconnect();
 
-    const data = hexlify(randomBytes(32));
-    const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = await signer.signMessage(digest);
-
+    const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
+    const attestation = {
+      ...receipt,
+      signature,
+    };
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
       clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve);
       clientB.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
-        data,
         paymentId,
-        signature,
+        attestation,
       });
     });
     const retrievedTransfer = await clientB.getSignedTransfer(paymentId);
@@ -293,26 +308,28 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = getRandomChannelSigner();
-    const signerAddress = await signer.getAddress();
 
     await clientA.conditionalTransfer({
       amount: transfer.amount,
       conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
-      signer: signerAddress,
+      signerAddress: clientB.signerAddress,
+      chainId,
+      verifyingContract,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
 
     const badSig = hexlify(randomBytes(65));
-    const data = hexlify(randomBytes(32));
+    const attestation = {
+      ...receipt,
+      signature: badSig,
+    };
     await expect(
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
-        data,
         paymentId,
-        signature: badSig,
+        attestation,
       } as PublicParams.ResolveSignedTransfer),
     ).to.eventually.be.rejectedWith(/VM Exception while processing transaction/);
   });
@@ -322,15 +339,15 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const paymentId = hexlify(randomBytes(32));
-    const signer = getRandomChannelSigner();
-    const signerAddress = await signer.getAddress();
 
     const [transferRes, receiverRes] = await Promise.all([
       clientA.conditionalTransfer({
         amount: transfer.amount,
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
-        signer: signerAddress,
+        signerAddress: clientB.signerAddress,
+        chainId,
+        verifyingContract,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -364,15 +381,20 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const paymentId = hexlify(randomBytes(32));
-    const signer = getRandomChannelSigner();
-    const signerAddress = await signer.getAddress();
+    // const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
+    // const attestation = {
+    //   ...receipt,
+    //   signature,
+    // };
 
     const [transferRes] = await Promise.all([
       clientA.conditionalTransfer({
         amount: transfer.amount,
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
-        signer: signerAddress,
+        signerAddress: clientB.signerAddress,
+        chainId,
+        verifyingContract,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -396,15 +418,20 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const paymentId = hexlify(randomBytes(32));
-    const signer = getRandomChannelSigner();
-    const signerAddress = await signer.getAddress();
+    const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
+    const attestation = {
+      ...receipt,
+      signature,
+    };
 
     const [transferRes] = await Promise.all([
       clientA.conditionalTransfer({
         amount: transfer.amount,
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
-        signer: signerAddress,
+        signerAddress: clientB.signerAddress,
+        chainId,
+        verifyingContract,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -414,10 +441,6 @@ describe("Signed Transfers", () => {
         clientA.once(EventNames.REJECT_INSTALL_EVENT, rej);
       }),
     ]);
-
-    const data = hexlify(randomBytes(32));
-    const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = await signer.signMessage(digest);
 
     // disconnect so sender cannot unlock
     clientA.messaging.disconnect();
@@ -429,8 +452,7 @@ describe("Signed Transfers", () => {
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
-        data,
-        signature,
+        attestation,
       } as PublicParams.ResolveSignedTransfer),
     ]);
 
@@ -441,12 +463,10 @@ describe("Signed Transfers", () => {
 
   // average time in multichannel test
   it.skip("Experimental: Average latency of 5 signed transfers with Eth", async () => {
-    let runTime: number[] = [];
+    const runTime: number[] = [];
     let sum = 0;
     const numberOfRuns = 5;
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-    const signer = getRandomChannelSigner();
-    const signerAddress = signer.address;
 
     await fundChannel(clientA, transfer.amount.mul(25), transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
@@ -459,13 +479,13 @@ describe("Signed Transfers", () => {
         [clientB.signerAddress]: clientBPreBal,
         [clientB.nodeSignerAddress]: nodeBPreBal,
       } = await clientB.getFreeBalance(transfer.assetId);
-      const data = hexlify(randomBytes(32));
       const paymentId = hexlify(randomBytes(32));
 
       // Start timer
       const start = Date.now();
 
       // TODO: what are these errors
+      // eslint-disable-next-line no-loop-func
       await new Promise(async (res) => {
         clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (data) => {
           res();
@@ -474,7 +494,9 @@ describe("Signed Transfers", () => {
           amount: transfer.amount,
           conditionType: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
           paymentId,
-          signer: signerAddress,
+          signerAddress: clientB.signerAddress,
+          chainId,
+          verifyingContract,
           assetId: transfer.assetId,
           meta: { foo: "bar", sender: clientA.publicIdentifier },
           recipient: clientB.publicIdentifier,
@@ -482,9 +504,12 @@ describe("Signed Transfers", () => {
       });
 
       // Including recipient signing in test to match real conditions
-      const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-      const signature = await signer.signMessage(digest);
-
+      const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
+      const attestation = {
+        ...receipt,
+        signature,
+      };
+      // eslint-disable-next-line no-loop-func
       await new Promise(async (res) => {
         clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
           res();
@@ -492,8 +517,7 @@ describe("Signed Transfers", () => {
         await clientB.resolveCondition({
           conditionType: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
           paymentId,
-          data,
-          signature,
+          attestation,
         } as PublicParams.ResolveSignedTransfer);
       });
 
