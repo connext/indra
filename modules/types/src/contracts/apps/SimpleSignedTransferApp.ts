@@ -9,10 +9,22 @@ export const SimpleSignedTransferAppName = "SimpleSignedTransferApp";
 ////////////////////////////////////////
 // keep synced w contracts/app/SimpleSignedTransferApp.sol
 
-// ABI Encoding TS Types
+export interface Receipt {
+  requestCID: string;
+  responseCID: string;
+  subgraphID: string;
+}
+
+export interface Attestation extends Receipt {
+  signature: string;
+}
+
+// ABI Encoding TS Typess
 export type SimpleSignedTransferAppState = {
   coinTransfers: CoinTransfer[];
-  signer: Address;
+  signerAddress: Address;
+  chainId: number;
+  verifyingContract: Address;
   paymentId: Bytes32;
   finalized: boolean;
 };
@@ -20,17 +32,18 @@ export type SimpleSignedTransferAppState = {
 // ABI Encodings
 export const SimpleSignedTransferAppStateEncoding = tidy(`tuple(
   ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
-  address signer,
+  address signerAddress,
+  uint256 chainId,
+  address verifyingContract,
   bytes32 paymentId,
   bool finalized
 )`);
 
-export type SimpleSignedTransferAppAction = {
-  data: Bytes32;
-  signature: string;
-};
+export type SimpleSignedTransferAppAction = Attestation;
 
 export const SimpleSignedTransferAppActionEncoding = tidy(`tuple(
-  bytes32 data,
+  bytes32 requestCID,
+  bytes32 responseCID,
+  bytes32 subgraphID,
   bytes signature
 )`);

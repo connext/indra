@@ -21,7 +21,7 @@ import {
   ETH_AMOUNT_SM,
   CLIENT_INSTALL_FAILED,
 } from "../util";
-import { getRandomChannelSigner } from "@connext/utils";
+import { getRandomChannelSigner, delay } from "@connext/utils";
 
 const makeFailingDepositCall = async (opts: {
   client: IConnextClient;
@@ -62,6 +62,8 @@ const recreateClientAndRetryDepositCall = async (
   store: IStoreService,
 ) => {
   await client.messaging.disconnect();
+  // Add delay to make sure messaging properly disconnects
+  await delay(1000);
   const newClient = await createClient({ signer, store });
 
   // Check that client can recover and continue
