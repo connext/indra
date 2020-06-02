@@ -39,7 +39,6 @@
     "bs58check": "2.1.2",
     "class-validator": "0.12.2",
     "dotenv": "8.2.0",
-    "eccrypto-js": "4.5.4",
     "ethers": "4.0.47",
     "evt": "1.7.11",
     "human-standard-token-abi": "2.0.0",
