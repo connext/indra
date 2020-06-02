@@ -152,8 +152,8 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       logging: false,
     });
     // create stores with different prefixes
-    const senderStore = getPostgresStore(sequelize, "sender");
-    const recipientStore = getPostgresStore(sequelize, "recipient");
+    const senderStore = getPostgresStore(sequelize, { prefix: "sender" });
+    const recipientStore = getPostgresStore(sequelize, { prefix: "recipient" });
     // create clients with shared store
     senderPrivateKey = getRandomPrivateKey();
     sender = (await createClient({
@@ -365,7 +365,6 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
         clearInterval(interval);
         return;
       }
-      let error: any = undefined;
       try {
         const paymentId = getRandomBytes32();
         console.log(`[${intervals}/${MIN_TRANSFERS}] creating transfer with ${paymentId}`);
@@ -382,7 +381,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
         console.log(`[${intervals}/${MIN_TRANSFERS}] senderApp: ${transferRes.appIdentityHash}`);
       } catch (e) {
         clearInterval(interval);
-        throw error;
+        throw e;
       }
     }, TRANSFER_INTERVAL);
 

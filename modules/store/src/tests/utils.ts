@@ -71,7 +71,7 @@ export const createStore = async (
   } else if (type === StoreTypes.Memory) {
     store = getMemoryStore(opts);
   } else if (type === StoreTypes.Postgres) {
-    store = getPostgresStore(postgresConnectionUri, opts);
+    store = getPostgresStore(opts.sequelize || postgresConnectionUri, opts);
   } else {
     throw new Error(`${type} should be one of ${Object.keys(StoreTypes)}`);
   }

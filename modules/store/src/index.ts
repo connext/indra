@@ -1,4 +1,5 @@
 import { IAsyncStorage, IStoreService } from "@connext/types";
+import { Sequelize } from "sequelize";
 
 import { storeDefaults } from "./constants";
 import { StoreService } from "./store";
@@ -59,12 +60,12 @@ export const getMemoryStore = (opts: StoreOptions = {}): IStoreService =>
   );
 
 export const getPostgresStore = (
-  postgresUrl: string,
+  connection: Sequelize | string,
   opts: StoreOptions = {},
 ): IStoreService =>
   new StoreService(
     new WrappedSequelizeStorage(
-      opts.sequelize || postgresUrl,
+      connection,
       opts.prefix,
       opts.separator,
       storeDefaults.DATABASE_TABLE_NAME,
