@@ -2,6 +2,8 @@ import { BuidlerConfig } from "@nomiclabs/buidler/config";
 import { usePlugin } from "@nomiclabs/buidler/config";
 import { BigNumber } from "ethers/utils";
 
+import * as packageJson from "./package.json";
+
 // for deposit tests, you will need an account that
 // holds the maximum uint256 value
 
@@ -13,13 +15,12 @@ usePlugin("@nomiclabs/buidler-waffle");
 
 const config: BuidlerConfig = {
   paths: {
-    sources: "./contracts",
-    tests: "./test",
-    artifacts: "./build",
+    sources: "./src.sol",
+    tests: "./src.ts/tests",
+    artifacts: "./artifacts",
   },
   solc: {
-    version: "0.5.11", // Note that this only has the version number
-    evmVersion: "constantinople",
+    version: packageJson.devDependencies.solc,
   },
   defaultNetwork: "buidlerevm",
   networks: {

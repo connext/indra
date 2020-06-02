@@ -5,10 +5,9 @@ export type Collateralizations = { [assetId: string]: boolean };
 
 export type RebalanceProfile = {
   assetId: Address;
-  upperBoundCollateralize: BigNumber;
-  lowerBoundCollateralize: BigNumber;
-  upperBoundReclaim: BigNumber;
-  lowerBoundReclaim: BigNumber;
+  collateralizeThreshold: BigNumber;
+  target: BigNumber;
+  reclaimThreshold: BigNumber;
 };
 
 // wtf is this?
@@ -43,7 +42,7 @@ export const PriceOracleTypes = enumify({
   UNISWAP: "UNISWAP",
   HARDCODED: "HARDCODED",
 });
-export type PriceOracleTypes = (typeof PriceOracleTypes)[keyof typeof PriceOracleTypes];
+export type PriceOracleTypes = typeof PriceOracleTypes[keyof typeof PriceOracleTypes];
 
 export type SwapRate = AllowedSwap & {
   rate: string; // DecString?

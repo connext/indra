@@ -2,9 +2,11 @@
 **/*.0x
 **/.flags
 **/_build/**
+**/artifacts/**
 **/build/**
 **/dist/**
 **/node_modules/**
+**/tsconfig.tsbuildinfo
 modules/*/package-lock.json
 
 # Cache
@@ -51,3 +53,8 @@ cypress/videos
 **/.env
 **/react-app-env.d.ts
 ops/database/snapshots
+
+# Http files
+ganache.http
+modules/bot/.connext-store/
+modules/bot-registry/.node-persist/

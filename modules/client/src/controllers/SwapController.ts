@@ -1,7 +1,6 @@
 import { DEFAULT_APP_TIMEOUT, SWAP_STATE_TIMEOUT } from "@connext/apps";
-import { delayAndThrow, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import { stringify } from "@connext/utils";
 import {
-  CF_METHOD_TIMEOUT,
   DefaultApp,
   MethodParams,
   PublicParams,
@@ -70,14 +69,9 @@ export class SwapController extends AbstractController {
     this.log.debug(`Swap app installed: ${appIdentityHash}, uninstalling`);
 
     // if app installed, that means swap was accepted now uninstall
+
     try {
-      await Promise.race([
-        delayAndThrow(
-          CF_METHOD_TIMEOUT,
-          `App uninstall took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
-        ),
-        this.connext.uninstallApp(appIdentityHash),
-      ]);
+      await this.connext.uninstallApp(appIdentityHash);
     } catch (e) {
       const msg = `Failed to uninstall swap: ${e.stack || e.message}`;
       this.log.error(msg);
@@ -96,7 +90,30 @@ export class SwapController extends AbstractController {
       preSwapToBal[this.connext.signerAddress],
     );
     if (!diffFrom.eq(amount) || !diffTo.eq(swappedAmount)) {
-      throw new Error("Invalid final swap amounts - this shouldn't happen!!");
+      const expectedTo = {
+        [this.connext.signerAddress]: preSwapToBal[this.connext.signerAddress].add(swappedAmount),
+        [this.connext.nodeSignerAddress]: preSwapToBal[this.connext.nodeSignerAddress].sub(
+          swappedAmount,
+        ),
+      };
+      const expectedFrom = {
+        [this.connext.signerAddress]: preSwapFromBal[this.connext.signerAddress].sub(amount),
+        [this.connext.nodeSignerAddress]: preSwapFromBal[this.connext.nodeSignerAddress].add(
+          amount,
+        ),
+      };
+      throw new Error(
+        `Invalid final swap amounts - this shouldn't happen!!\n` +
+          `Post swap free balance:\n` +
+          `   - ${toTokenAddress}: ${stringify(postSwapToBal)}\n` +
+          `   - ${fromTokenAddress}: ${stringify(postSwapFromBal)}\n` +
+          `Expected free balance: \n` +
+          `   - ${toTokenAddress}: ${stringify(expectedTo)}\n` +
+          `   - ${fromTokenAddress}: ${stringify(expectedFrom)}\n` +
+          `Amounts: \n` +
+          `   - ${toTokenAddress}: ${swappedAmount.toString()}\n` +
+          `   - ${fromTokenAddress}: ${amount.toString()}\n`,
+      );
     }
     const res = await this.connext.getChannel();
 
@@ -141,7 +158,7 @@ export class SwapController extends AbstractController {
         [
           {
             amount: swappedAmount,
-            to: getSignerAddressFromPublicIdentifier(this.connext.nodeIdentifier),
+            to: this.connext.nodeSignerAddress,
           },
         ],
       ],
@@ -158,6 +175,7 @@ export class SwapController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositAssetId: fromTokenAddress,
+      multisigAddress: this.connext.multisigAddress,
       outcomeType: appInfo.outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: swappedAmount,

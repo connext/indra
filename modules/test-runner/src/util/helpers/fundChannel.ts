@@ -3,8 +3,9 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   EventNames,
   IConnextClient,
+  EventPayloads,
 } from "@connext/types";
-import { ColorfulLogger, delay, getAddressFromAssetId } from "@connext/utils";
+import { ColorfulLogger, getAddressFromAssetId, delayAndThrow } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 
 import { env, expect } from "../";
@@ -24,10 +25,23 @@ export const fundChannel = async (
       const expected = prevFreeBalance[client.signerAddress].add(amount);
       expect(freeBalance[client.signerAddress]).to.equal(expected);
       log.info(`Got deposit confirmed event, helper wrapper is returning`);
-      resolve();
+      return resolve();
     });
-    client.once(EventNames.DEPOSIT_FAILED_EVENT, async (msg: any) => {
-      reject(new Error(JSON.stringify(msg)));
+    // register failure listeners
+    client.once(EventNames.DEPOSIT_FAILED_EVENT, async (msg: EventPayloads.DepositFailed) => {
+      return reject(new Error(msg.error));
+    });
+    client.once(
+      EventNames.PROPOSE_INSTALL_FAILED_EVENT,
+      async (msg: EventPayloads.ProposeFailed) => {
+        return reject(new Error(msg.error));
+      },
+    );
+    client.once(EventNames.INSTALL_FAILED_EVENT, async (msg: EventPayloads.InstallFailed) => {
+      return reject(new Error(msg.error));
+    });
+    client.once(EventNames.UNINSTALL_FAILED_EVENT, async (msg: EventPayloads.UninstallFailed) => {
+      return reject(new Error(msg.error));
     });
 
     try {
@@ -52,35 +66,24 @@ export const requestCollateral = async (
   const log = new ColorfulLogger("RequestCollateral", env.logLevel);
   const tokenAddress = getAddressFromAssetId(assetId);
   const preCollateralBal = await client.getFreeBalance(tokenAddress);
-
+  log.debug(`client.requestCollateral() called`);
+  const start = Date.now();
+  if (!enforce) {
+    await client.requestCollateral(assetId);
+    log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
+    return;
+  }
   return new Promise(async (resolve, reject) => {
     log.debug(`client.requestCollateral() called`);
     const start = Date.now();
-    if (!enforce) {
-      try {
-        await client.requestCollateral(assetId);
-        log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
-        return resolve();
-      } catch (e) {
-        return reject(e);
-      }
-    }
     // watch for balance change on uninstall
     try {
       await Promise.race([
-        new Promise(async (res, rej) => {
-          await delay(20_000);
-          return rej(`Could not detect increase in node free balance within 20s`);
-        }),
-        new Promise(async res => {
-          client.on(
-            EventNames.UNINSTALL_EVENT,
-            async () => {
+        delayAndThrow(20_000, `Could not detect increase in node free balance within 20s`),
+        new Promise(async (res) => {
+          client.on(EventNames.UNINSTALL_EVENT, async () => {
             const currBal = await client.getFreeBalance(tokenAddress);
-            if (
-              currBal[client.nodeSignerAddress]
-                .lte(preCollateralBal[client.nodeSignerAddress])
-            ) {
+            if (currBal[client.nodeSignerAddress].lte(preCollateralBal[client.nodeSignerAddress])) {
               // no increase in bal
               return;
             }

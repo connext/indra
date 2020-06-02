@@ -8,43 +8,38 @@ import {
   ProtocolRoles,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime, toBN } from "@connext/utils";
+import {
+  appIdentityToHash,
+  getSignerAddressFromPublicIdentifier,
+  logTime,
+  stringify,
+  toBN,
+} from "@connext/utils";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import { AppInstance } from "../models";
-import {
-  Context,
-  PersistAppType,
-  ProtocolExecutionFlow,
-} from "../types";
-import { appIdentityToHash } from "../utils";
+import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
-import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
+import { assertIsValidSignature } from "./utils";
 
 const protocol = ProtocolNames.propose;
-const {
-  OP_SIGN,
-  OP_VALIDATE,
-  IO_SEND,
-  IO_SEND_AND_WAIT,
-  PERSIST_APP_INSTANCE,
-} = Opcode;
+const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
 
 /**
  * @description This exchange is described at the following URL:
  *
  */
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
-  0 /* Initiating */: async function*(context: Context) {
-    const { message, store } = context;
+  0 /* Initiating */: async function* (context: Context) {
+    const { message, preProtocolStateChannel } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
-    log.info(`Initiation started`);
-
     const { processID, params } = message;
+    log.info(`[${processID}] Initiation started`);
+    log.debug(`[${processID}] Initiation started: ${stringify(params)}`);
 
     const {
       abiEncodings,
@@ -55,18 +50,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initiatorDepositAssetId,
       initiatorIdentifier,
       meta,
-      multisigAddress,
       outcomeType,
       responderDeposit,
       responderDepositAssetId,
       responderIdentifier,
       stateTimeout,
     } = params as ProtocolParams.Propose;
-
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
-      multisigAddress,
-      store,
-    );
 
     // 7ms
     const appInstanceProposal: AppInstanceProposal = {
@@ -80,45 +69,50 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       stateTimeout: stateTimeout.toHexString(),
       identityHash: appIdentityToHash({
         appDefinition,
-        channelNonce: toBN(preProtocolStateChannel.numProposedApps + 1),
-        participants: preProtocolStateChannel.getSigningKeysFor(
+        channelNonce: toBN(preProtocolStateChannel!.numProposedApps + 1),
+        participants: preProtocolStateChannel!.getSigningKeysFor(
           initiatorIdentifier,
           responderIdentifier,
         ),
-        multisigAddress: preProtocolStateChannel.multisigAddress,
+        multisigAddress: preProtocolStateChannel!.multisigAddress,
         defaultTimeout,
       }),
       initiatorIdentifier,
       responderIdentifier,
-      appSeqNo: preProtocolStateChannel.numProposedApps + 1,
-      initiatorDepositAssetId: initiatorDepositAssetId 
-        || CONVENTION_FOR_ETH_ASSET_ID,
-      responderDepositAssetId: responderDepositAssetId 
-        || CONVENTION_FOR_ETH_ASSET_ID,
+      appSeqNo: preProtocolStateChannel!.numProposedApps + 1,
+      initiatorDepositAssetId: initiatorDepositAssetId || CONVENTION_FOR_ETH_ASSET_ID,
+      responderDepositAssetId: responderDepositAssetId || CONVENTION_FOR_ETH_ASSET_ID,
       meta,
     };
 
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
         proposal: appInstanceProposal,
-        params, role: ProtocolRoles.initiator,
+        params,
+        role: ProtocolRoles.initiator,
+        stateChannel: preProtocolStateChannel!.toJson(),
       } as ProposeMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
+    logTime(log, substart, `[${processID}] Validated proposal`);
+    substart = Date.now();
 
     // 0 ms
-    const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
+    const postProtocolStateChannel = preProtocolStateChannel!.addProposal(appInstanceProposal);
 
     const proposedAppInstance = {
       identity: {
         appDefinition,
-        channelNonce: toBN(preProtocolStateChannel.numProposedApps + 1),
-        participants: preProtocolStateChannel.getSigningKeysFor(
+        channelNonce: toBN(preProtocolStateChannel!.numProposedApps + 1),
+        participants: preProtocolStateChannel!.getSigningKeysFor(
           initiatorIdentifier,
           responderIdentifier,
         ),
-        multisigAddress: preProtocolStateChannel.multisigAddress,
+        multisigAddress: preProtocolStateChannel!.multisigAddress,
         defaultTimeout: toBN(defaultTimeout),
       },
       hashOfLatestState: keccak256(
@@ -132,11 +126,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     substart = Date.now();
     // 6ms
-    const initiatorSignatureOnInitialState = yield [
-      OP_SIGN,
-      setStateCommitment.hashToSign(),
-    ];
-    logTime(log, substart, `Signed initial state initiator propose`);
+    const initiatorSignatureOnInitialState = yield [OP_SIGN, setStateCommitment.hashToSign()];
+    logTime(log, substart, `[${processID}] Signed initial state initiator propose`);
 
     const m1 = {
       protocol,
@@ -153,20 +144,25 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     // 200ms
     const m2 = yield [IO_SEND_AND_WAIT, m1];
-    logTime(log, substart, `Received responder's m2`);
+    logTime(log, substart, `[${processID}] Received responder's m2`);
     substart = Date.now();
 
     const {
-      customData: { signature: responderSignatureOnInitialState },
-    } = m2! as ProtocolMessageData;
+      data: {
+        customData: { signature: responderSignatureOnInitialState },
+      },
+    } = m2!;
 
     substart = Date.now();
     await assertIsValidSignature(
       getSignerAddressFromPublicIdentifier(responderIdentifier),
       setStateCommitment.hashToSign(),
       responderSignatureOnInitialState,
+      `Failed to validate responders signature on initial set state commitment in the propose protocol. Our commitment: ${stringify(
+        setStateCommitment.toJson(),
+      )}. Initial state: ${stringify(initialState)}`,
     );
-    logTime(log, substart, `Asserted valid signture initiator propose`);
+    logTime(log, substart, `[${processID}] Asserted valid signture initiator propose`);
 
     // add signatures to commitment and save
     await setStateCommitment.addSignatures(
@@ -184,21 +180,25 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       appInstanceProposal,
       setStateCommitment,
     ];
-    logTime(log, substart, `Persisted app instance`);
+    logTime(
+      log,
+      substart,
+      `[${processID}] Persisted app instance ${appInstanceProposal.identityHash}`,
+    );
     substart = Date.now();
 
     // Total 298ms
-    logTime(log, start, `Initiation finished`);
+    logTime(log, start, `[${processID}] Initiation finished`);
   },
 
-  1 /* Responding */: async function*(context: Context) {
-    const { message, store } = context;
+  1 /* Responding */: async function* (context: Context) {
+    const { message, preProtocolStateChannel } = context;
+    const { params, processID } = message;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
-    log.info(`Response started`);
-
-    const { params, processID } = message;
+    log.info(`[${processID}] Response started`);
+    log.debug(`[${processID}] Protocol response started with parameters ${stringify(params)}`);
 
     const {
       abiEncodings,
@@ -209,7 +209,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initiatorDepositAssetId,
       initiatorIdentifier,
       meta,
-      multisigAddress,
       outcomeType,
       responderDeposit,
       responderDepositAssetId,
@@ -221,11 +220,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignatureOnInitialState },
     } = message;
 
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
-      multisigAddress,
-      store,
-    );
-
     // 16ms
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -234,12 +228,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       outcomeType,
       identityHash: appIdentityToHash({
         appDefinition,
-        channelNonce: toBN(preProtocolStateChannel.numProposedApps + 1),
-        participants: preProtocolStateChannel.getSigningKeysFor(
+        channelNonce: toBN(preProtocolStateChannel!.numProposedApps + 1),
+        participants: preProtocolStateChannel!.getSigningKeysFor(
           initiatorIdentifier,
           responderIdentifier,
         ),
-        multisigAddress: preProtocolStateChannel.multisigAddress,
+        multisigAddress: preProtocolStateChannel!.multisigAddress,
         defaultTimeout: toBN(defaultTimeout),
       }),
       defaultTimeout: defaultTimeout.toHexString(),
@@ -249,31 +243,36 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initiatorIdentifier,
       responderIdentifier,
       meta,
-      appSeqNo: preProtocolStateChannel.numProposedApps + 1,
-      initiatorDepositAssetId: initiatorDepositAssetId
-        || CONVENTION_FOR_ETH_ASSET_ID,
-      responderDepositAssetId: responderDepositAssetId 
-        || CONVENTION_FOR_ETH_ASSET_ID,
+      appSeqNo: preProtocolStateChannel!.numProposedApps + 1,
+      initiatorDepositAssetId: initiatorDepositAssetId || CONVENTION_FOR_ETH_ASSET_ID,
+      responderDepositAssetId: responderDepositAssetId || CONVENTION_FOR_ETH_ASSET_ID,
     };
 
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
         proposal: appInstanceProposal,
-        params, role: ProtocolRoles.responder,
+        params,
+        role: ProtocolRoles.responder,
+        stateChannel: preProtocolStateChannel!.toJson(),
       } as ProposeMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
+    logTime(log, substart, `[${processID}] Validated proposal`);
+    substart = Date.now();
 
     const proposedAppInstance = {
       identity: {
         appDefinition,
-        channelNonce: toBN(preProtocolStateChannel.numProposedApps + 1),
-        participants: preProtocolStateChannel.getSigningKeysFor(
+        channelNonce: toBN(preProtocolStateChannel!.numProposedApps + 1),
+        participants: preProtocolStateChannel!.getSigningKeysFor(
           initiatorIdentifier,
           responderIdentifier,
         ),
-        multisigAddress: preProtocolStateChannel.multisigAddress,
+        multisigAddress: preProtocolStateChannel!.multisigAddress,
         defaultTimeout: toBN(defaultTimeout),
       },
       hashOfLatestState: keccak256(
@@ -286,23 +285,44 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
 
     // 0ms
-    const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
+    const postProtocolStateChannel = preProtocolStateChannel!.addProposal(appInstanceProposal);
 
     substart = Date.now();
     await assertIsValidSignature(
       getSignerAddressFromPublicIdentifier(initiatorIdentifier),
       setStateCommitment.hashToSign(),
       initiatorSignatureOnInitialState,
+      `Failed to validate initiator's signature on initial set state commitment in the propose protocol. Process: ${processID}. Our commitment: ${stringify(
+        setStateCommitment.toJson(),
+      )}. Initial state: ${stringify(initialState)}`,
     );
-    logTime(log, substart, `asserted valid signature responder propose`);
+    logTime(log, substart, `[${processID}] Asserted valid signature responder propose`);
 
     substart = Date.now();
     // 12ms
-    const responderSignatureOnInitialState = yield [
-      OP_SIGN,
-      setStateCommitment.hashToSign(),
+    const responderSignatureOnInitialState = yield [OP_SIGN, setStateCommitment.hashToSign()];
+    logTime(log, substart, `[${processID}] Signed initial state responder propose`);
+
+    await setStateCommitment.addSignatures(
+      initiatorSignatureOnInitialState,
+      responderSignatureOnInitialState as any,
+    );
+
+    substart = Date.now();
+    // 98ms
+    // will also save the app array into the state channel
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.CreateProposal,
+      postProtocolStateChannel,
+      appInstanceProposal,
+      setStateCommitment,
     ];
-    logTime(log, substart, `Signed initial state responder propose`);
+    logTime(
+      log,
+      substart,
+      `[${processID}] Persisted app instance ${appInstanceProposal.identityHash}`,
+    );
 
     // 0ms
     yield [
@@ -316,26 +336,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
           signature: responderSignatureOnInitialState,
         },
       } as ProtocolMessageData,
-    ];
-
-    await setStateCommitment.addSignatures(
-      initiatorSignatureOnInitialState,
-      responderSignatureOnInitialState as any,
-    );
-
-    substart = Date.now();
-
-    // 98ms
-    // will also save the app array into the state channel
-    yield [
-      PERSIST_APP_INSTANCE,
-      PersistAppType.CreateProposal,
       postProtocolStateChannel,
-      appInstanceProposal,
-      setStateCommitment,
     ];
-    logTime(log, substart, `Persisted app instance`);
+
     substart = Date.now();
-    logTime(log, start, `Response finished`);
+    logTime(log, start, `[${processID}] Response finished`);
   },
 };

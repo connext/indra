@@ -2,28 +2,23 @@ import { CONVENTION_FOR_ETH_ASSET_ID, ProposeMessage } from "@connext/types";
 import { One } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { toBeLt } from "../bignumber-jest-matcher";
-import { NetworkContextForTestSuite } from "../contracts";
+import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
-import {
-  collateralizeChannel,
-  createChannel,
-  makeInstallCall,
-  makeProposeCall,
-} from "../utils";
+import { collateralizeChannel, createChannel, makeInstallCall, makeProposeCall } from "../utils";
 
 expect.extend({ toBeLt });
 
-jest.setTimeout(7500);
+jest.setTimeout(7_500);
 
-const { TicTacToeApp } = global[`network`] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global[`contracts`] as TestContractAddresses;
 
 describe(`Node method follows spec - install`, () => {
   let multisigAddress: string;
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   describe(
     `Node A gets app install proposal, sends to node B, B approves it, installs it, ` +
@@ -44,11 +39,11 @@ describe(`Node method follows spec - install`, () => {
         );
       });
 
-      it(`install app with ETH`, done => {
+      it(`install app with ETH`, async (done) => {
         let completedInstalls = 0;
 
         nodeB.on(`PROPOSE_INSTALL_EVENT`, (msg: ProposeMessage) => {
-          makeInstallCall(nodeB, msg.data.appIdentityHash);
+          makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress);
         });
 
         nodeA.on(`INSTALL_EVENT`, () => {

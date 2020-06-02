@@ -19,11 +19,10 @@ export type MultiAssetMultiPartyCoinTransferInterpreterParams = {
   tokenAddresses: Address[];
 };
 
-export type MultiAssetMultiPartyCoinTransferInterpreterParamsJson = Partial<
-  MultiAssetMultiPartyCoinTransferInterpreterParams
-> & {
-  limit: BigNumberJson[];
-};
+export type MultiAssetMultiPartyCoinTransferInterpreterParamsJson =
+  Omit<MultiAssetMultiPartyCoinTransferInterpreterParams, "limit"> & {
+    limit: BigNumberJson[];
+  };
 
 export const multiAssetMultiPartyCoinTransferInterpreterParamsEncoding = tidy(`tuple(
   uint256[] limit,
@@ -38,11 +37,10 @@ export type SingleAssetTwoPartyCoinTransferInterpreterParams = {
   tokenAddress: Address;
 };
 
-export type SingleAssetTwoPartyCoinTransferInterpreterParamsJson = Partial<
-  SingleAssetTwoPartyCoinTransferInterpreterParams
-> & {
-  limit: BigNumberJson;
-};
+export type SingleAssetTwoPartyCoinTransferInterpreterParamsJson =
+  Omit<SingleAssetTwoPartyCoinTransferInterpreterParams, "limit"> & {
+    limit: BigNumberJson;
+  };
 
 export const singleAssetTwoPartyCoinTransferInterpreterParamsEncoding = tidy(`tuple(
   uint256 limit,
@@ -58,16 +56,16 @@ export type TwoPartyFixedOutcomeInterpreterParams = {
   tokenAddress: Address;
 };
 
-export type TwoPartyFixedOutcomeInterpreterParamsJson = Partial<
-  TwoPartyFixedOutcomeInterpreterParams
-> & {
-  amount: BigNumberJson;
-};
+export type TwoPartyFixedOutcomeInterpreterParamsJson =
+  Omit<TwoPartyFixedOutcomeInterpreterParams, "amount"> & {
+    amount: BigNumberJson;
+  };
 
 // TODO: tokenAddress?!
 export const twoPartyFixedOutcomeInterpreterParamsEncoding = tidy(`tuple(
   address[2] playerAddrs,
-  uint256 amount
+  uint256 amount,
+  address tokenAddress
 )`);
 
 ////////////////////////////////////////

@@ -16,20 +16,22 @@ export class ResolveSignedTransferController extends AbstractController {
     params: PublicParams.ResolveSignedTransfer,
   ): Promise<PublicResults.ResolveSignedTransfer> => {
     this.log.info(`resolveSignedTransfer started: ${stringify(params)}`);
-    const { paymentId, data, signature } = params;
+    const { paymentId, attestation } = params;
 
     const installedApps = await this.connext.getAppInstances();
     const existing = installedApps.find(
-      app =>
+      (app) =>
         app.appInterface.addr ===
-          this.connext.appRegistry.find(app => app.name === SimpleSignedTransferAppName)
+          this.connext.appRegistry.find((app) => app.name === SimpleSignedTransferAppName)
             .appDefinitionAddress &&
         (app.latestState as SimpleSignedTransferAppState).paymentId === paymentId,
     );
     let resolveRes: PublicResults.ResolveSignedTransfer;
+    let alreadyFinalized = false;
     try {
       // node installs app, validation happens in listener
       if (existing) {
+        alreadyFinalized = existing.latestState["finalized"];
         resolveRes = {
           appIdentityHash: existing.identityHash,
           amount: (existing.latestState as SimpleSignedTransferAppState).coinTransfers[0].amount,
@@ -39,13 +41,16 @@ export class ResolveSignedTransferController extends AbstractController {
         };
       } else {
         this.log.debug(`Did not find installed app, ask node to install it for us`);
+        // wait for proposal and install before taking action
         resolveRes = await this.connext.node.resolveSignedTransfer(paymentId);
       }
-      this.log.debug(`Taking action on signed transfer app ${resolveRes.appIdentityHash}`);
-      await this.connext.takeAction(resolveRes.appIdentityHash, {
-        data,
-        signature,
-      } as SimpleSignedTransferAppAction);
+      if (!alreadyFinalized) {
+        this.log.debug(`Taking action on signed transfer app ${resolveRes.appIdentityHash}`);
+        await this.connext.takeAction(
+          resolveRes.appIdentityHash,
+          attestation as SimpleSignedTransferAppAction,
+        );
+      }
       this.log.debug(`Uninstalling signed transfer app ${resolveRes.appIdentityHash}`);
       await this.connext.uninstallApp(resolveRes.appIdentityHash);
     } catch (e) {

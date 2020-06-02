@@ -1,26 +1,18 @@
-import { SIGNED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
-  Bytes32,
-  NodeResponses,
   SignedTransferStatus,
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
-  Address,
 } from "@connext/types";
-import { bigNumberifyJson, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
+import { bigNumberifyJson } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { Zero } from "ethers/constants";
-
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 import { SignedTransferRepository } from "./signedTransfer.repository";
 
 const appStatusesToSignedTransferStatus = (
-  senderApp: AppInstance<"SimpleSignedTransferApp">,
-  receiverApp?: AppInstance<"SimpleSignedTransferApp">,
+  senderApp: AppInstance<typeof SimpleSignedTransferAppName>,
+  receiverApp?: AppInstance<typeof SimpleSignedTransferAppName>,
 ): SignedTransferStatus | undefined => {
   if (!senderApp) {
     return undefined;
@@ -40,7 +32,7 @@ const appStatusesToSignedTransferStatus = (
 
 export const normalizeSignedTransferAppState = (
   app: AppInstance,
-): AppInstance<"SimpleSignedTransferApp"> | undefined => {
+): AppInstance<typeof SimpleSignedTransferAppName> | undefined => {
   return (
     app && {
       ...app,
@@ -53,127 +45,10 @@ export const normalizeSignedTransferAppState = (
 export class SignedTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
-    private readonly channelService: ChannelService,
     private readonly log: LoggerService,
-    private readonly channelRepository: ChannelRepository,
     private readonly signedTransferRepository: SignedTransferRepository,
   ) {
     this.log.setContext("SignedTransferService");
-  }
-
-  async installSignedTransferReceiverApp(
-    userIdentifier: Address,
-    paymentId: Bytes32,
-  ): Promise<NodeResponses.ResolveSignedTransfer> {
-    this.log.info(
-      `installSignedTransferReceiverApp for ${userIdentifier} paymentId ${paymentId} started`,
-    );
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      userIdentifier,
-    );
-
-    // TODO: could there be more than 1? how to handle that case?
-    let [senderAppBadType] = await this.signedTransferRepository.findSignedTransferAppsByPaymentId(
-      paymentId,
-    );
-    if (!senderAppBadType) {
-      throw new Error(`No sender app installed for paymentId: ${paymentId}`);
-    }
-
-    const senderChannel = await this.channelRepository.findByMultisigAddressOrThrow(
-      senderAppBadType.channel.multisigAddress,
-    );
-    const senderApp = normalizeSignedTransferAppState(senderAppBadType);
-
-    const assetId = senderApp.outcomeInterpreterParameters.tokenAddress;
-
-    // sender amount
-    const amount = senderApp.latestState.coinTransfers[0].amount;
-
-    const existing = await this.findReceiverAppByPaymentId(paymentId);
-    if (existing) {
-      const result: NodeResponses.ResolveSignedTransfer = {
-        appIdentityHash: existing.identityHash,
-        sender: senderChannel.userIdentifier,
-        meta: existing.meta,
-        amount,
-        assetId,
-      };
-      this.log.warn(`Found existing hashlock transfer app, returning: ${stringify(result)}`);
-      return result;
-    }
-
-    const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
-
-    const freeBal = await this.cfCoreService.getFreeBalance(
-      userIdentifier,
-      receiverChannel.multisigAddress,
-      assetId,
-    );
-    if (freeBal[freeBalanceAddr].lt(amount)) {
-      // request collateral and wait for deposit to come through
-      const depositReceipt = await this.channelService.rebalance(
-        userIdentifier,
-        assetId,
-        RebalanceType.COLLATERALIZE,
-        amount,
-      );
-      if (!depositReceipt) {
-        throw new Error(
-          `Could not deposit sufficient collateral to resolve signed transfer app for receiver: ${userIdentifier}`,
-        );
-      }
-    } else {
-      // request collateral normally without awaiting
-      this.channelService.rebalance(userIdentifier, assetId, RebalanceType.COLLATERALIZE, amount);
-    }
-
-    const initialState: SimpleSignedTransferAppState = {
-      coinTransfers: [
-        {
-          amount,
-          to: freeBalanceAddr,
-        },
-        {
-          amount: Zero,
-          to: getSignerAddressFromPublicIdentifier(userIdentifier),
-        },
-      ],
-      paymentId,
-      signer: senderApp.latestState.signer,
-      finalized: false,
-    };
-
-    const meta = { ...senderApp.meta, sender: senderChannel.userIdentifier };
-    const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
-      receiverChannel,
-      initialState,
-      amount,
-      assetId,
-      Zero,
-      assetId,
-      SimpleSignedTransferAppName,
-      meta,
-      SIGNED_TRANSFER_STATE_TIMEOUT,
-    );
-
-    if (!receiverAppInstallRes || !receiverAppInstallRes.appIdentityHash) {
-      throw new Error(`Could not install app on receiver side.`);
-    }
-
-    const result: NodeResponses.ResolveSignedTransfer = {
-      appIdentityHash: receiverAppInstallRes.appIdentityHash,
-      sender: senderChannel.userIdentifier,
-      meta,
-      amount,
-      assetId,
-    };
-    this.log.info(
-      `installSignedTransferReceiverApp for ${userIdentifier} paymentId ${paymentId} complete: ${JSON.stringify(
-        result,
-      )}`,
-    );
-    return result;
   }
 
   async findSenderAndReceiverAppsWithStatus(

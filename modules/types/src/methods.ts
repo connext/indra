@@ -82,7 +82,7 @@ type GetFreeBalanceStateParams = {
 };
 
 type GetFreeBalanceStateResult = {
-  [s: string]: BigNumber;
+  [signerAddress: string]: BigNumber;
 };
 
 ////////////////////////////////////////
@@ -131,6 +131,7 @@ type GetStateChannelResult = {
 
 type InstallParams = {
   appIdentityHash: Bytes32;
+  multisigAddress: Address;
 };
 
 type InstallResult = {
@@ -141,6 +142,7 @@ type InstallResult = {
 
 type RequestDepositRightsParams = {
   assetId?: Address;
+  multisigAddress: Address;
 };
 
 type RequestDepositRightsResult = {
@@ -157,7 +159,8 @@ type ProposeInstallParams = {
   initialState: AppState;
   initiatorDeposit: BigNumber;
   initiatorDepositAssetId: AssetId;
-  meta?: Object;
+  meta?: any;
+  multisigAddress: Address;
   outcomeType: OutcomeType;
   responderIdentifier: PublicIdentifier;
   responderDeposit: BigNumber;
@@ -173,6 +176,7 @@ type ProposeInstallResult = {
 
 type RejectInstallParams = {
   appIdentityHash: Bytes32;
+  multisigAddress: Address;
 };
 
 type RejectInstallResult = {};
@@ -182,6 +186,7 @@ type RejectInstallResult = {};
 type TakeActionParams = {
   appIdentityHash: Bytes32;
   action: SolidityValueType;
+  multisigAddress: Address;
   stateTimeout?: BigNumber;
 };
 
@@ -193,15 +198,20 @@ type TakeActionResult = {
 
 type UninstallParams = {
   appIdentityHash: Bytes32;
+  multisigAddress: Address;
 };
 
-type UninstallResult = {};
+type UninstallResult = {
+  appIdentityHash: Bytes32;
+  multisigAddress: Address;
+};
 
 ////////////////////////////////////////
 
 type RescindDepositRightsParams = {
   assetId?: Address;
   appIdentityHash?: Bytes32;
+  multisigAddress: Address;
 };
 
 type RescindDepositRightsResult = {
@@ -233,6 +243,16 @@ type WithdrawCommitmentResult = {
 };
 
 ////////////////////////////////////////
+
+type SyncParams = {
+  multisigAddress: Address;
+};
+
+type SyncResult = {
+  syncedChannel: StateChannelJSON;
+};
+
+////////////////////////////////////////
 // exports
 
 export const MethodNames = enumify({
@@ -250,12 +270,13 @@ export const MethodNames = enumify({
   chan_install: "chan_install",
   chan_proposeInstall: "chan_proposeInstall",
   chan_rejectInstall: "chan_rejectInstall",
+  chan_sync: "chan_sync",
   chan_takeAction: "chan_takeAction",
   chan_uninstall: "chan_uninstall",
   chan_withdraw: "chan_withdraw",
   chan_withdrawCommitment: "chan_withdrawCommitment",
 });
-type MethodNames = (typeof MethodNames)[keyof typeof MethodNames];
+type MethodNames = typeof MethodNames[keyof typeof MethodNames];
 export type MethodName = keyof typeof MethodNames;
 
 export namespace MethodParams {
@@ -263,7 +284,7 @@ export namespace MethodParams {
   export type DeployStateDepositHolder = DeployStateDepositHolderParams;
   export type Deposit = DepositParams;
   export type GetAppInstanceDetails = GetAppInstanceDetailsParams;
-  export type GetAppInstances = GetAppInstancesParams
+  export type GetAppInstances = GetAppInstancesParams;
   export type GetChannelAddresses = GetChannelAddressesParams;
   export type GetFreeBalanceState = GetFreeBalanceStateParams;
   export type GetProposedAppInstance = GetProposedAppInstanceParams;
@@ -277,6 +298,7 @@ export namespace MethodParams {
   export type RequestDepositRights = RequestDepositRightsParams;
   export type RescindDepositRights = RescindDepositRightsParams;
   export type TakeAction = TakeActionParams;
+  export type Sync = SyncParams;
   export type Uninstall = UninstallParams;
   export type Withdraw = WithdrawParams;
   export type WithdrawCommitment = WithdrawCommitmentParams;
@@ -300,6 +322,7 @@ export type MethodParam =
   | RejectInstallParams
   | RequestDepositRightsParams
   | RescindDepositRightsParams
+  | SyncParams
   | TakeActionParams
   | UninstallParams
   | WithdrawParams
@@ -310,7 +333,7 @@ export namespace MethodResults {
   export type DeployStateDepositHolder = DeployStateDepositHolderResult;
   export type Deposit = DepositResult;
   export type GetAppInstanceDetails = GetAppInstanceDetailsResult;
-  export type GetAppInstances = GetAppInstancesResult
+  export type GetAppInstances = GetAppInstancesResult;
   export type GetChannelAddresses = GetChannelAddressesResult;
   export type GetFreeBalanceState = GetFreeBalanceStateResult;
   export type GetProposedAppInstance = GetProposedAppInstanceResult;
@@ -323,6 +346,7 @@ export namespace MethodResults {
   export type RejectInstall = RejectInstallResult;
   export type RequestDepositRights = RequestDepositRightsResult;
   export type RescindDepositRights = RescindDepositRightsResult;
+  export type Sync = SyncResult;
   export type TakeAction = TakeActionResult;
   export type Uninstall = UninstallResult;
   export type Withdraw = WithdrawResult;
@@ -347,6 +371,7 @@ export type MethodResult =
   | RejectInstallResult
   | RequestDepositRightsResult
   | RescindDepositRightsResult
+  | SyncResult
   | TakeActionResult
   | UninstallResult
   | WithdrawResult

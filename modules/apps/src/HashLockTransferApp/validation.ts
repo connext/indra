@@ -1,15 +1,13 @@
-import { MethodParams, CoinTransfer, HashLockTransferAppState } from "@connext/types";
+import { CoinTransfer, HashLockTransferAppState, ProtocolParams } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 
 export const validateHashLockTransferApp = (
-  params: MethodParams.ProposeInstall,
+  params: ProtocolParams.Propose,
   blockNumber: number,
-  initiatorIdentifier: string,
-  responderIdentifier: string,
 ) => {
-  const { responderDeposit, initiatorDeposit } = params;
+  const { responderDeposit, initiatorDeposit, initiatorIdentifier, responderIdentifier } = params;
   const initialState = params.initialState as HashLockTransferAppState;
 
   const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);

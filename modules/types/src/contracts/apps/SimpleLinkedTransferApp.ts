@@ -1,4 +1,4 @@
-import { Address, BigNumber, HexString } from "../../basic";
+import { HexString } from "../../basic";
 import { tidy } from "../../utils";
 
 import { CoinTransfer } from "../funding";
@@ -12,19 +12,15 @@ export const SimpleLinkedTransferAppName = "SimpleLinkedTransferApp";
 export type SimpleLinkedTransferAppState = {
   coinTransfers: CoinTransfer[];
   linkedHash: HexString;
-  amount: BigNumber;
-  assetId: Address;
-  paymentId: HexString;
   preImage: HexString;
+  finalized: boolean;
 };
 
 export const SimpleLinkedTransferAppStateEncoding = tidy(`tuple(
   ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
   bytes32 linkedHash,
-  uint256 amount,
-  address assetId,
-  bytes32 paymentId,
-  bytes32 preImage
+  bytes32 preImage,
+  bool finalized
 )`);
 
 export type SimpleLinkedTransferAppAction = {

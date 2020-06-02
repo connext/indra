@@ -1,12 +1,12 @@
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 import { CANNOT_UNINSTALL_FREE_BALANCE } from "../../errors";
 
 import { setup, SetupContext } from "../setup";
 import { constructUninstallRpc, createChannel, constructGetStateChannelRpc } from "../utils";
 
 describe("Confirms that a FreeBalance cannot be uninstalled", () => {
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
 
   beforeAll(async () => {
     const context: SetupContext = await setup(global);
@@ -25,7 +25,10 @@ describe("Confirms that a FreeBalance cannot be uninstalled", () => {
       } = await nodeA.rpcRouter.dispatch(constructGetStateChannelRpc(multisigAddress));
       expect(channel.multisigAddress).toBe(multisigAddress);
 
-      const fbUninstallReq = constructUninstallRpc(channel.freeBalanceAppInstance.identityHash);
+      const fbUninstallReq = constructUninstallRpc(
+        channel.freeBalanceAppInstance.identityHash,
+        channel.multisigAddress,
+      );
 
       try {
         await nodeA.rpcRouter.dispatch(fbUninstallReq);

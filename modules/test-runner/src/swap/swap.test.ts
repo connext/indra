@@ -1,9 +1,8 @@
 import { IConnextClient, PublicParams } from "@connext/types";
-import { calculateExchange } from "@connext/utils";
-import { AddressZero, Zero } from "ethers/constants";
+import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
-import { expect, COLLATERAL_AMOUNT_TOKEN, ONE_ETH } from "../util";
+import { expect, ONE_ETH } from "../util";
 import {
   AssetOptions,
   createClient,
@@ -25,7 +24,7 @@ describe("Swaps", () => {
 
   beforeEach(async () => {
     client = await createClient();
-    tokenAddress = client.config.contractAddresses.Token;
+    tokenAddress = client.config.contractAddresses.Token!;
     nodeSignerAddress = client.nodeSignerAddress;
   });
 
@@ -53,20 +52,7 @@ describe("Swaps", () => {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(client, input.amount, input.assetId);
-    const expectedFreeBalanceNodeToken = COLLATERAL_AMOUNT_TOKEN.sub(
-      calculateExchange(
-        input.amount,
-        await client.getLatestSwapRate(input.assetId, output.assetId),
-      ),
-    );
-    await swapAsset(
-      client,
-      input,
-      output,
-      nodeSignerAddress,
-      { freeBalanceNodeToken: Zero },
-      { freeBalanceNodeToken: expectedFreeBalanceNodeToken },
-    );
+    await swapAsset(client, input, output, nodeSignerAddress);
   });
 
   it("client tries to swap with invalid from token address", async () => {

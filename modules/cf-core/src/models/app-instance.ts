@@ -14,6 +14,7 @@ import {
   twoPartyFixedOutcomeInterpreterParamsEncoding,
 } from "@connext/types";
 import {
+  appIdentityToHash,
   bigNumberifyJson,
   deBigNumberifyJson,
   getSignerAddressFromPublicIdentifier,
@@ -28,7 +29,6 @@ import { defaultAbiCoder, keccak256, BigNumber } from "ethers/utils";
 import { Memoize } from "typescript-memoize";
 
 import { CounterfactualApp } from "../contracts";
-import { appIdentityToHash } from "../utils";
 
 /**
  * Representation of an AppInstance.
@@ -68,12 +68,9 @@ export class AppInstance {
     public readonly multisigAddress: string,
     public readonly meta?: object,
     public readonly latestAction: any = undefined,
-    private readonly twoPartyOutcomeInterpreterParamsInternal?:
-      TwoPartyFixedOutcomeInterpreterParams,
-    private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?:
-      MultiAssetMultiPartyCoinTransferInterpreterParams,
-    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?:
-      SingleAssetTwoPartyCoinTransferInterpreterParams,
+    private readonly twoPartyOutcomeInterpreterParamsInternal?: TwoPartyFixedOutcomeInterpreterParams,
+    private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?: MultiAssetMultiPartyCoinTransferInterpreterParams,
+    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?: SingleAssetTwoPartyCoinTransferInterpreterParams,
   ) {}
 
   get twoPartyOutcomeInterpreterParams() {
@@ -114,18 +111,16 @@ export class AppInstance {
             deserialized.twoPartyOutcomeInterpreterParams,
           ) as TwoPartyFixedOutcomeInterpreterParams)
         : undefined,
-      singleAssetTwoPartyCoinTransferInterpreterParams:
-        deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
-          ? (bigNumberifyJson(
-              deserialized.singleAssetTwoPartyCoinTransferInterpreterParams,
-            ) as SingleAssetTwoPartyCoinTransferInterpreterParams)
-          : undefined,
-      multiAssetMultiPartyCoinTransferInterpreterParams:
-        deserialized.multiAssetMultiPartyCoinTransferInterpreterParams
-          ? (bigNumberifyJson(
-              deserialized.multiAssetMultiPartyCoinTransferInterpreterParams,
-            ) as MultiAssetMultiPartyCoinTransferInterpreterParams)
-          : undefined,
+      singleAssetTwoPartyCoinTransferInterpreterParams: deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
+        ? (bigNumberifyJson(
+            deserialized.singleAssetTwoPartyCoinTransferInterpreterParams,
+          ) as SingleAssetTwoPartyCoinTransferInterpreterParams)
+        : undefined,
+      multiAssetMultiPartyCoinTransferInterpreterParams: deserialized.multiAssetMultiPartyCoinTransferInterpreterParams
+        ? (bigNumberifyJson(
+            deserialized.multiAssetMultiPartyCoinTransferInterpreterParams,
+          ) as MultiAssetMultiPartyCoinTransferInterpreterParams)
+        : undefined,
     };
 
     return new AppInstance(
@@ -235,7 +230,7 @@ export class AppInstance {
 
       default: {
         throw new Error(
-          "The outcome type in this application logic contract is not supported yet.",
+          `The outcome type in this application logic contract is not supported yet. Outcome type: ${this.outcomeType}, expected one of: ${OutcomeType.TWO_PARTY_FIXED_OUTCOME}, ${OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER}, or ${OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER}`,
         );
       }
     }
@@ -272,7 +267,7 @@ export class AppInstance {
       ...this.toJson(),
       latestState: newState,
       latestVersionNumber: this.versionNumber + 1,
-      latestAction: undefined, 
+      latestAction: undefined,
       // any time you set app state, you should remove
       // any existing actions from previous states
       stateTimeout: stateTimeout.toHexString(),
@@ -332,18 +327,15 @@ export class AppInstance {
       let data = key ? dataObj[key] : dataObj;
       let output;
       if (isBN(template) || typeof template !== "object") {
-        // console.log(`Done, returning simple data: ${data}`);
         output = data;
       } else if (typeof template === "object" && typeof template.length === "number") {
         output = [];
         for (const index in template) {
-          // console.log(`Applying keyifiy for array index ${index}`);
           output.push(keyify(template, data, index));
         }
       } else if (typeof template === "object" && typeof template.length !== "number") {
         output = {};
         for (const subkey in template) {
-          // console.log(`Applying keyifiy for object key ${subkey}`);
           output[subkey] = keyify(template, data, subkey);
         }
       } else {

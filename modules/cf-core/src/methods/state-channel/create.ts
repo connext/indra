@@ -5,15 +5,13 @@ import {
   MethodParams,
   MethodResults,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
-import { jsonRpcMethod } from "rpc-server";
-
-import { RequestHandler } from "../../request-handler";
-
-import { NodeController } from "../controller";
-import { getCreate2MultisigAddress } from "../../utils";
 import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
+import { RequestHandler } from "../../request-handler";
+import { getCreate2MultisigAddress } from "../../utils";
+
+import { MethodController } from "../controller";
 
 /**
  * This instantiates a StateChannel object to encapsulate the "channel"
@@ -26,15 +24,19 @@ import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
  * is owned and the multisig's _address_ is sent as an event
  * to whoever subscribed to the `CREATE_CHANNEL_EVENT` event on the Node.
  */
-export class CreateChannelController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_create)
+export class CreateChannelController extends MethodController {
+  public readonly methodName = MethodNames.chan_create || "unknown";
+
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockNames(
+  protected async getRequiredLockName(
     requestHandler: RequestHandler,
     params: MethodParams.CreateChannel,
-  ): Promise<string[]> {
-    return [`${MethodNames.chan_create}:${params.owners.sort().toString()}`];
+  ): Promise<string> {
+    if (!params.owners) {
+      throw new Error(`No owners provided in params. ${stringify(params)}`);
+    }
+    return `${MethodNames.chan_create}:${params.owners.sort().toString()}`;
   }
 
   protected async executeMethodImplementation(
@@ -46,24 +48,23 @@ export class CreateChannelController extends NodeController {
 
     // safe to use network context proxy factory address directly here
     // using the assumption that `create` is only called for new state
-    // channels. also because the `getMultisigAddressWithCounterparty` function
+    // channels. also because the `getMultisigAddressWithCounterparty` const
     // will default to using any existing multisig address for the provided
     // owners before creating one
-    const { 
-      multisigAddress: storedMultisig,
-    } = await store.getStateChannelByOwners(owners) || { multisigAddress: undefined };
+    const { multisigAddress: storedMultisig } = (await store.getStateChannelByOwners(owners)) || {
+      multisigAddress: undefined,
+    };
     if (!networkContext.provider && !storedMultisig) {
       throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
     }
-    const multisigAddress = storedMultisig || await getCreate2MultisigAddress(
-      requestHandler.publicIdentifier,
-      owners.find(id => id !== requestHandler.publicIdentifier)!,
-      { 
-        proxyFactory: networkContext.ProxyFactory, 
-        multisigMastercopy: networkContext.MinimumViableMultisig,
-      },
-      networkContext.provider,
-    );
+    const multisigAddress =
+      storedMultisig ||
+      (await getCreate2MultisigAddress(
+        requestHandler.publicIdentifier,
+        owners.find((id) => id !== requestHandler.publicIdentifier)!,
+        networkContext.contractAddresses,
+        networkContext.provider,
+      ));
     // Check if the database has stored the relevant data for this state channel
     if (!storedMultisig) {
       await this.setupAndCreateChannel(multisigAddress, requestHandler, params);
@@ -78,11 +79,11 @@ export class CreateChannelController extends NodeController {
     params: MethodParams.CreateChannel,
   ) {
     const { owners } = params;
-    const { publicIdentifier, protocolRunner, outgoing } = requestHandler;
+    const { publicIdentifier, protocolRunner, outgoing, router } = requestHandler;
 
-    const [responderIdentifier] = owners.filter(x => x !== publicIdentifier);
+    const [responderIdentifier] = owners.filter((x) => x !== publicIdentifier);
 
-    await protocolRunner.runSetupProtocol({
+    await protocolRunner.runSetupProtocol(router, {
       multisigAddress,
       responderIdentifier,
       initiatorIdentifier: publicIdentifier,
@@ -101,7 +102,7 @@ export class CreateChannelController extends NodeController {
         multisigAddress,
         owners: addressOwners,
         counterpartyIdentifier: responderIdentifier,
-      } as MethodResults.CreateChannel,
+      },
     };
 
     outgoing.emit(EventNames.CREATE_CHANNEL_EVENT, msg);

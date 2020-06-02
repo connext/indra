@@ -1,13 +1,73 @@
-import { IConnextClient, StateChannelJSON, StateSchemaVersion } from "@connext/types";
-import { AddressZero } from "ethers/constants";
+import {
+  AppInstanceJson,
+  IConnextClient,
+  MinimalTransaction,
+  OutcomeType,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
+  StateSchemaVersion,
+} from "@connext/types";
+import { toBN, toBNJson } from "@connext/utils";
+import { AddressZero, One } from "ethers/constants";
+import { hexlify, randomBytes } from "ethers/utils";
 
 import {
   createClient,
   ETH_AMOUNT_SM,
   expect,
-  TEST_STORE_MINIMAL_TX,
-  TEST_STORE_SET_STATE_COMMITMENT,
 } from "../util";
+
+const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
+
+const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
+  to: TEST_STORE_ETH_ADDRESS,
+  value: One,
+  data: hexlify(randomBytes(64)),
+};
+
+const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
+  identityHash: "identityHashApp",
+  multisigAddress: TEST_STORE_ETH_ADDRESS,
+  initiatorIdentifier: "sender",
+  responderIdentifier: "receiver",
+  defaultTimeout: "0x00",
+  appInterface: {
+    addr: TEST_STORE_ETH_ADDRESS,
+    actionEncoding: `action encoding`,
+    stateEncoding: `state encoding`,
+  },
+  appSeqNo: 1,
+  latestVersionNumber: 2,
+  stateTimeout: "0x01",
+  latestState: {
+    counter: 4,
+  },
+  outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+  twoPartyOutcomeInterpreterParams: {
+    amount: { _hex: "0x42" } as any,
+    playerAddrs: [AddressZero, AddressZero],
+    tokenAddress: AddressZero,
+  },
+};
+
+const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
+  appIdentity: {
+    channelNonce: toBN(TEST_STORE_APP_INSTANCE.appSeqNo),
+    participants: [
+      TEST_STORE_APP_INSTANCE.initiatorIdentifier,
+      TEST_STORE_APP_INSTANCE.responderIdentifier,
+    ],
+    multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
+    appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
+    defaultTimeout: toBN(35),
+  },
+  appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
+  appStateHash: "setStateAppStateHash",
+  challengeRegistryAddress: TEST_STORE_ETH_ADDRESS,
+  stateTimeout: toBNJson(17),
+  versionNumber: toBNJson(23),
+  signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
+};
 
 describe("Get State Channel", () => {
   let clientA: IConnextClient;
@@ -15,7 +75,7 @@ describe("Get State Channel", () => {
 
   beforeEach(async () => {
     clientA = await createClient();
-    tokenAddress = clientA.config.contractAddresses.Token;
+    tokenAddress = clientA.config.contractAddresses.Token!;
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
   });
@@ -35,7 +95,7 @@ describe("Get State Channel", () => {
   });
 
   it("Store does not contain state channel", async () => {
-    clientA.store.clear();
+    await clientA.store.clear();
     await expect(clientA.getStateChannel()).to.be.rejectedWith(
       "Call to getStateChannel failed when searching for multisig address",
     );
@@ -85,12 +145,12 @@ describe("Get State Channel", () => {
     const channel = await clientA.store.getStateChannel(clientA.multisigAddress);
 
     expect(channel).to.be.ok;
-    expect(channel!.addresses.proxyFactory).to.be.eq(
-      (await clientA.getStateChannel()).data.addresses.proxyFactory,
+    expect(channel!.addresses.ProxyFactory).to.be.eq(
+      (await clientA.getStateChannel()).data.addresses.ProxyFactory,
     );
 
-    (channel as any).addresses.proxyFactory = null;
-    expect(channel!.addresses.proxyFactory).to.not.be.ok;
+    (channel as any).addresses.ProxyFactory = null;
+    expect(channel!.addresses.ProxyFactory).to.not.be.ok;
     await clientA.store.createStateChannel(
       channel!,
       TEST_STORE_MINIMAL_TX,

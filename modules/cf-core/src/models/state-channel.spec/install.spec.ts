@@ -2,15 +2,15 @@ import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext
 import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 
-import { createAppInstanceForTest } from "../../testing/utils";
-import { generateRandomNetworkContext } from "../../testing/mocks";
+import { createAppInstanceForTest, createAppInstanceProposalForTest } from "../../testing/utils";
+import { getRandomContractAddresses } from "../../testing/mocks";
 
 import { StateChannel } from "../state-channel";
 import { FreeBalanceClass } from "../free-balance";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 
 describe("StateChannel::uninstallApp", () => {
-  const networkContext = generateRandomNetworkContext();
+  const contractAddresses = getRandomContractAddresses();
 
   let sc1: StateChannel;
   let sc2: StateChannel;
@@ -22,17 +22,15 @@ describe("StateChannel::uninstallApp", () => {
     const ids = getRandomPublicIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
-      networkContext.IdentityApp,
-      {
-        proxyFactory: networkContext.ProxyFactory,
-        multisigMastercopy: networkContext.MinimumViableMultisig,
-      },
+      contractAddresses.IdentityApp,
+      contractAddresses,
       multisigAddress,
       ids[0],
       ids[1],
     );
 
     const appInstance = createAppInstanceForTest(sc1);
+    sc1 = sc1.addProposal(createAppInstanceProposalForTest(appInstance.identityHash, sc1));
 
     appIdentityHash = appInstance.identityHash;
 

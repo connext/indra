@@ -15,13 +15,13 @@ import { NodeResponses } from "./node";
 import { IMessagingService } from "./messaging";
 import { ILoggerService } from "./logger";
 import { JsonRpcProvider } from "ethers/providers";
-import { IClientStore } from "./store";
+import { IStoreService } from "./store";
 
 export interface AsyncNodeInitializationParameters extends NodeInitializationParameters {
   ethProvider: JsonRpcProvider;
   messaging: IMessagingService;
   messagingUrl?: string;
-  store?: IClientStore;
+  store?: IStoreService;
   signer?: IChannelSigner;
   channelProvider?: IChannelProvider;
 }
@@ -44,7 +44,8 @@ export interface INodeApiClient {
   nodeIdentifier: PublicIdentifier | undefined;
   config: NodeResponses.GetConfig | undefined;
   channelProvider: IChannelProvider | undefined;
-  acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
+  acquireLock(lockName: string): Promise<string>;
+  releaseLock(lockName: string, lockValue: string): Promise<void>;
   appRegistry(
     appDetails?:
       | {

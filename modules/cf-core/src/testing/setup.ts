@@ -4,7 +4,7 @@ import { Wallet } from "ethers";
 import { JsonRpcProvider, TransactionRequest } from "ethers/providers";
 import { parseEther } from "ethers/utils";
 
-import { Node } from "../node";
+import { CFCore } from "../cfCore";
 
 import { MemoryLockService, MemoryMessagingService, MemoryStoreServiceFactory } from "./services";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY, C_PRIVATE_KEY } from "./test-constants.jest";
@@ -15,7 +15,7 @@ export const env = {
 };
 
 export interface NodeContext {
-  node: Node;
+  node: CFCore;
   store: IStoreService;
 }
 
@@ -33,7 +33,7 @@ export async function setup(
   const setupContext: SetupContext = {};
 
   const nodeConfig = { STORE_KEY_PREFIX: "test" };
-  const ethUrl = global["network"]["provider"].connection.url;
+  const ethUrl = global["wallet"]["provider"].connection.url;
   const provider = new JsonRpcProvider(ethUrl);
   const prvKeyA = A_PRIVATE_KEY;
   let prvKeyB = B_PRIVATE_KEY;
@@ -51,10 +51,11 @@ export async function setup(
   const channelSignerA = new ChannelSigner(prvKeyA, ethUrl);
 
   const storeServiceA = storeServiceFactory.createStoreService();
-  const nodeA = await Node.create(
+  await storeServiceA.init();
+  const nodeA = await CFCore.create(
     messagingService,
     storeServiceA,
-    global["network"],
+    global["contracts"],
     nodeConfig,
     provider,
     channelSignerA,
@@ -70,10 +71,11 @@ export async function setup(
 
   const channelSignerB = new ChannelSigner(prvKeyB, ethUrl);
   const storeServiceB = storeServiceFactory.createStoreService();
-  const nodeB = await Node.create(
+  await storeServiceB.init();
+  const nodeB = await CFCore.create(
     messagingService,
     storeServiceB,
-    global["network"],
+    global["contracts"],
     nodeConfig,
     provider,
     channelSignerB,
@@ -86,14 +88,15 @@ export async function setup(
     store: storeServiceB,
   };
 
-  let nodeC: Node;
+  let nodeC: CFCore;
   if (nodeCPresent) {
     const channelSignerC = new ChannelSigner(C_PRIVATE_KEY, ethUrl);
     const storeServiceC = storeServiceFactory.createStoreService();
-    nodeC = await Node.create(
+    await storeServiceC.init();
+    nodeC = await CFCore.create(
       messagingService,
       storeServiceC,
-      global["network"],
+      global["contracts"],
       nodeConfig,
       provider,
       channelSignerC,

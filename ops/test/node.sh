@@ -114,9 +114,11 @@ docker run \
   --name="$ethprovider_host" \
   --network="$network" \
   --rm \
-  --mount="type=bind,source=$cwd,target=/root" \
-  --mount="type=volume,source=${project}_chain_dev,target=/data" \
-  ${project}_builder -c "cd modules/contracts && bash ops/entry.sh start"
+  --tmpfs="/data" \
+  trufflesuite/ganache-cli:v6.9.1 \
+    --db="/data" \
+    --mnemonic="$eth_mnemonic" \
+    --networkId="4447"
 
 echo "Starting $postgres_host.."
 docker run \
@@ -199,5 +201,4 @@ docker run \
     trap finish SIGTERM SIGINT
 
     '"$command"'
-
   '

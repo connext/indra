@@ -1,8 +1,4 @@
-import {
-  IConnextClient,
-  EventPayloads,
-  EventNames,
-} from "@connext/types";
+import { IConnextClient, EventPayloads, EventNames } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 import { Client } from "ts-nats";
@@ -36,7 +32,7 @@ describe("Full Flow: Transfer", () => {
     clientB = await createClient({ id: "B" });
     clientC = await createClient({ id: "C" });
     clientD = await createClient({ id: "D" });
-    tokenAddress = clientA.config.contractAddresses.Token;
+    tokenAddress = clientA.config.contractAddresses.Token!;
   });
 
   afterEach(async () => {
@@ -96,16 +92,13 @@ describe("Full Flow: Transfer", () => {
       await fundChannel(clientB, bigNumberify(5));
       await fundChannel(clientC, bigNumberify(5));
       let transferCount = 0;
-      clientA.on(
-        EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
-        async (data: EventPayloads.LinkedTransferUnlocked) => {
-          transferCount += 1;
-          if (transferCount === 2) {
-            expect(transferCount).to.eq(2);
-            res();
-          }
-        },
-      );
+      clientA.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async () => {
+        transferCount += 1;
+        if (transferCount === 2) {
+          expect(transferCount).to.eq(2);
+          res();
+        }
+      });
 
       clientA.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, () =>
         rej(`Received transfer failed event on clientA`),
@@ -117,8 +110,16 @@ describe("Full Flow: Transfer", () => {
         rej(`Received transfer failed event on clientC`),
       );
       await Promise.all([
-        clientB.transfer({ amount: "1", assetId: AddressZero, recipient: clientA.publicIdentifier }),
-        clientC.transfer({ amount: "1", assetId: AddressZero, recipient: clientA.publicIdentifier }),
+        clientB.transfer({
+          amount: "1",
+          assetId: AddressZero,
+          recipient: clientA.publicIdentifier,
+        }),
+        clientC.transfer({
+          amount: "1",
+          assetId: AddressZero,
+          recipient: clientA.publicIdentifier,
+        }),
       ]);
     });
   });

@@ -1,3 +1,4 @@
+import { DolphinCoin } from "@connext/contracts";
 import {
   BigNumber,
   CONVENTION_FOR_ETH_ASSET_ID,
@@ -5,10 +6,9 @@ import {
 } from "@connext/types";
 import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
-import { DolphinCoin } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   createChannel,
@@ -24,8 +24,8 @@ expect.extend({ toBeLt, toBeEq });
 
 describe(`Node method follows spec - install deposit app`, () => {
   let multisigAddress: string;
-  let nodeA: Node;
-  let nodeB: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
   let provider: JsonRpcProvider;
 
   beforeEach(async () => {
@@ -124,13 +124,13 @@ describe(`Node method follows spec - install deposit app`, () => {
 
   it(`install app with tokens, sending tokens should increase free balance`, async () => {
     const depositAmt = new BigNumber(1000);
-    const assetId = getAddressFromAssetId(global[`network`].DolphinCoin);
+    const assetId = getAddressFromAssetId(global[`contracts`].DolphinCoin);
 
     await runUnrolledDepositTest(assetId, depositAmt);;
   });
 
   it(`install app with both eth and tokens, sending eth and tokens should increase free balance`, async () => {
-    const erc20AssetId = getAddressFromAssetId(global[`network`].DolphinCoin);
+    const erc20AssetId = getAddressFromAssetId(global[`contracts`].DolphinCoin);
     const depositAmtToken = new BigNumber(1000);
     const depositAmtEth = new BigNumber(500);
 

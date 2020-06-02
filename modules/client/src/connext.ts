@@ -5,20 +5,20 @@ import {
   AppInstanceJson,
   AppInstanceProposal,
   AppRegistry,
-  AppState,
   AssetId,
   ChannelMethods,
   ChannelProviderConfig,
   ConditionalTransferTypes,
+  CONVENTION_FOR_ETH_ASSET_ID,
   DefaultApp,
   DepositAppName,
   DepositAppState,
-  EventNames,
   IChannelProvider,
   IChannelSigner,
-  IClientStore,
+  IStoreService,
   IConnextClient,
   ILoggerService,
+  IMessagingService,
   INodeApiClient,
   MethodNames,
   MethodParams,
@@ -30,19 +30,20 @@ import {
   RebalanceProfile,
   SimpleLinkedTransferAppName,
   SimpleTwoPartySwapAppName,
-  WithdrawAppName,
-  CONVENTION_FOR_ETH_ASSET_ID,
-  IMessagingService,
   WithdrawalMonitorObject,
+  WithdrawAppName,
+  EventName,
+  EventPayload,
 } from "@connext/types";
 import {
+  delay,
   getRandomBytes32,
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
   stringify,
 } from "@connext/utils";
 import { Contract, providers } from "ethers";
-import { AddressZero } from "ethers/constants";
+import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
@@ -78,7 +79,7 @@ export class ConnextClient implements IConnextClient {
   public publicIdentifier: string;
   public signer: IChannelSigner;
   public signerAddress: string;
-  public store: IClientStore;
+  public store: IStoreService;
   public token: Contract;
 
   private opts: InternalClientOptions;
@@ -153,7 +154,7 @@ export class ConnextClient implements IConnextClient {
           return chan && chan.available;
         };
         while (!(await channelIsAvailable())) {
-          await new Promise((res: any): any => setTimeout((): void => res(), 100));
+          await delay(100);
         }
         resolve();
       },
@@ -243,9 +244,9 @@ export class ConnextClient implements IConnextClient {
     }
     const { name, chainId, appDefinitionAddress } = appDetails as any;
     if (name) {
-      return registry.find(app => app.name === name && app.chainId === chainId);
+      return registry.find((app) => app.name === name && app.chainId === chainId);
     }
-    return registry.find(app => app.appDefinitionAddress === appDefinitionAddress);
+    return registry.find((app) => app.appDefinitionAddress === appDefinitionAddress);
   };
 
   public createChannel = async (): Promise<NodeResponses.CreateChannel> => {
@@ -295,7 +296,7 @@ export class ConnextClient implements IConnextClient {
     params: PublicParams.CheckDepositRights,
   ): Promise<PublicResults.CheckDepositRights> => {
     const app = await this.depositController.getDepositApp(params);
-    if (!app) {
+    if (!app || app.initiatorIdentifier !== this.publicIdentifier) {
       return { appIdentityHash: undefined };
     }
     return { appIdentityHash: app.identityHash };
@@ -347,10 +348,13 @@ export class ConnextClient implements IConnextClient {
         return this.resolveLinkedTransferController.resolveLinkedTransfer(params);
       }
       case ConditionalTransferTypes.HashLockTransfer: {
-        return this.resolveHashLockTransferController.resolveHashLockTransfer(params);
+        params.assetId = params.assetId ? params.assetId : AddressZero;
+        const res = await this.resolveHashLockTransferController.resolveHashLockTransfer(params);
+        return { ...res, paymentId: HashZero };
       }
       case ConditionalTransferTypes.SignedTransfer: {
-        return this.resolveSignedTransferController.resolveSignedTransfer(params);
+        const res = await this.resolveSignedTransferController.resolveSignedTransfer(params);
+        return { ...res, paymentId: params.paymentId };
       }
       default:
         throw new Error(`Condition type ${(params as any).conditionType} invalid`);
@@ -360,11 +364,13 @@ export class ConnextClient implements IConnextClient {
   public conditionalTransfer = async (
     params: PublicParams.ConditionalTransfer,
   ): Promise<PublicResults.ConditionalTransfer> => {
+    params.assetId = params.assetId ? params.assetId : AddressZero;
     switch (params.conditionType) {
       case ConditionalTransferTypes.LinkedTransfer: {
         return this.linkedTransferController.linkedTransfer(params);
       }
       case ConditionalTransferTypes.HashLockTransfer: {
+        params.timelock = params.timelock ? params.timelock : 5000;
         return this.hashlockTransferController.hashLockTransfer(params);
       }
       case ConditionalTransferTypes.SignedTransfer: {
@@ -386,7 +392,7 @@ export class ConnextClient implements IConnextClient {
     const values = await this.channelProvider.send(ChannelMethods.chan_getUserWithdrawal, {});
 
     // sanity check
-    values.forEach(val => {
+    values.forEach((val) => {
       const noRetry = typeof val.retry === "undefined" || val.retry === null;
       if (!val.tx || noRetry) {
         const msg = `Can not find tx or retry in retrieved user withdrawal ${stringify(val())}`;
@@ -482,23 +488,36 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // EVENT METHODS
 
-  public on = (event: EventNames, callback: (...args: any[]) => void): ConnextListener => {
-    return this.listener.on(event, callback);
+  public on = <T extends EventName>(
+    event: T,
+    callback: (payload: EventPayload[T]) => void | Promise<void>,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ) => {
+    this.listener.attach(event, callback, filter);
   };
 
-  public once = (event: EventNames, callback: (...args: any[]) => void): ConnextListener => {
-    return this.listener.once(event, callback);
+  public once = <T extends EventName>(
+    event: T,
+    callback: (payload: EventPayload[T]) => void | Promise<void>,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ) => {
+    this.listener.attachOnce(event, callback, filter);
   };
 
-  public emit = (event: EventNames, data: any): boolean => {
-    return this.listener.emit(event, data);
+  // TODO: allow for removing listeners attached via a specific event
+  // by manipulating the context of the events
+
+  public off = () => {
+    this.listener.detach();
   };
 
-  public removeListener = (
-    event: EventNames,
-    callback: (...args: any[]) => void,
-  ): ConnextListener => {
-    return this.listener.removeListener(event, callback);
+  public emit = <T extends EventName>(event: T, payload: EventPayload[T]): boolean => {
+    try {
+      this.listener.post(event, payload);
+      return true;
+    } catch (e) {
+      return false;
+    }
   };
 
   ///////////////////////////////////
@@ -601,16 +620,17 @@ export class ConnextClient implements IConnextClient {
       action,
       appIdentityHash,
       stateTimeout,
+      multisigAddress: this.multisigAddress,
     } as MethodParams.TakeAction);
   };
 
   public proposeInstallApp = async (
     params: MethodParams.ProposeInstall,
   ): Promise<MethodResults.ProposeInstall> => {
-    return this.channelProvider.send(
-      MethodNames.chan_proposeInstall,
-      params as MethodParams.ProposeInstall,
-    );
+    return this.channelProvider.send(MethodNames.chan_proposeInstall, {
+      ...(params as MethodParams.ProposeInstall),
+      multisigAddress: this.multisigAddress,
+    });
   };
 
   public installApp = async (appIdentityHash: string): Promise<MethodResults.Install> => {
@@ -621,6 +641,7 @@ export class ConnextClient implements IConnextClient {
     }
     return this.channelProvider.send(MethodNames.chan_install, {
       appIdentityHash,
+      multisigAddress: this.multisigAddress,
     } as MethodParams.Install);
   };
 
@@ -633,13 +654,15 @@ export class ConnextClient implements IConnextClient {
     }
     return this.channelProvider.send(MethodNames.chan_uninstall, {
       appIdentityHash,
+      multisigAddress: this.multisigAddress,
     } as MethodParams.Uninstall);
   };
 
   public rejectInstallApp = async (appIdentityHash: string): Promise<MethodResults.Uninstall> => {
     return this.channelProvider.send(MethodNames.chan_rejectInstall, {
       appIdentityHash,
-    });
+      multisigAddress: this.multisigAddress,
+    } as MethodParams.RejectInstall);
   };
 
   ///////////////////////////////////
@@ -651,10 +674,14 @@ export class ConnextClient implements IConnextClient {
 
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
     const pendingTransfers = await this.node.getPendingAsyncTransfers();
-    this.log.debug(`Found ${pendingTransfers.length} transfers to reclaim`);
+    this.log.info(`Found ${pendingTransfers.length} transfers to reclaim`);
     for (const transfer of pendingTransfers) {
       const { encryptedPreImage, paymentId } = transfer;
-      await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+      try {
+        await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+      } catch (e) {
+        this.log.error(`Could not reclaim transfer ${paymentId}, will try again on next connect`);
+      }
     }
   };
 
@@ -669,13 +696,18 @@ export class ConnextClient implements IConnextClient {
       encryptedPreImage,
     });
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
-    const response = await this.resolveLinkedTransferController.resolveLinkedTransfer({
-      conditionType: ConditionalTransferTypes.LinkedTransfer,
-      paymentId,
-      preImage,
-    });
-    this.log.debug(`Reclaimed transfer ${paymentId}`);
-    return response;
+    try {
+      const response = await this.resolveLinkedTransferController.resolveLinkedTransfer({
+        conditionType: ConditionalTransferTypes.LinkedTransfer,
+        paymentId,
+        preImage,
+      });
+      this.log.debug(`Reclaimed transfer ${paymentId} using preImage: ${preImage}`);
+      return response;
+    } catch (e) {
+      this.log.error(`Error in reclaimPendingAsyncTransfer: ${e.message}`);
+      throw e;
+    }
   };
 
   ///////////////////////////////////
@@ -791,16 +823,9 @@ export class ConnextClient implements IConnextClient {
         continue;
       }
       // otherwise, handle installed app
-      const { appInstance } = await this.getAppInstance(appIdentityHash);
-      if (!appInstance) {
-        continue;
-      }
-
-      // if we are not the initiator, continue
-      const latestState = appInstance.latestState as DepositAppState;
-      if (latestState.transfers[0].to !== this.signerAddress) {
-        continue;
-      }
+      const {
+        appInstance: { latestState },
+      } = await this.getAppInstance(appIdentityHash);
 
       // there is still an active deposit, setup a listener to
       // rescind deposit rights when deposit is sent to multisig
@@ -811,7 +836,7 @@ export class ConnextClient implements IConnextClient {
               this.multisigAddress,
             );
 
-      if (currentMultisigBalance.gt(latestState.startingMultisigBalance)) {
+      if (currentMultisigBalance.gt((latestState as DepositAppState).startingMultisigBalance)) {
         // deposit has occurred, rescind
         try {
           await this.rescindDepositRights({ assetId, appIdentityHash });
@@ -827,8 +852,9 @@ export class ConnextClient implements IConnextClient {
       // rescind deposit rights when deposit is sent to multisig
       if (assetId === AddressZero) {
         this.ethProvider.on(this.multisigAddress, async (balance: BigNumber) => {
-          if (balance.gt(latestState.startingMultisigBalance)) {
+          if (balance.gt((latestState as DepositAppState).startingMultisigBalance)) {
             await this.rescindDepositRights({ assetId, appIdentityHash });
+            this.ethProvider.removeAllListeners(this.multisigAddress);
           }
         });
         continue;
@@ -841,7 +867,7 @@ export class ConnextClient implements IConnextClient {
             const bal = await new Contract(assetId, tokenAbi, this.ethProvider).functions.balanceOf(
               this.multisigAddress,
             );
-            if (bal.gt(latestState.startingMultisigBalance)) {
+            if (bal.gt((latestState as DepositAppState).startingMultisigBalance)) {
               await this.rescindDepositRights({ assetId, appIdentityHash });
             }
           }

@@ -1,7 +1,7 @@
 import { CreateChannelMessage, EventNames } from "@connext/types";
 import { isHexString } from "ethers/utils";
 
-import { Node } from "../../node";
+import { CFCore } from "../../cfCore";
 
 import { setup, SetupContext } from "../setup";
 import {
@@ -13,9 +13,9 @@ import {
 } from "../utils";
 
 describe("Node can create multisig, other owners get notified", () => {
-  let nodeA: Node;
-  let nodeB: Node;
-  let nodeC: Node;
+  let nodeA: CFCore;
+  let nodeB: CFCore;
+  let nodeC: CFCore;
 
   beforeAll(async () => {
     const context: SetupContext = await setup(global, true);
@@ -24,7 +24,7 @@ describe("Node can create multisig, other owners get notified", () => {
     nodeC = context["C"].node;
   });
 
-  it("Node A and Node B can create a channel", async done => {
+  it("Node A and Node B can create a channel", async (done) => {
     const owners = [nodeA.publicIdentifier, nodeB.publicIdentifier];
 
     const expectedMsg = {
@@ -37,18 +37,18 @@ describe("Node can create multisig, other owners get notified", () => {
 
     let assertionCount = 0;
 
-    nodeA.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
-      assertMessage(msg, expectedMsg, ["data.multisigAddress"]);
+    nodeA.once(EventNames.CREATE_CHANNEL_EVENT, async (msg) => {
+      assertMessage<typeof EventNames.CREATE_CHANNEL_EVENT>(msg, expectedMsg, [
+        "data.multisigAddress",
+      ]);
       assertionCount += 1;
       if (assertionCount === 2) done();
     });
 
-    nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
-      assertMessage(
-        msg,
-        expectedMsg,
-        ["data.multisigAddress"],
-      );
+    nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg) => {
+      assertMessage<typeof EventNames.CREATE_CHANNEL_EVENT>(msg, expectedMsg, [
+        "data.multisigAddress",
+      ]);
       assertionCount += 1;
       if (assertionCount === 3) done();
     });
@@ -57,16 +57,14 @@ describe("Node can create multisig, other owners get notified", () => {
       result: {
         result: { multisigAddress },
       },
-    } = await nodeB.rpcRouter.dispatch(
-      constructChannelCreationRpc(owners),
-    );
+    } = await nodeB.rpcRouter.dispatch(constructChannelCreationRpc(owners));
     expect(isHexString(multisigAddress)).toBeTruthy();
     assertionCount += 1;
     if (assertionCount === 3) done();
   });
 
   describe("Queued channel creation", () => {
-    it("Node A can create multiple back-to-back channels with Node B and Node C", async done => {
+    it("Node A can create multiple back-to-back channels with Node B and Node C", async (done) => {
       const ownersABPublicIdentifiers = [nodeA.publicIdentifier, nodeB.publicIdentifier];
 
       const ownersABFreeBalanceAddr = [nodeA.signerAddress, nodeB.signerAddress];

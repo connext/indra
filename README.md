@@ -116,7 +116,7 @@ One exception: if you want to redeploy some contract(s), then delete their addre
 
 Lets say you want to deploy an Indra payment node to `https://indra.example.com` (we'll call this url `$DOMAINNAME`)
 
-First step: get a server via AWS or DigitalOcean or whichever cloud provider is your favorite. For best results, use the most recent LTS version of Ubuntu. Note this new server's IP address (we'll call it `$SERVER_IP`). Make sure it's able to connect to the internet via ports 80, 443, 4221, and 4222 (no action required on DigitalOcean, Security Group config needs to be setup properly on AWS).
+First step: get a server via AWS or DigitalOcean or whichever cloud provider is your favorite. For best results, use the most recent LTS version of Ubuntu. If using DigitalOcean, make sure you toggle on the VPC network when instantiating a droplet. Note this new server's IP address (we'll call it `$SERVER_IP`). Make sure it's able to connect to the internet via ports 80, 443, 4221, and 4222 (no action required on DigitalOcean, Security Group config needs to be setup properly on AWS).
 
 Set up DNS so that `$DOMAINNAME` points to this server's IP address.
 

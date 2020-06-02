@@ -3,9 +3,9 @@ import { ILogger, ILoggerService } from "@connext/types";
 export const logTime = (log: ILogger, start: number, msg: string) => {
   const diff = Date.now() - start;
   const message = `${msg} in ${diff} ms`;
-  if (diff < 25) {
+  if (diff < 20) {
     log.debug(message);
-  } else if (diff < 250) {
+  } else if (diff < 200) {
     log.info(message);
   } else {
     log.warn(message);
@@ -107,11 +107,11 @@ export class ColorfulLogger implements ILoggerService {
   private levels: { [key: string]: number } = { debug: 4, error: 1, info: 3, warn: 2 };
   private id = "?";
 
-  public constructor(context?: string, level?: number, color?: boolean, id?: string) {
+  public constructor(context?: string, level?: number, color?: boolean, id?: string | number) {
     this.context = typeof context !== "undefined" ? context : this.context;
     this.level = typeof level !== "undefined" ? parseInt(level.toString(), 10) : this.level;
     this.color = color || false;
-    this.id = id || "?";
+    this.id = id ? id.toString() : "?";
     if (!this.color) {
       this.colors = { context: "", debug: "", error: "", info: "", warn: "", reset: "" };
     }

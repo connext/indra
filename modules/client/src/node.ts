@@ -4,7 +4,6 @@ import {
   ILoggerService,
   IMessagingService,
   INodeApiClient,
-  NATS_ATTEMPTS,
   NATS_TIMEOUT,
   NodeResponses,
   StringMapping,
@@ -14,7 +13,7 @@ import {
   VerifyNonceDtoType,
   Address,
 } from "@connext/types";
-import { bigNumberifyJson, delay, logTime, stringify, formatMessagingUrl } from "@connext/utils";
+import { bigNumberifyJson, logTime, stringify, formatMessagingUrl } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { getAddress, Transaction } from "ethers/utils";
 import { v4 as uuid } from "uuid";
@@ -60,6 +59,7 @@ export class NodeApiClient implements INodeApiClient {
       messaging: providedMessaging,
       messagingUrl,
     } = opts;
+    const log = logger.newContext("NodeApiClient");
 
     if (signer) {
       getSignature = (msg: string) => signer.signMessage(msg);
@@ -80,7 +80,7 @@ export class NodeApiClient implements INodeApiClient {
       messaging = new MessagingService(
         {
           messagingUrl: messagingUrl || formatMessagingUrl(nodeUrl),
-          logger,
+          logger: log,
         },
         "INDRA",
         () => NodeApiClient.getBearerToken(nodeUrl, userIdentifier, getSignature),
@@ -110,10 +110,10 @@ export class NodeApiClient implements INodeApiClient {
         ethProvider,
         signer,
         node,
-        logger,
+        logger: log,
         store: opts.store,
       });
-      logger.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
+      log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
       node.channelProvider = channelProvider;
     }
     return node;
@@ -175,25 +175,12 @@ export class NodeApiClient implements INodeApiClient {
   ////////////////////////////////////////
   // PUBLIC
 
-  async acquireLock(
-    lockName: string,
-    callback: (...args: any[]) => any,
-    timeout: number,
-  ): Promise<any> {
-    const lockValue = await this.send(`${this.userIdentifier}.lock.acquire.${lockName}`, {
-      lockTTL: timeout,
-    });
-    this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
-    let retVal: any;
-    try {
-      retVal = await callback();
-    } catch (e) {
-      this.log.error(`Failed to execute callback while lock is held: ${e.stack || e.message}`);
-    } finally {
-      await this.send(`${this.userIdentifier}.lock.release.${lockName}`, { lockValue });
-      this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);
-    }
-    return retVal;
+  async acquireLock(lockName: string): Promise<string> {
+    return this.send(`${this.userIdentifier}.lock.acquire.${lockName}`);
+  }
+
+  async releaseLock(lockName: string, lockValue: string): Promise<void> {
+    return this.send(`${this.userIdentifier}.lock.release.${lockName}`, { lockValue });
   }
 
   public async appRegistry(): Promise<AppRegistry> {
@@ -240,9 +227,11 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  // TODO: right now node doesnt return until the deposit has completed
-  // which exceeds the timeout.....
   public async requestCollateral(assetId: string): Promise<NodeResponses.RequestCollateral | void> {
+    // DONT added extended timeout to prevent client application from being
+    // held up longer than necessary if node is collateralizing. The endpoint
+    // will return after an onchain tx is submitted and mined in cases where
+    // a rebalancing occurs
     try {
       return this.send(`${this.userIdentifier}.channel.request-collateral`, {
         assetId,
@@ -250,7 +239,6 @@ export class NodeApiClient implements INodeApiClient {
     } catch (e) {
       // TODO: node should return once deposit starts
       if (e.message.startsWith("Request timed out")) {
-        this.log.warn("request collateral message timed out");
         return;
       }
       throw e;
@@ -272,17 +260,37 @@ export class NodeApiClient implements INodeApiClient {
   public async resolveLinkedTransfer(
     paymentId: string,
   ): Promise<NodeResponses.ResolveLinkedTransfer> {
-    return this.send(`${this.userIdentifier}.transfer.install-linked`, {
-      paymentId,
-    });
+    // add a special timeout here, because this request could include
+    // up to the following protocols:
+    // - propose (DepositApp)
+    // - install (DepositApp)
+    // - onchain tx (collateral)
+    // - uninstall (DepositApp)
+    // - propose (LinkedTransfer)
+    // if the user is not already collateralized
+    const extendedTimeout = NATS_TIMEOUT * 5; // 55s
+    return this.send(
+      `${this.userIdentifier}.transfer.install-linked`,
+      {
+        paymentId,
+      },
+      extendedTimeout,
+    );
   }
 
   public async resolveSignedTransfer(
     paymentId: string,
   ): Promise<NodeResponses.ResolveSignedTransfer> {
-    return this.send(`${this.userIdentifier}.transfer.install-signed`, {
-      paymentId,
-    });
+    // add extended timeout in case receiver uncollateralized and multiple
+    // protocols are run (see comments in `resolveLinkedTransfer` for details)
+    const extendedTimeout = NATS_TIMEOUT * 5; // 55s
+    return this.send(
+      `${this.userIdentifier}.transfer.install-signed`,
+      {
+        paymentId,
+      },
+      extendedTimeout,
+    );
   }
 
   public async getRebalanceProfile(assetId?: string): Promise<NodeResponses.GetRebalanceProfile> {
@@ -327,11 +335,19 @@ export class NodeApiClient implements INodeApiClient {
   ////////////////////////////////////////
   // PRIVATE
 
-  private async send(subject: string, data?: any): Promise<any | undefined> {
-    return this.sendAttempt(subject, data);
+  private async send(
+    subject: string,
+    data?: any,
+    timeout: number = NATS_TIMEOUT,
+  ): Promise<any | undefined> {
+    return this.sendAttempt(timeout, subject, data);
   }
 
-  private async sendAttempt(subject: string, data?: any): Promise<any | undefined> {
+  private async sendAttempt(
+    timeout: number,
+    subject: string,
+    data?: any,
+  ): Promise<any | undefined> {
     const start = Date.now();
     const payload = {
       ...data,
@@ -339,7 +355,7 @@ export class NodeApiClient implements INodeApiClient {
     };
     let msg: any;
     try {
-      msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
+      msg = await this.messaging.request(subject, timeout, payload);
     } catch (e) {
       throw new Error(`${sendFailed}: ${e.message}`);
     }
@@ -357,7 +373,7 @@ export class NodeApiClient implements INodeApiClient {
     logTime(
       this.log,
       start,
-      `Node responded to ${subject.split(".").slice(0, 2).join(".")} request`, // prettier-ignore
+      `Node responded to ${subject} request`,
     );
     return !response || isEmptyObj ? undefined : bigNumberifyJson(response);
   }

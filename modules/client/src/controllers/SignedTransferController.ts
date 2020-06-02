@@ -22,10 +22,19 @@ export class SignedTransferController extends AbstractController {
     this.log.info(`signedTransfer started: ${stringify(params)}`);
     // convert params + validate
     const amount = toBN(params.amount);
-    const { meta, paymentId, signer, assetId, recipient } = params;
+    const {
+      meta,
+      paymentId,
+      signerAddress,
+      chainId,
+      verifyingContract,
+      assetId,
+      recipient,
+    } = params;
     const submittedMeta = { ...(meta || {}) } as any;
     submittedMeta.recipient = recipient;
     submittedMeta.sender = this.connext.publicIdentifier;
+    submittedMeta.paymentId = paymentId;
 
     const initialState: SimpleSignedTransferAppState = {
       coinTransfers: [
@@ -39,7 +48,9 @@ export class SignedTransferController extends AbstractController {
         },
       ],
       paymentId,
-      signer,
+      signerAddress,
+      chainId,
+      verifyingContract,
       finalized: false,
     };
 
@@ -63,6 +74,7 @@ export class SignedTransferController extends AbstractController {
       initiatorDeposit: amount,
       initiatorDepositAssetId: assetId,
       meta: submittedMeta,
+      multisigAddress: this.connext.multisigAddress,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: Zero,
@@ -81,11 +93,14 @@ export class SignedTransferController extends AbstractController {
     const eventData = {
       type: ConditionalTransferTypes.SignedTransfer,
       amount,
+      appIdentityHash,
       assetId,
       sender: this.connext.publicIdentifier,
       meta: submittedMeta,
       transferMeta: {
-        signer,
+        signerAddress,
+        chainId,
+        verifyingContract,
       },
     } as EventPayloads.SignedTransferCreated;
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);

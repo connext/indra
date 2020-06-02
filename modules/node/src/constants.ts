@@ -7,10 +7,9 @@ export enum Network {
   HOMESTEAD = "homestead",
 }
 
-// should be 3x the IO_SEND_AND_WAIT_TIMEOUT of cf-core
-// to account for 3 IO_SEND_AND_WAITs by intermediary in
-// the install virtual protocol
-export const LOCK_SERVICE_TTL = 90_000;
+// should be 2x the IO_SEND_AND_WAIT_TIMEOUT of cf-core
+// to account for 2 IO_SEND_AND_WAITs in install
+export const LOCK_SERVICE_TTL = 11_000;
 export const TIMEOUT_BUFFER = 100;
 
 // PROVIDERS

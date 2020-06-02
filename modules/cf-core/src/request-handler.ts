@@ -4,30 +4,28 @@ import {
   ILoggerService,
   IMessagingService,
   IStoreService,
-  Message,
   MethodName,
   NetworkContext,
   ProtocolMessage,
   PublicIdentifier,
+  ILockService,
+  EventName,
+  ProtocolEventMessage,
 } from "@connext/types";
-import { bigNumberifyJson, logTime } from "@connext/utils";
-import { JsonRpcProvider } from "ethers/providers";
+import { logTime } from "@connext/utils";
 import EventEmitter from "eventemitter3";
 
-import { eventNameToImplementation, methodNameToImplementation } from "./methods";
+import { eventImplementations } from "./message-handling";
+import { methodImplementations } from "./methods";
 import { ProtocolRunner } from "./machine";
-import ProcessQueue from "./process-queue";
-import RpcRouter from "./rpc-router";
+import { RpcRouter } from "./rpc-router";
 import { MethodRequest, MethodResponse } from "./types";
 /**
  * This class registers handlers for requests to get or set some information
  * about app instances and channels for this Node and any relevant peer Nodes.
  */
 export class RequestHandler {
-  private readonly methods = new Map();
-  private readonly events = new Map();
-
-  router!: RpcRouter;
+  public router!: RpcRouter;
 
   constructor(
     readonly publicIdentifier: PublicIdentifier,
@@ -37,10 +35,9 @@ export class RequestHandler {
     readonly messagingService: IMessagingService,
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,
-    readonly provider: JsonRpcProvider,
     readonly signer: IChannelSigner,
     readonly blocksNeededForConfirmation: number,
-    public readonly processQueue: ProcessQueue,
+    readonly lockService: ILockService,
     public readonly log: ILoggerService,
   ) {
     this.log = this.log.newContext("CF-RequestHandler");
@@ -49,23 +46,25 @@ export class RequestHandler {
   injectRouter(router: RpcRouter) {
     this.router = router;
     this.mapPublicApiMethods();
-    this.mapEventHandlers();
   }
 
   /**
    * In some use cases, waiting for the response of a method call is easier
    * and cleaner than wrangling through callback hell.
-   * @param method
+   * @param methodName
    * @param req
    */
-  public async callMethod(method: MethodName, req: MethodRequest): Promise<MethodResponse> {
+  public async callMethod(methodName: MethodName, req: MethodRequest): Promise<MethodResponse> {
+    if (!methodImplementations[methodName]) {
+      throw new Error(`No implementation available for method ${methodName}`);
+    }
     const start = Date.now();
     const result: MethodResponse = {
       type: req.type,
       requestId: req.requestId,
-      result: await this.methods.get(method)(this, req.params),
+      result: await methodImplementations[methodName](this, req.params),
     };
-    logTime(this.log, start, `Method ${method} was executed`);
+    logTime(this.log, start, `Method ${methodName} was executed`);
     return result;
   }
 
@@ -73,26 +72,15 @@ export class RequestHandler {
    * This registers all of the methods the Node is expected to have
    */
   private mapPublicApiMethods() {
-    for (const methodName in methodNameToImplementation) {
-      this.methods.set(methodName, methodNameToImplementation[methodName]);
+    for (const methodName of Object.keys(methodImplementations)) {
       this.incoming.on(methodName, async (req: MethodRequest) => {
         const res: MethodResponse = {
           type: req.type,
           requestId: req.requestId,
-          result: await this.methods.get(methodName)(this, bigNumberifyJson(req.params)),
+          result: await methodImplementations[methodName](this, req.params),
         };
         this.router.emit((req as any).methodName, res, "outgoing");
       });
-    }
-  }
-
-  /**
-   * This maps the Node event names to their respective handlers.
-   * These are the events being listened on to detect requests from peer Nodes.
-   */
-  private mapEventHandlers() {
-    for (const eventName of Object.values(EventNames)) {
-      this.events.set(eventName, eventNameToImplementation[eventName]);
     }
   }
 
@@ -102,9 +90,9 @@ export class RequestHandler {
    * @param event
    * @param msg
    */
-  public async callEvent(event: EventNames, msg: Message) {
+  public async callEvent<T extends EventName>(event: T, msg: ProtocolEventMessage<T>) {
     const start = Date.now();
-    const controllerExecutionMethod = this.events.get(event);
+    const controllerExecutionMethod = eventImplementations[event as string];
     const controllerCount = this.router.eventListenerCount(event);
 
     if (!controllerExecutionMethod && controllerCount === 0) {
@@ -137,8 +125,8 @@ export class RequestHandler {
     this.router.emit(event, msg);
   }
 
-  public async isLegacyEvent(event: EventNames) {
-    return this.events.has(event);
+  public async isLegacyEvent(event: EventName) {
+    return Object.keys(eventImplementations).includes(event);
   }
 
   public getSigner(): IChannelSigner {

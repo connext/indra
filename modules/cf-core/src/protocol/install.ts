@@ -15,6 +15,7 @@ import {
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
   logTime,
+  stringify,
 } from "@connext/utils";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -29,13 +30,7 @@ import { assertSufficientFundsWithinFreeBalance } from "../utils";
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
 const protocol = ProtocolNames.install;
-const {
-  OP_SIGN,
-  OP_VALIDATE,
-  IO_SEND,
-  IO_SEND_AND_WAIT,
-  PERSIST_APP_INSTANCE,
-} = Opcode;
+const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
 
 /**
  * @description This exchange is described at the following URL:
@@ -54,14 +49,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
    * @param {Context} context
    */
 
-  0 /* Initiating */: async function*(context: Context) {
+  0 /* Initiating */: async function* (context: Context) {
     const {
       store,
       message: { params, processID },
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
-    log.info(`Initiation started`);
+    let substart = start;
+    log.info(`[${processID}] Initiation started`);
+    log.debug(`[${processID}] Protocol initiated with parameters ${stringify(params)}`);
 
     const {
       initiatorBalanceDecrement,
@@ -91,15 +88,17 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderBalanceDecrement,
     );
 
-    const stateChannelAfter = computeStateChannelTransition(
+    let stateChannelAfter = computeInstallStateChannelTransition(
       stateChannelBefore,
       params as ProtocolParams.Install,
     );
 
-    const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
+    const newAppInstance = stateChannelAfter.getAppInstanceByAppSeqNo(
+      (params as ProtocolParams.Install).appSeqNo,
+    );
 
     // safe to do here, nothing is signed or written to store
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
@@ -109,6 +108,11 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.initiator,
       } as InstallMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
+    logTime(log, substart, `[${processID}] Validated app ${newAppInstance.identityHash}`);
+    substart = Date.now();
 
     const conditionalTxCommitment = getConditionalTransactionCommitment(
       context,
@@ -126,9 +130,11 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 124ms
     const {
-      customData: {
-        signature: counterpartySignatureOnConditionalTransaction,
-        signature2: counterpartySignatureOnFreeBalanceStateUpdate,
+      data: {
+        customData: {
+          signature: counterpartySignatureOnConditionalTransaction,
+          signature2: counterpartySignatureOnFreeBalanceStateUpdate,
+        },
       },
     } = yield [
       IO_SEND_AND_WAIT,
@@ -146,11 +152,17 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 7ms
     // free balance addr signs conditional transactions
+    const { contractAddresses, ...toLog } = conditionalTxCommitment.toJson();
     await assertIsValidSignature(
       responderSignerAddress,
       conditionalTxCommitmentHash,
       counterpartySignatureOnConditionalTransaction,
+      `Failed to validate responders signature on conditional transaction commitment in the install protocol. Our commitment: ${stringify(
+        { ...toLog },
+      )}`,
     );
+    logTime(log, substart, `[${processID}] Verified responder's conditional sig`);
+    substart = Date.now();
 
     const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== responderSignerAddress;
     await conditionalTxCommitment.addSignatures(
@@ -171,7 +183,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderSignerAddress,
       freeBalanceUpdateDataHash,
       counterpartySignatureOnFreeBalanceStateUpdate,
+      `Failed to validate responders signature on free balance update in the install protocol. Our commitment: ${stringify(
+        freeBalanceUpdateData.toJson(),
+      )}`,
     );
+    logTime(log, substart, `[${processID}] Verified responder's sig on free balance update`);
+    substart = Date.now();
 
     // 12ms
     // always use free balance key to sign free balance update
@@ -208,10 +225,11 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         },
         seq: UNASSIGNED_SEQ_NO,
       } as ProtocolMessageData,
+      stateChannelAfter,
     ];
 
     // 335ms
-    logTime(log, start, `Initiation finished`);
+    logTime(log, start, `[${processID}] Initiation finished`);
   } as any,
 
   /**
@@ -223,7 +241,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
    * @param {Context} context
    */
 
-  1 /* Responding */: async function*(context: Context) {
+  1 /* Responding */: async function* (context: Context) {
     const {
       store,
       message: {
@@ -234,7 +252,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
-    log.info(`Response started`);
+    let substart = start;
+    log.info(`[${processID}] Response started`);
+    log.debug(`[${processID}] Protocol response started with parameters ${stringify(params)}`);
 
     // Aliasing `signature` to this variable name for code clarity
     const counterpartySignatureOnConditionalTransaction = signature;
@@ -267,7 +287,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderBalanceDecrement,
     );
 
-    const stateChannelAfter = computeStateChannelTransition(
+    const stateChannelAfter = computeInstallStateChannelTransition(
       stateChannelBefore,
       params as ProtocolParams.Install,
     );
@@ -275,10 +295,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
 
-    const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
+    const newAppInstance = stateChannelAfter.getAppInstanceByAppSeqNo(
+      (params as ProtocolParams.Install).appSeqNo,
+    );
 
     // safe to do here, nothing is signed or written to store
-    yield [
+    const error = yield [
       OP_VALIDATE,
       protocol,
       {
@@ -288,6 +310,11 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         role: ProtocolRoles.responder,
       } as InstallMiddlewareContext,
     ];
+    if (!!error) {
+      throw new Error(error);
+    }
+    logTime(log, substart, `[${processID}] Validated app ${newAppInstance.identityHash}`);
+    substart = Date.now();
 
     const conditionalTxCommitment = getConditionalTransactionCommitment(
       context,
@@ -298,11 +325,17 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 7ms
     // multisig owner always signs conditional tx
+    const { contractAddresses, ...toLog } = conditionalTxCommitment.toJson();
     await assertIsValidSignature(
       initiatorSignerAddress,
       conditionalTxCommitmentHash,
       counterpartySignatureOnConditionalTransaction,
+      `Failed to validate initiators signature on conditional transaction commitment in the install protocol. Our commitment: ${stringify(
+        toLog,
+      )}`,
     );
+    logTime(log, substart, `[${processID}] Verified initiator's conditional sig`);
+    substart = Date.now();
 
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
 
@@ -325,7 +358,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 154ms
     const {
-      customData: { signature: counterpartySignatureOnFreeBalanceStateUpdate },
+      data: {
+        customData: { signature: counterpartySignatureOnFreeBalanceStateUpdate },
+      },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -346,7 +381,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorSignerAddress,
       freeBalanceUpdateDataHash,
       counterpartySignatureOnFreeBalanceStateUpdate,
+      `Failed to validate initiators signature on free balance update in the install protocol. Our commitment: ${stringify(
+        freeBalanceUpdateData.toJson(),
+      )}`,
     );
+    logTime(log, substart, `[${processID}] Verified initiator's sig on free balance update`);
+    substart = Date.now();
 
     // add signature
     await freeBalanceUpdateData.addSignatures(
@@ -367,6 +407,8 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceUpdateData,
       conditionalTxCommitment,
     ];
+    logTime(log, substart, `[${processID}] Persisted app ${newAppInstance.identityHash}`);
+    substart = Date.now();
 
     const m4 = {
       processID,
@@ -379,10 +421,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } as ProtocolMessageData;
 
     // 0ms
-    yield [IO_SEND, m4];
+    yield [IO_SEND, m4, stateChannelAfter];
 
     // 272ms
-    logTime(log, start, `Response finished`);
+    logTime(log, start, `[${processID}] Response finished`);
   } as any,
 };
 
@@ -395,7 +437,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
  *
  * @returns {Promise<StateChannel>} - The post-protocol state of the channel
  */
-function computeStateChannelTransition(
+function computeInstallStateChannelTransition(
   stateChannel: StateChannel,
   params: ProtocolParams.Install,
 ): StateChannel {
@@ -404,8 +446,6 @@ function computeStateChannelTransition(
     responderBalanceDecrement,
     initiatorDepositAssetId,
     responderDepositAssetId,
-    initiatorIdentifier,
-    responderIdentifier,
     initialState,
     appInterface,
     defaultTimeout,
@@ -416,10 +456,28 @@ function computeStateChannelTransition(
     meta,
     appInitiatorIdentifier,
     appResponderIdentifier,
+    initiatorIdentifier,
   } = params;
 
-  const initiatorFbAddress = stateChannel.getFreeBalanceAddrOf(initiatorIdentifier);
-  const responderFbAddress = stateChannel.getFreeBalanceAddrOf(responderIdentifier);
+  // initiator in params context corr to protocol initiator
+  // retrieve app-specific values for interpreter params, etc.
+  const appInitiatorFbAddress = stateChannel.getFreeBalanceAddrOf(appInitiatorIdentifier);
+  const appResponderFbAddress = stateChannel.getFreeBalanceAddrOf(appResponderIdentifier);
+  const isSame = appInitiatorIdentifier === initiatorIdentifier;
+  const appInitiatorAssetId = isSame ? initiatorDepositAssetId : responderDepositAssetId;
+  const appResponderAssetId = isSame ? responderDepositAssetId : initiatorDepositAssetId;
+  const appInitiatorBalanceDecrement = isSame
+    ? initiatorBalanceDecrement
+    : responderBalanceDecrement;
+  const appResponderBalanceDecrement = isSame
+    ? responderBalanceDecrement
+    : initiatorBalanceDecrement;
+
+  // make sure the addresses mirror the free balance addresses of
+  // the channel
+  const channelInitiatorFbAddress = stateChannel.multisigOwners[0];
+  const channelResponderFbAddress = stateChannel.multisigOwners[1];
+  const sameChannelAndAppOrdering = channelInitiatorFbAddress === appInitiatorFbAddress;
 
   const {
     multiAssetMultiPartyCoinTransferInterpreterParams,
@@ -427,12 +485,14 @@ function computeStateChannelTransition(
     singleAssetTwoPartyCoinTransferInterpreterParams,
   } = computeInterpreterParameters(
     outcomeType,
-    initiatorDepositAssetId,
-    responderDepositAssetId,
-    initiatorBalanceDecrement,
-    responderBalanceDecrement,
-    initiatorFbAddress,
-    responderFbAddress,
+    // make sure the asset id array is returned in same order
+    // as channel since interpreter is multisig fn
+    sameChannelAndAppOrdering ? appInitiatorAssetId : appResponderAssetId,
+    sameChannelAndAppOrdering ? appResponderAssetId : appInitiatorAssetId,
+    appInitiatorBalanceDecrement,
+    appResponderBalanceDecrement,
+    appInitiatorFbAddress,
+    appResponderFbAddress,
     disableLimit,
   );
 
@@ -454,17 +514,26 @@ function computeStateChannelTransition(
     singleAssetTwoPartyCoinTransferInterpreterParams,
   );
 
-  const initiatorDepositTokenAddress = getAddressFromAssetId(initiatorDepositAssetId);
-  const responderDepositTokenAddress = getAddressFromAssetId(responderDepositAssetId);
+  // does not matter for asset ids
+  const initiatorDepositTokenAddress = getAddressFromAssetId(appInitiatorAssetId);
+  const responderDepositTokenAddress = getAddressFromAssetId(appResponderAssetId);
 
   let tokenIndexedBalanceDecrement: TokenIndexedCoinTransferMap;
   if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
+    const keys = [
+      sameChannelAndAppOrdering ? initiatorDepositTokenAddress : responderDepositTokenAddress,
+      sameChannelAndAppOrdering ? responderDepositTokenAddress : initiatorDepositTokenAddress,
+    ];
     tokenIndexedBalanceDecrement = {
-      [initiatorDepositTokenAddress]: {
-        [initiatorFbAddress]: initiatorBalanceDecrement,
+      [keys[0]]: {
+        [channelInitiatorFbAddress]: sameChannelAndAppOrdering
+          ? appInitiatorBalanceDecrement
+          : appResponderBalanceDecrement,
       },
-      [responderDepositTokenAddress]: {
-        [responderFbAddress]: responderBalanceDecrement,
+      [keys[1]]: {
+        [channelResponderFbAddress]: sameChannelAndAppOrdering
+          ? appResponderBalanceDecrement
+          : appInitiatorBalanceDecrement,
       },
     };
   } else {
@@ -473,8 +542,12 @@ function computeStateChannelTransition(
     // `initiatingFbAddress` would get overwritten
     tokenIndexedBalanceDecrement = {
       [initiatorDepositTokenAddress]: {
-        [initiatorFbAddress]: initiatorBalanceDecrement,
-        [responderFbAddress]: responderBalanceDecrement,
+        [channelInitiatorFbAddress]: sameChannelAndAppOrdering
+          ? appInitiatorBalanceDecrement
+          : appResponderBalanceDecrement,
+        [channelResponderFbAddress]: sameChannelAndAppOrdering
+          ? appResponderBalanceDecrement
+          : appInitiatorBalanceDecrement,
       },
     };
   }
@@ -505,7 +578,7 @@ function computeStateChannelTransition(
  * will be undefined and the other will be a correctly structured POJO. The AppInstance
  * object currently accepts both in its constructor and internally manages them.
  */
-function computeInterpreterParameters(
+export function computeInterpreterParameters(
   outcomeType: OutcomeType,
   initiatorAssetId: AssetId,
   responderAssetId: AssetId,

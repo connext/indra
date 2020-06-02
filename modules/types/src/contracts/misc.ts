@@ -21,28 +21,42 @@ export type AddressHistory = {
   };
 };
 
-export type ContractAddresses = NetworkContext & {
-  Token: Address;
-  [SupportedApplication: string]: Address;
+// Contract addresses that must be provided to withdraw funds from a channel
+// Losing track of a critical address means losing access to the funds in that
+// channel. Each channel must track it's own critical addresses because there's
+// no guarantee that these addresses will be the same across different channels
+export type CriticalStateChannelAddresses = {
+  ProxyFactory: Address;
+  MinimumViableMultisig: Address;
+};
+
+export type ContractAddresses = CriticalStateChannelAddresses & {
+  ChallengeRegistry: Address;
+  ConditionalTransactionDelegateTarget: Address;
+  DepositApp: Address;
+  WithdrawApp: Address;
+  HashLockTransferApp?: Address;
+  IdentityApp: Address;
+  MultiAssetMultiPartyCoinTransferInterpreter: Address;
+  SimpleLinkedTransferApp?: Address;
+  SimpleSignedTransferApp?: Address;
+  SimpleTwoPartySwapApp?: Address;
+  SingleAssetTwoPartyCoinTransferInterpreter: Address;
+  TimeLockedPassThrough: Address;
+  Token?: Address;
+  TwoPartyFixedOutcomeInterpreter: Address;
 };
 
 export interface NetworkContext {
-  ChallengeRegistry: Address;
-  ConditionalTransactionDelegateTarget: Address;
-  IdentityApp: Address;
-  MinimumViableMultisig: Address;
-  MultiAssetMultiPartyCoinTransferInterpreter: Address;
-  ProxyFactory: Address;
-  SingleAssetTwoPartyCoinTransferInterpreter: Address;
-  TimeLockedPassThrough: Address;
-  TwoPartyFixedOutcomeInterpreter: Address;
+  contractAddresses: ContractAddresses;
   provider: JsonRpcProvider;
 }
 
-// Keep in sync with above
+// Keep in sync with required addresses of ContractAddresses
 export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "ChallengeRegistry",
   "ConditionalTransactionDelegateTarget",
+  "DepositApp",
   "IdentityApp",
   "MinimumViableMultisig",
   "MultiAssetMultiPartyCoinTransferInterpreter",
@@ -52,7 +66,7 @@ export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "TwoPartyFixedOutcomeInterpreter",
 ];
 
-//////////////////////////////////////// 
+////////////////////////////////////////
 // Mixins, etc
 
 export const singleAssetTwoPartyCoinTransferEncoding = tidy(`tuple(
@@ -73,7 +87,7 @@ export const OutcomeType = enumify({
   // CoinTransfer[2]
   SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: "SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER",
 });
-export type OutcomeType = (typeof OutcomeType)[keyof typeof OutcomeType];
+export type OutcomeType = typeof OutcomeType[keyof typeof OutcomeType];
 
 // Commitment targets
 export const CommitmentTarget = enumify({
@@ -81,4 +95,3 @@ export const CommitmentTarget = enumify({
   SET_STATE: "1",
   CANCEL_DISPUTE: "2",
 });
-

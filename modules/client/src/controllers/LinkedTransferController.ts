@@ -9,10 +9,8 @@ import {
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   DefaultApp,
-  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import {
-  getAddressFromAssetId,
   getBytes32Error,
   getAddressError,
   getPublicIdentifierError,
@@ -20,7 +18,7 @@ import {
   toBN,
 } from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
-import { solidityKeccak256 } from "ethers/utils";
+import { soliditySha256 } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
 
@@ -30,10 +28,7 @@ export class LinkedTransferController extends AbstractController {
   ): Promise<PublicResults.LinkedTransfer> => {
     this.log.info(`linkedTransfer started: ${stringify(params)}`);
     const amount = toBN(params.amount);
-    const { paymentId, preImage, meta, recipient } = params;
-    const assetId = params.assetId
-      ? getAddressFromAssetId(params.assetId)
-      : CONVENTION_FOR_ETH_ASSET_ID;
+    const { paymentId, preImage, meta, recipient, assetId } = params;
 
     this.throwIfAny(
       getAddressError(assetId),
@@ -54,14 +49,11 @@ export class LinkedTransferController extends AbstractController {
       submittedMeta.sender = this.connext.publicIdentifier;
     }
 
-    const linkedHash = solidityKeccak256(
-      ["uint256", "address", "bytes32", "bytes32"],
-      [amount, assetId, paymentId, preImage],
-    );
+    submittedMeta.paymentId = paymentId;
+
+    const linkedHash = soliditySha256(["bytes32"], [preImage]);
 
     const initialState: SimpleLinkedTransferAppState = {
-      amount,
-      assetId,
       coinTransfers: [
         {
           amount,
@@ -73,8 +65,8 @@ export class LinkedTransferController extends AbstractController {
         },
       ],
       linkedHash,
-      paymentId,
       preImage: HashZero,
+      finalized: false
     };
 
     const network = await this.ethProvider.getNetwork();
@@ -97,6 +89,7 @@ export class LinkedTransferController extends AbstractController {
       initiatorDeposit: amount,
       initiatorDepositAssetId: assetId,
       meta: submittedMeta,
+      multisigAddress: this.connext.multisigAddress,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: Zero,
@@ -106,15 +99,16 @@ export class LinkedTransferController extends AbstractController {
     };
     this.log.debug(`Installing linked transfer app`);
     const appIdentityHash = await this.proposeAndInstallLedgerApp(proposeInstallParams);
-    this.log.debug(`Installed: ${appIdentityHash}`);
 
     if (!appIdentityHash) {
       throw new Error(`App was not installed`);
     }
+    this.log.debug(`Installed: ${appIdentityHash}`);
 
     const eventData = {
       type: ConditionalTransferTypes.LinkedTransfer,
       amount,
+      appIdentityHash,
       assetId,
       paymentId,
       sender: this.connext.publicIdentifier,

@@ -1,3 +1,4 @@
+import { getLocalStore } from "@connext/store";
 import {
   ClientOptions,
   IChannelProvider,
@@ -7,9 +8,8 @@ import {
   StateSchemaVersion,
   STORE_SCHEMA_VERSION,
   IChannelSigner,
-  StoreTypes,
 } from "@connext/types";
-import { ChannelSigner, ConsoleLogger, delayAndThrow, logTime, stringify } from "@connext/utils";
+import { ChannelSigner, ConsoleLogger, logTime, stringify, delay } from "@connext/utils";
 
 import { Contract, providers } from "ethers";
 import tokenAbi from "human-standard-token-abi";
@@ -17,7 +17,6 @@ import tokenAbi from "human-standard-token-abi";
 import { ConnextClient } from "./connext";
 import { getDefaultOptions } from "./default";
 import { NodeApiClient } from "./node";
-import { ConnextStore } from "@connext/store";
 
 export const connect = async (
   clientOptions: string | ClientOptions,
@@ -37,6 +36,9 @@ export const connect = async (
     logLevel,
   } = opts;
   let { store, messaging, nodeUrl, messagingUrl } = opts;
+  if (store) {
+    await store.init();
+  }
 
   const logger = loggerService
     ? loggerService.newContext("ConnextConnect")
@@ -46,13 +48,10 @@ export const connect = async (
     `Called connect with ${stringify({ nodeUrl, ethProviderUrl, messagingUrl })}, and ${
       providedChannelProvider!!
         ? `provided channel provider`
-        : `signer ${
-            typeof opts.signer === "string"
-              ? `using pk: ${opts.signer}`
-              : `with id: ${opts.signer!.publicIdentifier}`
-          }`
+        : `signer ${typeof opts.signer === "string" ? `using private key` : `with injected signer`}`
     }`,
   );
+
   // setup ethProvider + network information
   logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
@@ -96,7 +95,7 @@ export const connect = async (
         ? new ChannelSigner(opts.signer, ethProviderUrl)
         : opts.signer;
 
-    store = store || new ConnextStore(StoreTypes.LocalStorage);
+    store = store || getLocalStore();
 
     node = await NodeApiClient.init({
       store,
@@ -147,22 +146,26 @@ export const connect = async (
   }
 
   // waits until the setup protocol or create channel call is completed
-  await Promise.race([
-    new Promise(
-      async (resolve: any, reject: any): Promise<any> => {
-        // Wait for channel to be available
-        const channelIsAvailable = async (): Promise<boolean> => {
-          const chan = await client.node.getChannel();
-          return chan && chan.available;
-        };
-        while (!(await channelIsAvailable())) {
-          await new Promise((res: any): any => setTimeout((): void => res(), 1000));
-        }
-        resolve();
-      },
-    ),
-    delayAndThrow(30_000, "Channel was not available after 30 seconds."),
-  ]);
+  await new Promise(async (resolve, reject) => {
+    // Wait for channel to be available
+    const channelIsAvailable = async (): Promise<boolean> => {
+      try {
+        const chan = await client.node.getChannel();
+        return chan && chan.available;
+      } catch (e) {
+        return false;
+      }
+    };
+    const start = Date.now();
+    const MAX_WAIT = 20_000;
+    while (!(await channelIsAvailable())) {
+      if (Date.now() - start >= MAX_WAIT) {
+        return reject(`Could not create channel within ${MAX_WAIT / 1000}s`);
+      }
+      await delay(MAX_WAIT / 10);
+    }
+    return resolve();
+  });
 
   logger.info(`Channel is available`);
 
@@ -181,7 +184,9 @@ export const connect = async (
     await client.getFreeBalance();
   } catch (e) {
     if (e.message.includes("StateChannel does not exist yet")) {
-      logger.info(`Our store does not contain channel, attempting to restore: ${e.stack || e.message}`);
+      logger.info(
+        `Our store does not contain channel, attempting to restore: ${e.stack || e.message}`,
+      );
       await client.restoreState();
       logger.info(`State restored successfully`);
     } else {
@@ -207,8 +212,9 @@ export const connect = async (
     await client.cleanupRegistryApps();
   } catch (e) {
     logger.error(
-      `Could not clean up registry: ${e.stack ||
-        e.message}... will attempt again on next connection`,
+      `Could not clean up registry: ${
+        e.stack || e.message
+      }... will attempt again on next connection`,
     );
   }
   logger.info("Cleaned up registry apps");
@@ -216,19 +222,7 @@ export const connect = async (
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting
   logger.info("Reclaiming pending async transfers");
-  // NOTE: Removing the following await results in a subtle race condition during bot tests.
-  //       Don't remove this await again unless you really know what you're doing & bot tests pass
-  // no need to await this if it needs collateral
-  // TODO: without await causes race conditions in bot, refactor to
-  // use events
-  try {
-    await client.reclaimPendingAsyncTransfers();
-  } catch (e) {
-    logger.error(
-      `Could not reclaim pending async transfers: ${e.stack ||
-        e.message}... will attempt again on next connection`,
-    );
-  }
+  await client.reclaimPendingAsyncTransfers();
   logger.info("Reclaimed pending async transfers");
 
   // check in with node to do remaining work
@@ -237,8 +231,9 @@ export const connect = async (
     await client.clientCheckIn();
   } catch (e) {
     logger.error(
-      `Could not complete node check-in: ${e.stack ||
-        e.message}... will attempt again on next connection`,
+      `Could not complete node check-in: ${
+        e.stack || e.message
+      }... will attempt again on next connection`,
     );
   }
   logger.info("Checked in with node");
@@ -256,12 +251,13 @@ export const connect = async (
     logger.info(`Watching for user withdrawals`);
     const transactions = await client.watchForUserWithdrawal();
     if (transactions.length > 0) {
-      logger.info(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
+      logger.info(`Found node submitted user withdrawals: ${transactions.map((tx) => tx.hash)}`);
     }
   } catch (e) {
     logger.error(
-      `Could not complete watching for user withdrawals: ${e.stack ||
-        e.message}... will attempt again on next connection`,
+      `Could not complete watching for user withdrawals: ${
+        e.stack || e.message
+      }... will attempt again on next connection`,
     );
   }
 

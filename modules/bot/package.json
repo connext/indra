@@ -1,0 +1,26 @@
+{
+  "name": "bots",
+  "version": "0.0.1",
+  "description": "",
+  "main": "dist/src/index.js",
+  "scripts": {
+    "build": "rm -rf dist && tsc --project tsconfig.json",
+    "start": "node dist/src/index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@connext/client": "6.6.5",
+    "@connext/store": "6.6.5",
+    "@connext/types": "6.6.5",
+    "@connext/utils": "6.6.5",
+    "axios": "0.19.2",
+    "ethers": "4.0.47",
+    "interval-promise": "1.4.0",
+    "yargs": "15.3.1"
+  },
+  "devDependencies": {
+    "ts-node": "8.10.2",
+    "typescript": "3.9.3"
+  }
+}

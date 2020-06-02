@@ -1,13 +1,14 @@
 import { MethodNames, MethodParams, MethodResults } from "@connext/types";
-import { jsonRpcMethod } from "rpc-server";
 
 import { NO_NETWORK_PROVIDER_CREATE2, NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
 import { RequestHandler } from "../../request-handler";
-import { NodeController } from "../controller";
 import { getCreate2MultisigAddress } from "../../utils";
 
-export class GetStateDepositHolderAddressController extends NodeController {
-  @jsonRpcMethod(MethodNames.chan_getStateDepositHolderAddress)
+import { MethodController } from "../controller";
+
+export class GetStateDepositHolderAddressController extends MethodController {
+  public readonly methodName = MethodNames.chan_getStateDepositHolderAddress;
+
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(
@@ -24,20 +25,20 @@ export class GetStateDepositHolderAddressController extends NodeController {
     // the `getMultisigAddressWithCounterparty` function will default
     // to using any existing multisig address for the provided
     // owners before creating one
-    const { multisigAddress: storedMultisig } = await store
-      .getStateChannelByOwners(owners) || { multisigAddress: undefined };
+    const { multisigAddress: storedMultisig } = (await store.getStateChannelByOwners(owners)) || {
+      multisigAddress: undefined,
+    };
     if (!networkContext.provider && !storedMultisig) {
       throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
     }
-    const address = storedMultisig || await getCreate2MultisigAddress(
-      owners[0],
-      owners[1],
-      { 
-        proxyFactory: networkContext.ProxyFactory,
-        multisigMastercopy: networkContext.MinimumViableMultisig,
-      },
-      networkContext.provider,
-    );
+    const address =
+      storedMultisig ||
+      (await getCreate2MultisigAddress(
+        owners[0],
+        owners[1],
+        networkContext.contractAddresses,
+        networkContext.provider,
+      ));
 
     return { address };
   }

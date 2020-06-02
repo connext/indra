@@ -1,7 +1,11 @@
-import { Node as CFCore } from "@connext/cf-core";
+import { CFCore } from "@connext/cf-core";
+import { ERC20 } from "@connext/contracts";
 import { MessagingService } from "@connext/messaging";
 import { ConnextNodeStorePrefix } from "@connext/types";
 import { Provider } from "@nestjs/common";
+import { Contract } from "ethers";
+import { EtherSymbol } from "ethers/constants";
+import { formatEther } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, MessagingProviderId } from "../constants";
@@ -24,7 +28,6 @@ export const cfCoreProviderFactory: Provider = {
     const signer = config.getSigner();
     const signerAddress = await signer.getAddress();
     log.setContext("CFCoreProvider");
-    log.info(`Derived address from mnemonic: ${signerAddress}`);
 
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();
@@ -36,13 +39,24 @@ export const cfCoreProviderFactory: Provider = {
       { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
       provider,
       config.getSigner(),
-      { acquireLock: lockService.lockedOperation.bind(lockService) },
+      { 
+        acquireLock: lockService.acquireLock.bind(lockService),
+        releaseLock: lockService.releaseLock.bind(lockService),
+      },
       undefined,
       log.newContext("CFCore"),
+      false, // only clients sync on cf core start
     );
-    const balance = (await provider.getBalance(signerAddress)).toString();
+    const ethBalance = formatEther(await provider.getBalance(signerAddress));
+
+    const tokenContract = new Contract(
+      contractAddresses.Token,
+      ERC20.abi,
+      config.getSigner(),
+    );
+    const tknBalance = formatEther(await tokenContract.balanceOf(signerAddress));
     log.info(
-      `Balance of signer address ${signerAddress} on ${networkName} (chainId ${chainId}): ${balance}`,
+      `Balance of signer address ${signerAddress} on ${networkName} (chainId ${chainId}): ${EtherSymbol} ${ethBalance} & ${tknBalance} tokens`,
     );
     log.info("CFCore created");
     return cfCore;
