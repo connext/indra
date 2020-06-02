@@ -647,7 +647,7 @@ export class ConnextClient implements IConnextClient {
     paymentId: string,
     encryptedPreImage: string,
   ): Promise<PublicResults.ResolveLinkedTransfer> => {
-    this.log.info(`Reclaiming transfer ${paymentId}`);
+    this.log.info(`Unlocking transfer ${paymentId}`);
     // decrypt secret and resolve
     const preImage = await this.channelProvider.send(ChannelMethods.chan_decrypt, {
       encryptedPreImage,
@@ -659,7 +659,7 @@ export class ConnextClient implements IConnextClient {
         paymentId,
         preImage,
       });
-      this.log.info(`Reclaimed transfer ${paymentId} using preImage: ${preImage}`);
+      this.log.info(`Unlocked transfer ${paymentId} using preImage: ${preImage}`);
       return response;
     } catch (e) {
       this.log.error(`Error in reclaimPendingAsyncTransfer: ${e.message}`);

@@ -46,6 +46,10 @@ export class ResolveTransferController extends AbstractController {
         appIdentityHash = installRes.appIdentityHash;
         amount = installRes.amount;
         assetId = installRes.assetId;
+      } else {
+        this.log.info(
+          `[${paymentId}] Found existing transfer app, proceeding with ${appIdentityHash}`,
+        );
       }
 
       let action:
