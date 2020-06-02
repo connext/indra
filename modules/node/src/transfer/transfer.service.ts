@@ -238,6 +238,7 @@ export class TransferService {
       throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
     }
 
+    // this should never happen, maybe remove
     if (senderApp.latestState.preImage && senderApp.latestState.preImage !== HashZero) {
       throw new Error(`Sender app has action, refusing to redeem`);
     }

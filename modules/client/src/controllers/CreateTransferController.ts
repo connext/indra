@@ -57,7 +57,6 @@ export class CreateTransferController extends AbstractController {
     switch (conditionType) {
       case ConditionalTransferTypes.LinkedTransfer: {
         const { preImage, paymentId } = params as PublicParams.LinkedTransfer;
-        const encryptedPreImage = await this.channelProvider.encrypt(preImage, recipient);
         // add encrypted preImage to meta so node can store it in the DB
         const linkedHash = soliditySha256(["bytes32"], [preImage]);
 
@@ -67,7 +66,10 @@ export class CreateTransferController extends AbstractController {
           preImage: HashZero,
         } as SimpleLinkedTransferAppState;
 
-        submittedMeta.encryptedPreImage = encryptedPreImage;
+        if (recipient) {
+          const encryptedPreImage = await this.channelProvider.encrypt(preImage, recipient);
+          submittedMeta.encryptedPreImage = encryptedPreImage;
+        }
         submittedMeta.paymentId = paymentId;
 
         transferMeta = {} as CreatedLinkedTransferMeta;
@@ -123,6 +125,8 @@ export class CreateTransferController extends AbstractController {
           chainId,
         } as CreatedSignedTransferMeta;
 
+        submittedMeta.paymentId = paymentId;
+
         break;
       }
       default: {
@@ -159,7 +163,7 @@ export class CreateTransferController extends AbstractController {
       responderDeposit: Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
-      stateTimeout: HASHLOCK_TRANSFER_STATE_TIMEOUT,
+      stateTimeout: Zero,
     };
     this.log.debug(`Installing transfer app ${conditionType}`);
     const appIdentityHash = await this.proposeAndInstallLedgerApp(proposeInstallParams);
@@ -170,7 +174,7 @@ export class CreateTransferController extends AbstractController {
     }
 
     const eventData = {
-      type: ConditionalTransferTypes.HashLockTransfer,
+      type: conditionType,
       amount,
       appIdentityHash,
       assetId,
@@ -181,7 +185,7 @@ export class CreateTransferController extends AbstractController {
       transferMeta,
     };
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
-    const result: PublicResults.HashLockTransfer = {
+    const result: PublicResults.ConditionalTransfer = {
       appIdentityHash,
     };
     this.log.info(

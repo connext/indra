@@ -4,6 +4,7 @@ import {
   SimpleLinkedTransferAppName,
   SimpleSignedTransferAppName,
   ConditionalTransferTypes,
+  getTransferTypeFromAppName,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
@@ -87,6 +88,10 @@ export class TransferMessaging extends AbstractMessagingProvider {
   ): Promise<NodeResponses.InstallConditionalTransferReceiverApp> {
     if (!data.paymentId || !data.conditionType) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
+    }
+    const transferType = getTransferTypeFromAppName(data.conditionType);
+    if (transferType !== "AllowOffline") {
+      throw new Error(`Only AllowOffline apps are able to be installed through node API`);
     }
     this.log.info(`Got installReceiverApp request with paymentId: ${data.paymentId}`);
 

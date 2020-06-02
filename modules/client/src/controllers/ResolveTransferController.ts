@@ -17,8 +17,8 @@ export class ResolveTransferController extends AbstractController {
   public resolveTransfer = async (
     params: PublicParams.ResolveCondition,
   ): Promise<PublicResults.ResolveCondition> => {
-    this.log.info(`resolveHashLockTransfer started: ${stringify(params)}`);
     const { conditionType, paymentId } = params;
+    this.log.info(`[${paymentId}] resolveTransfer started: ${stringify(params)}`);
 
     const installedApps = await this.connext.getAppInstances();
     const existingApp = installedApps.find(
@@ -31,6 +31,7 @@ export class ResolveTransferController extends AbstractController {
     let amount = (existingApp?.latestState as GenericConditionalTransferAppState)?.coinTransfers[0]
       .amount;
     let assetId = existingApp?.singleAssetTwoPartyCoinTransferInterpreterParams?.tokenAddress;
+    let finalized = (existingApp?.latestState as GenericConditionalTransferAppState)?.finalized;
     try {
       const transferType = getTransferTypeFromAppName(conditionType);
       if (!existingApp) {
@@ -54,35 +55,43 @@ export class ResolveTransferController extends AbstractController {
       switch (conditionType) {
         case ConditionalTransferTypes.HashLockTransfer: {
           const { preImage } = params as PublicParams.ResolveHashLockTransfer;
-          action = { preImage } as HashLockTransferAppAction;
+          action = preImage && ({ preImage } as HashLockTransferAppAction);
           break;
         }
         case ConditionalTransferTypes.SignedTransfer: {
           const { attestation } = params as PublicParams.ResolveSignedTransfer;
-          action = attestation as SimpleSignedTransferAppAction;
+          action = attestation.signature && (attestation as SimpleSignedTransferAppAction);
           break;
         }
         case ConditionalTransferTypes.LinkedTransfer: {
           const { preImage } = params as PublicParams.ResolveLinkedTransfer;
-          action = { preImage } as SimpleLinkedTransferAppAction;
+          action = preImage && ({ preImage } as SimpleLinkedTransferAppAction);
           break;
         }
         default: {
           const c: never = conditionType;
-          this.log.error(`Unsupported conditionType ${c}`);
+          this.log.error(`[${paymentId}] Unsupported conditionType ${c}`);
         }
       }
 
       // node installs app, validation happens in listener
-      this.log.debug(`Taking action on transfer app ${existingApp.identityHash}`);
-      await this.connext.takeAction(existingApp.identityHash, action);
-      this.log.debug(`Uninstalling hashlock transfer app ${existingApp.identityHash}`);
+      if (finalized === false && action) {
+        this.log.info(`[${paymentId}] Taking action on transfer app ${existingApp.identityHash}`);
+        await this.connext.takeAction(existingApp.identityHash, action);
+        this.log.info(
+          `[${paymentId}] Finished taking action on transfer app ${existingApp.identityHash}`,
+        );
+      }
+      this.log.info(`[${paymentId}] Uninstalling transfer app ${existingApp.identityHash}`);
       await this.connext.uninstallApp(existingApp.identityHash);
+      this.log.info(
+        `[${paymentId}] Finished uninstalling transfer app ${existingApp.identityHash}`,
+      );
     } catch (e) {
       this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
         error: e.message,
         paymentId,
-        type: ConditionalTransferTypes[conditionType],
+        type: conditionType,
       });
       throw e;
     }
