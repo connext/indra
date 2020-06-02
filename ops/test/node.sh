@@ -111,14 +111,13 @@ echo "Node tester activated!";echo;
 echo "Starting $ethprovider_host.."
 docker run \
   --detach \
+  --env="ETH_MENMONIC=$eth_mnemonic" \
   --name="$ethprovider_host" \
   --network="$network" \
   --rm \
-  --tmpfs="/data" \
-  trufflesuite/ganache-cli:v6.9.1 \
-    --db="/data" \
-    --mnemonic="$eth_mnemonic" \
-    --networkId="4447"
+  --mount="type=bind,source=$cwd,target=/root" \
+  --mount="type=volume,source=${project}_chain_dev,target=/data" \
+  ${project}_builder -c "cd modules/contracts && bash ops/entry.sh start"
 
 echo "Starting $postgres_host.."
 docker run \

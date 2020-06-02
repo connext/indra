@@ -1,20 +1,16 @@
-import { Test, TestingModule } from "@nestjs/testing";
 import { connect } from "@connext/client";
-import { IConnextClient, StoreTypes } from "@connext/types";
-import { ConnextStore } from "@connext/store";
+import { ChannelSigner, getRandomPrivateKey } from "@connext/utils";
+import { INestApplication } from "@nestjs/common";
+import { getMemoryStore } from "@connext/store";
+import { Test, TestingModule } from "@nestjs/testing";
+import { IConnextClient } from "@connext/types";
 import { Wallet } from "ethers";
-import { HttpModule, INestApplication } from "@nestjs/common";
+import { AddressZero } from "ethers/constants";
+import { parseEther } from "ethers/utils";
 
 import { AppModule } from "../../app.module";
-import { ConfigService } from "../../config/config.service";
-
-import { ChannelService } from "../../channel/channel.service";
-import { bigNumberify, parseEther } from "ethers/utils";
-import { ChannelSigner, getRandomPrivateKey } from "@connext/utils";
-import { AddressZero } from "ethers/constants";
 import { ChannelRepository } from "../../channel/channel.repository";
-
-const randomPk = getRandomPrivateKey();
+import { ConfigService } from "../../config/config.service";
 
 class MockConfigService extends ConfigService {
   getLogLevel(): number {
@@ -22,7 +18,7 @@ class MockConfigService extends ConfigService {
   }
 
   getSigner() {
-    return new ChannelSigner(randomPk, this.getEthRpcUrl());
+    return new ChannelSigner(getRandomPrivateKey(), this.getEthRpcUrl());
   }
 
   async getSignerAddress() {
@@ -36,7 +32,6 @@ class MockConfigService extends ConfigService {
 
 describe("Startup", () => {
   let app: INestApplication;
-  let channelService: ChannelService;
   let configService: ConfigService;
   let clientA: IConnextClient;
   let clientB: IConnextClient;
@@ -52,7 +47,6 @@ describe("Startup", () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
-    channelService = moduleFixture.get<ChannelService>(ChannelService);
     configService = moduleFixture.get<ConfigService>(ConfigService);
     channelRepo = moduleFixture.get<ChannelRepository>(ChannelRepository);
     await app.listen(configService.getPort());
@@ -62,7 +56,7 @@ describe("Startup", () => {
     const channels = await channelRepo.findAll();
     console.log("channels: ", channels);
 
-    const storeA = new ConnextStore(StoreTypes.Memory);
+    const storeA = getMemoryStore();
     const pkA = getRandomPrivateKey();
     console.log("pkA: ", pkA);
     clientA = await connect("localhost", {
@@ -71,7 +65,7 @@ describe("Startup", () => {
       ethProviderUrl: configService.getEthRpcUrl(),
       messagingUrl: configService.getMessagingConfig().messagingUrl[0],
       nodeUrl,
-      logLevel: 1,
+      logLevel: 3,
     });
     const realWallet = Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC).connect(
       configService.getEthProvider(),
@@ -81,7 +75,7 @@ describe("Startup", () => {
     console.log("clientA.publicIdentifier: ", clientA.publicIdentifier);
     expect(clientA.signerAddress).toBeTruthy();
 
-    const storeB = new ConnextStore(StoreTypes.Memory);
+    const storeB = getMemoryStore();
     const pkB = getRandomPrivateKey();
     console.log("pkB: ", pkB);
     clientB = await connect("localhost", {

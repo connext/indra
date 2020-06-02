@@ -26,7 +26,7 @@ import {
   createStateProgressedEventPayload,
   generateRandomIdentifier,
   createChallengeUpdatedEventPayload,
-} from "../test/cfCore";
+} from "../test/utils/cfCore";
 import { ConfigService } from "../config/config.service";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
