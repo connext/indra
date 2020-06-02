@@ -25,7 +25,7 @@
     "@types/jest": "25.2.3",
     "@types/node": "14.0.9",
     "eth-crypto": "1.6.0",
-    "ethers": "4.0.47",
+    "ethers": "5.0.0-beta.190",
     "jest": "26.0.1",
     "ts-jest": "26.1.0",
     "typescript": "3.9.3"

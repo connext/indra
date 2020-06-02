@@ -1,9 +1,9 @@
 import { AppABIEncodings } from "@connext/types";
 import { getRandomBytes32 } from "@connext/utils";
-import { utils, constants } from "ethers";
+import { BigNumber, BigNumberish, utils, constants } from "ethers";
 
 const { Zero, AddressZero } = constants;
-const { bigNumberify, solidityKeccak256 } = utils;
+const { solidityKeccak256 } = utils;
 
 const singleAssetTwoPartyCoinTransferEncoding = `
 tuple(address to, uint256 amount)[2]
@@ -27,10 +27,10 @@ export const linkedAbiEncodings: AppABIEncodings = {
     )`,
 };
 
-export function validAction(amount: utils.BigNumberish = 1, assetId: string = AddressZero) {
+export function validAction(amount: BigNumberish = 1, assetId: string = AddressZero) {
   return {
     assetId,
-    amount: bigNumberify(amount),
+    amount: BigNumber.from(amount),
     paymentId: getRandomBytes32(),
     preImage: getRandomBytes32(),
   };
@@ -49,7 +49,7 @@ function createLinkedHash(
 export function initialLinkedState(
   senderAddr: string,
   redeemerAddr: string,
-  amount: utils.BigNumberish = 1,
+  amount: BigNumberish = 1,
   assetId: string = AddressZero,
 ) {
   const action = validAction(amount, assetId);
@@ -63,7 +63,7 @@ export function initialLinkedState(
       turnNum: Zero,
       transfers: [
         {
-          amount: bigNumberify(amount),
+          amount: BigNumber.from(amount),
           to: senderAddr,
         },
         {

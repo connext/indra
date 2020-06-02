@@ -29,7 +29,7 @@ import {
   env,
   SEND,
 } from "../util";
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 import { Client } from "ts-nats";
 import { before } from "mocha";
 import { getRandomChannelSigner } from "@connext/utils";
@@ -38,7 +38,7 @@ import { getMemoryStore } from "@connext/store";
 const fundForTransfers = async (
   receiverClient: IConnextClient,
   senderClient: IConnextClient,
-  amount: utils.BigNumber = TOKEN_AMOUNT,
+  amount: BigNumber = TOKEN_AMOUNT,
   assetId?: string,
 ): Promise<void> => {
   // make sure the tokenAddress is set

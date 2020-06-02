@@ -10,7 +10,7 @@ import {
   PublicIdentifier,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { errors, utils } from "ethers";
+import { BigNumber, errors } from "ethers";
 
 import {
   IMPROPERLY_FORMATTED_STRUCT,
@@ -128,7 +128,7 @@ async function runTakeActionProtocol(
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
   action: SolidityValueType,
-  stateTimeout: utils.BigNumber,
+  stateTimeout: BigNumber,
 ) {
   const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
   if (!stateChannel) {

@@ -638,7 +638,7 @@ export class StoreService implements IStoreService {
       ChallengeRegistry.abi,
       provider,
     );
-    const onchainChallenge = await registry.functions.getAppChallenge(appIdentityHash);
+    const onchainChallenge = await registry.getAppChallenge(appIdentityHash);
     if (onchainChallenge.versionNumber.eq(ourLatestSetState.versionNumber)) {
       return;
     }
@@ -658,7 +658,7 @@ export class StoreService implements IStoreService {
         timeout,
         turnTaker,
         signature,
-      } = registry.interface.parseLog(log).values;
+      } = registry.interface.parseLog(log).args;
       return { identityHash, action, versionNumber, timeout, turnTaker, signature };
     });
 

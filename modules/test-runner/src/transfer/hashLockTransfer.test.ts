@@ -9,7 +9,7 @@ import {
   EventPayloads,
 } from "@connext/types";
 import { getRandomBytes32 } from "@connext/utils";
-import { providers, constants, utils } from "ethers";
+import { BigNumber, providers, constants, utils } from "ethers";
 
 import {
   AssetOptions,
@@ -23,7 +23,7 @@ import {
 } from "../util";
 
 const { AddressZero, HashZero } = constants;
-const { soliditySha256, bigNumberify } = utils;
+const { soliditySha256 } = utils;
 
 describe("HashLock Transfers", () => {
   let clientA: IConnextClient;
@@ -61,7 +61,7 @@ describe("HashLock Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
-    const expiry = bigNumberify(timelock).add(await provider.getBlockNumber());
+    const expiry = BigNumber.from(timelock).add(await provider.getBlockNumber());
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
 
@@ -147,7 +147,7 @@ describe("HashLock Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
-    const expiry = bigNumberify(timelock).add(await provider.getBlockNumber());
+    const expiry = BigNumber.from(timelock).add(await provider.getBlockNumber());
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     // both sender + receiver apps installed, sender took action
@@ -234,7 +234,7 @@ describe("HashLock Transfers", () => {
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     const paymentId = soliditySha256(["address", "bytes32"], [transfer.assetId, lockHash]);
-    const expiry = bigNumberify(await provider.getBlockNumber())
+    const expiry = BigNumber.from(await provider.getBlockNumber())
       .add(timelock)
       .sub(TIMEOUT_BUFFER);
     // both sender + receiver apps installed, sender took action
@@ -269,7 +269,7 @@ describe("HashLock Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
-    const expiry = bigNumberify(await provider.getBlockNumber())
+    const expiry = BigNumber.from(await provider.getBlockNumber())
       .add(timelock)
       .sub(TIMEOUT_BUFFER);
 

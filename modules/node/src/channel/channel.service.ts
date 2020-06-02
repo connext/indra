@@ -8,7 +8,7 @@ import {
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
-import { providers, constants, utils } from "ethers";
+import { BigNumber, providers, constants, utils } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -21,7 +21,7 @@ import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
 
 const { AddressZero } = constants;
-const { getAddress, toUtf8Bytes, sha256, bigNumberify } = utils;
+const { getAddress, toUtf8Bytes, sha256 } = utils;
 
 export enum RebalanceType {
   COLLATERALIZE = "COLLATERALIZE",
@@ -163,9 +163,9 @@ export class ChannelService {
   async getCollateralAmountToCoverPaymentAndRebalance(
     userPublicIdentifier: string,
     assetId: string,
-    paymentAmount: utils.BigNumber,
-    currentBalance: utils.BigNumber,
-  ): Promise<utils.BigNumber> {
+    paymentAmount: BigNumber,
+    currentBalance: BigNumber,
+  ): Promise<BigNumber> {
     const { collateralizeThreshold, target } = await this.getRebalancingTargets(
       userPublicIdentifier,
       assetId,
@@ -325,9 +325,9 @@ export class ChannelService {
     }
     const response: RebalanceProfileType = {
       assetId: rebalancingTargets.assetId,
-      collateralizeThreshold: bigNumberify(rebalancingTargets.collateralizeThreshold),
-      target: bigNumberify(rebalancingTargets.target),
-      reclaimThreshold: bigNumberify(rebalancingTargets.reclaimThreshold),
+      collateralizeThreshold: BigNumber.from(rebalancingTargets.collateralizeThreshold),
+      target: BigNumber.from(rebalancingTargets.target),
+      reclaimThreshold: BigNumber.from(rebalancingTargets.reclaimThreshold),
     };
     this.log.info(
       `getDataFromRebalancingService for ${userPublicIdentifier} asset ${assetId} complete: ${JSON.stringify(

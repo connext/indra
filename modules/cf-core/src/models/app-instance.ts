@@ -22,7 +22,7 @@ import {
   stringify,
   toBN,
 } from "@connext/utils";
-import { Contract, constants, utils, providers } from "ethers";
+import { BigNumber, Contract, constants, utils, providers } from "ethers";
 import { Memoize } from "typescript-memoize";
 
 import { CounterfactualApp } from "../contracts";
@@ -248,7 +248,7 @@ export class AppInstance {
     return this.stateTimeout;
   }
 
-  public setState(newState: SolidityValueType, stateTimeout: utils.BigNumber = Zero) {
+  public setState(newState: SolidityValueType, stateTimeout: BigNumber = Zero) {
     try {
       defaultAbiCoder.encode([this.appInterface.stateEncoding], [newState]);
     } catch (e) {
@@ -302,7 +302,7 @@ export class AppInstance {
     state: SolidityValueType,
     provider: providers.JsonRpcProvider,
   ): Promise<string> {
-    return this.toEthersContract(provider).functions.computeOutcome(this.encodeState(state));
+    return this.toEthersContract(provider).computeOutcome(this.encodeState(state));
   }
 
   public async computeOutcomeWithCurrentState(
@@ -316,7 +316,7 @@ export class AppInstance {
     provider: providers.JsonRpcProvider,
   ): Promise<SolidityValueType> {
     const computedNextState = this.decodeAppState(
-      await this.toEthersContract(provider).functions.applyAction(
+      await this.toEthersContract(provider).applyAction(
         this.encodedLatestState,
         this.encodeAction(action),
       ),

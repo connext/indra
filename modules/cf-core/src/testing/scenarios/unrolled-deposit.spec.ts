@@ -1,7 +1,7 @@
 import { DolphinCoin } from "@connext/contracts";
-import { BigNumber, CONVENTION_FOR_ETH_ASSET_ID, DepositAppState } from "@connext/types";
+import { CONVENTION_FOR_ETH_ASSET_ID, DepositAppState } from "@connext/types";
 import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { providers } from "ethers";
+import { BigNumber, providers } from "ethers";
 import { CFCore } from "../../cfCore";
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
@@ -35,7 +35,7 @@ describe(`Node method follows spec - install deposit app`, () => {
 
   const runUnrolledDepositTest = async (
     assetId: string = CONVENTION_FOR_ETH_ASSET_ID,
-    depositAmt: BigNumber = new BigNumber(1000),
+    depositAmt: BigNumber = BigNumber.from(1000),
   ) => {
     // request rights
     const appIdentityHash = await requestDepositRights(nodeA, nodeB, multisigAddress, assetId);
@@ -66,7 +66,7 @@ describe(`Node method follows spec - install deposit app`, () => {
       : await transferERC20Tokens(
           multisigAddress,
           getAddressFromAssetId(assetId),
-          DolphinCoin.abi,
+          DolphinCoin.abi as any,
           depositAmt,
         );
     const multisigBalance = await getMultisigBalance(
@@ -97,7 +97,7 @@ describe(`Node method follows spec - install deposit app`, () => {
   });
 
   it(`install app with tokens, sending tokens should increase free balance`, async () => {
-    const depositAmt = new BigNumber(1000);
+    const depositAmt = BigNumber.from(1000);
     const assetId = getAddressFromAssetId(global[`contracts`].DolphinCoin);
 
     await runUnrolledDepositTest(assetId, depositAmt);
@@ -105,8 +105,8 @@ describe(`Node method follows spec - install deposit app`, () => {
 
   it(`install app with both eth and tokens, sending eth and tokens should increase free balance`, async () => {
     const erc20AssetId = getAddressFromAssetId(global[`contracts`].DolphinCoin);
-    const depositAmtToken = new BigNumber(1000);
-    const depositAmtEth = new BigNumber(500);
+    const depositAmtToken = BigNumber.from(1000);
+    const depositAmtEth = BigNumber.from(500);
 
     // request deposit rights
     await requestDepositRights(nodeA, nodeB, multisigAddress);
@@ -135,7 +135,7 @@ describe(`Node method follows spec - install deposit app`, () => {
     await transferERC20Tokens(
       multisigAddress,
       getAddressFromAssetId(erc20AssetId),
-      DolphinCoin.abi,
+      DolphinCoin.abi as any,
       depositAmtToken,
     );
     const tx = await provider.getSigner().sendTransaction({

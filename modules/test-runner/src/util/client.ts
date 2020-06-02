@@ -53,7 +53,7 @@ export const createClient = async (
     await ethTx.wait();
     const token = new Contract(client.config.contractAddresses.Token!, ERC20.abi, ethWallet);
     log.info(`sending client tokens`);
-    const tokenTx = await token.functions.transfer(client.signerAddress, TOKEN_AMOUNT);
+    const tokenTx = await token.transfer(client.signerAddress, TOKEN_AMOUNT);
     log.debug(`transaction sent ${tokenTx.hash}, waiting...`);
     await tokenTx.wait();
   }

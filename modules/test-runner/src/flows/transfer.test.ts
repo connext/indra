@@ -1,5 +1,5 @@
 import { IConnextClient, EventNames } from "@connext/types";
-import { constants, utils } from "ethers";
+import { BigNumber, constants } from "ethers";
 import { Client } from "ts-nats";
 import { before } from "mocha";
 
@@ -15,7 +15,6 @@ import { asyncTransferAsset } from "../util/helpers/asyncTransferAsset";
 import { getNatsClient } from "../util/nats";
 
 const { AddressZero } = constants;
-const { bigNumberify } = utils;
 
 describe("Full Flow: Transfer", () => {
   let clientA: IConnextClient;
@@ -91,8 +90,8 @@ describe("Full Flow: Transfer", () => {
       // while user has deposit in flight and node has insufficient
       // collateral. node will not allow the resolution of that payment
       await requestCollateral(clientA, AddressZero, true);
-      await fundChannel(clientB, bigNumberify(5));
-      await fundChannel(clientC, bigNumberify(5));
+      await fundChannel(clientB, BigNumber.from(5));
+      await fundChannel(clientC, BigNumber.from(5));
       let transferCount = 0;
       clientA.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async () => {
         transferCount += 1;

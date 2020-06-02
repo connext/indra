@@ -167,12 +167,12 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         await (wallet.provider as providers.JsonRpcProvider).send("evm_mine", []);
       }
 
-      await appRegistry.functions.setOutcome(
+      await appRegistry.setOutcome(
         identityAppInstance.identity,
         identityAppInstance.encodedLatestState,
       );
 
-      await appRegistry.functions.setOutcome(
+      await appRegistry.setOutcome(
         stateChannel.freeBalance.identity,
         stateChannel.freeBalance.encodedLatestState,
       );
@@ -194,7 +194,12 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         value: parseEther("2"),
       });
 
-      await transferERC20Tokens(proxyAddress, erc20TokenAddress, DolphinCoin.abi, parseEther("2"));
+      await transferERC20Tokens(
+        proxyAddress,
+        erc20TokenAddress,
+        DolphinCoin.abi as any,
+        parseEther("2"),
+      );
 
       await wallet.sendTransaction({
         ...multisigDelegateCallTx,
@@ -207,9 +212,9 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
 
       const erc20Contract = new Contract(erc20TokenAddress, DolphinCoin.abi, wallet.provider);
 
-      expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(WeiPerEther);
-      expect(await erc20Contract.functions.balanceOf(signers[0].address)).toBeEq(Zero);
-      expect(await erc20Contract.functions.balanceOf(signers[1].address)).toBeEq(WeiPerEther);
+      expect(await erc20Contract.balanceOf(proxyAddress)).toBeEq(WeiPerEther);
+      expect(await erc20Contract.balanceOf(signers[0].address)).toBeEq(Zero);
+      expect(await erc20Contract.balanceOf(signers[1].address)).toBeEq(WeiPerEther);
 
       const freeBalanceConditionalTransaction = getSetupCommitment(context, stateChannel);
 
@@ -229,16 +234,16 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       expect(await wallet.provider.getBalance(signers[0].address)).toBeEq(WeiPerEther);
       expect(await wallet.provider.getBalance(signers[1].address)).toBeEq(WeiPerEther);
 
-      expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(Zero);
-      expect(await erc20Contract.functions.balanceOf(signers[0].address)).toBeEq(WeiPerEther);
-      expect(await erc20Contract.functions.balanceOf(signers[1].address)).toBeEq(WeiPerEther);
+      expect(await erc20Contract.balanceOf(proxyAddress)).toBeEq(Zero);
+      expect(await erc20Contract.balanceOf(signers[0].address)).toBeEq(WeiPerEther);
+      expect(await erc20Contract.balanceOf(signers[1].address)).toBeEq(WeiPerEther);
 
       done();
     });
 
-    await proxyFactory.functions.createProxyWithNonce(
+    await proxyFactory.createProxyWithNonce(
       contracts.MinimumViableMultisig,
-      new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+      new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
         signers.map((x) => x.address),
       ]),
       0,

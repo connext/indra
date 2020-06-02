@@ -1,7 +1,7 @@
 import { DolphinCoin } from "@connext/contracts";
 import { MethodParams, EventNames } from "@connext/types";
 import { getAddressFromAssetId, deBigNumberifyJson } from "@connext/utils";
-import { Contract, providers, constants, utils } from "ethers";
+import { BigNumber, Contract, providers, constants } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
@@ -113,7 +113,7 @@ describe("Node method follows spec - deposit", () => {
       DolphinCoin.abi,
       global["wallet"].provider,
     );
-    const preDepositERC20Balance = await erc20Contract.functions.balanceOf(multisigAddress);
+    const preDepositERC20Balance = await erc20Contract.balanceOf(multisigAddress);
 
     await transferERC20Tokens(await nodeA.signerAddress);
     await transferERC20Tokens(await nodeB.signerAddress);
@@ -129,9 +129,7 @@ describe("Node method follows spec - deposit", () => {
       One,
       One,
     ]);
-    expect(await erc20Contract.functions.balanceOf(multisigAddress)).toEqual(
-      preDepositERC20Balance.add(Two),
-    );
+    expect(await erc20Contract.balanceOf(multisigAddress)).toEqual(preDepositERC20Balance.add(Two));
   });
 
   it("updates balances correctly when depositing both ERC20 tokens and ETH", async () => {
@@ -146,7 +144,7 @@ describe("Node method follows spec - deposit", () => {
     await transferERC20Tokens(await nodeB.signerAddress);
 
     const preDepositEthBalance = await provider.getBalance(multisigAddress);
-    const preDepositERC20Balance = await erc20Contract.functions.balanceOf(multisigAddress);
+    const preDepositERC20Balance = await erc20Contract.balanceOf(multisigAddress);
 
     await deposit(nodeA, multisigAddress, One, nodeB, erc20AssetId);
     await confirmEthAndERC20FreeBalances(nodeA, nodeB, multisigAddress, tokenAddress, undefined, [
@@ -162,9 +160,7 @@ describe("Node method follows spec - deposit", () => {
 
     expect(await provider.getBalance(multisigAddress)).toEqual(preDepositEthBalance);
 
-    expect(await erc20Contract.functions.balanceOf(multisigAddress)).toEqual(
-      preDepositERC20Balance.add(Two),
-    );
+    expect(await erc20Contract.balanceOf(multisigAddress)).toEqual(preDepositERC20Balance.add(Two));
 
     // now deposits ETH
 
@@ -196,8 +192,8 @@ async function confirmEthAndERC20FreeBalances(
   channelResponder: CFCore,
   multisigAddress: string,
   tokenAddress: string,
-  ethExpected: [utils.BigNumber, utils.BigNumber] = [Zero, Zero],
-  erc20Expected: [utils.BigNumber, utils.BigNumber] = [Zero, Zero],
+  ethExpected: [BigNumber, BigNumber] = [Zero, Zero],
+  erc20Expected: [BigNumber, BigNumber] = [Zero, Zero],
 ) {
   const eth = deBigNumberifyJson({
     [channelInitiator.signerAddress]: ethExpected[0],

@@ -17,7 +17,7 @@ import {
   logTime,
   stringify,
 } from "@connext/utils";
-import { constants, utils } from "ethers";
+import { BigNumber, constants } from "ethers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
@@ -570,8 +570,8 @@ function computeInstallStateChannelTransition(
  * TODO: update doc on how MultiAssetMultiPartyCoinTransferInterpreterParams work
  *
  * @param {OutcomeType} outcomeType - either COIN_TRANSFER or TWO_PARTY_FIXED_OUTCOME
- * @param {utils.BigNumber} initiatorBalanceDecrement - amount Wei initiator deposits
- * @param {utils.BigNumber} responderBalanceDecrement - amount Wei responder deposits
+ * @param {BigNumber} initiatorBalanceDecrement - amount Wei initiator deposits
+ * @param {BigNumber} responderBalanceDecrement - amount Wei responder deposits
  * @param {string} initiatorFbAddress - the address of the recipient of initiator
  * @param {string} responderFbAddress - the address of the recipient of responder
  *
@@ -583,8 +583,8 @@ export function computeInterpreterParameters(
   outcomeType: OutcomeType,
   initiatorAssetId: AssetId,
   responderAssetId: AssetId,
-  initiatorBalanceDecrement: utils.BigNumber,
-  responderBalanceDecrement: utils.BigNumber,
+  initiatorBalanceDecrement: BigNumber,
+  responderBalanceDecrement: BigNumber,
   initiatorFbAddress: string,
   responderFbAddress: string,
   disableLimit: boolean,

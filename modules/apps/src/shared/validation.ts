@@ -1,6 +1,6 @@
 import { CoinTransfer, DepositAppName, ProtocolParams } from "@connext/types";
 import { getAddressFromAssetId, stringify } from "@connext/utils";
-import { constants, utils } from "ethers";
+import { BigNumber, constants } from "ethers";
 
 import { AppRegistryInfo, DEFAULT_APP_TIMEOUT, MINIMUM_APP_TIMEOUT } from "./registry";
 
@@ -39,8 +39,8 @@ const appProposalMatchesRegistry = (
  * @param responderIdentifier
  */
 export const baseCoinTransferValidation = (
-  initiatorDeposit: utils.BigNumber,
-  responderDeposit: utils.BigNumber,
+  initiatorDeposit: BigNumber,
+  responderDeposit: BigNumber,
   initiatorTransfer: CoinTransfer,
   responderTransfer: CoinTransfer,
 ) => {
@@ -69,8 +69,8 @@ export const baseCoinTransferValidation = (
  * @param responderIdentifier
  */
 export const unidirectionalCoinTransferValidation = (
-  initiatorDeposit: utils.BigNumber,
-  responderDeposit: utils.BigNumber,
+  initiatorDeposit: BigNumber,
+  responderDeposit: BigNumber,
   initiatorTransfer: CoinTransfer,
   responderTransfer: CoinTransfer,
 ) => {

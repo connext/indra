@@ -31,7 +31,7 @@ export const uninstallDepositMiddleware = async (
   const currentMultisigBalance =
     latestState.assetId === CONVENTION_FOR_ETH_ASSET_ID
       ? await provider.getBalance(stateChannel.multisigAddress)
-      : await new Contract(latestState.assetId, ERC20.abi as any, provider).functions.balanceOf(
+      : await new Contract(latestState.assetId, ERC20.abi, provider).balanceOf(
           stateChannel.multisigAddress,
         );
 

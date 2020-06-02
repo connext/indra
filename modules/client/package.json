@@ -26,7 +26,7 @@
     "@connext/store": "6.6.5",
     "@connext/types": "6.6.5",
     "core-js": "3.6.5",
-    "ethers": "4.0.47",
+    "ethers": "5.0.0-beta.190",
     "evt": "1.7.11",
     "regenerator-runtime": "0.13.5",
     "ts-natsutil": "1.0.6",

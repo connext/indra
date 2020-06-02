@@ -1,9 +1,7 @@
-import { utils } from "ethers";
+import { BigNumber, utils } from "ethers";
 
 import { isBN, toBN } from "./bigNumbers";
 import { abbreviate } from "./strings";
-
-const { bigNumberify } = utils;
 
 export const bigNumberifyJson = (json: any): any =>
   typeof json === "string"
@@ -23,7 +21,7 @@ export const stringify = (value: any, abrv = false, spaces = 2): string =>
     value,
     (key: string, value: any): any =>
       value && value._hex
-        ? bigNumberify(value).toString()
+        ? BigNumber.from(value).toString()
         : abrv && value && typeof value === "string" && value.startsWith("indra")
         ? abbreviate(value, 5)
         : abrv && value && typeof value === "string" && value.startsWith("0x") && value.length > 12

@@ -20,7 +20,7 @@ import { ColorfulLogger, toBN, toBNJson, getRandomBytes32 } from "@connext/utils
 import { expect, use } from "chai";
 import MockAsyncStorage from "mock-async-storage";
 import { v4 as uuid } from "uuid";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import {
   getAsyncStore,
@@ -88,7 +88,7 @@ export const setAndGet = async (
 ): Promise<void> => {
   await store.setItem(pair.path, pair.value);
   const value = await store.getItem(pair.path);
-  if (typeof pair.value === "object" && !utils.BigNumber.isBigNumber(pair.value)) {
+  if (typeof pair.value === "object" && !BigNumber.isBigNumber(pair.value)) {
     expect(value).to.be.deep.equal(pair.value);
     return;
   }

@@ -24,7 +24,6 @@ import {
 import {
   IChannelSigner,
   IConnextClient,
-  BigNumber,
   ConditionalTransferTypes,
   EventNames,
   EventName,
@@ -35,7 +34,7 @@ import {
   PrivateKey,
 } from "@connext/types";
 import { addressBook } from "@connext/contracts";
-import { constants } from "ethers";
+import { BigNumber, constants } from "ethers";
 
 const { Zero } = constants;
 

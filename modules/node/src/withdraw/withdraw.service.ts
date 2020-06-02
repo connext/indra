@@ -1,7 +1,6 @@
 import { WITHDRAW_STATE_TIMEOUT } from "@connext/apps";
 import {
   AppInstanceJson,
-  BigNumber,
   CoinTransfer,
   MinimalTransaction,
   PublicParams,
@@ -12,7 +11,7 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
@@ -27,7 +26,7 @@ import { WithdrawRepository } from "./withdraw.repository";
 import { Withdraw } from "./withdraw.entity";
 
 const { HashZero, Zero, AddressZero } = constants;
-const { bigNumberify, hexlify, randomBytes } = utils;
+const { hexlify, randomBytes } = utils;
 
 @Injectable()
 export class WithdrawService {
@@ -249,7 +248,7 @@ export class WithdrawService {
 
     await this.saveWithdrawal(
       appIdentityHash,
-      bigNumberify(amount),
+      BigNumber.from(amount),
       assetId,
       initialState.transfers[0].to,
       initialState.data,

@@ -1,6 +1,6 @@
 import { AppChallenge, ChallengeStatus } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { Wallet, utils } from "ethers";
+import { BigNumberish, Wallet, utils } from "ethers";
 
 import { setupContext } from "../context";
 import {
@@ -24,7 +24,7 @@ describe("LibStateChannelApp", () => {
   let alice: Wallet;
 
   // helpers
-  let hasPassed: (timeout: utils.BigNumberish) => Promise<boolean>;
+  let hasPassed: (timeout: BigNumberish) => Promise<boolean>;
   let isDisputable: (challenge?: AppChallenge) => Promise<boolean>;
   let setState: (versionNumber: number) => Promise<void>;
   let verifyChallenge: (expected: Partial<AppChallenge>) => Promise<void>;

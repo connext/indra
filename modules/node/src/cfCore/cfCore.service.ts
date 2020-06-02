@@ -24,7 +24,7 @@ import {
   TypedEmitter,
 } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
@@ -182,13 +182,13 @@ export class CFCoreService {
   async proposeAndWaitForInstallApp(
     channel: Channel,
     initialState: any,
-    initiatorDeposit: utils.BigNumber,
+    initiatorDeposit: BigNumber,
     initiatorDepositAssetId: AssetId,
-    responderDeposit: utils.BigNumber,
+    responderDeposit: BigNumber,
     responderDepositAssetId: AssetId,
     app: string,
     meta: object = {},
-    stateTimeout: utils.BigNumber = Zero,
+    stateTimeout: BigNumber = Zero,
   ): Promise<MethodResults.ProposeInstall | undefined> {
     const network = await this.configService.getEthNetwork();
 
@@ -316,7 +316,7 @@ export class CFCoreService {
     appIdentityHash: string,
     multisigAddress: string,
     action: AppAction,
-    stateTimeout?: utils.BigNumber,
+    stateTimeout?: BigNumber,
   ): Promise<MethodResults.TakeAction> {
     const parameters = {
       action,

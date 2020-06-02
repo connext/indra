@@ -1,5 +1,5 @@
 import { AppActions, AppStates, AppName, HexString, OutcomeType } from "@connext/types";
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 import {
   Entity,
   Column,
@@ -53,11 +53,11 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  initiatorDeposit!: utils.BigNumber;
+  initiatorDeposit!: BigNumber;
 
   @Column("text")
   @IsEthAddress()
@@ -76,11 +76,11 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  responderDeposit!: utils.BigNumber;
+  responderDeposit!: BigNumber;
 
   @Column("text")
   @IsEthAddress()

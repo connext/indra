@@ -22,7 +22,7 @@
     "@connext/utils": "6.6.5",
     "@connext/types": "6.6.5",
     "async-mutex": "0.2.2",
-    "ethers": "4.0.47",
+    "ethers": "5.0.0-beta.190",
     "@openzeppelin/contracts": "3.0.1",
     "eventemitter3": "4.0.4",
     "memoizee": "0.4.14",

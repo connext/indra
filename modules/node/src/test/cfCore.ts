@@ -19,11 +19,11 @@ import {
   getRandomAddress,
   getRandomChannelSigner,
 } from "@connext/utils";
-import { Wallet, constants, utils } from "ethers";
+import { BigNumber, Wallet, constants, utils } from "ethers";
 import { randomBytes } from "crypto";
 
 const { AddressZero, HashZero, Zero, One } = constants;
-const { hexlify, bigNumberify } = utils;
+const { hexlify } = utils;
 
 export const generateRandomAddress = () => Wallet.createRandom().address;
 
@@ -46,7 +46,7 @@ export const createAppInstanceJson = (
     defaultTimeout: Zero.toHexString(),
     identityHash: generateRandomBytes32(),
     latestState: {},
-    stateTimeout: bigNumberify(1000).toHexString(),
+    stateTimeout: BigNumber.from(1000).toHexString(),
     latestVersionNumber: 0,
     multisigAddress: generateRandomAddress(),
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,

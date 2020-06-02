@@ -1,12 +1,6 @@
 import PQueue from "p-queue";
-import { constants, utils } from "ethers";
-import {
-  ConditionalTransferTypes,
-  IConnextClient,
-  BigNumber,
-  PublicParams,
-  Address,
-} from "@connext/types";
+import { BigNumber, constants, utils } from "ethers";
+import { ConditionalTransferTypes, IConnextClient, PublicParams, Address } from "@connext/types";
 import { delay, ColorfulLogger, getTestVerifyingContract } from "@connext/utils";
 
 import { createClient, fundChannel } from "../util";

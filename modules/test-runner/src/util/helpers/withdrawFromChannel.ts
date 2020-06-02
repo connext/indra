@@ -1,7 +1,7 @@
 import { IConnextClient } from "@connext/types";
 import { ColorfulLogger } from "@connext/utils";
 import { ERC20 } from "@connext/contracts";
-import { Contract, Wallet, constants, utils } from "ethers";
+import { BigNumber, Contract, Wallet, constants, utils } from "ethers";
 
 import { env } from "../env";
 import { expect } from "../";
@@ -11,7 +11,7 @@ const { AddressZero } = constants;
 
 export const withdrawFromChannel = async (
   client: IConnextClient,
-  amount: utils.BigNumber,
+  amount: BigNumber,
   assetId: string,
   recipient: string = Wallet.createRandom().address,
 ): Promise<void> => {
@@ -28,7 +28,7 @@ export const withdrawFromChannel = async (
   });
   log.info(`client.withdraw() returned in ${Date.now() - start}ms`);
   const postWithdrawalBalance = await client.getFreeBalance(assetId);
-  let recipientBalance: utils.BigNumber;
+  let recipientBalance: BigNumber;
   if (assetId === AddressZero) {
     recipientBalance = await ethProvider.getBalance(recipient);
   } else {

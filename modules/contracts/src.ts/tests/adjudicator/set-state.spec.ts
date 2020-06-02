@@ -127,7 +127,7 @@ describe("setState", () => {
         ONCHAIN_CHALLENGE_TIMEOUT, // timeout
       );
       await expect(
-        appRegistry.functions.setState(appInstance.appIdentity, {
+        appRegistry.setState(appInstance.appIdentity, {
           versionNumber: One,
           appStateHash: appStateToHash(state),
           timeout: ONCHAIN_CHALLENGE_TIMEOUT,

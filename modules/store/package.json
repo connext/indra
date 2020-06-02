@@ -18,7 +18,7 @@
     "@connext/contracts": "3.2.0",
     "@connext/types": "6.6.5",
     "@connext/utils": "6.6.5",
-    "ethers": "4.0.47",
+    "ethers": "5.0.0-beta.190",
     "localStorage": "1.0.4",
     "p-waterfall": "2.1.0",
     "pg": "8.2.1",

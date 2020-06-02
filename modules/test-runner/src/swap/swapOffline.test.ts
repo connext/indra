@@ -6,7 +6,7 @@ import {
   EventName,
   EventNames,
 } from "@connext/types";
-import { constants, utils } from "ethers";
+import { BigNumber, constants } from "ethers";
 
 import {
   APP_PROTOCOL_TOO_LONG,
@@ -33,8 +33,8 @@ const { AddressZero } = constants;
 
 const fundChannelAndSwap = async (opts: {
   messagingConfig?: Partial<ClientTestMessagingInputOpts>;
-  inputAmount: utils.BigNumber;
-  outputAmount: utils.BigNumber;
+  inputAmount: BigNumber;
+  outputAmount: BigNumber;
   tokenToEth?: boolean;
   failsWith?: string;
   failureEvent?: EventName;

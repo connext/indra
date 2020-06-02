@@ -1,7 +1,7 @@
 import { AppChallenge } from "@connext/types";
 import { Wallet, ContractFactory } from "ethers";
 
-import { AppApplyActionFails }  from "../../artifacts";
+import { AppApplyActionFails } from "../../artifacts";
 
 import { setupContext } from "../context";
 import {
@@ -144,7 +144,7 @@ describe("progressState", () => {
 
   it("progressState should fail if apply action fails", async () => {
     const failingApp = await new ContractFactory(
-      AppApplyActionFails.abi as any,
+      AppApplyActionFails.abi,
       AppApplyActionFails.bytecode,
       wallet,
     ).deploy();
@@ -179,5 +179,4 @@ describe("progressState", () => {
       "progressState: versionNumber of new state is not that of stored state plus 1",
     );
   });
-
 });

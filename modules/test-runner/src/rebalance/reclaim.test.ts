@@ -1,6 +1,6 @@
 import { IConnextClient, Contract, RebalanceProfile } from "@connext/types";
 import { getRandomBytes32, toBN } from "@connext/utils";
-import { constants, utils } from "ethers";
+import { BigNumber, constants } from "ethers";
 import { before, describe } from "mocha";
 import { Client } from "ts-nats";
 
@@ -10,7 +10,6 @@ import { getNatsClient } from "../util/nats";
 import { ERC20 } from "@connext/contracts";
 
 const { AddressZero, One, Two } = constants;
-const { bigNumberify } = utils;
 
 describe("Reclaim", () => {
   let clientA: IConnextClient;
@@ -49,7 +48,7 @@ describe("Reclaim", () => {
     // deposit client
     await fundChannel(
       clientA,
-      bigNumberify(REBALANCE_PROFILE.reclaimThreshold).add(Two),
+      BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(Two),
       AddressZero,
     );
     await clientB.requestCollateral(AddressZero);
@@ -59,7 +58,7 @@ describe("Reclaim", () => {
     await asyncTransferAsset(
       clientA,
       clientB,
-      bigNumberify(REBALANCE_PROFILE.reclaimThreshold).add(One),
+      BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(One),
       AddressZero,
       nats,
     );
@@ -84,10 +83,11 @@ describe("Reclaim", () => {
 
     const freeBalancePost = await clientA.getFreeBalance(AddressZero);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
-    expect(freeBalancePost[nodeSignerAddress].gte(bigNumberify(REBALANCE_PROFILE.target))).to.be
+    expect(freeBalancePost[nodeSignerAddress].gte(BigNumber.from(REBALANCE_PROFILE.target))).to.be
       .true;
-    expect(freeBalancePost[nodeSignerAddress].lte(bigNumberify(REBALANCE_PROFILE.target).add(One)))
-      .to.be.true;
+    expect(
+      freeBalancePost[nodeSignerAddress].lte(BigNumber.from(REBALANCE_PROFILE.target).add(One)),
+    ).to.be.true;
   });
 
   it("happy case: node should reclaim tokens after async transfer", async () => {
@@ -104,7 +104,7 @@ describe("Reclaim", () => {
     // deposit client
     await fundChannel(
       clientA,
-      bigNumberify(REBALANCE_PROFILE.reclaimThreshold).add(Two),
+      BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(Two),
       tokenAddress,
     );
     await clientB.requestCollateral(tokenAddress);
@@ -114,13 +114,13 @@ describe("Reclaim", () => {
     await asyncTransferAsset(
       clientA,
       clientB,
-      bigNumberify(REBALANCE_PROFILE.reclaimThreshold).add(One),
+      BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(One),
       tokenAddress,
       nats,
     );
 
     const tokenContract = new Contract(tokenAddress, ERC20.abi, clientA.ethProvider);
-    const preBalance = await tokenContract.functions.balanceOf(clientA.multisigAddress);
+    const preBalance = await tokenContract.balanceOf(clientA.multisigAddress);
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async (res) => {
@@ -140,10 +140,11 @@ describe("Reclaim", () => {
 
     const freeBalancePost = await clientA.getFreeBalance(tokenAddress);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
-    expect(freeBalancePost[nodeSignerAddress].gte(bigNumberify(REBALANCE_PROFILE.target))).to.be
+    expect(freeBalancePost[nodeSignerAddress].gte(BigNumber.from(REBALANCE_PROFILE.target))).to.be
       .true;
-    expect(freeBalancePost[nodeSignerAddress].lte(bigNumberify(REBALANCE_PROFILE.target).add(One)))
-      .to.be.true;
+    expect(
+      freeBalancePost[nodeSignerAddress].lte(BigNumber.from(REBALANCE_PROFILE.target).add(One)),
+    ).to.be.true;
   });
 
   it.skip("happy case: node should reclaim ETH after linked transfer", async () => {});

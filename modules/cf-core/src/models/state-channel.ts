@@ -15,7 +15,7 @@ import {
   toBN,
 } from "@connext/utils";
 
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 
 import { HARD_CODED_ASSUMPTIONS } from "../constants";
 
@@ -339,7 +339,7 @@ export class StateChannel {
   public setState(
     appInstance: AppInstance,
     state: SolidityValueType,
-    stateTimeout: utils.BigNumber = toBN(appInstance.defaultTimeout),
+    stateTimeout: BigNumber = toBN(appInstance.defaultTimeout),
   ) {
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 

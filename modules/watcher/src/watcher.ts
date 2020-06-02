@@ -70,7 +70,7 @@ export class Watcher implements IWatcher {
     this.log = log.newContext("Watcher");
     this.challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
-      ChallengeRegistry.abi as any,
+      ChallengeRegistry.abi,
       this.provider,
     );
   }
@@ -293,7 +293,9 @@ export class Watcher implements IWatcher {
     this.provider.removeAllListeners();
   };
 
-  private startAppChallenge = async (appInstanceId: string): Promise<providers.TransactionReceipt> => {
+  private startAppChallenge = async (
+    appInstanceId: string,
+  ): Promise<providers.TransactionReceipt> => {
     this.log.debug(`Starting challenge for ${appInstanceId}`);
     const challenge = (await this.store.getAppChallenge(appInstanceId)) || {
       identityHash: appInstanceId,
@@ -673,7 +675,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi as any).functions.progressState.encode([
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("progressState", [
         this.getAppIdentity(app, channel.multisigAddress),
         await latest.getSignedAppChallengeUpdate(),
         state,
@@ -717,7 +719,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi as any).functions.setAndProgressState.encode([
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("setAndProgressState", [
         this.getAppIdentity(app, channel.multisigAddress),
         await prev.getSignedAppChallengeUpdate(),
         await latest.getSignedAppChallengeUpdate(),
@@ -774,11 +776,7 @@ export class Watcher implements IWatcher {
       [app.latestState],
     );
     const encodedFinalState = !!app.latestAction
-      ? await new Contract(
-          app.appInterface.addr,
-          CounterfactualApp.abi,
-          this.provider,
-        ).functions.applyAction(
+      ? await new Contract(app.appInterface.addr, CounterfactualApp.abi, this.provider).applyAction(
           encodedState,
           defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]),
         )
@@ -787,7 +785,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi).functions.setOutcome.encode([
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("setOutcome", [
         this.getAppIdentity(app, channel.multisigAddress),
         encodedFinalState,
       ]),
@@ -825,7 +823,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi).functions.cancelDispute.encode([
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("cancelDispute", [
         this.getAppIdentity(app, channel.multisigAddress),
         req,
       ]),

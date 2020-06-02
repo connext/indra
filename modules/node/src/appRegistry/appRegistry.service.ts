@@ -25,7 +25,7 @@ import {
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { providers, utils } from "ethers";
+import { BigNumber, providers, utils } from "ethers";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -42,8 +42,6 @@ import { TransferService, getTransferTypeFromAppName } from "../transfer/transfe
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
-
-const { bigNumberify } = utils;
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -115,7 +113,7 @@ export class AppRegistryService implements OnModuleInit {
           installerChannel.multisigAddress,
           proposeInstallParams.responderDepositAssetId,
         );
-        const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
+        const responderDepositBigNumber = BigNumber.from(proposeInstallParams.responderDeposit);
         if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
           const amount = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
             from,
@@ -163,7 +161,7 @@ export class AppRegistryService implements OnModuleInit {
         this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`);
         await this.withdrawService.saveWithdrawal(
           appIdentityHash,
-          bigNumberify(proposeInstallParams.initiatorDeposit),
+          BigNumber.from(proposeInstallParams.initiatorDeposit),
           proposeInstallParams.initiatorDepositAssetId,
           initialState.transfers[0].to,
           initialState.data,

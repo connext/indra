@@ -1,4 +1,4 @@
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 import {
   Column,
   Entity,
@@ -27,27 +27,27 @@ export class OnchainTransaction {
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  value!: utils.BigNumber;
+  value!: BigNumber;
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  gasPrice!: utils.BigNumber;
+  gasPrice!: BigNumber;
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  gasLimit!: utils.BigNumber;
+  gasLimit!: BigNumber;
 
   @Column("integer")
   nonce!: number;

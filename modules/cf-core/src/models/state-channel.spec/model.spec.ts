@@ -1,6 +1,6 @@
 import { StateChannelJSON } from "@connext/types";
 import { bigNumberifyJson, getRandomAddress, getRandomBytes32, toBN } from "@connext/utils";
-import { utils, constants } from "ethers";
+import { BigNumberish, utils, constants } from "ethers";
 
 import { getRandomContractAddresses } from "../../testing/mocks";
 
@@ -91,10 +91,7 @@ describe("StateChannel", () => {
           appResponderAssetId = AddressZero; // channel initiator
         });
 
-        const runTest = (
-          initiatorDeposit: utils.BigNumberish,
-          responderDeposit: utils.BigNumberish,
-        ) => {
+        const runTest = (initiatorDeposit: BigNumberish, responderDeposit: BigNumberish) => {
           const balanceDecrements = {
             [appInitiatorAssetId]: {
               [appInitiator]: toBN(initiatorDeposit),

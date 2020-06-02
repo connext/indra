@@ -1,6 +1,6 @@
 import { EventNames, IConnextClient, LinkedTransferStatus, Address } from "@connext/types";
 import { ColorfulLogger, getRandomBytes32, stringify } from "@connext/utils";
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 import { Client } from "ts-nats";
 
 import { env } from "../env";
@@ -12,7 +12,7 @@ const log = new ColorfulLogger("AsyncTransfer", env.logLevel);
 export async function asyncTransferAsset(
   clientA: IConnextClient,
   clientB: IConnextClient,
-  transferAmount: utils.BigNumber,
+  transferAmount: BigNumber,
   assetId: Address,
   nats: Client, // TODO: remove
 ): Promise<ExistingBalancesAsyncTransfer> {

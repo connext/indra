@@ -8,8 +8,8 @@ import {
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "@connext/types";
-import { logTime, recoverAddressFromChannelMessage, stringify } from "@connext/utils";
-import { providers, utils } from "ethers";
+import { logTime, recoverAddressFromChannelMessage } from "@connext/utils";
+import { BigNumber, providers, utils } from "ethers";
 
 import {
   AppInstance,
@@ -171,16 +171,14 @@ function handleSingleAssetTwoPartyCoinTransfer(
 
   return {
     [tokenAddress]: {
-      [to1 as string]: amount1 as utils.BigNumber,
-      [to2 as string]: amount2 as utils.BigNumber,
+      [to1 as string]: amount1 as BigNumber,
+      [to2 as string]: amount2 as BigNumber,
     },
   };
 }
 
 function decodeTwoPartyFixedOutcome(encodedOutcome: string): TwoPartyFixedOutcome {
-  const [twoPartyFixedOutcome] = defaultAbiCoder.decode(["uint256"], encodedOutcome) as [
-    utils.BigNumber,
-  ];
+  const [twoPartyFixedOutcome] = defaultAbiCoder.decode(["uint256"], encodedOutcome) as [BigNumber];
 
   return twoPartyFixedOutcome.toNumber();
 }

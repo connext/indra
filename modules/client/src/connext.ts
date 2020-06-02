@@ -43,7 +43,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   stringify,
 } from "@connext/utils";
-import { Contract, providers, constants, utils } from "ethers";
+import { BigNumber, Contract, providers, constants, utils } from "ethers";
 
 import {
   DepositController,
@@ -61,7 +61,6 @@ import { InternalClientOptions } from "./types";
 import { NodeApiClient } from "./node";
 
 const { AddressZero, HashZero } = constants;
-const { bigNumberify } = utils;
 
 export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
@@ -72,7 +71,7 @@ export class ConnextClient implements IConnextClient {
   public log: ILoggerService;
   public messaging: IMessagingService;
   public multisigAddress: Address;
-  public network: utils.Network;
+  public network: providers.Network;
   public node: INodeApiClient;
   public nodeIdentifier: string;
   public nodeSignerAddress: string;
@@ -562,8 +561,8 @@ export class ConnextClient implements IConnextClient {
         // but need the nodes free balance
         // address in the multisig
         const obj = {};
-        obj[this.nodeSignerAddress] = new utils.BigNumber(0);
-        obj[this.signerAddress] = new utils.BigNumber(0);
+        obj[this.nodeSignerAddress] = BigNumber.from(0);
+        obj[this.signerAddress] = BigNumber.from(0);
         return obj;
       }
       throw e;
@@ -602,7 +601,7 @@ export class ConnextClient implements IConnextClient {
   public takeAction = async (
     appIdentityHash: string,
     action: AppAction,
-    stateTimeout?: utils.BigNumber,
+    stateTimeout?: BigNumber,
   ): Promise<MethodResults.TakeAction> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appIdentityHash);
@@ -714,13 +713,13 @@ export class ConnextClient implements IConnextClient {
   // LOW LEVEL METHODS
 
   public matchTx = (
-    givenTransaction: utils.Transaction | undefined,
+    givenTransaction: providers.TransactionRequest | undefined,
     expected: MinimalTransaction,
   ): boolean => {
     return (
       givenTransaction &&
       givenTransaction.to === expected.to &&
-      bigNumberify(givenTransaction.value).eq(expected.value) &&
+      BigNumber.from(givenTransaction.value).eq(expected.value) &&
       givenTransaction.data === expected.data
     );
   };
@@ -832,7 +831,7 @@ export class ConnextClient implements IConnextClient {
       const currentMultisigBalance =
         assetId === AddressZero
           ? await this.ethProvider.getBalance(this.multisigAddress)
-          : await new Contract(assetId, ERC20.abi, this.ethProvider).functions.balanceOf(
+          : await new Contract(assetId, ERC20.abi, this.ethProvider).balanceOf(
               this.multisigAddress,
             );
 
@@ -851,7 +850,7 @@ export class ConnextClient implements IConnextClient {
       // there is still an active deposit, setup a listener to
       // rescind deposit rights when deposit is sent to multisig
       if (assetId === AddressZero) {
-        this.ethProvider.on(this.multisigAddress, async (balance: utils.BigNumber) => {
+        this.ethProvider.on(this.multisigAddress, async (balance: BigNumber) => {
           if (balance.gt((latestState as DepositAppState).startingMultisigBalance)) {
             await this.rescindDepositRights({ assetId, appIdentityHash });
             this.ethProvider.removeAllListeners(this.multisigAddress);
@@ -862,13 +861,11 @@ export class ConnextClient implements IConnextClient {
 
       new Contract(assetId, ERC20.abi, this.ethProvider).once(
         "Transfer",
-        async (sender: string, recipient: string, amount: utils.BigNumber) => {
+        async (sender: string, recipient: string, amount: BigNumber) => {
           if (recipient === this.multisigAddress && amount.gt(0)) {
-            const bal = await new Contract(
-              assetId,
-              ERC20.abi,
-              this.ethProvider,
-            ).functions.balanceOf(this.multisigAddress);
+            const bal = await new Contract(assetId, ERC20.abi, this.ethProvider).balanceOf(
+              this.multisigAddress,
+            );
             if (bal.gt((latestState as DepositAppState).startingMultisigBalance)) {
               await this.rescindDepositRights({ assetId, appIdentityHash });
             }

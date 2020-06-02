@@ -79,13 +79,13 @@ describe("HighRollerApp", () => {
   let highRollerApp: Contract;
 
   const computeStateTransition = async (state: SolidityValueType, action: SolidityValueType) => {
-    return highRollerApp.functions.applyAction(encodeState(state), encodeAction(action));
+    return highRollerApp.applyAction(encodeState(state), encodeAction(action));
   };
 
   const computeOutcome = async (state: SolidityValueType) => {
     const [decodedResult] = defaultAbiCoder.decode(
       ["uint256"],
-      await highRollerApp.functions.computeOutcome(encodeState(state)),
+      await highRollerApp.computeOutcome(encodeState(state)),
     );
     return decodedResult;
   };
