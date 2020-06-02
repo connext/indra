@@ -630,15 +630,14 @@ export class ConnextClient implements IConnextClient {
   };
 
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
-    const pendingTransfers = await this.node.getPendingAsyncTransfers();
-    this.log.info(`Found ${pendingTransfers.length} transfers to reclaim`);
-    for (const transfer of pendingTransfers) {
-      const { encryptedPreImage, paymentId } = transfer;
-      try {
-        await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
-      } catch (e) {
-        this.log.error(`Could not reclaim transfer ${paymentId}, will try again on next connect`);
-      }
+    try {
+      this.log.info(`Attempting to install pending transfers`);
+      const installedTransfers = await this.node.installPendingTransfers();
+      this.log.info(
+        `Installed ${installedTransfers.length} transfers, should unlock automatically`,
+      );
+    } catch (e) {
+      this.log.error(`Error installing pending transfers: ${e.message}`);
     }
   };
 
