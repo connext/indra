@@ -83,6 +83,8 @@ describe("Withdraw offline tests", () => {
   const recreateClientAndRetryWithdraw = async (client: IConnextClient, withdrawParams: any) => {
     const { amount, assetId } = withdrawParams;
     await client.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
     const newClient = await createClient({ signer, store: client.store });
     // Check that client can recover and continue
     await withdrawFromChannel(newClient, amount, assetId);

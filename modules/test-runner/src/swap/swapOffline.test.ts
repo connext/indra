@@ -27,7 +27,7 @@ import {
   CLIENT_INSTALL_FAILED,
 } from "../util";
 import { addressBook } from "@connext/contracts";
-import { getRandomChannelSigner } from "@connext/utils";
+import { getRandomChannelSigner, delay } from "@connext/utils";
 
 const { AddressZero } = constants;
 
@@ -98,6 +98,8 @@ const fundChannelAndSwap = async (opts: {
       });
     }
     await client.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
     // recreate client and retry swap after failure
     const recreated = await createClientWithMessagingLimits({ signer, store: client.store });
     if (balanceUpdatedWithoutRetry) {

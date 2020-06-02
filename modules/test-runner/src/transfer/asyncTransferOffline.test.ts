@@ -67,6 +67,8 @@ const recreateReceiverAndRetryTransfer = async (
 ) => {
   const { amount, assetId, nats } = transferParams;
   await receiverClient.messaging.disconnect();
+  // Add delay to make sure messaging properly disconnects
+  await delay(1000);
   const newClient = await createClient({ signer: receiverSigner, store: receiverStore });
 
   // Check that client can recover and continue
