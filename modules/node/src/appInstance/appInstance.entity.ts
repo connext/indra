@@ -209,8 +209,8 @@ export const AppInstanceSerializer: JSONSerializer<AppInstance, AppInstanceJSON>
       latestAction: input.latestAction,
       outcomeInterpreterParameters: input.outcomeInterpreterParameters,
       channel: input.channel,
-      createdAt: input.createdAt.getTime(),
-      updatedAt: input.updatedAt.getTime(),
+      createdAt: input.createdAt ? input.createdAt.getTime() : Date.now(),
+      updatedAt: input.updatedAt ? input.updatedAt.getTime() : Date.now(),
     });
   }
 };

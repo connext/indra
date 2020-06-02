@@ -32,6 +32,7 @@ import { ConfigService } from "../config/config.service";
 import { CFCoreRecordRepository } from "./cfCore.repository";
 import { CFCoreStore } from "./cfCore.store";
 import { ChallengeRepository, ProcessedBlockRepository } from "../challenge/challenge.repository";
+import {CacheModule} from '../caching/cache.module';
 
 const createTestStateChannelJSONs = (
   nodeIdentifier: string,
@@ -182,6 +183,7 @@ describe("CFCoreStore", () => {
           ChallengeRepository,
           ProcessedBlockRepository,
         ]),
+        CacheModule
       ],
     }).compile();
 

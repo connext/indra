@@ -129,8 +129,8 @@ export const ChannelSerializer: JSONSerializer<Channel, ChannelJSON> = class {
       available: input.available,
       activeCollateralizations: input.activeCollateralizations,
       monotonicNumProposedApps: input.monotonicNumProposedApps,
-      createdAt: input.createdAt.getTime(),
-      updatedAt: input.createdAt.getTime(),
+      createdAt: input.createdAt ? input.createdAt.getTime() : Date.now(),
+      updatedAt: input.updatedAt ? input.updatedAt.getTime() : Date.now(),
     });
     res.appInstances = input.appInstances.map(AppInstanceSerializer.toJSON);
     return res;

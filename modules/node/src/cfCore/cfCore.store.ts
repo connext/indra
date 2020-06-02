@@ -148,7 +148,7 @@ export class CFCoreStore implements IStoreService {
       monotonicNumProposedApps,
     } = stateChannel;
 
-    const channel = new Channel();
+    let channel = new Channel();
     channel.multisigAddress = multisigAddress;
     channel.schemaVersion = this.schemaVersion;
     channel.userIdentifier = userIdentifier;
@@ -240,7 +240,7 @@ export class CFCoreStore implements IStoreService {
     ).toNumber();
 
     await getManager().transaction(async (transactionalEntityManager) => {
-      await transactionalEntityManager.save(channel);
+      channel = await transactionalEntityManager.save(channel);
       await transactionalEntityManager.save(freeBalanceUpdateCommitment);
     });
     await this.cache.set(
