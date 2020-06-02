@@ -245,6 +245,10 @@ export class AppRegistryService implements OnModuleInit {
       appInstance.meta.paymentId,
     );
 
+    if (!existingSenderApp) {
+      throw new Error(`Sender app not installed`);
+    }
+
     if (existingSenderApp.type === AppType.INSTANCE) {
       this.log.info(`Sender app was already installed, doing nothing.`);
       return;

@@ -20,13 +20,11 @@ export class ResolveTransferController extends AbstractController {
     this.log.info(`resolveHashLockTransfer started: ${stringify(params)}`);
     const { conditionType, paymentId } = params;
 
-    const appName = ConditionalTransferTypes[conditionType];
-
     const installedApps = await this.connext.getAppInstances();
     const existingApp = installedApps.find(
       (app) =>
         app.appInterface.addr ===
-          this.connext.appRegistry.find((app) => app.name === appName).appDefinitionAddress &&
+          this.connext.appRegistry.find((app) => app.name === conditionType).appDefinitionAddress &&
         app.meta.paymentId === paymentId,
     );
     let appIdentityHash = existingApp?.identityHash;
@@ -34,7 +32,7 @@ export class ResolveTransferController extends AbstractController {
       .amount;
     let assetId = existingApp?.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
     try {
-      const transferType = getTransferTypeFromAppName(appName);
+      const transferType = getTransferTypeFromAppName(conditionType);
       if (!existingApp) {
         if (transferType === "RequireOnline") {
           throw new Error(`Receiver app has not been installed`);

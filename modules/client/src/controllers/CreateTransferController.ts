@@ -2,7 +2,6 @@ import { DEFAULT_APP_TIMEOUT, HASHLOCK_TRANSFER_STATE_TIMEOUT } from "@connext/a
 import {
   ConditionalTransferTypes,
   EventNames,
-  HashLockTransferAppName,
   MethodParams,
   PublicParams,
   PublicResults,
@@ -50,11 +49,14 @@ export class CreateTransferController extends AbstractController {
     let paymentId: string;
     let transferMeta: any;
 
-    let initialState;
+    let initialState:
+      | SimpleLinkedTransferAppState
+      | HashLockTransferAppState
+      | SimpleSignedTransferAppState;
 
     switch (conditionType) {
       case ConditionalTransferTypes.LinkedTransfer: {
-        const { preImage } = params as PublicParams.LinkedTransfer;
+        const { preImage, paymentId } = params as PublicParams.LinkedTransfer;
         const encryptedPreImage = await this.channelProvider.encrypt(preImage, recipient);
         // add encrypted preImage to meta so node can store it in the DB
         const linkedHash = soliditySha256(["bytes32"], [preImage]);
@@ -100,7 +102,12 @@ export class CreateTransferController extends AbstractController {
         break;
       }
       case ConditionalTransferTypes.SignedTransfer: {
-        const { signerAddress, chainId, verifyingContract } = params as PublicParams.SignedTransfer;
+        const {
+          signerAddress,
+          chainId,
+          verifyingContract,
+          paymentId,
+        } = params as PublicParams.SignedTransfer;
 
         initialState = {
           ...baseInitialState,
@@ -124,12 +131,18 @@ export class CreateTransferController extends AbstractController {
       }
     }
 
+    const transferAppRegistryInfo = this.connext.appRegistry.find(
+      (app) => app.name === conditionType,
+    );
+    if (!transferAppRegistryInfo) {
+      throw new Error(`transferAppRegistryInfo not found for ${conditionType}`);
+    }
     const {
       actionEncoding,
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = this.connext.appRegistry.find((app) => app.name === HashLockTransferAppName);
+    } = transferAppRegistryInfo;
     const proposeInstallParams: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,

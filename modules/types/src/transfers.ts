@@ -16,7 +16,8 @@ const RequireOnlineAppNames: SupportedApplicationNames[] = [
   SupportedApplicationNames.HashLockTransferApp,
 ];
 const AllowOfflineAppNames: SupportedApplicationNames[] = [
-  SupportedApplicationNames.HashLockTransferApp,
+  SupportedApplicationNames.SimpleSignedTransferApp,
+  SupportedApplicationNames.SimpleLinkedTransferApp,
 ];
 
 export type TransferType = "RequireOnline" | "AllowOffline";
