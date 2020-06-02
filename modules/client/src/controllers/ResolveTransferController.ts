@@ -28,9 +28,9 @@ export class ResolveTransferController extends AbstractController {
         app.meta.paymentId === paymentId,
     );
     let appIdentityHash = existingApp?.identityHash;
-    let amount = (existingApp?.latestState as GenericConditionalTransferAppState).coinTransfers[0]
+    let amount = (existingApp?.latestState as GenericConditionalTransferAppState)?.coinTransfers[0]
       .amount;
-    let assetId = existingApp?.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
+    let assetId = existingApp?.singleAssetTwoPartyCoinTransferInterpreterParams?.tokenAddress;
     try {
       const transferType = getTransferTypeFromAppName(conditionType);
       if (!existingApp) {
