@@ -49,6 +49,15 @@ export class ResolveTransferController extends AbstractController {
         assetId = installRes.assetId;
         meta = installRes.meta;
         finalized = false;
+        if (
+          conditionType === ConditionalTransferTypes.LinkedTransfer &&
+          installRes.meta.recipient
+        ) {
+          // TODO: this is hacky
+          this.log.error(`Returning early from install, unlock will happen through listener`);
+          // @ts-ignore
+          return;
+        }
       } else {
         this.log.info(
           `[${paymentId}] Found existing transfer app, proceeding with ${appIdentityHash}`,

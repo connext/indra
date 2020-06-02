@@ -92,6 +92,7 @@ describe("Async Transfers", () => {
       paymentId,
     });
     receiver = await createClient({ id: "C", signer: receiverPk });
+    await delay(5000);
 
     const { [receiver.signerAddress]: receiverFreeBalance } = await receiver.getFreeBalance(
       transfer.assetId,
@@ -111,6 +112,7 @@ describe("Async Transfers", () => {
       recipient: receiverIdentifier,
     });
     const receiverClient = await createClient({ signer: receiverPk, id: "R" }, false);
+    await delay(5000);
     expect(receiverClient.publicIdentifier).to.eq(receiverIdentifier);
     const freeBalance = await receiverClient.getFreeBalance(tokenAddress);
     expect(freeBalance[receiverClient.signerAddress]).to.be.above(0);

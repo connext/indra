@@ -125,6 +125,7 @@ describe("Restore State", () => {
       });
       expect(clientA.signerAddress).to.be.eq(signerA.address);
       expect(clientA.publicIdentifier).to.be.eq(signerA.publicIdentifier);
+      await delay(5000);
       return resolve();
     });
 

@@ -5,6 +5,7 @@ import {
   SimpleSignedTransferAppName,
   ConditionalTransferTypes,
   getTransferTypeFromAppName,
+  LinkedTransferStatus,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
@@ -82,6 +83,34 @@ export class TransferMessaging extends AbstractMessagingProvider {
     };
   }
 
+  async installPendingTransfers(
+    userIdentifier: string,
+  ): Promise<NodeResponses.GetPendingAsyncTransfers> {
+    const transfers = await this.linkedTransferService.getLinkedTransfersForReceiverUnlock(
+      userIdentifier,
+    );
+    for (const transfer of transfers) {
+      await this.transferService.resolveByPaymentId(
+        userIdentifier,
+        transfer.meta.paymentId,
+        ConditionalTransferTypes.LinkedTransfer,
+      );
+    }
+    return transfers.map((transfer) => {
+      return {
+        paymentId: transfer.meta.paymentId,
+        createdAt: transfer.createdAt,
+        amount: transfer.latestState.coinTransfers[0].amount,
+        assetId: transfer.initiatorDepositAssetId,
+        senderIdentifier: transfer.channel.userIdentifier,
+        receiverIdentifier: transfer.meta.recipient,
+        status: LinkedTransferStatus.PENDING,
+        meta: transfer.meta,
+        encryptedPreImage: transfer.meta.encryptedPreImage,
+      };
+    });
+  }
+
   async installConditionalTransferReceiverApp(
     pubId: string,
     data: { paymentId: string; conditionType: ConditionalTransferTypes },
@@ -130,6 +159,11 @@ export class TransferMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "*.transfer.install-receiver",
       this.authService.parseIdentifier(this.installConditionalTransferReceiverApp.bind(this)),
+    );
+
+    await super.connectRequestReponse(
+      "*.transfer.install-pending",
+      this.authService.parseIdentifier(this.installPendingTransfers.bind(this)),
     );
   }
 }

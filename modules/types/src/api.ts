@@ -66,6 +66,7 @@ export interface INodeApiClient {
     assetId?: Address,
   ): Promise<NodeResponses.GetHashLockTransfer>;
   getPendingAsyncTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers>;
+  installPendingTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers>;
   getTransferHistory(userAddress?: Address): Promise<NodeResponses.GetTransferHistory>;
   getLatestWithdrawal(): Promise<Transaction>;
   installConditionalTransferReceiverApp(

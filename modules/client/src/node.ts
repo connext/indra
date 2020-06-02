@@ -212,6 +212,13 @@ export class NodeApiClient implements INodeApiClient {
     return (await this.send(`${this.userIdentifier}.transfer.get-pending`)) || [];
   }
 
+  public async installPendingTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers> {
+    const extendedTimeout = NATS_TIMEOUT * 5;
+    return (
+      (await this.send(`${this.userIdentifier}.transfer.install-pending`, extendedTimeout)) || []
+    );
+  }
+
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
     return this.send(`${this.userIdentifier}.swap-rate.${from}.${to}`);
   }
