@@ -70,25 +70,30 @@ export class TransferService {
 
     // install for receiver or error
     // https://github.com/ConnextProject/indra/issues/942
-    this.installReceiverAppByPaymentId(
-      from,
-      proposeInstallParams.meta.recipient,
-      paymentId,
-      proposeInstallParams.initiatorDepositAssetId,
-      proposeInstallParams.initialState as AppStates[typeof transferType],
-      proposeInstallParams.meta,
-      transferType,
-    )
-      .then((receiverInstall) => {
-        this.log.info(`Installed receiver app ${receiverInstall.appIdentityHash}`);
-      })
-      .catch((e) => {
-        this.log.error(`Error installing receiver app: ${e.message}`);
-        if (allowed === "RequireOnline") {
-          throw e;
-        }
-      });
-    this.log.info(`TransferAppInstallFlow for appIdentityHash ${appIdentityHash} complete`);
+    if (proposeInstallParams.meta.recipient) {
+      const receiverInstallPromise = this.installReceiverAppByPaymentId(
+        from,
+        proposeInstallParams.meta.recipient,
+        paymentId,
+        proposeInstallParams.initiatorDepositAssetId,
+        proposeInstallParams.initialState as AppStates[typeof transferType],
+        proposeInstallParams.meta,
+        transferType,
+      )
+        .then((receiverInstall) => {
+          this.log.info(`Installed receiver app ${receiverInstall.appIdentityHash}`);
+        })
+        .catch((e) => {
+          this.log.error(`Error installing receiver app: ${e.message}`);
+          if (allowed === "RequireOnline") {
+            throw e;
+          }
+        });
+      if (allowed === "RequireOnline") {
+        await receiverInstallPromise;
+      }
+      this.log.info(`TransferAppInstallFlow for appIdentityHash ${appIdentityHash} complete`);
+    }
   }
 
   async installReceiverAppByPaymentId(
