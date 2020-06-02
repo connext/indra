@@ -260,6 +260,7 @@ export class AppRegistryService implements OnModuleInit {
     }
 
     try {
+      this.log.info(`Installing sender app from app proposal: ${appInstance.identityHash}`);
       await this.cfCoreService.installApp(
         existingSenderApp.identityHash,
         existingSenderApp.channel.multisigAddress,
