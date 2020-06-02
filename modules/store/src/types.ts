@@ -1,4 +1,13 @@
-import { enumify } from "@connext/types";
+import { enumify, IBackupService, ILoggerService } from "@connext/types";
+import { Sequelize } from "sequelize";
+
+export type StoreOptions = {
+  backupService?: IBackupService,
+  logger?: ILoggerService,
+  sequelize?: Sequelize,
+  prefix?: string,
+  separator?: string,
+};
 
 export const StoreTypes = enumify({
   AsyncStorage: "AsyncStorage",
@@ -9,7 +18,7 @@ export const StoreTypes = enumify({
 });
 export type StoreTypes = typeof StoreTypes[keyof typeof StoreTypes];
 
-export interface WrappedStorage {
+export interface KeyValueStorage {
   init(): Promise<void>;
   close(): Promise<void>;
   getItem<T = any>(key: string): Promise<T | undefined>;

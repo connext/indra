@@ -1,9 +1,9 @@
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
 
 import { storeDefaults } from "../constants";
-import { WrappedStorage } from "../types";
+import { KeyValueStorage } from "../types";
 
-export class WrappedMemoryStorage implements WrappedStorage {
+export class WrappedMemoryStorage implements KeyValueStorage {
   private storage: Map<string, string> = new Map();
 
   constructor(

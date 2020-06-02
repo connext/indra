@@ -30,11 +30,11 @@ export type StorePair = {
   value: any;
 };
 
-export type InitCallback = (data: AsyncStorageData) => void;
-
 export interface AsyncStorageData {
   [key: string]: any;
 }
+
+export type InitCallback = (data: AsyncStorageData) => void;
 
 export interface IAsyncStorage {
   getItem(key: string): Promise<string | null>;
