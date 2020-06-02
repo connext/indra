@@ -4,7 +4,7 @@ import {
   HashLockTransferAppName,
   SimpleLinkedTransferAppName,
   SimpleSignedTransferAppName,
-  SupportedApplications,
+  SupportedApplicationNames,
   GenericConditionalTransferAppName,
   Attestation,
 } from "./contracts";
@@ -12,12 +12,16 @@ import {
 ////////////////////////////////////////
 // Types
 
-const RequireOnlineAppNames: SupportedApplications[] = [SupportedApplications.HashLockTransferApp];
-const AllowOfflineAppNames: SupportedApplications[] = [SupportedApplications.HashLockTransferApp];
+const RequireOnlineAppNames: SupportedApplicationNames[] = [
+  SupportedApplicationNames.HashLockTransferApp,
+];
+const AllowOfflineAppNames: SupportedApplicationNames[] = [
+  SupportedApplicationNames.HashLockTransferApp,
+];
 
 export type TransferType = "RequireOnline" | "AllowOffline";
 export const getTransferTypeFromAppName = (
-  name: SupportedApplications,
+  name: SupportedApplicationNames,
 ): TransferType | undefined => {
   if (RequireOnlineAppNames.includes(name)) {
     return "RequireOnline";

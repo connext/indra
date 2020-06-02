@@ -84,7 +84,7 @@ export type AppState =
   | WithdrawAppState
   | GenericConditionalTransferAppState;
 
-export const SupportedApplications = enumify({
+export const SupportedApplicationNames = enumify({
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
@@ -93,4 +93,4 @@ export const SupportedApplications = enumify({
   [DepositAppName]: DepositAppName,
 });
 
-export type SupportedApplications = typeof SupportedApplications[keyof typeof SupportedApplications];
+export type SupportedApplicationNames = typeof SupportedApplicationNames[keyof typeof SupportedApplicationNames];

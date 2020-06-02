@@ -16,7 +16,7 @@ import {
   EventName,
   CF_METHOD_TIMEOUT,
   ProtocolEventMessage,
-  SupportedApplications,
+  SupportedApplicationNames,
 } from "@connext/types";
 import {
   getSignerAddressFromPublicIdentifier,
@@ -419,7 +419,7 @@ export class CFCoreService {
 
   async getAppInstancesByAppName(
     multisigAddress: string,
-    appName: SupportedApplications,
+    appName: SupportedApplicationNames,
   ): Promise<AppInstanceJson[]> {
     const network = await this.configService.getEthNetwork();
     const appRegistry = await this.appRegistryRepository.findByNameAndNetwork(

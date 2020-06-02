@@ -33,7 +33,7 @@ import {
   WithdrawAppName,
   EventName,
   EventPayload,
-  SupportedApplications,
+  SupportedApplicationNames,
 } from "@connext/types";
 import {
   delay,
@@ -209,7 +209,7 @@ export class ConnextClient implements IConnextClient {
   public getAppRegistry = async (
     appDetails?:
       | {
-          name: SupportedApplications;
+          name: SupportedApplicationNames;
           chainId: number;
         }
       | { appDefinitionAddress: string },

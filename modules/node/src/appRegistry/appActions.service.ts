@@ -6,7 +6,7 @@ import {
   WithdrawAppState,
   AppInstanceJson,
   ConditionalTransferAppNames,
-  SupportedApplications,
+  SupportedApplicationNames,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 
@@ -30,7 +30,7 @@ export class AppActionsService {
   }
 
   async handleAppAction(
-    appName: SupportedApplications,
+    appName: SupportedApplicationNames,
     app: AppInstanceJson,
     newState: AppState,
     action: AppAction,

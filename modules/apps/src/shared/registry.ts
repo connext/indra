@@ -1,10 +1,10 @@
-import { OutcomeType, SupportedApplications } from "@connext/types";
+import { OutcomeType, SupportedApplicationNames } from "@connext/types";
 import { toBN } from "@connext/utils";
 
 export type AppRegistryInfo = {
   actionEncoding?: string;
   allowNodeInstall: boolean;
-  name: SupportedApplications;
+  name: SupportedApplicationNames;
   outcomeType: OutcomeType;
   stateEncoding: string;
 };
