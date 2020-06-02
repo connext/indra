@@ -95,6 +95,8 @@ export class ResolveTransferController extends AbstractController {
         this.log.info(`[${paymentId}] Taking action on transfer app ${appIdentityHash}`);
         await this.connext.takeAction(appIdentityHash, action);
         this.log.info(`[${paymentId}] Finished taking action on transfer app ${appIdentityHash}`);
+      } else {
+        this.log.info(`[${paymentId}] Not taking action ${action} - finalized: ${finalized}`);
       }
       this.log.info(`[${paymentId}] Uninstalling transfer app ${appIdentityHash}`);
       await this.connext.uninstallApp(appIdentityHash);

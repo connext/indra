@@ -1,7 +1,7 @@
 import { providers, utils } from "ethers";
 
 import { Address, BigNumber, Bytes32, HexString, PublicIdentifier } from "./basic";
-import { ConditionalTransferTypes } from "./transfers";
+import { ConditionalTransferTypes, CreatedConditionalTransferMetaMap } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
 import { Attestation } from "./contracts";
 
@@ -141,10 +141,16 @@ type ConditionalTransferParameters =
   | HashLockTransferParameters
   | SignedTransferParameters;
 
-type ConditionalTransferResponse =
-  | LinkedTransferResponse
-  | HashLockTransferResponse
-  | SignedTransferResponse;
+type ConditionalTransferResponse = {
+  amount: BigNumber;
+  appIdentityHash: Bytes32;
+  assetId: Address;
+  paymentId: Bytes32;
+  sender: Address;
+  recipient?: Address;
+  meta: any;
+  transferMeta: any;
+};
 
 ////////////////////////////////////////
 // resolve condition

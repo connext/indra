@@ -1,4 +1,4 @@
-import { DEFAULT_APP_TIMEOUT, HASHLOCK_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
+import { DEFAULT_APP_TIMEOUT } from "@connext/apps";
 import {
   ConditionalTransferTypes,
   EventNames,
@@ -46,7 +46,6 @@ export class CreateTransferController extends AbstractController {
       finalized: false,
     };
 
-    let paymentId: string;
     let transferMeta: any;
 
     let initialState:
@@ -71,6 +70,7 @@ export class CreateTransferController extends AbstractController {
           submittedMeta.encryptedPreImage = encryptedPreImage;
         }
         submittedMeta.paymentId = paymentId;
+        submittedMeta.preImage = preImage;
 
         transferMeta = {} as CreatedLinkedTransferMeta;
 
@@ -91,7 +91,7 @@ export class CreateTransferController extends AbstractController {
         initialState.lockHash = lockHash;
         initialState.preImage = HashZero;
 
-        paymentId = soliditySha256(["address", "bytes32"], [assetId, lockHash]);
+        const paymentId = soliditySha256(["address", "bytes32"], [assetId, lockHash]);
         submittedMeta.paymentId = paymentId;
         submittedMeta.timelock = timelock;
 
@@ -180,18 +180,25 @@ export class CreateTransferController extends AbstractController {
       assetId,
       sender: this.connext.publicIdentifier,
       meta: submittedMeta,
-      paymentId,
+      paymentId: submittedMeta.paymentId,
       recipient,
       transferMeta,
     };
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
     const result: PublicResults.ConditionalTransfer = {
+      amount,
       appIdentityHash,
+      assetId,
+      sender: this.connext.publicIdentifier,
+      meta: submittedMeta,
+      paymentId: submittedMeta.paymentId,
+      recipient,
+      transferMeta,
     };
     this.log.info(
-      `conditionalTransfer ${conditionType} for paymentId ${paymentId} complete: ${JSON.stringify(
-        result,
-      )}`,
+      `conditionalTransfer ${conditionType} for paymentId ${
+        submittedMeta.paymentId
+      } complete: ${JSON.stringify(result)}`,
     );
     return result;
   };

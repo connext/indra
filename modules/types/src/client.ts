@@ -90,7 +90,7 @@ export interface IConnextClient {
   resolveCondition(params: PublicParams.ResolveCondition): Promise<PublicResults.ResolveCondition>;
   restoreState(): Promise<void>;
   swap(params: PublicParams.Swap): Promise<PublicResults.Swap>;
-  transfer(params: PublicParams.Transfer): Promise<PublicResults.LinkedTransfer>;
+  transfer(params: PublicParams.Transfer): Promise<PublicResults.ConditionalTransfer>;
   withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw>;
 
   ///////////////////////////////////

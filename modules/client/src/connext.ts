@@ -292,7 +292,7 @@ export class ConnextClient implements IConnextClient {
    */
   public transfer = async (
     params: PublicParams.Transfer,
-  ): Promise<PublicResults.LinkedTransfer> => {
+  ): Promise<PublicResults.ConditionalTransfer> => {
     return this.createTransferController.createTransfer({
       amount: params.amount,
       assetId: params.assetId || CONVENTION_FOR_ETH_ASSET_ID,
@@ -301,7 +301,7 @@ export class ConnextClient implements IConnextClient {
       paymentId: params.paymentId || getRandomBytes32(),
       preImage: getRandomBytes32(),
       recipient: params.recipient,
-    }) as Promise<PublicResults.LinkedTransfer>;
+    }) as Promise<PublicResults.ConditionalTransfer>;
   };
 
   public withdraw = (params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> => {
