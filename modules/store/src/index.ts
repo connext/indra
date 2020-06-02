@@ -77,12 +77,10 @@ export const getPostgresStore = (
 // TODO: the following @connext/store interface is depreciated & undocumented
 // remove the following exports during next breaking release
 
-export { ConnextStore } from "./connextStore";
 export { storeDefaults, storeKeys, storePaths } from "./constants";
 export { PisaBackupService as PisaClientBackupAPI } from "./pisaClient";
 export { StoreTypes } from "./types";
 export {
-  StoreService,
   WrappedAsyncStorage,
   WrappedLocalStorage,
   WrappedMemoryStorage,

@@ -29,9 +29,9 @@ import {
   getLocalStore,
   getMemoryStore,
   getPostgresStore,
-} from "./index";
-import { StoreOptions, StoreTypes } from "./types";
-import { StoreService } from "./wrappers";
+} from "../index";
+import { StoreService } from "../store";
+import { StoreOptions, StoreTypes } from "../types";
 
 use(require("chai-as-promised"));
 use(require("chai-subset"));
@@ -75,6 +75,7 @@ export const createStore = async (
   } else {
     throw new Error(`${type} should be one of ${Object.keys(StoreTypes)}`);
   }
+  await store.init();
   await store.clear();
   return store;
 };
