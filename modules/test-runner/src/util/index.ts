@@ -1,6 +1,5 @@
 // export from helpers dir
 export * from "./helpers/asyncTransferAsset";
-export * from "./helpers/backupService";
 export * from "./helpers/fundChannel";
 export * from "./helpers/requestDepositRights";
 export * from "./helpers/swapAsset";

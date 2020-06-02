@@ -23,7 +23,7 @@
   "devDependencies": {
     "@babel/polyfill": "7.10.1",
     "@types/jest": "25.2.3",
-    "@types/node": "14.0.6",
+    "@types/node": "14.0.9",
     "eth-crypto": "1.6.0",
     "ethers": "4.0.47",
     "jest": "26.0.1",

@@ -6,6 +6,7 @@ import {
   ConditionalTransactionCommitmentJSON,
   ContractAddresses,
   IBackupService,
+  IStoreService,
   MinimalTransaction,
   OutcomeType,
   SetStateCommitmentJSON,
@@ -13,7 +14,6 @@ import {
   StateProgressedEventPayload,
   StoredAppChallenge,
   StoredAppChallengeStatus,
-  StoreFactoryOptions,
   StorePair,
 } from "@connext/types";
 import { ColorfulLogger, toBN, toBNJson, getRandomBytes32 } from "@connext/utils";
@@ -22,9 +22,15 @@ import MockAsyncStorage from "mock-async-storage";
 import { v4 as uuid } from "uuid";
 import { constants, utils } from "ethers";
 
-import { ConnextStore } from "./connextStore";
-import { StoreTypes } from "./types";
-import { KeyValueStorage } from "./wrappers";
+import {
+  getAsyncStore,
+  getFileStore,
+  getLocalStore,
+  getMemoryStore,
+  getPostgresStore,
+} from "../index";
+import { StoreService } from "../store";
+import { StoreOptions, StoreTypes } from "../types";
 
 const { One, AddressZero } = constants;
 const { hexlify, randomBytes } = utils;
@@ -42,6 +48,123 @@ const env = {
   user: process.env.INDRA_PG_USERNAME || "",
   logLevel: parseInt(process.env.LOG_LEVEL || "0", 10),
 };
+
+type TestStoreOptions = StoreOptions & {
+  fileDir?: string;
+};
+
+////////////////////////////////////////
+// Helper Methods
+
+export const postgresConnectionUri = `postgres://${env.user}:${env.password}@${env.host}:${env.port}/${env.database}`;
+
+export const createStore = async (
+  type: StoreTypes,
+  opts: TestStoreOptions = {},
+): Promise<IStoreService> => {
+  opts.logger = new ColorfulLogger(`ConnextStore_${type}`, env.logLevel, true);
+  let store: IStoreService;
+  if (type === StoreTypes.AsyncStorage) {
+    store = getAsyncStore(new MockAsyncStorage(), opts);
+  } else if (type === StoreTypes.File) {
+    store = getFileStore(opts.fileDir || "./.test-store", opts);
+  } else if (type === StoreTypes.LocalStorage) {
+    store = getLocalStore(opts);
+  } else if (type === StoreTypes.Memory) {
+    store = getMemoryStore(opts);
+  } else if (type === StoreTypes.Postgres) {
+    store = getPostgresStore(opts.sequelize || postgresConnectionUri, opts);
+  } else {
+    throw new Error(`${type} should be one of ${Object.keys(StoreTypes)}`);
+  }
+  await store.init();
+  await store.clear();
+  return store;
+};
+
+export const setAndGet = async (
+  store: StoreService,
+  pair: StorePair = TEST_STORE_PAIR,
+): Promise<void> => {
+  await store.setItem(pair.path, pair.value);
+  const value = await store.getItem(pair.path);
+  if (typeof pair.value === "object" && !utils.BigNumber.isBigNumber(pair.value)) {
+    expect(value).to.be.deep.equal(pair.value);
+    return;
+  }
+  expect(value).to.be.equal(pair.value);
+};
+
+export const setAndGetMultiple = async (
+  store: StoreService,
+  length: number = 10,
+): Promise<void> => {
+  const pairs = Array(length)
+    .fill(0)
+    .map(() => {
+      const id = uuid();
+      return { path: `path-${id}`, value: `value-${id}` };
+    });
+
+  expect(pairs.length).to.equal(length);
+  for (const pair of pairs) {
+    await setAndGet(store, pair);
+  }
+};
+
+export const testAsyncStorageKey = async (
+  storage: StoreService,
+  asyncStorageKey: string,
+): Promise<void> => {
+  const keys = await storage.getKeys();
+  expect(keys.length).to.equal(1);
+  expect(keys[0]).to.equal(asyncStorageKey);
+};
+
+/**
+ * Class simply holds all the states in memory that would otherwise get
+ * backed up by the service.
+ *
+ * TODO: Currently the implementation implies that the backup service
+ * will have write access to the store (or at least there is no specific
+ * call to `.set` when calling `restoreState` in
+ * `client/src/channelProvider.ts`). This should be addressed in a larger
+ * store refactor, and it is not clear how this would impact backwards
+ * compatability of custom stores.
+ */
+export class MockBackupService implements IBackupService {
+  private prefix: string;
+  private storage = new Map<string, any>();
+
+  constructor(prefix: string = "backup/") {
+    this.prefix = prefix;
+  }
+
+  public async restore(): Promise<StorePair[]> {
+    this.storage.keys();
+    const keys: string[] = [];
+    for (const key of this.storage.keys()) {
+      if (key.includes(this.prefix)) {
+        keys.push(key);
+      }
+    }
+    const statesToRestore: StorePair[] = [];
+    for (const key of keys) {
+      const value = this.storage.get(key);
+      const path = key.split(this.prefix)[1];
+      statesToRestore.push({ path, value });
+      this.storage.set(path, value);
+    }
+    return statesToRestore;
+  }
+
+  public async backup(pair: StorePair): Promise<any> {
+    return this.storage.set(`${this.prefix}${pair.path}`, pair.value);
+  }
+}
+
+////////////////////////////////////////
+// Example Data
 
 export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
 
@@ -172,119 +295,3 @@ export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = 
   finalizesAt: toBN(3),
   status: ChallengeStatus.IN_DISPUTE,
 };
-
-////////////////////////////////////////
-// Helper Methods
-
-export const postgresConnectionUri = `postgres://${env.user}:${env.password}@${env.host}:${env.port}/${env.database}`;
-
-export const createKeyValueStore = async (
-  type: StoreTypes,
-  opts: StoreFactoryOptions = {},
-): Promise<KeyValueStorage> => {
-  const cStore = await createConnextStore(type, opts);
-  await cStore.internalStore.init();
-  await cStore.internalStore.clear();
-  return cStore.internalStore;
-};
-
-export const createConnextStore = async (
-  type: StoreTypes,
-  opts: StoreFactoryOptions = {},
-): Promise<ConnextStore> => {
-  if (!Object.values(StoreTypes).includes(type)) {
-    throw new Error(`Unrecognized type: ${type}`);
-  }
-  opts.logger = new ColorfulLogger(`ConnextStore_${type}`, env.logLevel, true);
-  if (type === StoreTypes.Postgres) {
-    opts.sequelize = opts.sequelize || postgresConnectionUri;
-  } else if (type === StoreTypes.AsyncStorage) {
-    opts.storage = new MockAsyncStorage();
-  }
-  const cStore = new ConnextStore(type, opts);
-  await cStore.internalStore.init();
-  expect(cStore).to.be.instanceOf(ConnextStore);
-  await cStore.clear();
-  return cStore;
-};
-
-export const setAndGet = async (
-  store: KeyValueStorage,
-  pair: StorePair = TEST_STORE_PAIR,
-): Promise<void> => {
-  await store.setItem(pair.path, pair.value);
-  const value = await store.getItem(pair.path);
-  if (typeof pair.value === "object" && !utils.BigNumber.isBigNumber(pair.value)) {
-    expect(value).to.be.deep.equal(pair.value);
-    return;
-  }
-  expect(value).to.be.equal(pair.value);
-};
-
-export const setAndGetMultiple = async (
-  store: KeyValueStorage,
-  length: number = 10,
-): Promise<void> => {
-  const pairs = Array(length)
-    .fill(0)
-    .map(() => {
-      const id = uuid();
-      return { path: `path-${id}`, value: `value-${id}` };
-    });
-
-  expect(pairs.length).to.equal(length);
-  for (const pair of pairs) {
-    await setAndGet(store, pair);
-  }
-};
-
-export const testAsyncStorageKey = async (
-  storage: KeyValueStorage,
-  asyncStorageKey: string,
-): Promise<void> => {
-  const keys = await storage.getKeys();
-  expect(keys.length).to.equal(1);
-  expect(keys[0]).to.equal(asyncStorageKey);
-};
-
-/**
- * Class simply holds all the states in memory that would otherwise get
- * backed up by the service.
- *
- * TODO: Currently the implementation implies that the backup service
- * will have write access to the store (or at least there is no specific
- * call to `.set` when calling `restoreState` in
- * `client/src/channelProvider.ts`). This should be addressed in a larger
- * store refactor, and it is not clear how this would impact backwards
- * compatability of custom stores.
- */
-export class MockBackupService implements IBackupService {
-  private prefix: string;
-  private storage = new Map<string, any>();
-
-  constructor(prefix: string = "backup/") {
-    this.prefix = prefix;
-  }
-
-  public async restore(): Promise<StorePair[]> {
-    this.storage.keys();
-    const keys: string[] = [];
-    for (const key of this.storage.keys()) {
-      if (key.includes(this.prefix)) {
-        keys.push(key);
-      }
-    }
-    const statesToRestore: StorePair[] = [];
-    for (const key of keys) {
-      const value = this.storage.get(key);
-      const path = key.split(this.prefix)[1];
-      statesToRestore.push({ path, value });
-      this.storage.set(path, value);
-    }
-    return statesToRestore;
-  }
-
-  public async backup(pair: StorePair): Promise<any> {
-    return this.storage.set(`${this.prefix}${pair.path}`, pair.value);
-  }
-}
