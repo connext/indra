@@ -6,8 +6,8 @@ import {
   WithdrawAppState,
   AppInstanceJson,
   ConditionalTransferAppNames,
+  SupportedApplications,
 } from "@connext/types";
-import { SupportedApplications } from "@connext/apps";
 import { Injectable } from "@nestjs/common";
 
 import { LoggerService } from "../logger/logger.service";

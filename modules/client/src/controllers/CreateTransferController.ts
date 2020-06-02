@@ -7,6 +7,12 @@ import {
   PublicParams,
   PublicResults,
   GenericConditionalTransferAppState,
+  CreatedHashLockTransferMeta,
+  CreatedSignedTransferMeta,
+  CreatedLinkedTransferMeta,
+  SimpleLinkedTransferAppState,
+  SimpleSignedTransferAppState,
+  HashLockTransferAppState,
 } from "@connext/types";
 import { toBN, stringify } from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
@@ -14,8 +20,8 @@ import { HashZero, Zero } from "ethers/constants";
 import { AbstractController } from "./AbstractController";
 import { soliditySha256 } from "ethers/utils";
 
-export class ConditionalTransferController extends AbstractController {
-  public conditionalTransfer = async (
+export class CreateTransferController extends AbstractController {
+  public createTransfer = async (
     params: PublicParams.ConditionalTransfer,
   ): Promise<PublicResults.ConditionalTransfer> => {
     this.log.info(`conditionalTransfer started: ${stringify(params)}`);
@@ -27,7 +33,7 @@ export class ConditionalTransferController extends AbstractController {
     submittedMeta.recipient = recipient;
     submittedMeta.sender = this.connext.publicIdentifier;
 
-    const initialState: GenericConditionalTransferAppState = {
+    const baseInitialState: GenericConditionalTransferAppState = {
       coinTransfers: [
         {
           amount,
@@ -44,6 +50,8 @@ export class ConditionalTransferController extends AbstractController {
     let paymentId: string;
     let transferMeta: any;
 
+    let initialState;
+
     switch (conditionType) {
       case ConditionalTransferTypes.LinkedTransfer: {
         const { preImage } = params as PublicParams.LinkedTransfer;
@@ -51,12 +59,16 @@ export class ConditionalTransferController extends AbstractController {
         // add encrypted preImage to meta so node can store it in the DB
         const linkedHash = soliditySha256(["bytes32"], [preImage]);
 
-        initialState.linkedHash = linkedHash;
+        initialState = {
+          ...baseInitialState,
+          linkedHash,
+          preImage: HashZero,
+        } as SimpleLinkedTransferAppState;
 
         submittedMeta.encryptedPreImage = encryptedPreImage;
         submittedMeta.paymentId = paymentId;
 
-        transferMeta = {};
+        transferMeta = {} as CreatedLinkedTransferMeta;
 
         break;
       }
@@ -65,6 +77,12 @@ export class ConditionalTransferController extends AbstractController {
 
         // convert to block height
         const expiry = toBN(timelock).add(await this.connext.ethProvider.getBlockNumber());
+        initialState = {
+          ...baseInitialState,
+          lockHash,
+          preImage: HashZero,
+          expiry,
+        } as HashLockTransferAppState;
         initialState.expiry = expiry;
         initialState.lockHash = lockHash;
         initialState.preImage = HashZero;
@@ -77,18 +95,26 @@ export class ConditionalTransferController extends AbstractController {
           expiry,
           timelock,
           lockHash,
-        };
+        } as CreatedHashLockTransferMeta;
 
         break;
       }
       case ConditionalTransferTypes.SignedTransfer: {
-        const { signer } = params as PublicParams.SignedTransfer;
+        const { signerAddress, chainId, verifyingContract } = params as PublicParams.SignedTransfer;
 
-        initialState.signer = signer;
+        initialState = {
+          ...baseInitialState,
+          chainId,
+          signerAddress,
+          verifyingContract,
+          paymentId,
+        } as SimpleSignedTransferAppState;
 
         transferMeta = {
-          signer,
-        };
+          signerAddress,
+          verifyingContract,
+          chainId,
+        } as CreatedSignedTransferMeta;
 
         break;
       }

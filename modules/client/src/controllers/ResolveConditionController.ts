@@ -13,10 +13,10 @@ import {
 import { AbstractController } from "./AbstractController";
 import { stringify } from "@connext/utils";
 
-export class ResolveConditionController extends AbstractController {
-  public resolveCondition = async (
+export class ResolveTransferController extends AbstractController {
+  public resolveTransfer = async (
     params: PublicParams.ResolveCondition,
-  ): Promise<PublicResults.ResolveHashLockTransfer> => {
+  ): Promise<PublicResults.ResolveCondition> => {
     this.log.info(`resolveHashLockTransfer started: ${stringify(params)}`);
     const { conditionType, paymentId } = params;
 
@@ -60,11 +60,8 @@ export class ResolveConditionController extends AbstractController {
           break;
         }
         case ConditionalTransferTypes.SignedTransfer: {
-          const { data, signature } = params as PublicParams.ResolveSignedTransfer;
-          action = {
-            data,
-            signature,
-          } as SimpleSignedTransferAppAction;
+          const { attestation } = params as PublicParams.ResolveSignedTransfer;
+          action = attestation as SimpleSignedTransferAppAction;
           break;
         }
         case ConditionalTransferTypes.LinkedTransfer: {
@@ -93,12 +90,13 @@ export class ResolveConditionController extends AbstractController {
     }
     const sender = existingApp.meta.sender;
 
-    const result: PublicResults.ResolveHashLockTransfer = {
+    const result: PublicResults.ResolveCondition = {
       amount,
       appIdentityHash,
       assetId,
       sender,
       meta: existingApp.meta,
+      paymentId,
     };
     this.log.info(`[${paymentId}] resolveCondition complete: ${stringify(result)}`);
     return result;

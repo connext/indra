@@ -1,5 +1,5 @@
 import { CFCore } from "@connext/cf-core";
-import { DEFAULT_APP_TIMEOUT, SupportedApplications, WithdrawCommitment } from "@connext/apps";
+import { DEFAULT_APP_TIMEOUT, WithdrawCommitment } from "@connext/apps";
 import {
   AppAction,
   AppInstanceJson,
@@ -16,6 +16,7 @@ import {
   EventName,
   CF_METHOD_TIMEOUT,
   ProtocolEventMessage,
+  SupportedApplications,
 } from "@connext/types";
 import {
   getSignerAddressFromPublicIdentifier,
@@ -195,7 +196,7 @@ export class CFCoreService {
 
     // Decrement timeout so that receiver app MUST finalize before sender app
     // See: https://github.com/connext/indra/issues/1046
-    const timeout = DEFAULT_APP_TIMEOUT.sub(TIMEOUT_BUFFER)
+    const timeout = DEFAULT_APP_TIMEOUT.sub(TIMEOUT_BUFFER);
 
     const {
       actionEncoding,

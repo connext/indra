@@ -22,6 +22,7 @@ import {
   HashLockTransferAppState,
   DepositAppName,
   GenericConditionalTransferAppState,
+  getTransferTypeFromAppName,
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
@@ -39,7 +40,7 @@ import { DepositService } from "../deposit/deposit.service";
 import { LoggerService } from "../logger/logger.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
-import { TransferService, getTransferTypeFromAppName } from "../transfer/transfer.service";
+import { TransferService } from "../transfer/transfer.service";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";

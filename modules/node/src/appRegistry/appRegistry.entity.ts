@@ -1,6 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
-import { SupportedApplications } from "@connext/apps";
-import { OutcomeType } from "@connext/types";
+import { OutcomeType, SupportedApplications } from "@connext/types";
 
 @Entity()
 export class AppRegistry {

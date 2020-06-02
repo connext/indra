@@ -54,6 +54,7 @@ type HashLockTransferResponse = {
 type ResolveHashLockTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.HashLockTransfer;
   assetId: Address;
+  paymentId?: Bytes32;
   preImage: Bytes32;
 };
 
@@ -150,9 +151,7 @@ type ConditionalTransferResponse =
 // resolve condition
 
 type ResolveConditionParameters =
-  | (ResolveHashLockTransferParameters & {
-      paymentId: Bytes32;
-    })
+  | ResolveHashLockTransferParameters
   | ResolveLinkedTransferParameters
   | ResolveSignedTransferParameters;
 

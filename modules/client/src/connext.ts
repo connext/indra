@@ -43,17 +43,21 @@ import {
   stringify,
 } from "@connext/utils";
 import { Contract, providers } from "ethers";
-import { AddressZero, HashZero } from "ethers/constants";
+import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, bigNumberify, Network, Transaction, soliditySha256 } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
-import { DepositController, SwapController, WithdrawalController } from "./controllers";
+import {
+  DepositController,
+  SwapController,
+  WithdrawalController,
+  CreateTransferController,
+  ResolveTransferController,
+} from "./controllers";
 import { ConnextListener } from "./listener";
 import { InternalClientOptions } from "./types";
 import { NodeApiClient } from "./node";
-import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
-import { ResolveConditionController } from "./controllers/ResolveConditionController";
 
 export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
@@ -77,8 +81,8 @@ export class ConnextClient implements IConnextClient {
   private opts: InternalClientOptions;
 
   private depositController: DepositController;
-  private conditionalTransferController: ConditionalTransferController;
-  private resolveConditionController: ResolveConditionController;
+  private createTransferController: CreateTransferController;
+  private resolveTransferController: ResolveTransferController;
   private swapController: SwapController;
   private withdrawalController: WithdrawalController;
 
@@ -109,12 +113,9 @@ export class ConnextClient implements IConnextClient {
     this.depositController = new DepositController("DepositController", this);
     this.swapController = new SwapController("SwapController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
-    this.conditionalTransferController = new ConditionalTransferController(
-      "ConditionalTransferController",
-      this,
-    );
-    this.resolveConditionController = new ResolveConditionController(
-      "ResolveConditionController",
+    this.createTransferController = new CreateTransferController("CreateTransferController", this);
+    this.resolveTransferController = new ResolveTransferController(
+      "ResolveTransferController",
       this,
     );
   }
@@ -292,7 +293,7 @@ export class ConnextClient implements IConnextClient {
   public transfer = async (
     params: PublicParams.Transfer,
   ): Promise<PublicResults.LinkedTransfer> => {
-    return this.conditionalTransfer.conditionalTransfer({
+    return this.createTransferController.createTransfer({
       amount: params.amount,
       assetId: params.assetId || CONVENTION_FOR_ETH_ASSET_ID,
       conditionType: ConditionalTransferTypes.LinkedTransfer,
@@ -321,19 +322,20 @@ export class ConnextClient implements IConnextClient {
   public resolveCondition = async (
     params: PublicParams.ResolveCondition,
   ): Promise<PublicResults.ResolveCondition> => {
+    // paymentId is generated for hashlock transfer
     if (params.conditionType === ConditionalTransferTypes.HashLockTransfer) {
       const lockHash = soliditySha256(["bytes32"], [params.preImage]);
       const paymentId = soliditySha256(["address", "bytes32"], [params.assetId, lockHash]);
       params.paymentId = paymentId;
     }
-    return this.resolveConditionController.resolveCondition(params);
+    return this.resolveTransferController.resolveTransfer(params);
   };
 
   public conditionalTransfer = async (
     params: PublicParams.ConditionalTransfer,
   ): Promise<PublicResults.ConditionalTransfer> => {
-    params.assetId = params.assetId ? params.assetId : CONVENTION_FOR_ETH_ASSET_ID;
-    return this.conditionalTransferController.conditionalTransfer(params);
+    params.assetId = params.assetId || CONVENTION_FOR_ETH_ASSET_ID;
+    return this.createTransferController.createTransfer(params);
   };
 
   public getHashLockTransfer = async (
@@ -652,7 +654,7 @@ export class ConnextClient implements IConnextClient {
     });
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
     try {
-      const response = await this.resolveLinkedTransferController.resolveLinkedTransfer({
+      const response = await this.resolveTransferController.resolveTransfer({
         conditionType: ConditionalTransferTypes.LinkedTransfer,
         paymentId,
         preImage,
