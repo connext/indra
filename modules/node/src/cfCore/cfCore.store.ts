@@ -63,6 +63,7 @@ import {
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 import { ChallengeRegistry } from "@connext/contracts";
 import { LoggerService } from "../logger/logger.service";
+import {CacheService} from "../caching/cache.service";
 
 const { Zero, AddressZero } = constants;
 const { bigNumberify, defaultAbiCoder } = utils;

@@ -1,10 +1,13 @@
-import {AppActions, AppName, AppStates, BigNumberJSON, HexString, JSONSerializer, OutcomeType} from '@connext/types';
+import { utils } from "ethers";
+import {AppActions, AppName, AppStates, HexString, JSONSerializer, OutcomeType} from '@connext/types';
 import {BigNumber} from 'ethers/utils';
 import {Column, CreateDateColumn, Entity, ManyToOne, PrimaryColumn, UpdateDateColumn,} from 'typeorm';
 
 import {Channel} from '../channel/channel.entity';
 import {IsEthAddress, IsKeccak256Hash, IsValidPublicIdentifier} from '../validate';
 import {bigNumberifyJson, deBigNumberifyJson} from '@connext/utils';
+
+
 
 export enum AppType {
   PROPOSAL = "PROPOSAL",
