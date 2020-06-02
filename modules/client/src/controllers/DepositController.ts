@@ -1,5 +1,5 @@
 import { DEFAULT_APP_TIMEOUT, DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
-import { MinimumViableMultisig } from "@connext/contracts";
+import { ERC20, MinimumViableMultisig } from "@connext/contracts";
 import {
   AppInstanceJson,
   BigNumber,
@@ -22,7 +22,6 @@ import {
   delayAndThrow,
 } from "@connext/utils";
 import { Contract, constants } from "ethers";
-import tokenAbi from "human-standard-token-abi";
 
 import { AbstractController } from "./AbstractController";
 
@@ -42,7 +41,7 @@ export class DepositController extends AbstractController {
     const startingBalance =
       tokenAddress === AddressZero
         ? await this.ethProvider.getBalance(this.connext.signerAddress)
-        : await new Contract(tokenAddress, tokenAbi, this.ethProvider).functions.balanceOf(
+        : await new Contract(tokenAddress, ERC20.abi, this.ethProvider).functions.balanceOf(
             this.connext.signerAddress,
           );
     this.throwIfAny(notLessThanOrEqualTo(amount, startingBalance), notGreaterThan(amount, Zero));
@@ -229,7 +228,7 @@ export class DepositController extends AbstractController {
     const startingMultisigBalance =
       tokenAddress === AddressZero
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
-        : await new Contract(tokenAddress, tokenAbi, this.ethProvider).functions.balanceOf(
+        : await new Contract(tokenAddress, ERC20.abi, this.ethProvider).functions.balanceOf(
             this.connext.multisigAddress,
           );
 

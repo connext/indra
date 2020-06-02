@@ -6,8 +6,8 @@ import {
   EventNames,
 } from "@connext/types";
 import { delay, toBN } from "@connext/utils";
+import { ERC20 } from "@connext/contracts";
 import { Contract, constants } from "ethers";
-import tokenAbi from "human-standard-token-abi";
 
 import {
   expect,
@@ -52,7 +52,7 @@ describe("Deposits", () => {
     const onchainBalance: BigNumber =
       expected.assetId === AddressZero
         ? await ethProvider.getBalance(client.multisigAddress)
-        : await new Contract(expected.assetId!, tokenAbi, ethProvider).functions.balanceOf(
+        : await new Contract(expected.assetId!, ERC20.abi, ethProvider).functions.balanceOf(
             client.multisigAddress,
           );
     expect(onchainBalance.eq(toBN(expected.node).add(toBN(expected.client))));

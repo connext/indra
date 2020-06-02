@@ -42,7 +42,6 @@
     "eccrypto-js": "4.5.4",
     "ethers": "4.0.47",
     "evt": "1.7.11",
-    "human-standard-token-abi": "2.0.0",
     "ioredis": "4.17.1",
     "nats": "1.4.9",
     "pg": "8.0.3",

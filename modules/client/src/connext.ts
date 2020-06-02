@@ -1,4 +1,5 @@
 import { SupportedApplications } from "@connext/apps";
+import { ERC20 } from "@connext/contracts";
 import {
   Address,
   AppAction,
@@ -43,7 +44,6 @@ import {
   stringify,
 } from "@connext/utils";
 import { Contract, providers, constants, utils } from "ethers";
-import tokenAbi from "human-standard-token-abi";
 
 import {
   DepositController,
@@ -832,7 +832,7 @@ export class ConnextClient implements IConnextClient {
       const currentMultisigBalance =
         assetId === AddressZero
           ? await this.ethProvider.getBalance(this.multisigAddress)
-          : await new Contract(assetId, tokenAbi, this.ethProvider).functions.balanceOf(
+          : await new Contract(assetId, ERC20.abi, this.ethProvider).functions.balanceOf(
               this.multisigAddress,
             );
 
@@ -860,13 +860,15 @@ export class ConnextClient implements IConnextClient {
         continue;
       }
 
-      new Contract(assetId, tokenAbi, this.ethProvider).once(
+      new Contract(assetId, ERC20.abi, this.ethProvider).once(
         "Transfer",
         async (sender: string, recipient: string, amount: utils.BigNumber) => {
           if (recipient === this.multisigAddress && amount.gt(0)) {
-            const bal = await new Contract(assetId, tokenAbi, this.ethProvider).functions.balanceOf(
-              this.multisigAddress,
-            );
+            const bal = await new Contract(
+              assetId,
+              ERC20.abi,
+              this.ethProvider,
+            ).functions.balanceOf(this.multisigAddress);
             if (bal.gt((latestState as DepositAppState).startingMultisigBalance)) {
               await this.rescindDepositRights({ assetId, appIdentityHash });
             }

@@ -1,5 +1,4 @@
 import { Contract, Wallet, providers, constants, utils } from "ethers";
-import abi from "human-standard-token-abi";
 
 import { env } from "./env";
 import { ERC20, addressBook } from "@connext/contracts";
@@ -58,7 +57,7 @@ export const sendOnchainValue = async (
         await tx.wait();
         return;
       } else {
-        const tokenContract = new Contract(assetId, abi, ethWallet);
+        const tokenContract = new Contract(assetId, ERC20.abi, ethWallet);
         const tx = await tokenContract.functions.transfer(to, value, { nonce });
         await tx.wait();
         return;
@@ -85,7 +84,7 @@ export const getOnchainBalance = async (
     }
   } else {
     try {
-      const tokenContract = new Contract(assetId, abi, ethProvider);
+      const tokenContract = new Contract(assetId, ERC20.abi, ethProvider);
       result = await tokenContract.functions.balanceOf(address);
     } catch (e) {
       throw new Error(`Error getting token balance for ${address}: ${e.toString()}`);

@@ -1,4 +1,5 @@
 import * as connext from "@connext/client";
+import { ERC20 } from "@connext/contracts";
 import { getLocalStore, PisaBackupService } from "@connext/store";
 import { ConnextClientStorePrefix, EventNames } from "@connext/types";
 import { Currency, minBN, toBN, tokenToWei, weiToToken } from "@connext/utils";
@@ -9,7 +10,6 @@ import interval from "interval-promise";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import { interpret } from "xstate";
-import tokenAbi from "human-standard-token-abi";
 
 import "./App.css";
 
@@ -262,7 +262,7 @@ class App extends React.Component {
     }
     console.log(`Successfully connected channel`);
 
-    const token = new Contract(channel.config.contractAddresses.Token, tokenAbi, ethProvider);
+    const token = new Contract(channel.config.contractAddresses.Token, ERC20.abi, ethProvider);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     console.log(`Client created successfully!`);
@@ -316,7 +316,7 @@ class App extends React.Component {
     if (!channel.config.contractAddresses.SAIToken) {
       return Zero;
     }
-    const saiToken = new Contract(channel.config.contractAddresses.SAIToken, tokenAbi, wallet);
+    const saiToken = new Contract(channel.config.contractAddresses.SAIToken, ERC20.abi, wallet);
     const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
     const mySaiBalance = freeSaiBalance[channel.signerAddress];
     return mySaiBalance;
