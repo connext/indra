@@ -3,6 +3,9 @@ import {
   NodeResponses,
   SimpleLinkedTransferAppName,
   SimpleSignedTransferAppName,
+  ConditionalTransferTypes,
+  getTransferTypeFromAppName,
+  LinkedTransferStatus,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
@@ -80,6 +83,58 @@ export class TransferMessaging extends AbstractMessagingProvider {
     };
   }
 
+  async installPendingTransfers(
+    userIdentifier: string,
+  ): Promise<NodeResponses.GetPendingAsyncTransfers> {
+    const transfers = await this.linkedTransferService.getLinkedTransfersForReceiverUnlock(
+      userIdentifier,
+    );
+    for (const transfer of transfers) {
+      await this.transferService.resolveByPaymentId(
+        userIdentifier,
+        transfer.meta.paymentId,
+        ConditionalTransferTypes.LinkedTransfer,
+      );
+    }
+    return transfers.map((transfer) => {
+      return {
+        paymentId: transfer.meta.paymentId,
+        createdAt: transfer.createdAt,
+        amount: transfer.latestState.coinTransfers[0].amount,
+        assetId: transfer.initiatorDepositAssetId,
+        senderIdentifier: transfer.channel.userIdentifier,
+        receiverIdentifier: transfer.meta.recipient,
+        status: LinkedTransferStatus.PENDING,
+        meta: transfer.meta,
+        encryptedPreImage: transfer.meta.encryptedPreImage,
+      };
+    });
+  }
+
+  async installConditionalTransferReceiverApp(
+    pubId: string,
+    data: { paymentId: string; conditionType: ConditionalTransferTypes },
+  ): Promise<NodeResponses.InstallConditionalTransferReceiverApp> {
+    if (!data.paymentId || !data.conditionType) {
+      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
+    }
+    const transferType = getTransferTypeFromAppName(data.conditionType);
+    if (transferType !== "AllowOffline") {
+      throw new Error(`Only AllowOffline apps are able to be installed through node API`);
+    }
+    this.log.info(`Got installReceiverApp request with paymentId: ${data.paymentId}`);
+
+    const response = await this.transferService.resolveByPaymentId(
+      pubId,
+      data.paymentId,
+      data.conditionType,
+    );
+    return {
+      ...response,
+      amount: response.amount,
+    };
+  }
+
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "*.transfer.get-history",
@@ -99,6 +154,16 @@ export class TransferMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "*.client.check-in",
       this.authService.parseIdentifier(this.clientCheckIn.bind(this)),
+    );
+
+    await super.connectRequestReponse(
+      "*.transfer.install-receiver",
+      this.authService.parseIdentifier(this.installConditionalTransferReceiverApp.bind(this)),
+    );
+
+    await super.connectRequestReponse(
+      "*.transfer.install-pending",
+      this.authService.parseIdentifier(this.installPendingTransfers.bind(this)),
     );
   }
 }

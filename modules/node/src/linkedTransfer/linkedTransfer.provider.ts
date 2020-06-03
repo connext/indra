@@ -66,17 +66,16 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
       userIdentifier,
     );
     return transfers.map((transfer) => {
-      const state = bigNumberifyJson(transfer.latestState) as SimpleLinkedTransferAppState;
       return {
-        paymentId: transfer.meta["paymentId"],
+        paymentId: transfer.meta.paymentId,
         createdAt: transfer.createdAt,
-        amount: transfer.initialState.coinTransfers[0].amount,
+        amount: transfer.latestState.coinTransfers[0].amount,
         assetId: transfer.initiatorDepositAssetId,
         senderIdentifier: transfer.channel.userIdentifier,
-        receiverIdentifier: transfer.meta["recipient"],
+        receiverIdentifier: transfer.meta.recipient,
         status: LinkedTransferStatus.PENDING,
         meta: transfer.meta,
-        encryptedPreImage: transfer.meta["encryptedPreImage"],
+        encryptedPreImage: transfer.meta.encryptedPreImage,
       };
     });
   }
@@ -86,10 +85,10 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
       "*.transfer.get-linked",
       this.authService.parseIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
     );
-    await super.connectRequestReponse(
-      "*.transfer.get-pending",
-      this.authService.parseIdentifier(this.getPendingTransfers.bind(this)),
-    );
+    // await super.connectRequestReponse(
+    //   "*.transfer.get-pending",
+    //   this.authService.parseIdentifier(this.getPendingTransfers.bind(this)),
+    // );
   }
 }
 

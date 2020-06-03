@@ -3,7 +3,7 @@ import { mkdirSync } from "fs";
 import { dirname } from "path";
 
 import { storeDefaults } from "../constants";
-import { WrappedStorage } from "../types";
+import { KeyValueStorage } from "../types";
 
 type SupportedDialects = "postgres" | "sqlite";
 
@@ -23,7 +23,7 @@ const getConnextClientDataInitParams = (dialect: SupportedDialects) => {
   };
 };
 
-export class WrappedSequelizeStorage implements WrappedStorage {
+export class WrappedSequelizeStorage implements KeyValueStorage {
   public sequelize: Sequelize;
   private ConnextClientData: any;
   // FIXME: Using transactions in the memory store passes the store tests

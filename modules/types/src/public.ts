@@ -1,15 +1,15 @@
-import { TransactionResponse } from "ethers/providers";
-import { BigNumberish } from "ethers/utils";
+import { providers, utils } from "ethers";
 
 import { Address, BigNumber, Bytes32, HexString, PublicIdentifier } from "./basic";
-import { ConditionalTransferTypes } from "./transfers";
+import { ConditionalTransferTypes, CreatedConditionalTransferMetaMap } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
+import { Attestation } from "./contracts";
 
 ////////////////////////////////////////
 // deposit
 
 type DepositParameters = {
-  amount: BigNumberish;
+  amount: utils.BigNumberish;
   assetId?: Address; // if not provided, will default to 0x0 (Eth)
 };
 
@@ -38,8 +38,8 @@ type RescindDepositRightsResponse = MethodResults.RescindDepositRights;
 
 type HashLockTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.HashLockTransfer;
-  amount: BigNumberish;
-  timelock?: BigNumberish;
+  amount: utils.BigNumberish;
+  timelock?: utils.BigNumberish;
   lockHash: Bytes32;
   recipient: PublicIdentifier;
   assetId?: Address;
@@ -53,6 +53,7 @@ type HashLockTransferResponse = {
 type ResolveHashLockTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.HashLockTransfer;
   assetId: Address;
+  paymentId?: Bytes32;
   preImage: Bytes32;
 };
 
@@ -69,7 +70,7 @@ type ResolveHashLockTransferResponse = {
 
 type LinkedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.LinkedTransfer;
-  amount: BigNumberish;
+  amount: utils.BigNumberish;
   assetId?: Address;
   paymentId: Bytes32;
   preImage: Bytes32;
@@ -106,7 +107,9 @@ type SignedTransferParameters = {
   amount: BigNumber;
   assetId: Address;
   paymentId: Bytes32;
-  signer: Address;
+  signerAddress: Address;
+  chainId: number;
+  verifyingContract: Address;
   recipient?: PublicIdentifier;
   meta?: any;
 };
@@ -119,8 +122,7 @@ type SignedTransferResponse = {
 type ResolveSignedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.SignedTransfer;
   paymentId: Bytes32;
-  data: Bytes32;
-  signature: HexString;
+  attestation: Attestation;
 };
 
 type ResolveSignedTransferResponse = {
@@ -139,10 +141,17 @@ type ConditionalTransferParameters =
   | HashLockTransferParameters
   | SignedTransferParameters;
 
-type ConditionalTransferResponse =
-  | LinkedTransferResponse
-  | HashLockTransferResponse
-  | SignedTransferResponse;
+type ConditionalTransferResponse = {
+  amount: BigNumber;
+  appIdentityHash: Bytes32;
+  assetId: Address;
+  paymentId: Bytes32;
+  preImage?: Bytes32;
+  sender: Address;
+  recipient?: Address;
+  meta: any;
+  transferMeta: any;
+};
 
 ////////////////////////////////////////
 // resolve condition
@@ -170,7 +179,7 @@ type ResolveConditionResponse = {
 // swap
 
 type SwapParameters = {
-  amount: BigNumberish;
+  amount: utils.BigNumberish;
   fromAssetId: Address;
   swapRate: string; // DecString?
   toAssetId: Address;
@@ -189,14 +198,14 @@ type SwapResponse = {
 // withdraw
 
 type WithdrawParameters = {
-  amount: BigNumberish;
+  amount: utils.BigNumberish;
   assetId?: Address; // if not provided, will default to 0x0 (Eth)
   recipient?: Address; // if not provided, will default to signer addr
   nonce?: HexString; // generated internally, end user doesn't need to provide it
 };
 
 type WithdrawResponse = {
-  transaction: TransactionResponse;
+  transaction: providers.TransactionResponse;
 };
 
 ////////////////////////////////////////

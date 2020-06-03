@@ -5,6 +5,7 @@ import {
 } from "@connext/apps";
 import {
   AppInstanceJson,
+  MethodParams,
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   WithdrawAppState,
@@ -19,12 +20,13 @@ import {
   ProposeMiddlewareContext,
   ConditionalTransferAppNames,
   HashLockTransferAppState,
-  ProtocolParams,
+  DepositAppName,
+  GenericConditionalTransferAppState,
+  getTransferTypeFromAppName,
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { JsonRpcProvider } from "ethers/providers";
-import { bigNumberify } from "ethers/utils";
+import { providers, utils } from "ethers";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -37,10 +39,12 @@ import { DepositService } from "../deposit/deposit.service";
 import { LoggerService } from "../logger/logger.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
-import { TransferService, getTransferTypeFromAppName } from "../transfer/transfer.service";
+import { TransferService } from "../transfer/transfer.service";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
+
+const { bigNumberify } = utils;
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -62,7 +66,7 @@ export class AppRegistryService implements OnModuleInit {
 
   async installOrReject(
     appIdentityHash: string,
-    proposeInstallParams: ProtocolParams.Propose,
+    proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
     this.log.info(
@@ -72,7 +76,6 @@ export class AppRegistryService implements OnModuleInit {
     );
 
     let registryAppInfo: AppRegistry;
-    let appInstance: AppInstanceJson;
 
     // if error, reject install
     let installerChannel: Channel;
@@ -133,10 +136,7 @@ export class AppRegistryService implements OnModuleInit {
           }
         }
       }
-      ({ appInstance } = await this.cfCoreService.installApp(
-        appIdentityHash,
-        installerChannel.multisigAddress,
-      ));
+      await this.cfCoreService.installApp(appIdentityHash, installerChannel.multisigAddress);
       // any tasks that need to happen after install, i.e. DB writes
       await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams);
     } catch (e) {
@@ -150,7 +150,7 @@ export class AppRegistryService implements OnModuleInit {
   private async runPostInstallTasks(
     registryAppInfo: AppRegistry,
     appIdentityHash: string,
-    proposeInstallParams: ProtocolParams.Propose,
+    proposeInstallParams: MethodParams.ProposeInstall,
   ): Promise<void> {
     this.log.info(
       `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} started`,
@@ -184,18 +184,20 @@ export class AppRegistryService implements OnModuleInit {
   }
 
   // APP SPECIFIC MIDDLEWARE
-  public generateMiddleware = async () => {
+  public generateMiddleware = async (): Promise<
+    (protocol: ProtocolName, cxt: MiddlewareContext) => Promise<void>
+  > => {
     const contractAddresses = await this.configService.getContractAddresses();
     const provider = this.configService.getEthProvider();
     const defaultValidation = await generateValidationMiddleware(
       {
         contractAddresses,
-        provider: provider as JsonRpcProvider,
+        provider: provider as providers.JsonRpcProvider,
       },
       this.configService.getSupportedTokens(),
     );
 
-    return async (protocol: ProtocolName, cxt: MiddlewareContext) => {
+    return async (protocol: ProtocolName, cxt: MiddlewareContext): Promise<void> => {
       await defaultValidation(protocol, cxt);
       switch (protocol) {
         case ProtocolNames.setup:
@@ -204,13 +206,13 @@ export class AppRegistryService implements OnModuleInit {
           return;
         }
         case ProtocolNames.propose: {
-          return await this.proposeMiddleware(cxt as ProposeMiddlewareContext);
+          return this.proposeMiddleware(cxt as ProposeMiddlewareContext);
         }
         case ProtocolNames.install: {
-          return await this.installMiddleware(cxt as InstallMiddlewareContext);
+          return this.installMiddleware(cxt as InstallMiddlewareContext);
         }
         case ProtocolNames.uninstall: {
-          return await this.uninstallMiddleware(cxt as UninstallMiddlewareContext);
+          return this.uninstallMiddleware(cxt as UninstallMiddlewareContext);
         }
         default: {
           const unexpected: never = protocol;
@@ -244,6 +246,10 @@ export class AppRegistryService implements OnModuleInit {
       appInstance.meta.paymentId,
     );
 
+    if (!existingSenderApp) {
+      throw new Error(`Sender app not installed`);
+    }
+
     if (existingSenderApp.type === AppType.INSTANCE) {
       this.log.info(`Sender app was already installed, doing nothing.`);
       return;
@@ -254,6 +260,7 @@ export class AppRegistryService implements OnModuleInit {
     }
 
     try {
+      this.log.info(`Installing sender app from app proposal: ${appInstance.identityHash}`);
       await this.cfCoreService.installApp(
         existingSenderApp.identityHash,
         existingSenderApp.channel.multisigAddress,
@@ -286,7 +293,7 @@ export class AppRegistryService implements OnModuleInit {
 
     switch (proposal.appDefinition) {
       case contractAddresses.SimpleTwoPartySwapApp: {
-        validateSimpleSwapApp(
+        return validateSimpleSwapApp(
           params as any,
           this.configService.getAllowedSwaps(),
           await this.swapRateService.getOrFetchRate(
@@ -294,37 +301,110 @@ export class AppRegistryService implements OnModuleInit {
             getAddressFromAssetId(params.responderDepositAssetId),
           ),
         );
-        break;
       }
     }
   };
 
-  private uninstallMiddleware = async (cxt: UninstallMiddlewareContext) => {
+  /**
+   * https://github.com/connext/indra/issues/863
+   * The node must not allow a sender's transfer app to be uninstalled before the receiver.
+   * If the sender app is installed, the node will try to uninstall the receiver app. If the
+   * receiver app is uninstalled, it must be checked for the following case:
+   * if !senderApp.latestState.finalized && receiverApp.latestState.finalized, then ERROR
+   */
+  private uninstallTransferMiddleware = async (
+    appInstance: AppInstanceJson,
+    role: ProtocolRoles,
+  ) => {
+    // if we initiated the protocol, we dont need to have this check
+    if (role === ProtocolRoles.initiator) {
+      return;
+    }
+
+    const nodeSignerAddress = await this.configService.getSignerAddress();
+    const senderAppLatestState = appInstance.latestState as GenericConditionalTransferAppState;
+
+    // only run validation against sender app uninstall
+    if (senderAppLatestState.coinTransfers[1].to !== nodeSignerAddress) {
+      return;
+    }
+
+    let receiverApp = await this.transferService.findReceiverAppByPaymentId(
+      appInstance.meta.paymentId,
+    );
+
+    // TODO: VERIFY THIS
+    // okay to allow uninstall if receiver app was not installed ever
+    if (!receiverApp) {
+      return;
+    }
+
+    this.log.info(`Starting uninstallTransferMiddleware for ${appInstance.identityHash}`);
+
+    if (receiverApp.type !== AppType.UNINSTALLED) {
+      this.log.info(
+        `Found receiver app ${receiverApp.identityHash} with type ${receiverApp.type}, attempting uninstall`,
+      );
+      try {
+        await this.cfCoreService.uninstallApp(
+          receiverApp.identityHash,
+          receiverApp.channel.multisigAddress,
+        );
+        this.log.info(`Receiver app ${receiverApp.identityHash} uninstalled`);
+      } catch (e) {
+        this.log.error(
+          `Caught error uninstalling receiver app ${receiverApp.identityHash}: ${e.message}`,
+        );
+      }
+      // TODO: can we optimize?
+      // get new instance from store
+      receiverApp = await this.transferService.findReceiverAppByPaymentId(
+        appInstance.meta.paymentId,
+      );
+    }
+
+    // double check that the app was uninstalled
+    if (receiverApp.type !== AppType.UNINSTALLED) {
+      throw new Error(`Receiver app was unable to be uninstalled`);
+    }
+
+    if (!senderAppLatestState.finalized && receiverApp.latestState.finalized) {
+      throw new Error(`Cannot uninstall unfinalized sender app, receiver app has been finalized`);
+    }
+    this.log.info(`Finished uninstallTransferMiddleware for ${appInstance.identityHash}`);
+  };
+
+  private uninstallDepositMiddleware = async (
+    appInstance: AppInstanceJson,
+    role: ProtocolRoles,
+  ): Promise<void> => {
+    const nodeSignerAddress = await this.configService.getSignerAddress();
+    // do not respond to user requests to uninstall deposit
+    // apps if node is depositor and there is an active collateralization
+    const latestState = appInstance.latestState as DepositAppState;
+    if (latestState.transfers[0].to !== nodeSignerAddress || role === ProtocolRoles.initiator) {
+      return;
+    }
+
+    const channel = await this.cfCoreStore.getChannel(appInstance.multisigAddress);
+    if (channel.activeCollateralizations[latestState.assetId]) {
+      throw new Error(`Cannot uninstall deposit app with active collateralization`);
+    }
+    return;
+  };
+
+  private uninstallMiddleware = async (cxt: UninstallMiddlewareContext): Promise<void> => {
     const { appInstance, role } = cxt;
     const appDef = appInstance.appInterface.addr;
 
-    const contractAddresses = await this.configService.getContractAddresses();
-    const nodeSignerAddress = await this.configService.getSignerAddress();
+    const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
 
-    switch (appDef) {
-      case contractAddresses.DepositApp: {
-        // do not respond to user requests to uninstall deposit
-        // apps if node is depositor and there is an active collateralization
-        const latestState = appInstance.latestState as DepositAppState;
-        if (latestState.transfers[0].to !== nodeSignerAddress || role === ProtocolRoles.initiator) {
-          return;
-        }
+    if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo.name)) {
+      return this.uninstallTransferMiddleware(appInstance, role);
+    }
 
-        const channel = await this.cfCoreStore.getChannel(appInstance.multisigAddress);
-        if (channel.activeCollateralizations[latestState.assetId]) {
-          throw new Error(`Cannot uninstall deposit app with active collateralization`);
-        }
-        return;
-      }
-      default: {
-        // middleware for app not configured
-        return;
-      }
+    if (appRegistryInfo.name === DepositAppName) {
+      return this.uninstallDepositMiddleware(appInstance, role);
     }
   };
 

@@ -1,6 +1,8 @@
-import { BigNumber } from "ethers/utils";
+import { utils } from "ethers";
 
 import { isBN, isBNJson, getBigNumberError, getBigNumberishError } from "./bigNumbers";
+
+const { BigNumber } = utils;
 
 const TEST_BN = new BigNumber(1);
 const TEST_BN_JSON_1 = { _hex: "0x01" };

@@ -1,7 +1,6 @@
 import { IConnextClient, Contract, RebalanceProfile } from "@connext/types";
 import { getRandomBytes32, toBN } from "@connext/utils";
-import { AddressZero, One, Two } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import { constants, utils } from "ethers";
 import { before, describe } from "mocha";
 import { Client } from "ts-nats";
 
@@ -9,6 +8,9 @@ import { createClient, fundChannel, asyncTransferAsset, expect } from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 import { getNatsClient } from "../util/nats";
 import { ERC20 } from "@connext/contracts";
+
+const { AddressZero, One, Two } = constants;
+const { bigNumberify } = utils;
 
 describe("Reclaim", () => {
   let clientA: IConnextClient;

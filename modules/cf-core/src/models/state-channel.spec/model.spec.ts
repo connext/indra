@@ -1,14 +1,16 @@
 import { StateChannelJSON } from "@connext/types";
 import { bigNumberifyJson, getRandomAddress, getRandomBytes32, toBN } from "@connext/utils";
-import { getAddress, BigNumberish } from "ethers/utils";
+import { utils, constants } from "ethers";
 
 import { getRandomContractAddresses } from "../../testing/mocks";
 
 import { StateChannel } from "../state-channel";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
-import { AddressZero } from "ethers/constants";
 import { FreeBalanceClass } from "../free-balance";
 import { flipTokenIndexedBalances } from "../utils";
+
+const { getAddress } = utils;
+const { AddressZero } = constants;
 
 describe("StateChannel", () => {
   test("should be able to instantiate", () => {
@@ -89,7 +91,10 @@ describe("StateChannel", () => {
           appResponderAssetId = AddressZero; // channel initiator
         });
 
-        const runTest = (initiatorDeposit: BigNumberish, responderDeposit: BigNumberish) => {
+        const runTest = (
+          initiatorDeposit: utils.BigNumberish,
+          responderDeposit: utils.BigNumberish,
+        ) => {
           const balanceDecrements = {
             [appInitiatorAssetId]: {
               [appInitiator]: toBN(initiatorDeposit),

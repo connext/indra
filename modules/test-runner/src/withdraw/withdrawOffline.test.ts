@@ -8,8 +8,7 @@ import {
   ProtocolParams,
 } from "@connext/types";
 import { getRandomChannelSigner, delay } from "@connext/utils";
-import { BigNumber } from "ethers/utils";
-import { AddressZero } from "ethers/constants";
+import { constants, utils } from "ethers";
 import {
   ClientTestMessagingInputOpts,
   createClient,
@@ -28,13 +27,15 @@ import {
 } from "../util";
 import { addressBook } from "@connext/contracts";
 
+const { AddressZero } = constants;
+
 describe("Withdraw offline tests", () => {
   let signer: IChannelSigner;
   const addr = addressBook[4447].WithdrawApp.address;
 
   const createAndFundChannel = async (
     messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
-    amount: BigNumber = ETH_AMOUNT_SM,
+    amount: utils.BigNumber = ETH_AMOUNT_SM,
     assetId: string = AddressZero,
   ): Promise<IConnextClient> => {
     const client = await createClientWithMessagingLimits({
@@ -61,8 +62,8 @@ describe("Withdraw offline tests", () => {
     await new Promise(async (resolve, reject) => {
       client.once(event, (msg) => {
         try {
-          expect(msg.params).to.be.an("object");
-          expect(msg.error).to.include(error);
+          expect((msg as any).params).to.be.an("object");
+          expect((msg as any).error).to.include(error);
           return resolve(msg);
         } catch (e) {
           return reject(e.message);
@@ -82,6 +83,8 @@ describe("Withdraw offline tests", () => {
   const recreateClientAndRetryWithdraw = async (client: IConnextClient, withdrawParams: any) => {
     const { amount, assetId } = withdrawParams;
     await client.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
     const newClient = await createClient({ signer, store: client.store });
     // Check that client can recover and continue
     await withdrawFromChannel(newClient, amount, assetId);
@@ -184,7 +187,7 @@ describe("Withdraw offline tests", () => {
       }),
       // make sure the onchain tx was submitted successfully
       new Promise(async (resolve) => {
-        ethProvider.on(client.multisigAddress, (balance: BigNumber) => {
+        ethProvider.on(client.multisigAddress, (balance: utils.BigNumber) => {
           if (!balance.eq(startingBalance)) {
             resolve();
           }

@@ -7,13 +7,15 @@ import {
 } from "@connext/types";
 import { bigNumberifyJson } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { HashZero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 import { HashlockTransferRepository } from "./hashlockTransfer.repository";
+
+const { HashZero } = constants;
 
 const appStatusesToHashLockTransferStatus = (
   currentBlockNumber: number,

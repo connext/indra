@@ -8,16 +8,23 @@ import {
   ProtocolRoles,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime, toBN, stringify } from "@connext/utils";
-import { defaultAbiCoder, keccak256 } from "ethers/utils";
+import {
+  appIdentityToHash,
+  getSignerAddressFromPublicIdentifier,
+  logTime,
+  stringify,
+  toBN,
+} from "@connext/utils";
+import { utils } from "ethers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import { AppInstance } from "../models";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
-import { appIdentityToHash } from "../utils";
 
 import { assertIsValidSignature } from "./utils";
+
+const { defaultAbiCoder, keccak256 } = utils;
 
 const protocol = ProtocolNames.propose;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;

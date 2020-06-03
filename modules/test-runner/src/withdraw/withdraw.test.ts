@@ -1,11 +1,6 @@
 import { MinimumViableMultisig } from "@connext/contracts";
-import {
-  IConnextClient,
-  BigNumberish,
-  CONVENTION_FOR_ETH_ASSET_ID,
-} from "@connext/types";
-import { Wallet, Contract } from "ethers";
-import { AddressZero, Zero } from "ethers/constants";
+import { IConnextClient, BigNumberish, CONVENTION_FOR_ETH_ASSET_ID } from "@connext/types";
+import { Wallet, Contract, constants } from "ethers";
 
 import {
   createClient,
@@ -21,6 +16,8 @@ import {
   getNatsClient,
 } from "../util";
 import { Client } from "ts-nats";
+
+const { AddressZero } = constants;
 
 // TODO: some withdrawal tests are skipped because of this issue: https://github.com/connext/indra/issues/1186
 describe("Withdrawal", () => {
@@ -107,8 +104,8 @@ describe("Withdrawal", () => {
 
     await Promise.all([
       requestCollateral(client, AddressZero, true),
-      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero)
-    ])
+      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero),
+    ]);
   });
 
   describe("client tries to withdraw while it has active deposit rights", () => {

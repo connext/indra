@@ -4,7 +4,7 @@ import { EntityRepository, Repository } from "typeorm";
 
 import { SetStateCommitment } from "./setStateCommitment.entity";
 import { AppType } from "../appInstance/appInstance.entity";
-import { BigNumber } from "ethers/utils";
+import { utils } from "ethers";
 
 export const setStateToJson = (entity: SetStateCommitment): SetStateCommitmentJSON => {
   return {
@@ -44,7 +44,7 @@ export class SetStateCommitmentRepository extends Repository<SetStateCommitment>
 
   findByAppIdentityHashAndVersionNumber(
     appIdentityHash: string,
-    versionNumber: BigNumber,
+    versionNumber: utils.BigNumber,
   ): Promise<SetStateCommitment | undefined> {
     return this.createQueryBuilder("set_state")
       .leftJoinAndSelect("set_state.app", "app")

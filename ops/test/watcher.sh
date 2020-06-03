@@ -47,7 +47,7 @@ docker run \
   --network="$network" \
   --rm \
   --tmpfs="/data" \
-  trufflesuite/ganache-cli:v6.7.0 \
+  trufflesuite/ganache-cli:v6.9.1 \
     --db="/data" \
     --defaultBalanceEther="10000" \
     --gasLimit="9000000000" \

@@ -4,9 +4,11 @@ import {
   getSignerAddressFromPublicIdentifier,
   recoverAddressFromChannelMessage,
 } from "@connext/utils";
-import { HashZero, Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
+
+const { HashZero, Zero } = constants;
 
 export const validateWithdrawApp = async (params: ProtocolParams.Propose) => {
   const { responderDeposit, initiatorDeposit, initiatorIdentifier, responderIdentifier } = params;
@@ -50,7 +52,7 @@ export const validateWithdrawApp = async (params: ProtocolParams.Propose) => {
     );
   }
 
-  let recovered = await recoverAddressFromChannelMessage(
+  const recovered = await recoverAddressFromChannelMessage(
     initialState.data,
     initialState.signatures[0],
   );

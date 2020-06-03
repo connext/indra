@@ -13,7 +13,6 @@ registry=$(shell cat $(dir)/package.json | grep '"registry":' | head -n 1 | cut 
 cwd=$(shell pwd)
 commit=$(shell git rev-parse HEAD | head -c 8)
 release=$(shell cat package.json | grep '"version"' | head -n 1 | cut -d '"' -f 4)
-solc_version=$(shell cat modules/contracts/package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # version that will be tested against for backwards compatibility checks
 backwards_compatible_version=$(shell cat package.json | grep '"backwardsCompatibleWith"' | head -n 1 | cut -d '"' -f 4)
@@ -94,7 +93,8 @@ clean: stop
 	rm -rf node_modules/@connext modules/*/node_modules/@connext
 	rm -rf node_modules/@walletconnect modules/*/node_modules/@walletconnect
 	rm -rf modules/*/node_modules/*/.git
-	rm -rf modules/*/build modules/*/dist docs/build
+	rm -rf modules/*/node_modules/.bin
+	rm -rf modules/contracts/artifacts modules/*/build modules/*/dist docs/build
 	rm -rf modules/*/.*cache* modules/*/node_modules/.cache modules/contracts/cache/*.json
 
 quick-reset:
@@ -213,7 +213,7 @@ watch-node: node
 
 builder: $(shell find ops/builder)
 	$(log_start)
-	docker build --file ops/builder/Dockerfile --build-arg SOLC_VERSION=$(solc_version) $(image_cache) --tag $(project)_builder ops/builder
+	docker build --file ops/builder/Dockerfile $(image_cache) --tag $(project)_builder ops/builder
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 node-modules: builder package.json $(shell ls modules/*/package.json)
@@ -328,7 +328,7 @@ database: $(shell find ops/database $(find_options))
 
 ethprovider: contracts $(shell find modules/contracts/ops $(find_options))
 	$(log_start)
-	docker build --file modules/contracts/ops/Dockerfile $(image_cache) --tag $(project)_ethprovider .
+	docker build --file modules/contracts/ops/Dockerfile $(image_cache) --tag $(project)_ethprovider modules/contracts
 	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 

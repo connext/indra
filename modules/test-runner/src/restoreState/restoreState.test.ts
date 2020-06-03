@@ -1,7 +1,7 @@
 import { getLocalStore } from "@connext/store";
-import { IConnextClient, IChannelSigner, EventNames, EventPayloads } from "@connext/types";
-import { getRandomChannelSigner, stringify, toBN } from "@connext/utils";
-import { AddressZero, Zero } from "ethers/constants";
+import { IConnextClient, IChannelSigner, EventNames } from "@connext/types";
+import { getRandomChannelSigner, stringify, toBN, delay } from "@connext/utils";
+import { constants } from "ethers";
 
 import {
   expect,
@@ -14,6 +14,8 @@ import {
   getNatsClient,
 } from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
+
+const { AddressZero, Zero } = constants;
 
 describe("Restore State", () => {
   let clientA: IConnextClient;
@@ -114,18 +116,16 @@ describe("Restore State", () => {
 
     // bring clientA back online
     await new Promise(async (resolve, reject) => {
-      clientA.on(
-        EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT,
-        (msg: EventPayloads.LinkedTransferFailed) => {
-          return reject(`${clientA.publicIdentifier} failed to transfer: ${stringify(msg)}`);
-        },
-      );
+      clientA.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, (msg) => {
+        return reject(`${clientA.publicIdentifier} failed to transfer: ${stringify(msg)}`);
+      });
       clientA = await createClient({
         signer: signerA,
         id: "A2",
       });
       expect(clientA.signerAddress).to.be.eq(signerA.address);
       expect(clientA.publicIdentifier).to.be.eq(signerA.publicIdentifier);
+      await delay(5000);
       return resolve();
     });
 

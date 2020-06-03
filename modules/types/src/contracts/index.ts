@@ -1,4 +1,4 @@
-import { 
+import {
   DepositAppState,
   HashLockTransferAppAction,
   HashLockTransferAppState,
@@ -16,12 +16,21 @@ import {
   DepositAppName,
   SimpleTwoPartySwapAppName,
 } from "./apps";
+import { enumify } from "../utils";
+import { CoinTransfer } from "./funding";
 
 export * from "./adjudicator";
 export * from "./apps";
 export * from "./funding";
 export * from "./misc";
 
+export type GenericConditionalTransferAppState = {
+  coinTransfers: CoinTransfer[];
+  finalized: boolean;
+  [x: string]: any;
+};
+
+export const GenericConditionalTransferAppName = "GenericConditionalTransferApp";
 
 export const AppNames = {
   [DepositAppName]: DepositAppName,
@@ -30,6 +39,7 @@ export const AppNames = {
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
   [WithdrawAppName]: WithdrawAppName,
+  [GenericConditionalTransferAppName]: GenericConditionalTransferAppName,
 } as const;
 export type AppName = keyof typeof AppNames;
 
@@ -40,10 +50,11 @@ interface AppActionMap {
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppAction;
   [SimpleTwoPartySwapAppName]: {}; // no action
   [WithdrawAppName]: WithdrawAppAction;
+  [GenericConditionalTransferAppName]: any;
 }
 export type AppActions = {
   [P in keyof AppActionMap]: AppActionMap[P];
-}
+};
 
 interface AppStateMap {
   [DepositAppName]: DepositAppState;
@@ -52,10 +63,11 @@ interface AppStateMap {
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppState;
   [SimpleTwoPartySwapAppName]: SimpleSwapAppState;
   [WithdrawAppName]: WithdrawAppState;
+  [GenericConditionalTransferAppName]: GenericConditionalTransferAppState;
 }
 export type AppStates = {
   [P in keyof AppStateMap]: AppStateMap[P];
-}
+};
 
 export type AppAction =
   | HashLockTransferAppAction
@@ -63,10 +75,22 @@ export type AppAction =
   | SimpleSignedTransferAppAction
   | WithdrawAppAction;
 
-export type AppState = 
+export type AppState =
   | DepositAppState
   | HashLockTransferAppState
   | SimpleLinkedTransferAppState
   | SimpleSignedTransferAppState
   | SimpleSwapAppState
-  | WithdrawAppState;
+  | WithdrawAppState
+  | GenericConditionalTransferAppState;
+
+export const SupportedApplicationNames = enumify({
+  [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
+  [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
+  [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
+  [WithdrawAppName]: WithdrawAppName,
+  [HashLockTransferAppName]: HashLockTransferAppName,
+  [DepositAppName]: DepositAppName,
+});
+
+export type SupportedApplicationNames = typeof SupportedApplicationNames[keyof typeof SupportedApplicationNames];

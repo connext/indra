@@ -1,5 +1,7 @@
-import { parseEther } from "ethers/utils";
 import { ProtocolName } from "@connext/types";
+import { utils } from "ethers";
+
+const { parseEther } = utils;
 
 export const FUNDED_MNEMONICS = [
   "humble sense shrug young vehicle assault destroy cook property average silent travel",

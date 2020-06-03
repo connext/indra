@@ -1,6 +1,5 @@
 import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
-import { getAddress } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import { createAppInstanceForTest, createAppInstanceProposalForTest } from "../../testing/utils";
 import { getRandomContractAddresses } from "../../testing/mocks";
@@ -8,6 +7,9 @@ import { getRandomContractAddresses } from "../../testing/mocks";
 import { StateChannel } from "../state-channel";
 import { FreeBalanceClass } from "../free-balance";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
+
+const { WeiPerEther, Zero, AddressZero } = constants;
+const { getAddress } = utils;
 
 describe("StateChannel::uninstallApp", () => {
   const contractAddresses = getRandomContractAddresses();
@@ -72,9 +74,7 @@ describe("StateChannel::uninstallApp", () => {
     });
 
     it("should have updated balances for Alice and Bob", () => {
-      for (const amount of Object.values(
-        fb.withTokenAddress(AddressZero) || {},
-      )) {
+      for (const amount of Object.values(fb.withTokenAddress(AddressZero) || {})) {
         expect(amount).toEqual(Zero);
       }
     });

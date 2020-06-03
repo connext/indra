@@ -14,7 +14,6 @@ import {
   AppInstanceProposal,
   SignedCancelChallengeRequest,
 } from "@connext/types";
-import { defaultAbiCoder, solidityPack, keccak256 } from "ethers/utils";
 import {
   ChannelSigner,
   toBNJson,
@@ -22,10 +21,14 @@ import {
   computeCancelDisputeHash,
   toBN,
 } from "@connext/utils";
-import { One, Zero } from "ethers/constants";
-import { stateToHash } from "./utils";
 import { ConditionalTransactionCommitment, SetStateCommitment } from "@connext/contracts";
+import { constants, utils } from "ethers";
+
+import { stateToHash } from "./utils";
 import { TestNetworkContext } from "./contracts";
+
+const { One, Zero } = constants;
+const { defaultAbiCoder, solidityPack, keccak256 } = utils;
 
 export type AppWithCounterAction = {
   actionType: ActionType;

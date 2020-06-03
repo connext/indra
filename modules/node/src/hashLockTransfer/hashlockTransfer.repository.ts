@@ -1,9 +1,11 @@
 import { HashLockTransferAppName, Address, Bytes32 } from "@connext/types";
-import { HashZero } from "ethers/constants";
+import { constants } from "ethers";
 import { EntityRepository, Repository } from "typeorm";
 
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
+
+const { HashZero } = constants;
 
 @EntityRepository(AppInstance)
 export class HashlockTransferRepository extends Repository<

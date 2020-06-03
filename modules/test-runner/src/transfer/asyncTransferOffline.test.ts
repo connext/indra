@@ -29,7 +29,7 @@ import {
   env,
   SEND,
 } from "../util";
-import { BigNumber } from "ethers/utils";
+import { utils } from "ethers";
 import { Client } from "ts-nats";
 import { before } from "mocha";
 import { getRandomChannelSigner } from "@connext/utils";
@@ -38,7 +38,7 @@ import { getMemoryStore } from "@connext/store";
 const fundForTransfers = async (
   receiverClient: IConnextClient,
   senderClient: IConnextClient,
-  amount: BigNumber = TOKEN_AMOUNT,
+  amount: utils.BigNumber = TOKEN_AMOUNT,
   assetId?: string,
 ): Promise<void> => {
   // make sure the tokenAddress is set
@@ -67,6 +67,8 @@ const recreateReceiverAndRetryTransfer = async (
 ) => {
   const { amount, assetId, nats } = transferParams;
   await receiverClient.messaging.disconnect();
+  // Add delay to make sure messaging properly disconnects
+  await delay(1000);
   const newClient = await createClient({ signer: receiverSigner, store: receiverStore });
 
   // Check that client can recover and continue

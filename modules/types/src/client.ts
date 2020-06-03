@@ -4,7 +4,7 @@ import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
 import { Address, Bytes32, DecString, PublicIdentifier } from "./basic";
 import { ChannelProviderConfig, IChannelProvider } from "./channelProvider";
 import { IChannelSigner } from "./crypto";
-import { EventName } from "./events";
+import { EventName, EventPayload } from "./events";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import { NodeResponses } from "./node";
@@ -53,9 +53,22 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // LISTENER METHODS
-  on(event: EventName | MethodName, callback: (...args: any[]) => void): void;
-  once(event: EventName | MethodName, callback: (...args: any[]) => void): void;
-  emit(event: EventName | MethodName, data: any): boolean;
+  on<T extends EventName>(
+    event: T,
+    callback: (payload: EventPayload[T]) => void | Promise<void>,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ): void;
+  once<T extends EventName>(
+    event: T,
+    callback: (payload: EventPayload[T]) => void | Promise<void>,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ): void;
+  waitFor<T extends EventName>(
+    event: T,
+    timeout: number,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ): Promise<EventPayload[T]>;
+  emit<T extends EventName>(event: T, payload: EventPayload[T]): boolean;
   off(): void;
 
   ///////////////////////////////////
@@ -77,7 +90,7 @@ export interface IConnextClient {
   resolveCondition(params: PublicParams.ResolveCondition): Promise<PublicResults.ResolveCondition>;
   restoreState(): Promise<void>;
   swap(params: PublicParams.Swap): Promise<PublicResults.Swap>;
-  transfer(params: PublicParams.Transfer): Promise<PublicResults.LinkedTransfer>;
+  transfer(params: PublicParams.Transfer): Promise<PublicResults.ConditionalTransfer>;
   withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw>;
 
   ///////////////////////////////////
@@ -114,7 +127,9 @@ export interface IConnextClient {
   getStateChannel(): Promise<MethodResults.GetStateChannel>;
   getFreeBalance(assetId?: Address): Promise<MethodResults.GetFreeBalanceState>;
   getAppInstances(): Promise<AppInstanceJson[]>;
-  getAppInstance(appIdentityHash: Bytes32): Promise<MethodResults.GetAppInstanceDetails>;
+  getAppInstance(
+    appIdentityHash: Bytes32,
+  ): Promise<MethodResults.GetAppInstanceDetails | undefined>;
   getProposedAppInstances(
     multisigAddress?: Address,
   ): Promise<MethodResults.GetProposedAppInstances | undefined>;

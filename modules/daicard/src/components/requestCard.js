@@ -1,12 +1,14 @@
 import { Currency } from "@connext/utils";
 import { Button, Grid, TextField, Typography, withStyles } from "@material-ui/core";
-import { Zero } from "ethers/constants";
+import { constants } from "ethers";
 import React, { useEffect, useState } from "react";
 
 import { Copyable } from "./copyable";
 import { QRGenerate } from "./qrCode";
 
-const style = withStyles(theme => ({
+const { Zero } = constants;
+
+const style = withStyles((theme) => ({
   icon: {
     width: "40px",
     height: "40px",
@@ -17,7 +19,7 @@ const zero = "0.0";
 const generateQrUrl = (amount, publicId) =>
   `${window.location.origin}/send?amount=${amount || zero}&recipient=${publicId}`;
 
-export const RequestCard = style(props => {
+export const RequestCard = style((props) => {
   const { maxDeposit, publicId } = props;
 
   const [amount, setAmount] = useState({ value: Currency.DAI(zero), display: "0" });
@@ -25,7 +27,7 @@ export const RequestCard = style(props => {
 
   useEffect(() => setQrUrl(generateQrUrl(amount.value, publicId)), [amount.value, publicId]);
 
-  const updateAmountHandler = input => {
+  const updateAmountHandler = (input) => {
     let value, error;
     try {
       value = Currency.DAI(input);
@@ -89,7 +91,7 @@ export const RequestCard = style(props => {
           value={amount.display}
           type="number"
           variant="outlined"
-          onChange={evt => updateAmountHandler(evt.target.value)}
+          onChange={(evt) => updateAmountHandler(evt.target.value)}
           error={!!amount.error}
           helperText={amount.error}
         />

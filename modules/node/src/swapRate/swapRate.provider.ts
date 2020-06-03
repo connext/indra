@@ -1,12 +1,14 @@
 import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { getAddress } from "ethers/utils";
+import { utils } from "ethers";
 
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, SwapRateProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { SwapRateService } from "./swapRate.service";
+
+const { getAddress } = utils;
 
 export class SwapRateMessaging extends AbstractMessagingProvider {
   constructor(

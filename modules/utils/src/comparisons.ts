@@ -1,6 +1,8 @@
-import { BigNumberish, bigNumberify } from "ethers/utils";
+import { utils } from "ethers";
 
 import { getBigNumberishError } from "./bigNumbers";
+
+const { bigNumberify } = utils;
 
 // this contains all of the bn related validation
 // all functions in this library will return `undefined` if the conditions are
@@ -13,7 +15,7 @@ import { getBigNumberishError } from "./bigNumbers";
 export const notBigNumberish = getBigNumberishError;
 
 // return string when value is not greater than ceiling
-export const notGreaterThan = (value: any, ceil: BigNumberish): string | undefined => {
+export const notGreaterThan = (value: any, ceil: utils.BigNumberish): string | undefined => {
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
   }
@@ -22,7 +24,10 @@ export const notGreaterThan = (value: any, ceil: BigNumberish): string | undefin
     : `Value (${value.toString()}) is not greater than ${ceil.toString()}`;
 };
 
-export const notGreaterThanOrEqualTo = (value: any, ceil: BigNumberish): string | undefined => {
+export const notGreaterThanOrEqualTo = (
+  value: any,
+  ceil: utils.BigNumberish,
+): string | undefined => {
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
   }
@@ -32,7 +37,7 @@ export const notGreaterThanOrEqualTo = (value: any, ceil: BigNumberish): string 
 };
 
 // return string when value is not less than floor
-export const notLessThan = (value: any, floor: BigNumberish): string | undefined => {
+export const notLessThan = (value: any, floor: utils.BigNumberish): string | undefined => {
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
   }
@@ -41,7 +46,7 @@ export const notLessThan = (value: any, floor: BigNumberish): string | undefined
     : `Value (${value.toString()}) is not less than ${floor.toString()}`;
 };
 
-export const notLessThanOrEqualTo = (value: any, floor: BigNumberish): string | undefined => {
+export const notLessThanOrEqualTo = (value: any, floor: utils.BigNumberish): string | undefined => {
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
   }

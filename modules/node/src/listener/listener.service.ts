@@ -9,7 +9,7 @@ import {
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -20,6 +20,8 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { ChannelRepository } from "../channel/channel.repository";
+
+const { AddressZero } = constants;
 
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
@@ -116,7 +118,7 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(PROPOSE_INSTALL_EVENT, data);
         await this.appRegistryService.installOrReject(
           data.data.appInstanceId,
-          data.data.params,
+          data.data.params as any,
           data.from,
         );
       },
@@ -197,7 +199,7 @@ export default class ListenerService implements OnModuleInit {
     try {
       await this.channelService.rebalance(channel, assetIdResponder, RebalanceType.RECLAIM);
     } catch (e) {
-      this.log.error(`Caught error rebalancing channel ${channel.multisigAddress}: ${e.message}`);
+      this.log.error(`Caught error rebalancing channel ${channel.multisigAddress}: ${e.stack}`);
     }
   }
 

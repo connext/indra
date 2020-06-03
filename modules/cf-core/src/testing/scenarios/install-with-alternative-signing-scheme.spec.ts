@@ -1,8 +1,6 @@
 import { ChannelSigner } from "@connext/utils";
 import { CONVENTION_FOR_ETH_ASSET_ID, ProposeMessage } from "@connext/types";
-import { One } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
-import { BigNumber } from "ethers/utils";
+import { providers, constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
@@ -20,6 +18,8 @@ import {
   newWallet,
 } from "../utils";
 
+const { One } = constants;
+
 expect.extend({ toBeLt });
 
 describe(`Uses a provided signing key generation function to sign channel state updates`, () => {
@@ -34,7 +34,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
     () => {
       beforeEach(async () => {
         const wallet = newWallet(global["wallet"]);
-        const provider = wallet.provider as JsonRpcProvider;
+        const provider = wallet.provider as providers.JsonRpcProvider;
         const messagingService = new MemoryMessagingService();
         const nodeConfig = { STORE_KEY_PREFIX: `test` };
 
@@ -71,10 +71,10 @@ describe(`Uses a provided signing key generation function to sign channel state 
       it(`install app with ETH`, async (done) => {
         await collateralizeChannel(multisigAddress, nodeA, nodeB);
 
-        let preInstallETHBalanceNodeA: BigNumber;
-        let postInstallETHBalanceNodeA: BigNumber;
-        let preInstallETHBalanceNodeB: BigNumber;
-        let postInstallETHBalanceNodeB: BigNumber;
+        let preInstallETHBalanceNodeA: utils.BigNumber;
+        let postInstallETHBalanceNodeA: utils.BigNumber;
+        let preInstallETHBalanceNodeB: utils.BigNumber;
+        let postInstallETHBalanceNodeB: utils.BigNumber;
 
         nodeB.on(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
           [preInstallETHBalanceNodeA, preInstallETHBalanceNodeB] = await getBalances(

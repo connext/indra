@@ -1,21 +1,17 @@
 import { Ctx } from "evt";
+import { providers } from "ethers";
 
 import { AppInstanceProposal } from "./app";
 import { Address, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
 import {
   ConditionalTransferTypes,
-  CreatedHashLockTransferMeta,
-  CreatedLinkedTransferMeta,
-  CreatedSignedTransferMeta,
-  UnlockedLinkedTransferMeta,
-  UnlockedHashLockTransferMeta,
-  UnlockedSignedTransferMeta,
+  CreatedConditionalTransferMetaMap,
+  UnlockedConditionalTransferMetaMap,
 } from "./transfers";
 import { ProtocolParams } from "./protocol";
 import { ProtocolMessageData } from "./messaging";
 import { PublicParams } from "./public";
 import { MinimalTransaction } from "./commitments";
-import { TransactionResponse } from "ethers/providers";
 import { StateChannelJSON } from "./state";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
@@ -27,19 +23,14 @@ const CONDITIONAL_TRANSFER_CREATED_EVENT = "CONDITIONAL_TRANSFER_CREATED_EVENT";
 
 export type ConditionalTransferCreatedEventData<T extends ConditionalTransferTypes> = {
   amount: BigNumber;
+  appIdentityHash: Bytes32;
   assetId: Address;
   paymentId?: Bytes32;
   sender: Address;
   recipient?: Address;
   meta: any;
   type: T;
-  transferMeta: T extends LinkedTransfer
-    ? CreatedLinkedTransferMeta
-    : T extends HashLockTransfer
-    ? CreatedHashLockTransferMeta
-    : T extends SignedTransfer
-    ? CreatedSignedTransferMeta
-    : {};
+  transferMeta: CreatedConditionalTransferMetaMap[T];
 };
 
 ////////////////////////////////////////
@@ -53,13 +44,7 @@ export type ConditionalTransferUnlockedEventData<T extends ConditionalTransferTy
   recipient?: PublicIdentifier;
   meta: any;
   type: T;
-  transferMeta: T extends LinkedTransfer
-    ? UnlockedLinkedTransferMeta
-    : T extends HashLockTransfer
-    ? UnlockedHashLockTransferMeta
-    : T extends SignedTransfer
-    ? UnlockedSignedTransferMeta
-    : {};
+  transferMeta: UnlockedConditionalTransferMetaMap[T];
 };
 
 ////////////////////////////////////////
@@ -186,7 +171,7 @@ type UpdateStateFailedEventData = {
 const WITHDRAWAL_CONFIRMED_EVENT = "WITHDRAWAL_CONFIRMED_EVENT";
 
 type WithdrawalConfirmedEventData = {
-  transaction: TransactionResponse;
+  transaction: providers.TransactionResponse;
 };
 
 ////////////////////////////////////////

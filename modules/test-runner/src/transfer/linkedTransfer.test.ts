@@ -1,17 +1,19 @@
-import { IConnextClient, ConditionalTransferTypes, PublicResults } from "@connext/types";
+import { IConnextClient, ConditionalTransferTypes } from "@connext/types";
 import { getRandomBytes32 } from "@connext/utils";
-import { AddressZero, One } from "ethers/constants";
+import { constants } from "ethers";
 
 import { expect } from "../util";
 import { AssetOptions, createClient, fundChannel } from "../util";
+
+const { AddressZero, One } = constants;
 
 describe("Linked Transfer", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
 
   beforeEach(async () => {
-    clientA = await createClient();
-    clientB = await createClient();
+    clientA = await createClient({ id: "A" });
+    clientB = await createClient({ id: "B" });
   });
 
   afterEach(async () => {
@@ -23,41 +25,41 @@ describe("Linked Transfer", () => {
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
-    const linkedTransfer = (await clientA.conditionalTransfer({
+    const linkedTransfer = await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId: getRandomBytes32(),
       preImage: getRandomBytes32(),
-    })) as PublicResults.LinkedTransfer;
+    });
     const balMiddle = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
-    expect(balBefore.sub(transfer.amount).toString()).to.be.equal(balMiddle.toString());
+    expect(balBefore.sub(transfer.amount)).to.be.equal(balMiddle);
     await clientA.resolveCondition({
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId: linkedTransfer.paymentId,
-      preImage: linkedTransfer.preImage,
+      preImage: linkedTransfer.preImage!,
     });
     const balAfter = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
-    expect(balBefore.toString()).to.be.equal(balAfter.toString());
+    expect(balBefore).to.be.equal(balAfter);
   });
 
   it("happy case: a user can redeem someone else's link payment", async () => {
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
-    const linkedTransfer = (await clientA.conditionalTransfer({
+    const linkedTransfer = await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId: getRandomBytes32(),
       preImage: getRandomBytes32(),
-    })) as PublicResults.LinkedTransfer;
+    });
     const balMiddle = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
     expect(balBefore.sub(transfer.amount).toString()).to.be.equal(balMiddle.toString());
     await clientB.resolveCondition({
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId: linkedTransfer.paymentId,
-      preImage: linkedTransfer.preImage,
+      preImage: linkedTransfer.preImage!,
     });
     const balAfter = (await clientB.getFreeBalance(transfer.assetId))[clientB.signerAddress];
     expect(transfer.amount.toString()).to.be.equal(balAfter.toString());

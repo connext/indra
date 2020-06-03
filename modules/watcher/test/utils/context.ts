@@ -16,9 +16,7 @@ import {
   IStoreService,
 } from "@connext/types";
 import { toBN, getRandomChannelSigner } from "@connext/utils";
-import { Wallet, Contract } from "ethers";
-import { One, Zero } from "ethers/constants";
-import { Interface } from "ethers/utils";
+import { Wallet, Contract, constants, utils } from "ethers";
 
 import { AppWithCounterClass, AppWithCounterAction, ActionType } from "./appWithCounter";
 import { getMemoryStore } from "@connext/store";
@@ -26,6 +24,9 @@ import { MiniFreeBalance } from "./miniFreeBalance";
 import { deployTestArtifactsToChain, mineBlock } from "./contracts";
 import { CREATE_PROXY_AND_SETUP_GAS } from "./utils";
 import { expect, verifyChallengeUpdatedEvent } from "./assertions";
+
+const { One, Zero } = constants;
+const { Interface } = utils;
 
 export type TokenIndexedBalance = { [tokenAddress: string]: CoinTransfer[] };
 export type CreatedAppInstanceOpts = {
@@ -136,7 +137,7 @@ export const setupContext = async (
     .map((app) => app.tokenIndexedBalances)
     .concat(freeBalance.balances);
 
-  let channelBalances: { [assetId: string]: BigNumber } = {};
+  const channelBalances: { [assetId: string]: BigNumber } = {};
   Object.keys(freeBalance.balances).forEach((assetId) => {
     let assetTotal = Zero;
     appBalances.forEach((tokenIndexed) => {

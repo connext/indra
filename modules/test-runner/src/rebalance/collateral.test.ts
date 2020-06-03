@@ -1,5 +1,5 @@
 import { IConnextClient } from "@connext/types";
-import { AddressZero, Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import {
   createClient,
@@ -8,6 +8,8 @@ import {
   TOKEN_AMOUNT,
   getOnchainTransactionsForChannel,
 } from "../util";
+
+const { AddressZero, Zero } = constants;
 
 describe("Collateral", () => {
   let client: IConnextClient;

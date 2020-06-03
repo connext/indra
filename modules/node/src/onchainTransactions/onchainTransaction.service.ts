@@ -1,7 +1,7 @@
 import { MinimalTransaction } from "@connext/types";
 import { stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { TransactionReceipt, TransactionResponse } from "ethers/providers";
+import { providers } from "ethers";
 
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
@@ -12,10 +12,7 @@ import { OnchainTransaction } from "./onchainTransaction.entity";
 
 const NO_TX_HASH = "no transaction hash found in tx response";
 export const MAX_RETRIES = 3;
-export const KNOWN_ERRORS = [
-  "the tx doesn't have the correct nonce",
-  NO_TX_HASH,
-];
+export const KNOWN_ERRORS = ["the tx doesn't have the correct nonce", NO_TX_HASH];
 
 @Injectable()
 export class OnchainTransactionService {
@@ -30,7 +27,7 @@ export class OnchainTransactionService {
   async sendWithdrawalCommitment(
     channel: Channel,
     transaction: MinimalTransaction,
-  ): Promise<TransactionReceipt> {
+  ): Promise<providers.TransactionReceipt> {
     const [receipt, tx] = await this.sendTransaction(transaction);
     await this.onchainTransactionRepository.addReclaim(tx, channel);
     return receipt;
@@ -39,7 +36,7 @@ export class OnchainTransactionService {
   async sendWithdrawal(
     channel: Channel,
     transaction: MinimalTransaction,
-  ): Promise<TransactionReceipt> {
+  ): Promise<providers.TransactionReceipt> {
     const [receipt, tx] = await this.sendTransaction(transaction);
     await this.onchainTransactionRepository.addWithdrawal(tx, channel);
     return receipt;
@@ -48,7 +45,7 @@ export class OnchainTransactionService {
   async sendDeposit(
     channel: Channel,
     transaction: MinimalTransaction,
-  ): Promise<TransactionReceipt> {
+  ): Promise<providers.TransactionReceipt> {
     const [receipt, tx] = await this.sendTransaction(transaction);
     await this.onchainTransactionRepository.addCollateralization(tx, channel);
     return receipt;
@@ -60,13 +57,13 @@ export class OnchainTransactionService {
 
   private async sendTransaction(
     transaction: MinimalTransaction,
-  ): Promise<[TransactionReceipt, TransactionResponse]> {
+  ): Promise<[providers.TransactionReceipt, providers.TransactionResponse]> {
     const wallet = this.configService.getSigner();
-    let errors: {[k: number]: string} = [];
+    const errors: { [k: number]: string } = [];
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
       try {
         this.log.info(`Attempt ${attempt}/${MAX_RETRIES} to send transaction to ${transaction.to}`);
-        const tx = await wallet.sendTransaction({ 
+        const tx = await wallet.sendTransaction({
           ...transaction,
           nonce: await wallet.provider.getTransactionCount(await wallet.getAddress()),
         });
@@ -78,13 +75,15 @@ export class OnchainTransactionService {
         return [receipt, tx];
       } catch (e) {
         errors[attempt] = e.message;
-        const knownErr = KNOWN_ERRORS.find(err => e.message.includes(err));
+        const knownErr = KNOWN_ERRORS.find((err) => e.message.includes(err));
         if (!knownErr) {
           this.log.error(`Transaction failed to send with unknown error: ${e.message}`);
           throw new Error(e.stack || e.message);
         }
         // known error, retry
-        this.log.warn(`Sending transaction attempt ${attempt}/${MAX_RETRIES} failed: ${e.message}. Retrying.`);
+        this.log.warn(
+          `Sending transaction attempt ${attempt}/${MAX_RETRIES} failed: ${e.message}. Retrying.`,
+        );
       }
     }
     throw new Error(`Failed to send transaction (errors indexed by attempt): ${stringify(errors)}`);

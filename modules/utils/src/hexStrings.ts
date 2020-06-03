@@ -1,4 +1,6 @@
-import { hexDataLength, hexlify, isHexString, getAddress, randomBytes } from "ethers/utils";
+import { utils } from "ethers";
+
+const { hexDataLength, hexlify, isHexString, getAddress, randomBytes } = utils;
 
 ////////////////////////////////////////
 // Validators
@@ -42,5 +44,5 @@ export const isValidBytes32 = (value: any): boolean => !getBytes32Error(value);
 ////////////////////////////////////////
 // Generators
 
-export const getRandomAddress = () => hexlify(randomBytes(20));
+export const getRandomAddress = () => getAddress(hexlify(randomBytes(20)));
 export const getRandomBytes32 = () => hexlify(randomBytes(32));

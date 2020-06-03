@@ -1,24 +1,33 @@
 import PQueue from "p-queue";
-import * as utils from "ethers/utils";
-import { ConditionalTransferTypes, IConnextClient, BigNumber } from "@connext/types";
-import { delay, ColorfulLogger } from "@connext/utils";
-import { AddressZero } from "ethers/constants";
-import { before } from "mocha";
+import { constants, utils } from "ethers";
+import {
+  ConditionalTransferTypes,
+  IConnextClient,
+  BigNumber,
+  PublicParams,
+  Address,
+} from "@connext/types";
+import { delay, ColorfulLogger, getTestVerifyingContract } from "@connext/utils";
 
 import { createClient, fundChannel } from "../util";
 
-const generatePaymentId = () => utils.hexlify(utils.randomBytes(32));
+const { AddressZero } = constants;
+const { hexlify, randomBytes, parseEther } = utils;
 
-const TRANSFER_AMOUNT = utils.parseEther("0.00001");
-const DEPOSIT_AMOUNT = utils.parseEther("0.1");
+const generatePaymentId = () => hexlify(randomBytes(32));
+
+const TRANSFER_AMOUNT = parseEther("0.00001");
+const DEPOSIT_AMOUNT = parseEther("0.1");
 
 describe("Concurrent transfers", async () => {
   let channel: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
+  let chainId: number;
+  let verifyingContract: Address;
   let subgraphChannels: { signer: string; publicIdentifier: string }[];
 
-  before(async () => {
+  beforeEach(async () => {
     // let wallet = Wallet.fromMnemonic(
     //   "favorite plunge fatigue crucial decorate bottom hour veteran embark gravity devote business",
     // );
@@ -31,16 +40,16 @@ describe("Concurrent transfers", async () => {
     indexerA = await createClient();
     indexerB = await createClient();
 
+    chainId = (await indexerA.ethProvider.getNetwork()).chainId;
+    verifyingContract = getTestVerifyingContract();
+
     console.log("Signer address:", channel.signerAddress);
 
     console.log("Deposit into state channel");
     await fundChannel(channel, DEPOSIT_AMOUNT, AddressZero);
     const balance: BigNumber = (await channel.getFreeBalance())[channel.signerAddress];
     console.log("Free balance:", balance.toString());
-    console.log(
-      "Total # of payments possible: ",
-      balance.div(utils.parseEther("0.00001")).toString(),
-    );
+    console.log("Total # of payments possible: ", balance.div(parseEther("0.00001")).toString());
 
     subgraphChannels = [
       {
@@ -65,14 +74,15 @@ describe("Concurrent transfers", async () => {
       count++;
       console.log(`${data.paymentId} Payment created: ${count}`);
     });
-    let queue = new PQueue({ concurrency: 10 });
-    let sendLoop = async () => {
+    const queue = new PQueue({ concurrency: 10 });
+    const sendLoop = async () => {
       while (true) {
-        for (let subgraphChannel of subgraphChannels) {
-          let recipient = subgraphChannel.publicIdentifier;
-          let paymentId = generatePaymentId();
+        for (const subgraphChannel of subgraphChannels) {
+          const recipient = subgraphChannel.publicIdentifier;
+          const paymentId = generatePaymentId();
 
           // Send payment and query
+          // eslint-disable-next-line no-loop-func
           queue.add(async () => {
             console.log(paymentId, "Send payment");
             try {
@@ -80,11 +90,13 @@ describe("Concurrent transfers", async () => {
                 paymentId,
                 amount: TRANSFER_AMOUNT,
                 conditionType: ConditionalTransferTypes.SignedTransfer,
-                signer: subgraphChannel.signer,
+                signerAddress: subgraphChannel.signer,
+                chainId,
+                verifyingContract,
                 recipient,
                 assetId: AddressZero,
                 meta: { info: "Query payment" },
-              });
+              } as PublicParams.SignedTransfer);
             } catch (e) {
               console.error(`Failed to send payment: ${e}`);
             }
