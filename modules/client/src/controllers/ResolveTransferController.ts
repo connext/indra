@@ -9,9 +9,10 @@ import {
   SimpleSignedTransferAppAction,
   SimpleLinkedTransferAppAction,
 } from "@connext/types";
+import { stringify } from "@connext/utils";
+import { utils } from "ethers";
 
 import { AbstractController } from "./AbstractController";
-import { stringify } from "@connext/utils";
 
 export class ResolveTransferController extends AbstractController {
   public resolveTransfer = async (
@@ -21,21 +22,38 @@ export class ResolveTransferController extends AbstractController {
     this.log.info(`[${paymentId}] resolveTransfer started: ${stringify(params)}`);
 
     const installedApps = await this.connext.getAppInstances();
-    const existingApp = installedApps.find(
+    const existingReceiverApp = installedApps.find(
       (app) =>
         app.appInterface.addr ===
           this.connext.appRegistry.find((app) => app.name === conditionType).appDefinitionAddress &&
-        app.meta.paymentId === paymentId,
+        app.meta.paymentId === paymentId &&
+        (app.latestState as GenericConditionalTransferAppState).coinTransfers[1].to ===
+          this.connext.signerAddress,
     );
-    let appIdentityHash = existingApp?.identityHash;
-    let amount = (existingApp?.latestState as GenericConditionalTransferAppState)?.coinTransfers[0]
-      .amount;
-    let assetId = existingApp?.singleAssetTwoPartyCoinTransferInterpreterParams?.tokenAddress;
-    let finalized = (existingApp?.latestState as GenericConditionalTransferAppState)?.finalized;
-    let meta = existingApp?.meta;
+
+    let appIdentityHash: string;
+    let amount: utils.BigNumber;
+    let assetId: string;
+    let finalized: boolean;
+    let meta: any;
+
+    if (existingReceiverApp) {
+      this.log.info(
+        `[${paymentId}] Found existing transfer app, proceeding with ${appIdentityHash}: ${JSON.stringify(
+          existingReceiverApp.latestState,
+        )}`,
+      );
+      appIdentityHash = existingReceiverApp.identityHash;
+      amount = (existingReceiverApp.latestState as GenericConditionalTransferAppState)
+        .coinTransfers[0].amount;
+      assetId = existingReceiverApp.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
+      finalized = (existingReceiverApp.latestState as GenericConditionalTransferAppState).finalized;
+      meta = existingReceiverApp.meta;
+    }
+
     try {
       const transferType = getTransferTypeFromAppName(conditionType);
-      if (!existingApp) {
+      if (!existingReceiverApp) {
         if (transferType === "RequireOnline") {
           throw new Error(`Receiver app has not been installed`);
         }
@@ -58,10 +76,6 @@ export class ResolveTransferController extends AbstractController {
           // @ts-ignore
           return;
         }
-      } else {
-        this.log.info(
-          `[${paymentId}] Found existing transfer app, proceeding with ${appIdentityHash}`,
-        );
       }
 
       let action:
