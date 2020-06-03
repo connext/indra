@@ -14,7 +14,6 @@ import {
   SimpleLinkedTransferAppState,
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
-  UninstallMessage,
   WithdrawAppName,
   WithdrawAppState,
   AppAction,
@@ -31,8 +30,9 @@ import {
   IBasicEventEmitter,
   ProtocolEventMessage,
   ProtocolParams,
+  AppInstanceJson,
 } from "@connext/types";
-import { bigNumberifyJson, stringify, TypedEmitter, appIdentityToHash } from "@connext/utils";
+import { bigNumberifyJson, stringify, TypedEmitter } from "@connext/utils";
 import { constants } from "ethers";
 
 import { ConnextClient } from "./connext";
@@ -144,10 +144,12 @@ export class ConnextListener {
       this.emitAndLog(SYNC_FAILED_EVENT, msg.data);
     },
     UNINSTALL_EVENT: async (msg): Promise<void> => {
+      const { latestState } = msg.data.uninstalledApp;
       await this.handleAppUninstall(
         msg.data.appIdentityHash,
-        msg.data.preState as AppState,
+        latestState as AppState,
         msg.data.action as AppAction,
+        msg.data.uninstalledApp,
       );
       this.emitAndLog(UNINSTALL_EVENT, msg.data);
     },
@@ -428,8 +430,10 @@ export class ConnextListener {
     appIdentityHash: string,
     state: AppState,
     action?: AppAction,
+    appContext?: AppInstanceJson,
   ): Promise<void> => {
-    const { appInstance } = (await this.connext.getAppInstance(appIdentityHash)) || {};
+    const appInstance =
+      appContext || (await this.connext.getAppInstance(appIdentityHash)).appInstance;
     if (!appInstance) {
       this.log.info(
         `Could not find app instance, this likely means the app has been uninstalled, doing nothing`,
