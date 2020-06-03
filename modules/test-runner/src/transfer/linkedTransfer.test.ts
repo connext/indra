@@ -21,7 +21,7 @@ describe.only("Linked Transfer", () => {
     await clientB.messaging.disconnect();
   });
 
-  it.skip("happy case: a user can redeem their own link payment", async () => {
+  it("happy case: a user can redeem their own link payment", async () => {
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const balBefore = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
@@ -33,14 +33,14 @@ describe.only("Linked Transfer", () => {
       preImage: getRandomBytes32(),
     });
     const balMiddle = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
-    expect(balBefore.sub(transfer.amount).toString()).to.be.equal(balMiddle.toString());
+    expect(balBefore.sub(transfer.amount)).to.be.equal(balMiddle);
     await clientA.resolveCondition({
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId: linkedTransfer.paymentId,
       preImage: linkedTransfer.meta.preImage,
     });
     const balAfter = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
-    expect(balBefore.toString()).to.be.equal(balAfter.toString());
+    expect(balBefore).to.be.equal(balAfter);
   });
 
   it("happy case: a user can redeem someone else's link payment", async () => {
