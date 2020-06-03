@@ -143,6 +143,7 @@ type UninstallEventData = {
   appIdentityHash: Bytes32;
   multisigAddress: string;
   uninstalledApp: AppInstanceJson;
+  action?: SolidityValueType;
 };
 
 const UNINSTALL_FAILED_EVENT = "UNINSTALL_FAILED_EVENT";
