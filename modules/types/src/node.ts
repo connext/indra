@@ -8,7 +8,13 @@ import { ContractAddresses } from "./contracts";
 import { MethodResults } from "./methods";
 import { PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
-import { LinkedTransferStatus, HashLockTransferStatus, SignedTransferStatus } from "./transfers";
+import {
+  LinkedTransferStatus,
+  HashLockTransferStatus,
+  SignedTransferStatus,
+  CreatedConditionalTransferMetaMap,
+  ConditionalTransferTypes,
+} from "./transfers";
 import { Collateralizations, RebalanceProfile } from "./misc";
 
 type GetRebalanceProfileResponse = RebalanceProfile;
@@ -102,6 +108,7 @@ export namespace NodeResponses {
   export type GetTransferHistory = GetTransferResponse[];
   export type GetLinkedTransfer = GetLinkedTransferResponse;
   export type GetPendingAsyncTransfers = GetPendingAsyncTransfersResponse;
+  export type InstallConditionalTransferReceiverApp = PublicResults.ResolveCondition;
   export type ResolveLinkedTransfer = PublicResults.ResolveLinkedTransfer;
   export type ResolveSignedTransfer = PublicResults.ResolveSignedTransfer;
   export type GetRebalanceProfile = GetRebalanceProfileResponse;

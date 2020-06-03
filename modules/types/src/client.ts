@@ -63,6 +63,11 @@ export interface IConnextClient {
     callback: (payload: EventPayload[T]) => void | Promise<void>,
     filter?: (payload: EventPayload[T]) => boolean,
   ): void;
+  waitFor<T extends EventName>(
+    event: T,
+    timeout: number,
+    filter?: (payload: EventPayload[T]) => boolean,
+  ): Promise<EventPayload[T]>;
   emit<T extends EventName>(event: T, payload: EventPayload[T]): boolean;
   off(): void;
 
@@ -85,7 +90,7 @@ export interface IConnextClient {
   resolveCondition(params: PublicParams.ResolveCondition): Promise<PublicResults.ResolveCondition>;
   restoreState(): Promise<void>;
   swap(params: PublicParams.Swap): Promise<PublicResults.Swap>;
-  transfer(params: PublicParams.Transfer): Promise<PublicResults.LinkedTransfer>;
+  transfer(params: PublicParams.Transfer): Promise<PublicResults.ConditionalTransfer>;
   withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw>;
 
   ///////////////////////////////////

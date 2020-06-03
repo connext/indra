@@ -6,8 +6,8 @@ import {
   WithdrawAppState,
   AppInstanceJson,
   ConditionalTransferAppNames,
+  SupportedApplicationNames,
 } from "@connext/types";
-import { SupportedApplications } from "@connext/apps";
 import { Injectable } from "@nestjs/common";
 
 import { LoggerService } from "../logger/logger.service";
@@ -30,7 +30,7 @@ export class AppActionsService {
   }
 
   async handleAppAction(
-    appName: SupportedApplications,
+    appName: SupportedApplicationNames,
     app: AppInstanceJson,
     newState: AppState,
     action: AppAction,

@@ -4,11 +4,15 @@ set -e
 project="indra"
 bucket_name=backups.indra.connext.network
 lifecycle=backup-lifecycle.json
-network="${1:-ganache}"
+chainId="$1"
+
+if [[ -z "$chainId" ]]
+then echo "A chainId must be provided" && exit 1;
+fi
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 timestamp="`date +"%y%m%d-%H%M%S"`"
-backup_file=$network-$timestamp.sql
+backup_file=$chainId-$timestamp.sql
 backup_dir=$dir/snapshots
 backup_path=$backup_dir/$backup_file
 mkdir -p "`dirname $backup_path`"
@@ -46,8 +50,12 @@ else
 fi
 
 # Remove old backups
-for snapshot in `find $backup_dir -type f`
+for snapshot in `find $backup_dir -type f | sort`
 do
+  # Safety measure: if a small number of snapshots remain, then stop deleting old ones
+  if [[ "`find $backup_dir -type f`" -lt "24" ]]
+  then exit;
+  fi
   yymmdd="`echo $snapshot | cut -d "-" -f 2`"
   hhmmss="`echo $snapshot | sed 's/.*-\([0-9]\+\)\..*/\1/'`"
   twoDaysAgo="`date --date "2 days ago" "+%y%m%d"`"
