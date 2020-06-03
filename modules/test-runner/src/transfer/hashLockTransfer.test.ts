@@ -66,33 +66,7 @@ describe("HashLock Transfers", () => {
     const lockHash = soliditySha256(["bytes32"], [preImage]);
 
     await Promise.all([
-      new Promise(async (res) => {
-        clientA.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, (eventPayload) => {
-          expect(eventPayload).to.deep.contain({
-            amount: transfer.amount,
-            assetId: transfer.assetId,
-            type: ConditionalTransferTypes.HashLockTransfer,
-            paymentId: lockHash,
-            recipient: clientB.publicIdentifier,
-          } as EventPayloads.HashLockTransferCreated);
-          expect(eventPayload.transferMeta).to.deep.eq({
-            timelock,
-            lockHash,
-            expiry,
-          });
-          res();
-        });
-        await clientA.conditionalTransfer({
-          amount: transfer.amount.toString(),
-          conditionType: ConditionalTransferTypes.HashLockTransfer,
-          lockHash,
-          timelock,
-          assetId: transfer.assetId,
-          meta: { foo: "bar", sender: clientA.publicIdentifier },
-          recipient: clientB.publicIdentifier,
-        } as PublicParams.HashLockTransfer);
-      }),
-      new Promise((res) =>
+      new Promise((res) => {
         clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, (eventPayload) => {
           expect(eventPayload).to.deep.contain({
             amount: transfer.amount,
@@ -106,9 +80,37 @@ describe("HashLock Transfers", () => {
             lockHash,
             expiry: expiry.sub(100),
           });
-          res();
-        }),
-      ),
+          return res();
+        });
+      }),
+      // new Promise((reso) => {
+      //   clientA.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, (eventPayload) => {
+      //     console.log("clientAeventPayload: ", eventPayload);
+      //     expect(eventPayload).to.deep.contain({
+      //       amount: transfer.amount,
+      //       assetId: transfer.assetId,
+      //       type: ConditionalTransferTypes.HashLockTransfer,
+      //       paymentId: lockHash,
+      //       recipient: clientB.publicIdentifier,
+      //     } as EventPayloads.HashLockTransferCreated);
+      //     expect(eventPayload.transferMeta).to.deep.eq({
+      //       timelock,
+      //       lockHash,
+      //       expiry,
+      //     });
+      //     console.log("RESOLVING A");
+      //     return reso();
+      //   });
+      // }),
+      clientA.conditionalTransfer({
+        amount: transfer.amount.toString(),
+        conditionType: ConditionalTransferTypes.HashLockTransfer,
+        lockHash,
+        timelock,
+        assetId: transfer.assetId,
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
+        recipient: clientB.publicIdentifier,
+      } as PublicParams.HashLockTransfer),
     ]);
 
     const {
@@ -161,23 +163,6 @@ describe("HashLock Transfers", () => {
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
-      new Promise((res) => {
-        clientA.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, (eventPayload) => {
-          expect(eventPayload).to.deep.contain({
-            amount: transfer.amount,
-            assetId: transfer.assetId,
-            type: ConditionalTransferTypes.HashLockTransfer,
-            paymentId: lockHash,
-            recipient: clientB.publicIdentifier,
-          } as EventPayloads.HashLockTransferCreated);
-          expect(eventPayload.transferMeta).to.deep.eq({
-            timelock,
-            lockHash,
-            expiry,
-          });
-          res();
-        });
-      }),
       new Promise((res) => {
         clientB.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, (eventPayload) => {
           expect(eventPayload).to.deep.contain({
@@ -396,7 +381,7 @@ describe("HashLock Transfers", () => {
         preImage: badPreImage,
         assetId: transfer.assetId,
       } as PublicParams.ResolveHashLockTransfer),
-    ).to.eventually.be.rejectedWith(/Hashlock app has not been installed/);
+    ).to.eventually.be.rejectedWith(/app has not been installed/);
   });
 
   // NOTE: if the node tries to collateralize or send a transaction during
