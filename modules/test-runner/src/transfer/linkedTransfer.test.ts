@@ -37,7 +37,7 @@ describe("Linked Transfer", () => {
     await clientA.resolveCondition({
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId: linkedTransfer.paymentId,
-      preImage: linkedTransfer.meta.preImage,
+      preImage: linkedTransfer.preImage!,
     });
     const balAfter = (await clientA.getFreeBalance(transfer.assetId))[clientA.signerAddress];
     expect(balBefore).to.be.equal(balAfter);
@@ -59,7 +59,7 @@ describe("Linked Transfer", () => {
     await clientB.resolveCondition({
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId: linkedTransfer.paymentId,
-      preImage: linkedTransfer.meta.preImage,
+      preImage: linkedTransfer.preImage!,
     });
     const balAfter = (await clientB.getFreeBalance(transfer.assetId))[clientB.signerAddress];
     expect(transfer.amount.toString()).to.be.equal(balAfter.toString());
