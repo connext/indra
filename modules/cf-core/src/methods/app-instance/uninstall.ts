@@ -99,14 +99,14 @@ export class UninstallController extends MethodController {
     returnValue: MethodResults.Uninstall,
   ): Promise<void> {
     const { router, publicIdentifier } = requestHandler;
-    const { appIdentityHash } = params;
+    const { appIdentityHash, action } = params;
     const { multisigAddress, uninstalledApp } = returnValue;
 
-    const msg = {
+    const msg: UninstallMessage = {
       from: publicIdentifier,
       type: EventNames.UNINSTALL_EVENT,
-      data: { appIdentityHash, multisigAddress, uninstalledApp },
-    } as UninstallMessage;
+      data: { appIdentityHash, multisigAddress, uninstalledApp, action },
+    };
 
     await router.emit(msg.type, msg, `outgoing`);
   }
