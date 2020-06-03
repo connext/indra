@@ -12,7 +12,7 @@
     "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
     "rebuild": "npm run clean && npm run build",
     "clean": "rm -rf ./dist",
-    "test": "./node_modules/.bin/jest --runInBand"
+    "test": "./node_modules/.bin/ts-mocha --bail --check-leaks --exit src/**/*.spec.ts"
   },
   "dependencies": {
     "@connext/types": "6.6.5",
@@ -22,12 +22,14 @@
   },
   "devDependencies": {
     "@babel/polyfill": "7.10.1",
-    "@types/jest": "25.2.3",
+    "@types/chai": "4.2.11",
+    "@types/mocha": "7.0.2",
     "@types/node": "14.0.9",
+    "chai": "4.2.0",
     "eth-crypto": "1.6.0",
     "ethers": "4.0.47",
-    "jest": "26.0.1",
-    "ts-jest": "26.1.0",
+    "mocha": "7.2.0",
+    "ts-mocha": "7.0.0",
     "typescript": "3.9.3"
   }
 }

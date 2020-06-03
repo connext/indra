@@ -22,7 +22,7 @@
     "@connext/utils": "6.6.5",
     "@connext/types": "6.6.5",
     "ethers": "4.0.47",
-    "rollup": "2.12.0",
+    "rollup": "2.12.1",
     "@rollup/plugin-json": "4.0.3",
     "rollup-plugin-typescript2": "0.27.1",
     "typescript": "3.9.3"

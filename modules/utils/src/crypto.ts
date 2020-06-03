@@ -43,13 +43,6 @@ export const bufferify = (input: Uint8Array | Buffer | string): Buffer =>
     : input;
 
 ////////////////////////////////////////
-// Generators
-
-export const getRandomPrivateKey = (): PrivateKey => hexlify(randomBytes(32));
-export const getRandomPublicKey = (): PrivateKey => hexlify(randomBytes(65));
-export const getRandomSignature = getRandomPublicKey;
-
-////////////////////////////////////////
 // Validators
 
 export const getPublicKeyError = (value: any): string | undefined => {
@@ -100,6 +93,16 @@ export const getAddressFromPublicKey = (publicKey: PublicKey): Address => {
 
 export const getAddressFromPrivateKey = (privateKey: PrivateKey): Address =>
   getAddressFromPublicKey(getPublicKeyFromPrivateKey(privateKey));
+
+////////////////////////////////////////
+// Generators
+
+export const getRandomPrivateKey = (): PrivateKey => hexlify(randomBytes(32));
+
+export const getRandomPublicKey = (): PublicKey =>
+  getPublicKeyFromPrivateKey(getRandomPrivateKey());
+
+export const getRandomSignature = getRandomPublicKey;
 
 ////////////////////////////////////////
 // Crypto functions
