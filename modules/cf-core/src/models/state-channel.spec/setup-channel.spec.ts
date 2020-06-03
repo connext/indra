@@ -1,7 +1,6 @@
 import { AppInstanceProposal } from "@connext/types";
 import { getRandomAddress, getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
-import { Zero, AddressZero } from "ethers/constants";
-import { getAddress } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import { HARD_CODED_ASSUMPTIONS } from "../../constants";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
@@ -9,6 +8,9 @@ import { getRandomContractAddresses } from "../../testing/mocks";
 
 import { AppInstance } from "../app-instance";
 import { StateChannel } from "../state-channel";
+
+const { Zero, AddressZero } = constants;
+const { getAddress } = utils;
 
 describe("StateChannel::setupChannel", () => {
   const multisigAddress = getAddress(getRandomAddress());
@@ -63,15 +65,13 @@ describe("StateChannel::setupChannel", () => {
     it("should have a default timeout defined by the hard-coded assumption", () => {
       // See HARD_CODED_ASSUMPTIONS in state-channel.ts
       expect(fb.defaultTimeout).toBe(
-        toBN(HARD_CODED_ASSUMPTIONS.freeBalanceDefaultTimeout)
-          .toHexString(),
+        toBN(HARD_CODED_ASSUMPTIONS.freeBalanceDefaultTimeout).toHexString(),
       );
     });
 
     it("should use the default timeout for the initial timeout", () => {
       expect(fb.stateTimeout).toBe(
-        toBN(HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout)
-          .toHexString(),
+        toBN(HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout).toHexString(),
       );
     });
 
@@ -95,10 +95,7 @@ describe("StateChannel::setupChannel", () => {
 
     it("should have 0 balances for Alice and Bob", () => {
       for (const amount of Object.values(
-        sc.getFreeBalanceClass()
-          .withTokenAddress(
-            AddressZero,
-          ) || {},
+        sc.getFreeBalanceClass().withTokenAddress(AddressZero) || {},
       )) {
         expect(amount).toEqual(Zero);
       }

@@ -1,5 +1,7 @@
-import { HashZero } from "ethers/constants";
+import { constants } from "ethers";
 import { Machine, assign } from "xstate";
+
+const { HashZero } = constants;
 
 const notifyStates = (prefix, initial = "idle") => ({
   initial,

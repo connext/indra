@@ -6,8 +6,7 @@ import {
   EventName,
   EventNames,
 } from "@connext/types";
-import { AddressZero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import {
   APP_PROTOCOL_TOO_LONG,
@@ -30,10 +29,12 @@ import {
 import { addressBook } from "@connext/contracts";
 import { getRandomChannelSigner, delay } from "@connext/utils";
 
+const { AddressZero } = constants;
+
 const fundChannelAndSwap = async (opts: {
   messagingConfig?: Partial<ClientTestMessagingInputOpts>;
-  inputAmount: BigNumber;
-  outputAmount: BigNumber;
+  inputAmount: utils.BigNumber;
+  outputAmount: utils.BigNumber;
   tokenToEth?: boolean;
   failsWith?: string;
   failureEvent?: EventName;

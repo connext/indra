@@ -1,12 +1,14 @@
 import { IConnextClient, RebalanceProfile } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 import { before } from "mocha";
 import { Client } from "ts-nats";
 
 import { createClient, expect } from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 import { getNatsClient } from "../util/nats";
+
+const { AddressZero } = constants;
 
 describe("Reclaim", () => {
   let client: IConnextClient;

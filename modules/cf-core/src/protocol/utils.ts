@@ -9,8 +9,7 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
 } from "@connext/types";
 import { logTime, recoverAddressFromChannelMessage, stringify } from "@connext/utils";
-import { JsonRpcProvider } from "ethers/providers";
-import { BigNumber, defaultAbiCoder, getAddress } from "ethers/utils";
+import { providers, utils } from "ethers";
 
 import {
   AppInstance,
@@ -20,6 +19,8 @@ import {
   StateChannel,
 } from "../models";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
+
+const { defaultAbiCoder, getAddress } = utils;
 
 export async function assertIsValidSignature(
   expectedSigner: string,
@@ -63,14 +64,14 @@ export async function stateChannelClassFromStoreByMultisig(
  */
 export async function computeTokenIndexedFreeBalanceIncrements(
   appInstance: AppInstance,
-  provider: JsonRpcProvider,
+  provider: providers.JsonRpcProvider,
   encodedOutcomeOverride: string = "",
   blockNumberToUseIfNecessary?: number,
   log?: ILoggerService,
 ): Promise<TokenIndexedCoinTransferMap> {
   const { outcomeType } = appInstance;
 
-  let checkpoint = Date.now();
+  const checkpoint = Date.now();
   if (!encodedOutcomeOverride || encodedOutcomeOverride === "") {
     try {
       encodedOutcomeOverride = await appInstance.computeOutcomeWithCurrentState(provider);
@@ -170,14 +171,16 @@ function handleSingleAssetTwoPartyCoinTransfer(
 
   return {
     [tokenAddress]: {
-      [to1 as string]: amount1 as BigNumber,
-      [to2 as string]: amount2 as BigNumber,
+      [to1 as string]: amount1 as utils.BigNumber,
+      [to2 as string]: amount2 as utils.BigNumber,
     },
   };
 }
 
 function decodeTwoPartyFixedOutcome(encodedOutcome: string): TwoPartyFixedOutcome {
-  const [twoPartyFixedOutcome] = defaultAbiCoder.decode(["uint256"], encodedOutcome) as [BigNumber];
+  const [twoPartyFixedOutcome] = defaultAbiCoder.decode(["uint256"], encodedOutcome) as [
+    utils.BigNumber,
+  ];
 
   return twoPartyFixedOutcome.toNumber();
 }

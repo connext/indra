@@ -1,4 +1,5 @@
 import { AppRegistry } from "./app";
+import { providers } from "ethers";
 
 import {
   Address,
@@ -14,11 +15,11 @@ import { IChannelSigner } from "./crypto";
 import { NodeResponses } from "./node";
 import { IMessagingService } from "./messaging";
 import { ILoggerService } from "./logger";
-import { JsonRpcProvider } from "ethers/providers";
 import { IStoreService } from "./store";
+import { ConditionalTransferTypes } from "./transfers";
 
 export interface AsyncNodeInitializationParameters extends NodeInitializationParameters {
-  ethProvider: JsonRpcProvider;
+  ethProvider: providers.JsonRpcProvider;
   messaging: IMessagingService;
   messagingUrl?: string;
   store?: IStoreService;
@@ -60,10 +61,18 @@ export interface INodeApiClient {
   getChannel(): Promise<NodeResponses.GetChannel>;
   getLatestSwapRate(from: Address, to: Address): Promise<DecString>;
   getRebalanceProfile(assetId?: Address): Promise<NodeResponses.GetRebalanceProfile>;
-  getHashLockTransfer(lockHash: Bytes32, assetId?: Address): Promise<NodeResponses.GetHashLockTransfer>;
+  getHashLockTransfer(
+    lockHash: Bytes32,
+    assetId?: Address,
+  ): Promise<NodeResponses.GetHashLockTransfer>;
   getPendingAsyncTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers>;
+  installPendingTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers>;
   getTransferHistory(userAddress?: Address): Promise<NodeResponses.GetTransferHistory>;
   getLatestWithdrawal(): Promise<Transaction>;
+  installConditionalTransferReceiverApp(
+    paymentId: string,
+    conditionType: ConditionalTransferTypes,
+  ): Promise<NodeResponses.InstallConditionalTransferReceiverApp>;
   requestCollateral(assetId: Address): Promise<NodeResponses.RequestCollateral | void>;
   fetchLinkedTransfer(paymentId: Bytes32): Promise<NodeResponses.GetLinkedTransfer>;
   fetchSignedTransfer(paymentId: Bytes32): Promise<NodeResponses.GetSignedTransfer>;

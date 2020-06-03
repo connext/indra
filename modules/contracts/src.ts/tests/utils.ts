@@ -4,8 +4,10 @@ import { waffle as buidler } from "@nomiclabs/buidler";
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
 import { use } from "chai";
-import { HashZero, Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, keccak256, solidityPack } from "ethers/utils";
+import { constants, utils } from "ethers";
+
+const { HashZero, Zero } = constants;
+const { defaultAbiCoder, keccak256, solidityPack } = utils;
 
 use(require("chai-subset"));
 use(solidity);
@@ -17,7 +19,7 @@ export const provider = buidler.provider;
 export const mineBlocks = async (n: number = 1) => {
   for (let i = 0; i < n; i++) {
     await provider.send("evm_mine", []);
-  };
+  }
 };
 
 export const snapshot = async () => await provider.send("evm_snapshot", []);
@@ -30,11 +32,14 @@ export const sortSignaturesBySignerAddress = async (
 ): Promise<string[]> => {
   return (
     await Promise.all(
-      signatures.map(
-        async sig => ({ sig, addr: await recoverAddressFromChannelMessage(digest, sig) }),
-      ),
+      signatures.map(async (sig) => ({
+        sig,
+        addr: await recoverAddressFromChannelMessage(digest, sig),
+      })),
     )
-  ).sort((a, b) => toBN(a.addr).lt(toBN(b.addr)) ? -1 : 1).map(x => x.sig);
+  )
+    .sort((a, b) => (toBN(a.addr).lt(toBN(b.addr)) ? -1 : 1))
+    .map((x) => x.sig);
 };
 
 export const emptyChallenge = {
@@ -49,7 +54,7 @@ export const emptyChallenge = {
 
 // App State With Action types for testing
 export type AppWithCounterState = {
-  counter: BigNumber;
+  counter: utils.BigNumber;
 };
 
 export const encodeState = (state: AppWithCounterState) => {
@@ -63,7 +68,7 @@ export enum ActionType {
 
 export type AppWithCounterAction = {
   actionType: ActionType;
-  increment: BigNumber;
+  increment: utils.BigNumber;
 };
 
 export const encodeAction = (action: AppWithCounterAction) => {

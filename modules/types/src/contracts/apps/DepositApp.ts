@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers/utils";
+import { utils } from "ethers";
 
 import { Address } from "../../basic";
 import { tidy } from "../../utils";
@@ -16,8 +16,8 @@ export type DepositAppState = {
   transfers: CoinTransfer[];
   multisigAddress: Address;
   assetId: Address;
-  startingTotalAmountWithdrawn: BigNumber;
-  startingMultisigBalance: BigNumber;
+  startingTotalAmountWithdrawn: utils.BigNumber;
+  startingMultisigBalance: utils.BigNumber;
 };
 
 export const DepositAppStateEncoding = tidy(`tuple(

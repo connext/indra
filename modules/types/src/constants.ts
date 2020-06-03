@@ -1,4 +1,6 @@
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
+
+const { AddressZero } = constants;
 
 // used in generating AssetId type
 export const ETHEREUM_NAMESPACE = "ethereum";

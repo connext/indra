@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Button, Grid, Typography, styled } from "@material-ui/core";
-import { WeiPerEther } from "ethers/constants";
+import { constants } from "ethers";
+
+const { WeiPerEther } = constants;
 
 const TopGrid = styled(Grid)({
   display: "flex",
@@ -35,7 +37,7 @@ const HeaderTypography = styled(Typography)({
   fontStyle: "underline",
 });
 
-const StatsTransfers = props => {
+const StatsTransfers = (props) => {
   const { messaging } = props;
 
   const [allTransfers, setAllTransfers] = useState(null);

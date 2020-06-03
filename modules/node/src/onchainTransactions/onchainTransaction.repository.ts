@@ -1,4 +1,4 @@
-import { Transaction } from "ethers/utils";
+import { utils } from "ethers";
 import { EntityRepository, Repository, Between, getManager } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
@@ -41,7 +41,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return tx;
   }
 
-  async addWithdrawal(tx: Transaction, channel: Channel): Promise<void> {
+  async addWithdrawal(tx: utils.Transaction, channel: Channel): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
       const { identifiers } = await transactionalEntityManager
         .createQueryBuilder()
@@ -62,7 +62,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     });
   }
 
-  async addCollateralization(tx: Transaction, channel: Channel): Promise<void> {
+  async addCollateralization(tx: utils.Transaction, channel: Channel): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
       const { identifiers } = await transactionalEntityManager
         .createQueryBuilder()
@@ -83,7 +83,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     });
   }
 
-  async addReclaim(tx: Transaction, channel: Channel): Promise<void> {
+  async addReclaim(tx: utils.Transaction, channel: Channel): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
       const { identifiers } = await transactionalEntityManager
         .createQueryBuilder()

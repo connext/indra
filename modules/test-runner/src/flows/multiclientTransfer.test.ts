@@ -1,9 +1,11 @@
 import { IConnextClient, EventNames } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { AddressZero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import { expect, createClient, fundChannel } from "../util";
+
+const { AddressZero } = constants;
+const { bigNumberify } = utils;
 
 // TODO: fix race condition
 describe.skip("Full Flow: Multi-client transfer", () => {
@@ -26,15 +28,15 @@ describe.skip("Full Flow: Multi-client transfer", () => {
   it("Clients transfer assets between themselves", async function () {
     // how long the ping-pong transfers should last in s
     const DURATION = 15_000;
-    let gatewayTransfers = {
+    const gatewayTransfers = {
       sent: 0,
       received: 0,
     };
-    let indexerATransfers = {
+    const indexerATransfers = {
       sent: 0,
       received: 0,
     };
-    let indexerBTransfers = {
+    const indexerBTransfers = {
       sent: 0,
       received: 0,
     };

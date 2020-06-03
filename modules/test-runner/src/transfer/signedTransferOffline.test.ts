@@ -35,7 +35,9 @@ import {
   PrivateKey,
 } from "@connext/types";
 import { addressBook } from "@connext/contracts";
-import { Zero } from "ethers/constants";
+import { constants } from "ethers";
+
+const { Zero } = constants;
 
 describe("Signed Transfer Offline", () => {
   const tokenAddress = addressBook[4447].Token.address;
@@ -320,7 +322,7 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       event: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
     });
-    await sender.off();
+    sender.off();
     await sender.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
@@ -341,7 +343,7 @@ describe("Signed Transfer Offline", () => {
       whichFails: "sender",
       error: CLIENT_INSTALL_FAILED(true),
     });
-    await sender.off();
+    sender.off();
     await sender.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
@@ -368,7 +370,7 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       event: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
     });
-    await receiver.off();
+    receiver.off();
     await receiver.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
@@ -406,7 +408,7 @@ describe("Signed Transfer Offline", () => {
         reject(err);
       }
     });
-    await receiver.off();
+    receiver.off();
     await receiver.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
@@ -436,7 +438,7 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.takeAction),
       event: EventNames.UPDATE_STATE_FAILED_EVENT,
     });
-    await receiver.off();
+    receiver.off();
     await receiver.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
@@ -466,7 +468,7 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.uninstall),
       event: EventNames.UNINSTALL_FAILED_EVENT,
     });
-    await receiver.off();
+    receiver.off();
     await receiver.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);

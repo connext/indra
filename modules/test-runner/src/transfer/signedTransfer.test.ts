@@ -17,9 +17,8 @@ import {
   signReceiptMessage,
   getRandomPrivateKey,
 } from "@connext/utils";
-import { AddressZero } from "ethers/constants";
-import { hexlify, randomBytes } from "ethers/utils";
-import { providers } from "ethers";
+
+import { providers, constants, utils } from "ethers";
 
 import {
   AssetOptions,
@@ -31,6 +30,9 @@ import {
   env,
   requestCollateral,
 } from "../util";
+
+const { AddressZero } = constants;
+const { hexlify, randomBytes } = utils;
 
 describe("Signed Transfers", () => {
   let privateKeyA: PrivateKey;
@@ -99,7 +101,7 @@ describe("Signed Transfers", () => {
     expect(installed).deep.contain({
       amount: transfer.amount,
       assetId: transfer.assetId,
-      type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+      type: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       sender: clientA.publicIdentifier,
       transferMeta: { signerAddress: clientB.signerAddress, chainId, verifyingContract },
@@ -138,7 +140,7 @@ describe("Signed Transfers", () => {
     expect(eventData).to.deep.contain({
       amount: transfer.amount,
       assetId: transfer.assetId,
-      type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+      type: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       sender: clientA.publicIdentifier,
       transferMeta: attestation,
@@ -188,7 +190,7 @@ describe("Signed Transfers", () => {
     expect(installed).deep.contain({
       amount: transfer.amount,
       assetId: transfer.assetId,
-      type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+      type: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       transferMeta: { signerAddress: clientB.signerAddress, chainId, verifyingContract },
       meta: {
@@ -492,7 +494,7 @@ describe("Signed Transfers", () => {
         });
         await clientA.conditionalTransfer({
           amount: transfer.amount,
-          conditionType: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+          conditionType: ConditionalTransferTypes.SignedTransfer,
           paymentId,
           signerAddress: clientB.signerAddress,
           chainId,
@@ -515,7 +517,7 @@ describe("Signed Transfers", () => {
           res();
         });
         await clientB.resolveCondition({
-          conditionType: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+          conditionType: ConditionalTransferTypes.SignedTransfer,
           paymentId,
           attestation,
         } as PublicParams.ResolveSignedTransfer);

@@ -7,13 +7,14 @@ import {
   SimpleLinkedTransferAppActionEncoding,
 } from "@connext/types";
 import { getRandomAddress, getRandomBytes32 } from "@connext/utils";
-import { Contract, ContractFactory } from "ethers";
-import { Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, soliditySha256 } from "ethers/utils";
+import { Contract, ContractFactory, constants, utils } from "ethers";
 
 import { SimpleLinkedTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
+
+const { Zero } = constants;
+const { defaultAbiCoder, soliditySha256 } = utils;
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
@@ -61,7 +62,7 @@ describe("SimpleLinkedTransferApp", () => {
   const createInitialState = async (preImage: string): Promise<SimpleLinkedTransferAppState> => {
     const senderAddr = getRandomAddress();
     const receiverAddr = getRandomAddress();
-    const transferAmount = new BigNumber(10000);
+    const transferAmount = new utils.BigNumber(10000);
     const linkedHash = createLinkedHash(preImage);
     return {
       coinTransfers: [

@@ -1,10 +1,11 @@
 import { SolidityValueType } from "@connext/types";
-import { Contract, ContractFactory } from "ethers";
-import { defaultAbiCoder } from "ethers/utils";
+import { Contract, ContractFactory, utils } from "ethers";
 
 import { TicTacToeApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
+
+const { defaultAbiCoder } = utils;
 
 type TicTacToeAppState = {
   versionNumber: number;
@@ -66,11 +67,7 @@ describe("TicTacToeApp", () => {
 
   before(async () => {
     const wallet = (await provider.getWallets())[0];
-    ticTacToe = await new ContractFactory(
-      TicTacToeApp.abi,
-      TicTacToeApp.bytecode,
-      wallet,
-    ).deploy();
+    ticTacToe = await new ContractFactory(TicTacToeApp.abi, TicTacToeApp.bytecode, wallet).deploy();
   });
 
   describe("applyAction", () => {
