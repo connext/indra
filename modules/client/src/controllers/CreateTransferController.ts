@@ -70,7 +70,6 @@ export class CreateTransferController extends AbstractController {
           submittedMeta.encryptedPreImage = encryptedPreImage;
         }
         submittedMeta.paymentId = paymentId;
-        submittedMeta.preImage = preImage;
 
         transferMeta = {} as CreatedLinkedTransferMeta;
 
@@ -192,6 +191,7 @@ export class CreateTransferController extends AbstractController {
       sender: this.connext.publicIdentifier,
       meta: submittedMeta,
       paymentId: submittedMeta.paymentId,
+      preImage: (params as PublicParams.LinkedTransfer).preImage,
       recipient,
       transferMeta,
     };

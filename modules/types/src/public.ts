@@ -146,6 +146,7 @@ type ConditionalTransferResponse = {
   appIdentityHash: Bytes32;
   assetId: Address;
   paymentId: Bytes32;
+  preImage?: Bytes32;
   sender: Address;
   recipient?: Address;
   meta: any;
