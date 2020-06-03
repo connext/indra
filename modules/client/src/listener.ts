@@ -32,7 +32,7 @@ import {
   ProtocolEventMessage,
   ProtocolParams,
 } from "@connext/types";
-import { bigNumberifyJson, stringify, TypedEmitter } from "@connext/utils";
+import { bigNumberifyJson, stringify, TypedEmitter, appIdentityToHash } from "@connext/utils";
 import { constants } from "ethers";
 
 import { ConnextClient } from "./connext";
@@ -143,7 +143,12 @@ export class ConnextListener {
     SYNC_FAILED_EVENT: (msg): void => {
       this.emitAndLog(SYNC_FAILED_EVENT, msg.data);
     },
-    UNINSTALL_EVENT: (msg): void => {
+    UNINSTALL_EVENT: async (msg): Promise<void> => {
+      await this.handleAppUninstall(
+        msg.data.appIdentityHash,
+        msg.data.preState as AppState,
+        msg.data.action as AppAction,
+      )
       this.emitAndLog(UNINSTALL_EVENT, msg.data);
     },
     UNINSTALL_FAILED_EVENT: (msg): void => {
@@ -419,27 +424,11 @@ export class ConnextListener {
     );
   };
 
-  private resolveUninstallEvent = (
-    resolve: (value?: unknown) => void,
-    appIdentityHash: string,
-    msg: UninstallMessage,
-  ): UninstallMessage => {
-    if (msg.data.appIdentityHash === appIdentityHash) {
-      resolve(msg);
-    }
-    return msg;
-  };
-
-  private cleanupUninstallListener = (boundResolve: any): void => {
-    this.channelProvider.off(EventNames.UNINSTALL_EVENT, boundResolve);
-  };
-
-  private handleAppUpdate = async (
+  private handleAppUninstall = async (
     appIdentityHash: string,
     state: AppState,
-    action: AppAction,
+    action?: AppAction,
   ): Promise<void> => {
-    let boundResolve: (reason?: any) => void;
     const { appInstance } = (await this.connext.getAppInstance(appIdentityHash)) || {};
     if (!appInstance) {
       this.log.info(
@@ -450,32 +439,14 @@ export class ConnextListener {
     const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
       return app.appDefinitionAddress === appInstance.appInterface.addr;
     });
-    const waitForUninstall = () =>
-      new Promise((resolve): void => {
-        boundResolve = this.resolveUninstallEvent.bind(null, resolve, appIdentityHash);
-        this.channelProvider.on(EventNames.UNINSTALL_EVENT, boundResolve);
-      });
 
-    switch (registryAppInfo.name) {
-      case WithdrawAppName: {
-        const withdrawState = state as WithdrawAppState;
-        const params = {
-          amount: withdrawState.transfers[0].amount,
-          recipient: withdrawState.transfers[0].to,
-          assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
-          nonce: withdrawState.nonce,
-        };
-        await this.connext.saveWithdrawCommitmentToStore(params, withdrawState.signatures);
-        break;
-      }
+    switch(registryAppInfo.name) {
       case SimpleLinkedTransferAppName: {
         const transferState = state as SimpleLinkedTransferAppState;
         const transferAction = action as SimpleLinkedTransferAppAction;
         const transferAmount = transferState.coinTransfers[0].amount.isZero()
           ? transferState.coinTransfers[1].amount
           : transferState.coinTransfers[0].amount;
-        await waitForUninstall();
-        this.cleanupUninstallListener(boundResolve);
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.LinkedTransfer,
           amount: transferAmount,
@@ -496,8 +467,6 @@ export class ConnextListener {
         const transferAmount = transferState.coinTransfers[0].amount.isZero()
           ? transferState.coinTransfers[1].amount
           : transferState.coinTransfers[0].amount;
-        await waitForUninstall();
-        this.cleanupUninstallListener(boundResolve);
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.HashLockTransfer,
           amount: transferAmount,
@@ -519,8 +488,6 @@ export class ConnextListener {
         const transferAmount = transferState.coinTransfers[0].amount.isZero()
           ? transferState.coinTransfers[1].amount
           : transferState.coinTransfers[0].amount;
-        await waitForUninstall();
-        this.cleanupUninstallListener(boundResolve);
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.SignedTransfer,
           amount: transferAmount,
@@ -536,6 +503,42 @@ export class ConnextListener {
             subgraphID: transferAction.subgraphID,
           } as UnlockedSignedTransferMeta,
         } as EventPayloads.SignedTransferUnlocked);
+        break;
+      }
+      default: {
+        this.log.info(
+          `Received update state event for ${registryAppInfo.name}, not doing anything`,
+        );
+      }
+    }
+  }
+
+  private handleAppUpdate = async (
+    appIdentityHash: string,
+    state: AppState,
+    action: AppAction,
+  ): Promise<void> => {
+    const { appInstance } = (await this.connext.getAppInstance(appIdentityHash)) || {};
+    if (!appInstance) {
+      this.log.info(
+        `Could not find app instance, this likely means the app has been uninstalled, doing nothing`,
+      );
+      return;
+    }
+    const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
+      return app.appDefinitionAddress === appInstance.appInterface.addr;
+    });
+
+    switch (registryAppInfo.name) {
+      case WithdrawAppName: {
+        const withdrawState = state as WithdrawAppState;
+        const params = {
+          amount: withdrawState.transfers[0].amount,
+          recipient: withdrawState.transfers[0].to,
+          assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+          nonce: withdrawState.nonce,
+        };
+        await this.connext.saveWithdrawCommitmentToStore(params, withdrawState.signatures);
         break;
       }
       default: {
