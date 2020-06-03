@@ -6,6 +6,7 @@ import {
   PublicIdentifier,
   EventNames,
   UninstallMessage,
+  SolidityValueType,
 } from "@connext/types";
 
 import {
@@ -75,7 +76,7 @@ export class UninstallController extends MethodController {
     const { protocolRunner, publicIdentifier, router } = requestHandler;
     const { appIdentityHash } = params;
 
-    const { updatedChannel, uninstalledApp } = await uninstallAppInstanceFromChannel(
+    const { updatedChannel, uninstalledApp, action } = await uninstallAppInstanceFromChannel(
       preProtocolStateChannel!,
       router,
       protocolRunner,
@@ -88,6 +89,7 @@ export class UninstallController extends MethodController {
       appIdentityHash,
       multisigAddress: updatedChannel.multisigAddress,
       uninstalledApp: uninstalledApp.toJson(),
+      action,
     };
   }
 
@@ -117,7 +119,11 @@ export async function uninstallAppInstanceFromChannel(
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
   params: MethodParams.Uninstall,
-): Promise<{ updatedChannel: StateChannel; uninstalledApp: AppInstance }> {
+): Promise<{
+  updatedChannel: StateChannel;
+  uninstalledApp: AppInstance;
+  action?: SolidityValueType;
+}> {
   const appInstance = stateChannel.getAppInstance(params.appIdentityHash);
 
   const {
@@ -129,7 +135,7 @@ export async function uninstallAppInstanceFromChannel(
     multisigAddress: stateChannel.multisigAddress,
     appIdentityHash: appInstance.identityHash,
     action: params.action,
-    stateTimeout: params.stateTimeout || toBN(appInstance.defaultTimeout),
+    stateTimeout: toBN(0), // Explicitly finalized states
   });
-  return { updatedChannel, uninstalledApp };
+  return { updatedChannel, uninstalledApp, action: params.action };
 }
