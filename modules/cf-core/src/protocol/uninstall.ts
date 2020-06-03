@@ -279,6 +279,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessageData,
       postProtocolStateChannel,
+      appToUninstall,
     ];
 
     // 100ms

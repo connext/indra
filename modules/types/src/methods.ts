@@ -206,6 +206,7 @@ type UninstallParams = {
 type UninstallResult = {
   appIdentityHash: Bytes32;
   multisigAddress: Address;
+  uninstalledApp: AppInstanceJson;
 };
 
 ////////////////////////////////////////
