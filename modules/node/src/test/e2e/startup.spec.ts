@@ -67,15 +67,16 @@ describe("Startup", () => {
       ethProviderUrl: configService.getEthRpcUrl(),
       messagingUrl: configService.getMessagingConfig().messagingUrl[0],
       nodeUrl,
-      logLevel: 3,
+      logLevel: 1,
     });
+    console.log("clientA.signerAddress: ", clientA.signerAddress);
+    console.log("clientA.publicIdentifier: ", clientA.publicIdentifier);
+    expect(clientA.signerAddress).toBeTruthy();
+
     const realWallet = Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC).connect(
       configService.getEthProvider(),
     );
     await realWallet.sendTransaction({ to: clientA.signerAddress, value: parseEther("0.1") });
-    console.log("clientA.signerAddress: ", clientA.signerAddress);
-    console.log("clientA.publicIdentifier: ", clientA.publicIdentifier);
-    expect(clientA.signerAddress).toBeTruthy();
 
     const storeB = getMemoryStore();
     const pkB = getRandomPrivateKey();
@@ -94,7 +95,7 @@ describe("Startup", () => {
     expect(clientB.signerAddress).toBeTruthy();
   });
 
-  it("should error properly when node has no funds", async () => {
+  it("should properly handle a client deposit + transfer", async () => {
     await clientA.deposit({ assetId: AddressZero, amount: parseEther("0.01") });
     const transferRes = await clientA.transfer({
       amount: parseEther("0.001"),
@@ -104,6 +105,5 @@ describe("Startup", () => {
     console.log("transferRes: ", transferRes);
     console.log("getSignerAddress: ", await configService.getSignerAddress());
     console.log("env loglevel", parseInt(process.env.INDRA_LOG_LEVEL, 10));
-    expect(true).toBeTruthy();
   });
 });
