@@ -7,12 +7,12 @@ export const bigNumberifyJson = (json: any): any =>
   typeof json === "string"
     ? json
     : JSON.parse(JSON.stringify(json), (key: string, value: any): any =>
-        value && value["_hex"] ? toBN(value._hex) : value,
+        value && value._hex ? toBN(value._hex) : value,
       );
 
 export const deBigNumberifyJson = (json: any): any =>
-  JSON.parse(JSON.stringify(json), (key: string, val: any) =>
-    val && isBN(val) ? val.toHexString() : val,
+  JSON.parse(JSON.stringify(json), (key: string, value: any) =>
+    value && isBN(value) && value.toHexString ? value.toHexString() : value,
   );
 
 // Give abrv = true to abbreviate hex strings and addresss to look like "0x6FEC..kuQk"

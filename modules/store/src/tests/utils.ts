@@ -189,7 +189,7 @@ export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
   },
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
   twoPartyOutcomeInterpreterParams: {
-    amount: { _hex: "0x42" },
+    amount: { _hex: "0x42", _isBigNumber: true } as any,
     playerAddrs: [AddressZero, AddressZero],
     tokenAddress: AddressZero,
   },
@@ -216,7 +216,7 @@ export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
   defaultTimeout: "0x01",
   stateTimeout: "0x00",
   singleAssetTwoPartyCoinTransferInterpreterParams: {
-    limit: { _hex: "0x1" } as any,
+    limit: { _hex: "0x1", _isBigNumber: true } as any,
     tokenAddress: AddressZero,
   },
 };
