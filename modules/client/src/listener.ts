@@ -148,7 +148,7 @@ export class ConnextListener {
         msg.data.appIdentityHash,
         msg.data.preState as AppState,
         msg.data.action as AppAction,
-      )
+      );
       this.emitAndLog(UNINSTALL_EVENT, msg.data);
     },
     UNINSTALL_FAILED_EVENT: (msg): void => {
@@ -440,7 +440,7 @@ export class ConnextListener {
       return app.appDefinitionAddress === appInstance.appInterface.addr;
     });
 
-    switch(registryAppInfo.name) {
+    switch (registryAppInfo.name) {
       case SimpleLinkedTransferAppName: {
         const transferState = state as SimpleLinkedTransferAppState;
         const transferAction = action as SimpleLinkedTransferAppAction;
@@ -511,7 +511,7 @@ export class ConnextListener {
         );
       }
     }
-  }
+  };
 
   private handleAppUpdate = async (
     appIdentityHash: string,
