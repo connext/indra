@@ -49,8 +49,7 @@ import {
   DepositController,
   SwapController,
   WithdrawalController,
-  CreateTransferController,
-  ResolveTransferController,
+  TransferController,
 } from "./controllers";
 import { ConnextListener } from "./listener";
 import { InternalClientOptions } from "./types";
@@ -81,8 +80,7 @@ export class ConnextClient implements IConnextClient {
   private opts: InternalClientOptions;
 
   private depositController: DepositController;
-  private createTransferController: CreateTransferController;
-  private resolveTransferController: ResolveTransferController;
+  private transferController: TransferController;
   private swapController: SwapController;
   private withdrawalController: WithdrawalController;
 
@@ -113,11 +111,7 @@ export class ConnextClient implements IConnextClient {
     this.depositController = new DepositController("DepositController", this);
     this.swapController = new SwapController("SwapController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
-    this.createTransferController = new CreateTransferController("CreateTransferController", this);
-    this.resolveTransferController = new ResolveTransferController(
-      "ResolveTransferController",
-      this,
-    );
+    this.transferController = new TransferController("TransferController", this);
   }
 
   /**
@@ -293,7 +287,7 @@ export class ConnextClient implements IConnextClient {
   public transfer = async (
     params: PublicParams.Transfer,
   ): Promise<PublicResults.ConditionalTransfer> => {
-    return this.createTransferController.createTransfer({
+    return this.transferController.createTransfer({
       amount: params.amount,
       assetId: params.assetId || CONVENTION_FOR_ETH_ASSET_ID,
       conditionType: ConditionalTransferTypes.LinkedTransfer,
@@ -328,14 +322,14 @@ export class ConnextClient implements IConnextClient {
       const paymentId = soliditySha256(["address", "bytes32"], [params.assetId, lockHash]);
       params.paymentId = paymentId;
     }
-    return this.resolveTransferController.resolveTransfer(params);
+    return this.transferController.resolveTransfer(params);
   };
 
   public conditionalTransfer = async (
     params: PublicParams.ConditionalTransfer,
   ): Promise<PublicResults.ConditionalTransfer> => {
     params.assetId = params.assetId || CONVENTION_FOR_ETH_ASSET_ID;
-    return this.createTransferController.createTransfer(params);
+    return this.transferController.createTransfer(params);
   };
 
   public getHashLockTransfer = async (
@@ -661,7 +655,7 @@ export class ConnextClient implements IConnextClient {
     });
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
     try {
-      const response = await this.resolveTransferController.resolveTransfer({
+      const response = await this.transferController.resolveTransfer({
         conditionType: ConditionalTransferTypes.LinkedTransfer,
         paymentId,
         preImage,
