@@ -3,6 +3,7 @@ import {
   AppInstanceProposal,
   OutcomeType,
   SimpleLinkedTransferAppName,
+  AppState,
 } from "@connext/types";
 import { constants } from "ethers";
 import { getSignerAddressFromPublicIdentifier, safeJsonParse } from "@connext/utils";
@@ -329,5 +330,17 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .getMany();
     return res;
+  }
+
+  async updateAppStateOnUninstall(uninstalledApp: AppInstanceJson): Promise<void> {
+    await this.createQueryBuilder("app_instance")
+      .update(AppInstance)
+      .set({
+        latestState: uninstalledApp.latestState as AppState,
+        stateTimeout: uninstalledApp.stateTimeout,
+        latestVersionNumber: uninstalledApp.latestVersionNumber,
+      })
+      .where("identityHash = :identityHash", { identityHash: uninstalledApp.identityHash })
+      .execute();
   }
 }

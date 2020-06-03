@@ -184,17 +184,17 @@ export default class ListenerService implements OnModuleInit {
   }
 
   async handleUninstall(data: UninstallMessage) {
-    if (!data.data.multisigAddress) {
+    const { action, uninstalledApp, multisigAddress, appIdentityHash } = data.data;
+    if (!multisigAddress) {
       this.log.error(
-        `Unexpected error - no multisigAddress found in uninstall event data: ${data.data.appIdentityHash}`,
+        `Unexpected error - no multisigAddress found in uninstall event data: ${appIdentityHash}`,
       );
       return;
     }
-    const channel = await this.channelRepository.findByMultisigAddressOrThrow(
-      data.data.multisigAddress,
-    );
-    if (data.data.action) {
-      const { action, uninstalledApp } = data.data;
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    if (action) {
+      // update app with uninstalled state
+      await this.appInstanceRepository.updateAppStateOnUninstall(uninstalledApp);
       const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
         uninstalledApp.appInterface.addr,
       );
