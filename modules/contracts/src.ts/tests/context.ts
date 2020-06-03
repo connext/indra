@@ -168,8 +168,7 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
       status: ChallengeStatus.IN_DISPUTE,
       appStateHash: stateHash,
       versionNumber: toBN(versionNumber),
-      // FIXME: why is this off by one?
-      finalizesAt: toBN((await provider.getBlockNumber()) + timeout + 1),
+      finalizesAt: toBN((await provider.getBlockNumber()) + timeout),
     });
   };
 
