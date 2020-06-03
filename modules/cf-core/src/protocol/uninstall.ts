@@ -87,13 +87,15 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } else {
       preUninstallStateChannel = preProtocolStateChannel;
     }
+    // make sure the uninstalled app is the finalized app
+    const preUninstallApp = preUninstallStateChannel.appInstances.get(appToUninstall.identityHash)!;
 
     // 47ms
     const postProtocolStateChannel = await computeStateTransition(
       params as ProtocolParams.Uninstall,
       network.provider,
       preUninstallStateChannel,
-      appToUninstall,
+      preUninstallApp,
       log,
     );
 
@@ -151,7 +153,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       PERSIST_APP_INSTANCE,
       PersistAppType.RemoveInstance,
       postProtocolStateChannel,
-      appToUninstall,
+      preUninstallApp,
       uninstallCommitment,
     ];
 
@@ -217,13 +219,15 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } else {
       preUninstallStateChannel = preProtocolStateChannel;
     }
+    // make sure the uninstalled app is the finalized app
+    const preUninstallApp = preUninstallStateChannel.appInstances.get(appToUninstall.identityHash)!;
 
     // 40ms
     const postProtocolStateChannel = await computeStateTransition(
       params as ProtocolParams.Uninstall,
       network.provider,
       preUninstallStateChannel,
-      appToUninstall,
+      preUninstallApp,
       log,
     );
 
@@ -266,7 +270,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       PERSIST_APP_INSTANCE,
       PersistAppType.RemoveInstance,
       postProtocolStateChannel,
-      appToUninstall,
+      preUninstallApp,
       uninstallCommitment,
     ];
 
@@ -283,7 +287,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessageData,
       postProtocolStateChannel,
-      appToUninstall,
+      preUninstallApp,
     ];
 
     // 100ms
