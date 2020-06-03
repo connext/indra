@@ -7,7 +7,7 @@ import { AssetOptions, createClient, fundChannel } from "../util";
 
 const { AddressZero, One } = constants;
 
-describe.only("Linked Transfer", () => {
+describe("Linked Transfer", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
 
