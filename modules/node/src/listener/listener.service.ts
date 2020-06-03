@@ -193,6 +193,18 @@ export default class ListenerService implements OnModuleInit {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(
       data.data.multisigAddress,
     );
+    if (data.data.action) {
+      const { action, uninstalledApp } = data.data;
+      const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+        uninstalledApp.appInterface.addr,
+      );
+      await this.appActionsService.handleAppAction(
+        appRegistryInfo.name,
+        uninstalledApp,
+        uninstalledApp.latestState as any, // AppState (excluding simple swap app)
+        action as AppAction,
+      );
+    }
     const assetIdResponder = (
       await this.appInstanceRepository.findByIdentityHashOrThrow(data.data.appIdentityHash)
     ).responderDepositAssetId;
