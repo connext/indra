@@ -100,7 +100,7 @@ export class AppActionsService {
     await this.cfCoreService.uninstallApp(
       senderApp.identityHash,
       senderApp.channel.multisigAddress,
-      action
+      action,
     );
   }
 }

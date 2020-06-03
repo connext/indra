@@ -340,7 +340,7 @@ export class CFCoreService {
   async uninstallApp(
     appIdentityHash: string,
     multisigAddress: string,
-    action?: AppAction
+    action?: AppAction,
   ): Promise<MethodResults.Uninstall> {
     const parameters = {
       appIdentityHash,
