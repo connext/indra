@@ -233,22 +233,6 @@ export class ConnextListener {
       this.channelProvider.off(event);
       this.channelProvider.on(event, callback);
     });
-
-    this.channelProvider.off(MethodNames.chan_install);
-    this.channelProvider.on(
-      MethodNames.chan_install,
-      async (msg: any): Promise<void> => {
-        const {
-          result: {
-            result: { appInstance },
-          },
-        } = msg;
-        await this.connext.node.messaging.publish(
-          `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstance.appIdentityHash}.uninstall`,
-          appInstance,
-        );
-      },
-    );
   };
 
   private emitAndLog<T extends EventName>(event: T, data: EventPayload[T]): void {

@@ -212,14 +212,5 @@ export default class ListenerService implements OnModuleInit {
         this.cfCoreService.registerCfCoreListener(event, callback);
       },
     );
-
-    this.cfCoreService.registerCfCoreListener(
-      MethodNames.chan_uninstall as any,
-      async (data: any) => {
-        // TODO: GET CHANNEL MULTISIG
-        const uninstallSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${AddressZero}.app-instance.${data.result.result.appIdentityHash}.uninstall`;
-        await this.messagingService.publish(uninstallSubject, data.result.result);
-      },
-    );
   }
 }
