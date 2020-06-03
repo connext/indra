@@ -5,6 +5,7 @@ import {
   getRandomPrivateKey,
   getPublicKeyFromPrivateKey,
   getPublicIdentifierFromPublicKey,
+  delay,
 } from "@connext/utils";
 import { ContractFactory, Wallet, constants } from "ethers";
 import tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
@@ -91,6 +92,7 @@ describe("Async Transfers", () => {
       paymentId,
     });
     receiver = await createClient({ id: "C", signer: receiverPk });
+    await delay(5000);
 
     const { [receiver.signerAddress]: receiverFreeBalance } = await receiver.getFreeBalance(
       transfer.assetId,
@@ -109,7 +111,8 @@ describe("Async Transfers", () => {
       assetId: tokenAddress,
       recipient: receiverIdentifier,
     });
-    const receiverClient = await createClient({ signer: receiverPk }, false);
+    const receiverClient = await createClient({ signer: receiverPk, id: "R" }, false);
+    await delay(5000);
     expect(receiverClient.publicIdentifier).to.eq(receiverIdentifier);
     const freeBalance = await receiverClient.getFreeBalance(tokenAddress);
     expect(freeBalance[receiverClient.signerAddress]).to.be.above(0);
@@ -201,7 +204,7 @@ describe("Async Transfers", () => {
         assetId,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Invalid hex string`);
+    ).to.be.rejectedWith(`invalid address`);
     // NOTE: will also include a `Value (..) is not less than or equal to 0
     // because it will not be able to fetch the free balance of the assetId
   });
@@ -246,7 +249,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient,
       }),
-    ).to.be.rejectedWith(`Invalid public identifier`);
+    ).to.be.rejectedWith(`Invalid checksum`);
   });
 
   it("Bot A tries to transfer an amount greater than they have in their free balance", async () => {
@@ -260,7 +263,8 @@ describe("Async Transfers", () => {
     ).to.be.rejectedWith(`Insufficient funds.`);
   });
 
-  it("Bot A tries to transfer with a paymentId that is not 32 bytes", async () => {
+  // this doesnt really matter anymore since its not encoded in the state
+  it.skip("Bot A tries to transfer with a paymentId that is not 32 bytes", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
     const paymentId = "nope";
@@ -289,7 +293,7 @@ describe("Async Transfers", () => {
         preImage,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Invalid hex string`);
+    ).to.be.rejectedWith(`invalid hexidecimal string`);
   });
 
   it("Experimental: Average latency of 10 async transfers with Eth", async () => {

@@ -101,7 +101,7 @@ describe("Signed Transfers", () => {
     expect(installed).deep.contain({
       amount: transfer.amount,
       assetId: transfer.assetId,
-      type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+      type: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       sender: clientA.publicIdentifier,
       transferMeta: { signerAddress: clientB.signerAddress, chainId, verifyingContract },
@@ -140,7 +140,7 @@ describe("Signed Transfers", () => {
     expect(eventData).to.deep.contain({
       amount: transfer.amount,
       assetId: transfer.assetId,
-      type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+      type: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       sender: clientA.publicIdentifier,
       transferMeta: attestation,
@@ -190,7 +190,7 @@ describe("Signed Transfers", () => {
     expect(installed).deep.contain({
       amount: transfer.amount,
       assetId: transfer.assetId,
-      type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+      type: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       transferMeta: { signerAddress: clientB.signerAddress, chainId, verifyingContract },
       meta: {
@@ -494,7 +494,7 @@ describe("Signed Transfers", () => {
         });
         await clientA.conditionalTransfer({
           amount: transfer.amount,
-          conditionType: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+          conditionType: ConditionalTransferTypes.SignedTransfer,
           paymentId,
           signerAddress: clientB.signerAddress,
           chainId,
@@ -517,7 +517,7 @@ describe("Signed Transfers", () => {
           res();
         });
         await clientB.resolveCondition({
-          conditionType: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+          conditionType: ConditionalTransferTypes.SignedTransfer,
           paymentId,
           attestation,
         } as PublicParams.ResolveSignedTransfer);
