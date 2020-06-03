@@ -4,20 +4,17 @@ import {
   LinkedTransferStatus,
   IChannelSigner,
   IStoreService,
-  ProtocolNames,
   CF_METHOD_TIMEOUT,
 } from "@connext/types";
 import { delay } from "@connext/utils";
 import * as lolex from "lolex";
 
 import {
-  APP_PROTOCOL_TOO_LONG,
   asyncTransferAsset,
   createClient,
   createClientWithMessagingLimits,
   expect,
   fundChannel,
-  getProtocolFromData,
   MessagingEventData,
   RECEIVED,
   REQUEST,
@@ -25,13 +22,10 @@ import {
   TestMessagingService,
   TOKEN_AMOUNT,
   TOKEN_AMOUNT_SM,
-  getNatsClient,
   env,
   SEND,
 } from "../util";
 import { utils } from "ethers";
-import { Client } from "ts-nats";
-import { before } from "mocha";
 import { getRandomChannelSigner } from "@connext/utils";
 import { getMemoryStore } from "@connext/store";
 
@@ -131,98 +125,6 @@ describe("Async transfer offline tests", () => {
     await expect(
       asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
     ).to.be.rejectedWith(`Failed to send message: Request timed out`);
-  });
-
-  /**
-   * Should get timeout errors
-   */
-  it.skip("sender installs transfer successfully, receiver installs successfully, but node is offline for take action (times out)", async () => {
-    // create the sender client and receiver clients + fund
-    senderClient = await createClientWithMessagingLimits();
-    receiverClient = await createClientWithMessagingLimits({
-      ceiling: { [RECEIVED]: 1 },
-      protocol: ProtocolNames.takeAction,
-      signer,
-      store,
-    });
-    const tokenAddress = senderClient.config.contractAddresses.Token!;
-    await fundForTransfers(receiverClient, senderClient);
-    (receiverClient.messaging as TestMessagingService).on(
-      RECEIVED,
-      async (msg: MessagingEventData) => {
-        if (getProtocolFromData(msg) === ProtocolNames.takeAction) {
-          clock.tick(CF_METHOD_TIMEOUT + 1_000);
-        }
-      },
-    );
-    await expect(
-      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
-    ).to.be.rejectedWith(APP_PROTOCOL_TOO_LONG("takeAction"));
-
-    await recreateReceiverAndRetryTransfer(signer, senderClient, receiverClient, store, {
-      amount: TOKEN_AMOUNT_SM,
-      assetId: tokenAddress,
-    });
-  });
-
-  /**
-   * Expected behavior: sender should still have app (with money owed to
-   * them) installed in the channel when they come back online
-   *
-   * Ideally, the node takes action +  uninstalls these apps on `connect`,
-   * and money is returned to the hubs channel (redeemed payment)
-   */
-  it.skip("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action with sender but sender is offline but then comes online later (sender offline for take action)", async () => {
-    const senderSigner = getRandomChannelSigner(env.ethProviderUrl);
-    const receiverSigner = getRandomChannelSigner(env.ethProviderUrl);
-    // create the sender client and receiver clients + fund
-    senderClient = await createClientWithMessagingLimits({ signer: senderSigner });
-    receiverClient = await createClientWithMessagingLimits({ signer: receiverSigner });
-    const tokenAddress = senderClient.config.contractAddresses.Token!;
-    await fundForTransfers(receiverClient, senderClient);
-    // transfer from the sender to the receiver, then take the
-    // sender offline
-    const received = new Promise((resolve) =>
-      receiverClient.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve),
-    );
-    const { paymentId } = await senderClient.transfer({
-      amount: TOKEN_AMOUNT_SM,
-      assetId: tokenAddress,
-      recipient: receiverClient.publicIdentifier,
-    });
-    const senderApps = await senderClient.getAppInstances();
-    // immediately take sender offline
-    await (senderClient.messaging as TestMessagingService).disconnect();
-    // wait for transfer to finish
-    await received;
-    // verify transfer
-    const expected = {
-      amount: TOKEN_AMOUNT_SM,
-      receiverIdentifier: receiverClient.publicIdentifier,
-      paymentId,
-      senderIdentifier: senderClient.publicIdentifier,
-      status: LinkedTransferStatus.COMPLETED,
-      assetId: tokenAddress,
-    };
-    await verifyTransfer(receiverClient, expected);
-    // reconnect the sender
-    const reconnected = await createClient({
-      signer: senderSigner,
-      store: senderClient.store,
-    });
-    // NOTE: fast forwarding does not propagate to node timers
-    // so when `reconnected comes online, there is still a 90s
-    // timer locked on the multisig address + appIdentityHash (trying to
-    // take action) and uninstall app (this is why this test has
-    // an extended timeout)
-    expect(reconnected.publicIdentifier).to.be.equal(senderClient.publicIdentifier);
-    expect(reconnected.multisigAddress).to.be.equal(senderClient.multisigAddress);
-    expect(reconnected.signerAddress).to.be.equal(senderClient.signerAddress);
-    // make sure the transfer is properly reclaimed
-    const reconnectedApps = await senderClient.getAppInstances();
-    expect(reconnectedApps.length).to.be.equal(senderApps.length - 1);
-    // make sure the transfer is properly returned
-    await verifyTransfer(reconnected, expected);
   });
 
   /**
