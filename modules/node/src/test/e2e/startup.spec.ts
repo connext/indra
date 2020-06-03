@@ -12,6 +12,8 @@ import { AppModule } from "../../app.module";
 import { ChannelRepository } from "../../channel/channel.repository";
 import { ConfigService } from "../../config/config.service";
 
+import { expect } from "../utils";
+
 class MockConfigService extends ConfigService {
   getLogLevel(): number {
     return 0;

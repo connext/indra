@@ -7,11 +7,11 @@ project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' 
 if [[ "$1" == "--watch" ]]
 then
   suffix="node_watcher"
-  command='exec jest --config ops/jest.config.json --watch '"$@"
+  command='exec ts-mocha --bail --check-leaks --watch --timeout 7500 src/**/*.spec.ts '"$@"
   shift # forget $1 and replace it w $2, etc
 else
   suffix="node_tester"
-  command='jest --config ops/jest.config.json '"$@"
+  command='ts-mocha --bail --check-leaks --exit --timeout 7500 src/**/*.spec.ts '"$@"
 fi
 echo $command
 
@@ -180,6 +180,7 @@ docker run \
   --volume="`pwd`:/root" \
   ${project}_builder -c '
     echo "Node Tester Container launched!";echo
+    shopt -s globstar
 
     echo "Waiting for ${INDRA_ETH_RPC_URL#*://}..."
     wait-for -t 60 ${INDRA_ETH_RPC_URL#*://} 2> /dev/null
