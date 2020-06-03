@@ -1,7 +1,7 @@
 import { Ctx } from "evt";
 import { providers } from "ethers";
 
-import { AppInstanceProposal } from "./app";
+import { AppInstanceProposal, AppInstanceJson } from "./app";
 import { Address, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
 import {
   ConditionalTransferTypes,
@@ -142,6 +142,7 @@ const UNINSTALL_EVENT = "UNINSTALL_EVENT";
 type UninstallEventData = {
   appIdentityHash: Bytes32;
   multisigAddress: string;
+  uninstalledApp: AppInstanceJson;
 };
 
 const UNINSTALL_FAILED_EVENT = "UNINSTALL_FAILED_EVENT";

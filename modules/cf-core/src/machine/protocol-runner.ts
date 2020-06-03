@@ -18,7 +18,7 @@ import { getProtocolFromName } from "../protocol";
 import { Context } from "../types";
 
 import { MiddlewareContainer } from "./middleware";
-import { StateChannel } from "../models";
+import { StateChannel, AppInstance } from "../models";
 import { RpcRouter } from "../rpc-router";
 
 function firstRecipientFromProtocolName(protocolName: ProtocolName) {
@@ -121,7 +121,7 @@ export class ProtocolRunner {
     instruction: (context: Context) => AsyncIterableIterator<any>,
     message: ProtocolMessageData,
     preProtocolStateChannel?: StateChannel,
-  ): Promise<{ channel: StateChannel; data: any }> {
+  ): Promise<{ channel: StateChannel; data: any; appContext: AppInstance }> {
     const context: Context = {
       log: this.log,
       message,
