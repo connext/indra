@@ -44,7 +44,7 @@ import { ChannelRepository, convertChannelToJSON } from "../channel/channel.repo
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
 import { AppInstance, AppInstanceSerializer, AppType } from "../appInstance/appInstance.entity";
 import { SetStateCommitment } from "../setStateCommitment/setStateCommitment.entity";
-import { Channel, ChannelSerializer } from "../channel/channel.entity";
+import {Channel, ChannelJSON, ChannelSerializer} from '../channel/channel.entity';
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
 import {
   ChallengeRepository,
@@ -245,12 +245,12 @@ export class CFCoreStore implements IStoreService {
     });
     await this.cache.set(
       `channel:multisig:${multisigAddress}`,
-      60000,
+      60,
       ChannelSerializer.toJSON(channel),
     );
     await this.cache.set(
       `appInstance:identityHash:${freeBalanceApp.identityHash}`,
-      60000,
+      60,
       AppInstanceSerializer.toJSON(freeBalanceApp),
     );
   }
@@ -386,7 +386,7 @@ export class CFCoreStore implements IStoreService {
     });
     await this.cache.mergeCacheValues(
       `appInstance:identityHash:${freeBalanceAppInstance.identityHash}`,
-      60000,
+      60,
       {
         latestState: freeBalanceAppInstance.latestState,
         stateTimeout: freeBalanceAppInstance.stateTimeout,
@@ -395,11 +395,24 @@ export class CFCoreStore implements IStoreService {
     );
     await this.cache.set(
       `appInstance:identityHash:${identityHash}`,
-      60000,
+      60,
       AppInstanceSerializer.toJSON(proposal),
     );
-    await this.cache.set(`channel:appIdentityHash:${identityHash}`, 70000, multisigAddress);
-    await this.cache.del(`channel:multisig:${multisigAddress}`);
+    await this.cache.set(`channel:appIdentityHash:${identityHash}`, 70, multisigAddress);
+    const cached = await this.cache.get(`channel:multisig:${multisigAddress}`);
+    if (!cached) {
+      return;
+    }
+    const cachedChan = ChannelSerializer.fromJSON(JSON.parse(cached) as ChannelJSON);
+    const chanIdx = cachedChan.appInstances.findIndex((ai) => ai.identityHash === proposal.identityHash);
+    const freeBalIdx = cachedChan.appInstances.findIndex((ai) => ai.identityHash == freeBalanceAppInstance.identityHash);
+    cachedChan.appInstances[chanIdx] = proposal;
+    Object.assign(cachedChan.appInstances[freeBalIdx], {
+      latestState: freeBalanceAppInstance.latestState as any,
+      stateTimeout: freeBalanceAppInstance.stateTimeout,
+      latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
+    });
+    await this.cache.set(`channel:multisig:${multisigAddress}`, 60, ChannelSerializer.toJSON(cachedChan));
   }
 
   async updateAppInstance(
@@ -445,12 +458,23 @@ export class CFCoreStore implements IStoreService {
         })
         .execute();
     });
-    await this.cache.mergeCacheValues(`appInstance:identityHash:${identityHash}`, 60000, {
+    await this.cache.mergeCacheValues(`appInstance:identityHash:${identityHash}`, 60, {
       latestState,
       stateTimeout,
       latestVersionNumber,
     });
-    await this.cache.del(`channel:multisig:${multisigAddress}`);
+    const cached = await this.cache.get(`channel:multisig:${multisigAddress}`);
+    if (!cached) {
+      return;
+    }
+    const cachedChan = ChannelSerializer.fromJSON(JSON.parse(cached) as ChannelJSON);
+    const chanIdx = cachedChan.appInstances.findIndex((ai) => ai.identityHash === identityHash);
+    Object.assign(cachedChan.appInstances[chanIdx], {
+      latestState: latestState as AppState,
+      stateTimeout,
+      latestVersionNumber
+    });
+    await this.cache.set(`channel:multisig:${multisigAddress}`, 60, ChannelSerializer.toJSON(cachedChan));
   }
 
   async removeAppInstance(
@@ -508,11 +532,11 @@ export class CFCoreStore implements IStoreService {
     if (app) {
       await this.cache.mergeCacheValues(
         `appInstance:identityHash:${appIdentityHash}`,
-        60000,
+        60,
         AppInstanceSerializer.toJSON(app),
       );
+      await this.cache.del(`channel:multisig:${multisigAddress}`);
     }
-    await this.cache.del(`channel:multisig:${multisigAddress}`);
   }
 
   async getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal> {
@@ -1009,7 +1033,7 @@ export class CFCoreStore implements IStoreService {
   private async findAppInstanceByIdentityHash(identityHash: string) {
     return this.cache.wrap(
       `appInstance:identityHash:${identityHash}`,
-      60000,
+      60,
       () => {
         return this.appInstanceRepository.findByIdentityHash(identityHash);
       },
@@ -1028,7 +1052,7 @@ export class CFCoreStore implements IStoreService {
   private async findChannelByMultisigAddress(multisig: string) {
     return this.cache.wrap(
       `channel:multisig:${multisig}`,
-      60000,
+      60,
       () => {
         return this.channelRepository.findByMultisigAddress(multisig);
       },
@@ -1054,10 +1078,10 @@ export class CFCoreStore implements IStoreService {
     if (!chan) {
       return undefined;
     }
-    await this.cache.set(`channel:appIdentityHash:${aih}`, 70000, chan.multisigAddress);
+    await this.cache.set(`channel:appIdentityHash:${aih}`, 70, chan.multisigAddress);
     await this.cache.set(
       `channel:multisig:${chan.multisigAddress}`,
-      60000,
+      60,
       ChannelSerializer.toJSON(chan),
     );
     return chan;
@@ -1074,10 +1098,10 @@ export class CFCoreStore implements IStoreService {
     if (!chan) {
       return undefined;
     }
-    await this.cache.set(`channel:owners:${canonical}`, 70000, chan.multisigAddress);
+    await this.cache.set(`channel:owners:${canonical}`, 70, chan.multisigAddress);
     await this.cache.set(
       `channel:multisig:${chan.multisigAddress}`,
-      60000,
+      60,
       ChannelSerializer.toJSON(chan),
     );
     return chan;

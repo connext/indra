@@ -155,6 +155,7 @@ export default {
           )} ETH to ${receiverIdentifier} (${receiverSigner})`,
         );
 
+        const start = Date.now();
         try {
           // Send transfer
           log.info(`Starting transfer to ${receiverIdentifier} with signer ${receiverSigner}`);
@@ -169,7 +170,7 @@ export default {
             recipient: receiverIdentifier,
             meta: { info: `Transfer from ${NAME}` },
           });
-          log.info(`Conditional transfer ${paymentId} sent`);
+          log.info(`Conditional transfer ${paymentId} sent. Elapsed: ${Date.now() - start}`);
         } catch (err) {
           console.error(`Error sending tranfer: ${err.message}`);
       }

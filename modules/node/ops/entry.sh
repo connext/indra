@@ -40,20 +40,20 @@ wait_for "nats" "$INDRA_NATS_SERVERS"
 wait_for "ethprovider" "$INDRA_ETH_RPC_URL"
 wait_for "redis" "$INDRA_REDIS_URL"
 
- if [[ "$NODE_ENV" == "development" ]]
- then
-   echo "Starting indra node in dev-mode"
-   exec ./node_modules/.bin/nodemon \
-     --delay 1 \
-     --exitcrash \
-     --ignore *.test.ts \
-     --ignore *.swp \
-     --legacy-watch \
-     --polling-interval 1000 \
-     --watch src \
-     --exec ts-node \
-     ./src/main.ts
- else
+if [[ "$NODE_ENV" == "development" ]]
+then
+ echo "Starting indra node in dev-mode"
+ exec ./node_modules/.bin/nodemon \
+   --delay 1 \
+   --exitcrash \
+   --ignore *.test.ts \
+   --ignore *.swp \
+   --legacy-watch \
+   --polling-interval 1000 \
+   --watch src \
+   --exec ts-node \
+   ./src/main.ts
+else
   echo "Starting indra node in prod-mode"
   if [ -z "$INSPECT" ]
   then
@@ -61,5 +61,5 @@ wait_for "redis" "$INDRA_REDIS_URL"
   else
     exec node --no-deprecation dist/src/main.js
   fi
- fi
+fi
 
