@@ -1,13 +1,15 @@
 import { LinkedTransferStatus } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { HashZero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { LoggerService } from "../logger/logger.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
+
+const { HashZero } = constants;
 
 const appStatusesToLinkedTransferStatus = (
   senderAppType: AppType,

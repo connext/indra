@@ -11,10 +11,12 @@ import {
   DefaultApp,
 } from "@connext/types";
 import { toBN, stringify } from "@connext/utils";
-import { HashZero, Zero } from "ethers/constants";
+import { constants, utils } from "ethers";
 
 import { AbstractController } from "./AbstractController";
-import { soliditySha256 } from "ethers/utils";
+
+const { HashZero, Zero } = constants;
+const { soliditySha256 } = utils;
 
 export class HashLockTransferController extends AbstractController {
   public hashLockTransfer = async (

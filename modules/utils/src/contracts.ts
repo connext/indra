@@ -1,5 +1,7 @@
-import { BigNumberish, solidityPack, keccak256 } from "ethers/utils";
+import { utils } from "ethers";
 import { AppIdentity, CommitmentTarget } from "@connext/types";
+
+const { solidityPack, keccak256 } = utils;
 
 export const appIdentityToHash = (appIdentity: AppIdentity): string => {
   return keccak256(
@@ -17,7 +19,7 @@ export const appIdentityToHash = (appIdentity: AppIdentity): string => {
 };
 
 // TS version of MChallengeRegistryCore::computeCancelDisputeHash
-export const computeCancelDisputeHash = (identityHash: string, versionNumber: BigNumberish) =>
+export const computeCancelDisputeHash = (identityHash: string, versionNumber: utils.BigNumberish) =>
   keccak256(
     solidityPack(
       ["uint8", "bytes32", "uint256"],
@@ -32,8 +34,8 @@ export const appStateToHash = (state: string) => keccak256(state);
 export const computeAppChallengeHash = (
   id: string,
   appStateHash: string,
-  versionNumber: BigNumberish,
-  timeout: BigNumberish,
+  versionNumber: utils.BigNumberish,
+  timeout: utils.BigNumberish,
 ) =>
   keccak256(
     solidityPack(

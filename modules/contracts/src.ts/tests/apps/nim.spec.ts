@@ -1,15 +1,16 @@
 /* global before */
 import { SolidityValueType } from "@connext/types";
-import { Contract, ContractFactory } from "ethers";
-import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { Contract, ContractFactory, utils } from "ethers";
 
 import { NimApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 
+const { defaultAbiCoder } = utils;
+
 type NimAppState = {
-  versionNumber: BigNumber;
-  pileHeights: BigNumber[];
+  versionNumber: utils.BigNumber;
+  pileHeights: utils.BigNumber[];
 };
 
 const decodeBytesToAppState = (encodedAppState: string): NimAppState => {
@@ -60,11 +61,7 @@ describe("Nim", () => {
 
   before(async () => {
     const wallet = (await provider.getWallets())[0];
-    nim = await new ContractFactory(
-      NimApp.abi,
-      NimApp.bytecode,
-      wallet,
-    ).deploy();
+    nim = await new ContractFactory(NimApp.abi, NimApp.bytecode, wallet).deploy();
   });
 
   describe("applyAction", () => {

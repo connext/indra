@@ -11,9 +11,11 @@ import {
   DefaultApp,
 } from "@connext/types";
 import { toBN, stringify } from "@connext/utils";
-import { Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { AbstractController } from "./AbstractController";
+
+const { Zero } = constants;
 
 export class SignedTransferController extends AbstractController {
   public signedTransfer = async (

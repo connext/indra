@@ -1,8 +1,4 @@
-import {
-  AppChallenge,
-  ChallengeEvents,
-  ChallengeStatus,
-} from "@connext/types";
+import { AppChallenge, ChallengeEvents, ChallengeStatus } from "@connext/types";
 import {
   ChannelSigner,
   computeAppChallengeHash,
@@ -11,11 +7,9 @@ import {
   getRandomBytes32,
   toBN,
 } from "@connext/utils";
-import { Contract, ContractFactory, Wallet } from "ethers";
-import { Zero, One, HashZero } from "ethers/constants";
-import { BigNumberish, keccak256 } from "ethers/utils";
+import { Contract, ContractFactory, Wallet, constants, utils } from "ethers";
 
-import { AppWithAction, ChallengeRegistry }  from "../artifacts";
+import { AppWithAction, ChallengeRegistry } from "../artifacts";
 
 import {
   ActionType,
@@ -30,6 +24,9 @@ import {
   provider,
   sortSignaturesBySignerAddress,
 } from "./utils";
+
+const { Zero, One, HashZero } = constants;
+const { keccak256 } = utils;
 
 export const setupContext = async (givenAppDefinition?: Contract) => {
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
@@ -60,11 +57,13 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
   ).deploy();
   await appRegistry.deployed();
 
-  const appDefinition = givenAppDefinition || await new ContractFactory(
-    AppWithAction.abi as any,
-    AppWithAction.bytecode,
-    deployer,
-  ).deploy();
+  const appDefinition =
+    givenAppDefinition ||
+    (await new ContractFactory(
+      AppWithAction.abi as any,
+      AppWithAction.bytecode,
+      deployer,
+    ).deploy());
   await appDefinition.deployed();
 
   const appInstance = new AppWithCounterClass(
@@ -77,8 +76,8 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
 
   const getSignatures = async (digest: string): Promise<string[]> =>
     await sortSignaturesBySignerAddress(digest, [
-      await (new ChannelSigner(bob.privateKey).signMessage(digest)),
-      await (new ChannelSigner(alice.privateKey).signMessage(digest)),
+      await new ChannelSigner(bob.privateKey).signMessage(digest),
+      await new ChannelSigner(alice.privateKey).signMessage(digest),
     ]);
 
   ////////////////////////////////////////
@@ -105,19 +104,18 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
     appRegistry.functions.isProgressable(await getChallenge(), appInstance.defaultTimeout);
 
   const isDisputable = async (challenge?: AppChallenge) =>
-    appRegistry.functions.isDisputable(challenge || await getChallenge());
+    appRegistry.functions.isDisputable(challenge || (await getChallenge()));
 
   const isFinalized = async () =>
     appRegistry.functions.isFinalized(await getChallenge(), appInstance.defaultTimeout);
 
   const isCancellable = async (challenge?: AppChallenge) =>
     appRegistry.functions.isCancellable(
-      challenge || await getChallenge(),
+      challenge || (await getChallenge()),
       appInstance.defaultTimeout,
     );
 
-  const hasPassed = (timeout: BigNumberish) =>
-    appRegistry.functions.hasPassed(toBN(timeout));
+  const hasPassed = (timeout: utils.BigNumberish) => appRegistry.functions.hasPassed(toBN(timeout));
 
   const verifySignatures = async (
     digest: string = getRandomBytes32(),
@@ -125,7 +123,7 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
     signers?: string[],
   ) =>
     appRegistry.functions.verifySignatures(
-      signatures || await getSignatures(digest),
+      signatures || (await getSignatures(digest)),
       digest,
       signers || [alice.address, bob.address],
     );
@@ -204,7 +202,7 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
     action: AppWithCounterAction,
     signer: Wallet,
     resultingState?: AppWithCounterState,
-    resultingStateVersionNumber?: BigNumberish,
+    resultingStateVersionNumber?: utils.BigNumberish,
     resultingStateTimeout?: number,
   ) => {
     resultingState = resultingState ?? {
@@ -227,7 +225,7 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
       appStateHash: resultingStateHash,
       versionNumber: resultingStateVersionNumber,
       timeout: resultingStateTimeout,
-      signatures: [ await (new ChannelSigner(signer.privateKey).signMessage(digest)) ],
+      signatures: [await new ChannelSigner(signer.privateKey).signMessage(digest)],
     };
     await wrapInEventVerification(
       appRegistry.functions.progressState(
@@ -342,9 +340,7 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
       versionNumber: One.add(versionNumber),
       appStateHash: resultingStateHash,
       timeout: timeout2,
-      signatures: [
-        await (new ChannelSigner(turnTaker.privateKey).signMessage(resultingStateDigest)),
-      ],
+      signatures: [await new ChannelSigner(turnTaker.privateKey).signMessage(resultingStateDigest)],
     };
     await appRegistry.functions.setAndProgressState(
       appInstance.appIdentity,
@@ -361,7 +357,7 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
     const digest = computeCancelDisputeHash(appInstance.identityHash, toBN(versionNumber));
     await appRegistry.functions.cancelDispute(appInstance.appIdentity, {
       versionNumber: toBN(versionNumber),
-      signatures: signatures || await getSignatures(digest),
+      signatures: signatures || (await getSignatures(digest)),
     });
   };
 

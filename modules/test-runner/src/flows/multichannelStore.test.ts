@@ -19,9 +19,9 @@ import {
   signReceiptMessage,
 } from "@connext/utils";
 import { Sequelize } from "sequelize";
+import { utils } from "ethers";
 
 import { createClient, fundChannel, ETH_AMOUNT_MD, expect, env } from "../util";
-import { BigNumber } from "ethers/utils";
 
 // NOTE: only groups correct number of promises associated with a payment.
 // there is no validation done to ensure the events correspond to the payments,
@@ -42,7 +42,7 @@ const registerFailureListeners = (reject: any, sender: ConnextClient, recipient:
 
 const performConditionalTransfer = async (params: {
   ASSET: string;
-  TRANSFER_AMT: BigNumber;
+  TRANSFER_AMT: utils.BigNumber;
   conditionType: ConditionalTransferTypes;
   sender: IConnextClient;
   recipient: IConnextClient;
@@ -134,8 +134,8 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
   let receipt: Receipt;
   let chainId: number;
   let verifyingContract: Address;
-  let initialSenderFb: { [x: string]: string | BigNumber };
-  let initialRecipientFb: { [x: string]: BigNumber };
+  let initialSenderFb: { [x: string]: string | utils.BigNumber };
+  let initialRecipientFb: { [x: string]: utils.BigNumber };
 
   const DEPOSIT_AMT = ETH_AMOUNT_MD;
   const ASSET = CONVENTION_FOR_ETH_ASSET_ID;

@@ -13,9 +13,11 @@ import {
   deBigNumberifyJson,
   recoverAddressFromChannelMessage,
 } from "@connext/utils";
-import { Interface, keccak256, solidityPack } from "ethers/utils";
+import { utils } from "ethers";
 
 import * as ChallengeRegistry from "../../artifacts/ChallengeRegistry.json";
+
+const { Interface, keccak256, solidityPack } = utils;
 
 const iface = new Interface(ChallengeRegistry.abi as any);
 
@@ -110,7 +112,7 @@ export class SetStateCommitment implements EthereumCommitment {
       timeout: this.stateTimeout, // this is a *state-specific* timeout (defaults to defaultTimeout)
       // safe to do because IFF single signed commitment, then contract
       // will take a single signers array of just the turn taker
-      signatures: this.signatures.filter(x => !!x),
+      signatures: this.signatures.filter((x) => !!x),
     };
   }
 

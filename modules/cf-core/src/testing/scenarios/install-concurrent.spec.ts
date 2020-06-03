@@ -1,6 +1,5 @@
 import { CONVENTION_FOR_ETH_ASSET_ID, ProposeMessage } from "@connext/types";
-import { One } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
@@ -8,6 +7,9 @@ import { toBeLt } from "../bignumber-jest-matcher";
 import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import { collateralizeChannel, createChannel, makeInstallCall, makeProposeCall } from "../utils";
+
+const { One } = constants;
+const { parseEther } = utils;
 
 expect.extend({ toBeLt });
 

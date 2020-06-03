@@ -7,7 +7,7 @@ import {
   ProtocolRoles,
   UninstallMiddlewareContext,
 } from "@connext/types";
-import { JsonRpcProvider } from "ethers/providers";
+import { providers } from "ethers";
 import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -248,7 +248,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
 async function computeStateTransition(
   params: ProtocolParams.Uninstall,
-  provider: JsonRpcProvider,
+  provider: providers.JsonRpcProvider,
   stateChannel: StateChannel,
   appInstance: AppInstance,
   log?: ILoggerService,

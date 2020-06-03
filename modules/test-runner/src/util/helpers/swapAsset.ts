@@ -1,9 +1,11 @@
 import { IConnextClient, PublicParams } from "@connext/types";
 import { calculateExchange, getAddressFromAssetId, inverse } from "@connext/utils";
-import { AddressZero, Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { expect } from "../";
 import { AssetOptions, ExistingBalancesSwap } from "../types";
+
+const { AddressZero, Zero } = constants;
 
 export async function swapAsset(
   client: IConnextClient,

@@ -25,8 +25,7 @@ import {
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { JsonRpcProvider } from "ethers/providers";
-import { bigNumberify } from "ethers/utils";
+import { providers, utils } from "ethers";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -43,6 +42,8 @@ import { TransferService, getTransferTypeFromAppName } from "../transfer/transfe
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
+
+const { bigNumberify } = utils;
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -190,7 +191,7 @@ export class AppRegistryService implements OnModuleInit {
     const defaultValidation = await generateValidationMiddleware(
       {
         contractAddresses,
-        provider: provider as JsonRpcProvider,
+        provider: provider as providers.JsonRpcProvider,
       },
       this.configService.getSupportedTokens(),
     );

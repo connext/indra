@@ -1,13 +1,12 @@
 import { getLocalStore } from "@connext/store";
-import { ConditionalTransferTypes, IConnextClient, EventNames } from "@connext/types";
+import { ConditionalTransferTypes, IConnextClient } from "@connext/types";
 import {
   getRandomBytes32,
   getRandomPrivateKey,
   getPublicKeyFromPrivateKey,
   getPublicIdentifierFromPublicKey,
 } from "@connext/utils";
-import { ContractFactory, Wallet } from "ethers";
-import { AddressZero } from "ethers/constants";
+import { ContractFactory, Wallet, constants } from "ethers";
 import tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
 import { before } from "mocha";
 import { Client } from "ts-nats";
@@ -29,6 +28,8 @@ import {
   ZERO_ZERO_ONE_ETH,
 } from "../util";
 import { getNatsClient } from "../util/nats";
+
+const { AddressZero } = constants;
 
 describe("Async Transfers", () => {
   let clientA: IConnextClient;
@@ -292,7 +293,7 @@ describe("Async Transfers", () => {
   });
 
   it("Experimental: Average latency of 10 async transfers with Eth", async () => {
-    let runTime: number[] = [];
+    const runTime: number[] = [];
     let sum = 0;
     const numberOfRuns = 5;
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };

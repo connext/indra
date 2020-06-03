@@ -1,5 +1,5 @@
 import { EventNames, UpdateStateMessage, EventPayload } from "@connext/types";
-import { Zero, Two } from "ethers/constants";
+import { constants } from "ethers";
 
 import { CFCore } from "../../cfCore";
 import { NO_MULTISIG_IN_PARAMS, NO_APP_INSTANCE_FOR_GIVEN_HASH } from "../../errors";
@@ -15,6 +15,8 @@ import {
   assertMessage,
 } from "../utils";
 import { toBN, deBigNumberifyJson } from "@connext/utils";
+
+const { Zero, Two } = constants;
 
 const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 

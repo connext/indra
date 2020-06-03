@@ -16,6 +16,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   recoverAddressFromChannelMessage,
 } from "@connext/utils";
+import { utils } from "ethers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { StateChannel, AppInstance, FreeBalanceClass } from "../models";
@@ -27,8 +28,9 @@ import {
   SetStateCommitment,
   ConditionalTransactionCommitment,
 } from "../ethereum";
-import { keccak256, defaultAbiCoder } from "ethers/utils";
 import { computeInterpreterParameters } from "./install";
+
+const { keccak256, defaultAbiCoder } = utils;
 
 const protocol = ProtocolNames.sync;
 const { IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, OP_SIGN, OP_VALIDATE } = Opcode;
@@ -162,7 +164,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           postSyncStateChannel = StateChannel.fromJson(updatedChannel.toJson());
         }
 
-        let doubleSigned: SetStateCommitment[] = [];
+        const doubleSigned: SetStateCommitment[] = [];
         // process single-signed commitments
         for (const commitment of commitments) {
           if (commitment.signatures.length === 2) {
@@ -349,7 +351,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           postSyncStateChannel = StateChannel.fromJson(updatedChannel.toJson());
         }
 
-        let doubleSigned: SetStateCommitment[] = [];
+        const doubleSigned: SetStateCommitment[] = [];
         // process single-signed commitments
         for (const commitment of commitments) {
           if (commitment.signatures.length === 2) {
@@ -438,7 +440,7 @@ async function syncAppStates(
   publicIdentifier: string,
 ) {
   let updatedChannel: StateChannel | undefined = undefined;
-  let commitments: SetStateCommitment[] = [];
+  const commitments: SetStateCommitment[] = [];
 
   for (const ourApp of [...ourChannel.appInstances.values()]) {
     const counterpartyApp = counterpartyChannel.appInstances.get(ourApp.identityHash);

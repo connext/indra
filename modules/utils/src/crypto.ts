@@ -6,7 +6,7 @@ import {
   PrivateKey,
   SignatureString,
 } from "@connext/types";
-import { arrayify, getAddress, hexlify, randomBytes, toUtf8String } from "ethers/utils";
+import { utils } from "ethers";
 import {
   arrayToBuffer,
   concatBuffers,
@@ -25,6 +25,8 @@ import {
 } from "eccrypto-js";
 
 import { getAddressError, getHexStringError, isValidHexString } from "./hexStrings";
+
+const { arrayify, getAddress, hexlify, randomBytes, toUtf8String } = utils;
 
 export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
 

@@ -1,6 +1,5 @@
 import { IConnextClient, PublicParams } from "@connext/types";
-import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import { expect, ONE_ETH } from "../util";
 import {
@@ -16,6 +15,9 @@ import {
   ZERO_ZERO_ZERO_FIVE,
   ONE,
 } from "../util";
+
+const { AddressZero } = constants;
+const { parseEther } = utils;
 
 describe("Swaps", () => {
   let client: IConnextClient;

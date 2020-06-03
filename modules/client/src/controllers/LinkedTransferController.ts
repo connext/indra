@@ -17,10 +17,12 @@ import {
   stringify,
   toBN,
 } from "@connext/utils";
-import { HashZero, Zero } from "ethers/constants";
-import { soliditySha256 } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import { AbstractController } from "./AbstractController";
+
+const { HashZero, Zero } = constants;
+const { soliditySha256 } = utils;
 
 export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (
@@ -66,7 +68,7 @@ export class LinkedTransferController extends AbstractController {
       ],
       linkedHash,
       preImage: HashZero,
-      finalized: false
+      finalized: false,
     };
 
     const network = await this.ethProvider.getNetwork();

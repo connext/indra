@@ -6,10 +6,12 @@ import {
 } from "@connext/contracts";
 import { OutcomeType } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { Context } from "../types";
 import { StateChannel, AppInstance } from "../models";
+
+const { AddressZero } = constants;
 
 const getConditionalTransactionCommitment = (
   context: Context,

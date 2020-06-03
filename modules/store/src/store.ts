@@ -21,12 +21,14 @@ import {
   ChallengeEvents,
 } from "@connext/types";
 import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
-import { Zero } from "ethers/constants";
-import { defaultAbiCoder } from "ethers/utils";
 import pWaterfall from "p-waterfall";
+import { constants, utils } from "ethers";
 
 import { storeKeys } from "./constants";
 import { KeyValueStorage } from "./types";
+
+const { Zero } = constants;
+const { defaultAbiCoder } = utils;
 
 const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
   return {

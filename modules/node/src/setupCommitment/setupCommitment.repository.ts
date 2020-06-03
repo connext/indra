@@ -1,8 +1,10 @@
 import { MinimalTransaction } from "@connext/types";
-import { bigNumberify } from "ethers/utils";
+import { utils } from "ethers";
 import { EntityRepository, Repository } from "typeorm";
 
 import { SetupCommitment } from "./setupCommitment.entity";
+
+const { bigNumberify } = utils;
 
 export const convertSetupEntityToMinimalTransaction = (commitment: SetupCommitment) => {
   return {

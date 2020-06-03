@@ -1,8 +1,9 @@
 import { IBackupService, StorePair } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
-import { Wallet } from "ethers";
-import { arrayify, hexlify, keccak256, toUtf8Bytes, toUtf8String } from "ethers/utils";
+import { Wallet, utils } from "ethers";
 import { PisaClient } from "pisa-client";
+
+const { arrayify, hexlify, keccak256, toUtf8Bytes, toUtf8String } = utils;
 
 export class PisaBackupService implements IBackupService {
   private pisaClient: PisaClient;

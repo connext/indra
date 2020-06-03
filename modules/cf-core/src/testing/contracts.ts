@@ -14,8 +14,7 @@ import {
   WithdrawApp,
 } from "@connext/contracts";
 import { ContractAddresses } from "@connext/types";
-import { ContractFactory, Wallet } from "ethers";
-import { JsonRpcProvider } from "ethers/providers";
+import { ContractFactory, Wallet, providers } from "ethers";
 
 export type TestContractAddresses = ContractAddresses & {
   TicTacToeApp: string;
@@ -25,14 +24,13 @@ export type TestContractAddresses = ContractAddresses & {
 };
 
 export type TestNetworkContext = {
-  provider: JsonRpcProvider;
+  provider: providers.JsonRpcProvider;
   contractAddresses: TestContractAddresses;
 };
 
 export const deployTestArtifactsToChain = async (
   wallet: Wallet,
 ): Promise<TestContractAddresses> => {
-
   const depositAppContract = await new ContractFactory(
     DepositApp.abi,
     DepositApp.bytecode,
@@ -98,7 +96,6 @@ export const deployTestArtifactsToChain = async (
     TicTacToeApp.bytecode,
     wallet,
   ).deploy();
-
 
   const timeLockedPassThrough = await new ContractFactory(
     TimeLockedPassThrough.abi,

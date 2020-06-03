@@ -24,8 +24,7 @@ import {
   TypedEmitter,
 } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
-import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
@@ -37,6 +36,8 @@ import { CFCoreRecordRepository } from "./cfCore.repository";
 import { AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { MessagingService } from "@connext/messaging";
+
+const { Zero } = constants;
 
 Injectable();
 export class CFCoreService {
@@ -181,13 +182,13 @@ export class CFCoreService {
   async proposeAndWaitForInstallApp(
     channel: Channel,
     initialState: any,
-    initiatorDeposit: BigNumber,
+    initiatorDeposit: utils.BigNumber,
     initiatorDepositAssetId: AssetId,
-    responderDeposit: BigNumber,
+    responderDeposit: utils.BigNumber,
     responderDepositAssetId: AssetId,
     app: string,
     meta: object = {},
-    stateTimeout: BigNumber = Zero,
+    stateTimeout: utils.BigNumber = Zero,
   ): Promise<MethodResults.ProposeInstall | undefined> {
     const network = await this.configService.getEthNetwork();
 
@@ -195,7 +196,7 @@ export class CFCoreService {
 
     // Decrement timeout so that receiver app MUST finalize before sender app
     // See: https://github.com/connext/indra/issues/1046
-    const timeout = DEFAULT_APP_TIMEOUT.sub(TIMEOUT_BUFFER)
+    const timeout = DEFAULT_APP_TIMEOUT.sub(TIMEOUT_BUFFER);
 
     const {
       actionEncoding,
@@ -315,7 +316,7 @@ export class CFCoreService {
     appIdentityHash: string,
     multisigAddress: string,
     action: AppAction,
-    stateTimeout?: BigNumber,
+    stateTimeout?: utils.BigNumber,
   ): Promise<MethodResults.TakeAction> {
     const parameters = {
       action,

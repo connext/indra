@@ -4,9 +4,11 @@ import {
   WithdrawAppActionEncoding,
   WithdrawAppName,
 } from "@connext/types";
-import { Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { AppRegistryInfo } from "../shared";
+
+const { Zero } = constants;
 
 export const WithdrawAppRegistryInfo: AppRegistryInfo = {
   allowNodeInstall: true,

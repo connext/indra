@@ -16,11 +16,12 @@
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
-    "ethers": "4.0.47"
-  },
-  "devDependencies": {
+    "ethers": "4.0.47",
     "eventemitter3": "4.0.4",
     "evt": "1.7.11",
+    "sequelize": "5.21.11"
+  },
+  "devDependencies": {
     "rollup": "2.12.0",
     "rollup-plugin-typescript2": "0.27.1",
     "typescript": "3.9.3"

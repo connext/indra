@@ -10,8 +10,7 @@ import {
   PublicIdentifier,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { INVALID_ARGUMENT } from "ethers/errors";
-import { BigNumber } from "ethers/utils";
+import { errors, utils } from "ethers";
 
 import {
   IMPROPERLY_FORMATTED_STRUCT,
@@ -67,7 +66,7 @@ export class TakeActionController extends MethodController {
     try {
       appInstance.encodeAction(action);
     } catch (e) {
-      if (e.code === INVALID_ARGUMENT) {
+      if (e.code === errors.INVALID_ARGUMENT) {
         throw new Error(`${IMPROPERLY_FORMATTED_STRUCT}: ${e.message}`);
       }
       throw new Error(STATE_OBJECT_NOT_ENCODABLE);
@@ -129,7 +128,7 @@ async function runTakeActionProtocol(
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
   action: SolidityValueType,
-  stateTimeout: BigNumber,
+  stateTimeout: utils.BigNumber,
 ) {
   const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
   if (!stateChannel) {

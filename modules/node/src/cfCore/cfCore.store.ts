@@ -21,9 +21,8 @@ import {
   WithdrawalMonitorObject,
 } from "@connext/types";
 import { toBN, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { Zero, AddressZero } from "ethers/constants";
 import { getManager } from "typeorm";
-import { bigNumberify, defaultAbiCoder } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import {
@@ -60,6 +59,9 @@ import {
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 import { ChallengeRegistry } from "@connext/contracts";
 import { LoggerService } from "../logger/logger.service";
+
+const { Zero, AddressZero } = constants;
+const { bigNumberify, defaultAbiCoder } = utils;
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
@@ -142,7 +144,7 @@ export class CFCoreStore implements IStoreService {
     channel.addresses = addresses;
     channel.monotonicNumProposedApps = monotonicNumProposedApps;
     const swaps = this.configService.getAllowedSwaps();
-    let activeCollateralizations = {};
+    const activeCollateralizations = {};
     swaps.forEach((swap) => {
       activeCollateralizations[swap.to] = false;
     });
@@ -204,11 +206,10 @@ export class CFCoreStore implements IStoreService {
 
     channel.setupCommitment = setupCommitment;
 
-    let freeBalanceUpdateCommitment =
-      await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
-        freeBalanceApp.identityHash,
-        toBN(signedFreeBalanceUpdate.versionNumber),
-      );
+    let freeBalanceUpdateCommitment = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
+      freeBalanceApp.identityHash,
+      toBN(signedFreeBalanceUpdate.versionNumber),
+    );
 
     if (!freeBalanceUpdateCommitment) {
       freeBalanceUpdateCommitment = new SetStateCommitment();
@@ -290,10 +291,9 @@ export class CFCoreStore implements IStoreService {
         throw new Error(`Unrecognized outcome type: ${OutcomeType[outcomeType]}`);
     }
 
-    const existingConditionalTx =
-      await this.conditionalTransactionCommitmentRepository.findByAppIdentityHash(
-        appJson.identityHash,
-      );
+    const existingConditionalTx = await this.conditionalTransactionCommitmentRepository.findByAppIdentityHash(
+      appJson.identityHash,
+    );
 
     await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(proposal);
@@ -497,11 +497,10 @@ export class CFCoreStore implements IStoreService {
     app.latestVersionNumber = 0;
     app.channel = channel;
 
-    let setStateCommitment =
-      await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
-        appProposal.identityHash,
-        toBN(signedSetStateCommitment.versionNumber),
-      );
+    let setStateCommitment = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
+      appProposal.identityHash,
+      toBN(signedSetStateCommitment.versionNumber),
+    );
 
     if (!setStateCommitment) {
       setStateCommitment = new SetStateCommitment();
@@ -693,7 +692,6 @@ export class CFCoreStore implements IStoreService {
     throw new Error("Method not implemented.");
   }
 
-
   ////// Watcher methods
   async getAppChallenge(appIdentityHash: string): Promise<StoredAppChallenge | undefined> {
     const challenge = await this.challengeRepository.findByIdentityHash(appIdentityHash);
@@ -757,11 +755,10 @@ export class CFCoreStore implements IStoreService {
   async addOnchainAction(appIdentityHash: string, provider: JsonRpcProvider): Promise<void> {
     const channel = await this.channelRepository.findByAppIdentityHashOrThrow(appIdentityHash);
     const app = channel.appInstances.find((a) => a.identityHash === appIdentityHash);
-    const latestSetState =
-      await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
-        appIdentityHash,
-        toBN(app.latestVersionNumber),
-      );
+    const latestSetState = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
+      appIdentityHash,
+      toBN(app.latestVersionNumber),
+    );
     // fetch onchain data
     const registry = new Contract(
       latestSetState.challengeRegistryAddress,
