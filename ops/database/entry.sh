@@ -9,7 +9,7 @@ export CHAIN_ID=$CHAIN_ID
 # 60 sec/min * 30 min = 1800
 backup_frequency="1800"
 mkdir -p snapshots
-backup_file="snapshots/`ls snapshots | grep "$CHAIN_ID" | sort -r | head -n 1`"
+backup_file="snapshots/`ls snapshots | grep "$CHAIN_ID-" | sort -r | head -n 1`"
 
 ########################################
 ## Helper functions
@@ -50,6 +50,10 @@ trap cleanup SIGTERM
 ## Execute
 
 log "Good morning"
+if [[ ! -f "/var/lib/postgresql/data/PG_VERSION" ]]
+then isFresh="true"
+else isFresh="false"
+fi
 
 # Start temp database & wait until it wakes up
 log "Starting temp database for initialization & backup recovery.."
@@ -62,13 +66,13 @@ done
 log "Good morning, Postgres!"
 
 # Is this a fresh database? Should we restore data from a snapshot?
-if [[ ! -f "/var/lib/postgresql/data/PG_VERSION" && -f "$backup_file" ]]
+if [[ "$isFresh" == "true" && -f "$backup_file" ]]
 then 
   log "Fresh postgres db started w backup present, we'll restore: $backup_file"
   psql --username=$POSTGRES_USER $POSTGRES_DB < $backup_file
   log "Done restoring db snapshot"
 else
-  log "Not restoring: Database exists or no snapshots found or in test mode"
+  log "Not restoring: Database exists ($isFresh) or no snapshots found ($backup_file)"
 fi
 
 log "Stopping old database.."
