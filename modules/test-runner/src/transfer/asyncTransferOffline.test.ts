@@ -65,27 +65,22 @@ const recreateReceiverAndRetryTransfer = async (
   receiverStore: IStoreService,
   transferParams: any,
 ) => {
-  const { amount, assetId, nats } = transferParams;
+  const { amount, assetId } = transferParams;
   await receiverClient.messaging.disconnect();
   // Add delay to make sure messaging properly disconnects
   await delay(1000);
   const newClient = await createClient({ signer: receiverSigner, store: receiverStore });
 
   // Check that client can recover and continue
-  await asyncTransferAsset(senderClient, newClient, amount, assetId, nats);
+  await asyncTransferAsset(senderClient, newClient, amount, assetId);
 };
 
 describe("Async transfer offline tests", () => {
   let clock: any;
   let senderClient: IConnextClient;
   let receiverClient: IConnextClient;
-  let nats: Client;
   let signer: IChannelSigner;
   let store: IStoreService;
-
-  before(async () => {
-    nats = getNatsClient();
-  });
 
   beforeEach(async () => {
     signer = getRandomChannelSigner(env.ethProviderUrl);
@@ -134,7 +129,7 @@ describe("Async transfer offline tests", () => {
     );
     // make the transfer call, should timeout in propose protocol
     await expect(
-      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress, nats),
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
     ).to.be.rejectedWith(`Failed to send message: Request timed out`);
   });
 
@@ -161,13 +156,12 @@ describe("Async transfer offline tests", () => {
       },
     );
     await expect(
-      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress, nats),
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
     ).to.be.rejectedWith(APP_PROTOCOL_TOO_LONG("takeAction"));
 
     await recreateReceiverAndRetryTransfer(signer, senderClient, receiverClient, store, {
       amount: TOKEN_AMOUNT_SM,
       assetId: tokenAddress,
-      nats,
     });
   });
 
