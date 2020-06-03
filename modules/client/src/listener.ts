@@ -32,7 +32,7 @@ import {
   ProtocolParams,
   AppInstanceJson,
 } from "@connext/types";
-import { bigNumberifyJson, stringify, TypedEmitter } from "@connext/utils";
+import { bigNumberifyJson, stringify, TypedEmitter, toBN } from "@connext/utils";
 import { constants } from "ethers";
 
 import { ConnextClient } from "./connext";
@@ -448,9 +448,9 @@ export class ConnextListener {
       case SimpleLinkedTransferAppName: {
         const transferState = state as SimpleLinkedTransferAppState;
         const transferAction = action as SimpleLinkedTransferAppAction;
-        const transferAmount = transferState.coinTransfers[0].amount.isZero()
-          ? transferState.coinTransfers[1].amount
-          : transferState.coinTransfers[0].amount;
+        const transferAmount = toBN(transferState.coinTransfers[0].amount).isZero()
+          ? toBN(transferState.coinTransfers[1].amount)
+          : toBN(transferState.coinTransfers[0].amount);
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.LinkedTransfer,
           amount: transferAmount,
@@ -468,9 +468,9 @@ export class ConnextListener {
       case HashLockTransferAppName: {
         const transferState = state as HashLockTransferAppState;
         const transferAction = action as HashLockTransferAppAction;
-        const transferAmount = transferState.coinTransfers[0].amount.isZero()
-          ? transferState.coinTransfers[1].amount
-          : transferState.coinTransfers[0].amount;
+        const transferAmount = toBN(transferState.coinTransfers[0].amount).isZero()
+          ? toBN(transferState.coinTransfers[1].amount)
+          : toBN(transferState.coinTransfers[0].amount);
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.HashLockTransfer,
           amount: transferAmount,
@@ -489,9 +489,9 @@ export class ConnextListener {
       case SimpleSignedTransferAppName: {
         const transferState = state as SimpleSignedTransferAppState;
         const transferAction = action as SimpleSignedTransferAppAction;
-        const transferAmount = transferState.coinTransfers[0].amount.isZero()
-          ? transferState.coinTransfers[1].amount
-          : transferState.coinTransfers[0].amount;
+        const transferAmount = toBN(transferState.coinTransfers[0].amount).isZero()
+          ? toBN(transferState.coinTransfers[1].amount)
+          : toBN(transferState.coinTransfers[0].amount);
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.SignedTransfer,
           amount: transferAmount,
