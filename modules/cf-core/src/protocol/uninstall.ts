@@ -70,18 +70,20 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     let preUninstallStateChannel: StateChannel;
     if (action) {
-      if (!stateTimeout) {
-        // TODO: Is this actually required? If state is finalized, we dont need it
-        throw new Error("A state timeout is required if uninstalling with action");
+      log.info(`Action provided. Finalizing app before uninstall`);
+      // apply action
+      const newState = await appToUninstall.computeStateTransition(action, network.provider);
+      // ensure state is finalized after applying action
+      const isFinal = await appToUninstall.isStateTerminal(newState, network.provider);
+      if (!isFinal) {
+        throw new Error(`Action provided did not lead to terminal state, refusing to uninstall.`);
       }
-      log.info(`Action provided. Finalizing app before uninstall!`);
+      log.debug(`Resulting state is terminal state, proceeding with uninstall`);
       preUninstallStateChannel = preProtocolStateChannel.setState(
         appToUninstall,
-        await appToUninstall.computeStateTransition(action, network.provider),
+        newState,
         stateTimeout,
       );
-      log.warn(`isFinalized check not yet implemented here - TODO!!`);
-      // TODO: check that state is finalized here?
     } else {
       preUninstallStateChannel = preProtocolStateChannel;
     }
@@ -198,18 +200,20 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     let preUninstallStateChannel: StateChannel;
     if (action) {
-      if (!stateTimeout) {
-        // TODO: Is this actually required? If state is finalized, we dont need it
-        throw new Error("A state timeout is required if uninstalling with action");
+      log.info(`Action provided. Finalizing app before uninstall`);
+      // apply action
+      const newState = await appToUninstall.computeStateTransition(action, network.provider);
+      // ensure state is finalized after applying action
+      const isFinal = await appToUninstall.isStateTerminal(newState, network.provider);
+      if (!isFinal) {
+        throw new Error(`Action provided did not lead to terminal state, refusing to uninstall.`);
       }
-      log.info(`Action provided. Finalizing app before uninstall!`);
+      log.debug(`Resulting state is terminal state, proceeding with uninstall`);
       preUninstallStateChannel = preProtocolStateChannel.setState(
         appToUninstall,
-        await appToUninstall.computeStateTransition(action, network.provider),
+        newState,
         stateTimeout,
       );
-      log.warn(`isFinalized check not yet implemented here - TODO!!`);
-      // TODO: check that state is finalized here?
     } else {
       preUninstallStateChannel = preProtocolStateChannel;
     }
