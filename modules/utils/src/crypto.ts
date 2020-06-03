@@ -42,7 +42,12 @@ export const bufferify = (input: Uint8Array | Buffer | string): Buffer =>
     ? arrayToBuffer(arrayify(input))
     : input;
 
+////////////////////////////////////////
+// Generators
+
 export const getRandomPrivateKey = (): PrivateKey => hexlify(randomBytes(32));
+export const getRandomPublicKey = (): PrivateKey => hexlify(randomBytes(65));
+export const getRandomSignature = getRandomPublicKey;
 
 ////////////////////////////////////////
 // Validators
