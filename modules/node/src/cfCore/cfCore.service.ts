@@ -1,5 +1,5 @@
 import { CFCore } from "@connext/cf-core";
-import { DEFAULT_APP_TIMEOUT, SupportedApplications, WithdrawCommitment } from "@connext/apps";
+import { DEFAULT_APP_TIMEOUT, WithdrawCommitment } from "@connext/apps";
 import {
   AppAction,
   AppInstanceJson,
@@ -16,6 +16,7 @@ import {
   EventName,
   CF_METHOD_TIMEOUT,
   ProtocolEventMessage,
+  SupportedApplicationNames,
 } from "@connext/types";
 import {
   getSignerAddressFromPublicIdentifier,
@@ -419,7 +420,7 @@ export class CFCoreService {
 
   async getAppInstancesByAppName(
     multisigAddress: string,
-    appName: SupportedApplications,
+    appName: SupportedApplicationNames,
   ): Promise<AppInstanceJson[]> {
     const network = await this.configService.getEthNetwork();
     const appRegistry = await this.appRegistryRepository.findByNameAndNetwork(

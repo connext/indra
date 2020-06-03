@@ -103,7 +103,7 @@ export class AppInstance<T extends AppName = any> {
   nodeIdentifier?: string;
 
   @Column("jsonb", { nullable: true })
-  meta?: object;
+  meta?: any;
 
   @Column("jsonb", { nullable: true })
   latestAction!: AppActions[T];
