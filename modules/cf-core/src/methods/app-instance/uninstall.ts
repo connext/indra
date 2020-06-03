@@ -112,7 +112,7 @@ export async function uninstallAppInstanceFromChannel(
   protocolRunner: ProtocolRunner,
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
-  params: MethodParams.Uninstall
+  params: MethodParams.Uninstall,
 ): Promise<StateChannel> {
   const appInstance = stateChannel.getAppInstance(params.appIdentityHash);
 
@@ -125,7 +125,7 @@ export async function uninstallAppInstanceFromChannel(
       multisigAddress: stateChannel.multisigAddress,
       appIdentityHash: appInstance.identityHash,
       action: params.action,
-      stateTimeout: params.stateTimeout || toBN(appInstance.defaultTimeout)
+      stateTimeout: params.stateTimeout || toBN(appInstance.defaultTimeout),
     },
   );
   return updatedChannel;
