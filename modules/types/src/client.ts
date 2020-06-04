@@ -8,9 +8,10 @@ import { EventName, EventPayload } from "./events";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import { NodeResponses } from "./node";
-import { MethodResults, MethodParams, MethodName } from "./methods";
+import { MethodResults, MethodParams } from "./methods";
 import { IStoreService } from "./store";
 import { PublicParams, PublicResults } from "./public";
+import { AppAction } from ".";
 
 /////////////////////////////////
 
@@ -140,5 +141,5 @@ export interface IConnextClient {
   installApp(appIdentityHash: Bytes32): Promise<MethodResults.Install>;
   rejectInstallApp(appIdentityHash: Bytes32): Promise<MethodResults.Uninstall>;
   takeAction(appIdentityHash: Bytes32, action: any): Promise<MethodResults.TakeAction>;
-  uninstallApp(appIdentityHash: Bytes32): Promise<MethodResults.Uninstall>;
+  uninstallApp(appIdentityHash: Bytes32, action?: AppAction): Promise<MethodResults.Uninstall>;
 }
