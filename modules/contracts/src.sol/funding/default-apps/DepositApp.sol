@@ -1,4 +1,4 @@
-pragma solidity 0.6.7;
+pragma solidity ^0.6.4;
 pragma experimental "ABIEncoderV2";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -14,53 +14,57 @@ import "../libs/LibOutcome.sol";
 
 ///         THIS CONTRACT WILL ONLY WORK FOR 2-PARTY CHANNELS!
 contract DepositApp is CounterfactualApp {
+  address constant CONVENTION_FOR_ETH_TOKEN_ADDRESS = address(0x0);
 
-    address constant CONVENTION_FOR_ETH_TOKEN_ADDRESS = address(0x0);
+  struct AppState {
+    LibOutcome.CoinTransfer[2] transfers; // both amounts should be 0 in initial state
+    address payable multisigAddress;
+    address assetId;
+    uint256 startingTotalAmountWithdrawn;
+    uint256 startingMultisigBalance;
+  }
 
-    struct AppState {
-        LibOutcome.CoinTransfer[2] transfers; // both amounts should be 0 in initial state
-        address payable multisigAddress;
-        address assetId;
-        uint256 startingTotalAmountWithdrawn;
-        uint256 startingMultisigBalance;
+  function computeOutcome(bytes calldata encodedState)
+    external
+    override
+    view
+    returns (bytes memory)
+  {
+    AppState memory state = abi.decode(encodedState, (AppState));
+
+    uint256 endingTotalAmountWithdrawn;
+    uint256 endingMultisigBalance;
+
+    if (Address.isContract(state.multisigAddress)) {
+      endingTotalAmountWithdrawn = MinimumViableMultisig(state.multisigAddress)
+        .totalAmountWithdrawn(state.assetId);
+    } else {
+      endingTotalAmountWithdrawn = 0;
     }
 
-    function computeOutcome(bytes calldata encodedState)
-        override
-        external
-        view
-        returns (bytes memory)
-    {
-        AppState memory state = abi.decode(encodedState, (AppState));
+    if (state.assetId == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
+      endingMultisigBalance = state.multisigAddress.balance;
+    } else {
+      endingMultisigBalance = IERC20(state.assetId).balanceOf(state.multisigAddress);
+    }
 
-        uint256 endingTotalAmountWithdrawn;
-        uint256 endingMultisigBalance;
-
-        if (Address.isContract(state.multisigAddress)) {
-            endingTotalAmountWithdrawn = MinimumViableMultisig(state.multisigAddress).totalAmountWithdrawn(state.assetId);
-        } else {
-            endingTotalAmountWithdrawn = 0;
-        }
-
-        if (state.assetId == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
-            endingMultisigBalance = state.multisigAddress.balance;
-        } else {
-            endingMultisigBalance = IERC20(state.assetId).balanceOf(state.multisigAddress);
-        }
-
-        return abi.encode(LibOutcome.CoinTransfer[2]([
+    return
+      abi.encode(
+        LibOutcome.CoinTransfer[2](
+          [
             LibOutcome.CoinTransfer(
-                state.transfers[0].to,
-                // NOTE: deliberately do NOT use safemath here. For more info, see: TODO
-                (endingMultisigBalance - state.startingMultisigBalance) +
-                        (endingTotalAmountWithdrawn - state.startingTotalAmountWithdrawn)
+              state.transfers[0].to,
+              // NOTE: deliberately do NOT use safemath here. For more info, see: TODO
+              (endingMultisigBalance - state.startingMultisigBalance) +
+                (endingTotalAmountWithdrawn - state.startingTotalAmountWithdrawn)
             ),
             LibOutcome.CoinTransfer(
-                state.transfers[1].to,
-                /* should always be 0 */
-                0
+              state.transfers[1].to,
+              /* should always be 0 */
+              0
             )
-        ]));
-    }
-
+          ]
+        )
+      );
+  }
 }
