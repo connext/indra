@@ -107,21 +107,27 @@ export class CreateTransferController extends AbstractController {
           signerAddress,
           chainId,
           verifyingContract,
+          requestCID,
+          subgraphDeploymentID,
           paymentId,
         } = params as PublicParams.SignedTransfer;
 
         initialState = {
           ...baseInitialState,
-          chainId,
           signerAddress,
+          chainId,
           verifyingContract,
+          requestCID,
+          subgraphDeploymentID,
           paymentId,
         } as SimpleSignedTransferAppState;
 
         transferMeta = {
           signerAddress,
-          verifyingContract,
           chainId,
+          verifyingContract,
+          requestCID,
+          subgraphDeploymentID,
         } as CreatedSignedTransferMeta;
 
         submittedMeta.paymentId = paymentId;

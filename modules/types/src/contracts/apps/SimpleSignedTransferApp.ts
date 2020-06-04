@@ -1,4 +1,4 @@
-import { Address, Bytes32 } from "../../basic";
+import { Address, Bytes32, SignatureString } from "../../basic";
 import { tidy } from "../../utils";
 
 import { CoinTransfer } from "../funding";
@@ -10,13 +10,13 @@ export const SimpleSignedTransferAppName = "SimpleSignedTransferApp";
 // keep synced w contracts/app/SimpleSignedTransferApp.sol
 
 export interface Receipt {
-  requestCID: string;
-  responseCID: string;
-  subgraphDeploymentID: string;
+  requestCID: Bytes32;
+  responseCID: Bytes32;
+  subgraphDeploymentID: Bytes32;
 }
 
 export interface Attestation extends Receipt {
-  signature: string;
+  signature: SignatureString;
 }
 
 // ABI Encoding TS Typess
@@ -25,6 +25,8 @@ export type SimpleSignedTransferAppState = {
   signerAddress: Address;
   chainId: number;
   verifyingContract: Address;
+  requestCID: Bytes32;
+  subgraphDeploymentID: Bytes32;
   paymentId: Bytes32;
   finalized: boolean;
 };
@@ -35,15 +37,18 @@ export const SimpleSignedTransferAppStateEncoding = tidy(`tuple(
   address signerAddress,
   uint256 chainId,
   address verifyingContract,
+  bytes32 requestCID,
+  bytes32 subgraphDeploymentID,
   bytes32 paymentId,
   bool finalized
 )`);
 
-export type SimpleSignedTransferAppAction = Attestation;
+export type SimpleSignedTransferAppAction = {
+  responseCID: Bytes32;
+  signature: SignatureString;
+};
 
 export const SimpleSignedTransferAppActionEncoding = tidy(`tuple(
-  bytes32 requestCID,
   bytes32 responseCID,
-  bytes32 subgraphDeploymentID,
   bytes signature
 )`);

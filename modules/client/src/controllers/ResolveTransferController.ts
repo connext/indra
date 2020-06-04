@@ -89,8 +89,11 @@ export class ResolveTransferController extends AbstractController {
           break;
         }
         case ConditionalTransferTypes.SignedTransfer: {
-          const { attestation } = params as PublicParams.ResolveSignedTransfer;
-          action = attestation.signature && (attestation as SimpleSignedTransferAppAction);
+          const { responseCID, signature } = params as PublicParams.ResolveSignedTransfer;
+          action =
+            responseCID &&
+            signature &&
+            ({ responseCID, signature } as SimpleSignedTransferAppAction);
           break;
         }
         case ConditionalTransferTypes.LinkedTransfer: {

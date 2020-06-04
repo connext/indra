@@ -19,14 +19,14 @@ contract SimpleSignedTransferApp is CounterfactualApp {
     address signerAddress;
     uint256 chainId;
     address verifyingContract;
+    bytes32 requestCID;
+    bytes32 subgraphDeploymentID;
     bytes32 paymentId;
     bool finalized;
   }
 
   struct Action {
-    bytes32 requestCID;
     bytes32 responseCID;
-    bytes32 subgraphDeploymentID;
     bytes signature;
   }
 
@@ -68,9 +68,9 @@ contract SimpleSignedTransferApp is CounterfactualApp {
             keccak256(
               abi.encode(
                 RECEIPT_TYPE_HASH,
-                action.requestCID,
+                state.requestCID,
                 action.responseCID,
-                action.subgraphDeploymentID
+                state.subgraphDeploymentID
               )
             )
           )
