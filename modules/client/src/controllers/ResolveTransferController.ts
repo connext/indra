@@ -24,7 +24,7 @@ export class ResolveTransferController extends AbstractController {
     const installedApps = await this.connext.getAppInstances();
     const existingReceiverApp = installedApps.find(
       (app) =>
-        app.appInterface.addr ===
+        app.appDefinition ===
           this.connext.appRegistry.find((app) => app.name === conditionType).appDefinitionAddress &&
         app.meta.paymentId === paymentId &&
         (app.latestState as GenericConditionalTransferAppState).coinTransfers[1].to ===

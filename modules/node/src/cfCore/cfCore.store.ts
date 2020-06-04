@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import {
   AppInstanceJson,
-  AppInstanceProposal,
+  AppInstanceJson,
   AppState,
   ChallengeEvents,
   ChallengeStatus,
@@ -423,13 +423,13 @@ export class CFCoreStore implements IStoreService {
     });
   }
 
-  getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal> {
+  getAppProposal(appIdentityHash: string): Promise<AppInstanceJson> {
     return this.appInstanceRepository.getAppProposal(appIdentityHash);
   }
 
   async createAppProposal(
     multisigAddress: string,
-    appProposal: AppInstanceProposal,
+    appProposal: AppInstanceJson,
     numProposedApps: number,
     signedSetStateCommitment: SetStateCommitmentJSON,
     signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,

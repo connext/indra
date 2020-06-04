@@ -3,7 +3,7 @@ import {
   Address,
   AppAction,
   AppInstanceJson,
-  AppInstanceProposal,
+  AppInstanceJson,
   AppRegistry,
   AssetId,
   ChannelMethods,
@@ -748,7 +748,7 @@ export class ConnextClient implements IConnextClient {
     const { appInstances: proposed } = await this.getProposedAppInstances();
 
     // deal with any proposed swap or linked transfer apps
-    const hangingProposals = proposed.filter((proposal: AppInstanceProposal) =>
+    const hangingProposals = proposed.filter((proposal: AppInstanceJson) =>
       appDefinitions.includes(proposal.appDefinition),
     );
     // remove from `proposedAppInstances`
@@ -768,7 +768,7 @@ export class ConnextClient implements IConnextClient {
    */
   private uninstallAllAppsByDefintion = async (appDefinitions: string[]): Promise<void> => {
     const apps = (await this.getAppInstances()).filter((app: AppInstanceJson) =>
-      appDefinitions.includes(app.appInterface.addr),
+      appDefinitions.includes(app.appDefinition),
     );
     // TODO: ARJUN there is an edgecase where this will cancel withdrawal
     for (const app of apps) {

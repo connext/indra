@@ -1,6 +1,6 @@
 import {
   AppInstanceJson,
-  AppInstanceProposal,
+  AppInstanceJson,
   OutcomeType,
   SimpleLinkedTransferAppName,
   AppState,
@@ -46,11 +46,8 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
       throw new Error(`Unrecognized outcome type: ${OutcomeType[app.outcomeType]}`);
   }
   const json: AppInstanceJson = {
-    appInterface: {
-      stateEncoding: app.stateEncoding,
-      actionEncoding: app.actionEncoding || null,
-      addr: app.appDefinition,
-    },
+    appDefinition: app.appDefinition,
+    abiEncodings: {stateEncoding: app.stateEncoding, actionEncoding: app.actionEncoding || null},
     appSeqNo: app.appSeqNo,
     defaultTimeout: app.defaultTimeout,
     identityHash: app.identityHash,
@@ -69,7 +66,7 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
   return json;
 };
 
-export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceProposal => {
+export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceJson => {
   if (!app) {
     return undefined;
   }
@@ -152,7 +149,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .getMany();
   }
 
-  async getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal | undefined> {
+  async getAppProposal(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
     const app = await this.findByIdentityHash(appIdentityHash);
     if (!app || app.type !== AppType.PROPOSAL) {
       return undefined;

@@ -1,6 +1,6 @@
 import {
   Address,
-  AppInstanceProposal,
+  AppInstanceJson,
   ContractAddresses,
   EventNames,
   IChannelSigner,
@@ -343,7 +343,7 @@ export class CFCore {
         args: [
           PersistAppType,
           StateChannel,
-          AppInstance | AppInstanceProposal,
+          AppInstance | AppInstanceJson,
           SetStateCommitment,
           ConditionalTransactionCommitment,
         ],
@@ -357,12 +357,12 @@ export class CFCore {
         ] = args;
         const { multisigAddress, numProposedApps, freeBalance } = postProtocolChannel;
         const { identityHash } = app;
-        let appContext: AppInstance | AppInstanceProposal | undefined;
+        let appContext: AppInstance | AppInstanceJson | undefined;
         switch (type) {
           case PersistAppType.CreateProposal: {
             await this.storeService.createAppProposal(
               multisigAddress,
-              app as AppInstanceProposal,
+              app as AppInstanceJson,
               numProposedApps,
               signedSetStateCommitment.toJson(),
               signedConditionalTxCommitment.toJson(),

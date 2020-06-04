@@ -1,6 +1,6 @@
 import {
   AppInstanceJson,
-  AppInstanceProposal,
+  AppInstanceJson,
   ChallengeStatus,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
@@ -59,9 +59,9 @@ export const createAppInstanceJson = (
   };
 };
 
-export const createAppInstanceProposal = (
-  overrides: Partial<AppInstanceProposal> = {},
-): AppInstanceProposal => {
+export const createAppInstanceJson = (
+  overrides: Partial<AppInstanceJson> = {},
+): AppInstanceJson => {
   return {
     appDefinition: AddressZero,
     appSeqNo: 0,

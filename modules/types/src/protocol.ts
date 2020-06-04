@@ -1,4 +1,4 @@
-import { AppInterface, AppABIEncodings } from "./app";
+import { AppABIEncodings } from "./app";
 import { Address, BigNumber, Bytes32, AssetId, PublicIdentifier, SolidityValueType } from "./basic";
 import { OutcomeType } from "./contracts";
 import { enumify } from "./utils";
@@ -13,7 +13,8 @@ type InstallProtocolParams = {
   initiatorBalanceDecrement: BigNumber;
   responderBalanceDecrement: BigNumber;
   initialState: SolidityValueType;
-  appInterface: AppInterface;
+  abiEncodings: AppABIEncodings;
+  appDefinition: Address;
   meta?: Object;
   defaultTimeout: BigNumber;
   stateTimeout: BigNumber;

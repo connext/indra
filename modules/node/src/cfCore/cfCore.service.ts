@@ -3,7 +3,7 @@ import { DEFAULT_APP_TIMEOUT, WithdrawCommitment } from "@connext/apps";
 import {
   AppAction,
   AppInstanceJson,
-  AppInstanceProposal,
+  AppInstanceJson,
   AssetId,
   ConnextNodeStorePrefix,
   CONVENTION_FOR_ETH_ASSET_ID,
@@ -374,7 +374,7 @@ export class CFCoreService {
     return appInstanceResponse.result.result.appInstances as AppInstanceJson[];
   }
 
-  async getProposedAppInstances(multisigAddress?: string): Promise<AppInstanceProposal[]> {
+  async getProposedAppInstances(multisigAddress?: string): Promise<AppInstanceJson[]> {
     const parameters = {
       multisigAddress,
     } as MethodParams.GetProposedAppInstances;
@@ -389,7 +389,7 @@ export class CFCoreService {
       MethodNames.chan_getProposedAppInstances,
       appInstanceResponse.result.result,
     );
-    return appInstanceResponse.result.result.appInstances as AppInstanceProposal[];
+    return appInstanceResponse.result.result.appInstances as AppInstanceJson[];
   }
 
   async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson> {
@@ -430,7 +430,7 @@ export class CFCoreService {
       network.chainId,
     );
     const apps = await this.getAppInstances(multisigAddress);
-    return apps.filter((app) => app.appInterface.addr === appRegistry.appDefinitionAddress);
+    return apps.filter((app) => app.appDefinition === appRegistry.appDefinitionAddress);
   }
 
   /**

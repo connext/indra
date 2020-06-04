@@ -1,7 +1,6 @@
 import { ChallengeRegistry } from "@connext/contracts";
 import {
   AppInstanceJson,
-  AppInstanceProposal,
   Bytes32,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
@@ -380,7 +379,7 @@ export class StoreService implements IStoreService {
     });
   }
 
-  async getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal | undefined> {
+  async getAppProposal(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
     const channel = await this.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!channel) {
       return undefined;
@@ -394,7 +393,7 @@ export class StoreService implements IStoreService {
 
   async createAppProposal(
     multisigAddress: string,
-    appInstance: AppInstanceProposal,
+    appInstance: AppInstanceJson,
     monotonicNumProposedApps: number,
     signedSetStateCommitment: SetStateCommitmentJSON,
     signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
@@ -698,7 +697,7 @@ export class StoreService implements IStoreService {
     };
     const updatedApp = {
       ...ourApp,
-      latestAction: defaultAbiCoder.decode([ourApp.appInterface.actionEncoding], encodedAction),
+      latestAction: defaultAbiCoder.decode([ourApp.abiEncodings.actionEncoding], encodedAction),
     };
     await this.updateAppInstance(channel.multisigAddress, updatedApp, setStateJson);
 
@@ -792,7 +791,7 @@ export class StoreService implements IStoreService {
 
   private hasAppIdentityHash(
     hash: string,
-    toSearch: [string, AppInstanceJson][] | [string, AppInstanceProposal][],
+    toSearch: [string, AppInstanceJson][] | [string, AppInstanceJson][],
   ) {
     const existsIndex = toSearch.findIndex(([idHash, app]) => idHash === hash);
     return existsIndex >= 0;

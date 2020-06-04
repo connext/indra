@@ -17,7 +17,6 @@ import { LoggerModule } from "../logger/logger.module";
 import {
   createStateChannelJSON,
   generateRandomAddress,
-  createAppInstanceProposal,
   createAppInstanceJson,
   createSetStateCommitmentJSON,
   createConditionalTransactionCommitmentJSON,
@@ -79,7 +78,7 @@ const createTestChannelWithAppInstance = async (
   );
 
   const setStateCommitment = createSetStateCommitmentJSON();
-  const appProposal = createAppInstanceProposal({
+  const appProposal = createAppInstanceJson({
     appSeqNo: 2,
     initiatorIdentifier: userIdentifier,
     responderIdentifier: nodeIdentifier,
@@ -230,13 +229,13 @@ describe("CFCoreStore", () => {
   });
 
   describe("App Proposal", () => {
-    it("createAppInstanceProposal", async () => {
+    it("createAppInstanceJson", async () => {
       const { multisigAddress } = await createTestChannel(
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
 
-      const appProposal = createAppInstanceProposal({ appSeqNo: 2 });
+      const appProposal = createAppInstanceJson({ appSeqNo: 2 });
       const setStateCommitment = createSetStateCommitmentJSON({
         appIdentityHash: appProposal.identityHash,
       });
@@ -270,7 +269,7 @@ describe("CFCoreStore", () => {
       let channelEntity = await channelRepository.findByMultisigAddressOrThrow(multisigAddress);
       expect(channelEntity.appInstances.length).toEqual(1);
 
-      const appProposal = createAppInstanceProposal();
+      const appProposal = createAppInstanceJson();
       await cfCoreStore.createAppProposal(
         multisigAddress,
         appProposal,
@@ -327,7 +326,7 @@ describe("CFCoreStore", () => {
         freeBalanceUpdate,
       } = await createTestChannel(cfCoreStore, configService.getPublicIdentifier());
 
-      const appProposal = createAppInstanceProposal({
+      const appProposal = createAppInstanceJson({
         appSeqNo: APP_SEQ_NO,
         initiatorIdentifier: userIdentifier,
         responderIdentifier: configService.getPublicIdentifier(),

@@ -1,6 +1,5 @@
 import {
   AppInstanceJson,
-  AppInstanceProposal,
   ChallengeStatus,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
@@ -174,10 +173,14 @@ export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
   identityHash: getRandomBytes32(),
   multisigAddress: TEST_STORE_ETH_ADDRESS,
   initiatorIdentifier: "sender",
+  initiatorDeposit: "10",
+  initiatorDepositAssetId: TEST_STORE_ETH_ADDRESS,
   responderIdentifier: "receiver",
+  responderDeposit: "11",
+  responderDepositAssetId: TEST_STORE_ETH_ADDRESS,
   defaultTimeout: "0x00",
-  appInterface: {
-    addr: TEST_STORE_ETH_ADDRESS,
+  appDefinition: TEST_STORE_ETH_ADDRESS,
+  abiEncodings: {
     actionEncoding: `action encoding`,
     stateEncoding: `state encoding`,
   },
@@ -188,14 +191,15 @@ export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
     counter: 4,
   },
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-  twoPartyOutcomeInterpreterParams: {
+  interpreterParams: {
     amount: { _hex: "0x42" },
     playerAddrs: [AddressZero, AddressZero],
     tokenAddress: AddressZero,
   },
 };
 
-export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
+export const TEST_STORE_PROPOSAL: AppInstanceJson = {
+  multisigAddress: TEST_STORE_ETH_ADDRESS,
   abiEncodings: {
     actionEncoding: `action encoding`,
     stateEncoding: `state encoding`,
@@ -203,9 +207,10 @@ export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
   appDefinition: TEST_STORE_ETH_ADDRESS,
   appSeqNo: 1,
   identityHash: getRandomBytes32(),
-  initialState: {
+  latestState: {
     counter: 4,
   },
+  latestVersionNumber: 1,
   initiatorDeposit: "10",
   initiatorDepositAssetId: TEST_STORE_ETH_ADDRESS,
   outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
@@ -215,7 +220,7 @@ export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
   responderDepositAssetId: TEST_STORE_ETH_ADDRESS,
   defaultTimeout: "0x01",
   stateTimeout: "0x00",
-  singleAssetTwoPartyCoinTransferInterpreterParams: {
+  interpreterParams: {
     limit: { _hex: "0x1" } as any,
     tokenAddress: AddressZero,
   },
@@ -249,7 +254,7 @@ export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
       TEST_STORE_APP_INSTANCE.responderIdentifier,
     ],
     multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
-    appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
+    appDefinition: TEST_STORE_APP_INSTANCE.appDefinition,
     defaultTimeout: toBN(35),
   },
   appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,

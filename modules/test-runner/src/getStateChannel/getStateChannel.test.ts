@@ -56,7 +56,7 @@ const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
       TEST_STORE_APP_INSTANCE.responderIdentifier,
     ],
     multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
-    appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
+    appDefinition: TEST_STORE_APP_INSTANCE.appDefinition,
     defaultTimeout: toBN(35),
   },
   appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,

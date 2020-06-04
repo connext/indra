@@ -1,4 +1,4 @@
-import { AppInstanceProposal } from "@connext/types";
+import { AppInstanceJson } from "@connext/types";
 import { getRandomAddress, getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
 import { constants, utils } from "ethers";
 
@@ -31,7 +31,7 @@ describe("StateChannel::setupChannel", () => {
   });
 
   it("should have empty map for proposed app instances", () => {
-    expect(sc.proposedAppInstances).toEqual(new Map<string, AppInstanceProposal>());
+    expect(sc.proposedAppInstances).toEqual(new Map<string, AppInstanceJson>());
   });
 
   it("should have empty map for app instances", () => {
@@ -83,8 +83,8 @@ describe("StateChannel::setupChannel", () => {
     });
 
     it("should use the FreeBalanceAppApp as the app target", () => {
-      expect(fb.appInterface.addr).toBe(contractAddresses.IdentityApp);
-      expect(fb.appInterface.actionEncoding).toBe(undefined);
+      expect(fb.appDefinition).toBe(contractAddresses.IdentityApp);
+      expect(fb.abiEncodings.actionEncoding).toBe(undefined);
     });
 
     it("should have seqNo of 1 (b/c it is the first ever app)", () => {

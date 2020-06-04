@@ -425,7 +425,7 @@ export class ConnextListener {
       return;
     }
     const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
-      return app.appDefinitionAddress === appInstance.appInterface.addr;
+      return app.appDefinitionAddress === appInstance.appDefinition;
     });
 
     switch (registryAppInfo.name) {
@@ -514,7 +514,7 @@ export class ConnextListener {
       return;
     }
     const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
-      return app.appDefinitionAddress === appInstance.appInterface.addr;
+      return app.appDefinitionAddress === appInstance.appDefinition;
     });
 
     switch (registryAppInfo.name) {
