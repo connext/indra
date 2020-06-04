@@ -7,8 +7,9 @@ import {
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
+  AssetId,
 } from "@connext/types";
-import { logTime, recoverAddressFromChannelMessage, stringify } from "@connext/utils";
+import { logTime, recoverAddressFromChannelMessage, getAddressFromAssetId } from "@connext/utils";
 import { providers, utils } from "ethers";
 
 import {
@@ -18,7 +19,8 @@ import {
   TokenIndexedCoinTransferMap,
   StateChannel,
 } from "../models";
-import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR, TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
+import { MaxUint256 } from "ethers/constants";
 
 const { defaultAbiCoder, getAddress } = utils;
 
@@ -87,20 +89,20 @@ export async function computeTokenIndexedFreeBalanceIncrements(
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
       return handleTwoPartyFixedOutcome(
         encodedOutcome,
-        appInstance.twoPartyOutcomeInterpreterParams,
+        appInstance.interpreterParams as TwoPartyFixedOutcomeInterpreterParams,
       );
     }
     case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
       return handleSingleAssetTwoPartyCoinTransfer(
         encodedOutcome,
-        appInstance.singleAssetTwoPartyCoinTransferInterpreterParams,
+        appInstance.interpreterParams as SingleAssetTwoPartyCoinTransferInterpreterParams,
         log,
       );
     }
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
       return handleMultiAssetMultiPartyCoinTransfer(
         encodedOutcome,
-        appInstance.multiAssetMultiPartyCoinTransferInterpreterParams,
+        appInstance.interpreterParams as MultiAssetMultiPartyCoinTransferInterpreterParams,
       );
     }
     default: {
@@ -208,4 +210,86 @@ function decodeMultiAssetMultiPartyCoinTransfer(encodedOutcome: string): CoinTra
   return coinTransferListOfLists.map((coinTransferList) =>
     coinTransferList.map(({ to, amount }) => ({ to, amount })),
   );
+}
+
+/**
+ * Returns the parameters for two hard-coded possible interpreter types.
+ *
+ * Note that this is _not_ a built-in part of the protocol. Here we are _restricting_
+ * all newly installed AppInstances to be either of type COIN_TRANSFER or
+ * TWO_PARTY_FIXED_OUTCOME. In the future, we will be extending the ProtocolParams.Install
+ * to indidicate the interpreterAddress and interpreterParams so the developers
+ * installing apps have more control, however for now we are putting this logic
+ * inside of the client (the Node) by adding an "outcomeType" variable which
+ * is a simplification of the actual decision a developer has to make with their app.
+ *
+ * TODO: update doc on how MultiAssetMultiPartyCoinTransferInterpreterParams work
+ *
+ * @param {OutcomeType} outcomeType - either COIN_TRANSFER or TWO_PARTY_FIXED_OUTCOME
+ * @param {utils.BigNumber} initiatorBalanceDecrement - amount Wei initiator deposits
+ * @param {utils.BigNumber} responderBalanceDecrement - amount Wei responder deposits
+ * @param {string} initiatorFbAddress - the address of the recipient of initiator
+ * @param {string} responderFbAddress - the address of the recipient of responder
+ *
+ * @returns An object with the required parameters for both interpreter types, one
+ * will be undefined and the other will be a correctly structured POJO. The AppInstance
+ * object currently accepts both in its constructor and internally manages them.
+ */
+export function computeInterpreterParameters(
+  outcomeType: OutcomeType,
+  initiatorAssetId: AssetId,
+  responderAssetId: AssetId,
+  initiatorBalanceDecrement: utils.BigNumber,
+  responderBalanceDecrement: utils.BigNumber,
+  initiatorFbAddress: string,
+  responderFbAddress: string,
+  disableLimit: boolean,
+): TwoPartyFixedOutcomeInterpreterParams|MultiAssetMultiPartyCoinTransferInterpreterParams|SingleAssetTwoPartyCoinTransferInterpreterParams {
+  const initiatorDepositAssetId = getAddressFromAssetId(initiatorAssetId);
+  const responderDepositAssetId = getAddressFromAssetId(responderAssetId);
+  switch (outcomeType) {
+    case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
+      if (initiatorDepositAssetId !== responderDepositAssetId) {
+        throw new Error(
+          TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(initiatorDepositAssetId, responderDepositAssetId),
+        );
+      }
+
+      return {
+        tokenAddress: initiatorDepositAssetId,
+        playerAddrs: [initiatorFbAddress, responderFbAddress],
+        amount: initiatorBalanceDecrement.add(responderBalanceDecrement),
+      };
+    }
+    case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
+      return initiatorDepositAssetId === responderDepositAssetId
+        ? {
+            limit: [initiatorBalanceDecrement.add(responderBalanceDecrement)],
+            tokenAddresses: [initiatorDepositAssetId],
+          }
+        : {
+            limit: [initiatorBalanceDecrement, responderBalanceDecrement],
+            tokenAddresses: [initiatorDepositAssetId, responderDepositAssetId],
+          };
+    }
+
+    case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
+      if (initiatorDepositAssetId !== responderDepositAssetId) {
+        throw new Error(
+          TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(initiatorDepositAssetId, responderDepositAssetId),
+        );
+      }
+
+      return {
+          limit: disableLimit
+            ? MaxUint256
+            : initiatorBalanceDecrement.add(responderBalanceDecrement),
+          tokenAddress: initiatorDepositAssetId,
+      };
+    }
+
+    default: {
+      throw new Error("The outcome type in this application logic contract is not supported yet.");
+    }
+  }
 }
