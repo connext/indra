@@ -15,23 +15,15 @@ import {
 } from "@connext/types";
 import {
   deBigNumberifyJson,
-  getRandomBytes32,
   getRandomAddress,
-  getRandomChannelSigner,
+  getRandomBytes32,
+  getRandomIdentifier,
+  getRandomSignature,
+  toBN,
 } from "@connext/utils";
-import { Wallet, constants, utils } from "ethers";
-import { randomBytes } from "crypto";
+import { constants } from "ethers";
 
 const { AddressZero, HashZero, Zero, One } = constants;
-const { hexlify, bigNumberify } = utils;
-
-export const generateRandomAddress = () => Wallet.createRandom().address;
-
-export const generateRandomIdentifier = () => getRandomChannelSigner().publicIdentifier;
-
-export const generateRandomBytes32 = () => hexlify(randomBytes(32));
-
-export const generateRandomSignature = () => hexlify(randomBytes(65));
 
 export const createAppInstanceJson = (
   overrides: Partial<AppInstanceJson> = {},
@@ -44,16 +36,17 @@ export const createAppInstanceJson = (
     },
     appSeqNo: 0,
     defaultTimeout: Zero.toHexString(),
-    identityHash: generateRandomBytes32(),
+    identityHash: getRandomBytes32(),
+    initiatorIdentifier: getRandomIdentifier(),
     latestState: {},
-    stateTimeout: bigNumberify(1000).toHexString(),
     latestVersionNumber: 0,
-    multisigAddress: generateRandomAddress(),
-    outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-    initiatorIdentifier: generateRandomIdentifier(),
-    responderIdentifier: generateRandomIdentifier(),
+    meta: null,
     multiAssetMultiPartyCoinTransferInterpreterParams: null,
+    multisigAddress: getRandomAddress(),
+    outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+    responderIdentifier: getRandomIdentifier(),
     singleAssetTwoPartyCoinTransferInterpreterParams: null,
+    stateTimeout: toBN(1000).toHexString(),
     twoPartyOutcomeInterpreterParams: null,
     ...overrides,
   };
@@ -63,26 +56,24 @@ export const createAppInstanceProposal = (
   overrides: Partial<AppInstanceProposal> = {},
 ): AppInstanceProposal => {
   return {
+    abiEncodings: { actionEncoding: "", stateEncoding: "" },
     appDefinition: AddressZero,
     appSeqNo: 0,
-    identityHash: generateRandomBytes32(),
-    abiEncodings: {
-      actionEncoding: "",
-      stateEncoding: "",
-    },
+    defaultTimeout: "0x00",
+    identityHash: getRandomBytes32(),
     initialState: {},
     initiatorDeposit: "0x00",
     initiatorDepositAssetId: AddressZero,
-    initiatorIdentifier: generateRandomIdentifier(),
-    responderIdentifier: generateRandomIdentifier(),
+    initiatorIdentifier: getRandomIdentifier(),
+    meta: null,
+    multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
+    outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
     responderDeposit: "0x00",
     responderDepositAssetId: AddressZero,
-    defaultTimeout: "0x00",
-    stateTimeout: "0x00",
-    multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
+    responderIdentifier: getRandomIdentifier(),
     singleAssetTwoPartyCoinTransferInterpreterParams: null,
+    stateTimeout: "0x00",
     twoPartyOutcomeInterpreterParams: undefined,
-    outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
     ...overrides,
   };
 };
@@ -90,7 +81,7 @@ export const createAppInstanceProposal = (
 export const createStateChannelJSON = (
   overrides: Partial<StateChannelJSON> = {},
 ): StateChannelJSON => {
-  const userIdentifiers = [generateRandomAddress(), generateRandomAddress()];
+  const userIdentifiers = [getRandomAddress(), getRandomAddress()];
   const channelData: Omit<StateChannelJSON, "freeBalanceAppInstance"> = {
     addresses: {
       MinimumViableMultisig: "",
@@ -98,7 +89,7 @@ export const createStateChannelJSON = (
     },
     appInstances: [],
     monotonicNumProposedApps: 0,
-    multisigAddress: generateRandomAddress(),
+    multisigAddress: getRandomAddress(),
     proposedAppInstances: [],
     schemaVersion: 1,
     userIdentifiers,
@@ -108,8 +99,8 @@ export const createStateChannelJSON = (
   return {
     ...channelData,
     freeBalanceAppInstance: createAppInstanceJson({
-      multisigAddress: channelData.multisigAddress,
       initiatorIdentifier: channelData.userIdentifiers[0],
+      multisigAddress: channelData.multisigAddress,
       responderIdentifier: channelData.userIdentifiers[1],
       ...overrides.freeBalanceAppInstance,
     }),
@@ -122,15 +113,15 @@ export const createSetStateCommitmentJSON = (
   return deBigNumberifyJson({
     appIdentity: {
       channelNonce: Zero,
-      participants: [generateRandomAddress(), generateRandomAddress()],
-      multisigAddress: generateRandomAddress(),
+      participants: [getRandomAddress(), getRandomAddress()],
+      multisigAddress: getRandomAddress(),
       appDefinition: AddressZero,
       defaultTimeout: Zero,
     },
-    appIdentityHash: generateRandomBytes32(),
-    appStateHash: generateRandomBytes32(),
+    appIdentityHash: getRandomBytes32(),
+    appStateHash: getRandomBytes32(),
     challengeRegistryAddress: AddressZero,
-    signatures: [generateRandomSignature(), generateRandomSignature()],
+    signatures: [getRandomSignature(), getRandomSignature()],
     stateTimeout: Zero,
     versionNumber: Zero,
     ...overrides,
@@ -141,14 +132,14 @@ export const createConditionalTransactionCommitmentJSON = (
   overrides: Partial<ConditionalTransactionCommitmentJSON> = {},
 ): ConditionalTransactionCommitmentJSON => {
   return {
-    appIdentityHash: generateRandomBytes32(),
-    freeBalanceAppIdentityHash: generateRandomBytes32(),
+    appIdentityHash: getRandomBytes32(),
+    freeBalanceAppIdentityHash: getRandomBytes32(),
     interpreterAddr: AddressZero,
     interpreterParams: "",
-    multisigAddress: generateRandomAddress(),
-    multisigOwners: [generateRandomAddress(), generateRandomAddress()],
+    multisigAddress: getRandomAddress(),
+    multisigOwners: [getRandomAddress(), getRandomAddress()],
     contractAddresses: {} as ContractAddresses,
-    signatures: [generateRandomSignature(), generateRandomSignature()],
+    signatures: [getRandomSignature(), getRandomSignature()],
     ...overrides,
   };
 };

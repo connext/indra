@@ -4,7 +4,7 @@ import { utils } from "ethers";
 import { hexToBuffer, bufferToHex, compress, decompress } from "eccrypto-js";
 
 import { getAddressError } from "./hexStrings";
-import { getAddressFromPublicKey } from "./crypto";
+import { getRandomPublicKey, getAddressFromPublicKey } from "./crypto";
 
 const { getAddress } = utils;
 
@@ -26,6 +26,12 @@ export const getSignerAddressFromPublicIdentifier = (publicIdentifier: PublicIde
 
 // makes sure all addresses are normalized
 export const getAddressFromAssetId = (assetId: AssetId): Address => getAddress(assetId);
+
+////////////////////////////////////////
+// Generator
+
+export const getRandomIdentifier = (): PublicIdentifier =>
+  getPublicIdentifierFromPublicKey(getRandomPublicKey());
 
 ////////////////////////////////////////
 // Validators

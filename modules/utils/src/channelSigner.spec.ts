@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import * as EthCrypto from "eth-crypto";
 import { Wallet } from "ethers";
 
@@ -16,22 +17,22 @@ const testMessage = "123456789012345";
 
 describe("ChannelSigner", () => {
   it("should generate a valid publicIdentifier", async () => {
-    expect(getPublicIdentifierError(getRandomChannelSigner().publicIdentifier)).toBeUndefined();
+    expect(getPublicIdentifierError(getRandomChannelSigner().publicIdentifier)).to.be.undefined;
   });
 
   it("should generate a valid publicKey", async () => {
-    expect(getPublicKeyError(getRandomChannelSigner().publicKey)).toBeUndefined();
+    expect(getPublicKeyError(getRandomChannelSigner().publicKey)).to.be.undefined;
   });
 
   it("should generate a valid address", async () => {
-    expect(getAddressError(getRandomChannelSigner().address)).toBeUndefined();
+    expect(getAddressError(getRandomChannelSigner().address)).to.be.undefined;
   });
 
   it("should sign Channel messages", async () => {
     const signer = getRandomChannelSigner();
     const sig = await (signer.signMessage(testMessage));
-    expect(getEthSignatureError(sig)).toBeUndefined();
-    expect(recoverAddressFromChannelMessage(testMessage, sig)).toBeTruthy();
+    expect(getEthSignatureError(sig)).to.be.undefined;
+    expect(await recoverAddressFromChannelMessage(testMessage, sig)).to.be.a("string");
   });
 
   it("should be able to decrypt stuff it encrypts", async () => {
@@ -39,7 +40,7 @@ describe("ChannelSigner", () => {
     const recipient = getRandomChannelSigner();
     const encrypted = await sender.encrypt(testMessage, recipient.publicKey);
     const decrypted = await recipient.decrypt(encrypted);
-    expect(testMessage).toEqual(decrypted);
+    expect(testMessage).to.equal(decrypted);
   });
 
   it("should decrypt messages longer than 15 chars", async () => {
@@ -48,7 +49,7 @@ describe("ChannelSigner", () => {
     const recipient = getRandomChannelSigner();
     const encrypted = await sender.encrypt(longMessage, recipient.publicKey);
     const decrypted = await recipient.decrypt(encrypted);
-    expect(longMessage).toEqual(decrypted);
+    expect(longMessage).to.equal(decrypted);
   });
 
   it("should have encrypt/decrypt that are compatible with eth-crypto", async () => {
@@ -64,8 +65,8 @@ describe("ChannelSigner", () => {
       ethSignerPrivateKey,
       EthCrypto.cipher.parse(myEncrypted.replace(/^0x/, "")),
     );
-    expect(myDecrypted).toEqual(ethDecrypted);
-    expect(myDecrypted).toEqual(testMessage);
+    expect(myDecrypted).to.equal(ethDecrypted);
+    expect(myDecrypted).to.equal(testMessage);
   });
 
   it("should have encrypt/decrypt that are compatible with browser crypto", async () => {
@@ -78,6 +79,6 @@ describe("ChannelSigner", () => {
     const browserEncryptedMessage = "b304bbe1bc97a4f1101f3381b93a837f022b6ef864c41e7b8837779b59be67ef355cf2c918961251ec118da2c0abde3b0e803d817b2a3a318f60609023301748350008307ae20ccb1473eac05aced53180511e97cc4cec5809cb4f2ba43517d7951a71bd56b85ac161b8ccdc98dbeabfa99d555216cda31247c21d4a3caa7c46d37fa229f02f15ba254f8d6f5b15ed5310c35dd9ddd54cd23b99a7e332ed501605";
     const signer = new ChannelSigner(browserPrivateKey);
     const decrypted = await signer.decrypt(browserEncryptedMessage);
-    expect(decrypted).toEqual(browserMessage);
+    expect(decrypted).to.equal(browserMessage);
   });
 });

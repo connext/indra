@@ -48,13 +48,19 @@ export const cfCoreProviderFactory: Provider = {
       log.newContext("CFCore"),
       false, // only clients sync on cf core start
     );
-    const ethBalance = formatEther(await provider.getBalance(signerAddress));
 
+    const ethBalance = await provider.getBalance(signerAddress);
     const tokenContract = new Contract(contractAddresses.Token, ERC20.abi, config.getSigner());
     const tknBalance = formatEther(await tokenContract.balanceOf(signerAddress));
+
     log.info(
-      `Balance of signer address ${signerAddress} on ${networkName} (chainId ${chainId}): ${EtherSymbol} ${ethBalance} & ${tknBalance} tokens`,
+      `Balance of signer address ${signerAddress} on ${networkName} (chainId ${chainId}): ${EtherSymbol} ${formatEther(ethBalance)} & ${tknBalance} tokens`,
     );
+
+    if (ethBalance.eq(constants.Zero)) {
+      throw new Error(`Fatal: Node's ETH balance is zero`);
+    }
+
     log.info("CFCore created");
     return cfCore;
   },
