@@ -10,7 +10,7 @@ import "../Interpreter.sol";
  * This file is excluded from ethlint/solium because of this issue:
  * https://github.com/duaraghav8/Ethlint/issues/261
  */
-contract SingleAssetSinglePartyCoinTransferInterpreter is MultisigTransfer, Interpreter {
+contract WithdrawInterpreter is MultisigTransfer, Interpreter {
 
     struct Params {
         uint256 limit;
