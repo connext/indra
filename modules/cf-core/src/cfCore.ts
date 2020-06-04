@@ -271,7 +271,10 @@ export class CFCore {
           }
 
           case PersistStateChannelType.SyncProposal: {
-            const [setState] = signedCommitments as [SetStateCommitment];
+            const [setState, conditional] = signedCommitments as [
+              SetStateCommitment,
+              ConditionalTransactionCommitment,
+            ];
             const proposal = stateChannel.proposedAppInstances.get(setState.appIdentityHash);
             if (!proposal) {
               throw new Error("Could not find proposal in post protocol channel");
@@ -282,6 +285,7 @@ export class CFCore {
               proposal,
               stateChannel.numProposedApps,
               setState.toJson(),
+              conditional.toJson(),
             );
             break;
           }
@@ -289,11 +293,14 @@ export class CFCore {
             break;
           }
           case PersistStateChannelType.SyncFreeBalance: {
-            const [setState, conditional] = signedCommitments as [
+            const [setState] = signedCommitments as [
               SetStateCommitment,
               ConditionalTransactionCommitment | undefined,
             ];
-            if (!conditional) {
+            const latestInstalled = stateChannel
+              .getAppInstanceByAppSeqNo(stateChannel.numProposedApps)
+              .toJson();
+            if (!stateChannel.getFreeBalanceClass().hasActiveApp(latestInstalled.identityHash)) {
               // this was an uninstall, so remove app instance
               await this.storeService.removeAppInstance(
                 stateChannel.multisigAddress,
@@ -305,10 +312,9 @@ export class CFCore {
               // this was an install, add app and remove proposals
               await this.storeService.createAppInstance(
                 stateChannel.multisigAddress,
-                stateChannel.getAppInstanceByAppSeqNo(stateChannel.numProposedApps).toJson(),
+                latestInstalled,
                 stateChannel.freeBalance.toJson(),
                 setState.toJson(),
-                conditional.toJson(),
               );
             }
             break;
@@ -359,6 +365,7 @@ export class CFCore {
               app as AppInstanceProposal,
               numProposedApps,
               signedSetStateCommitment.toJson(),
+              signedConditionalTxCommitment.toJson(),
             );
             break;
           }
@@ -374,7 +381,6 @@ export class CFCore {
               (app as AppInstance).toJson(),
               freeBalance.toJson(),
               signedSetStateCommitment.toJson(),
-              signedConditionalTxCommitment.toJson(),
             );
             break;
           }

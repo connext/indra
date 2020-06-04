@@ -27,6 +27,7 @@ import {
   getSetStateCommitment,
   SetStateCommitment,
   ConditionalTransactionCommitment,
+  getConditionalTransactionCommitment,
 } from "../ethereum";
 import { computeInterpreterParameters } from "./install";
 
@@ -707,20 +708,31 @@ async function syncUntrackedProposals(
     ),
     versionNumber: 1,
     stateTimeout: untrackedProposedApp.stateTimeout,
+    multiAssetMultiPartyCoinTransferInterpreterParams:
+      untrackedProposedApp.multiAssetMultiPartyCoinTransferInterpreterParams,
+    twoPartyOutcomeInterpreterParams: untrackedProposedApp.twoPartyOutcomeInterpreterParams,
+    singleAssetTwoPartyCoinTransferInterpreterParams:
+      untrackedProposedApp.singleAssetTwoPartyCoinTransferInterpreterParams,
+    outcomeType: untrackedProposedApp.outcomeType,
   };
-  const generatedCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
-  await generatedCommitment.addSignatures(
+  const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
+  const conditionalCommitment = getConditionalTransactionCommitment(
+    context,
+    ourChannel,
+    proposedAppInstance as AppInstance,
+  );
+  await setStateCommitment.addSignatures(
     correspondingSetStateCommitment.signatures[0],
     correspondingSetStateCommitment.signatures[1],
   );
   await assertSignerPresent(
     getSignerAddressFromPublicIdentifier(publicIdentifier),
-    generatedCommitment,
+    setStateCommitment,
   );
   const updatedChannel = ourChannel.addProposal(untrackedProposedApp);
   return {
     updatedChannel,
-    commitments: [generatedCommitment],
+    commitments: [setStateCommitment, conditionalCommitment],
   };
 }
 
