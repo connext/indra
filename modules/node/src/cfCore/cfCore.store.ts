@@ -242,7 +242,6 @@ export class CFCoreStore implements IStoreService {
     appJson: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
-    signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
     const {
       identityHash,
@@ -291,10 +290,6 @@ export class CFCoreStore implements IStoreService {
         throw new Error(`Unrecognized outcome type: ${OutcomeType[outcomeType]}`);
     }
 
-    const existingConditionalTx = await this.conditionalTransactionCommitmentRepository.findByAppIdentityHash(
-      appJson.identityHash,
-    );
-
     await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(proposal);
       await transactionalEntityManager
@@ -325,41 +320,6 @@ export class CFCoreStore implements IStoreService {
           appIdentityHash: freeBalanceAppInstance.identityHash,
         })
         .execute();
-
-      // idempotence
-      if (existingConditionalTx) {
-        await transactionalEntityManager
-          .createQueryBuilder()
-          .update(ConditionalTransactionCommitment)
-          .set({
-            freeBalanceAppIdentityHash: signedConditionalTxCommitment.freeBalanceAppIdentityHash,
-            multisigAddress: signedConditionalTxCommitment.multisigAddress,
-            multisigOwners: signedConditionalTxCommitment.multisigOwners,
-            interpreterAddr: signedConditionalTxCommitment.interpreterAddr,
-            interpreterParams: signedConditionalTxCommitment.interpreterParams,
-            signatures: signedConditionalTxCommitment.signatures,
-            app: proposal,
-          })
-          .where('"appIdentityHash" = :appIdentityHash', {
-            appIdentityHash: signedConditionalTxCommitment.freeBalanceAppIdentityHash,
-          })
-          .execute();
-      } else {
-        await transactionalEntityManager
-          .createQueryBuilder()
-          .insert()
-          .into(ConditionalTransactionCommitment)
-          .values({
-            freeBalanceAppIdentityHash: signedConditionalTxCommitment.freeBalanceAppIdentityHash,
-            multisigAddress: signedConditionalTxCommitment.multisigAddress,
-            multisigOwners: signedConditionalTxCommitment.multisigOwners,
-            interpreterAddr: signedConditionalTxCommitment.interpreterAddr,
-            interpreterParams: signedConditionalTxCommitment.interpreterParams,
-            signatures: signedConditionalTxCommitment.signatures,
-            app: proposal,
-          })
-          .execute();
-      }
     });
   }
 
@@ -472,6 +432,7 @@ export class CFCoreStore implements IStoreService {
     appProposal: AppInstanceProposal,
     numProposedApps: number,
     signedSetStateCommitment: SetStateCommitmentJSON,
+    signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
 
@@ -513,12 +474,51 @@ export class CFCoreStore implements IStoreService {
     setStateCommitment.stateTimeout = toBN(signedSetStateCommitment.stateTimeout).toString();
     setStateCommitment.versionNumber = toBN(signedSetStateCommitment.versionNumber).toNumber();
 
+    const existingConditionalTx = await this.conditionalTransactionCommitmentRepository.findByAppIdentityHash(
+      appProposal.identityHash,
+    );
+
     // because the app instance has `cascade` set to true, saving
     // the channel will involve multiple queries and should be put
     // within a transaction
     await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(app);
       await transactionalEntityManager.save(setStateCommitment);
+
+      // idempotence
+      if (existingConditionalTx) {
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .update(ConditionalTransactionCommitment)
+          .set({
+            freeBalanceAppIdentityHash: signedConditionalTxCommitment.freeBalanceAppIdentityHash,
+            multisigAddress: signedConditionalTxCommitment.multisigAddress,
+            multisigOwners: signedConditionalTxCommitment.multisigOwners,
+            interpreterAddr: signedConditionalTxCommitment.interpreterAddr,
+            interpreterParams: signedConditionalTxCommitment.interpreterParams,
+            signatures: signedConditionalTxCommitment.signatures,
+            app,
+          })
+          .where('"appIdentityHash" = :appIdentityHash', {
+            appIdentityHash: signedConditionalTxCommitment.freeBalanceAppIdentityHash,
+          })
+          .execute();
+      } else {
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .insert()
+          .into(ConditionalTransactionCommitment)
+          .values({
+            freeBalanceAppIdentityHash: signedConditionalTxCommitment.freeBalanceAppIdentityHash,
+            multisigAddress: signedConditionalTxCommitment.multisigAddress,
+            multisigOwners: signedConditionalTxCommitment.multisigOwners,
+            interpreterAddr: signedConditionalTxCommitment.interpreterAddr,
+            interpreterParams: signedConditionalTxCommitment.interpreterParams,
+            signatures: signedConditionalTxCommitment.signatures,
+            app,
+          })
+          .execute();
+      }
 
       await transactionalEntityManager
         .createQueryBuilder()
