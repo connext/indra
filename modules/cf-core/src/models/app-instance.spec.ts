@@ -13,30 +13,32 @@ describe("AppInstance", () => {
     const participants = [getRandomPublicIdentifier(), getRandomPublicIdentifier()];
 
     const appInstance = new AppInstance(
+      /* multisigAddres */ getRandomAddress(),
       /* initiator */ participants[0],
-      /* responder*/ participants[1],
-      /* default timeout */ toBN(Math.ceil(Math.random() * 2e10)).toHexString(),
-      /* appInterface */ {
-        addr: getAddress(getRandomAddress()),
-        stateEncoding: "tuple(address foo, uint256 bar)",
-        actionEncoding: undefined,
-      },
+      /* initiatorDeposit */ "0",
+      /* initiaotrDepositAssetId */ AddressZero,
+      /* responder */ participants[1],
+      /* responderDeposit */ "0",
+      /* responderDepositAssetId */ AddressZero,
+      /* abiEncodings */ {
+          stateEncoding: "tuple(address foo, uint256 bar)",
+          actionEncoding: undefined,
+        },
+      /* appDefinition */ getAddress(getRandomAddress()),
       /* appSeqNo */ Math.ceil(Math.random() * 2e10),
-      /* latestState */ { foo: getAddress(getRandomAddress()), bar: 0 },
+      /* latestState */ { foo: getRandomAddress(), bar: 0 },
       /* latestVersionNumber */ 999,
+      /* defaultTimeout */ toBN(Math.ceil(Math.random() * 2e10)).toHexString(),
       /* stateTimeout */ toBN(Math.ceil(1000 * Math.random())).toHexString(),
       /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-      /* multisigAddress */ getRandomAddress(),
-      /* meta */ undefined,
-      /* latestAction */ undefined,
-      /* twoPartyOutcomeInterpreterParamsInternal */ {
+      /* interpreterParamsInternal*/ {
         playerAddrs: [AddressZero, AddressZero],
         amount: Zero,
         tokenAddress: AddressZero,
       },
-      /* multiAssetMultiPartyCoinTransferInterpreterParamsInternal */ undefined,
-      /* singleAssetTwoPartyCoinTransferInterpreterParamsInternal */ undefined,
-    );
+      /* meta */ undefined,
+      /* latestAction */ undefined,
+    )
 
     expect(appInstance).not.toBe(null);
     expect(appInstance).not.toBe(undefined);
