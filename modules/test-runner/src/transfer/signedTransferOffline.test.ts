@@ -422,36 +422,6 @@ describe("Signed Transfer Offline", () => {
     );
   });
 
-  it("sender + receiver install transfer successfully, receiver take action protocol times out", async () => {
-    const receiverConfig = {
-      ceiling: { [SEND]: 0 },
-      protocol: ProtocolNames.takeAction,
-    };
-    const [sender, receiver] = await createAndFundClients(undefined, receiverConfig);
-    const paymentId = await sendSignedTransfer(sender, receiver);
-    expect(paymentId).to.be.ok;
-    await resolveFailingSignedTransfer({
-      sender,
-      receiver,
-      paymentId,
-      whichFails: "receiver",
-      error: APP_PROTOCOL_TOO_LONG(ProtocolNames.takeAction),
-      event: EventNames.UPDATE_STATE_FAILED_EVENT,
-    });
-    receiver.off();
-    await receiver.messaging.disconnect();
-    // Add delay to make sure messaging properly disconnects
-    await delay(1000);
-
-    await recreateClientAndRetryTransfer(
-      "receiver",
-      sender,
-      receiverSigner,
-      receiver.store,
-      paymentId,
-    );
-  });
-
   it("sender + receiver install transfer successfully, receiver takes action, receiver uninstall protocol times out", async () => {
     const receiverConfig = {
       ceiling: { [RECEIVED]: 2 }, // collateral
@@ -475,10 +445,6 @@ describe("Signed Transfer Offline", () => {
 
     await recreateClientAndRetryTransfer("receiver", sender, receiverSigner, receiver.store);
   });
-
-  // see notes in withdrawal offline tests about take action protocol responders
-  // tl;dr need to move this test into the node unit tests
-  it.skip("sender install transfer successfully, receiver takes action and uninstalls, sender's take action protocol times out", async () => {});
 
   // see notes in withdrawal offline tests about take action protocol responders
   // tl;dr need to move this test into the node unit tests (same thing happens

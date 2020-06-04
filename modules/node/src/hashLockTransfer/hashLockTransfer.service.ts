@@ -32,10 +32,7 @@ const appStatusesToHashLockTransferStatus = (
   // pending iff no receiver app + not expired
   if (!senderApp) {
     return isSenderExpired ? HashLockTransferStatus.EXPIRED : HashLockTransferStatus.PENDING;
-  } else if (
-    senderApp.latestState.preImage !== HashZero ||
-    receiverApp.latestState.preImage !== HashZero
-  ) {
+  } else if (senderApp.latestState.preImage !== HashZero || latestState.preImage !== HashZero) {
     // iff sender uninstalled, payment is unlocked
     return HashLockTransferStatus.COMPLETED;
   } else if (senderApp.type === AppType.REJECTED || receiverApp.type === AppType.REJECTED) {
@@ -49,7 +46,11 @@ const appStatusesToHashLockTransferStatus = (
     // do this last bc could be retrieving historically
     return HashLockTransferStatus.PENDING;
   } else {
-    throw new Error(`Cound not determine hash lock transfer status`);
+    throw new Error(
+      `Could not determine hash lock transfer status. Sender app type: ${
+        senderApp && senderApp.type
+      }, receiver app type: ${receiverApp && receiverApp.type}`,
+    );
   }
 };
 

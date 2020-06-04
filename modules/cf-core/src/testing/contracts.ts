@@ -12,6 +12,7 @@ import {
   TimeLockedPassThrough,
   TwoPartyFixedOutcomeInterpreter,
   WithdrawApp,
+  SimpleLinkedTransferApp,
 } from "@connext/contracts";
 import { ContractAddresses } from "@connext/types";
 import { ContractFactory, Wallet, providers } from "ethers";
@@ -19,8 +20,7 @@ import { ContractFactory, Wallet, providers } from "ethers";
 export type TestContractAddresses = ContractAddresses & {
   TicTacToeApp: string;
   DolphinCoin: string;
-  WithdrawApp: string;
-  DepositApp: string;
+  SimpleLinkedTransferApp: string;
 };
 
 export type TestNetworkContext = {
@@ -31,6 +31,12 @@ export type TestNetworkContext = {
 export const deployTestArtifactsToChain = async (
   wallet: Wallet,
 ): Promise<TestContractAddresses> => {
+  const linkedTransferAppContract = await new ContractFactory(
+    SimpleLinkedTransferApp.abi,
+    SimpleLinkedTransferApp.bytecode,
+    wallet,
+  ).deploy();
+
   const depositAppContract = await new ContractFactory(
     DepositApp.abi,
     DepositApp.bytecode,
@@ -123,5 +129,6 @@ export const deployTestArtifactsToChain = async (
     TimeLockedPassThrough: timeLockedPassThrough.address,
     TwoPartyFixedOutcomeInterpreter: twoPartyFixedOutcomeInterpreter.address,
     WithdrawApp: withdrawAppContract.address,
+    SimpleLinkedTransferApp: linkedTransferAppContract.address,
   };
 };

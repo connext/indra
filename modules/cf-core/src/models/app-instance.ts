@@ -305,6 +305,13 @@ export class AppInstance {
     return this.toEthersContract(provider).functions.computeOutcome(this.encodeState(state));
   }
 
+  public async isStateTerminal(
+    state: SolidityValueType,
+    provider: providers.JsonRpcProvider,
+  ): Promise<string> {
+    return this.toEthersContract(provider).functions.isStateTerminal(this.encodeState(state));
+  }
+
   public async computeOutcomeWithCurrentState(
     provider: providers.JsonRpcProvider,
   ): Promise<string> {
