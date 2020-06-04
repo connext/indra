@@ -75,6 +75,8 @@ type UninstallProtocolParams = {
   responderIdentifier: PublicIdentifier;
   multisigAddress: Address;
   blockNumberToUseIfNecessary?: number;
+  action?: SolidityValueType;
+  stateTimeout?: BigNumber;
 };
 
 ////////////////////////////////////////
