@@ -3,7 +3,6 @@ import {
   Address,
   AppABIEncodings,
   AppInstanceJson,
-  AppInstanceProposal,
   AssetId,
   ContractABI,
   CONVENTION_FOR_ETH_ASSET_ID,
@@ -32,6 +31,7 @@ import {
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
   toBN,
+  getRandomAddress,
 } from "@connext/utils";
 import { Contract, Wallet, providers, constants, utils } from "ethers";
 
@@ -66,68 +66,46 @@ export const newWallet = (wallet: Wallet) =>
     new providers.JsonRpcProvider((wallet.provider as providers.JsonRpcProvider).connection.url),
   );
 
-export function createAppInstanceProposalForTest(
+export function createAppInstanceJsonForTest(
   appIdentityHash: string,
   stateChannel?: StateChannel,
-): AppInstanceProposal {
-  const [initiator, responder] = StateChannel
-    ? [stateChannel!.userIdentifiers[0], stateChannel!.userIdentifiers[1]]
-    : [getRandomPublicIdentifier(), getRandomPublicIdentifier()];
-  return {
-    identityHash: appIdentityHash,
-    initiatorIdentifier: initiator,
-    responderIdentifier: responder,
-    appDefinition: AddressZero,
-    abiEncodings: {
-      stateEncoding: "tuple(address foo, uint256 bar)",
-      actionEncoding: undefined,
-    } as AppABIEncodings,
-    initiatorDeposit: "0x00",
-    responderDeposit: "0x00",
-    defaultTimeout: "0x01",
-    stateTimeout: "0x00",
-    initialState: {
-      foo: AddressZero,
-      bar: 0,
-    } as SolidityValueType,
-    appSeqNo: stateChannel ? stateChannel.numProposedApps : Math.ceil(1000 * Math.random()),
-    outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-    responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
-    initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
-  };
+): AppInstanceJson {
+  return createAppInstanceForTest(stateChannel).toJson()
 }
 
 export function createAppInstanceForTest(stateChannel?: StateChannel) {
   const [initiator, responder] = stateChannel
     ? [stateChannel!.userIdentifiers[0], stateChannel!.userIdentifiers[1]]
     : [getRandomPublicIdentifier(), getRandomPublicIdentifier()];
-  return new AppInstance(
-    /* initiator */ initiator,
-    /* responder */ responder,
-    /* defaultTimeout */ "0x00",
-    /* appInterface */ {
-      addr: getAddress(hexlify(randomBytes(20))),
+  return AppInstance.fromJson({
+    multisigAddress: stateChannel!.multisigAddress || getRandomAddress(),
+    identityHash: "", // gets calculated
+    initiatorIdentifier: initiator,
+    initiatorDeposit: "0x00",
+    initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
+    responderIdentifier: responder,
+    responderDeposit: "0x00",
+    responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
+    appDefinition: AddressZero,
+    abiEncodings: {
       stateEncoding: "tuple(address foo, uint256 bar)",
       actionEncoding: undefined,
-    },
-    /* appSeqNo */ stateChannel ? stateChannel.numProposedApps : Math.ceil(1000 * Math.random()),
-    /* latestState */ { foo: AddressZero, bar: bigNumberify(0) },
-    /* latestVersionNumber */ 0,
-    /* stateTimeout */ toBN(Math.ceil(1000 * Math.random())).toHexString(),
-    /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-    /* multisig */ stateChannel
-      ? stateChannel.multisigAddress
-      : getAddress(hexlify(randomBytes(20))),
-    /* meta */ undefined,
-    /* latestAction */ undefined,
-    /* twoPartyOutcomeInterpreterParams */ {
+    } as AppABIEncodings,
+    defaultTimeout: "0x01",
+    stateTimeout: "0x00",
+    latestState: {
+      foo: AddressZero,
+      bar: 0,
+    } as SolidityValueType,
+    latestVersionNumber: 10,
+    appSeqNo: stateChannel ? stateChannel.numProposedApps : Math.ceil(1000 * Math.random()),
+    outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+    interpreterParams: {
       playerAddrs: [AddressZero, AddressZero],
-      amount: Zero,
+      amount: bigNumberifyJson(Zero),
       tokenAddress: AddressZero,
     },
-    /* multiAssetMultiPartyCoinTransferInterpreterParams */ undefined,
-    /* singleAssetTwoPartyCoinTransferInterpreterParams */ undefined,
-  );
+  })
 }
 
 export async function requestDepositRights(
@@ -167,7 +145,7 @@ export async function rescindDepositRights(
   const apps = await getInstalledAppInstances(node, multisigAddress);
   const depositAppInstance = apps.filter(
     (app) =>
-      app.appInterface.addr === DepositApp &&
+      app.appDefinition === DepositApp &&
       (app.latestState as DepositAppState).assetId === getAddressFromAssetId(assetId),
   )[0];
   if (!depositAppInstance) {
@@ -187,7 +165,7 @@ export async function getDepositApps(
   if (apps.length === 0) {
     return [];
   }
-  const depositApps = apps.filter((app) => app.appInterface.addr === DepositApp);
+  const depositApps = apps.filter((app) => app.appDefinition === DepositApp);
   if (tokenAddresses.length === 0) {
     return depositApps;
   }
@@ -326,11 +304,11 @@ export async function getAppInstance(
   return appInstance;
 }
 
-export async function getAppInstanceProposal(
+export async function getAppInstanceJson(
   node: CFCore,
   appIdentityHash: string,
   multisigAddress: string,
-): Promise<AppInstanceProposal> {
+): Promise<AppInstanceJson> {
   const proposals = await getProposedAppInstances(node, multisigAddress);
   const candidates = proposals.filter((proposal) => proposal.identityHash === appIdentityHash);
 
@@ -398,7 +376,7 @@ export async function getInstalledAppInstances(
 export async function getProposedAppInstances(
   node: CFCore,
   multisigAddress: string,
-): Promise<AppInstanceProposal[]> {
+): Promise<AppInstanceJson[]> {
   const rpc = {
     id: Date.now(),
     methodName: MethodNames.chan_getProposedAppInstances,
@@ -585,35 +563,35 @@ export function constructAppProposalRpc(
 
 /**
  * @param MethodParams.proposal The parameters of the installation proposal.
- * @param appInstanceProposal The proposed app instance contained in the Node.
+ * @param AppInstanceJson The proposed app instance contained in the Node.
  */
 export function confirmProposedAppInstance(
   methodParams: MethodParam,
-  appInstanceProposal: AppInstanceProposal,
+  AppInstanceJson: AppInstanceJson,
   nonInitiatingNode: boolean = false,
 ) {
   const proposalParams = methodParams as MethodParams.ProposeInstall;
-  expect(proposalParams.abiEncodings).toEqual(appInstanceProposal.abiEncodings);
-  expect(proposalParams.appDefinition).toEqual(appInstanceProposal.appDefinition);
+  expect(proposalParams.abiEncodings).toEqual(AppInstanceJson.abiEncodings);
+  expect(proposalParams.appDefinition).toEqual(AppInstanceJson.appDefinition);
 
   if (nonInitiatingNode) {
     expect(proposalParams.initiatorDeposit).toEqual(
-      bigNumberify(appInstanceProposal.responderDeposit),
+      bigNumberify(AppInstanceJson.responderDeposit),
     );
     expect(proposalParams.responderDeposit).toEqual(
-      bigNumberify(appInstanceProposal.initiatorDeposit),
+      bigNumberify(AppInstanceJson.initiatorDeposit),
     );
   } else {
     expect(proposalParams.initiatorDeposit).toEqual(
-      bigNumberify(appInstanceProposal.initiatorDeposit),
+      bigNumberify(AppInstanceJson.initiatorDeposit),
     );
     expect(proposalParams.responderDeposit).toEqual(
-      bigNumberify(appInstanceProposal.responderDeposit),
+      bigNumberify(AppInstanceJson.responderDeposit),
     );
   }
 
-  expect(proposalParams.defaultTimeout).toEqual(toBN(appInstanceProposal.defaultTimeout));
-  expect(proposalParams.stateTimeout).toEqual(toBN(appInstanceProposal.stateTimeout));
+  expect(proposalParams.defaultTimeout).toEqual(toBN(AppInstanceJson.defaultTimeout));
+  expect(proposalParams.stateTimeout).toEqual(toBN(AppInstanceJson.stateTimeout));
 
   // TODO: uncomment when getState is implemented
   // expect(proposalParams.initialState).toEqual(appInstanceInitialState);
@@ -791,7 +769,7 @@ export async function installApp(
       // Sanity-check
       confirmProposedAppInstance(
         installationProposalRpc.parameters,
-        await getAppInstanceProposal(nodeB, msg.data.appInstanceId, multisigAddress),
+        await getAppInstanceJson(nodeB, msg.data.appInstanceId, multisigAddress),
       );
       resolve(msg.data.appInstanceId);
     });
@@ -801,7 +779,7 @@ export async function installApp(
 
   confirmProposedAppInstance(
     installationProposalRpc.parameters,
-    await getAppInstanceProposal(nodeA, appIdentityHash, multisigAddress),
+    await getAppInstanceJson(nodeA, appIdentityHash, multisigAddress),
   );
 
   // send nodeB install call
@@ -862,9 +840,9 @@ export async function confirmAppInstanceInstallation(
   appInstance: AppInstanceJson,
 ) {
   const params = bigNumberifyJson(proposedParams) as ProtocolParams.Propose;
-  expect(appInstance.appInterface.addr).toEqual(params.appDefinition);
-  expect(appInstance.appInterface.stateEncoding).toEqual(params.abiEncodings.stateEncoding);
-  expect(appInstance.appInterface.actionEncoding).toEqual(params.abiEncodings.actionEncoding);
+  expect(appInstance.appDefinition).toEqual(params.appDefinition);
+  expect(appInstance.abiEncodings.stateEncoding).toEqual(params.abiEncodings.stateEncoding);
+  expect(appInstance.abiEncodings.actionEncoding).toEqual(params.abiEncodings.actionEncoding);
   expect(appInstance.defaultTimeout).toEqual(params.defaultTimeout.toHexString());
   expect(appInstance.stateTimeout).toEqual(params.stateTimeout.toHexString());
   expect(appInstance.latestState).toEqual(params.initialState);
