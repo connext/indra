@@ -7,11 +7,11 @@ project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' 
 if [[ "$1" == "--watch" ]]
 then
   suffix="node_watcher"
-  command='exec ts-mocha --bail --check-leaks --watch --timeout 7500 src/**/*.spec.ts '"$@"
+  command='exec ts-mocha --bail --check-leaks --watch --timeout 10000 src/**/*.spec.ts '"$@"
   shift # forget $1 and replace it w $2, etc
 else
   suffix="node_tester"
-  command='ts-mocha --bail --check-leaks --exit --timeout 7500 src/**/*.spec.ts '"$@"
+  command='ts-mocha --bail --check-leaks --exit --timeout 10000 src/**/*.spec.ts '"$@"
 fi
 echo $command
 
@@ -50,7 +50,6 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 # config & hard-coded stuff you might want to change
 admin_token="cxt1234"
 
-log_level="1" # set to 0 for no logs or to 5 for all the logs
 network="${project}_$suffix"
 
 eth_network="ganache"
@@ -159,7 +158,8 @@ docker run \
   --env="INDRA_ETH_CONTRACT_ADDRESSES=$eth_contract_addresses" \
   --env="INDRA_ETH_MNEMONIC=$eth_mnemonic" \
   --env="INDRA_ETH_RPC_URL=$eth_rpc_url" \
-  --env="INDRA_LOG_LEVEL=$log_level" \
+  --env="INDRA_LOG_LEVEL=${INDRA_LOG_LEVEL:-0}" \
+  --env="LOG_LEVEL=${LOG_LEVEL:-0}" \
   --env="INDRA_NATS_CLUSTER_ID=" \
   --env="INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" \
   --env="INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY" \

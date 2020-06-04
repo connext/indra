@@ -179,7 +179,7 @@ test-integration:
 	bash ops/test/integration.sh
 
 test-node: node
-	bash ops/test/node.sh --runInBand --forceExit
+	bash ops/test/node.sh
 
 test-store: store
 	bash ops/test/store.sh

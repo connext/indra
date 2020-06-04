@@ -16,7 +16,7 @@
     "migration:generate": "typeorm migration:generate -d migrations -n ",
     "prestart:prod": "rm -rf dist && npm run build",
     "start:prod": "node dist/main.js",
-    "test": "ts-mocha --bail --check-leaks --exit --timeout 7500 src/**/*.spec.ts",
+    "test": "ts-mocha --bail --check-leaks --exit --timeout 10000 src/**/*.spec.ts",
     "test:watch": "ts-mocha --bail --check-leaks --watch --timeout 7500 src/**/*.spec.ts"
   },
   "dependencies": {
