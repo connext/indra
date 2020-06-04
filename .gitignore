@@ -60,3 +60,6 @@ modules/bot/.connext-store/
 modules/bot-registry/.node-persist/
 
 .secret
+
+# Local address book
+address-book.json
