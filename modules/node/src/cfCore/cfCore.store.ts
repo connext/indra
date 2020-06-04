@@ -599,7 +599,7 @@ export class CFCoreStore implements IStoreService {
     // but we dont "remove" app proposals, they get upgraded. so
     // simply return without editing, and set the status to `REJECTED`
     // in the listener
-    const app = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
+    let app = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
     if (!app || app.type !== AppType.PROPOSAL) {
       return;
     }
@@ -607,13 +607,19 @@ export class CFCoreStore implements IStoreService {
 
     app.channel = undefined;
     await getManager().transaction(async (transactionalEntityManager) => {
-      await transactionalEntityManager.save(app);
+      app = await transactionalEntityManager.save(app);
       await transactionalEntityManager
         .createQueryBuilder()
         .relation(Channel, "appInstances")
         .of(multisigAddress)
         .remove(app.identityHash);
     });
+    await this.cache.mergeCacheValues(
+      `appInstance:identityHash:${appIdentityHash}`,
+      60,
+      AppInstanceSerializer.toJSON(app),
+    );
+    await this.cache.del(`channel:multisig:${multisigAddress}`);
   }
 
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {
