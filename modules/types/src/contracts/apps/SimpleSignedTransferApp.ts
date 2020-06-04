@@ -12,7 +12,7 @@ export const SimpleSignedTransferAppName = "SimpleSignedTransferApp";
 export interface Receipt {
   requestCID: string;
   responseCID: string;
-  subgraphID: string;
+  subgraphDeploymentID: string;
 }
 
 export interface Attestation extends Receipt {
@@ -44,6 +44,6 @@ export type SimpleSignedTransferAppAction = Attestation;
 export const SimpleSignedTransferAppActionEncoding = tidy(`tuple(
   bytes32 requestCID,
   bytes32 responseCID,
-  bytes32 subgraphID,
+  bytes32 subgraphDeploymentID,
   bytes signature
 )`);

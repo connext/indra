@@ -488,7 +488,7 @@ export class ConnextListener {
             signature: transferAction?.signature,
             requestCID: transferAction?.requestCID,
             responseCID: transferAction?.responseCID,
-            subgraphID: transferAction?.subgraphID,
+            subgraphDeploymentID: transferAction?.subgraphDeploymentID,
           } as UnlockedSignedTransferMeta,
         } as EventPayloads.SignedTransferUnlocked);
         break;

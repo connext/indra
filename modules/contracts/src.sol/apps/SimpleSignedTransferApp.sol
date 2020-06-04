@@ -26,7 +26,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
   struct Action {
     bytes32 requestCID;
     bytes32 responseCID;
-    bytes32 subgraphID;
+    bytes32 subgraphDeploymentID;
     bytes signature;
   }
 
@@ -36,7 +36,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
     "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)"
   );
   bytes32 private constant RECEIPT_TYPE_HASH = keccak256(
-    "Receipt(bytes32 requestCID,bytes32 responseCID,bytes32 subgraphID)"
+    "Receipt(bytes32 requestCID,bytes32 responseCID,bytes32 subgraphDeploymentID)"
   );
 
   // EIP-712 DOMAIN SEPARATOR CONSTANTS
@@ -70,7 +70,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
                 RECEIPT_TYPE_HASH,
                 action.requestCID,
                 action.responseCID,
-                action.subgraphID
+                action.subgraphDeploymentID
               )
             )
           )
