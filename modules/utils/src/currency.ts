@@ -1,5 +1,7 @@
-import { BigNumber, bigNumberify, commify, parseUnits, formatUnits } from "ethers/utils";
-import { EtherSymbol } from "ethers/constants";
+import { constants, utils } from "ethers";
+
+const { EtherSymbol } = constants;
+const { bigNumberify, commify, parseUnits, formatUnits } = utils;
 
 export class Currency {
   ////////////////////////////////////////
@@ -34,8 +36,8 @@ export class Currency {
   // ray is in units like MakerDAO's ray aka an integer w 36 extra units of precision
   // So: this.wad is to the currency amount as wei is to an ether amount
   // These let us handle divisions & decimals cleanly w/out needing a BigDecimal library
-  public wad: BigNumber;
-  public ray: BigNumber;
+  public wad: utils.BigNumber;
+  public ray: utils.BigNumber;
   public type: string;
 
   public daiRate: string;

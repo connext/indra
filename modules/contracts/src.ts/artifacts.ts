@@ -1,6 +1,6 @@
 import { HexString } from "@connext/types";
 import * as Token from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
-import { FunctionFragment, EventFragment, ParamType } from "ethers/utils";
+import { utils } from "ethers";
 
 import * as AppApplyActionFails from "../artifacts/AppApplyActionFails.json";
 import * as AppComputeOutcomeFails from "../artifacts/AppComputeOutcomeFails.json";
@@ -30,13 +30,13 @@ import * as TimeLockedPassThrough from "../artifacts/TimeLockedPassThrough.json"
 import * as TwoPartyFixedOutcomeInterpreter from "../artifacts/TwoPartyFixedOutcomeInterpreter.json";
 import * as WithdrawApp from "../artifacts/WithdrawApp.json";
 
-type Abi = Array<string | FunctionFragment | EventFragment | ParamType>;
+type Abi = Array<string | utils.FunctionFragment | utils.EventFragment | utils.ParamType>;
 
 type Artifact = {
-  contractName: string,
-  abi: Abi,
-  bytecode: HexString,
-  deployedBytecode: HexString,
+  contractName: string;
+  abi: Abi;
+  bytecode: HexString;
+  deployedBytecode: HexString;
 };
 
 type Artifacts = { [contractName: string]: Artifact };

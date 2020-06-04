@@ -1,6 +1,6 @@
 {
   "name": "@connext/channel-provider",
-  "version": "6.6.3",
+  "version": "6.6.5",
   "description": "Channel Provider module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -16,7 +16,7 @@
     "test": "./node_modules/.bin/ts-mocha --watch"
   },
   "dependencies": {
-    "@connext/types": "6.6.3",
+    "@connext/types": "6.6.5",
     "eventemitter3": "4.0.4"
   },
   "devDependencies": {
@@ -24,7 +24,7 @@
     "@types/chai": "4.2.11",
     "@types/chai-as-promised": "7.1.2",
     "@types/mocha": "7.0.2",
-    "@types/node": "14.0.6",
+    "@types/node": "14.0.9",
     "chai": "4.2.0",
     "chai-as-promised": "7.1.1",
     "mocha": "7.2.0",

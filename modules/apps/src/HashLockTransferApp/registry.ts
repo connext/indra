@@ -4,9 +4,11 @@ import {
   HashLockTransferAppStateEncoding,
   HashLockTransferAppName,
 } from "@connext/types";
-import { Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { AppRegistryInfo } from "../shared";
+
+const { Zero } = constants;
 
 export const HashLockTransferAppRegistryInfo: AppRegistryInfo = {
   name: HashLockTransferAppName,

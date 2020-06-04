@@ -12,26 +12,30 @@ import {
   TimeLockedPassThrough,
   TwoPartyFixedOutcomeInterpreter,
   WithdrawApp,
+  SimpleLinkedTransferApp,
 } from "@connext/contracts";
 import { ContractAddresses } from "@connext/types";
-import { ContractFactory, Wallet } from "ethers";
-import { JsonRpcProvider } from "ethers/providers";
+import { ContractFactory, Wallet, providers } from "ethers";
 
 export type TestContractAddresses = ContractAddresses & {
   TicTacToeApp: string;
   DolphinCoin: string;
-  WithdrawApp: string;
-  DepositApp: string;
+  SimpleLinkedTransferApp: string;
 };
 
 export type TestNetworkContext = {
-  provider: JsonRpcProvider;
+  provider: providers.JsonRpcProvider;
   contractAddresses: TestContractAddresses;
 };
 
 export const deployTestArtifactsToChain = async (
   wallet: Wallet,
 ): Promise<TestContractAddresses> => {
+  const linkedTransferAppContract = await new ContractFactory(
+    SimpleLinkedTransferApp.abi,
+    SimpleLinkedTransferApp.bytecode,
+    wallet,
+  ).deploy();
 
   const depositAppContract = await new ContractFactory(
     DepositApp.abi,
@@ -99,7 +103,6 @@ export const deployTestArtifactsToChain = async (
     wallet,
   ).deploy();
 
-
   const timeLockedPassThrough = await new ContractFactory(
     TimeLockedPassThrough.abi,
     TimeLockedPassThrough.bytecode,
@@ -126,5 +129,6 @@ export const deployTestArtifactsToChain = async (
     TimeLockedPassThrough: timeLockedPassThrough.address,
     TwoPartyFixedOutcomeInterpreter: twoPartyFixedOutcomeInterpreter.address,
     WithdrawApp: withdrawAppContract.address,
+    SimpleLinkedTransferApp: linkedTransferAppContract.address,
   };
 };

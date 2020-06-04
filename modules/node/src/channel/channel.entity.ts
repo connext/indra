@@ -10,7 +10,7 @@ import {
   UpdateDateColumn,
   PrimaryColumn,
 } from "typeorm";
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
@@ -18,6 +18,8 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsValidPublicIdentifier } from "../validate";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
+
+const { AddressZero } = constants;
 
 @Entity()
 export class Channel {
@@ -46,11 +48,9 @@ export class Channel {
   @Column("json", { default: { [AddressZero]: false } })
   activeCollateralizations!: Collateralizations;
 
-  @OneToMany(
-    (type: any) => AppInstance,
-    (appInstance: AppInstance) => appInstance.channel,
-    { cascade: true },
-  )
+  @OneToMany((type: any) => AppInstance, (appInstance: AppInstance) => appInstance.channel, {
+    cascade: true,
+  })
   appInstances!: AppInstance[];
 
   @Column("integer", { nullable: true })
@@ -62,24 +62,16 @@ export class Channel {
   )
   withdrawalCommitments!: WithdrawCommitment[];
 
-  @OneToOne(
-    (type: any) => SetupCommitment,
-    (commitment: SetupCommitment) => commitment.channel,
-    { cascade: true },
-  )
+  @OneToOne((type: any) => SetupCommitment, (commitment: SetupCommitment) => commitment.channel, {
+    cascade: true,
+  })
   setupCommitment!: SetupCommitment;
 
-  @ManyToMany(
-    (type: any) => RebalanceProfile,
-    (profile: RebalanceProfile) => profile.channels,
-  )
+  @ManyToMany((type: any) => RebalanceProfile, (profile: RebalanceProfile) => profile.channels)
   @JoinTable()
   rebalanceProfiles!: RebalanceProfile[];
 
-  @OneToMany(
-    (type: any) => OnchainTransaction,
-    (tx: OnchainTransaction) => tx.channel,
-  )
+  @OneToMany((type: any) => OnchainTransaction, (tx: OnchainTransaction) => tx.channel)
   transactions!: OnchainTransaction[];
 
   @CreateDateColumn()

@@ -1,7 +1,9 @@
 import { IConnextClient, CONVENTION_FOR_ETH_ASSET_ID } from "@connext/types";
-import { One, Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { createClient, ethProvider, expect, getOnchainBalance, sendOnchainValue } from "../util";
+
+const { One, Zero } = constants;
 
 describe("Deposit Rights", () => {
   let client: IConnextClient;

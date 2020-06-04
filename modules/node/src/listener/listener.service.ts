@@ -9,7 +9,7 @@ import {
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -20,6 +20,8 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { ChannelRepository } from "../channel/channel.repository";
+
+const { AddressZero } = constants;
 
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
@@ -182,15 +184,27 @@ export default class ListenerService implements OnModuleInit {
   }
 
   async handleUninstall(data: UninstallMessage) {
-    if (!data.data.multisigAddress) {
+    const { action, uninstalledApp, multisigAddress, appIdentityHash } = data.data;
+    if (!multisigAddress) {
       this.log.error(
-        `Unexpected error - no multisigAddress found in uninstall event data: ${data.data.appIdentityHash}`,
+        `Unexpected error - no multisigAddress found in uninstall event data: ${appIdentityHash}`,
       );
       return;
     }
-    const channel = await this.channelRepository.findByMultisigAddressOrThrow(
-      data.data.multisigAddress,
-    );
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    if (action) {
+      // update app with uninstalled state
+      await this.appInstanceRepository.updateAppStateOnUninstall(uninstalledApp);
+      const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+        uninstalledApp.appInterface.addr,
+      );
+      await this.appActionsService.handleAppAction(
+        appRegistryInfo.name,
+        uninstalledApp,
+        uninstalledApp.latestState as any, // AppState (excluding simple swap app)
+        action as AppAction,
+      );
+    }
     const assetIdResponder = (
       await this.appInstanceRepository.findByIdentityHashOrThrow(data.data.appIdentityHash)
     ).responderDepositAssetId;
@@ -208,15 +222,6 @@ export default class ListenerService implements OnModuleInit {
         (data: ProtocolEventMessage<any>) => void | Promise<void>,
       ]) => {
         this.cfCoreService.registerCfCoreListener(event, callback);
-      },
-    );
-
-    this.cfCoreService.registerCfCoreListener(
-      MethodNames.chan_uninstall as any,
-      async (data: any) => {
-        // TODO: GET CHANNEL MULTISIG
-        const uninstallSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${AddressZero}.app-instance.${data.result.result.appIdentityHash}.uninstall`;
-        await this.messagingService.publish(uninstallSubject, data.result.result);
       },
     );
   }

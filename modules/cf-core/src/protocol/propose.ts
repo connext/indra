@@ -15,7 +15,7 @@ import {
   stringify,
   toBN,
 } from "@connext/utils";
-import { defaultAbiCoder, keccak256 } from "ethers/utils";
+import { utils } from "ethers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
@@ -23,6 +23,8 @@ import { AppInstance } from "../models";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
 import { assertIsValidSignature } from "./utils";
+
+const { defaultAbiCoder, keccak256 } = utils;
 
 const protocol = ProtocolNames.propose;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;

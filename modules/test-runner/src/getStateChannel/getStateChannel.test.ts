@@ -8,14 +8,12 @@ import {
   StateSchemaVersion,
 } from "@connext/types";
 import { toBN, toBNJson } from "@connext/utils";
-import { AddressZero, One } from "ethers/constants";
-import { hexlify, randomBytes } from "ethers/utils";
+import { constants, utils } from "ethers";
 
-import {
-  createClient,
-  ETH_AMOUNT_SM,
-  expect,
-} from "../util";
+import { createClient, ETH_AMOUNT_SM, expect } from "../util";
+
+const { AddressZero, One } = constants;
+const { hexlify, randomBytes } = utils;
 
 const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
 

@@ -1,18 +1,19 @@
 import { getRandomAddress } from "@connext/utils";
-import { Contract, Wallet, ContractFactory } from "ethers";
-import { AddressZero, One } from "ethers/constants";
-import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { Contract, Wallet, ContractFactory, constants, utils } from "ethers";
 
 import { DolphinCoin, MultiAssetMultiPartyCoinTransferInterpreter } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 
+const { AddressZero, One } = constants;
+const { defaultAbiCoder } = utils;
+
 type CoinTransfer = {
   to: string;
-  amount: BigNumber;
+  amount: utils.BigNumber;
 };
 
-const encodeParams = (params: { limit: BigNumber[]; tokenAddresses: string[] }) => {
+const encodeParams = (params: { limit: utils.BigNumber[]; tokenAddresses: string[] }) => {
   return defaultAbiCoder.encode([`tuple(uint256[] limit, address[] tokenAddresses)`], [params]);
 };
 
@@ -37,29 +38,21 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
 
   const interpretOutcomeAndExecuteEffect = async (
     state: CoinTransfer[][],
-    params: { limit: BigNumber[]; tokenAddresses: string[] },
+    params: { limit: utils.BigNumber[]; tokenAddresses: string[] },
   ) => {
-    return multiAssetMultiPartyCoinTransferInterpreter
-      .functions
-      .interpretOutcomeAndExecuteEffect(
-        encodeOutcome(state),
-        encodeParams(params),
-      );
+    return multiAssetMultiPartyCoinTransferInterpreter.functions.interpretOutcomeAndExecuteEffect(
+      encodeOutcome(state),
+      encodeParams(params),
+    );
   };
 
   const getTotalAmountWithdrawn = async (assetId: string) => {
-    return multiAssetMultiPartyCoinTransferInterpreter
-      .functions
-      .totalAmountWithdrawn(assetId);
+    return multiAssetMultiPartyCoinTransferInterpreter.functions.totalAmountWithdrawn(assetId);
   };
 
   beforeEach(async () => {
     wallet = (await provider.getWallets())[0];
-    erc20 = await new ContractFactory(
-      DolphinCoin.abi,
-      DolphinCoin.bytecode,
-      wallet,
-    ).deploy();
+    erc20 = await new ContractFactory(DolphinCoin.abi, DolphinCoin.bytecode, wallet).deploy();
 
     multiAssetMultiPartyCoinTransferInterpreter = await new ContractFactory(
       MultiAssetMultiPartyCoinTransferInterpreter.abi,
@@ -76,7 +69,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     // fund interpreter with ETH
     await wallet.sendTransaction({
       to: multiAssetMultiPartyCoinTransferInterpreter.address,
-      value: new BigNumber(100),
+      value: new utils.BigNumber(100),
     });
   });
 
@@ -158,9 +151,9 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
 
     expect(await erc20.functions.balanceOf(to1)).to.eq(One);
     expect(await erc20.functions.balanceOf(to2)).to.eq(One);
-    expect(
-      await getTotalAmountWithdrawn(erc20.address),
-    ).to.eq(preAmountWithdrawn.add(One).add(One));
+    expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
+      preAmountWithdrawn.add(One).add(One),
+    );
   });
 
   it("Can distribute both ETH and ERC20 coins to one person", async () => {
@@ -237,12 +230,12 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     expect(await provider.getBalance(to2)).to.eq(One);
     expect(await erc20.functions.balanceOf(to2)).to.eq(One);
 
-    expect(
-      await getTotalAmountWithdrawn(erc20.address),
-    ).to.eq(preAmountWithdrawnToken.add(One).add(One));
-    expect(
-      await getTotalAmountWithdrawn(AddressZero),
-    ).to.eq(preAmountWithdrawnEth.add(One).add(One));
+    expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
+      preAmountWithdrawnToken.add(One).add(One),
+    );
+    expect(await getTotalAmountWithdrawn(AddressZero)).to.eq(
+      preAmountWithdrawnEth.add(One).add(One),
+    );
   });
 
   it("Can distribute a mix of ETH and ERC20 coins to an unorderded list of people", async () => {
@@ -278,11 +271,11 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     expect(await provider.getBalance(to2)).to.eq(One);
     expect(await erc20.functions.balanceOf(to2)).to.eq(One);
 
-    expect(
-      await getTotalAmountWithdrawn(erc20.address),
-    ).to.eq(preAmountWithdrawnToken.add(One).add(One));
-    expect(
-      await getTotalAmountWithdrawn(AddressZero),
-    ).to.eq(preAmountWithdrawnEth.add(One).add(One));
+    expect(await getTotalAmountWithdrawn(erc20.address)).to.eq(
+      preAmountWithdrawnToken.add(One).add(One),
+    );
+    expect(await getTotalAmountWithdrawn(AddressZero)).to.eq(
+      preAmountWithdrawnEth.add(One).add(One),
+    );
   });
 });

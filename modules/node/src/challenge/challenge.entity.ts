@@ -14,7 +14,7 @@ import {
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { IsKeccak256Hash } from "../validate";
 import { Channel } from "../channel/channel.entity";
-import { BigNumber } from "ethers/utils";
+import { utils } from "ethers";
 import { AppName, StoredAppChallengeStatus } from "@connext/types";
 import { StateProgressedEvent } from "../stateProgressedEvent/stateProgressedEvent.entity";
 import { ChallengeUpdatedEvent } from "../challengeUpdatedEvent/challengeUpdatedEvent.entity";
@@ -33,11 +33,11 @@ export class Challenge<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => toBN(value),
-      to: (value: BigNumber): string => value.toString(),
+      from: (value: string): utils.BigNumber => toBN(value),
+      to: (value: utils.BigNumber): string => value.toString(),
     },
   })
-  versionNumber: BigNumber;
+  versionNumber: utils.BigNumber;
 
   @Column("text")
   @IsKeccak256Hash()
@@ -45,11 +45,11 @@ export class Challenge<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => toBN(value),
-      to: (value: BigNumber): string => value.toString(),
+      from: (value: string): utils.BigNumber => toBN(value),
+      to: (value: utils.BigNumber): string => value.toString(),
     },
   })
-  finalizesAt: BigNumber;
+  finalizesAt: utils.BigNumber;
 
   @Column({ type: "enum", enum: StoredAppChallengeStatus })
   status: StoredAppChallengeStatus;
@@ -58,10 +58,10 @@ export class Challenge<T extends AppName = any> {
   @JoinColumn()
   app!: AppInstance<T>;
 
-  @OneToMany(type => StateProgressedEvent, event => event.challenge)
+  @OneToMany((type) => StateProgressedEvent, (event) => event.challenge)
   stateProgressedEvents!: StateProgressedEvent<T>[];
 
-  @OneToMany(type => ChallengeUpdatedEvent, event => event.challenge)
+  @OneToMany((type) => ChallengeUpdatedEvent, (event) => event.challenge)
   challengeUpdatedEvents!: ChallengeUpdatedEvent<T>[];
 
   @ManyToOne((type: any) => Channel)

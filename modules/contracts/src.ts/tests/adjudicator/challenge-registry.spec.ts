@@ -1,7 +1,6 @@
 import { ChallengeStatus, AppChallenge } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { Wallet } from "ethers";
-import { keccak256 } from "ethers/utils";
+import { Wallet, utils } from "ethers";
 
 import { setupContext } from "../context";
 import {
@@ -13,6 +12,8 @@ import {
   restore,
   snapshot,
 } from "../utils";
+
+const { keccak256 } = utils;
 
 describe("ChallengeRegistry", () => {
   let snapshotId: any;

@@ -1,9 +1,10 @@
 import * as Connext from "connext";
 import { toBN } from "@connext/utils";
-import { Zero } from "ethers/constants";
-import { formatEther } from "ethers/utils";
 import interval from "interval-promise";
+import { constants, utils } from "ethers";
 
+const { Zero } = constants;
+const { formatEther } = utils;
 
 export const migrate = async (hubUrl, wallet, ethUrl) => {
   console.log(`==== Migration Started | hubUrl: ${hubUrl}, ethUrl: ${ethUrl}`);

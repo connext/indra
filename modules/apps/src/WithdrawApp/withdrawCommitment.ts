@@ -6,7 +6,9 @@ import {
   singleAssetSinglePartyCoinTransferEncoding,
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
 } from "@connext/types";
-import { BigNumberish, defaultAbiCoder, Interface } from "ethers/utils";
+import { utils } from "ethers";
+
+const { defaultAbiCoder, Interface } = utils;
 
 const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 export class WithdrawCommitment extends MultisigCommitment {
@@ -16,7 +18,7 @@ export class WithdrawCommitment extends MultisigCommitment {
     public readonly multisigOwners: string[],
     public readonly recipient: string,
     public readonly assetId: string,
-    public readonly amount: BigNumberish,
+    public readonly amount: utils.BigNumberish,
     public readonly nonce: string,
   ) {
     super(multisigAddress, multisigOwners);

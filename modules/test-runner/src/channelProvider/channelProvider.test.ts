@@ -1,6 +1,6 @@
 import { EventNames, IConnextClient, CONVENTION_FOR_ETH_ASSET_ID } from "@connext/types";
 import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { AddressZero, One } from "ethers/constants";
+import { constants } from "ethers";
 
 import {
   AssetOptions,
@@ -14,6 +14,8 @@ import {
   TOKEN_AMOUNT,
   withdrawFromChannel,
 } from "../util";
+
+const { AddressZero, One } = constants;
 
 describe("ChannelProvider", () => {
   let client: IConnextClient;
@@ -62,19 +64,11 @@ describe("ChannelProvider", () => {
     const clientB = await createClient({ id: "B" });
     await clientB.requestCollateral(tokenAddress);
 
-    const transferFinished = Promise.all([
-      new Promise(async (resolve) => {
-        await clientB.messaging.subscribe(
-          `${client.nodeIdentifier}.channel.*.app-instance.*.uninstall`,
-          resolve,
-        );
-      }),
-      new Promise(async (resolve) => {
-        clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async () => {
-          resolve();
-        });
-      }),
-    ]);
+    const transferFinished = new Promise(async (resolve) => {
+      clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async () => {
+        resolve();
+      });
+    });
 
     await remoteClient.transfer({
       amount: transfer.amount.toString(),

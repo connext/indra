@@ -3,7 +3,9 @@ import {
   AppInstanceProposal,
   OutcomeType,
   SimpleLinkedTransferAppName,
+  AppState,
 } from "@connext/types";
+import { constants } from "ethers";
 import { getSignerAddressFromPublicIdentifier, safeJsonParse } from "@connext/utils";
 import { EntityRepository, Repository } from "typeorm";
 
@@ -11,7 +13,8 @@ import { Channel } from "../channel/channel.entity";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 
 import { AppInstance, AppType } from "./appInstance.entity";
-import { HashZero } from "ethers/constants";
+
+const { HashZero } = constants;
 
 export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
   if (!app) {
@@ -213,7 +216,8 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderAddress}"'`,
-      ).getOne();
+      )
+      .getOne();
   }
 
   async findLinkedTransferAppByPaymentIdAndReceiver(
@@ -233,7 +237,8 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       // receiver is recipient
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverAddress}"'`,
-      ).getOne();
+      )
+      .getOne();
   }
 
   async findRedeemedLinkedTransferAppByPaymentIdFromNode(
@@ -325,5 +330,17 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .getMany();
     return res;
+  }
+
+  async updateAppStateOnUninstall(uninstalledApp: AppInstanceJson): Promise<void> {
+    await this.createQueryBuilder("app_instance")
+      .update(AppInstance)
+      .set({
+        latestState: uninstalledApp.latestState as AppState,
+        stateTimeout: uninstalledApp.stateTimeout,
+        latestVersionNumber: uninstalledApp.latestVersionNumber,
+      })
+      .where("identityHash = :identityHash", { identityHash: uninstalledApp.identityHash })
+      .execute();
   }
 }

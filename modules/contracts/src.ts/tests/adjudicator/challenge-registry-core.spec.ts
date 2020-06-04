@@ -1,8 +1,6 @@
-import { Wallet } from "ethers";
-import { One } from "ethers/constants";
+import { Wallet, constants, utils } from "ethers";
 import { ChallengeStatus, AppChallenge } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { keccak256 } from "ethers/utils";
 
 import { setupContext } from "../context";
 import {
@@ -15,6 +13,9 @@ import {
   restore,
   snapshot,
 } from "../utils";
+
+const { One } = constants;
+const { keccak256 } = utils;
 
 describe("MChallengeRegistryCore", () => {
   let wallet: Wallet;
@@ -51,8 +52,12 @@ describe("MChallengeRegistryCore", () => {
     setState = context["setState"];
     isFinalized = context["isFinalized"];
     verifyChallenge = context["verifyChallenge"];
-    setAndProgressState = 
-      (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => context["setAndProgressState"](
+    setAndProgressState = (
+      versionNumber: number,
+      state?: AppWithCounterState,
+      turnTaker?: Wallet,
+    ) =>
+      context["setAndProgressState"](
         versionNumber, // nonce
         state || context["state0"], // state
         context["action"], // action

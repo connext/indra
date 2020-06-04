@@ -6,8 +6,7 @@ import {
   getRandomBytes32,
   toBN,
 } from "@connext/utils";
-import { One } from "ethers/constants";
-import { Contract, Wallet } from "ethers";
+import { Contract, Wallet, constants } from "ethers";
 
 import { setupContext } from "../context";
 import {
@@ -19,6 +18,8 @@ import {
   snapshot,
   sortSignaturesBySignerAddress,
 } from "../utils";
+
+const { One } = constants;
 
 describe("setState", () => {
   let wallet: Wallet;
@@ -131,8 +132,8 @@ describe("setState", () => {
           appStateHash: appStateToHash(state),
           timeout: ONCHAIN_CHALLENGE_TIMEOUT,
           signatures: await sortSignaturesBySignerAddress(thingToSign, [
-            await (new ChannelSigner(wallet.privateKey).signMessage(thingToSign)),
-            await (new ChannelSigner(bob.privateKey).signMessage(thingToSign)),
+            await new ChannelSigner(wallet.privateKey).signMessage(thingToSign),
+            await new ChannelSigner(bob.privateKey).signMessage(thingToSign),
           ]),
         }),
       ).to.be.revertedWith(`Invalid signature`);

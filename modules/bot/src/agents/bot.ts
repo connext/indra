@@ -8,9 +8,7 @@ import {
   getTestVerifyingContract,
   signReceiptMessage,
 } from "@connext/utils";
-import { utils } from "ethers";
-import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { utils, constants } from "ethers";
 import { Argv } from "yargs";
 import intervalPromise from "interval-promise";
 
@@ -19,6 +17,9 @@ import {
   addAgentIdentifierToIndex,
   getRandomAgentIdentifierFromIndex,
 } from "../helpers/agentIndex";
+
+const { AddressZero } = constants;
+const { parseEther, formatEther } = utils;
 
 export default {
   command: "bot",
@@ -149,7 +150,7 @@ export default {
         const receiverSigner = getSignerAddressFromPublicIdentifier(receiverIdentifier);
         const paymentId = getRandomBytes32();
         log.debug(
-          `Send conditional transfer ${paymentId} for ${utils.formatEther(
+          `Send conditional transfer ${paymentId} for ${formatEther(
             TRANSFER_AMT,
           )} ETH to ${receiverIdentifier} (${receiverSigner})`,
         );

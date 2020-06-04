@@ -1,6 +1,6 @@
 import { waffleChai } from "@ethereum-waffle/chai";
 import { use } from "chai";
-import { Contract, Wallet } from "ethers";
+import { Contract, Wallet, constants, utils } from "ethers";
 import { MinimumViableMultisig } from "@connext/contracts";
 import {
   CONVENTION_FOR_ETH_ASSET_ID,
@@ -16,11 +16,12 @@ import {
   TransactionResponse,
 } from "@connext/types";
 import { expect } from "chai";
-import { Zero, HashZero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
 import { ChannelSigner, toBN } from "@connext/utils";
+
 import { AppWithCounterClass } from "./appWithCounter";
 import { TestNetworkContext } from "./contracts";
+
+const { Zero, HashZero } = constants;
 
 /////////////////////////////
 //// Assertions
@@ -36,7 +37,7 @@ export { expect } from "chai";
 export const verifyOnchainBalancesPostChallenge = async (
   multisigAddress: string,
   signers: ChannelSigner[],
-  expected: { [assetId: string]: BigNumber },
+  expected: { [assetId: string]: utils.BigNumber },
   wallet: Wallet,
 ) => {
   const withdrawn = await new Contract(
@@ -75,7 +76,7 @@ export const verifyChallengeUpdatedEvent = async (
   provider: JsonRpcProvider,
 ) => {
   const current = await provider.getBlockNumber();
-  const isSingleSigned = setState.signatures.filter(x => !!x).length === 1;
+  const isSingleSigned = setState.signatures.filter((x) => !!x).length === 1;
   if (isSingleSigned) {
     expect(event).to.containSubset({
       identityHash: app.identityHash,

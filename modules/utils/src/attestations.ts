@@ -1,9 +1,11 @@
 import { PrivateKey, Receipt, Address, SignatureString, Attestation } from "@connext/types";
-import { hexlify, keccak256, toUtf8Bytes, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
+import { utils } from "ethers";
 import { sign, recover } from "eccrypto-js";
 import * as bs58 from "bs58";
 
 import { bufferify, getAddressFromPublicKey } from "./crypto";
+
+const { hexlify, keccak256, toUtf8Bytes, defaultAbiCoder, solidityKeccak256 } = utils;
 
 const hashString = (str: string) => keccak256(toUtf8Bytes(str));
 

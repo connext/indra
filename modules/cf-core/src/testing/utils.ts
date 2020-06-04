@@ -23,6 +23,8 @@ import {
   UninstallMessage,
   EventName,
   ProtocolEventMessage,
+  SimpleLinkedTransferAppStateEncoding,
+  SimpleLinkedTransferAppActionEncoding,
 } from "@connext/types";
 import {
   bigNumberifyJson,
@@ -31,10 +33,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   toBN,
 } from "@connext/utils";
-import { Contract, Wallet } from "ethers";
-import { JsonRpcProvider } from "ethers/providers";
-import { AddressZero, One, Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
+import { Contract, Wallet, providers, constants, utils } from "ethers";
 
 import { CFCore } from "../cfCore";
 import { AppInstance, StateChannel } from "../models";
@@ -45,6 +44,9 @@ import { TestContractAddresses } from "./contracts";
 import { initialEmptyTTTState, tttAbiEncodings } from "./tic-tac-toe";
 import { toBeEq } from "./bignumber-jest-matcher";
 
+const { AddressZero, One, Zero } = constants;
+const { bigNumberify, getAddress, hexlify, randomBytes } = utils;
+
 expect.extend({ toBeEq });
 
 interface AppContext {
@@ -54,16 +56,14 @@ interface AppContext {
   outcomeType: OutcomeType;
 }
 
-const {
-  DepositApp,
-  DolphinCoin,
-  TicTacToeApp,
-} = global[`contracts`] as TestContractAddresses;
+const { DepositApp, DolphinCoin, TicTacToeApp, SimpleLinkedTransferApp } = global[
+  `contracts`
+] as TestContractAddresses;
 
 export const newWallet = (wallet: Wallet) =>
   new Wallet(
     wallet.privateKey,
-    new JsonRpcProvider((wallet.provider as JsonRpcProvider).connection.url),
+    new providers.JsonRpcProvider((wallet.provider as providers.JsonRpcProvider).connection.url),
   );
 
 export function createAppInstanceProposalForTest(
@@ -412,7 +412,7 @@ export async function getProposedAppInstances(
 export async function getMultisigBalance(
   multisigAddr: string,
   tokenAddress: string = AddressZero,
-): Promise<BigNumber> {
+): Promise<utils.BigNumber> {
   const provider = global[`wallet`].provider;
   return tokenAddress === AddressZero
     ? await provider.getBalance(multisigAddr)
@@ -491,7 +491,7 @@ export async function getProposeDepositAppParams(
 export async function deposit(
   node: CFCore,
   multisigAddress: string,
-  amount: BigNumber = One,
+  amount: utils.BigNumber = One,
   responderNode: CFCore,
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ) {
@@ -555,12 +555,12 @@ export function constructAppProposalRpc(
   appDefinition: string,
   abiEncodings: AppABIEncodings,
   initialState: SolidityValueType,
-  initiatorDeposit: BigNumber = Zero,
+  initiatorDeposit: utils.BigNumber = Zero,
   initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
-  responderDeposit: BigNumber = Zero,
+  responderDeposit: utils.BigNumber = Zero,
   responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
-  defaultTimeout: BigNumber = Zero,
-  stateTimeout: BigNumber = defaultTimeout,
+  defaultTimeout: utils.BigNumber = Zero,
+  stateTimeout: utils.BigNumber = defaultTimeout,
 ): Rpc {
   const { outcomeType } = getAppContext(appDefinition, initialState);
   return {
@@ -653,11 +653,16 @@ export function constructGetAppsRpc(multisigAddress: string): Rpc {
   };
 }
 
-export function constructUninstallRpc(appIdentityHash: string, multisigAddress: string): Rpc {
+export function constructUninstallRpc(
+  appIdentityHash: string,
+  multisigAddress: string,
+  action?: SolidityValueType,
+): Rpc {
   return {
     parameters: {
       appIdentityHash,
       multisigAddress,
+      action,
     } as MethodParams.Uninstall,
     id: Date.now(),
     methodName: MethodNames.chan_uninstall,
@@ -668,7 +673,7 @@ export async function collateralizeChannel(
   multisigAddress: string,
   node1: CFCore,
   node2: CFCore,
-  amount: BigNumber = One,
+  amount: utils.BigNumber = One,
   assetId: string = CONVENTION_FOR_ETH_ASSET_ID,
   collateralizeNode2: boolean = true,
 ): Promise<void> {
@@ -729,12 +734,12 @@ export async function installApp(
   multisigAddress: string,
   appDefinition: string,
   initialState?: SolidityValueType,
-  initiatorDeposit: BigNumber = Zero,
+  initiatorDeposit: utils.BigNumber = Zero,
   initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
-  responderDeposit: BigNumber = Zero,
+  responderDeposit: utils.BigNumber = Zero,
   responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
-  defaultTimeout: BigNumber = Zero,
-  stateTimeout: BigNumber = defaultTimeout,
+  defaultTimeout: utils.BigNumber = Zero,
+  stateTimeout: utils.BigNumber = defaultTimeout,
 ): Promise<[string, ProtocolParams.Propose]> {
   const appContext = getAppContext(appDefinition, initialState);
 
@@ -878,9 +883,9 @@ export function makeProposeCall(
   appDefinition: string,
   multisigAddress: string,
   initialState?: SolidityValueType,
-  initiatorDeposit: BigNumber = Zero,
+  initiatorDeposit: utils.BigNumber = Zero,
   initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
-  responderDeposit: BigNumber = Zero,
+  responderDeposit: utils.BigNumber = Zero,
   responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
 ): Rpc {
   const appContext = getAppContext(appDefinition, initialState);
@@ -903,9 +908,9 @@ export async function makeAndSendProposeCall(
   appDefinition: string,
   multisigAddress: string,
   initialState?: SolidityValueType,
-  initiatorDeposit: BigNumber = Zero,
+  initiatorDeposit: utils.BigNumber = Zero,
   initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
-  responderDeposit: BigNumber = Zero,
+  responderDeposit: utils.BigNumber = Zero,
   responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
 ): Promise<{
   appIdentityHash: string;
@@ -941,13 +946,13 @@ export async function transferERC20Tokens(
   toAddress: string,
   tokenAddress: string = DolphinCoin,
   contractABI: ContractABI = ERC20.abi,
-  amount: BigNumber = One,
-): Promise<BigNumber> {
+  amount: utils.BigNumber = One,
+): Promise<utils.BigNumber> {
   const deployerAccount = global["wallet"];
   const contract = new Contract(tokenAddress, contractABI, deployerAccount);
-  const balanceBefore: BigNumber = await contract.functions.balanceOf(toAddress);
+  const balanceBefore: utils.BigNumber = await contract.functions.balanceOf(toAddress);
   await contract.functions.transfer(toAddress, amount);
-  const balanceAfter: BigNumber = await contract.functions.balanceOf(toAddress);
+  const balanceAfter: utils.BigNumber = await contract.functions.balanceOf(toAddress);
   expect(balanceAfter.sub(balanceBefore)).toEqual(amount);
   return balanceAfter;
 }
@@ -992,6 +997,19 @@ export function getAppContext(
         },
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
       };
+
+    case SimpleLinkedTransferApp: {
+      checkForInitialState();
+      return {
+        appDefinition,
+        initialState: initialState!,
+        abiEncodings: {
+          stateEncoding: SimpleLinkedTransferAppStateEncoding,
+          actionEncoding: SimpleLinkedTransferAppActionEncoding,
+        },
+        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+      };
+    }
 
     default:
       throw new Error(`Proposing the specified app is not supported: ${appDefinition}`);
@@ -1038,7 +1056,7 @@ export async function getBalances(
   nodeB: CFCore,
   multisigAddress: string,
   assetId: AssetId,
-): Promise<[BigNumber, BigNumber]> {
+): Promise<[utils.BigNumber, utils.BigNumber]> {
   let tokenFreeBalanceState = await getFreeBalanceState(nodeA, multisigAddress, assetId);
 
   const tokenBalanceNodeA = tokenFreeBalanceState[nodeA.signerAddress];

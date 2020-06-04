@@ -1,6 +1,7 @@
 import { Ctx } from "evt";
+import { providers } from "ethers";
 
-import { AppInstanceProposal } from "./app";
+import { AppInstanceProposal, AppInstanceJson } from "./app";
 import { Address, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
 import {
   ConditionalTransferTypes,
@@ -11,7 +12,6 @@ import { ProtocolParams } from "./protocol";
 import { ProtocolMessageData } from "./messaging";
 import { PublicParams } from "./public";
 import { MinimalTransaction } from "./commitments";
-import { TransactionResponse } from "ethers/providers";
 import { StateChannelJSON } from "./state";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
@@ -142,6 +142,8 @@ const UNINSTALL_EVENT = "UNINSTALL_EVENT";
 type UninstallEventData = {
   appIdentityHash: Bytes32;
   multisigAddress: string;
+  uninstalledApp: AppInstanceJson;
+  action?: SolidityValueType;
 };
 
 const UNINSTALL_FAILED_EVENT = "UNINSTALL_FAILED_EVENT";
@@ -171,7 +173,7 @@ type UpdateStateFailedEventData = {
 const WITHDRAWAL_CONFIRMED_EVENT = "WITHDRAWAL_CONFIRMED_EVENT";
 
 type WithdrawalConfirmedEventData = {
-  transaction: TransactionResponse;
+  transaction: providers.TransactionResponse;
 };
 
 ////////////////////////////////////////

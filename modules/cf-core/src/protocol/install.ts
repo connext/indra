@@ -17,8 +17,7 @@ import {
   logTime,
   stringify,
 } from "@connext/utils";
-import { MaxUint256 } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
@@ -28,6 +27,8 @@ import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
+
+const { MaxUint256 } = constants;
 
 const protocol = ProtocolNames.install;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
@@ -88,7 +89,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderBalanceDecrement,
     );
 
-    let stateChannelAfter = computeInstallStateChannelTransition(
+    const stateChannelAfter = computeInstallStateChannelTransition(
       stateChannelBefore,
       params as ProtocolParams.Install,
     );
@@ -569,8 +570,8 @@ function computeInstallStateChannelTransition(
  * TODO: update doc on how MultiAssetMultiPartyCoinTransferInterpreterParams work
  *
  * @param {OutcomeType} outcomeType - either COIN_TRANSFER or TWO_PARTY_FIXED_OUTCOME
- * @param {BigNumber} initiatorBalanceDecrement - amount Wei initiator deposits
- * @param {BigNumber} responderBalanceDecrement - amount Wei responder deposits
+ * @param {utils.BigNumber} initiatorBalanceDecrement - amount Wei initiator deposits
+ * @param {utils.BigNumber} responderBalanceDecrement - amount Wei responder deposits
  * @param {string} initiatorFbAddress - the address of the recipient of initiator
  * @param {string} responderFbAddress - the address of the recipient of responder
  *
@@ -582,17 +583,15 @@ export function computeInterpreterParameters(
   outcomeType: OutcomeType,
   initiatorAssetId: AssetId,
   responderAssetId: AssetId,
-  initiatorBalanceDecrement: BigNumber,
-  responderBalanceDecrement: BigNumber,
+  initiatorBalanceDecrement: utils.BigNumber,
+  responderBalanceDecrement: utils.BigNumber,
   initiatorFbAddress: string,
   responderFbAddress: string,
   disableLimit: boolean,
 ): {
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?:
-    MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?:
-    SingleAssetTwoPartyCoinTransferInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
 } {
   const initiatorDepositAssetId = getAddressFromAssetId(initiatorAssetId);
   const responderDepositAssetId = getAddressFromAssetId(responderAssetId);

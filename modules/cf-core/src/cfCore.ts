@@ -25,7 +25,7 @@ import {
   EventName,
 } from "@connext/types";
 import { delay, nullLogger } from "@connext/utils";
-import { JsonRpcProvider } from "ethers/providers";
+import { providers } from "ethers";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
 
@@ -67,7 +67,7 @@ export class CFCore {
     storeService: IStoreService,
     contractAddresses: ContractAddresses,
     nodeConfig: NodeConfig,
-    provider: JsonRpcProvider,
+    provider: providers.JsonRpcProvider,
     signer: IChannelSigner,
     lockService: ILockService,
     blocksNeededForConfirmation?: number,
@@ -94,7 +94,7 @@ export class CFCore {
     private readonly messagingService: IMessagingService,
     private readonly storeService: IStoreService,
     private readonly nodeConfig: NodeConfig,
-    private readonly provider: JsonRpcProvider,
+    private readonly provider: providers.JsonRpcProvider,
     public readonly contractAddresses: ContractAddresses,
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
     public readonly log: ILoggerService = nullLogger,
@@ -191,22 +191,25 @@ export class CFCore {
       return this.signer.signMessage(commitmentHash);
     });
 
-    protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessageData, StateChannel]) => {
-      const [data, channel] = args;
+    protocolRunner.register(
+      Opcode.IO_SEND,
+      async (args: [ProtocolMessageData, StateChannel, AppInstance]) => {
+        const [data, channel, appContext] = args;
 
-      await this.messagingService.send(data.to, {
-        data,
-        from: this.publicIdentifier,
-        type: EventNames.PROTOCOL_MESSAGE_EVENT,
-      } as ProtocolMessage);
+        await this.messagingService.send(data.to, {
+          data,
+          from: this.publicIdentifier,
+          type: EventNames.PROTOCOL_MESSAGE_EVENT,
+        } as ProtocolMessage);
 
-      return { channel };
-    });
+        return { channel, appContext };
+      },
+    );
 
     protocolRunner.register(
       Opcode.IO_SEND_AND_WAIT,
-      async (args: [ProtocolMessageData, StateChannel]) => {
-        const [data, channel] = args;
+      async (args: [ProtocolMessageData, StateChannel, AppInstance]) => {
+        const [data, channel, appContext] = args;
 
         const deferral = new Deferred<ProtocolMessage>();
 
@@ -237,7 +240,7 @@ export class CFCore {
         // per counterparty at the moment.
         this.ioSendDeferrals.delete(data.processID);
 
-        return { data: (msg as ProtocolMessage).data, channel };
+        return { data: (msg as ProtocolMessage).data, channel, appContext };
       },
     );
 
@@ -348,6 +351,7 @@ export class CFCore {
         ] = args;
         const { multisigAddress, numProposedApps, freeBalance } = postProtocolChannel;
         const { identityHash } = app;
+        let appContext: AppInstance | AppInstanceProposal | undefined;
         switch (type) {
           case PersistAppType.CreateProposal: {
             await this.storeService.createAppProposal(
@@ -391,6 +395,8 @@ export class CFCore {
               freeBalance.toJson(),
               signedSetStateCommitment.toJson(),
             );
+            // final state of app before uninstall
+            appContext = app;
             break;
           }
 
@@ -405,7 +411,7 @@ export class CFCore {
           }
         }
 
-        return { channel: postProtocolChannel };
+        return { channel: postProtocolChannel, appContext };
       },
     );
 

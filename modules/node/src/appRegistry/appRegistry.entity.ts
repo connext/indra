@@ -1,6 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
-import { SupportedApplications } from "@connext/apps";
-import { OutcomeType } from "@connext/types";
+import { OutcomeType, SupportedApplicationNames } from "@connext/types";
 
 @Entity()
 export class AppRegistry {
@@ -8,7 +7,7 @@ export class AppRegistry {
   id!: number;
 
   @Column("text")
-  name!: SupportedApplications;
+  name!: SupportedApplicationNames;
 
   @Column("integer")
   chainId!: number;

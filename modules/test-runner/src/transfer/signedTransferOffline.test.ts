@@ -19,6 +19,7 @@ import {
   getRandomPrivateKey,
   ChannelSigner,
   signReceiptMessage,
+  delay,
 } from "@connext/utils";
 import {
   IChannelSigner,
@@ -32,10 +33,11 @@ import {
   PublicParams,
   ProtocolParams,
   PrivateKey,
-  JsonRpcProvider,
 } from "@connext/types";
 import { addressBook } from "@connext/contracts";
-import { Zero } from "ethers/constants";
+import { constants } from "ethers";
+
+const { Zero } = constants;
 
 describe("Signed Transfer Offline", () => {
   const tokenAddress = addressBook[4447].Token.address;
@@ -320,8 +322,10 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       event: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
     });
-    await sender.off();
+    sender.off();
     await sender.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
 
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
   });
@@ -339,8 +343,10 @@ describe("Signed Transfer Offline", () => {
       whichFails: "sender",
       error: CLIENT_INSTALL_FAILED(true),
     });
-    await sender.off();
+    sender.off();
     await sender.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
 
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
   });
@@ -364,8 +370,10 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       event: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
     });
-    await receiver.off();
+    receiver.off();
     await receiver.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
 
     await recreateClientAndRetryTransfer(
       "receiver",
@@ -400,36 +408,10 @@ describe("Signed Transfer Offline", () => {
         reject(err);
       }
     });
-    await receiver.off();
+    receiver.off();
     await receiver.messaging.disconnect();
-
-    await recreateClientAndRetryTransfer(
-      "receiver",
-      sender,
-      receiverSigner,
-      receiver.store,
-      paymentId,
-    );
-  });
-
-  it("sender + receiver install transfer successfully, receiver take action protocol times out", async () => {
-    const receiverConfig = {
-      ceiling: { [SEND]: 0 },
-      protocol: ProtocolNames.takeAction,
-    };
-    const [sender, receiver] = await createAndFundClients(undefined, receiverConfig);
-    const paymentId = await sendSignedTransfer(sender, receiver);
-    expect(paymentId).to.be.ok;
-    await resolveFailingSignedTransfer({
-      sender,
-      receiver,
-      paymentId,
-      whichFails: "receiver",
-      error: APP_PROTOCOL_TOO_LONG(ProtocolNames.takeAction),
-      event: EventNames.UPDATE_STATE_FAILED_EVENT,
-    });
-    await receiver.off();
-    await receiver.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
 
     await recreateClientAndRetryTransfer(
       "receiver",
@@ -456,15 +438,13 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.uninstall),
       event: EventNames.UNINSTALL_FAILED_EVENT,
     });
-    await receiver.off();
+    receiver.off();
     await receiver.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
 
     await recreateClientAndRetryTransfer("receiver", sender, receiverSigner, receiver.store);
   });
-
-  // see notes in withdrawal offline tests about take action protocol responders
-  // tl;dr need to move this test into the node unit tests
-  it.skip("sender install transfer successfully, receiver takes action and uninstalls, sender's take action protocol times out", async () => {});
 
   // see notes in withdrawal offline tests about take action protocol responders
   // tl;dr need to move this test into the node unit tests (same thing happens
@@ -491,6 +471,8 @@ describe("Signed Transfer Offline", () => {
     console.log(`correctly asserted failure!`);
     // recreate client, node should reclaim
     await sender.messaging.disconnect();
+    // Add delay to make sure messaging properly disconnects
+    await delay(1000);
     const recreatedSender = await createClient({ signer: senderSigner, store: sender.store });
     const postReclaim = await recreatedSender.getFreeBalance(tokenAddress);
     expect(postReclaim[recreatedSender.nodeSignerAddress]).to.be.greaterThan(
