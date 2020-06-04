@@ -1,4 +1,4 @@
-import { Contract } from "ethers";
+import { Contract, constants } from "ethers";
 import {
   JsonRpcProvider,
   ChallengeUpdatedEventPayload,
@@ -6,18 +6,14 @@ import {
   NetworkContext,
   StateProgressedEventPayload,
 } from "@connext/types";
-import {
-  ChannelSigner,
-  ColorfulLogger,
-  computeAppChallengeHash,
-  toBN,
-} from "@connext/utils";
-import { Zero, One } from "ethers/constants";
+import { ChannelSigner, ColorfulLogger, computeAppChallengeHash, toBN } from "@connext/utils";
 import { beforeEach } from "mocha";
 
 import { stateToHash, setupContext, AppWithCounterClass, ActionType, expect } from "./utils";
 
 import { ChainListener } from "../src";
+
+const { Zero, One } = constants;
 
 describe("ChainListener", () => {
   let challengeRegistry: Contract;
@@ -29,7 +25,6 @@ describe("ChainListener", () => {
 
   const logLevel = parseInt(process.env.LOG_LEVEL || "0");
   const log = new ColorfulLogger("TestChainListener", logLevel, true, "T");
-
 
   const action = {
     actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
@@ -97,10 +92,10 @@ describe("ChainListener", () => {
   it("should parse ChallengeUpdated + StateProgressed events properly when enabled", async () => {
     await chainListener.enable();
 
-    let statesUpdated: ChallengeUpdatedEventPayload[] = [];
+    const statesUpdated: ChallengeUpdatedEventPayload[] = [];
     // trigger `ChallengeUpdated` event
     const [states, progressed, tx] = await Promise.all([
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         chainListener.on("ChallengeUpdated", async (data: ChallengeUpdatedEventPayload) => {
           statesUpdated.push(data);
           if (statesUpdated.length >= 2) {
@@ -110,7 +105,7 @@ describe("ChainListener", () => {
           }
         });
       }),
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         chainListener.once("StateProgressed", async (data: StateProgressedEventPayload) => {
           return resolve(data);
         });
@@ -162,7 +157,7 @@ describe("ChainListener", () => {
     expect(tx).to.be.ok;
 
     // wait for block number to increase
-    await new Promise(resolve =>
+    await new Promise((resolve) =>
       provider.on("block", (block: number) => {
         if (startingBlock < block) {
           return resolve();
@@ -172,9 +167,9 @@ describe("ChainListener", () => {
     expect(startingBlock).to.be.lessThan(await provider.getBlockNumber());
 
     // parse logs
-    let statesUpdated: ChallengeUpdatedEventPayload[] = [];
+    const statesUpdated: ChallengeUpdatedEventPayload[] = [];
     const [states, progressed] = await Promise.all([
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         chainListener.on("ChallengeUpdated", async (data: ChallengeUpdatedEventPayload) => {
           statesUpdated.push(data);
           if (statesUpdated.length >= 2) {
@@ -184,7 +179,7 @@ describe("ChainListener", () => {
           }
         });
       }),
-      new Promise(async resolve => {
+      new Promise(async (resolve) => {
         chainListener.once("StateProgressed", async (data: StateProgressedEventPayload) => {
           return resolve(data);
         });

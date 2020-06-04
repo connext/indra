@@ -9,10 +9,15 @@ import {
   ProtocolNames,
   IStoreService,
 } from "@connext/types";
-import { getRandomChannelSigner, ChannelSigner, ColorfulLogger } from "@connext/utils";
+import { ERC20 } from "@connext/contracts";
+import {
+  getRandomChannelSigner,
+  ChannelSigner,
+  ColorfulLogger,
+  getRandomPrivateKey,
+} from "@connext/utils";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
-import tokenAbi from "human-standard-token-abi";
 
 import { ETH_AMOUNT_LG, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
@@ -24,12 +29,11 @@ export const createClient = async (
   fund: boolean = true,
 ): Promise<IConnextClient> => {
   const store = opts.store || getMemoryStore();
-  const wallet = Wallet.createRandom();
   const log = new ColorfulLogger("CreateClient", opts.logLevel || env.logLevel);
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     loggerService: new ColorfulLogger("Client", opts.logLevel || env.logLevel, true, opts.id),
-    signer: opts.signer || wallet.privateKey,
+    signer: opts.signer || getRandomPrivateKey(),
     nodeUrl: env.nodeUrl,
     store,
     ...opts,
@@ -47,7 +51,7 @@ export const createClient = async (
     });
     log.debug(`transaction sent ${ethTx.hash}, waiting...`);
     await ethTx.wait();
-    const token = new Contract(client.config.contractAddresses.Token!, tokenAbi, ethWallet);
+    const token = new Contract(client.config.contractAddresses.Token!, ERC20.abi, ethWallet);
     log.info(`sending client tokens`);
     const tokenTx = await token.functions.transfer(client.signerAddress, TOKEN_AMOUNT);
     log.debug(`transaction sent ${tokenTx.hash}, waiting...`);
@@ -121,7 +125,7 @@ export const createClientWithMessagingLimits = async (
     expect(messaging.apiCount).to.containSubset(emptyCount);
     return createClient({ messaging, signer });
   }
-  let messageOptions = {} as any;
+  const messageOptions = {} as any;
   if (protocol === "any" && ceiling) {
     // assign the ceiling for the general message count
     // by default, only use the send and receive methods here

@@ -7,37 +7,35 @@ import {
   MinimumViableMultisig,
   MultiAssetMultiPartyCoinTransferInterpreter,
   ProxyFactory,
-  SimpleTransferApp,
   SingleAssetTwoPartyCoinTransferInterpreter,
   TicTacToeApp,
   TimeLockedPassThrough,
   TwoPartyFixedOutcomeInterpreter,
-  UnidirectionalLinkedTransferApp,
-  UnidirectionalTransferApp,
   WithdrawApp,
+  SimpleLinkedTransferApp,
 } from "@connext/contracts";
 import { ContractAddresses } from "@connext/types";
-import { ContractFactory, Wallet } from "ethers";
-import { JsonRpcProvider } from "ethers/providers";
+import { ContractFactory, Wallet, providers } from "ethers";
 
 export type TestContractAddresses = ContractAddresses & {
   TicTacToeApp: string;
   DolphinCoin: string;
-  UnidirectionalTransferApp: string;
-  UnidirectionalLinkedTransferApp: string;
-  SimpleTransferApp: string;
-  WithdrawApp: string;
-  DepositApp: string;
+  SimpleLinkedTransferApp: string;
 };
 
 export type TestNetworkContext = {
-  provider: JsonRpcProvider;
+  provider: providers.JsonRpcProvider;
   contractAddresses: TestContractAddresses;
 };
 
 export const deployTestArtifactsToChain = async (
   wallet: Wallet,
 ): Promise<TestContractAddresses> => {
+  const linkedTransferAppContract = await new ContractFactory(
+    SimpleLinkedTransferApp.abi,
+    SimpleLinkedTransferApp.bytecode,
+    wallet,
+  ).deploy();
 
   const depositAppContract = await new ContractFactory(
     DepositApp.abi,
@@ -105,24 +103,6 @@ export const deployTestArtifactsToChain = async (
     wallet,
   ).deploy();
 
-  const transferContract = await new ContractFactory(
-    UnidirectionalTransferApp.abi,
-    UnidirectionalTransferApp.bytecode,
-    wallet,
-  ).deploy();
-
-  const simpleTransferContract = await new ContractFactory(
-    SimpleTransferApp.abi,
-    SimpleTransferApp.bytecode,
-    wallet,
-  ).deploy();
-
-  const linkContract = await new ContractFactory(
-    UnidirectionalLinkedTransferApp.abi,
-    UnidirectionalLinkedTransferApp.bytecode,
-    wallet,
-  ).deploy();
-
   const timeLockedPassThrough = await new ContractFactory(
     TimeLockedPassThrough.abi,
     TimeLockedPassThrough.bytecode,
@@ -144,13 +124,11 @@ export const deployTestArtifactsToChain = async (
     MinimumViableMultisig: mvmContract.address,
     MultiAssetMultiPartyCoinTransferInterpreter: coinTransferETHInterpreter.address,
     ProxyFactory: proxyFactoryContract.address,
-    SimpleTransferApp: simpleTransferContract.address,
     SingleAssetTwoPartyCoinTransferInterpreter: singleAssetTwoPartyCoinTransferInterpreter.address,
     TicTacToeApp: tttContract.address,
     TimeLockedPassThrough: timeLockedPassThrough.address,
     TwoPartyFixedOutcomeInterpreter: twoPartyFixedOutcomeInterpreter.address,
-    UnidirectionalLinkedTransferApp: linkContract.address,
-    UnidirectionalTransferApp: transferContract.address,
     WithdrawApp: withdrawAppContract.address,
+    SimpleLinkedTransferApp: linkedTransferAppContract.address,
   };
 };

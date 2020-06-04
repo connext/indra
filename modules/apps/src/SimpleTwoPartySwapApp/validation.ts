@@ -1,6 +1,8 @@
 import { AllowedSwap, SwapRate, ProtocolParams } from "@connext/types";
 import { calculateExchange, getAddressFromAssetId, stringify } from "@connext/utils";
-import { bigNumberify } from "ethers/utils";
+import { utils } from "ethers";
+
+const { bigNumberify } = utils;
 
 const ALLOWED_DISCREPANCY_PCT = 5;
 

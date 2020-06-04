@@ -1,6 +1,7 @@
-import { Contract } from "ethers";
-import { HashZero } from "ethers/constants";
-import { keccak256, toUtf8Bytes } from "ethers/utils";
+import { Contract, constants, utils } from "ethers";
+
+const { HashZero } = constants;
+const { keccak256, toUtf8Bytes } = utils;
 
 // Abi is copy/pasted from etherscan because the @ensdomains/ens package is out of date
 const ensRegistryAbi = [
@@ -326,7 +327,7 @@ const resolverAbi = [
   },
 ];
 
-const namehash = name => {
+const namehash = (name) => {
   let node = HashZero;
   if (name !== "") {
     const labels = name.split(".");

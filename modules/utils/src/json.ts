@@ -1,7 +1,9 @@
-import { bigNumberify } from "ethers/utils";
+import { utils } from "ethers";
 
 import { isBN, toBN } from "./bigNumbers";
 import { abbreviate } from "./strings";
+
+const { bigNumberify } = utils;
 
 export const bigNumberifyJson = (json: any): any =>
   typeof json === "string"
@@ -30,7 +32,7 @@ export const stringify = (value: any, abrv = false, spaces = 2): string =>
     spaces,
   );
 
-const nullify = (key: string, value: any) => typeof value === "undefined" ? null : value;
+const nullify = (key: string, value: any) => (typeof value === "undefined" ? null : value);
 
 export const safeJsonStringify = (value: any): string => {
   try {
@@ -49,4 +51,3 @@ export const safeJsonParse = (value: any): any => {
     return value;
   }
 };
-

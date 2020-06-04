@@ -1,9 +1,11 @@
 import { IChannelSigner, EthereumCommitment } from "@connext/types";
 import { getRandomChannelSigner, recoverAddressFromChannelMessage } from "@connext/utils";
-import { HashZero } from "ethers/constants";
-import { hashMessage } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import { assertIsValidSignature } from "./utils";
+
+const { HashZero } = constants;
+const { hashMessage } = utils;
 
 describe("Signature Validator Helper", () => {
   let signer: IChannelSigner;

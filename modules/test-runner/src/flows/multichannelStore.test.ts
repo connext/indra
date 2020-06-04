@@ -3,16 +3,25 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   EventNames,
   PublicParams,
-  EventPayloads,
   ConditionalTransferTypes,
+  Address,
+  PrivateKey,
+  Receipt,
 } from "@connext/types";
 import { getPostgresStore } from "@connext/store";
 import { ConnextClient } from "@connext/client";
-import { toBN, getRandomBytes32 } from "@connext/utils";
+import {
+  toBN,
+  getRandomBytes32,
+  getTestVerifyingContract,
+  getTestReceiptToSign,
+  getRandomPrivateKey,
+  signReceiptMessage,
+} from "@connext/utils";
 import { Sequelize } from "sequelize";
+import { utils } from "ethers";
 
 import { createClient, fundChannel, ETH_AMOUNT_MD, expect, env } from "../util";
-import { BigNumber, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 
 // NOTE: only groups correct number of promises associated with a payment.
 // there is no validation done to ensure the events correspond to the payments,
@@ -33,15 +42,28 @@ const registerFailureListeners = (reject: any, sender: ConnextClient, recipient:
 
 const performConditionalTransfer = async (params: {
   ASSET: string;
-  TRANSFER_AMT: BigNumber;
+  TRANSFER_AMT: utils.BigNumber;
   conditionType: ConditionalTransferTypes;
   sender: IConnextClient;
   recipient: IConnextClient;
+  chainId?: number;
+  verifyingContract?: Address;
   paymentId?: string;
   secret?: string; // preimage for linked
   meta?: any;
 }): Promise<[string, string]> => {
-  const { ASSET, TRANSFER_AMT, sender, recipient, conditionType, paymentId, secret, meta } = params;
+  const {
+    ASSET,
+    TRANSFER_AMT,
+    sender,
+    recipient,
+    conditionType,
+    chainId,
+    verifyingContract,
+    paymentId,
+    secret,
+    meta,
+  } = params;
   let TRANSFER_PARAMS;
   const baseParams = {
     conditionType,
@@ -51,9 +73,13 @@ const performConditionalTransfer = async (params: {
     recipient: recipient.publicIdentifier,
     meta,
   };
+  const networkContext = await sender.ethProvider.getNetwork();
   switch (conditionType) {
     case ConditionalTransferTypes.LinkedTransfer: {
-      TRANSFER_PARAMS = { ...baseParams, preImage: secret || getRandomBytes32() };
+      TRANSFER_PARAMS = {
+        ...baseParams,
+        preImage: secret || getRandomBytes32(),
+      } as PublicParams.LinkedTransfer;
       break;
     }
     case ConditionalTransferTypes.HashLockTransfer: {
@@ -62,8 +88,10 @@ const performConditionalTransfer = async (params: {
     case ConditionalTransferTypes.SignedTransfer: {
       TRANSFER_PARAMS = {
         ...baseParams,
-        signer: recipient.signerAddress,
-      };
+        signerAddress: recipient.signerAddress,
+        chainId: chainId || networkContext.chainId,
+        verifyingContract: verifyingContract || getTestVerifyingContract(),
+      } as PublicParams.SignedTransfer;
       break;
     }
   }
@@ -99,10 +127,15 @@ const performConditionalTransfer = async (params: {
 };
 
 describe("Full Flow: Multichannel stores (clients share single sequelize instance)", () => {
+  let senderPrivateKey: PrivateKey;
   let sender: ConnextClient;
+  let recipientPrivateKey: PrivateKey;
   let recipient: ConnextClient;
-  let initialSenderFb: { [x: string]: string | BigNumber };
-  let initialRecipientFb: { [x: string]: BigNumber };
+  let receipt: Receipt;
+  let chainId: number;
+  let verifyingContract: Address;
+  let initialSenderFb: { [x: string]: string | utils.BigNumber };
+  let initialRecipientFb: { [x: string]: utils.BigNumber };
 
   const DEPOSIT_AMT = ETH_AMOUNT_MD;
   const ASSET = CONVENTION_FOR_ETH_ASSET_ID;
@@ -119,11 +152,24 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       logging: false,
     });
     // create stores with different prefixes
-    const senderStore = getPostgresStore(sequelize, "sender");
-    const recipientStore = getPostgresStore(sequelize, "recipient");
+    const senderStore = getPostgresStore(sequelize, { prefix: "sender" });
+    const recipientStore = getPostgresStore(sequelize, { prefix: "recipient" });
     // create clients with shared store
-    sender = (await createClient({ store: senderStore, id: "S" })) as ConnextClient;
-    recipient = (await createClient({ store: recipientStore, id: "R" })) as ConnextClient;
+    senderPrivateKey = getRandomPrivateKey();
+    sender = (await createClient({
+      signer: senderPrivateKey,
+      store: senderStore,
+      id: "S",
+    })) as ConnextClient;
+    recipientPrivateKey = getRandomPrivateKey();
+    recipient = (await createClient({
+      signer: recipientPrivateKey,
+      store: recipientStore,
+      id: "R",
+    })) as ConnextClient;
+    receipt = getTestReceiptToSign();
+    chainId = (await sender.ethProvider.getNetwork()).chainId;
+    verifyingContract = getTestVerifyingContract();
     await fundChannel(sender, DEPOSIT_AMT, ASSET);
     initialSenderFb = await sender.getFreeBalance(ASSET);
     initialRecipientFb = await recipient.getFreeBalance(ASSET);
@@ -165,24 +211,29 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     const TRANSFER_AMT = toBN(100);
 
     // register listener to resolve payment
-    recipient.once(
-      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-      async (payload: EventPayloads.SignedTransferCreated) => {
-        const data = hexlify(randomBytes(32));
-        const digest = solidityKeccak256(["bytes32", "bytes32"], [data, payload.paymentId]);
-        const signature = await recipient.signer.signMessage(digest);
-        await recipient.resolveCondition({
-          conditionType: ConditionalTransferTypes.SignedTransfer,
-          data,
-          paymentId: payload.paymentId,
-          signature,
-        } as PublicParams.ResolveSignedTransfer);
-      },
-    );
+    recipient.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
+      const signature = await signReceiptMessage(
+        receipt,
+        chainId,
+        verifyingContract,
+        recipientPrivateKey,
+      );
+      const attestation = {
+        ...receipt,
+        signature,
+      };
+      await recipient.resolveCondition({
+        conditionType: ConditionalTransferTypes.SignedTransfer,
+        paymentId: payload.paymentId,
+        attestation,
+      } as PublicParams.ResolveSignedTransfer);
+    });
 
     await performConditionalTransfer({
       conditionType: ConditionalTransferTypes.SignedTransfer,
       sender,
+      chainId,
+      verifyingContract,
       recipient,
       ASSET,
       TRANSFER_AMT,
@@ -284,22 +335,27 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     let intervals = 0;
     let pollerError: any;
 
-    recipient.on(
-      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-      async (payload: EventPayloads.SignedTransferCreated) => {
-        console.log(`Got signed transfer event: ${payload.paymentId}`);
-        const data = hexlify(randomBytes(32));
-        const digest = solidityKeccak256(["bytes32", "bytes32"], [data, payload.paymentId]);
-        const signature = await recipient.signer.signMessage(digest);
-        await recipient.resolveCondition({
-          conditionType: ConditionalTransferTypes.SignedTransfer,
-          data,
-          paymentId: payload.paymentId,
-          signature,
-        } as PublicParams.ResolveSignedTransfer);
-        console.log(`Resolved signed transfer: ${payload.paymentId}`);
-      },
-    );
+    const { chainId } = await sender.ethProvider.getNetwork();
+
+    recipient.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
+      console.log(`Got signed transfer event: ${payload.paymentId}`);
+      const signature = await signReceiptMessage(
+        receipt,
+        chainId,
+        verifyingContract,
+        recipientPrivateKey,
+      );
+      const attestation = {
+        ...receipt,
+        signature,
+      };
+      await recipient.resolveCondition({
+        conditionType: ConditionalTransferTypes.SignedTransfer,
+        paymentId: payload.paymentId,
+        attestation,
+      } as PublicParams.ResolveSignedTransfer);
+      console.log(`Resolved signed transfer: ${payload.paymentId}`);
+    });
 
     // call transfers on interval
     const start = Date.now();
@@ -309,7 +365,6 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
         clearInterval(interval);
         return;
       }
-      let error: any = undefined;
       try {
         const paymentId = getRandomBytes32();
         console.log(`[${intervals}/${MIN_TRANSFERS}] creating transfer with ${paymentId}`);
@@ -317,14 +372,16 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
           amount: TRANSFER_AMT,
           paymentId,
           conditionType: ConditionalTransferTypes.SignedTransfer,
-          signer: recipient.signerAddress,
+          signerAddress: recipient.signerAddress,
+          chainId,
+          verifyingContract,
           assetId: ASSET,
           recipient: recipient.publicIdentifier,
         } as PublicParams.SignedTransfer);
         console.log(`[${intervals}/${MIN_TRANSFERS}] senderApp: ${transferRes.appIdentityHash}`);
       } catch (e) {
         clearInterval(interval);
-        throw error;
+        throw e;
       }
     }, TRANSFER_INTERVAL);
 

@@ -1,17 +1,16 @@
 import { OutcomeType } from "@connext/types";
 import { getRandomAddress, toBN } from "@connext/utils";
-import { AddressZero, Zero } from "ethers/constants";
-import { getAddress } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import { AppInstance } from "./app-instance";
 import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
 
+const { AddressZero, Zero } = constants;
+const { getAddress } = utils;
+
 describe("AppInstance", () => {
   it("should be able to instantiate", () => {
-    const participants = [
-      getRandomPublicIdentifier(),
-      getRandomPublicIdentifier(),
-    ];
+    const participants = [getRandomPublicIdentifier(), getRandomPublicIdentifier()];
 
     const appInstance = new AppInstance(
       /* initiator */ participants[0],

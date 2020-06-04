@@ -18,14 +18,15 @@ import {
   SaveAlt as ReceiveIcon,
 } from "@material-ui/icons";
 import { useMachine } from "@xstate/react";
-import { AddressZero } from "ethers/constants";
-import { formatEther } from "ethers/utils";
 import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
+import { constants } from "ethers";
 
 import { redeemMachine } from "../state";
 
-const style = withStyles(theme => ({
+const { AddressZero } = constants;
+
+const style = withStyles((theme) => ({
   icon: {
     width: "40px",
     height: "40px",

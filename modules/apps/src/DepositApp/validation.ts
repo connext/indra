@@ -10,16 +10,16 @@ import {
   stringify,
 } from "@connext/utils";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
-import { Contract } from "ethers";
-import { Zero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
+import { Contract, providers, constants } from "ethers";
 
 import { baseCoinTransferValidation } from "../shared";
+
+const { Zero } = constants;
 
 export const validateDepositApp = async (
   params: ProtocolParams.Propose,
   channel: StateChannelJSON,
-  provider: JsonRpcProvider,
+  provider: providers.JsonRpcProvider,
 ) => {
   const { responderDeposit, initiatorDeposit, initiatorIdentifier, responderIdentifier } = params;
   const { multisigAddress } = channel;

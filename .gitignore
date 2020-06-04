@@ -1,11 +1,12 @@
 # Build Output
-**/tsconfig.tsbuildinfo
 **/*.0x
 **/.flags
 **/_build/**
+**/artifacts/**
 **/build/**
 **/dist/**
 **/node_modules/**
+**/tsconfig.tsbuildinfo
 modules/*/package-lock.json
 
 # Cache
@@ -57,3 +58,6 @@ ops/database/snapshots
 ganache.http
 modules/bot/.connext-store/
 modules/bot-registry/.node-persist/
+
+# Local address book
+address-book.json

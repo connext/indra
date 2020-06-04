@@ -1,4 +1,4 @@
-import { BigNumber, keccak256, solidityPack, defaultAbiCoder } from "ethers/utils";
+import { constants, utils } from "ethers";
 import {
   CoinTransfer,
   Address,
@@ -9,16 +9,18 @@ import {
   SetStateCommitmentJSON,
   StateChannelJSON,
   StateSchemaVersion,
-  CONVENTION_FOR_ETH_ASSET_ID,
   MinimalTransaction,
 } from "@connext/types";
 import { ChannelSigner, toBN } from "@connext/utils";
-import { One, Zero } from "ethers/constants";
 import { SetStateCommitment, SetupCommitment } from "@connext/contracts";
+
 import { stateToHash } from "./utils";
 import { TestNetworkContext } from "./contracts";
 import { AppWithCounterClass } from "./appWithCounter";
 import { TokenIndexedBalance } from "./context";
+
+const { One, Zero } = constants;
+const { keccak256, solidityPack, defaultAbiCoder } = utils;
 
 type FreeBalanceStateJSON = {
   tokenAddresses: string[];
@@ -38,7 +40,7 @@ export class MiniFreeBalance {
     public readonly multisigAddress: string,
     private balancesIndexedByToken: TokenIndexedBalance,
     private readonly networkContext: TestNetworkContext,
-    public versionNumber: BigNumber = One,
+    public versionNumber: utils.BigNumber = One,
     private activeApps: string[] = [],
   ) {}
 

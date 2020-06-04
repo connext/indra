@@ -1,9 +1,7 @@
 import { DolphinCoin } from "@connext/contracts";
 import { MethodParams, EventNames } from "@connext/types";
 import { getAddressFromAssetId, deBigNumberifyJson } from "@connext/utils";
-import { Contract } from "ethers";
-import { One, Two, Zero, AddressZero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
+import { Contract, providers, constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
@@ -19,7 +17,8 @@ import {
   getTokenIndexedFreeBalanceStates,
   transferERC20Tokens,
 } from "../utils";
-import { BigNumber } from "ethers/utils";
+
+const { One, Two, Zero, AddressZero } = constants;
 
 expect.extend({ toBeEq });
 
@@ -59,7 +58,7 @@ export function confirmDepositMessages(
 describe("Node method follows spec - deposit", () => {
   let nodeA: CFCore;
   let nodeB: CFCore;
-  let provider: JsonRpcProvider;
+  let provider: providers.JsonRpcProvider;
   let multisigAddress: string;
 
   beforeEach(async () => {
@@ -197,8 +196,8 @@ async function confirmEthAndERC20FreeBalances(
   channelResponder: CFCore,
   multisigAddress: string,
   tokenAddress: string,
-  ethExpected: [BigNumber, BigNumber] = [Zero, Zero],
-  erc20Expected: [BigNumber, BigNumber] = [Zero, Zero],
+  ethExpected: [utils.BigNumber, utils.BigNumber] = [Zero, Zero],
+  erc20Expected: [utils.BigNumber, utils.BigNumber] = [Zero, Zero],
 ) {
   const eth = deBigNumberifyJson({
     [channelInitiator.signerAddress]: ethExpected[0],

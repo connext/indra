@@ -1,14 +1,12 @@
-import { Contract, Wallet } from "ethers";
-import { AddressZero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
-import { BigNumber, BigNumberish, parseEther } from "ethers/utils";
-import abi from "human-standard-token-abi";
+import { Contract, Wallet, providers, constants, utils } from "ethers";
 
 import { env } from "./env";
-import { stringify } from "@connext/utils";
 import { ERC20, addressBook } from "@connext/contracts";
 
-export const ethProvider = new JsonRpcProvider(env.ethProviderUrl);
+const { AddressZero } = constants;
+const { parseEther } = utils;
+
+export const ethProvider = new providers.JsonRpcProvider(env.ethProviderUrl);
 export const sugarDaddy = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
 export const ethWallet = Wallet.createRandom().connect(ethProvider);
 
@@ -42,7 +40,7 @@ export const revertEVMSnapshot = async (snapshotId: string): Promise<void> => {
 
 export const sendOnchainValue = async (
   to: string,
-  value: BigNumberish,
+  value: utils.BigNumberish,
   assetId: string = AddressZero,
 ): Promise<void> => {
   const nonceErr = "the tx doesn't have the correct nonce";
@@ -59,7 +57,7 @@ export const sendOnchainValue = async (
         await tx.wait();
         return;
       } else {
-        const tokenContract = new Contract(assetId, abi, ethWallet);
+        const tokenContract = new Contract(assetId, ERC20.abi, ethWallet);
         const tx = await tokenContract.functions.transfer(to, value, { nonce });
         await tx.wait();
         return;
@@ -76,8 +74,8 @@ export const sendOnchainValue = async (
 export const getOnchainBalance = async (
   address: string,
   assetId: string = AddressZero,
-): Promise<BigNumber> => {
-  let result: BigNumber;
+): Promise<utils.BigNumber> => {
+  let result: utils.BigNumber;
   if (assetId === AddressZero) {
     try {
       result = await ethProvider.getBalance(address);
@@ -86,7 +84,7 @@ export const getOnchainBalance = async (
     }
   } else {
     try {
-      const tokenContract = new Contract(assetId, abi, ethProvider);
+      const tokenContract = new Contract(assetId, ERC20.abi, ethProvider);
       result = await tokenContract.functions.balanceOf(address);
     } catch (e) {
       throw new Error(`Error getting token balance for ${address}: ${e.toString()}`);

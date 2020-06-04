@@ -1,16 +1,17 @@
+import { utils } from "ethers";
+
 import { Address, HexString, Bytes32 } from "../basic";
-import { BigNumber } from "ethers/utils";
 
 ////////////////////////////////////////
 // keep synced w contracts/adjudicator/libs/LibStateChannelApp.sol
 
 // A minimal structure that uniquely identifies a single instance of an App
 export type AppIdentity = {
-  channelNonce: BigNumber;
+  channelNonce: utils.BigNumber;
   participants: Address[];
   multisigAddress: Address;
   appDefinition: Address;
-  defaultTimeout: BigNumber;
+  defaultTimeout: utils.BigNumber;
 };
 
 // A structure representing the state of a CounterfactualApp instance from the POV of the blockchain
@@ -18,8 +19,8 @@ export type AppIdentity = {
 // appStateHash is the hash of a state specific to the CounterfactualApp (e.g. chess position)
 export type AppChallenge = {
   appStateHash: HexString;
-  versionNumber: BigNumber;
-  finalizesAt: BigNumber;
+  versionNumber: utils.BigNumber;
+  finalizesAt: utils.BigNumber;
   status: ChallengeStatus;
 };
 
@@ -37,13 +38,13 @@ export enum ChallengeStatus {
 
 export type SignedAppChallengeUpdate = {
   appStateHash: Bytes32;
-  versionNumber: BigNumber;
-  timeout: BigNumber;
+  versionNumber: utils.BigNumber;
+  timeout: utils.BigNumber;
   signatures: string[];
 };
 
 export type SignedCancelChallengeRequest = {
-  versionNumber: BigNumber;
+  versionNumber: utils.BigNumber;
   signatures: string[];
 };
 
@@ -54,8 +55,8 @@ const StateProgressedEventName = "StateProgressed";
 export type StateProgressedEventPayload = {
   identityHash: string;
   action: string; // encoded
-  versionNumber: BigNumber;
-  timeout: BigNumber;
+  versionNumber: utils.BigNumber;
+  timeout: utils.BigNumber;
   turnTaker: Address; // eth addr
   signature: string; // of action taker
 };
@@ -67,8 +68,8 @@ export type ChallengeUpdatedEventPayload = {
   identityHash: Bytes32;
   status: ChallengeStatus;
   appStateHash: Bytes32; // latest app state
-  versionNumber: BigNumber;
-  finalizesAt: BigNumber;
+  versionNumber: utils.BigNumber;
+  finalizesAt: utils.BigNumber;
 };
 
 // events emitted by contracts

@@ -20,11 +20,12 @@ import {
   stringify,
   toBN,
 } from "@connext/utils";
-import { AddressZero, Zero, HashZero } from "ethers/constants";
-import { TransactionResponse } from "ethers/providers";
-import { getAddress, hexlify, randomBytes } from "ethers/utils";
+import { providers, constants, utils } from "ethers";
 
 import { AbstractController } from "./AbstractController";
+
+const { AddressZero, Zero, HashZero } = constants;
+const { getAddress, hexlify, randomBytes } = utils;
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> {
@@ -45,7 +46,7 @@ export class WithdrawalController extends AbstractController {
     }
 
     const { assetId, recipient } = params;
-    let transaction: TransactionResponse | undefined;
+    let transaction: providers.TransactionResponse | undefined;
 
     this.throwIfAny(getAddressError(recipient), getAddressError(assetId));
 
@@ -70,6 +71,7 @@ export class WithdrawalController extends AbstractController {
 
       this.connext.emit(EventNames.WITHDRAWAL_STARTED_EVENT, {
         params,
+        // @ts-ignore
         withdrawCommitment,
         withdrawerSignatureOnWithdrawCommitment,
       });
@@ -89,11 +91,11 @@ export class WithdrawalController extends AbstractController {
             return reject(new Error(e));
           }
         }),
-      ])) as EventPayloads.UpdateStateFailed | TransactionResponse;
+      ])) as EventPayloads.UpdateStateFailed | providers.TransactionResponse;
       if ((raceRes as EventPayloads.UpdateStateFailed).error) {
         throw new Error((raceRes as EventPayloads.UpdateStateFailed).error);
       }
-      transaction = raceRes as TransactionResponse;
+      transaction = raceRes as providers.TransactionResponse;
       this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
       this.log.debug(`Transaction details: ${stringify(transaction)}`);
 
@@ -104,6 +106,7 @@ export class WithdrawalController extends AbstractController {
     } catch (e) {
       this.connext.emit(EventNames.WITHDRAWAL_FAILED_EVENT, {
         params,
+        // @ts-ignore
         withdrawCommitment,
         withdrawerSignatureOnWithdrawCommitment,
         error: e.stack || e.message,
@@ -227,7 +230,9 @@ export class WithdrawalController extends AbstractController {
     return;
   }
 
-  public async removeWithdrawCommitmentFromStore(transaction: TransactionResponse): Promise<void> {
+  public async removeWithdrawCommitmentFromStore(
+    transaction: providers.TransactionResponse,
+  ): Promise<void> {
     const minTx: MinimalTransaction = {
       to: transaction.to,
       value: transaction.value,

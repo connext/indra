@@ -1,5 +1,5 @@
 import { CONVENTION_FOR_ETH_ASSET_ID, EventNames, ProtocolEventMessage } from "@connext/types";
-import { One, Two, Zero } from "ethers/constants";
+import { constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
@@ -15,7 +15,9 @@ import {
   getInstalledAppInstances,
   installApp,
 } from "../utils";
-import { isHexString } from "ethers/utils";
+
+const { One, Two, Zero } = constants;
+const { isHexString } = utils;
 
 expect.extend({ toBeEq });
 
