@@ -16,7 +16,7 @@
     "@connext/cf-core": "6.6.5",
     "@connext/channel-provider": "6.6.5",
     "@connext/client": "6.6.5",
-    "@connext/contracts": "3.2.0",
+    "@connext/contracts": "3.2.1",
     "@connext/utils": "6.6.5",
     "@connext/messaging": "6.6.5",
     "@connext/store": "6.6.5",
