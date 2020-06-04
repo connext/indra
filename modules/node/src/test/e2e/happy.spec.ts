@@ -4,17 +4,18 @@ import { INestApplication } from "@nestjs/common";
 import { getMemoryStore } from "@connext/store";
 import { Test, TestingModule } from "@nestjs/testing";
 import { IConnextClient } from "@connext/types";
-import { providers, Wallet } from "ethers";
+import { Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
 import { AppModule } from "../../app.module";
 import { ConfigService } from "../../config/config.service";
 
-import { env, expect, MockConfigService, nodeSigner } from "../utils";
+import { env, expect, MockConfigService } from "../utils";
 
 describe("Happy path", () => {
   const log = new ColorfulLogger("TestStartup", env.logLevel, true, "T");
+
   let app: INestApplication;
   let configService: ConfigService;
   let clientA: IConnextClient;
@@ -23,13 +24,6 @@ describe("Happy path", () => {
   before(async () => {
     const start = Date.now();
     let tx;
-
-    tx = await sugarDaddy.sendTransaction({
-      to: nodeSigner.address,
-      value: parseEther("0.01"),
-    });
-    await ethProvider.waitForTransaction(tx.hash);
-
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -45,9 +39,6 @@ describe("Happy path", () => {
     const ethProvider = configService.getEthProvider();
     const sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC).connect(ethProvider);
     const nodeUrl = "http://localhost:8080";
-
-    tx = await sugarDaddy.sendTransaction({ to: nodeSigner.address, value: parseEther("0.01") });
-    await ethProvider.waitForTransaction(tx.hash);
 
     clientA = await connect({
       store: getMemoryStore(),
@@ -76,19 +67,29 @@ describe("Happy path", () => {
     logTime(log, start, "Done setting up test env");
   });
 
-  it("should throw a descriptive error if node is out of money", async () => {
+  after(async () => {
+    try {
+      await app.close();
+      log.info(`Application was shutdown successfully`);
+    } catch (e) {
+      log.warn(`Application was shutdown unsuccessfully: ${e.message}`);
+    }
+  });
+
+  it("should let a client deposit, transfer, and withdraw ", async () => {
     const depositRes = await clientA.deposit({
       assetId: AddressZero,
-      amount: parseEther("0.01"),
+      amount: parseEther("0.03"),
     });
     log.info(`depositRes: ${stringify(depositRes)}`);
     const transferRes = await clientA.transfer({
-      amount: parseEther("0.01"),
+      amount: parseEther("0.02"),
       assetId: AddressZero,
       recipient: clientB.publicIdentifier,
     });
     log.info(`transferRes: ${stringify(transferRes)}`);
-    const withdrawRes = await clientB.withdraw({
+    // TODO: make this work w clientB withdrawing instead
+    const withdrawRes = await clientA.withdraw({
       assetId: AddressZero,
       amount: parseEther("0.01"),
     });
