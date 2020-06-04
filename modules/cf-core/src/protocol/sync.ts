@@ -15,6 +15,7 @@ import {
   toBN,
   getSignerAddressFromPublicIdentifier,
   recoverAddressFromChannelMessage,
+  delay,
 } from "@connext/utils";
 import { utils } from "ethers";
 
@@ -29,7 +30,6 @@ import {
   ConditionalTransactionCommitment,
   getConditionalTransactionCommitment,
 } from "../ethereum";
-import { computeInterpreterParameters } from "./install";
 
 const { keccak256, defaultAbiCoder } = utils;
 
@@ -118,6 +118,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           postSyncStateChannel,
           responderChannel,
           responderSetStateCommitments,
+          responderConditionalCommitments,
           context,
           ourIdentifier,
         );
@@ -305,6 +306,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           postSyncStateChannel,
           initiatorChannel,
           initiatorSetStateCommitments,
+          initiatorConditionalCommitments,
           context,
           ourIdentifier,
         );
@@ -577,41 +579,7 @@ async function syncFreeBalanceState(
     conditionalCommitment = ConditionalTransactionCommitment.fromJson(conditionalJson);
     await assertSignerPresent(signer, conditionalCommitment);
     // add app to channel
-    const {
-      multiAssetMultiPartyCoinTransferInterpreterParams,
-      twoPartyOutcomeInterpreterParams,
-      singleAssetTwoPartyCoinTransferInterpreterParams,
-    } = computeInterpreterParameters(
-      installedProposal.outcomeType,
-      installedProposal.initiatorDepositAssetId,
-      installedProposal.responderDepositAssetId,
-      toBN(installedProposal.initiatorDeposit),
-      toBN(installedProposal.responderDeposit),
-      getSignerAddressFromPublicIdentifier(installedProposal.initiatorIdentifier),
-      getSignerAddressFromPublicIdentifier(installedProposal.responderIdentifier),
-      false,
-    );
-    const appInstance = new AppInstance(
-      /* initiator */ installedProposal.initiatorIdentifier,
-      /* responder */ installedProposal.responderIdentifier,
-      /* defaultTimeout */ installedProposal.defaultTimeout,
-      /* appInterface */ {
-        addr: installedProposal.appDefinition,
-        stateEncoding: installedProposal.abiEncodings.stateEncoding,
-        actionEncoding: installedProposal.abiEncodings.actionEncoding,
-      },
-      /* appSeqNo */ installedProposal.appSeqNo,
-      /* latestState */ installedProposal.initialState,
-      /* latestVersionNumber */ 1,
-      /* stateTimeout */ installedProposal.stateTimeout,
-      /* outcomeType */ installedProposal.outcomeType,
-      /* multisig */ ourChannel.multisigAddress,
-      installedProposal.meta,
-      /* latestAction */ undefined,
-      twoPartyOutcomeInterpreterParams,
-      multiAssetMultiPartyCoinTransferInterpreterParams,
-      singleAssetTwoPartyCoinTransferInterpreterParams,
-    );
+    const appInstance = AppInstance.fromJson(installedProposal);
     updatedChannel = ourChannel
       .removeProposal(appInstance.identityHash)
       .addAppInstance(appInstance)
@@ -661,9 +629,11 @@ async function syncUntrackedProposals(
   ourChannel: StateChannel,
   counterpartyChannel: StateChannel,
   setStateCommitments: SetStateCommitmentJSON[],
+  conditionalCommitments: ConditionalTransactionCommitmentJSON[],
   context: Context,
   publicIdentifier: string,
 ) {
+  console.log("1")
   // handle case where we have to add a proposal to our store
   if (ourChannel.numProposedApps >= counterpartyChannel.numProposedApps) {
     // our proposals are ahead, counterparty should sync if needed
@@ -676,6 +646,7 @@ async function syncUntrackedProposals(
   const untrackedProposedApp = [...counterpartyChannel.proposedAppInstances.values()].find(
     (app) => !ourChannel.proposedAppInstances.has(app.identityHash),
   );
+  console.log(`Untracked app: ${stringify(untrackedProposedApp)}`)
   if (!untrackedProposedApp) {
     throw new Error(`Cannot find matching untracked proposal in counterparty's store, aborting`);
   }
@@ -687,48 +658,45 @@ async function syncUntrackedProposals(
       `No corresponding set state commitment for ${untrackedProposedApp.identityHash}, aborting`,
     );
   }
+  const correspondingConditionalCommitment = conditionalCommitments.find(
+    (p) => p.appIdentityHash === untrackedProposedApp.identityHash,
+  );
+  if (!correspondingSetStateCommitment) {
+    throw new Error(
+      `No corresponding conditional tx commitment for ${untrackedProposedApp.identityHash}, aborting`,
+    );
+  }
+
+  await delay(1000)
 
   // generate the commitment and verify signatures
-  const proposedAppInstance = {
-    identity: {
-      appDefinition: untrackedProposedApp.appDefinition,
-      channelNonce: toBN(counterpartyChannel.numProposedApps),
-      participants: counterpartyChannel.getSigningKeysFor(
-        untrackedProposedApp.initiatorIdentifier,
-        untrackedProposedApp.responderIdentifier,
-      ),
-      multisigAddress: ourChannel.multisigAddress,
-      defaultTimeout: toBN(untrackedProposedApp.defaultTimeout),
-    },
-    hashOfLatestState: keccak256(
-      defaultAbiCoder.encode(
-        [untrackedProposedApp.abiEncodings.stateEncoding],
-        [untrackedProposedApp.initialState],
-      ),
-    ),
-    versionNumber: 1,
-    stateTimeout: untrackedProposedApp.stateTimeout,
-    multiAssetMultiPartyCoinTransferInterpreterParams:
-      untrackedProposedApp.multiAssetMultiPartyCoinTransferInterpreterParams,
-    twoPartyOutcomeInterpreterParams: untrackedProposedApp.twoPartyOutcomeInterpreterParams,
-    singleAssetTwoPartyCoinTransferInterpreterParams:
-      untrackedProposedApp.singleAssetTwoPartyCoinTransferInterpreterParams,
-    outcomeType: untrackedProposedApp.outcomeType,
-  };
-  const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
+  const proposal = AppInstance.fromJson(untrackedProposedApp)
+  console.log("2")
+  const setStateCommitment = getSetStateCommitment(context, proposal as AppInstance);
   const conditionalCommitment = getConditionalTransactionCommitment(
     context,
     ourChannel,
-    proposedAppInstance as AppInstance,
+    proposal as AppInstance,
   );
+  console.log("3")
   await setStateCommitment.addSignatures(
     correspondingSetStateCommitment.signatures[0],
     correspondingSetStateCommitment.signatures[1],
   );
+  await conditionalCommitment.addSignatures(
+    correspondingConditionalCommitment!.signatures[0],
+    correspondingConditionalCommitment!.signatures[1]
+  )
+  console.log("4")
   await assertSignerPresent(
     getSignerAddressFromPublicIdentifier(publicIdentifier),
     setStateCommitment,
   );
+  await assertSignerPresent(
+    getSignerAddressFromPublicIdentifier(publicIdentifier),
+    conditionalCommitment,
+  );
+  console.log("5")
   const updatedChannel = ourChannel.addProposal(untrackedProposedApp);
   return {
     updatedChannel,
