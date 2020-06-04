@@ -18,11 +18,12 @@ import {
 import { utils } from "ethers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { getSetStateCommitment } from "../ethereum";
+import { getSetStateCommitment, getConditionalTransactionCommitment } from "../ethereum";
 import { AppInstance } from "../models";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
 import { assertIsValidSignature } from "./utils";
+import { computeInterpreterParameters } from "./install";
 
 const { defaultAbiCoder, keccak256 } = utils;
 
@@ -106,6 +107,21 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     // 0 ms
     const postProtocolStateChannel = preProtocolStateChannel!.addProposal(appInstanceProposal);
 
+    const {
+      multiAssetMultiPartyCoinTransferInterpreterParams,
+      twoPartyOutcomeInterpreterParams,
+      singleAssetTwoPartyCoinTransferInterpreterParams,
+    } = computeInterpreterParameters(
+      outcomeType,
+      initiatorDepositAssetId,
+      responderDepositAssetId,
+      initiatorDeposit,
+      responderDeposit,
+      getSignerAddressFromPublicIdentifier(initiatorIdentifier),
+      getSignerAddressFromPublicIdentifier(responderIdentifier),
+      false /* disableLimit */,
+    );
+
     const proposedAppInstance = {
       identity: {
         appDefinition,
@@ -122,9 +138,24 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       ),
       versionNumber: 1,
       stateTimeout: stateTimeout.toHexString(),
+      singleAssetTwoPartyCoinTransferInterpreterParams,
+      multiAssetMultiPartyCoinTransferInterpreterParams,
+      twoPartyOutcomeInterpreterParams,
+      outcomeType,
     };
 
     const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
+
+    const conditionalTxCommitment = getConditionalTransactionCommitment(
+      context,
+      postProtocolStateChannel,
+      proposedAppInstance as AppInstance,
+    );
+    const conditionalTxCommitmentHash = conditionalTxCommitment.hashToSign();
+
+    // 6ms
+    // free balance addr signs conditional transactions
+    const initiatorSignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
 
     substart = Date.now();
     // 6ms
@@ -139,6 +170,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       to: responderIdentifier,
       customData: {
         signature: initiatorSignatureOnInitialState,
+        signature2: initiatorSignatureOnConditionalTransaction,
       },
     } as ProtocolMessageData;
 
@@ -151,7 +183,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const {
       data: {
-        customData: { signature: responderSignatureOnInitialState },
+        customData: {
+          signature: responderSignatureOnInitialState,
+          signature2: responderSignatureOnConditionalTransaction,
+        },
       },
     } = m2!;
 
@@ -164,12 +199,35 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         setStateCommitment.toJson(),
       )}. Initial state: ${stringify(initialState)}`,
     );
-    logTime(log, substart, `[${processID}] Asserted valid signture initiator propose`);
+    logTime(
+      log,
+      substart,
+      `[${processID}] Asserted valid responder signature set state commitment`,
+    );
+
+    substart = Date.now();
+    await assertIsValidSignature(
+      getSignerAddressFromPublicIdentifier(responderIdentifier),
+      conditionalTxCommitmentHash,
+      responderSignatureOnConditionalTransaction,
+      `Failed to validate responders signature on conditional transaction commitment in the propose protocol. Our commitment: ${stringify(
+        conditionalTxCommitment.toJson(),
+      )}. Initial state: ${stringify(initialState)}`,
+    );
+    logTime(
+      log,
+      substart,
+      `[${processID}] Asserted valid responder signature on conditional transaction`,
+    );
 
     // add signatures to commitment and save
     await setStateCommitment.addSignatures(
       initiatorSignatureOnInitialState as any,
       responderSignatureOnInitialState,
+    );
+    await conditionalTxCommitment.addSignatures(
+      initiatorSignatureOnConditionalTransaction as any,
+      responderSignatureOnConditionalTransaction,
     );
 
     substart = Date.now();
@@ -181,6 +239,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
       appInstanceProposal,
       setStateCommitment,
+      conditionalTxCommitment,
     ];
     logTime(
       log,
@@ -219,7 +278,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     } = params as ProtocolParams.Propose;
 
     const {
-      customData: { signature: initiatorSignatureOnInitialState },
+      customData: {
+        signature: initiatorSignatureOnInitialState,
+        signature2: initiatorSignatureOnConditionalTransaction,
+      },
     } = message;
 
     // 16ms
@@ -266,6 +328,21 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `[${processID}] Validated proposal`);
     substart = Date.now();
 
+    const {
+      multiAssetMultiPartyCoinTransferInterpreterParams,
+      twoPartyOutcomeInterpreterParams,
+      singleAssetTwoPartyCoinTransferInterpreterParams,
+    } = computeInterpreterParameters(
+      outcomeType,
+      initiatorDepositAssetId,
+      responderDepositAssetId,
+      initiatorDeposit,
+      responderDeposit,
+      getSignerAddressFromPublicIdentifier(initiatorIdentifier),
+      getSignerAddressFromPublicIdentifier(responderIdentifier),
+      false /* disableLimit */,
+    );
+
     const proposedAppInstance = {
       identity: {
         appDefinition,
@@ -282,12 +359,23 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       ),
       versionNumber: 1,
       stateTimeout: stateTimeout.toHexString(),
+      singleAssetTwoPartyCoinTransferInterpreterParams,
+      multiAssetMultiPartyCoinTransferInterpreterParams,
+      twoPartyOutcomeInterpreterParams,
+      outcomeType,
     };
 
     const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
 
     // 0ms
     const postProtocolStateChannel = preProtocolStateChannel!.addProposal(appInstanceProposal);
+
+    const conditionalTxCommitment = getConditionalTransactionCommitment(
+      context,
+      postProtocolStateChannel,
+      proposedAppInstance as AppInstance,
+    );
+    const conditionalTxCommitmentHash = conditionalTxCommitment.hashToSign();
 
     substart = Date.now();
     await assertIsValidSignature(
@@ -301,13 +389,37 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `[${processID}] Asserted valid signature responder propose`);
 
     substart = Date.now();
+    await assertIsValidSignature(
+      getSignerAddressFromPublicIdentifier(responderIdentifier),
+      conditionalTxCommitmentHash,
+      initiatorSignatureOnConditionalTransaction,
+      `Failed to validate initiator's signature on conditional transaction commitment in the propose protocol. Our commitment: ${stringify(
+        conditionalTxCommitment.toJson(),
+      )}. Initial state: ${stringify(initialState)}`,
+    );
+    logTime(
+      log,
+      substart,
+      `[${processID}] Asserted valid initiator signature on conditional transaction`,
+    );
+
+    substart = Date.now();
     // 12ms
     const responderSignatureOnInitialState = yield [OP_SIGN, setStateCommitment.hashToSign()];
     logTime(log, substart, `[${processID}] Signed initial state responder propose`);
+    const responderSignatureOnConditionalTransaction = yield [
+      OP_SIGN,
+      conditionalTxCommitment.hashToSign(),
+    ];
+    logTime(log, substart, `[${processID}] Signed conditional tx commitment`);
 
     await setStateCommitment.addSignatures(
       initiatorSignatureOnInitialState,
       responderSignatureOnInitialState as any,
+    );
+    await conditionalTxCommitment.addSignatures(
+      initiatorSignatureOnConditionalTransaction,
+      responderSignatureOnConditionalTransaction as any,
     );
 
     substart = Date.now();
@@ -319,6 +431,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
       appInstanceProposal,
       setStateCommitment,
+      conditionalTxCommitment,
     ];
     logTime(
       log,
@@ -336,6 +449,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         to: initiatorIdentifier,
         customData: {
           signature: responderSignatureOnInitialState,
+          signature2: responderSignatureOnConditionalTransaction,
         },
       } as ProtocolMessageData,
       postProtocolStateChannel,
