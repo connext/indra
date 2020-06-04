@@ -5,9 +5,9 @@ import {
   IConnextClient,
   BigNumber,
   PublicParams,
-  Address,
+  EIP712Domain,
 } from "@connext/types";
-import { delay, ColorfulLogger, getTestVerifyingContract } from "@connext/utils";
+import { delay, ColorfulLogger, getTestEIP712Domain } from "@connext/utils";
 
 import { createClient, fundChannel } from "../util";
 
@@ -24,7 +24,7 @@ describe("Concurrent transfers", async () => {
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
   let chainId: number;
-  let verifyingContract: Address;
+  let domain: EIP712Domain;
   let subgraphChannels: { signer: string; publicIdentifier: string }[];
 
   beforeEach(async () => {
@@ -41,7 +41,7 @@ describe("Concurrent transfers", async () => {
     indexerB = await createClient();
 
     chainId = (await indexerA.ethProvider.getNetwork()).chainId;
-    verifyingContract = getTestVerifyingContract();
+    domain = getTestEIP712Domain(chainId);
 
     console.log("Signer address:", channel.signerAddress);
 
@@ -91,8 +91,7 @@ describe("Concurrent transfers", async () => {
                 amount: TRANSFER_AMOUNT,
                 conditionType: ConditionalTransferTypes.SignedTransfer,
                 signerAddress: subgraphChannel.signer,
-                chainId,
-                verifyingContract,
+                domain,
                 recipient,
                 assetId: AddressZero,
                 meta: { info: "Query payment" },

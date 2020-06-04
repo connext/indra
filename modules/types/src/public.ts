@@ -1,9 +1,9 @@
 import { providers, utils } from "ethers";
 
 import { Address, BigNumber, Bytes32, HexString, PublicIdentifier } from "./basic";
-import { ConditionalTransferTypes, CreatedConditionalTransferMetaMap } from "./transfers";
+import { ConditionalTransferTypes } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
-import { Attestation } from "./contracts";
+import { EIP712Domain } from "./contracts";
 
 ////////////////////////////////////////
 // deposit
@@ -108,8 +108,7 @@ type SignedTransferParameters = {
   assetId: Address;
   paymentId: Bytes32;
   signerAddress: Address;
-  chainId: number;
-  verifyingContract: Address;
+  domain: EIP712Domain;
   recipient?: PublicIdentifier;
   meta?: any;
 };
@@ -122,7 +121,8 @@ type SignedTransferResponse = {
 type ResolveSignedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.SignedTransfer;
   paymentId: Bytes32;
-  attestation: Attestation;
+  data: Bytes32;
+  signature: Bytes32;
 };
 
 type ResolveSignedTransferResponse = {

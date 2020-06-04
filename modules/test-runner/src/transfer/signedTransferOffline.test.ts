@@ -14,11 +14,12 @@ import {
 import {
   toBN,
   getRandomBytes32,
-  getTestVerifyingContract,
+  getTestEIP712Domain,
   getTestReceiptToSign,
   getRandomPrivateKey,
   ChannelSigner,
   signReceiptMessage,
+  hashReceiptData,
   delay,
 } from "@connext/utils";
 import {
@@ -98,19 +99,11 @@ describe("Signed Transfer Offline", () => {
     resolves: boolean = true,
   ) => {
     const preTransferBalance = await receiver.getFreeBalance(tokenAddress);
-    const verifyingContract = getTestVerifyingContract();
     const receipt = getTestReceiptToSign();
     const { chainId } = await receiver.ethProvider.getNetwork();
-    const signature = await signReceiptMessage(
-      receipt,
-      chainId,
-      verifyingContract,
-      receiverPrivateKey,
-    );
-    const attestation = {
-      ...receipt,
-      signature,
-    };
+    const domain = getTestEIP712Domain(chainId);
+    const signature = await signReceiptMessage(domain, receipt, receiverPrivateKey);
+    const data = hashReceiptData(receipt);
     // node reclaims from sender
     const amount = await new Promise(async (resolve, reject) => {
       // register event listeners
@@ -160,7 +153,8 @@ describe("Signed Transfer Offline", () => {
         await receiver.resolveCondition({
           conditionType: ConditionalTransferTypes.SignedTransfer,
           paymentId,
-          attestation,
+          data,
+          signature,
         } as PublicParams.ResolveSignedTransfer);
         if (!resolves) {
           return reject(new Error(`Signed transfer successfully resolved`));
@@ -185,14 +179,14 @@ describe("Signed Transfer Offline", () => {
   ) => {
     const preTransferSenderBalance = await sender.getFreeBalance(tokenAddress);
     const { chainId } = await sender.ethProvider.getNetwork();
+    const domain = getTestEIP712Domain(chainId);
     await sender.conditionalTransfer({
       amount,
       paymentId,
       conditionType: ConditionalTransferTypes.SignedTransfer,
       assetId: tokenAddress,
       signerAddress: receiver.signerAddress,
-      chainId,
-      verifyingContract: getTestVerifyingContract(),
+      domain,
       recipient: receiver.publicIdentifier,
     });
     const postTransferSenderBalance = await sender.getFreeBalance(tokenAddress);

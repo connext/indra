@@ -1,4 +1,5 @@
 export * from "./attestations";
+export * from "./eip712";
 export * from "./bigNumbers";
 export * from "./channelSigner";
 export * from "./comparisons";

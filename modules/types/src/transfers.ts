@@ -1,4 +1,4 @@
-import { Address, BigNumber, Bytes32 } from "./basic";
+import { Address, BigNumber, Bytes32, SignatureString } from "./basic";
 import { enumify } from "./utils";
 import {
   HashLockTransferAppName,
@@ -6,7 +6,6 @@ import {
   SimpleSignedTransferAppName,
   SupportedApplicationNames,
   GenericConditionalTransferAppName,
-  Attestation,
 } from "./contracts";
 
 ////////////////////////////////////////
@@ -82,8 +81,7 @@ export type CreatedHashLockTransferMeta = {
 
 export type CreatedSignedTransferMeta = {
   signerAddress: Address;
-  verifyingContract: Address;
-  chainId: number;
+  domainSeparator: Bytes32;
 };
 
 export type UnlockedLinkedTransferMeta = {
@@ -95,7 +93,10 @@ export type UnlockedHashLockTransferMeta = {
   preImage: Bytes32;
 };
 
-export type UnlockedSignedTransferMeta = Attestation;
+export type UnlockedSignedTransferMeta = {
+  data: Bytes32;
+  signature: SignatureString;
+};
 
 ////////////////////////////////////////
 // Statuses

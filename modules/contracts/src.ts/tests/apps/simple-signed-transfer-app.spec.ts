@@ -1,4 +1,5 @@
 import {
+  EIP712Domain,
   CoinTransfer,
   SimpleSignedTransferAppAction,
   SimpleSignedTransferAppActionEncoding,
@@ -7,11 +8,14 @@ import {
   singleAssetTwoPartyCoinTransferEncoding,
   PrivateKey,
   Receipt,
+  Bytes32,
 } from "@connext/types";
 import {
   signReceiptMessage,
   getTestReceiptToSign,
-  getTestVerifyingContract,
+  getTestEIP712Domain,
+  hashDomainSeparator,
+  hashReceiptData,
   getRandomBytes32,
   getAddressFromPrivateKey,
 } from "@connext/utils";
@@ -51,8 +55,10 @@ describe("SimpleSignedTransferApp", () => {
   let privateKey: PrivateKey;
   let signerAddress: string;
   let chainId: number;
-  let verifyingContract: string;
   let receipt: Receipt;
+  let data: Bytes32;
+  let domain: EIP712Domain;
+  let domainSeparator: Bytes32;
   let goodSig: string;
   let badSig: string;
   let simpleSignedTransferApp: Contract;
@@ -100,9 +106,12 @@ describe("SimpleSignedTransferApp", () => {
     signerAddress = getAddressFromPrivateKey(privateKey);
 
     chainId = (await wallet.provider.getNetwork()).chainId;
+
+    domain = getTestEIP712Domain(chainId);
+    domainSeparator = hashDomainSeparator(domain);
     receipt = getTestReceiptToSign();
-    verifyingContract = getTestVerifyingContract();
-    goodSig = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
+    data = hashReceiptData(receipt);
+    goodSig = await signReceiptMessage(domain, receipt, privateKey);
     badSig = getRandomBytes32();
     paymentId = getRandomBytes32();
 
@@ -123,15 +132,14 @@ describe("SimpleSignedTransferApp", () => {
       finalized: false,
       paymentId,
       signerAddress,
-      chainId,
-      verifyingContract,
+      domainSeparator,
     };
   });
 
   describe("update state", () => {
     it("will redeem a payment with correct signature", async () => {
       const action: SimpleSignedTransferAppAction = {
-        ...receipt,
+        data,
         signature: goodSig,
       };
 
@@ -151,8 +159,7 @@ describe("SimpleSignedTransferApp", () => {
         ],
         paymentId,
         signerAddress,
-        chainId,
-        verifyingContract,
+        domainSeparator,
         finalized: true,
       };
 
@@ -170,7 +177,7 @@ describe("SimpleSignedTransferApp", () => {
 
     it("will revert action with incorrect signature", async () => {
       const action: SimpleSignedTransferAppAction = {
-        ...receipt,
+        data,
         signature: badSig,
       };
 
@@ -181,7 +188,7 @@ describe("SimpleSignedTransferApp", () => {
 
     it("will revert action if already finalized", async () => {
       const action: SimpleSignedTransferAppAction = {
-        ...receipt,
+        data,
         signature: goodSig,
       };
       preState.finalized = true;

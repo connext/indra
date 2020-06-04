@@ -352,8 +352,7 @@ export class ConnextListener {
           sender: meta["sender"],
           transferMeta: {
             signerAddress: initialState.signerAddress,
-            chainId: initialState.chainId,
-            verifyingContract: initialState.verifyingContract,
+            domainSeparator: initialState.domainSeparator,
           } as CreatedSignedTransferMeta,
           type: ConditionalTransferTypes.SignedTransfer,
           paymentId: initialState.paymentId,
@@ -486,9 +485,7 @@ export class ConnextListener {
           meta: appInstance.meta,
           transferMeta: {
             signature: transferAction?.signature,
-            requestCID: transferAction?.requestCID,
-            responseCID: transferAction?.responseCID,
-            subgraphID: transferAction?.subgraphID,
+            data: transferAction?.data,
           } as UnlockedSignedTransferMeta,
         } as EventPayloads.SignedTransferUnlocked);
         break;

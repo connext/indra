@@ -13,7 +13,7 @@ import {
   SimpleSignedTransferAppState,
   HashLockTransferAppState,
 } from "@connext/types";
-import { toBN, stringify } from "@connext/utils";
+import { toBN, stringify, hashDomainSeparator } from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
 
 import { AbstractController } from "./AbstractController";
@@ -103,25 +103,20 @@ export class CreateTransferController extends AbstractController {
         break;
       }
       case ConditionalTransferTypes.SignedTransfer: {
-        const {
-          signerAddress,
-          chainId,
-          verifyingContract,
-          paymentId,
-        } = params as PublicParams.SignedTransfer;
+        const { signerAddress, domain, paymentId } = params as PublicParams.SignedTransfer;
+
+        const domainSeparator = hashDomainSeparator(domain);
 
         initialState = {
           ...baseInitialState,
-          chainId,
           signerAddress,
-          verifyingContract,
+          domainSeparator,
           paymentId,
         } as SimpleSignedTransferAppState;
 
         transferMeta = {
           signerAddress,
-          verifyingContract,
-          chainId,
+          domainSeparator,
         } as CreatedSignedTransferMeta;
 
         submittedMeta.paymentId = paymentId;

@@ -4,8 +4,9 @@ import {
   getRandomBytes32,
   getSignerAddressFromPublicIdentifier,
   stringify,
+  hashReceiptData,
   getTestReceiptToSign,
-  getTestVerifyingContract,
+  getTestEIP712Domain,
   signReceiptMessage,
 } from "@connext/utils";
 import { utils, constants } from "ethers";
@@ -54,7 +55,6 @@ export default {
     const TRANSFER_AMT = parseEther("0.0001");
     const DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 1 eth
     const receipt = getTestReceiptToSign();
-    const verifyingContract = getTestVerifyingContract();
     const ethUrl = process.env.INDRA_ETH_RPC_URL;
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
@@ -74,6 +74,7 @@ export default {
     );
 
     const { chainId } = await client.ethProvider.getNetwork();
+    const domain = getTestEIP712Domain(chainId);
 
     log.info(`Registering address ${client.publicIdentifier}`);
     // Register agent in environment
@@ -96,18 +97,14 @@ export default {
         return;
       }
 
-      const signature = await signReceiptMessage(
-        receipt,
-        chainId,
-        verifyingContract,
-        argv.privateKey,
-      );
-      const attestation = { ...receipt, signature };
+      const signature = await signReceiptMessage(domain, receipt, argv.privateKey);
+      const data = hashReceiptData(receipt);
       log.info(`Unlocking transfer with signature ${signature}`);
       await client.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId: eventData.paymentId,
-        attestation,
+        data,
+        signature,
       } as PublicParams.ResolveSignedTransfer);
 
       log.info(`Unlocked transfer ${eventData.paymentId} for (${eventData.amount} ETH)`);
@@ -163,8 +160,7 @@ export default {
             amount: TRANSFER_AMT,
             conditionType: ConditionalTransferTypes.SignedTransfer,
             signerAddress: receiverSigner,
-            chainId,
-            verifyingContract,
+            domain,
             assetId: AddressZero,
             recipient: receiverIdentifier,
             meta: { info: `Transfer from ${NAME}` },
