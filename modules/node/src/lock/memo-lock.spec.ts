@@ -3,23 +3,28 @@ import { Test } from "@nestjs/testing";
 import {RedisProviderId} from '../constants';
 import Redis from 'ioredis';
 import {MemoLock} from './memo-lock';
+import {LoggerModule} from '../logger/logger.module';
+import {LoggerService} from '../logger/logger.service';
 
 describe('MemoLock', () => {
   let redis: Redis.Redis;
   let module: MemoLock;
+  let log: LoggerService;
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
       imports: [
         RedisModule,
+        LoggerModule
       ]
     }).compile();
-    redis = module.get<Redis.Redis>(RedisProviderId)
+    redis = module.get<Redis.Redis>(RedisProviderId);
+    log = await module.resolve<LoggerService>(LoggerService);
   });
 
   beforeEach(async () => {
     await redis.flushall();
-    module = new MemoLock(redis, 5, 1000, 100);
+    module = new MemoLock(log, redis, 5, 1000, 100);
     await module.setupSubs();
   });
 
