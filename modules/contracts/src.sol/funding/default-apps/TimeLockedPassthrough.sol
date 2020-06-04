@@ -1,4 +1,4 @@
-pragma solidity 0.6.7;
+pragma solidity ^0.6.4;
 pragma experimental "ABIEncoderV2";
 
 import "../../adjudicator/ChallengeRegistry.sol";
@@ -23,29 +23,23 @@ import "../../adjudicator/interfaces/CounterfactualApp.sol";
 ///    this contract must be set to the default outcome, so that if funding
 ///    fails halfway, the intermediary can dispute both channels safely
 contract TimeLockedPassThrough {
+  struct AppState {
+    address challengeRegistryAddress;
+    bytes32 targetAppIdentityHash;
+    uint256 switchesOutcomeAt;
+    bytes defaultOutcome;
+  }
 
-    struct AppState {
-        address challengeRegistryAddress;
-        bytes32 targetAppIdentityHash;
-        uint256 switchesOutcomeAt;
-        bytes defaultOutcome;
+  function computeOutcome(bytes calldata encodedState) external view returns (bytes memory) {
+    AppState memory appState = abi.decode(encodedState, (AppState));
+
+    if (block.number >= appState.switchesOutcomeAt) {
+      return appState.defaultOutcome;
     }
 
-    function computeOutcome(bytes calldata encodedState)
-        external
-        view
-        returns (bytes memory)
-    {
-        AppState memory appState = abi.decode(encodedState, (AppState));
-
-        if (block.number >= appState.switchesOutcomeAt) {
-            return appState.defaultOutcome;
-        }
-
-        return ChallengeRegistry(
-            appState.challengeRegistryAddress
-        ).getOutcome(
-            appState.targetAppIdentityHash
-        );
-    }
+    return
+      ChallengeRegistry(appState.challengeRegistryAddress).getOutcome(
+        appState.targetAppIdentityHash
+      );
+  }
 }
