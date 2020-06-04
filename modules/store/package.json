@@ -1,6 +1,6 @@
 {
   "name": "@connext/store",
-  "version": "6.6.5",
+  "version": "6.7.0",
   "description": "Store module for Connext client",
   "browser": "dist/browser.js",
   "main": "dist/index.js",
@@ -16,8 +16,8 @@
   },
   "dependencies": {
     "@connext/contracts": "3.2.1",
-    "@connext/types": "6.6.5",
-    "@connext/utils": "6.6.5",
+    "@connext/types": "6.7.0",
+    "@connext/utils": "6.7.0",
     "ethers": "4.0.47",
     "localStorage": "1.0.4",
     "p-waterfall": "2.1.0",
