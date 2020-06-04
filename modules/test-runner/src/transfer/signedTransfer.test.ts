@@ -336,8 +336,7 @@ describe("Signed Transfers", () => {
     ).to.eventually.be.rejectedWith(/VM Exception while processing transaction/);
   });
 
-  // TODO: does this edgecase still exist?
-  it.skip("if sender uninstalls, node should force uninstall receiver first", async () => {
+  it("if sender uninstalls, node should force uninstall receiver first", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 

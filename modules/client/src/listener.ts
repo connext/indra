@@ -439,12 +439,12 @@ export class ConnextListener {
           type: ConditionalTransferTypes.LinkedTransfer,
           amount: transferAmount,
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
-          paymentId: appInstance.meta["paymentId"],
-          sender: appInstance.meta ? appInstance.meta["sender"] : undefined, // https://github.com/ConnextProject/indra/issues/1054
-          recipient: appInstance.meta ? appInstance.meta["recipient"] : undefined,
+          paymentId: appInstance.meta.paymentId,
+          sender: appInstance.meta.sender,
+          recipient: appInstance.meta.recipient,
           meta: appInstance.meta,
           transferMeta: {
-            preImage: transferAction.preImage,
+            preImage: transferAction?.preImage,
           } as UnlockedLinkedTransferMeta,
         } as EventPayloads.LinkedTransferUnlocked);
         break;
@@ -460,11 +460,11 @@ export class ConnextListener {
           amount: transferAmount,
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
           paymentId: HashZero,
-          sender: appInstance.meta ? appInstance.meta["sender"] : undefined, // https://github.com/ConnextProject/indra/issues/1054
-          recipient: appInstance.meta ? appInstance.meta["recipient"] : undefined,
+          sender: appInstance.meta.sender,
+          recipient: appInstance.meta.recipient,
           meta: appInstance.meta,
           transferMeta: {
-            preImage: transferAction.preImage,
+            preImage: transferAction?.preImage,
             lockHash: transferState.lockHash,
           } as UnlockedHashLockTransferMeta,
         } as EventPayloads.HashLockTransferUnlocked);
@@ -481,14 +481,14 @@ export class ConnextListener {
           amount: transferAmount,
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
           paymentId: transferState.paymentId,
-          sender: appInstance.meta ? appInstance.meta["sender"] : undefined, // https://github.com/ConnextProject/indra/issues/1054
-          recipient: appInstance.meta ? appInstance.meta["recipient"] : undefined,
+          sender: appInstance.meta.sender,
+          recipient: appInstance.meta.recipient,
           meta: appInstance.meta,
           transferMeta: {
-            signature: transferAction.signature,
-            requestCID: transferAction.requestCID,
-            responseCID: transferAction.responseCID,
-            subgraphID: transferAction.subgraphID,
+            signature: transferAction?.signature,
+            requestCID: transferAction?.requestCID,
+            responseCID: transferAction?.responseCID,
+            subgraphID: transferAction?.subgraphID,
           } as UnlockedSignedTransferMeta,
         } as EventPayloads.SignedTransferUnlocked);
         break;
