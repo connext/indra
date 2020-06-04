@@ -347,7 +347,8 @@ function computeInstallStateChannelTransition(
     initiatorDepositAssetId,
     responderDepositAssetId,
     initialState,
-    appInterface,
+    appDefinition,
+    abiEncodings,
     defaultTimeout,
     stateTimeout,
     appSeqNo,
@@ -379,40 +380,12 @@ function computeInstallStateChannelTransition(
   const channelResponderFbAddress = stateChannel.multisigOwners[1];
   const sameChannelAndAppOrdering = channelInitiatorFbAddress === appInitiatorFbAddress;
 
-  const {
-    multiAssetMultiPartyCoinTransferInterpreterParams,
-    twoPartyOutcomeInterpreterParams,
-    singleAssetTwoPartyCoinTransferInterpreterParams,
-  } = computeInterpreterParameters(
-    outcomeType,
-    // make sure the asset id array is returned in same order
-    // as channel since interpreter is multisig fn
-    sameChannelAndAppOrdering ? appInitiatorAssetId : appResponderAssetId,
-    sameChannelAndAppOrdering ? appResponderAssetId : appInitiatorAssetId,
-    appInitiatorBalanceDecrement,
-    appResponderBalanceDecrement,
-    appInitiatorFbAddress,
-    appResponderFbAddress,
-    disableLimit,
-  );
-
-  const appInstanceToBeInstalled = new AppInstance(
-    /* initiator */ appInitiatorIdentifier,
-    /* responder */ appResponderIdentifier,
-    /* defaultTimeout */ defaultTimeout.toHexString(),
-    /* appInterface */ appInterface,
-    /* appSeqNo */ appSeqNo,
-    /* latestState */ initialState,
-    /* latestVersionNumber */ 1,
-    /* stateTimeout */ stateTimeout.toHexString(),
-    /* outcomeType */ outcomeType,
-    /* multisig */ stateChannel.multisigAddress,
-    meta,
-    /* latestAction */ undefined,
-    twoPartyOutcomeInterpreterParams,
-    multiAssetMultiPartyCoinTransferInterpreterParams,
-    singleAssetTwoPartyCoinTransferInterpreterParams,
-  );
+  const proposal = stateChannel.proposedAppInstances.get(params.identityHash)
+  if(!proposal) {
+    throw new Error("There should be a proposal here, we got it before. Wtf?")
+  }
+  
+  const appInstanceToBeInstalled = AppInstance.fromJson(proposal)
 
   // does not matter for asset ids
   const initiatorDepositTokenAddress = getAddressFromAssetId(appInitiatorAssetId);
@@ -453,99 +426,4 @@ function computeInstallStateChannelTransition(
   }
 
   return stateChannel.installApp(appInstanceToBeInstalled, tokenIndexedBalanceDecrement);
-}
-
-/**
- * Returns the parameters for two hard-coded possible interpreter types.
- *
- * Note that this is _not_ a built-in part of the protocol. Here we are _restricting_
- * all newly installed AppInstances to be either of type COIN_TRANSFER or
- * TWO_PARTY_FIXED_OUTCOME. In the future, we will be extending the ProtocolParams.Install
- * to indidicate the interpreterAddress and interpreterParams so the developers
- * installing apps have more control, however for now we are putting this logic
- * inside of the client (the Node) by adding an "outcomeType" variable which
- * is a simplification of the actual decision a developer has to make with their app.
- *
- * TODO: update doc on how MultiAssetMultiPartyCoinTransferInterpreterParams work
- *
- * @param {OutcomeType} outcomeType - either COIN_TRANSFER or TWO_PARTY_FIXED_OUTCOME
- * @param {utils.BigNumber} initiatorBalanceDecrement - amount Wei initiator deposits
- * @param {utils.BigNumber} responderBalanceDecrement - amount Wei responder deposits
- * @param {string} initiatorFbAddress - the address of the recipient of initiator
- * @param {string} responderFbAddress - the address of the recipient of responder
- *
- * @returns An object with the required parameters for both interpreter types, one
- * will be undefined and the other will be a correctly structured POJO. The AppInstance
- * object currently accepts both in its constructor and internally manages them.
- */
-export function computeInterpreterParameters(
-  outcomeType: OutcomeType,
-  initiatorAssetId: AssetId,
-  responderAssetId: AssetId,
-  initiatorBalanceDecrement: utils.BigNumber,
-  responderBalanceDecrement: utils.BigNumber,
-  initiatorFbAddress: string,
-  responderFbAddress: string,
-  disableLimit: boolean,
-): {
-  twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
-} {
-  const initiatorDepositAssetId = getAddressFromAssetId(initiatorAssetId);
-  const responderDepositAssetId = getAddressFromAssetId(responderAssetId);
-  switch (outcomeType) {
-    case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
-      if (initiatorDepositAssetId !== responderDepositAssetId) {
-        throw new Error(
-          TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(initiatorDepositAssetId, responderDepositAssetId),
-        );
-      }
-
-      return {
-        twoPartyOutcomeInterpreterParams: {
-          tokenAddress: initiatorDepositAssetId,
-          playerAddrs: [initiatorFbAddress, responderFbAddress],
-          amount: initiatorBalanceDecrement.add(responderBalanceDecrement),
-        },
-      };
-    }
-
-    case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
-      return initiatorDepositAssetId === responderDepositAssetId
-        ? {
-            multiAssetMultiPartyCoinTransferInterpreterParams: {
-              limit: [initiatorBalanceDecrement.add(responderBalanceDecrement)],
-              tokenAddresses: [initiatorDepositAssetId],
-            },
-          }
-        : {
-            multiAssetMultiPartyCoinTransferInterpreterParams: {
-              limit: [initiatorBalanceDecrement, responderBalanceDecrement],
-              tokenAddresses: [initiatorDepositAssetId, responderDepositAssetId],
-            },
-          };
-    }
-
-    case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
-      if (initiatorDepositAssetId !== responderDepositAssetId) {
-        throw new Error(
-          TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(initiatorDepositAssetId, responderDepositAssetId),
-        );
-      }
-
-      return {
-        singleAssetTwoPartyCoinTransferInterpreterParams: {
-          limit: disableLimit
-            ? MaxUint256
-            : initiatorBalanceDecrement.add(responderBalanceDecrement),
-          tokenAddress: initiatorDepositAssetId,
-        },
-      };
-    }
-
-    default: {
-      throw new Error("The outcome type in this application logic contract is not supported yet.");
-    }
-  }
 }

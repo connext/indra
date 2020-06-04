@@ -105,13 +105,14 @@ export async function install(
     ProtocolNames.install,
     {
       appInitiatorIdentifier: proposal.initiatorIdentifier,
-      appInterface: { ...proposal.abiEncodings, addr: proposal.appDefinition },
       appResponderIdentifier: proposal.responderIdentifier,
       appSeqNo: proposal.appSeqNo,
       defaultTimeout: toBN(proposal.defaultTimeout),
       disableLimit: false,
+      abiEncodings: proposal.abiEncodings,
+      appDefinition: proposal.appDefinition,
       identityHash: proposal.identityHash,
-      initialState: proposal.initialState,
+      initialState: proposal.latestState,
       initiatorBalanceDecrement: isSame
         ? toBN(proposal.initiatorDeposit)
         : toBN(proposal.responderDeposit),
