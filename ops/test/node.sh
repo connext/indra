@@ -7,11 +7,11 @@ project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' 
 if [[ "$1" == "--watch" ]]
 then
   suffix="node_watcher"
-  command='exec ts-mocha --bail --check-leaks --watch --timeout 10000 src/**/*.spec.ts '"$@"
+  command='exec ts-mocha --bail --check-leaks --watch --timeout 45000 src/**/*.spec.ts '"$@"
   shift # forget $1 and replace it w $2, etc
 else
   suffix="node_tester"
-  command='ts-mocha --bail --check-leaks --exit --timeout 10000 src/**/*.spec.ts '"$@"
+  command='ts-mocha --bail --check-leaks --exit --timeout 45000 src/**/*.spec.ts '"$@"
 fi
 echo $command
 
