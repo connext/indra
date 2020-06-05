@@ -43,7 +43,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
   0 /* Initiating */: async function* (context: Context) {
     const {
-      store,
+      preProtocolStateChannel,
       message: { params, processID },
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
@@ -52,21 +52,20 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     log.info(`[${processID}] Initiation started`);
     log.debug(`[${processID}] Protocol initiated with parameters ${stringify(params)}`);
 
+    if (!preProtocolStateChannel) throw new Error("No state channel found for install");
+
     const {
       initiatorBalanceDecrement,
       initiatorDepositAssetId,
       initiatorIdentifier,
-      multisigAddress,
       responderBalanceDecrement,
       responderDepositAssetId,
       responderIdentifier,
     } = params as ProtocolParams.Install;
 
-    const stateChannelBefore = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
-
     // 0ms
     assertSufficientFundsWithinFreeBalance(
-      stateChannelBefore,
+      preProtocolStateChannel,
       initiatorIdentifier,
       getAddressFromAssetId(initiatorDepositAssetId),
       initiatorBalanceDecrement,
@@ -74,14 +73,14 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 0ms
     assertSufficientFundsWithinFreeBalance(
-      stateChannelBefore,
+      preProtocolStateChannel,
       responderIdentifier,
       getAddressFromAssetId(responderDepositAssetId),
       responderBalanceDecrement,
     );
 
     const stateChannelAfter = computeInstallStateChannelTransition(
-      stateChannelBefore,
+      preProtocolStateChannel,
       params as ProtocolParams.Install,
     );
 
@@ -95,7 +94,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       protocol,
       {
         params,
-        stateChannel: stateChannelBefore.toJson(),
+        stateChannel: preProtocolStateChannel.toJson(),
         appInstance: newAppInstance.toJson(),
         role: ProtocolRoles.initiator,
       } as InstallMiddlewareContext,
@@ -187,12 +186,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
   1 /* Responding */: async function* (context: Context) {
     const {
-      store,
       message: {
         params,
         processID,
         customData: { signature },
       },
+      preProtocolStateChannel,
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
@@ -207,17 +206,18 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorBalanceDecrement,
       initiatorDepositAssetId,
       initiatorIdentifier,
-      multisigAddress,
       responderBalanceDecrement,
       responderDepositAssetId,
       responderIdentifier,
     } = params as ProtocolParams.Install;
 
-    const stateChannelBefore = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
+    if (!preProtocolStateChannel) {
+      throw new Error("No state channel found for install");
+    }
 
     // 1ms
     assertSufficientFundsWithinFreeBalance(
-      stateChannelBefore,
+      preProtocolStateChannel,
       initiatorIdentifier,
       getAddressFromAssetId(initiatorDepositAssetId),
       initiatorBalanceDecrement,
@@ -225,14 +225,14 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 0ms
     assertSufficientFundsWithinFreeBalance(
-      stateChannelBefore,
+      preProtocolStateChannel,
       responderIdentifier,
       getAddressFromAssetId(responderDepositAssetId),
       responderBalanceDecrement,
     );
 
     const stateChannelAfter = computeInstallStateChannelTransition(
-      stateChannelBefore,
+      preProtocolStateChannel,
       params as ProtocolParams.Install,
     );
 
@@ -249,7 +249,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       protocol,
       {
         params,
-        stateChannel: stateChannelBefore.toJson(),
+        stateChannel: preProtocolStateChannel.toJson(),
         appInstance: newAppInstance.toJson(),
         role: ProtocolRoles.responder,
       } as InstallMiddlewareContext,

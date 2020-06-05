@@ -132,6 +132,7 @@ export async function install(
       responderIdentifier: isSame ? proposal.responderIdentifier : proposal.initiatorIdentifier,
       stateTimeout: toBN(proposal.stateTimeout),
     } as ProtocolParams.Install,
+    preProtocolStateChannel,
   );
 
   return postProtocolChannel;

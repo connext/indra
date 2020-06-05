@@ -24,7 +24,7 @@ const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } 
  */
 export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
-    const { store, message, network } = context;
+    const { message, network, preProtocolStateChannel } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
     let substart = start;
@@ -34,16 +34,15 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
 
     const {
       appIdentityHash,
-      multisigAddress,
       responderIdentifier,
       action,
       stateTimeout,
     } = params as ProtocolParams.TakeAction;
 
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
-      multisigAddress,
-      store,
-    );
+    if (!preProtocolStateChannel) {
+      throw new Error("No state channel found for takeAction");
+    }
+
     // 8ms
     const preAppInstance = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
@@ -153,7 +152,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
   } as any,
 
   1 /* Responding */: async function* (context: Context) {
-    const { store, message, network } = context;
+    const { preProtocolStateChannel, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
     let substart = start;
@@ -168,16 +167,14 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
 
     const {
       appIdentityHash,
-      multisigAddress,
       initiatorIdentifier,
       action,
       stateTimeout,
     } = params as ProtocolParams.TakeAction;
 
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
-      multisigAddress,
-      store,
-    );
+    if (!preProtocolStateChannel) {
+      throw new Error("No state channel found for takeAction");
+    }
 
     // 9ms
     const preAppInstance = preProtocolStateChannel.getAppInstance(appIdentityHash);
