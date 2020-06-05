@@ -248,7 +248,7 @@ export class CFCoreService {
       this.emitter.waitFor(
         EventNames.INSTALL_FAILED_EVENT,
         CF_METHOD_TIMEOUT * 3,
-        (msg) => msg.params.identityHash === proposeRes.appIdentityHash,
+        (msg) => msg.params.proposal.identityHash === proposeRes.appIdentityHash,
       ),
       this.emitter.waitFor(
         EventNames.REJECT_INSTALL_EVENT,

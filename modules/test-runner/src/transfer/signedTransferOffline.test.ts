@@ -334,7 +334,7 @@ describe("Signed Transfer Offline", () => {
     const senderConfig = {
       ceiling: { [RECEIVED]: 0 },
       protocol: ProtocolNames.install,
-      params: { appDefinition: addr } as ProtocolParams.Install,
+      params: { proposal: { appDefinition: addr } } as ProtocolParams.Install,
     };
     const [sender, receiver] = await createAndFundClients(senderConfig);
     await sendFailingSignedTransfer({
@@ -388,7 +388,7 @@ describe("Signed Transfer Offline", () => {
     const receiverConfig = {
       ceiling: { [SEND]: 0, [RECEIVED]: 0 },
       protocol: ProtocolNames.install,
-      params: { appDefinition: addr } as ProtocolParams.Install,
+      params: { proposal: { appDefinition: addr } } as ProtocolParams.Install,
     };
     const [sender, receiver] = await createAndFundClients(undefined, receiverConfig);
     const paymentId = await new Promise<string>(async (resolve, reject) => {
