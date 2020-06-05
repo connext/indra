@@ -244,7 +244,6 @@ export class CFCoreStore implements IStoreService {
     signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
-    console.log("createAppProposal:: channel: ", channel);
 
     const app = new AppInstance();
     app.type = AppType.PROPOSAL;
@@ -855,7 +854,6 @@ export class CFCoreStore implements IStoreService {
               channelNonce: toBN(app.appSeqNo),
               participants: appSigners,
               multisigAddress: channel.multisigAddress,
-              console.log('appProposal: ', appProposal);
               appDefinition: app.appDefinition,
               defaultTimeout: toBN(app.defaultTimeout),
             },

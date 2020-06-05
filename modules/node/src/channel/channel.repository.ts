@@ -28,7 +28,7 @@ export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
     multisigAddress: channel.multisigAddress,
     proposedAppInstances: (channel.appInstances || [])
       .filter((app) => app.type === AppType.PROPOSAL)
-      .map((app) => [app.identityHash, convertAppToInstanceJSON(app, app.channel)]),
+      .map((app) => [app.identityHash, convertAppToInstanceJSON(app, channel)]),
     schemaVersion: channel.schemaVersion,
     userIdentifiers: [channel.nodeIdentifier, channel.userIdentifier], // always [initiator, responder] -- node will always be initiator
   };

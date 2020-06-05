@@ -68,6 +68,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   async getAppProposal(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
     const app = await this.findByIdentityHash(appIdentityHash);
+    console.log("getAppProposal app: ", app);
     if (!app || app.type !== AppType.PROPOSAL) {
       return undefined;
     }
@@ -81,7 +82,10 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
     const app = await this.findByIdentityHash(appIdentityHash);
-    return app && convertAppToInstanceJSON(app, app.channel);
+    if (!app || app.type !== AppType.INSTANCE) {
+      return undefined;
+    }
+    return convertAppToInstanceJSON(app, app.channel);
   }
 
   async findInstalledAppsByAppDefinition(
