@@ -71,9 +71,12 @@ export class AppInstance {
     public readonly defaultTimeout: HexString,
     public readonly stateTimeout: HexString,
     public readonly outcomeType: OutcomeType,
-    private readonly interpreterParamsInternal: TwoPartyFixedOutcomeInterpreterParams|MultiAssetMultiPartyCoinTransferInterpreterParams|SingleAssetTwoPartyCoinTransferInterpreterParams,
+    private readonly interpreterParamsInternal:
+      | TwoPartyFixedOutcomeInterpreterParams
+      | MultiAssetMultiPartyCoinTransferInterpreterParams
+      | SingleAssetTwoPartyCoinTransferInterpreterParams,
     public readonly meta?: any,
-    public readonly latestAction?: any,  
+    public readonly latestAction?: any,
   ) {}
 
   get interpreterParams() {
@@ -101,7 +104,7 @@ export class AppInstance {
       deserialized.outcomeType,
       deserialized.meta,
       deserialized.latestAction,
-      bigNumberifyJson(deserialized.interpreterParams)
+      bigNumberifyJson(deserialized.interpreterParams),
     );
   }
 
@@ -128,8 +131,8 @@ export class AppInstance {
       outcomeType: this.outcomeType,
       meta: this.meta,
       latestAction: this.latestAction,
-      interpreterParams: this.interpreterParamsInternal
-   })
+      interpreterParams: this.interpreterParamsInternal,
+    });
   }
 
   @Memoize()
