@@ -11,6 +11,7 @@ import {
   StateProgressedEventPayload,
   StoredAppChallenge,
   StoredAppChallengeStatus,
+  SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
 import {
   deBigNumberifyJson,
@@ -36,17 +37,21 @@ export const createAppInstanceJson = (
     defaultTimeout: Zero.toHexString(),
     identityHash: getRandomBytes32(),
     initiatorIdentifier: getRandomIdentifier(),
+    responderIdentifier: getRandomIdentifier(),
     latestState: {},
     latestVersionNumber: 0,
     multisigAddress: getRandomAddress(),
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-    responderIdentifier: getRandomIdentifier(),
-    outcomeInterpreterParameters: {} as any,
+    outcomeInterpreterParameters: {
+      limit: { _hex: Zero.toHexString() },
+      tokenAddress: AddressZero,
+    } as SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
     initiatorDeposit: Zero.toString(),
     initiatorDepositAssetId: AddressZero,
     responderDeposit: Zero.toString(),
     responderDepositAssetId: AddressZero,
     stateTimeout: Zero.toHexString(),
+    meta: null,
     ...overrides,
   };
 };
@@ -75,6 +80,7 @@ export const createStateChannelJSON = (
       initiatorIdentifier: channelData.userIdentifiers[0],
       multisigAddress: channelData.multisigAddress,
       responderIdentifier: channelData.userIdentifiers[1],
+      meta: null,
       ...overrides.freeBalanceAppInstance,
     }),
   };
