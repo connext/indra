@@ -138,11 +138,11 @@ export class MemoLock {
 
   async stopSubs() {
     if (this.pulseTimer) {
-      clearTimeout(this.pulseTimer);
+      clearInterval(this.pulseTimer);
     }
 
     if (this.subConn) {
-      this.subConn.quit();
+      await this.subConn.disconnect();
     }
   }
 

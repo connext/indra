@@ -90,7 +90,7 @@ describe("JSON", () => {
       const input = TEST_JSON_WITH_BN_JSON_DEPTH;
       const expected = TEST_JSON_WITH_BN_OBJECT_DEPTH;
       const result = bigNumberifyJson(input);
-      expect(result).toEqual(expected);
+      expect(result).to.equal(expected);
     });
   });
   describe("deBigNumberifyJson", () => {
@@ -104,7 +104,7 @@ describe("JSON", () => {
       const input = TEST_JSON_WITH_BN_OBJECT_DEPTH;
       const expected = TEST_JSON_WITH_BN_JSON_DEPTH;
       const result = deBigNumberifyJson(input);
-      expect(result).toEqual(expected);
+      expect(result).to.equal(expected);
     });
   });
   describe("safeJsonStringify", () => {

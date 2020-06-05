@@ -5,6 +5,7 @@ import Redis from 'ioredis';
 import {MemoLock} from './memo-lock';
 import {LoggerModule} from '../logger/logger.module';
 import {LoggerService} from '../logger/logger.service';
+import { expect } from '../test/utils';
 
 describe('MemoLock', () => {
   let redis: Redis.Redis;
@@ -39,7 +40,7 @@ describe('MemoLock', () => {
       module.releaseLock('foo', lock);
     }, 100);
     const nextLock = await module.acquireLock('foo');
-    expect(Date.now() - start).toBeGreaterThanOrEqual(100);
+    expect(Date.now() - start).to.be.at.least(100);
     await module.releaseLock('foo', nextLock);
   });
 
@@ -52,7 +53,7 @@ describe('MemoLock', () => {
     try {
       await module.acquireLock('foo');
     } catch (e) {
-      expect(e.message).toContain('is full');
+      expect(e.message).to.contain('is full');
       return;
     }
     throw new Error('expected an error');
@@ -75,8 +76,8 @@ describe('MemoLock', () => {
     setTimeout(() => module.acquireLock('foo').then(() => {
       done = true
     }), 900);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    expect(err!.message).toContain("expired after");
-    expect(done).toBeTruthy();
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    expect(err!.message).to.contain("expired after");
+    expect(done).to.be.true;
   });
 });
