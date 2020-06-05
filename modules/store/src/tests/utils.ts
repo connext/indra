@@ -221,7 +221,7 @@ export const TEST_STORE_PROPOSAL: AppInstanceJson = {
   defaultTimeout: "0x01",
   stateTimeout: "0x00",
   outcomeInterpreterParameters: {
-    limit: { _hex: "0x1" } as any,
+    limit: { _hex: "0x1" },
     tokenAddress: AddressZero,
   },
 };
