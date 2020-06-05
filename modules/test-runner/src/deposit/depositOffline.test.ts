@@ -132,6 +132,7 @@ describe("Deposit offline tests", () => {
       protocol: ProtocolNames.propose,
       ceiling: { [SEND]: 0 },
       signer,
+      store,
     });
 
     await makeFailingDepositCall({
