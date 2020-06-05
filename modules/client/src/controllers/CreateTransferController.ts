@@ -1,3 +1,4 @@
+import { constants, utils } from "ethers";
 import { DEFAULT_APP_TIMEOUT } from "@connext/apps";
 import {
   ConditionalTransferTypes,
@@ -14,10 +15,11 @@ import {
   HashLockTransferAppState,
 } from "@connext/types";
 import { toBN, stringify } from "@connext/utils";
-import { HashZero, Zero } from "ethers/constants";
 
 import { AbstractController } from "./AbstractController";
-import { soliditySha256 } from "ethers/utils";
+
+const { HashZero, Zero } = constants;
+const { soliditySha256 } = utils;
 
 export class CreateTransferController extends AbstractController {
   public createTransfer = async (
