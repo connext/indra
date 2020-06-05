@@ -359,22 +359,6 @@ export class StateChannel {
       throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(appInstance.identityHash));
     }
 
-    const [initiator, responder] = this.getSigningKeysFor(
-      proposal.initiatorIdentifier,
-      proposal.responderIdentifier,
-    );
-
-    if (
-      appInstance.initiatorIdentifier !== proposal.initiatorIdentifier ||
-      appInstance.responderIdentifier !== proposal.responderIdentifier
-    ) {
-      throw new Error(
-        `AppInstance passed to installApp has incorrect participants. Got ${JSON.stringify(
-          appInstance.identity.participants,
-        )} but expected ${JSON.stringify([initiator, responder])}`,
-      );
-    }
-
     /// Add modified FB and new AppInstance to appInstances
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 

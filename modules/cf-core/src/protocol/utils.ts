@@ -68,7 +68,6 @@ export async function computeTokenIndexedFreeBalanceIncrements(
   appInstance: AppInstance,
   provider: providers.JsonRpcProvider,
   encodedOutcomeOverride: string = "",
-  blockNumberToUseIfNecessary?: number,
   log?: ILoggerService,
 ): Promise<TokenIndexedCoinTransferMap> {
   const { outcomeType } = appInstance;
@@ -96,7 +95,6 @@ export async function computeTokenIndexedFreeBalanceIncrements(
       return handleSingleAssetTwoPartyCoinTransfer(
         encodedOutcome,
         appInstance.outcomeInterpreterParameters as SingleAssetTwoPartyCoinTransferInterpreterParams,
-        log,
       );
     }
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
@@ -161,7 +159,6 @@ function handleMultiAssetMultiPartyCoinTransfer(
 function handleSingleAssetTwoPartyCoinTransfer(
   encodedOutcome: string,
   interpreterParams: SingleAssetTwoPartyCoinTransferInterpreterParams,
-  log?: ILoggerService,
 ): TokenIndexedCoinTransferMap {
   const { tokenAddress } = interpreterParams;
 
@@ -236,6 +233,7 @@ function decodeMultiAssetMultiPartyCoinTransfer(encodedOutcome: string): CoinTra
  * object currently accepts both in its constructor and internally manages them.
  */
 export function computeInterpreterParameters(
+  multisigOwners: string[],
   outcomeType: OutcomeType,
   initiatorAssetId: AssetId,
   responderAssetId: AssetId,
@@ -250,6 +248,8 @@ export function computeInterpreterParameters(
   | SingleAssetTwoPartyCoinTransferInterpreterParams {
   const initiatorDepositAssetId = getAddressFromAssetId(initiatorAssetId);
   const responderDepositAssetId = getAddressFromAssetId(responderAssetId);
+  // make sure the interpreter params ordering corr. with the fb
+  const sameOrder = initiatorFbAddress === multisigOwners[0];
   switch (outcomeType) {
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
       if (initiatorDepositAssetId !== responderDepositAssetId) {
@@ -260,20 +260,29 @@ export function computeInterpreterParameters(
 
       return {
         tokenAddress: initiatorDepositAssetId,
-        playerAddrs: [initiatorFbAddress, responderFbAddress],
+        playerAddrs: sameOrder
+          ? [initiatorFbAddress, responderFbAddress]
+          : [responderFbAddress, initiatorFbAddress],
         amount: initiatorBalanceDecrement.add(responderBalanceDecrement),
       };
     }
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
-      return initiatorDepositAssetId === responderDepositAssetId
-        ? {
-            limit: [initiatorBalanceDecrement.add(responderBalanceDecrement)],
-            tokenAddresses: [initiatorDepositAssetId],
-          }
-        : {
-            limit: [initiatorBalanceDecrement, responderBalanceDecrement],
-            tokenAddresses: [initiatorDepositAssetId, responderDepositAssetId],
-          };
+      if (initiatorDepositAssetId === responderDepositAssetId) {
+        return {
+          limit: [initiatorBalanceDecrement.add(responderBalanceDecrement)],
+          tokenAddresses: [initiatorDepositAssetId],
+        };
+      }
+      const limit = sameOrder
+        ? [initiatorBalanceDecrement, responderBalanceDecrement]
+        : [responderBalanceDecrement, initiatorBalanceDecrement];
+      const tokenAddresses = sameOrder
+        ? [initiatorDepositAssetId, responderDepositAssetId]
+        : [responderDepositAssetId, initiatorDepositAssetId];
+      return {
+        limit,
+        tokenAddresses,
+      };
     }
 
     case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {

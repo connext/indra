@@ -294,15 +294,8 @@ async function computeStateTransition(
   appInstance: AppInstance,
   log?: ILoggerService,
 ) {
-  const { blockNumberToUseIfNecessary } = params;
   return stateChannel.uninstallApp(
     appInstance,
-    await computeTokenIndexedFreeBalanceIncrements(
-      appInstance,
-      provider,
-      undefined,
-      blockNumberToUseIfNecessary,
-      log,
-    ),
+    await computeTokenIndexedFreeBalanceIncrements(appInstance, provider, undefined, log),
   );
 }

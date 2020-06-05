@@ -1,4 +1,9 @@
-import { OutcomeType, PublicIdentifier, AppABIEncodings, MultiAssetMultiPartyCoinTransferInterpreterParams } from "@connext/types";
+import {
+  OutcomeType,
+  PublicIdentifier,
+  AppABIEncodings,
+  MultiAssetMultiPartyCoinTransferInterpreterParams,
+} from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
 import { constants, utils } from "ethers";
 
@@ -224,7 +229,7 @@ export function createFreeBalance(
   const interpreterParams: MultiAssetMultiPartyCoinTransferInterpreterParams = {
     limit: [],
     tokenAddresses: [],
-  }
+  };
 
   return new AppInstance(
     /* multisigAddres */ multisigAddress,
@@ -242,7 +247,7 @@ export function createFreeBalance(
     /* defaultTimeout */ toBN(freeBalanceTimeout).toHexString(),
     /* stateTimeout */ toBN(HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout).toHexString(),
     /* outcomeType */ OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
-    /* interpreterParamsInternal*/ interpreterParams
+    /* interpreterParamsInternal*/ interpreterParams,
   );
 }
 

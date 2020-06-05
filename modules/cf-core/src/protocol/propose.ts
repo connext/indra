@@ -52,6 +52,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     if (!preProtocolStateChannel) throw new Error("No state channel found for proposal");
 
     const interpreterParams = computeInterpreterParameters(
+      preProtocolStateChannel.multisigOwners,
       outcomeType,
       initiatorDepositAssetId,
       responderDepositAssetId,
@@ -245,6 +246,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     }
 
     const interpreterParams = computeInterpreterParameters(
+      preProtocolStateChannel.multisigOwners,
       outcomeType,
       initiatorDepositAssetId,
       responderDepositAssetId,

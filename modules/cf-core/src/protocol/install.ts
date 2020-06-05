@@ -317,28 +317,23 @@ function computeInstallStateChannelTransition(
   stateChannel: StateChannel,
   proposal: AppInstance,
 ): StateChannel {
-  const initiatorDepositTokenAddress = getAddressFromAssetId(proposal.initiatorDepositAssetId);
-  const responderDepositTokenAddress = getAddressFromAssetId(proposal.responderDepositAssetId);
+  // this state transition is calculated for the free balance app, so use
+  // the channel not app, ordering when calculating
+  const appInitiatorToken = getAddressFromAssetId(proposal.initiatorDepositAssetId);
+  const appResponderToken = getAddressFromAssetId(proposal.responderDepositAssetId);
 
-  const sameChannelAndAppOrdering =
-    proposal.initiatorIdentifier === stateChannel.freeBalance.initiatorIdentifier;
+  const appInitiatorFb = getSignerAddressFromPublicIdentifier(proposal.initiatorIdentifier);
+  const appResponderFb = getSignerAddressFromPublicIdentifier(proposal.responderIdentifier);
+  const sameChannelAndAppOrdering = appInitiatorFb === stateChannel.multisigOwners[0];
 
   let tokenIndexedBalanceDecrement: TokenIndexedCoinTransferMap;
-  if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
-    const keys = [
-      sameChannelAndAppOrdering ? initiatorDepositTokenAddress : responderDepositTokenAddress,
-      sameChannelAndAppOrdering ? responderDepositTokenAddress : initiatorDepositTokenAddress,
-    ];
+  if (appInitiatorToken !== appResponderToken) {
     tokenIndexedBalanceDecrement = {
-      [keys[0]]: {
-        [stateChannel.multisigOwners[0]]: sameChannelAndAppOrdering
-          ? toBN(proposal.initiatorDeposit)
-          : toBN(proposal.responderDeposit),
+      [appInitiatorToken]: {
+        [appInitiatorFb]: toBN(proposal.initiatorDeposit),
       },
-      [keys[1]]: {
-        [stateChannel.multisigOwners[1]]: sameChannelAndAppOrdering
-          ? toBN(proposal.responderDeposit)
-          : toBN(proposal.initiatorDeposit),
+      [appResponderToken]: {
+        [appResponderFb]: toBN(proposal.responderDeposit),
       },
     };
   } else {
@@ -346,7 +341,7 @@ function computeInstallStateChannelTransition(
     // sets the decrement only on the `respondingFbAddress` and the
     // `initiatingFbAddress` would get overwritten
     tokenIndexedBalanceDecrement = {
-      [initiatorDepositTokenAddress]: {
+      [appResponderToken]: {
         [stateChannel.multisigOwners[0]]: sameChannelAndAppOrdering
           ? toBN(proposal.initiatorDeposit)
           : toBN(proposal.responderDeposit),
