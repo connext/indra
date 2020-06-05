@@ -1,18 +1,9 @@
-import {
-  ABIEncoding,
-  Address,
-  AssetId,
-  DecString,
-  HexString,
-  PublicIdentifier,
-  SolidityValueType,
-} from "./basic";
+import { ABIEncoding, Address, AssetId, DecString, HexString, PublicIdentifier } from "./basic";
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
   TwoPartyFixedOutcomeInterpreterParamsJson,
-  AppState,
 } from "./contracts";
 
 ////////////////////////////////////
@@ -42,7 +33,10 @@ export type AppInstanceJson = {
   outcomeType: OutcomeType;
   meta?: any;
   latestAction?: any;
-  interpreterParams: TwoPartyFixedOutcomeInterpreterParamsJson|MultiAssetMultiPartyCoinTransferInterpreterParamsJson|SingleAssetTwoPartyCoinTransferInterpreterParamsJson
+  interpreterParams:
+    | TwoPartyFixedOutcomeInterpreterParamsJson
+    | MultiAssetMultiPartyCoinTransferInterpreterParamsJson
+    | SingleAssetTwoPartyCoinTransferInterpreterParamsJson;
 };
 
 ////////////////////////////////////
