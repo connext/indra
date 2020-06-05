@@ -19,7 +19,7 @@ import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../model
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
-import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
+import { assertIsValidSignature } from "./utils";
 
 const protocol = ProtocolNames.install;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;

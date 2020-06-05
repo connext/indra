@@ -15,11 +15,7 @@ import { getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel } from "../models";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
-import {
-  assertIsValidSignature,
-  computeTokenIndexedFreeBalanceIncrements,
-  stateChannelClassFromStoreByMultisig,
-} from "./utils";
+import { assertIsValidSignature, computeTokenIndexedFreeBalanceIncrements } from "./utils";
 
 const protocol = ProtocolNames.uninstall;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;

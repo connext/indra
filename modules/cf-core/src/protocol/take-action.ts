@@ -12,7 +12,7 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
-import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
+import { assertIsValidSignature } from "./utils";
 
 const protocol = ProtocolNames.takeAction;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
