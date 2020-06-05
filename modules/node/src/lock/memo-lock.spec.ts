@@ -39,7 +39,7 @@ describe('MemoLock', () => {
       module.releaseLock('foo', lock);
     }, 100);
     const nextLock = await module.acquireLock('foo');
-    expect(Date.now() - start).toBeGreaterThan(100);
+    expect(Date.now() - start).toBeGreaterThanOrEqual(100);
     await module.releaseLock('foo', nextLock);
   });
 
@@ -74,7 +74,7 @@ describe('MemoLock', () => {
     }), 0);
     setTimeout(() => module.acquireLock('foo').then(() => {
       done = true
-    }), 800);
+    }), 900);
     await new Promise((resolve) => setTimeout(resolve, 1500));
     expect(err!.message).toContain("expired after");
     expect(done).toBeTruthy();
