@@ -41,7 +41,7 @@ export const createAppInstanceJson = (
     multisigAddress: getRandomAddress(),
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
     responderIdentifier: getRandomIdentifier(),
-    interpreterParams: {} as any,
+    outcomeInterpreterParameters: {} as any,
     initiatorDeposit: Zero.toString(),
     initiatorDepositAssetId: AddressZero,
     responderDeposit: Zero.toString(),

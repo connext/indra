@@ -41,7 +41,7 @@ const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
     counter: 4,
   },
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-  interpreterParams: {
+  outcomeInterpreterParameters: {
     amount: { _hex: "0x42" } as any,
     playerAddrs: [AddressZero, AddressZero],
     tokenAddress: AddressZero,
