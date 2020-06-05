@@ -7,20 +7,12 @@ export class AppRegistryRepository extends Repository<AppRegistry> {
   async findByNameAndNetwork(name: string, chainId: number): Promise<AppRegistry> {
     return this.findOne({
       where: { name, chainId },
-      cache: {
-        id: `appRegistry:${name}:${chainId}`,
-        milliseconds: 60000,
-      }
     });
   }
 
   async findByAppDefinitionAddress(appDefinitionAddress: string): Promise<AppRegistry> {
     return this.findOne({
       where: { appDefinitionAddress },
-      cache: {
-        id: `appRegistry:${appDefinitionAddress}`,
-        milliseconds: 60000,
-      }
     });
   }
 }
