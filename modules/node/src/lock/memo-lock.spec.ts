@@ -76,7 +76,7 @@ describe('MemoLock', () => {
     setTimeout(() => module.acquireLock('foo').then(() => {
       done = true
     }), 900);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2200));
     expect(err!.message).to.contain("expired after");
     expect(done).to.be.true;
   });
