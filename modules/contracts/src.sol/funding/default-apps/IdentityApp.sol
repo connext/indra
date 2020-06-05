@@ -5,13 +5,15 @@ import "../../adjudicator/interfaces/CounterfactualApp.sol";
 
 
 contract IdentityApp is CounterfactualApp {
-  function computeOutcome(bytes calldata encodedState)
-    external
-    virtual
-    override
-    view
-    returns (bytes memory)
-  {
-    return encodedState;
-  }
+
+    function computeOutcome(bytes calldata encodedState)
+        override
+        virtual
+        external
+        view
+        returns (bytes memory)
+    {
+        return encodedState;
+    }
+
 }
