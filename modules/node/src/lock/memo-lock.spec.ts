@@ -1,11 +1,11 @@
 import {RedisModule} from '../redis/redis.module';
-import { Test } from "@nestjs/testing";
+import {Test} from '@nestjs/testing';
 import {RedisProviderId} from '../constants';
 import Redis from 'ioredis';
 import {MemoLock} from './memo-lock';
 import {LoggerModule} from '../logger/logger.module';
 import {LoggerService} from '../logger/logger.service';
-import { expect } from '../test/utils';
+import {expect} from '../test/utils';
 
 describe('MemoLock', () => {
   let redis: Redis.Redis;
@@ -70,14 +70,21 @@ describe('MemoLock', () => {
     await module.acquireLock('foo');
     let err: Error;
     let done = false;
-    setTimeout(() => module.acquireLock('foo').catch((e) => {
-      err = e;
-    }), 0);
+    setTimeout(() => module.acquireLock('foo').then(() => console.log('lock was unlocked - should not happen'))
+      .catch((e) => {
+        err = e;
+      }), 0);
     setTimeout(() => module.acquireLock('foo').then(() => {
-      done = true
-    }), 900);
-    await new Promise((resolve) => setTimeout(resolve, 2200));
-    expect(err!.message).to.contain("expired after");
-    expect(done).to.be.true;
+      done = true;
+    }).catch((e) => console.error(`Caught error acquiring lock: ${e}`)), 900);
+    await new Promise((resolve, reject) => setTimeout(() => {
+      try {
+        expect(err!.message).to.contain('expired after');
+        expect(done).to.be.true;
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    }, 2000));
   });
 });
