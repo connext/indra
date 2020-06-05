@@ -10,14 +10,15 @@ import { INestApplication } from "@nestjs/common";
 import { getMemoryStore } from "@connext/store";
 import { Test, TestingModule } from "@nestjs/testing";
 import { IConnextClient } from "@connext/types";
-import { Wallet } from "ethers";
-import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { Wallet, constants, utils } from "ethers";
 
 import { AppModule } from "../../app.module";
 import { ConfigService } from "../../config/config.service";
 
 import { env, expect, MockConfigService } from "../utils";
+
+const { AddressZero } = constants;
+const { parseEther } = utils;
 
 describe("Happy path", () => {
   const log = new ColorfulLogger("TestStartup", env.logLevel, true, "T");

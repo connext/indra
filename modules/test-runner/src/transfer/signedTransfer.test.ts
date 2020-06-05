@@ -88,6 +88,8 @@ describe("Signed Transfers", () => {
         signerAddress: clientB.signerAddress,
         chainId,
         verifyingContract,
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -104,7 +106,13 @@ describe("Signed Transfers", () => {
       type: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       sender: clientA.publicIdentifier,
-      transferMeta: { signerAddress: clientB.signerAddress, chainId, verifyingContract },
+      transferMeta: {
+        signerAddress: clientB.signerAddress,
+        chainId,
+        verifyingContract,
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
+      },
       meta: {
         foo: "bar",
         recipient: clientB.publicIdentifier,
@@ -120,10 +128,7 @@ describe("Signed Transfers", () => {
     expect(clientAPostTransferBal).to.eq(0);
 
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
-    const attestation = {
-      ...receipt,
-      signature,
-    };
+
     const [eventData] = await Promise.all([
       new Promise(async (res) => {
         clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, res);
@@ -134,7 +139,8 @@ describe("Signed Transfers", () => {
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
-        attestation,
+        responseCID: receipt.responseCID,
+        signature,
       } as PublicParams.ResolveSignedTransfer),
     ]);
     expect(eventData).to.deep.contain({
@@ -143,7 +149,10 @@ describe("Signed Transfers", () => {
       type: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       sender: clientA.publicIdentifier,
-      transferMeta: attestation,
+      transferMeta: {
+        responseCID: receipt.responseCID,
+        signature,
+      },
       meta: {
         foo: "bar",
         recipient: clientB.publicIdentifier,
@@ -177,6 +186,8 @@ describe("Signed Transfers", () => {
         signerAddress: clientB.signerAddress,
         chainId,
         verifyingContract,
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -192,7 +203,13 @@ describe("Signed Transfers", () => {
       assetId: transfer.assetId,
       type: ConditionalTransferTypes.SignedTransfer,
       paymentId,
-      transferMeta: { signerAddress: clientB.signerAddress, chainId, verifyingContract },
+      transferMeta: {
+        signerAddress: clientB.signerAddress,
+        chainId,
+        verifyingContract,
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
+      },
       meta: {
         foo: "bar",
         recipient: clientB.publicIdentifier,
@@ -208,10 +225,7 @@ describe("Signed Transfers", () => {
     expect(clientAPostTransferBal).to.eq(0);
 
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
-    const attestation = {
-      ...receipt,
-      signature,
-    };
+
     await new Promise(async (res) => {
       clientA.on(EventNames.UNINSTALL_EVENT, async (data) => {
         const {
@@ -225,7 +239,8 @@ describe("Signed Transfers", () => {
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
-        attestation,
+        responseCID: receipt.responseCID,
+        signature,
       } as PublicParams.ResolveSignedTransfer);
       const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
         transfer.assetId,
@@ -246,6 +261,8 @@ describe("Signed Transfers", () => {
       signerAddress: clientB.signerAddress,
       chainId,
       verifyingContract,
+      requestCID: receipt.requestCID,
+      subgraphDeploymentID: receipt.subgraphDeploymentID,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
@@ -273,6 +290,8 @@ describe("Signed Transfers", () => {
       signerAddress: clientB.signerAddress,
       chainId,
       verifyingContract,
+      requestCID: receipt.requestCID,
+      subgraphDeploymentID: receipt.subgraphDeploymentID,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
@@ -280,10 +299,7 @@ describe("Signed Transfers", () => {
     await clientA.messaging.disconnect();
 
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
-    const attestation = {
-      ...receipt,
-      signature,
-    };
+
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
       clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve);
@@ -291,7 +307,8 @@ describe("Signed Transfers", () => {
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
-        attestation,
+        responseCID: receipt.responseCID,
+        signature,
       });
     });
     const retrievedTransfer = await clientB.getSignedTransfer(paymentId);
@@ -318,20 +335,19 @@ describe("Signed Transfers", () => {
       signerAddress: clientB.signerAddress,
       chainId,
       verifyingContract,
+      requestCID: receipt.requestCID,
+      subgraphDeploymentID: receipt.subgraphDeploymentID,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.SignedTransfer);
 
     const badSig = hexlify(randomBytes(65));
-    const attestation = {
-      ...receipt,
-      signature: badSig,
-    };
     await expect(
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
-        attestation,
+        responseCID: receipt.responseCID,
+        signature: badSig,
       } as PublicParams.ResolveSignedTransfer),
     ).to.eventually.be.rejectedWith(/VM Exception while processing transaction/);
   });
@@ -350,6 +366,8 @@ describe("Signed Transfers", () => {
         signerAddress: clientB.signerAddress,
         chainId,
         verifyingContract,
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -383,11 +401,6 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const paymentId = hexlify(randomBytes(32));
-    // const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
-    // const attestation = {
-    //   ...receipt,
-    //   signature,
-    // };
 
     const [transferRes] = await Promise.all([
       clientA.conditionalTransfer({
@@ -397,6 +410,8 @@ describe("Signed Transfers", () => {
         signerAddress: clientB.signerAddress,
         chainId,
         verifyingContract,
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -421,10 +436,6 @@ describe("Signed Transfers", () => {
 
     const paymentId = hexlify(randomBytes(32));
     const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
-    const attestation = {
-      ...receipt,
-      signature,
-    };
 
     const [transferRes] = await Promise.all([
       clientA.conditionalTransfer({
@@ -434,6 +445,8 @@ describe("Signed Transfers", () => {
         signerAddress: clientB.signerAddress,
         chainId,
         verifyingContract,
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar", sender: clientA.publicIdentifier },
@@ -454,7 +467,8 @@ describe("Signed Transfers", () => {
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
-        attestation,
+        responseCID: receipt.responseCID,
+        signature,
       } as PublicParams.ResolveSignedTransfer),
     ]);
 
@@ -499,6 +513,8 @@ describe("Signed Transfers", () => {
           signerAddress: clientB.signerAddress,
           chainId,
           verifyingContract,
+          requestCID: receipt.requestCID,
+          subgraphDeploymentID: receipt.subgraphDeploymentID,
           assetId: transfer.assetId,
           meta: { foo: "bar", sender: clientA.publicIdentifier },
           recipient: clientB.publicIdentifier,
@@ -507,10 +523,6 @@ describe("Signed Transfers", () => {
 
       // Including recipient signing in test to match real conditions
       const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
-      const attestation = {
-        ...receipt,
-        signature,
-      };
       // eslint-disable-next-line no-loop-func
       await new Promise(async (res) => {
         clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
@@ -519,7 +531,8 @@ describe("Signed Transfers", () => {
         await clientB.resolveCondition({
           conditionType: ConditionalTransferTypes.SignedTransfer,
           paymentId,
-          attestation,
+          responseCID: receipt.responseCID,
+          signature,
         } as PublicParams.ResolveSignedTransfer);
       });
 

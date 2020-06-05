@@ -107,10 +107,6 @@ describe("Signed Transfer Offline", () => {
       verifyingContract,
       receiverPrivateKey,
     );
-    const attestation = {
-      ...receipt,
-      signature,
-    };
     // node reclaims from sender
     const amount = await new Promise(async (resolve, reject) => {
       // register event listeners
@@ -160,7 +156,8 @@ describe("Signed Transfer Offline", () => {
         await receiver.resolveCondition({
           conditionType: ConditionalTransferTypes.SignedTransfer,
           paymentId,
-          attestation,
+          responseCID: receipt.responseCID,
+          signature,
         } as PublicParams.ResolveSignedTransfer);
         if (!resolves) {
           return reject(new Error(`Signed transfer successfully resolved`));
@@ -185,6 +182,7 @@ describe("Signed Transfer Offline", () => {
   ) => {
     const preTransferSenderBalance = await sender.getFreeBalance(tokenAddress);
     const { chainId } = await sender.ethProvider.getNetwork();
+    const receipt = getTestReceiptToSign();
     await sender.conditionalTransfer({
       amount,
       paymentId,
@@ -193,6 +191,8 @@ describe("Signed Transfer Offline", () => {
       signerAddress: receiver.signerAddress,
       chainId,
       verifyingContract: getTestVerifyingContract(),
+      requestCID: receipt.requestCID,
+      subgraphDeploymentID: receipt.subgraphDeploymentID,
       recipient: receiver.publicIdentifier,
     });
     const postTransferSenderBalance = await sender.getFreeBalance(tokenAddress);
