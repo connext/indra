@@ -11,7 +11,7 @@ describe('MemoLock', () => {
   let module: MemoLock;
   let log: LoggerService;
 
-  beforeAll(async () => {
+  before(async () => {
     const module = await Test.createTestingModule({
       imports: [
         RedisModule,
@@ -28,7 +28,7 @@ describe('MemoLock', () => {
     await module.setupSubs();
   });
 
-  afterEach(async () => {
+  after(async () => {
     await module.stopSubs();
   });
 
