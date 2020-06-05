@@ -4,7 +4,6 @@ import { utils } from "ethers";
 import { hexToBuffer, bufferToHex, compress, decompress } from "eccrypto-js";
 
 import { getAddressError } from "./hexStrings";
-import { getAddressFromPublicKey } from "./crypto";
 import { LimitedCache } from "./limitedCache";
 import { getRandomPublicKey, getAddressFromPublicKey } from "./crypto";
 
