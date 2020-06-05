@@ -59,7 +59,7 @@ export const proposeDepositMiddleware = async (
   const depositApp = stateChannel.appInstances.find(([id, app]) => {
     return (
       app.appDefinition === proposal.appDefinition &&
-      app.latestState["assetId"] === proposal.initialState["assetId"]
+      app.latestState["assetId"] === proposal.latestState["assetId"]
     );
   });
   if (depositApp) {
