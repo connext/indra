@@ -332,7 +332,7 @@ describe("Signed Transfer Offline", () => {
 
   it("sender proposes transfer successfully, install protocol times out", async () => {
     const senderConfig = {
-      ceiling: { [RECEIVED]: 0 },
+      ceiling: { [SEND]: 0, [RECEIVED]: 0 },
       protocol: ProtocolNames.install,
       params: { proposal: { appDefinition: addr } } as ProtocolParams.Install,
     };
@@ -347,6 +347,7 @@ describe("Signed Transfer Offline", () => {
     await sender.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
+    console.log(`retrying`);
 
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
   });
