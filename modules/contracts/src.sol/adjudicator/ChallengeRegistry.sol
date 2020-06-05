@@ -1,4 +1,4 @@
-pragma solidity ^0.6.4;
+pragma solidity 0.6.7;
 pragma experimental "ABIEncoderV2";
 
 import "./mixins/MixinChallengeRegistryCore.sol";
@@ -17,8 +17,7 @@ contract ChallengeRegistry is
   MixinProgressState,
   MixinSetAndProgressState,
   MixinCancelDispute,
-  MixinSetOutcome
-{
-  // solium-disable-next-line no-empty-blocks
-  constructor() public {}
+  MixinSetOutcome {
+    // solium-disable-next-line no-empty-blocks
+    constructor () public {}
 }

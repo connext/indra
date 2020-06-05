@@ -1,22 +1,26 @@
-pragma solidity ^0.6.4;
+pragma solidity 0.6.7;
 
 
 contract Echo {
-  address masterCopy;
+    address masterCopy;
 
-  function helloWorld() external pure returns (string memory) {
-    return "hello world";
-  }
+    function helloWorld() external pure returns (string memory) {
+        return "hello world";
+    }
 
-  function helloWorldArg(string calldata arg) external pure returns (string memory) {
-    return arg;
-  }
+    function helloWorldArg(string calldata arg)
+        external
+        pure
+        returns (string memory)
+    {
+        return arg;
+    }
 
-  function msgSender() external view returns (address) {
-    return msg.sender;
-  }
+    function msgSender() external view returns (address) {
+        return msg.sender;
+    }
 
-  function returnArg(bool arg) external pure returns (bool) {
-    return arg;
-  }
+    function returnArg(bool arg) external pure returns (bool) {
+        return arg;
+    }
 }
