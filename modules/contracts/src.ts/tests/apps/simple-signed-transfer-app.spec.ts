@@ -125,6 +125,8 @@ describe("SimpleSignedTransferApp", () => {
       signerAddress,
       chainId,
       verifyingContract,
+      requestCID: receipt.requestCID,
+      subgraphDeploymentID: receipt.subgraphDeploymentID,
     };
   });
 
@@ -153,6 +155,8 @@ describe("SimpleSignedTransferApp", () => {
         signerAddress,
         chainId,
         verifyingContract,
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
         finalized: true,
       };
 
