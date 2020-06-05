@@ -3,7 +3,7 @@ import { constants } from "ethers";
 
 const { AddressZero } = constants;
 
-type AddressBookEntry = {
+export type AddressBookEntry = {
   address: string;
   constructorArgs?: Array<{ name: string; value: string }>;
   creationCodeHash?: string;
@@ -11,7 +11,7 @@ type AddressBookEntry = {
   txHash?: string;
 };
 
-type AddressBookJson = {
+export type AddressBookJson = {
   [chainId: string]: {
     [contractName: string]: AddressBookEntry;
   };

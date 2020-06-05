@@ -1,9 +1,0 @@
-{
-  "cacheDirectory": "../.cache",
-  "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": "../src",
-  "testEnvironment": "node",
-  "testRegex": ".spec.ts$",
-  "transform": { "^.+\\.tsx?$": "ts-jest" },
-  "testTimeout": 30000
-}
