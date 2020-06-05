@@ -484,8 +484,8 @@ export class CFCore {
           this.rpcRouter.emit(msg.type, msg, "outgoing");
         } catch (e) {
           // No need to crash the entire cfCore if we receive an invalid message.
-          // Just log & continue on our way
-          this.log.error(e.message);
+          // Just log & wait for the next one
+          this.log.error(`Failed to handle ${msg.type} message: ${e.message}`);
         }
       },
     );
