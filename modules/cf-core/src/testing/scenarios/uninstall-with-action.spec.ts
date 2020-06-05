@@ -28,9 +28,8 @@ import {
 } from "../utils";
 import { AppInstance } from "../../models";
 import { getRandomBytes32 } from "@connext/utils";
-import { HashZero } from "ethers/constants";
 
-const { One, Two, Zero } = constants;
+const { One, Two, Zero, HashZero } = constants;
 const { soliditySha256 } = utils;
 
 expect.extend({ toBeEq });

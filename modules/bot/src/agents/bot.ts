@@ -102,12 +102,12 @@ export default {
         verifyingContract,
         argv.privateKey,
       );
-      const attestation = { ...receipt, signature };
       log.info(`Unlocking transfer with signature ${signature}`);
       await client.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId: eventData.paymentId,
-        attestation,
+        responseCID: receipt.responseCID,
+        signature,
       } as PublicParams.ResolveSignedTransfer);
 
       log.info(`Unlocked transfer ${eventData.paymentId} for (${eventData.amount} ETH)`);
@@ -166,6 +166,8 @@ export default {
             signerAddress: receiverSigner,
             chainId,
             verifyingContract,
+            requestCID: receipt.requestCID,
+            subgraphDeploymentID: receipt.subgraphDeploymentID,
             assetId: AddressZero,
             recipient: receiverIdentifier,
             meta: { info: `Transfer from ${NAME}` },

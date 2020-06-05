@@ -1,6 +1,6 @@
 import { providers, utils } from "ethers";
 
-import { Address, BigNumber, Bytes32, HexString, PublicIdentifier } from "./basic";
+import { Address, BigNumber, Bytes32, HexString, PublicIdentifier, SignatureString } from "./basic";
 import { ConditionalTransferTypes, CreatedConditionalTransferMetaMap } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
 import { Attestation } from "./contracts";
@@ -110,6 +110,8 @@ type SignedTransferParameters = {
   signerAddress: Address;
   chainId: number;
   verifyingContract: Address;
+  requestCID: Bytes32;
+  subgraphDeploymentID: Bytes32;
   recipient?: PublicIdentifier;
   meta?: any;
 };
@@ -122,7 +124,8 @@ type SignedTransferResponse = {
 type ResolveSignedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.SignedTransfer;
   paymentId: Bytes32;
-  attestation: Attestation;
+  responseCID: Bytes32;
+  signature: SignatureString;
 };
 
 type ResolveSignedTransferResponse = {

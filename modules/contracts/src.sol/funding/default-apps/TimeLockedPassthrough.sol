@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.6.4;
 pragma experimental "ABIEncoderV2";
 
@@ -23,23 +24,29 @@ import "../../adjudicator/interfaces/CounterfactualApp.sol";
 ///    this contract must be set to the default outcome, so that if funding
 ///    fails halfway, the intermediary can dispute both channels safely
 contract TimeLockedPassThrough {
-  struct AppState {
-    address challengeRegistryAddress;
-    bytes32 targetAppIdentityHash;
-    uint256 switchesOutcomeAt;
-    bytes defaultOutcome;
-  }
 
-  function computeOutcome(bytes calldata encodedState) external view returns (bytes memory) {
-    AppState memory appState = abi.decode(encodedState, (AppState));
-
-    if (block.number >= appState.switchesOutcomeAt) {
-      return appState.defaultOutcome;
+    struct AppState {
+        address challengeRegistryAddress;
+        bytes32 targetAppIdentityHash;
+        uint256 switchesOutcomeAt;
+        bytes defaultOutcome;
     }
 
-    return
-      ChallengeRegistry(appState.challengeRegistryAddress).getOutcome(
-        appState.targetAppIdentityHash
-      );
-  }
+    function computeOutcome(bytes calldata encodedState)
+        external
+        view
+        returns (bytes memory)
+    {
+        AppState memory appState = abi.decode(encodedState, (AppState));
+
+        if (block.number >= appState.switchesOutcomeAt) {
+            return appState.defaultOutcome;
+        }
+
+        return ChallengeRegistry(
+            appState.challengeRegistryAddress
+        ).getOutcome(
+            appState.targetAppIdentityHash
+        );
+    }
 }
