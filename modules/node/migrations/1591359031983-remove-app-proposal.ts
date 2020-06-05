@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class removeProposalFields1591319880783 implements MigrationInterface {
-  name = "removeProposalFields1591319880783";
+export class removeAppProposal1591359031983 implements MigrationInterface {
+  name = "removeAppProposal1591359031983";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
@@ -10,14 +10,6 @@ export class removeProposalFields1591319880783 implements MigrationInterface {
     );
     await queryRunner.query(`DROP VIEW "anonymized_onchain_transaction"`, undefined);
     await queryRunner.query(`ALTER TABLE "app_instance" DROP COLUMN "initialState"`, undefined);
-    await queryRunner.query(
-      `ALTER TABLE "app_instance" RENAME COLUMN "outcomeInterpreterParameters" TO "interpreterParams"`,
-      undefined,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "app_instance" ALTER COLUMN "interpreterParams" SET NOT NULL`,
-      undefined,
-    );
     await queryRunner.query(
       `ALTER TABLE "app_instance" ALTER COLUMN "userIdentifier" SET NOT NULL`,
       undefined,
@@ -30,9 +22,17 @@ export class removeProposalFields1591319880783 implements MigrationInterface {
       `ALTER TABLE "app_instance" ALTER COLUMN "latestAction" SET NOT NULL`,
       undefined,
     );
+    await queryRunner.query(
+      `ALTER TABLE "app_instance" ALTER COLUMN "outcomeInterpreterParameters" SET NOT NULL`,
+      undefined,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(
+      `ALTER TABLE "app_instance" ALTER COLUMN "outcomeInterpreterParameters" DROP NOT NULL`,
+      undefined,
+    );
     await queryRunner.query(
       `ALTER TABLE "app_instance" ALTER COLUMN "latestAction" DROP NOT NULL`,
       undefined,
@@ -43,14 +43,6 @@ export class removeProposalFields1591319880783 implements MigrationInterface {
     );
     await queryRunner.query(
       `ALTER TABLE "app_instance" ALTER COLUMN "userIdentifier" DROP NOT NULL`,
-      undefined,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "app_instance" ALTER COLUMN "interpreterParams" DROP NOT NULL`,
-      undefined,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "app_instance" RENAME COLUMN "interpreterParams" TO "outcomeInterpreterParameters"`,
       undefined,
     );
     await queryRunner.query(
