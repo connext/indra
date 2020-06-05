@@ -78,7 +78,7 @@ export class AppActionsService {
     const commitment = await this.cfCoreService.createWithdrawCommitment(
       {
         amount: state.transfers[0].amount,
-        assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+        assetId: appInstance.interpreterParams["tokenAddress"],
         recipient: this.cfCoreService.cfCore.signerAddress,
         nonce: state.nonce,
       },

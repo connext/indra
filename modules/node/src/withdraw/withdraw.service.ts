@@ -67,7 +67,7 @@ export class WithdrawService {
     const generatedCommitment = await this.cfCoreService.createWithdrawCommitment(
       {
         amount: state.transfers[0].amount,
-        assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+        assetId: appInstance.interpreterParams["tokenAddress"],
         recipient: state.transfers[0].to,
         nonce: state.nonce,
       } as PublicParams.Withdraw,

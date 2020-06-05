@@ -1,10 +1,4 @@
-import {
-  AppInstanceJson,
-  AppInstanceJson,
-  OutcomeType,
-  SimpleLinkedTransferAppName,
-  AppState,
-} from "@connext/types";
+import { AppInstanceJson, SimpleLinkedTransferAppName, AppState } from "@connext/types";
 import { constants } from "ethers";
 import { getSignerAddressFromPublicIdentifier, safeJsonParse } from "@connext/utils";
 import { EntityRepository, Repository } from "typeorm";
@@ -20,34 +14,9 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
   if (!app) {
     return undefined;
   }
-  // interpreter params
-  let multiAssetMultiPartyCoinTransferInterpreterParams = null;
-  let singleAssetTwoPartyCoinTransferInterpreterParams = null;
-  let twoPartyOutcomeInterpreterParams = null;
-
-  switch (OutcomeType[app.outcomeType]) {
-    case OutcomeType.TWO_PARTY_FIXED_OUTCOME:
-      twoPartyOutcomeInterpreterParams = safeJsonParse(app.outcomeInterpreterParameters);
-      break;
-
-    case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
-      multiAssetMultiPartyCoinTransferInterpreterParams = safeJsonParse(
-        app.outcomeInterpreterParameters,
-      );
-      break;
-
-    case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
-      singleAssetTwoPartyCoinTransferInterpreterParams = safeJsonParse(
-        app.outcomeInterpreterParameters,
-      );
-      break;
-
-    default:
-      throw new Error(`Unrecognized outcome type: ${OutcomeType[app.outcomeType]}`);
-  }
   const json: AppInstanceJson = {
     appDefinition: app.appDefinition,
-    abiEncodings: {stateEncoding: app.stateEncoding, actionEncoding: app.actionEncoding || null},
+    abiEncodings: { stateEncoding: app.stateEncoding, actionEncoding: app.actionEncoding || null },
     appSeqNo: app.appSeqNo,
     defaultTimeout: app.defaultTimeout,
     identityHash: app.identityHash,
@@ -58,66 +27,14 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
     outcomeType: app.outcomeType,
     initiatorIdentifier: app.initiatorIdentifier,
     responderIdentifier: app.responderIdentifier,
-    multiAssetMultiPartyCoinTransferInterpreterParams,
-    singleAssetTwoPartyCoinTransferInterpreterParams,
-    twoPartyOutcomeInterpreterParams,
+    interpreterParams: safeJsonParse(app.outcomeInterpreterParameters),
     meta: app.meta,
+    initiatorDeposit: app.initiatorDeposit.toString(),
+    initiatorDepositAssetId: app.initiatorDepositAssetId,
+    responderDeposit: app.responderDeposit.toString(),
+    responderDepositAssetId: app.responderDepositAssetId,
   };
   return json;
-};
-
-export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceJson => {
-  if (!app) {
-    return undefined;
-  }
-  // interpreter params
-  let multiAssetMultiPartyCoinTransferInterpreterParams = undefined;
-  let singleAssetTwoPartyCoinTransferInterpreterParams = undefined;
-  let twoPartyOutcomeInterpreterParams = undefined;
-
-  switch (OutcomeType[app.outcomeType]) {
-    case OutcomeType.TWO_PARTY_FIXED_OUTCOME:
-      twoPartyOutcomeInterpreterParams = safeJsonParse(app.outcomeInterpreterParameters);
-      break;
-
-    case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
-      multiAssetMultiPartyCoinTransferInterpreterParams = safeJsonParse(
-        app.outcomeInterpreterParameters,
-      );
-      break;
-
-    case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
-      singleAssetTwoPartyCoinTransferInterpreterParams = safeJsonParse(
-        app.outcomeInterpreterParameters,
-      );
-      break;
-
-    default:
-      throw new Error(`Unrecognized outcome type: ${OutcomeType[app.outcomeType]}`);
-  }
-  return {
-    abiEncodings: {
-      stateEncoding: app.stateEncoding,
-      actionEncoding: app.actionEncoding,
-    },
-    appDefinition: app.appDefinition,
-    appSeqNo: app.appSeqNo,
-    identityHash: app.identityHash,
-    initialState: app.initialState,
-    initiatorDeposit: app.initiatorDeposit.toHexString(),
-    initiatorDepositAssetId: app.initiatorDepositAssetId,
-    outcomeType: app.outcomeType,
-    initiatorIdentifier: app.initiatorIdentifier,
-    responderIdentifier: app.responderIdentifier,
-    responderDeposit: app.responderDeposit.toHexString(),
-    responderDepositAssetId: app.responderDepositAssetId,
-    defaultTimeout: app.defaultTimeout,
-    stateTimeout: app.stateTimeout,
-    multiAssetMultiPartyCoinTransferInterpreterParams,
-    singleAssetTwoPartyCoinTransferInterpreterParams,
-    twoPartyOutcomeInterpreterParams,
-    meta: app.meta,
-  };
 };
 
 @EntityRepository(AppInstance)
@@ -154,7 +71,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     if (!app || app.type !== AppType.PROPOSAL) {
       return undefined;
     }
-    return convertAppToProposedInstanceJSON(app);
+    return convertAppToInstanceJSON(app, app.channel);
   }
 
   async getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined> {

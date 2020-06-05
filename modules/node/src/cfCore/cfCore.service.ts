@@ -3,7 +3,6 @@ import { DEFAULT_APP_TIMEOUT, WithdrawCommitment } from "@connext/apps";
 import {
   AppAction,
   AppInstanceJson,
-  AppInstanceJson,
   AssetId,
   ConnextNodeStorePrefix,
   CONVENTION_FOR_ETH_ASSET_ID,

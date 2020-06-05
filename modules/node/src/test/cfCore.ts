@@ -1,6 +1,5 @@
 import {
   AppInstanceJson,
-  AppInstanceJson,
   ChallengeStatus,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
@@ -37,11 +36,11 @@ export const createAppInstanceJson = (
   overrides: Partial<AppInstanceJson> = {},
 ): AppInstanceJson => {
   return {
-    appInterface: {
+    abiEncodings: {
       actionEncoding: null,
-      addr: AddressZero,
       stateEncoding: "",
     },
+    appDefinition: AddressZero,
     appSeqNo: 0,
     defaultTimeout: Zero.toHexString(),
     identityHash: generateRandomBytes32(),
@@ -52,37 +51,11 @@ export const createAppInstanceJson = (
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
     initiatorIdentifier: generateRandomIdentifier(),
     responderIdentifier: generateRandomIdentifier(),
-    multiAssetMultiPartyCoinTransferInterpreterParams: null,
-    singleAssetTwoPartyCoinTransferInterpreterParams: null,
-    twoPartyOutcomeInterpreterParams: null,
-    ...overrides,
-  };
-};
-
-export const createAppInstanceJson = (
-  overrides: Partial<AppInstanceJson> = {},
-): AppInstanceJson => {
-  return {
-    appDefinition: AddressZero,
-    appSeqNo: 0,
-    identityHash: generateRandomBytes32(),
-    abiEncodings: {
-      actionEncoding: "",
-      stateEncoding: "",
-    },
-    initialState: {},
-    initiatorDeposit: "0x00",
+    interpreterParams: {} as any,
+    initiatorDeposit: Zero.toString(),
     initiatorDepositAssetId: AddressZero,
-    initiatorIdentifier: generateRandomIdentifier(),
-    responderIdentifier: generateRandomIdentifier(),
-    responderDeposit: "0x00",
+    responderDeposit: Zero.toString(),
     responderDepositAssetId: AddressZero,
-    defaultTimeout: "0x00",
-    stateTimeout: "0x00",
-    multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
-    singleAssetTwoPartyCoinTransferInterpreterParams: null,
-    twoPartyOutcomeInterpreterParams: undefined,
-    outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
     ...overrides,
   };
 };

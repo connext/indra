@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import {
   AppInstanceJson,
-  AppInstanceJson,
   AppState,
   ChallengeEvents,
   ChallengeStatus,
@@ -158,18 +157,19 @@ export class CFCoreStore implements IStoreService {
     const nodeId = participants.find((p) => p === nodeIdentifier);
     const {
       identityHash,
-      appInterface: { stateEncoding, actionEncoding, addr },
+      abiEncodings: { stateEncoding, actionEncoding },
       outcomeType,
       latestState,
       stateTimeout,
       defaultTimeout,
       latestVersionNumber,
       appSeqNo,
+      appDefinition,
     } = freeBalanceAppInstance;
 
     const freeBalanceApp = new AppInstance();
     freeBalanceApp.identityHash = identityHash;
-    freeBalanceApp.appDefinition = addr;
+    freeBalanceApp.appDefinition = appDefinition;
     freeBalanceApp.stateEncoding = stateEncoding;
     freeBalanceApp.actionEncoding = actionEncoding;
     freeBalanceApp.outcomeType = OutcomeType[outcomeType];
@@ -251,10 +251,6 @@ export class CFCoreStore implements IStoreService {
       stateTimeout,
       latestVersionNumber,
       meta,
-      outcomeType,
-      twoPartyOutcomeInterpreterParams,
-      multiAssetMultiPartyCoinTransferInterpreterParams,
-      singleAssetTwoPartyCoinTransferInterpreterParams,
     } = appJson;
     const proposal = await this.appInstanceRepository.findByIdentityHashOrThrow(identityHash);
 
@@ -271,24 +267,6 @@ export class CFCoreStore implements IStoreService {
     proposal.latestState = latestState;
     proposal.stateTimeout = stateTimeout;
     proposal.latestVersionNumber = latestVersionNumber;
-
-    // interpreter params
-    switch (OutcomeType[outcomeType]) {
-      case OutcomeType.TWO_PARTY_FIXED_OUTCOME:
-        proposal.outcomeInterpreterParameters = twoPartyOutcomeInterpreterParams;
-        break;
-
-      case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
-        proposal.outcomeInterpreterParameters = multiAssetMultiPartyCoinTransferInterpreterParams;
-        break;
-
-      case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
-        proposal.outcomeInterpreterParameters = singleAssetTwoPartyCoinTransferInterpreterParams;
-        break;
-
-      default:
-        throw new Error(`Unrecognized outcome type: ${OutcomeType[outcomeType]}`);
-    }
 
     await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.save(proposal);
@@ -453,8 +431,7 @@ export class CFCoreStore implements IStoreService {
     app.initiatorIdentifier = appProposal.initiatorIdentifier;
     app.outcomeType = appProposal.outcomeType;
     app.meta = appProposal.meta;
-    app.initialState = appProposal.initialState;
-    app.latestState = appProposal.initialState;
+    app.latestState = appProposal.latestState;
     app.latestVersionNumber = 0;
     app.channel = channel;
 
