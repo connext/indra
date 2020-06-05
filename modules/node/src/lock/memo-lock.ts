@@ -130,10 +130,14 @@ export class MemoLock {
     });
 
     this.pulseTimer = setInterval(() => {
-      this.redis.pulseMemolock().catch((e) => {
+      this.pulse().catch((e) => {
         this.log.error(`Error pulsing memolock: ${e.message}\n${e.stack}`);
       });
     }, this.pulseInterval);
+  }
+
+  async pulse() {
+    return this.redis.pulseMemolock();
   }
 
   async stopSubs() {

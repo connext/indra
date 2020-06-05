@@ -9,7 +9,6 @@ import {expect} from '../test/utils';
 
 describe('MemoLock', () => {
   let redis: Redis.Redis;
-  let module: MemoLock;
   let log: LoggerService;
 
   before(async () => {
@@ -25,60 +24,76 @@ describe('MemoLock', () => {
 
   beforeEach(async () => {
     await redis.flushall();
-    module = new MemoLock(log, redis, 5, 1000, 100);
-    await module.setupSubs();
   });
 
-  after(async () => {
-    await module.stopSubs();
-  });
+  describe('with a common lock', () => {
+    let module: MemoLock;
 
-  it('should allow locking to occur', async () => {
-    const lock = await module.acquireLock('foo');
-    const start = Date.now();
-    setTimeout(() => {
-      module.releaseLock('foo', lock);
-    }, 100);
-    const nextLock = await module.acquireLock('foo');
-    expect(Date.now() - start).to.be.at.least(100);
-    await module.releaseLock('foo', nextLock);
-  });
+    beforeEach(async () => {
+      module = new MemoLock(log, redis, 5, 1000, 100);
+      await module.setupSubs();
+    });
 
-  it('should enforce the queue size', async () => {
-    await module.acquireLock('foo');
-    for (let i = 0; i < 4; i++) {
-      module.acquireLock('foo').catch(console.error.bind(console, 'Error acquiring lock:'));
-    }
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    try {
+    afterEach(async () => {
+      await module.stopSubs();
+    });
+
+    it('should allow locking to occur', async () => {
+      const lock = await module.acquireLock('foo');
+      const start = Date.now();
+      setTimeout(() => {
+        module.releaseLock('foo', lock);
+      }, 100);
+      const nextLock = await module.acquireLock('foo');
+      expect(Date.now() - start).to.be.at.least(100);
+      await module.releaseLock('foo', nextLock);
+    });
+
+    it('should enforce the queue size', async () => {
       await module.acquireLock('foo');
-    } catch (e) {
-      expect(e.message).to.contain('is full');
-      return;
-    }
-    throw new Error('expected an error');
-  });
+      for (let i = 0; i < 4; i++) {
+        module.acquireLock('foo').catch(console.error.bind(console, 'Error acquiring lock:'));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      try {
+        await module.acquireLock('foo');
+      } catch (e) {
+        expect(e.message).to.contain('is full');
+        return;
+      }
+      throw new Error('expected an error');
+    });
 
-  it('should handle deadlocks', async () => {
-    await module.acquireLock('foo');
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    const lock = await module.acquireLock('foo');
-    await module.releaseLock('foo', lock);
+    it('should handle deadlocks', async () => {
+      await module.acquireLock('foo');
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      const lock = await module.acquireLock('foo');
+      await module.releaseLock('foo', lock);
+    });
   });
 
   it('should expire locks in TTL order', async () => {
-    await module.acquireLock('foo');
+    let customModule = new MemoLock(log, redis, 5, 1000, 10000);
+    await customModule.setupSubs();
+    await customModule.acquireLock('foo');
     let err: Error;
     let done = false;
-    setTimeout(() => module.acquireLock('foo').then(() => console.log('lock was unlocked - should not happen'))
+    customModule.acquireLock('foo')
+      .then(() => console.error(`Lock was unlocked - should not happen!`))
       .catch((e) => {
         err = e;
-      }), 0);
-    setTimeout(() => module.acquireLock('foo').then(() => {
+      });
+    setTimeout(() => customModule.acquireLock('foo').then(() => {
       done = true;
-    }).catch((e) => console.error(`Caught error acquiring lock: ${e}`)), 900);
+    }).catch((e) => console.error(`Caught error acquiring lock: ${e.message}\n${e.stack}`)), 500);
+    setTimeout(
+      () => customModule.pulse()
+        .catch((e) => console.error(`Caught error pulsing: ${e.message}\n${e.stack}`)),
+      1200,
+    );
     await new Promise((resolve, reject) => setTimeout(() => {
       try {
+        expect(err).not.to.be.undefined;
         expect(err!.message).to.contain('expired after');
         expect(done).to.be.true;
         resolve();
@@ -86,5 +101,6 @@ describe('MemoLock', () => {
         reject(e);
       }
     }, 2000));
+    await customModule.stopSubs();
   });
 });
