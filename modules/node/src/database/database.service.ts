@@ -111,6 +111,12 @@ export const migrations = [
 export class TypeOrmConfigService implements TypeOrmOptionsFactory {
   constructor(private readonly config: ConfigService) {}
   createTypeOrmOptions(): TypeOrmModuleOptions {
+    const redisUrl = this.config.getRedisUrl().replace('redis://', '');
+    const hostPort = redisUrl.split(':');
+    if (hostPort.length !== 2) {
+      throw new Error('Invalid redis URL.');
+    }
+
     return {
       ...this.config.getPostgresConfig(),
       entities,
@@ -122,8 +128,8 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
       cache: {
         type: 'ioredis',
         options: {
-          host: 'redis',
-          port: 6379
+          host: hostPort[0],
+          port: Number(hostPort[1]),
         }
       }
     };
