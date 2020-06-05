@@ -203,7 +203,7 @@ describe.skip("Swap offline", () => {
     await (providedClient.messaging as TestMessagingService)!.subscribe(
       `${providedClient.nodeIdentifier}.channel.${providedClient.multisigAddress}.app-instance.*.install`,
       async (msg: any) => {
-        const { appInterface } = msg.data;
+        const { appDefinition } = msg.data;
         if (appDefinition !== swapAppAddr) {
           return;
         }
