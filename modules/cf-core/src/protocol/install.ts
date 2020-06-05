@@ -11,6 +11,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   logTime,
   stringify,
+  toBN,
 } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -52,41 +53,36 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     log.info(`[${processID}] Initiation started`);
     log.debug(`[${processID}] Protocol initiated with parameters ${stringify(params)}`);
 
-    if (!preProtocolStateChannel) throw new Error("No state channel found for install");
+    if (!preProtocolStateChannel) {
+      throw new Error("No state channel found for install");
+    }
 
-    const {
-      initiatorBalanceDecrement,
-      initiatorDepositAssetId,
-      initiatorIdentifier,
-      responderBalanceDecrement,
-      responderDepositAssetId,
-      responderIdentifier,
-    } = params as ProtocolParams.Install;
+    const { proposal: proposalJson, responderIdentifier } = params as ProtocolParams.Install;
+
+    const proposal = AppInstance.fromJson(proposalJson);
 
     // 0ms
     assertSufficientFundsWithinFreeBalance(
       preProtocolStateChannel,
-      initiatorIdentifier,
-      getAddressFromAssetId(initiatorDepositAssetId),
-      initiatorBalanceDecrement,
+      proposal.initiatorIdentifier,
+      getAddressFromAssetId(proposal.initiatorDepositAssetId),
+      toBN(proposal.initiatorDeposit),
     );
 
     // 0ms
     assertSufficientFundsWithinFreeBalance(
       preProtocolStateChannel,
-      responderIdentifier,
-      getAddressFromAssetId(responderDepositAssetId),
-      responderBalanceDecrement,
+      proposal.responderIdentifier,
+      getAddressFromAssetId(proposal.responderDepositAssetId),
+      toBN(proposal.responderDeposit),
     );
 
     const stateChannelAfter = computeInstallStateChannelTransition(
       preProtocolStateChannel,
-      params as ProtocolParams.Install,
+      proposal,
     );
 
-    const newAppInstance = stateChannelAfter.getAppInstanceByAppSeqNo(
-      (params as ProtocolParams.Install).appSeqNo,
-    );
+    const newAppInstance = stateChannelAfter.getAppInstance(proposal.identityHash);
 
     // safe to do here, nothing is signed or written to store
     const error = yield [
@@ -202,46 +198,36 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // Aliasing `signature` to this variable name for code clarity
     const counterpartySignatureOnFreeBalanceStateUpdate = signature;
 
-    const {
-      initiatorBalanceDecrement,
-      initiatorDepositAssetId,
-      initiatorIdentifier,
-      responderBalanceDecrement,
-      responderDepositAssetId,
-      responderIdentifier,
-    } = params as ProtocolParams.Install;
-
     if (!preProtocolStateChannel) {
       throw new Error("No state channel found for install");
     }
 
-    // 1ms
+    const { proposal: proposalJson, initiatorIdentifier } = params as ProtocolParams.Install;
+
+    const proposal = AppInstance.fromJson(proposalJson);
+
+    // 0ms
     assertSufficientFundsWithinFreeBalance(
       preProtocolStateChannel,
-      initiatorIdentifier,
-      getAddressFromAssetId(initiatorDepositAssetId),
-      initiatorBalanceDecrement,
+      proposal.initiatorIdentifier,
+      getAddressFromAssetId(proposal.initiatorDepositAssetId),
+      toBN(proposal.initiatorDeposit),
     );
 
     // 0ms
     assertSufficientFundsWithinFreeBalance(
       preProtocolStateChannel,
-      responderIdentifier,
-      getAddressFromAssetId(responderDepositAssetId),
-      responderBalanceDecrement,
+      proposal.responderIdentifier,
+      getAddressFromAssetId(proposal.responderDepositAssetId),
+      toBN(proposal.responderDeposit),
     );
 
     const stateChannelAfter = computeInstallStateChannelTransition(
       preProtocolStateChannel,
-      params as ProtocolParams.Install,
+      proposal,
     );
 
-    // 0ms
-    const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
-
-    const newAppInstance = stateChannelAfter.getAppInstanceByAppSeqNo(
-      (params as ProtocolParams.Install).appSeqNo,
-    );
+    const newAppInstance = stateChannelAfter.getAppInstance(proposal.identityHash);
 
     // safe to do here, nothing is signed or written to store
     const error = yield [
@@ -262,10 +248,11 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 7ms
     // multisig owner always signs conditional tx
+    const protocolInitiatorAddr = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
     const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
     const freeBalanceUpdateDataHash = freeBalanceUpdateData.hashToSign();
     await assertIsValidSignature(
-      initiatorSignerAddress,
+      protocolInitiatorAddr,
       freeBalanceUpdateDataHash,
       counterpartySignatureOnFreeBalanceStateUpdate,
       `Failed to validate initiators signature on conditional transaction commitment in the install protocol. Our commitment: ${stringify(
@@ -278,7 +265,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateDataHash];
 
     // add signature
-    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== initiatorSignerAddress;
+    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== protocolInitiatorAddr;
     await freeBalanceUpdateData.addSignatures(
       isChannelInitiator
         ? (mySignatureOnFreeBalanceStateUpdate as any)
@@ -324,52 +311,17 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
  * StateChannel after the protocol would be executed with correct signatures.
  *
  * @param {StateChannel} stateChannel - The pre-protocol state of the channel
- * @param {ProtocolParams.Install} params - Parameters about the new AppInstance
- *
  * @returns {Promise<StateChannel>} - The post-protocol state of the channel
  */
 function computeInstallStateChannelTransition(
   stateChannel: StateChannel,
-  params: ProtocolParams.Install,
+  proposal: AppInstance,
 ): StateChannel {
-  const {
-    initiatorBalanceDecrement,
-    responderBalanceDecrement,
-    initiatorDepositAssetId,
-    responderDepositAssetId,
-    appInitiatorIdentifier,
-    initiatorIdentifier,
-  } = params;
+  const initiatorDepositTokenAddress = getAddressFromAssetId(proposal.initiatorDepositAssetId);
+  const responderDepositTokenAddress = getAddressFromAssetId(proposal.responderDepositAssetId);
 
-  // initiator in params context corr to protocol initiator
-  // retrieve app-specific values for interpreter params, etc.
-  const appInitiatorFbAddress = stateChannel.getFreeBalanceAddrOf(appInitiatorIdentifier);
-  const isSame = appInitiatorIdentifier === initiatorIdentifier;
-  const appInitiatorAssetId = isSame ? initiatorDepositAssetId : responderDepositAssetId;
-  const appResponderAssetId = isSame ? responderDepositAssetId : initiatorDepositAssetId;
-  const appInitiatorBalanceDecrement = isSame
-    ? initiatorBalanceDecrement
-    : responderBalanceDecrement;
-  const appResponderBalanceDecrement = isSame
-    ? responderBalanceDecrement
-    : initiatorBalanceDecrement;
-
-  // make sure the addresses mirror the free balance addresses of
-  // the channel
-  const channelInitiatorFbAddress = stateChannel.multisigOwners[0];
-  const channelResponderFbAddress = stateChannel.multisigOwners[1];
-  const sameChannelAndAppOrdering = channelInitiatorFbAddress === appInitiatorFbAddress;
-
-  const proposal = stateChannel.proposedAppInstances.get(params.identityHash);
-  if (!proposal) {
-    throw new Error("There should be a proposal here, we got it before. Wtf?");
-  }
-
-  const appInstanceToBeInstalled = AppInstance.fromJson(proposal);
-
-  // does not matter for asset ids
-  const initiatorDepositTokenAddress = getAddressFromAssetId(appInitiatorAssetId);
-  const responderDepositTokenAddress = getAddressFromAssetId(appResponderAssetId);
+  const sameChannelAndAppOrdering =
+    proposal.initiatorIdentifier === stateChannel.freeBalance.initiatorIdentifier;
 
   let tokenIndexedBalanceDecrement: TokenIndexedCoinTransferMap;
   if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
@@ -379,14 +331,14 @@ function computeInstallStateChannelTransition(
     ];
     tokenIndexedBalanceDecrement = {
       [keys[0]]: {
-        [channelInitiatorFbAddress]: sameChannelAndAppOrdering
-          ? appInitiatorBalanceDecrement
-          : appResponderBalanceDecrement,
+        [stateChannel.multisigOwners[0]]: sameChannelAndAppOrdering
+          ? toBN(proposal.initiatorDeposit)
+          : toBN(proposal.responderDeposit),
       },
       [keys[1]]: {
-        [channelResponderFbAddress]: sameChannelAndAppOrdering
-          ? appResponderBalanceDecrement
-          : appInitiatorBalanceDecrement,
+        [stateChannel.multisigOwners[1]]: sameChannelAndAppOrdering
+          ? toBN(proposal.responderDeposit)
+          : toBN(proposal.initiatorDeposit),
       },
     };
   } else {
@@ -395,15 +347,15 @@ function computeInstallStateChannelTransition(
     // `initiatingFbAddress` would get overwritten
     tokenIndexedBalanceDecrement = {
       [initiatorDepositTokenAddress]: {
-        [channelInitiatorFbAddress]: sameChannelAndAppOrdering
-          ? appInitiatorBalanceDecrement
-          : appResponderBalanceDecrement,
-        [channelResponderFbAddress]: sameChannelAndAppOrdering
-          ? appResponderBalanceDecrement
-          : appInitiatorBalanceDecrement,
+        [stateChannel.multisigOwners[0]]: sameChannelAndAppOrdering
+          ? toBN(proposal.initiatorDeposit)
+          : toBN(proposal.responderDeposit),
+        [stateChannel.multisigOwners[1]]: sameChannelAndAppOrdering
+          ? toBN(proposal.responderDeposit)
+          : toBN(proposal.initiatorDeposit),
       },
     };
   }
 
-  return stateChannel.installApp(appInstanceToBeInstalled, tokenIndexedBalanceDecrement);
+  return stateChannel.installApp(proposal, tokenIndexedBalanceDecrement);
 }

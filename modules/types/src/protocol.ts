@@ -1,35 +1,13 @@
-import { AppABIEncodings } from "./app";
+import { AppABIEncodings, AppInstanceJson } from "./app";
 import { Address, BigNumber, Bytes32, AssetId, PublicIdentifier, SolidityValueType } from "./basic";
 import { OutcomeType } from "./contracts";
 import { enumify } from "./utils";
 
 type InstallProtocolParams = {
-  identityHash: Bytes32;
-  initiatorIdentifier: PublicIdentifier;
-  initiatorDepositAssetId: Address;
-  responderIdentifier: PublicIdentifier;
-  responderDepositAssetId: Address;
+  initiatorIdentifier: PublicIdentifier; // protocol-specific
+  responderIdentifier: PublicIdentifier; // protocol-specific
+  proposal: AppInstanceJson;
   multisigAddress: Address;
-  initiatorBalanceDecrement: BigNumber;
-  responderBalanceDecrement: BigNumber;
-  initialState: SolidityValueType;
-  abiEncodings: AppABIEncodings;
-  appDefinition: Address;
-  meta?: Object;
-  defaultTimeout: BigNumber;
-  stateTimeout: BigNumber;
-  appSeqNo: number;
-  // Outcome Type returned by the app instance, as defined by `appInterface`
-  outcomeType: OutcomeType;
-  // By default, the SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER interpreter params
-  // contains a "limit" that is computed as
-  // `initiatorBalanceDecrement + responderBalanceDecrement`; setting this
-  // flag disables the limit by setting it to MAX_UINT256
-  disableLimit: boolean;
-  // these are set during the proposal for the app instance
-  // set state commitment generation
-  appInitiatorIdentifier: string;
-  appResponderIdentifier: string;
 };
 
 type ProposeProtocolParams = {
