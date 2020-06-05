@@ -9,6 +9,7 @@ import {
   WithdrawAppName,
   WithdrawAppState,
   TransactionReceipt,
+  SingleAssetTwoPartyCoinTransferInterpreterParams,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
@@ -67,7 +68,8 @@ export class WithdrawService {
     const generatedCommitment = await this.cfCoreService.createWithdrawCommitment(
       {
         amount: state.transfers[0].amount,
-        assetId: appInstance.interpreterParams["tokenAddress"],
+        assetId: (appInstance.outcomeInterpreterParameters as SingleAssetTwoPartyCoinTransferInterpreterParams)
+          .tokenAddress,
         recipient: state.transfers[0].to,
         nonce: state.nonce,
       } as PublicParams.Withdraw,

@@ -127,7 +127,7 @@ export class WithdrawalController extends AbstractController {
 
     const generatedCommitment = await this.createWithdrawCommitment({
       amount: state.transfers[0].amount,
-      assetId: appInstance.interpreterParams["tokenAddress"],
+      assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
       recipient: state.transfers[0].to,
       nonce: state.nonce,
     } as PublicParams.Withdraw);

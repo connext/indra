@@ -1,4 +1,16 @@
-import { AppActions, AppStates, AppName, HexString, OutcomeType } from "@connext/types";
+import {
+  AppActions,
+  AppStates,
+  AppName,
+  HexString,
+  OutcomeType,
+  MultiAssetMultiPartyCoinTransferInterpreterParams,
+  TwoPartyFixedOutcomeInterpreterParams,
+  SingleAssetTwoPartyCoinTransferInterpreterParams,
+  TwoPartyFixedOutcomeInterpreterParamsJson,
+  MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
+  SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
+} from "@connext/types";
 import { utils } from "ethers";
 import {
   Entity,
@@ -104,7 +116,10 @@ export class AppInstance<T extends AppName = any> {
   latestAction!: AppActions[T];
 
   @Column("jsonb")
-  interpreterParams!: any;
+  outcomeInterpreterParameters!:
+    | TwoPartyFixedOutcomeInterpreterParamsJson
+    | MultiAssetMultiPartyCoinTransferInterpreterParamsJson
+    | SingleAssetTwoPartyCoinTransferInterpreterParamsJson;
 
   @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances)
   channel!: Channel;

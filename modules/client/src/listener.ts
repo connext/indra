@@ -438,7 +438,7 @@ export class ConnextListener {
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.LinkedTransfer,
           amount: transferAmount,
-          assetId: appInstance.interpreterParams["tokenAddress"],
+          assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
           paymentId: appInstance.meta.paymentId,
           sender: appInstance.meta.sender,
           recipient: appInstance.meta.recipient,
@@ -458,7 +458,7 @@ export class ConnextListener {
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.HashLockTransfer,
           amount: transferAmount,
-          assetId: appInstance.interpreterParams["tokenAddress"],
+          assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
           paymentId: HashZero,
           sender: appInstance.meta.sender,
           recipient: appInstance.meta.recipient,
@@ -479,7 +479,7 @@ export class ConnextListener {
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.SignedTransfer,
           amount: transferAmount,
-          assetId: appInstance.interpreterParams["tokenAddress"],
+          assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
           paymentId: transferState.paymentId,
           sender: appInstance.meta.sender,
           recipient: appInstance.meta.recipient,
@@ -523,7 +523,7 @@ export class ConnextListener {
         const params = {
           amount: withdrawState.transfers[0].amount,
           recipient: withdrawState.transfers[0].to,
-          assetId: appInstance.interpreterParams["tokenAddress"],
+          assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
           nonce: withdrawState.nonce,
         };
         await this.connext.saveWithdrawCommitmentToStore(params, withdrawState.signatures);

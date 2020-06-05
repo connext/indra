@@ -18,7 +18,6 @@ import {
   getRandomBytes32,
   getRandomIdentifier,
   getRandomSignature,
-  toBN,
 } from "@connext/utils";
 import { constants } from "ethers";
 
@@ -47,6 +46,7 @@ export const createAppInstanceJson = (
     initiatorDepositAssetId: AddressZero,
     responderDeposit: Zero.toString(),
     responderDepositAssetId: AddressZero,
+    stateTimeout: Zero.toHexString(),
     ...overrides,
   };
 };

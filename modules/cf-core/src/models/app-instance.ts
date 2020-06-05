@@ -71,7 +71,7 @@ export class AppInstance {
     public readonly defaultTimeout: HexString,
     public readonly stateTimeout: HexString,
     public readonly outcomeType: OutcomeType,
-    private readonly interpreterParamsInternal:
+    private readonly outcomeInterpreterParametersInternal:
       | TwoPartyFixedOutcomeInterpreterParams
       | MultiAssetMultiPartyCoinTransferInterpreterParams
       | SingleAssetTwoPartyCoinTransferInterpreterParams,
@@ -79,8 +79,8 @@ export class AppInstance {
     public readonly latestAction?: any,
   ) {}
 
-  get interpreterParams() {
-    return this.interpreterParamsInternal!;
+  get outcomeInterpreterParameters() {
+    return this.outcomeInterpreterParametersInternal!;
   }
 
   public static fromJson(json: AppInstanceJson) {
@@ -102,7 +102,7 @@ export class AppInstance {
       deserialized.defaultTimeout,
       deserialized.stateTimeout,
       deserialized.outcomeType,
-      bigNumberifyJson(deserialized.interpreterParams),
+      bigNumberifyJson(deserialized.outcomeInterpreterParameters),
       deserialized.meta,
       deserialized.latestAction,
     );
@@ -131,7 +131,7 @@ export class AppInstance {
       outcomeType: this.outcomeType,
       meta: this.meta,
       latestAction: this.latestAction,
-      interpreterParams: this.interpreterParamsInternal,
+      outcomeInterpreterParameters: this.outcomeInterpreterParametersInternal,
     });
   }
 
@@ -175,21 +175,21 @@ export class AppInstance {
       case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
         return defaultAbiCoder.encode(
           [singleAssetTwoPartyCoinTransferInterpreterParamsEncoding],
-          [this.interpreterParamsInternal],
+          [this.outcomeInterpreterParametersInternal],
         );
       }
 
       case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
         return defaultAbiCoder.encode(
           [multiAssetMultiPartyCoinTransferInterpreterParamsEncoding],
-          [this.interpreterParamsInternal],
+          [this.outcomeInterpreterParametersInternal],
         );
       }
 
       case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
         return defaultAbiCoder.encode(
           [twoPartyFixedOutcomeInterpreterParamsEncoding],
-          [this.interpreterParamsInternal],
+          [this.outcomeInterpreterParametersInternal],
         );
       }
 

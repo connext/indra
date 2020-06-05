@@ -33,7 +33,7 @@ export type AppInstanceJson = {
   outcomeType: OutcomeType;
   meta?: any;
   latestAction?: any;
-  interpreterParams:
+  outcomeInterpreterParameters:
     | TwoPartyFixedOutcomeInterpreterParamsJson
     | MultiAssetMultiPartyCoinTransferInterpreterParamsJson
     | SingleAssetTwoPartyCoinTransferInterpreterParamsJson;

@@ -45,7 +45,7 @@ export class ResolveTransferController extends AbstractController {
       appIdentityHash = existingReceiverApp.identityHash;
       amount = (existingReceiverApp.latestState as GenericConditionalTransferAppState)
         .coinTransfers[0].amount;
-      assetId = existingReceiverApp.interpreterParams["tokenAddress"];
+      assetId = existingReceiverApp.outcomeInterpreterParameters["tokenAddress"];
       meta = existingReceiverApp.meta;
     }
 

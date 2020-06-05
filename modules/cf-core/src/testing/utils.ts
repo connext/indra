@@ -45,7 +45,7 @@ import { initialEmptyTTTState, tttAbiEncodings } from "./tic-tac-toe";
 import { toBeEq } from "./bignumber-jest-matcher";
 
 const { AddressZero, One, Zero } = constants;
-const { bigNumberify, getAddress, hexlify, randomBytes } = utils;
+const { bigNumberify } = utils;
 
 expect.extend({ toBeEq });
 
@@ -70,7 +70,7 @@ export function createAppInstanceJsonForTest(
   appIdentityHash: string,
   stateChannel?: StateChannel,
 ): AppInstanceJson {
-  return createAppInstanceForTest(stateChannel).toJson()
+  return createAppInstanceForTest(stateChannel).toJson();
 }
 
 export function createAppInstanceForTest(stateChannel?: StateChannel) {
@@ -100,12 +100,12 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
     latestVersionNumber: 10,
     appSeqNo: stateChannel ? stateChannel.numProposedApps : Math.ceil(1000 * Math.random()),
     outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-    interpreterParams: {
+    outcomeInterpreterParameters: {
       playerAddrs: [AddressZero, AddressZero],
       amount: bigNumberifyJson(Zero),
       tokenAddress: AddressZero,
     },
-  })
+  });
 }
 
 export async function requestDepositRights(
@@ -575,19 +575,11 @@ export function confirmProposedAppInstance(
   expect(proposalParams.appDefinition).toEqual(AppInstanceJson.appDefinition);
 
   if (nonInitiatingNode) {
-    expect(proposalParams.initiatorDeposit).toEqual(
-      bigNumberify(AppInstanceJson.responderDeposit),
-    );
-    expect(proposalParams.responderDeposit).toEqual(
-      bigNumberify(AppInstanceJson.initiatorDeposit),
-    );
+    expect(proposalParams.initiatorDeposit).toEqual(bigNumberify(AppInstanceJson.responderDeposit));
+    expect(proposalParams.responderDeposit).toEqual(bigNumberify(AppInstanceJson.initiatorDeposit));
   } else {
-    expect(proposalParams.initiatorDeposit).toEqual(
-      bigNumberify(AppInstanceJson.initiatorDeposit),
-    );
-    expect(proposalParams.responderDeposit).toEqual(
-      bigNumberify(AppInstanceJson.responderDeposit),
-    );
+    expect(proposalParams.initiatorDeposit).toEqual(bigNumberify(AppInstanceJson.initiatorDeposit));
+    expect(proposalParams.responderDeposit).toEqual(bigNumberify(AppInstanceJson.responderDeposit));
   }
 
   expect(proposalParams.defaultTimeout).toEqual(toBN(AppInstanceJson.defaultTimeout));
@@ -941,14 +933,6 @@ export function getAppContext(
   senderAddress?: string, // needed for both types of transfer apps
   receiverAddress?: string, // needed for both types of transfer apps
 ): AppContext {
-  const checkForAddresses = () => {
-    const missingAddr = !senderAddress || !receiverAddress;
-    if (missingAddr && !initialState) {
-      throw new Error(
-        `Must have sender and redeemer addresses to generate initial state for either transfer app context`,
-      );
-    }
-  };
   const checkForInitialState = () => {
     if (!initialState) {
       throw new Error(`Must have initial state to generate app context`);

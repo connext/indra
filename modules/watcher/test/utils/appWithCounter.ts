@@ -11,7 +11,6 @@ import {
   ConditionalTransactionCommitmentJSON,
   CoinTransfer,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
-  AppInstanceJson,
   SignedCancelChallengeRequest,
 } from "@connext/types";
 import {

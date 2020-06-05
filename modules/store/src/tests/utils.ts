@@ -191,7 +191,7 @@ export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
     counter: 4,
   },
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-  interpreterParams: {
+  outcomeInterpreterParameters: {
     amount: { _hex: "0x42" },
     playerAddrs: [AddressZero, AddressZero],
     tokenAddress: AddressZero,
@@ -220,7 +220,7 @@ export const TEST_STORE_PROPOSAL: AppInstanceJson = {
   responderDepositAssetId: TEST_STORE_ETH_ADDRESS,
   defaultTimeout: "0x01",
   stateTimeout: "0x00",
-  interpreterParams: {
+  outcomeInterpreterParameters: {
     limit: { _hex: "0x1" } as any,
     tokenAddress: AddressZero,
   },

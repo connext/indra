@@ -89,20 +89,20 @@ export async function computeTokenIndexedFreeBalanceIncrements(
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
       return handleTwoPartyFixedOutcome(
         encodedOutcome,
-        appInstance.interpreterParams as TwoPartyFixedOutcomeInterpreterParams,
+        appInstance.outcomeInterpreterParameters as TwoPartyFixedOutcomeInterpreterParams,
       );
     }
     case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
       return handleSingleAssetTwoPartyCoinTransfer(
         encodedOutcome,
-        appInstance.interpreterParams as SingleAssetTwoPartyCoinTransferInterpreterParams,
+        appInstance.outcomeInterpreterParameters as SingleAssetTwoPartyCoinTransferInterpreterParams,
         log,
       );
     }
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
       return handleMultiAssetMultiPartyCoinTransfer(
         encodedOutcome,
-        appInstance.interpreterParams as MultiAssetMultiPartyCoinTransferInterpreterParams,
+        appInstance.outcomeInterpreterParameters as MultiAssetMultiPartyCoinTransferInterpreterParams,
       );
     }
     default: {
@@ -244,7 +244,10 @@ export function computeInterpreterParameters(
   initiatorFbAddress: string,
   responderFbAddress: string,
   disableLimit: boolean,
-): TwoPartyFixedOutcomeInterpreterParams|MultiAssetMultiPartyCoinTransferInterpreterParams|SingleAssetTwoPartyCoinTransferInterpreterParams {
+):
+  | TwoPartyFixedOutcomeInterpreterParams
+  | MultiAssetMultiPartyCoinTransferInterpreterParams
+  | SingleAssetTwoPartyCoinTransferInterpreterParams {
   const initiatorDepositAssetId = getAddressFromAssetId(initiatorAssetId);
   const responderDepositAssetId = getAddressFromAssetId(responderAssetId);
   switch (outcomeType) {
@@ -281,10 +284,8 @@ export function computeInterpreterParameters(
       }
 
       return {
-          limit: disableLimit
-            ? MaxUint256
-            : initiatorBalanceDecrement.add(responderBalanceDecrement),
-          tokenAddress: initiatorDepositAssetId,
+        limit: disableLimit ? MaxUint256 : initiatorBalanceDecrement.add(responderBalanceDecrement),
+        tokenAddress: initiatorDepositAssetId,
       };
     }
 
