@@ -19,14 +19,14 @@ contract SimpleSignedTransferApp is CounterfactualApp {
         address signerAddress;
         uint256 chainId;
         address verifyingContract;
+        bytes32 requestCID;
+        bytes32 subgraphDeploymentID;
         bytes32 paymentId;
         bool finalized;
     }
 
     struct Action {
-        bytes32 requestCID;
         bytes32 responseCID;
-        bytes32 subgraphID;
         bytes signature;
     }
 
@@ -36,7 +36,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
         "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)"
     );
     bytes32 private constant RECEIPT_TYPE_HASH = keccak256(
-        "Receipt(bytes32 requestCID,bytes32 responseCID,bytes32 subgraphID)"
+        "Receipt(bytes32 requestCID,bytes32 responseCID,bytes32 subgraphDeploymentID)"
     );
 
     // EIP-712 DOMAIN SEPARATOR CONSTANTS
@@ -64,9 +64,9 @@ contract SimpleSignedTransferApp is CounterfactualApp {
                     keccak256(
                         abi.encode(
                             RECEIPT_TYPE_HASH,
-                            action.requestCID,
+                            state.requestCID,
                             action.responseCID,
-                            action.subgraphID
+                            state.subgraphDeploymentID
                         )
                     )
                 )
