@@ -479,8 +479,14 @@ export class CFCore {
     this.messagingService.onReceive(
       this.publicIdentifier,
       async (msg: ProtocolEventMessage<any>) => {
-        await this.handleReceivedMessage(msg);
-        this.rpcRouter.emit(msg.type, msg, "outgoing");
+        try {
+          await this.handleReceivedMessage(msg);
+          this.rpcRouter.emit(msg.type, msg, "outgoing");
+        } catch (e) {
+          // No need to crash the entire cfCore if we receive an invalid message.
+          // Just log & continue on our way
+          this.log.error(e.message);
+        }
       },
     );
   }

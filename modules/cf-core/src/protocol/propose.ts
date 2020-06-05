@@ -128,8 +128,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     substart = Date.now();
     // 6ms
-    const initiatorSignatureOnInitialState = yield [OP_SIGN, setStateCommitment.hashToSign()];
-    logTime(log, substart, `[${processID}] Signed initial state initiator propose`);
+    const hashToSign = setStateCommitment.hashToSign();
+    const initiatorSignatureOnInitialState = yield [OP_SIGN, hashToSign];
+    logTime(log, substart, `[${processID}] Signed initial set state commitment ${hashToSign}`);
+    log.debug(`setStateCommitment with hash ${hashToSign}: ${stringify(setStateCommitment.toJson())}`);
 
     const m1 = {
       protocol,
