@@ -27,7 +27,7 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
     outcomeType: app.outcomeType,
     initiatorIdentifier: app.initiatorIdentifier,
     responderIdentifier: app.responderIdentifier,
-    interpreterParams: safeJsonParse(app.outcomeInterpreterParameters),
+    interpreterParams: safeJsonParse(app.interpreterParams),
     meta: app.meta,
     initiatorDeposit: app.initiatorDeposit.toString(),
     initiatorDepositAssetId: app.initiatorDepositAssetId,

@@ -173,7 +173,6 @@ export class CFCoreStore implements IStoreService {
     freeBalanceApp.stateEncoding = stateEncoding;
     freeBalanceApp.actionEncoding = actionEncoding;
     freeBalanceApp.outcomeType = OutcomeType[outcomeType];
-    freeBalanceApp.initialState = latestState as any;
     freeBalanceApp.appSeqNo = appSeqNo;
     freeBalanceApp.latestState = latestState as any;
     freeBalanceApp.latestVersionNumber = latestVersionNumber;
@@ -263,7 +262,6 @@ export class CFCoreStore implements IStoreService {
 
     proposal.meta = meta;
 
-    proposal.initialState = latestState;
     proposal.latestState = latestState;
     proposal.stateTimeout = stateTimeout;
     proposal.latestVersionNumber = latestVersionNumber;
