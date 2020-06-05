@@ -19,10 +19,6 @@ export class removeAppProposal1591359031983 implements MigrationInterface {
       undefined,
     );
     await queryRunner.query(
-      `ALTER TABLE "app_instance" ALTER COLUMN "latestAction" SET NOT NULL`,
-      undefined,
-    );
-    await queryRunner.query(
       `ALTER TABLE "app_instance" ALTER COLUMN "outcomeInterpreterParameters" SET NOT NULL`,
       undefined,
     );
@@ -31,10 +27,6 @@ export class removeAppProposal1591359031983 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
       `ALTER TABLE "app_instance" ALTER COLUMN "outcomeInterpreterParameters" DROP NOT NULL`,
-      undefined,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "app_instance" ALTER COLUMN "latestAction" DROP NOT NULL`,
       undefined,
     );
     await queryRunner.query(
