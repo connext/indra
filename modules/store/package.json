@@ -1,6 +1,6 @@
 {
   "name": "@connext/store",
-  "version": "6.6.5",
+  "version": "6.7.1",
   "description": "Store module for Connext client",
   "browser": "dist/browser.js",
   "main": "dist/index.js",
@@ -15,9 +15,9 @@
     "test": "ts-mocha --bail --check-leaks --exit --timeout 7500 src/**/*.spec.ts"
   },
   "dependencies": {
-    "@connext/contracts": "3.2.0",
-    "@connext/types": "6.6.5",
-    "@connext/utils": "6.6.5",
+    "@connext/contracts": "3.2.2",
+    "@connext/types": "6.7.1",
+    "@connext/utils": "6.7.1",
     "ethers": "5.0.0-beta.190",
     "localStorage": "1.0.4",
     "p-waterfall": "2.1.0",
@@ -25,6 +25,7 @@
     "pg-hstore": "2.3.3",
     "pisa-client": "0.1.5",
     "sequelize": "5.21.11",
+    "sqlite3": "4.2.0",
     "uuid": "8.1.0"
   },
   "devDependencies": {
@@ -38,7 +39,6 @@
     "chai-as-promised": "7.1.1",
     "chai-subset": "1.6.0",
     "mocha": "7.2.0",
-    "sqlite3": "4.2.0",
     "ts-mocha": "7.0.0",
     "typescript": "3.9.3"
   }

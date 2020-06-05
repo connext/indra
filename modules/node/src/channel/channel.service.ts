@@ -265,23 +265,21 @@ export class ChannelService {
     const existing = await this.channelRepository.findByMultisigAddress(
       creationData.data.multisigAddress,
     );
+    const existingOwners = [
+      getSignerAddressFromPublicIdentifier(existing.nodeIdentifier),
+      getSignerAddressFromPublicIdentifier(existing.userIdentifier),
+    ];
     if (!existing) {
       throw new Error(
         `Did not find existing channel, meaning "PERSIST_STATE_CHANNEL" failed in setup protocol`,
       );
     }
     if (
-      !creationData.data.owners.includes(
-        getSignerAddressFromPublicIdentifier(existing.nodeIdentifier),
-      ) ||
-      !creationData.data.owners.includes(
-        getSignerAddressFromPublicIdentifier(existing.userIdentifier),
-      )
+      !creationData.data.owners.includes(existingOwners[0]) ||
+      !creationData.data.owners.includes(existingOwners[1])
     ) {
       throw new Error(
-        `Channel has already been created with different owners! ${stringify(
-          existing,
-        )}. Event data: ${stringify(creationData)}`,
+        `Channel has already been created with owners ${stringify(existingOwners)}. Event data: ${stringify(creationData)}`,
       );
     }
     if (existing.available) {

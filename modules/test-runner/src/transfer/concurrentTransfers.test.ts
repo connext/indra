@@ -1,7 +1,18 @@
 import PQueue from "p-queue";
 import { BigNumber, constants, utils } from "ethers";
-import { ConditionalTransferTypes, IConnextClient, PublicParams, Address } from "@connext/types";
-import { delay, ColorfulLogger, getTestVerifyingContract } from "@connext/utils";
+import {
+  ConditionalTransferTypes,
+  IConnextClient,
+  PublicParams,
+  Address,
+  Receipt,
+} from "@connext/types";
+import {
+  delay,
+  ColorfulLogger,
+  getTestVerifyingContract,
+  getTestReceiptToSign,
+} from "@connext/utils";
 
 import { createClient, fundChannel } from "../util";
 
@@ -19,6 +30,7 @@ describe("Concurrent transfers", async () => {
   let indexerB: IConnextClient;
   let chainId: number;
   let verifyingContract: Address;
+  let receipt: Receipt;
   let subgraphChannels: { signer: string; publicIdentifier: string }[];
 
   beforeEach(async () => {
@@ -36,6 +48,7 @@ describe("Concurrent transfers", async () => {
 
     chainId = (await indexerA.ethProvider.getNetwork()).chainId;
     verifyingContract = getTestVerifyingContract();
+    receipt = getTestReceiptToSign();
 
     console.log("Signer address:", channel.signerAddress);
 
@@ -87,6 +100,8 @@ describe("Concurrent transfers", async () => {
                 signerAddress: subgraphChannel.signer,
                 chainId,
                 verifyingContract,
+                requestCID: receipt.requestCID,
+                subgraphDeploymentID: receipt.subgraphDeploymentID,
                 recipient,
                 assetId: AddressZero,
                 meta: { info: "Query payment" },

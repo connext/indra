@@ -31,7 +31,7 @@ const DOMAIN_TYPE_HASH = hashString(
 );
 
 const RECEIPT_TYPE_HASH = hashString(
-  "Receipt(bytes32 requestCID,bytes32 responseCID,bytes32 subgraphID)",
+  "Receipt(bytes32 requestCID,bytes32 responseCID,bytes32 subgraphDeploymentID)",
 );
 
 const DOMAIN_NAME = "Graph Protocol";
@@ -49,7 +49,7 @@ export const hashReceiptData = (receipt: Receipt) =>
   hashStruct(
     RECEIPT_TYPE_HASH,
     ["bytes32", "bytes32", "bytes32"],
-    [receipt.requestCID, receipt.responseCID, receipt.subgraphID],
+    [receipt.requestCID, receipt.responseCID, receipt.subgraphDeploymentID],
   );
 
 export const hashReceiptMessage = (
@@ -93,5 +93,7 @@ export const getTestVerifyingContract = () => "0x1d85568eEAbad713fBB5293B45ea066
 export const getTestReceiptToSign = () => ({
   requestCID: "0xd902c18a1b3590a3d2a8ae4439db376764fda153ca077e339d0427bf776bd463",
   responseCID: "0xbe0b5ae5f598fdf631133571d59ef16b443b2fe02e35ca2cb807158069009db9",
-  subgraphID: hexlify(bs58.decode("QmTXzATwNfgGVukV1fX2T6xw9f6LAYRVWpsdXyRWzUR2H9").slice(2)),
+  subgraphDeploymentID: hexlify(
+    bs58.decode("QmTXzATwNfgGVukV1fX2T6xw9f6LAYRVWpsdXyRWzUR2H9").slice(2),
+  ),
 });

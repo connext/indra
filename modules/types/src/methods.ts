@@ -199,11 +199,14 @@ type TakeActionResult = {
 type UninstallParams = {
   appIdentityHash: Bytes32;
   multisigAddress: Address;
+  action?: SolidityValueType;
 };
 
 type UninstallResult = {
   appIdentityHash: Bytes32;
   multisigAddress: Address;
+  uninstalledApp: AppInstanceJson;
+  action?: SolidityValueType;
 };
 
 ////////////////////////////////////////

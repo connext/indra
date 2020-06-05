@@ -6,6 +6,7 @@ import {
   PublicIdentifier,
   EventNames,
   UninstallMessage,
+  SolidityValueType,
 } from "@connext/types";
 
 import {
@@ -16,11 +17,12 @@ import {
   NO_MULTISIG_IN_PARAMS,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
-import { StateChannel } from "../../models";
+import { StateChannel, AppInstance } from "../../models";
 import { RequestHandler } from "../../request-handler";
 import { RpcRouter } from "../../rpc-router";
 
 import { MethodController } from "../controller";
+import { toBN } from "@connext/utils";
 
 export class UninstallController extends MethodController {
   public readonly methodName = MethodNames.chan_uninstall;
@@ -74,16 +76,21 @@ export class UninstallController extends MethodController {
     const { protocolRunner, publicIdentifier, router } = requestHandler;
     const { appIdentityHash } = params;
 
-    const updatedChannel = await uninstallAppInstanceFromChannel(
+    const { updatedChannel, uninstalledApp, action } = await uninstallAppInstanceFromChannel(
       preProtocolStateChannel!,
       router,
       protocolRunner,
       publicIdentifier,
       preProtocolStateChannel!.userIdentifiers.find((id) => id !== publicIdentifier)!,
-      appIdentityHash,
+      params,
     );
 
-    return { appIdentityHash, multisigAddress: updatedChannel.multisigAddress };
+    return {
+      appIdentityHash,
+      multisigAddress: updatedChannel.multisigAddress,
+      uninstalledApp: uninstalledApp.toJson(),
+      action,
+    };
   }
 
   protected async afterExecution(
@@ -92,14 +99,14 @@ export class UninstallController extends MethodController {
     returnValue: MethodResults.Uninstall,
   ): Promise<void> {
     const { router, publicIdentifier } = requestHandler;
-    const { appIdentityHash } = params;
-    const { multisigAddress } = returnValue;
+    const { appIdentityHash, action } = params;
+    const { multisigAddress, uninstalledApp } = returnValue;
 
-    const msg = {
+    const msg: UninstallMessage = {
       from: publicIdentifier,
       type: EventNames.UNINSTALL_EVENT,
-      data: { appIdentityHash, multisigAddress },
-    } as UninstallMessage;
+      data: { appIdentityHash, multisigAddress, uninstalledApp, action },
+    };
 
     await router.emit(msg.type, msg, `outgoing`);
   }
@@ -111,19 +118,24 @@ export async function uninstallAppInstanceFromChannel(
   protocolRunner: ProtocolRunner,
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
-  appIdentityHash: string,
-): Promise<StateChannel> {
-  const appInstance = stateChannel.getAppInstance(appIdentityHash);
+  params: MethodParams.Uninstall,
+): Promise<{
+  updatedChannel: StateChannel;
+  uninstalledApp: AppInstance;
+  action?: SolidityValueType;
+}> {
+  const appInstance = stateChannel.getAppInstance(params.appIdentityHash);
 
-  const { channel: updatedChannel } = await protocolRunner.initiateProtocol(
-    router,
-    ProtocolNames.uninstall,
-    {
-      initiatorIdentifier,
-      responderIdentifier,
-      multisigAddress: stateChannel.multisigAddress,
-      appIdentityHash: appInstance.identityHash,
-    },
-  );
-  return updatedChannel;
+  const {
+    channel: updatedChannel,
+    appContext: uninstalledApp,
+  } = await protocolRunner.initiateProtocol(router, ProtocolNames.uninstall, {
+    initiatorIdentifier,
+    responderIdentifier,
+    multisigAddress: stateChannel.multisigAddress,
+    appIdentityHash: appInstance.identityHash,
+    action: params.action,
+    stateTimeout: toBN(0), // Explicitly finalized states
+  });
+  return { updatedChannel, uninstalledApp, action: params.action };
 }

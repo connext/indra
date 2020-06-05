@@ -89,8 +89,11 @@ export class ResolveTransferController extends AbstractController {
           break;
         }
         case ConditionalTransferTypes.SignedTransfer: {
-          const { attestation } = params as PublicParams.ResolveSignedTransfer;
-          action = attestation.signature && (attestation as SimpleSignedTransferAppAction);
+          const { responseCID, signature } = params as PublicParams.ResolveSignedTransfer;
+          action =
+            responseCID &&
+            signature &&
+            ({ responseCID, signature } as SimpleSignedTransferAppAction);
           break;
         }
         case ConditionalTransferTypes.LinkedTransfer: {
@@ -103,17 +106,8 @@ export class ResolveTransferController extends AbstractController {
           this.log.error(`[${paymentId}] Unsupported conditionType ${c}`);
         }
       }
-
-      // node installs app, validation happens in listener
-      if (finalized === false && action) {
-        this.log.info(`[${paymentId}] Taking action on transfer app ${appIdentityHash}`);
-        await this.connext.takeAction(appIdentityHash, action);
-        this.log.info(`[${paymentId}] Finished taking action on transfer app ${appIdentityHash}`);
-      } else {
-        this.log.info(`[${paymentId}] Not taking action ${action} - finalized: ${finalized}`);
-      }
-      this.log.info(`[${paymentId}] Uninstalling transfer app ${appIdentityHash}`);
-      await this.connext.uninstallApp(appIdentityHash);
+      this.log.info(`[${paymentId}] Uninstalling transfer app with action ${appIdentityHash}`);
+      await this.connext.uninstallApp(appIdentityHash, action);
       this.log.info(`[${paymentId}] Finished uninstalling transfer app ${appIdentityHash}`);
     } catch (e) {
       this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {

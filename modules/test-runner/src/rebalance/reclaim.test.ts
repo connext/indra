@@ -60,7 +60,6 @@ describe("Reclaim", () => {
       clientB,
       BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(One),
       AddressZero,
-      nats,
     );
 
     const preBalance = await clientA.ethProvider.getBalance(clientA.multisigAddress);
@@ -116,7 +115,6 @@ describe("Reclaim", () => {
       clientB,
       BigNumber.from(REBALANCE_PROFILE.reclaimThreshold).add(One),
       tokenAddress,
-      nats,
     );
 
     const tokenContract = new Contract(tokenAddress, ERC20.abi, clientA.ethProvider);

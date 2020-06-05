@@ -1,6 +1,6 @@
 {
   "name": "@connext/cf-core",
-  "version": "6.6.5",
+  "version": "6.7.1",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
@@ -18,9 +18,9 @@
     "test:coverage": "jest --runInBand --detectOpenHandles --bail --coverage"
   },
   "dependencies": {
-    "@connext/contracts": "3.2.0",
-    "@connext/utils": "6.6.5",
-    "@connext/types": "6.6.5",
+    "@connext/contracts": "3.2.2",
+    "@connext/utils": "6.7.1",
+    "@connext/types": "6.7.1",
     "async-mutex": "0.2.2",
     "ethers": "5.0.0-beta.190",
     "@openzeppelin/contracts": "3.0.1",
@@ -33,7 +33,7 @@
   "devDependencies": {
     "@babel/core": "7.10.2",
     "@babel/plugin-proposal-object-rest-spread": "7.10.1",
-    "@connext/store": "6.6.5",
+    "@connext/store": "6.7.1",
     "@types/chai": "4.2.11",
     "@types/dotenv-safe": "8.1.0",
     "@types/jest": "25.2.3",
@@ -45,7 +45,7 @@
     "jest": "26.0.1",
     "jest-cli": "26.0.1",
     "jest-dot-reporter": "1.0.14",
-    "rollup": "2.12.0",
+    "rollup": "2.12.1",
     "rollup-plugin-babel": "4.4.0",
     "rollup-plugin-commonjs": "10.1.0",
     "rollup-plugin-json": "4.0.0",
