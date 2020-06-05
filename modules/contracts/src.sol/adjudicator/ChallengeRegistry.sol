@@ -17,8 +17,7 @@ contract ChallengeRegistry is
   MixinProgressState,
   MixinSetAndProgressState,
   MixinCancelDispute,
-  MixinSetOutcome
-{
-  // solium-disable-next-line no-empty-blocks
-  constructor() public {}
+  MixinSetOutcome {
+    // solium-disable-next-line no-empty-blocks
+    constructor () public {}
 }

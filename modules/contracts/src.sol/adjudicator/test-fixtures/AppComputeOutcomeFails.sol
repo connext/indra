@@ -9,7 +9,13 @@ import "./AppWithAction.sol";
  * Only participants[1] is allowed to increment it
  */
 contract AppComputeOutcomeFails is AppWithAction {
-  function computeOutcome(bytes calldata) external override view returns (bytes memory) {
-    revert("computeOutcome always fails for this app");
-  }
+
+    function computeOutcome(bytes calldata)
+        override
+        external
+        view
+        returns (bytes memory)
+    {
+        revert("computeOutcome always fails for this app");
+    }
 }
