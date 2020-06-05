@@ -18,9 +18,9 @@ export type AppInstanceJson = {
   multisigAddress: Address;
   identityHash: HexString;
   initiatorIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
   initiatorDeposit: DecString;
   initiatorDepositAssetId: AssetId;
-  responderIdentifier: PublicIdentifier;
   responderDeposit: DecString;
   responderDepositAssetId: AssetId;
   abiEncodings: AppABIEncodings;
