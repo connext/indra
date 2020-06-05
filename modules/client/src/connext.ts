@@ -3,7 +3,6 @@ import {
   Address,
   AppAction,
   AppInstanceJson,
-  AppInstanceJson,
   AppRegistry,
   AssetId,
   ChannelMethods,

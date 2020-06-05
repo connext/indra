@@ -34,7 +34,6 @@ export class ResolveTransferController extends AbstractController {
     let appIdentityHash: string;
     let amount: utils.BigNumber;
     let assetId: string;
-    let finalized: boolean;
     let meta: any;
 
     if (existingReceiverApp) {
@@ -46,8 +45,7 @@ export class ResolveTransferController extends AbstractController {
       appIdentityHash = existingReceiverApp.identityHash;
       amount = (existingReceiverApp.latestState as GenericConditionalTransferAppState)
         .coinTransfers[0].amount;
-      assetId = existingReceiverApp.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
-      finalized = (existingReceiverApp.latestState as GenericConditionalTransferAppState).finalized;
+      assetId = existingReceiverApp.interpreterParams["tokenAddress"];
       meta = existingReceiverApp.meta;
     }
 
@@ -66,7 +64,6 @@ export class ResolveTransferController extends AbstractController {
         amount = installRes.amount;
         assetId = installRes.assetId;
         meta = installRes.meta;
-        finalized = false;
         if (
           conditionType === ConditionalTransferTypes.LinkedTransfer &&
           installRes.meta.recipient
