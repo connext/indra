@@ -84,7 +84,7 @@ export class AppInstance {
   }
 
   public static fromJson(json: AppInstanceJson) {
-    const deserialized = bigNumberifyJson(json) as AppInstanceJson;
+    const deserialized = bigNumberifyJson<AppInstanceJson>(json);
 
     return new AppInstance(
       deserialized.multisigAddress,
@@ -102,9 +102,9 @@ export class AppInstance {
       deserialized.defaultTimeout,
       deserialized.stateTimeout,
       deserialized.outcomeType,
+      bigNumberifyJson(deserialized.interpreterParams),
       deserialized.meta,
       deserialized.latestAction,
-      bigNumberifyJson(deserialized.interpreterParams),
     );
   }
 
