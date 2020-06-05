@@ -161,5 +161,5 @@ export const createClientWithMessagingLimits = async (
         params,
       });
   expect(messaging.providedOptions).to.containSubset(messageOptions);
-  return createClient({ messaging, signer: signer });
+  return createClient({ messaging, signer: signer, store: opts.store });
 };

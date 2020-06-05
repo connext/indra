@@ -146,12 +146,13 @@ export const connect = async (
     return client;
   }
 
+  let chan;
   // waits until the setup protocol or create channel call is completed
   await new Promise(async (resolve, reject) => {
     // Wait for channel to be available
     const channelIsAvailable = async (): Promise<boolean> => {
       try {
-        const chan = await client.node.getChannel();
+        chan = await client.node.getChannel();
         return chan && chan.available;
       } catch (e) {
         return false;
@@ -168,7 +169,7 @@ export const connect = async (
     return resolve();
   });
 
-  logger.info(`Channel is available`);
+  logger.info(`Channel is available with multisig address: ${chan.multisigAddress}`);
 
   // Make sure our state schema is up-to-date
   const { data: sc } = await client.getStateChannel();
