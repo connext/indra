@@ -19,7 +19,7 @@ import {
   StoredAppChallengeStatus,
   WithdrawalMonitorObject,
 } from "@connext/types";
-import { toBN, getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { toBN, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { getManager } from "typeorm";
 import { constants, utils } from "ethers";
 
@@ -264,7 +264,7 @@ export class CFCoreStore implements IStoreService {
     app.outcomeInterpreterParameters = appProposal.outcomeInterpreterParameters;
     app.meta = appProposal.meta;
     app.latestState = appProposal.latestState;
-    app.latestVersionNumber = 0;
+    app.latestVersionNumber = appProposal.latestVersionNumber;
     app.channel = channel;
     app.userIdentifier = channel.userIdentifier;
     app.nodeIdentifier = channel.nodeIdentifier;
@@ -872,8 +872,15 @@ export class CFCoreStore implements IStoreService {
     // safe to throw here because challenges should never be created from a
     // `StateProgressed` event, must always go through the set state game
     const challenge = await this.challengeRepository.findByIdentityHashOrThrow(identityHash);
+    if (!challenge.app.actionEncoding) {
+      throw new Error(
+        `App associated with state progressed event does not have action encoding. Event: ${stringify(
+          event,
+        )}`,
+      );
+    }
     const entity = new StateProgressedEvent();
-    entity.action = defaultAbiCoder.decode([challenge.app.actionEncoding!], action);
+    entity.action = defaultAbiCoder.decode([challenge.app.actionEncoding], action)[0];
     entity.challenge = challenge;
     entity.signature = signature;
     entity.timeout = timeout;

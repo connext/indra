@@ -31,7 +31,7 @@ const getConditionalTransactionCommitment = (
       : appInstance.outcomeType === OutcomeType.TWO_PARTY_FIXED_OUTCOME
       ? context.network.contractAddresses.TwoPartyFixedOutcomeInterpreter
       : AddressZero,
-    appInstance.encodedInterpreterParams
+    appInstance.encodedInterpreterParams,
   );
 
 const getSetStateCommitment = (context: Context, appInstance: AppInstance) =>

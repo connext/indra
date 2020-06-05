@@ -172,7 +172,7 @@ export class AppRegistryService implements OnModuleInit {
           initialState.signatures[1],
           appInstance.multisigAddress,
         );
-        this.withdrawService.handleUserWithdraw(appInstance);
+        await this.withdrawService.handleUserWithdraw(appInstance);
         break;
       }
       default:

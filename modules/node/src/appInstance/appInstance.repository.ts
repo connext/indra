@@ -68,7 +68,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   async getAppProposal(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
     const app = await this.findByIdentityHash(appIdentityHash);
-    console.log("getAppProposal app: ", app);
     if (!app || app.type !== AppType.PROPOSAL) {
       return undefined;
     }

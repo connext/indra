@@ -250,8 +250,6 @@ describe("CFCoreStore", () => {
       });
 
       for (let index = 0; index < 3; index++) {
-        console.log(`SAVING appProposal ${1}: ${stringify(appProposal)}`);
-
         await cfCoreStore.createAppProposal(
           multisigAddress,
           appProposal,

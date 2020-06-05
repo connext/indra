@@ -21,6 +21,7 @@ import {
   getRandomSignature,
 } from "@connext/utils";
 import { constants } from "ethers";
+import { defaultAbiCoder } from "ethers/utils";
 
 const { AddressZero, HashZero, Zero, One } = constants;
 
@@ -29,8 +30,8 @@ export const createAppInstanceJson = (
 ): AppInstanceJson => {
   return {
     abiEncodings: {
-      actionEncoding: null,
-      stateEncoding: "",
+      actionEncoding: `uint256`,
+      stateEncoding: "uint256",
     },
     appDefinition: AddressZero,
     appSeqNo: 0,
@@ -152,7 +153,7 @@ export const createStateProgressedEventPayload = (
 ): StateProgressedEventPayload => {
   return {
     identityHash: getRandomBytes32(),
-    action: "0x",
+    action: defaultAbiCoder.encode(["uint256"], [One]),
     versionNumber: One,
     timeout: Zero,
     turnTaker: getRandomAddress(),
