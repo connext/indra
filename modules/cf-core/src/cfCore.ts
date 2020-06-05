@@ -297,10 +297,15 @@ export class CFCore {
               SetStateCommitment,
               ConditionalTransactionCommitment | undefined,
             ];
-            const latestInstalled = stateChannel
-              .getAppInstanceByAppSeqNo(stateChannel.numProposedApps)
-              .toJson();
-            if (!stateChannel.getFreeBalanceClass().hasActiveApp(latestInstalled.identityHash)) {
+            let latestInstalled;
+            try {
+              latestInstalled = stateChannel
+                .getAppInstanceByAppSeqNo(stateChannel.numProposedApps)
+                .toJson();
+            } catch (e) {
+              latestInstalled = undefined;
+            }
+            if (!latestInstalled) {
               // this was an uninstall, so remove app instance
               await this.storeService.removeAppInstance(
                 stateChannel.multisigAddress,
@@ -309,6 +314,9 @@ export class CFCore {
                 setState.toJson(),
               );
             } else {
+              const latestInstalled = stateChannel
+                .getAppInstanceByAppSeqNo(stateChannel.numProposedApps)
+                .toJson();
               // this was an install, add app and remove proposals
               await this.storeService.createAppInstance(
                 stateChannel.multisigAddress,
