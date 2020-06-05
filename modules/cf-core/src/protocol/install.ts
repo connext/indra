@@ -1,15 +1,10 @@
 import {
   InstallMiddlewareContext,
-  MultiAssetMultiPartyCoinTransferInterpreterParams,
   Opcode,
-  OutcomeType,
   ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
-  SingleAssetTwoPartyCoinTransferInterpreterParams,
-  TwoPartyFixedOutcomeInterpreterParams,
-  AssetId,
 } from "@connext/types";
 import {
   getAddressFromAssetId,
@@ -17,18 +12,14 @@ import {
   logTime,
   stringify,
 } from "@connext/utils";
-import { constants, utils } from "ethers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
 import { getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
-
-const { MaxUint256 } = constants;
 
 const protocol = ProtocolNames.install;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
@@ -346,24 +337,13 @@ function computeInstallStateChannelTransition(
     responderBalanceDecrement,
     initiatorDepositAssetId,
     responderDepositAssetId,
-    initialState,
-    appDefinition,
-    abiEncodings,
-    defaultTimeout,
-    stateTimeout,
-    appSeqNo,
-    outcomeType,
-    disableLimit,
-    meta,
     appInitiatorIdentifier,
-    appResponderIdentifier,
     initiatorIdentifier,
   } = params;
 
   // initiator in params context corr to protocol initiator
   // retrieve app-specific values for interpreter params, etc.
   const appInitiatorFbAddress = stateChannel.getFreeBalanceAddrOf(appInitiatorIdentifier);
-  const appResponderFbAddress = stateChannel.getFreeBalanceAddrOf(appResponderIdentifier);
   const isSame = appInitiatorIdentifier === initiatorIdentifier;
   const appInitiatorAssetId = isSame ? initiatorDepositAssetId : responderDepositAssetId;
   const appResponderAssetId = isSame ? responderDepositAssetId : initiatorDepositAssetId;
@@ -380,12 +360,12 @@ function computeInstallStateChannelTransition(
   const channelResponderFbAddress = stateChannel.multisigOwners[1];
   const sameChannelAndAppOrdering = channelInitiatorFbAddress === appInitiatorFbAddress;
 
-  const proposal = stateChannel.proposedAppInstances.get(params.identityHash)
-  if(!proposal) {
-    throw new Error("There should be a proposal here, we got it before. Wtf?")
+  const proposal = stateChannel.proposedAppInstances.get(params.identityHash);
+  if (!proposal) {
+    throw new Error("There should be a proposal here, we got it before. Wtf?");
   }
-  
-  const appInstanceToBeInstalled = AppInstance.fromJson(proposal)
+
+  const appInstanceToBeInstalled = AppInstance.fromJson(proposal);
 
   // does not matter for asset ids
   const initiatorDepositTokenAddress = getAddressFromAssetId(appInitiatorAssetId);

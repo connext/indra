@@ -15,10 +15,7 @@ import {
   toBN,
   getSignerAddressFromPublicIdentifier,
   recoverAddressFromChannelMessage,
-  delay,
 } from "@connext/utils";
-import { utils } from "ethers";
-
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { StateChannel, AppInstance, FreeBalanceClass } from "../models";
 import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
@@ -30,8 +27,6 @@ import {
   ConditionalTransactionCommitment,
   getConditionalTransactionCommitment,
 } from "../ethereum";
-
-const { keccak256, defaultAbiCoder } = utils;
 
 const protocol = ProtocolNames.sync;
 const { IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, OP_SIGN, OP_VALIDATE } = Opcode;
@@ -633,7 +628,6 @@ async function syncUntrackedProposals(
   context: Context,
   publicIdentifier: string,
 ) {
-  console.log("1")
   // handle case where we have to add a proposal to our store
   if (ourChannel.numProposedApps >= counterpartyChannel.numProposedApps) {
     // our proposals are ahead, counterparty should sync if needed
@@ -646,7 +640,6 @@ async function syncUntrackedProposals(
   const untrackedProposedApp = [...counterpartyChannel.proposedAppInstances.values()].find(
     (app) => !ourChannel.proposedAppInstances.has(app.identityHash),
   );
-  console.log(`Untracked app: ${stringify(untrackedProposedApp)}`)
   if (!untrackedProposedApp) {
     throw new Error(`Cannot find matching untracked proposal in counterparty's store, aborting`);
   }
@@ -667,27 +660,22 @@ async function syncUntrackedProposals(
     );
   }
 
-  await delay(1000)
-
   // generate the commitment and verify signatures
-  const proposal = AppInstance.fromJson(untrackedProposedApp)
-  console.log("2")
+  const proposal = AppInstance.fromJson(untrackedProposedApp);
   const setStateCommitment = getSetStateCommitment(context, proposal as AppInstance);
   const conditionalCommitment = getConditionalTransactionCommitment(
     context,
     ourChannel,
     proposal as AppInstance,
   );
-  console.log("3")
   await setStateCommitment.addSignatures(
     correspondingSetStateCommitment.signatures[0],
     correspondingSetStateCommitment.signatures[1],
   );
   await conditionalCommitment.addSignatures(
     correspondingConditionalCommitment!.signatures[0],
-    correspondingConditionalCommitment!.signatures[1]
-  )
-  console.log("4")
+    correspondingConditionalCommitment!.signatures[1],
+  );
   await assertSignerPresent(
     getSignerAddressFromPublicIdentifier(publicIdentifier),
     setStateCommitment,
@@ -696,7 +684,6 @@ async function syncUntrackedProposals(
     getSignerAddressFromPublicIdentifier(publicIdentifier),
     conditionalCommitment,
   );
-  console.log("5")
   const updatedChannel = ourChannel.addProposal(untrackedProposedApp);
   return {
     updatedChannel,
