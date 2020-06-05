@@ -1,10 +1,5 @@
 import { AppInstanceJson } from "@connext/types";
-import {
-  getRandomAddress,
-  getRandomIdentifier,
-  toBN,
-  toBNJson,
-} from "@connext/utils";
+import { getRandomAddress, getRandomIdentifier, toBN, toBNJson, stringify } from "@connext/utils";
 import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { getConnection } from "typeorm";
@@ -87,7 +82,16 @@ const createTestChannelWithAppInstance = async (
     initiatorIdentifier: userIdentifier,
     responderIdentifier: nodeIdentifier,
   });
-  await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2, setStateCommitment);
+  const conditionalCommitment = createConditionalTransactionCommitmentJSON({
+    appIdentityHash: appProposal.identityHash,
+  });
+  await cfCoreStore.createAppProposal(
+    multisigAddress,
+    appProposal,
+    2,
+    setStateCommitment,
+    conditionalCommitment,
+  );
 
   const appInstance = createAppInstanceJson({
     identityHash: appProposal.identityHash,
@@ -104,15 +108,11 @@ const createTestChannelWithAppInstance = async (
     appIdentityHash: channelJson.freeBalanceAppInstance.identityHash,
     versionNumber: toBNJson(100),
   });
-  const conditionalCommitment = createConditionalTransactionCommitmentJSON({
-    appIdentityHash: appInstance.identityHash,
-  });
   await cfCoreStore.createAppInstance(
     multisigAddress,
     appInstance,
     updatedFreeBalance,
     freeBalanceUpdateCommitment,
-    conditionalCommitment,
   );
 
   return {
@@ -233,19 +233,32 @@ describe("CFCoreStore", () => {
   });
 
   describe("App Proposal", () => {
-    it("createAppInstanceJson", async () => {
+    it("createAppProposal", async () => {
       const { multisigAddress } = await createTestChannel(
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
 
-      const appProposal = createAppInstanceJson({ appSeqNo: 2 });
+      const appProposal = createAppInstanceJson({ appSeqNo: 2, multisigAddress });
       const setStateCommitment = createSetStateCommitmentJSON({
         appIdentityHash: appProposal.identityHash,
       });
 
+      const conditionalTx = createConditionalTransactionCommitmentJSON({
+        appIdentityHash: appProposal.identityHash,
+        contractAddresses: await configService.getContractAddresses(),
+      });
+
       for (let index = 0; index < 3; index++) {
-        await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2, setStateCommitment);
+        console.log(`SAVING appProposal ${1}: ${stringify(appProposal)}`);
+
+        await cfCoreStore.createAppProposal(
+          multisigAddress,
+          appProposal,
+          2,
+          setStateCommitment,
+          conditionalTx,
+        );
 
         const received = await cfCoreStore.getAppProposal(appProposal.identityHash);
         expect(received).to.deep.equal(appProposal);
@@ -260,6 +273,11 @@ describe("CFCoreStore", () => {
           appProposal.identityHash,
         );
         expect(setStateCommitmentFromStore).to.deep.equal(setStateCommitment);
+
+        const conditionalTxFromStore = await cfCoreStore.getConditionalTransactionCommitment(
+          appProposal.identityHash,
+        );
+        expect(conditionalTxFromStore).to.deep.equal(conditionalTx);
       }
     });
 
@@ -279,6 +297,7 @@ describe("CFCoreStore", () => {
         appProposal,
         2,
         createSetStateCommitmentJSON(),
+        createConditionalTransactionCommitmentJSON(),
       );
 
       channelEntity = await channelRepository.findByMultisigAddressOrThrow(multisigAddress);
@@ -309,13 +328,14 @@ describe("CFCoreStore", () => {
         ...channelJson.freeBalanceAppInstance!,
         latestState: { appState: "updated" },
       };
-      expect(cfCoreStore.createAppInstance(
-        multisigAddress,
-        appInstance,
-        updatedFreeBalance,
-        createSetStateCommitmentJSON(),
-        createConditionalTransactionCommitmentJSON(),
-      )).to.be.rejectedWith(/Could not find app with identity hash/);
+      expect(
+        cfCoreStore.createAppInstance(
+          multisigAddress,
+          appInstance,
+          updatedFreeBalance,
+          createSetStateCommitmentJSON(),
+        ),
+      ).to.be.rejectedWith(/Could not find app with identity hash/);
     });
 
     it("createAppInstance", async () => {
@@ -334,11 +354,13 @@ describe("CFCoreStore", () => {
         responderIdentifier: configService.getPublicIdentifier(),
       });
       const setStateCommitment = createSetStateCommitmentJSON();
+      const conditionalTx = createConditionalTransactionCommitmentJSON();
       await cfCoreStore.createAppProposal(
         multisigAddress,
         appProposal,
         APP_SEQ_NO,
         setStateCommitment,
+        conditionalTx,
       );
 
       const userParticipantAddr = userIdentifier;
@@ -359,10 +381,6 @@ describe("CFCoreStore", () => {
         ...freeBalanceUpdate,
         versionNumber: toBNJson(100),
       });
-      const conditionalTx = createConditionalTransactionCommitmentJSON({
-        appIdentityHash: appInstance.identityHash,
-        contractAddresses: await configService.getContractAddresses(),
-      });
 
       for (let index = 0; index < 3; index++) {
         await cfCoreStore.createAppInstance(
@@ -370,7 +388,6 @@ describe("CFCoreStore", () => {
           appInstance,
           updatedFreeBalance,
           updatedFreeBalanceCommitment,
-          conditionalTx,
         );
         const app = await cfCoreStore.getAppInstance(appInstance.identityHash);
         expect(app).to.deep.equal(appInstance);
@@ -379,11 +396,6 @@ describe("CFCoreStore", () => {
           channelJson.freeBalanceAppInstance.identityHash,
         );
         expect(updatedFreeBalanceCommitmentFromStore).to.deep.equal(updatedFreeBalanceCommitment);
-
-        const conditionalTxFromStore = await cfCoreStore.getConditionalTransactionCommitment(
-          appInstance.identityHash,
-        );
-        expect(conditionalTxFromStore).to.deep.equal(conditionalTx);
 
         const channel = await cfCoreStore.getStateChannel(multisigAddress);
         expect(channel).to.deep.equal({
