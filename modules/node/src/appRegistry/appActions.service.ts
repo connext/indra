@@ -14,7 +14,7 @@ import { LoggerService } from "../logger/logger.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { WithdrawRepository } from "../withdraw/withdraw.repository";
 import { WithdrawService } from "../withdraw/withdraw.service";
-import { AppInstance } from "../appInstance/appInstance.entity";
+import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { TransferService } from "../transfer/transfer.service";
 
 @Injectable()
@@ -97,14 +97,15 @@ export class AppActionsService {
     senderApp: AppInstance<any>,
     action: AppAction,
   ): Promise<void> {
-    await this.cfCoreService.takeAction(
-      senderApp.identityHash,
-      senderApp.channel.multisigAddress,
-      action,
-    );
+    // App could be uninstalled, which means the channel is no longer
+    // associated with this app instance
+    if (senderApp.type !== AppType.INSTANCE) {
+      return;
+    }
     await this.cfCoreService.uninstallApp(
       senderApp.identityHash,
       senderApp.channel.multisigAddress,
+      action,
     );
   }
 }

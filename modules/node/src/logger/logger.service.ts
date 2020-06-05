@@ -46,7 +46,7 @@ export class LoggerService extends NestLogger implements ILogger {
   };
 
   public context: string;
-  public logLevel: number = parseInt(process.env.INDRA_LOG_LEVEL, 10) || 3;
+  public logLevel: number = parseInt(process.env.INDRA_LOG_LEVEL || "3", 10);
 
   public constructor(context?: string) {
     super();

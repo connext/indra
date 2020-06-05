@@ -23,6 +23,8 @@ import {
   UninstallMessage,
   EventName,
   ProtocolEventMessage,
+  SimpleLinkedTransferAppStateEncoding,
+  SimpleLinkedTransferAppActionEncoding,
 } from "@connext/types";
 import {
   bigNumberifyJson,
@@ -54,7 +56,9 @@ interface AppContext {
   outcomeType: OutcomeType;
 }
 
-const { DepositApp, DolphinCoin, TicTacToeApp } = global[`contracts`] as TestContractAddresses;
+const { DepositApp, DolphinCoin, TicTacToeApp, SimpleLinkedTransferApp } = global[
+  `contracts`
+] as TestContractAddresses;
 
 export const newWallet = (wallet: Wallet) =>
   new Wallet(
@@ -649,11 +653,16 @@ export function constructGetAppsRpc(multisigAddress: string): Rpc {
   };
 }
 
-export function constructUninstallRpc(appIdentityHash: string, multisigAddress: string): Rpc {
+export function constructUninstallRpc(
+  appIdentityHash: string,
+  multisigAddress: string,
+  action?: SolidityValueType,
+): Rpc {
   return {
     parameters: {
       appIdentityHash,
       multisigAddress,
+      action,
     } as MethodParams.Uninstall,
     id: Date.now(),
     methodName: MethodNames.chan_uninstall,
@@ -988,6 +997,19 @@ export function getAppContext(
         },
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
       };
+
+    case SimpleLinkedTransferApp: {
+      checkForInitialState();
+      return {
+        appDefinition,
+        initialState: initialState!,
+        abiEncodings: {
+          stateEncoding: SimpleLinkedTransferAppStateEncoding,
+          actionEncoding: SimpleLinkedTransferAppActionEncoding,
+        },
+        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+      };
+    }
 
     default:
       throw new Error(`Proposing the specified app is not supported: ${appDefinition}`);

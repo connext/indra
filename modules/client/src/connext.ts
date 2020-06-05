@@ -610,7 +610,10 @@ export class ConnextClient implements IConnextClient {
     } as MethodParams.Install);
   };
 
-  public uninstallApp = async (appIdentityHash: string): Promise<MethodResults.Uninstall> => {
+  public uninstallApp = async (
+    appIdentityHash: string,
+    action?: AppAction,
+  ): Promise<MethodResults.Uninstall> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appIdentityHash);
     if (err) {
@@ -620,6 +623,7 @@ export class ConnextClient implements IConnextClient {
     return this.channelProvider.send(MethodNames.chan_uninstall, {
       appIdentityHash,
       multisigAddress: this.multisigAddress,
+      action,
     } as MethodParams.Uninstall);
   };
 

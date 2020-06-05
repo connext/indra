@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import { utils } from "ethers";
 
 import { bigNumberifyJson, deBigNumberifyJson, safeJsonParse, safeJsonStringify } from "./json";
@@ -83,7 +84,7 @@ describe("JSON", () => {
       const input = TEST_JSON_WITH_BN_JSON;
       const expected = TEST_JSON_WITH_BN_OBJ;
       const result = bigNumberifyJson(input);
-      expect(result).toEqual(expected);
+      expect(result).to.deep.equal(expected);
     });
     it("handles depths", () => {
       const input = TEST_JSON_WITH_BN_JSON_DEPTH;
@@ -97,7 +98,7 @@ describe("JSON", () => {
       const input = TEST_JSON_WITH_BN_OBJ;
       const expected = TEST_JSON_WITH_BN_JSON;
       const result = deBigNumberifyJson(input);
-      expect(result).toEqual(expected);
+      expect(result).to.deep.equal(expected);
     });
     it("handles depths", () => {
       const input = TEST_JSON_WITH_BN_OBJECT_DEPTH;
@@ -111,7 +112,7 @@ describe("JSON", () => {
       const input = TEST_JSON;
       const expected = VALID_JSON_STRING;
       const result = safeJsonStringify(input);
-      expect(result).toEqual(expected);
+      expect(result).to.deep.equal(expected);
     });
   });
   describe("safeJsonParse", () => {
@@ -119,19 +120,19 @@ describe("JSON", () => {
       const input = VALID_JSON_STRING;
       const expected = TEST_JSON_WITH_NULL;
       const result = safeJsonParse(input);
-      expect(result).toEqual(expected);
+      expect(result).to.deep.equal(expected);
     });
     it("return same input if provided invalid stringified json", () => {
       const input = INVALID_JSON_STRING;
       const expected = INVALID_JSON_STRING;
       const result = safeJsonParse(input);
-      expect(result).toEqual(expected);
+      expect(result).to.deep.equal(expected);
     });
     it("return same input if not provided a string", () => {
       const input = TEST_JSON;
       const expected = TEST_JSON;
       const result = safeJsonParse(input);
-      expect(result).toEqual(expected);
+      expect(result).to.deep.equal(expected);
     });
   });
 });
