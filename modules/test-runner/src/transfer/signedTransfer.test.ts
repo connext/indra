@@ -106,7 +106,13 @@ describe("Signed Transfers", () => {
       type: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       sender: clientA.publicIdentifier,
-      transferMeta: { signerAddress: clientB.signerAddress, chainId, verifyingContract },
+      transferMeta: {
+        signerAddress: clientB.signerAddress,
+        chainId,
+        verifyingContract,
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
+      },
       meta: {
         foo: "bar",
         recipient: clientB.publicIdentifier,
@@ -197,7 +203,13 @@ describe("Signed Transfers", () => {
       assetId: transfer.assetId,
       type: ConditionalTransferTypes.SignedTransfer,
       paymentId,
-      transferMeta: { signerAddress: clientB.signerAddress, chainId, verifyingContract },
+      transferMeta: {
+        signerAddress: clientB.signerAddress,
+        chainId,
+        verifyingContract,
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
+      },
       meta: {
         foo: "bar",
         recipient: clientB.publicIdentifier,
