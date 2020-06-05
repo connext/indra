@@ -6,11 +6,7 @@ import {
   ProtocolParams,
   ProtocolRoles,
 } from "@connext/types";
-import {
-  getSignerAddressFromPublicIdentifier,
-  logTime,
-  stringify,
-} from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime, stringify, delay } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment, getConditionalTransactionCommitment } from "../ethereum";
@@ -63,7 +59,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderDeposit,
       getSignerAddressFromPublicIdentifier(initiatorIdentifier),
       getSignerAddressFromPublicIdentifier(responderIdentifier),
-      true
+      true,
     );
 
     const proposal = new AppInstance(
@@ -85,7 +81,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       /* interpreterParamsInternal*/ interpreterParams,
       /* meta */ meta,
     );
-    const proposalJson = proposal.toJson()
+    const proposalJson = proposal.toJson();
 
     const error = yield [
       OP_VALIDATE,
@@ -241,8 +237,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       },
     } = message;
 
-    if (!params) throw new Error("No params found for proposal");
-    if (!preProtocolStateChannel) throw new Error("No state channel found for proposal");
+    if (!params) {
+      throw new Error("No params found for proposal");
+    }
+    if (!preProtocolStateChannel) {
+      throw new Error("No state channel found for proposal");
+    }
 
     const interpreterParams = computeInterpreterParameters(
       outcomeType,
@@ -252,7 +252,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderDeposit,
       getSignerAddressFromPublicIdentifier(initiatorIdentifier),
       getSignerAddressFromPublicIdentifier(responderIdentifier),
-      true
+      true,
     );
 
     const proposal = new AppInstance(
@@ -274,7 +274,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       /* interpreterParamsInternal*/ interpreterParams,
       /* meta */ meta,
     );
-    const proposalJson = proposal.toJson()
+    const proposalJson = proposal.toJson();
 
     const error = yield [
       OP_VALIDATE,
@@ -337,7 +337,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `[${processID}] Signed initial state responder propose`);
     const responderSignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
     logTime(log, substart, `[${processID}] Signed conditional tx commitment`);
-
     await setStateCommitment.addSignatures(
       initiatorSignatureOnInitialState,
       responderSignatureOnInitialState as any,
