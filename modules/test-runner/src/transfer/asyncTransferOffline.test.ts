@@ -69,7 +69,7 @@ const recreateReceiverAndRetryTransfer = async (
   await asyncTransferAsset(senderClient, newClient, amount, assetId);
 };
 
-describe("Async transfer offline tests", () => {
+describe.skip("Async transfer offline tests", () => {
   let clock: any;
   let senderClient: IConnextClient;
   let receiverClient: IConnextClient;
@@ -98,7 +98,7 @@ describe("Async transfer offline tests", () => {
    * Client calls `resolve` on node, node will install and propose, client
    * will take action with recipient.
    */
-  it.skip("sender installs transfer successfully, receiver proposes install but node is offline", async () => {
+  it("sender installs transfer successfully, receiver proposes install but node is offline", async () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits();
     // 1 successful proposal (balance refund)
@@ -134,7 +134,7 @@ describe("Async transfer offline tests", () => {
    * Ideally, the node takes action +  uninstalls these apps on `connect`,
    * and money is returned to the hubs channel (redeemed payment)
    */
-  it.skip("sender installs, receiver installs, takesAction, then uninstalls. Node takes action with sender then tries to uninstall, but sender is offline then comes online later (sender offline for uninstall)", async () => {
+  it("sender installs, receiver installs, takesAction, then uninstalls. Node takes action with sender then tries to uninstall, but sender is offline then comes online later (sender offline for uninstall)", async () => {
     const senderSigner = getRandomChannelSigner(env.ethProviderUrl);
     const receiverSigner = getRandomChannelSigner(env.ethProviderUrl);
     // create the sender client and receiver clients + fund

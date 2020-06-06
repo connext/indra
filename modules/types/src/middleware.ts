@@ -1,6 +1,6 @@
 import { enumify } from "./utils";
 import { ProtocolParams, ProtocolName } from "./protocol";
-import { AppInstanceProposal, AppInstanceJson } from "./app";
+import { AppInstanceJson } from "./app";
 import { StateChannelJSON } from "./state";
 
 // Note: these are also used in the node so shouldn't be moved into cf-core
@@ -25,7 +25,7 @@ export type SetupMiddlewareContext = {
 export type ProposeMiddlewareContext = {
   role: ProtocolRole;
   params: ProtocolParams.Propose;
-  proposal: AppInstanceProposal;
+  proposal: AppInstanceJson;
   stateChannel: StateChannelJSON;
 };
 export type InstallMiddlewareContext = {

@@ -182,7 +182,7 @@ describe("Node method follows spec - install", () => {
 
       it("sends proposal with null initial state", async () => {
         const appContext = getAppContext(TicTacToeApp);
-        const appInstanceProposalReq = constructAppProposalRpc(
+        const AppInstanceJsonReq = constructAppProposalRpc(
           multisigAddress,
           nodeB.publicIdentifier,
           appContext.appDefinition,
@@ -190,9 +190,9 @@ describe("Node method follows spec - install", () => {
           appContext.initialState,
         );
 
-        appInstanceProposalReq.parameters["initialState"] = undefined;
+        AppInstanceJsonReq.parameters["initialState"] = undefined;
 
-        await expect(nodeA.rpcRouter.dispatch(appInstanceProposalReq)).rejects.toThrowError(
+        await expect(nodeA.rpcRouter.dispatch(AppInstanceJsonReq)).rejects.toThrowError(
           NULL_INITIAL_STATE_FOR_PROPOSAL,
         );
       });

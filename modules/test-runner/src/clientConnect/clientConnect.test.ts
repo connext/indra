@@ -55,7 +55,7 @@ describe("Client Connect", () => {
     let apps = await client.getAppInstances();
     const initDepositApps = apps.filter(
       (app) =>
-        app.appInterface.addr === client.config.contractAddresses.DepositApp &&
+        app.appDefinition === client.config.contractAddresses.DepositApp &&
         app.initiatorIdentifier === client.publicIdentifier,
     );
     expect(initDepositApps.length).to.be.eq(2);
@@ -68,7 +68,7 @@ describe("Client Connect", () => {
     apps = await client.getAppInstances();
     const depositApps = apps.filter(
       (app) =>
-        app.appInterface.addr === client.config.contractAddresses.DepositApp &&
+        app.appDefinition === client.config.contractAddresses.DepositApp &&
         app.initiatorIdentifier === client.publicIdentifier,
     );
     expect(depositApps.length).to.be.eq(0);

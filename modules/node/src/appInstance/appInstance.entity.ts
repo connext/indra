@@ -1,4 +1,16 @@
-import { AppActions, AppStates, AppName, HexString, OutcomeType } from "@connext/types";
+import {
+  AppActions,
+  AppStates,
+  AppName,
+  HexString,
+  OutcomeType,
+  MultiAssetMultiPartyCoinTransferInterpreterParams,
+  TwoPartyFixedOutcomeInterpreterParams,
+  SingleAssetTwoPartyCoinTransferInterpreterParams,
+  TwoPartyFixedOutcomeInterpreterParamsJson,
+  MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
+  SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
+} from "@connext/types";
 import { utils } from "ethers";
 import {
   Entity,
@@ -41,9 +53,6 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("integer")
   appSeqNo!: number;
-
-  @Column("jsonb")
-  initialState!: AppStates[T];
 
   @Column("jsonb")
   latestState!: AppStates[T];
@@ -92,25 +101,26 @@ export class AppInstance<T extends AppName = any> {
   @Column("text", { nullable: true })
   stateTimeout!: HexString;
 
-  // assigned a value on installation not proposal
-  @Column("text", { nullable: true })
+  @Column("text")
   @IsValidPublicIdentifier()
-  userIdentifier?: string;
+  userIdentifier!: string;
 
-  // assigned a value on installation not proposal
-  @Column("text", { nullable: true })
+  @Column("text")
   @IsValidPublicIdentifier()
-  nodeIdentifier?: string;
+  nodeIdentifier!: string;
 
   @Column("jsonb", { nullable: true })
-  meta?: any;
+  meta!: any;
 
   @Column("jsonb", { nullable: true })
   latestAction!: AppActions[T];
 
-  // Interpreter-related Fields
-  @Column("jsonb", { nullable: true })
-  outcomeInterpreterParameters?: any;
+  @Column("jsonb")
+  outcomeInterpreterParameters!:
+    | TwoPartyFixedOutcomeInterpreterParamsJson
+    | MultiAssetMultiPartyCoinTransferInterpreterParamsJson
+    | SingleAssetTwoPartyCoinTransferInterpreterParamsJson
+    | {};
 
   @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances)
   channel!: Channel;
