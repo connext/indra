@@ -1,13 +1,28 @@
 import { utils } from "ethers";
-import {AppActions, AppName, AppStates, HexString, JSONSerializer, OutcomeType} from '@connext/types';
-import {BigNumber} from 'ethers/utils';
-import {Column, CreateDateColumn, Entity, ManyToOne, PrimaryColumn, UpdateDateColumn,} from 'typeorm';
+import {
+  AppActions,
+  AppName,
+  AppStates,
+  HexString,
+  JSONSerializer,
+  OutcomeType,
+  TwoPartyFixedOutcomeInterpreterParamsJson,
+  MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
+  SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
+} from "@connext/types";
+import { BigNumber } from "ethers/utils";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from "typeorm";
 
-import {Channel} from '../channel/channel.entity';
-import {IsEthAddress, IsKeccak256Hash, IsValidPublicIdentifier} from '../validate';
-import {bigNumberifyJson, deBigNumberifyJson} from '@connext/utils';
-
-
+import { Channel } from "../channel/channel.entity";
+import { IsEthAddress, IsKeccak256Hash, IsValidPublicIdentifier } from "../validate";
+import { bigNumberifyJson, deBigNumberifyJson } from "@connext/utils";
 
 export enum AppType {
   PROPOSAL = "PROPOSAL",
@@ -38,9 +53,6 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("integer")
   appSeqNo!: number;
-
-  @Column("jsonb")
-  initialState!: AppStates[T];
 
   @Column("jsonb")
   latestState!: AppStates[T];
@@ -89,25 +101,26 @@ export class AppInstance<T extends AppName = any> {
   @Column("text", { nullable: true })
   stateTimeout!: HexString;
 
-  // assigned a value on installation not proposal
-  @Column("text", { nullable: true })
+  @Column("text")
   @IsValidPublicIdentifier()
-  userIdentifier?: string;
+  userIdentifier!: string;
 
-  // assigned a value on installation not proposal
-  @Column("text", { nullable: true })
+  @Column("text")
   @IsValidPublicIdentifier()
-  nodeIdentifier?: string;
+  nodeIdentifier!: string;
 
   @Column("jsonb", { nullable: true })
-  meta?: any;
+  meta!: any;
 
   @Column("jsonb", { nullable: true })
   latestAction!: AppActions[T];
 
-  // Interpreter-related Fields
-  @Column("jsonb", { nullable: true })
-  outcomeInterpreterParameters?: any;
+  @Column("jsonb")
+  outcomeInterpreterParameters!:
+    | TwoPartyFixedOutcomeInterpreterParamsJson
+    | MultiAssetMultiPartyCoinTransferInterpreterParamsJson
+    | SingleAssetTwoPartyCoinTransferInterpreterParamsJson
+    | {};
 
   @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances)
   channel!: Channel;
@@ -120,70 +133,73 @@ export class AppInstance<T extends AppName = any> {
 }
 
 export interface AppInstanceJSON<T extends AppName = any> {
-  identityHash: string
-  type: AppType
-  appDefinition: string
-  stateEncoding: string
-  actionEncoding: string
-  appSeqNo: number
-  initialState: AppStates[T]
-  latestState: AppStates[T]
-  latestVersionNumber: number
-  initiatorDeposit: BigNumber
-  initiatorDepositAssetId: string
-  outcomeType: OutcomeType
-  initiatorIdentifier: string
-  responderIdentifier: string
-  responderDeposit: BigNumber
-  responderDepositAssetId: string
-  defaultTimeout: HexString
-  stateTimeout: HexString
-  userIdentifier?: string
-  nodeIdentifier?: string
-  meta?: object
-  latestAction: AppActions[T]
-  outcomeInterpreterParameters?: any
-  channel: Channel
+  identityHash: string;
+  type: AppType;
+  appDefinition: string;
+  stateEncoding: string;
+  actionEncoding: string;
+  appSeqNo: number;
+  initialState: AppStates[T];
+  latestState: AppStates[T];
+  latestVersionNumber: number;
+  initiatorDeposit: BigNumber;
+  initiatorDepositAssetId: string;
+  outcomeType: OutcomeType;
+  initiatorIdentifier: string;
+  responderIdentifier: string;
+  responderDeposit: BigNumber;
+  responderDepositAssetId: string;
+  defaultTimeout: HexString;
+  stateTimeout: HexString;
+  userIdentifier?: string;
+  nodeIdentifier?: string;
+  meta?: object;
+  latestAction: AppActions[T];
+  outcomeInterpreterParameters?: any;
+  channel: Channel;
   createdAt: number;
   updatedAt: number;
 }
 
 export const AppInstanceSerializer: JSONSerializer<AppInstance, AppInstanceJSON> = class {
-  static fromJSON (input: AppInstanceJSON): AppInstance {
+  static fromJSON(input: AppInstanceJSON): AppInstance {
     const inst = new AppInstance();
-    Object.assign(inst, bigNumberifyJson({
-      identityHash: input.identityHash,
-      type: input.type,
-      appDefinition: input.appDefinition,
-      stateEncoding: input.stateEncoding,
-      actionEncoding: input.actionEncoding,
-      appSeqNo: input.appSeqNo,
-      initialState: input.initialState,
-      latestState: input.latestState,
-      latestVersionNumber: input.latestVersionNumber,
-      initiatorDeposit: input.initiatorDeposit,
-      initiatorDepositAssetId: input.initiatorDepositAssetId,
-      outcomeType: input.outcomeType,
-      initiatorIdentifier: input.initiatorIdentifier,
-      responderIdentifier: input.responderIdentifier,
-      responderDeposit: input.responderDeposit,
-      responderDepositAssetId: input.responderDepositAssetId,
-      defaultTimeout: input.defaultTimeout,
-      stateTimeout: input.stateTimeout,
-      userIdentifier: input.userIdentifier,
-      nodeIdentifier: input.nodeIdentifier,
-      meta: input.meta,
-      latestAction: input.latestAction,
-      outcomeInterpreterParameters: input.outcomeInterpreterParameters,
-      channel: input.channel,
-    }));
+    Object.assign(
+      inst,
+      bigNumberifyJson({
+        identityHash: input.identityHash,
+        type: input.type,
+        appDefinition: input.appDefinition,
+        stateEncoding: input.stateEncoding,
+        actionEncoding: input.actionEncoding,
+        appSeqNo: input.appSeqNo,
+        initialState: input.initialState,
+        latestState: input.latestState,
+        latestVersionNumber: input.latestVersionNumber,
+        initiatorDeposit: input.initiatorDeposit,
+        initiatorDepositAssetId: input.initiatorDepositAssetId,
+        outcomeType: input.outcomeType,
+        initiatorIdentifier: input.initiatorIdentifier,
+        responderIdentifier: input.responderIdentifier,
+        responderDeposit: input.responderDeposit,
+        responderDepositAssetId: input.responderDepositAssetId,
+        defaultTimeout: input.defaultTimeout,
+        stateTimeout: input.stateTimeout,
+        userIdentifier: input.userIdentifier,
+        nodeIdentifier: input.nodeIdentifier,
+        meta: input.meta,
+        latestAction: input.latestAction,
+        outcomeInterpreterParameters: input.outcomeInterpreterParameters,
+        channel: input.channel,
+      }),
+    );
     // cannot bignumberify these - they get mangled
     inst.createdAt = new Date(input.createdAt);
     inst.updatedAt = new Date(input.updatedAt);
     return inst;
   }
 
-  static toJSON (input: AppInstance): AppInstanceJSON {
+  static toJSON(input: AppInstance): AppInstanceJSON {
     return deBigNumberifyJson({
       identityHash: input.identityHash,
       type: input.type,

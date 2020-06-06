@@ -5,18 +5,19 @@ import { abbreviate } from "./strings";
 
 const { bigNumberify } = utils;
 
-export const bigNumberifyJson = (json: any): any =>
-  typeof json === "string"
+export function bigNumberifyJson<T = any>(json: any): T {
+  return typeof json === "string"
     ? json
     : JSON.parse(JSON.stringify(json), (key: string, value: any): any =>
         value && value["_hex"] ? toBN(value._hex) : value,
       );
+}
 
-export const deBigNumberifyJson = (json: any): any =>
-  JSON.parse(JSON.stringify(json), (key: string, val: any) =>
+export function deBigNumberifyJson<T = any>(json: any): T {
+  return JSON.parse(JSON.stringify(json), (key: string, val: any) =>
     val && isBN(val) ? val.toHexString() : val,
   );
-
+}
 // Give abrv = true to abbreviate hex strings and addresss to look like "0x6FEC..kuQk"
 export const stringify = (value: any, abrv = false, spaces = 2): string =>
   JSON.stringify(
@@ -43,11 +44,11 @@ export const safeJsonStringify = (value: any): string => {
   }
 };
 
-export const safeJsonParse = (value: any): any => {
+export function safeJsonParse<T = any>(value: any): T {
   try {
     return typeof value === "string" ? JSON.parse(value, nullify) : value;
   } catch (e) {
     console.log(`Failed to safeJsonParse value ${value}: ${e.message}`);
     return value;
   }
-};
+}

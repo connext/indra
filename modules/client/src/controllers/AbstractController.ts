@@ -68,7 +68,7 @@ export abstract class AbstractController {
       this.listener.waitFor(
         EventNames.INSTALL_FAILED_EVENT,
         CF_METHOD_TIMEOUT * 3,
-        (msg) => msg.params.identityHash === appIdentityHash,
+        (msg) => msg.params.proposal.identityHash === appIdentityHash,
       ),
       this.listener.waitFor(
         EventNames.REJECT_INSTALL_EVENT,

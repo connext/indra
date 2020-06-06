@@ -99,9 +99,7 @@ async function getOutgoingEventDataFromProtocol(
         ...baseEvent,
         type: EventNames.INSTALL_EVENT,
         data: {
-          appIdentityHash: postProtocolStateChannel.getAppInstanceByAppSeqNo(
-            (params as ProtocolParams.Install).appSeqNo,
-          ).identityHash,
+          appIdentityHash: (params as ProtocolParams.Install).proposal.identityHash,
         },
       } as ProtocolEventMessage<typeof EventNames.INSTALL_EVENT>;
     }

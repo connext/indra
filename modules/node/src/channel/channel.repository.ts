@@ -3,10 +3,7 @@ import { NotFoundException } from "@nestjs/common";
 import { constants } from "ethers";
 import { EntityManager, EntityRepository, Repository } from "typeorm";
 
-import {
-  convertAppToInstanceJSON,
-  convertAppToProposedInstanceJSON,
-} from "../appInstance/appInstance.repository";
+import { convertAppToInstanceJSON } from "../appInstance/appInstance.repository";
 import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
@@ -31,7 +28,7 @@ export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
     multisigAddress: channel.multisigAddress,
     proposedAppInstances: (channel.appInstances || [])
       .filter((app) => app.type === AppType.PROPOSAL)
-      .map((app) => [app.identityHash, convertAppToProposedInstanceJSON(app)]),
+      .map((app) => [app.identityHash, convertAppToInstanceJSON(app, channel)]),
     schemaVersion: channel.schemaVersion,
     userIdentifiers: [channel.nodeIdentifier, channel.userIdentifier], // always [initiator, responder] -- node will always be initiator
   };

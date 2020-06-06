@@ -172,7 +172,7 @@ export class AppRegistryService implements OnModuleInit {
           initialState.signatures[1],
           appInstance.multisigAddress,
         );
-        this.withdrawService.handleUserWithdraw(appInstance);
+        await this.withdrawService.handleUserWithdraw(appInstance);
         break;
       }
       default:
@@ -234,7 +234,7 @@ export class AppRegistryService implements OnModuleInit {
     }
 
     const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
-      appInstance.appInterface.addr,
+      appInstance.appDefinition,
     );
 
     // this middleware is only relevant for require online
@@ -278,7 +278,7 @@ export class AppRegistryService implements OnModuleInit {
 
   private installMiddleware = async (cxt: InstallMiddlewareContext) => {
     const { appInstance } = cxt;
-    const appDef = appInstance.appInterface.addr;
+    const appDef = appInstance.appDefinition;
 
     const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
 
@@ -395,7 +395,7 @@ export class AppRegistryService implements OnModuleInit {
 
   private uninstallMiddleware = async (cxt: UninstallMiddlewareContext): Promise<void> => {
     const { appInstance, role } = cxt;
-    const appDef = appInstance.appInterface.addr;
+    const appDef = appInstance.appDefinition;
 
     const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
 

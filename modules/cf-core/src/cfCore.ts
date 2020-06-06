@@ -1,6 +1,6 @@
 import {
   Address,
-  AppInstanceProposal,
+  AppInstanceJson,
   ContractAddresses,
   EventNames,
   IChannelSigner,
@@ -271,7 +271,10 @@ export class CFCore {
           }
 
           case PersistStateChannelType.SyncProposal: {
-            const [setState] = signedCommitments as [SetStateCommitment];
+            const [setState, conditional] = signedCommitments as [
+              SetStateCommitment,
+              ConditionalTransactionCommitment,
+            ];
             const proposal = stateChannel.proposedAppInstances.get(setState.appIdentityHash);
             if (!proposal) {
               throw new Error("Could not find proposal in post protocol channel");
@@ -282,6 +285,7 @@ export class CFCore {
               proposal,
               stateChannel.numProposedApps,
               setState.toJson(),
+              conditional.toJson(),
             );
             break;
           }
@@ -289,11 +293,19 @@ export class CFCore {
             break;
           }
           case PersistStateChannelType.SyncFreeBalance: {
-            const [setState, conditional] = signedCommitments as [
+            const [setState] = signedCommitments as [
               SetStateCommitment,
               ConditionalTransactionCommitment | undefined,
             ];
-            if (!conditional) {
+            let latestInstalled;
+            try {
+              latestInstalled = stateChannel
+                .getAppInstanceByAppSeqNo(stateChannel.numProposedApps)
+                .toJson();
+            } catch (e) {
+              latestInstalled = undefined;
+            }
+            if (!latestInstalled) {
               // this was an uninstall, so remove app instance
               await this.storeService.removeAppInstance(
                 stateChannel.multisigAddress,
@@ -302,13 +314,15 @@ export class CFCore {
                 setState.toJson(),
               );
             } else {
+              const latestInstalled = stateChannel
+                .getAppInstanceByAppSeqNo(stateChannel.numProposedApps)
+                .toJson();
               // this was an install, add app and remove proposals
               await this.storeService.createAppInstance(
                 stateChannel.multisigAddress,
-                stateChannel.getAppInstanceByAppSeqNo(stateChannel.numProposedApps).toJson(),
+                latestInstalled,
                 stateChannel.freeBalance.toJson(),
                 setState.toJson(),
-                conditional.toJson(),
               );
             }
             break;
@@ -337,7 +351,7 @@ export class CFCore {
         args: [
           PersistAppType,
           StateChannel,
-          AppInstance | AppInstanceProposal,
+          AppInstance | AppInstanceJson,
           SetStateCommitment,
           ConditionalTransactionCommitment,
         ],
@@ -351,14 +365,15 @@ export class CFCore {
         ] = args;
         const { multisigAddress, numProposedApps, freeBalance } = postProtocolChannel;
         const { identityHash } = app;
-        let appContext: AppInstance | AppInstanceProposal | undefined;
+        let appContext: AppInstance | AppInstanceJson | undefined;
         switch (type) {
           case PersistAppType.CreateProposal: {
             await this.storeService.createAppProposal(
               multisigAddress,
-              app as AppInstanceProposal,
+              app as AppInstanceJson,
               numProposedApps,
               signedSetStateCommitment.toJson(),
+              signedConditionalTxCommitment.toJson(),
             );
             break;
           }
@@ -374,7 +389,6 @@ export class CFCore {
               (app as AppInstance).toJson(),
               freeBalance.toJson(),
               signedSetStateCommitment.toJson(),
-              signedConditionalTxCommitment.toJson(),
             );
             break;
           }
