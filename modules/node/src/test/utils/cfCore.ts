@@ -20,10 +20,10 @@ import {
   getRandomIdentifier,
   getRandomSignature,
 } from "@connext/utils";
-import { constants } from "ethers";
-import { defaultAbiCoder } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 const { AddressZero, HashZero, Zero, One } = constants;
+const { defaultAbiCoder } = utils;
 
 export const createAppInstanceJson = (
   overrides: Partial<AppInstanceJson> = {},

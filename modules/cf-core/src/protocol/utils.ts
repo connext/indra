@@ -10,7 +10,7 @@ import {
   AssetId,
 } from "@connext/types";
 import { logTime, recoverAddressFromChannelMessage, getAddressFromAssetId } from "@connext/utils";
-import { providers, utils } from "ethers";
+import { providers, utils, constants } from "ethers";
 
 import {
   AppInstance,
@@ -20,8 +20,8 @@ import {
   StateChannel,
 } from "../models";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR, TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
-import { MaxUint256 } from "ethers/constants";
 
+const { MaxUint256 } = constants;
 const { defaultAbiCoder, getAddress } = utils;
 
 export async function assertIsValidSignature(
