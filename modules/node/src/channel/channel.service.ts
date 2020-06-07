@@ -8,7 +8,7 @@ import {
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
-import { providers, constants, utils } from "ethers";
+import { providers, constants, utils, Contract } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -16,12 +16,13 @@ import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { DepositService } from "../deposit/deposit.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
+import tokenAbi from "../abi/token.abi";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
 
 const { AddressZero } = constants;
-const { getAddress, toUtf8Bytes, sha256, bigNumberify } = utils;
+const { getAddress, toUtf8Bytes, sha256, bigNumberify, formatUnits } = utils;
 
 export enum RebalanceType {
   COLLATERALIZE = "COLLATERALIZE",
@@ -214,6 +215,25 @@ export class ChannelService {
         `Node is not configured to rebalance asset ${assetId} for user ${userPublicIdentifier}`,
       );
     }
+
+    // convert targets to proper units for token
+    if (assetId !== AddressZero) {
+      const token = new Contract(assetId, tokenAbi, this.configService.getEthProvider());
+      const decimals = await token.decimals();
+      console.log("decimals: ", decimals);
+      if (decimals !== 18) {
+        this.log.warn(`Token has ${decimals} decimals, converting rebalance targets`);
+        targets.collateralizeThreshold = bigNumberify(
+          formatUnits(targets.collateralizeThreshold, decimals).split(".")[0],
+        );
+        targets.target = bigNumberify(formatUnits(targets.target, decimals).split(".")[0]);
+        targets.reclaimThreshold = bigNumberify(
+          formatUnits(targets.reclaimThreshold, decimals).split(".")[0],
+        );
+        this.log.warn(`Converted rebalance targets: ${targets}`);
+        console.log("targets: ", targets);
+      }
+    }
     this.log.debug(`Rebalancing target: ${stringify(targets)}`);
     return targets;
   }
@@ -279,7 +299,9 @@ export class ChannelService {
       !creationData.data.owners.includes(existingOwners[1])
     ) {
       throw new Error(
-        `Channel has already been created with owners ${stringify(existingOwners)}. Event data: ${stringify(creationData)}`,
+        `Channel has already been created with owners ${stringify(
+          existingOwners,
+        )}. Event data: ${stringify(creationData)}`,
       );
     }
     if (existing.available) {
