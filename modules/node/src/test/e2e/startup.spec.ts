@@ -1,5 +1,6 @@
 import { ColorfulLogger, getRandomChannelSigner } from "@connext/utils";
 import { Test, TestingModule } from "@nestjs/testing";
+import { INestApplication } from "@nestjs/common";
 
 import { AppModule } from "../../app.module";
 import { ConfigService } from "../../config/config.service";
@@ -28,11 +29,14 @@ describe("Startup", () => {
       .compile();
     app = moduleFixture.createNestApplication();
     expect(app.init()).to.not.be.rejected;
-    await app.listen();
+    const configService = moduleFixture.get<ConfigService>(ConfigService);
+    await app.listen(configService.getPort());
   });
 
   it("should throw an error on startup if node is broke", async () => {
-    const configService = new MockConfigService(getRandomChannelSigner(env.ethProviderUrl));
+    const configService = new MockConfigService({
+      signer: getRandomChannelSigner(env.ethProviderUrl),
+    });
     log.info(`Creatted a config service`);
     expect(
       Test.createTestingModule({
