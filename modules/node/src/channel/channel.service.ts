@@ -5,6 +5,7 @@ import {
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
 } from "@connext/types";
+import { ERC20 } from "@connext/contracts";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
@@ -16,7 +17,6 @@ import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { DepositService } from "../deposit/deposit.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import tokenAbi from "../abi/token.abi";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
@@ -218,7 +218,7 @@ export class ChannelService {
 
     // convert targets to proper units for token
     if (assetId !== AddressZero) {
-      const token = new Contract(assetId, tokenAbi, this.configService.getEthProvider());
+      const token = new Contract(assetId, ERC20.abi, this.configService.getEthProvider());
       const decimals = await token.decimals();
       console.log("decimals: ", decimals);
       if (decimals !== 18) {
