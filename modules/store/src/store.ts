@@ -206,10 +206,7 @@ export class StoreService implements IStoreService {
     });
   }
 
-  async updateStateChannel(
-    multisigAddress: string,
-    monotonicNumProposedApps: number,
-  ): Promise<void> {
+  async incrementNumProposedApps(multisigAddress: string): Promise<void> {
     return this.execute((store) => {
       const channel = this.getStateChannelFromStore(store, multisigAddress);
       if (!channel) {
@@ -217,7 +214,7 @@ export class StoreService implements IStoreService {
       }
       const updatedStore = this.setStateChannel(store, {
         ...channel,
-        monotonicNumProposedApps,
+        monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
       });
       return this.saveStore(updatedStore);
     });

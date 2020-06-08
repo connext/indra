@@ -271,10 +271,7 @@ export class CFCore {
           }
 
           case PersistStateChannelType.SyncNumProposedApps: {
-            await this.storeService.updateStateChannel(
-              stateChannel.multisigAddress,
-              stateChannel.numProposedApps,
-            );
+            await this.storeService.incrementNumProposedApps(stateChannel.multisigAddress);
             break;
           }
 

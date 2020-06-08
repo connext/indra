@@ -48,7 +48,7 @@ export interface IStoreService extends IWatcherStoreService {
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void>;
 
-  updateStateChannel(multisigAddress: string, monotonicNumProposedApps: number): Promise<void>;
+  incrementNumProposedApps(multisigAddress: string): Promise<void>;
 
   ///// App instances
   createAppInstance(
