@@ -90,7 +90,7 @@ describe("Sync", () => {
       0,
       new Logger("CreateClient", env.logLevel, true, "B"),
     );
-  });
+  }, 30_000);
 
   describe("Sync::propose", () => {
     let identityHash: string;
@@ -225,6 +225,7 @@ describe("Sync", () => {
   });
 
   describe("Sync::propose + rejectInstall", () => {
+    let proposedAppIdentityHash: string;
     beforeEach(async () => {
       // propose-specific setup
       messagingServiceA = new MemoryMessagingServiceWithLimits(sharedEventEmitter, 0, "propose");
@@ -256,26 +257,31 @@ describe("Sync", () => {
           log.info(`Caught error sending rpc: ${e.message}`);
         }
       });
-
-      await nodeA.rpcRouter.dispatch({
-        methodName: MethodNames.chan_rejectInstall,
-        parameters: {
-          appIdentityHash: res.data.appInstanceId,
-          multisigAddress,
-        } as MethodParams.RejectInstall,
-      });
+      proposedAppIdentityHash = res.data.appInstanceId;
 
       // get expected channel from nodeB
       expect(isHexString(multisigAddress)).toBe(true);
       expectedChannel = await storeServiceA.getStateChannel(multisigAddress);
       const unsynced = await storeServiceB.getStateChannel(multisigAddress);
       expect(expectedChannel).toBeDefined();
-      expect(expectedChannel!.proposedAppInstances.length).toBe(0);
+      expect(expectedChannel!.proposedAppInstances.length).toBe(1);
       expect(unsynced?.proposedAppInstances.length).toBe(0);
-      messagingServiceA.clearLimits();
-    });
 
-    test.only("sync protocol responder is missing a proposal held by the protocol initiator", async () => {
+      await nodeA.rpcRouter.dispatch({
+        methodName: MethodNames.chan_rejectInstall,
+        parameters: {
+          appIdentityHash: proposedAppIdentityHash,
+          multisigAddress,
+        } as MethodParams.RejectInstall,
+      });
+
+      expectedChannel = await storeServiceA.getStateChannel(multisigAddress);
+      expect(expectedChannel!.proposedAppInstances.length).toBe(0);
+
+      messagingServiceA.clearLimits();
+    }, 30_000);
+
+    test("sync protocol responder is missing a proposal held by the protocol initiator", async () => {
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve, reject) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -327,8 +333,6 @@ describe("Sync", () => {
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(1);
       expect(newChannelB!.monotonicNumProposedApps).toBe(3);
       expect(newChannelB!.proposedAppInstances.length).toBe(1);
-      console.log(`DONE`);
-      await delay(1000);
     }, 30_000);
 
     test("sync protocol initiator is missing a proposal held by the protocol responder", async () => {
@@ -352,17 +356,17 @@ describe("Sync", () => {
 
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
       expect(eventData).toMatchObject({
-        from: nodeB.publicIdentifier,
+        from: (newNodeB as CFCore).publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
       expect(syncedChannel).toMatchObject(expectedChannel!);
 
-      const rpc = makeProposeCall(newNodeB as CFCore, TicTacToeApp, multisigAddress);
+      const rpc = makeProposeCall(nodeA, TicTacToeApp, multisigAddress);
       const res: any = await new Promise(async (resolve) => {
-        (newNodeB as CFCore).once("PROPOSE_INSTALL_EVENT", resolve);
+        nodeA.once("PROPOSE_INSTALL_EVENT", resolve);
         try {
-          await nodeB.rpcRouter.dispatch({
+          await (newNodeB as CFCore).rpcRouter.dispatch({
             ...rpc,
             parameters: deBigNumberifyJson(rpc.parameters),
           });
@@ -374,9 +378,7 @@ describe("Sync", () => {
       const newAppInstanceA = await storeServiceA.getAppProposal(res.data.appInstanceId);
       const newAppInstanceB = await storeServiceB.getAppProposal(res.data.appInstanceId);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
-      console.log("newChannelA: ", stringify(newChannelA));
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      console.log("newChannelB: ", stringify(newChannelB));
       expect(newChannelA!).toMatchObject(newChannelB!);
       expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
       expect(newAppInstanceB!.identityHash).toBe(res.data.appInstanceId);
