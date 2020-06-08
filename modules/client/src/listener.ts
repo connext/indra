@@ -310,7 +310,7 @@ export class ConnextListener {
         return;
       } else {
         this.log.error(`Caught error, rejecting install: ${e.message}`);
-        await this.connext.rejectInstallApp(appIdentityHash);
+        await this.connext.rejectInstallApp(appIdentityHash, e.message);
         return;
       }
     }
