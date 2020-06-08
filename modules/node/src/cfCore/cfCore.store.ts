@@ -239,6 +239,7 @@ export class CFCoreStore implements IStoreService {
 
     await getManager().transaction(async (transactionalEntityManager) => {
       channel = await transactionalEntityManager.save(channel);
+      await transactionalEntityManager.save(freeBalanceApp);
       await transactionalEntityManager.save(freeBalanceUpdateCommitment);
     });
     await this.cache.set(
