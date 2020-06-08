@@ -626,10 +626,14 @@ export class ConnextClient implements IConnextClient {
     } as MethodParams.Uninstall);
   };
 
-  public rejectInstallApp = async (appIdentityHash: string): Promise<MethodResults.Uninstall> => {
+  public rejectInstallApp = async (
+    appIdentityHash: string,
+    reason?: string,
+  ): Promise<MethodResults.Uninstall> => {
     return this.channelProvider.send(MethodNames.chan_rejectInstall, {
       appIdentityHash,
       multisigAddress: this.multisigAddress,
+      reason,
     } as MethodParams.RejectInstall);
   };
 
@@ -753,7 +757,7 @@ export class ConnextClient implements IConnextClient {
     // remove from `proposedAppInstances`
     for (const hanging of hangingProposals) {
       try {
-        await this.rejectInstallApp(hanging.identityHash);
+        await this.rejectInstallApp(hanging.identityHash, `Removing hanging proposals`);
       } catch (e) {
         this.log.error(
           `Could not remove proposal: ${hanging.identityHash}. Error: ${e.stack || e.message}`,
