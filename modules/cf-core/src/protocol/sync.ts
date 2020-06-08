@@ -566,18 +566,24 @@ async function syncFreeBalanceState(
 
   // check to see if the free balance update came from an app intall
   // or an app uninstall by looking at the active apps
-  const activeAppIds = Object.keys(freeBalance.toFreeBalanceState().activeAppsMap);
-  const uninstalledApp = [...ourChannel.appInstances.values()].find((app) => {
-    return !activeAppIds.includes(app.identityHash);
-  });
-  const installedProposal = [...ourChannel.proposedAppInstances.values()].find((proposal) =>
-    activeAppIds.includes(proposal.identityHash),
+  const activeAppIds = Object.keys(
+    FreeBalanceClass.fromAppInstance(ourChannel.freeBalance).toFreeBalanceState().activeAppsMap,
   );
+
+  const uninstalledAppId = activeAppIds.find((appId) => {
+    return !counterpartyChannel.appInstances.has(appId);
+  });
+
+  const installedProposal = [...counterpartyChannel.appInstances.values()].find((appInstance) =>
+    ourChannel.proposedAppInstances.has(appInstance.identityHash),
+  );
+  console.log("uninstalledApp: ", uninstalledAppId);
+  console.log("installedProposal: ", installedProposal);
 
   let updatedChannel: StateChannel;
   let setStateCommitment: SetStateCommitment;
   let conditionalCommitment: ConditionalTransactionCommitment | undefined = undefined;
-  if (installedProposal && !uninstalledApp) {
+  if (installedProposal && !uninstalledAppId) {
     // set state commitment needed by store is the free balance
     // commitment
     setStateCommitment = SetStateCommitment.fromJson(freeBalanceSetState.toJson());
@@ -593,24 +599,24 @@ async function syncFreeBalanceState(
     conditionalCommitment = ConditionalTransactionCommitment.fromJson(conditionalJson);
     await assertSignerPresent(signer, conditionalCommitment);
     // add app to channel
-    const appInstance = AppInstance.fromJson(installedProposal);
+    const appInstance = installedProposal;
     updatedChannel = ourChannel
       .removeProposal(appInstance.identityHash)
       .addAppInstance(appInstance)
       .setFreeBalance(freeBalance);
-  } else if (uninstalledApp && !installedProposal) {
+  } else if (uninstalledAppId && !installedProposal) {
     // set state commitment needed here is for the app
     // counterparty may not have this since it is uninstalled,
     // so find from our records
-    const json = ourSetState.find(
+    const json = counterpartySetState.find(
       (c) =>
-        c.appIdentityHash === uninstalledApp.identityHash &&
-        toBN(c.versionNumber).eq(uninstalledApp.versionNumber),
+        c.appIdentityHash === uninstalledAppId &&
+        toBN(c.versionNumber).eq(ourChannel.appInstances.get(uninstalledAppId)!.versionNumber),
     );
     if (!json) {
       throw new Error(
         `Failed to find final set state commitment for app in counterparty's commitments, aborting. App: ${stringify(
-          uninstalledApp,
+          uninstalledAppId,
         )}, counterparty commitments: ${stringify(counterpartySetState)}`,
       );
     }
@@ -619,17 +625,16 @@ async function syncFreeBalanceState(
       getSignerAddressFromPublicIdentifier(publicIdentifier),
       setStateCommitment,
     );
-    updatedChannel = ourChannel
-      .removeAppInstance(uninstalledApp.identityHash)
-      .setFreeBalance(freeBalance);
+    updatedChannel = ourChannel.removeAppInstance(uninstalledAppId).setFreeBalance(freeBalance);
   } else {
     throw new Error(
-      `Free balance has higher nonce, but cannot find an app that has been uninstalled or installed, or found both an installed and uninstalled app. Our channel: ${stringify(
+      `Free balance has higher nonce, but cannot find an app that has been uninstalled or installed, or found both an installed and uninstalled app. installed: ${installedProposal} uninstalled: ${uninstalledAppId} Our channel: ${stringify(
         ourChannel.toJson(),
-      )}, free balance: ${stringify(freeBalance.toFreeBalanceState())}`,
+      )}, counterparty: ${stringify(counterpartyChannel.toJson())}`,
     );
   }
 
+  console.log("syncFreeBalanceState::updatedChannel: ", stringify(updatedChannel.toJson()));
   return {
     updatedChannel,
     commitments: [setStateCommitment, conditionalCommitment].filter((x) => !!x),
