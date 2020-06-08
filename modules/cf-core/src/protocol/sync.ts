@@ -17,7 +17,7 @@ import {
   recoverAddressFromChannelMessage,
 } from "@connext/utils";
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { StateChannel, AppInstance, FreeBalanceClass } from "../models";
+import { StateChannel, FreeBalanceClass } from "../models";
 import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 
 import { stateChannelClassFromStoreByMultisig, assertIsValidSignature } from "./utils";
@@ -564,7 +564,7 @@ async function syncFreeBalanceState(
 
   const freeBalance = FreeBalanceClass.fromAppInstance(counterpartyFreeBalance);
 
-  // check to see if the free balance update came from an app intall
+  // check to see if the free balance update came from an app install
   // or an app uninstall by looking at the active apps
   const activeAppIds = Object.keys(
     FreeBalanceClass.fromAppInstance(ourChannel.freeBalance).toFreeBalanceState().activeAppsMap,
@@ -574,11 +574,9 @@ async function syncFreeBalanceState(
     return !counterpartyChannel.appInstances.has(appId);
   });
 
-  const installedProposal = [...counterpartyChannel.appInstances.values()].find((appInstance) =>
-    ourChannel.proposedAppInstances.has(appInstance.identityHash),
+  const installedProposal = [...counterpartyChannel.appInstances.values()].find(
+    (appInstance) => !ourChannel.appInstances.has(appInstance.identityHash),
   );
-  console.log("uninstalledApp: ", uninstalledAppId);
-  console.log("installedProposal: ", installedProposal);
 
   let updatedChannel: StateChannel;
   let setStateCommitment: SetStateCommitment;
@@ -634,7 +632,6 @@ async function syncFreeBalanceState(
     );
   }
 
-  console.log("syncFreeBalanceState::updatedChannel: ", stringify(updatedChannel.toJson()));
   return {
     updatedChannel,
     commitments: [setStateCommitment, conditionalCommitment].filter((x) => !!x),
