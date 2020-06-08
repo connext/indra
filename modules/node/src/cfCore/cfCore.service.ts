@@ -290,10 +290,12 @@ export class CFCoreService {
   async rejectInstallApp(
     appIdentityHash: string,
     multisigAddress: string,
+    reason: string,
   ): Promise<MethodResults.RejectInstall> {
     const parameters: MethodParams.RejectInstall = {
       appIdentityHash,
       multisigAddress,
+      reason,
     };
     this.logCfCoreMethodStart(MethodNames.chan_rejectInstall, parameters);
     const rejectRes = await this.cfCore.rpcRouter.dispatch({

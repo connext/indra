@@ -177,6 +177,7 @@ type ProposeInstallResult = {
 type RejectInstallParams = {
   appIdentityHash: Bytes32;
   multisigAddress: Address;
+  reason?: string;
 };
 
 type RejectInstallResult = {};
