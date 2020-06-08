@@ -119,7 +119,7 @@ describe("Withdraw offline tests", () => {
     const client = await createAndFundChannel({
       ceiling: { [RECEIVED]: 0 },
       protocol: ProtocolNames.install,
-      params: ({ appInterface: { addr } } as unknown) as ProtocolParams.Install,
+      params: { proposal: { appDefinition: addr } } as ProtocolParams.Install,
     });
     const withdrawParams = {
       amount: ZERO_ZERO_ZERO_FIVE_ETH,

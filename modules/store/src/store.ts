@@ -1,7 +1,6 @@
 import { ChallengeRegistry } from "@connext/contracts";
 import {
   AppInstanceJson,
-  AppInstanceProposal,
   Bytes32,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
@@ -229,7 +228,6 @@ export class StoreService implements IStoreService {
     appInstance: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
-    signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
     return this.execute((store) => {
       const channel = this.getStateChannelFromStore(store, multisigAddress);
@@ -272,14 +270,10 @@ export class StoreService implements IStoreService {
       this.log.debug(
         `Adding conditional transaction, new free balance state, and revised channel to store`,
       );
-      updatedStore = this.setConditionalTransactionCommitment(
-        this.setSetStateCommitment(
-          this.setStateChannel(store, { ...channel, freeBalanceAppInstance }),
-          freeBalanceAppInstance.identityHash,
-          signedFreeBalanceUpdate,
-        ),
-        appInstance.identityHash,
-        signedConditionalTxCommitment,
+      updatedStore = this.setSetStateCommitment(
+        this.setStateChannel(store, { ...channel, freeBalanceAppInstance }),
+        freeBalanceAppInstance.identityHash,
+        signedFreeBalanceUpdate,
       );
       return this.saveStore(updatedStore);
     });
@@ -385,7 +379,7 @@ export class StoreService implements IStoreService {
     });
   }
 
-  async getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal | undefined> {
+  async getAppProposal(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
     const channel = await this.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!channel) {
       return undefined;
@@ -399,9 +393,10 @@ export class StoreService implements IStoreService {
 
   async createAppProposal(
     multisigAddress: string,
-    appInstance: AppInstanceProposal,
+    appInstance: AppInstanceJson,
     monotonicNumProposedApps: number,
     signedSetStateCommitment: SetStateCommitmentJSON,
+    signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
     return this.execute((store) => {
       const channel = this.getStateChannelFromStore(store, multisigAddress);
@@ -417,10 +412,14 @@ export class StoreService implements IStoreService {
         channel.proposedAppInstances.push([appInstance.identityHash, appInstance]);
       }
       this.log.debug(`Adding set state commitment to store, and updating channel`);
-      const updatedStore = this.setSetStateCommitment(
-        this.setStateChannel(store, { ...channel, monotonicNumProposedApps }),
+      const updatedStore = this.setConditionalTransactionCommitment(
+        this.setSetStateCommitment(
+          this.setStateChannel(store, { ...channel, monotonicNumProposedApps }),
+          appInstance.identityHash,
+          signedSetStateCommitment,
+        ),
         appInstance.identityHash,
-        signedSetStateCommitment,
+        signedConditionalTxCommitment,
       );
       return this.saveStore(updatedStore);
     });
@@ -698,7 +697,7 @@ export class StoreService implements IStoreService {
     };
     const updatedApp = {
       ...ourApp,
-      latestAction: defaultAbiCoder.decode([ourApp.appInterface.actionEncoding], encodedAction),
+      latestAction: defaultAbiCoder.decode([ourApp.abiEncodings.actionEncoding], encodedAction),
     };
     await this.updateAppInstance(channel.multisigAddress, updatedApp, setStateJson);
 
@@ -792,7 +791,7 @@ export class StoreService implements IStoreService {
 
   private hasAppIdentityHash(
     hash: string,
-    toSearch: [string, AppInstanceJson][] | [string, AppInstanceProposal][],
+    toSearch: [string, AppInstanceJson][] | [string, AppInstanceJson][],
   ) {
     const existsIndex = toSearch.findIndex(([idHash, app]) => idHash === hash);
     return existsIndex >= 0;

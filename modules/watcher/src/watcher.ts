@@ -776,7 +776,7 @@ export class Watcher implements IWatcher {
       [app.latestState],
     );
     const encodedFinalState = !!app.latestAction
-      ? await new Contract(app.appInterface.addr, CounterfactualApp.abi, this.provider).applyAction(
+      ? await new Contract(app.appDefinition, CounterfactualApp.abi, this.provider).applyAction(
           encodedState,
           defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]),
         )
@@ -901,7 +901,7 @@ export class Watcher implements IWatcher {
         getSignerAddressFromPublicIdentifier(app.responderIdentifier),
       ],
       multisigAddress,
-      appDefinition: app.appInterface.addr,
+      appDefinition: app.appDefinition,
       defaultTimeout: toBN(app.defaultTimeout),
     };
   };

@@ -52,7 +52,7 @@ export class RejectInstallController extends MethodController {
   ): Promise<MethodResults.RejectInstall> {
     const { store, messagingService, publicIdentifier } = requestHandler;
 
-    const { appIdentityHash } = params;
+    const { appIdentityHash, reason } = params;
 
     const proposal = preProtocolStateChannel!.proposedAppInstances.get(appIdentityHash);
 
@@ -63,6 +63,7 @@ export class RejectInstallController extends MethodController {
       type: EventNames.REJECT_INSTALL_EVENT,
       data: {
         appInstance: proposal!,
+        reason,
       },
     };
 

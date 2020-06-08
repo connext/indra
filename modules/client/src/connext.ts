@@ -3,7 +3,6 @@ import {
   Address,
   AppAction,
   AppInstanceJson,
-  AppInstanceProposal,
   AppRegistry,
   AssetId,
   ChannelMethods,
@@ -627,10 +626,14 @@ export class ConnextClient implements IConnextClient {
     } as MethodParams.Uninstall);
   };
 
-  public rejectInstallApp = async (appIdentityHash: string): Promise<MethodResults.Uninstall> => {
+  public rejectInstallApp = async (
+    appIdentityHash: string,
+    reason?: string,
+  ): Promise<MethodResults.Uninstall> => {
     return this.channelProvider.send(MethodNames.chan_rejectInstall, {
       appIdentityHash,
       multisigAddress: this.multisigAddress,
+      reason,
     } as MethodParams.RejectInstall);
   };
 
@@ -748,13 +751,13 @@ export class ConnextClient implements IConnextClient {
     const { appInstances: proposed } = await this.getProposedAppInstances();
 
     // deal with any proposed swap or linked transfer apps
-    const hangingProposals = proposed.filter((proposal: AppInstanceProposal) =>
+    const hangingProposals = proposed.filter((proposal: AppInstanceJson) =>
       appDefinitions.includes(proposal.appDefinition),
     );
     // remove from `proposedAppInstances`
     for (const hanging of hangingProposals) {
       try {
-        await this.rejectInstallApp(hanging.identityHash);
+        await this.rejectInstallApp(hanging.identityHash, `Removing hanging proposals`);
       } catch (e) {
         this.log.error(
           `Could not remove proposal: ${hanging.identityHash}. Error: ${e.stack || e.message}`,
@@ -768,7 +771,7 @@ export class ConnextClient implements IConnextClient {
    */
   private uninstallAllAppsByDefintion = async (appDefinitions: string[]): Promise<void> => {
     const apps = (await this.getAppInstances()).filter((app: AppInstanceJson) =>
-      appDefinitions.includes(app.appInterface.addr),
+      appDefinitions.includes(app.appDefinition),
     );
     // TODO: ARJUN there is an edgecase where this will cancel withdrawal
     for (const app of apps) {

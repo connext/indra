@@ -158,7 +158,7 @@ describe("Deposits", () => {
     const getDepositApps = async () => {
       const apps = await receiver.getAppInstances();
       return apps.filter(
-        (app) => app.appInterface.addr === client.config.contractAddresses.DepositApp,
+        (app) => app.appDefinition === client.config.contractAddresses.DepositApp,
       )[0];
     };
     while (!(await getDepositApps())) {

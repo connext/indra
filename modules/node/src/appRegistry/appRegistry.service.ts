@@ -140,7 +140,11 @@ export class AppRegistryService implements OnModuleInit {
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.stack || e.message}`);
-      await this.cfCoreService.rejectInstallApp(appIdentityHash, installerChannel.multisigAddress);
+      await this.cfCoreService.rejectInstallApp(
+        appIdentityHash,
+        installerChannel.multisigAddress,
+        e.message,
+      );
       return;
     }
   }
@@ -170,7 +174,7 @@ export class AppRegistryService implements OnModuleInit {
           initialState.signatures[1],
           appInstance.multisigAddress,
         );
-        this.withdrawService.handleUserWithdraw(appInstance);
+        await this.withdrawService.handleUserWithdraw(appInstance);
         break;
       }
       default:
@@ -232,7 +236,7 @@ export class AppRegistryService implements OnModuleInit {
     }
 
     const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
-      appInstance.appInterface.addr,
+      appInstance.appDefinition,
     );
 
     // this middleware is only relevant for require online
@@ -269,6 +273,7 @@ export class AppRegistryService implements OnModuleInit {
       await this.cfCoreService.rejectInstallApp(
         existingSenderApp.identityHash,
         existingSenderApp.channel.multisigAddress,
+        e.message,
       );
       return;
     }
@@ -276,7 +281,7 @@ export class AppRegistryService implements OnModuleInit {
 
   private installMiddleware = async (cxt: InstallMiddlewareContext) => {
     const { appInstance } = cxt;
-    const appDef = appInstance.appInterface.addr;
+    const appDef = appInstance.appDefinition;
 
     const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
 
@@ -393,7 +398,7 @@ export class AppRegistryService implements OnModuleInit {
 
   private uninstallMiddleware = async (cxt: UninstallMiddlewareContext): Promise<void> => {
     const { appInstance, role } = cxt;
-    const appDef = appInstance.appInterface.addr;
+    const appDef = appInstance.appDefinition;
 
     const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
 

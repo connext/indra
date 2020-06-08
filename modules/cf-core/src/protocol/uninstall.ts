@@ -15,11 +15,7 @@ import { getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel } from "../models";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
-import {
-  assertIsValidSignature,
-  computeTokenIndexedFreeBalanceIncrements,
-  stateChannelClassFromStoreByMultisig,
-} from "./utils";
+import { assertIsValidSignature, computeTokenIndexedFreeBalanceIncrements } from "./utils";
 
 const protocol = ProtocolNames.uninstall;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
@@ -30,7 +26,7 @@ const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } 
  */
 export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
-    const { message, store, network } = context;
+    const { message, network, preProtocolStateChannel } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
     let substart = start;
@@ -41,15 +37,13 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const {
       responderIdentifier,
       appIdentityHash,
-      multisigAddress,
       action,
       stateTimeout,
     } = params as ProtocolParams.Uninstall;
 
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
-      multisigAddress,
-      store,
-    );
+    if (!preProtocolStateChannel) {
+      throw new Error("No state channel found for uninstall");
+    }
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const error = yield [
@@ -162,7 +156,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   } as any,
 
   1 /* Responding */: async function* (context: Context) {
-    const { message, store, network } = context;
+    const { message, preProtocolStateChannel, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
     let substart = start;
@@ -173,15 +167,13 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const {
       initiatorIdentifier,
       appIdentityHash,
-      multisigAddress,
       action,
       stateTimeout,
     } = params as ProtocolParams.Uninstall;
 
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
-      multisigAddress,
-      store,
-    );
+    if (!preProtocolStateChannel) {
+      throw new Error("No state channel found for proposal");
+    }
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const error = yield [
@@ -302,15 +294,8 @@ async function computeStateTransition(
   appInstance: AppInstance,
   log?: ILoggerService,
 ) {
-  const { blockNumberToUseIfNecessary } = params;
   return stateChannel.uninstallApp(
     appInstance,
-    await computeTokenIndexedFreeBalanceIncrements(
-      appInstance,
-      provider,
-      undefined,
-      blockNumberToUseIfNecessary,
-      log,
-    ),
+    await computeTokenIndexedFreeBalanceIncrements(appInstance, provider, undefined, log),
   );
 }

@@ -40,7 +40,7 @@ export const requestDepositRights = async (
       (a: AppInstanceJson, b: AppInstanceJson) => b.appSeqNo - a.appSeqNo,
     )[0];
     // make sure its the coin balance refund app
-    expect(latestApp.appInterface.addr).to.be.eq(appDefinition);
+    expect(latestApp.appDefinition).to.be.eq(appDefinition);
     depositApp = latestApp.latestState as DepositAppState;
   } else {
     // node is installing, params must be manually generated

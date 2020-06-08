@@ -12,7 +12,7 @@ import {
 } from "./contracts";
 import { StateChannelJSON } from "./state";
 import { Address, Bytes32 } from "./basic";
-import { AppInstanceJson, AppInstanceProposal } from "./app";
+import { AppInstanceJson } from "./app";
 import {
   ConditionalTransactionCommitmentJSON,
   MinimalTransaction,
@@ -229,7 +229,7 @@ export interface IWatcherStoreService {
   getAppInstance(appIdentityHash: Bytes32): Promise<AppInstanceJson | undefined>;
 
   // App proposals
-  getAppProposal(appIdentityHash: Bytes32): Promise<AppInstanceProposal | undefined>;
+  getAppProposal(appIdentityHash: Bytes32): Promise<AppInstanceJson | undefined>;
 
   // Free balance
   getFreeBalance(multisigAddress: Address): Promise<AppInstanceJson | undefined>;

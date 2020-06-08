@@ -10,12 +10,13 @@ import {
   ProtocolName,
   ProtocolNames,
 } from "@connext/types";
-import { ChannelSigner, ColorfulLogger, stringify, isBN } from "@connext/utils";
+import { ChannelSigner, ColorfulLogger, stringify } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { Wallet } from "ethers";
 
 import { env } from "./env";
 import { combineObjects } from "./misc";
+import { expect } from "./assertions";
 
 const log = new ColorfulLogger("Messaging", env.logLevel);
 
@@ -432,10 +433,8 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     const msgParams = getParamsFromData(msg);
     const { ceiling: indexedCeiling, params } = this.protocolLimits[protocol];
 
-    const ceiling =
-      (indexedCeiling || {})[apiType] === undefined || (indexedCeiling || {})[apiType] === null
-        ? NO_LIMIT
-        : indexedCeiling[apiType];
+    const exists = (x) => x !== undefined && x !== null;
+    const ceiling = exists(indexedCeiling[apiType]) ? indexedCeiling[apiType] : NO_LIMIT;
 
     const evaluateCeiling = () => {
       if (this.protocolCounter[protocol][apiType] >= ceiling) {
@@ -447,8 +446,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
     logIf(`protocol: ${protocol}`);
     logIf(`ceiling: ${ceiling}`);
-    logIf(`params: ${stringify(params)}`);
-    logIf(`msg: ${stringify(msg)}`);
+    logIf(`indexedCeiling[${apiType}]: ${stringify(indexedCeiling[apiType])}`);
 
     if (!params) {
       // nothing specified, applies to all
@@ -461,25 +459,15 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       return true;
     }
 
-    let containsVal = false;
-    Object.entries(msgParams).forEach(([key, value]) => {
-      if (!params[key]) {
-        return;
-      }
-      let unnestedVal = value as any;
-      let unnestedComp = params[key];
-      while (typeof unnestedVal === "object" && !isBN(unnestedVal)) {
-        const [key] = Object.entries(unnestedVal as object).pop() as any;
-        unnestedVal = unnestedVal[key];
-        unnestedComp = unnestedComp[key];
-      }
-      containsVal = unnestedVal.toString() === unnestedComp.toString();
-    });
-    if (containsVal) {
+    try {
+      expect(msgParams).to.containSubset(params);
+      const ret = evaluateCeiling();
+      logIf(`evaluated, should continue: ${ret}`);
+      // does contain params
       return evaluateCeiling();
+    } catch (e) {
+      // does not contain params, ignore
+      return true;
     }
-    // otherwise dont count and return true (msg does not include)
-    // user-specificed params
-    return true;
   }
 }

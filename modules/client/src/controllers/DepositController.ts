@@ -186,7 +186,7 @@ export class DepositController extends AbstractController {
     })) as DefaultApp;
     const depositApp = appInstances.find(
       (appInstance) =>
-        appInstance.appInterface.addr === depositAppInfo.appDefinitionAddress &&
+        appInstance.appDefinition === depositAppInfo.appDefinitionAddress &&
         (appInstance.latestState as DepositAppState).assetId === params.assetId,
     );
 

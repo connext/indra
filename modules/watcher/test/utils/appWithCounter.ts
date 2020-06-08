@@ -10,7 +10,6 @@ import {
   ConditionalTransactionCommitmentJSON,
   CoinTransfer,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
-  AppInstanceProposal,
   SignedCancelChallengeRequest,
 } from "@connext/types";
 import {
@@ -167,7 +166,7 @@ export class AppWithCounterClass {
     };
   }
 
-  public getProposal(): AppInstanceProposal {
+  public getProposal(): AppInstanceJson {
     return {
       identityHash: this.identityHash,
       initiatorIdentifier: this.signerParticipants[0].publicIdentifier,
@@ -180,7 +179,7 @@ export class AppWithCounterClass {
         actionEncoding: this.appInterface.actionEncoding,
       },
       outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-      appDefinition: this.appInterface.addr,
+      appDefinition: this.appDefinition,
       initialState: { counter: Zero },
       initiatorDeposit: this.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][0].amount.toString(),
       initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,

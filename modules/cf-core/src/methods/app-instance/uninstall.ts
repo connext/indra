@@ -113,7 +113,7 @@ export class UninstallController extends MethodController {
 }
 
 export async function uninstallAppInstanceFromChannel(
-  stateChannel: StateChannel,
+  preProtocolStateChannel: StateChannel,
   router: RpcRouter,
   protocolRunner: ProtocolRunner,
   initiatorIdentifier: PublicIdentifier,
@@ -124,18 +124,23 @@ export async function uninstallAppInstanceFromChannel(
   uninstalledApp: AppInstance;
   action?: SolidityValueType;
 }> {
-  const appInstance = stateChannel.getAppInstance(params.appIdentityHash);
+  const appInstance = preProtocolStateChannel.getAppInstance(params.appIdentityHash);
 
   const {
     channel: updatedChannel,
     appContext: uninstalledApp,
-  } = await protocolRunner.initiateProtocol(router, ProtocolNames.uninstall, {
-    initiatorIdentifier,
-    responderIdentifier,
-    multisigAddress: stateChannel.multisigAddress,
-    appIdentityHash: appInstance.identityHash,
-    action: params.action,
-    stateTimeout: toBN(0), // Explicitly finalized states
-  });
+  } = await protocolRunner.initiateProtocol(
+    router,
+    ProtocolNames.uninstall,
+    {
+      initiatorIdentifier,
+      responderIdentifier,
+      multisigAddress: preProtocolStateChannel.multisigAddress,
+      appIdentityHash: appInstance.identityHash,
+      action: params.action,
+      stateTimeout: toBN(0), // Explicitly finalized states
+    },
+    preProtocolStateChannel,
+  );
   return { updatedChannel, uninstalledApp, action: params.action };
 }
