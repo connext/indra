@@ -139,7 +139,7 @@ export interface IConnextClient {
   ): Promise<MethodResults.GetProposedAppInstance | undefined>;
   proposeInstallApp(params: MethodParams.ProposeInstall): Promise<MethodResults.ProposeInstall>;
   installApp(appIdentityHash: Bytes32): Promise<MethodResults.Install>;
-  rejectInstallApp(appIdentityHash: Bytes32): Promise<MethodResults.Uninstall>;
+  rejectInstallApp(appIdentityHash: Bytes32, reason?: string): Promise<MethodResults.Uninstall>;
   takeAction(appIdentityHash: Bytes32, action: any): Promise<MethodResults.TakeAction>;
   uninstallApp(appIdentityHash: Bytes32, action?: AppAction): Promise<MethodResults.Uninstall>;
 }
