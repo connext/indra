@@ -516,13 +516,18 @@ export function constructInstallRpc(appIdentityHash: string, multisigAddress: st
   };
 }
 
-export function constructRejectInstallRpc(appIdentityHash: string, multisigAddress: string): Rpc {
+export function constructRejectInstallRpc(
+  appIdentityHash: string,
+  multisigAddress: string,
+  reason: string = "Rejected",
+): Rpc {
   return {
     id: Date.now(),
     methodName: MethodNames.chan_rejectInstall,
     parameters: {
       appIdentityHash,
       multisigAddress,
+      reason,
     } as MethodParams.RejectInstall,
   };
 }
