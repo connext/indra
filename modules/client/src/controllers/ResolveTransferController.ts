@@ -24,7 +24,7 @@ export class ResolveTransferController extends AbstractController {
     const installedApps = await this.connext.getAppInstances();
     const existingReceiverApp = installedApps.find(
       (app) =>
-        app.appInterface.addr ===
+        app.appDefinition ===
           this.connext.appRegistry.find((app) => app.name === conditionType).appDefinitionAddress &&
         app.meta.paymentId === paymentId &&
         (app.latestState as GenericConditionalTransferAppState).coinTransfers[1].to ===
@@ -34,7 +34,6 @@ export class ResolveTransferController extends AbstractController {
     let appIdentityHash: string;
     let amount: utils.BigNumber;
     let assetId: string;
-    let finalized: boolean;
     let meta: any;
 
     if (existingReceiverApp) {
@@ -46,8 +45,7 @@ export class ResolveTransferController extends AbstractController {
       appIdentityHash = existingReceiverApp.identityHash;
       amount = (existingReceiverApp.latestState as GenericConditionalTransferAppState)
         .coinTransfers[0].amount;
-      assetId = existingReceiverApp.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
-      finalized = (existingReceiverApp.latestState as GenericConditionalTransferAppState).finalized;
+      assetId = existingReceiverApp.outcomeInterpreterParameters["tokenAddress"];
       meta = existingReceiverApp.meta;
     }
 
@@ -66,7 +64,6 @@ export class ResolveTransferController extends AbstractController {
         amount = installRes.amount;
         assetId = installRes.assetId;
         meta = installRes.meta;
-        finalized = false;
         if (
           conditionType === ConditionalTransferTypes.LinkedTransfer &&
           installRes.meta.recipient
@@ -89,8 +86,11 @@ export class ResolveTransferController extends AbstractController {
           break;
         }
         case ConditionalTransferTypes.SignedTransfer: {
-          const { attestation } = params as PublicParams.ResolveSignedTransfer;
-          action = attestation.signature && (attestation as SimpleSignedTransferAppAction);
+          const { responseCID, signature } = params as PublicParams.ResolveSignedTransfer;
+          action =
+            responseCID &&
+            signature &&
+            ({ responseCID, signature } as SimpleSignedTransferAppAction);
           break;
         }
         case ConditionalTransferTypes.LinkedTransfer: {

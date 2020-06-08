@@ -178,7 +178,7 @@ describe("Deposit offline tests", () => {
 
     await makeFailingDepositCall({
       client,
-      error: APP_PROTOCOL_TOO_LONG(ProtocolNames.install),
+      error: CLIENT_INSTALL_FAILED(true),
     });
     const messaging = client.messaging! as TestMessagingService;
     expect(messaging.installCount[SEND]).to.be.eq(0);

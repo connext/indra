@@ -1,7 +1,7 @@
 import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { constants, utils } from "ethers";
 
-import { createAppInstanceForTest, createAppInstanceProposalForTest } from "../../testing/utils";
+import { createAppInstanceForTest, createAppInstanceJsonForTest } from "../../testing/utils";
 import { getRandomContractAddresses } from "../../testing/mocks";
 
 import { StateChannel } from "../state-channel";
@@ -32,7 +32,7 @@ describe("StateChannel::uninstallApp", () => {
     );
 
     const appInstance = createAppInstanceForTest(sc1);
-    sc1 = sc1.addProposal(createAppInstanceProposalForTest(appInstance.identityHash, sc1));
+    sc1 = sc1.addProposal(createAppInstanceJsonForTest(appInstance.identityHash, sc1));
 
     appIdentityHash = appInstance.identityHash;
 

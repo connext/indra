@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.6.4;
 pragma experimental "ABIEncoderV2";
 
@@ -9,26 +10,27 @@ import "../funding/libs/LibOutcome.sol";
 /// @title SimpleTwoPartySwapApp
 /// @notice This contract lets two parties swap one ERC20 or ETH asset for another
 contract SimpleTwoPartySwapApp is CounterfactualApp {
-  using SafeMath for uint256;
 
-  struct AppState {
-    LibOutcome.CoinTransfer[][] coinTransfers;
-  }
+    using SafeMath for uint256;
 
-  function computeOutcome(bytes calldata encodedState)
-    external
-    override
-    view
-    returns (bytes memory)
-  {
-    AppState memory state = abi.decode(encodedState, (AppState));
+    struct AppState {
+        LibOutcome.CoinTransfer[][] coinTransfers;
+    }
 
-    uint256 amountsA = state.coinTransfers[0][0].amount;
-    uint256 amountsB = state.coinTransfers[1][0].amount;
+    function computeOutcome(bytes calldata encodedState)
+        override
+        external
+        view
+        returns (bytes memory)
+    {
+        AppState memory state = abi.decode(encodedState, (AppState));
 
-    state.coinTransfers[0][0].amount = amountsB;
-    state.coinTransfers[1][0].amount = amountsA;
+        uint256 amountsA = state.coinTransfers[0][0].amount;
+        uint256 amountsB = state.coinTransfers[1][0].amount;
 
-    return abi.encode(state.coinTransfers);
-  }
+        state.coinTransfers[0][0].amount = amountsB;
+        state.coinTransfers[1][0].amount = amountsA;
+
+        return abi.encode(state.coinTransfers);
+    }
 }

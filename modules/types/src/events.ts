@@ -1,7 +1,7 @@
 import { Ctx } from "evt";
 import { providers } from "ethers";
 
-import { AppInstanceProposal, AppInstanceJson } from "./app";
+import { AppInstanceJson } from "./app";
 import { Address, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
 import {
   ConditionalTransferTypes,
@@ -133,7 +133,7 @@ const PROTOCOL_MESSAGE_EVENT = "PROTOCOL_MESSAGE_EVENT";
 const REJECT_INSTALL_EVENT = "REJECT_INSTALL_EVENT";
 
 type RejectInstallEventData = {
-  appInstance: AppInstanceProposal;
+  appInstance: AppInstanceJson;
 };
 
 ////////////////////////////////////////

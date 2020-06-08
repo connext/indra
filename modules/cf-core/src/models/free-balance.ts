@@ -1,4 +1,9 @@
-import { AppInterface, OutcomeType, PublicIdentifier } from "@connext/types";
+import {
+  OutcomeType,
+  PublicIdentifier,
+  AppABIEncodings,
+  MultiAssetMultiPartyCoinTransferInterpreterParams,
+} from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
 import { constants, utils } from "ethers";
 
@@ -10,10 +15,9 @@ import { merge } from "./utils";
 const { Zero, AddressZero } = constants;
 const { bigNumberify, getAddress } = utils;
 
-export function getFreeBalanceAppInterface(addr: string): AppInterface {
+export function getFreeBalanceAbiEncoding(): AppABIEncodings {
   return {
     actionEncoding: undefined, // because no actions exist for FreeBalanceApp
-    addr,
     stateEncoding: `tuple(address[] tokenAddresses, tuple(address to, uint256 amount)[][] balances, bytes32[] activeApps)`,
   };
 }
@@ -222,17 +226,28 @@ export function createFreeBalance(
     },
   };
 
+  const interpreterParams: MultiAssetMultiPartyCoinTransferInterpreterParams = {
+    limit: [],
+    tokenAddresses: [],
+  };
+
   return new AppInstance(
+    /* multisigAddres */ multisigAddress,
     /* initiator */ initiatorId,
+    /* initiatorDeposit */ "0",
+    /* initiaotrDepositAssetId */ AddressZero,
     /* responder */ responderId,
-    /* defaultTimeout */ toBN(freeBalanceTimeout).toHexString(),
-    /* appInterface */ getFreeBalanceAppInterface(coinBucketAddress),
+    /* responderDeposit */ "0",
+    /* responderDepositAssetId */ AddressZero,
+    /* abiEncodings */ getFreeBalanceAbiEncoding(),
+    /* appDefinition */ coinBucketAddress,
     /* appSeqNo */ HARD_CODED_ASSUMPTIONS.appSequenceNumberForFreeBalance,
     /* latestState */ serializeFreeBalanceState(initialState),
     /* latestVersionNumber */ 1,
-    /* latestTimeout */ toBN(HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout).toHexString(),
+    /* defaultTimeout */ toBN(freeBalanceTimeout).toHexString(),
+    /* stateTimeout */ toBN(HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout).toHexString(),
     /* outcomeType */ OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
-    /* multisigAddr */ multisigAddress,
+    /* interpreterParamsInternal*/ interpreterParams,
   );
 }
 

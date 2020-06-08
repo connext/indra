@@ -301,11 +301,20 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
           `Could not find set state commitment for proposal ${proposal.identityHash}`,
         );
       }
+      const conditional = conditionalCommitments.find(
+        ([id, json]) => id === proposal.identityHash,
+      )[1];
+      if (!conditional) {
+        throw new Error(
+          `Could not find conditional commitment for proposal ${proposal.identityHash}`,
+        );
+      }
       await this.store.createAppProposal(
         channel.multisigAddress,
         proposal,
         proposal.appSeqNo,
         setState,
+        conditional,
       );
     }
     // save all the app instances + conditionals
@@ -328,9 +337,6 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
           appIdentityHash: channel.freeBalanceAppInstance.identityHash,
           versionNumber: app.appSeqNo,
         } as unknown) as SetStateCommitmentJSON,
-        // latest free balance saved when channel created, use dummy values
-        // with increasing app numbers so they get deleted properly
-        conditional,
       );
     }
   };

@@ -1,6 +1,5 @@
 import {
   AppInstanceJson,
-  AppInstanceProposal,
   ChallengeStatus,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
@@ -12,6 +11,7 @@ import {
   StateProgressedEventPayload,
   StoredAppChallenge,
   StoredAppChallengeStatus,
+  SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
 import {
   deBigNumberifyJson,
@@ -19,61 +19,40 @@ import {
   getRandomBytes32,
   getRandomIdentifier,
   getRandomSignature,
-  toBN,
 } from "@connext/utils";
-import { constants } from "ethers";
+import { constants, utils } from "ethers";
 
 const { AddressZero, HashZero, Zero, One } = constants;
+const { defaultAbiCoder } = utils;
 
 export const createAppInstanceJson = (
   overrides: Partial<AppInstanceJson> = {},
 ): AppInstanceJson => {
   return {
-    appInterface: {
-      actionEncoding: null,
-      addr: AddressZero,
-      stateEncoding: "",
+    abiEncodings: {
+      actionEncoding: `uint256`,
+      stateEncoding: "uint256",
     },
+    appDefinition: AddressZero,
     appSeqNo: 0,
     defaultTimeout: Zero.toHexString(),
     identityHash: getRandomBytes32(),
     initiatorIdentifier: getRandomIdentifier(),
+    responderIdentifier: getRandomIdentifier(),
     latestState: {},
     latestVersionNumber: 0,
-    meta: null,
-    multiAssetMultiPartyCoinTransferInterpreterParams: null,
     multisigAddress: getRandomAddress(),
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-    responderIdentifier: getRandomIdentifier(),
-    singleAssetTwoPartyCoinTransferInterpreterParams: null,
-    stateTimeout: toBN(1000).toHexString(),
-    twoPartyOutcomeInterpreterParams: null,
-    ...overrides,
-  };
-};
-
-export const createAppInstanceProposal = (
-  overrides: Partial<AppInstanceProposal> = {},
-): AppInstanceProposal => {
-  return {
-    abiEncodings: { actionEncoding: "", stateEncoding: "" },
-    appDefinition: AddressZero,
-    appSeqNo: 0,
-    defaultTimeout: "0x00",
-    identityHash: getRandomBytes32(),
-    initialState: {},
-    initiatorDeposit: "0x00",
+    outcomeInterpreterParameters: {
+      limit: { _hex: Zero.toHexString() },
+      tokenAddress: AddressZero,
+    } as SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
+    initiatorDeposit: Zero.toString(),
     initiatorDepositAssetId: AddressZero,
-    initiatorIdentifier: getRandomIdentifier(),
-    meta: null,
-    multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
-    outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-    responderDeposit: "0x00",
+    responderDeposit: Zero.toString(),
     responderDepositAssetId: AddressZero,
-    responderIdentifier: getRandomIdentifier(),
-    singleAssetTwoPartyCoinTransferInterpreterParams: null,
-    stateTimeout: "0x00",
-    twoPartyOutcomeInterpreterParams: undefined,
+    stateTimeout: Zero.toHexString(),
+    meta: null,
     ...overrides,
   };
 };
@@ -102,6 +81,7 @@ export const createStateChannelJSON = (
       initiatorIdentifier: channelData.userIdentifiers[0],
       multisigAddress: channelData.multisigAddress,
       responderIdentifier: channelData.userIdentifiers[1],
+      meta: null,
       ...overrides.freeBalanceAppInstance,
     }),
   };
@@ -173,7 +153,7 @@ export const createStateProgressedEventPayload = (
 ): StateProgressedEventPayload => {
   return {
     identityHash: getRandomBytes32(),
-    action: "0x",
+    action: defaultAbiCoder.encode(["uint256"], [One]),
     versionNumber: One,
     timeout: Zero,
     turnTaker: getRandomAddress(),

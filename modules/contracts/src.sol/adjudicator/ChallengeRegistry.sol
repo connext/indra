@@ -1,3 +1,5 @@
+
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.6.4;
 pragma experimental "ABIEncoderV2";
 
@@ -17,8 +19,7 @@ contract ChallengeRegistry is
   MixinProgressState,
   MixinSetAndProgressState,
   MixinCancelDispute,
-  MixinSetOutcome
-{
-  // solium-disable-next-line no-empty-blocks
-  constructor() public {}
+  MixinSetOutcome {
+    // solium-disable-next-line no-empty-blocks
+    constructor () public {}
 }

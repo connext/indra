@@ -1,4 +1,4 @@
-import { AppInstanceJson, AppInstanceProposal } from "./app";
+import { AppInstanceJson } from "./app";
 import { Address, Bytes32 } from "./basic";
 import {
   ConditionalTransactionCommitmentJSON,
@@ -54,7 +54,6 @@ export interface IStoreService extends IWatcherStoreService {
     appInstance: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
-    signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void>;
   updateAppInstance(
     multisigAddress: Address,
@@ -71,9 +70,10 @@ export interface IStoreService extends IWatcherStoreService {
   ///// App proposals
   createAppProposal(
     multisigAddress: Address,
-    appProposal: AppInstanceProposal,
+    appProposal: AppInstanceJson,
     numProposedApps: number,
     signedSetStateCommitment: SetStateCommitmentJSON,
+    signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void>;
   removeAppProposal(multisigAddress: Address, appIdentityHash: Bytes32): Promise<void>;
   // proposals dont need to be updated

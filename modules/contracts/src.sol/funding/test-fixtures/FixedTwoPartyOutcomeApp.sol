@@ -1,3 +1,5 @@
+
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.6.4;
 pragma experimental "ABIEncoderV2";
 
@@ -6,9 +8,16 @@ import "../libs/LibOutcome.sol";
 
 
 contract TwoPartyFixedOutcomeApp is CounterfactualApp {
-  function computeOutcome(
-    bytes calldata /* encodedState */
-  ) external override view returns (bytes memory) {
-    return abi.encode(LibOutcome.TwoPartyFixedOutcome.SPLIT_AND_SEND_TO_BOTH_ADDRS);
-  }
+
+    function computeOutcome(bytes calldata /* encodedState */)
+        override
+        external
+        view
+        returns (bytes memory)
+    {
+        return abi.encode(
+            LibOutcome.TwoPartyFixedOutcome.SPLIT_AND_SEND_TO_BOTH_ADDRS
+        );
+    }
+
 }

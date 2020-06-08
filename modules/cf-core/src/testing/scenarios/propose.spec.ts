@@ -9,7 +9,7 @@ import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
   createChannel,
-  getAppInstanceProposal,
+  getAppInstanceJson,
   getProposedAppInstances,
   makeProposeCall,
 } from "../utils";
@@ -31,8 +31,8 @@ async function assertEqualProposedApps(
   expect(proposedA).toEqual(proposedB);
   // check each appID
   for (const id of expectedAppIds) {
-    const appA = await getAppInstanceProposal(nodeA, id, multisigAddress);
-    const appB = await getAppInstanceProposal(nodeB, id, multisigAddress);
+    const appA = await getAppInstanceJson(nodeA, id, multisigAddress);
+    const appB = await getAppInstanceJson(nodeB, id, multisigAddress);
     expect(appA).toEqual(appB);
   }
 }
