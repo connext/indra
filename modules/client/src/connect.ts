@@ -171,24 +171,6 @@ export const connect = async (
 
   logger.info(`Channel is available with multisig address: ${chan.multisigAddress}`);
 
-  // Make sure our state schema is up-to-date
-  const { data: sc } = await client.getStateChannel();
-  if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion || !sc.addresses) {
-    logger.info(`State schema is out-of-date (${sc.schemaVersion} !== ${StateSchemaVersion}), restoring state`);
-    await client.restoreState();
-    logger.info(`State restored successfully`);
-  }
-
-  // Make sure our store schema is up-to-date
-  const schemaVersion = await client.channelProvider.getSchemaVersion();
-  if (!schemaVersion || schemaVersion !== STORE_SCHEMA_VERSION) {
-    logger.info(`Store schema is out-of-date (${schemaVersion} !== ${STORE_SCHEMA_VERSION}), restoring state`);
-    await client.restoreState();
-    logger.info(`State restored successfully`);
-    // increment / update store schema version, defaults to types const of `STORE_SCHEMA_VERSION`
-    await client.channelProvider.updateSchemaVersion();
-  }
-
   try {
     await client.getFreeBalance();
   } catch (e) {
@@ -202,6 +184,24 @@ export const connect = async (
       logger.error(`Failed to get free balance: ${e.message}`);
       throw e;
     }
+  }
+
+  // Make sure our store schema is up-to-date
+  const schemaVersion = await client.channelProvider.getSchemaVersion();
+  if (!schemaVersion || schemaVersion !== STORE_SCHEMA_VERSION) {
+    logger.info(`Store schema is out-of-date (${schemaVersion} !== ${STORE_SCHEMA_VERSION}), restoring state`);
+    await client.restoreState();
+    logger.info(`State restored successfully`);
+    // increment / update store schema version, defaults to types const of `STORE_SCHEMA_VERSION`
+    await client.channelProvider.updateSchemaVersion();
+  }
+
+  // Make sure our state schema is up-to-date
+  const { data: sc } = await client.getStateChannel();
+  if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion || !sc.addresses) {
+    logger.info(`State schema is out-of-date (${sc.schemaVersion} !== ${StateSchemaVersion}), restoring state`);
+    await client.restoreState();
+    logger.info(`State restored successfully`);
   }
 
   logger.debug("Registering subscriptions");

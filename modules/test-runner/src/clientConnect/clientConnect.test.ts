@@ -1,5 +1,6 @@
 import { getMemoryStore } from "@connext/store";
 import { ClientOptions } from "@connext/types";
+import { getRandomChannelSigner } from "@connext/utils";
 import { Wallet, constants, utils } from "ethers";
 
 import { createClient, expect, sendOnchainValue, env, fundChannel, ETH_AMOUNT_SM } from "../util";
@@ -9,8 +10,8 @@ const { hexlify, randomBytes } = utils;
 
 describe("Client Connect", () => {
   it("Client should not rescind deposit rights if no transfers have been made to the multisig", async () => {
-    const pk = Wallet.createRandom().privateKey;
-    let client = await createClient({ signer: pk });
+    const signer = getRandomChannelSigner();
+    let client = await createClient({ signer });
     const { appIdentityHash: ethDeposit } = await client.requestDepositRights({
       assetId: AddressZero,
     });
@@ -32,7 +33,7 @@ describe("Client Connect", () => {
     // disconnect + reconnect
     await client.messaging.disconnect();
     await client.store.clear();
-    client = await createClient({ signer: pk });
+    client = await createClient({ signer });
 
     // verify still installed
     const { appIdentityHash: retrievedEth2 } = await client.checkDepositRights({
