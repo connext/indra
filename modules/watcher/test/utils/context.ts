@@ -289,6 +289,7 @@ export const setupContext = async (
         app.getProposal(),
         app.toJson().appSeqNo,
         await app.getInitialSetState(networkContext.ChallengeRegistry),
+        await app.getConditional(freeBalance.identityHash, networkContext),
       );
 
       // no need to create intermediate free balance state, since
@@ -299,7 +300,6 @@ export const setupContext = async (
         app.toJson(),
         freeBalance.toJson(),
         await freeBalance.getSetState(),
-        await app.getConditional(freeBalance.identityHash, networkContext),
       );
 
       await store.updateAppInstance(

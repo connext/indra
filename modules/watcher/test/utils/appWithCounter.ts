@@ -1,7 +1,6 @@
 import {
   AppIdentity,
   BigNumber,
-  AppInterface,
   AppInstanceJson,
   Address,
   OutcomeType,
@@ -12,6 +11,7 @@ import {
   CoinTransfer,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   SignedCancelChallengeRequest,
+  AppABIEncodings,
 } from "@connext/types";
 import {
   ChannelSigner,
@@ -97,11 +97,10 @@ export class AppWithCounterClass {
     };
   }
 
-  get appInterface(): AppInterface {
+  get abiEncodings(): AppABIEncodings {
     return {
       stateEncoding: `tuple(uint256 counter)`,
       actionEncoding: `tuple(uint8 actionType, uint256 increment)`,
-      addr: this.appDefinition,
     };
   }
 
@@ -156,38 +155,24 @@ export class AppWithCounterClass {
       initiatorIdentifier: this.signerParticipants[0].publicIdentifier,
       responderIdentifier: this.signerParticipants[1].publicIdentifier,
       defaultTimeout: this.defaultTimeout.toHexString(),
-      appInterface: this.appInterface,
+      abiEncodings: this.abiEncodings,
       appSeqNo: this.channelNonce.toNumber(),
       latestState: this.latestState,
       latestVersionNumber: this.latestVersionNumber.toNumber(),
       stateTimeout: this.stateTimeout.toString(),
       outcomeType: this.outcomeType,
       latestAction: this.latestAction,
-      twoPartyOutcomeInterpreterParams: this.interpreterParams,
-    };
-  }
-
-  public getProposal(): AppInstanceJson {
-    return {
-      identityHash: this.identityHash,
-      initiatorIdentifier: this.signerParticipants[0].publicIdentifier,
-      responderIdentifier: this.signerParticipants[1].publicIdentifier,
-      appSeqNo: this.channelNonce.toNumber(),
-      defaultTimeout: this.defaultTimeout.toString(),
-      stateTimeout: this.stateTimeout.toString(),
-      abiEncodings: {
-        stateEncoding: this.appInterface.stateEncoding,
-        actionEncoding: this.appInterface.actionEncoding,
-      },
-      outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-      appDefinition: this.appDefinition,
-      initialState: { counter: Zero },
+      outcomeInterpreterParameters: bigNumberifyJson(this.interpreterParams),
       initiatorDeposit: this.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][0].amount.toString(),
       initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
       responderDeposit: this.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][1].amount.toString(),
       responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
-      twoPartyOutcomeInterpreterParams: bigNumberifyJson(this.interpreterParams),
+      appDefinition: this.appDefinition,
     };
+  }
+
+  public getProposal(): AppInstanceJson {
+    return this.toJson();
   }
 
   public async getInitialSetState(

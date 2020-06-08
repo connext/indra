@@ -3,8 +3,8 @@ import {
   JsonRpcProvider,
   ChallengeUpdatedEventPayload,
   ChallengeStatus,
-  NetworkContext,
   StateProgressedEventPayload,
+  ContractAddresses,
 } from "@connext/types";
 import { ChannelSigner, ColorfulLogger, computeAppChallengeHash, toBN } from "@connext/utils";
 import { beforeEach } from "mocha";
@@ -80,7 +80,7 @@ describe("ChainListener", () => {
 
     chainListener = new ChainListener(
       provider,
-      { ChallengeRegistry: challengeRegistry.address } as NetworkContext,
+      { ChallengeRegistry: challengeRegistry.address } as ContractAddresses,
       new ColorfulLogger("Test", logLevel, true, " "),
     );
   });

@@ -3,13 +3,13 @@ import {
   CoinTransfer,
   Address,
   AppIdentity,
-  AppInterface,
   AppInstanceJson,
   OutcomeType,
   SetStateCommitmentJSON,
   StateChannelJSON,
   StateSchemaVersion,
   MinimalTransaction,
+  AppABIEncodings,
 } from "@connext/types";
 import { ChannelSigner, toBN } from "@connext/utils";
 import { SetStateCommitment, SetupCommitment } from "@connext/contracts";
@@ -19,7 +19,7 @@ import { TestNetworkContext } from "./contracts";
 import { AppWithCounterClass } from "./appWithCounter";
 import { TokenIndexedBalance } from "./context";
 
-const { One, Zero } = constants;
+const { One, Zero, AddressZero } = constants;
 const { keccak256, solidityPack, defaultAbiCoder } = utils;
 
 type FreeBalanceStateJSON = {
@@ -81,11 +81,10 @@ export class MiniFreeBalance {
     };
   }
 
-  get appInterface(): AppInterface {
+  get abiEncodings(): AppABIEncodings {
     return {
       stateEncoding: freeBalStateEncoding,
       actionEncoding: undefined,
-      addr: this.appDefinition,
     };
   }
 
@@ -136,8 +135,8 @@ export class MiniFreeBalance {
       schemaVersion: StateSchemaVersion,
       multisigAddress,
       addresses: {
-        proxyFactory: networkContext.ProxyFactory,
-        minimumViableMultisig: networkContext.MinimumViableMultisig,
+        ProxyFactory: networkContext.ProxyFactory,
+        MinimumViableMultisig: networkContext.MinimumViableMultisig,
       },
       userIdentifiers: [signers[0].publicIdentifier, signers[1].publicIdentifier],
       proposedAppInstances: [],
@@ -158,13 +157,19 @@ export class MiniFreeBalance {
       initiatorIdentifier: this.signerParticipants[0].publicIdentifier,
       responderIdentifier: this.signerParticipants[1].publicIdentifier,
       defaultTimeout: this.defaultTimeout.toHexString(),
-      appInterface: this.appInterface,
+      abiEncodings: this.abiEncodings,
       appSeqNo: this.channelNonce.toNumber(),
       latestState: this.latestState,
       latestVersionNumber: this.versionNumber.toNumber(),
       stateTimeout: this.stateTimeout.toString(),
       outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
       latestAction: undefined,
+      appDefinition: this.appDefinition,
+      responderDeposit: Zero.toString(),
+      responderDepositAssetId: AddressZero,
+      initiatorDeposit: Zero.toString(),
+      initiatorDepositAssetId: AddressZero,
+      outcomeInterpreterParameters: {} as any,
     };
   }
 
