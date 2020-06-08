@@ -1,6 +1,5 @@
 import {
   ConditionalTransactionCommitmentJSON,
-  ILogger,
   IStoreService,
   Opcode,
   ProtocolMessageData,
@@ -103,6 +102,19 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     log.debug(`[${processID}] Syncing channel with type: ${syncType}`);
     substart = Date.now();
     switch (syncType) {
+      case PersistStateChannelType.SyncNumProposedApps: {
+        const proposalSync = await syncNumProposedApps(postSyncStateChannel, responderChannel);
+        if (proposalSync) {
+          yield [
+            PERSIST_STATE_CHANNEL,
+            PersistStateChannelType.SyncNumProposedApps,
+            proposalSync.updatedChannel,
+          ];
+          postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
+        }
+        logTime(log, substart, `[${processID}] Synced proposals with initiator`);
+        break;
+      }
       case PersistStateChannelType.SyncProposal: {
         // sync and save all proposals
         const proposalSync = await syncUntrackedProposals(
@@ -110,9 +122,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           responderChannel,
           responderSetStateCommitments,
           responderConditionalCommitments,
-          context,
           ourIdentifier,
-          log,
         );
         yield [
           PERSIST_STATE_CHANNEL,
@@ -292,6 +302,19 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     log.debug(`[${processID}] Syncing channel with type: ${syncType}`);
     substart = Date.now();
     switch (syncType) {
+      case PersistStateChannelType.SyncNumProposedApps: {
+        const proposalSync = await syncNumProposedApps(postSyncStateChannel, initiatorChannel);
+        if (proposalSync) {
+          yield [
+            PERSIST_STATE_CHANNEL,
+            PersistStateChannelType.SyncNumProposedApps,
+            proposalSync.updatedChannel,
+          ];
+          postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
+        }
+        logTime(log, substart, `[${processID}] Synced proposals with initiator`);
+        break;
+      }
       case PersistStateChannelType.SyncProposal: {
         // sync and save all proposals
         const proposalSync = await syncUntrackedProposals(
@@ -299,9 +322,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           initiatorChannel,
           initiatorSetStateCommitments,
           initiatorConditionalCommitments,
-          context,
           ourIdentifier,
-          log,
         );
         yield [
           PERSIST_STATE_CHANNEL,
@@ -615,6 +636,19 @@ async function syncFreeBalanceState(
   };
 }
 
+async function syncNumProposedApps(ourChannel: StateChannel, counterpartyChannel: StateChannel) {
+  // handle case where we have to add a proposal to our store
+  if (ourChannel.numProposedApps >= counterpartyChannel.numProposedApps) {
+    // our proposals are ahead, counterparty should sync if needed
+    return undefined;
+  }
+  if (ourChannel.numProposedApps !== counterpartyChannel.numProposedApps - 1) {
+    throw new Error(`Cannot sync by more than one proposed app, use restore instead.`);
+  }
+
+  return { updatedChannel: ourChannel.incrementNumProposedApps() };
+}
+
 // adds a missing proposal from the responder channel to our channel. Is only
 // safe for use when there is one proposal missing. Verifies we have signed
 // the update before adding the proposal to our channel.s
@@ -623,9 +657,7 @@ async function syncUntrackedProposals(
   counterpartyChannel: StateChannel,
   setStateCommitments: SetStateCommitmentJSON[],
   conditionalCommitments: ConditionalTransactionCommitmentJSON[],
-  context: Context,
   publicIdentifier: string,
-  log: ILogger,
 ) {
   // handle case where we have to add a proposal to our store
   if (ourChannel.numProposedApps >= counterpartyChannel.numProposedApps) {
@@ -640,8 +672,7 @@ async function syncUntrackedProposals(
     (app) => !ourChannel.proposedAppInstances.has(app.identityHash),
   );
   if (!untrackedProposedApp) {
-    log.warn(`We must have failed to persist a proposed app that the counterparty has since rejected, incrementing numProposedApps`);
-    return { updatedChannel: ourChannel.incrementNumProposedApps(), commitments: [] };
+    throw new Error(`Could not find proposal to sync`);
   }
   const correspondingSetStateCommitment = setStateCommitments.find(
     (p) => p.appIdentityHash === untrackedProposedApp.identityHash,
@@ -724,6 +755,10 @@ function needsSyncFromCounterparty(
   // check channel nonces
   // covers interruptions in: propose
   if (ourChannel.numProposedApps < counterpartyChannel.numProposedApps) {
+    if (ourChannel.proposedAppInstances.size === counterpartyChannel.proposedAppInstances.size) {
+      // their proposal was rejected
+      return PersistStateChannelType.SyncNumProposedApps;
+    }
     return PersistStateChannelType.SyncProposal;
   }
 

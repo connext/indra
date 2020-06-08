@@ -206,6 +206,23 @@ export class StoreService implements IStoreService {
     });
   }
 
+  async updateStateChannel(
+    multisigAddress: string,
+    monotonicNumProposedApps: number,
+  ): Promise<void> {
+    return this.execute((store) => {
+      const channel = this.getStateChannelFromStore(store, multisigAddress);
+      if (!channel) {
+        throw new Error(`Can't save app instance without channel`);
+      }
+      const updatedStore = this.setStateChannel(store, {
+        ...channel,
+        monotonicNumProposedApps,
+      });
+      return this.saveStore(updatedStore);
+    });
+  }
+
   async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
     const channel = await this.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!channel) {

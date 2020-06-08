@@ -270,6 +270,14 @@ export class CFCore {
             break;
           }
 
+          case PersistStateChannelType.SyncNumProposedApps: {
+            await this.storeService.updateStateChannel(
+              stateChannel.multisigAddress,
+              stateChannel.numProposedApps,
+            );
+            break;
+          }
+
           case PersistStateChannelType.SyncProposal: {
             const [setState, conditional] = signedCommitments as [
               SetStateCommitment,
@@ -297,7 +305,7 @@ export class CFCore {
               SetStateCommitment,
               ConditionalTransactionCommitment | undefined,
             ];
-            let latestInstalled;
+            let latestInstalled: AppInstanceJson | undefined;
             try {
               latestInstalled = stateChannel
                 .getAppInstanceByAppSeqNo(stateChannel.numProposedApps)
@@ -338,7 +346,8 @@ export class CFCore {
             break;
           }
           default: {
-            throw new Error(`Unrecognized persist state channel type: ${type}`);
+            const c: never = type;
+            throw new Error(`Unrecognized persist state channel type: ${c}`);
           }
         }
         return { channel: stateChannel };
