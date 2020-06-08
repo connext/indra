@@ -23,7 +23,10 @@ import { toBN, getSignerAddressFromPublicIdentifier, stringify } from "@connext/
 import { getManager } from "typeorm";
 import { constants, utils } from "ethers";
 
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import {
+  AppInstanceRepository,
+  convertAppToInstanceJSON,
+} from "../appInstance/appInstance.repository";
 import {
   SetStateCommitmentRepository,
   setStateToJson,
@@ -114,7 +117,7 @@ export class CFCoreStore implements IStoreService {
   }
 
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON> {
-    if (owners.length != 2) {
+    if (owners.length !== 2) {
       return this.channelRepository.getStateChannelByOwners(owners);
     }
     const chan = await this.findChannelByOwners([owners[0], owners[1]]);
@@ -250,8 +253,12 @@ export class CFCoreStore implements IStoreService {
     );
   }
 
-  getAppProposal(appIdentityHash: string): Promise<AppInstanceJson> {
-    return this.appInstanceRepository.getAppProposal(appIdentityHash);
+  async getAppProposal(appIdentityHash: string): Promise<AppInstanceJson> {
+    const app = await this.findAppInstanceByIdentityHash(appIdentityHash);
+    if (!app || app.type !== AppType.PROPOSAL) {
+      return undefined;
+    }
+    return convertAppToInstanceJSON(app, app.channel);
   }
 
   async createAppProposal(
@@ -364,6 +371,12 @@ export class CFCoreStore implements IStoreService {
         .of(multisigAddress)
         .add(app.identityHash);
 
+      // Update cache values
+      await this.cache.mergeCacheValues(
+        `appInstance:identityHash:${app.identityHash}`,
+        60,
+        AppInstanceSerializer.toJSON(app),
+      );
       await this.cache.del(`channel:multisig:${multisigAddress}`);
     });
   }
@@ -397,8 +410,9 @@ export class CFCoreStore implements IStoreService {
     });
   }
 
-  getAppInstance(appIdentityHash: string): Promise<AppInstanceJson> {
-    return this.appInstanceRepository.getAppInstance(appIdentityHash);
+  async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson> {
+    const res = await this.findAppInstanceByIdentityHashOrThrow(appIdentityHash);
+    return res && convertAppToInstanceJSON(res, res.channel);
   }
 
   async createAppInstance(
@@ -525,6 +539,7 @@ export class CFCoreStore implements IStoreService {
       stateTimeout,
       latestVersionNumber,
     });
+    await this.cache.set(`channel:appIdentityHash:${identityHash}`, 70, multisigAddress);
     await this.cache.del(`channel:multisig:${multisigAddress}`);
   }
 

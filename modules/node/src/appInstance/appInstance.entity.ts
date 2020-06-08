@@ -166,7 +166,7 @@ export const AppInstanceSerializer: JSONSerializer<AppInstance, AppInstanceJSON>
     const inst = new AppInstance();
     Object.assign(
       inst,
-      bigNumberifyJson({
+      bigNumberifyJson<AppInstanceJSON>({
         identityHash: input.identityHash,
         type: input.type,
         appDefinition: input.appDefinition,
@@ -200,14 +200,13 @@ export const AppInstanceSerializer: JSONSerializer<AppInstance, AppInstanceJSON>
   }
 
   static toJSON(input: AppInstance): AppInstanceJSON {
-    return deBigNumberifyJson({
+    return deBigNumberifyJson<AppInstanceJSON>({
       identityHash: input.identityHash,
       type: input.type,
       appDefinition: input.appDefinition,
       stateEncoding: input.stateEncoding,
       actionEncoding: input.actionEncoding,
       appSeqNo: input.appSeqNo,
-      initialState: input.initialState,
       latestState: input.latestState,
       latestVersionNumber: input.latestVersionNumber,
       initiatorDeposit: input.initiatorDeposit,
