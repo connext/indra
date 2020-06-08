@@ -432,6 +432,12 @@ export class CFCoreStore implements IStoreService {
 
       await transactionalEntityManager
         .createQueryBuilder()
+        .relation(AppInstance, "channel")
+        .of(proposal)
+        .set(multisigAddress);
+
+      await transactionalEntityManager
+        .createQueryBuilder()
         .update(SetStateCommitment)
         .set({
           appIdentity: signedFreeBalanceUpdate.appIdentity,
