@@ -293,10 +293,7 @@ export class CFCore {
             break;
           }
           case PersistStateChannelType.SyncFreeBalance: {
-            const [setState] = signedCommitments as [
-              SetStateCommitment,
-              ConditionalTransactionCommitment | undefined,
-            ];
+            const [setState] = signedCommitments as [SetStateCommitment];
             let latestInstalled;
             try {
               latestInstalled = stateChannel
@@ -314,9 +311,6 @@ export class CFCore {
                 setState.toJson(),
               );
             } else {
-              const latestInstalled = stateChannel
-                .getAppInstanceByAppSeqNo(stateChannel.numProposedApps)
-                .toJson();
               // this was an install, add app and remove proposals
               await this.storeService.createAppInstance(
                 stateChannel.multisigAddress,
