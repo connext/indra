@@ -1,4 +1,4 @@
-import { BigNumber, utils } from "ethers";
+import { BigNumber } from "ethers";
 
 import { isBN, toBN } from "./bigNumbers";
 import { abbreviate } from "./strings";
@@ -12,8 +12,8 @@ export function bigNumberifyJson<T = any>(json: any): T {
 }
 
 export function deBigNumberifyJson<T = any>(json: any): T {
-  return JSON.parse(JSON.stringify(json), (key: string, val: any) =>
-    val && isBN(val) ? val.toHexString() : val,
+  return JSON.parse(JSON.stringify(json), (key: string, value: any) =>
+    value && isBN(value) && value.toHexString ? value.toHexString() : value,
   );
 }
 // Give abrv = true to abbreviate hex strings and addresss to look like "0x6FEC..kuQk"
