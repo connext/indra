@@ -1,13 +1,14 @@
 import {
+  ConditionalTransactionCommitmentJSON,
+  ILogger,
+  IStoreService,
   Opcode,
   ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
-  StateChannelJSON,
-  SetStateCommitmentJSON,
-  IStoreService,
-  ConditionalTransactionCommitmentJSON,
   ProtocolRoles,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
 } from "@connext/types";
 import {
   logTime,
@@ -111,6 +112,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           responderConditionalCommitments,
           context,
           ourIdentifier,
+          log,
         );
         yield [
           PERSIST_STATE_CHANNEL,
@@ -299,6 +301,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           initiatorConditionalCommitments,
           context,
           ourIdentifier,
+          log,
         );
         yield [
           PERSIST_STATE_CHANNEL,
@@ -622,6 +625,7 @@ async function syncUntrackedProposals(
   conditionalCommitments: ConditionalTransactionCommitmentJSON[],
   context: Context,
   publicIdentifier: string,
+  log: ILogger,
 ) {
   // handle case where we have to add a proposal to our store
   if (ourChannel.numProposedApps >= counterpartyChannel.numProposedApps) {
@@ -636,7 +640,8 @@ async function syncUntrackedProposals(
     (app) => !ourChannel.proposedAppInstances.has(app.identityHash),
   );
   if (!untrackedProposedApp) {
-    throw new Error(`Cannot find matching untracked proposal in counterparty's store, aborting`);
+    log.warn(`We must have failed to persist a proposed app that the counterparty has since rejected, incrementing numProposedApps`);
+    return { updatedChannel: ourChannel.incrementNumProposedApps(), commitments: [] };
   }
   const correspondingSetStateCommitment = setStateCommitments.find(
     (p) => p.appIdentityHash === untrackedProposedApp.identityHash,
