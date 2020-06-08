@@ -5,10 +5,10 @@ import {
   ChallengeEvent,
   ChallengeEventData,
   ChallengeUpdatedEventPayload,
-  NetworkContext,
   SignedCancelChallengeRequest,
   StateProgressedEventPayload,
   ChallengeEvents,
+  ContractAddresses,
 } from "./contracts";
 import { StateChannelJSON } from "./state";
 import { Address, Bytes32 } from "./basic";
@@ -27,7 +27,7 @@ import { ILoggerService, ILogger } from "./logger";
 export type WatcherInitOptions = {
   signer: IChannelSigner | string; // wallet or pk
   provider: providers.JsonRpcProvider | string;
-  context: NetworkContext;
+  context: ContractAddresses;
   store: IWatcherStoreService;
   logger?: ILoggerService | ILogger;
   logLevel?: number;

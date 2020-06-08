@@ -1,13 +1,13 @@
 import { ChallengeRegistry } from "@connext/contracts";
 import {
   ILoggerService,
-  NetworkContext,
   ChallengeEvents,
   IChainListener,
   ChallengeEvent,
   ChallengeEventData,
   ChallengeStatus,
   Address,
+  ContractAddresses,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { Contract, Event, providers, utils } from "ethers";
@@ -34,7 +34,7 @@ export class ChainListener implements IChainListener {
 
   constructor(
     private readonly provider: providers.JsonRpcProvider,
-    private readonly context: NetworkContext,
+    private readonly context: ContractAddresses,
     loggerService: ILoggerService,
   ) {
     this.log = loggerService.newContext("ChainListener");

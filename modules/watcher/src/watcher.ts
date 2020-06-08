@@ -27,6 +27,7 @@ import {
   StoredAppChallengeStatus,
   ConditionalTransactionCommitmentJSON,
   ChallengeInitiatedResponse,
+  ContractAddresses,
 } from "@connext/types";
 import {
   ConsoleLogger,
@@ -61,7 +62,7 @@ export class Watcher implements IWatcher {
   constructor(
     private readonly signer: IChannelSigner,
     private readonly provider: providers.JsonRpcProvider,
-    private readonly context: NetworkContext,
+    private readonly context: ContractAddresses,
     private readonly store: IWatcherStoreService,
     private readonly listener: ChainListener,
     log: ILoggerService,
@@ -293,7 +294,9 @@ export class Watcher implements IWatcher {
     this.provider.removeAllListeners();
   };
 
-  private startAppChallenge = async (appInstanceId: string): Promise<providers.TransactionReceipt> => {
+  private startAppChallenge = async (
+    appInstanceId: string,
+  ): Promise<providers.TransactionReceipt> => {
     this.log.debug(`Starting challenge for ${appInstanceId}`);
     const challenge = (await this.store.getAppChallenge(appInstanceId)) || {
       identityHash: appInstanceId,
@@ -667,8 +670,8 @@ export class Watcher implements IWatcher {
     );
     const [latest] = sortedCommitments.map(SetStateCommitment.fromJson);
 
-    const action = defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]);
-    const state = defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
+    const action = defaultAbiCoder.encode([app.abiEncodings.actionEncoding!], [app.latestAction]);
+    const state = defaultAbiCoder.encode([app.abiEncodings.stateEncoding], [app.latestState]);
 
     const tx = {
       to: this.challengeRegistry.address,
@@ -712,8 +715,8 @@ export class Watcher implements IWatcher {
     );
     const [latest, prev] = sortedCommitments.map(SetStateCommitment.fromJson);
 
-    const action = defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]);
-    const state = defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
+    const action = defaultAbiCoder.encode([app.abiEncodings.actionEncoding!], [app.latestAction]);
+    const state = defaultAbiCoder.encode([app.abiEncodings.stateEncoding], [app.latestState]);
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
@@ -770,7 +773,7 @@ export class Watcher implements IWatcher {
 
     // derive final state from action on app
     const encodedState = defaultAbiCoder.encode(
-      [app.appInterface.stateEncoding],
+      [app.abiEncodings.stateEncoding],
       [app.latestState],
     );
     const encodedFinalState = !!app.latestAction
@@ -780,7 +783,7 @@ export class Watcher implements IWatcher {
           this.provider,
         ).functions.applyAction(
           encodedState,
-          defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]),
+          defaultAbiCoder.encode([app.abiEncodings.actionEncoding!], [app.latestAction]),
         )
       : encodedState;
 
