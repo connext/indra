@@ -134,6 +134,7 @@ const REJECT_INSTALL_EVENT = "REJECT_INSTALL_EVENT";
 
 type RejectInstallEventData = {
   appInstance: AppInstanceJson;
+  reason?: string;
 };
 
 ////////////////////////////////////////

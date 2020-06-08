@@ -142,7 +142,11 @@ export class AppRegistryService implements OnModuleInit {
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.stack || e.message}`);
-      await this.cfCoreService.rejectInstallApp(appIdentityHash, installerChannel.multisigAddress);
+      await this.cfCoreService.rejectInstallApp(
+        appIdentityHash,
+        installerChannel.multisigAddress,
+        e.message,
+      );
       return;
     }
   }
@@ -271,6 +275,7 @@ export class AppRegistryService implements OnModuleInit {
       await this.cfCoreService.rejectInstallApp(
         existingSenderApp.identityHash,
         existingSenderApp.channel.multisigAddress,
+        e.message,
       );
       return;
     }
