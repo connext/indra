@@ -41,6 +41,7 @@ describe("Node method follows spec - rejectInstall", () => {
           {
             from: nodeB.publicIdentifier,
             type: EventNames.REJECT_INSTALL_EVENT,
+            data: { reason: "Rejected" },
           },
           ["data.appInstance"],
         );
@@ -74,6 +75,7 @@ describe("Node method follows spec - rejectInstall", () => {
           {
             from: nodeA.publicIdentifier,
             type: EventNames.REJECT_INSTALL_EVENT,
+            data: { reason: "Rejected" },
           },
           ["data.appInstance"],
         );
