@@ -21,6 +21,8 @@ export const redisClientFactory: FactoryProvider = {
   },
 };
 
+const RETRY_DELAY = 50;
+
 export const redlockClientFactory: FactoryProvider = {
   inject: [RedisProviderId, LoggerService],
   provide: RedlockProviderId,
@@ -32,10 +34,10 @@ export const redlockClientFactory: FactoryProvider = {
 
       // the max number of times Redlock will attempt
       // to lock a resource before erroring
-      retryCount: (LOCK_SERVICE_TTL * 2) / 5, // 2x TTL so that dropped messages do not clear queue
+      retryCount: (LOCK_SERVICE_TTL * 2) / RETRY_DELAY, // 2x TTL so that dropped messages do not clear queue
 
       // the time in ms between attempts
-      retryDelay: 5, // time in ms
+      retryDelay: RETRY_DELAY, // time in ms
 
       // the max time in ms randomly added to retries
       // to improve performance under high contention

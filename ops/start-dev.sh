@@ -231,6 +231,7 @@ services:
       - '$project'
     ports:
       - '$node_port:$node_port'
+      - '9229:9229'
     secrets:
       - '${project}_database_dev'
     volumes:

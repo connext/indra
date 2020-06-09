@@ -75,20 +75,6 @@ describe("Client Connect", () => {
     expect(depositApps.length).to.be.eq(0);
   });
 
-  it("Client should override messaging URL if provided", async () => {
-    let messagingUrl: string;
-    if (env.nodeUrl.startsWith("https://")) {
-      // prod mode
-      messagingUrl = env.nodeUrl.replace("https://", "nats://").split("/api")[0] + ":4222";
-    } else {
-      messagingUrl = env.nodeUrl.replace("http://", "nats://").split(":8080")[0] + ":4222";
-    }
-    const client = await createClient({
-      messagingUrl,
-    });
-    expect(client.publicIdentifier).to.be.ok;
-  });
-
   it.skip("Client should attempt to wait for user withdrawal if there are withdraw commitments in store", async () => {
     const pk = Wallet.createRandom().privateKey;
     const store = getMemoryStore();

@@ -15,6 +15,12 @@ then interactive="--interactive --tty"
 else echo "Running in non-interactive mode"
 fi
 
+if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
+then
+  id="`docker network create --attachable --driver overlay $project`"
+  echo "Created ATTACHABLE network with id $id"
+fi
+
 if [[ -n "`docker image ls -q $name:$1`" ]]
 then image=$name:$1; shift # rm $1 from $@
 elif [[ "$mode" == "release" ]]
@@ -24,6 +30,7 @@ then image=$name:$commit;
 else
 
   exec docker run \
+    $interactive \
     --entrypoint="bash" \
     --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
     --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
@@ -32,9 +39,9 @@ else
     --env="INDRA_NODE_URL=$NODE_URL" \
     --env="NODE_ENV=development" \
     --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
-    $interactive \
-    --name="$name" \
     --mount="type=bind,source=`pwd`,target=/root" \
+    --name="$name" \
+    --network="$project" \
     --rm \
     ${project}_builder -c "cd modules/test-runner && bash ops/entry.sh $@"
 fi
@@ -42,15 +49,16 @@ fi
 echo "Executing image $image"
 
 exec docker run \
+  $interactive \
   $watchOptions \
   --env="INDRA_ADMIN_TOKEN=${INDRA_ADMIN_TOKEN}" \
   --env="INDRA_CLIENT_LOG_LEVEL=0" \
   --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
   --env="INDRA_NATS_URL=$NATS_URL" \
-  --env="INDRA_NODE_URL=https://172.17.0.1/api" \
+  --env="INDRA_NODE_URL=$NODE_URL" \
   --env="NODE_ENV=production" \
   --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
-  $interactive \
   --name="$name" \
+  --network="$project" \
   --rm \
   $image $@
