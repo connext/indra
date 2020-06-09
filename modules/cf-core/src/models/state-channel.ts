@@ -65,6 +65,12 @@ export class StateChannel {
     return this.appInstances.size;
   }
 
+  public incrementNumProposedApps(): StateChannel {
+    return this.build({
+      monotonicNumProposedApps: this.monotonicNumProposedApps + 1,
+    });
+  }
+
   public getAppInstance(appIdentityHash: string): AppInstance {
     if (this.hasFreeBalance && appIdentityHash === this.freeBalance.identityHash) {
       return this.freeBalance;

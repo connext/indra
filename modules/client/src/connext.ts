@@ -420,16 +420,17 @@ export class ConnextClient implements IConnextClient {
       await this.channelProvider.send(ChannelMethods.chan_restoreState, {});
       this.log.info(`Found state to restore from store's backup`);
     } catch (e) {
+      const toRestore = await this.node.restoreState(this.publicIdentifier);
       const {
         channel,
         setupCommitment,
         setStateCommitments,
         conditionalCommitments,
-      } = await this.node.restoreState(this.publicIdentifier);
+      } = toRestore;
       if (!channel) {
         throw new Error(`No matching states found by node for ${this.publicIdentifier}`);
       }
-      this.log.info(`Found state to restore from node: ${stringify(channel)}`);
+      this.log.info(`Found state to restore from node: ${stringify(toRestore)}`);
       await this.channelProvider.send(ChannelMethods.chan_setStateChannel, {
         state: channel,
         setupCommitment,
