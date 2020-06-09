@@ -19,6 +19,7 @@ import { ChannelService } from "./channel.service";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
 import { SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
 import { ConditionalTransactionCommitmentRepository } from "../conditionalCommitment/conditionalCommitment.repository";
+import { CacheModule } from "../caching/cache.module";
 
 @Module({
   controllers: [],
@@ -32,6 +33,7 @@ import { ConditionalTransactionCommitmentRepository } from "../conditionalCommit
     LoggerModule,
     MessagingModule,
     DepositModule,
+    CacheModule,
     TypeOrmModule.forFeature([
       AppRegistryRepository,
       ChannelRepository,

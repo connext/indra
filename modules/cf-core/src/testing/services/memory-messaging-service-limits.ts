@@ -7,21 +7,18 @@ export type MessagingLimit = { to: string; limit: number };
 export type MessagingLimitAndCount = MessagingLimit & { count: number };
 
 export class MemoryMessagingServiceWithLimits implements IMessagingService {
-  public eventEmitter: EventEmitter;
   private connected: boolean = true;
   private messageCount = 0;
   private logger: Logger;
   private isSend: boolean;
 
   constructor(
-    eventEmitter: EventEmitter = new EventEmitter(),
+    public eventEmitter: EventEmitter = new EventEmitter(),
     private limit: number = 0,
     private protocol?: ProtocolName,
     sendOrReceive: "send" | "receive" = "send",
     private readonly name: string = "Node",
   ) {
-    this.limit = limit;
-    this.eventEmitter = eventEmitter;
     this.logger = new Logger("CreateClient", env.logLevel, true, this.name);
     this.isSend = sendOrReceive === "send";
   }

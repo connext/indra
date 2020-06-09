@@ -5,7 +5,7 @@
   "main": "dist/src/index.js",
   "scripts": {
     "build": "rm -rf dist && tsc --project tsconfig.json",
-    "start": "node dist/src/index.js"
+    "start": "node --inspect=0.0.0.0:9229 dist/src/index.js"
   },
   "author": "",
   "license": "ISC",

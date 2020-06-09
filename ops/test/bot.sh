@@ -41,7 +41,7 @@ function cleanup {
     agent_code="`docker container inspect bot-registry | jq '.[0].State.ExitCode'`"
     docker container rm bot-registry &> /dev/null || true
   fi
-exit $exit_code
+  exit $exit_code
 }
 trap cleanup EXIT SIGINT
 
@@ -51,25 +51,26 @@ else echo "Running in non-interactive mode"
 fi
 
 echo "Starting bot registry container"
-docker run \
-  --detach \
-  --entrypoint="bash" \
-  $interactive \
-  --name="bot-registry" \
-  --volume="`pwd`:/root" \
-  -p 3333:3333 \
-  ${project}_builder -c '
-    set -e
-    echo "Bot registry container launched!"
-    cd modules/bot-registry
-    export PATH=./node_modules/.bin:$PATH
-    function finish {
-      echo && echo "Bot container exiting.." && exit
-    }
-    trap finish SIGTERM SIGINT
-    echo "Launching agent!";echo
-    npm run start
-  '
+  docker run \
+    $interactive \
+    --detach \
+    --entrypoint="bash" \
+    --name="bot-registry" \
+    --publish "3333:3333" \
+    --publish="$((n + 8330)):9229" \
+    --volume="`pwd`:/root" \
+    ${project}_builder -c '
+      set -e
+      echo "Bot registry container launched!"
+      cd modules/bot-registry
+      export PATH=./node_modules/.bin:$PATH
+      function finish {
+        echo && echo "Bot container exiting.." && exit
+      }
+      trap finish SIGTERM SIGINT
+      echo "Launching agent!";echo
+      npm run start
+    '
   docker logs --follow bot-registry &
 
 for (( n=1; n<=$agents; n++ ))
@@ -87,15 +88,16 @@ do
 
   echo "Starting agent container $n"
   docker run \
+    $interactive \
     --detach \
     --entrypoint="bash" \
-    --env="LOG_LEVEL=$LOG_LEVEL" \
-    --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
-    --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
-    --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
     --env="BOT_REGISTRY_URL"="$BOT_REGISTRY_URL" \
-    $interactive \
+    --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
+    --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
+    --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
+    --env="LOG_LEVEL=$LOG_LEVEL" \
     --name="$agent" \
+    --publish="$((n + 9330)):9229" \
     --volume="`pwd`:/root" \
     ${project}_builder -c '
       set -e

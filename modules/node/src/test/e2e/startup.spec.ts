@@ -33,18 +33,18 @@ describe("Startup", () => {
     await app.listen(configService.getPort());
   });
 
-  it("should throw an error on startup if node is broke", async () => {
+  it("should still start up even if the node has zero balance", async () => {
     const configService = new MockConfigService({
       signer: getRandomChannelSigner(env.ethProviderUrl),
     });
-    log.info(`Creatted a config service`);
-    expect(
-      Test.createTestingModule({
-        imports: [AppModule],
-      })
-        .overrideProvider(ConfigService)
-        .useValue(configService)
-        .compile(),
-    ).to.be.rejectedWith("balance is zero");
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider(ConfigService)
+      .useValue(configService)
+      .compile();
+    app = moduleFixture.createNestApplication();
+    expect(app.init()).to.not.be.rejected;
+    await app.listen(configService.getPort());
   });
 });

@@ -21,12 +21,12 @@ import { MiddlewareContainer } from "./middleware";
 import { StateChannel, AppInstance } from "../models";
 import { RpcRouter } from "../rpc-router";
 
-function firstRecipientFromProtocolName(protocolName: ProtocolName) {
+const firstRecipientFromProtocolName = (protocolName: ProtocolName) => {
   if (Object.values(ProtocolNames).includes(protocolName)) {
     return "responderIdentifier";
   }
   throw new Error(`Unknown protocolName ${protocolName} passed to firstRecipientFromProtocolName`);
-}
+};
 
 export class ProtocolRunner {
   public middlewares: MiddlewareContainer;
@@ -144,11 +144,11 @@ export class ProtocolRunner {
   }
 }
 
-export function getOutgoingEventFailureDataFromProtocol(
+export const getOutgoingEventFailureDataFromProtocol = (
   protocol: ProtocolName,
   params: ProtocolParam,
   error: Error,
-): ProtocolEventMessage<any> {
+): ProtocolEventMessage<any> => {
   const baseEvent = {
     from: params.initiatorIdentifier,
     data: {
@@ -198,8 +198,8 @@ export function getOutgoingEventFailureDataFromProtocol(
       throw new Error(`Unexpected case: ${unexpected}`);
     }
   }
-}
+};
 
-export function emitOutgoingMessage(router: RpcRouter, msg: ProtocolEventMessage<any>) {
+export const emitOutgoingMessage = (router: RpcRouter, msg: ProtocolEventMessage<any>) => {
   return router.emit(msg["type"], msg, "outgoing");
-}
+};

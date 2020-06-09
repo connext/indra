@@ -24,7 +24,7 @@ import {
   ValidationMiddleware,
   EventName,
 } from "@connext/types";
-import { delay, nullLogger } from "@connext/utils";
+import { delay, nullLogger, stringify } from "@connext/utils";
 import { providers } from "ethers";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
@@ -251,9 +251,10 @@ export class CFCore {
           PersistStateChannelType,
           StateChannel,
           (MinimalTransaction | SetStateCommitment | ConditionalTransactionCommitment)[],
+          AppInstance, // uninstalled app context
         ],
       ) => {
-        const [type, stateChannel, signedCommitments] = args;
+        const [type, stateChannel, signedCommitments, appContext] = args;
         switch (type) {
           case PersistStateChannelType.CreateChannel: {
             const [setup, freeBalance] = signedCommitments as [
@@ -267,6 +268,11 @@ export class CFCore {
             );
 
             await this.storeService.updateSchemaVersion(STORE_SCHEMA_VERSION);
+            break;
+          }
+
+          case PersistStateChannelType.SyncNumProposedApps: {
+            await this.storeService.incrementNumProposedApps(stateChannel.multisigAddress);
             break;
           }
 
@@ -293,24 +299,13 @@ export class CFCore {
             break;
           }
           case PersistStateChannelType.SyncFreeBalance: {
-            const [setState] = signedCommitments as [
-              SetStateCommitment,
-              ConditionalTransactionCommitment | undefined,
-            ];
-            let latestInstalled;
-            try {
-              latestInstalled = stateChannel
-                .getAppInstanceByAppSeqNo(stateChannel.numProposedApps)
-                .toJson();
-            } catch (e) {
-              latestInstalled = undefined;
-            }
-            if (!latestInstalled) {
+            const [setState] = signedCommitments as [SetStateCommitment];
+            if (appContext) {
               // this was an uninstall, so remove app instance
               await this.storeService.removeAppInstance(
                 stateChannel.multisigAddress,
-                setState.appIdentityHash,
-                stateChannel.freeBalance.toJson(),
+                appContext.identityHash,
+                stateChannel.toJson().freeBalanceAppInstance!,
                 setState.toJson(),
               );
             } else {
@@ -338,7 +333,8 @@ export class CFCore {
             break;
           }
           default: {
-            throw new Error(`Unrecognized persist state channel type: ${type}`);
+            const c: never = type;
+            throw new Error(`Unrecognized persist state channel type: ${c}`);
           }
         }
         return { channel: stateChannel };
@@ -493,8 +489,14 @@ export class CFCore {
     this.messagingService.onReceive(
       this.publicIdentifier,
       async (msg: ProtocolEventMessage<any>) => {
-        await this.handleReceivedMessage(msg);
-        this.rpcRouter.emit(msg.type, msg, "outgoing");
+        try {
+          await this.handleReceivedMessage(msg);
+          this.rpcRouter.emit(msg.type, msg, "outgoing");
+        } catch (e) {
+          // No need to crash the entire cfCore if we receive an invalid message.
+          // Just log & wait for the next one
+          this.log.error(`Failed to handle ${msg.type} message: ${e.message}`);
+        }
       },
     );
   }
