@@ -110,9 +110,15 @@ then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
   new_secret "$db_secret" "$project"
-  db_port="ports:
-      - '5432:5432'
-  "
+  # Deploy with an attachable network so tests can connect to individual components
+  if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
+  then
+    id="`docker network create --attachable --driver overlay $project`"
+    echo "Created ATTACHABLE network with id $id"
+  fi
+  network="networks:
+      - '$project'
+    "
 else
   db_volume="database"
   db_secret="${project}_database"
@@ -258,9 +264,11 @@ services:
       - '4222:4222'
     volumes:
       - 'certs:/etc/letsencrypt'
+    $network
 
   webserver:
     image: '$webserver_image'
+    $network
 
   node:
     image: '$node_image'
@@ -292,6 +300,7 @@ services:
     secrets:
       - '$db_secret'
       - '$eth_mnemonic_name'
+    $network
 
   database:
     image: '$database_image'
@@ -313,7 +322,7 @@ services:
     volumes:
       - '$db_volume:/var/lib/postgresql/data'
       - '`pwd`/ops/database/snapshots:/root/snapshots'
-    $db_port
+    $network
 
   nats:
     image: '$nats_image'
@@ -324,9 +333,11 @@ services:
       driver: 'json-file'
       options:
           max-size: '100m'
+    $network
 
   redis:
     image: '$redis_image'
+    $network
 
   logdna:
     image: '$logdna_image'
