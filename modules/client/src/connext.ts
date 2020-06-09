@@ -421,12 +421,7 @@ export class ConnextClient implements IConnextClient {
       this.log.info(`Found state to restore from store's backup`);
     } catch (e) {
       const toRestore = await this.node.restoreState(this.publicIdentifier);
-      const {
-        channel,
-        setupCommitment,
-        setStateCommitments,
-        conditionalCommitments,
-      } = toRestore;
+      const { channel, setupCommitment, setStateCommitments, conditionalCommitments } = toRestore;
       if (!channel) {
         throw new Error(`No matching states found by node for ${this.publicIdentifier}`);
       }
@@ -823,7 +818,13 @@ export class ConnextClient implements IConnextClient {
       // there is still an active deposit, setup a listener to
       // rescind deposit rights when deposit is sent to multisig
       if (assetId === AddressZero) {
-        this.ethProvider.on(this.multisigAddress, async (balance: BigNumber) => {
+        this.ethProvider.on("block", async () => {
+          const balance =
+            assetId === AddressZero
+              ? await this.ethProvider.getBalance(this.multisigAddress)
+              : await new Contract(assetId, ERC20.abi, this.ethProvider).balanceOf(
+                  this.multisigAddress,
+                );
           if (balance.gt((latestState as DepositAppState).startingMultisigBalance)) {
             await this.rescindDepositRights({ assetId, appIdentityHash });
             this.ethProvider.removeAllListeners(this.multisigAddress);

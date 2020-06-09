@@ -67,7 +67,8 @@ describe("Reclaim", () => {
     // verify that node reclaims until lower bound reclaim
     await new Promise(async (res) => {
       const paymentId = getRandomBytes32();
-      clientA.ethProvider.on(clientA.multisigAddress, (balance) => {
+      clientA.ethProvider.on("block", async () => {
+        const balance = await clientA.ethProvider.getBalance(clientA.multisigAddress);
         if (preBalance.gt(balance)) {
           res();
         }

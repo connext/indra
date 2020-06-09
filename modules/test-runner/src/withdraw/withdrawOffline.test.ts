@@ -187,7 +187,8 @@ describe("Withdraw offline tests", () => {
       }),
       // make sure the onchain tx was submitted successfully
       new Promise(async (resolve) => {
-        ethProvider.on(client.multisigAddress, (balance: BigNumber) => {
+        ethProvider.on("block", async () => {
+          const balance = await ethProvider.getBalance(client.multisigAddress);
           if (!balance.eq(startingBalance)) {
             resolve();
           }

@@ -23,7 +23,8 @@ describe("Deposit Rights", () => {
     await new Promise(
       async (res: any, rej: any): Promise<any> => {
         // ignore events when listener is registered
-        ethProvider.on(client.multisigAddress, async (balance) => {
+        ethProvider.on("block", async () => {
+          const balance = await getOnchainBalance(client.multisigAddress);
           if (balance.eq(initialBalance)) {
             return;
           }
@@ -58,7 +59,7 @@ describe("Deposit Rights", () => {
     expect(initialBalance).to.be.eq(Zero);
     await new Promise(
       async (res: any, rej: any): Promise<any> => {
-        ethProvider.on(client.multisigAddress, async () => {
+        ethProvider.on("block", async () => {
           const balance = await getOnchainBalance(client.multisigAddress, assetId);
           if (balance.eq(initialBalance)) {
             return;
