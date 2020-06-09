@@ -1,10 +1,11 @@
 /* global before */
-import { SolidityValueType, TwoPartyFixedOutcome } from "@connext/types";
+import { SolidityValueType, TwoPartyFixedOutcome, tidy } from "@connext/types";
 import { Contract, ContractFactory, constants, utils } from "ethers";
 
 import { HighRollerApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
+import { toBN } from "@connext/utils";
 
 const { HashZero } = constants;
 const { defaultAbiCoder, solidityKeccak256 } = utils;
@@ -44,7 +45,7 @@ type HighRollerAction = {
   actionHash: string;
 };
 
-const rlpAppStateEncoding = `
+const rlpAppStateEncoding = tidy(`
   tuple(
     uint8 stage,
     bytes32 salt,
@@ -53,15 +54,15 @@ const rlpAppStateEncoding = `
     uint256 playerSecondNumber,
     uint256 versionNumber
   )
-`;
+`);
 
-const rlpActionEncoding = `
+const rlpActionEncoding = tidy(`
   tuple(
     uint8 actionType,
     uint256 number,
-    bytes32 actionHash,
+    bytes32 actionHash
   )
-`;
+`);
 
 const decodeBytesToAppState = (encodedAppState: string): HighRollerAppState => {
   return defaultAbiCoder.decode([rlpAppStateEncoding], encodedAppState)[0];
@@ -71,7 +72,9 @@ const encodeState = (state: SolidityValueType) => {
   return defaultAbiCoder.encode([rlpAppStateEncoding], [state]);
 };
 
-const encodeAction = (state: SolidityValueType) => {
+const encodeAction = (state: any) => {
+  console.log("[encodeAction]", "rlpActionEncoding", rlpActionEncoding);
+  console.log("[encodeAction]", "state", state);
   return defaultAbiCoder.encode([rlpActionEncoding], [state]);
 };
 

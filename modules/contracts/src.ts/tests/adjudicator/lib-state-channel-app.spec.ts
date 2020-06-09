@@ -16,8 +16,6 @@ import {
 describe("LibStateChannelApp", () => {
   let wallet: Wallet;
 
-  let snapshotId: any;
-
   // apps/constants
   let ONCHAIN_CHALLENGE_TIMEOUT: number;
   let bob: Wallet;
@@ -39,7 +37,6 @@ describe("LibStateChannelApp", () => {
   });
 
   beforeEach(async () => {
-    snapshotId = await snapshot();
     const context = await setupContext();
 
     // apps/constants
@@ -62,10 +59,6 @@ describe("LibStateChannelApp", () => {
       );
 
     verifySignatures = context["verifySignatures"];
-  });
-
-  afterEach(async () => {
-    await restore(snapshotId);
   });
 
   describe("hasPassed", () => {

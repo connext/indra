@@ -25,5 +25,5 @@ export const DepositAppStateEncoding = tidy(`tuple(
   address multisigAddress,
   address assetId,
   uint256 startingTotalAmountWithdrawn,
-  uint256 startingMultisigBalance,
+  uint256 startingMultisigBalance
 )`);

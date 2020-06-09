@@ -1,30 +1,30 @@
-import { AppABIEncodings } from "@connext/types";
+import { AppABIEncodings, tidy } from "@connext/types";
 import { getRandomBytes32 } from "@connext/utils";
 import { BigNumber, BigNumberish, utils, constants } from "ethers";
 
 const { Zero, AddressZero } = constants;
 const { solidityKeccak256 } = utils;
 
-const singleAssetTwoPartyCoinTransferEncoding = `
+const singleAssetTwoPartyCoinTransferEncoding = tidy(`
 tuple(address to, uint256 amount)[2]
-`;
+`);
 
 export const linkedAbiEncodings: AppABIEncodings = {
-  stateEncoding: `
+  stateEncoding: tidy(`
     tuple(
       uint8 stage,
       ${singleAssetTwoPartyCoinTransferEncoding} transfers,
       bytes32 linkedHash,
       uint256 turnNum,
       bool finalized
-    )`,
-  actionEncoding: `
+    )`),
+  actionEncoding: tidy(`
     tuple(
       uint256 amount,
       address assetId,
       bytes32 paymentId,
       bytes32 preImage
-    )`,
+    )`),
 };
 
 export function validAction(amount: BigNumberish = 1, assetId: string = AddressZero) {

@@ -52,7 +52,6 @@ describe("progressState", () => {
   });
 
   beforeEach(async () => {
-    snapshotId = await snapshot();
     const context = await setupContext();
 
     // apps
@@ -70,10 +69,6 @@ describe("progressState", () => {
     verifyChallenge = context["verifyChallenge"];
     isProgressable = context["isProgressable"];
     progressStateAndVerify = context["progressStateAndVerify"];
-  });
-
-  afterEach(async () => {
-    await restore(snapshotId);
   });
 
   it("Can call progressState", async () => {

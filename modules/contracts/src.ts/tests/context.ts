@@ -164,12 +164,14 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
       timeout,
       signatures: await getSignatures(digest),
     });
+    const blockNumber = await provider.getBlockNumber();
+    // FIXME: why is this off by one?
+    const finalizesAt = toBN(blockNumber).add(timeout).add(1);
     await wrapInEventVerification(call, {
       status: ChallengeStatus.IN_DISPUTE,
       appStateHash: stateHash,
       versionNumber: toBN(versionNumber),
-      // FIXME: why is this off by one?
-      finalizesAt: toBN((await provider.getBlockNumber()) + timeout + 1),
+      finalizesAt,
     });
   };
 
@@ -216,6 +218,10 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
       timeout: resultingStateTimeout,
       signatures: [await new ChannelSigner(signer.privateKey).signMessage(digest)],
     };
+    const blockNumber = await provider.getBlockNumber();
+    const timeout = appInstance.defaultTimeout;
+    // FIXME: why is this off by one?
+    const finalizesAt = toBN(blockNumber).add(timeout).add(1);
     await wrapInEventVerification(
       appRegistry.progressState(
         appInstance.appIdentity,
@@ -229,8 +235,7 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
           : ChallengeStatus.IN_ONCHAIN_PROGRESSION,
         appStateHash: resultingStateHash,
         versionNumber: toBN(resultingStateVersionNumber),
-        // FIXME: why is this off by one?
-        finalizesAt: toBN((await provider.getBlockNumber()) + appInstance.defaultTimeout + 1),
+        finalizesAt,
       },
     );
   };
