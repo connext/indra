@@ -35,12 +35,12 @@ function cleanup {
     fi
   done
   if [[ -n "`docker container ls -a | grep bot-registry`" ]]
-    then
+  then
     echo "Stopping bot-registry.."
     docker container stop bot-registry &> /dev/null || true
     agent_code="`docker container inspect bot-registry | jq '.[0].State.ExitCode'`"
     docker container rm bot-registry &> /dev/null || true
-    fi
+  fi
   exit $exit_code
 }
 trap cleanup EXIT SIGINT
@@ -52,24 +52,24 @@ fi
 
 echo "Starting bot registry container"
   docker run \
-    --detach \
-    -p "$((n + 8330)):9229" \
-    --entrypoint="bash" \
     $interactive \
-  --name="bot-registry" \
+    --detach \
+    --entrypoint="bash" \
+    --name="bot-registry" \
+    --publish "3333:3333" \
+    --publish="$((n + 8330)):9229" \
     --volume="`pwd`:/root" \
-  -p 3333:3333 \
     ${project}_builder -c '
       set -e
-    echo "Bot registry container launched!"
-    cd modules/bot-registry
+      echo "Bot registry container launched!"
+      cd modules/bot-registry
       export PATH=./node_modules/.bin:$PATH
       function finish {
         echo && echo "Bot container exiting.." && exit
       }
       trap finish SIGTERM SIGINT
-    echo "Launching agent!";echo
-    npm run start
+      echo "Launching agent!";echo
+      npm run start
     '
   docker logs --follow bot-registry &
 
@@ -88,16 +88,16 @@ do
 
   echo "Starting agent container $n"
   docker run \
-    --detach \
-    -p "$((n + 9330)):9229" \
-    --entrypoint="bash" \
-    --env="LOG_LEVEL=$LOG_LEVEL" \
-    --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
-    --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
-    --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
-    --env="BOT_REGISTRY_URL"="$BOT_REGISTRY_URL" \
     $interactive \
+    --detach \
+    --entrypoint="bash" \
+    --env="BOT_REGISTRY_URL"="$BOT_REGISTRY_URL" \
+    --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
+    --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
+    --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
+    --env="LOG_LEVEL=$LOG_LEVEL" \
     --name="$agent" \
+    --publish="$((n + 9330)):9229" \
     --volume="`pwd`:/root" \
     ${project}_builder -c '
       set -e

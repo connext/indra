@@ -2,9 +2,9 @@ import { abbreviate } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
 import Redis from "ioredis";
 
-import {LOCK_SERVICE_TTL, RedisProviderId} from '../constants';
+import { LOCK_SERVICE_TTL, RedisProviderId } from "../constants";
 import { LoggerService } from "../logger/logger.service";
-import {MemoLock} from './memo-lock';
+import { MemoLock } from "./memo-lock";
 
 @Injectable()
 export class LockService {
@@ -20,7 +20,7 @@ export class LockService {
 
   constructor(
     private readonly log: LoggerService,
-    @Inject(RedisProviderId) private readonly redis: Redis.Redis
+    @Inject(RedisProviderId) private readonly redis: Redis.Redis,
   ) {
     this.log.setContext("LockService");
     this.memoLock = new MemoLock(log, redis, 50, LOCK_SERVICE_TTL, 1000);
@@ -56,7 +56,7 @@ export class LockService {
       await this.memoLock.releaseLock(lockName, lockValue);
       this.log.info(`Done releasing lock for ${lockName}`);
     } catch (e) {
-      this.log.error(`Error unlocking resource ${lockName} (${lockValue}): ${e.message}\n${e.stack}`)
+      this.log.error(`Error unlocking resource ${lockName} (${lockValue}): ${e.stack}`);
     } finally {
       delete this.locks[lockName];
     }

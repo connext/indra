@@ -175,8 +175,8 @@ export default {
           log.info(`Conditional transfer ${paymentId} sent. Elapsed: ${Date.now() - start}`);
         } catch (err) {
           console.error(`Error sending tranfer: ${err.message}`);
+        }
       }
-    }
       // add slight randomness to interval so that it's somewhere between
       // 75% and 125% of inputted argument
     }, randomInterval);

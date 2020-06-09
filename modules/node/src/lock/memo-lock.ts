@@ -1,7 +1,7 @@
-import Redis from 'ioredis';
-import crypto from 'crypto';
-import Timer = NodeJS.Timer;
-import {LoggerService} from '../logger/logger.service';
+import Redis from "ioredis";
+import crypto from "crypto";
+
+import { LoggerService } from "../logger/logger.service";
 
 const lockScript = `
   local len = redis.call("llen", KEYS[1]);
@@ -71,12 +71,18 @@ export class MemoLock {
 
   private awaiters: { [k: string]: Awaiter } = {};
 
-  private pulseTimer: Timer | null = null;
+  private pulseTimer: NodeJS.Timer | null = null;
 
   // subConn used for subscriber connections
   private subConn: Redis.Redis;
 
-  constructor (log: LoggerService, redis: Redis.Redis, queueLen: number = 50, ttl: number = 30000, pulseInterval: number = 5000) {
+  constructor (
+    log: LoggerService,
+    redis: Redis.Redis,
+    queueLen: number = 50,
+    ttl: number = 30000,
+    pulseInterval: number = 5000,
+  ) {
     this.log = log;
     this.redis = redis;
     this.queueLen = queueLen;
@@ -87,51 +93,51 @@ export class MemoLock {
   async setupSubs (): Promise<void> {
     this.subConn = this.redis.duplicate();
 
-    await new Promise((resolve, reject) => this.subConn.subscribe('memolock:acquire', (err) => {
+    await new Promise((resolve, reject) => this.subConn.subscribe("memolock:acquire", (err) => {
       if (err) {
         return reject(err);
       }
       resolve();
     }));
-    await new Promise((resolve, reject) => this.subConn.subscribe('memolock:expire', (err) => {
+    await new Promise((resolve, reject) => this.subConn.subscribe("memolock:expire", (err) => {
       if (err) {
         return reject(err);
       }
       resolve();
     }));
 
-    this.subConn.on('message', (channel, message) => {
+    this.subConn.on("message", (channel, message) => {
       const awaiter = this.awaiters[message];
       if (!awaiter) {
         return;
       }
       delete this.awaiters[message];
       switch (channel) {
-        case 'memolock:acquire':
+        case "memolock:acquire":
           awaiter.resolve();
           break;
-        case 'memolock:expire':
+        case "memolock:expire":
           awaiter.reject(new Error(`Lock ${message} expired after ${this.ttl} seconds.`));
           break;
       }
     });
 
-    await this.redis.defineCommand('acquireMemolock', {
+    await this.redis.defineCommand("acquireMemolock", {
       numberOfKeys: 2,
-      lua: lockScript
+      lua: lockScript,
     });
-    await this.redis.defineCommand('releaseMemolock', {
+    await this.redis.defineCommand("releaseMemolock", {
       numberOfKeys: 1,
-      lua: unlockScript
+      lua: unlockScript,
     });
-    await this.redis.defineCommand('pulseMemolock', {
+    await this.redis.defineCommand("pulseMemolock", {
       numberOfKeys: 0,
       lua: pulseScript,
     });
 
     this.pulseTimer = setInterval(() => {
       this.pulse().catch((e) => {
-        this.log.error(`Error pulsing memolock: ${e.message}\n${e.stack}`);
+        this.log.error(`Error pulsing memolock: ${e.stack}`);
       });
     }, this.pulseInterval);
   }
@@ -166,10 +172,10 @@ export class MemoLock {
         if (err) {
           return reject(err);
         }
-        if (res === 'QUEUE_FULL') {
+        if (res === "QUEUE_FULL") {
           return reject(new Error(`Queue is full.`));
         }
-        return reject(new Error(`Unknown response ${res} during lock acquisition.`))
+        return reject(new Error(`Unknown response ${res} during lock acquisition.`));
       });
     });
   }
@@ -180,7 +186,7 @@ export class MemoLock {
         if (err) {
           return reject(err);
         }
-        if (res === 'NO_LOCK') {
+        if (res === "NO_LOCK") {
           return reject(new Error(`Trying to unlock invalid lock: ${lockName} ${lockValue}`));
         }
         resolve();
@@ -189,6 +195,6 @@ export class MemoLock {
   }
 
   private randomValue () {
-    return crypto.randomBytes(16).toString('hex');
+    return crypto.randomBytes(16).toString("hex");
   }
 }

@@ -1,15 +1,15 @@
-import {Inject} from '@nestjs/common';
-import Redis from 'ioredis';
-import {JSONSerializer} from '@connext/types';
-import {RedisProviderId} from '../constants';
-import {LoggerService} from '../logger/logger.service';
+import { Inject } from "@nestjs/common";
+import Redis from "ioredis";
+import { JSONSerializer } from "@connext/types";
+import { RedisProviderId } from "../constants";
+import { LoggerService } from "../logger/logger.service";
 
 export class CacheService {
   constructor (
     @Inject(RedisProviderId) private readonly redis: Redis.Redis,
-    private readonly log: LoggerService
+    private readonly log: LoggerService,
   ) {
-    this.log.setContext('Cache');
+    this.log.setContext("Cache");
   }
 
   async get(key: string): Promise<string|null> {
@@ -17,14 +17,19 @@ export class CacheService {
   }
 
   async set (key: string, expiry: number, value: any): Promise<void> {
-    return this.redis.set(key, JSON.stringify(value), 'EX', expiry);
+    return this.redis.set(key, JSON.stringify(value), "EX", expiry);
   }
 
   async del (key: string): Promise<void> {
     return this.redis.del(key);
   }
 
-  async wrap<T> (key: string, expiry: number, cb: () => Promise<T>, ser: JSONSerializer<T, any>): Promise<T> {
+  async wrap<T> (
+    key: string,
+    expiry: number,
+    cb: () => Promise<T>,
+    ser: JSONSerializer<T, any>,
+  ): Promise<T> {
     const cached = await this.redis.get(key);
     if (cached) {
       return ser.fromJSON(JSON.parse(cached));
@@ -33,7 +38,7 @@ export class CacheService {
     if (!val) {
       return val;
     }
-    await this.redis.set(key, JSON.stringify(ser.toJSON(val)), 'EX', expiry);
+    await this.redis.set(key, JSON.stringify(ser.toJSON(val)), "EX", expiry);
     return val;
   }
 
@@ -44,6 +49,6 @@ export class CacheService {
     }
     const parsed = JSON.parse(cached);
     Object.assign(parsed, toMerge);
-    await this.redis.set(key, JSON.stringify(parsed), 'EX', expiry);
+    await this.redis.set(key, JSON.stringify(parsed), "EX", expiry);
   }
 }

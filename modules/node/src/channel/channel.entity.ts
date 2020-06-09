@@ -1,4 +1,4 @@
-import {CriticalStateChannelAddresses, Collateralizations, JSONSerializer} from '@connext/types';
+import { CriticalStateChannelAddresses, Collateralizations, JSONSerializer } from "@connext/types";
 import {
   Column,
   CreateDateColumn,
@@ -12,13 +12,13 @@ import {
 } from "typeorm";
 import { constants } from "ethers";
 
-import {AppInstance, AppInstanceJSON, AppInstanceSerializer} from '../appInstance/appInstance.entity';
+import { AppInstance, AppInstanceJSON, AppInstanceSerializer } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsValidPublicIdentifier } from "../validate";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
-import {bigNumberifyJson, deBigNumberifyJson} from '@connext/utils';
+import { bigNumberifyJson, deBigNumberifyJson } from "@connext/utils";
 
 const { AddressZero } = constants;
 
