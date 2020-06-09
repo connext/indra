@@ -10,6 +10,7 @@ export const toBN = (n: BigNumberish | BigNumberJson): BigNumber =>
 
 export const toBNJson = (n: BigNumberish | BigNumberJson): BigNumberJson => ({
   _hex: toBN(n).toHexString(),
+  _isBigNumber: true,
 });
 
 export const getBigNumberError = (value: any): string | undefined =>

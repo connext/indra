@@ -33,7 +33,7 @@ export const BigNumber = ethers.BigNumber;
 
 // result of JSON.stringify(toBN(1))
 // bigNumberifyJson & deBigNumberifyJson convert values between BigNumber & BigNumberJson
-export type BigNumberJson = { _hex: HexString };
+export type BigNumberJson = { _hex: HexString; _isBigNumber: true };
 
 export type StringMapping = { [key: string]: string };
 
