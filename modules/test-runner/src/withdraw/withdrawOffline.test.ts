@@ -31,7 +31,7 @@ const { AddressZero } = constants;
 
 describe("Withdraw offline tests", () => {
   let signer: IChannelSigner;
-  const addr = addressBook[4447].WithdrawApp.address;
+  const addr = addressBook[1337].WithdrawApp.address;
 
   const createAndFundChannel = async (
     messagingConfig: Partial<ClientTestMessagingInputOpts> = {},

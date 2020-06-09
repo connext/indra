@@ -7,7 +7,7 @@ const provider = new eth.providers.JsonRpcProvider(Cypress.env("provider"));
 const funder = eth.Wallet.fromMnemonic(Cypress.env("funder")).connect(provider);
 const cashout = eth.Wallet.createRandom().connect(provider);
 const origin = Cypress.env("publicUrl").substring(Cypress.env("publicUrl").indexOf("://") + 3);
-const tokenAddress = addressBook["4447"].Token.address.toLowerCase();
+const tokenAddress = addressBook["1337"].Token.address.toLowerCase();
 const token = new eth.Contract(tokenAddress, tokenArtifacts.abi, funder);
 
 const gasMoney = "0.005";
@@ -71,15 +71,11 @@ my.burnCard = () => {
   my.doneStarting();
 };
 
-my.restoreMnemonic = mnemonic => {
+my.restoreMnemonic = (mnemonic) => {
   my.goToSettings();
   cy.contains("button", /import/i).click();
-  cy.get(`input[type="text"]`)
-    .clear()
-    .type(mnemonic);
-  cy.get("button")
-    .find("svg")
-    .click();
+  cy.get(`input[type="text"]`).clear().type(mnemonic);
+  cy.get("button").find("svg").click();
   my.goBack();
   my.isStarting();
   my.doneStarting();
@@ -87,13 +83,9 @@ my.restoreMnemonic = mnemonic => {
 
 my.pay = (to, value) => {
   my.goToSend();
-  cy.get(`input[type="string"]`)
-    .clear()
-    .type(to);
+  cy.get(`input[type="string"]`).clear().type(to);
   cy.contains("p", /ignored for link/i).should("not.exist");
-  cy.get(`input[type="number"]`)
-    .clear()
-    .type(value);
+  cy.get(`input[type="number"]`).clear().type(value);
   cy.contains("button", /send/i).click();
   cy.contains("h5", /payment success/i).should("exist");
   cy.contains("button", /home/i).click();
@@ -102,9 +94,7 @@ my.pay = (to, value) => {
 my.cashoutEther = () => {
   my.goToCashout();
   cy.log(`cashing out to ${cashout.address}`);
-  cy.get(`input[type="string"]`)
-    .clear()
-    .type(cashout.address);
+  cy.get(`input[type="string"]`).clear().type(cashout.address);
   cy.contains("button", /cash out eth/i).click();
   cy.contains("span", /processing withdrawal/i).should("exist");
   cy.contains("span", /withdraw succeeded/i).should("exist");
@@ -115,9 +105,7 @@ my.cashoutEther = () => {
 my.cashoutToken = () => {
   my.goToCashout();
   cy.log(`cashing out to ${cashout.address}`);
-  cy.get(`input[type="string"]`)
-    .clear()
-    .type(cashout.address);
+  cy.get(`input[type="string"]`).clear().type(cashout.address);
   cy.contains("button", /cash out dai/i).click();
   cy.contains("span", /processing withdrawal/i).should("exist");
   cy.contains("span", /withdraw succeeded/i).should("exist");
@@ -142,7 +130,7 @@ my.getAddress = () => {
       my.goToDeposit();
       cy.contains("button", my.addressRegex)
         .invoke("text")
-        .then(address => {
+        .then((address) => {
           cy.log(`Got address: ${address}`);
           my.goBack();
           resolve(address);
@@ -160,7 +148,7 @@ my.getMnemonic = () => {
       cy.contains("button", my.mnemonicRegex).should("exist");
       cy.contains("button", my.mnemonicRegex)
         .invoke("text")
-        .then(mnemonic => {
+        .then((mnemonic) => {
           cy.log(`Got mnemonic: ${mnemonic}`);
           my.goBack();
           resolve(mnemonic);
@@ -175,7 +163,7 @@ my.getPublicId = () => {
       my.goToRequest();
       cy.contains("button", my.publicIdRegex)
         .invoke("text")
-        .then(publicId => {
+        .then((publicId) => {
           cy.log(`Got publicId: ${publicId}`);
           my.goBack();
           resolve(publicId);
@@ -187,9 +175,9 @@ my.getPublicId = () => {
 my.getAccount = () => {
   return cy.wrap(
     new Cypress.Promise((resolve, reject) => {
-      return my.getMnemonic().then(mnemonic => {
-        return my.getAddress().then(address => {
-          return my.getPublicId().then(publicId => {
+      return my.getMnemonic().then((mnemonic) => {
+        return my.getAddress().then((address) => {
+          return my.getPublicId().then((publicId) => {
             return resolve({ address, mnemonic, publicId });
           });
         });
@@ -201,7 +189,7 @@ my.getAccount = () => {
 my.getOnchainEtherBalance = (address = cashout.address) => {
   return cy.wrap(
     new Cypress.Promise((resolve, reject) => {
-      return cy.wrap(cashout.provider.getBalance(address)).then(balance => {
+      return cy.wrap(cashout.provider.getBalance(address)).then((balance) => {
         cy.log(`Onchain ether balance is ${balance.toString()} for ${address}`);
         resolve(balance.toString());
       });
@@ -212,7 +200,7 @@ my.getOnchainEtherBalance = (address = cashout.address) => {
 my.getOnchainTokenBalance = (address = cashout.address) => {
   return cy.wrap(
     new Cypress.Promise((resolve, reject) => {
-      return cy.wrap(token.balanceOf(address)).then(balance => {
+      return cy.wrap(token.balanceOf(address)).then((balance) => {
         cy.log(`Onchain token balance is ${balance.toString()} for ${address}`);
         resolve(balance.toString());
       });
@@ -225,7 +213,7 @@ my.getChannelEtherBalance = () => {
     new Cypress.Promise((resolve, reject) => {
       cy.get("span#balance-channel-ether")
         .invoke("text")
-        .then(balance => {
+        .then((balance) => {
           cy.log(`Got ether balance: ${balance}`);
           resolve(balance.substring(1));
         });
@@ -238,7 +226,7 @@ my.getChannelTokenBalance = () => {
     new Cypress.Promise((resolve, reject) => {
       cy.get("span#balance-channel-token")
         .invoke("text")
-        .then(balance => {
+        .then((balance) => {
           cy.log(`Got token balance: ${balance}`);
           resolve(balance.substring(1));
         });
@@ -246,10 +234,10 @@ my.getChannelTokenBalance = () => {
   );
 };
 
-my.deposit = value => {
+my.deposit = (value) => {
   return cy.wrap(
     new Cypress.Promise((resolve, reject) => {
-      my.getAddress().then(address => {
+      my.getAddress().then((address) => {
         cy.log(`Depositing ${value} eth into channel ${address}`);
         return cy
           .wrap(
@@ -258,7 +246,7 @@ my.deposit = value => {
               value: eth.utils.parseEther(value),
             }),
           )
-          .then(tx => {
+          .then((tx) => {
             return cy.wrap(funder.provider.waitForTransaction(tx.hash)).then(() => {
               // cy.contains('span', /processing deposit/i).should('exist')
               cy.contains("span", /processing swap/i).should("exist");
@@ -272,17 +260,17 @@ my.deposit = value => {
   );
 };
 
-my.depositToken = value => {
+my.depositToken = (value) => {
   let address;
   return cy.wrap(
     new Cypress.Promise((resolve, reject) => {
       my.getAddress()
-        .then(_address => {
+        .then((_address) => {
           address = _address;
           cy.log(`Depositing ${value} tokens into channel ${address}`);
           return cy.wrap(token.transfer(address, eth.utils.parseEther(value).toHexString()));
         })
-        .then(tx => {
+        .then((tx) => {
           cy.log(`Waiting for tx ${tx.hash} to be mined...`);
           return cy.wrap(funder.provider.waitForTransaction(tx.hash));
         })
@@ -294,7 +282,7 @@ my.depositToken = value => {
             }),
           );
         })
-        .then(tx => {
+        .then((tx) => {
           return cy.wrap(funder.provider.waitForTransaction(tx.hash));
         })
         .then(() => {
@@ -307,17 +295,15 @@ my.depositToken = value => {
   );
 };
 
-my.linkPay = value => {
+my.linkPay = (value) => {
   return cy.wrap(
     new Cypress.Promise((resolve, reject) => {
       my.goToSend();
-      cy.get(`input[type="number"]`)
-        .clear()
-        .type(value);
+      cy.get(`input[type="number"]`).clear().type(value);
       cy.contains("button", /link/i).click();
       cy.contains("button", origin)
         .invoke("text")
-        .then(redeemLink => {
+        .then((redeemLink) => {
           cy.contains("button", /home/i).click();
           resolve(redeemLink);
         });

@@ -19,6 +19,7 @@ import {
   notLessThanOrEqualTo,
   toBN,
   delayAndThrow,
+  stringify,
 } from "@connext/utils";
 import { BigNumber, Contract, constants } from "ethers";
 
@@ -214,10 +215,11 @@ export class DepositController extends AbstractController {
     try {
       startingTotalAmountWithdrawn = await multisig.totalAmountWithdrawn(tokenAddress);
     } catch (e) {
-      const NOT_DEPLOYED_ERR = `contract not deployed (contractAddress="${this.connext.multisigAddress}"`;
+      const NOT_DEPLOYED_ERR = `CALL_EXCEPTION`;
       if (!e.message.includes(NOT_DEPLOYED_ERR)) {
         throw new Error(e);
       }
+
       // multisig is deployed on withdrawal, if not
       // deployed withdrawal amount is 0
       startingTotalAmountWithdrawn = Zero;

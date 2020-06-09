@@ -63,7 +63,7 @@ export class ConfigService implements OnModuleInit {
   @Memoize()
   async getEthNetwork(): Promise<providers.Network> {
     const ethNetwork = await this.getEthProvider().getNetwork();
-    if (ethNetwork.name === `unknown` && ethNetwork.chainId === 4447) {
+    if (ethNetwork.name === `unknown` && ethNetwork.chainId === 1337) {
       ethNetwork.name = `ganache`;
     } else if (ethNetwork.chainId === 1) {
       ethNetwork.name = `homestead`;

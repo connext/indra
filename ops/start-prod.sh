@@ -74,7 +74,7 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 ####################
 # Internal Config
 
-ganache_chain_id="4447"
+ganache_chain_id="1337"
 node_port="8080"
 number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
 

@@ -53,7 +53,7 @@ admin_token="cxt1234"
 network="${project}_$suffix"
 
 eth_network="ganache"
-ganacheId="4447"
+ganacheId="1337"
 
 ethprovider_host="${project}_ethprovider_$suffix"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"

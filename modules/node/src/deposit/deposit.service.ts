@@ -251,7 +251,7 @@ export class DepositService {
     try {
       startingTotalAmountWithdrawn = await multisig.totalAmountWithdrawn(tokenAddress);
     } catch (e) {
-      const NOT_DEPLOYED_ERR = `contract not deployed (contractAddress="${channel.multisigAddress}"`;
+      const NOT_DEPLOYED_ERR = `CALL_EXCEPTION`;
       if (!e.message.includes(NOT_DEPLOYED_ERR)) {
         throw new Error(e);
       }

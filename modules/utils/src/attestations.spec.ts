@@ -21,7 +21,7 @@ describe("Attestations", () => {
     );
   });
   it("recover attestation signer", async () => {
-    const chainId = 4447;
+    const chainId = 1337;
     const signature =
       "0xf935516901d11fdfeb3ce0816f3238084a7de131825c7a55054876d43aabe1643b1116d5b0e80fc89f3ed97de4a2839c4401742e5ec2de50b1549253288cc0fe1c";
     const signer = await recoverAttestationSigner(

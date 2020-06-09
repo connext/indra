@@ -39,8 +39,8 @@ import { BigNumber, constants } from "ethers";
 const { Zero } = constants;
 
 describe("Signed Transfer Offline", () => {
-  const tokenAddress = addressBook[4447].Token.address;
-  const addr = addressBook[4447].SimpleSignedTransferApp.address;
+  const tokenAddress = addressBook[1337].Token.address;
+  const addr = addressBook[1337].SimpleSignedTransferApp.address;
 
   let senderPrivateKey: PrivateKey;
   let senderSigner: IChannelSigner;

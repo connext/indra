@@ -12,7 +12,7 @@ export const ethWallet = Wallet.createRandom().connect(ethProvider);
 
 export const fundEthWallet = async () => {
   const FUND_AMT = parseEther("10000");
-  const tokenContract = new Contract(addressBook[4447].Token.address, ERC20.abi, sugarDaddy);
+  const tokenContract = new Contract(addressBook[1337].Token.address, ERC20.abi, sugarDaddy);
   const ethFunding = await sugarDaddy.sendTransaction({
     to: ethWallet.address,
     value: FUND_AMT,

@@ -117,7 +117,7 @@ const fundChannelAndSwap = async (opts: {
 };
 
 describe.skip("Swap offline", () => {
-  const swapAppAddr = addressBook[4447].SimpleTwoPartySwapApp.address;
+  const swapAppAddr = addressBook[1337].SimpleTwoPartySwapApp.address;
   it("Bot A tries to propose swap app, but gets no response from the node", async () => {
     const messagingConfig = {
       ceiling: { [SEND]: 0 },
