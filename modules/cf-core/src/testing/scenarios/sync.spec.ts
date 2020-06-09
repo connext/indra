@@ -5,6 +5,8 @@ import {
   EventNames,
   StateChannelJSON,
   ProtocolNames,
+  MethodNames,
+  MethodParams,
 } from "@connext/types";
 import { getMemoryStore } from "@connext/store";
 import { utils } from "ethers";
@@ -88,7 +90,7 @@ describe("Sync", () => {
       0,
       new Logger("CreateClient", env.logLevel, true, "B"),
     );
-  });
+  }, 30_000);
 
   describe("Sync::propose", () => {
     let identityHash: string;
@@ -219,6 +221,172 @@ describe("Sync", () => {
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(2);
       expect(newChannelB!.monotonicNumProposedApps).toBe(2);
       expect(newChannelB!.appInstances.length).toBe(1);
+    }, 30_000);
+  });
+
+  describe("Sync::propose + rejectInstall", () => {
+    let proposedAppIdentityHash: string;
+    beforeEach(async () => {
+      // propose-specific setup
+      messagingServiceA = new MemoryMessagingServiceWithLimits(sharedEventEmitter, 0, "propose");
+      nodeA = await CFCore.create(
+        messagingServiceA,
+        storeServiceA,
+        global["contracts"],
+        nodeConfig,
+        provider,
+        channelSignerA,
+        lockService,
+        0,
+        new Logger("CreateClient", env.logLevel, true, "A"),
+      );
+
+      // create channel
+      multisigAddress = await createChannel(nodeA, nodeB);
+
+      // load stores with proposal
+      const rpc = makeProposeCall(nodeA, TicTacToeApp, multisigAddress);
+      const res: any = await new Promise(async (res) => {
+        nodeA.once("PROPOSE_INSTALL_EVENT", res);
+        try {
+          await nodeB.rpcRouter.dispatch({
+            ...rpc,
+            parameters: deBigNumberifyJson(rpc.parameters),
+          });
+        } catch (e) {
+          log.info(`Caught error sending rpc: ${e.message}`);
+        }
+      });
+      proposedAppIdentityHash = res.data.appInstanceId;
+
+      // get expected channel from nodeB
+      expect(isHexString(multisigAddress)).toBe(true);
+      expectedChannel = await storeServiceA.getStateChannel(multisigAddress);
+      const unsynced = await storeServiceB.getStateChannel(multisigAddress);
+      expect(expectedChannel).toBeDefined();
+      expect(expectedChannel!.proposedAppInstances.length).toBe(1);
+      expect(unsynced?.proposedAppInstances.length).toBe(0);
+
+      await nodeA.rpcRouter.dispatch({
+        methodName: MethodNames.chan_rejectInstall,
+        parameters: {
+          appIdentityHash: proposedAppIdentityHash,
+          multisigAddress,
+        } as MethodParams.RejectInstall,
+      });
+
+      expectedChannel = await storeServiceA.getStateChannel(multisigAddress);
+      expect(expectedChannel!.proposedAppInstances.length).toBe(0);
+
+      messagingServiceA.clearLimits();
+    }, 30_000);
+
+    test("sync protocol responder is missing a proposal held by the protocol initiator", async () => {
+      const [eventData, newNodeA] = await Promise.all([
+        new Promise(async (resolve, reject) => {
+          nodeB.on(EventNames.SYNC, (data) => resolve(data));
+          nodeB.on(EventNames.SYNC_FAILED_EVENT, () => reject(`Sync failed`));
+        }),
+        CFCore.create(
+          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+          storeServiceA,
+          global["contracts"],
+          nodeConfig,
+          provider,
+          channelSignerA,
+          lockService,
+          0,
+          new Logger("CreateClient", env.logLevel, true, "A"),
+        ),
+      ]);
+
+      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
+      expect(eventData).toMatchObject({
+        from: nodeA.publicIdentifier,
+        type: EventNames.SYNC,
+        data: { syncedChannel: expectedChannel },
+      });
+      expect(syncedChannel).toMatchObject(expectedChannel!);
+
+      const rpc = makeProposeCall(newNodeA as CFCore, TicTacToeApp, multisigAddress);
+      const res: any = await new Promise(async (resolve) => {
+        (newNodeA as CFCore).once("PROPOSE_INSTALL_EVENT", resolve);
+        try {
+          await nodeB.rpcRouter.dispatch({
+            ...rpc,
+            parameters: deBigNumberifyJson(rpc.parameters),
+          });
+        } catch (e) {
+          log.info(`Caught error sending rpc: ${e.message}`);
+        }
+      });
+
+      const newAppInstanceA = await storeServiceA.getAppProposal(res.data.appInstanceId);
+      const newAppInstanceB = await storeServiceB.getAppProposal(res.data.appInstanceId);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceB!.identityHash).toBe(res.data.appInstanceId);
+      expect(newAppInstanceB!.appSeqNo).toBe(3);
+      expect(newAppInstanceB!.latestVersionNumber).toBe(1);
+      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(1);
+      expect(newChannelB!.monotonicNumProposedApps).toBe(3);
+      expect(newChannelB!.proposedAppInstances.length).toBe(1);
+    }, 30_000);
+
+    test("sync protocol initiator is missing a proposal held by the protocol responder", async () => {
+      const [eventData, newNodeB] = await Promise.all([
+        new Promise(async (resolve, reject) => {
+          nodeA.on(EventNames.SYNC, (data) => resolve(data));
+          nodeA.on(EventNames.SYNC_FAILED_EVENT, (data) => reject(`Sync failed`));
+        }),
+        CFCore.create(
+          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+          storeServiceB,
+          global["contracts"],
+          nodeConfig,
+          provider,
+          channelSignerB,
+          lockService,
+          0,
+          new Logger("CreateClient", env.logLevel, true, "B"),
+        ),
+      ]);
+
+      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
+      expect(eventData).toMatchObject({
+        from: (newNodeB as CFCore).publicIdentifier,
+        type: EventNames.SYNC,
+        data: { syncedChannel: expectedChannel },
+      });
+      expect(syncedChannel).toMatchObject(expectedChannel!);
+
+      const rpc = makeProposeCall(nodeA, TicTacToeApp, multisigAddress);
+      const res: any = await new Promise(async (resolve) => {
+        nodeA.once("PROPOSE_INSTALL_EVENT", resolve);
+        try {
+          await (newNodeB as CFCore).rpcRouter.dispatch({
+            ...rpc,
+            parameters: deBigNumberifyJson(rpc.parameters),
+          });
+        } catch (e) {
+          log.info(`Caught error sending rpc: ${e.message}`);
+        }
+      });
+
+      const newAppInstanceA = await storeServiceA.getAppProposal(res.data.appInstanceId);
+      const newAppInstanceB = await storeServiceB.getAppProposal(res.data.appInstanceId);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceB!.identityHash).toBe(res.data.appInstanceId);
+      expect(newAppInstanceB!.appSeqNo).toBe(3);
+      expect(newAppInstanceB!.latestVersionNumber).toBe(1);
+      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(1);
+      expect(newChannelB!.monotonicNumProposedApps).toBe(3);
+      expect(newChannelB!.proposedAppInstances.length).toBe(1);
     }, 30_000);
   });
 
@@ -398,6 +566,7 @@ describe("Sync", () => {
     }, 30_000);
 
     test("sync protocol -- initiator has an app uninstalled by responder", async () => {
+      await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -415,7 +584,6 @@ describe("Sync", () => {
         ),
       ]);
 
-      await delay(500);
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
       expect(eventData).toMatchObject({
         from: nodeB.publicIdentifier,
@@ -426,10 +594,14 @@ describe("Sync", () => {
 
       // create new app
       [identityHash] = await installApp(newNodeB as CFCore, nodeA, multisigAddress, TicTacToeApp);
-      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
-      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      const [newAppInstanceA, newAppInstanceB] = await Promise.all([
+        storeServiceA.getAppInstance(identityHash),
+        storeServiceB.getAppInstance(identityHash),
+      ]);
+      const [newChannelA, newChannelB] = await Promise.all([
+        storeServiceA.getStateChannel(multisigAddress),
+        storeServiceB.getStateChannel(multisigAddress),
+      ]);
       expect(newChannelA!).toMatchObject(newChannelB!);
       expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
       expect(newAppInstanceA!.identityHash).toBe(identityHash);
@@ -441,6 +613,7 @@ describe("Sync", () => {
     }, 30_000);
 
     test("sync protocol -- responder has an app uninstalled by initiator", async () => {
+      await messagingServiceA.disconnect();
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -468,10 +641,14 @@ describe("Sync", () => {
 
       // create new app
       [identityHash] = await installApp(nodeB, newNodeA as CFCore, multisigAddress, TicTacToeApp);
-      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
-      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      const [newAppInstanceA, newAppInstanceB] = await Promise.all([
+        storeServiceA.getAppInstance(identityHash),
+        storeServiceB.getAppInstance(identityHash),
+      ]);
+      const [newChannelA, newChannelB] = await Promise.all([
+        storeServiceA.getStateChannel(multisigAddress),
+        storeServiceB.getStateChannel(multisigAddress),
+      ]);
       expect(newChannelA!).toMatchObject(newChannelB!);
       expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
       expect(newAppInstanceB!.identityHash).toBe(identityHash);

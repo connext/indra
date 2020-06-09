@@ -270,9 +270,8 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   private setStateChannel = async (
     channel: StateChannelJSON,
     setupCommitment: MinimalTransaction,
-    setStateCommitments: [string, SetStateCommitmentJSON][], // [appId, json]
-    conditionalCommitments: [string, ConditionalTransactionCommitmentJSON][],
-    // [appId, json]
+    setStateCommitments: [string /* appIdentityHash */, SetStateCommitmentJSON][],
+    conditionalCommitments: [string /* appIdentityHash */, ConditionalTransactionCommitmentJSON][],
   ): Promise<void> => {
     await this.store.updateSchemaVersion();
     // save the channel + setup commitment + latest free balance set state
@@ -296,10 +295,17 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       const setState = setStateCommitments.find(
         ([id, json]) => id === proposal.identityHash && toBN(json.versionNumber).eq(1),
       );
-      const conditional = conditionalCommitments.find(([id, json]) => id === proposal.identityHash);
-      if (!setState || !conditional) {
+      if (!setState) {
         throw new Error(
           `Could not find set state commitment for proposal ${proposal.identityHash}`,
+        );
+      }
+      const conditional = conditionalCommitments.find(
+        ([id, json]) => id === proposal.identityHash,
+      );
+      if (!conditional) {
+        throw new Error(
+          `Could not find conditional commitment for proposal ${proposal.identityHash}`,
         );
       }
       await this.store.createAppProposal(
@@ -367,7 +373,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
         try {
           const creationData = await this.node.createChannel();
-          this.logger.debug(`created channel, transaction: ${stringify(creationData)}`);
+          this.logger.debug(`Created channel, transaction: ${stringify(creationData)}`);
         } catch (e) {
           return reject(e);
         }

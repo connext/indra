@@ -223,6 +223,28 @@ describe("CFCoreStore", () => {
         expect(freeBalanceUpdateFromStore).to.containSubset(freeBalanceUpdate);
       }
     });
+
+    it("incrementNumProposedApps", async () => {
+      const nodeIdentifier = configService.getPublicIdentifier();
+      const { channelJson, setupCommitment, freeBalanceUpdate } = createTestStateChannelJSONs(
+        nodeIdentifier,
+      );
+
+      await cfCoreStore.createStateChannel(channelJson, setupCommitment, freeBalanceUpdate);
+      await cfCoreStore.incrementNumProposedApps(channelJson.multisigAddress);
+      const channelFromStore = await cfCoreStore.getStateChannel(channelJson.multisigAddress);
+      const userIdentifier = channelJson.userIdentifiers.find((x) => x !== nodeIdentifier);
+      expect(channelFromStore).to.deep.equal({
+        ...channelJson,
+        monotonicNumProposedApps: channelJson.monotonicNumProposedApps + 1,
+        userIdentifiers: [nodeIdentifier, userIdentifier],
+        freeBalanceAppInstance: {
+          ...channelJson.freeBalanceAppInstance,
+          initiatorIdentifier: nodeIdentifier,
+          responderIdentifier: userIdentifier,
+        },
+      });
+    });
   });
 
   describe("App Proposal", () => {

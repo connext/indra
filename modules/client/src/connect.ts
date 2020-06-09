@@ -33,9 +33,10 @@ export const connect = async (
     logger: providedLogger,
     ethProviderUrl,
     loggerService,
+    messagingUrl,
     logLevel,
   } = opts;
-  let { store, messaging, nodeUrl, messagingUrl } = opts;
+  let { store, messaging, nodeUrl } = opts;
   if (store) {
     await store.init();
   }
@@ -145,12 +146,13 @@ export const connect = async (
     return client;
   }
 
+  let chan;
   // waits until the setup protocol or create channel call is completed
   await new Promise(async (resolve, reject) => {
     // Wait for channel to be available
     const channelIsAvailable = async (): Promise<boolean> => {
       try {
-        const chan = await client.node.getChannel();
+        chan = await client.node.getChannel();
         return chan && chan.available;
       } catch (e) {
         return false;
@@ -167,38 +169,37 @@ export const connect = async (
     return resolve();
   });
 
-  logger.info(`Channel is available`);
-
-  // Make sure our store schema is up-to-date
-  const schemaVersion = await client.channelProvider.getSchemaVersion();
-  if (!schemaVersion || schemaVersion !== STORE_SCHEMA_VERSION) {
-    logger.info(`Outdated store schema detected, restoring state`);
-    await client.restoreState();
-    logger.info(`State restored successfully`);
-    // increment / update store schema version, defaults to types const
-    // of `STORE_SCHEMA_VERSION`
-    await client.channelProvider.updateSchemaVersion();
-  }
+  logger.info(`Channel is available with multisig address: ${chan.multisigAddress}`);
 
   try {
     await client.getFreeBalance();
   } catch (e) {
     if (e.message.includes("StateChannel does not exist yet")) {
       logger.info(
-        `Our store does not contain channel, attempting to restore: ${e.stack || e.message}`,
+        `Our store does not contain channel, attempting to restore: ${e.message}`,
       );
       await client.restoreState();
       logger.info(`State restored successfully`);
     } else {
-      logger.error(`Failed to get free balance: ${e.stack || e.message}`);
+      logger.error(`Failed to get free balance: ${e.message}`);
       throw e;
     }
+  }
+
+  // Make sure our store schema is up-to-date
+  const schemaVersion = await client.channelProvider.getSchemaVersion();
+  if (!schemaVersion || schemaVersion !== STORE_SCHEMA_VERSION) {
+    logger.info(`Store schema is out-of-date (${schemaVersion} !== ${STORE_SCHEMA_VERSION}), restoring state`);
+    await client.restoreState();
+    logger.info(`State restored successfully`);
+    // increment / update store schema version, defaults to types const of `STORE_SCHEMA_VERSION`
+    await client.channelProvider.updateSchemaVersion();
   }
 
   // Make sure our state schema is up-to-date
   const { data: sc } = await client.getStateChannel();
   if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion || !sc.addresses) {
-    logger.info("State schema is out-of-date, restoring an up-to-date client state");
+    logger.info(`State schema is out-of-date (${sc.schemaVersion} !== ${StateSchemaVersion}), restoring state`);
     await client.restoreState();
     logger.info(`State restored successfully`);
   }

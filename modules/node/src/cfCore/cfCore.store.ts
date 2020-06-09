@@ -216,10 +216,11 @@ export class CFCoreStore implements IStoreService {
 
     channel.setupCommitment = setupCommitment;
 
-    let freeBalanceUpdateCommitment = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
-      freeBalanceApp.identityHash,
-      toBN(signedFreeBalanceUpdate.versionNumber),
-    );
+    let freeBalanceUpdateCommitment =
+      await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
+        freeBalanceApp.identityHash,
+        toBN(signedFreeBalanceUpdate.versionNumber),
+      );
 
     if (!freeBalanceUpdateCommitment) {
       freeBalanceUpdateCommitment = new SetStateCommitment();
@@ -252,6 +253,20 @@ export class CFCoreStore implements IStoreService {
       60,
       AppInstanceSerializer.toJSON(freeBalanceApp),
     );
+  }
+
+  async incrementNumProposedApps(multisigAddress: string): Promise<void> {
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    await getManager().transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(Channel)
+        .set({
+          monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
+        })
+        .where("multisigAddress = :multisigAddress", { multisigAddress })
+        .execute();
+    });
   }
 
   async getAppProposal(appIdentityHash: string): Promise<AppInstanceJson> {
@@ -295,10 +310,11 @@ export class CFCoreStore implements IStoreService {
     app.userIdentifier = channel.userIdentifier;
     app.nodeIdentifier = channel.nodeIdentifier;
 
-    let setStateCommitment = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
-      appProposal.identityHash,
-      toBN(signedSetStateCommitment.versionNumber),
-    );
+    let setStateCommitment =
+      await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
+        appProposal.identityHash,
+        toBN(signedSetStateCommitment.versionNumber),
+      );
 
     if (!setStateCommitment) {
       setStateCommitment = new SetStateCommitment();
@@ -311,9 +327,10 @@ export class CFCoreStore implements IStoreService {
     setStateCommitment.stateTimeout = toBN(signedSetStateCommitment.stateTimeout).toString();
     setStateCommitment.versionNumber = toBN(signedSetStateCommitment.versionNumber).toNumber();
 
-    const existingConditionalTx = await this.conditionalTransactionCommitmentRepository.findByAppIdentityHash(
-      appProposal.identityHash,
-    );
+    const existingConditionalTx =
+      await this.conditionalTransactionCommitmentRepository.findByAppIdentityHash(
+        appProposal.identityHash,
+      );
 
     // because the app instance has `cascade` set to true, saving
     // the channel will involve multiple queries and should be put
@@ -457,6 +474,12 @@ export class CFCoreStore implements IStoreService {
           identityHash: freeBalanceAppInstance.identityHash,
         })
         .execute();
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .relation(AppInstance, "channel")
+        .of(proposal)
+        .set(multisigAddress);
 
       await transactionalEntityManager
         .createQueryBuilder()
@@ -802,10 +825,11 @@ export class CFCoreStore implements IStoreService {
   async addOnchainAction(appIdentityHash: string, provider: JsonRpcProvider): Promise<void> {
     const channel = await this.channelRepository.findByAppIdentityHashOrThrow(appIdentityHash);
     const app = channel.appInstances.find((a) => a.identityHash === appIdentityHash);
-    const latestSetState = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
-      appIdentityHash,
-      toBN(app.latestVersionNumber),
-    );
+    const latestSetState =
+      await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
+        appIdentityHash,
+        toBN(app.latestVersionNumber),
+      );
     // fetch onchain data
     const registry = new Contract(
       latestSetState.challengeRegistryAddress,
@@ -1081,7 +1105,7 @@ export class CFCoreStore implements IStoreService {
   }
 
   private canonicalizeOwners(owners: string[]) {
-    if (owners.length != 2) {
+    if (owners.length !== 2) {
       throw new Error("sanity error - must have 2 owners");
     }
 

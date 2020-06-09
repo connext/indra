@@ -110,7 +110,7 @@ export type ClientTestMessagingInputOpts = {
 };
 
 export const createClientWithMessagingLimits = async (
-  opts: Partial<ClientTestMessagingInputOpts> = {},
+  opts: Partial<ClientTestMessagingInputOpts> & { id?: string; logLevel?: number } = {},
 ): Promise<IConnextClient> => {
   const { protocol, ceiling, signer: signerOpts, params } = opts;
   const signer = signerOpts || getRandomChannelSigner(env.ethProviderUrl);
@@ -161,5 +161,11 @@ export const createClientWithMessagingLimits = async (
         params,
       });
   expect(messaging.providedOptions).to.containSubset(messageOptions);
-  return createClient({ messaging, signer: signer });
+  return createClient({
+    messaging,
+    signer: signer,
+    store: opts.store,
+    id: opts.id,
+    logLevel: opts.logLevel,
+  });
 };
