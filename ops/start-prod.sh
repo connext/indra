@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 set -e
 
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
+
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
+
+# Deploy with an attachable network in test-mode
+docker network create --attachable --driver overlay $project 2> /dev/null || true
 
 ####################
 # Load env vars
@@ -67,10 +74,6 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 ####################
 # Internal Config
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
-registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
-
 ganache_chain_id="4447"
 node_port="8080"
 number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
@@ -110,12 +113,6 @@ then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
   new_secret "$db_secret" "$project"
-  # Deploy with an attachable network so tests can connect to individual components
-  if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
-  then
-    id="`docker network create --attachable --driver overlay $project`"
-    echo "Created ATTACHABLE network with id $id"
-  fi
   network="networks:
       - '$project'
     "
