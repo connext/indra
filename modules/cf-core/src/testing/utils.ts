@@ -37,7 +37,7 @@ import { BigNumber, Contract, Wallet, providers, constants } from "ethers";
 
 import { CFCore } from "../cfCore";
 import { AppInstance, StateChannel } from "../models";
-import { CONTRACT_NOT_DEPLOYED } from "../errors";
+import { CONTRACT_NOT_DEPLOYED, CALL_EXCEPTION } from "../errors";
 import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
 
 import { TestContractAddresses } from "./contracts";
@@ -407,7 +407,9 @@ export async function getMultisigAmountWithdrawn(
   } catch (e) {
     if (!e.message.includes(CONTRACT_NOT_DEPLOYED)) {
       console.log(CONTRACT_NOT_DEPLOYED);
-      throw new Error(e);
+      if (!e.message.includes(CALL_EXCEPTION)) {
+        throw new Error(e);
+      }
     }
     // multisig is deployed on withdrawal, if not
     // deployed withdrawal amount is 0

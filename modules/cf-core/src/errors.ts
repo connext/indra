@@ -28,6 +28,8 @@ export const CANNOT_UNINSTALL_FREE_BALANCE = (multisigAddress: string): string =
 
 export const CONTRACT_NOT_DEPLOYED = `contract not deployed`;
 
+export const CALL_EXCEPTION = `CALL_EXCEPTION`;
+
 export const CANNOT_WITHDRAW =
   "Cannot withdraw while another deposit / withdraw app is active in the channel.";
 
