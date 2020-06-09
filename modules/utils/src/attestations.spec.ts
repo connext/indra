@@ -30,6 +30,6 @@ describe("Attestations", () => {
       getTestVerifyingContract(),
       signature,
     );
-    expect(signer).to.equal("0x8682a38538F0A6D4208B2ce346dCA77d8075BB8f");
+    expect(signer).to.equal("0x57638b3C89924b8a4FA40734ca6Bf68e133a8B4f");
   });
 });
