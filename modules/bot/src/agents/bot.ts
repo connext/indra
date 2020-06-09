@@ -58,6 +58,7 @@ export default {
     const ethUrl = process.env.INDRA_ETH_RPC_URL;
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
+    let start = new Map()
 
     const randomInterval = Math.round(argv.interval * 0.75 + Math.random() * (argv.interval * 0.5));
     log.info(`Using random inteval: ${randomInterval}`);
@@ -113,6 +114,14 @@ export default {
       log.info(`Unlocked transfer ${eventData.paymentId} for (${eventData.amount} ETH)`);
     });
 
+    client.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (payload: EventPayloads.ConditionalTransferUnlocked<"SignedTransferUnlocked">) => {
+      // ignore if we're unlocking
+      if(payload.recipient === client.publicIdentifier) {
+        return;
+      }
+      console.log(`Payment completed in ${Date.now() - start[payload.paymentId!]}`)
+    })
+
     let depositLock: boolean;
 
     // Setup agent logic to transfer on an interval
@@ -155,7 +164,7 @@ export default {
           )} ETH to ${receiverIdentifier} (${receiverSigner})`,
         );
 
-        const start = Date.now();
+        start[paymentId] = Date.now();
         try {
           // Send transfer
           log.info(`Starting transfer to ${receiverIdentifier} with signer ${receiverSigner}`);
@@ -172,7 +181,7 @@ export default {
             recipient: receiverIdentifier,
             meta: { info: `Transfer from ${NAME}` },
           });
-          log.info(`Conditional transfer ${paymentId} sent. Elapsed: ${Date.now() - start}`);
+          // log.info(`Conditional transfer ${paymentId} sent. Elapsed: ${Date.now() - start}`);
         } catch (err) {
           console.error(`Error sending tranfer: ${err.message}`);
         }
