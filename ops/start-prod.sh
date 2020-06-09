@@ -119,6 +119,8 @@ then
   network="networks:
       - '$project'
     "
+  stack_network="$project:
+    external: true"
 else
   db_volume="database"
   db_secret="${project}_database"
@@ -210,6 +212,7 @@ then
       - '8545:8545'
     volumes:
       - '$eth_volume/data'
+    $network
   "
   INDRA_ETH_PROVIDER="http://ethprovider:8545"
   MODE=${INDRA_MODE#*-} bash ops/deploy-contracts.sh
@@ -228,6 +231,9 @@ mkdir -p `pwd`/ops/database/snapshots
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
+
+networks:
+  $stack_network
 
 secrets:
   $db_secret:

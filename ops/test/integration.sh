@@ -55,7 +55,7 @@ exec docker run \
   --env="INDRA_CLIENT_LOG_LEVEL=0" \
   --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
   --env="INDRA_NATS_URL=$NATS_URL" \
-  --env="INDRA_NODE_URL=https://172.17.0.1/api" \
+  --env="INDRA_NODE_URL=https://proxy/api" \
   --env="NODE_ENV=production" \
   --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
   --name="$name" \
