@@ -19,7 +19,7 @@ export const nullLogger: ILoggerService = {
   warn: (msg: string): void => {},
   error: (msg: string): void => {},
   setContext: (context: string): void => {},
-  newContext: function(context: string): ILoggerService {
+  newContext: function (context: string): ILoggerService {
     return this;
   },
 };

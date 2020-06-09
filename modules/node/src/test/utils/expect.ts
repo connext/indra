@@ -1,6 +1,5 @@
 import { expect, use } from "chai";
-import chaiAsPromised from "chai-as-promised";
 
-use(chaiAsPromised);
-
+use(require("chai-as-promised"));
+use(require("chai-subset"));
 export { expect };

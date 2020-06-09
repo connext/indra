@@ -44,9 +44,7 @@ export class ChannelRepository extends Repository<Channel> {
   }
 
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
-    const [channel] = (
-      await Promise.all(owners.map((owner) => this.findByUserPublicIdentifier(owner)))
-    ).filter((chan) => !!chan);
+    const channel = await this.findByOwners(owners);
     if (!channel) {
       return undefined;
     }
@@ -67,6 +65,13 @@ export class ChannelRepository extends Repository<Channel> {
 
   async findAll(available: boolean = true): Promise<Channel[]> {
     return this.find({ where: { available } });
+  }
+
+  async findByOwners(owners: string[]): Promise<Channel|undefined> {
+    return this.createQueryBuilder("channel")
+      .leftJoinAndSelect("channel.appInstances", "appInstance")
+      .where("channel.userIdentifier IN (:...owners)", { owners })
+      .getOne();
   }
 
   async findByMultisigAddress(multisigAddress: string): Promise<Channel | undefined> {

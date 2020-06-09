@@ -8,4 +8,5 @@ RUN curl https://raw.githubusercontent.com/vishnubob/wait-for-it/ed77b63706ea721
 COPY modules/node/package.json package.json
 RUN npm install --only=production > /dev/null 2>&1
 COPY modules/node /root
+EXPOSE 8080 9229
 ENTRYPOINT ["bash", "ops/entry.sh"]

@@ -23,7 +23,7 @@ export const connectNats = async (): Promise<Client> => {
       userIdentifier: signer.publicIdentifier,
       adminToken: env.adminToken,
     } as VerifyNonceDtoType);
-    natsClient = await connect({ servers: ["nats://172.17.0.1:4222"], userJWT: adminJWT.data });
+    natsClient = await connect({ servers: [env.natsUrl], userJWT: adminJWT.data });
   }
   return natsClient;
 };

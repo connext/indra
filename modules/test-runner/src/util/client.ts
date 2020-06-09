@@ -35,6 +35,7 @@ export const createClient = async (
     loggerService: new ColorfulLogger("Client", opts.logLevel || env.logLevel, true, opts.id),
     signer: opts.signer || getRandomPrivateKey(),
     nodeUrl: env.nodeUrl,
+    messagingUrl: env.natsUrl,
     store,
     ...opts,
   };
@@ -70,6 +71,7 @@ export const createRemoteClient = async (
     channelProvider,
     ethProviderUrl: env.ethProviderUrl,
     loggerService: new ColorfulLogger("TestRunner", env.logLevel, true),
+    messagingUrl: env.natsUrl,
   };
   const client = await connect(clientOpts);
   expect(client.signerAddress).to.be.ok;
@@ -82,6 +84,7 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
   const urlOptions = {
     ethProviderUrl: env.ethProviderUrl,
     nodeUrl: env.nodeUrl,
+    messagingUrl: env.natsUrl,
   };
   let clientOpts: Partial<ClientOptions> = {
     ...opts,

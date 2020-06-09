@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e -o pipefail
 
-flags=.makeflags
+flags=.flags
 if [[ ! -d "$flags" ]]
 then echo "Nothing has been built yet. Try running: make" && exit
 fi

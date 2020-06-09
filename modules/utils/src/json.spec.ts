@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 
-import { bigNumberifyJson, deBigNumberifyJson, safeJsonStringify, safeJsonParse } from "./json";
+import { bigNumberifyJson, deBigNumberifyJson, safeJsonParse, safeJsonStringify } from "./json";
 
 const TEST_JSON = { test: "something", nullfied: undefined };
 const TEST_JSON_WITH_NULL = { test: "something", nullfied: null };
