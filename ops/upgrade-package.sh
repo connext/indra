@@ -9,7 +9,7 @@ then version="`npm info $package version`"
 fi
 
 if [[ -z "$package" || -z "$version" || -n "$3" ]]
-then echo "Usage: bash ops/set-dependency-version.sh <package> <version>" && exit 1
+then echo "Usage: bash ops/upgrade-package.sh <package> <version>" && exit 1
 else echo "Setting package $package to version $version in all modules that depend on it"
 fi
 

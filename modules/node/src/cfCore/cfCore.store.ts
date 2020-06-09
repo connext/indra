@@ -232,6 +232,20 @@ export class CFCoreStore implements IStoreService {
     });
   }
 
+  async incrementNumProposedApps(multisigAddress: string): Promise<void> {
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    await getManager().transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(Channel)
+        .set({
+          monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
+        })
+        .where("multisigAddress = :multisigAddress", { multisigAddress })
+        .execute();
+    });
+  }
+
   getAppProposal(appIdentityHash: string): Promise<AppInstanceJson> {
     return this.appInstanceRepository.getAppProposal(appIdentityHash);
   }
@@ -415,6 +429,12 @@ export class CFCoreStore implements IStoreService {
           identityHash: freeBalanceAppInstance.identityHash,
         })
         .execute();
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .relation(AppInstance, "channel")
+        .of(proposal)
+        .set(multisigAddress);
 
       await transactionalEntityManager
         .createQueryBuilder()

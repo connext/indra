@@ -293,15 +293,20 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       .map(([id, json]) => json)
       .sort((a, b) => a.appSeqNo - b.appSeqNo);
     for (const proposal of proposals) {
-      const [_, setState] = setStateCommitments.find(
+      const setState = setStateCommitments.find(
         ([id, json]) => id === proposal.identityHash && toBN(json.versionNumber).eq(1),
-      );
-      const [_ignore, conditional] = conditionalCommitments.find(
-        ([id, json]) => id === proposal.identityHash,
-      );
-      if (!setState || !conditional) {
+      )[1];
+      if (!setState) {
         throw new Error(
           `Could not find set state commitment for proposal ${proposal.identityHash}`,
+        );
+      }
+      const conditional = conditionalCommitments.find(
+        ([id, json]) => id === proposal.identityHash,
+      )[1];
+      if (!conditional) {
+        throw new Error(
+          `Could not find conditional commitment for proposal ${proposal.identityHash}`,
         );
       }
       await this.store.createAppProposal(
@@ -320,7 +325,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       if (app.identityHash === channel.freeBalanceAppInstance.identityHash) {
         continue;
       }
-      const [_, conditional] = conditionalCommitments.find(([id, _]) => id === app.identityHash);
+      const conditional = conditionalCommitments.find(([id, _]) => id === app.identityHash)[1];
       if (!conditional) {
         throw new Error(`Could not find set state commitment for proposal ${app.identityHash}`);
       }
@@ -369,7 +374,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
         try {
           const creationData = await this.node.createChannel();
-          this.logger.debug(`created channel, transaction: ${stringify(creationData)}`);
+          this.logger.debug(`Created channel, transaction: ${stringify(creationData)}`);
         } catch (e) {
           return reject(e);
         }

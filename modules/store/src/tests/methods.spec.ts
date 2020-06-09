@@ -99,6 +99,31 @@ describe("Methods", () => {
     });
   });
 
+  describe("incrementNumProposedApps", () => {
+    storeTypes.forEach((type) => {
+      it(`${type} - should work`, async () => {
+        const store = await createStore(type as StoreTypes);
+        await store.updateSchemaVersion();
+        const channel = TEST_STORE_CHANNEL;
+        const owners = channel.userIdentifiers;
+        const nullValue = await store.getStateChannelByOwners(owners);
+        expect(nullValue).to.be.undefined;
+        await store.createStateChannel(
+          channel,
+          TEST_STORE_MINIMAL_TX,
+          TEST_STORE_SET_STATE_COMMITMENT,
+        );
+        await store.incrementNumProposedApps(channel.multisigAddress);
+        const retrieved = await store.getStateChannelByOwners(owners);
+        expect(retrieved).to.deep.eq({
+          ...channel,
+          monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
+        });
+        await clearAndClose(store);
+      });
+    });
+  });
+
   describe("getStateChannelByAppIdentityHash", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {

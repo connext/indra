@@ -60,11 +60,12 @@ const recreateClientAndRetryDepositCall = async (
   signer: IChannelSigner,
   client: IConnextClient,
   store: IStoreService,
+  opts: { id?: string; logLevel?: number } = {},
 ) => {
   await client.messaging.disconnect();
   // Add delay to make sure messaging properly disconnects
   await delay(1000);
-  const newClient = await createClient({ signer, store });
+  const newClient = await createClient({ signer, store, id: opts.id, logLevel: opts.logLevel });
 
   // Check that client can recover and continue
   await fundChannel(newClient, ETH_AMOUNT_SM);
@@ -132,6 +133,7 @@ describe("Deposit offline tests", () => {
       protocol: ProtocolNames.propose,
       ceiling: { [SEND]: 0 },
       signer,
+      store,
     });
 
     await makeFailingDepositCall({
@@ -173,6 +175,7 @@ describe("Deposit offline tests", () => {
       ceiling: { [SEND]: 0 },
       signer,
       store,
+      id: "Pre-Offline",
     });
 
     await makeFailingDepositCall({
@@ -182,7 +185,7 @@ describe("Deposit offline tests", () => {
     const messaging = client.messaging! as TestMessagingService;
     expect(messaging.installCount[SEND]).to.be.eq(0);
 
-    await recreateClientAndRetryDepositCall(signer, client, store);
+    await recreateClientAndRetryDepositCall(signer, client, store, { id: "Post-Offline" });
   });
 
   it("client successfully installed deposit app, but went offline before uninstall", async () => {
