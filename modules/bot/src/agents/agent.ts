@@ -4,28 +4,31 @@ import {
   EventPayloads,
   IConnextClient,
   ILoggerService,
-  PublicParams
-} from '@connext/types';
-import {getTestReceiptToSign, getTestVerifyingContract, signReceiptMessage, stringify} from '@connext/utils';
-import { utils, constants, BigNumber } from 'ethers';
-const { hexlify, randomBytes} = utils;
-const {AddressZero} = constants;
+  PublicParams,
+} from "@connext/types";
+import {
+  getTestReceiptToSign,
+  getTestVerifyingContract,
+  signReceiptMessage,
+  stringify,
+} from "@connext/utils";
+import { utils, constants, BigNumber } from "ethers";
+const { hexlify, randomBytes } = utils;
+const { AddressZero } = constants;
 
 export class Agent {
-  private payments: {[k:string]: { resolve: () => void, reject: () => void}} = {};
+  private payments: { [k: string]: { resolve: () => void; reject: () => void } } = {};
 
-  constructor (
+  constructor(
     private readonly log: ILoggerService,
     private readonly client: IConnextClient,
     private readonly privateKey: string,
-  ) {
-  }
+  ) {}
 
-  async start () {
+  async start() {
     const receipt = getTestReceiptToSign();
-    const {chainId} = await this.client.ethProvider.getNetwork();
+    const { chainId } = await this.client.ethProvider.getNetwork();
     const verifyingContract = getTestVerifyingContract();
-
 
     this.client.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (eData) => {
       const eventData = eData as EventPayloads.SignedTransferCreated;
@@ -57,7 +60,11 @@ export class Agent {
         responseCID: receipt.responseCID,
         signature,
       } as PublicParams.ResolveSignedTransfer);
-      this.log.info(`Unlocked transfer ${eventData.paymentId} for (${eventData.amount} ETH). Elapsed: ${Date.now() - start}`);
+      this.log.info(
+        `Unlocked transfer ${eventData.paymentId} for (${eventData.amount} ETH). Elapsed: ${
+          Date.now() - start
+        }`,
+      );
     });
 
     this.client.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (eData) => {
@@ -67,13 +74,13 @@ export class Agent {
       }
       const resolver = this.payments[eData.paymentId];
       if (!resolver) {
-        return
+        return;
       }
       resolver.resolve();
     });
   }
 
-  async deposit (amount: BigNumber) {
+  async deposit(amount: BigNumber) {
     await this.client.deposit({
       amount: amount,
       assetId: AddressZero,
@@ -84,28 +91,32 @@ export class Agent {
     const id = hexlify(randomBytes(32));
     const receipt = getTestReceiptToSign();
     const verifyingContract = getTestVerifyingContract();
-    const {chainId} = await this.client.ethProvider.getNetwork();
+    const { chainId } = await this.client.ethProvider.getNetwork();
     await new Promise((resolve, reject) => {
-      this.client.conditionalTransfer({
-        amount: amount,
-        conditionType: ConditionalTransferTypes.SignedTransfer,
-        paymentId: id,
-        signerAddress,
-        chainId,
-        verifyingContract,
-        requestCID: receipt.requestCID,
-        subgraphDeploymentID: receipt.subgraphDeploymentID,
-        assetId: AddressZero,
-        recipient: receiverIdentifier,
-      }).then(() => {
-        this.log.info(`Initiated transfer with ID ${id}.`)
-      }).catch(() => {
-        delete this.payments[id];
-        reject();
-      });
+      this.client
+        .conditionalTransfer({
+          amount: amount,
+          conditionType: ConditionalTransferTypes.SignedTransfer,
+          paymentId: id,
+          signerAddress,
+          chainId,
+          verifyingContract,
+          requestCID: receipt.requestCID,
+          subgraphDeploymentID: receipt.subgraphDeploymentID,
+          assetId: AddressZero,
+          recipient: receiverIdentifier,
+        })
+        .then(() => {
+          this.log.info(`Initiated transfer with ID ${id}.`);
+        })
+        .catch(() => {
+          delete this.payments[id];
+          reject();
+        });
 
       this.payments[id] = {
-        resolve, reject,
+        resolve,
+        reject,
       };
     });
   }
