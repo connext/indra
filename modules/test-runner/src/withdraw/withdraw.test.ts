@@ -13,9 +13,7 @@ import {
   ZERO_ZERO_TWO_ETH,
   ZERO_ZERO_ZERO_ONE_ETH,
   requestCollateral,
-  getNatsClient,
 } from "../util";
-import { Client } from "ts-nats";
 
 const { AddressZero } = constants;
 
@@ -23,11 +21,9 @@ const { AddressZero } = constants;
 describe("Withdrawal", () => {
   let client: IConnextClient;
   let tokenAddress: string;
-  let nats: Client;
 
   beforeEach(async () => {
     client = await createClient();
-    nats = getNatsClient();
     tokenAddress = client.config.contractAddresses.Token!;
   });
 
@@ -63,7 +59,7 @@ describe("Withdrawal", () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     await expect(
       withdrawFromChannel(client, NEGATIVE_ZERO_ZERO_ONE_ETH, AddressZero),
-    ).to.be.rejectedWith(`invalid number value`);
+    ).to.be.rejectedWith(`value out-of-bounds`);
   });
 
   it("client tries to withdraw to an invalid recipient address", async () => {
