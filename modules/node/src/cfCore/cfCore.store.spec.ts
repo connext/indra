@@ -234,7 +234,7 @@ describe("CFCoreStore", () => {
       await cfCoreStore.incrementNumProposedApps(channelJson.multisigAddress);
       const channelFromStore = await cfCoreStore.getStateChannel(channelJson.multisigAddress);
       const userIdentifier = channelJson.userIdentifiers.find((x) => x !== nodeIdentifier);
-      expect(channelFromStore).to.deep.equal({
+      expect(channelFromStore).to.containSubset({
         ...channelJson,
         monotonicNumProposedApps: channelJson.monotonicNumProposedApps + 1,
         userIdentifiers: [nodeIdentifier, userIdentifier],

@@ -60,11 +60,17 @@ while ! curl -s $NODE_URL > /dev/null
 do sleep 2
 done
 
-echo "waiting for $WEBSERVER_URL..."
-wait-for -t 60 $WEBSERVER_URL 2> /dev/null
-while ! curl -s $WEBSERVER_URL > /dev/null
-do sleep 2
-done
+if [[ -n "$WEBSERVER_URL" ]]
+then
+  echo "waiting for $WEBSERVER_URL..."
+  wait-for -t 60 $WEBSERVER_URL 2> /dev/null
+  while ! curl -s $WEBSERVER_URL > /dev/null
+  do sleep 2
+  done
+else
+  # This won't return anything useful but must be provided so that haproxy doesn't crash on startup
+  WEBSERVER_URL="localhost:80"
+fi
 
 # Kill the loading message server
 kill "$loading_pid" && pkill nc
