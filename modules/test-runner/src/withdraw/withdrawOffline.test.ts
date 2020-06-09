@@ -8,7 +8,7 @@ import {
   ProtocolParams,
 } from "@connext/types";
 import { getRandomChannelSigner, delay } from "@connext/utils";
-import { BigNumber, constants, utils } from "ethers";
+import { BigNumber, constants } from "ethers";
 import {
   ClientTestMessagingInputOpts,
   createClient,
