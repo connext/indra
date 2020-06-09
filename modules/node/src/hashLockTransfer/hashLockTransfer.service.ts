@@ -32,7 +32,12 @@ const appStatusesToHashLockTransferStatus = (
   // pending iff no receiver app + not expired
   if (!senderApp) {
     return isSenderExpired ? HashLockTransferStatus.EXPIRED : HashLockTransferStatus.PENDING;
-  } else if (senderApp.latestState.preImage !== HashZero || latestState.preImage !== HashZero) {
+  } else if (
+    senderApp?.type === AppType.UNINSTALLED ||
+    receiverApp?.type === AppType.UNINSTALLED ||
+    senderApp.latestState.preImage !== HashZero ||
+    latestState.preImage !== HashZero
+  ) {
     // iff sender uninstalled, payment is unlocked
     return HashLockTransferStatus.COMPLETED;
   } else if (senderApp.type === AppType.REJECTED || receiverApp.type === AppType.REJECTED) {
