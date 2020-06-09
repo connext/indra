@@ -19,7 +19,9 @@ export class removeAppProposal1591359031983 implements MigrationInterface {
       undefined,
     );
     await queryRunner.query(
-      `ALTER TABLE "app_instance" ALTER COLUMN "outcomeInterpreterParameters" SET NOT NULL`,
+      `ALTER TABLE "app_instance" 
+      ALTER COLUMN "outcomeInterpreterParameters" SET DEFAULT '{}',
+      ALTER COLUMN "outcomeInterpreterParameters" SET NOT NULL`,
       undefined,
     );
   }
