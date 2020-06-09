@@ -68,7 +68,7 @@ describe("Daicard", () => {
         my.burnCard();
         my.deposit(depositEth).then((tokensDeposited) => {
           my.pay(recipient.publicId, payTokens);
-          my.restoreMnemonic(recipient.mnemonic.phrase);
+          my.restoreMnemonic(recipient.mnemonic);
           cy.resolve(my.getChannelTokenBalance).should("contain", payTokens);
         });
       });
