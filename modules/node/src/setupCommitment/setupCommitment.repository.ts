@@ -1,10 +1,8 @@
 import { MinimalTransaction } from "@connext/types";
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 import { EntityRepository, Repository } from "typeorm";
 
 import { SetupCommitment } from "./setupCommitment.entity";
-
-const { bigNumberify } = utils;
 
 export const convertSetupEntityToMinimalTransaction = (commitment: SetupCommitment) => {
   return {
@@ -46,7 +44,7 @@ export class SetupCommitmentRepository extends Repository<SetupCommitment> {
     const commitmentEnt = new SetupCommitment();
     commitmentEnt.multisigAddress = multisigAddress;
     commitmentEnt.to = commitment.to;
-    commitmentEnt.value = bigNumberify(commitment.value);
+    commitmentEnt.value = BigNumber.from(commitment.value);
     commitmentEnt.data = commitment.data;
     return this.save(commitmentEnt);
   }

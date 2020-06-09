@@ -1,8 +1,8 @@
 import { Ctx } from "evt";
-import { providers } from "ethers";
+import { BigNumber, providers } from "ethers";
 
 import { AppInstanceJson } from "./app";
-import { Address, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
+import { Address, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
 import {
   ConditionalTransferTypes,
   CreatedConditionalTransferMetaMap,

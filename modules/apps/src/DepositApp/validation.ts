@@ -78,18 +78,14 @@ export const validateDepositApp = async (
   const startingMultisigBalance =
     initialState.assetId === CONVENTION_FOR_ETH_ASSET_ID
       ? await provider.getBalance(multisigAddress)
-      : await new Contract(initialState.assetId, ERC20.abi as any, provider).functions.balanceOf(
-          multisigAddress,
-        );
+      : await new Contract(initialState.assetId, ERC20.abi, provider).balanceOf(multisigAddress);
 
-  const multisig = new Contract(multisigAddress, MinimumViableMultisig.abi as any, provider);
+  const multisig = new Contract(multisigAddress, MinimumViableMultisig.abi, provider);
   let startingTotalAmountWithdrawn;
   try {
-    startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(
-      initialState.assetId,
-    );
+    startingTotalAmountWithdrawn = await multisig.totalAmountWithdrawn(initialState.assetId);
   } catch (e) {
-    const NOT_DEPLOYED_ERR = `contract not deployed (contractAddress="${multisigAddress}"`;
+    const NOT_DEPLOYED_ERR = `CALL_EXCEPTION`;
     if (!e.message.includes(NOT_DEPLOYED_ERR)) {
       throw new Error(e);
     }

@@ -1,4 +1,3 @@
-import { utils } from "ethers";
 import {
   AppActions,
   AppName,
@@ -10,7 +9,7 @@ import {
   MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 import {
   Column,
   CreateDateColumn,
@@ -62,11 +61,11 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  initiatorDeposit!: utils.BigNumber;
+  initiatorDeposit!: BigNumber;
 
   @Column("text")
   @IsEthAddress()
@@ -85,11 +84,11 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  responderDeposit!: utils.BigNumber;
+  responderDeposit!: BigNumber;
 
   @Column("text")
   @IsEthAddress()

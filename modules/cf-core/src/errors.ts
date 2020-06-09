@@ -1,5 +1,5 @@
 import { stringify } from "@connext/utils";
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 
 export const NO_MULTISIG_IN_PARAMS = (params: any): string => {
   return `No multisig address provided in params: ${stringify(params)}`;
@@ -27,6 +27,8 @@ export const CANNOT_UNINSTALL_FREE_BALANCE = (multisigAddress: string): string =
   `Cannot uninstall the FreeBalance of channel: ${multisigAddress}`;
 
 export const CONTRACT_NOT_DEPLOYED = `contract not deployed`;
+
+export const CALL_EXCEPTION = `CALL_EXCEPTION`;
 
 export const CANNOT_WITHDRAW =
   "Cannot withdraw while another deposit / withdraw app is active in the channel.";
@@ -58,15 +60,15 @@ export const NO_NETWORK_PROVIDER_CREATE2 =
 export const INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT = (
   address: string,
   tokenAddress: string,
-  amount: utils.BigNumber,
-  balance: utils.BigNumber,
+  amount: BigNumber,
+  balance: BigNumber,
 ): string =>
   `Protocol engine's default signer ${address} has ${balance} and needs ${amount} of the specified ERC20 token ${tokenAddress} to deposit`;
 
 export const INSUFFICIENT_FUNDS_TO_WITHDRAW = (
   address: string,
-  amount: utils.BigNumber,
-  balance: utils.BigNumber,
+  amount: BigNumber,
+  balance: BigNumber,
 ): string => {
   return `Protocol engine signer has ${balance} and needs ${amount} of token ${address} to withdraw`;
 };
@@ -75,8 +77,8 @@ export const INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET = (
   publicIdentifier: string,
   multisigAddress: string,
   tokenAddress: string,
-  balance: utils.BigNumber,
-  allocationAmount: utils.BigNumber,
+  balance: BigNumber,
+  allocationAmount: BigNumber,
 ): string =>
   `Protocol engine with public identifier ${publicIdentifier} has insufficient funds in channel ${multisigAddress}
   for token ${tokenAddress} to allocate towards an AppInstance. Current free balance for token is ${balance},

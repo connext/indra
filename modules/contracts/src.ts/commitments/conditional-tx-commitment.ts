@@ -12,7 +12,7 @@ import { MultisigCommitment } from "./multisig-commitment";
 const { AddressZero } = constants;
 const { Interface } = utils;
 
-const iface = new Interface(ConditionalTransactionDelegateTarget.abi as any);
+const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 
 // class to represent an unsigned multisignature wallet transaction
 // to the ConditionalTransactionDelegateTarget contract.
@@ -72,7 +72,7 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
     return {
       to: this.contractAddresses.ConditionalTransactionDelegateTarget,
       value: 0,
-      data: iface.functions.executeEffectOfInterpretedAppOutcome.encode([
+      data: iface.encodeFunctionData("executeEffectOfInterpretedAppOutcome", [
         this.contractAddresses.ChallengeRegistry,
         this.freeBalanceAppIdentityHash,
         this.appIdentityHash,

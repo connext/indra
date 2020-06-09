@@ -131,9 +131,9 @@ async function sendMultisigDeployTx(
   let error;
   for (let tryCount = 1; tryCount < retryCount + 1; tryCount += 1) {
     try {
-      const tx: providers.TransactionResponse = await proxyFactory.functions.createProxyWithNonce(
+      const tx: providers.TransactionResponse = await proxyFactory.createProxyWithNonce(
         networkContext.contractAddresses.MinimumViableMultisig,
-        new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+        new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
           stateChannel.multisigOwners,
         ]),
         // hash chainId plus nonce for x-chain replay protection
@@ -194,14 +194,14 @@ async function checkForCorrectOwners(
 ): Promise<boolean> {
   await tx.wait();
 
-  const contract = new Contract(multisigAddress, MinimumViableMultisig.abi as any, provider);
+  const contract = new Contract(multisigAddress, MinimumViableMultisig.abi, provider);
 
   const expectedOwners = [
     getSignerAddressFromPublicIdentifier(identifiers[0]),
     getSignerAddressFromPublicIdentifier(identifiers[1]),
   ];
 
-  const actualOwners = await contract.functions.getOwners();
+  const actualOwners = await contract.getOwners();
 
   return expectedOwners[0] === actualOwners[0] && expectedOwners[1] === actualOwners[1];
 }

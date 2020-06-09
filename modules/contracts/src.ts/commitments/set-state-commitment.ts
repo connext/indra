@@ -1,6 +1,5 @@
 import {
   AppIdentity,
-  BigNumber,
   CommitmentTarget,
   EthereumCommitment,
   MinimalTransaction,
@@ -13,13 +12,13 @@ import {
   deBigNumberifyJson,
   recoverAddressFromChannelMessage,
 } from "@connext/utils";
-import { utils } from "ethers";
+import { BigNumber, utils } from "ethers";
 
 import * as ChallengeRegistry from "../../artifacts/ChallengeRegistry.json";
 
 const { Interface, keccak256, solidityPack } = utils;
 
-const iface = new Interface(ChallengeRegistry.abi as any);
+const iface = new Interface(ChallengeRegistry.abi);
 
 export class SetStateCommitment implements EthereumCommitment {
   constructor(
@@ -71,7 +70,7 @@ export class SetStateCommitment implements EthereumCommitment {
     return {
       to: this.challengeRegistryAddress,
       value: 0,
-      data: iface.functions.setState.encode([
+      data: iface.encodeFunctionData("setState", [
         this.appIdentity,
         await this.getSignedAppChallengeUpdate(),
       ]),

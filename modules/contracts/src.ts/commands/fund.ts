@@ -16,7 +16,7 @@ export const fund = async (
   tokenAddress?: Address,
 ): Promise<void> => {
   if (tokenAddress && tokenAddress !== AddressZero) {
-    const token = new Contract(tokenAddress, tokenArtifacts.abi as any, sender);
+    const token = new Contract(tokenAddress, tokenArtifacts.abi, sender);
     const tx = await token.transfer(recipient, parseEther(amount));
     console.log(`Sending ${amount} tokens to ${recipient} via tx ${tx.hash}`);
     await sender.provider.waitForTransaction(tx.hash);

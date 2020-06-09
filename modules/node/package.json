@@ -37,7 +37,7 @@
     "bs58check": "2.1.2",
     "class-validator": "0.12.2",
     "dotenv": "8.2.0",
-    "ethers": "4.0.47",
+    "ethers": "5.0.0-beta.190",
     "evt": "1.7.11",
     "ioredis": "4.17.3",
     "nats": "1.4.9",

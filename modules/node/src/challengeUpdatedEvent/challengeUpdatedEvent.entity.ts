@@ -9,7 +9,7 @@ import {
 
 import { Challenge } from "../challenge/challenge.entity";
 import { AppName, Bytes32, ChallengeUpdatedEventPayload, ChallengeStatus } from "@connext/types";
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 import { toBN } from "@connext/utils";
 import { IsKeccak256Hash } from "../validate";
 
@@ -44,19 +44,19 @@ export class ChallengeUpdatedEvent<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => toBN(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => toBN(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  versionNumber!: utils.BigNumber;
+  versionNumber!: BigNumber;
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => toBN(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => toBN(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  finalizesAt!: utils.BigNumber;
+  finalizesAt!: BigNumber;
 
   @Column({ type: "enum", enum: ChallengeStatus })
   status: ChallengeStatus;

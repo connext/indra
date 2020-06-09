@@ -77,7 +77,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       lockHash: latestState.lockHash,
       status,
       meta,
-      preImage: latestState.preImage,
+      preImage: !!receiverApp ? receiverApp.latestState.preImage : userApp.latestState.preImage,
       expiry: latestState.expiry,
     };
   }

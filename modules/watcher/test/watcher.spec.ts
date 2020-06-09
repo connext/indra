@@ -1,6 +1,5 @@
 import {
   JsonRpcProvider,
-  BigNumber,
   WatcherEvents,
   StateProgressedEventData,
   SetStateCommitmentJSON,
@@ -9,7 +8,7 @@ import {
   ChallengeProgressionFailedEventData,
   IStoreService,
 } from "@connext/types";
-import { Wallet, constants } from "ethers";
+import { BigNumber, Wallet, constants } from "ethers";
 
 import {
   setupContext,

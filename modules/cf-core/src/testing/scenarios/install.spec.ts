@@ -1,6 +1,6 @@
 import { CONVENTION_FOR_ETH_ASSET_ID, ProtocolParams, ProtocolEventMessage } from "@connext/types";
 import { delay, getAddressFromAssetId } from "@connext/utils";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
@@ -54,10 +54,10 @@ describe("Node method follows spec - install", () => {
         await collateralizeChannel(multisigAddress, nodeA, nodeB);
         const appDeposit = One;
 
-        let preInstallETHBalanceNodeA: utils.BigNumber;
-        let postInstallETHBalanceNodeA: utils.BigNumber;
-        let preInstallETHBalanceNodeB: utils.BigNumber;
-        let postInstallETHBalanceNodeB: utils.BigNumber;
+        let preInstallETHBalanceNodeA: BigNumber;
+        let postInstallETHBalanceNodeA: BigNumber;
+        let preInstallETHBalanceNodeB: BigNumber;
+        let postInstallETHBalanceNodeB: BigNumber;
 
         let proposeInstallParams: ProtocolParams.Propose;
 
@@ -125,10 +125,10 @@ describe("Node method follows spec - install", () => {
 
         await collateralizeChannel(multisigAddress, nodeA, nodeB, One, assetId);
 
-        let preInstallERC20BalanceNodeA: utils.BigNumber;
-        let postInstallERC20BalanceNodeA: utils.BigNumber;
-        let preInstallERC20BalanceNodeB: utils.BigNumber;
-        let postInstallERC20BalanceNodeB: utils.BigNumber;
+        let preInstallERC20BalanceNodeA: BigNumber;
+        let postInstallERC20BalanceNodeA: BigNumber;
+        let preInstallERC20BalanceNodeB: BigNumber;
+        let postInstallERC20BalanceNodeB: BigNumber;
 
         let proposedParams: ProtocolParams.Propose;
 

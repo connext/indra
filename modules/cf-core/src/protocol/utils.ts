@@ -10,7 +10,7 @@ import {
   AssetId,
 } from "@connext/types";
 import { logTime, recoverAddressFromChannelMessage, getAddressFromAssetId } from "@connext/utils";
-import { providers, utils, constants } from "ethers";
+import { BigNumber, providers, utils, constants } from "ethers";
 
 import {
   AppInstance,
@@ -170,16 +170,14 @@ function handleSingleAssetTwoPartyCoinTransfer(
 
   return {
     [tokenAddress]: {
-      [to1 as string]: amount1 as utils.BigNumber,
-      [to2 as string]: amount2 as utils.BigNumber,
+      [to1 as string]: amount1 as BigNumber,
+      [to2 as string]: amount2 as BigNumber,
     },
   };
 }
 
 function decodeTwoPartyFixedOutcome(encodedOutcome: string): TwoPartyFixedOutcome {
-  const [twoPartyFixedOutcome] = defaultAbiCoder.decode(["uint256"], encodedOutcome) as [
-    utils.BigNumber,
-  ];
+  const [twoPartyFixedOutcome] = defaultAbiCoder.decode(["uint256"], encodedOutcome) as [BigNumber];
 
   return twoPartyFixedOutcome.toNumber();
 }
@@ -237,8 +235,8 @@ export function computeInterpreterParameters(
   outcomeType: OutcomeType,
   initiatorAssetId: AssetId,
   responderAssetId: AssetId,
-  initiatorBalanceDecrement: utils.BigNumber,
-  responderBalanceDecrement: utils.BigNumber,
+  initiatorBalanceDecrement: BigNumber,
+  responderBalanceDecrement: BigNumber,
   initiatorFbAddress: string,
   responderFbAddress: string,
   disableLimit: boolean,

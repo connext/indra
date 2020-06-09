@@ -15,7 +15,7 @@ import {
   getRandomBytes32,
   getAddressFromPrivateKey,
 } from "@connext/utils";
-import { Contract, ContractFactory, constants, utils } from "ethers";
+import { BigNumber, Contract, ContractFactory, constants, utils } from "ethers";
 
 import { SimpleSignedTransferApp } from "../../artifacts";
 
@@ -58,22 +58,19 @@ describe("SimpleSignedTransferApp", () => {
   let simpleSignedTransferApp: Contract;
   let senderAddr: string;
   let receiverAddr: string;
-  let transferAmount: utils.BigNumber;
+  let transferAmount: BigNumber;
   let preState: SimpleSignedTransferAppState;
   let paymentId: string;
 
   async function computeOutcome(state: SimpleSignedTransferAppState): Promise<string> {
-    return simpleSignedTransferApp.functions.computeOutcome(encodeAppState(state));
+    return simpleSignedTransferApp.computeOutcome(encodeAppState(state));
   }
 
   async function applyAction(
     state: SimpleSignedTransferAppState,
     action: SimpleSignedTransferAppAction,
   ): Promise<string> {
-    return simpleSignedTransferApp.functions.applyAction(
-      encodeAppState(state),
-      encodeAppAction(action),
-    );
+    return simpleSignedTransferApp.applyAction(encodeAppState(state), encodeAppAction(action));
   }
 
   async function validateOutcome(
@@ -108,7 +105,7 @@ describe("SimpleSignedTransferApp", () => {
 
     senderAddr = mkAddress("0xa");
     receiverAddr = mkAddress("0xB");
-    transferAmount = new utils.BigNumber(10000);
+    transferAmount = BigNumber.from(10000);
     preState = {
       coinTransfers: [
         {
