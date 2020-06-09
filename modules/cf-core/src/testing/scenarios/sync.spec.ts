@@ -566,6 +566,7 @@ describe("Sync", () => {
     }, 30_000);
 
     test("sync protocol -- initiator has an app uninstalled by responder", async () => {
+      await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -583,7 +584,6 @@ describe("Sync", () => {
         ),
       ]);
 
-      await delay(500);
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
       expect(eventData).toMatchObject({
         from: nodeB.publicIdentifier,
@@ -594,10 +594,14 @@ describe("Sync", () => {
 
       // create new app
       [identityHash] = await installApp(newNodeB as CFCore, nodeA, multisigAddress, TicTacToeApp);
-      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
-      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      const [newAppInstanceA, newAppInstanceB] = await Promise.all([
+        storeServiceA.getAppInstance(identityHash),
+        storeServiceB.getAppInstance(identityHash),
+      ]);
+      const [newChannelA, newChannelB] = await Promise.all([
+        storeServiceA.getStateChannel(multisigAddress),
+        storeServiceB.getStateChannel(multisigAddress),
+      ]);
       expect(newChannelA!).toMatchObject(newChannelB!);
       expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
       expect(newAppInstanceA!.identityHash).toBe(identityHash);
@@ -609,6 +613,7 @@ describe("Sync", () => {
     }, 30_000);
 
     test("sync protocol -- responder has an app uninstalled by initiator", async () => {
+      await messagingServiceA.disconnect();
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -636,10 +641,14 @@ describe("Sync", () => {
 
       // create new app
       [identityHash] = await installApp(nodeB, newNodeA as CFCore, multisigAddress, TicTacToeApp);
-      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
-      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      const [newAppInstanceA, newAppInstanceB] = await Promise.all([
+        storeServiceA.getAppInstance(identityHash),
+        storeServiceB.getAppInstance(identityHash),
+      ]);
+      const [newChannelA, newChannelB] = await Promise.all([
+        storeServiceA.getStateChannel(multisigAddress),
+        storeServiceB.getStateChannel(multisigAddress),
+      ]);
       expect(newChannelA!).toMatchObject(newChannelB!);
       expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
       expect(newAppInstanceB!.identityHash).toBe(identityHash);

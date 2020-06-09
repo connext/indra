@@ -24,7 +24,7 @@ import {
   ValidationMiddleware,
   EventName,
 } from "@connext/types";
-import { delay, nullLogger } from "@connext/utils";
+import { delay, nullLogger, stringify } from "@connext/utils";
 import { providers } from "ethers";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
@@ -251,9 +251,10 @@ export class CFCore {
           PersistStateChannelType,
           StateChannel,
           (MinimalTransaction | SetStateCommitment | ConditionalTransactionCommitment)[],
+          AppInstance, // uninstalled app context
         ],
       ) => {
-        const [type, stateChannel, signedCommitments] = args;
+        const [type, stateChannel, signedCommitments, appContext] = args;
         switch (type) {
           case PersistStateChannelType.CreateChannel: {
             const [setup, freeBalance] = signedCommitments as [
@@ -298,24 +299,13 @@ export class CFCore {
             break;
           }
           case PersistStateChannelType.SyncFreeBalance: {
-            const [setState] = signedCommitments as [
-              SetStateCommitment,
-              ConditionalTransactionCommitment | undefined,
-            ];
-            let latestInstalled: AppInstanceJson | undefined;
-            try {
-              latestInstalled = stateChannel
-                .getAppInstanceByAppSeqNo(stateChannel.numProposedApps)
-                .toJson();
-            } catch (e) {
-              latestInstalled = undefined;
-            }
-            if (!latestInstalled) {
+            const [setState] = signedCommitments as [SetStateCommitment];
+            if (appContext) {
               // this was an uninstall, so remove app instance
               await this.storeService.removeAppInstance(
                 stateChannel.multisigAddress,
-                setState.appIdentityHash,
-                stateChannel.freeBalance.toJson(),
+                appContext.identityHash,
+                stateChannel.toJson().freeBalanceAppInstance!,
                 setState.toJson(),
               );
             } else {

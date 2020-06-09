@@ -39,10 +39,7 @@ export async function handleReceivedProtocolMessage(
 
   let postProtocolStateChannel: StateChannel;
   let appInstance: AppInstance | undefined;
-  const json = await store.getStateChannelByOwners([
-    params!.initiatorIdentifier,
-    params!.responderIdentifier,
-  ]);
+  const json = await store.getStateChannel(params!.multisigAddress);
   try {
     const { channel, appContext } = await protocolRunner.runProtocolWithMessage(
       router,

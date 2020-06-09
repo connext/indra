@@ -118,7 +118,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const conditionalTxCommitmentHash = conditionalTxCommitment.hashToSign();
     const initiatorSignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
-    logTime(log, substart, `[${processID}] Signed set state commitment ${setStateCommitmentHash} & conditional transfer commitment ${conditionalTxCommitmentHash}`);
+    logTime(
+      log,
+      substart,
+      `[${processID}] Signed set state commitment ${setStateCommitmentHash} & conditional transfer commitment ${conditionalTxCommitmentHash}`,
+    );
 
     const m1 = {
       protocol,
