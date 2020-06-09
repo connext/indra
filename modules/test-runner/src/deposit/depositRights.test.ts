@@ -34,10 +34,11 @@ describe("Deposit Rights", () => {
             await client.rescindDepositRights({ assetId });
             const { [client.signerAddress]: postDeposit } = await client.getFreeBalance(assetId);
             expect(postDeposit).to.be.eq(preDeposit.add(depositAmount));
-            ethProvider.off("block");
             res();
           } catch (e) {
             rej(e);
+          } finally {
+            ethProvider.off("block");
           }
         });
         try {
@@ -70,10 +71,11 @@ describe("Deposit Rights", () => {
             await client.rescindDepositRights({ assetId });
             const { [client.signerAddress]: postDeposit } = await client.getFreeBalance(assetId);
             expect(postDeposit).to.be.eq(depositAmount);
-            ethProvider.off("block");
             res();
           } catch (e) {
             rej(e);
+          } finally {
+            ethProvider.off("block");
           }
         });
         try {
