@@ -190,6 +190,7 @@ describe("Withdraw offline tests", () => {
         ethProvider.on("block", async () => {
           const balance = await ethProvider.getBalance(client.multisigAddress);
           if (!balance.eq(startingBalance)) {
+            ethProvider.off("block");
             resolve();
           }
         });

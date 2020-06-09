@@ -70,6 +70,7 @@ describe("Reclaim", () => {
       clientA.ethProvider.on("block", async () => {
         const balance = await clientA.ethProvider.getBalance(clientA.multisigAddress);
         if (preBalance.gt(balance)) {
+          clientA.ethProvider.off("block");
           res();
         }
       });

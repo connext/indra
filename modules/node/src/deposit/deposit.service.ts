@@ -196,6 +196,7 @@ export class DepositService {
         // only wait for 5 blocks
         ethProvider.on("block", async (blockNumber: number) => {
           if (blockNumber - startingBlock > BLOCKS_TO_WAIT) {
+            ethProvider.off("block");
             return resolve(undefined);
           }
         });
