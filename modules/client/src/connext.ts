@@ -826,8 +826,8 @@ export class ConnextClient implements IConnextClient {
                   this.multisigAddress,
                 );
           if (balance.gt((latestState as DepositAppState).startingMultisigBalance)) {
-            await this.rescindDepositRights({ assetId, appIdentityHash });
             this.ethProvider.removeAllListeners("block");
+            await this.rescindDepositRights({ assetId, appIdentityHash });
           }
         });
         continue;
