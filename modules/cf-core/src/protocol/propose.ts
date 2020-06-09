@@ -6,7 +6,7 @@ import {
   ProtocolParams,
   ProtocolRoles,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime, stringify, delay } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment, getConditionalTransactionCommitment } from "../ethereum";
@@ -112,13 +112,17 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     substart = Date.now();
+
     const setStateCommitmentHash = setStateCommitment.hashToSign();
     const initiatorSignatureOnInitialState = yield [OP_SIGN, setStateCommitmentHash];
 
-    // free balance addr signs conditional transactions
     const conditionalTxCommitmentHash = conditionalTxCommitment.hashToSign();
     const initiatorSignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
-    logTime(log, substart, `[${processID}] Signed initial state initiator propose`);
+    logTime(
+      log,
+      substart,
+      `[${processID}] Signed set state commitment ${setStateCommitmentHash} & conditional transfer commitment ${conditionalTxCommitmentHash}`,
+    );
 
     const m1 = {
       protocol,

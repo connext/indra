@@ -206,6 +206,20 @@ export class StoreService implements IStoreService {
     });
   }
 
+  async incrementNumProposedApps(multisigAddress: string): Promise<void> {
+    return this.execute((store) => {
+      const channel = this.getStateChannelFromStore(store, multisigAddress);
+      if (!channel) {
+        throw new Error(`Can't incremement number of proposed apps without channel`);
+      }
+      const updatedStore = this.setStateChannel(store, {
+        ...channel,
+        monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
+      });
+      return this.saveStore(updatedStore);
+    });
+  }
+
   async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
     const channel = await this.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!channel) {
@@ -232,7 +246,7 @@ export class StoreService implements IStoreService {
     return this.execute((store) => {
       const channel = this.getStateChannelFromStore(store, multisigAddress);
       if (!channel) {
-        throw new Error(`Can't save app instance without channel`);
+        throw new Error(`Can't create app instance without channel`);
       }
       if (this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
         this.log.warn(
@@ -287,7 +301,7 @@ export class StoreService implements IStoreService {
     return this.execute((store) => {
       const channel = this.getStateChannelFromStore(store, multisigAddress);
       if (!channel) {
-        throw new Error(`Can't save app instance without channel`);
+        throw new Error(`Can't update app instance without channel`);
       }
       if (!this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
         throw new Error(`Could not find app instance with hash ${appInstance.identityHash}`);
