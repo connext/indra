@@ -107,7 +107,7 @@ export class Agent {
     this.client.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async (eData) => {
       const paymentId = eData.params.meta?.["paymentId"];
       if (!paymentId) {
-        this.log.info(`Ignoring untracked transfer ${paymentId}.`);
+        this.log.info(`Ignoring untracked proposal failure ${stringify(eData)}.`);
         return;
       }
       this.retrieveResolverAndReject(paymentId, eData.error);
@@ -116,7 +116,7 @@ export class Agent {
     this.client.on(EventNames.INSTALL_FAILED_EVENT, async (eData) => {
       const paymentId = eData.params.proposal.meta?.["paymentId"];
       if (!paymentId) {
-        this.log.info(`Ignoring untracked transfer ${paymentId}.`);
+        this.log.info(`Ignoring untracked install failure ${stringify(eData)}.`);
         return;
       }
       this.retrieveResolverAndReject(paymentId, eData.error);
@@ -125,6 +125,7 @@ export class Agent {
     this.client.on(EventNames.UPDATE_STATE_FAILED_EVENT, async (eData) => {
       const appId = eData.params.appIdentityHash;
       if (!appId || !this.apps[appId]) {
+        this.log.info(`Ignoring untracked take action failure ${stringify(eData)}.`);
         return;
       }
       this.retrieveResolverAndReject(this.apps[appId], eData.error);
@@ -133,6 +134,7 @@ export class Agent {
     this.client.on(EventNames.UNINSTALL_FAILED_EVENT, async (eData) => {
       const appId = eData.params.appIdentityHash;
       if (!appId || !this.apps[appId]) {
+        this.log.info(`Ignoring untracked uninstall failure ${stringify(eData)}.`);
         return;
       }
       this.retrieveResolverAndReject(this.apps[appId], eData.error);
@@ -140,6 +142,7 @@ export class Agent {
   }
 
   async deposit(amount: BigNumber, assetId: string = AddressZero) {
+    // Perform deposit
     await this.client.deposit({
       amount,
       assetId,
