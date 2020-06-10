@@ -167,10 +167,12 @@ export default {
       return (elapsed[paymentId] = end[paymentId] - startTime);
     });
     const numberPayments = Object.keys(elapsed).length;
+    if (numberPayments < limit) {
+      log.error(`Only able to run ${numberPayments}/${limit} requested before exiting.`);
+    }
     log.debug(`Elapsed payment: ${stringify(elapsed)}`);
     const average = Object.values(elapsed).reduce((prev, curr) => prev + curr, 0) / numberPayments;
-    log.warn(`Average payment time across ${numberPayments} payments: ${average}ms`);
-    log.warn(`Exiting`);
+    log.warn(`Average payment time across ${numberPayments} payments: ${average}ms, exiting`);
     process.exit(0);
   },
 };
