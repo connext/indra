@@ -17,7 +17,14 @@ const { hexlify, randomBytes } = utils;
 const { AddressZero } = constants;
 
 export class Agent {
-  private payments: { [k: string]: { resolve: () => void; reject: () => void } } = {};
+  private payments: {
+    [k: string]: { resolve: () => void; reject: (msg?: string | Error) => void };
+  } = {};
+
+  // Tracks all apps associated with this client and the paymentId
+  private apps: {
+    [appId: string]: string; // { appId: paymentId }
+  } = {};
 
   constructor(
     private readonly log: ILoggerService,
@@ -78,6 +85,71 @@ export class Agent {
       }
       resolver.resolve();
     });
+
+    // Add listener to associate paymentId with appId
+    this.client.on(EventNames.PROPOSE_INSTALL_EVENT, async (eData) => {
+      const paymentId = eData.params.meta?.["paymentId"];
+      if (!paymentId || !this.payments[paymentId]) {
+        return;
+      }
+      this.apps[eData.appInstanceId] = paymentId;
+    });
+
+    // Add failure listeners
+    this.client.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, async (eData) => {
+      if (!eData.paymentId) {
+        this.log.info(`Ignoring untracked transfer ${eData.paymentId}.`);
+        return;
+      }
+      this.retrieveResolverAndReject(eData.paymentId, eData.error);
+    });
+
+    this.client.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async (eData) => {
+      const paymentId = eData.params.meta?.["paymentId"];
+      if (!paymentId) {
+        this.log.info(`Ignoring untracked transfer ${paymentId}.`);
+        return;
+      }
+      this.retrieveResolverAndReject(paymentId, eData.error);
+    });
+
+    this.client.on(EventNames.INSTALL_FAILED_EVENT, async (eData) => {
+      const paymentId = eData.params.proposal.meta?.["paymentId"];
+      if (!paymentId) {
+        this.log.info(`Ignoring untracked transfer ${paymentId}.`);
+        return;
+      }
+      this.retrieveResolverAndReject(paymentId, eData.error);
+    });
+
+    this.client.on(EventNames.UPDATE_STATE_FAILED_EVENT, async (eData) => {
+      const appId = eData.params.appIdentityHash;
+      if (!appId || !this.apps[appId]) {
+        return;
+      }
+      this.retrieveResolverAndReject(this.apps[appId], eData.error);
+    });
+
+    this.client.on(EventNames.UNINSTALL_FAILED_EVENT, async (eData) => {
+      const appId = eData.params.appIdentityHash;
+      if (!appId || !this.apps[appId]) {
+        return;
+      }
+      this.retrieveResolverAndReject(this.apps[appId], eData.error);
+    });
+  }
+
+  private retrieveResolverAndReject(paymentId: string, msg: string) {
+    const resolver = this.payments[paymentId];
+    if (!resolver) {
+      return;
+    }
+    delete this.payments[paymentId];
+    const [appId] = Object.entries(this.apps).find(([appId, id]) => id === paymentId) || [];
+    if (appId) {
+      delete this.apps[appId];
+    }
+    resolver.reject(new Error(msg));
   }
 
   async deposit(amount: BigNumber) {
@@ -109,9 +181,9 @@ export class Agent {
         .then(() => {
           this.log.info(`Initiated transfer with ID ${id}.`);
         })
-        .catch(() => {
+        .catch((e) => {
           delete this.payments[id];
-          reject();
+          return reject(e);
         });
 
       this.payments[id] = {
