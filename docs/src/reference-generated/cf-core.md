@@ -1,7 +1,5 @@
 # @connext/cf-core
 
-bar
-
 **Exported Classes:**
  - [`CFCore`](#cfcore)
 
@@ -65,8 +63,6 @@ CFCore doesn't have a traditional constructor because some required setup steps 
 -----
 
 Legacy Docs: Probably out of date
-
------
 
 -----
 

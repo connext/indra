@@ -28,7 +28,7 @@ Clients contain the following functionality:
 * Handling a dispute.
 * Generating/signing/sending and validating/receiving state updates over NATS. The Client takes in the address of the server that is being used to pass messages in the constructor.
 
-Further documentation on the client can be found [here](../reference/client.md).
+Further documentation on the client can be found [here](../reference-generated/client.md).
 
 ### Node
 

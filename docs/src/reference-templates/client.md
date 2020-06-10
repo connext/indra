@@ -1,7 +1,5 @@
 # @connext/client
 
-{{foo}}
-
 All methods return promises.
 
 ## Management Methods

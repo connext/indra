@@ -1,7 +1,5 @@
 # @connext/client
 
-bar
-
 All methods return promises.
 
 ## Management Methods

@@ -34,11 +34,11 @@ In production, you'll want to get an API key for [alchemy](https://alchemyapi.io
 
 3. You need a key pair & you need to keep it safe.
 
-Internally, we derive a `signingAddress` from a provided private key & funds at this Ethereum address will be used when calling `deposit()`. Alternatively, to protect the private key, you can wrap it in a ChannelSigner interface & inject that. See [reference](../reference/utils.html#channelsigner) for more info.
+Internally, we derive a `signingAddress` from a provided private key & funds at this Ethereum address will be used when calling `deposit()`. Alternatively, to protect the private key, you can wrap it in a ChannelSigner interface & inject that. See [reference](../reference-generated/utils.html#channelsigner) for more info.
 
 4. You need to consider where you're going to store your state.
 
-The simplest option is save it as a file. Alternatively, to increase performance you can save it to a postgres database. The [`@connext/store`](../reference/store.md) reference has more info about the options available.
+The simplest option is save it as a file. Alternatively, to increase performance you can save it to a postgres database. The [`@connext/store`](../reference-generated/store.md) reference has more info about the options available.
 
 ## Example Code
 

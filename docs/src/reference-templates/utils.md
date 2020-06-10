@@ -1,8 +1,6 @@
 
 # @connext/utils
 
-{{foo}}
-
 **Exported Classes:**
  - [`ChannelSigner`](#channelsigner)
 

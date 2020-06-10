@@ -1,8 +1,6 @@
 
 # @connext/store
 
-{{foo}}
-
 **Exported Types:**
  - [`IAsyncStorage`](#iasyncstorage)
  - [`IBackupService`](#ibackupservice)

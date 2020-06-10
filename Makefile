@@ -316,7 +316,7 @@ watcher: types utils contracts store $(shell find modules/watcher $(find_options
 
 .PHONY: docs
 docs: documentation
-documentation: py-requirements client store
+documentation: py-requirements client store $(shell find docs $(find_options))
 	$(log_start)
 	$(docker_run) "rm -rf docs/build && mkdir -p docs/build"
 	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b html -d build/doctrees ./src build/html"
