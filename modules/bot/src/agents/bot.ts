@@ -2,7 +2,9 @@ import {
   ColorfulLogger,
   getRandomBytes32,
   getSignerAddressFromPublicIdentifier,
+  stringify,
 } from "@connext/utils";
+import { EventNames } from "@connext/types";
 import { utils } from "ethers";
 import { Argv } from "yargs";
 import intervalPromise from "interval-promise";
@@ -11,7 +13,6 @@ import { createClient } from "../helpers/client";
 import {
   addAgentIdentifierToIndex,
   getRandomAgentIdentifierFromIndex,
-  removeAgentIdentifierFromIndex,
 } from "../helpers/agentIndex";
 import { Agent } from "./agent";
 
@@ -65,6 +66,7 @@ export default {
     const messagingUrl = process.env.INDRA_NATS_URL;
     const limit = argv.limit;
     const start: { [paymentId: string]: number } = {};
+    const end: { [paymentId: string]: number } = {};
 
     const randomInterval = Math.round(argv.interval * 0.75 + Math.random() * (argv.interval * 0.5));
     log.info(`Using random inteval: ${randomInterval}`);
@@ -90,61 +92,85 @@ export default {
 
     let depositLock = false;
 
+    // Register listener
+    let receivedCount = 1;
+    client.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (eData) => {
+      log.debug(`Received transfer #${receivedCount}: ${stringify(eData)}`);
+      receivedCount += 1;
+    });
+
     // Setup agent logic to transfer on an interval
-    intervalPromise(async (intervalCount, stop) => {
-      log.debug(`Started interval`);
+    let sentPayments = 1;
+    await intervalPromise(
+      async (_, stop) => {
+        log.debug(`Started interval`);
 
-      // if (limit > 0 && intervalCount > limit) {
-      //   // If we haven't recieved a payment for several intervals, other bots are probably done
-      //   const diff = Date.now() - lastReceived;
-      //   if (diff > argv.interval * 5) {
-      //     log.info(`Agent ${NAME} hasn't recieved a payment in ${diff}ms, exiting`);
-      //     await removeAgentIdentifierFromIndex(client.publicIdentifier);
-      //     process.exit(0);
-      //   } else {
-      //     // Don't send any more transfers if over the limit
-      //     return;
-      //   }
-      // }
+        // Only send up to the limit of payments
+        if (sentPayments > limit) {
+          stop();
+        }
 
-      // Deposit if agent is out of funds + if a request isn't already in flight
-      if (!depositLock) {
-        depositLock = true;
-        await agent.depositIfNeeded(TRANSFER_AMT, DEPOSIT_AMT);
-        depositLock = false;
-      }
+        // Deposit if agent is out of funds + if a request isn't already in flight
+        if (!depositLock) {
+          depositLock = true;
+          await agent.depositIfNeeded(TRANSFER_AMT, DEPOSIT_AMT);
+          depositLock = false;
+        }
 
-      // Get random agent from registry and setup params
-      const receiverIdentifier = await getRandomAgentIdentifierFromIndex(client.publicIdentifier);
+        // Get random agent from registry and setup params
+        const receiverIdentifier = await getRandomAgentIdentifierFromIndex(client.publicIdentifier);
 
-      if (!receiverIdentifier) {
-        return;
-      }
+        if (!receiverIdentifier) {
+          return;
+        }
 
-      // If this is the first bot, dont transfer and instead wait for the others to come up
-      const receiverSigner = getSignerAddressFromPublicIdentifier(receiverIdentifier);
-      const paymentId = getRandomBytes32();
-      log.debug(
-        `Send conditional transfer ${paymentId} for ${formatEther(
-          TRANSFER_AMT,
-        )} ETH to ${receiverIdentifier} (${receiverSigner})`,
-      );
-
-      start[paymentId] = Date.now();
-      try {
-        // Send transfer
-        log.info(`Starting transfer to ${receiverIdentifier} with signer ${receiverSigner}`);
-        await agent.pay(receiverIdentifier, receiverSigner, TRANSFER_AMT, paymentId);
-        log.info(
-          `Conditional transfer ${paymentId} sent. Elapsed: ${Date.now() - start[paymentId]}`,
+        // If this is the first bot, dont transfer and instead wait for the others to come up
+        const receiverSigner = getSignerAddressFromPublicIdentifier(receiverIdentifier);
+        const paymentId = getRandomBytes32();
+        log.debug(
+          `Send conditional transfer ${paymentId} for ${formatEther(
+            TRANSFER_AMT,
+          )} ETH to ${receiverIdentifier} (${receiverSigner})`,
         );
-      } catch (err) {
-        console.error(`Error sending tranfer: ${err.message}`);
-        stop();
-      }
 
+        start[paymentId] = Date.now();
+        try {
+          // Send transfer
+          log.info(
+            `Starting transfer #${sentPayments}/${limit} to ${receiverIdentifier} with signer ${receiverSigner}`,
+          );
+          await agent.pay(receiverIdentifier, receiverSigner, TRANSFER_AMT, paymentId);
+          end[paymentId] = Date.now();
+          log.info(
+            `Conditional transfer #${sentPayments}/${limit} with ${paymentId} sent. Elapsed: ${
+              end[paymentId] - start[paymentId]
+            }`,
+          );
+          sentPayments++;
+        } catch (err) {
+          console.error(`Error sending tranfer: ${err.message}`);
+          stop();
+        }
+      },
       // add slight randomness to interval so that it's somewhere between
       // 75% and 125% of inputted argument
-    }, randomInterval);
+      randomInterval,
+      { stopOnError: false },
+    );
+
+    log.warn(`Process completed, calculating times`);
+    const elapsed: { [k: string]: number } = {};
+    Object.entries(start).forEach(([paymentId, startTime]) => {
+      if (!end[paymentId]) {
+        return;
+      }
+      return (elapsed[paymentId] = end[paymentId] - startTime);
+    });
+    const numberPayments = Object.keys(elapsed).length;
+    log.debug(`Elapsed payment: ${stringify(elapsed)}`);
+    const average = Object.values(elapsed).reduce((prev, curr) => prev + curr, 0) / numberPayments;
+    log.warn(`Average payment time across ${numberPayments} payments: ${average}ms`);
+    log.warn(`Exiting`);
+    process.exit(0);
   },
 };
