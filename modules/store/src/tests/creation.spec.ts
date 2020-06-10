@@ -1,5 +1,4 @@
 import { isDirectory } from "@connext/utils";
-import { expect } from "chai";
 import fs from "fs";
 import { Sequelize } from "sequelize";
 import { v4 as uuid } from "uuid";

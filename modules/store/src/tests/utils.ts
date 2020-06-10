@@ -5,7 +5,6 @@ import {
   ConditionalTransactionCommitmentJSON,
   ContractAddresses,
   IBackupService,
-  IStoreService,
   MinimalTransaction,
   OutcomeType,
   SetStateCommitmentJSON,
@@ -50,6 +49,7 @@ const env = {
 
 type TestStoreOptions = StoreOptions & {
   fileDir?: string;
+  asyncStorageKey?: string;
 };
 
 ////////////////////////////////////////
@@ -60,19 +60,19 @@ export const postgresConnectionUri = `postgres://${env.user}:${env.password}@${e
 export const createStore = async (
   type: StoreTypes,
   opts: TestStoreOptions = {},
-): Promise<IStoreService> => {
+): Promise<StoreService> => {
   opts.logger = new ColorfulLogger(`ConnextStore_${type}`, env.logLevel, true);
-  let store: IStoreService;
+  let store: StoreService;
   if (type === StoreTypes.AsyncStorage) {
-    store = getAsyncStore(new MockAsyncStorage(), opts);
+    store = getAsyncStore(new MockAsyncStorage(), opts) as StoreService;
   } else if (type === StoreTypes.File) {
-    store = getFileStore(opts.fileDir || "./.test-store", opts);
+    store = getFileStore(opts.fileDir || "./.test-store", opts) as StoreService;
   } else if (type === StoreTypes.LocalStorage) {
-    store = getLocalStore(opts);
+    store = getLocalStore(opts) as StoreService;
   } else if (type === StoreTypes.Memory) {
-    store = getMemoryStore(opts);
+    store = getMemoryStore(opts) as StoreService;
   } else if (type === StoreTypes.Postgres) {
-    store = getPostgresStore(opts.sequelize || postgresConnectionUri, opts);
+    store = getPostgresStore(opts.sequelize || postgresConnectionUri, opts) as StoreService;
   } else {
     throw new Error(`${type} should be one of ${Object.keys(StoreTypes)}`);
   }

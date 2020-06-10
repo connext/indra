@@ -10,7 +10,7 @@
     "declarationDir": "dist/",
     "module": "commonjs"
   },
-  "exclude": ["dist", "node_modules", "**/*spec.ts"],
+  "exclude": ["dist", "node_modules"],
   "include": [ "src/**/*.ts" ]
 }
 

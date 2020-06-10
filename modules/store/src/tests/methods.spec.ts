@@ -239,7 +239,6 @@ describe("Methods", () => {
           app,
           channel.freeBalanceAppInstance!,
           freeBalanceSetState1,
-          TEST_STORE_CONDITIONAL_COMMITMENT,
         );
 
         // can be called multiple times in a row and preserve the data
@@ -287,6 +286,7 @@ describe("Methods", () => {
             proposal,
             channel.monotonicNumProposedApps,
             TEST_STORE_SET_STATE_COMMITMENT,
+            TEST_STORE_CONDITIONAL_COMMITMENT,
           );
           const retrieved = await store.getAppProposal(proposal.identityHash);
           expect(retrieved).to.deep.eq(proposal);
@@ -316,6 +316,7 @@ describe("Methods", () => {
           proposal,
           channel.monotonicNumProposedApps,
           TEST_STORE_SET_STATE_COMMITMENT,
+          TEST_STORE_CONDITIONAL_COMMITMENT,
         );
         // can be called multiple times in a row and preserve the data
         for (let i = 0; i < 3; i++) {

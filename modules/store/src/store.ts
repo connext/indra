@@ -45,6 +45,7 @@ const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
 
 export class StoreService implements IStoreService {
   private deferred: ((store: any) => Promise<any>)[] = [];
+
   constructor(
     private readonly storage: KeyValueStorage,
     private readonly backupService?: IBackupService,
