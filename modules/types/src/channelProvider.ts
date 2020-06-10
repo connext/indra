@@ -1,4 +1,4 @@
-import { JsonRpcProvider } from "ethers/providers";
+import { providers } from "ethers";
 import EventEmitter from "eventemitter3";
 
 import { INodeApiClient } from "./api";
@@ -43,7 +43,7 @@ export type ChannelProviderConfig = {
 };
 
 export interface CFChannelProviderOptions {
-  ethProvider: JsonRpcProvider;
+  ethProvider: providers.JsonRpcProvider;
   signer: IChannelSigner;
   node: INodeApiClient;
   logger?: ILoggerService;
@@ -57,6 +57,7 @@ export type WalletDepositParams = {
 
 // TODO: replace with IBasicEventEmitter
 export class ConnextEventEmitter extends EventEmitter<string | ChannelMethods | EventName> {}
+
 export interface IRpcConnection extends ConnextEventEmitter {
   ////////////////////////////////////////
   // Properties

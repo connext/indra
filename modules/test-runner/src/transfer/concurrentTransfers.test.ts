@@ -1,21 +1,28 @@
 import PQueue from "p-queue";
-import * as utils from "ethers/utils";
+import { BigNumber, constants, utils } from "ethers";
 import {
   ConditionalTransferTypes,
   IConnextClient,
-  BigNumber,
   PublicParams,
   Address,
+  Receipt,
 } from "@connext/types";
-import { delay, ColorfulLogger, getTestVerifyingContract } from "@connext/utils";
-import { AddressZero } from "ethers/constants";
+import {
+  delay,
+  ColorfulLogger,
+  getTestVerifyingContract,
+  getTestReceiptToSign,
+} from "@connext/utils";
 
 import { createClient, fundChannel } from "../util";
 
-const generatePaymentId = () => utils.hexlify(utils.randomBytes(32));
+const { AddressZero } = constants;
+const { hexlify, randomBytes, parseEther } = utils;
 
-const TRANSFER_AMOUNT = utils.parseEther("0.00001");
-const DEPOSIT_AMOUNT = utils.parseEther("0.1");
+const generatePaymentId = () => hexlify(randomBytes(32));
+
+const TRANSFER_AMOUNT = parseEther("0.00001");
+const DEPOSIT_AMOUNT = parseEther("0.1");
 
 describe("Concurrent transfers", async () => {
   let channel: IConnextClient;
@@ -23,6 +30,7 @@ describe("Concurrent transfers", async () => {
   let indexerB: IConnextClient;
   let chainId: number;
   let verifyingContract: Address;
+  let receipt: Receipt;
   let subgraphChannels: { signer: string; publicIdentifier: string }[];
 
   beforeEach(async () => {
@@ -40,6 +48,7 @@ describe("Concurrent transfers", async () => {
 
     chainId = (await indexerA.ethProvider.getNetwork()).chainId;
     verifyingContract = getTestVerifyingContract();
+    receipt = getTestReceiptToSign();
 
     console.log("Signer address:", channel.signerAddress);
 
@@ -47,10 +56,7 @@ describe("Concurrent transfers", async () => {
     await fundChannel(channel, DEPOSIT_AMOUNT, AddressZero);
     const balance: BigNumber = (await channel.getFreeBalance())[channel.signerAddress];
     console.log("Free balance:", balance.toString());
-    console.log(
-      "Total # of payments possible: ",
-      balance.div(utils.parseEther("0.00001")).toString(),
-    );
+    console.log("Total # of payments possible: ", balance.div(parseEther("0.00001")).toString());
 
     subgraphChannels = [
       {
@@ -75,12 +81,12 @@ describe("Concurrent transfers", async () => {
       count++;
       console.log(`${data.paymentId} Payment created: ${count}`);
     });
-    let queue = new PQueue({ concurrency: 10 });
-    let sendLoop = async () => {
+    const queue = new PQueue({ concurrency: 10 });
+    const sendLoop = async () => {
       while (true) {
-        for (let subgraphChannel of subgraphChannels) {
-          let recipient = subgraphChannel.publicIdentifier;
-          let paymentId = generatePaymentId();
+        for (const subgraphChannel of subgraphChannels) {
+          const recipient = subgraphChannel.publicIdentifier;
+          const paymentId = generatePaymentId();
 
           // Send payment and query
           // eslint-disable-next-line no-loop-func
@@ -94,6 +100,8 @@ describe("Concurrent transfers", async () => {
                 signerAddress: subgraphChannel.signer,
                 chainId,
                 verifyingContract,
+                requestCID: receipt.requestCID,
+                subgraphDeploymentID: receipt.subgraphDeploymentID,
                 recipient,
                 assetId: AddressZero,
                 meta: { info: "Query payment" },

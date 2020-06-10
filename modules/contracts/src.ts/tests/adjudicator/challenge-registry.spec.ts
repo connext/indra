@@ -1,7 +1,6 @@
 import { ChallengeStatus, AppChallenge } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { Wallet } from "ethers";
-import { keccak256 } from "ethers/utils";
+import { Wallet, utils } from "ethers";
 
 import { setupContext } from "../context";
 import {
@@ -10,13 +9,11 @@ import {
   encodeState,
   expect,
   mineBlocks,
-  restore,
-  snapshot,
 } from "../utils";
 
-describe("ChallengeRegistry", () => {
-  let snapshotId: any;
+const { keccak256 } = utils;
 
+describe("ChallengeRegistry", () => {
   let ONCHAIN_CHALLENGE_TIMEOUT: number;
   let alice: Wallet;
   let action: AppWithCounterAction;
@@ -47,7 +44,6 @@ describe("ChallengeRegistry", () => {
   let isProgressable: () => Promise<boolean>;
 
   beforeEach(async () => {
-    snapshotId = await snapshot();
     const context = await setupContext();
 
     // apps / constants
@@ -77,10 +73,6 @@ describe("ChallengeRegistry", () => {
     verifyChallenge = context["verifyChallenge"];
     isProgressable = context["isProgressable"];
     cancelDisputeAndVerify = context["cancelDisputeAndVerify"];
-  });
-
-  afterEach(async () => {
-    await restore(snapshotId);
   });
 
   it("Can successfully dispute using: `setAndProgressState` + `progressState` + `setOutcome`", async () => {

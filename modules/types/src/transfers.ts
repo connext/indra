@@ -1,22 +1,43 @@
-import { Address, BigNumber, Bytes32 } from "./basic";
+import { Address, BigNumber, Bytes32, SignatureString } from "./basic";
 import { enumify } from "./utils";
 import {
   HashLockTransferAppName,
   SimpleLinkedTransferAppName,
   SimpleSignedTransferAppName,
+  SupportedApplicationNames,
+  GenericConditionalTransferAppName,
   Attestation,
-  CoinTransfer,
 } from "./contracts";
 
 ////////////////////////////////////////
 // Types
 
-export const GenericConditionalTransferAppName = "GenericConditionalTransferApp";
+const RequireOnlineAppNames: SupportedApplicationNames[] = [
+  SupportedApplicationNames.HashLockTransferApp,
+];
+const AllowOfflineAppNames: SupportedApplicationNames[] = [
+  SupportedApplicationNames.SimpleSignedTransferApp,
+  SupportedApplicationNames.SimpleLinkedTransferApp,
+];
+
+export type TransferType = "RequireOnline" | "AllowOffline";
+export const getTransferTypeFromAppName = (
+  name: SupportedApplicationNames,
+): TransferType | undefined => {
+  if (RequireOnlineAppNames.includes(name)) {
+    return "RequireOnline";
+  }
+  if (AllowOfflineAppNames.includes(name)) {
+    return "AllowOffline";
+  }
+
+  return undefined;
+};
 
 export const ConditionalTransferTypes = enumify({
-  HashLockTransfer: "HashLockTransfer",
-  LinkedTransfer: "LinkedTransfer",
-  SignedTransfer: "SignedTransfer",
+  HashLockTransfer: HashLockTransferAppName,
+  LinkedTransfer: SimpleLinkedTransferAppName,
+  SignedTransfer: SimpleSignedTransferAppName,
 });
 export type ConditionalTransferTypes = typeof ConditionalTransferTypes[keyof typeof ConditionalTransferTypes];
 
@@ -27,12 +48,6 @@ export const ConditionalTransferAppNames = enumify({
   [GenericConditionalTransferAppName]: GenericConditionalTransferAppName,
 });
 export type ConditionalTransferAppNames = typeof ConditionalTransferAppNames[keyof typeof ConditionalTransferAppNames];
-
-export type GenericConditionalTransferAppState = {
-  coinTransfers: CoinTransfer[];
-  finalized: boolean;
-  [x: string]: any;
-};
 
 ////////////////////////////////////////
 // Metadata
@@ -67,8 +82,10 @@ export type CreatedHashLockTransferMeta = {
 
 export type CreatedSignedTransferMeta = {
   signerAddress: Address;
-  verifyingContract: Address;
   chainId: number;
+  verifyingContract: Address;
+  requestCID: Bytes32;
+  subgraphDeploymentID: Bytes32;
 };
 
 export type UnlockedLinkedTransferMeta = {
@@ -80,7 +97,10 @@ export type UnlockedHashLockTransferMeta = {
   preImage: Bytes32;
 };
 
-export type UnlockedSignedTransferMeta = Attestation;
+export type UnlockedSignedTransferMeta = {
+  responseCID: Bytes32;
+  signature: SignatureString;
+};
 
 ////////////////////////////////////////
 // Statuses

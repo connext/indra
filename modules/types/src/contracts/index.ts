@@ -16,15 +16,21 @@ import {
   DepositAppName,
   SimpleTwoPartySwapAppName,
 } from "./apps";
-import {
-  GenericConditionalTransferAppState,
-  GenericConditionalTransferAppName,
-} from "../transfers";
+import { enumify } from "../utils";
+import { CoinTransfer } from "./funding";
 
 export * from "./adjudicator";
 export * from "./apps";
 export * from "./funding";
 export * from "./misc";
+
+export type GenericConditionalTransferAppState = {
+  coinTransfers: CoinTransfer[];
+  finalized: boolean;
+  [x: string]: any;
+};
+
+export const GenericConditionalTransferAppName = "GenericConditionalTransferApp";
 
 export const AppNames = {
   [DepositAppName]: DepositAppName,
@@ -77,3 +83,14 @@ export type AppState =
   | SimpleSwapAppState
   | WithdrawAppState
   | GenericConditionalTransferAppState;
+
+export const SupportedApplicationNames = enumify({
+  [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
+  [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
+  [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
+  [WithdrawAppName]: WithdrawAppName,
+  [HashLockTransferAppName]: HashLockTransferAppName,
+  [DepositAppName]: DepositAppName,
+});
+
+export type SupportedApplicationNames = typeof SupportedApplicationNames[keyof typeof SupportedApplicationNames];

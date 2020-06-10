@@ -1,8 +1,7 @@
-import { TransactionResponse } from "ethers/providers";
-import { BigNumberish } from "ethers/utils";
+import { providers, BigNumberish } from "ethers";
 
-import { Address, BigNumber, Bytes32, HexString, PublicIdentifier } from "./basic";
-import { ConditionalTransferTypes } from "./transfers";
+import { Address, BigNumber, Bytes32, HexString, PublicIdentifier, SignatureString } from "./basic";
+import { ConditionalTransferTypes, CreatedConditionalTransferMetaMap } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
 import { Attestation } from "./contracts";
 
@@ -54,6 +53,7 @@ type HashLockTransferResponse = {
 type ResolveHashLockTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.HashLockTransfer;
   assetId: Address;
+  paymentId?: Bytes32;
   preImage: Bytes32;
 };
 
@@ -110,6 +110,8 @@ type SignedTransferParameters = {
   signerAddress: Address;
   chainId: number;
   verifyingContract: Address;
+  requestCID: Bytes32;
+  subgraphDeploymentID: Bytes32;
   recipient?: PublicIdentifier;
   meta?: any;
 };
@@ -122,7 +124,8 @@ type SignedTransferResponse = {
 type ResolveSignedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.SignedTransfer;
   paymentId: Bytes32;
-  attestation: Attestation;
+  responseCID: Bytes32;
+  signature: SignatureString;
 };
 
 type ResolveSignedTransferResponse = {
@@ -141,10 +144,17 @@ type ConditionalTransferParameters =
   | HashLockTransferParameters
   | SignedTransferParameters;
 
-type ConditionalTransferResponse =
-  | LinkedTransferResponse
-  | HashLockTransferResponse
-  | SignedTransferResponse;
+type ConditionalTransferResponse = {
+  amount: BigNumber;
+  appIdentityHash: Bytes32;
+  assetId: Address;
+  paymentId: Bytes32;
+  preImage?: Bytes32;
+  sender: Address;
+  recipient?: Address;
+  meta: any;
+  transferMeta: any;
+};
 
 ////////////////////////////////////////
 // resolve condition
@@ -198,7 +208,7 @@ type WithdrawParameters = {
 };
 
 type WithdrawResponse = {
-  transaction: TransactionResponse;
+  transaction: providers.TransactionResponse;
 };
 
 ////////////////////////////////////////

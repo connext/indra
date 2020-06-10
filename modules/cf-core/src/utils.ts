@@ -1,20 +1,14 @@
 import { CriticalStateChannelAddresses, PublicIdentifier } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { Contract } from "ethers";
-import { Zero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
-import {
-  BigNumber,
-  getAddress,
-  Interface,
-  keccak256,
-  solidityKeccak256,
-} from "ethers/utils";
+import { BigNumber, Contract, providers, constants, utils } from "ethers";
 import memoize from "memoizee";
 
 import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./errors";
 import { MinimumViableMultisig, ProxyFactory } from "./contracts";
 import { StateChannel } from "./models";
+
+const { Zero } = constants;
+const { getAddress, Interface, keccak256, solidityKeccak256 } = utils;
 
 export const assertSufficientFundsWithinFreeBalance = (
   channel: StateChannel,
@@ -23,11 +17,9 @@ export const assertSufficientFundsWithinFreeBalance = (
   depositAmount: BigNumber,
 ): void => {
   const freeBalanceForToken =
-    channel.getFreeBalanceClass()
-      .getBalance(
-        tokenAddress, 
-        getSignerAddressFromPublicIdentifier(publicIdentifier),
-      ) || Zero;
+    channel
+      .getFreeBalanceClass()
+      .getBalance(tokenAddress, getSignerAddressFromPublicIdentifier(publicIdentifier)) || Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {
     throw new Error(
@@ -65,11 +57,11 @@ export const getCreate2MultisigAddress = async (
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
   addresses: CriticalStateChannelAddresses,
-  ethProvider: JsonRpcProvider,
+  ethProvider: providers.JsonRpcProvider,
 ): Promise<string> => {
   const proxyFactory = new Contract(addresses.ProxyFactory, ProxyFactory.abi, ethProvider);
 
-  const proxyBytecode = (await proxyFactory.functions.proxyCreationCode());
+  const proxyBytecode = await proxyFactory.proxyCreationCode();
 
   return memoizedGetAddress(
     solidityKeccak256(
@@ -82,7 +74,7 @@ export const getCreate2MultisigAddress = async (
           [
             keccak256(
               // see encoding notes
-              new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+              new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
                 [
                   getSignerAddressFromPublicIdentifier(initiatorIdentifier),
                   getSignerAddressFromPublicIdentifier(responderIdentifier),
@@ -90,10 +82,7 @@ export const getCreate2MultisigAddress = async (
               ]),
             ),
             // hash chainId + saltNonce to ensure multisig addresses are *always* unique
-            solidityKeccak256(
-              ["uint256", "uint256"],
-              [ethProvider.network.chainId, 0],
-            ),
+            solidityKeccak256(["uint256", "uint256"], [ethProvider.network.chainId, 0]),
           ],
         ),
         solidityKeccak256(

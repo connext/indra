@@ -1,8 +1,9 @@
 import { MessagingService } from "@connext/messaging";
 import { HashLockTransferAppState, NodeResponses } from "@connext/types";
-import { bigNumberifyJson, stringify } from "@connext/utils";
+import { bigNumberifyJson } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
+import { constants } from "ethers";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
@@ -12,7 +13,8 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { HashLockTransferService } from "./hashLockTransfer.service";
-import { AddressZero } from "ethers/constants";
+
+const { AddressZero } = constants;
 
 export class HashLockTransferMessaging extends AbstractMessagingProvider {
   constructor(
@@ -75,7 +77,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       lockHash: latestState.lockHash,
       status,
       meta,
-      preImage: latestState.preImage,
+      preImage: !!receiverApp ? receiverApp.latestState.preImage : userApp.latestState.preImage,
       expiry: latestState.expiry,
     };
   }

@@ -8,8 +8,7 @@ import {
   SignatureString,
   UrlString,
 } from "@connext/types";
-import { Wallet } from "ethers";
-import { TransactionResponse, TransactionRequest, JsonRpcProvider } from "ethers/providers";
+import { Wallet, Signer, providers } from "ethers";
 
 import {
   decrypt,
@@ -21,14 +20,14 @@ import {
 } from "./crypto";
 import { getPublicIdentifierFromPublicKey } from "./identifiers";
 
-export const getRandomChannelSigner = (provider?: UrlString | JsonRpcProvider) =>
+export const getRandomChannelSigner = (provider?: UrlString | providers.Provider) =>
   new ChannelSigner(getRandomPrivateKey(), provider);
 
-export class ChannelSigner implements IChannelSigner {
+export class ChannelSigner extends Signer implements IChannelSigner {
   public address: Address;
   public publicIdentifier: PublicIdentifier;
   public publicKey: PublicKey;
-  public provider?: JsonRpcProvider;
+  public provider?: providers.Provider;
 
   // NOTE: without this property, the Signer.isSigner
   // function will not return true, even though this class
@@ -36,12 +35,13 @@ export class ChannelSigner implements IChannelSigner {
   // https://github.com/ethers-io/ethers.js/issues/779
   private readonly _ethersType = "Signer";
 
-  constructor(private readonly privateKey: PrivateKey, provider?: UrlString | JsonRpcProvider) {
+  constructor(private readonly privateKey: PrivateKey, provider?: UrlString | providers.Provider) {
+    super();
     this.privateKey = privateKey;
     this.publicKey = getPublicKeyFromPrivateKey(privateKey);
     this.address = getAddressFromPublicKey(this.publicKey);
     this.publicIdentifier = getPublicIdentifierFromPublicKey(this.publicKey);
-    this.connect(provider);
+    this.connectProvider(provider);
   }
 
   public async getAddress(): Promise<Address> {
@@ -50,8 +50,14 @@ export class ChannelSigner implements IChannelSigner {
 
   public encrypt = encrypt;
 
-  public connect(provider?: UrlString | JsonRpcProvider): void {
-    this.provider = typeof provider === "string" ? new JsonRpcProvider(provider) : provider;
+  public connectProvider(provider?: UrlString | providers.Provider): void {
+    this.provider =
+      typeof provider === "string" ? new providers.JsonRpcProvider(provider) : provider;
+  }
+
+  public connect(provider: providers.Provider): Signer {
+    this.connectProvider(provider);
+    return this;
   }
 
   public async decrypt(message: string): Promise<HexString> {
@@ -62,7 +68,19 @@ export class ChannelSigner implements IChannelSigner {
     return signChannelMessage(message, this.privateKey);
   }
 
-  public async sendTransaction(transaction: TransactionRequest): Promise<TransactionResponse> {
+  public async signTransaction(transaction: providers.TransactionRequest): Promise<string> {
+    if (!this.provider) {
+      throw new Error(
+        `ChannelSigner can't send transactions without being connected to a provider`,
+      );
+    }
+    const wallet = new Wallet(this.privateKey, this.provider);
+    return wallet.signTransaction(transaction);
+  }
+
+  public async sendTransaction(
+    transaction: providers.TransactionRequest,
+  ): Promise<providers.TransactionResponse> {
     if (!this.provider) {
       throw new Error(
         `ChannelSigner can't send transactions without being connected to a provider`,

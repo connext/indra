@@ -6,7 +6,7 @@ import {
   EventPayloads,
 } from "@connext/types";
 import { ColorfulLogger, getAddressFromAssetId, delayAndThrow } from "@connext/utils";
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 
 import { env, expect } from "../";
 

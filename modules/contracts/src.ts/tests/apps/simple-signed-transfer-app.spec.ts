@@ -15,13 +15,14 @@ import {
   getRandomBytes32,
   getAddressFromPrivateKey,
 } from "@connext/utils";
-import { Contract, ContractFactory } from "ethers";
-import { Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { BigNumber, Contract, ContractFactory, constants, utils } from "ethers";
 
 import { SimpleSignedTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
+
+const { Zero } = constants;
+const { defaultAbiCoder } = utils;
 
 function mkAddress(prefix: string = "0xa"): string {
   return prefix.padEnd(42, "0");
@@ -62,17 +63,14 @@ describe("SimpleSignedTransferApp", () => {
   let paymentId: string;
 
   async function computeOutcome(state: SimpleSignedTransferAppState): Promise<string> {
-    return simpleSignedTransferApp.functions.computeOutcome(encodeAppState(state));
+    return simpleSignedTransferApp.computeOutcome(encodeAppState(state));
   }
 
   async function applyAction(
     state: SimpleSignedTransferAppState,
     action: SimpleSignedTransferAppAction,
   ): Promise<string> {
-    return simpleSignedTransferApp.functions.applyAction(
-      encodeAppState(state),
-      encodeAppAction(action),
-    );
+    return simpleSignedTransferApp.applyAction(encodeAppState(state), encodeAppAction(action));
   }
 
   async function validateOutcome(
@@ -107,7 +105,7 @@ describe("SimpleSignedTransferApp", () => {
 
     senderAddr = mkAddress("0xa");
     receiverAddr = mkAddress("0xB");
-    transferAmount = new BigNumber(10000);
+    transferAmount = BigNumber.from(10000);
     preState = {
       coinTransfers: [
         {
@@ -124,6 +122,8 @@ describe("SimpleSignedTransferApp", () => {
       signerAddress,
       chainId,
       verifyingContract,
+      requestCID: receipt.requestCID,
+      subgraphDeploymentID: receipt.subgraphDeploymentID,
     };
   });
 
@@ -152,6 +152,8 @@ describe("SimpleSignedTransferApp", () => {
         signerAddress,
         chainId,
         verifyingContract,
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
         finalized: true,
       };
 

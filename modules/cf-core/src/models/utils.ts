@@ -1,7 +1,8 @@
-import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, constants } from "ethers";
 
 import { CoinTransferMap, TokenIndexedCoinTransferMap } from "./free-balance";
+
+const { Zero } = constants;
 
 // makes all values that are decremental incremental. Example:
 // fb.sub(balanceDecrement) === fb.add(flib(balanceDecrement))

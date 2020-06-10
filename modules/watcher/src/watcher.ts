@@ -37,13 +37,13 @@ import {
   stringify,
   bigNumberifyJson,
 } from "@connext/utils";
-import { JsonRpcProvider, TransactionReceipt, TransactionResponse } from "ethers/providers";
 import EventEmitter from "eventemitter3";
-import { Contract } from "ethers";
-import { Interface, defaultAbiCoder } from "ethers/utils";
+import { Contract, providers, constants, utils } from "ethers";
 
 import { ChainListener } from "./chainListener";
-import { Zero, HashZero } from "ethers/constants";
+
+const { Zero, HashZero } = constants;
+const { Interface, defaultAbiCoder } = utils;
 
 /**
  * Watchers will watch for contract events and respond to disputes on behalf
@@ -60,7 +60,7 @@ export class Watcher implements IWatcher {
 
   constructor(
     private readonly signer: IChannelSigner,
-    private readonly provider: JsonRpcProvider,
+    private readonly provider: providers.JsonRpcProvider,
     private readonly context: NetworkContext,
     private readonly store: IWatcherStoreService,
     private readonly listener: ChainListener,
@@ -70,7 +70,7 @@ export class Watcher implements IWatcher {
     this.log = log.newContext("Watcher");
     this.challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
-      ChallengeRegistry.abi as any,
+      ChallengeRegistry.abi,
       this.provider,
     );
   }
@@ -100,7 +100,7 @@ export class Watcher implements IWatcher {
     log.debug(`Creating new Watcher`);
 
     const provider =
-      typeof ethProvider === "string" ? new JsonRpcProvider(ethProvider) : ethProvider;
+      typeof ethProvider === "string" ? new providers.JsonRpcProvider(ethProvider) : ethProvider;
 
     const signer =
       typeof providedSigner === "string"
@@ -144,7 +144,7 @@ export class Watcher implements IWatcher {
   public cancel = async (
     appInstanceId: string,
     req: SignedCancelChallengeRequest,
-  ): Promise<TransactionReceipt> => {
+  ): Promise<providers.TransactionReceipt> => {
     this.log.info(
       `Cancelling challenge for ${appInstanceId} at nonce ${toBN(req.versionNumber).toString()}`,
     );
@@ -293,7 +293,9 @@ export class Watcher implements IWatcher {
     this.provider.removeAllListeners();
   };
 
-  private startAppChallenge = async (appInstanceId: string): Promise<TransactionReceipt> => {
+  private startAppChallenge = async (
+    appInstanceId: string,
+  ): Promise<providers.TransactionReceipt> => {
     this.log.debug(`Starting challenge for ${appInstanceId}`);
     const challenge = (await this.store.getAppChallenge(appInstanceId)) || {
       identityHash: appInstanceId,
@@ -357,7 +359,7 @@ export class Watcher implements IWatcher {
 
   private respondToChallenge = async (
     challengeJson: StoredAppChallenge,
-  ): Promise<TransactionReceipt | string> => {
+  ): Promise<providers.TransactionReceipt | string> => {
     this.log.info(`Respond to challenge called with: ${stringify(challengeJson)}`);
     const challenge = bigNumberifyJson(challengeJson) as StoredAppChallenge;
     const current = await this.provider.getBlockNumber();
@@ -382,7 +384,7 @@ export class Watcher implements IWatcher {
   // should only be used to progress a challenge
   private respondToChallengeDuringTimeout = async (
     challenge: StoredAppChallenge,
-  ): Promise<TransactionReceipt | string> => {
+  ): Promise<providers.TransactionReceipt | string> => {
     const { identityHash, versionNumber, status } = challenge;
 
     // verify app and channel records
@@ -476,7 +478,7 @@ export class Watcher implements IWatcher {
   // disputes with an elapsed timeout
   private respondToChallengeAfterTimeout = async (
     challenge: StoredAppChallenge,
-  ): Promise<TransactionReceipt | string> => {
+  ): Promise<providers.TransactionReceipt | string> => {
     const { identityHash, status } = challenge;
 
     // verify app and channel records
@@ -563,7 +565,7 @@ export class Watcher implements IWatcher {
     channel: StateChannelJSON,
     challenge: StoredAppChallenge,
     setStateCommitment: SetStateCommitmentJSON,
-  ): Promise<TransactionReceipt | string> => {
+  ): Promise<providers.TransactionReceipt | string> => {
     this.log.info(
       `Calling 'setState' for ${setStateCommitment.appIdentityHash} at nonce ${toBN(
         setStateCommitment.versionNumber,
@@ -593,7 +595,7 @@ export class Watcher implements IWatcher {
   private executeEffectOfFreeBalance = async (
     channel: StateChannelJSON,
     setup: MinimalTransaction,
-  ): Promise<TransactionReceipt | string> => {
+  ): Promise<providers.TransactionReceipt | string> => {
     // make sure all ssociated apps has already tried to execute its effect
     const appIds = channel.appInstances.map(([id]) => id);
     for (const identityHash of appIds) {
@@ -616,7 +618,7 @@ export class Watcher implements IWatcher {
     } else {
       this.emit(WatcherEvents.ChallengeCompletedEvent, {
         appInstanceId: channel!.freeBalanceAppInstance!.identityHash,
-        transaction: response as TransactionReceipt,
+        transaction: response as providers.TransactionReceipt,
         multisigAddress: channel.multisigAddress,
       });
       await this.updateChallengeStatus(StoredAppChallengeStatus.CONDITIONAL_SENT, challenge!);
@@ -628,7 +630,7 @@ export class Watcher implements IWatcher {
     app: AppInstanceJson,
     channel: StateChannelJSON,
     conditional: ConditionalTransactionCommitmentJSON,
-  ): Promise<TransactionReceipt | string> => {
+  ): Promise<providers.TransactionReceipt | string> => {
     this.log.info(`Sending conditional transaction for ${app.identityHash}`);
     const challenge = await this.getChallengeOrThrow(app.identityHash);
     const commitment = ConditionalTransactionCommitment.fromJson(conditional);
@@ -644,7 +646,7 @@ export class Watcher implements IWatcher {
     } else {
       this.emit(WatcherEvents.ChallengeCompletedEvent, {
         appInstanceId: app.identityHash,
-        transaction: response as TransactionReceipt,
+        transaction: response as providers.TransactionReceipt,
         multisigAddress: channel.multisigAddress,
       });
       // update challenge of app and free balance
@@ -658,7 +660,7 @@ export class Watcher implements IWatcher {
     app: AppInstanceJson,
     channel: StateChannelJSON,
     sortedCommitments: SetStateCommitmentJSON[],
-  ): Promise<TransactionReceipt | string> => {
+  ): Promise<providers.TransactionReceipt | string> => {
     const challenge = await this.getChallengeOrThrow(app.identityHash);
     this.log.info(
       `Calling 'progressState' for ${app.identityHash} at currrent nonce ${toBN(
@@ -673,7 +675,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi as any).functions.progressState.encode([
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("progressState", [
         this.getAppIdentity(app, channel.multisigAddress),
         await latest.getSignedAppChallengeUpdate(),
         state,
@@ -704,7 +706,7 @@ export class Watcher implements IWatcher {
     channel: StateChannelJSON,
     challenge: StoredAppChallenge,
     sortedCommitments: SetStateCommitmentJSON[],
-  ): Promise<TransactionReceipt | string> => {
+  ): Promise<providers.TransactionReceipt | string> => {
     this.log.info(
       `Calling 'setAndProgressState' for ${app.identityHash} with expected final nonce of ${toBN(
         sortedCommitments[0].versionNumber,
@@ -717,7 +719,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi as any).functions.setAndProgressState.encode([
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("setAndProgressState", [
         this.getAppIdentity(app, channel.multisigAddress),
         await prev.getSignedAppChallengeUpdate(),
         await latest.getSignedAppChallengeUpdate(),
@@ -747,7 +749,7 @@ export class Watcher implements IWatcher {
   private setOutcome = async (
     app: AppInstanceJson,
     channel: StateChannelJSON,
-  ): Promise<TransactionReceipt | string> => {
+  ): Promise<providers.TransactionReceipt | string> => {
     const challenge = await this.getChallengeOrThrow(app.identityHash);
     this.log.info(
       `Calling 'setOutcome' for ${app.identityHash} at nonce ${toBN(
@@ -774,11 +776,7 @@ export class Watcher implements IWatcher {
       [app.latestState],
     );
     const encodedFinalState = !!app.latestAction
-      ? await new Contract(
-          app.appInterface.addr,
-          CounterfactualApp.abi,
-          this.provider,
-        ).functions.applyAction(
+      ? await new Contract(app.appDefinition, CounterfactualApp.abi, this.provider).applyAction(
           encodedState,
           defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]),
         )
@@ -787,7 +785,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi).functions.setOutcome.encode([
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("setOutcome", [
         this.getAppIdentity(app, channel.multisigAddress),
         encodedFinalState,
       ]),
@@ -815,7 +813,7 @@ export class Watcher implements IWatcher {
     app: AppInstanceJson,
     channel: StateChannelJSON,
     req: SignedCancelChallengeRequest,
-  ): Promise<TransactionReceipt | string> => {
+  ): Promise<providers.TransactionReceipt | string> => {
     const challenge = await this.getChallengeOrThrow(app.identityHash);
     this.log.debug(
       `Calling 'cancelChallenge' for ${app.identityHash} at nonce ${toBN(
@@ -825,7 +823,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi).functions.cancelDispute.encode([
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("cancelDispute", [
         this.getAppIdentity(app, channel.multisigAddress),
         req,
       ]),
@@ -852,16 +850,16 @@ export class Watcher implements IWatcher {
   //////// Private helper functions
   private sendContractTransaction = async (
     transaction: MinimalTransaction,
-  ): Promise<TransactionReceipt | string> => {
+  ): Promise<providers.TransactionReceipt | string> => {
     this.assertSignerCanSendTransactions();
 
     const KNOWN_ERRORS = ["the tx doesn't have the correct nonce"];
     const MAX_RETRIES = 3;
 
-    let errors: { [k: number]: string } = [];
+    const errors: { [k: number]: string } = [];
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
       this.log.debug(`Attempt ${attempt}/${MAX_RETRIES} to send transaction to ${transaction.to}`);
-      let response: TransactionResponse;
+      let response: providers.TransactionResponse;
       try {
         response = await this.signer.sendTransaction({
           ...transaction,
@@ -903,7 +901,7 @@ export class Watcher implements IWatcher {
         getSignerAddressFromPublicIdentifier(app.responderIdentifier),
       ],
       multisigAddress,
-      appDefinition: app.appInterface.addr,
+      appDefinition: app.appDefinition,
       defaultTimeout: toBN(app.defaultTimeout),
     };
   };

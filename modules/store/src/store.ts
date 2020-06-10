@@ -1,7 +1,6 @@
 import { ChallengeRegistry } from "@connext/contracts";
 import {
   AppInstanceJson,
-  AppInstanceProposal,
   Bytes32,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
@@ -22,11 +21,13 @@ import {
 } from "@connext/types";
 import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import pWaterfall from "p-waterfall";
+import { constants, utils } from "ethers";
 
-import { storeKeys } from "../constants";
-import { WrappedStorage } from "../types";
-import { defaultAbiCoder } from "ethers/utils";
-import { Zero } from "ethers/constants";
+import { storeKeys } from "./constants";
+import { KeyValueStorage } from "./types";
+
+const { Zero } = constants;
+const { defaultAbiCoder } = utils;
 
 const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
   return {
@@ -42,10 +43,10 @@ const properlyConvertChannelNullVals = (json: any): StateChannelJSON => {
  * This class wraps a general key value storage service to become an `IStoreService`
  */
 
-export class KeyValueStorage implements WrappedStorage, IStoreService {
+export class StoreService implements IStoreService {
   private deferred: ((store: any) => Promise<any>)[] = [];
   constructor(
-    private readonly storage: WrappedStorage,
+    private readonly storage: KeyValueStorage,
     private readonly backupService?: IBackupService,
     private readonly log: ILoggerService = nullLogger,
   ) {}
@@ -205,6 +206,20 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
     });
   }
 
+  async incrementNumProposedApps(multisigAddress: string): Promise<void> {
+    return this.execute((store) => {
+      const channel = this.getStateChannelFromStore(store, multisigAddress);
+      if (!channel) {
+        throw new Error(`Can't incremement number of proposed apps without channel`);
+      }
+      const updatedStore = this.setStateChannel(store, {
+        ...channel,
+        monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
+      });
+      return this.saveStore(updatedStore);
+    });
+  }
+
   async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
     const channel = await this.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!channel) {
@@ -227,12 +242,11 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
     appInstance: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
-    signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
     return this.execute((store) => {
       const channel = this.getStateChannelFromStore(store, multisigAddress);
       if (!channel) {
-        throw new Error(`Can't save app instance without channel`);
+        throw new Error(`Can't create app instance without channel`);
       }
       if (this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
         this.log.warn(
@@ -270,14 +284,10 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
       this.log.debug(
         `Adding conditional transaction, new free balance state, and revised channel to store`,
       );
-      updatedStore = this.setConditionalTransactionCommitment(
-        this.setSetStateCommitment(
-          this.setStateChannel(store, { ...channel, freeBalanceAppInstance }),
-          freeBalanceAppInstance.identityHash,
-          signedFreeBalanceUpdate,
-        ),
-        appInstance.identityHash,
-        signedConditionalTxCommitment,
+      updatedStore = this.setSetStateCommitment(
+        this.setStateChannel(store, { ...channel, freeBalanceAppInstance }),
+        freeBalanceAppInstance.identityHash,
+        signedFreeBalanceUpdate,
       );
       return this.saveStore(updatedStore);
     });
@@ -291,7 +301,7 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
     return this.execute((store) => {
       const channel = this.getStateChannelFromStore(store, multisigAddress);
       if (!channel) {
-        throw new Error(`Can't save app instance without channel`);
+        throw new Error(`Can't update app instance without channel`);
       }
       if (!this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
         throw new Error(`Could not find app instance with hash ${appInstance.identityHash}`);
@@ -383,7 +393,7 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
     });
   }
 
-  async getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal | undefined> {
+  async getAppProposal(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
     const channel = await this.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!channel) {
       return undefined;
@@ -397,9 +407,10 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
 
   async createAppProposal(
     multisigAddress: string,
-    appInstance: AppInstanceProposal,
+    appInstance: AppInstanceJson,
     monotonicNumProposedApps: number,
     signedSetStateCommitment: SetStateCommitmentJSON,
+    signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
     return this.execute((store) => {
       const channel = this.getStateChannelFromStore(store, multisigAddress);
@@ -415,10 +426,14 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
         channel.proposedAppInstances.push([appInstance.identityHash, appInstance]);
       }
       this.log.debug(`Adding set state commitment to store, and updating channel`);
-      const updatedStore = this.setSetStateCommitment(
-        this.setStateChannel(store, { ...channel, monotonicNumProposedApps }),
+      const updatedStore = this.setConditionalTransactionCommitment(
+        this.setSetStateCommitment(
+          this.setStateChannel(store, { ...channel, monotonicNumProposedApps }),
+          appInstance.identityHash,
+          signedSetStateCommitment,
+        ),
         appInstance.identityHash,
-        signedSetStateCommitment,
+        signedConditionalTxCommitment,
       );
       return this.saveStore(updatedStore);
     });
@@ -624,7 +639,7 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
     if (!channel) {
       throw new Error(`Could not find channel for app ${appIdentityHash}`);
     }
-    const [_, ourApp] = channel.appInstances.find(([id]) => id === appIdentityHash);
+    const ourApp = channel.appInstances.find(([id]) => id === appIdentityHash)[1];
     const ourLatestSetState = this.getLatestSetStateCommitment(store, appIdentityHash);
     if (!ourApp || !ourLatestSetState) {
       throw new Error(`No record of channel or app associated with ${appIdentityHash}`);
@@ -636,7 +651,7 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
       ChallengeRegistry.abi,
       provider,
     );
-    const onchainChallenge = await registry.functions.getAppChallenge(appIdentityHash);
+    const onchainChallenge = await registry.getAppChallenge(appIdentityHash);
     if (onchainChallenge.versionNumber.eq(ourLatestSetState.versionNumber)) {
       return;
     }
@@ -656,7 +671,7 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
         timeout,
         turnTaker,
         signature,
-      } = registry.interface.parseLog(log).values;
+      } = registry.interface.parseLog(log).args;
       return { identityHash, action, versionNumber, timeout, turnTaker, signature };
     });
 
@@ -696,7 +711,7 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
     };
     const updatedApp = {
       ...ourApp,
-      latestAction: defaultAbiCoder.decode([ourApp.appInterface.actionEncoding], encodedAction),
+      latestAction: defaultAbiCoder.decode([ourApp.abiEncodings.actionEncoding], encodedAction),
     };
     await this.updateAppInstance(channel.multisigAddress, updatedApp, setStateJson);
 
@@ -790,7 +805,7 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
 
   private hasAppIdentityHash(
     hash: string,
-    toSearch: [string, AppInstanceJson][] | [string, AppInstanceProposal][],
+    toSearch: [string, AppInstanceJson][] | [string, AppInstanceJson][],
   ) {
     const existsIndex = toSearch.findIndex(([idHash, app]) => idHash === hash);
     return existsIndex >= 0;
@@ -815,4 +830,4 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
   };
 }
 
-export default KeyValueStorage;
+export default StoreService;

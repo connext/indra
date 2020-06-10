@@ -1,9 +1,8 @@
 import { CFCore } from "@connext/cf-core";
-import { DEFAULT_APP_TIMEOUT, SupportedApplications, WithdrawCommitment } from "@connext/apps";
+import { DEFAULT_APP_TIMEOUT, WithdrawCommitment } from "@connext/apps";
 import {
   AppAction,
   AppInstanceJson,
-  AppInstanceProposal,
   AssetId,
   ConnextNodeStorePrefix,
   CONVENTION_FOR_ETH_ASSET_ID,
@@ -16,6 +15,7 @@ import {
   EventName,
   CF_METHOD_TIMEOUT,
   ProtocolEventMessage,
+  SupportedApplicationNames,
 } from "@connext/types";
 import {
   getSignerAddressFromPublicIdentifier,
@@ -24,8 +24,7 @@ import {
   TypedEmitter,
 } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
-import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, constants, utils } from "ethers";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
@@ -37,6 +36,8 @@ import { CFCoreRecordRepository } from "./cfCore.repository";
 import { AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { MessagingService } from "@connext/messaging";
+
+const { Zero } = constants;
 
 Injectable();
 export class CFCoreService {
@@ -195,7 +196,7 @@ export class CFCoreService {
 
     // Decrement timeout so that receiver app MUST finalize before sender app
     // See: https://github.com/connext/indra/issues/1046
-    const timeout = DEFAULT_APP_TIMEOUT.sub(TIMEOUT_BUFFER)
+    const timeout = DEFAULT_APP_TIMEOUT.sub(TIMEOUT_BUFFER);
 
     const {
       actionEncoding,
@@ -247,7 +248,7 @@ export class CFCoreService {
       this.emitter.waitFor(
         EventNames.INSTALL_FAILED_EVENT,
         CF_METHOD_TIMEOUT * 3,
-        (msg) => msg.params.identityHash === proposeRes.appIdentityHash,
+        (msg) => msg.params.proposal.identityHash === proposeRes.appIdentityHash,
       ),
       this.emitter.waitFor(
         EventNames.REJECT_INSTALL_EVENT,
@@ -289,10 +290,12 @@ export class CFCoreService {
   async rejectInstallApp(
     appIdentityHash: string,
     multisigAddress: string,
+    reason: string,
   ): Promise<MethodResults.RejectInstall> {
     const parameters: MethodParams.RejectInstall = {
       appIdentityHash,
       multisigAddress,
+      reason,
     };
     this.logCfCoreMethodStart(MethodNames.chan_rejectInstall, parameters);
     const rejectRes = await this.cfCore.rpcRouter.dispatch({
@@ -338,10 +341,12 @@ export class CFCoreService {
   async uninstallApp(
     appIdentityHash: string,
     multisigAddress: string,
+    action?: AppAction,
   ): Promise<MethodResults.Uninstall> {
     const parameters = {
       appIdentityHash,
       multisigAddress,
+      action,
     } as MethodParams.Uninstall;
     this.logCfCoreMethodStart(MethodNames.chan_uninstall, parameters);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
@@ -370,7 +375,7 @@ export class CFCoreService {
     return appInstanceResponse.result.result.appInstances as AppInstanceJson[];
   }
 
-  async getProposedAppInstances(multisigAddress?: string): Promise<AppInstanceProposal[]> {
+  async getProposedAppInstances(multisigAddress?: string): Promise<AppInstanceJson[]> {
     const parameters = {
       multisigAddress,
     } as MethodParams.GetProposedAppInstances;
@@ -385,7 +390,7 @@ export class CFCoreService {
       MethodNames.chan_getProposedAppInstances,
       appInstanceResponse.result.result,
     );
-    return appInstanceResponse.result.result.appInstances as AppInstanceProposal[];
+    return appInstanceResponse.result.result.appInstances as AppInstanceJson[];
   }
 
   async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson> {
@@ -418,7 +423,7 @@ export class CFCoreService {
 
   async getAppInstancesByAppName(
     multisigAddress: string,
-    appName: SupportedApplications,
+    appName: SupportedApplicationNames,
   ): Promise<AppInstanceJson[]> {
     const network = await this.configService.getEthNetwork();
     const appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
@@ -426,7 +431,7 @@ export class CFCoreService {
       network.chainId,
     );
     const apps = await this.getAppInstances(multisigAddress);
-    return apps.filter((app) => app.appInterface.addr === appRegistry.appDefinitionAddress);
+    return apps.filter((app) => app.appDefinition === appRegistry.appDefinitionAddress);
   }
 
   /**

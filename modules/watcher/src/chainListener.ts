@@ -10,10 +10,10 @@ import {
   Address,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { Contract, Event } from "ethers";
-import { JsonRpcProvider, Log } from "ethers/providers";
-import { BigNumber, Interface } from "ethers/utils";
+import { BigNumber, Contract, Event, providers, utils } from "ethers";
 import EventEmitter from "eventemitter3";
+
+const { Interface } = utils;
 
 // While fetching historical data, we query this many blocks at a time
 const chunkSize = 30;
@@ -33,12 +33,14 @@ export class ChainListener implements IChainListener {
   private challengeRegistry: Contract;
 
   constructor(
-    private readonly provider: JsonRpcProvider,
+    private readonly provider: providers.JsonRpcProvider,
     private readonly context: NetworkContext,
     loggerService: ILoggerService,
   ) {
     this.log = loggerService.newContext("ChainListener");
-    this.log.debug(`Creating new ChainListener for ChallengeRegistry at ${this.context.ChallengeRegistry}`);
+    this.log.debug(
+      `Creating new ChainListener for ChallengeRegistry at ${this.context.ChallengeRegistry}`,
+    );
     this.emitter = new EventEmitter();
     this.challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
@@ -77,11 +79,11 @@ export class ChainListener implements IChainListener {
     const nChunks = Math.ceil((currentBlock - startingBlock) / chunkSize);
     this.log.info(`Fetching logs from block ${startingBlock} to ${currentBlock}`);
 
-    const updatedLogs = [] as Log[];
-    const progressedLogs = [] as Log[];
+    const updatedLogs = [] as providers.Log[];
+    const progressedLogs = [] as providers.Log[];
     for (let index = 0; index <= nChunks; index++) {
-      const fromBlock = startingBlock + (index * chunkSize);
-      const nextChunk = startingBlock + ((index + 1) * chunkSize) - 1;
+      const fromBlock = startingBlock + index * chunkSize;
+      const nextChunk = startingBlock + (index + 1) * chunkSize - 1;
       const toBlock = nextChunk >= currentBlock ? currentBlock : nextChunk;
 
       const newUpdatedLogs = await this.provider.getLogs({
@@ -99,15 +101,17 @@ export class ChainListener implements IChainListener {
       progressedLogs.push(...newProgressedLogs);
       this.log.info(
         `Fetched ${progressedLogs.length} StateProgressed & ${newUpdatedLogs.length} ` +
-        `ChallengeUpdated logs from block ${fromBlock} to ${toBlock} (${index}/${nChunks})`,
+          `ChallengeUpdated logs from block ${fromBlock} to ${toBlock} (${index}/${nChunks})`,
       );
       if (toBlock === currentBlock) break;
     }
 
-    this.log.info(`Parsing ${progressedLogs.length} StateProgessed and ${updatedLogs.length} ChallengeUpdated event logs`);
+    this.log.info(
+      `Parsing ${progressedLogs.length} StateProgessed and ${updatedLogs.length} ChallengeUpdated event logs`,
+    );
 
-    progressedLogs.concat(updatedLogs).forEach(log => {
-      const parsed = new Interface(ChallengeRegistry.abi as any).parseLog(log);
+    progressedLogs.concat(updatedLogs).forEach((log) => {
+      const parsed = new Interface(ChallengeRegistry.abi).parseLog(log);
       const { identityHash, versionNumber } = parsed.values;
       switch (parsed.name) {
         case ChallengeEvents.ChallengeUpdated: {
@@ -170,7 +174,7 @@ export class ChainListener implements IChainListener {
   private removeChallengeRegistryListeners = (): void => {
     const challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
-      ChallengeRegistry.abi as any,
+      ChallengeRegistry.abi,
       this.provider,
     );
 

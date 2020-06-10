@@ -1,7 +1,7 @@
 import { Address, AssetId, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
 import { AppState } from "./contracts";
 
-import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
+import { AppABIEncodings, AppInstanceJson } from "./app";
 import { OutcomeType } from "./contracts";
 import { PublicParams, PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
@@ -104,7 +104,7 @@ type GetProposedAppInstanceParams = {
 };
 
 type GetProposedAppInstanceResult = {
-  appInstance: AppInstanceProposal;
+  appInstance: AppInstanceJson;
 };
 
 ////////////////////////////////////////
@@ -114,7 +114,7 @@ type GetProposedAppInstancesParams = {
 };
 
 type GetProposedAppInstancesResult = {
-  appInstances: AppInstanceProposal[];
+  appInstances: AppInstanceJson[];
 };
 
 ////////////////////////////////////////
@@ -177,6 +177,7 @@ type ProposeInstallResult = {
 type RejectInstallParams = {
   appIdentityHash: Bytes32;
   multisigAddress: Address;
+  reason?: string;
 };
 
 type RejectInstallResult = {};
@@ -199,11 +200,14 @@ type TakeActionResult = {
 type UninstallParams = {
   appIdentityHash: Bytes32;
   multisigAddress: Address;
+  action?: SolidityValueType;
 };
 
 type UninstallResult = {
   appIdentityHash: Bytes32;
   multisigAddress: Address;
+  uninstalledApp: AppInstanceJson;
+  action?: SolidityValueType;
 };
 
 ////////////////////////////////////////

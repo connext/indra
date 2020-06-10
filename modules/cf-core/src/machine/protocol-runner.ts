@@ -18,15 +18,15 @@ import { getProtocolFromName } from "../protocol";
 import { Context } from "../types";
 
 import { MiddlewareContainer } from "./middleware";
-import { StateChannel } from "../models";
+import { StateChannel, AppInstance } from "../models";
 import { RpcRouter } from "../rpc-router";
 
-function firstRecipientFromProtocolName(protocolName: ProtocolName) {
+const firstRecipientFromProtocolName = (protocolName: ProtocolName) => {
   if (Object.values(ProtocolNames).includes(protocolName)) {
     return "responderIdentifier";
   }
   throw new Error(`Unknown protocolName ${protocolName} passed to firstRecipientFromProtocolName`);
-}
+};
 
 export class ProtocolRunner {
   public middlewares: MiddlewareContainer;
@@ -121,7 +121,7 @@ export class ProtocolRunner {
     instruction: (context: Context) => AsyncIterableIterator<any>,
     message: ProtocolMessageData,
     preProtocolStateChannel?: StateChannel,
-  ): Promise<{ channel: StateChannel; data: any }> {
+  ): Promise<{ channel: StateChannel; data: any; appContext: AppInstance }> {
     const context: Context = {
       log: this.log,
       message,
@@ -144,11 +144,11 @@ export class ProtocolRunner {
   }
 }
 
-export function getOutgoingEventFailureDataFromProtocol(
+export const getOutgoingEventFailureDataFromProtocol = (
   protocol: ProtocolName,
   params: ProtocolParam,
   error: Error,
-): ProtocolEventMessage<any> {
+): ProtocolEventMessage<any> => {
   const baseEvent = {
     from: params.initiatorIdentifier,
     data: {
@@ -198,8 +198,8 @@ export function getOutgoingEventFailureDataFromProtocol(
       throw new Error(`Unexpected case: ${unexpected}`);
     }
   }
-}
+};
 
-export function emitOutgoingMessage(router: RpcRouter, msg: ProtocolEventMessage<any>) {
+export const emitOutgoingMessage = (router: RpcRouter, msg: ProtocolEventMessage<any>) => {
   return router.emit(msg["type"], msg, "outgoing");
-}
+};

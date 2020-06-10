@@ -6,7 +6,7 @@ import {
   PrivateKey,
   SignatureString,
 } from "@connext/types";
-import { arrayify, getAddress, hexlify, randomBytes, toUtf8String } from "ethers/utils";
+import { utils } from "ethers";
 import {
   arrayToBuffer,
   concatBuffers,
@@ -26,6 +26,8 @@ import {
 
 import { getAddressError, getHexStringError, isValidHexString } from "./hexStrings";
 
+const { arrayify, getAddress, hexlify, randomBytes, toUtf8String } = utils;
+
 export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
 
 ////////////////////////////////////////
@@ -39,8 +41,6 @@ export const bufferify = (input: Uint8Array | Buffer | string): Buffer =>
     : !Buffer.isBuffer(input)
     ? arrayToBuffer(arrayify(input))
     : input;
-
-export const getRandomPrivateKey = (): PrivateKey => hexlify(randomBytes(32));
 
 ////////////////////////////////////////
 // Validators
@@ -93,6 +93,16 @@ export const getAddressFromPublicKey = (publicKey: PublicKey): Address => {
 
 export const getAddressFromPrivateKey = (privateKey: PrivateKey): Address =>
   getAddressFromPublicKey(getPublicKeyFromPrivateKey(privateKey));
+
+////////////////////////////////////////
+// Generators
+
+export const getRandomPrivateKey = (): PrivateKey => hexlify(randomBytes(32));
+
+export const getRandomPublicKey = (): PublicKey =>
+  getPublicKeyFromPrivateKey(getRandomPrivateKey());
+
+export const getRandomSignature = getRandomPublicKey;
 
 ////////////////////////////////////////
 // Crypto functions

@@ -1,11 +1,11 @@
 import {
   AppInstanceJson,
-  AppInstanceProposal,
   ChallengeStatus,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
   ContractAddresses,
   IBackupService,
+  IStoreService,
   MinimalTransaction,
   OutcomeType,
   SetStateCommitmentJSON,
@@ -13,19 +13,26 @@ import {
   StateProgressedEventPayload,
   StoredAppChallenge,
   StoredAppChallengeStatus,
-  StoreFactoryOptions,
   StorePair,
 } from "@connext/types";
 import { ColorfulLogger, toBN, toBNJson, getRandomBytes32 } from "@connext/utils";
 import { expect, use } from "chai";
-import { One, AddressZero } from "ethers/constants";
-import { BigNumber, hexlify, randomBytes } from "ethers/utils";
 import MockAsyncStorage from "mock-async-storage";
 import { v4 as uuid } from "uuid";
+import { BigNumber, constants, utils } from "ethers";
 
-import { ConnextStore } from "./connextStore";
-import { StoreTypes } from "./types";
-import { KeyValueStorage } from "./wrappers";
+import {
+  getAsyncStore,
+  getFileStore,
+  getLocalStore,
+  getMemoryStore,
+  getPostgresStore,
+} from "../index";
+import { StoreService } from "../store";
+import { StoreOptions, StoreTypes } from "../types";
+
+const { One, AddressZero } = constants;
+const { hexlify, randomBytes } = utils;
 
 use(require("chai-as-promised"));
 use(require("chai-subset"));
@@ -41,134 +48,8 @@ const env = {
   logLevel: parseInt(process.env.LOG_LEVEL || "0", 10),
 };
 
-export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
-
-export const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
-
-export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
-  identityHash: getRandomBytes32(),
-  multisigAddress: TEST_STORE_ETH_ADDRESS,
-  initiatorIdentifier: "sender",
-  responderIdentifier: "receiver",
-  defaultTimeout: "0x00",
-  appInterface: {
-    addr: TEST_STORE_ETH_ADDRESS,
-    actionEncoding: `action encoding`,
-    stateEncoding: `state encoding`,
-  },
-  appSeqNo: 1,
-  latestVersionNumber: 2,
-  stateTimeout: "0x01",
-  latestState: {
-    counter: 4,
-  },
-  outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-  twoPartyOutcomeInterpreterParams: {
-    amount: { _hex: "0x42" },
-    playerAddrs: [AddressZero, AddressZero],
-    tokenAddress: AddressZero,
-  },
-};
-
-export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
-  abiEncodings: {
-    actionEncoding: `action encoding`,
-    stateEncoding: `state encoding`,
-  },
-  appDefinition: TEST_STORE_ETH_ADDRESS,
-  appSeqNo: 1,
-  identityHash: getRandomBytes32(),
-  initialState: {
-    counter: 4,
-  },
-  initiatorDeposit: "10",
-  initiatorDepositAssetId: TEST_STORE_ETH_ADDRESS,
-  outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
-  initiatorIdentifier: "address1",
-  responderIdentifier: "address2",
-  responderDeposit: "11",
-  responderDepositAssetId: TEST_STORE_ETH_ADDRESS,
-  defaultTimeout: "0x01",
-  stateTimeout: "0x00",
-  singleAssetTwoPartyCoinTransferInterpreterParams: {
-    limit: { _hex: "0x1" } as any,
-    tokenAddress: AddressZero,
-  },
-};
-
-export const TEST_STORE_CHANNEL: StateChannelJSON = {
-  schemaVersion: 1,
-  multisigAddress: TEST_STORE_ETH_ADDRESS,
-  addresses: {
-    MinimumViableMultisig: TEST_STORE_ETH_ADDRESS,
-    ProxyFactory: TEST_STORE_ETH_ADDRESS,
-  },
-  userIdentifiers: ["address1", "address2"],
-  proposedAppInstances: [[TEST_STORE_PROPOSAL.identityHash, TEST_STORE_PROPOSAL]],
-  appInstances: [[TEST_STORE_APP_INSTANCE.identityHash, TEST_STORE_APP_INSTANCE]],
-  freeBalanceAppInstance: { ...TEST_STORE_APP_INSTANCE, identityHash: getRandomBytes32() },
-  monotonicNumProposedApps: 2,
-};
-
-export const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
-  to: TEST_STORE_ETH_ADDRESS,
-  value: One,
-  data: hexlify(randomBytes(64)),
-};
-
-export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
-  appIdentity: {
-    channelNonce: toBN(TEST_STORE_APP_INSTANCE.appSeqNo),
-    participants: [
-      TEST_STORE_APP_INSTANCE.initiatorIdentifier,
-      TEST_STORE_APP_INSTANCE.responderIdentifier,
-    ],
-    multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
-    appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
-    defaultTimeout: toBN(35),
-  },
-  appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
-  appStateHash: "setStateAppStateHash",
-  challengeRegistryAddress: TEST_STORE_ETH_ADDRESS,
-  stateTimeout: toBNJson(17),
-  versionNumber: toBNJson(23),
-  signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
-};
-
-export const TEST_STORE_CONDITIONAL_COMMITMENT: ConditionalTransactionCommitmentJSON = {
-  appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
-  contractAddresses: {} as ContractAddresses,
-  freeBalanceAppIdentityHash: "conditionalFreeBalance",
-  interpreterAddr: TEST_STORE_ETH_ADDRESS,
-  interpreterParams: "conditionalInterpreter",
-  multisigAddress: TEST_STORE_ETH_ADDRESS,
-  multisigOwners: TEST_STORE_CHANNEL.userIdentifiers,
-  signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
-};
-
-export const TEST_STORE_APP_CHALLENGE: StoredAppChallenge = {
-  identityHash: TEST_STORE_APP_INSTANCE.identityHash,
-  appStateHash: getRandomBytes32(),
-  versionNumber: toBN(1),
-  finalizesAt: toBN(3),
-  status: StoredAppChallengeStatus.IN_DISPUTE,
-};
-
-export const TEST_STORE_STATE_PROGRESSED_EVENT: StateProgressedEventPayload = {
-  identityHash: TEST_STORE_APP_INSTANCE.identityHash,
-  action: getRandomBytes32(),
-  versionNumber: toBN(1),
-  timeout: toBN(3),
-  turnTaker: TEST_STORE_CHANNEL.userIdentifiers[0],
-  signature: getRandomBytes32(),
-};
-
-export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = {
-  identityHash: TEST_STORE_APP_INSTANCE.identityHash,
-  appStateHash: getRandomBytes32(),
-  versionNumber: toBN(1),
-  finalizesAt: toBN(3),
-  status: ChallengeStatus.IN_DISPUTE,
+type TestStoreOptions = StoreOptions & {
+  fileDir?: string;
 };
 
 ////////////////////////////////////////
@@ -176,38 +57,32 @@ export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = 
 
 export const postgresConnectionUri = `postgres://${env.user}:${env.password}@${env.host}:${env.port}/${env.database}`;
 
-export const createKeyValueStore = async (
+export const createStore = async (
   type: StoreTypes,
-  opts: StoreFactoryOptions = {},
-): Promise<KeyValueStorage> => {
-  const cStore = await createConnextStore(type, opts);
-  await cStore.internalStore.init();
-  await cStore.internalStore.clear();
-  return cStore.internalStore;
-};
-
-export const createConnextStore = async (
-  type: StoreTypes,
-  opts: StoreFactoryOptions = {},
-): Promise<ConnextStore> => {
-  if (!Object.values(StoreTypes).includes(type)) {
-    throw new Error(`Unrecognized type: ${type}`);
-  }
+  opts: TestStoreOptions = {},
+): Promise<IStoreService> => {
   opts.logger = new ColorfulLogger(`ConnextStore_${type}`, env.logLevel, true);
-  if (type === StoreTypes.Postgres) {
-    opts.sequelize = opts.sequelize || postgresConnectionUri;
-  } else if (type === StoreTypes.AsyncStorage) {
-    opts.storage = new MockAsyncStorage();
+  let store: IStoreService;
+  if (type === StoreTypes.AsyncStorage) {
+    store = getAsyncStore(new MockAsyncStorage(), opts);
+  } else if (type === StoreTypes.File) {
+    store = getFileStore(opts.fileDir || "./.test-store", opts);
+  } else if (type === StoreTypes.LocalStorage) {
+    store = getLocalStore(opts);
+  } else if (type === StoreTypes.Memory) {
+    store = getMemoryStore(opts);
+  } else if (type === StoreTypes.Postgres) {
+    store = getPostgresStore(opts.sequelize || postgresConnectionUri, opts);
+  } else {
+    throw new Error(`${type} should be one of ${Object.keys(StoreTypes)}`);
   }
-  const cStore = new ConnextStore(type, opts);
-  await cStore.internalStore.init();
-  expect(cStore).to.be.instanceOf(ConnextStore);
-  await cStore.clear();
-  return cStore;
+  await store.init();
+  await store.clear();
+  return store;
 };
 
 export const setAndGet = async (
-  store: KeyValueStorage,
+  store: StoreService,
   pair: StorePair = TEST_STORE_PAIR,
 ): Promise<void> => {
   await store.setItem(pair.path, pair.value);
@@ -220,7 +95,7 @@ export const setAndGet = async (
 };
 
 export const setAndGetMultiple = async (
-  store: KeyValueStorage,
+  store: StoreService,
   length: number = 10,
 ): Promise<void> => {
   const pairs = Array(length)
@@ -237,7 +112,7 @@ export const setAndGetMultiple = async (
 };
 
 export const testAsyncStorageKey = async (
-  storage: KeyValueStorage,
+  storage: StoreService,
   asyncStorageKey: string,
 ): Promise<void> => {
   const keys = await storage.getKeys();
@@ -286,3 +161,142 @@ export class MockBackupService implements IBackupService {
     return this.storage.set(`${this.prefix}${pair.path}`, pair.value);
   }
 }
+
+////////////////////////////////////////
+// Example Data
+
+export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
+
+export const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
+
+export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
+  identityHash: getRandomBytes32(),
+  multisigAddress: TEST_STORE_ETH_ADDRESS,
+  initiatorIdentifier: "sender",
+  initiatorDeposit: "10",
+  initiatorDepositAssetId: TEST_STORE_ETH_ADDRESS,
+  responderIdentifier: "receiver",
+  responderDeposit: "11",
+  responderDepositAssetId: TEST_STORE_ETH_ADDRESS,
+  defaultTimeout: "0x00",
+  appDefinition: TEST_STORE_ETH_ADDRESS,
+  abiEncodings: {
+    actionEncoding: `action encoding`,
+    stateEncoding: `state encoding`,
+  },
+  appSeqNo: 1,
+  latestVersionNumber: 2,
+  stateTimeout: "0x01",
+  latestState: {
+    counter: 4,
+  },
+  outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+  outcomeInterpreterParameters: {
+    amount: { _hex: "0x42", _isBigNumber: true } as any,
+    playerAddrs: [AddressZero, AddressZero],
+    tokenAddress: AddressZero,
+  },
+};
+
+export const TEST_STORE_PROPOSAL: AppInstanceJson = {
+  multisigAddress: TEST_STORE_ETH_ADDRESS,
+  abiEncodings: {
+    actionEncoding: `action encoding`,
+    stateEncoding: `state encoding`,
+  },
+  appDefinition: TEST_STORE_ETH_ADDRESS,
+  appSeqNo: 1,
+  identityHash: getRandomBytes32(),
+  latestState: {
+    counter: 4,
+  },
+  latestVersionNumber: 1,
+  initiatorDeposit: "10",
+  initiatorDepositAssetId: TEST_STORE_ETH_ADDRESS,
+  outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
+  initiatorIdentifier: "address1",
+  responderIdentifier: "address2",
+  responderDeposit: "11",
+  responderDepositAssetId: TEST_STORE_ETH_ADDRESS,
+  defaultTimeout: "0x01",
+  stateTimeout: "0x00",
+  outcomeInterpreterParameters: {
+    limit: { _hex: "0x1", _isBigNumber: true } as any,
+    tokenAddress: AddressZero,
+  },
+};
+
+export const TEST_STORE_CHANNEL: StateChannelJSON = {
+  schemaVersion: 1,
+  multisigAddress: TEST_STORE_ETH_ADDRESS,
+  addresses: {
+    MinimumViableMultisig: TEST_STORE_ETH_ADDRESS,
+    ProxyFactory: TEST_STORE_ETH_ADDRESS,
+  },
+  userIdentifiers: ["address1", "address2"],
+  proposedAppInstances: [[TEST_STORE_PROPOSAL.identityHash, TEST_STORE_PROPOSAL]],
+  appInstances: [[TEST_STORE_APP_INSTANCE.identityHash, TEST_STORE_APP_INSTANCE]],
+  freeBalanceAppInstance: { ...TEST_STORE_APP_INSTANCE, identityHash: getRandomBytes32() },
+  monotonicNumProposedApps: 2,
+};
+
+export const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
+  to: TEST_STORE_ETH_ADDRESS,
+  value: One,
+  data: hexlify(randomBytes(64)),
+};
+
+export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
+  appIdentity: {
+    channelNonce: toBN(TEST_STORE_APP_INSTANCE.appSeqNo),
+    participants: [
+      TEST_STORE_APP_INSTANCE.initiatorIdentifier,
+      TEST_STORE_APP_INSTANCE.responderIdentifier,
+    ],
+    multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
+    appDefinition: TEST_STORE_APP_INSTANCE.appDefinition,
+    defaultTimeout: toBN(35),
+  },
+  appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
+  appStateHash: "setStateAppStateHash",
+  challengeRegistryAddress: TEST_STORE_ETH_ADDRESS,
+  stateTimeout: toBNJson(17),
+  versionNumber: toBNJson(23),
+  signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
+};
+
+export const TEST_STORE_CONDITIONAL_COMMITMENT: ConditionalTransactionCommitmentJSON = {
+  appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
+  contractAddresses: {} as ContractAddresses,
+  freeBalanceAppIdentityHash: "conditionalFreeBalance",
+  interpreterAddr: TEST_STORE_ETH_ADDRESS,
+  interpreterParams: "conditionalInterpreter",
+  multisigAddress: TEST_STORE_ETH_ADDRESS,
+  multisigOwners: TEST_STORE_CHANNEL.userIdentifiers,
+  signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
+};
+
+export const TEST_STORE_APP_CHALLENGE: StoredAppChallenge = {
+  identityHash: TEST_STORE_APP_INSTANCE.identityHash,
+  appStateHash: getRandomBytes32(),
+  versionNumber: toBN(1),
+  finalizesAt: toBN(3),
+  status: StoredAppChallengeStatus.IN_DISPUTE,
+};
+
+export const TEST_STORE_STATE_PROGRESSED_EVENT: StateProgressedEventPayload = {
+  identityHash: TEST_STORE_APP_INSTANCE.identityHash,
+  action: getRandomBytes32(),
+  versionNumber: toBN(1),
+  timeout: toBN(3),
+  turnTaker: TEST_STORE_CHANNEL.userIdentifiers[0],
+  signature: getRandomBytes32(),
+};
+
+export const TEST_STORE_CHALLENGE_UPDATED_EVENT: ChallengeUpdatedEventPayload = {
+  identityHash: TEST_STORE_APP_INSTANCE.identityHash,
+  appStateHash: getRandomBytes32(),
+  versionNumber: toBN(1),
+  finalizesAt: toBN(3),
+  status: ChallengeStatus.IN_DISPUTE,
+};

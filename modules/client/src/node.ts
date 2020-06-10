@@ -12,14 +12,17 @@ import {
   AsyncNodeInitializationParameters,
   VerifyNonceDtoType,
   Address,
+  ConditionalTransferTypes,
 } from "@connext/types";
 import { bigNumberifyJson, logTime, stringify, formatMessagingUrl } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
-import { getAddress, Transaction } from "ethers/utils";
+import { utils, providers } from "ethers";
 import { v4 as uuid } from "uuid";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { MessagingService } from "@connext/messaging";
+
+const { getAddress } = utils;
 
 const sendFailed = "Failed to send message";
 
@@ -209,6 +212,13 @@ export class NodeApiClient implements INodeApiClient {
     return (await this.send(`${this.userIdentifier}.transfer.get-pending`)) || [];
   }
 
+  public async installPendingTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers> {
+    const extendedTimeout = NATS_TIMEOUT * 5;
+    return (
+      (await this.send(`${this.userIdentifier}.transfer.install-pending`, extendedTimeout)) || []
+    );
+  }
+
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
     return this.send(`${this.userIdentifier}.swap-rate.${from}.${to}`);
   }
@@ -255,6 +265,22 @@ export class NodeApiClient implements INodeApiClient {
     return this.send(`${this.userIdentifier}.transfer.get-signed`, {
       paymentId,
     });
+  }
+
+  public async installConditionalTransferReceiverApp(
+    paymentId: string,
+    conditionType: ConditionalTransferTypes,
+  ): Promise<NodeResponses.InstallConditionalTransferReceiverApp> {
+    this.log.info(`Start installConditionalTransferReceiverApp for ${paymentId}: ${conditionType}`);
+    const extendedTimeout = NATS_TIMEOUT * 5; // 55s
+    return this.send(
+      `${this.userIdentifier}.transfer.install-receiver`,
+      {
+        paymentId,
+        conditionType,
+      },
+      extendedTimeout,
+    );
   }
 
   public async resolveLinkedTransfer(
@@ -324,7 +350,7 @@ export class NodeApiClient implements INodeApiClient {
     return this.send(`${this.userIdentifier}.channel.restore`);
   }
 
-  public async getLatestWithdrawal(): Promise<Transaction> {
+  public async getLatestWithdrawal(): Promise<providers.TransactionRequest> {
     return this.send(`${this.userIdentifier}.channel.latestWithdrawal`);
   }
 
@@ -360,7 +386,13 @@ export class NodeApiClient implements INodeApiClient {
       throw new Error(`${sendFailed}: ${e.message}`);
     }
     const parsedData = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
-    let error = msg ? (parsedData ? (parsedData.response ? parsedData.response.err : "") : "") : "";
+    const error = msg
+      ? parsedData
+        ? parsedData.response
+          ? parsedData.response.err
+          : ""
+        : ""
+      : "";
     if (!parsedData) {
       this.log.info(`Could not parse data, is this message malformed? ${stringify(msg)}`);
       return undefined;
@@ -370,11 +402,7 @@ export class NodeApiClient implements INodeApiClient {
       throw new Error(`Error sending request to subject ${subject}. Message: ${stringify(msg)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
-    logTime(
-      this.log,
-      start,
-      `Node responded to ${subject} request`,
-    );
+    logTime(this.log, start, `Node responded to ${subject} request`);
     return !response || isEmptyObj ? undefined : bigNumberifyJson(response);
   }
 }

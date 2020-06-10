@@ -1,6 +1,5 @@
 import {
   AppInstanceJson,
-  AppInstanceProposal,
   ChallengeStatus,
   ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
@@ -12,71 +11,48 @@ import {
   StateProgressedEventPayload,
   StoredAppChallenge,
   StoredAppChallengeStatus,
+  SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
-import { deBigNumberifyJson, getRandomBytes32, getRandomAddress, getRandomChannelSigner } from "@connext/utils";
-import { AddressZero, HashZero, Zero, One } from "ethers/constants";
-import { Wallet } from "ethers";
-import { hexlify, bigNumberify } from "ethers/utils";
-import { randomBytes } from "crypto";
+import {
+  deBigNumberifyJson,
+  getRandomAddress,
+  getRandomBytes32,
+  getRandomIdentifier,
+  getRandomSignature,
+} from "@connext/utils";
+import { constants, utils } from "ethers";
 
-export const generateRandomAddress = () => Wallet.createRandom().address;
-
-export const generateRandomIdentifier = () => getRandomChannelSigner().publicIdentifier;
-
-export const generateRandomBytes32 = () => hexlify(randomBytes(32));
-
-export const generateRandomSignature = () => hexlify(randomBytes(65));
+const { AddressZero, HashZero, Zero, One } = constants;
+const { defaultAbiCoder } = utils;
 
 export const createAppInstanceJson = (
   overrides: Partial<AppInstanceJson> = {},
 ): AppInstanceJson => {
   return {
-    appInterface: {
-      actionEncoding: null,
-      addr: AddressZero,
-      stateEncoding: "",
+    abiEncodings: {
+      actionEncoding: `uint256`,
+      stateEncoding: "uint256",
     },
-    appSeqNo: 0,
-    defaultTimeout: Zero.toHexString(),
-    identityHash: generateRandomBytes32(),
-    latestState: {},
-    stateTimeout: bigNumberify(1000).toHexString(),
-    latestVersionNumber: 0,
-    multisigAddress: generateRandomAddress(),
-    outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-    initiatorIdentifier: generateRandomIdentifier(),
-    responderIdentifier: generateRandomIdentifier(),
-    multiAssetMultiPartyCoinTransferInterpreterParams: null,
-    singleAssetTwoPartyCoinTransferInterpreterParams: null,
-    twoPartyOutcomeInterpreterParams: null,
-    ...overrides,
-  };
-};
-
-export const createAppInstanceProposal = (
-  overrides: Partial<AppInstanceProposal> = {},
-): AppInstanceProposal => {
-  return {
     appDefinition: AddressZero,
     appSeqNo: 0,
-    identityHash: generateRandomBytes32(),
-    abiEncodings: {
-      actionEncoding: "",
-      stateEncoding: "",
-    },
-    initialState: {},
-    initiatorDeposit: "0x00",
-    initiatorDepositAssetId: AddressZero,
-    initiatorIdentifier: generateRandomIdentifier(),
-    responderIdentifier: generateRandomIdentifier(),
-    responderDeposit: "0x00",
-    responderDepositAssetId: AddressZero,
-    defaultTimeout: "0x00",
-    stateTimeout: "0x00",
-    multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
-    singleAssetTwoPartyCoinTransferInterpreterParams: null,
-    twoPartyOutcomeInterpreterParams: undefined,
+    defaultTimeout: Zero.toHexString(),
+    identityHash: getRandomBytes32(),
+    initiatorIdentifier: getRandomIdentifier(),
+    responderIdentifier: getRandomIdentifier(),
+    latestState: {},
+    latestVersionNumber: 0,
+    multisigAddress: getRandomAddress(),
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+    outcomeInterpreterParameters: {
+      limit: { _hex: Zero.toHexString(), _isBigNumber: true },
+      tokenAddress: AddressZero,
+    } as SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
+    initiatorDeposit: Zero.toString(),
+    initiatorDepositAssetId: AddressZero,
+    responderDeposit: Zero.toString(),
+    responderDepositAssetId: AddressZero,
+    stateTimeout: Zero.toHexString(),
+    meta: null,
     ...overrides,
   };
 };
@@ -84,7 +60,7 @@ export const createAppInstanceProposal = (
 export const createStateChannelJSON = (
   overrides: Partial<StateChannelJSON> = {},
 ): StateChannelJSON => {
-  const userIdentifiers = [generateRandomAddress(), generateRandomAddress()];
+  const userIdentifiers = [getRandomAddress(), getRandomAddress()];
   const channelData: Omit<StateChannelJSON, "freeBalanceAppInstance"> = {
     addresses: {
       MinimumViableMultisig: "",
@@ -92,7 +68,7 @@ export const createStateChannelJSON = (
     },
     appInstances: [],
     monotonicNumProposedApps: 0,
-    multisigAddress: generateRandomAddress(),
+    multisigAddress: getRandomAddress(),
     proposedAppInstances: [],
     schemaVersion: 1,
     userIdentifiers,
@@ -102,9 +78,10 @@ export const createStateChannelJSON = (
   return {
     ...channelData,
     freeBalanceAppInstance: createAppInstanceJson({
-      multisigAddress: channelData.multisigAddress,
       initiatorIdentifier: channelData.userIdentifiers[0],
+      multisigAddress: channelData.multisigAddress,
       responderIdentifier: channelData.userIdentifiers[1],
+      meta: null,
       ...overrides.freeBalanceAppInstance,
     }),
   };
@@ -116,15 +93,15 @@ export const createSetStateCommitmentJSON = (
   return deBigNumberifyJson({
     appIdentity: {
       channelNonce: Zero,
-      participants: [generateRandomAddress(), generateRandomAddress()],
-      multisigAddress: generateRandomAddress(),
+      participants: [getRandomAddress(), getRandomAddress()],
+      multisigAddress: getRandomAddress(),
       appDefinition: AddressZero,
       defaultTimeout: Zero,
     },
-    appIdentityHash: generateRandomBytes32(),
-    appStateHash: generateRandomBytes32(),
+    appIdentityHash: getRandomBytes32(),
+    appStateHash: getRandomBytes32(),
     challengeRegistryAddress: AddressZero,
-    signatures: [generateRandomSignature(), generateRandomSignature()],
+    signatures: [getRandomSignature(), getRandomSignature()],
     stateTimeout: Zero,
     versionNumber: Zero,
     ...overrides,
@@ -135,14 +112,14 @@ export const createConditionalTransactionCommitmentJSON = (
   overrides: Partial<ConditionalTransactionCommitmentJSON> = {},
 ): ConditionalTransactionCommitmentJSON => {
   return {
-    appIdentityHash: generateRandomBytes32(),
-    freeBalanceAppIdentityHash: generateRandomBytes32(),
+    appIdentityHash: getRandomBytes32(),
+    freeBalanceAppIdentityHash: getRandomBytes32(),
     interpreterAddr: AddressZero,
     interpreterParams: "",
-    multisigAddress: generateRandomAddress(),
-    multisigOwners: [generateRandomAddress(), generateRandomAddress()],
+    multisigAddress: getRandomAddress(),
+    multisigOwners: [getRandomAddress(), getRandomAddress()],
     contractAddresses: {} as ContractAddresses,
-    signatures: [generateRandomSignature(), generateRandomSignature()],
+    signatures: [getRandomSignature(), getRandomSignature()],
     ...overrides,
   };
 };
@@ -176,7 +153,7 @@ export const createStateProgressedEventPayload = (
 ): StateProgressedEventPayload => {
   return {
     identityHash: getRandomBytes32(),
-    action:"0x",
+    action: defaultAbiCoder.encode(["uint256"], [One]),
     versionNumber: One,
     timeout: Zero,
     turnTaker: getRandomAddress(),

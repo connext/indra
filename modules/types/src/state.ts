@@ -1,4 +1,4 @@
-import { AppInstanceProposal, AppInstanceJson } from "./app";
+import { AppInstanceJson } from "./app";
 import { Address, Bytes32, PublicIdentifier } from "./basic";
 import { CriticalStateChannelAddresses } from "./contracts";
 import { SetStateCommitmentJSON } from "./commitments";
@@ -12,7 +12,7 @@ export type StateChannelJSON = {
   readonly multisigAddress: Address; // TODO: rm & calculate from critical addresses on rehydrate?
   readonly addresses: CriticalStateChannelAddresses;
   readonly userIdentifiers: PublicIdentifier[];
-  readonly proposedAppInstances: [Bytes32, AppInstanceProposal][];
+  readonly proposedAppInstances: [Bytes32, AppInstanceJson][];
   readonly appInstances: [Bytes32, AppInstanceJson][];
   readonly freeBalanceAppInstance: AppInstanceJson | undefined;
   readonly monotonicNumProposedApps: number;

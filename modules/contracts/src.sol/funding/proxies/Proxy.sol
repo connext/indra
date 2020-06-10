@@ -1,4 +1,5 @@
-pragma solidity 0.6.7;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.6.4;
 
 
 /// @title Proxy - Generic proxy contract allows to execute all transactions applying the code of a master contract.

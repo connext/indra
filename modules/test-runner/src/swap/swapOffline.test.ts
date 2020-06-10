@@ -6,8 +6,7 @@ import {
   EventName,
   EventNames,
 } from "@connext/types";
-import { AddressZero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, constants } from "ethers";
 
 import {
   APP_PROTOCOL_TOO_LONG,
@@ -29,6 +28,8 @@ import {
 } from "../util";
 import { addressBook } from "@connext/contracts";
 import { getRandomChannelSigner, delay } from "@connext/utils";
+
+const { AddressZero } = constants;
 
 const fundChannelAndSwap = async (opts: {
   messagingConfig?: Partial<ClientTestMessagingInputOpts>;
@@ -116,7 +117,7 @@ const fundChannelAndSwap = async (opts: {
 };
 
 describe.skip("Swap offline", () => {
-  const swapAppAddr = addressBook[4447].SimpleTwoPartySwapApp.address;
+  const swapAppAddr = addressBook[1337].SimpleTwoPartySwapApp.address;
   it("Bot A tries to propose swap app, but gets no response from the node", async () => {
     const messagingConfig = {
       ceiling: { [SEND]: 0 },
@@ -202,8 +203,8 @@ describe.skip("Swap offline", () => {
     await (providedClient.messaging as TestMessagingService)!.subscribe(
       `${providedClient.nodeIdentifier}.channel.${providedClient.multisigAddress}.app-instance.*.install`,
       async (msg: any) => {
-        const { appInterface } = msg.data;
-        if (appInterface.addr !== swapAppAddr) {
+        const { appDefinition } = msg.data;
+        if (appDefinition !== swapAppAddr) {
           return;
         }
         // we know client has swap app installed,

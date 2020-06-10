@@ -1,3 +1,5 @@
+import { providers } from "ethers";
+
 import {
   AppChallenge,
   ChallengeEvent,
@@ -10,14 +12,13 @@ import {
 } from "./contracts";
 import { StateChannelJSON } from "./state";
 import { Address, Bytes32 } from "./basic";
-import { AppInstanceJson, AppInstanceProposal } from "./app";
+import { AppInstanceJson } from "./app";
 import {
   ConditionalTransactionCommitmentJSON,
   MinimalTransaction,
   SetStateCommitmentJSON,
 } from "./commitments";
 import { IChannelSigner } from "./crypto";
-import { JsonRpcProvider, TransactionReceipt } from "ethers/providers";
 import { ILoggerService, ILogger } from "./logger";
 
 ////////////////////////////////////////
@@ -25,7 +26,7 @@ import { ILoggerService, ILogger } from "./logger";
 
 export type WatcherInitOptions = {
   signer: IChannelSigner | string; // wallet or pk
-  provider: JsonRpcProvider | string;
+  provider: providers.JsonRpcProvider | string;
   context: NetworkContext;
   store: IWatcherStoreService;
   logger?: ILoggerService | ILogger;
@@ -36,7 +37,7 @@ export type WatcherInitOptions = {
 // Watcher Events
 
 type BaseChallengeTransactionCompletedEvent = {
-  transaction: TransactionReceipt;
+  transaction: providers.TransactionReceipt;
   appInstanceId: Bytes32;
   multisigAddress: Address;
 };
@@ -126,8 +127,8 @@ export type WatcherEventData = {
 // Watcher interface
 
 export type ChallengeInitiatedResponse = {
-  freeBalanceChallenge: TransactionReceipt;
-  appChallenge: TransactionReceipt;
+  freeBalanceChallenge: providers.TransactionReceipt;
+  appChallenge: providers.TransactionReceipt;
 };
 
 export interface IWatcher {
@@ -148,7 +149,10 @@ export interface IWatcher {
   enable(): Promise<void>;
   disable(): Promise<void>;
   initiate(appIdentityHash: string): Promise<ChallengeInitiatedResponse>;
-  cancel(appIdentityHash: string, req: SignedCancelChallengeRequest): Promise<TransactionReceipt>;
+  cancel(
+    appIdentityHash: string,
+    req: SignedCancelChallengeRequest,
+  ): Promise<providers.TransactionReceipt>;
 }
 
 ////////////////////////////////////////
@@ -207,10 +211,7 @@ export interface IWatcherStoreService {
   getChallengeUpdatedEvents(appIdentityHash: Bytes32): Promise<ChallengeUpdatedEventPayload[]>;
   createChallengeUpdatedEvent(event: ChallengeUpdatedEventPayload): Promise<void>;
 
-  addOnchainAction(
-    appIdentityHash: Bytes32,
-    provider: JsonRpcProvider,
-  ): Promise<void>;
+  addOnchainAction(appIdentityHash: Bytes32, provider: providers.JsonRpcProvider): Promise<void>;
 
   ////////////////////////////////////////
   //// Channel data
@@ -228,7 +229,7 @@ export interface IWatcherStoreService {
   getAppInstance(appIdentityHash: Bytes32): Promise<AppInstanceJson | undefined>;
 
   // App proposals
-  getAppProposal(appIdentityHash: Bytes32): Promise<AppInstanceProposal | undefined>;
+  getAppProposal(appIdentityHash: Bytes32): Promise<AppInstanceJson | undefined>;
 
   // Free balance
   getFreeBalance(multisigAddress: Address): Promise<AppInstanceJson | undefined>;

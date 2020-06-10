@@ -1,10 +1,11 @@
 import { SolidityValueType } from "@connext/types";
-import { Contract, ContractFactory } from "ethers";
-import { defaultAbiCoder } from "ethers/utils";
+import { Contract, ContractFactory, utils } from "ethers";
 
 import { TicTacToeApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
+
+const { defaultAbiCoder } = utils;
 
 type TicTacToeAppState = {
   versionNumber: number;
@@ -23,7 +24,7 @@ describe("TicTacToeApp", () => {
   let ticTacToe: Contract;
 
   const computeOutcome = async (state: SolidityValueType) => {
-    return ticTacToe.functions.computeOutcome(encodeState(state));
+    return ticTacToe.computeOutcome(encodeState(state));
   };
 
   const encodeState = (state: SolidityValueType) => {
@@ -61,16 +62,12 @@ describe("TicTacToeApp", () => {
   };
 
   const applyAction = async (state: SolidityValueType, action: SolidityValueType) => {
-    return ticTacToe.functions.applyAction(encodeState(state), encodeAction(action));
+    return ticTacToe.applyAction(encodeState(state), encodeAction(action));
   };
 
   before(async () => {
     const wallet = (await provider.getWallets())[0];
-    ticTacToe = await new ContractFactory(
-      TicTacToeApp.abi,
-      TicTacToeApp.bytecode,
-      wallet,
-    ).deploy();
+    ticTacToe = await new ContractFactory(TicTacToeApp.abi, TicTacToeApp.bytecode, wallet).deploy();
   });
 
   describe("applyAction", () => {

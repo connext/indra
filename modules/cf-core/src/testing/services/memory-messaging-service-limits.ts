@@ -7,20 +7,20 @@ export type MessagingLimit = { to: string; limit: number };
 export type MessagingLimitAndCount = MessagingLimit & { count: number };
 
 export class MemoryMessagingServiceWithLimits implements IMessagingService {
-  public eventEmitter: EventEmitter;
   private connected: boolean = true;
-  private messagesSent = 0;
+  private messageCount = 0;
   private logger: Logger;
+  private isSend: boolean;
 
   constructor(
-    eventEmitter: EventEmitter = new EventEmitter(),
-    private readonly messagesToSend: number = 0,
-    private readonly protocol?: ProtocolName,
+    public eventEmitter: EventEmitter = new EventEmitter(),
+    private limit: number = 0,
+    private protocol?: ProtocolName,
+    sendOrReceive: "send" | "receive" = "send",
     private readonly name: string = "Node",
   ) {
-    this.messagesToSend = messagesToSend;
-    this.eventEmitter = eventEmitter;
     this.logger = new Logger("CreateClient", env.logLevel, true, this.name);
+    this.isSend = sendOrReceive === "send";
   }
 
   async send(to: string, msg: GenericMessage): Promise<void> {
@@ -28,21 +28,32 @@ export class MemoryMessagingServiceWithLimits implements IMessagingService {
       this.logger.info(`Messaging service disconnected, not sending message`);
       return;
     }
-    this.eventEmitter.emit(to, msg);
-    if (this.protocol && msg.data.protocol === this.protocol) {
-      this.messagesSent += 1;
-      if (this.messagesSent >= this.messagesToSend) {
-        this.logger.info(`Disconnecting after ${this.messagesSent} messages sent`);
+    if (this.protocol && msg.data.protocol === this.protocol && this.isSend) {
+      if (this.messageCount >= this.limit) {
+        this.logger.info(`Disconnecting after ${this.messageCount} ${this.protocol} messages sent`);
         await this.disconnect();
+        return;
       }
+      this.messageCount += 1;
     }
+    this.eventEmitter.emit(to, msg);
   }
 
   async onReceive(address: string, callback: (msg: GenericMessage) => void) {
-    this.eventEmitter.on(address, (msg) => {
+    this.eventEmitter.on(address, async (msg) => {
       if (!this.connected) {
         this.logger.info(`Messaging service disconnected, not responding to message`);
         return;
+      }
+      if (this.protocol && msg.data.protocol === this.protocol && !this.isSend) {
+        if (this.messageCount >= this.limit) {
+          this.logger.info(
+            `Disconnecting after ${this.messageCount} ${this.protocol} messages sent`,
+          );
+          await this.disconnect();
+          return;
+        }
+        this.messageCount += 1;
       }
       callback(msg);
     });
@@ -53,6 +64,11 @@ export class MemoryMessagingServiceWithLimits implements IMessagingService {
   }
   async disconnect() {
     this.connected = false;
+  }
+  clearLimits() {
+    this.limit = 10_000;
+    this.protocol = undefined;
+    this.connected = true;
   }
   async flush() {}
   async publish(subject: string, data: any) {}

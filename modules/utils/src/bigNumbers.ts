@@ -1,15 +1,16 @@
 import { BigNumberJson } from "@connext/types";
-import { BigNumber, BigNumberish, bigNumberify } from "ethers/utils";
+import { BigNumber, BigNumberish } from "ethers";
 
 export const isBN = BigNumber.isBigNumber;
 
 export const isBNJson = (value: any): boolean => !isBN(value) && !!value._hex;
 
 export const toBN = (n: BigNumberish | BigNumberJson): BigNumber =>
-  bigNumberify(n && (n as BigNumberJson)._hex ? (n as BigNumberJson)._hex : n.toString());
+  BigNumber.from(n && (n as BigNumberJson)._hex ? (n as BigNumberJson)._hex : n.toString());
 
 export const toBNJson = (n: BigNumberish | BigNumberJson): BigNumberJson => ({
   _hex: toBN(n).toHexString(),
+  _isBigNumber: true,
 });
 
 export const getBigNumberError = (value: any): string | undefined =>

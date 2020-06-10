@@ -1,14 +1,7 @@
-import {
-  IConnextClient,
-  BigNumberish,
-  BigNumber,
-  DepositAppState,
-  EventNames,
-} from "@connext/types";
+import { IConnextClient, BigNumberish, DepositAppState, EventNames } from "@connext/types";
 import { delay, toBN } from "@connext/utils";
-import { Contract } from "ethers";
-import { AddressZero, Zero, One } from "ethers/constants";
-import tokenAbi from "human-standard-token-abi";
+import { ERC20 } from "@connext/contracts";
+import { BigNumber, Contract, constants } from "ethers";
 
 import {
   expect,
@@ -21,6 +14,8 @@ import {
 } from "../util";
 import { createClient } from "../util/client";
 import { getOnchainBalance, ethProvider } from "../util/ethprovider";
+
+const { AddressZero, Zero, One } = constants;
 
 describe("Deposits", () => {
   let client: IConnextClient;
@@ -51,7 +46,7 @@ describe("Deposits", () => {
     const onchainBalance: BigNumber =
       expected.assetId === AddressZero
         ? await ethProvider.getBalance(client.multisigAddress)
-        : await new Contract(expected.assetId!, tokenAbi, ethProvider).functions.balanceOf(
+        : await new Contract(expected.assetId!, ERC20.abi, ethProvider).balanceOf(
             client.multisigAddress,
           );
     expect(onchainBalance.eq(toBN(expected.node).add(toBN(expected.client))));
@@ -163,7 +158,7 @@ describe("Deposits", () => {
     const getDepositApps = async () => {
       const apps = await receiver.getAppInstances();
       return apps.filter(
-        (app) => app.appInterface.addr === client.config.contractAddresses.DepositApp,
+        (app) => app.appDefinition === client.config.contractAddresses.DepositApp,
       )[0];
     };
     while (!(await getDepositApps())) {

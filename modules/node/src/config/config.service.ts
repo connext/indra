@@ -1,13 +1,13 @@
 import { ChannelSigner } from "@connext/utils";
 import { ContractAddresses, IChannelSigner, MessagingConfig, SwapRate } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { Wallet } from "ethers";
-import { AddressZero, Zero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
-import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
+import { Wallet, providers, constants, utils } from "ethers";
 import { Memoize } from "typescript-memoize";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
+
+const { AddressZero, Zero } = constants;
+const { getAddress, parseEther } = utils;
 
 type PostgresConfig = {
   database: string;
@@ -27,12 +27,12 @@ type TokenConfig = {
 @Injectable()
 export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
-  private readonly ethProvider: JsonRpcProvider;
+  private readonly ethProvider: providers.JsonRpcProvider;
   private signer: IChannelSigner;
 
   constructor() {
     this.envConfig = process.env;
-    this.ethProvider = new JsonRpcProvider(this.getEthRpcUrl());
+    this.ethProvider = new providers.JsonRpcProvider(this.getEthRpcUrl());
     this.signer = new ChannelSigner(this.getPrivateKey(), this.getEthRpcUrl());
   }
 
@@ -56,14 +56,14 @@ export class ConfigService implements OnModuleInit {
   }
 
   @Memoize()
-  getEthProvider(): JsonRpcProvider {
+  getEthProvider(): providers.JsonRpcProvider {
     return this.ethProvider;
   }
 
   @Memoize()
-  async getEthNetwork(): Promise<EthNetwork> {
+  async getEthNetwork(): Promise<providers.Network> {
     const ethNetwork = await this.getEthProvider().getNetwork();
-    if (ethNetwork.name === `unknown` && ethNetwork.chainId === 4447) {
+    if (ethNetwork.name === `unknown` && ethNetwork.chainId === 1337) {
       ethNetwork.name = `ganache`;
     } else if (ethNetwork.chainId === 1) {
       ethNetwork.name = `homestead`;

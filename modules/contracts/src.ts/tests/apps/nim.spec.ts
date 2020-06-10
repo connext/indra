@@ -1,11 +1,12 @@
 /* global before */
 import { SolidityValueType } from "@connext/types";
-import { Contract, ContractFactory } from "ethers";
-import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { BigNumber, Contract, ContractFactory, utils } from "ethers";
 
 import { NimApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
+
+const { defaultAbiCoder } = utils;
 
 type NimAppState = {
   versionNumber: BigNumber;
@@ -51,20 +52,16 @@ describe("Nim", () => {
   };
 
   const applyAction = async (state: SolidityValueType, action: SolidityValueType) => {
-    return nim.functions.applyAction(encodeState(state), encodeAction(action));
+    return nim.applyAction(encodeState(state), encodeAction(action));
   };
 
   const isStateTerminal = async (state: SolidityValueType) => {
-    return nim.functions.isStateTerminal(encodeState(state));
+    return nim.isStateTerminal(encodeState(state));
   };
 
   before(async () => {
     const wallet = (await provider.getWallets())[0];
-    nim = await new ContractFactory(
-      NimApp.abi,
-      NimApp.bytecode,
-      wallet,
-    ).deploy();
+    nim = await new ContractFactory(NimApp.abi, NimApp.bytecode, wallet).deploy();
   });
 
   describe("applyAction", () => {

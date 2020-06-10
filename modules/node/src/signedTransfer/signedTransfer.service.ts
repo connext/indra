@@ -20,13 +20,16 @@ const appStatusesToSignedTransferStatus = (
   // pending iff no receiver app + not expired
   if (!receiverApp) {
     return SignedTransferStatus.PENDING;
-  } else if (senderApp.latestState.finalized || receiverApp.latestState.finalized) {
-    // iff sender uninstalled, payment is unlocked
+  } else if (senderApp.type === AppType.UNINSTALLED || receiverApp.type === AppType.UNINSTALLED) {
     return SignedTransferStatus.COMPLETED;
   } else if (senderApp.type === AppType.REJECTED || receiverApp.type === AppType.REJECTED) {
     return SignedTransferStatus.FAILED;
   } else {
-    throw new Error(`Cound not determine hash lock transfer status`);
+    throw new Error(
+      `Could not determine signed transfer status. Sender app type: ${
+        senderApp && senderApp.type
+      }, receiver app type: ${receiverApp && receiverApp.type}`,
+    );
   }
 };
 

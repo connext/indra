@@ -24,7 +24,6 @@ import {
 import {
   IChannelSigner,
   IConnextClient,
-  BigNumber,
   ConditionalTransferTypes,
   EventNames,
   EventName,
@@ -35,11 +34,13 @@ import {
   PrivateKey,
 } from "@connext/types";
 import { addressBook } from "@connext/contracts";
-import { Zero } from "ethers/constants";
+import { BigNumber, constants } from "ethers";
+
+const { Zero } = constants;
 
 describe("Signed Transfer Offline", () => {
-  const tokenAddress = addressBook[4447].Token.address;
-  const addr = addressBook[4447].SimpleSignedTransferApp.address;
+  const tokenAddress = addressBook[1337].Token.address;
+  const addr = addressBook[1337].SimpleSignedTransferApp.address;
 
   let senderPrivateKey: PrivateKey;
   let senderSigner: IChannelSigner;
@@ -105,10 +106,6 @@ describe("Signed Transfer Offline", () => {
       verifyingContract,
       receiverPrivateKey,
     );
-    const attestation = {
-      ...receipt,
-      signature,
-    };
     // node reclaims from sender
     const amount = await new Promise(async (resolve, reject) => {
       // register event listeners
@@ -158,7 +155,8 @@ describe("Signed Transfer Offline", () => {
         await receiver.resolveCondition({
           conditionType: ConditionalTransferTypes.SignedTransfer,
           paymentId,
-          attestation,
+          responseCID: receipt.responseCID,
+          signature,
         } as PublicParams.ResolveSignedTransfer);
         if (!resolves) {
           return reject(new Error(`Signed transfer successfully resolved`));
@@ -183,6 +181,7 @@ describe("Signed Transfer Offline", () => {
   ) => {
     const preTransferSenderBalance = await sender.getFreeBalance(tokenAddress);
     const { chainId } = await sender.ethProvider.getNetwork();
+    const receipt = getTestReceiptToSign();
     await sender.conditionalTransfer({
       amount,
       paymentId,
@@ -191,6 +190,8 @@ describe("Signed Transfer Offline", () => {
       signerAddress: receiver.signerAddress,
       chainId,
       verifyingContract: getTestVerifyingContract(),
+      requestCID: receipt.requestCID,
+      subgraphDeploymentID: receipt.subgraphDeploymentID,
       recipient: receiver.publicIdentifier,
     });
     const postTransferSenderBalance = await sender.getFreeBalance(tokenAddress);
@@ -320,7 +321,7 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       event: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
     });
-    await sender.off();
+    sender.off();
     await sender.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
@@ -330,9 +331,9 @@ describe("Signed Transfer Offline", () => {
 
   it("sender proposes transfer successfully, install protocol times out", async () => {
     const senderConfig = {
-      ceiling: { [RECEIVED]: 0 },
+      ceiling: { [SEND]: 0, [RECEIVED]: 0 },
       protocol: ProtocolNames.install,
-      params: { appInterface: { addr } } as ProtocolParams.Install,
+      params: { proposal: { appDefinition: addr } } as ProtocolParams.Install,
     };
     const [sender, receiver] = await createAndFundClients(senderConfig);
     await sendFailingSignedTransfer({
@@ -341,10 +342,11 @@ describe("Signed Transfer Offline", () => {
       whichFails: "sender",
       error: CLIENT_INSTALL_FAILED(true),
     });
-    await sender.off();
+    sender.off();
     await sender.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
+    console.log(`retrying`);
 
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
   });
@@ -368,7 +370,7 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.propose),
       event: EventNames.PROPOSE_INSTALL_FAILED_EVENT,
     });
-    await receiver.off();
+    receiver.off();
     await receiver.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
@@ -386,7 +388,7 @@ describe("Signed Transfer Offline", () => {
     const receiverConfig = {
       ceiling: { [SEND]: 0, [RECEIVED]: 0 },
       protocol: ProtocolNames.install,
-      params: { appInterface: { addr } } as ProtocolParams.Install,
+      params: { proposal: { appDefinition: addr } } as ProtocolParams.Install,
     };
     const [sender, receiver] = await createAndFundClients(undefined, receiverConfig);
     const paymentId = await new Promise<string>(async (resolve, reject) => {
@@ -406,37 +408,7 @@ describe("Signed Transfer Offline", () => {
         reject(err);
       }
     });
-    await receiver.off();
-    await receiver.messaging.disconnect();
-    // Add delay to make sure messaging properly disconnects
-    await delay(1000);
-
-    await recreateClientAndRetryTransfer(
-      "receiver",
-      sender,
-      receiverSigner,
-      receiver.store,
-      paymentId,
-    );
-  });
-
-  it("sender + receiver install transfer successfully, receiver take action protocol times out", async () => {
-    const receiverConfig = {
-      ceiling: { [SEND]: 0 },
-      protocol: ProtocolNames.takeAction,
-    };
-    const [sender, receiver] = await createAndFundClients(undefined, receiverConfig);
-    const paymentId = await sendSignedTransfer(sender, receiver);
-    expect(paymentId).to.be.ok;
-    await resolveFailingSignedTransfer({
-      sender,
-      receiver,
-      paymentId,
-      whichFails: "receiver",
-      error: APP_PROTOCOL_TOO_LONG(ProtocolNames.takeAction),
-      event: EventNames.UPDATE_STATE_FAILED_EVENT,
-    });
-    await receiver.off();
+    receiver.off();
     await receiver.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
@@ -466,17 +438,13 @@ describe("Signed Transfer Offline", () => {
       error: APP_PROTOCOL_TOO_LONG(ProtocolNames.uninstall),
       event: EventNames.UNINSTALL_FAILED_EVENT,
     });
-    await receiver.off();
+    receiver.off();
     await receiver.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
 
     await recreateClientAndRetryTransfer("receiver", sender, receiverSigner, receiver.store);
   });
-
-  // see notes in withdrawal offline tests about take action protocol responders
-  // tl;dr need to move this test into the node unit tests
-  it.skip("sender install transfer successfully, receiver takes action and uninstalls, sender's take action protocol times out", async () => {});
 
   // see notes in withdrawal offline tests about take action protocol responders
   // tl;dr need to move this test into the node unit tests (same thing happens

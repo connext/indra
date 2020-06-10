@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 
 import { Bytes32 } from "../../basic";
 import { tidy } from "../../utils";

@@ -1,5 +1,5 @@
 import { stringify } from "@connext/utils";
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 
 export const NO_MULTISIG_IN_PARAMS = (params: any): string => {
   return `No multisig address provided in params: ${stringify(params)}`;
@@ -27,6 +27,8 @@ export const CANNOT_UNINSTALL_FREE_BALANCE = (multisigAddress: string): string =
   `Cannot uninstall the FreeBalance of channel: ${multisigAddress}`;
 
 export const CONTRACT_NOT_DEPLOYED = `contract not deployed`;
+
+export const CALL_EXCEPTION = `CALL_EXCEPTION`;
 
 export const CANNOT_WITHDRAW =
   "Cannot withdraw while another deposit / withdraw app is active in the channel.";

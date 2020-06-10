@@ -9,7 +9,7 @@ import {
 
 import { Challenge } from "../challenge/challenge.entity";
 import { AppName, Bytes32, ChallengeUpdatedEventPayload, ChallengeStatus } from "@connext/types";
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 import { toBN } from "@connext/utils";
 import { IsKeccak256Hash } from "../validate";
 

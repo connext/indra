@@ -1,11 +1,11 @@
 /* global before */
-import { Contract, Event, Wallet, ContractFactory } from "ethers";
-import { TransactionResponse } from "ethers/providers";
-import { getAddress, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
+import { Contract, Event, Wallet, ContractFactory, providers, utils } from "ethers";
 
 import { Echo, Proxy, ProxyFactory } from "../../artifacts";
 
 import { expect, provider } from "../utils";
+
+const { getAddress, keccak256, solidityKeccak256, solidityPack } = utils;
 
 describe("ProxyFactory with CREATE2", () => {
   let wallet: Wallet;
@@ -29,17 +29,9 @@ describe("ProxyFactory with CREATE2", () => {
 
   before(async () => {
     wallet = (await provider.getWallets())[0];
-    pf = await new ContractFactory(
-      ProxyFactory.abi as any,
-      ProxyFactory.bytecode,
-      wallet,
-    ).deploy();
+    pf = await new ContractFactory(ProxyFactory.abi, ProxyFactory.bytecode, wallet).deploy();
 
-    echo = await new ContractFactory(
-      Echo.abi as any,
-      Echo.bytecode,
-      wallet,
-    ).deploy();
+    echo = await new ContractFactory(Echo.abi, Echo.bytecode, wallet).deploy();
   });
 
   describe("createProxy", async () => {
@@ -53,7 +45,11 @@ describe("ProxyFactory with CREATE2", () => {
 
       const saltNonce = 0;
 
-      const tx: TransactionResponse = await pf.createProxyWithNonce(masterCopy, "0x", saltNonce);
+      const tx: providers.TransactionResponse = await pf.createProxyWithNonce(
+        masterCopy,
+        "0x",
+        saltNonce,
+      );
 
       const receipt = await tx.wait();
 
@@ -63,9 +59,9 @@ describe("ProxyFactory with CREATE2", () => {
       expect(event.eventSignature).to.eq("ProxyCreation(address)");
       expect(event.args![0]).to.eq(create2(initcode, saltNonce));
 
-      const echoProxy = new Contract(create2(initcode), Echo.abi as any, wallet);
+      const echoProxy = new Contract(create2(initcode), Echo.abi, wallet);
 
-      expect(await echoProxy.functions.helloWorld()).to.eq("hello world");
+      expect(await echoProxy.helloWorld()).to.eq("hello world");
     });
   });
 });

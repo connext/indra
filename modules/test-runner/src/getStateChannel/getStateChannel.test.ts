@@ -8,14 +8,12 @@ import {
   StateSchemaVersion,
 } from "@connext/types";
 import { toBN, toBNJson } from "@connext/utils";
-import { AddressZero, One } from "ethers/constants";
-import { hexlify, randomBytes } from "ethers/utils";
+import { constants, utils } from "ethers";
 
-import {
-  createClient,
-  ETH_AMOUNT_SM,
-  expect,
-} from "../util";
+import { createClient, ETH_AMOUNT_SM, expect } from "../util";
+
+const { AddressZero, One } = constants;
+const { hexlify, randomBytes } = utils;
 
 const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
 
@@ -31,11 +29,11 @@ const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
   initiatorIdentifier: "sender",
   responderIdentifier: "receiver",
   defaultTimeout: "0x00",
-  appInterface: {
-    addr: TEST_STORE_ETH_ADDRESS,
+  abiEncodings: {
     actionEncoding: `action encoding`,
     stateEncoding: `state encoding`,
   },
+  appDefinition: TEST_STORE_ETH_ADDRESS,
   appSeqNo: 1,
   latestVersionNumber: 2,
   stateTimeout: "0x01",
@@ -43,11 +41,15 @@ const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
     counter: 4,
   },
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-  twoPartyOutcomeInterpreterParams: {
-    amount: { _hex: "0x42" } as any,
+  outcomeInterpreterParameters: {
+    amount: { _hex: "0x42", _isBigNumber: true } as any,
     playerAddrs: [AddressZero, AddressZero],
     tokenAddress: AddressZero,
   },
+  initiatorDeposit: "0",
+  initiatorDepositAssetId: TEST_STORE_ETH_ADDRESS,
+  responderDeposit: "0",
+  responderDepositAssetId: TEST_STORE_ETH_ADDRESS,
 };
 
 const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
@@ -58,7 +60,7 @@ const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
       TEST_STORE_APP_INSTANCE.responderIdentifier,
     ],
     multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
-    appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
+    appDefinition: TEST_STORE_APP_INSTANCE.appDefinition,
     defaultTimeout: toBN(35),
   },
   appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,

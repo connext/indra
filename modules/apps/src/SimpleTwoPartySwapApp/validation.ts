@@ -1,6 +1,6 @@
 import { AllowedSwap, SwapRate, ProtocolParams } from "@connext/types";
 import { calculateExchange, getAddressFromAssetId, stringify } from "@connext/utils";
-import { bigNumberify } from "ethers/utils";
+import { BigNumber } from "ethers";
 
 const ALLOWED_DISCREPANCY_PCT = 5;
 
@@ -38,7 +38,7 @@ export const validateSimpleSwapApp = (
   const calculatedToActualDiscrepancy = calculated.sub(responderDeposit).abs();
   // i.e. (x * (100 - 5)) / 100 = 0.95 * x
   const allowedDiscrepancy = calculated
-    .mul(bigNumberify(100).sub(ALLOWED_DISCREPANCY_PCT))
+    .mul(BigNumber.from(100).sub(ALLOWED_DISCREPANCY_PCT))
     .div(100);
 
   if (calculatedToActualDiscrepancy.gt(allowedDiscrepancy)) {

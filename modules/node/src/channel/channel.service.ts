@@ -8,8 +8,7 @@ import {
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
-import { AddressZero } from "ethers/constants";
-import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
+import { BigNumber, providers, constants, utils } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -20,7 +19,9 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
-import { TransactionReceipt } from "ethers/providers";
+
+const { AddressZero } = constants;
+const { getAddress, toUtf8Bytes, sha256 } = utils;
 
 export enum RebalanceType {
   COLLATERALIZE = "COLLATERALIZE",
@@ -91,7 +92,7 @@ export class ChannelService {
     channel: Channel,
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
-  ): Promise<TransactionReceipt | undefined> {
+  ): Promise<providers.TransactionReceipt | undefined> {
     this.log.info(
       `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started`,
     );
@@ -125,7 +126,7 @@ export class ChannelService {
       normalizedAssetId,
     );
 
-    let receipt: TransactionReceipt;
+    let receipt: providers.TransactionReceipt;
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // If free balance is too low, collateralize up to upper bound
       if (nodeFreeBalance.lt(collateralizeThreshold)) {
@@ -156,7 +157,7 @@ export class ChannelService {
       }
     }
     this.log.info(`Rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`);
-    return receipt as TransactionReceipt | undefined;
+    return receipt as providers.TransactionReceipt | undefined;
   }
 
   async getCollateralAmountToCoverPaymentAndRebalance(
@@ -264,23 +265,21 @@ export class ChannelService {
     const existing = await this.channelRepository.findByMultisigAddress(
       creationData.data.multisigAddress,
     );
+    const existingOwners = [
+      getSignerAddressFromPublicIdentifier(existing.nodeIdentifier),
+      getSignerAddressFromPublicIdentifier(existing.userIdentifier),
+    ];
     if (!existing) {
       throw new Error(
         `Did not find existing channel, meaning "PERSIST_STATE_CHANNEL" failed in setup protocol`,
       );
     }
     if (
-      !creationData.data.owners.includes(
-        getSignerAddressFromPublicIdentifier(existing.nodeIdentifier),
-      ) ||
-      !creationData.data.owners.includes(
-        getSignerAddressFromPublicIdentifier(existing.userIdentifier),
-      )
+      !creationData.data.owners.includes(existingOwners[0]) ||
+      !creationData.data.owners.includes(existingOwners[1])
     ) {
       throw new Error(
-        `Channel has already been created with different owners! ${stringify(
-          existing,
-        )}. Event data: ${stringify(creationData)}`,
+        `Channel has already been created with owners ${stringify(existingOwners)}. Event data: ${stringify(creationData)}`,
       );
     }
     if (existing.available) {
@@ -324,9 +323,9 @@ export class ChannelService {
     }
     const response: RebalanceProfileType = {
       assetId: rebalancingTargets.assetId,
-      collateralizeThreshold: bigNumberify(rebalancingTargets.collateralizeThreshold),
-      target: bigNumberify(rebalancingTargets.target),
-      reclaimThreshold: bigNumberify(rebalancingTargets.reclaimThreshold),
+      collateralizeThreshold: BigNumber.from(rebalancingTargets.collateralizeThreshold),
+      target: BigNumber.from(rebalancingTargets.target),
+      reclaimThreshold: BigNumber.from(rebalancingTargets.reclaimThreshold),
     };
     this.log.info(
       `getDataFromRebalancingService for ${userPublicIdentifier} asset ${assetId} complete: ${JSON.stringify(
@@ -341,7 +340,7 @@ export class ChannelService {
     assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
     // try to get rebalance profile configured
-    let profile = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
+    const profile = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
       userIdentifier,
       assetId,
     );

@@ -105,6 +105,7 @@ quick-reset:
 	bash ops/db.sh 'truncate table onchain_transaction cascade;'
 	bash ops/db.sh 'truncate table rebalance_profile cascade;'
 	bash ops/db.sh 'truncate table app_instance cascade;'
+	bash ops/redis.sh 'flushall'
 	touch modules/node/src/main.ts
 
 reset: stop
@@ -179,7 +180,7 @@ test-integration:
 	bash ops/test/integration.sh
 
 test-node: node
-	bash ops/test/node.sh --runInBand --forceExit
+	bash ops/test/node.sh
 
 test-store: store
 	bash ops/test/store.sh

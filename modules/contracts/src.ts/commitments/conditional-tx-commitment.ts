@@ -3,15 +3,16 @@ import {
   MultisigOperation,
   ContractAddresses,
 } from "@connext/types";
-
-import { AddressZero } from "ethers/constants";
-import { Interface } from "ethers/utils";
+import { constants, utils } from "ethers";
 
 import * as ConditionalTransactionDelegateTarget from "../../artifacts/ConditionalTransactionDelegateTarget.json";
 
 import { MultisigCommitment } from "./multisig-commitment";
 
-const iface = new Interface(ConditionalTransactionDelegateTarget.abi as any);
+const { AddressZero } = constants;
+const { Interface } = utils;
+
+const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 
 // class to represent an unsigned multisignature wallet transaction
 // to the ConditionalTransactionDelegateTarget contract.
@@ -71,7 +72,7 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
     return {
       to: this.contractAddresses.ConditionalTransactionDelegateTarget,
       value: 0,
-      data: iface.functions.executeEffectOfInterpretedAppOutcome.encode([
+      data: iface.encodeFunctionData("executeEffectOfInterpretedAppOutcome", [
         this.contractAddresses.ChallengeRegistry,
         this.freeBalanceAppIdentityHash,
         this.appIdentityHash,

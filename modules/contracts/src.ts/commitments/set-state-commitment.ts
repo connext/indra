@@ -1,6 +1,5 @@
 import {
   AppIdentity,
-  BigNumber,
   CommitmentTarget,
   EthereumCommitment,
   MinimalTransaction,
@@ -13,11 +12,13 @@ import {
   deBigNumberifyJson,
   recoverAddressFromChannelMessage,
 } from "@connext/utils";
-import { Interface, keccak256, solidityPack } from "ethers/utils";
+import { BigNumber, utils } from "ethers";
 
 import * as ChallengeRegistry from "../../artifacts/ChallengeRegistry.json";
 
-const iface = new Interface(ChallengeRegistry.abi as any);
+const { Interface, keccak256, solidityPack } = utils;
+
+const iface = new Interface(ChallengeRegistry.abi);
 
 export class SetStateCommitment implements EthereumCommitment {
   constructor(
@@ -69,7 +70,7 @@ export class SetStateCommitment implements EthereumCommitment {
     return {
       to: this.challengeRegistryAddress,
       value: 0,
-      data: iface.functions.setState.encode([
+      data: iface.encodeFunctionData("setState", [
         this.appIdentity,
         await this.getSignedAppChallengeUpdate(),
       ]),
@@ -110,7 +111,7 @@ export class SetStateCommitment implements EthereumCommitment {
       timeout: this.stateTimeout, // this is a *state-specific* timeout (defaults to defaultTimeout)
       // safe to do because IFF single signed commitment, then contract
       // will take a single signers array of just the turn taker
-      signatures: this.signatures.filter(x => !!x),
+      signatures: this.signatures.filter((x) => !!x),
     };
   }
 

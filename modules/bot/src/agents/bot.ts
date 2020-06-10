@@ -8,9 +8,7 @@ import {
   getTestVerifyingContract,
   signReceiptMessage,
 } from "@connext/utils";
-import { utils } from "ethers";
-import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { utils, constants } from "ethers";
 import { Argv } from "yargs";
 import intervalPromise from "interval-promise";
 
@@ -19,6 +17,9 @@ import {
   addAgentIdentifierToIndex,
   getRandomAgentIdentifierFromIndex,
 } from "../helpers/agentIndex";
+
+const { AddressZero } = constants;
+const { parseEther, formatEther } = utils;
 
 export default {
   command: "bot",
@@ -101,12 +102,12 @@ export default {
         verifyingContract,
         argv.privateKey,
       );
-      const attestation = { ...receipt, signature };
       log.info(`Unlocking transfer with signature ${signature}`);
       await client.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId: eventData.paymentId,
-        attestation,
+        responseCID: receipt.responseCID,
+        signature,
       } as PublicParams.ResolveSignedTransfer);
 
       log.info(`Unlocked transfer ${eventData.paymentId} for (${eventData.amount} ETH)`);
@@ -127,7 +128,7 @@ export default {
         log.warn(
           `Balance too low: ${balance[
             client.signerAddress
-          ].toString()} < ${TRANSFER_AMT.toString()}, depositing...`,
+            ].toString()} < ${TRANSFER_AMT.toString()}, depositing...`,
         );
         try {
           await client.deposit({ amount: DEPOSIT_AMT, assetId: AddressZero });
@@ -149,11 +150,12 @@ export default {
         const receiverSigner = getSignerAddressFromPublicIdentifier(receiverIdentifier);
         const paymentId = getRandomBytes32();
         log.debug(
-          `Send conditional transfer ${paymentId} for ${utils.formatEther(
+          `Send conditional transfer ${paymentId} for ${formatEther(
             TRANSFER_AMT,
           )} ETH to ${receiverIdentifier} (${receiverSigner})`,
         );
 
+        const start = Date.now();
         try {
           // Send transfer
           log.info(`Starting transfer to ${receiverIdentifier} with signer ${receiverSigner}`);
@@ -164,11 +166,13 @@ export default {
             signerAddress: receiverSigner,
             chainId,
             verifyingContract,
+            requestCID: receipt.requestCID,
+            subgraphDeploymentID: receipt.subgraphDeploymentID,
             assetId: AddressZero,
             recipient: receiverIdentifier,
             meta: { info: `Transfer from ${NAME}` },
           });
-          log.info(`Conditional transfer ${paymentId} sent`);
+          log.info(`Conditional transfer ${paymentId} sent. Elapsed: ${Date.now() - start}`);
         } catch (err) {
           console.error(`Error sending tranfer: ${err.message}`);
         }

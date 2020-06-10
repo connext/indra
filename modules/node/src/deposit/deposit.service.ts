@@ -2,7 +2,6 @@ import { DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
 import {
   Address,
-  BigNumber,
   Contract,
   DepositAppName,
   DepositAppState,
@@ -13,7 +12,7 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { Zero, AddressZero } from "ethers/constants";
+import { BigNumber, constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
@@ -27,6 +26,8 @@ import {
   TransactionReason,
 } from "../onchainTransactions/onchainTransaction.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
+
+const { Zero, AddressZero } = constants;
 
 @Injectable()
 export class DepositService {
@@ -170,7 +171,7 @@ export class DepositService {
       })
       .map((app) => app.identityHash);
 
-    let resolvedDepositAppIds: string[] = [];
+    const resolvedDepositAppIds: string[] = [];
     const depositIdPromises = ourDepositAppIds.map((appId) => {
       return new Promise((resolve, reject) => {
         this.cfCoreService.emitter.attachOnce(
@@ -195,6 +196,7 @@ export class DepositService {
         // only wait for 5 blocks
         ethProvider.on("block", async (blockNumber: number) => {
           if (blockNumber - startingBlock > BLOCKS_TO_WAIT) {
+            ethProvider.off("block");
             return resolve(undefined);
           }
         });
@@ -228,15 +230,11 @@ export class DepositService {
         data: "0x",
       };
     } else {
-      const token = new Contract(
-        tokenAddress,
-        ERC20.abi as any,
-        this.configService.getEthProvider(),
-      );
+      const token = new Contract(tokenAddress, ERC20.abi, this.configService.getEthProvider());
       tx = {
         to: tokenAddress,
         value: 0,
-        data: token.interface.functions.transfer.encode([channel.multisigAddress, amount]),
+        data: token.interface.encodeFunctionData("transfer", [channel.multisigAddress, amount]),
       };
     }
     return this.onchainTransactionService.sendDeposit(channel, tx);
@@ -249,16 +247,12 @@ export class DepositService {
     const ethProvider = this.configService.getEthProvider();
 
     // generate initial totalAmountWithdrawn
-    const multisig = new Contract(
-      channel.multisigAddress,
-      MinimumViableMultisig.abi as any,
-      ethProvider,
-    );
+    const multisig = new Contract(channel.multisigAddress, MinimumViableMultisig.abi, ethProvider);
     let startingTotalAmountWithdrawn: BigNumber;
     try {
-      startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(tokenAddress);
+      startingTotalAmountWithdrawn = await multisig.totalAmountWithdrawn(tokenAddress);
     } catch (e) {
-      const NOT_DEPLOYED_ERR = `contract not deployed (contractAddress="${channel.multisigAddress}"`;
+      const NOT_DEPLOYED_ERR = `CALL_EXCEPTION`;
       if (!e.message.includes(NOT_DEPLOYED_ERR)) {
         throw new Error(e);
       }
@@ -271,11 +265,9 @@ export class DepositService {
     const startingMultisigBalance =
       tokenAddress === AddressZero
         ? await ethProvider.getBalance(channel.multisigAddress)
-        : await new Contract(
-            tokenAddress,
-            ERC20.abi as any,
-            this.configService.getSigner(),
-          ).functions.balanceOf(channel.multisigAddress);
+        : await new Contract(tokenAddress, ERC20.abi, this.configService.getSigner()).balanceOf(
+            channel.multisigAddress,
+          );
 
     const initialState: DepositAppState = {
       transfers: [

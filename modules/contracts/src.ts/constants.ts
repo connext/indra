@@ -8,7 +8,7 @@ export const defaults = {
   addressBookPath: "./address-book.json",
 };
 
-export const ganacheId = 4447;
+export const ganacheId = 1337;
 
 export const cliOpts = {
   addressBook: {
@@ -30,7 +30,7 @@ export const cliOpts = {
     default: defaults.providerUrl,
   },
   fromMnemonic: {
-    alias: "from-mnemonic", 
+    alias: "from-mnemonic",
     description: "The mnemonic for an account which will send funds",
     type: "string",
     default: defaults.mnemonic,
@@ -45,6 +45,12 @@ export const cliOpts = {
     alias: "to-address",
     description: "The address to which funds will be sent",
     type: "string",
+  },
+  force: {
+    alias: "force",
+    description: "Deploy contract even if it's already deployed",
+    type: "boolean",
+    deafult: false,
   },
   tokenAddress: {
     alias: "token-address",

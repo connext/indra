@@ -5,17 +5,17 @@
   "main": "dist/src/index.js",
   "scripts": {
     "build": "rm -rf dist && tsc --project tsconfig.json",
-    "start": "node dist/src/index.js"
+    "start": "node --inspect=0.0.0.0:9229 dist/src/index.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@connext/client": "6.6.5",
-    "@connext/store": "6.6.5",
-    "@connext/types": "6.6.5",
-    "@connext/utils": "6.6.5",
+    "@connext/client": "7.0.0-alpha.0",
+    "@connext/store": "7.0.0-alpha.0",
+    "@connext/types": "7.0.0-alpha.0",
+    "@connext/utils": "7.0.0-alpha.0",
     "axios": "0.19.2",
-    "ethers": "4.0.47",
+    "ethers": "5.0.0-beta.190",
     "interval-promise": "1.4.0",
     "yargs": "15.3.1"
   },

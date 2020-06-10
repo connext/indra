@@ -8,10 +8,7 @@ import {
   PublicIdentifier,
 } from "@connext/types";
 import { delay, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
-import { Contract, Signer } from "ethers";
-import { HashZero } from "ethers/constants";
-import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
-import { Interface, solidityKeccak256 } from "ethers/utils";
+import { Contract, Signer, utils, constants, providers } from "ethers";
 
 import {
   CHANNEL_CREATION_FAILED,
@@ -27,6 +24,9 @@ import { RequestHandler } from "../../request-handler";
 import { getCreate2MultisigAddress } from "../../utils";
 
 import { MethodController } from "../controller";
+
+const { HashZero } = constants;
+const { Interface, solidityKeccak256 } = utils;
 
 // Estimate based on rinkeby transaction:
 // 0xaac429aac389b6fccc7702c8ad5415248a5add8e8e01a09a42c4ed9733086bec
@@ -79,7 +79,7 @@ export class DeployStateDepositController extends MethodController {
 
     // By default, if the contract has been deployed and
     // DB has records of it, controller will return HashZero
-    let tx = { hash: HashZero } as TransactionResponse;
+    let tx = { hash: HashZero } as providers.TransactionResponse;
 
     const json = await store.getStateChannel(multisigAddress);
     if (!json) {
@@ -114,7 +114,7 @@ async function sendMultisigDeployTx(
   networkContext: NetworkContext,
   retryCount: number = 1,
   log: ILoggerService,
-): Promise<TransactionResponse> {
+): Promise<providers.TransactionResponse> {
   if (!signer.provider || !Signer.isSigner(signer)) {
     throw new Error(`Signer must be connected to provider`);
   }
@@ -131,9 +131,9 @@ async function sendMultisigDeployTx(
   let error;
   for (let tryCount = 1; tryCount < retryCount + 1; tryCount += 1) {
     try {
-      const tx: TransactionResponse = await proxyFactory.functions.createProxyWithNonce(
+      const tx: providers.TransactionResponse = await proxyFactory.createProxyWithNonce(
         networkContext.contractAddresses.MinimumViableMultisig,
-        new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+        new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
           stateChannel.multisigOwners,
         ]),
         // hash chainId plus nonce for x-chain replay protection
@@ -154,7 +154,7 @@ async function sendMultisigDeployTx(
 
       const ownersAreCorrectlySet = await checkForCorrectOwners(
         tx!,
-        provider as JsonRpcProvider,
+        provider as providers.JsonRpcProvider,
         owners,
         stateChannel.multisigAddress,
       );
@@ -187,21 +187,21 @@ async function sendMultisigDeployTx(
 }
 
 async function checkForCorrectOwners(
-  tx: TransactionResponse,
-  provider: JsonRpcProvider,
+  tx: providers.TransactionResponse,
+  provider: providers.JsonRpcProvider,
   identifiers: PublicIdentifier[], // [initiator, responder]
   multisigAddress: string,
 ): Promise<boolean> {
   await tx.wait();
 
-  const contract = new Contract(multisigAddress, MinimumViableMultisig.abi as any, provider);
+  const contract = new Contract(multisigAddress, MinimumViableMultisig.abi, provider);
 
   const expectedOwners = [
     getSignerAddressFromPublicIdentifier(identifiers[0]),
     getSignerAddressFromPublicIdentifier(identifiers[1]),
   ];
 
-  const actualOwners = await contract.functions.getOwners();
+  const actualOwners = await contract.getOwners();
 
   return expectedOwners[0] === actualOwners[0] && expectedOwners[1] === actualOwners[1];
 }

@@ -1,6 +1,6 @@
 {
   "name": "@connext/contracts",
-  "version": "3.2.0",
+  "version": "3.2.2",
   "description": "Smart contracts that power a Counterfactual State Channel platform",
   "license": "ISC",
   "files": [
@@ -30,28 +30,28 @@
     "transpile": "./node_modules/.bin/tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@connext/types": "6.6.5",
-    "@connext/utils": "6.6.5",
+    "@connext/types": "7.0.0-alpha.0",
+    "@connext/utils": "7.0.0-alpha.0",
     "@openzeppelin/contracts": "3.0.1",
-    "ethers": "4.0.47",
+    "ethers": "5.0.0-beta.190",
     "ganache-cli": "6.9.1",
     "yargs": "15.3.1"
   },
   "devDependencies": {
-    "@nomiclabs/buidler": "1.3.4",
-    "@nomiclabs/buidler-ethers": "1.3.3",
-    "@nomiclabs/buidler-waffle": "1.3.3",
+    "@nomiclabs/buidler": "1.3.6",
+    "@nomiclabs/buidler-ethers": "2.0.0-alpha.1",
+    "@nomiclabs/buidler-waffle": "2.0.0-alpha.1",
     "@types/chai": "4.2.11",
     "@types/chai-subset": "1.3.3",
     "@types/mocha": "7.0.2",
-    "@types/node": "14.0.6",
+    "@types/node": "14.0.9",
     "@types/sinon-chai": "3.2.4",
     "chai": "4.2.0",
-    "ethereum-waffle": "2.5.1",
+    "ethereum-waffle": "3.0.0-beta.2",
     "ethlint": "1.2.5",
     "event-target-shim": "5.0.1",
     "mocha": "7.2.0",
-    "solc": "0.6.7",
+    "solc": "0.6.9",
     "ts-mocha": "7.0.0",
     "ts-node": "8.10.2",
     "typescript": "3.9.3"

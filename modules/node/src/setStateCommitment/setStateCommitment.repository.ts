@@ -4,7 +4,7 @@ import { EntityRepository, Repository } from "typeorm";
 
 import { SetStateCommitment } from "./setStateCommitment.entity";
 import { AppType } from "../appInstance/appInstance.entity";
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 
 export const setStateToJson = (entity: SetStateCommitment): SetStateCommitmentJSON => {
   return {

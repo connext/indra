@@ -1,13 +1,15 @@
 import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { AddressZero, Zero } from "ethers/constants";
-import { getAddress } from "ethers/utils";
+import { constants, utils } from "ethers";
 
-import { createAppInstanceForTest, createAppInstanceProposalForTest } from "../../testing/utils";
+import { createAppInstanceForTest, createAppInstanceJsonForTest } from "../../testing/utils";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 import { getRandomContractAddresses } from "../../testing/mocks";
 
 import { AppInstance } from "../app-instance";
 import { StateChannel } from "../state-channel";
+
+const { AddressZero, Zero } = constants;
+const { getAddress } = utils;
 
 const APP_STATE = {
   foo: AddressZero,
@@ -34,7 +36,7 @@ describe("StateChannel::setState", () => {
     );
 
     appInstance = createAppInstanceForTest(sc1);
-    sc1 = sc1.addProposal(createAppInstanceProposalForTest(appInstance.identityHash, sc1));
+    sc1 = sc1.addProposal(createAppInstanceJsonForTest(appInstance.identityHash, sc1));
 
     sc1 = sc1.installApp(appInstance, {
       [AddressZero]: {

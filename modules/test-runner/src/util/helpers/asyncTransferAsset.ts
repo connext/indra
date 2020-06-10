@@ -1,7 +1,6 @@
 import { EventNames, IConnextClient, LinkedTransferStatus, Address } from "@connext/types";
 import { ColorfulLogger, getRandomBytes32, stringify } from "@connext/utils";
-import { BigNumber } from "ethers/utils";
-import { Client } from "ts-nats";
+import { BigNumber } from "ethers";
 
 import { env } from "../env";
 import { expect } from "../";
@@ -14,7 +13,6 @@ export async function asyncTransferAsset(
   clientB: IConnextClient,
   transferAmount: BigNumber,
   assetId: Address,
-  nats: Client, // TODO: remove
 ): Promise<ExistingBalancesAsyncTransfer> {
   const SENDER_INPUT_META = { hello: "world" };
   const nodeSignerAddress = clientA.nodeSignerAddress;
@@ -64,7 +62,7 @@ export async function asyncTransferAsset(
     ]);
   };
 
-  let start = Date.now();
+  const start = Date.now();
   log.info(`call client.transfer()`);
   const { appIdentityHash } = await clientA.transfer({
     amount: transferAmount.toString(),

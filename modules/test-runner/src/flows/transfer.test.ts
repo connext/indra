@@ -1,8 +1,5 @@
-import { IConnextClient, EventPayloads, EventNames } from "@connext/types";
-import { AddressZero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
-import { Client } from "ts-nats";
-import { before } from "mocha";
+import { IConnextClient, EventNames } from "@connext/types";
+import { BigNumber, constants } from "ethers";
 
 import {
   createClient,
@@ -13,7 +10,8 @@ import {
   expect,
 } from "../util";
 import { asyncTransferAsset } from "../util/helpers/asyncTransferAsset";
-import { getNatsClient } from "../util/nats";
+
+const { AddressZero } = constants;
 
 describe("Full Flow: Transfer", () => {
   let clientA: IConnextClient;
@@ -21,11 +19,6 @@ describe("Full Flow: Transfer", () => {
   let clientC: IConnextClient;
   let clientD: IConnextClient;
   let tokenAddress: string;
-  let nats: Client;
-
-  before(async () => {
-    nats = getNatsClient();
-  });
 
   beforeEach(async () => {
     clientA = await createClient({ id: "A" });
@@ -47,9 +40,9 @@ describe("Full Flow: Transfer", () => {
     await requestCollateral(clientB, AddressZero);
     await requestCollateral(clientC, AddressZero);
     await requestCollateral(clientD, AddressZero);
-    await asyncTransferAsset(clientA, clientB, ETH_AMOUNT_SM, AddressZero, nats);
-    await asyncTransferAsset(clientA, clientC, ETH_AMOUNT_SM, AddressZero, nats);
-    await asyncTransferAsset(clientA, clientD, ETH_AMOUNT_SM, AddressZero, nats);
+    await asyncTransferAsset(clientA, clientB, ETH_AMOUNT_SM, AddressZero);
+    await asyncTransferAsset(clientA, clientC, ETH_AMOUNT_SM, AddressZero);
+    await asyncTransferAsset(clientA, clientD, ETH_AMOUNT_SM, AddressZero);
   });
 
   it("User transfers tokens to multiple clients", async () => {
@@ -57,9 +50,9 @@ describe("Full Flow: Transfer", () => {
     await requestCollateral(clientB, tokenAddress);
     await requestCollateral(clientC, tokenAddress);
     await requestCollateral(clientD, tokenAddress);
-    await asyncTransferAsset(clientA, clientB, TOKEN_AMOUNT_SM, tokenAddress, nats);
-    await asyncTransferAsset(clientA, clientC, TOKEN_AMOUNT_SM, tokenAddress, nats);
-    await asyncTransferAsset(clientA, clientD, TOKEN_AMOUNT_SM, tokenAddress, nats);
+    await asyncTransferAsset(clientA, clientB, TOKEN_AMOUNT_SM, tokenAddress);
+    await asyncTransferAsset(clientA, clientC, TOKEN_AMOUNT_SM, tokenAddress);
+    await asyncTransferAsset(clientA, clientD, TOKEN_AMOUNT_SM, tokenAddress);
   });
 
   it("User receives multiple ETH transfers ", async () => {
@@ -67,9 +60,9 @@ describe("Full Flow: Transfer", () => {
     await fundChannel(clientC, ETH_AMOUNT_SM, AddressZero);
     await fundChannel(clientD, ETH_AMOUNT_SM, AddressZero);
     await requestCollateral(clientA, AddressZero);
-    await asyncTransferAsset(clientB, clientA, ETH_AMOUNT_SM, AddressZero, nats);
-    await asyncTransferAsset(clientC, clientA, ETH_AMOUNT_SM, AddressZero, nats);
-    await asyncTransferAsset(clientD, clientA, ETH_AMOUNT_SM, AddressZero, nats);
+    await asyncTransferAsset(clientB, clientA, ETH_AMOUNT_SM, AddressZero);
+    await asyncTransferAsset(clientC, clientA, ETH_AMOUNT_SM, AddressZero);
+    await asyncTransferAsset(clientD, clientA, ETH_AMOUNT_SM, AddressZero);
   });
 
   it("User receives multiple token transfers ", async () => {
@@ -77,9 +70,9 @@ describe("Full Flow: Transfer", () => {
     await fundChannel(clientC, TOKEN_AMOUNT_SM, tokenAddress);
     await fundChannel(clientD, TOKEN_AMOUNT_SM, tokenAddress);
     await requestCollateral(clientA, tokenAddress);
-    await asyncTransferAsset(clientB, clientA, TOKEN_AMOUNT_SM, tokenAddress, nats);
-    await asyncTransferAsset(clientC, clientA, TOKEN_AMOUNT_SM, tokenAddress, nats);
-    await asyncTransferAsset(clientD, clientA, TOKEN_AMOUNT_SM, tokenAddress, nats);
+    await asyncTransferAsset(clientB, clientA, TOKEN_AMOUNT_SM, tokenAddress);
+    await asyncTransferAsset(clientC, clientA, TOKEN_AMOUNT_SM, tokenAddress);
+    await asyncTransferAsset(clientD, clientA, TOKEN_AMOUNT_SM, tokenAddress);
   });
 
   it("Client receives transfers concurrently", () => {
@@ -89,8 +82,8 @@ describe("Full Flow: Transfer", () => {
       // while user has deposit in flight and node has insufficient
       // collateral. node will not allow the resolution of that payment
       await requestCollateral(clientA, AddressZero, true);
-      await fundChannel(clientB, bigNumberify(5));
-      await fundChannel(clientC, bigNumberify(5));
+      await fundChannel(clientB, BigNumber.from(5));
+      await fundChannel(clientC, BigNumber.from(5));
       let transferCount = 0;
       clientA.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async () => {
         transferCount += 1;

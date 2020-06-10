@@ -6,8 +6,7 @@ import {
   getRandomBytes32,
   toBN,
 } from "@connext/utils";
-import { One } from "ethers/constants";
-import { Contract, Wallet } from "ethers";
+import { Contract, Wallet, constants } from "ethers";
 
 import { setupContext } from "../context";
 import {
@@ -20,9 +19,10 @@ import {
   sortSignaturesBySignerAddress,
 } from "../utils";
 
+const { One } = constants;
+
 describe("setState", () => {
   let wallet: Wallet;
-  let snapshotId: number;
 
   let bob: Wallet;
   let appRegistry: Contract;
@@ -40,7 +40,6 @@ describe("setState", () => {
   });
 
   beforeEach(async () => {
-    snapshotId = await snapshot();
     const context = await setupContext();
     appRegistry = context["appRegistry"];
     setState = context["setState"];
@@ -49,10 +48,6 @@ describe("setState", () => {
     ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];
     appInstance = context["appInstance"];
     bob = context["bob"];
-  });
-
-  afterEach(async () => {
-    await restore(snapshotId);
   });
 
   describe("setState", () => {
@@ -126,13 +121,13 @@ describe("setState", () => {
         ONCHAIN_CHALLENGE_TIMEOUT, // timeout
       );
       await expect(
-        appRegistry.functions.setState(appInstance.appIdentity, {
+        appRegistry.setState(appInstance.appIdentity, {
           versionNumber: One,
           appStateHash: appStateToHash(state),
           timeout: ONCHAIN_CHALLENGE_TIMEOUT,
           signatures: await sortSignaturesBySignerAddress(thingToSign, [
-            await (new ChannelSigner(wallet.privateKey).signMessage(thingToSign)),
-            await (new ChannelSigner(bob.privateKey).signMessage(thingToSign)),
+            await new ChannelSigner(wallet.privateKey).signMessage(thingToSign),
+            await new ChannelSigner(bob.privateKey).signMessage(thingToSign),
           ]),
         }),
       ).to.be.revertedWith(`Invalid signature`);

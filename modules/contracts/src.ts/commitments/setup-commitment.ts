@@ -4,14 +4,16 @@ import {
   MultisigTransaction,
   ContractAddresses,
 } from "@connext/types";
-import { Interface } from "ethers/utils";
+import { utils } from "ethers";
 import { appIdentityToHash } from "@connext/utils";
 
 import * as ConditionalTransactionDelegateTarget from "../../artifacts/ConditionalTransactionDelegateTarget.json";
 
 import { MultisigCommitment } from "./multisig-commitment";
 
-const iface = new Interface(ConditionalTransactionDelegateTarget.abi as any);
+const { Interface } = utils;
+
+const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 
 export class SetupCommitment extends MultisigCommitment {
   public constructor(
@@ -25,7 +27,7 @@ export class SetupCommitment extends MultisigCommitment {
 
   public getTransactionDetails(): MultisigTransaction {
     return {
-      data: iface.functions.executeEffectOfFreeBalance.encode([
+      data: iface.encodeFunctionData("executeEffectOfFreeBalance", [
         this.contractAddresses.ChallengeRegistry,
         appIdentityToHash(this.freeBalanceAppIdentity),
         this.contractAddresses.MultiAssetMultiPartyCoinTransferInterpreter,

@@ -18,10 +18,12 @@ import {
   notPositive,
   toBN,
 } from "@connext/utils";
-import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, formatEther, parseEther } from "ethers/utils";
+import { BigNumber, constants, utils } from "ethers";
 
 import { AbstractController } from "./AbstractController";
+
+const { AddressZero, Zero } = constants;
+const { formatEther, parseEther } = utils;
 
 export class SwapController extends AbstractController {
   public async swap(params: PublicParams.Swap): Promise<PublicResults.Swap> {

@@ -1,19 +1,21 @@
 import fs from "fs";
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
 
-type AddressBookEntry = {
+const { AddressZero } = constants;
+
+export type AddressBookEntry = {
   address: string;
-  constructorArgs?: Array<{ name: string, value: string }>;
+  constructorArgs?: Array<{ name: string; value: string }>;
   creationCodeHash?: string;
   runtimeCodeHash?: string;
   txHash?: string;
-}
+};
 
-type AddressBookJson = {
+export type AddressBookJson = {
   [chainId: string]: {
     [contractName: string]: AddressBookEntry;
-  }
-}
+  };
+};
 
 export interface AddressBook {
   getEntry: (contractName: string) => AddressBookEntry;
@@ -32,7 +34,7 @@ export const getAddressBook = (path: string, chainId: string): AddressBook => {
 
   const getEntry = (contractName: string): AddressBookEntry => {
     try {
-      return addressBook[chainId][contractName];
+      return addressBook[chainId][contractName] || { address: AddressZero };
     } catch (e) {
       return { address: AddressZero };
     }

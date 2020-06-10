@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 
 import { Address } from "../../basic";
 import { tidy } from "../../utils";
@@ -25,5 +25,5 @@ export const DepositAppStateEncoding = tidy(`tuple(
   address multisigAddress,
   address assetId,
   uint256 startingTotalAmountWithdrawn,
-  uint256 startingMultisigBalance,
+  uint256 startingMultisigBalance
 )`);

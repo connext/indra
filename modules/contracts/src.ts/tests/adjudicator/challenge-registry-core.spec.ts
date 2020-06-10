@@ -1,8 +1,6 @@
-import { Wallet } from "ethers";
-import { One } from "ethers/constants";
+import { Wallet, constants, utils } from "ethers";
 import { ChallengeStatus, AppChallenge } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { keccak256 } from "ethers/utils";
 
 import { setupContext } from "../context";
 import {
@@ -16,10 +14,11 @@ import {
   snapshot,
 } from "../utils";
 
+const { One } = constants;
+const { keccak256 } = utils;
+
 describe("MChallengeRegistryCore", () => {
   let wallet: Wallet;
-
-  let snapshotId: any;
 
   let ONCHAIN_CHALLENGE_TIMEOUT: number;
   let alice: Wallet;
@@ -41,7 +40,6 @@ describe("MChallengeRegistryCore", () => {
   });
 
   beforeEach(async () => {
-    snapshotId = await snapshot();
     const context = await setupContext();
 
     ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];
@@ -51,18 +49,18 @@ describe("MChallengeRegistryCore", () => {
     setState = context["setState"];
     isFinalized = context["isFinalized"];
     verifyChallenge = context["verifyChallenge"];
-    setAndProgressState = 
-      (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => context["setAndProgressState"](
+    setAndProgressState = (
+      versionNumber: number,
+      state?: AppWithCounterState,
+      turnTaker?: Wallet,
+    ) =>
+      context["setAndProgressState"](
         versionNumber, // nonce
         state || context["state0"], // state
         context["action"], // action
         undefined, // timeout
         turnTaker || context["bob"], // turn taker
       );
-  });
-
-  afterEach(async () => {
-    await restore(snapshotId);
   });
 
   describe("isFinalized", () => {

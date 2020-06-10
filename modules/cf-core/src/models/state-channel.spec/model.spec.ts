@@ -1,14 +1,16 @@
 import { StateChannelJSON } from "@connext/types";
 import { bigNumberifyJson, getRandomAddress, getRandomBytes32, toBN } from "@connext/utils";
-import { getAddress, BigNumberish } from "ethers/utils";
+import { BigNumberish, utils, constants } from "ethers";
 
 import { getRandomContractAddresses } from "../../testing/mocks";
 
 import { StateChannel } from "../state-channel";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
-import { AddressZero } from "ethers/constants";
 import { FreeBalanceClass } from "../free-balance";
 import { flipTokenIndexedBalances } from "../utils";
+
+const { getAddress } = utils;
+const { AddressZero } = constants;
 
 describe("StateChannel", () => {
   test("should be able to instantiate", () => {
@@ -194,8 +196,6 @@ describe("StateChannel", () => {
     const [initiator, responder] = getRandomPublicIdentifiers(2);
 
     const { IdentityApp, ProxyFactory, MinimumViableMultisig } = getRandomContractAddresses();
-
-    console.log(`IdentityApp address: ${IdentityApp}`);
 
     let sc: StateChannel;
     let json: StateChannelJSON;

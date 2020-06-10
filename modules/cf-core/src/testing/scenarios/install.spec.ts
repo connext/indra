@@ -1,7 +1,6 @@
 import { CONVENTION_FOR_ETH_ASSET_ID, ProtocolParams, ProtocolEventMessage } from "@connext/types";
 import { delay, getAddressFromAssetId } from "@connext/utils";
-import { One } from "ethers/constants";
-import { BigNumber, isHexString } from "ethers/utils";
+import { BigNumber, constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
@@ -24,6 +23,9 @@ import {
   makeInstallCall,
   transferERC20Tokens,
 } from "../utils";
+
+const { One } = constants;
+const { isHexString } = utils;
 
 expect.extend({ toBeLt, toBeEq });
 
@@ -180,7 +182,7 @@ describe("Node method follows spec - install", () => {
 
       it("sends proposal with null initial state", async () => {
         const appContext = getAppContext(TicTacToeApp);
-        const appInstanceProposalReq = constructAppProposalRpc(
+        const AppInstanceJsonReq = constructAppProposalRpc(
           multisigAddress,
           nodeB.publicIdentifier,
           appContext.appDefinition,
@@ -188,9 +190,9 @@ describe("Node method follows spec - install", () => {
           appContext.initialState,
         );
 
-        appInstanceProposalReq.parameters["initialState"] = undefined;
+        AppInstanceJsonReq.parameters["initialState"] = undefined;
 
-        await expect(nodeA.rpcRouter.dispatch(appInstanceProposalReq)).rejects.toThrowError(
+        await expect(nodeA.rpcRouter.dispatch(AppInstanceJsonReq)).rejects.toThrowError(
           NULL_INITIAL_STATE_FOR_PROPOSAL,
         );
       });

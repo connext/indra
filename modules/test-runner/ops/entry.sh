@@ -6,15 +6,16 @@ cmd="${1:-test}"
 
 export STORE_DIR="./.test-store"
 export INDRA_CLIENT_LOG_LEVEL="${INDRA_CLIENT_LOG_LEVEL:-0}"
-export INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:8545}"
+export INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://ethprovider:8545}"
 export INDRA_ETH_MNEMONIC="${INDRA_ETH_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
-export INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:8080}"
-export INDRA_NATS_URL="${INDRA_NATS_URL:-nats://172.17.0.1:4222}"
+export INDRA_NODE_URL="${INDRA_NODE_URL:-http://node:8080}"
+export INDRA_NATS_URL="${INDRA_NATS_URL:-nats://nats:4222}"
 export INDRA_PG_DATABASE="${INDRA_PG_DATABASE:-$project}"
-export INDRA_PG_HOST="${INDRA_PG_HOST:-172.17.0.1}"
+export INDRA_PG_HOST="${INDRA_PG_HOST:-database}"
 export INDRA_PG_PASSWORD="${INDRA_PG_PASSWORD:-$project}"
 export INDRA_PG_PORT="${INDRA_PG_PORT:-5432}"
 export INDRA_PG_USERNAME="${INDRA_PG_USERNAME:-$project}"
+export INDRA_REDIS_URL="${INDRA_REDIS_URL:-redis://redis:6379}"
 export NODE_ENV="${NODE_ENV:-development}"
 
 echo "Integration Tester Container launched!"
@@ -47,6 +48,8 @@ function wait_for {
 wait_for "database" "$INDRA_PG_HOST:$INDRA_PG_PORT"
 wait_for "ethprovider" "$INDRA_ETH_RPC_URL"
 wait_for "node" "$INDRA_NODE_URL"
+wait_for "redis" "$INDRA_REDIS_URL"
+wait_for "nats" "$INDRA_NATS_URL"
 
 bundle=dist/tests.bundle.js
 

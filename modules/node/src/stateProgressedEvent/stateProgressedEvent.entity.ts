@@ -10,8 +10,10 @@ import {
 import { Challenge } from "../challenge/challenge.entity";
 import { StateProgressedEventPayload, AppName, AppActions, Address } from "@connext/types";
 import { IsEthAddress } from "../validate";
-import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { BigNumber, utils } from "ethers";
 import { toBN } from "@connext/utils";
+
+const { defaultAbiCoder } = utils;
 
 export const entityToStateProgressedEventPayload = (
   item: StateProgressedEvent | undefined,

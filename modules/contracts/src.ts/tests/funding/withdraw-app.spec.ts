@@ -8,13 +8,14 @@ import {
   WithdrawAppStateEncoding,
 } from "@connext/types";
 import { ChannelSigner, getRandomBytes32 } from "@connext/utils";
-import { Wallet, ContractFactory, Contract } from "ethers";
-import { Zero, HashZero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, hexlify, randomBytes, SigningKey } from "ethers/utils";
+import { BigNumber, Wallet, ContractFactory, Contract, constants, utils } from "ethers";
 
 import { WithdrawApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
+
+const { Zero, HashZero } = constants;
+const { defaultAbiCoder, hexlify, randomBytes, SigningKey } = utils;
 
 const decodeTransfers = (encodedTransfers: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedTransfers)[0];
@@ -39,7 +40,7 @@ describe("WithdrawApp", async () => {
   const withdrawerWallet = Wallet.createRandom();
   const counterpartyWallet = Wallet.createRandom();
   const bystanderWallet = Wallet.createRandom();
-  const amount = new BigNumber(10000);
+  const amount = BigNumber.from(10000);
   const data = getRandomBytes32(); // TODO: test this with real withdrawal commitment hash?
   const withdrawerSigningKey = new SigningKey(withdrawerWallet.privateKey);
   const counterpartySigningKey = new SigningKey(counterpartyWallet.privateKey);
@@ -52,11 +53,11 @@ describe("WithdrawApp", async () => {
 
   // helpers
   const computeOutcome = async (state: WithdrawAppState): Promise<string> => {
-    return withdrawApp.functions.computeOutcome(encodeAppState(state));
+    return withdrawApp.computeOutcome(encodeAppState(state));
   };
 
   const applyAction = async (state: any, action: WithdrawAppAction): Promise<string> => {
-    return withdrawApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
+    return withdrawApp.applyAction(encodeAppState(state), encodeAppAction(action));
   };
 
   const createInitialState = async (): Promise<WithdrawAppState> => {

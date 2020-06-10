@@ -9,6 +9,7 @@ import {
   SolidityValueType,
   EventPayload,
   Address,
+  EventPayloads,
 } from "@connext/types";
 import { bigNumberifyJson } from "@connext/utils";
 
@@ -16,7 +17,7 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 
 import { RequestHandler } from "../request-handler";
 import { RpcRouter } from "../rpc-router";
-import { StateChannel } from "../models";
+import { StateChannel, AppInstance } from "../models";
 
 /**
  * Forwards all received Messages that are for the machine's internal
@@ -37,19 +38,18 @@ export async function handleReceivedProtocolMessage(
   if (seq === UNASSIGNED_SEQ_NO) return;
 
   let postProtocolStateChannel: StateChannel;
-  const json = await store.getStateChannelByOwners([
-    params!.initiatorIdentifier,
-    params!.responderIdentifier,
-  ]);
+  let appInstance: AppInstance | undefined;
+  const json = await store.getStateChannel(params!.multisigAddress);
   try {
-    const { channel } = await protocolRunner.runProtocolWithMessage(
+    const { channel, appContext } = await protocolRunner.runProtocolWithMessage(
       router,
       data,
       json && StateChannel.fromJson(json),
     );
     postProtocolStateChannel = channel;
+    appInstance = appContext || undefined;
   } catch (e) {
-    log.error(`Caught error running protocol, aborting. Error: ${e.message}`);
+    log.error(`Caught error running ${data.protocol} protocol, aborting. Error: ${e.stack}`);
     return;
   }
 
@@ -57,6 +57,7 @@ export async function handleReceivedProtocolMessage(
     protocol,
     params!,
     postProtocolStateChannel,
+    appInstance,
   );
 
   if (!outgoingEventData) {
@@ -73,6 +74,7 @@ async function getOutgoingEventDataFromProtocol(
   protocol: ProtocolName,
   params: ProtocolParam,
   postProtocolStateChannel: StateChannel,
+  appContext?: AppInstance,
 ): Promise<ProtocolEventMessage<any> | undefined> {
   // default to the pubId that initiated the protocol
   const baseEvent = { from: params.initiatorIdentifier };
@@ -94,9 +96,7 @@ async function getOutgoingEventDataFromProtocol(
         ...baseEvent,
         type: EventNames.INSTALL_EVENT,
         data: {
-          appIdentityHash: postProtocolStateChannel.getAppInstanceByAppSeqNo(
-            (params as ProtocolParams.Install).appSeqNo,
-          ).identityHash,
+          appIdentityHash: (params as ProtocolParams.Install).proposal.identityHash,
         },
       } as ProtocolEventMessage<typeof EventNames.INSTALL_EVENT>;
     }
@@ -104,7 +104,7 @@ async function getOutgoingEventDataFromProtocol(
       return {
         ...baseEvent,
         type: EventNames.UNINSTALL_EVENT,
-        data: getUninstallEventData(params as ProtocolParams.Uninstall),
+        data: getUninstallEventData(params as ProtocolParams.Uninstall, appContext!),
       } as ProtocolEventMessage<typeof EventNames.UNINSTALL_EVENT>;
     }
     case ProtocolNames.setup: {
@@ -150,8 +150,12 @@ function getStateUpdateEventData(params: ProtocolParams.TakeAction, newState: So
   return { newState, appIdentityHash, action };
 }
 
-function getUninstallEventData({ appIdentityHash, multisigAddress }: ProtocolParams.Uninstall) {
-  return { appIdentityHash, multisigAddress };
+function getUninstallEventData(
+  params: ProtocolParams.Uninstall,
+  appContext: AppInstance,
+): EventPayloads.Uninstall {
+  const { appIdentityHash, multisigAddress, action } = params;
+  return { appIdentityHash, multisigAddress, action, uninstalledApp: appContext.toJson() };
 }
 
 function getSetupEventData(

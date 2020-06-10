@@ -1,17 +1,17 @@
 import { Address, AssetId, PublicKey, PublicIdentifier } from "@connext/types";
 import bs58check from "bs58check";
-import { getAddress } from "ethers/utils";
-import {
-  hexToBuffer,
-  bufferToHex,
-  compress,
-  decompress,
-} from "eccrypto-js";
+import { utils } from "ethers";
+import { hexToBuffer, bufferToHex, compress, decompress } from "eccrypto-js";
 
 import { getAddressError } from "./hexStrings";
-import { getAddressFromPublicKey } from "./crypto";
+import { LimitedCache } from "./limitedCache";
+import { getRandomPublicKey, getAddressFromPublicKey } from "./crypto";
+
+const { getAddress } = utils;
 
 export const INDRA_PUB_ID_PREFIX = "indra";
+
+const cache = new LimitedCache(200);
 
 ////////////////////////////////////////
 // Conversions
@@ -20,15 +20,31 @@ export const getPublicIdentifierFromPublicKey = (publicKey: PublicKey): PublicId
   INDRA_PUB_ID_PREFIX + bs58check.encode(compress(hexToBuffer(publicKey)));
 
 export const getPublicKeyFromPublicIdentifier = (publicIdentifier: PublicIdentifier) =>
-  `0x${bufferToHex(decompress(bs58check.decode(
-    publicIdentifier.replace(INDRA_PUB_ID_PREFIX, ""),
-  )))}`;
+  `0x${bufferToHex(
+    decompress(bs58check.decode(publicIdentifier.replace(INDRA_PUB_ID_PREFIX, ""))),
+  )}`;
 
-export const getSignerAddressFromPublicIdentifier = (publicIdentifier: PublicIdentifier): Address =>
-  getAddressFromPublicKey(getPublicKeyFromPublicIdentifier(publicIdentifier));
+export const getSignerAddressFromPublicIdentifier = (
+  publicIdentifier: PublicIdentifier,
+): Address => {
+  const key = `signer-address:${publicIdentifier}`;
+  const cached = cache.get<Address>(key);
+  if (cached) {
+    return cached;
+  }
+  const res = getAddressFromPublicKey(getPublicKeyFromPublicIdentifier(publicIdentifier));
+  cache.set<Address>(key, res);
+  return res;
+};
 
 // makes sure all addresses are normalized
 export const getAddressFromAssetId = (assetId: AssetId): Address => getAddress(assetId);
+
+////////////////////////////////////////
+// Generator
+
+export const getRandomIdentifier = (): PublicIdentifier =>
+  getPublicIdentifierFromPublicKey(getRandomPublicKey());
 
 ////////////////////////////////////////
 // Validators

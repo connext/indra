@@ -14,7 +14,7 @@ import {
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { IsKeccak256Hash } from "../validate";
 import { Channel } from "../channel/channel.entity";
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 import { AppName, StoredAppChallengeStatus } from "@connext/types";
 import { StateProgressedEvent } from "../stateProgressedEvent/stateProgressedEvent.entity";
 import { ChallengeUpdatedEvent } from "../challengeUpdatedEvent/challengeUpdatedEvent.entity";
@@ -58,10 +58,10 @@ export class Challenge<T extends AppName = any> {
   @JoinColumn()
   app!: AppInstance<T>;
 
-  @OneToMany(type => StateProgressedEvent, event => event.challenge)
+  @OneToMany((type) => StateProgressedEvent, (event) => event.challenge)
   stateProgressedEvents!: StateProgressedEvent<T>[];
 
-  @OneToMany(type => ChallengeUpdatedEvent, event => event.challenge)
+  @OneToMany((type) => ChallengeUpdatedEvent, (event) => event.challenge)
   challengeUpdatedEvents!: ChallengeUpdatedEvent<T>[];
 
   @ManyToOne((type: any) => Channel)

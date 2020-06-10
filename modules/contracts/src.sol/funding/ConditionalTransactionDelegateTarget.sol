@@ -1,4 +1,6 @@
-pragma solidity 0.6.7;
+
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.6.4;
 pragma experimental "ABIEncoderV2";
 
 import "./state-deposit-holders/MultisigTransfer.sol";

@@ -22,11 +22,11 @@ import {
   HashLockTransferAppState,
   DepositAppName,
   GenericConditionalTransferAppState,
+  getTransferTypeFromAppName,
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { JsonRpcProvider } from "ethers/providers";
-import { bigNumberify } from "ethers/utils";
+import { BigNumber, providers, utils } from "ethers";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -39,7 +39,7 @@ import { DepositService } from "../deposit/deposit.service";
 import { LoggerService } from "../logger/logger.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
-import { TransferService, getTransferTypeFromAppName } from "../transfer/transfer.service";
+import { TransferService } from "../transfer/transfer.service";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -114,7 +114,7 @@ export class AppRegistryService implements OnModuleInit {
           installerChannel.multisigAddress,
           proposeInstallParams.responderDepositAssetId,
         );
-        const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
+        const responderDepositBigNumber = BigNumber.from(proposeInstallParams.responderDeposit);
         if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
           const amount = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
             from,
@@ -140,7 +140,11 @@ export class AppRegistryService implements OnModuleInit {
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.stack || e.message}`);
-      await this.cfCoreService.rejectInstallApp(appIdentityHash, installerChannel.multisigAddress);
+      await this.cfCoreService.rejectInstallApp(
+        appIdentityHash,
+        installerChannel.multisigAddress,
+        e.message,
+      );
       return;
     }
   }
@@ -162,7 +166,7 @@ export class AppRegistryService implements OnModuleInit {
         this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`);
         await this.withdrawService.saveWithdrawal(
           appIdentityHash,
-          bigNumberify(proposeInstallParams.initiatorDeposit),
+          BigNumber.from(proposeInstallParams.initiatorDeposit),
           proposeInstallParams.initiatorDepositAssetId,
           initialState.transfers[0].to,
           initialState.data,
@@ -170,7 +174,7 @@ export class AppRegistryService implements OnModuleInit {
           initialState.signatures[1],
           appInstance.multisigAddress,
         );
-        this.withdrawService.handleUserWithdraw(appInstance);
+        await this.withdrawService.handleUserWithdraw(appInstance);
         break;
       }
       default:
@@ -190,7 +194,7 @@ export class AppRegistryService implements OnModuleInit {
     const defaultValidation = await generateValidationMiddleware(
       {
         contractAddresses,
-        provider: provider as JsonRpcProvider,
+        provider: provider as providers.JsonRpcProvider,
       },
       this.configService.getSupportedTokens(),
     );
@@ -232,7 +236,7 @@ export class AppRegistryService implements OnModuleInit {
     }
 
     const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
-      appInstance.appInterface.addr,
+      appInstance.appDefinition,
     );
 
     // this middleware is only relevant for require online
@@ -244,6 +248,10 @@ export class AppRegistryService implements OnModuleInit {
       appInstance.meta.paymentId,
     );
 
+    if (!existingSenderApp) {
+      throw new Error(`Sender app not installed`);
+    }
+
     if (existingSenderApp.type === AppType.INSTANCE) {
       this.log.info(`Sender app was already installed, doing nothing.`);
       return;
@@ -254,6 +262,7 @@ export class AppRegistryService implements OnModuleInit {
     }
 
     try {
+      this.log.info(`Installing sender app from app proposal: ${appInstance.identityHash}`);
       await this.cfCoreService.installApp(
         existingSenderApp.identityHash,
         existingSenderApp.channel.multisigAddress,
@@ -264,6 +273,7 @@ export class AppRegistryService implements OnModuleInit {
       await this.cfCoreService.rejectInstallApp(
         existingSenderApp.identityHash,
         existingSenderApp.channel.multisigAddress,
+        e.message,
       );
       return;
     }
@@ -271,7 +281,7 @@ export class AppRegistryService implements OnModuleInit {
 
   private installMiddleware = async (cxt: InstallMiddlewareContext) => {
     const { appInstance } = cxt;
-    const appDef = appInstance.appInterface.addr;
+    const appDef = appInstance.appDefinition;
 
     const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
 
@@ -388,7 +398,7 @@ export class AppRegistryService implements OnModuleInit {
 
   private uninstallMiddleware = async (cxt: UninstallMiddlewareContext): Promise<void> => {
     const { appInstance, role } = cxt;
-    const appDef = appInstance.appInterface.addr;
+    const appDef = appInstance.appDefinition;
 
     const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
 

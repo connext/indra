@@ -3,9 +3,7 @@ import { ERC20 } from "@connext/contracts";
 import { MessagingService } from "@connext/messaging";
 import { ConnextNodeStorePrefix } from "@connext/types";
 import { Provider } from "@nestjs/common";
-import { Contract } from "ethers";
-import { EtherSymbol } from "ethers/constants";
-import { formatEther } from "ethers/utils";
+import { Contract, constants, utils } from "ethers";
 
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, MessagingProviderId } from "../constants";
@@ -13,6 +11,9 @@ import { LockService } from "../lock/lock.service";
 import { LoggerService } from "../logger/logger.service";
 
 import { CFCoreStore } from "./cfCore.store";
+
+const { EtherSymbol } = constants;
+const { formatEther } = utils;
 
 export const cfCoreProviderFactory: Provider = {
   inject: [ConfigService, LockService, LoggerService, MessagingProviderId, CFCoreStore],
@@ -39,7 +40,7 @@ export const cfCoreProviderFactory: Provider = {
       { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
       provider,
       config.getSigner(),
-      { 
+      {
         acquireLock: lockService.acquireLock.bind(lockService),
         releaseLock: lockService.releaseLock.bind(lockService),
       },
@@ -47,17 +48,23 @@ export const cfCoreProviderFactory: Provider = {
       log.newContext("CFCore"),
       false, // only clients sync on cf core start
     );
-    const ethBalance = formatEther(await provider.getBalance(signerAddress));
 
-    const tokenContract = new Contract(
-      contractAddresses.Token,
-      ERC20.abi,
-      config.getSigner(),
-    );
-    const tknBalance = formatEther(await tokenContract.balanceOf(signerAddress));
+    const ethBalance = await provider.getBalance(signerAddress);
+    const tokenContract = new Contract(contractAddresses.Token, ERC20.abi, config.getSigner());
+    const tknBalance = await tokenContract.balanceOf(signerAddress);
+
     log.info(
-      `Balance of signer address ${signerAddress} on ${networkName} (chainId ${chainId}): ${EtherSymbol} ${ethBalance} & ${tknBalance} tokens`,
+      `Balance of signer address ${signerAddress} on ${networkName} (chainId ${chainId}): ${EtherSymbol} ${formatEther(ethBalance)} & ${formatEther(tknBalance)} tokens`,
     );
+
+    if (ethBalance.eq(constants.Zero)) {
+      log.warn(`Warning: Node's ETH balance is zero`);
+    }
+
+    if (tknBalance.eq(constants.Zero)) {
+      log.warn(`Warning: Node's Token balance is zero`);
+    }
+
     log.info("CFCore created");
     return cfCore;
   },

@@ -1,5 +1,6 @@
+import { BigNumber } from "ethers";
+
 import { Address, HexString, Bytes32 } from "../basic";
-import { BigNumber } from "ethers/utils";
 
 ////////////////////////////////////////
 // keep synced w contracts/adjudicator/libs/LibStateChannelApp.sol

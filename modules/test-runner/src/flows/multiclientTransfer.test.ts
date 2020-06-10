@@ -1,9 +1,10 @@
 import { IConnextClient, EventNames } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { AddressZero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import { BigNumber, constants } from "ethers";
 
 import { expect, createClient, fundChannel } from "../util";
+
+const { AddressZero } = constants;
 
 // TODO: fix race condition
 describe.skip("Full Flow: Multi-client transfer", () => {
@@ -26,21 +27,21 @@ describe.skip("Full Flow: Multi-client transfer", () => {
   it("Clients transfer assets between themselves", async function () {
     // how long the ping-pong transfers should last in s
     const DURATION = 15_000;
-    let gatewayTransfers = {
+    const gatewayTransfers = {
       sent: 0,
       received: 0,
     };
-    let indexerATransfers = {
+    const indexerATransfers = {
       sent: 0,
       received: 0,
     };
-    let indexerBTransfers = {
+    const indexerBTransfers = {
       sent: 0,
       received: 0,
     };
     const startTime = Date.now();
     await new Promise(async (res, rej) => {
-      await fundChannel(gateway, bigNumberify(100));
+      await fundChannel(gateway, BigNumber.from(100));
       gateway.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
         gatewayTransfers.received += 1;
         const freeBalance = await gateway.getFreeBalance();

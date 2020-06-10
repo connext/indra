@@ -9,10 +9,12 @@ import {
   CoinTransfer,
   GenericConditionalTransferAppName,
   MethodParams,
+  getTransferTypeFromAppName,
+  SupportedApplicationNames,
 } from "@connext/types";
 import { stringify, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { TRANSFER_TIMEOUT, SupportedApplications } from "@connext/apps";
-import { Zero, HashZero } from "ethers/constants";
+import { TRANSFER_TIMEOUT } from "@connext/apps";
+import { constants } from "ethers";
 
 import { LoggerService } from "../logger/logger.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -25,28 +27,7 @@ import { Channel } from "../channel/channel.entity";
 
 import { TransferRepository } from "./transfer.repository";
 
-export type TransferType = "RequireOnline" | "AllowOffline";
-export const getTransferTypeFromAppName = (
-  name: SupportedApplications,
-): TransferType | undefined => {
-  switch (name) {
-    case SupportedApplications.DepositApp:
-    case SupportedApplications.SimpleTwoPartySwapApp:
-    case SupportedApplications.WithdrawApp: {
-      return undefined;
-    }
-    case SupportedApplications.HashLockTransferApp: {
-      return "RequireOnline";
-    }
-    case SupportedApplications.SimpleLinkedTransferApp:
-    case SupportedApplications.SimpleSignedTransferApp: {
-      return "AllowOffline";
-    }
-    default:
-      const c: never = name;
-      throw new Error(`Unreachable: ${c}`);
-  }
-};
+const { Zero, HashZero } = constants;
 
 @Injectable()
 export class TransferService {
@@ -73,44 +54,46 @@ export class TransferService {
     this.log.info(`Start transferAppInstallFlow for appIdentityHash ${appIdentityHash}`);
 
     const paymentId = proposeInstallParams.meta["paymentId"];
-    const allowed = getTransferTypeFromAppName(transferType as SupportedApplications);
+    const allowed = getTransferTypeFromAppName(transferType as SupportedApplicationNames);
     // in the allow offline case, we want both receiver and sender apps to install in parallel
     // if allow offline, resolve after sender app install
     // if not, will be installed in middleware
     if (allowed === "AllowOffline") {
-      try {
-        this.log.info(
-          `Installing sender app ${appIdentityHash} in channel ${installerChannel.multisigAddress}`,
-        );
-        await this.cfCoreService.installApp(appIdentityHash, installerChannel.multisigAddress);
-        this.log.info(
-          `Sender app ${appIdentityHash} in channel ${installerChannel.multisigAddress} installed`,
-        );
-      } catch (e) {
-        throw e;
-      }
+      this.log.info(
+        `Installing sender app ${appIdentityHash} in channel ${installerChannel.multisigAddress}`,
+      );
+      await this.cfCoreService.installApp(appIdentityHash, installerChannel.multisigAddress);
+      this.log.info(
+        `Sender app ${appIdentityHash} in channel ${installerChannel.multisigAddress} installed`,
+      );
     }
 
     // install for receiver or error
     // https://github.com/ConnextProject/indra/issues/942
-    this.installReceiverAppByPaymentId(
-      from,
-      proposeInstallParams.meta.recipient,
-      paymentId,
-      proposeInstallParams.initiatorDepositAssetId,
-      proposeInstallParams.initialState as AppStates[typeof transferType],
-      proposeInstallParams.meta,
-      transferType,
-    )
-      .then((receiverInstall) => {
-        this.log.info(`Installed receiver app ${receiverInstall.appIdentityHash}`);
-      })
-      .catch((e) => {
-        if (allowed === "RequireOnline") {
-          throw e;
-        }
-      });
-    this.log.info(`TransferAppInstallFlow for appIdentityHash ${appIdentityHash} complete`);
+    if (proposeInstallParams.meta.recipient) {
+      const receiverInstallPromise = this.installReceiverAppByPaymentId(
+        from,
+        proposeInstallParams.meta.recipient,
+        paymentId,
+        proposeInstallParams.initiatorDepositAssetId,
+        proposeInstallParams.initialState as AppStates[typeof transferType],
+        proposeInstallParams.meta,
+        transferType,
+      )
+        .then((receiverInstall) => {
+          this.log.info(`Installed receiver app ${receiverInstall.appIdentityHash}`);
+        })
+        .catch((e) => {
+          this.log.error(`Error installing receiver app: ${e.message}`);
+          if (allowed === "RequireOnline") {
+            throw e;
+          }
+        });
+      if (allowed === "RequireOnline") {
+        await receiverInstallPromise;
+      }
+      this.log.info(`TransferAppInstallFlow for appIdentityHash ${appIdentityHash} complete`);
+    }
   }
 
   async installReceiverAppByPaymentId(
@@ -148,12 +131,12 @@ export class TransferService {
           return result;
         }
         case AppType.PROPOSAL: {
-          this.log.warn(
-            `Found existing transfer app proposal ${existing.identityHash}, rejecting and continuing`,
-          );
+          const msg = `Found existing transfer app proposal ${existing.identityHash}`;
+          this.log.warn(msg + `, rejecting and continuing`);
           await this.cfCoreService.rejectInstallApp(
             existing.identityHash,
             receiverChannel.multisigAddress,
+            msg,
           );
           break;
         }
@@ -259,6 +242,7 @@ export class TransferService {
       throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
     }
 
+    // this should never happen, maybe remove
     if (senderApp.latestState.preImage && senderApp.latestState.preImage !== HashZero) {
       throw new Error(`Sender app has action, refusing to redeem`);
     }

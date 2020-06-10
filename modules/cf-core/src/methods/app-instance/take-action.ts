@@ -10,8 +10,7 @@ import {
   PublicIdentifier,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { INVALID_ARGUMENT } from "ethers/errors";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, errors } from "ethers";
 
 import {
   IMPROPERLY_FORMATTED_STRUCT,
@@ -67,7 +66,7 @@ export class TakeActionController extends MethodController {
     try {
       appInstance.encodeAction(action);
     } catch (e) {
-      if (e.code === INVALID_ARGUMENT) {
+      if (e.code === errors.INVALID_ARGUMENT) {
         throw new Error(`${IMPROPERLY_FORMATTED_STRUCT}: ${e.message}`);
       }
       throw new Error(STATE_OBJECT_NOT_ENCODABLE);
@@ -77,16 +76,16 @@ export class TakeActionController extends MethodController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
-    preProtocolStateChannel: StateChannel | undefined,
+    preProtocolStateChannel: StateChannel,
   ): Promise<MethodResults.TakeAction> {
-    const { store, publicIdentifier, protocolRunner, router } = requestHandler;
+    const { publicIdentifier, protocolRunner, router } = requestHandler;
     const { appIdentityHash, action, stateTimeout } = params;
 
     const app = preProtocolStateChannel!.appInstances.get(appIdentityHash)!;
 
     const { channel } = await runTakeActionProtocol(
       appIdentityHash,
-      store,
+      preProtocolStateChannel,
       router,
       protocolRunner,
       publicIdentifier,
@@ -123,7 +122,7 @@ export class TakeActionController extends MethodController {
 
 async function runTakeActionProtocol(
   appIdentityHash: string,
-  store: IStoreService,
+  preProtocolStateChannel: StateChannel,
   router: RpcRouter,
   protocolRunner: ProtocolRunner,
   initiatorIdentifier: PublicIdentifier,
@@ -131,25 +130,25 @@ async function runTakeActionProtocol(
   action: SolidityValueType,
   stateTimeout: BigNumber,
 ) {
-  const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-  if (!stateChannel) {
-    throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
-  }
-
   try {
-    return await protocolRunner.initiateProtocol(router, ProtocolNames.takeAction, {
-      initiatorIdentifier,
-      responderIdentifier,
-      appIdentityHash,
-      action,
-      multisigAddress: stateChannel.multisigAddress,
-      stateTimeout,
-    });
+    return await protocolRunner.initiateProtocol(
+      router,
+      ProtocolNames.takeAction,
+      {
+        initiatorIdentifier,
+        responderIdentifier,
+        appIdentityHash,
+        action,
+        multisigAddress: preProtocolStateChannel.multisigAddress,
+        stateTimeout,
+      },
+      preProtocolStateChannel,
+    );
   } catch (e) {
-    if (e.toString().indexOf(`VM Exception`) !== -1) {
+    if (e.message.includes(`VM Exception`)) {
       // TODO: Fetch the revert reason
       throw new Error(`${INVALID_ACTION}: ${e.message}`);
     }
-    throw new Error(`Couldn't run TakeAction protocol: ${e.message}`);
+    throw new Error(`Couldn't run TakeAction protocol: ${e.stack}`);
   }
 }

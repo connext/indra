@@ -1,7 +1,9 @@
 import { IConnextClient, CONVENTION_FOR_ETH_ASSET_ID } from "@connext/types";
-import { One, Zero } from "ethers/constants";
+import { constants } from "ethers";
 
 import { createClient, ethProvider, expect, getOnchainBalance, sendOnchainValue } from "../util";
+
+const { One, Zero } = constants;
 
 describe("Deposit Rights", () => {
   let client: IConnextClient;
@@ -21,7 +23,8 @@ describe("Deposit Rights", () => {
     await new Promise(
       async (res: any, rej: any): Promise<any> => {
         // ignore events when listener is registered
-        ethProvider.on(client.multisigAddress, async (balance) => {
+        ethProvider.on("block", async () => {
+          const balance = await getOnchainBalance(client.multisigAddress);
           if (balance.eq(initialBalance)) {
             return;
           }
@@ -34,6 +37,8 @@ describe("Deposit Rights", () => {
             res();
           } catch (e) {
             rej(e);
+          } finally {
+            ethProvider.off("block");
           }
         });
         try {
@@ -56,7 +61,7 @@ describe("Deposit Rights", () => {
     expect(initialBalance).to.be.eq(Zero);
     await new Promise(
       async (res: any, rej: any): Promise<any> => {
-        ethProvider.on(client.multisigAddress, async () => {
+        ethProvider.on("block", async () => {
           const balance = await getOnchainBalance(client.multisigAddress, assetId);
           if (balance.eq(initialBalance)) {
             return;
@@ -69,6 +74,8 @@ describe("Deposit Rights", () => {
             res();
           } catch (e) {
             rej(e);
+          } finally {
+            ethProvider.off("block");
           }
         });
         try {

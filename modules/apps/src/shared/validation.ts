@@ -1,9 +1,10 @@
 import { CoinTransfer, DepositAppName, ProtocolParams } from "@connext/types";
 import { getAddressFromAssetId, stringify } from "@connext/utils";
-import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, constants } from "ethers";
 
 import { AppRegistryInfo, DEFAULT_APP_TIMEOUT, MINIMUM_APP_TIMEOUT } from "./registry";
+
+const { Zero } = constants;
 
 const appProposalMatchesRegistry = (
   proposal: ProtocolParams.Propose,
@@ -140,14 +141,14 @@ export const commonAppProposalValidation = (
   // Validate that the timeouts make sense
   if (params.defaultTimeout.lt(MINIMUM_APP_TIMEOUT)) {
     throw new Error(
-      `Cannot install an app with default timeout: ${params.defaultTimeout}, less than minimum timeout: ${MINIMUM_APP_TIMEOUT})`
-    )
+      `Cannot install an app with default timeout: ${params.defaultTimeout}, less than minimum timeout: ${MINIMUM_APP_TIMEOUT})`,
+    );
   }
 
   if (params.defaultTimeout.gt(DEFAULT_APP_TIMEOUT)) {
     throw new Error(
-      `Cannot install an app with default timeout: ${params.defaultTimeout}, greater than max timeout: ${DEFAULT_APP_TIMEOUT}`
-    )
+      `Cannot install an app with default timeout: ${params.defaultTimeout}, greater than max timeout: ${DEFAULT_APP_TIMEOUT}`,
+    );
   }
 
   // NOTE: may need to remove this condition if we start working

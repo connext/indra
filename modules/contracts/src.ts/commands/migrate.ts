@@ -1,12 +1,14 @@
-import { Wallet } from "ethers";
-import { EtherSymbol } from "ethers/constants";
-import { formatEther } from "ethers/utils";
+import { Wallet, constants, utils } from "ethers";
+
 import { Argv } from "yargs";
 
 import { getAddressBook } from "../address-book";
 import { cliOpts } from "../constants";
 import { isContractDeployed, deployContract } from "../deploy";
 import { getProvider } from "../utils";
+
+const { EtherSymbol } = constants;
+const { formatEther } = utils;
 
 const coreContracts = [
   "ChallengeRegistry",
@@ -27,7 +29,6 @@ const coreContracts = [
 ];
 
 export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<void> => {
-
   ////////////////////////////////////////
   // Environment Setup
 
@@ -36,7 +37,9 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
   const nonce = await wallet.getTransactionCount();
 
   console.log(`\nPreparing to migrate contracts to chain w id: ${chainId}`);
-  console.log(`Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${formatEther(balance)}\n`);
+  console.log(
+    `Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${formatEther(balance)}\n`,
+  );
 
   const addressBook = getAddressBook(addressBookPath, chainId.toString());
 

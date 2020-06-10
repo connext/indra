@@ -1,9 +1,11 @@
 import { HashLockTransferAppName, Address, Bytes32 } from "@connext/types";
-import { HashZero } from "ethers/constants";
+import { constants } from "ethers";
 import { EntityRepository, Repository } from "typeorm";
 
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
+
+const { HashZero } = constants;
 
 @EntityRepository(AppInstance)
 export class HashlockTransferRepository extends Repository<
@@ -22,9 +24,7 @@ export class HashlockTransferRepository extends Repository<
       .leftJoinAndSelect("app_instance.channel", "channel")
       .where("app_registry.name = :name", { name: HashLockTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "lockHash": "${lockHash}" }'`)
-      .andWhere(
-        `app_instance."outcomeInterpreterParameters"::JSONB @> '{ "tokenAddress": "${assetId}" }'`,
-      )
+      .andWhere(`app_instance."interpreterParams"::JSONB @> '{ "tokenAddress": "${assetId}" }'`)
       .getMany();
   }
 
@@ -49,9 +49,7 @@ export class HashlockTransferRepository extends Repository<
         .andWhere(
           `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${nodeSignerAddress}"'`,
         )
-        .andWhere(
-          `app_instance."outcomeInterpreterParameters"::JSONB @> '{ "tokenAddress": "${assetId}" }'`,
-        )
+        .andWhere(`app_instance."interpreterParams"::JSONB @> '{ "tokenAddress": "${assetId}" }'`)
         .getOne()
     );
   }
@@ -73,9 +71,7 @@ export class HashlockTransferRepository extends Repository<
         // meta for transfer recipient
         .andWhere(`app_instance."meta"::JSONB @> '{"recipient":"${recipientIdentifier}"}'`)
         .andWhere(`app_instance."latestState"::JSONB @> '{"lockHash": "${lockHash}"}'`)
-        .andWhere(
-          `app_instance."outcomeInterpreterParameters"::JSONB @> '{ "tokenAddress": "${assetId}" }'`,
-        )
+        .andWhere(`app_instance."interpreterParams"::JSONB @> '{ "tokenAddress": "${assetId}" }'`)
         .getOne()
     );
   }

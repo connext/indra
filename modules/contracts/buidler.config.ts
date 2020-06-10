@@ -1,6 +1,6 @@
 import { BuidlerConfig } from "@nomiclabs/buidler/config";
 import { usePlugin } from "@nomiclabs/buidler/config";
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers";
 
 import * as packageJson from "./package.json";
 
@@ -9,7 +9,7 @@ import * as packageJson from "./package.json";
 
 // create accounts with the default balance of MAX_INT / 2
 // and use them to fund accounts in the test as needed
-const MAX_INT = new BigNumber(2).pow(256).sub(1);
+const MAX_INT = BigNumber.from(2).pow(256).sub(1);
 
 usePlugin("@nomiclabs/buidler-waffle");
 
@@ -25,7 +25,7 @@ const config: BuidlerConfig = {
   defaultNetwork: "buidlerevm",
   networks: {
     ganache: {
-      chainId: 4447,
+      chainId: 1337,
       url: "http://localhost:8545",
     },
     buidlerevm: {

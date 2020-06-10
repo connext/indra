@@ -5,9 +5,11 @@ import {
   MultisigTransaction,
 } from "@connext/types";
 import { recoverAddressFromChannelMessage } from "@connext/utils";
-import { Interface, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
+import { utils } from "ethers";
 
 import * as MinimumViableMultisig from "../../artifacts/MinimumViableMultisig.json";
+
+const { Interface, keccak256, solidityKeccak256, solidityPack } = utils;
 
 // A commitment to make MinimumViableMultisig perform a message call
 export abstract class MultisigCommitment implements EthereumCommitment {
@@ -50,9 +52,7 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     await this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
 
-    const txData = new Interface(
-      MinimumViableMultisig.abi as any,
-    ).functions.execTransaction.encode([
+    const txData = new Interface(MinimumViableMultisig.abi).encodeFunctionData("execTransaction", [
       multisigInput.to,
       multisigInput.value,
       multisigInput.data,

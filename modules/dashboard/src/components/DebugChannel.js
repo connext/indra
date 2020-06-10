@@ -9,7 +9,7 @@ import {
   styled,
 } from "@material-ui/core";
 import { Search as SearchIcon } from "@material-ui/icons";
-import { bigNumberify } from "ethers/utils";
+import { BigNumber } from "ethers";
 import JSONTree from "react-json-tree";
 
 const RootGrid = styled(Grid)({
@@ -55,8 +55,8 @@ const DebugChannel = ({ classes, messaging }) => {
       const res = await messaging.getStateChannelByUserPubId(xPubSearch);
 
       let freeBalanceTotalHolder = [];
-      res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
-        balance.amount.readable = bigNumberify(balance.amount._hex).toString();
+      res.freeBalanceAppInstance.latestState.balances[0].forEach((balance) => {
+        balance.amount.readable = BigNumber.from(balance.amount._hex).toString();
         freeBalanceTotalHolder.push(balance.amount.readable);
       });
 
@@ -80,8 +80,8 @@ const DebugChannel = ({ classes, messaging }) => {
       const res = await messaging.getStateChannelByMultisig(multiSigSearch);
 
       let freeBalanceTotalHolder = [];
-      res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
-        balance.amount.readable = bigNumberify(balance.amount._hex).toString();
+      res.freeBalanceAppInstance.latestState.balances[0].forEach((balance) => {
+        balance.amount.readable = BigNumber.from(balance.amount._hex).toString();
         freeBalanceTotalHolder.push(balance.amount.readable);
       });
 
@@ -111,7 +111,7 @@ const DebugChannel = ({ classes, messaging }) => {
           label="Public Identifier"
           type="string"
           value={xPubSearch}
-          onChange={evt => setXPubSearch(evt.target.value)}
+          onChange={(evt) => setXPubSearch(evt.target.value)}
           margin="normal"
           variant="outlined"
           InputProps={{
@@ -137,7 +137,7 @@ const DebugChannel = ({ classes, messaging }) => {
           label="Multisig Address"
           type="string"
           value={multiSigSearch}
-          onChange={evt => setMultiSigSearch(evt.target.value)}
+          onChange={(evt) => setMultiSigSearch(evt.target.value)}
           margin="normal"
           variant="outlined"
           InputProps={{
@@ -159,22 +159,23 @@ const DebugChannel = ({ classes, messaging }) => {
       <Grid item xs={12}>
         <CardTextTypography>Free Balance: {freeBalance}</CardTextTypography>
       </Grid>
-      {!!channelState && <JSONTree data={channelState} />
-      // Object.entries(channelState).map(([k, v], i) => {
-      //   // if (Object.entries(v).length > 1) {
-      //   //   return(
-      //   //     Object.entries(channelState).map(([k2, v2], i) => {
-      //   //     <Typography className={classes.cardText}>{`${k}: ${}`}</Typography>})
-      //   //   );
-      //   // } else {
-      //   return (
-      //     <Grid item xs={12}>
-      //       <CardTextTypography key={k}>{`${k}: `}</CardTextTypography>
-      //       <pre>{`${JSON.stringify(v, null, 4)}`}</pre>
-      //     </Grid>
-      //   );
-      //   // }
-      // })
+      {
+        !!channelState && <JSONTree data={channelState} />
+        // Object.entries(channelState).map(([k, v], i) => {
+        //   // if (Object.entries(v).length > 1) {
+        //   //   return(
+        //   //     Object.entries(channelState).map(([k2, v2], i) => {
+        //   //     <Typography className={classes.cardText}>{`${k}: ${}`}</Typography>})
+        //   //   );
+        //   // } else {
+        //   return (
+        //     <Grid item xs={12}>
+        //       <CardTextTypography key={k}>{`${k}: `}</CardTextTypography>
+        //       <pre>{`${JSON.stringify(v, null, 4)}`}</pre>
+        //     </Grid>
+        //   );
+        //   // }
+        // })
       }
     </RootGrid>
   );
