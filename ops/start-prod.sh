@@ -116,7 +116,8 @@ then
   network="networks:
       - '$project'
     "
-  stack_network="$project:
+  stack_network="networks:
+  $project:
     external: true"
 else
   db_volume="database"
@@ -229,8 +230,7 @@ mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
-networks:
-  $stack_network
+$stack_network
 
 secrets:
   $db_secret:
