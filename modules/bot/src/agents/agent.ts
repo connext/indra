@@ -11,9 +11,9 @@ import {
   getTestVerifyingContract,
   signReceiptMessage,
   stringify,
+  getRandomBytes32,
 } from "@connext/utils";
-import { utils, constants, BigNumber } from "ethers";
-const { hexlify, randomBytes } = utils;
+import { constants, BigNumber } from "ethers";
 const { AddressZero } = constants;
 
 export class Agent {
@@ -139,45 +139,53 @@ export class Agent {
     });
   }
 
-  private retrieveResolverAndReject(paymentId: string, msg: string) {
-    const resolver = this.payments[paymentId];
-    if (!resolver) {
-      return;
-    }
-    delete this.payments[paymentId];
-    const [appId] = Object.entries(this.apps).find(([appId, id]) => id === paymentId) || [];
-    if (appId) {
-      delete this.apps[appId];
-    }
-    resolver.reject(new Error(msg));
-  }
-
-  async deposit(amount: BigNumber) {
+  async deposit(amount: BigNumber, assetId: string = AddressZero) {
     await this.client.deposit({
-      amount: amount,
-      assetId: AddressZero,
+      amount,
+      assetId,
     });
   }
 
-  async pay(receiverIdentifier: string, signerAddress: string, amount: BigNumber) {
-    const id = hexlify(randomBytes(32));
-    const receipt = getTestReceiptToSign();
-    const verifyingContract = getTestVerifyingContract();
-    const { chainId } = await this.client.ethProvider.getNetwork();
+  async depositIfNeeded(
+    minimumBalance: BigNumber,
+    depositAmount: BigNumber,
+    assetId: string = AddressZero,
+  ) {
+    // deposit if requested + needed
+    const balance = await this.client.getFreeBalance(assetId);
+    this.log.debug(`Agent balance: ${balance[this.client.signerAddress]}`);
+    if (balance[this.client.signerAddress].gte(minimumBalance)) {
+      return;
+    }
+    this.log.warn(
+      `Balance too low: ${balance[
+        this.client.signerAddress
+      ].toString()} < ${minimumBalance.toString()}, depositing...`,
+    );
+    await this.deposit(depositAmount);
+    this.log.info(`Finished depositing`);
+    const balanceAfterDeposit = await this.client.getFreeBalance(assetId);
+    this.log.info(`Agent balance after deposit: ${balanceAfterDeposit[this.client.signerAddress]}`);
+  }
+
+  async pay(
+    receiverIdentifier: string,
+    signerAddress: string,
+    amount: BigNumber,
+    id: string = getRandomBytes32(),
+    type: ConditionalTransferTypes = ConditionalTransferTypes.SignedTransfer,
+  ) {
+    const params = await this.getTransferParameters(
+      receiverIdentifier,
+      signerAddress,
+      amount,
+      id,
+      type,
+    );
+
     await new Promise((resolve, reject) => {
       this.client
-        .conditionalTransfer({
-          amount: amount,
-          conditionType: ConditionalTransferTypes.SignedTransfer,
-          paymentId: id,
-          signerAddress,
-          chainId,
-          verifyingContract,
-          requestCID: receipt.requestCID,
-          subgraphDeploymentID: receipt.subgraphDeploymentID,
-          assetId: AddressZero,
-          recipient: receiverIdentifier,
-        })
+        .conditionalTransfer(params)
         .then(() => {
           this.log.info(`Initiated transfer with ID ${id}.`);
         })
@@ -191,5 +199,53 @@ export class Agent {
         reject,
       };
     });
+  }
+
+  ///// Private methods
+  private retrieveResolverAndReject(paymentId: string, msg: string) {
+    const resolver = this.payments[paymentId];
+    if (!resolver) {
+      return;
+    }
+    delete this.payments[paymentId];
+    const [appId] = Object.entries(this.apps).find(([appId, id]) => id === paymentId) || [];
+    if (appId) {
+      delete this.apps[appId];
+    }
+    resolver.reject(new Error(msg));
+  }
+
+  private async getTransferParameters(
+    receiverIdentifier: string,
+    signerAddress: string,
+    amount: BigNumber,
+    id: string,
+    type: ConditionalTransferTypes,
+  ) {
+    const baseParams = {
+      conditionType: type as any,
+      amount,
+      assetId: AddressZero,
+      recipient: receiverIdentifier,
+    };
+    switch (type) {
+      case ConditionalTransferTypes.SignedTransfer: {
+        const { chainId } = await this.client.ethProvider.getNetwork();
+        const receipt = getTestReceiptToSign();
+        const verifyingContract = getTestVerifyingContract();
+        return {
+          ...baseParams,
+          paymentId: id,
+          signerAddress,
+          chainId,
+          verifyingContract,
+          requestCID: receipt.requestCID,
+          subgraphDeploymentID: receipt.subgraphDeploymentID,
+        };
+      }
+      default: {
+        throw new Error("Unrecognized payment type");
+      }
+    }
   }
 }

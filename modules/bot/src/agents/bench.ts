@@ -65,19 +65,7 @@ export default {
     // Register agent in environment
     await addAgentIdentifierToIndex(client.publicIdentifier);
 
-    const balance = await client.getFreeBalance(AddressZero);
-    log.debug(`Bot balance: ${balance[client.signerAddress]}`);
-    if (balance[client.signerAddress].lt(TRANSFER_AMT)) {
-      log.warn(
-        `Balance too low: ${balance[
-          client.signerAddress
-        ].toString()} < ${TRANSFER_AMT.toString()}, depositing...`,
-      );
-      await agent.deposit(DEPOSIT_AMT);
-      log.info(`Finished depositing`);
-      const balanceAfterDeposit = await client.getFreeBalance(AddressZero);
-      log.info(`Bot balance after deposit: ${balanceAfterDeposit[client.signerAddress]}`);
-    }
+    await agent.depositIfNeeded(TRANSFER_AMT, DEPOSIT_AMT);
 
     const receiverIdentifier = await getAgentFromIndex(0);
     // the first bot should sit and unlock transactions
