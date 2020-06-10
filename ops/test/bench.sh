@@ -12,6 +12,8 @@ INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:8545}"
 INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:8080}"
 INDRA_NATS_URL="${INDRA_NATS_URL:-nats://172.17.0.1:4222}"
 BOT_REGISTRY_URL="${BOT_REGISTRY_URL:-http://172.17.0.1:3333}"
+LOG_LEVEL="${LOG_LEVEL:-1}"
+echo $LOG_LEVEL
 
 agent_name="${project}_bot"
 
@@ -109,7 +111,7 @@ do
       }
       trap finish SIGTERM SIGINT
       echo "Launching agent!";echo
-      npm run start -- bench --private-key '$agent_key' --concurrency-index '$n' --number-payments '$payments'
+      npm run start -- bench --private-key '$agent_key' --concurrency-index '$n' --number-payments '$payments' --log-level '$LOG_LEVEL'
     '
 
   docker logs --follow $agent &

@@ -67,9 +67,14 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       log.info(`Action provided. Finalizing app before uninstall`);
       // apply action
       substart = Date.now();
-      const newState = await appToUninstall.computeStateTransition(action, network.provider);
+      const newState = await appToUninstall.computeStateTransition(
+        action,
+        network.provider,
+        "SimpleSignedTransferApp",
+      );
       logTime(log, substart, `[${processID}] computeStateTransition for action complete`);
       // ensure state is finalized after applying action
+      console.log("newState: ", newState);
       if (!(newState as any).finalized) {
         throw new Error(`Action provided did not lead to terminal state, refusing to uninstall.`);
       }
@@ -201,7 +206,11 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       log.info(`Action provided. Finalizing app before uninstall`);
       // apply action
       substart = Date.now();
-      const newState = await appToUninstall.computeStateTransition(action, network.provider);
+      const newState = await appToUninstall.computeStateTransition(
+        action,
+        network.provider,
+        "SimpleSignedTransferApp",
+      );
       logTime(log, substart, `[${processID}] computeStateTransition for action complete`);
       // ensure state is finalized after applying action
       if (!(newState as any).finalized) {
