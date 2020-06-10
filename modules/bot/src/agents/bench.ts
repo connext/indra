@@ -1,12 +1,11 @@
 import { ColorfulLogger, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { constants, utils } from "ethers";
+import { utils } from "ethers";
 import { Argv } from "yargs";
 
 import { createClient } from "../helpers/client";
 import { addAgentIdentifierToIndex, getAgentFromIndex } from "../helpers/agentIndex";
 import { Agent } from "./agent";
 
-const { AddressZero } = constants;
 const { parseEther } = utils;
 
 export default {
