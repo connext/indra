@@ -22,6 +22,12 @@ import {
 const { AddressZero } = constants;
 const { parseEther, formatEther } = utils;
 
+// Bot should crash if an unhandled promise rejection slips through.
+process.on("unhandledRejection", () => {
+  console.log(`UnhandledPromiseRejection detected. Crashing..`);
+  process.exit(1);
+});
+
 export default {
   command: "bot",
   describe: "Start the bot",
@@ -135,7 +141,7 @@ export default {
       if (limit > 0 && sentCount > limit) {
         // If we haven't recieved a payment for several intervals, other bots are probably done
         const diff = Date.now() - lastReceived;
-        if (diff > argv.interval * 3) {
+        if (diff > argv.interval * 5) {
           log.info(`Agent ${NAME} hasn't recieved a payment in ${diff}ms, exiting`);
           await removeAgentIdentifierFromIndex(client.publicIdentifier);
           process.exit(0);

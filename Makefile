@@ -68,7 +68,7 @@ start-bot: bot
 	bash ops/test/bot.sh 2 1000
 
 start-bot-farm: bot
-	bash ops/test/bot.sh 5 1000
+	bash ops/test/bot.sh 10 1000
 
 stop:
 	bash ops/stop.sh
@@ -159,10 +159,10 @@ test-backwards-compatibility: pull-backwards-compatible
 	bash ops/test/integration.sh $(backwards_compatible_version)
 
 test-bot: bot
-	bash ops/test/bot.sh 2 1000 3
+	bash ops/test/bot.sh 2 1000 10
 
 test-bot-farm: bot
-	bash ops/test/bot.sh 7 1000 3
+	bash ops/test/bot.sh 10 1000 10
 
 test-cf: cf-core
 	bash ops/test/cf.sh
