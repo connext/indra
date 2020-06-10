@@ -66,25 +66,28 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     if (action) {
       log.info(`Action provided. Finalizing app before uninstall`);
       // apply action
+      substart = Date.now();
       const newState = await appToUninstall.computeStateTransition(action, network.provider);
+      logTime(log, substart, `[${processID}] computeStateTransition for action complete`);
       // ensure state is finalized after applying action
-      const isFinal = await appToUninstall.isStateTerminal(newState, network.provider);
-      if (!isFinal) {
+      if (!(newState as any).finalized) {
         throw new Error(`Action provided did not lead to terminal state, refusing to uninstall.`);
       }
       log.debug(`Resulting state is terminal state, proceeding with uninstall`);
+      substart = Date.now();
       preUninstallStateChannel = preProtocolStateChannel.setState(
         appToUninstall,
         newState,
         stateTimeout,
       );
+      logTime(log, substart, `[${processID}] setState for action complete`);
     } else {
       preUninstallStateChannel = preProtocolStateChannel;
     }
     // make sure the uninstalled app is the finalized app
     const preUninstallApp = preUninstallStateChannel.appInstances.get(appToUninstall.identityHash)!;
 
-    // 47ms
+    substart = Date.now();
     const postProtocolStateChannel = await computeStateTransition(
       params as ProtocolParams.Uninstall,
       network.provider,
@@ -92,8 +95,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       preUninstallApp,
       log,
     );
+    logTime(log, substart, `[${processID}] computeStateTransition for uninstall complete`);
 
-    // 0ms
+    substart = Date.now();
     const responderFreeBalanceKey = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
     const uninstallCommitment = getSetStateCommitment(
@@ -196,25 +200,28 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     if (action) {
       log.info(`Action provided. Finalizing app before uninstall`);
       // apply action
+      substart = Date.now();
       const newState = await appToUninstall.computeStateTransition(action, network.provider);
+      logTime(log, substart, `[${processID}] computeStateTransition for action complete`);
       // ensure state is finalized after applying action
-      const isFinal = await appToUninstall.isStateTerminal(newState, network.provider);
-      if (!isFinal) {
+      if (!(newState as any).finalized) {
         throw new Error(`Action provided did not lead to terminal state, refusing to uninstall.`);
       }
       log.debug(`Resulting state is terminal state, proceeding with uninstall`);
+      substart = Date.now();
       preUninstallStateChannel = preProtocolStateChannel.setState(
         appToUninstall,
         newState,
         stateTimeout,
       );
+      logTime(log, substart, `[${processID}] setState for action complete`);
     } else {
       preUninstallStateChannel = preProtocolStateChannel;
     }
     // make sure the uninstalled app is the finalized app
     const preUninstallApp = preUninstallStateChannel.appInstances.get(appToUninstall.identityHash)!;
 
-    // 40ms
+    substart = Date.now();
     const postProtocolStateChannel = await computeStateTransition(
       params as ProtocolParams.Uninstall,
       network.provider,
@@ -222,8 +229,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       preUninstallApp,
       log,
     );
+    logTime(log, substart, `[${processID}] computeStateTransition for uninstall complete`);
 
-    // 0ms
+    substart = Date.now();
     const initiatorFreeBalanceKey = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
 
     const uninstallCommitment = getSetStateCommitment(
