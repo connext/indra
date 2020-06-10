@@ -1,7 +1,7 @@
 
 # @connext/store
 
-bar
+{{foo}}
 
 **Exported Types:**
  - [`IAsyncStorage`](#iasyncstorage)

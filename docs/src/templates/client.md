@@ -1,6 +1,6 @@
 # @connext/client
 
-bar
+{{foo}}
 
 All methods return promises.
 

@@ -228,17 +228,6 @@ py-requirements: builder docs/requirements.txt
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ########################################
-# Docs
-
-.PHONY: docs
-docs: documentation
-documentation: py-requirements $(shell find docs $(find_options))
-	$(log_start)
-	$(docker_run) "rm -rf docs/build"
-	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b html -d build/doctrees ./src build/html"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-########################################
 # Build JS & bundles
 
 # Keep prerequisites synced w the @connext/* dependencies of each module's package.json
@@ -276,6 +265,7 @@ contracts: types utils $(shell find modules/contracts $(find_options))
 store: types utils contracts $(shell find modules/store $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/store && npm run build"
+	$(docker_run) "bash ops/sync-docs.sh store"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 cf-core: types utils store contracts $(shell find modules/cf-core $(find_options))
@@ -291,6 +281,7 @@ apps: types utils contracts cf-core $(shell find modules/apps $(find_options))
 client: types utils channel-provider messaging store contracts cf-core apps $(shell find modules/client $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
+	$(docker_run) "bash ops/sync-docs.sh client"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 bot: types utils bot-registry channel-provider messaging store contracts cf-core apps client $(shell find modules/bot $(find_options))
@@ -316,6 +307,17 @@ test-runner: types utils channel-provider messaging store contracts cf-core apps
 watcher: types utils contracts store $(shell find modules/watcher $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/watcher && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+########################################
+# Build Docs
+
+.PHONY: docs
+docs: documentation
+documentation: py-requirements client store
+	$(log_start)
+	$(docker_run) "rm -rf docs/build && mkdir -p docs/build"
+	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b html -d build/doctrees ./src build/html"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ########################################
