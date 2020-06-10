@@ -1,46 +1,46 @@
-import {ColorfulLogger, getSignerAddressFromPublicIdentifier,} from '@connext/utils';
-import {constants, utils} from 'ethers';
-import {Argv} from 'yargs';
+import { ColorfulLogger, getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { constants, utils } from "ethers";
+import { Argv } from "yargs";
 
-import {createClient} from '../helpers/client';
-import {addAgentIdentifierToIndex, getAgentFromIndex,} from '../helpers/agentIndex';
-import {Agent} from './agent';
+import { createClient } from "../helpers/client";
+import { addAgentIdentifierToIndex, getAgentFromIndex } from "../helpers/agentIndex";
+import { Agent } from "./agent";
 
-const {AddressZero} = constants;
-const {parseEther} = utils;
+const { AddressZero } = constants;
+const { parseEther } = utils;
 
 export default {
-  command: 'bench',
-  describe: 'Start the benchmarker',
+  command: "bench",
+  describe: "Start the benchmarker",
   builder: (yargs: Argv) => {
     return yargs
-      .option('concurrency-index', {
-        description: 'Number that identifies this agent when many are running in parallel',
-        type: 'string',
-        default: '1',
+      .option("concurrency-index", {
+        description: "Number that identifies this agent when many are running in parallel",
+        type: "string",
+        default: "1",
       })
-      .option('log-level', {
-        description: '0 = print no logs, 5 = print all logs',
-        type: 'number',
+      .option("log-level", {
+        description: "0 = print no logs, 5 = print all logs",
+        type: "number",
         default: 1,
       })
-      .option('number-payments', {
-        describe: 'The number of payments this agent should initiate',
-        type: 'number',
+      .option("number-payments", {
+        describe: "The number of payments this agent should initiate",
+        type: "number",
         default: 200,
       })
-      .option('private-key', {
-        describe: 'Ethereum Private Key',
-        type: 'string',
+      .option("private-key", {
+        describe: "Ethereum Private Key",
+        type: "string",
       })
-      .demandOption(['private-key']);
+      .demandOption(["private-key"]);
   },
-  handler: async (argv: { [key: string]: any } & Argv['argv']) => {
+  handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
     const NAME = `Bot #${argv.concurrencyIndex}`;
     const log = new ColorfulLogger(NAME, 3, true, argv.concurrencyIndex);
     log.info(`Launched bot ${NAME}`);
-    const TRANSFER_AMT = parseEther('0.0001');
-    const DEPOSIT_AMT = parseEther('0.01'); // Note: max amount in signer address is 1 eth
+    const TRANSFER_AMT = parseEther("0.0001");
+    const DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 1 eth
     const ethUrl = process.env.INDRA_ETH_RPC_URL;
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
@@ -57,9 +57,9 @@ export default {
     );
 
     const agent = new Agent(log, client, argv.privateKey);
-    log.info('Agent starting up.');
+    log.info("Agent starting up.");
     await agent.start();
-    log.info('Agent started.');
+    log.info("Agent started.");
 
     log.info(`Registering address ${client.publicIdentifier}`);
     // Register agent in environment
@@ -71,7 +71,7 @@ export default {
       log.warn(
         `Balance too low: ${balance[
           client.signerAddress
-          ].toString()} < ${TRANSFER_AMT.toString()}, depositing...`,
+        ].toString()} < ${TRANSFER_AMT.toString()}, depositing...`,
       );
       await agent.deposit(DEPOSIT_AMT);
       log.info(`Finished depositing`);
