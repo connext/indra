@@ -59,11 +59,10 @@ Contents
     :maxdepth: 2
     :caption: API Reference
 
-    reference/cf-core
-    reference/client
-    reference/store
-    reference/types
-    reference/utils
+    reference-generated/cf-core
+    reference-generated/client
+    reference-generated/store
+    reference-generated/utils
 
 .. toctree::
     :maxdepth: 2

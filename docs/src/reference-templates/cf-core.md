@@ -1,5 +1,7 @@
 # @connext/cf-core
 
+{{foo}}
+
 **Exported Classes:**
  - [`CFCore`](#cfcore)
 

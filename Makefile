@@ -240,6 +240,7 @@ types: node-modules $(shell find modules/types $(find_options))
 utils: types $(shell find modules/utils $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/utils && npm run build"
+	$(docker_run) "bash ops/sync-docs.sh utils"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 bot-registry: types utils $(shell find modules/bot-registry $(find_options))
@@ -271,6 +272,7 @@ store: types utils contracts $(shell find modules/store $(find_options))
 cf-core: types utils store contracts $(shell find modules/cf-core $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build"
+	$(docker_run) "bash ops/sync-docs.sh cf-core"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 apps: types utils contracts cf-core $(shell find modules/apps $(find_options))

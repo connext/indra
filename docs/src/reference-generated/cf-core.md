@@ -1,5 +1,7 @@
 # @connext/cf-core
 
+bar
+
 **Exported Classes:**
  - [`CFCore`](#cfcore)
 
