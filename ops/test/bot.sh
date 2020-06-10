@@ -81,7 +81,7 @@ do
   agent_key="0x`hexdump -n 32 -e '"%08X"' < /dev/urandom | tr '[:upper:]' '[:lower:]'`"
 
   agent_address="`node <<<'var eth = require("ethers"); console.log((new eth.Wallet("'"$agent_key"'")).address);'`"
-  agent_pub_key="`node <<<'var eth = require("ethers"); console.log((new eth.Wallet("'"$agent_key"'")).signingKey.publicKey);'`"
+  agent_pub_key="`node <<<'var eth = require("ethers"); console.log((new eth.Wallet("'"$agent_key"'")).publicKey);'`"
 
   echo "Funding agent: $agent_address (pubKey: ${agent_pub_key})"
   bash ops/fund.sh $agent_address
