@@ -159,10 +159,10 @@ test-backwards-compatibility: pull-backwards-compatible
 	bash ops/test/integration.sh $(backwards_compatible_version)
 
 test-bot: bot
-	bash ops/test/bot.sh 1 3
+	bash ops/test/bot.sh 2 1000 3
 
 test-bot-farm: bot
-	bash ops/test/bot.sh 3 3
+	bash ops/test/bot.sh 7 1000 3
 
 test-cf: cf-core
 	bash ops/test/cf.sh

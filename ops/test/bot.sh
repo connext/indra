@@ -3,7 +3,8 @@ set -e
 
 agents="$1"
 interval="$2"
-echo "Starting bot test with $agents agents and interval $interval"
+limit="$3"
+echo "Starting bot test with: $agents agents | interval $interval | limit $limit"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
@@ -29,7 +30,7 @@ function cleanup {
       if [[ "$agent_code" != "0" ]]
       then
         echo "agent failed: $agent_code";
-        exit_code="$agent_code";
+        exit_code="1";
       fi
       docker container rm ${agent_name}_$n &> /dev/null || true
     fi
@@ -108,7 +109,7 @@ do
       }
       trap finish SIGTERM SIGINT
       echo "Launching agent!";echo
-      npm run start -- bot --private-key '$agent_key' --concurrency-index '$n' --interval '$interval'
+      npm run start -- bot --private-key '$agent_key' --concurrency-index '$n' --interval '$interval' --limit '$limit'
     '
 
   docker logs --follow $agent &
