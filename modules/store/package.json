@@ -1,6 +1,6 @@
 {
   "name": "@connext/store",
-  "version": "6.7.1",
+  "version": "7.0.0-alpha.0",
   "description": "Store module for Connext client",
   "browser": "dist/browser.js",
   "main": "dist/index.js",
@@ -16,8 +16,8 @@
   },
   "dependencies": {
     "@connext/contracts": "3.2.2",
-    "@connext/types": "6.7.1",
-    "@connext/utils": "6.7.1",
+    "@connext/types": "7.0.0-alpha.0",
+    "@connext/utils": "7.0.0-alpha.0",
     "ethers": "5.0.0-beta.190",
     "localStorage": "1.0.4",
     "p-waterfall": "2.1.0",
