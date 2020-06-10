@@ -127,7 +127,6 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
       migrationsRun: true,
       synchronize: false,
       type: "postgres",
-      maxQueryExecutionTime: 5,
       cache: {
         type: "ioredis",
         options: {
