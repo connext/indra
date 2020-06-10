@@ -20,6 +20,6 @@ export const getRandomAgentIdentifierFromIndex = async (exclude?: string): Promi
 };
 
 export const getAgentFromIndex = async (i: number): Promise<string> => {
-  let { data: addresses }: AxiosResponse<string[]> = await axios.get(`${BOT_REGISTRY_URL}/agent`);
+  const { data: addresses }: AxiosResponse<string[]> = await axios.get(`${BOT_REGISTRY_URL}/agent`);
   return addresses[i];
-}
+};

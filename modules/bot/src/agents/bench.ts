@@ -5,6 +5,7 @@ import { Argv } from "yargs";
 import { createClient } from "../helpers/client";
 import { addAgentIdentifierToIndex, getAgentFromIndex } from "../helpers/agentIndex";
 import { Agent } from "./agent";
+import { CONVENTION_FOR_ETH_ASSET_ID } from "@connext/types";
 
 const { parseEther } = utils;
 
@@ -65,6 +66,7 @@ export default {
     await addAgentIdentifierToIndex(client.publicIdentifier);
 
     await agent.depositIfNeeded(TRANSFER_AMT, DEPOSIT_AMT);
+    await client.requestCollateral(CONVENTION_FOR_ETH_ASSET_ID);
 
     const receiverIdentifier = await getAgentFromIndex(0);
     // the first bot should sit and unlock transactions
