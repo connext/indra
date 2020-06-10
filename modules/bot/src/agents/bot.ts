@@ -58,7 +58,7 @@ export default {
     const ethUrl = process.env.INDRA_ETH_RPC_URL;
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
-    let start = new Map()
+    const start = new Map();
 
     const randomInterval = Math.round(argv.interval * 0.75 + Math.random() * (argv.interval * 0.5));
     log.info(`Using random inteval: ${randomInterval}`);
@@ -114,13 +114,16 @@ export default {
       log.info(`Unlocked transfer ${eventData.paymentId} for (${eventData.amount} ETH)`);
     });
 
-    client.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (payload: EventPayloads.ConditionalTransferUnlocked<"SignedTransferUnlocked">) => {
-      // ignore if we're unlocking
-      if(payload.recipient === client.publicIdentifier) {
-        return;
-      }
-      console.log(`Payment completed in ${Date.now() - start[payload.paymentId!]}`)
-    })
+    client.on(
+      EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+      async (payload: EventPayloads.ConditionalTransferUnlocked<"SignedTransferUnlocked">) => {
+        // ignore if we're unlocking
+        if (payload.recipient === client.publicIdentifier) {
+          return;
+        }
+        console.log(`Payment completed in ${Date.now() - start[payload.paymentId!]}`);
+      },
+    );
 
     let depositLock: boolean;
 
@@ -137,7 +140,7 @@ export default {
         log.warn(
           `Balance too low: ${balance[
             client.signerAddress
-            ].toString()} < ${TRANSFER_AMT.toString()}, depositing...`,
+          ].toString()} < ${TRANSFER_AMT.toString()}, depositing...`,
         );
         try {
           await client.deposit({ amount: DEPOSIT_AMT, assetId: AddressZero });
