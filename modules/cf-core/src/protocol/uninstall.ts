@@ -67,11 +67,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       log.info(`Action provided. Finalizing app before uninstall`);
       // apply action
       substart = Date.now();
-      const newState = await appToUninstall.computeStateTransition(
-        action,
-        network.provider,
-        "SimpleLinkedTransferApp",
-      );
+      const newState = await appToUninstall.computeStateTransition(action, network.provider);
       logTime(log, substart, `[${processID}] computeStateTransition for action complete`);
       // ensure state is finalized after applying action
       console.log("newState: ", newState);
@@ -206,11 +202,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       log.info(`Action provided. Finalizing app before uninstall`);
       // apply action
       substart = Date.now();
-      const newState = await appToUninstall.computeStateTransition(
-        action,
-        network.provider,
-        "SimpleSignedTransferApp",
-      );
+      const newState = await appToUninstall.computeStateTransition(action, network.provider);
       logTime(log, substart, `[${processID}] computeStateTransition for action complete`);
       // ensure state is finalized after applying action
       if (!(newState as any).finalized) {

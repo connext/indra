@@ -24,7 +24,6 @@ import {
   isBN,
   stringify,
   toBN,
-  delay,
 } from "@connext/utils";
 import { BigNumber, Contract, constants, utils, providers } from "ethers";
 import { Memoize } from "typescript-memoize";
@@ -32,11 +31,7 @@ import { Memoize } from "typescript-memoize";
 import { CounterfactualApp } from "../contracts";
 
 const { Zero } = constants;
-const { defaultAbiCoder, keccak256, Interface } = utils;
-
-const pure_evm = require("pure-evm");
-// TODO: dont hardcode
-
+const { defaultAbiCoder, keccak256 } = utils;
 /**
  * Representation of an AppInstance.
  *
@@ -290,110 +285,30 @@ export class AppInstance {
   public async computeStateTransition(
     action: SolidityValueType,
     provider: providers.JsonRpcProvider,
-    // TODO: could add this to the app definition
-    pureAppName?: string,
   ): Promise<SolidityValueType> {
-    let computedNextState: SolidityValueType;
-    let usedNewStuff = false;
-    if (pureAppName) {
-      const substart = Date.now();
-      console.log(`computeStateTransition::******* USING ETH VM`);
-      usedNewStuff = true;
-      // TODO: do this always for apps that it can be used for
-      const appArtifact = require(`@connext/contracts/artifacts/${pureAppName}.json`);
-      const iface = new Interface(appArtifact.abi);
-      const data = iface.encodeFunctionData("applyAction", [
-        this.encodedLatestState,
-        this.encodeAction(action),
-      ]);
-      const encodedData = Uint8Array.from(Buffer.from(data.replace("0x", ""), "hex"));
-
-      const bytecode = await provider.send("eth_getCode", [this.appDefinition, "latest"]);
-      console.log(`bytecode:`, bytecode);
-
-      // Execute on the raw bytes.
-      const output = pure_evm.exec(
-        Uint8Array.from(Buffer.from(bytecode.replace("0x", ""), "hex")),
-        encodedData,
-      );
-      // Prepare for decoding.
-      const output_hex = "0x" + Buffer.from(output).toString("hex");
-      const encoded = await this.toEthersContract(provider).applyAction(
-        this.encodedLatestState,
-        this.encodeAction(action),
-      );
-      console.log(`encoded (old)`, encoded);
-      console.log(`output (new)`, output_hex);
-      // First abi decode bytes, since that's the return value of the function.
-      // const bytes = defaultAbiCoder.decode(["bytes"], output_hex)[0];
-      console.log(`pure_evm.exec in ${Date.now() - substart}ms`);
-      computedNextState = this.decodeAppState(output_hex);
-    } else {
-      const encoded = await this.toEthersContract(provider).applyAction(
-        this.encodedLatestState,
-        this.encodeAction(action),
-      );
-      computedNextState = this.decodeAppState(encoded);
-    }
+    const encoded = await this.toEthersContract(provider).applyAction(
+      this.encodedLatestState,
+      this.encodeAction(action),
+    );
+    const computedNextState = this.decodeAppState(encoded);
 
     // ethers returns an array of [ <each value by index>, <each value by key> ]
     // so we need to recursively clean this response before returning
-    const keyify = async (
-      log: boolean,
-      templateObj: any,
-      dataObj: any,
-      key?: string,
-    ): Promise<any> => {
-      // console.log("templateObj: ", templateObj);
-      // console.log("dataObj: ", dataObj);
-      // console.log("key: ", key);
+    const keyify = (templateObj: any, dataObj: any, key?: string): Promise<any> => {
       const template = key ? templateObj[key] : templateObj;
-      // console.log("template: ", template);
       const data = key ? dataObj[key] : dataObj;
       let output;
-      if (log) {
-        console.log("isBN(template): ", isBN(template));
-      }
       if (isBN(template) || typeof template !== "object") {
-        if (log) {
-          console.log(`here, template was BN`);
-          await delay(200);
-        }
         output = data;
       } else if (typeof template === "object" && typeof template.length === "number") {
         output = [];
-        if (log) {
-          console.log(`here, template was array`);
-          await delay(200);
-        }
         for (const index in template) {
-          output.push(await keyify(log, template, data, index));
+          output.push(keyify(template, data, index));
         }
       } else if (typeof template === "object" && typeof template.length !== "number") {
         output = {};
-        if (log) {
-          console.log(`here, template was object, recursively retrying`);
-        }
         for (const subkey in template) {
-          if (log) {
-            console.log(
-              `calling recursively for subkey:`,
-              subkey,
-              `,\nwith template:`,
-              template,
-              `,\nwith data`,
-              data,
-            );
-            const test = data["coinTransfers"] ? data["coinTransfers"] : undefined;
-            if (test && typeof test === "object" && typeof template.length === "number") {
-              console.log("test: ", test[0]);
-              await delay(200);
-            }
-          }
-
-          const ret = await keyify(log, template, data, subkey);
-          console.log(`here, successfully completed call`);
-          output[subkey] = ret;
+          output[subkey] = keyify(template, data, subkey);
         }
       } else {
         throw new Error(`Couldn't keyify, unrecogized key/value: ${key}/${data}`);
@@ -401,18 +316,8 @@ export class AppInstance {
       return output;
     };
 
-    if (usedNewStuff) {
-      console.error(`TRYING TO KEYIFY COMPUTED NEXT STATE`);
-    }
-    const keyified = await keyify(usedNewStuff, this.state, computedNextState);
-    if (usedNewStuff) {
-      console.log("keyified: ", keyified);
-    }
-    const bigNumberified = bigNumberifyJson(keyified);
-    if (usedNewStuff) {
-      console.log("bigNumberified: ", bigNumberified);
-    }
-    return bigNumberified;
+    const keyified = keyify(this.state, computedNextState);
+    return bigNumberifyJson(keyified);
   }
 
   public encodeAction(action: SolidityValueType) {
