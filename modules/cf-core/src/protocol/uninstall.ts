@@ -70,7 +70,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       const newState = await appToUninstall.computeStateTransition(
         action,
         network.provider,
-        "SimpleSignedTransferApp",
+        "SimpleLinkedTransferApp",
       );
       logTime(log, substart, `[${processID}] computeStateTransition for action complete`);
       // ensure state is finalized after applying action
