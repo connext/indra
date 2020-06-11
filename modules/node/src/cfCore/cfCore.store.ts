@@ -351,7 +351,7 @@ export class CFCoreStore implements IStoreService {
       setStateCommitment.stateTimeout = toBN(signedSetStateCommitment.stateTimeout).toString();
       setStateCommitment.versionNumber = toBN(signedSetStateCommitment.versionNumber).toNumber();
 
-      const existingConditionalTx = await instrument("createAppRoposal:getConditionalTx", () =>
+      const existingConditionalTx = await instrument("createAppProposal:getConditionalTx", () =>
         this.conditionalTransactionCommitmentRepository.findByAppIdentityHash(
           appProposal.identityHash,
         ),
