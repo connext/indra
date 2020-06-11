@@ -3,6 +3,7 @@
   "version": "7.0.0-alpha.0",
   "description": "Store module for Connext client",
   "browser": "dist/browser.js",
+  "react-native": "dist/reactNative.js",
   "main": "dist/index.js",
   "files": [
     "dist",
