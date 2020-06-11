@@ -70,7 +70,6 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       const newState = await appToUninstall.computeStateTransition(action, network.provider);
       logTime(log, substart, `[${processID}] computeStateTransition for action complete`);
       // ensure state is finalized after applying action
-      console.log("newState: ", newState);
       if (!(newState as any).finalized) {
         throw new Error(`Action provided did not lead to terminal state, refusing to uninstall.`);
       }
