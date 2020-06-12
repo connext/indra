@@ -1,6 +1,5 @@
 import {
   AppIdentity,
-  BigNumber,
   AppInterface,
   AppInstanceJson,
   Address,
@@ -21,7 +20,7 @@ import {
   toBN,
 } from "@connext/utils";
 import { ConditionalTransactionCommitment, SetStateCommitment } from "@connext/contracts";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import { stateToHash } from "./utils";
 import { TestNetworkContext } from "./contracts";

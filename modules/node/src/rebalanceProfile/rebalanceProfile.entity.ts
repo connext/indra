@@ -1,4 +1,4 @@
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
@@ -11,29 +11,29 @@ export class RebalanceProfile {
   @Column("text", {
     default: "0",
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  collateralizeThreshold!: utils.BigNumber;
+  collateralizeThreshold!: BigNumber;
 
   @Column("text", {
     default: "0",
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  target!: utils.BigNumber;
+  target!: BigNumber;
 
   @Column("text", {
     default: "0",
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  reclaimThreshold!: utils.BigNumber;
+  reclaimThreshold!: BigNumber;
 
   @Column("text")
   assetId: string;

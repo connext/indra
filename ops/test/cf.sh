@@ -67,7 +67,7 @@ docker run \
     --gasPrice="1000000000" \
     --host="0.0.0.0" \
     --mnemonic="$eth_mnemonic" \
-    --networkId="4447" \
+    --networkId="1337" \
     --port="$ethprovider_port"
 
 ########################################

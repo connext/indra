@@ -2,7 +2,10 @@
 set -e
 
 # This is the order they'll be published in
-packages="types,utils,cf-core,apps,messaging,store,channel-provider,client"
+default_packages="types,utils,cf-core,apps,messaging,store,channel-provider,client"
+
+# To publish contracts, run bash ops/npm-publish.sh contracts
+packages="${1:-$default_packages}"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"

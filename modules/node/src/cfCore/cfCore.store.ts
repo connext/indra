@@ -21,7 +21,7 @@ import {
 } from "@connext/types";
 import { toBN, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { getManager } from "typeorm";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import {
   AppInstanceRepository,
@@ -63,7 +63,7 @@ import { LoggerService } from "../logger/logger.service";
 import { CacheService } from "../caching/cache.service";
 
 const { Zero, AddressZero } = constants;
-const { bigNumberify, defaultAbiCoder } = utils;
+const { defaultAbiCoder } = utils;
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
@@ -295,9 +295,9 @@ export class CFCoreStore implements IStoreService {
     app.stateEncoding = appProposal.abiEncodings.stateEncoding;
     app.appDefinition = appProposal.appDefinition;
     app.appSeqNo = appProposal.appSeqNo;
-    app.initiatorDeposit = bigNumberify(appProposal.initiatorDeposit);
+    app.initiatorDeposit = BigNumber.from(appProposal.initiatorDeposit);
     app.initiatorDepositAssetId = appProposal.initiatorDepositAssetId;
-    app.responderDeposit = bigNumberify(appProposal.responderDeposit);
+    app.responderDeposit = BigNumber.from(appProposal.responderDeposit);
     app.responderDepositAssetId = appProposal.responderDepositAssetId;
     app.defaultTimeout = appProposal.defaultTimeout;
     app.stateTimeout = appProposal.stateTimeout;
@@ -835,7 +835,7 @@ export class CFCoreStore implements IStoreService {
       ChallengeRegistry.abi,
       provider,
     );
-    const onchainChallenge = await registry.functions.getAppChallenge(appIdentityHash);
+    const onchainChallenge = await registry.getAppChallenge(appIdentityHash);
     if (onchainChallenge.versionNumber.eq(latestSetState.versionNumber)) {
       return;
     }
@@ -857,7 +857,7 @@ export class CFCoreStore implements IStoreService {
           timeout,
           turnTaker,
           signature,
-        } = registry.interface.parseLog(log).values;
+        } = registry.interface.parseLog(log).args;
         return { identityHash, action, versionNumber, timeout, turnTaker, signature };
       })
       .sort((a, b) => b.versionNumber.sub(a.versionNumber).toNumber());

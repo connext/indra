@@ -5,7 +5,7 @@ import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import { HARD_CODED_ASSUMPTIONS } from "../constants";
 
@@ -13,7 +13,7 @@ import { AppInstance } from "./app-instance";
 import { merge } from "./utils";
 
 const { Zero, AddressZero } = constants;
-const { bigNumberify, getAddress } = utils;
+const { getAddress } = utils;
 
 export function getFreeBalanceAbiEncoding(): AppABIEncodings {
   return {
@@ -27,7 +27,7 @@ Keep in sync with the solidity struct LibOutcome::CoinTransfer
 */
 export type CoinTransfer = {
   to: string;
-  amount: utils.BigNumber;
+  amount: BigNumber;
 };
 
 /*
@@ -59,7 +59,7 @@ in client-side code for easier access, but we cannot use it in solidity due to
 nonexistent support for non-storage mappings.
 */
 export type CoinTransferMap = {
-  [to: string]: utils.BigNumber;
+  [to: string]: BigNumber;
 };
 
 /*
@@ -105,7 +105,7 @@ export class FreeBalanceClass {
 
   public static createWithFundedTokenAmounts(
     addresses: string[],
-    amount: utils.BigNumber,
+    amount: BigNumber,
     tokenAddresses: string[],
   ): FreeBalanceClass {
     return new FreeBalanceClass(
@@ -201,7 +201,7 @@ export class FreeBalanceClass {
 
 /**
  * Note that the state of the Free Balance is held as plain types
- * and only converted to more complex types (i.e. utils.BigNumber) upon usage.
+ * and only converted to more complex types (i.e. BigNumber) upon usage.
  */
 export function createFreeBalance(
   initiatorId: PublicIdentifier,
@@ -259,7 +259,7 @@ function deserializeFreeBalanceState(freeBalanceStateJSON: FreeBalanceStateJSON)
         ...acc,
         [getAddress(tokenAddress)]: balances[idx].map(({ to, amount }) => ({
           to,
-          amount: bigNumberify(amount._hex),
+          amount: BigNumber.from(amount._hex),
         })),
       }),
       {},

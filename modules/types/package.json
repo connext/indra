@@ -1,6 +1,6 @@
 {
   "name": "@connext/types",
-  "version": "6.7.1",
+  "version": "7.0.0-alpha.1",
   "description": "TypeScript typings for common Connext types",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -16,7 +16,7 @@
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
-    "ethers": "4.0.47",
+    "ethers": "5.0.0-beta.190",
     "eventemitter3": "4.0.4",
     "evt": "1.7.11",
     "sequelize": "5.21.11"

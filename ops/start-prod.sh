@@ -74,7 +74,7 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 ####################
 # Internal Config
 
-ganache_chain_id="4447"
+ganache_chain_id="1337"
 node_port="8080"
 number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
 
@@ -116,7 +116,8 @@ then
   network="networks:
       - '$project'
     "
-  stack_network="$project:
+  stack_network="networks:
+  $project:
     external: true"
 else
   db_volume="database"
@@ -229,8 +230,7 @@ mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
-networks:
-  $stack_network
+$stack_network
 
 secrets:
   $db_secret:

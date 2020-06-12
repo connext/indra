@@ -10,7 +10,7 @@ import {
   SimpleLinkedTransferAppAction,
 } from "@connext/types";
 import { stringify } from "@connext/utils";
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
@@ -32,7 +32,7 @@ export class ResolveTransferController extends AbstractController {
     );
 
     let appIdentityHash: string;
-    let amount: utils.BigNumber;
+    let amount: BigNumber;
     let assetId: string;
     let meta: any;
 

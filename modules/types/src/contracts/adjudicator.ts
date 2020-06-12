@@ -1,4 +1,4 @@
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 
 import { Address, HexString, Bytes32 } from "../basic";
 
@@ -7,11 +7,11 @@ import { Address, HexString, Bytes32 } from "../basic";
 
 // A minimal structure that uniquely identifies a single instance of an App
 export type AppIdentity = {
-  channelNonce: utils.BigNumber;
+  channelNonce: BigNumber;
   participants: Address[];
   multisigAddress: Address;
   appDefinition: Address;
-  defaultTimeout: utils.BigNumber;
+  defaultTimeout: BigNumber;
 };
 
 // A structure representing the state of a CounterfactualApp instance from the POV of the blockchain
@@ -19,8 +19,8 @@ export type AppIdentity = {
 // appStateHash is the hash of a state specific to the CounterfactualApp (e.g. chess position)
 export type AppChallenge = {
   appStateHash: HexString;
-  versionNumber: utils.BigNumber;
-  finalizesAt: utils.BigNumber;
+  versionNumber: BigNumber;
+  finalizesAt: BigNumber;
   status: ChallengeStatus;
 };
 
@@ -38,13 +38,13 @@ export enum ChallengeStatus {
 
 export type SignedAppChallengeUpdate = {
   appStateHash: Bytes32;
-  versionNumber: utils.BigNumber;
-  timeout: utils.BigNumber;
+  versionNumber: BigNumber;
+  timeout: BigNumber;
   signatures: string[];
 };
 
 export type SignedCancelChallengeRequest = {
-  versionNumber: utils.BigNumber;
+  versionNumber: BigNumber;
   signatures: string[];
 };
 
@@ -55,8 +55,8 @@ const StateProgressedEventName = "StateProgressed";
 export type StateProgressedEventPayload = {
   identityHash: string;
   action: string; // encoded
-  versionNumber: utils.BigNumber;
-  timeout: utils.BigNumber;
+  versionNumber: BigNumber;
+  timeout: BigNumber;
   turnTaker: Address; // eth addr
   signature: string; // of action taker
 };
@@ -68,8 +68,8 @@ export type ChallengeUpdatedEventPayload = {
   identityHash: Bytes32;
   status: ChallengeStatus;
   appStateHash: Bytes32; // latest app state
-  versionNumber: utils.BigNumber;
-  finalizesAt: utils.BigNumber;
+  versionNumber: BigNumber;
+  finalizesAt: BigNumber;
 };
 
 // events emitted by contracts

@@ -1,4 +1,4 @@
-import { constants, utils } from "ethers";
+import { BigNumber, constants } from "ethers";
 
 import { CoinTransferMap, TokenIndexedCoinTransferMap } from "./free-balance";
 
@@ -37,8 +37,8 @@ export function flip(coinTransferMap: CoinTransferMap): CoinTransferMap {
  * sets them to the increment. Keys in the base mapping which are not explicitly
  * incremented are returned unchanged.
  */
-export function merge(base: { [s: string]: utils.BigNumber }, increments: CoinTransferMap) {
-  const ret = {} as { [s: string]: utils.BigNumber };
+export function merge(base: { [s: string]: BigNumber }, increments: CoinTransferMap) {
+  const ret = {} as { [s: string]: BigNumber };
 
   const s1 = new Set(Object.keys(base));
   const s2 = new Set(Object.keys(increments));

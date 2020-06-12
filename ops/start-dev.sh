@@ -56,7 +56,7 @@ nats_port=4222
 node_port=8080
 dash_port=9999
 webserver_port=3000
-ganacheId="4447"
+ganacheId="1337"
 
 if [[ "$INDRA_ETH_PROVIDER" == "$ganacheProvider" ]]
 then chainId="$ganacheId"

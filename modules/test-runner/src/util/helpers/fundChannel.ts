@@ -6,13 +6,13 @@ import {
   EventPayloads,
 } from "@connext/types";
 import { ColorfulLogger, getAddressFromAssetId, delayAndThrow } from "@connext/utils";
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 
 import { env, expect } from "../";
 
 export const fundChannel = async (
   client: IConnextClient,
-  amount: utils.BigNumber,
+  amount: BigNumber,
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ): Promise<void> => {
   const log = new ColorfulLogger("FundChannel", env.logLevel);

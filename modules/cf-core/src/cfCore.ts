@@ -224,9 +224,12 @@ export class CFCore {
         } as ProtocolMessage);
 
         // 10 seconds is the default lock acquiring time time
-        const msg = await Promise.race([counterpartyResponse, delay(IO_SEND_AND_WAIT_TIMEOUT)]);
+        const msg = await Promise.race<ProtocolMessage | void>([
+          counterpartyResponse,
+          delay(IO_SEND_AND_WAIT_TIMEOUT),
+        ]);
 
-        if (!msg || !("data" in (msg as ProtocolMessage))) {
+        if (!msg || !msg.data) {
           throw new Error(
             `IO_SEND_AND_WAIT timed out after ${
               IO_SEND_AND_WAIT_TIMEOUT / 1000
@@ -240,7 +243,16 @@ export class CFCore {
         // per counterparty at the moment.
         this.ioSendDeferrals.delete(data.processID);
 
-        return { data: (msg as ProtocolMessage).data, channel, appContext };
+        // Check if there is an error reason in the response, and throw
+        // the error here if so
+        // NOTE: only errors that are thrown from protocol execution when the
+        // counterparty is waiting for a response should be sent
+        const { error } = msg.data;
+        if (error) {
+          throw new Error(`Counterparty execution of ${data.protocol} failed: ${error}`);
+        }
+
+        return { data: msg.data, channel, appContext };
       },
     );
 

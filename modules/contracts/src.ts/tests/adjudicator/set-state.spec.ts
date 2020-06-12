@@ -23,7 +23,6 @@ const { One } = constants;
 
 describe("setState", () => {
   let wallet: Wallet;
-  let snapshotId: number;
 
   let bob: Wallet;
   let appRegistry: Contract;
@@ -41,7 +40,6 @@ describe("setState", () => {
   });
 
   beforeEach(async () => {
-    snapshotId = await snapshot();
     const context = await setupContext();
     appRegistry = context["appRegistry"];
     setState = context["setState"];
@@ -50,10 +48,6 @@ describe("setState", () => {
     ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];
     appInstance = context["appInstance"];
     bob = context["bob"];
-  });
-
-  afterEach(async () => {
-    await restore(snapshotId);
   });
 
   describe("setState", () => {
@@ -127,7 +121,7 @@ describe("setState", () => {
         ONCHAIN_CHALLENGE_TIMEOUT, // timeout
       );
       await expect(
-        appRegistry.functions.setState(appInstance.appIdentity, {
+        appRegistry.setState(appInstance.appIdentity, {
           versionNumber: One,
           appStateHash: appStateToHash(state),
           timeout: ONCHAIN_CHALLENGE_TIMEOUT,

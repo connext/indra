@@ -5,7 +5,7 @@ import { expect } from "../util";
 import { createClient } from "../util/client";
 
 const expectedNetwork = {
-  chainId: 4447,
+  chainId: 1337,
   name: "ganache",
 };
 const expectedAddresses = addressBook[expectedNetwork.chainId];
@@ -33,7 +33,7 @@ describe("Get App Registry", () => {
   it("Happy case: user receives registry information for specific app", async () => {
     client = await createClient();
     const appRegistry = await client.getAppRegistry({
-      chainId: 4447,
+      chainId: 1337,
       name: "WithdrawApp",
     });
     verifyApp(appRegistry as DefaultApp);

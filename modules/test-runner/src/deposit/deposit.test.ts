@@ -1,13 +1,7 @@
-import {
-  IConnextClient,
-  BigNumberish,
-  BigNumber,
-  DepositAppState,
-  EventNames,
-} from "@connext/types";
+import { IConnextClient, BigNumberish, DepositAppState, EventNames } from "@connext/types";
 import { delay, toBN } from "@connext/utils";
 import { ERC20 } from "@connext/contracts";
-import { Contract, constants } from "ethers";
+import { BigNumber, Contract, constants } from "ethers";
 
 import {
   expect,
@@ -52,7 +46,7 @@ describe("Deposits", () => {
     const onchainBalance: BigNumber =
       expected.assetId === AddressZero
         ? await ethProvider.getBalance(client.multisigAddress)
-        : await new Contract(expected.assetId!, ERC20.abi, ethProvider).functions.balanceOf(
+        : await new Contract(expected.assetId!, ERC20.abi, ethProvider).balanceOf(
             client.multisigAddress,
           );
     expect(onchainBalance.eq(toBN(expected.node).add(toBN(expected.client))));

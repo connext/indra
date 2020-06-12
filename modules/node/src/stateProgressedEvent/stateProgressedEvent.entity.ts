@@ -10,7 +10,7 @@ import {
 import { Challenge } from "../challenge/challenge.entity";
 import { StateProgressedEventPayload, AppName, AppActions, Address } from "@connext/types";
 import { IsEthAddress } from "../validate";
-import { utils } from "ethers";
+import { BigNumber, utils } from "ethers";
 import { toBN } from "@connext/utils";
 
 const { defaultAbiCoder } = utils;
@@ -47,19 +47,19 @@ export class StateProgressedEvent<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => toBN(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => toBN(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  versionNumber!: utils.BigNumber;
+  versionNumber!: BigNumber;
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => toBN(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => toBN(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  timeout!: utils.BigNumber;
+  timeout!: BigNumber;
 
   @Column("text")
   @IsEthAddress()

@@ -1,4 +1,4 @@
-import { providers, utils } from "ethers";
+import { providers, BigNumberish } from "ethers";
 
 import { Address, BigNumber, Bytes32, HexString, PublicIdentifier, SignatureString } from "./basic";
 import { ConditionalTransferTypes, CreatedConditionalTransferMetaMap } from "./transfers";
@@ -9,7 +9,7 @@ import { Attestation } from "./contracts";
 // deposit
 
 type DepositParameters = {
-  amount: utils.BigNumberish;
+  amount: BigNumberish;
   assetId?: Address; // if not provided, will default to 0x0 (Eth)
 };
 
@@ -38,8 +38,8 @@ type RescindDepositRightsResponse = MethodResults.RescindDepositRights;
 
 type HashLockTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.HashLockTransfer;
-  amount: utils.BigNumberish;
-  timelock?: utils.BigNumberish;
+  amount: BigNumberish;
+  timelock?: BigNumberish;
   lockHash: Bytes32;
   recipient: PublicIdentifier;
   assetId?: Address;
@@ -70,7 +70,7 @@ type ResolveHashLockTransferResponse = {
 
 type LinkedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.LinkedTransfer;
-  amount: utils.BigNumberish;
+  amount: BigNumberish;
   assetId?: Address;
   paymentId: Bytes32;
   preImage: Bytes32;
@@ -182,7 +182,7 @@ type ResolveConditionResponse = {
 // swap
 
 type SwapParameters = {
-  amount: utils.BigNumberish;
+  amount: BigNumberish;
   fromAssetId: Address;
   swapRate: string; // DecString?
   toAssetId: Address;
@@ -201,7 +201,7 @@ type SwapResponse = {
 // withdraw
 
 type WithdrawParameters = {
-  amount: utils.BigNumberish;
+  amount: BigNumberish;
   assetId?: Address; // if not provided, will default to 0x0 (Eth)
   recipient?: Address; // if not provided, will default to signer addr
   nonce?: HexString; // generated internally, end user doesn't need to provide it

@@ -19,7 +19,7 @@ import { ColorfulLogger, toBN, toBNJson, getRandomBytes32 } from "@connext/utils
 import { expect, use } from "chai";
 import MockAsyncStorage from "mock-async-storage";
 import { v4 as uuid } from "uuid";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import {
   getAsyncStore,
@@ -87,7 +87,7 @@ export const setAndGet = async (
 ): Promise<void> => {
   await store.setItem(pair.path, pair.value);
   const value = await store.getItem(pair.path);
-  if (typeof pair.value === "object" && !utils.BigNumber.isBigNumber(pair.value)) {
+  if (typeof pair.value === "object" && !BigNumber.isBigNumber(pair.value)) {
     expect(value).to.be.deep.equal(pair.value);
     return;
   }
@@ -192,7 +192,7 @@ export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
   },
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
   outcomeInterpreterParameters: {
-    amount: { _hex: "0x42" },
+    amount: { _hex: "0x42", _isBigNumber: true } as any,
     playerAddrs: [AddressZero, AddressZero],
     tokenAddress: AddressZero,
   },
@@ -221,7 +221,7 @@ export const TEST_STORE_PROPOSAL: AppInstanceJson = {
   defaultTimeout: "0x01",
   stateTimeout: "0x00",
   outcomeInterpreterParameters: {
-    limit: { _hex: "0x1" },
+    limit: { _hex: "0x1", _isBigNumber: true } as any,
     tokenAddress: AddressZero,
   },
 };

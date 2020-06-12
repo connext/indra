@@ -1,11 +1,9 @@
 import { expect } from "chai";
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 
 import { isBN, isBNJson, getBigNumberError, getBigNumberishError } from "./bigNumbers";
 
-const { BigNumber } = utils;
-
-const TEST_BN = new BigNumber(1);
+const TEST_BN = BigNumber.from(1);
 const TEST_BN_JSON_1 = { _hex: "0x01" };
 // const TEST_BN_JSON_2 = { _hex: "0x01", _isBigNumber: true };
 const TEST_BN_INVALID = { amount: 1 };

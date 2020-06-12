@@ -9,7 +9,7 @@ import { ERC20 } from "@connext/contracts";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
-import { providers, constants, utils, Contract } from "ethers";
+import { BigNumber, providers, constants, utils, Contract } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -22,7 +22,7 @@ import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
 
 const { AddressZero } = constants;
-const { getAddress, toUtf8Bytes, sha256, bigNumberify, formatUnits } = utils;
+const { getAddress, toUtf8Bytes, sha256, formatUnits } = utils;
 
 export enum RebalanceType {
   COLLATERALIZE = "COLLATERALIZE",
@@ -164,9 +164,9 @@ export class ChannelService {
   async getCollateralAmountToCoverPaymentAndRebalance(
     userPublicIdentifier: string,
     assetId: string,
-    paymentAmount: utils.BigNumber,
-    currentBalance: utils.BigNumber,
-  ): Promise<utils.BigNumber> {
+    paymentAmount: BigNumber,
+    currentBalance: BigNumber,
+  ): Promise<BigNumber> {
     const { collateralizeThreshold, target } = await this.getRebalancingTargets(
       userPublicIdentifier,
       assetId,
@@ -223,11 +223,11 @@ export class ChannelService {
       console.log("decimals: ", decimals);
       if (decimals !== 18) {
         this.log.warn(`Token has ${decimals} decimals, converting rebalance targets`);
-        targets.collateralizeThreshold = bigNumberify(
+        targets.collateralizeThreshold = BigNumber.from(
           formatUnits(targets.collateralizeThreshold, decimals).split(".")[0],
         );
-        targets.target = bigNumberify(formatUnits(targets.target, decimals).split(".")[0]);
-        targets.reclaimThreshold = bigNumberify(
+        targets.target = BigNumber.from(formatUnits(targets.target, decimals).split(".")[0]);
+        targets.reclaimThreshold = BigNumber.from(
           formatUnits(targets.reclaimThreshold, decimals).split(".")[0],
         );
         this.log.warn(`Converted rebalance targets: ${targets}`);
@@ -345,9 +345,9 @@ export class ChannelService {
     }
     const response: RebalanceProfileType = {
       assetId: rebalancingTargets.assetId,
-      collateralizeThreshold: bigNumberify(rebalancingTargets.collateralizeThreshold),
-      target: bigNumberify(rebalancingTargets.target),
-      reclaimThreshold: bigNumberify(rebalancingTargets.reclaimThreshold),
+      collateralizeThreshold: BigNumber.from(rebalancingTargets.collateralizeThreshold),
+      target: BigNumber.from(rebalancingTargets.target),
+      reclaimThreshold: BigNumber.from(rebalancingTargets.reclaimThreshold),
     };
     this.log.info(
       `getDataFromRebalancingService for ${userPublicIdentifier} asset ${assetId} complete: ${JSON.stringify(

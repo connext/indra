@@ -20,8 +20,6 @@ const { keccak256 } = utils;
 describe("MChallengeRegistryCore", () => {
   let wallet: Wallet;
 
-  let snapshotId: any;
-
   let ONCHAIN_CHALLENGE_TIMEOUT: number;
   let alice: Wallet;
   let action: AppWithCounterAction;
@@ -42,7 +40,6 @@ describe("MChallengeRegistryCore", () => {
   });
 
   beforeEach(async () => {
-    snapshotId = await snapshot();
     const context = await setupContext();
 
     ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];
@@ -64,10 +61,6 @@ describe("MChallengeRegistryCore", () => {
         undefined, // timeout
         turnTaker || context["bob"], // turn taker
       );
-  });
-
-  afterEach(async () => {
-    await restore(snapshotId);
   });
 
   describe("isFinalized", () => {
