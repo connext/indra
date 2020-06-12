@@ -70,6 +70,7 @@ export default {
     const limit = argv.limit;
     const start: { [paymentId: string]: number } = {};
     const end: { [paymentId: string]: number } = {};
+    let exitCode = 0;
 
     const randomInterval = Math.round(argv.interval * 0.75 + Math.random() * (argv.interval * 0.5));
     log.info(`Using random inteval: ${randomInterval}`);
@@ -152,6 +153,7 @@ export default {
           sentPayments++;
         } catch (err) {
           log.error(`Error sending tranfer: ${err.message}`);
+          exitCode += 1;
           stop();
         }
       },
@@ -162,7 +164,6 @@ export default {
     );
 
     log.warn(`Done sending payments`);
-    let exitCode = 0;
 
     const elapsed: { [paymentId: string]: number } = {};
     Object.entries(start).forEach(([paymentId, startTime]) => {
@@ -174,7 +175,7 @@ export default {
     const numberPayments = Object.keys(elapsed).length;
     if (numberPayments < limit) {
       log.error(`Only able to run ${numberPayments}/${limit} requested payments before exiting.`);
-      exitCode = 1;
+      exitCode += 1;
     }
     log.info(`Payment times: ${stringify(elapsed)}`);
     const average = Object.values(elapsed).reduce((prev, curr) => prev + curr, 0) / numberPayments;

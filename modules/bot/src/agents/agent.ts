@@ -85,8 +85,8 @@ export class Agent {
       if (!resolver) {
         return;
       }
-      resolver.resolve();
       delete this.payments[eData.paymentId];
+      resolver.resolve();
     });
 
     // Add listener to associate paymentId with appId
@@ -210,8 +210,8 @@ export class Agent {
       delay(timeout).then(() => {
         if (this.payments[id]) {
           this.log.error(`Payment ${id} timed out after ${timeout/1000} s`);
-          reject();
           delete this.payments[id];
+          reject();
         }
       });
     });

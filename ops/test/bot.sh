@@ -29,7 +29,7 @@ function cleanup {
       agent_code="`docker container inspect ${agent_name}_$n | jq '.[0].State.ExitCode'`"
       if [[ "$agent_code" != "0" ]]
       then
-        echo "agent failed: $agent_code";
+        echo "agent $n failed with exit code $agent_code";
         exit_code="1";
       fi
       docker container rm ${agent_name}_$n &> /dev/null || true
@@ -101,7 +101,8 @@ do
     --volume="`pwd`:/root" \
     ${project}_builder -c '
       set -e
-      echo "Bot container launched!"
+      echo "Bot container launched! Waiting for others to launch.."
+      sleep '"$agents"'
       cd modules/bot
       export PATH=./node_modules/.bin:$PATH
       function finish {
@@ -109,7 +110,11 @@ do
       }
       trap finish SIGTERM SIGINT
       echo "Launching agent!";echo
-      npm run start -- bot --private-key '$agent_key' --concurrency-index '$n' --interval '$interval' --limit '$limit'
+      node --inspect=0.0.0.0:9229 dist/src/index.js bot \
+        --private-key '$agent_key' \
+        --concurrency-index '$n' \
+        --interval '$interval' \
+        --limit '$limit'
     '
 
   docker logs --follow $agent &

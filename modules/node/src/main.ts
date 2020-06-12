@@ -9,6 +9,11 @@ import { LoggerService } from "./logger/logger.service";
 (async () => {
   const log = new LoggerService("Main");
   log.info(`Deploying Indra ${version}`);
+
+  process.on("unhandledRejection", (e: Error) => {
+    log.error(`Unhandled Promise Rejection: ${e.stack}`);
+  });
+
   const app = await NestFactory.create(AppModule, { logger: log });
   app.enableCors();
   const config = app.get(ConfigService);
