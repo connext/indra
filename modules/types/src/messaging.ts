@@ -24,6 +24,7 @@ export type ProtocolMessageData = {
   protocol: ProtocolName;
   params?: ProtocolParam;
   to: PublicIdentifier;
+  error?: string;
   seq: number;
   // customData: Additional data which depends on the protocol (or even the specific message
   // number in a protocol) lives here. Includes signatures
