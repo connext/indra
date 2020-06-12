@@ -482,20 +482,19 @@ export class CFCoreStore implements IStoreService {
         latestVersionNumber,
       } = appJson;
 
-
-      let update;
-      update.type = AppType.INSTANCE;
-      // save user/node specific ids
       const nodeId = this.configService.getPublicIdentifier();
-      update.userIdentifier = [initiatorIdentifier, responderIdentifier].find(
-        (p) => p !== nodeId,
-      );
-      update.nodeIdentifier = [initiatorIdentifier, responderIdentifier].find(
-        (p) => p === nodeId,
-      );
-      update.latestState = latestState;
-      update.stateTimeout = stateTimeout;
-      update.latestVersionNumber = latestVersionNumber;
+      const update = {
+        type: AppType.INSTANCE,
+        userIdentifier: [initiatorIdentifier, responderIdentifier].find(
+          (p) => p !== nodeId,
+        ),
+        nodeIdentifier: [initiatorIdentifier, responderIdentifier].find(
+          (p) => p === nodeId,
+        ),
+        latestState: latestState,
+        stateTimeout: stateTimeout,
+        latestVersionNumber: latestVersionNumber
+      }
 
       // 25ms
       await instrument("createAppInstance:tx", async () => {
