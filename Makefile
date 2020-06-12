@@ -144,6 +144,12 @@ build-report:
 lint:
 	bash ops/lint.sh
 
+publish-contracts:
+	bash ops/npm-publish.sh contracts
+
+publish-packages:
+	bash ops/npm-publish.sh
+
 dls:
 	@docker service ls
 	@echo "====="
