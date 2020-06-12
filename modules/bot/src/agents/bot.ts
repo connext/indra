@@ -1,5 +1,6 @@
 import {
   ColorfulLogger,
+  delay,
   getRandomBytes32,
   getSignerAddressFromPublicIdentifier,
   stringify,
@@ -13,6 +14,7 @@ import { createClient } from "../helpers/client";
 import {
   addAgentIdentifierToIndex,
   getRandomAgentIdentifierFromIndex,
+  removeAgentIdentifierFromIndex,
 } from "../helpers/agentIndex";
 import { Agent } from "./agent";
 
@@ -86,18 +88,18 @@ export default {
     await agent.start();
     log.info("Agent started.");
 
+    let depositLock = true;
+    await agent.depositIfNeeded(TRANSFER_AMT, DEPOSIT_AMT);
+    depositLock = false;
+
+    // Register listener
+    client.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (eData) => {
+      log.debug(`Received transfer: ${stringify(eData)}`);
+    });
+
     log.info(`Registering address ${client.publicIdentifier}`);
     // Register agent in environment
     await addAgentIdentifierToIndex(client.publicIdentifier);
-
-    let depositLock = false;
-
-    // Register listener
-    let receivedCount = 1;
-    client.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (eData) => {
-      log.debug(`Received transfer #${receivedCount}: ${stringify(eData)}`);
-      receivedCount += 1;
-    });
 
     // Setup agent logic to transfer on an interval
     let sentPayments = 1;
@@ -106,7 +108,7 @@ export default {
         log.debug(`Started interval`);
 
         // Only send up to the limit of payments
-        if (sentPayments > limit) {
+        if (sentPayments >= limit) {
           stop();
         }
 
@@ -121,6 +123,7 @@ export default {
         const receiverIdentifier = await getRandomAgentIdentifierFromIndex(client.publicIdentifier);
 
         if (!receiverIdentifier) {
+          log.warn(`No recipients are available. Doing nothing..`);
           return;
         }
 
@@ -137,12 +140,12 @@ export default {
         try {
           // Send transfer
           log.info(
-            `Starting transfer #${sentPayments}/${limit} to ${receiverIdentifier} with signer ${receiverSigner}`,
+            `Sending transfer #${sentPayments}/${limit} to ${receiverIdentifier} with signer ${receiverSigner}`,
           );
           await agent.pay(receiverIdentifier, receiverSigner, TRANSFER_AMT, paymentId);
           end[paymentId] = Date.now();
           log.info(
-            `Conditional transfer #${sentPayments}/${limit} with ${paymentId} sent. Elapsed: ${
+            `Sent Conditional transfer #${sentPayments}/${limit} with ${paymentId} sent. Elapsed: ${
               end[paymentId] - start[paymentId]
             }`,
           );
@@ -158,8 +161,9 @@ export default {
       { stopOnError: false },
     );
 
-    log.warn(`Process completed, calculating times`);
-    const elapsed: { [k: string]: number } = {};
+    log.warn(`Done sending payments`);
+
+    const elapsed: { [paymentId: string]: number } = {};
     Object.entries(start).forEach(([paymentId, startTime]) => {
       if (!end[paymentId]) {
         return;
@@ -168,11 +172,25 @@ export default {
     });
     const numberPayments = Object.keys(elapsed).length;
     if (numberPayments < limit) {
-      log.error(`Only able to run ${numberPayments}/${limit} requested before exiting.`);
+      log.error(`Only able to run ${numberPayments}/${limit} requested payments before exiting.`);
     }
-    log.debug(`Elapsed payment: ${stringify(elapsed)}`);
+    log.info(`Payment times: ${stringify(elapsed)}`);
     const average = Object.values(elapsed).reduce((prev, curr) => prev + curr, 0) / numberPayments;
-    log.warn(`Average payment time across ${numberPayments} payments: ${average}ms, exiting`);
+    log.warn(`Average elapsed time across ${numberPayments} payments: ${average}ms`);
+
+    log.warn(`Waiting for other bots to stop sending us payments..`);
+    while (true) {
+      const diff = Date.now() - agent.lastReceivedOn;
+      if (diff > argv.interval * 5) {
+        log.warn(
+          `We haven't recieved a payment in ${diff} ms. Bot ${client.publicIdentifier} is exiting.`,
+        );
+        break;
+      } else {
+        await delay(argv.interval);
+      }
+    }
+    await removeAgentIdentifierFromIndex(client.publicIdentifier);
     process.exit(0);
   },
 };

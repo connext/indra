@@ -26,6 +26,8 @@ export class Agent {
     [appId: string]: string; // { appId: paymentId }
   } = {};
 
+  public lastReceivedOn = Date.now();
+
   constructor(
     private readonly log: ILoggerService,
     private readonly client: IConnextClient,
@@ -44,7 +46,7 @@ export class Agent {
         return;
       }
 
-      this.log.debug(`Received transfer: ${stringify(eventData)}`);
+      this.log.info(`Receiving transfer from ${eventData.sender}`);
 
       if (this.client.signerAddress !== eventData.transferMeta.signerAddress) {
         this.log.error(
@@ -53,13 +55,15 @@ export class Agent {
         return;
       }
 
+      this.lastReceivedOn = Date.now();
+
       const signature = await signReceiptMessage(
         receipt,
         chainId,
         verifyingContract,
         this.privateKey,
       );
-      this.log.info(`Unlocking transfer with signature ${signature}`);
+      this.log.debug(`Unlocking transfer with signature ${signature}`);
       const start = Date.now();
       await this.client.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
@@ -68,7 +72,7 @@ export class Agent {
         signature,
       } as PublicParams.ResolveSignedTransfer);
       this.log.info(
-        `Unlocked transfer ${eventData.paymentId} for (${eventData.amount} ETH). Elapsed: ${
+        `Received transfer ${eventData.paymentId} for ${eventData.amount} ETH. Elapsed: ${
           Date.now() - start
         }`,
       );
@@ -190,7 +194,7 @@ export class Agent {
       this.client
         .conditionalTransfer(params)
         .then(() => {
-          this.log.info(`Initiated transfer with ID ${id}.`);
+          this.log.debug(`Initiated transfer with ID ${id}.`);
         })
         .catch((e) => {
           delete this.payments[id];
