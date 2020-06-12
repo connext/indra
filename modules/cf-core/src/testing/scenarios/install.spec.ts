@@ -1,4 +1,9 @@
-import { CONVENTION_FOR_ETH_ASSET_ID, ProtocolParams, ProtocolEventMessage } from "@connext/types";
+import {
+  CONVENTION_FOR_ETH_ASSET_ID,
+  ProtocolParams,
+  ProtocolEventMessage,
+  IStoreService,
+} from "@connext/types";
 import { delay, getAddressFromAssetId } from "@connext/utils";
 import { BigNumber, constants, utils } from "ethers";
 
@@ -35,6 +40,7 @@ describe("Node method follows spec - install", () => {
   let multisigAddress: string;
   let nodeA: CFCore;
   let nodeB: CFCore;
+  let storeA: IStoreService;
 
   describe(
     "Node A gets app install proposal, sends to node B, B approves it, installs it, " +
@@ -44,6 +50,7 @@ describe("Node method follows spec - install", () => {
         const context: SetupContext = await setup(global);
         nodeA = context["A"].node;
         nodeB = context["B"].node;
+        storeA = context["A"].store;
 
         multisigAddress = await createChannel(nodeA, nodeB);
         expect(multisigAddress).toBeDefined();
@@ -194,6 +201,38 @@ describe("Node method follows spec - install", () => {
 
         await expect(nodeA.rpcRouter.dispatch(AppInstanceJsonReq)).rejects.toThrowError(
           NULL_INITIAL_STATE_FOR_PROPOSAL,
+        );
+      });
+
+      it("should error on initiating node if there is an error for the responder", async (done) => {
+        await collateralizeChannel(multisigAddress, nodeA, nodeB);
+        const appDeposit = One;
+
+        nodeB.on(
+          "PROPOSE_INSTALL_EVENT",
+          async (msg: ProtocolEventMessage<"PROPOSE_INSTALL_EVENT">) => {
+            // Delay because propose event fires before params are set
+            await delay(500);
+            // Delete the responders channel
+            await storeA.removeAppProposal(multisigAddress, msg.data.appInstanceId);
+            await expect(
+              makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress),
+            ).rejects.toThrow(
+              `Counterparty execution of install failed: No proposed AppInstance exists for the given appIdentityHash`,
+            );
+            done();
+          },
+        );
+        await makeAndSendProposeCall(
+          nodeA,
+          nodeB,
+          TicTacToeApp,
+          multisigAddress,
+          undefined,
+          appDeposit,
+          CONVENTION_FOR_ETH_ASSET_ID,
+          appDeposit,
+          CONVENTION_FOR_ETH_ASSET_ID,
         );
       });
     },
