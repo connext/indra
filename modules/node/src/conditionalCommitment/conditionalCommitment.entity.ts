@@ -1,12 +1,13 @@
-import { OneToOne, JoinColumn, PrimaryGeneratedColumn, Entity, Column } from "typeorm";
+import { OneToOne, JoinColumn, PrimaryGeneratedColumn, Entity, Column, PrimaryColumn } from "typeorm";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { IsEthAddress, IsKeccak256Hash } from "../validate";
 
 @Entity()
 export class ConditionalTransactionCommitment {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryColumn()
+  @IsKeccak256Hash()
+  appIdentityHash!: string;
 
   @Column("text")
   @IsKeccak256Hash()
