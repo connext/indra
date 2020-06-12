@@ -1,4 +1,5 @@
 import {
+  abrv,
   ColorfulLogger,
   delay,
   getRandomBytes32,
@@ -83,6 +84,7 @@ export default {
       messagingUrl!,
       argv.logLevel,
     );
+    log.setContext(abrv(client.publicIdentifier, 5));
     const agent = new Agent(log, client, argv.privateKey);
     log.info("Agent starting up.");
     await agent.start();
@@ -105,7 +107,7 @@ export default {
     let sentPayments = 1;
     await intervalPromise(
       async (_, stop) => {
-        log.debug(`Started interval`);
+        log.info(`heartbeat thump thump`);
 
         // Only send up to the limit of payments
         if (sentPayments >= limit) {
@@ -140,18 +142,16 @@ export default {
         try {
           // Send transfer
           log.info(
-            `Sending transfer #${sentPayments}/${limit} to ${receiverIdentifier} with signer ${receiverSigner}`,
+            `Sending transfer #${sentPayments}/${limit} to ${abrv(receiverIdentifier)} with id ${abrv(paymentId)}`,
           );
           await agent.pay(receiverIdentifier, receiverSigner, TRANSFER_AMT, paymentId);
           end[paymentId] = Date.now();
           log.info(
-            `Sent Conditional transfer #${sentPayments}/${limit} with ${paymentId} sent. Elapsed: ${
-              end[paymentId] - start[paymentId]
-            }`,
+            `Sent transfer ${abrv(paymentId)}. Elapsed: ${end[paymentId] - start[paymentId]}`,
           );
           sentPayments++;
         } catch (err) {
-          console.error(`Error sending tranfer: ${err.message}`);
+          log.error(`Error sending tranfer: ${err.message}`);
           stop();
         }
       },
@@ -162,6 +162,7 @@ export default {
     );
 
     log.warn(`Done sending payments`);
+    let exitCode = 0;
 
     const elapsed: { [paymentId: string]: number } = {};
     Object.entries(start).forEach(([paymentId, startTime]) => {
@@ -173,24 +174,25 @@ export default {
     const numberPayments = Object.keys(elapsed).length;
     if (numberPayments < limit) {
       log.error(`Only able to run ${numberPayments}/${limit} requested payments before exiting.`);
+      exitCode = 1;
     }
     log.info(`Payment times: ${stringify(elapsed)}`);
     const average = Object.values(elapsed).reduce((prev, curr) => prev + curr, 0) / numberPayments;
     log.warn(`Average elapsed time across ${numberPayments} payments: ${average}ms`);
 
     log.warn(`Waiting for other bots to stop sending us payments..`);
+
     while (true) {
-      const diff = Date.now() - agent.lastReceivedOn;
-      if (diff > argv.interval * 5) {
-        log.warn(
-          `We haven't recieved a payment in ${diff} ms. Bot ${client.publicIdentifier} is exiting.`,
-        );
+      if (Date.now() - agent.lastReceivedOn > argv.interval * 5) {
+        log.warn(`No payments recieved for ${Date.now() - agent.lastReceivedOn} ms. Bot ${client.publicIdentifier} is exiting.`);
         break;
       } else {
         await delay(argv.interval);
       }
     }
+
     await removeAgentIdentifierFromIndex(client.publicIdentifier);
-    process.exit(0);
+    await delay(argv.interval * 5); // make sure any in-process payments have time to finish
+    process.exit(exitCode);
   },
 };

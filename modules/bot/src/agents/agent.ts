@@ -7,11 +7,13 @@ import {
   PublicParams,
 } from "@connext/types";
 import {
+  abrv,
+  delay,
+  getRandomBytes32,
   getTestReceiptToSign,
   getTestVerifyingContract,
   signReceiptMessage,
   stringify,
-  getRandomBytes32,
 } from "@connext/utils";
 import { constants, BigNumber } from "ethers";
 const { AddressZero } = constants;
@@ -46,7 +48,7 @@ export class Agent {
         return;
       }
 
-      this.log.info(`Receiving transfer from ${eventData.sender}`);
+      this.log.info(`Receiving transfer from ${abrv(eventData.sender)} with id ${abrv(eventData.paymentId || "???")}`);
 
       if (this.client.signerAddress !== eventData.transferMeta.signerAddress) {
         this.log.error(
@@ -71,16 +73,12 @@ export class Agent {
         responseCID: receipt.responseCID,
         signature,
       } as PublicParams.ResolveSignedTransfer);
-      this.log.info(
-        `Received transfer ${eventData.paymentId} for ${eventData.amount} ETH. Elapsed: ${
-          Date.now() - start
-        }`,
-      );
+      this.log.info(`Received transfer ${abrv(eventData.paymentId || "???")}. Elapsed: ${Date.now() - start}`);
     });
 
     this.client.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (eData) => {
       if (!eData.paymentId) {
-        this.log.info(`Ignoring untracked transfer ${eData.paymentId}.`);
+        this.log.warn(`Ignoring untracked transfer ${eData.paymentId}.`);
         return;
       }
       const resolver = this.payments[eData.paymentId];
@@ -88,6 +86,7 @@ export class Agent {
         return;
       }
       resolver.resolve();
+      delete this.payments[eData.paymentId];
     });
 
     // Add listener to associate paymentId with appId
@@ -102,7 +101,7 @@ export class Agent {
     // Add failure listeners
     this.client.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, async (eData) => {
       if (!eData.paymentId) {
-        this.log.info(`Ignoring untracked transfer ${eData.paymentId}.`);
+        this.log.warn(`Ignoring untracked transfer ${eData.paymentId}.`);
         return;
       }
       this.retrieveResolverAndReject(eData.paymentId, eData.error);
@@ -111,7 +110,7 @@ export class Agent {
     this.client.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async (eData) => {
       const paymentId = eData.params.meta?.["paymentId"];
       if (!paymentId) {
-        this.log.info(`Ignoring untracked proposal failure ${stringify(eData)}.`);
+        this.log.warn(`Ignoring untracked proposal failure ${stringify(eData)}.`);
         return;
       }
       this.retrieveResolverAndReject(paymentId, eData.error);
@@ -120,7 +119,7 @@ export class Agent {
     this.client.on(EventNames.INSTALL_FAILED_EVENT, async (eData) => {
       const paymentId = eData.params.proposal.meta?.["paymentId"];
       if (!paymentId) {
-        this.log.info(`Ignoring untracked install failure ${stringify(eData)}.`);
+        this.log.warn(`Ignoring untracked install failure ${stringify(eData)}.`);
         return;
       }
       this.retrieveResolverAndReject(paymentId, eData.error);
@@ -129,7 +128,7 @@ export class Agent {
     this.client.on(EventNames.UPDATE_STATE_FAILED_EVENT, async (eData) => {
       const appId = eData.params.appIdentityHash;
       if (!appId || !this.apps[appId]) {
-        this.log.info(`Ignoring untracked take action failure ${stringify(eData)}.`);
+        this.log.warn(`Ignoring untracked take action failure ${stringify(eData)}.`);
         return;
       }
       this.retrieveResolverAndReject(this.apps[appId], eData.error);
@@ -138,7 +137,7 @@ export class Agent {
     this.client.on(EventNames.UNINSTALL_FAILED_EVENT, async (eData) => {
       const appId = eData.params.appIdentityHash;
       if (!appId || !this.apps[appId]) {
-        this.log.info(`Ignoring untracked uninstall failure ${stringify(eData)}.`);
+        this.log.warn(`Ignoring untracked uninstall failure ${stringify(eData)}.`);
         return;
       }
       this.retrieveResolverAndReject(this.apps[appId], eData.error);
@@ -170,9 +169,10 @@ export class Agent {
       ].toString()} < ${minimumBalance.toString()}, depositing...`,
     );
     await this.deposit(depositAmount);
-    this.log.info(`Finished depositing`);
     const balanceAfterDeposit = await this.client.getFreeBalance(assetId);
-    this.log.info(`Agent balance after deposit: ${balanceAfterDeposit[this.client.signerAddress]}`);
+    this.log.info(
+      `Finished depositing. Agent balance: ${balanceAfterDeposit[this.client.signerAddress]}`,
+    );
   }
 
   async pay(
@@ -190,7 +190,7 @@ export class Agent {
       type,
     );
 
-    await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       this.client
         .conditionalTransfer(params)
         .then(() => {
@@ -205,6 +205,15 @@ export class Agent {
         resolve,
         reject,
       };
+
+      const timeout = 7500;
+      delay(timeout).then(() => {
+        if (this.payments[id]) {
+          this.log.error(`Payment ${id} timed out after ${timeout/1000} s`);
+          reject();
+          delete this.payments[id];
+        }
+      });
     });
   }
 
