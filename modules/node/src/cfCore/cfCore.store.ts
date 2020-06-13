@@ -315,6 +315,32 @@ export class CFCoreStore implements IStoreService {
       // because the app instance has `cascade` set to true, saving
       // the channel will involve multiple queries and should be put
       // within a transaction
+      const appValues = {
+        type: AppType.PROPOSAL,
+        identityHash: appProposal.identityHash,
+        actionEncoding: appProposal.abiEncodings.actionEncoding,
+        stateEncoding: appProposal.abiEncodings.stateEncoding,
+        appDefinition: appProposal.appDefinition,
+        appSeqNo: appProposal.appSeqNo,
+        initiatorDeposit: BigNumber.from(appProposal.initiatorDeposit),
+        initiatorDepositAssetId: appProposal.initiatorDepositAssetId,
+        responderDeposit: BigNumber.from(appProposal.responderDeposit),
+        responderDepositAssetId: appProposal.responderDepositAssetId,
+        defaultTimeout: appProposal.defaultTimeout,
+        stateTimeout: appProposal.stateTimeout,
+        responderIdentifier: appProposal.responderIdentifier,
+        initiatorIdentifier: appProposal.initiatorIdentifier,
+        outcomeType: appProposal.outcomeType,
+        outcomeInterpreterParameters: appProposal.outcomeInterpreterParameters,
+        meta: appProposal.meta,
+        latestState: appProposal.latestState,
+        latestVersionNumber: appProposal.latestVersionNumber,
+        userIdentifier:
+          this.configService.getPublicIdentifier() === appProposal.initiatorIdentifier
+            ? appProposal.responderIdentifier
+            : appProposal.initiatorIdentifier,
+        nodeIdentifier: this.configService.getPublicIdentifier(),
+      };
 
       // 20 ms
       await instrument("createAppProposal:tx", () =>
@@ -324,32 +350,7 @@ export class CFCoreStore implements IStoreService {
               .createQueryBuilder()
               .insert()
               .into(AppInstance)
-              .values({
-                type: AppType.PROPOSAL,
-                identityHash: appProposal.identityHash,
-                actionEncoding: appProposal.abiEncodings.actionEncoding,
-                stateEncoding: appProposal.abiEncodings.stateEncoding,
-                appDefinition: appProposal.appDefinition,
-                appSeqNo: appProposal.appSeqNo,
-                initiatorDeposit: BigNumber.from(appProposal.initiatorDeposit),
-                initiatorDepositAssetId: appProposal.initiatorDepositAssetId,
-                responderDeposit: BigNumber.from(appProposal.responderDeposit),
-                responderDepositAssetId: appProposal.responderDepositAssetId,
-                defaultTimeout: appProposal.defaultTimeout,
-                stateTimeout: appProposal.stateTimeout,
-                responderIdentifier: appProposal.responderIdentifier,
-                initiatorIdentifier: appProposal.initiatorIdentifier,
-                outcomeType: appProposal.outcomeType,
-                outcomeInterpreterParameters: appProposal.outcomeInterpreterParameters,
-                meta: appProposal.meta,
-                latestState: appProposal.latestState,
-                latestVersionNumber: appProposal.latestVersionNumber,
-                userIdentifier:
-                  this.configService.getPublicIdentifier() === appProposal.initiatorIdentifier
-                    ? appProposal.responderIdentifier
-                    : appProposal.initiatorIdentifier,
-                nodeIdentifier: this.configService.getPublicIdentifier(),
-              })
+              .values(appValues)
               .onConflict(`("identityHash") DO NOTHING`)
               .execute();
           });
@@ -421,38 +422,27 @@ export class CFCoreStore implements IStoreService {
             await this.cache.mergeCacheValues(
               `appInstance:identityHash:${appProposal.identityHash}`,
               60,
-              {
-                identityHash: appProposal.identityHash,
-                type: AppType.PROPOSAL,
-                appDefinition: appProposal.appDefinition,
-                stateEncoding: appProposal.abiEncodings.stateEncoding,
-                actionEncoding: appProposal.abiEncodings.actionEncoding,
-                appSeqNo: appProposal.appSeqNo,
-                latestState: appProposal.latestState,
-                latestVersionNumber: appProposal.latestVersionNumber,
-                initiatorDeposit: BigNumber.from(appProposal.initiatorDeposit),
-                initiatorDepositAssetId: appProposal.initiatorDepositAssetId,
-                outcomeType: appProposal.outcomeType,
-                initiatorIdentifier: appProposal.initiatorIdentifier,
-                responderIdentifier: appProposal.responderIdentifier,
-                responderDeposit: BigNumber.from(appProposal.responderDeposit),
-                responderDepositAssetId: appProposal.responderDepositAssetId,
-                defaultTimeout: appProposal.defaultTimeout,
-                stateTimeout: appProposal.stateTimeout,
-                channel: { multisigAddress },
-                userIdentifier:
-                  this.configService.getPublicIdentifier() === appProposal.initiatorIdentifier
-                    ? appProposal.responderIdentifier
-                    : appProposal.initiatorIdentifier,
-                nodeIdentifier: this.configService.getPublicIdentifier(),
-                meta: appProposal.meta,
-                latestAction: appProposal.latestAction,
-                outcomeInterpreterParameters: appProposal.outcomeInterpreterParameters,
-                createdAt: new Date(),
-                updatedAt: new Date(),
+              appValues,
+            );
+
+            // TODO: this is messed up, if we change this back to cache.del everything is way faster
+            await this.cache.mergeCacheValuesFn(
+              `channel:multisig:${multisigAddress}`,
+              60,
+              (channel: Channel) => {
+                console.log("channel: ", channel);
+                const exists = channel.appInstances.findIndex(
+                  (app) => app.identityHash === appProposal.identityHash,
+                );
+                console.log("exists: ", exists);
+                if (exists !== -1) {
+                  channel.appInstances[exists] = appValues as any;
+                } else {
+                  channel.appInstances.push(appValues as any);
+                }
+                return channel;
               },
             );
-            await this.cache.del(`channel:multisig:${multisigAddress}`);
           });
         }),
       );
