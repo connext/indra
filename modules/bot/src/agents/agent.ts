@@ -187,10 +187,11 @@ export class Agent {
     );
 
     await new Promise((resolve, reject) => {
+      const start = Date.now();
       this.client
         .conditionalTransfer(params)
         .then(() => {
-          this.log.info(`Initiated transfer with ID ${id}.`);
+          this.log.info(`Initiated transfer with ID ${id}. Elapsed: ${Date.now() - start}ms`);
         })
         .catch((e) => {
           delete this.payments[id];
