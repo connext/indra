@@ -59,7 +59,7 @@ export class Agent {
         verifyingContract,
         this.privateKey,
       );
-      this.log.info(`Unlocking transfer with signature ${signature}`);
+      this.log.debug(`Unlocking transfer with signature ${signature}`);
       const start = Date.now();
       await this.client.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
