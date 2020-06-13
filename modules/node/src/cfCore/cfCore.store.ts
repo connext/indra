@@ -62,7 +62,6 @@ import { ChallengeRegistry } from "@connext/contracts";
 import { LoggerService } from "../logger/logger.service";
 import { CacheService } from "../caching/cache.service";
 import { instrument } from "../logger/instrument";
-import { async } from "rxjs/internal/scheduler/async";
 
 const { Zero, AddressZero } = constants;
 const { defaultAbiCoder } = utils;
@@ -425,16 +424,13 @@ export class CFCoreStore implements IStoreService {
               appValues,
             );
 
-            // TODO: this is messed up, if we change this back to cache.del everything is way faster
             await this.cache.mergeCacheValuesFn(
               `channel:multisig:${multisigAddress}`,
               60,
               (channel: Channel) => {
-                console.log("channel: ", channel);
                 const exists = channel.appInstances.findIndex(
                   (app) => app.identityHash === appProposal.identityHash,
                 );
-                console.log("exists: ", exists);
                 if (exists !== -1) {
                   channel.appInstances[exists] = appValues as any;
                 } else {
@@ -443,6 +439,14 @@ export class CFCoreStore implements IStoreService {
                 return channel;
               },
             );
+
+            await instrument("createAppInstance:cacheSet channel.appIdentityHash", async () => {
+              await this.cache.set(
+                `channel:appIdentityHash:${appProposal.identityHash}`,
+                70,
+                multisigAddress,
+              );
+            });
           });
         }),
       );
@@ -475,7 +479,19 @@ export class CFCoreStore implements IStoreService {
           60,
           AppInstanceSerializer.toJSON(app),
         );
-        await this.cache.del(`channel:multisig:${multisigAddress}`);
+        await this.cache.mergeCacheValuesFn(
+          `channel:multisig:${multisigAddress}`,
+          60,
+          (channel: Channel) => {
+            const exists = channel.appInstances.findIndex(
+              (app) => app.identityHash === appIdentityHash,
+            );
+            if (exists !== -1) {
+              channel.appInstances.splice(exists, 1);
+            }
+            return channel;
+          },
+        );
       });
     });
   }
@@ -511,6 +527,33 @@ export class CFCoreStore implements IStoreService {
         latestState: latestState,
         stateTimeout: stateTimeout,
         latestVersionNumber: latestVersionNumber,
+      };
+
+      const appJsonToEntity = {
+        type: AppType.INSTANCE,
+        identityHash: appJson.identityHash,
+        actionEncoding: appJson.abiEncodings.actionEncoding,
+        stateEncoding: appJson.abiEncodings.stateEncoding,
+        appDefinition: appJson.appDefinition,
+        appSeqNo: appJson.appSeqNo,
+        initiatorDeposit: BigNumber.from(appJson.initiatorDeposit),
+        initiatorDepositAssetId: appJson.initiatorDepositAssetId,
+        responderDeposit: BigNumber.from(appJson.responderDeposit),
+        responderDepositAssetId: appJson.responderDepositAssetId,
+        defaultTimeout: appJson.defaultTimeout,
+        stateTimeout: appJson.stateTimeout,
+        responderIdentifier: appJson.responderIdentifier,
+        initiatorIdentifier: appJson.initiatorIdentifier,
+        outcomeType: appJson.outcomeType,
+        outcomeInterpreterParameters: appJson.outcomeInterpreterParameters,
+        meta: appJson.meta,
+        latestState: appJson.latestState,
+        latestVersionNumber: appJson.latestVersionNumber,
+        userIdentifier:
+          this.configService.getPublicIdentifier() === appJson.initiatorIdentifier
+            ? appJson.responderIdentifier
+            : appJson.initiatorIdentifier,
+        nodeIdentifier: this.configService.getPublicIdentifier(),
       };
 
       // 25ms
@@ -602,8 +645,33 @@ export class CFCoreStore implements IStoreService {
       });
 
       // 0ms
-      await instrument("createAppInstance:cacheDel", async () => {
-        await this.cache.del(`channel:multisig:${multisigAddress}`);
+      await instrument("createAppInstance:mergeCacheValuesFn", async () => {
+        await this.cache.mergeCacheValuesFn(
+          `channel:multisig:${multisigAddress}`,
+          60,
+          (channel: Channel) => {
+            const exists = channel.appInstances.findIndex(
+              (app) => app.identityHash === identityHash,
+            );
+            if (exists !== -1) {
+              channel.appInstances[exists] = appJsonToEntity as any;
+            } else {
+              channel.appInstances.push(appJsonToEntity as any);
+            }
+
+            // free balance
+            const fbAppIndex = channel.appInstances.findIndex(
+              (app) => app.type === AppType.FREE_BALANCE,
+            );
+            channel.appInstances[fbAppIndex] = {
+              ...channel.appInstances[fbAppIndex],
+              latestState: freeBalanceAppInstance.latestState,
+              stateTimeout: freeBalanceAppInstance.stateTimeout,
+              latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
+            };
+            return channel;
+          },
+        );
       });
     });
   }
@@ -615,21 +683,13 @@ export class CFCoreStore implements IStoreService {
   ): Promise<void> {
     await instrument("CFCoreStore:updateAppInstance", async () => {
       const { identityHash, latestState, stateTimeout, latestVersionNumber } = appJson;
-      const app = await this.findAppInstanceByIdentityHash(identityHash);
-      if (!app) {
-        throw new Error(`No app found when trying to update. AppId: ${identityHash}`);
-      }
-
-      if (app.type !== AppType.INSTANCE && app.type !== AppType.FREE_BALANCE) {
-        throw new Error(`App is not of correct type, type: ${app.type}`);
-      }
 
       await getManager().transaction(async (transactionalEntityManager) => {
         await transactionalEntityManager
           .createQueryBuilder()
           .update(AppInstance)
           .set({
-            latestState: latestState as AppState,
+            latestState,
             stateTimeout,
             latestVersionNumber,
           })
@@ -658,7 +718,32 @@ export class CFCoreStore implements IStoreService {
         latestVersionNumber,
       });
       await this.cache.set(`channel:appIdentityHash:${identityHash}`, 70, multisigAddress);
-      await this.cache.del(`channel:multisig:${multisigAddress}`);
+      await instrument("createAppInstance:mergeCacheValuesFn", async () => {
+        await this.cache.mergeCacheValuesFn(
+          `channel:multisig:${multisigAddress}`,
+          60,
+          async (channel: Channel) => {
+            const exists = channel.appInstances.findIndex(
+              (app) => app.identityHash === identityHash,
+            );
+
+            if (exists === -1) {
+              this.log.warn(
+                `Possible cache out of sync, removing channel cache for ${multisigAddress}`,
+              );
+              await this.cache.del(`channel:multisig:${multisigAddress}`);
+            } else {
+              channel.appInstances[exists] = {
+                ...channel.appInstances[exists],
+                latestState,
+                stateTimeout,
+                latestVersionNumber,
+              };
+            }
+            return channel;
+          },
+        );
+      });
     });
   }
 
@@ -669,23 +754,27 @@ export class CFCoreStore implements IStoreService {
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
     await instrument("CFCoreStore:removeAppInstance", async () => {
-      let app = await this.findAppInstanceByIdentityHash(appIdentityHash);
-      if (app) {
-        app.type = AppType.UNINSTALLED;
-        app.channel = null;
-      } else {
-        this.log.warn(`Could not find app instance to remove`);
-      }
-
       await getManager().transaction(async (transactionalEntityManager) => {
-        if (app) {
-          app = await transactionalEntityManager.save(app);
-        }
         await transactionalEntityManager
           .createQueryBuilder()
           .update(AppInstance)
           .set({
-            latestState: freeBalanceAppInstance.latestState as any,
+            type: AppType.UNINSTALLED,
+          })
+          .where("identityHash = :identityHash", { identityHash: appIdentityHash })
+          .execute();
+
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .relation(Channel, "appInstances")
+          .of(multisigAddress)
+          .remove(appIdentityHash);
+
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .update(AppInstance)
+          .set({
+            latestState: freeBalanceAppInstance.latestState,
             stateTimeout: freeBalanceAppInstance.stateTimeout,
             latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
           })
@@ -693,11 +782,6 @@ export class CFCoreStore implements IStoreService {
             identityHash: freeBalanceAppInstance.identityHash,
           })
           .execute();
-        await transactionalEntityManager
-          .createQueryBuilder()
-          .relation(Channel, "appInstances")
-          .of(multisigAddress)
-          .remove(app.identityHash);
 
         await transactionalEntityManager
           .createQueryBuilder()
@@ -715,14 +799,50 @@ export class CFCoreStore implements IStoreService {
           })
           .execute();
       });
-      if (app) {
-        await this.cache.mergeCacheValues(
-          `appInstance:identityHash:${appIdentityHash}`,
-          60,
-          AppInstanceSerializer.toJSON(app),
-        );
-        await this.cache.del(`channel:multisig:${multisigAddress}`);
-      }
+
+      await this.cache.mergeCacheValues(`appInstance:identityHash:${appIdentityHash}`, 60, {
+        type: AppType.UNINSTALLED,
+      });
+      await this.cache.del(`channel:multisig:${multisigAddress}`);
+      // await instrument("removeAppInstance:mergeCacheValuesFn", async () => {
+      //   await this.cache.mergeCacheValues(
+      //     `appInstance:identityHash:${freeBalanceAppInstance.identityHash}`,
+      //     60,
+      //     {
+      //       latestState: freeBalanceAppInstance.latestState,
+      //       stateTimeout: freeBalanceAppInstance.stateTimeout,
+      //       latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
+      //     },
+      //   );
+
+      //   await this.cache.mergeCacheValuesFn(
+      //     `channel:multisig:${multisigAddress}`,
+      //     60,
+      //     (channel: Channel) => {
+      //       const exists = channel.appInstances.findIndex(
+      //         (app) => app.identityHash === appIdentityHash,
+      //       );
+      //       if (exists !== -1) {
+      //         channel.appInstances[exists] = {
+      //           ...channel.appInstances[exists],
+      //           type: AppType.UNINSTALLED,
+      //         };
+      //       }
+
+      //       // free balance
+      //       const fbAppIndex = channel.appInstances.findIndex(
+      //         (app) => app.type === AppType.FREE_BALANCE,
+      //       );
+      //       channel.appInstances[fbAppIndex] = {
+      //         ...channel.appInstances[fbAppIndex],
+      //         latestState: freeBalanceAppInstance.latestState,
+      //         stateTimeout: freeBalanceAppInstance.stateTimeout,
+      //         latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
+      //       };
+      //       return channel;
+      //     },
+      //   );
+      // });
     });
   }
 
@@ -1150,14 +1270,14 @@ export class CFCoreStore implements IStoreService {
     return res;
   }
 
-  private async findChannelByMultisigAddress(multisig: string) {
-    let cacheRes;
+  private async findChannelByMultisigAddress(multisig: string): Promise<Channel> {
+    let cacheRes: Promise<Channel>;
     await instrument("findChannelByMultisig:cacheWrap", async () => {
-      cacheRes = this.cache.wrap(
+      cacheRes = this.cache.wrap<Channel>(
         `channel:multisig:${multisig}`,
         60,
         async () => {
-          let res;
+          let res: Channel;
           await instrument("cacheWrap:findByMultisigAddress", async () => {
             res = await this.channelRepository.findByMultisigAddress(multisig);
           });
