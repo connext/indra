@@ -312,43 +312,6 @@ export class CFCoreStore implements IStoreService {
   ): Promise<void> {
     // 35 ms
     await instrument("CFCoreStore:createAppProposal", async () => {
-      const app = new AppInstance();
-      app.type = AppType.PROPOSAL;
-      app.identityHash = appProposal.identityHash;
-      app.actionEncoding = appProposal.abiEncodings.actionEncoding;
-      app.stateEncoding = appProposal.abiEncodings.stateEncoding;
-      app.appDefinition = appProposal.appDefinition;
-      app.appSeqNo = appProposal.appSeqNo;
-      app.initiatorDeposit = BigNumber.from(appProposal.initiatorDeposit);
-      app.initiatorDepositAssetId = appProposal.initiatorDepositAssetId;
-      app.responderDeposit = BigNumber.from(appProposal.responderDeposit);
-      app.responderDepositAssetId = appProposal.responderDepositAssetId;
-      app.defaultTimeout = appProposal.defaultTimeout;
-      app.stateTimeout = appProposal.stateTimeout;
-      app.responderIdentifier = appProposal.responderIdentifier;
-      app.initiatorIdentifier = appProposal.initiatorIdentifier;
-      app.outcomeType = appProposal.outcomeType;
-      app.outcomeInterpreterParameters = appProposal.outcomeInterpreterParameters;
-      app.meta = appProposal.meta;
-      app.latestState = appProposal.latestState;
-      app.latestVersionNumber = appProposal.latestVersionNumber;
-      app.userIdentifier =
-        this.configService.getPublicIdentifier() === appProposal.initiatorIdentifier
-          ? appProposal.responderIdentifier
-          : appProposal.initiatorIdentifier;
-      app.nodeIdentifier = this.configService.getPublicIdentifier();
-
-      const setStateCommitment = new SetStateCommitment();
-      setStateCommitment.app = app;
-      setStateCommitment.appIdentityHash = appProposal.identityHash;
-      setStateCommitment.appIdentity = signedSetStateCommitment.appIdentity;
-      setStateCommitment.appStateHash = signedSetStateCommitment.appStateHash;
-      setStateCommitment.challengeRegistryAddress =
-        signedSetStateCommitment.challengeRegistryAddress;
-      setStateCommitment.signatures = signedSetStateCommitment.signatures;
-      setStateCommitment.stateTimeout = toBN(signedSetStateCommitment.stateTimeout).toString();
-      setStateCommitment.versionNumber = toBN(signedSetStateCommitment.versionNumber).toNumber();
-
       // because the app instance has `cascade` set to true, saving
       // the channel will involve multiple queries and should be put
       // within a transaction
@@ -361,7 +324,33 @@ export class CFCoreStore implements IStoreService {
               .createQueryBuilder()
               .insert()
               .into(AppInstance)
-              .values(app)
+              .values({
+                type: AppType.PROPOSAL,
+                identityHash: appProposal.identityHash,
+                actionEncoding: appProposal.abiEncodings.actionEncoding,
+                stateEncoding: appProposal.abiEncodings.stateEncoding,
+                appDefinition: appProposal.appDefinition,
+                appSeqNo: appProposal.appSeqNo,
+                initiatorDeposit: BigNumber.from(appProposal.initiatorDeposit),
+                initiatorDepositAssetId: appProposal.initiatorDepositAssetId,
+                responderDeposit: BigNumber.from(appProposal.responderDeposit),
+                responderDepositAssetId: appProposal.responderDepositAssetId,
+                defaultTimeout: appProposal.defaultTimeout,
+                stateTimeout: appProposal.stateTimeout,
+                responderIdentifier: appProposal.responderIdentifier,
+                initiatorIdentifier: appProposal.initiatorIdentifier,
+                outcomeType: appProposal.outcomeType,
+                outcomeInterpreterParameters: appProposal.outcomeInterpreterParameters,
+                meta: appProposal.meta,
+                latestState: appProposal.latestState,
+                latestVersionNumber: appProposal.latestVersionNumber,
+                userIdentifier:
+                  this.configService.getPublicIdentifier() === appProposal.initiatorIdentifier
+                    ? appProposal.responderIdentifier
+                    : appProposal.initiatorIdentifier,
+                nodeIdentifier: this.configService.getPublicIdentifier(),
+              })
+              .onConflict(`("identityHash") DO NOTHING`)
               .execute();
           });
 
@@ -371,7 +360,7 @@ export class CFCoreStore implements IStoreService {
               .createQueryBuilder()
               .relation(Channel, "appInstances")
               .of(multisigAddress)
-              .add(app.identityHash);
+              .add(appProposal.identityHash);
           });
 
           // TODO can this be merged with above?
@@ -392,8 +381,16 @@ export class CFCoreStore implements IStoreService {
               .createQueryBuilder()
               .insert()
               .into(SetStateCommitment)
-              .values(setStateCommitment)
-              .orUpdate({ conflict_target: '"appIdentityHash"', overwrite: [] })
+              .values({
+                appIdentityHash: appProposal.identityHash,
+                appIdentity: signedSetStateCommitment.appIdentity,
+                appStateHash: signedSetStateCommitment.appStateHash,
+                challengeRegistryAddress: signedSetStateCommitment.challengeRegistryAddress,
+                signatures: signedSetStateCommitment.signatures,
+                stateTimeout: toBN(signedSetStateCommitment.stateTimeout).toString(),
+                versionNumber: toBN(signedSetStateCommitment.versionNumber).toNumber(),
+              })
+              .onConflict(`("appIdentityHash") DO NOTHING`)
               .execute();
           });
 
@@ -410,20 +407,50 @@ export class CFCoreStore implements IStoreService {
                 interpreterAddr: signedConditionalTxCommitment.interpreterAddr,
                 interpreterParams: signedConditionalTxCommitment.interpreterParams,
                 signatures: signedConditionalTxCommitment.signatures,
-                app,
+                appIdentityHash: appProposal.identityHash,
               })
-              .orUpdate({ conflict_target: '"appIdentityHash"', overwrite: [] })
+              .onConflict(`("appIdentityHash") DO NOTHING`)
               .execute();
           });
 
           // 1.6 ms
           await instrument("createAppProposal:cacheSet", async () => {
             // Update cache values
-            await this.cache.mergeCacheValues(
-              `appInstance:identityHash:${app.identityHash}`,
-              60,
-              AppInstanceSerializer.toJSON(app),
-            );
+
+            // TODO
+            // await this.cache.mergeCacheValues(
+            //   `appInstance:identityHash:${appProposal.identityHash}`,
+            //   60,
+            //   AppInstanceSerializer.toJSON({
+            //     identityHash: appProposal.identityHash,
+            //     type: AppType.PROPOSAL,
+            //     appDefinition: appProposal.appDefinition,
+            //     stateEncoding: appProposal.abiEncodings.stateEncoding,
+            //     actionEncoding: appProposal.abiEncodings.actionEncoding,
+            //     appSeqNo: appProposal.appSeqNo,
+            //     latestState: appProposal.latestState,
+            //     latestVersionNumber: appProposal.latestVersionNumber,
+            //     initiatorDeposit: BigNumber.from(appProposal.initiatorDeposit),
+            //     initiatorDepositAssetId: appProposal.initiatorDepositAssetId,
+            //     outcomeType: appProposal.outcomeType,
+            //     initiatorIdentifier: appProposal.initiatorIdentifier,
+            //     responderIdentifier: appProposal.responderIdentifier,
+            //     responderDeposit: BigNumber.from(appProposal.responderDeposit),
+            //     responderDepositAssetId: appProposal.responderDepositAssetId,
+            //     defaultTimeout: appProposal.defaultTimeout,
+            //     stateTimeout: appProposal.stateTimeout,
+            //     userIdentifier:
+            //       this.configService.getPublicIdentifier() === appProposal.initiatorIdentifier
+            //         ? appProposal.responderIdentifier
+            //         : appProposal.initiatorIdentifier,
+            //     nodeIdentifier: this.configService.getPublicIdentifier(),
+            //     meta: appProposal.meta,
+            //     latestAction: appProposal.latestAction,
+            //     outcomeInterpreterParameters: appProposal.outcomeInterpreterParameters,
+            //     createdAt: new Date(),
+            //     updatedAt: new Date(),
+            //   }),
+            // );
             await this.cache.del(`channel:multisig:${multisigAddress}`);
           });
         }),
