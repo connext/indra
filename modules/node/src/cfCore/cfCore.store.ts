@@ -417,40 +417,41 @@ export class CFCoreStore implements IStoreService {
           await instrument("createAppProposal:cacheSet", async () => {
             // Update cache values
 
-            // TODO
-            // await this.cache.mergeCacheValues(
-            //   `appInstance:identityHash:${appProposal.identityHash}`,
-            //   60,
-            //   AppInstanceSerializer.toJSON({
-            //     identityHash: appProposal.identityHash,
-            //     type: AppType.PROPOSAL,
-            //     appDefinition: appProposal.appDefinition,
-            //     stateEncoding: appProposal.abiEncodings.stateEncoding,
-            //     actionEncoding: appProposal.abiEncodings.actionEncoding,
-            //     appSeqNo: appProposal.appSeqNo,
-            //     latestState: appProposal.latestState,
-            //     latestVersionNumber: appProposal.latestVersionNumber,
-            //     initiatorDeposit: BigNumber.from(appProposal.initiatorDeposit),
-            //     initiatorDepositAssetId: appProposal.initiatorDepositAssetId,
-            //     outcomeType: appProposal.outcomeType,
-            //     initiatorIdentifier: appProposal.initiatorIdentifier,
-            //     responderIdentifier: appProposal.responderIdentifier,
-            //     responderDeposit: BigNumber.from(appProposal.responderDeposit),
-            //     responderDepositAssetId: appProposal.responderDepositAssetId,
-            //     defaultTimeout: appProposal.defaultTimeout,
-            //     stateTimeout: appProposal.stateTimeout,
-            //     userIdentifier:
-            //       this.configService.getPublicIdentifier() === appProposal.initiatorIdentifier
-            //         ? appProposal.responderIdentifier
-            //         : appProposal.initiatorIdentifier,
-            //     nodeIdentifier: this.configService.getPublicIdentifier(),
-            //     meta: appProposal.meta,
-            //     latestAction: appProposal.latestAction,
-            //     outcomeInterpreterParameters: appProposal.outcomeInterpreterParameters,
-            //     createdAt: new Date(),
-            //     updatedAt: new Date(),
-            //   }),
-            // );
+            // TODO: do we need anything else from channel?
+            await this.cache.mergeCacheValues(
+              `appInstance:identityHash:${appProposal.identityHash}`,
+              60,
+              {
+                identityHash: appProposal.identityHash,
+                type: AppType.PROPOSAL,
+                appDefinition: appProposal.appDefinition,
+                stateEncoding: appProposal.abiEncodings.stateEncoding,
+                actionEncoding: appProposal.abiEncodings.actionEncoding,
+                appSeqNo: appProposal.appSeqNo,
+                latestState: appProposal.latestState,
+                latestVersionNumber: appProposal.latestVersionNumber,
+                initiatorDeposit: BigNumber.from(appProposal.initiatorDeposit),
+                initiatorDepositAssetId: appProposal.initiatorDepositAssetId,
+                outcomeType: appProposal.outcomeType,
+                initiatorIdentifier: appProposal.initiatorIdentifier,
+                responderIdentifier: appProposal.responderIdentifier,
+                responderDeposit: BigNumber.from(appProposal.responderDeposit),
+                responderDepositAssetId: appProposal.responderDepositAssetId,
+                defaultTimeout: appProposal.defaultTimeout,
+                stateTimeout: appProposal.stateTimeout,
+                channel: { multisigAddress },
+                userIdentifier:
+                  this.configService.getPublicIdentifier() === appProposal.initiatorIdentifier
+                    ? appProposal.responderIdentifier
+                    : appProposal.initiatorIdentifier,
+                nodeIdentifier: this.configService.getPublicIdentifier(),
+                meta: appProposal.meta,
+                latestAction: appProposal.latestAction,
+                outcomeInterpreterParameters: appProposal.outcomeInterpreterParameters,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              },
+            );
             await this.cache.del(`channel:multisig:${multisigAddress}`);
           });
         }),
@@ -597,13 +598,13 @@ export class CFCoreStore implements IStoreService {
       });
 
       // 1ms
-      // await instrument("createAppInstance:cacheSet AppInstance.identityHash", async () => {
-      //   await this.cache.set(
-      //     `appInstance:identityHash:${identityHash}`,
-      //     60,
-      //     AppInstanceSerializer.toJSON(identityHash),
-      //   );
-      // })
+      // TODO: do we need anything else from channel?
+      await instrument("createAppInstance:cacheSet AppInstance.identityHash", async () => {
+        await this.cache.mergeCacheValues(`appInstance:identityHash:${identityHash}`, 60, {
+          ...update,
+          channel: { multisigAddress },
+        });
+      });
 
       // 1ms
       await instrument("createAppInstance:cacheSet channel.appIdentityHash", async () => {
