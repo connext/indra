@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import {
   AppInstanceJson,
-  AppState,
   ChallengeEvents,
   ChallengeStatus,
   ChallengeUpdatedEventPayload,
