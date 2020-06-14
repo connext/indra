@@ -175,12 +175,6 @@ export class CFCoreStore implements IStoreService {
       });
       channel.activeCollateralizations = activeCollateralizations;
 
-      const participants = [
-        freeBalanceAppInstance.initiatorIdentifier,
-        freeBalanceAppInstance.responderIdentifier,
-      ];
-      const userId = participants.find((p) => p === userIdentifier);
-      const nodeId = participants.find((p) => p === nodeIdentifier);
       const {
         identityHash,
         abiEncodings: { stateEncoding, actionEncoding },
@@ -192,6 +186,8 @@ export class CFCoreStore implements IStoreService {
         appSeqNo,
         appDefinition,
         outcomeInterpreterParameters,
+        initiatorIdentifier,
+        responderIdentifier,
       } = freeBalanceAppInstance;
 
       const freeBalanceApp = new AppInstance();
@@ -211,10 +207,8 @@ export class CFCoreStore implements IStoreService {
       freeBalanceApp.initiatorDepositAssetId = AddressZero;
       freeBalanceApp.responderDeposit = Zero;
       freeBalanceApp.responderDepositAssetId = AddressZero;
-      freeBalanceApp.responderIdentifier = userIdentifier;
-      freeBalanceApp.initiatorIdentifier = nodeIdentifier;
-      freeBalanceApp.userIdentifier = userId;
-      freeBalanceApp.nodeIdentifier = nodeId;
+      freeBalanceApp.responderIdentifier = responderIdentifier;
+      freeBalanceApp.initiatorIdentifier = initiatorIdentifier;
       freeBalanceApp.type = AppType.FREE_BALANCE;
       freeBalanceApp.outcomeInterpreterParameters = outcomeInterpreterParameters;
 
@@ -308,12 +302,6 @@ export class CFCoreStore implements IStoreService {
     signedSetStateCommitment: SetStateCommitmentJSON,
     signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
-    console.log("multisigAddress: ", JSON.stringify(multisigAddress));
-    console.log("appProposal: ", JSON.stringify(appProposal));
-    console.log("numProposedApps: ", JSON.stringify(numProposedApps));
-    console.log("signedSetStateCommitment: ", JSON.stringify(signedSetStateCommitment));
-    console.log("signedConditionalTxCommitment: ", JSON.stringify(signedConditionalTxCommitment));
-    // 35 ms
     await instrument("CFCoreStore:createAppProposal", async () => {
       // because the app instance has `cascade` set to true, saving
       // the channel will involve multiple queries and should be put
@@ -348,6 +336,18 @@ export class CFCoreStore implements IStoreService {
       // 20 ms
       await instrument("createAppProposal:tx", () =>
         getManager().transaction(async (transactionalEntityManager) => {
+          // await instrument("createAppProposal:create_app_proposal", async () => {
+          //   await transactionalEntityManager.query("SELECT create_app_proposal($1, $2, $3, $4)", [
+          //     appProposal,
+          //     numProposedApps,
+          //     {
+          //       ...signedSetStateCommitment,
+          //       versionNumber: BigNumber.from(signedSetStateCommitment.versionNumber).toNumber(),
+          //     },
+          //     signedConditionalTxCommitment,
+          //   ]);
+          // });
+
           await instrument("createAppProposal:CreateApp", async () => {
             await transactionalEntityManager
               .createQueryBuilder()
@@ -416,45 +416,45 @@ export class CFCoreStore implements IStoreService {
               .onConflict(`("appIdentityHash") DO NOTHING`)
               .execute();
           });
-
-          // 1.6 ms
-          await instrument("createAppProposal:cacheSet", async () => {
-            // Update cache values
-
-            // TODO: do we need anything else from channel?
-            await this.cache.mergeCacheValues(
-              `appInstance:identityHash:${appProposal.identityHash}`,
-              60,
-              appValues,
-            );
-
-            // await this.cache.mergeCacheValuesFn(
-            //   `channel:multisig:${multisigAddress}`,
-            //   60,
-            //   (channel: Channel) => {
-            //     const exists = channel.appInstances.findIndex(
-            //       (app) => app.identityHash === appProposal.identityHash,
-            //     );
-            //     if (exists !== -1) {
-            //       channel.appInstances[exists] = appValues as any;
-            //     } else {
-            //       channel.appInstances.push(appValues as any);
-            //     }
-            //     return channel;
-            //   },
-            // );
-            await this.cache.del(`channel:multisig:${multisigAddress}`);
-
-            await instrument("createAppInstance:cacheSet channel.appIdentityHash", async () => {
-              await this.cache.set(
-                `channel:appIdentityHash:${appProposal.identityHash}`,
-                70,
-                multisigAddress,
-              );
-            });
-          });
         }),
       );
+
+      // 1.6 ms
+      await instrument("createAppProposal:cacheSet", async () => {
+        // Update cache values
+
+        // TODO: do we need anything else from channel?
+        await this.cache.mergeCacheValues(
+          `appInstance:identityHash:${appProposal.identityHash}`,
+          60,
+          appValues,
+        );
+
+        // await this.cache.mergeCacheValuesFn(
+        //   `channel:multisig:${multisigAddress}`,
+        //   60,
+        //   (channel: Channel) => {
+        //     const exists = channel.appInstances.findIndex(
+        //       (app) => app.identityHash === appProposal.identityHash,
+        //     );
+        //     if (exists !== -1) {
+        //       channel.appInstances[exists] = appValues as any;
+        //     } else {
+        //       channel.appInstances.push(appValues as any);
+        //     }
+        //     return channel;
+        //   },
+        // );
+        await this.cache.del(`channel:multisig:${multisigAddress}`);
+
+        await instrument("createAppInstance:cacheSet channel.appIdentityHash", async () => {
+          await this.cache.set(
+            `channel:appIdentityHash:${appProposal.identityHash}`,
+            70,
+            multisigAddress,
+          );
+        });
+      });
     });
   }
 

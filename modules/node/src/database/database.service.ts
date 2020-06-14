@@ -55,6 +55,7 @@ import { changePrimaryKeys1588583967151 } from "../../migrations/1588583967151-c
 import { rebalanceTargets1589792004077 } from "../../migrations/1589792004077-rebalance-targets";
 import { removeAppProposal1591359031983 } from "../../migrations/1591359031983-remove-app-proposal";
 import { appIdentityHashPrimaryCommitmentKeys1591979802157 } from "../../migrations/1591979802157-app-identity-hash-primary-commitment-keys";
+import { storedProcedures1592148854323 } from "../../migrations/1592148854323-stored-procedures";
 
 export const entities = [
   AppInstance,
@@ -109,6 +110,7 @@ export const migrations = [
   rebalanceTargets1589792004077,
   removeAppProposal1591359031983,
   appIdentityHashPrimaryCommitmentKeys1591979802157,
+  storedProcedures1592148854323,
 ];
 
 @Injectable()
@@ -124,7 +126,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
     return {
       ...this.config.getPostgresConfig(),
       entities,
-      logging: ["info"],
+      logging: ["info", "query"],
       migrations,
       migrationsRun: true,
       synchronize: false,

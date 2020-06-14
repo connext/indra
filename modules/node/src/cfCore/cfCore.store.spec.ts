@@ -1,5 +1,5 @@
 import { AppInstanceJson } from "@connext/types";
-import { getRandomAddress, getRandomIdentifier, toBN, toBNJson, stringify } from "@connext/utils";
+import { getRandomAddress, getRandomIdentifier, toBN, toBNJson } from "@connext/utils";
 import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { getConnection } from "typeorm";

@@ -1,13 +1,13 @@
-import {AppInstanceJson, AppState, SimpleLinkedTransferAppName} from '@connext/types';
-import {constants} from 'ethers';
-import {getSignerAddressFromPublicIdentifier, safeJsonParse} from '@connext/utils';
-import {EntityRepository, Repository} from 'typeorm';
+import { AppInstanceJson, AppState, SimpleLinkedTransferAppName } from "@connext/types";
+import { constants } from "ethers";
+import { getSignerAddressFromPublicIdentifier, safeJsonParse } from "@connext/utils";
+import { EntityRepository, Repository } from "typeorm";
 
-import {Channel} from '../channel/channel.entity';
-import {AppRegistry} from '../appRegistry/appRegistry.entity';
+import { Channel } from "../channel/channel.entity";
+import { AppRegistry } from "../appRegistry/appRegistry.entity";
 
-import {AppInstance, AppType} from './appInstance.entity';
-import {instrument} from '../logger/instrument';
+import { AppInstance, AppType } from "./appInstance.entity";
+import { instrument } from "../logger/instrument";
 
 const { HashZero } = constants;
 
@@ -41,10 +41,12 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
 @EntityRepository(AppInstance)
 export class AppInstanceRepository extends Repository<AppInstance> {
   findByIdentityHash(identityHash: string): Promise<AppInstance | undefined> {
-    return instrument('AppInstanceRepository:findByIdentityHash', () => this.findOne({
-      where: { identityHash },
-      relations: ["channel"],
-    }));
+    return instrument("AppInstanceRepository:findByIdentityHash", () =>
+      this.findOne({
+        where: { identityHash },
+        relations: ["channel"],
+      }),
+    );
   }
 
   async findByIdentityHashOrThrow(identityHash: string): Promise<AppInstance> {
@@ -56,34 +58,34 @@ export class AppInstanceRepository extends Repository<AppInstance> {
   }
 
   findByMultisigAddressAndType(multisigAddress: string, type: AppType): Promise<AppInstance[]> {
-    return instrument('AppInstanceRepository:findByMultisigAddressAndType', () => this.createQueryBuilder('app_instances')
-      .leftJoinAndSelect(
-        'app_instances.channel',
-        'channel',
-        'channel.multisigAddress = :multisigAddress',
-        {multisigAddress},
-      )
-      .where('app_instance.type = :type', {type})
-      .getMany());
+    return instrument("AppInstanceRepository:findByMultisigAddressAndType", () =>
+      this.createQueryBuilder("app_instances")
+        .leftJoinAndSelect(
+          "app_instances.channel",
+          "channel",
+          "channel.multisigAddress = :multisigAddress",
+          { multisigAddress },
+        )
+        .where("app_instance.type = :type", { type })
+        .getMany(),
+    );
   }
 
   async getAppProposal(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
-    return instrument('AppInstanceRepository:getAppProposal', async () => {
+    return instrument("AppInstanceRepository:getAppProposal", async () => {
       const app = await this.findByIdentityHash(appIdentityHash);
       if (!app || app.type !== AppType.PROPOSAL) {
         return undefined;
       }
       return convertAppToInstanceJSON(app, app.channel);
-    })
-
+    });
   }
 
   async getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined> {
-    return instrument('AppInstanceRepository:getFreeBalance', async () => {
+    return instrument("AppInstanceRepository:getFreeBalance", async () => {
       const [app] = await this.findByMultisigAddressAndType(multisigAddress, AppType.FREE_BALANCE);
       return app && convertAppToInstanceJSON(app, app.channel);
-    })
-
+    });
   }
 
   async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
@@ -128,79 +130,86 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     paymentId: string,
     senderIdentifier: string,
   ): Promise<AppInstance> {
-    return instrument('AppInstanceRepository:findLinkedTransferAppByPaymendIdAndSender', async () => {
-      const senderAddress = getSignerAddressFromPublicIdentifier(senderIdentifier);
-      return await this.createQueryBuilder("app_instance")
-        .leftJoinAndSelect(
-          AppRegistry,
-          "app_registry",
-          "app_registry.appDefinitionAddress = app_instance.appDefinition",
-        )
-        .leftJoinAndSelect("app_instance.channel", "channel")
-        .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
-        .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
-        .andWhere(
-          `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderAddress}"'`,
-        )
-        .getOne();
-    })
-
+    return instrument(
+      "AppInstanceRepository:findLinkedTransferAppByPaymendIdAndSender",
+      async () => {
+        const senderAddress = getSignerAddressFromPublicIdentifier(senderIdentifier);
+        return await this.createQueryBuilder("app_instance")
+          .leftJoinAndSelect(
+            AppRegistry,
+            "app_registry",
+            "app_registry.appDefinitionAddress = app_instance.appDefinition",
+          )
+          .leftJoinAndSelect("app_instance.channel", "channel")
+          .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
+          .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+          .andWhere(
+            `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderAddress}"'`,
+          )
+          .getOne();
+      },
+    );
   }
 
   async findLinkedTransferAppByPaymentIdAndReceiver(
     paymentId: string,
     receiverIdentifier: string,
   ): Promise<AppInstance> {
-    return instrument('AppInstanceRepository:findLinkedTransferAppByPaymentIdAndReceiver', async () => {
-      const receiverAddress = getSignerAddressFromPublicIdentifier(receiverIdentifier);
-      return await this.createQueryBuilder("app_instance")
-        .leftJoinAndSelect(
-          AppRegistry,
-          "app_registry",
-          "app_registry.appDefinitionAddress = app_instance.appDefinition",
-        )
-        .leftJoinAndSelect("app_instance.channel", "channel")
-        .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
-        .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
-        // receiver is recipient
-        .andWhere(
-          `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverAddress}"'`,
-        )
-        .getOne();
-    });
+    return instrument(
+      "AppInstanceRepository:findLinkedTransferAppByPaymentIdAndReceiver",
+      async () => {
+        const receiverAddress = getSignerAddressFromPublicIdentifier(receiverIdentifier);
+        return await this.createQueryBuilder("app_instance")
+          .leftJoinAndSelect(
+            AppRegistry,
+            "app_registry",
+            "app_registry.appDefinitionAddress = app_instance.appDefinition",
+          )
+          .leftJoinAndSelect("app_instance.channel", "channel")
+          .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
+          .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+          // receiver is recipient
+          .andWhere(
+            `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverAddress}"'`,
+          )
+          .getOne();
+      },
+    );
   }
 
   async findRedeemedLinkedTransferAppByPaymentIdFromNode(
     paymentId: string,
     nodeSignerAddress: string,
   ): Promise<AppInstance> {
-    return instrument('AppInstanceRepository:findRedeemedLinkedTransferAppByPaymentIdFromNode', async () => {
-      const res = await this.createQueryBuilder("app_instance")
-        .leftJoinAndSelect(
-          AppRegistry,
-          "app_registry",
-          "app_registry.appDefinitionAddress = app_instance.appDefinition",
-        )
-        .leftJoinAndSelect("app_instance.channel", "channel")
-        .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
-        // if uninstalled, redeemed
-        .andWhere("app_instance.type = :type", { type: AppType.UNINSTALLED })
-        .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
-        // node is sender
-        .andWhere(
-          `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${nodeSignerAddress}"'`,
-        )
-        .getOne();
-      return res;
-    })
-
+    return instrument(
+      "AppInstanceRepository:findRedeemedLinkedTransferAppByPaymentIdFromNode",
+      async () => {
+        const res = await this.createQueryBuilder("app_instance")
+          .leftJoinAndSelect(
+            AppRegistry,
+            "app_registry",
+            "app_registry.appDefinitionAddress = app_instance.appDefinition",
+          )
+          .leftJoinAndSelect("app_instance.channel", "channel")
+          .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
+          // if uninstalled, redeemed
+          .andWhere("app_instance.type = :type", { type: AppType.UNINSTALLED })
+          .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+          // node is sender
+          .andWhere(
+            `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${nodeSignerAddress}"'`,
+          )
+          .getOne();
+        return res;
+      },
+    );
   }
 
   async findActiveLinkedTransferAppsToRecipient(
     recipientIdentifier: string,
     nodeSignerAddress: string,
   ): Promise<AppInstance[]> {
-    return instrument('AppInstanceRepository:findActiveLinkedTransferAppsToRecipient', async () => {
+    return instrument("AppInstanceRepository:findActiveLinkedTransferAppsToRecipient", async () => {
       const res = await this.createQueryBuilder("app_instance")
         .leftJoinAndSelect(
           AppRegistry,
@@ -220,40 +229,41 @@ export class AppInstanceRepository extends Repository<AppInstance> {
         .andWhere(`app_instance."latestState"::JSONB @> '{"preImage": "${HashZero}"}'`)
         .getMany();
       return res;
-    })
-
+    });
   }
 
   async findActiveLinkedTransferAppsFromSenderToNode(
     senderSignerAddress: string,
     nodeSignerAddress: string,
   ): Promise<AppInstance[]> {
-    return instrument('AppInstanceRepository:findActiveLinkedTransferAppsFromSenderToNode', async () => {
-      const res = await this.createQueryBuilder("app_instance")
-        .leftJoinAndSelect(
-          AppRegistry,
-          "app_registry",
-          "app_registry.appDefinitionAddress = app_instance.appDefinition",
-        )
-        .leftJoinAndSelect("app_instance.channel", "channel")
-        .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
-        .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
-        // sender is sender of transfer
-        .andWhere(
-          `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`,
-        )
-        // node is receiver of transfer
-        .andWhere(
-          `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeSignerAddress}"'`,
-        )
-        // preimage can be HashZero or empty, if its HashZero, then the
-        // node should takeAction + uninstall. if its not HashZero, then
-        // the node should just uninstall. If the node has completed the
-        // transfer, then the type would be AppType.UNINSTALLED
-        .getMany();
-      return res;
-    })
-
+    return instrument(
+      "AppInstanceRepository:findActiveLinkedTransferAppsFromSenderToNode",
+      async () => {
+        const res = await this.createQueryBuilder("app_instance")
+          .leftJoinAndSelect(
+            AppRegistry,
+            "app_registry",
+            "app_registry.appDefinitionAddress = app_instance.appDefinition",
+          )
+          .leftJoinAndSelect("app_instance.channel", "channel")
+          .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
+          .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
+          // sender is sender of transfer
+          .andWhere(
+            `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`,
+          )
+          // node is receiver of transfer
+          .andWhere(
+            `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeSignerAddress}"'`,
+          )
+          // preimage can be HashZero or empty, if its HashZero, then the
+          // node should takeAction + uninstall. if its not HashZero, then
+          // the node should just uninstall. If the node has completed the
+          // transfer, then the type would be AppType.UNINSTALLED
+          .getMany();
+        return res;
+      },
+    );
   }
 
   async findLinkedTransferAppsByPaymentId(paymentId: string): Promise<AppInstance[]> {
@@ -271,7 +281,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
   }
 
   async updateAppStateOnUninstall(uninstalledApp: AppInstanceJson): Promise<void> {
-    return instrument('AppInstanceRepository:updateAppStateOnUninstall', async () => {
+    return instrument("AppInstanceRepository:updateAppStateOnUninstall", async () => {
       await this.createQueryBuilder("app_instance")
         .update(AppInstance)
         .set({
@@ -281,7 +291,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
         })
         .where("identityHash = :identityHash", { identityHash: uninstalledApp.identityHash })
         .execute();
-    })
-
+    });
   }
 }
