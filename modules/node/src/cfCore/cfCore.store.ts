@@ -336,86 +336,86 @@ export class CFCoreStore implements IStoreService {
       // 20 ms
       await instrument("createAppProposal:tx", () =>
         getManager().transaction(async (transactionalEntityManager) => {
-          // await instrument("createAppProposal:create_app_proposal", async () => {
-          //   await transactionalEntityManager.query("SELECT create_app_proposal($1, $2, $3, $4)", [
-          //     appProposal,
-          //     numProposedApps,
-          //     {
-          //       ...signedSetStateCommitment,
-          //       versionNumber: BigNumber.from(signedSetStateCommitment.versionNumber).toNumber(),
-          //     },
-          //     signedConditionalTxCommitment,
-          //   ]);
+          await instrument("createAppProposal:create_app_proposal", async () => {
+            await transactionalEntityManager.query("SELECT create_app_proposal($1, $2, $3, $4)", [
+              appProposal,
+              numProposedApps,
+              {
+                ...signedSetStateCommitment,
+                versionNumber: BigNumber.from(signedSetStateCommitment.versionNumber).toNumber(),
+              },
+              signedConditionalTxCommitment,
+            ]);
+          });
+
+          // await instrument("createAppProposal:CreateApp", async () => {
+          //   await transactionalEntityManager
+          //     .createQueryBuilder()
+          //     .insert()
+          //     .into(AppInstance)
+          //     .values(appValues)
+          //     .onConflict(`("identityHash") DO NOTHING`)
+          //     .execute();
           // });
 
-          await instrument("createAppProposal:CreateApp", async () => {
-            await transactionalEntityManager
-              .createQueryBuilder()
-              .insert()
-              .into(AppInstance)
-              .values(appValues)
-              .onConflict(`("identityHash") DO NOTHING`)
-              .execute();
-          });
+          // // 2ms
+          // await instrument("createAppProposal:LinkAppToChannel", async () => {
+          //   await transactionalEntityManager
+          //     .createQueryBuilder()
+          //     .relation(Channel, "appInstances")
+          //     .of(multisigAddress)
+          //     .add(appProposal.identityHash);
+          // });
 
-          // 2ms
-          await instrument("createAppProposal:LinkAppToChannel", async () => {
-            await transactionalEntityManager
-              .createQueryBuilder()
-              .relation(Channel, "appInstances")
-              .of(multisigAddress)
-              .add(appProposal.identityHash);
-          });
+          // // TODO can this be merged with above?
+          // // 1.5ms
+          // await instrument("createAppProposal:setNumProposedApps", async () => {
+          //   await transactionalEntityManager
+          //     .createQueryBuilder()
+          //     .update(Channel)
+          //     .set({
+          //       monotonicNumProposedApps: numProposedApps,
+          //     })
+          //     .where("multisigAddress = :multisigAddress", { multisigAddress })
+          //     .execute();
+          // });
 
-          // TODO can this be merged with above?
-          // 1.5ms
-          await instrument("createAppProposal:setNumProposedApps", async () => {
-            await transactionalEntityManager
-              .createQueryBuilder()
-              .update(Channel)
-              .set({
-                monotonicNumProposedApps: numProposedApps,
-              })
-              .where("multisigAddress = :multisigAddress", { multisigAddress })
-              .execute();
-          });
+          // await instrument("createAppProposal:SetStateCommitment", async () => {
+          //   await transactionalEntityManager
+          //     .createQueryBuilder()
+          //     .insert()
+          //     .into(SetStateCommitment)
+          //     .values({
+          //       appIdentityHash: appProposal.identityHash,
+          //       appIdentity: signedSetStateCommitment.appIdentity,
+          //       appStateHash: signedSetStateCommitment.appStateHash,
+          //       challengeRegistryAddress: signedSetStateCommitment.challengeRegistryAddress,
+          //       signatures: signedSetStateCommitment.signatures,
+          //       stateTimeout: toBN(signedSetStateCommitment.stateTimeout).toString(),
+          //       versionNumber: toBN(signedSetStateCommitment.versionNumber).toNumber(),
+          //     })
+          //     .onConflict(`("appIdentityHash") DO NOTHING`)
+          //     .execute();
+          // });
 
-          await instrument("createAppProposal:SetStateCommitment", async () => {
-            await transactionalEntityManager
-              .createQueryBuilder()
-              .insert()
-              .into(SetStateCommitment)
-              .values({
-                appIdentityHash: appProposal.identityHash,
-                appIdentity: signedSetStateCommitment.appIdentity,
-                appStateHash: signedSetStateCommitment.appStateHash,
-                challengeRegistryAddress: signedSetStateCommitment.challengeRegistryAddress,
-                signatures: signedSetStateCommitment.signatures,
-                stateTimeout: toBN(signedSetStateCommitment.stateTimeout).toString(),
-                versionNumber: toBN(signedSetStateCommitment.versionNumber).toNumber(),
-              })
-              .onConflict(`("appIdentityHash") DO NOTHING`)
-              .execute();
-          });
-
-          await instrument("createAppProposal:ConditionalTxCommitment", async () => {
-            await transactionalEntityManager
-              .createQueryBuilder()
-              .insert()
-              .into(ConditionalTransactionCommitment)
-              .values({
-                freeBalanceAppIdentityHash:
-                  signedConditionalTxCommitment.freeBalanceAppIdentityHash,
-                multisigAddress: signedConditionalTxCommitment.multisigAddress,
-                multisigOwners: signedConditionalTxCommitment.multisigOwners,
-                interpreterAddr: signedConditionalTxCommitment.interpreterAddr,
-                interpreterParams: signedConditionalTxCommitment.interpreterParams,
-                signatures: signedConditionalTxCommitment.signatures,
-                appIdentityHash: appProposal.identityHash,
-              })
-              .onConflict(`("appIdentityHash") DO NOTHING`)
-              .execute();
-          });
+          // await instrument("createAppProposal:ConditionalTxCommitment", async () => {
+          //   await transactionalEntityManager
+          //     .createQueryBuilder()
+          //     .insert()
+          //     .into(ConditionalTransactionCommitment)
+          //     .values({
+          //       freeBalanceAppIdentityHash:
+          //         signedConditionalTxCommitment.freeBalanceAppIdentityHash,
+          //       multisigAddress: signedConditionalTxCommitment.multisigAddress,
+          //       multisigOwners: signedConditionalTxCommitment.multisigOwners,
+          //       interpreterAddr: signedConditionalTxCommitment.interpreterAddr,
+          //       interpreterParams: signedConditionalTxCommitment.interpreterParams,
+          //       signatures: signedConditionalTxCommitment.signatures,
+          //       appIdentityHash: appProposal.identityHash,
+          //     })
+          //     .onConflict(`("appIdentityHash") DO NOTHING`)
+          //     .execute();
+          // });
         }),
       );
 

@@ -45,9 +45,9 @@ export class storedProcedures1592148854323 implements MigrationInterface {
             app_proposal->'appDefinition',
             app_proposal#>'{abiEncodings,stateEncoding}',
             app_proposal#>'{abiEncodings,actionEncoding}',
-            (app_proposal->'appSeqNo')::INTEGER,
+            (app_proposal->>'appSeqNo')::INTEGER,
             app_proposal->'latestState',
-            (app_proposal->'latestVersionNumber')::INTEGER,
+            (app_proposal->>'latestVersionNumber')::INTEGER,
             app_proposal->'initiatorDeposit',
             app_proposal->'initiatorDepositAssetId', 
             (app_proposal->>'outcomeType')::app_instance_outcometype_enum, 
@@ -93,7 +93,7 @@ export class storedProcedures1592148854323 implements MigrationInterface {
             signed_set_state_commitment->'challengeRegistryAddress',
             signed_set_state_commitment->'signatures',
             signed_set_state_commitment->'stateTimeout',
-            (signed_set_state_commitment->'versionNumber')::INTEGER,
+            (signed_set_state_commitment->>'versionNumber')::INTEGER,
             DEFAULT, 
             DEFAULT
         ) ON CONFLICT ("appIdentityHash") DO NOTHING;
