@@ -23,8 +23,11 @@ import {
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
   EventName,
+  SimpleSignedTransferAppName,
+  SimpleLinkedTransferAppName,
+  SimpleTwoPartySwapAppName,
 } from "@connext/types";
-import { delay, nullLogger, stringify } from "@connext/utils";
+import { delay, nullLogger } from "@connext/utils";
 import { providers } from "ethers";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
@@ -37,6 +40,12 @@ import { StateChannel, AppInstance } from "./models";
 import { RequestHandler } from "./request-handler";
 import { RpcRouter } from "./rpc-router";
 import { MethodRequest, MethodResponse, PersistAppType, PersistStateChannelType } from "./types";
+
+const pureContractAppNames = [
+  SimpleSignedTransferAppName,
+  SimpleLinkedTransferAppName,
+  SimpleTwoPartySwapAppName,
+];
 
 export interface NodeConfig {
   STORE_KEY_PREFIX: string;
@@ -101,7 +110,16 @@ export class CFCore {
     private readonly lockService: ILockService,
   ) {
     this.log = log.newContext("CFCore");
-    this.networkContext = { contractAddresses: this.contractAddresses, provider: this.provider };
+    const pureBytecodesMap = pureContractAppNames.reduce((bytecodeMap, name) => {
+      const artifact = require(`@connext/contracts/artifacts/${name}.json`);
+      bytecodeMap[this.contractAddresses[name]] = artifact.deployedBytecode;
+      return bytecodeMap;
+    }, {});
+    this.networkContext = {
+      contractAddresses: this.contractAddresses,
+      provider: this.provider,
+      pureBytecodesMap,
+    };
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
     this.protocolRunner = this.buildProtocolRunner();

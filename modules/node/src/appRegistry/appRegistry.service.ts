@@ -195,6 +195,7 @@ export class AppRegistryService implements OnModuleInit {
       {
         contractAddresses,
         provider: provider as providers.JsonRpcProvider,
+        pureBytecodesMap: {},
       },
       this.configService.getSupportedTokens(),
     );
