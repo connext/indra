@@ -308,6 +308,11 @@ export class CFCoreStore implements IStoreService {
     signedSetStateCommitment: SetStateCommitmentJSON,
     signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
+    console.log("multisigAddress: ", JSON.stringify(multisigAddress));
+    console.log("appProposal: ", JSON.stringify(appProposal));
+    console.log("numProposedApps: ", JSON.stringify(numProposedApps));
+    console.log("signedSetStateCommitment: ", JSON.stringify(signedSetStateCommitment));
+    console.log("signedConditionalTxCommitment: ", JSON.stringify(signedConditionalTxCommitment));
     // 35 ms
     await instrument("CFCoreStore:createAppProposal", async () => {
       // because the app instance has `cascade` set to true, saving
