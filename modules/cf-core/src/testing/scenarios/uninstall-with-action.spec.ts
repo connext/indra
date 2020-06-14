@@ -103,7 +103,7 @@ describe("Node A and B install an app, then uninstall with a given action", () =
     );
     const appPreUninstall = AppInstance.fromJson(await getAppInstance(nodeA, appIdentityHash));
     const expected = appPreUninstall
-      .setState(await appPreUninstall.computeStateTransition(action, provider), Zero)
+      .setState(await appPreUninstall.computeStateTransition(action, provider, {}), Zero)
       .toJson();
 
     await Promise.all([

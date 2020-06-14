@@ -35,7 +35,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     const {
       message,
       store,
-      network: { provider },
+      network: { provider, pureBytecodesMap },
     } = context;
     const log = context.log.newContext("CF-SyncProtocol");
     const start = Date.now();
@@ -204,7 +204,11 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           // update the app
           postSyncStateChannel.setState(
             app,
-            await app.computeStateTransition(responderApp!.latestAction, provider),
+            await app.computeStateTransition(
+              responderApp!.latestAction,
+              provider,
+              pureBytecodesMap,
+            ),
             commitment.stateTimeout,
           );
 
@@ -251,7 +255,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     const {
       message,
       store,
-      network: { provider },
+      network: { provider, pureBytecodesMap },
     } = context;
     const { params, processID } = message;
     const log = context.log.newContext("CF-SyncProtocol");
@@ -405,7 +409,11 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           // update the app
           postSyncStateChannel.setState(
             app,
-            await app.computeStateTransition(initiatorApp!.latestAction, provider),
+            await app.computeStateTransition(
+              initiatorApp!.latestAction,
+              provider,
+              pureBytecodesMap,
+            ),
             commitment.stateTimeout,
           );
 

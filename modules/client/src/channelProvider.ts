@@ -99,7 +99,7 @@ export const createCFChannelProvider = async ({
   cfCore.injectMiddleware(
     Opcode.OP_VALIDATE,
     await generateValidationMiddleware(
-      { provider: ethProvider, contractAddresses },
+      { provider: ethProvider, contractAddresses, pureBytecodesMap: {} },
       supportedTokenAddresses,
     ),
   );
@@ -300,9 +300,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
           `Could not find set state commitment for proposal ${proposal.identityHash}`,
         );
       }
-      const conditional = conditionalCommitments.find(
-        ([id, json]) => id === proposal.identityHash,
-      );
+      const conditional = conditionalCommitments.find(([id, json]) => id === proposal.identityHash);
       if (!conditional) {
         throw new Error(
           `Could not find conditional commitment for proposal ${proposal.identityHash}`,
