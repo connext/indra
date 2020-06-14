@@ -2,16 +2,18 @@
 set -e
 
 agents="$1"
-interval="$2"
-echo "Starting bot test with $agents agents and interval $interval"
+payments="$2"
+echo "Starting bench test with $agents agents and $payments payments"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
-INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:3000/api/ethprovider}"
-INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:3000/api}"
+INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:8545}"
+INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:8080}"
 INDRA_NATS_URL="${INDRA_NATS_URL:-nats://172.17.0.1:4222}"
 BOT_REGISTRY_URL="${BOT_REGISTRY_URL:-http://172.17.0.1:3333}"
+LOG_LEVEL="${LOG_LEVEL:-1}"
+echo $LOG_LEVEL
 
 agent_name="${project}_bot"
 
@@ -101,15 +103,15 @@ do
     --volume="`pwd`:/root" \
     ${project}_builder -c '
       set -e
-      echo "Bot container launched!"
+      echo "Benchmark container launched!"
       cd modules/bot
       export PATH=./node_modules/.bin:$PATH
       function finish {
-        echo && echo "Bot container exiting.." && exit
+        echo && echo "Benchmark container exiting.." && exit
       }
       trap finish SIGTERM SIGINT
       echo "Launching agent!";echo
-      npm run start -- bot --private-key '$agent_key' --concurrency-index '$n' --interval '$interval'
+      npm run start -- bench --private-key '$agent_key' --concurrency-index '$n' --number-payments '$payments' --log-level '$LOG_LEVEL'
     '
 
   docker logs --follow $agent &
