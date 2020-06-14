@@ -428,21 +428,22 @@ export class CFCoreStore implements IStoreService {
               appValues,
             );
 
-            await this.cache.mergeCacheValuesFn(
-              `channel:multisig:${multisigAddress}`,
-              60,
-              (channel: Channel) => {
-                const exists = channel.appInstances.findIndex(
-                  (app) => app.identityHash === appProposal.identityHash,
-                );
-                if (exists !== -1) {
-                  channel.appInstances[exists] = appValues as any;
-                } else {
-                  channel.appInstances.push(appValues as any);
-                }
-                return channel;
-              },
-            );
+            // await this.cache.mergeCacheValuesFn(
+            //   `channel:multisig:${multisigAddress}`,
+            //   60,
+            //   (channel: Channel) => {
+            //     const exists = channel.appInstances.findIndex(
+            //       (app) => app.identityHash === appProposal.identityHash,
+            //     );
+            //     if (exists !== -1) {
+            //       channel.appInstances[exists] = appValues as any;
+            //     } else {
+            //       channel.appInstances.push(appValues as any);
+            //     }
+            //     return channel;
+            //   },
+            // );
+            await this.cache.del(`channel:multisig:${multisigAddress}`);
 
             await instrument("createAppInstance:cacheSet channel.appIdentityHash", async () => {
               await this.cache.set(
@@ -483,19 +484,20 @@ export class CFCoreStore implements IStoreService {
           60,
           AppInstanceSerializer.toJSON(app),
         );
-        await this.cache.mergeCacheValuesFn(
-          `channel:multisig:${multisigAddress}`,
-          60,
-          (channel: Channel) => {
-            const exists = channel.appInstances.findIndex(
-              (app) => app.identityHash === appIdentityHash,
-            );
-            if (exists !== -1) {
-              channel.appInstances.splice(exists, 1);
-            }
-            return channel;
-          },
-        );
+        // await this.cache.mergeCacheValuesFn(
+        //   `channel:multisig:${multisigAddress}`,
+        //   60,
+        //   (channel: Channel) => {
+        //     const exists = channel.appInstances.findIndex(
+        //       (app) => app.identityHash === appIdentityHash,
+        //     );
+        //     if (exists !== -1) {
+        //       channel.appInstances.splice(exists, 1);
+        //     }
+        //     return channel;
+        //   },
+        // );
+        await this.cache.del(`channel:multisig:${multisigAddress}`);
       });
     });
   }
@@ -635,7 +637,6 @@ export class CFCoreStore implements IStoreService {
       });
 
       // 1ms
-      // TODO: do we need anything else from channel?
       await instrument("createAppInstance:cacheSet AppInstance.identityHash", async () => {
         await this.cache.mergeCacheValues(`appInstance:identityHash:${identityHash}`, 60, {
           ...update,
@@ -649,34 +650,35 @@ export class CFCoreStore implements IStoreService {
       });
 
       // 0ms
-      await instrument("createAppInstance:mergeCacheValuesFn", async () => {
-        await this.cache.mergeCacheValuesFn(
-          `channel:multisig:${multisigAddress}`,
-          60,
-          (channel: Channel) => {
-            const exists = channel.appInstances.findIndex(
-              (app) => app.identityHash === identityHash,
-            );
-            if (exists !== -1) {
-              channel.appInstances[exists] = appJsonToEntity as any;
-            } else {
-              channel.appInstances.push(appJsonToEntity as any);
-            }
+      // await instrument("createAppInstance:mergeCacheValuesFn", async () => {
+      //   await this.cache.mergeCacheValuesFn(
+      //     `channel:multisig:${multisigAddress}`,
+      //     60,
+      //     (channel: Channel) => {
+      //       const exists = channel.appInstances.findIndex(
+      //         (app) => app.identityHash === identityHash,
+      //       );
+      //       if (exists !== -1) {
+      //         channel.appInstances[exists] = appJsonToEntity as any;
+      //       } else {
+      //         channel.appInstances.push(appJsonToEntity as any);
+      //       }
 
-            // free balance
-            const fbAppIndex = channel.appInstances.findIndex(
-              (app) => app.type === AppType.FREE_BALANCE,
-            );
-            channel.appInstances[fbAppIndex] = {
-              ...channel.appInstances[fbAppIndex],
-              latestState: freeBalanceAppInstance.latestState,
-              stateTimeout: freeBalanceAppInstance.stateTimeout,
-              latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
-            };
-            return channel;
-          },
-        );
-      });
+      //       // free balance
+      //       const fbAppIndex = channel.appInstances.findIndex(
+      //         (app) => app.type === AppType.FREE_BALANCE,
+      //       );
+      //       channel.appInstances[fbAppIndex] = {
+      //         ...channel.appInstances[fbAppIndex],
+      //         latestState: freeBalanceAppInstance.latestState,
+      //         stateTimeout: freeBalanceAppInstance.stateTimeout,
+      //         latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
+      //       };
+      //       return channel;
+      //     },
+      //   );
+      // });
+      await this.cache.del(`channel:multisig:${multisigAddress}`);
     });
   }
 
@@ -722,32 +724,33 @@ export class CFCoreStore implements IStoreService {
         latestVersionNumber,
       });
       await this.cache.set(`channel:appIdentityHash:${identityHash}`, 70, multisigAddress);
-      await instrument("createAppInstance:mergeCacheValuesFn", async () => {
-        await this.cache.mergeCacheValuesFn(
-          `channel:multisig:${multisigAddress}`,
-          60,
-          async (channel: Channel) => {
-            const exists = channel.appInstances.findIndex(
-              (app) => app.identityHash === identityHash,
-            );
+      // await instrument("createAppInstance:mergeCacheValuesFn", async () => {
+      //   await this.cache.mergeCacheValuesFn(
+      //     `channel:multisig:${multisigAddress}`,
+      //     60,
+      //     async (channel: Channel) => {
+      //       const exists = channel.appInstances.findIndex(
+      //         (app) => app.identityHash === identityHash,
+      //       );
 
-            if (exists === -1) {
-              this.log.warn(
-                `Possible cache out of sync, removing channel cache for ${multisigAddress}`,
-              );
-              await this.cache.del(`channel:multisig:${multisigAddress}`);
-            } else {
-              channel.appInstances[exists] = {
-                ...channel.appInstances[exists],
-                latestState,
-                stateTimeout,
-                latestVersionNumber,
-              };
-            }
-            return channel;
-          },
-        );
-      });
+      //       if (exists === -1) {
+      //         this.log.warn(
+      //           `Possible cache out of sync, removing channel cache for ${multisigAddress}`,
+      //         );
+      //         await this.cache.del(`channel:multisig:${multisigAddress}`);
+      //       } else {
+      //         channel.appInstances[exists] = {
+      //           ...channel.appInstances[exists],
+      //           latestState,
+      //           stateTimeout,
+      //           latestVersionNumber,
+      //         };
+      //       }
+      //       return channel;
+      //     },
+      //   );
+      // });
+      await this.cache.del(`channel:multisig:${multisigAddress}`);
     });
   }
 
