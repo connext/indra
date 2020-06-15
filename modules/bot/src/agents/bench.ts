@@ -1,8 +1,9 @@
+import { connect } from "@connext/client";
+import { getFileStore } from "@connext/store";
 import { ColorfulLogger, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { utils } from "ethers";
 import { Argv } from "yargs";
 
-import { createClient } from "../helpers/client";
 import { addAgentIdentifierToIndex, getAgentFromIndex } from "../helpers/agentIndex";
 import { Agent } from "./agent";
 import { CONVENTION_FOR_ETH_ASSET_ID } from "@connext/types";
@@ -45,16 +46,20 @@ export default {
     const nodeUrl = process.env.INDRA_NODE_URL;
     const messagingUrl = process.env.INDRA_NATS_URL;
 
-    // Create agent client
-    const client = await createClient(
-      argv.privateKey,
-      NAME,
-      log,
-      nodeUrl!,
-      ethUrl!,
-      messagingUrl!,
-      argv.logLevel,
-    );
+    const client = await connect({
+      ethProviderUrl: ethUrl,
+      messagingUrl,
+      nodeUrl,
+      signer: argv.privateKey,
+      loggerService: new ColorfulLogger(NAME, argv.logLevel, true, argv.concurrencyIndex),
+      store: getFileStore(`.connext-store/${argv.privateKey}`),
+    });
+
+    log.info(`Client ${argv.concurrencyIndex}:
+        publicIdentifier: ${client.publicIdentifier}
+        signer: ${client.signerAddress}
+        nodeIdentifier: ${client.nodeIdentifier}
+        nodeSignerAddress: ${client.nodeSignerAddress}`);
 
     const agent = new Agent(log, client, argv.privateKey);
     log.info("Agent starting up.");

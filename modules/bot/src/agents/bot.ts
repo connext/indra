@@ -1,3 +1,6 @@
+import { connect } from "@connext/client";
+import { getFileStore } from "@connext/store";
+import { EventNames } from "@connext/types";
 import {
   abrv,
   ColorfulLogger,
@@ -6,12 +9,10 @@ import {
   getSignerAddressFromPublicIdentifier,
   stringify,
 } from "@connext/utils";
-import { EventNames } from "@connext/types";
 import { utils } from "ethers";
-import { Argv } from "yargs";
 import intervalPromise from "interval-promise";
+import { Argv } from "yargs";
 
-import { createClient } from "../helpers/client";
 import {
   addAgentIdentifierToIndex,
   getRandomAgentIdentifierFromIndex,
@@ -75,17 +76,22 @@ export default {
     const randomInterval = Math.round(argv.interval * 0.75 + Math.random() * (argv.interval * 0.5));
     log.info(`Using random inteval: ${randomInterval}`);
 
-    // Create agent + client
-    const client = await createClient(
-      argv.privateKey,
-      NAME,
-      log,
-      nodeUrl!,
-      ethUrl!,
-      messagingUrl!,
-      argv.logLevel,
-    );
-    log.setContext(abrv(client.publicIdentifier, 5));
+    const client = await connect({
+      ethProviderUrl: ethUrl,
+      messagingUrl,
+      nodeUrl,
+      signer: argv.privateKey,
+      loggerService: new ColorfulLogger(NAME, argv.logLevel, true, argv.concurrencyIndex),
+      store: getFileStore(`.connext-store/${argv.privateKey}`),
+    });
+
+    log.info(`Client ${argv.concurrencyIndex}:
+        publicIdentifier: ${client.publicIdentifier}
+        signer: ${client.signerAddress}
+        nodeIdentifier: ${client.nodeIdentifier}
+        nodeSignerAddress: ${client.nodeSignerAddress}`);
+
+    log.setContext(abrv(client.publicIdentifier));
     const agent = new Agent(log, client, argv.privateKey);
     log.info("Agent starting up.");
     await agent.start();
@@ -108,7 +114,7 @@ export default {
     let sentPayments = 1;
     await intervalPromise(
       async (_, stop) => {
-        log.info(`heartbeat thump thump`);
+        log.debug(`heartbeat thump thump`);
 
         // Only send up to the limit of payments
         if (sentPayments >= limit) {
@@ -148,7 +154,7 @@ export default {
           await agent.pay(receiverIdentifier, receiverSigner, TRANSFER_AMT, paymentId);
           end[paymentId] = Date.now();
           log.info(
-            `Sent transfer ${abrv(paymentId)}. Elapsed: ${end[paymentId] - start[paymentId]}`,
+            `Finished transfer ${abrv(paymentId)} after ${end[paymentId] - start[paymentId]} ms`,
           );
           sentPayments++;
         } catch (err) {
