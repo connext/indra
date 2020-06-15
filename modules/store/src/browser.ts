@@ -9,13 +9,6 @@ import { WrappedLocalStorage } from "./wrappers/localStorage";
 // keep synced with indra/docs/reference/store
 
 export { IBackupService, IStoreService } from "@connext/types";
-export { PisaBackupService } from "./pisaClient";
 
-export const getLocalStore = (
-  opts: StoreOptions = {},
-): IStoreService =>
-  new StoreService(
-    new WrappedLocalStorage(opts.prefix),
-    opts.backupService,
-    opts.logger,
-  );
+export const getLocalStore = (opts: StoreOptions = {}): IStoreService =>
+  new StoreService(new WrappedLocalStorage(opts.prefix), opts.backupService, opts.logger);
