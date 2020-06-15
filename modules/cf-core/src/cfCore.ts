@@ -1,3 +1,4 @@
+import { artifacts } from "@connext/contracts";
 import {
   Address,
   AppInstanceJson,

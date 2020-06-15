@@ -100,14 +100,6 @@ export class AppInstance<T extends AppName = any> {
   @Column("text", { nullable: true })
   stateTimeout!: HexString;
 
-  @Column("text")
-  @IsValidPublicIdentifier()
-  userIdentifier!: string;
-
-  @Column("text")
-  @IsValidPublicIdentifier()
-  nodeIdentifier!: string;
-
   @Column("jsonb", { nullable: true })
   meta!: any;
 
@@ -121,7 +113,7 @@ export class AppInstance<T extends AppName = any> {
     | SingleAssetTwoPartyCoinTransferInterpreterParamsJson
     | {};
 
-  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances)
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances, { nullable: true })
   channel!: Channel;
 
   @CreateDateColumn()
@@ -150,8 +142,6 @@ export interface AppInstanceJSON<T extends AppName = any> {
   responderDepositAssetId: string;
   defaultTimeout: HexString;
   stateTimeout: HexString;
-  userIdentifier?: string;
-  nodeIdentifier?: string;
   meta?: object;
   latestAction: AppActions[T];
   outcomeInterpreterParameters?: any;
@@ -184,8 +174,6 @@ export const AppInstanceSerializer: JSONSerializer<AppInstance, AppInstanceJSON>
         responderDepositAssetId: input.responderDepositAssetId,
         defaultTimeout: input.defaultTimeout,
         stateTimeout: input.stateTimeout,
-        userIdentifier: input.userIdentifier,
-        nodeIdentifier: input.nodeIdentifier,
         meta: input.meta,
         latestAction: input.latestAction,
         outcomeInterpreterParameters: input.outcomeInterpreterParameters,
@@ -217,8 +205,6 @@ export const AppInstanceSerializer: JSONSerializer<AppInstance, AppInstanceJSON>
       responderDepositAssetId: input.responderDepositAssetId,
       defaultTimeout: input.defaultTimeout,
       stateTimeout: input.stateTimeout,
-      userIdentifier: input.userIdentifier,
-      nodeIdentifier: input.nodeIdentifier,
       meta: input.meta,
       latestAction: input.latestAction,
       outcomeInterpreterParameters: input.outcomeInterpreterParameters,

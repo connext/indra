@@ -248,7 +248,7 @@ export class TransferService {
     }
 
     return this.installReceiverAppByPaymentId(
-      senderApp.userIdentifier,
+      senderApp.initiatorIdentifier,
       receiverIdentifier,
       paymentId,
       senderApp.initiatorDepositAssetId,
