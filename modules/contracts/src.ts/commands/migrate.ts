@@ -10,7 +10,7 @@ import { getProvider } from "../utils";
 const { EtherSymbol } = constants;
 const { formatEther } = utils;
 
-const coreContracts = [
+export const coreContracts = [
   "ChallengeRegistry",
   "ConditionalTransactionDelegateTarget",
   "DepositApp",

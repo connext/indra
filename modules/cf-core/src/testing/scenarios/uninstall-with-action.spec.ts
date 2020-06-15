@@ -89,7 +89,7 @@ describe("Node A and B install an app, then uninstall with a given action", () =
     };
   });
 
-  it("should take action + uninstall linked app", async (done) => {
+  it("should take action + uninstall SimpleLinkedTransferApp app", async (done) => {
     [appIdentityHash] = await installApp(
       nodeA,
       nodeB,
@@ -151,5 +151,5 @@ describe("Node A and B install an app, then uninstall with a given action", () =
     ]);
 
     done();
-  });
+  }, 30_000);
 });
