@@ -13,11 +13,13 @@ import { utils } from "ethers";
 import intervalPromise from "interval-promise";
 import { Argv } from "yargs";
 
+import { env } from "../env";
 import {
   addAgentIdentifierToIndex,
   getRandomAgentIdentifierFromIndex,
   removeAgentIdentifierFromIndex,
 } from "../helpers/agentIndex";
+
 import { Agent } from "./agent";
 
 const { parseEther, formatEther } = utils;
@@ -65,9 +67,6 @@ export default {
     log.info(`Launched ${NAME}`);
     const TRANSFER_AMT = parseEther("0.0001");
     const DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 1 eth
-    const ethUrl = process.env.INDRA_ETH_RPC_URL;
-    const nodeUrl = process.env.INDRA_NODE_URL;
-    const messagingUrl = process.env.INDRA_NATS_URL;
     const limit = argv.limit;
     const start: { [paymentId: string]: number } = {};
     const end: { [paymentId: string]: number } = {};
@@ -77,9 +76,7 @@ export default {
     log.info(`Using random inteval: ${randomInterval}`);
 
     const client = await connect({
-      ethProviderUrl: ethUrl,
-      messagingUrl,
-      nodeUrl,
+      ...env,
       signer: argv.privateKey,
       loggerService: new ColorfulLogger(NAME, argv.logLevel, true, argv.concurrencyIndex),
       store: getFileStore(`.connext-store/${argv.privateKey}`),
@@ -107,7 +104,6 @@ export default {
     });
 
     log.info(`Registering address ${client.publicIdentifier}`);
-    // Register agent in environment
     await addAgentIdentifierToIndex(client.publicIdentifier);
 
     // Setup agent logic to transfer on an interval
