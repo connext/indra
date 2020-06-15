@@ -313,9 +313,9 @@ export class CFCoreStore implements IStoreService {
         stateEncoding: appProposal.abiEncodings.stateEncoding,
         appDefinition: appProposal.appDefinition,
         appSeqNo: appProposal.appSeqNo,
-        initiatorDeposit: BigNumber.from(appProposal.initiatorDeposit),
+        initiatorDeposit: appProposal.initiatorDeposit,
         initiatorDepositAssetId: appProposal.initiatorDepositAssetId,
-        responderDeposit: BigNumber.from(appProposal.responderDeposit),
+        responderDeposit: appProposal.responderDeposit,
         responderDepositAssetId: appProposal.responderDepositAssetId,
         defaultTimeout: appProposal.defaultTimeout,
         stateTimeout: appProposal.stateTimeout,
@@ -333,91 +333,18 @@ export class CFCoreStore implements IStoreService {
         nodeIdentifier: this.configService.getPublicIdentifier(),
       };
 
-      // 20 ms
-      await instrument("createAppProposal:tx", () =>
-        getManager().transaction(async (transactionalEntityManager) => {
-          await instrument("createAppProposal:create_app_proposal", async () => {
-            await transactionalEntityManager.query("SELECT create_app_proposal($1, $2, $3, $4)", [
-              appProposal,
-              numProposedApps,
-              {
-                ...signedSetStateCommitment,
-                versionNumber: BigNumber.from(signedSetStateCommitment.versionNumber).toNumber(),
-              },
-              signedConditionalTxCommitment,
-            ]);
-          });
-
-          // await instrument("createAppProposal:CreateApp", async () => {
-          //   await transactionalEntityManager
-          //     .createQueryBuilder()
-          //     .insert()
-          //     .into(AppInstance)
-          //     .values(appValues)
-          //     .onConflict(`("identityHash") DO NOTHING`)
-          //     .execute();
-          // });
-
-          // // 2ms
-          // await instrument("createAppProposal:LinkAppToChannel", async () => {
-          //   await transactionalEntityManager
-          //     .createQueryBuilder()
-          //     .relation(Channel, "appInstances")
-          //     .of(multisigAddress)
-          //     .add(appProposal.identityHash);
-          // });
-
-          // // TODO can this be merged with above?
-          // // 1.5ms
-          // await instrument("createAppProposal:setNumProposedApps", async () => {
-          //   await transactionalEntityManager
-          //     .createQueryBuilder()
-          //     .update(Channel)
-          //     .set({
-          //       monotonicNumProposedApps: numProposedApps,
-          //     })
-          //     .where("multisigAddress = :multisigAddress", { multisigAddress })
-          //     .execute();
-          // });
-
-          // await instrument("createAppProposal:SetStateCommitment", async () => {
-          //   await transactionalEntityManager
-          //     .createQueryBuilder()
-          //     .insert()
-          //     .into(SetStateCommitment)
-          //     .values({
-          //       appIdentityHash: appProposal.identityHash,
-          //       appIdentity: signedSetStateCommitment.appIdentity,
-          //       appStateHash: signedSetStateCommitment.appStateHash,
-          //       challengeRegistryAddress: signedSetStateCommitment.challengeRegistryAddress,
-          //       signatures: signedSetStateCommitment.signatures,
-          //       stateTimeout: toBN(signedSetStateCommitment.stateTimeout).toString(),
-          //       versionNumber: toBN(signedSetStateCommitment.versionNumber).toNumber(),
-          //     })
-          //     .onConflict(`("appIdentityHash") DO NOTHING`)
-          //     .execute();
-          // });
-
-          // await instrument("createAppProposal:ConditionalTxCommitment", async () => {
-          //   await transactionalEntityManager
-          //     .createQueryBuilder()
-          //     .insert()
-          //     .into(ConditionalTransactionCommitment)
-          //     .values({
-          //       freeBalanceAppIdentityHash:
-          //         signedConditionalTxCommitment.freeBalanceAppIdentityHash,
-          //       multisigAddress: signedConditionalTxCommitment.multisigAddress,
-          //       multisigOwners: signedConditionalTxCommitment.multisigOwners,
-          //       interpreterAddr: signedConditionalTxCommitment.interpreterAddr,
-          //       interpreterParams: signedConditionalTxCommitment.interpreterParams,
-          //       signatures: signedConditionalTxCommitment.signatures,
-          //       appIdentityHash: appProposal.identityHash,
-          //     })
-          //     .onConflict(`("appIdentityHash") DO NOTHING`)
-          //     .execute();
-          // });
-        }),
-      );
+      // 6 ms
+      await instrument("createAppProposal:create_app_proposal", async () => {
+        await getManager().query("SELECT create_app_proposal($1, $2, $3, $4)", [
+          appProposal,
+          numProposedApps,
+          {
+            ...signedSetStateCommitment,
+            versionNumber: BigNumber.from(signedSetStateCommitment.versionNumber).toNumber(),
+          },
+          signedConditionalTxCommitment,
+        ]);
+      });
 
       // 1.6 ms
       await instrument("createAppProposal:cacheSet", async () => {
@@ -430,22 +357,22 @@ export class CFCoreStore implements IStoreService {
           appValues,
         );
 
-        // await this.cache.mergeCacheValuesFn(
-        //   `channel:multisig:${multisigAddress}`,
-        //   60,
-        //   (channel: Channel) => {
-        //     const exists = channel.appInstances.findIndex(
-        //       (app) => app.identityHash === appProposal.identityHash,
-        //     );
-        //     if (exists !== -1) {
-        //       channel.appInstances[exists] = appValues as any;
-        //     } else {
-        //       channel.appInstances.push(appValues as any);
-        //     }
-        //     return channel;
-        //   },
-        // );
-        await this.cache.del(`channel:multisig:${multisigAddress}`);
+        await instrument('createAppInstance:cacheMerge channel.multisigAddress', () => this.cache.mergeCacheValuesFn(
+          `channel:multisig:${multisigAddress}`,
+          60,
+          (channel: Channel) => {
+            const exists = channel.appInstances.findIndex(
+              (app) => app.identityHash === appProposal.identityHash,
+            );
+            if (exists !== -1) {
+              channel.appInstances[exists] = appValues as any;
+            } else {
+              channel.appInstances.push(appValues as any);
+            }
+            channel.monotonicNumProposedApps = numProposedApps;
+            return channel;
+          },
+        ));
 
         await instrument("createAppInstance:cacheSet channel.appIdentityHash", async () => {
           await this.cache.set(
@@ -484,20 +411,21 @@ export class CFCoreStore implements IStoreService {
           60,
           AppInstanceSerializer.toJSON(app),
         );
-        // await this.cache.mergeCacheValuesFn(
-        //   `channel:multisig:${multisigAddress}`,
-        //   60,
-        //   (channel: Channel) => {
-        //     const exists = channel.appInstances.findIndex(
-        //       (app) => app.identityHash === appIdentityHash,
-        //     );
-        //     if (exists !== -1) {
-        //       channel.appInstances.splice(exists, 1);
-        //     }
-        //     return channel;
-        //   },
-        // );
-        await this.cache.del(`channel:multisig:${multisigAddress}`);
+        await instrument('removeAppProposal:mergeCache:channel', async () => {
+          await this.cache.mergeCacheValuesFn(
+            `channel:multisig:${multisigAddress}`,
+            60,
+            (channel: Channel) => {
+              const exists = channel.appInstances.findIndex(
+                (app) => app.identityHash === appIdentityHash,
+              );
+              if (exists !== -1) {
+                channel.appInstances.splice(exists, 1);
+              }
+              return channel;
+            },
+          );
+        });
       });
     });
   }
@@ -525,11 +453,10 @@ export class CFCoreStore implements IStoreService {
         latestVersionNumber,
       } = appJson;
 
-      const nodeId = this.configService.getPublicIdentifier();
       const update = {
         type: AppType.INSTANCE,
-        userIdentifier: [initiatorIdentifier, responderIdentifier].find((p) => p !== nodeId),
-        nodeIdentifier: [initiatorIdentifier, responderIdentifier].find((p) => p === nodeId),
+        initiatorIdentifier,
+        responderIdentifier,
         latestState: latestState,
         stateTimeout: stateTimeout,
         latestVersionNumber: latestVersionNumber,
@@ -650,35 +577,34 @@ export class CFCoreStore implements IStoreService {
       });
 
       // 0ms
-      // await instrument("createAppInstance:mergeCacheValuesFn", async () => {
-      //   await this.cache.mergeCacheValuesFn(
-      //     `channel:multisig:${multisigAddress}`,
-      //     60,
-      //     (channel: Channel) => {
-      //       const exists = channel.appInstances.findIndex(
-      //         (app) => app.identityHash === identityHash,
-      //       );
-      //       if (exists !== -1) {
-      //         channel.appInstances[exists] = appJsonToEntity as any;
-      //       } else {
-      //         channel.appInstances.push(appJsonToEntity as any);
-      //       }
+      await instrument("createAppInstance:mergeCacheValuesFn", async () => {
+        await this.cache.mergeCacheValuesFn(
+          `channel:multisig:${multisigAddress}`,
+          60,
+          (channel: Channel) => {
+            const exists = channel.appInstances.findIndex(
+              (app) => app.identityHash === identityHash,
+            );
+            if (exists !== -1) {
+              channel.appInstances[exists] = appJsonToEntity as any;
+            } else {
+              channel.appInstances.push(appJsonToEntity as any);
+            }
 
-      //       // free balance
-      //       const fbAppIndex = channel.appInstances.findIndex(
-      //         (app) => app.type === AppType.FREE_BALANCE,
-      //       );
-      //       channel.appInstances[fbAppIndex] = {
-      //         ...channel.appInstances[fbAppIndex],
-      //         latestState: freeBalanceAppInstance.latestState,
-      //         stateTimeout: freeBalanceAppInstance.stateTimeout,
-      //         latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
-      //       };
-      //       return channel;
-      //     },
-      //   );
-      // });
-      await this.cache.del(`channel:multisig:${multisigAddress}`);
+            // free balance
+            const fbAppIndex = channel.appInstances.findIndex(
+              (app) => app.type === AppType.FREE_BALANCE,
+            );
+            channel.appInstances[fbAppIndex] = {
+              ...channel.appInstances[fbAppIndex],
+              latestState: freeBalanceAppInstance.latestState,
+              stateTimeout: freeBalanceAppInstance.stateTimeout,
+              latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
+            };
+            return channel;
+          },
+        );
+      });
     });
   }
 
@@ -724,33 +650,38 @@ export class CFCoreStore implements IStoreService {
         latestVersionNumber,
       });
       await this.cache.set(`channel:appIdentityHash:${identityHash}`, 70, multisigAddress);
-      // await instrument("createAppInstance:mergeCacheValuesFn", async () => {
-      //   await this.cache.mergeCacheValuesFn(
-      //     `channel:multisig:${multisigAddress}`,
-      //     60,
-      //     async (channel: Channel) => {
-      //       const exists = channel.appInstances.findIndex(
-      //         (app) => app.identityHash === identityHash,
-      //       );
+      await instrument("updateAppInstance:mergeCacheValuesFn", async () => {
+        // callback in below method must be synchronous
+        let shouldPurge = false;
+        await this.cache.mergeCacheValuesFn(
+          `channel:multisig:${multisigAddress}`,
+          60,
+          (channel: Channel) => {
+            const exists = channel.appInstances.findIndex(
+              (app) => app.identityHash === identityHash,
+            );
 
-      //       if (exists === -1) {
-      //         this.log.warn(
-      //           `Possible cache out of sync, removing channel cache for ${multisigAddress}`,
-      //         );
-      //         await this.cache.del(`channel:multisig:${multisigAddress}`);
-      //       } else {
-      //         channel.appInstances[exists] = {
-      //           ...channel.appInstances[exists],
-      //           latestState,
-      //           stateTimeout,
-      //           latestVersionNumber,
-      //         };
-      //       }
-      //       return channel;
-      //     },
-      //   );
-      // });
-      await this.cache.del(`channel:multisig:${multisigAddress}`);
+            if (exists === -1) {
+              shouldPurge = true;
+            } else {
+              channel.appInstances[exists] = {
+                ...channel.appInstances[exists],
+                latestState,
+                stateTimeout,
+                latestVersionNumber,
+              };
+            }
+            return channel;
+          },
+        );
+
+        if (shouldPurge) {
+          this.log.warn(
+            `Possible cache out of sync, removing channel cache for ${multisigAddress}`,
+          );
+          await this.cache.del(`channel:multisig:${multisigAddress}`);
+        }
+      });
     });
   }
 
@@ -810,46 +741,44 @@ export class CFCoreStore implements IStoreService {
       await this.cache.mergeCacheValues(`appInstance:identityHash:${appIdentityHash}`, 60, {
         type: AppType.UNINSTALLED,
       });
-      await this.cache.del(`channel:multisig:${multisigAddress}`);
-      // await instrument("removeAppInstance:mergeCacheValuesFn", async () => {
-      //   await this.cache.mergeCacheValues(
-      //     `appInstance:identityHash:${freeBalanceAppInstance.identityHash}`,
-      //     60,
-      //     {
-      //       latestState: freeBalanceAppInstance.latestState,
-      //       stateTimeout: freeBalanceAppInstance.stateTimeout,
-      //       latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
-      //     },
-      //   );
+      await instrument("removeAppInstance:mergeCacheValuesFn", async () => {
+        await this.cache.mergeCacheValues(
+          `appInstance:identityHash:${freeBalanceAppInstance.identityHash}`,
+          60,
+          {
+            latestState: freeBalanceAppInstance.latestState,
+            stateTimeout: freeBalanceAppInstance.stateTimeout,
+            latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
+          },
+        );
 
-      //   await this.cache.mergeCacheValuesFn(
-      //     `channel:multisig:${multisigAddress}`,
-      //     60,
-      //     (channel: Channel) => {
-      //       const exists = channel.appInstances.findIndex(
-      //         (app) => app.identityHash === appIdentityHash,
-      //       );
-      //       if (exists !== -1) {
-      //         channel.appInstances[exists] = {
-      //           ...channel.appInstances[exists],
-      //           type: AppType.UNINSTALLED,
-      //         };
-      //       }
+        await this.cache.mergeCacheValuesFn(
+          `channel:multisig:${multisigAddress}`,
+          60,
+          (channel: Channel) => {
+            const exists = channel.appInstances.findIndex(
+              (app) => app.identityHash === appIdentityHash,
+            );
+            if (exists !== -1) {
+              // persistence deletes the app instance from the relation,
+              // so we need to do the same thing here
+              channel.appInstances.splice(exists, 1);
+            }
 
-      //       // free balance
-      //       const fbAppIndex = channel.appInstances.findIndex(
-      //         (app) => app.type === AppType.FREE_BALANCE,
-      //       );
-      //       channel.appInstances[fbAppIndex] = {
-      //         ...channel.appInstances[fbAppIndex],
-      //         latestState: freeBalanceAppInstance.latestState,
-      //         stateTimeout: freeBalanceAppInstance.stateTimeout,
-      //         latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
-      //       };
-      //       return channel;
-      //     },
-      //   );
-      // });
+            // free balance
+            const fbAppIndex = channel.appInstances.findIndex(
+              (app) => app.type === AppType.FREE_BALANCE,
+            );
+            channel.appInstances[fbAppIndex] = {
+              ...channel.appInstances[fbAppIndex],
+              latestState: freeBalanceAppInstance.latestState,
+              stateTimeout: freeBalanceAppInstance.stateTimeout,
+              latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
+            };
+            return channel;
+          },
+        );
+      });
     });
   }
 

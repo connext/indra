@@ -37,38 +37,34 @@ export class storedProcedures1592148854323 implements MigrationInterface {
             "meta", 
             "latestAction", 
             "outcomeInterpreterParameters", 
+            "channelMultisigAddress",
             "createdAt", 
             "updatedAt"
         ) VALUES (
-            app_proposal->'identityHash',
+            app_proposal->>'identityHash',
             'PROPOSAL',
-            app_proposal->'appDefinition',
+            app_proposal->>'appDefinition',
             app_proposal#>'{abiEncodings,stateEncoding}',
             app_proposal#>'{abiEncodings,actionEncoding}',
             (app_proposal->>'appSeqNo')::INTEGER,
             app_proposal->'latestState',
             (app_proposal->>'latestVersionNumber')::INTEGER,
-            app_proposal->'initiatorDeposit',
-            app_proposal->'initiatorDepositAssetId', 
+            app_proposal->>'initiatorDeposit',
+            app_proposal->>'initiatorDepositAssetId', 
             (app_proposal->>'outcomeType')::app_instance_outcometype_enum, 
-            app_proposal->'initiatorIdentifier', 
-            app_proposal->'responderIdentifier', 
-            app_proposal->'responderDeposit', 
-            app_proposal->'responderDepositAssetId', 
-            app_proposal->'defaultTimeout', 
-            app_proposal->'stateTimeout', 
+            app_proposal->>'initiatorIdentifier', 
+            app_proposal->>'responderIdentifier', 
+            app_proposal->>'responderDeposit', 
+            app_proposal->>'responderDepositAssetId', 
+            app_proposal->>'defaultTimeout', 
+            app_proposal->>'stateTimeout', 
             app_proposal->'meta', 
             app_proposal->'latestAction', 
             app_proposal->'outcomeInterpreterParameters', 
+            app_proposal->>'multisigAddress',
             DEFAULT, 
             DEFAULT
         ) ON CONFLICT ("identityHash") DO NOTHING;
-        
-        UPDATE "app_instance" 
-        SET 
-            "channelMultisigAddress" = app_proposal->>'multisigAddress', 
-            "updatedAt" = CURRENT_TIMESTAMP 
-        WHERE "identityHash" = app_proposal->>'identityHash';
         
         UPDATE "channel" 
         SET 
@@ -87,12 +83,12 @@ export class storedProcedures1592148854323 implements MigrationInterface {
             "createdAt", 
             "updatedAt"
         ) VALUES (
-            signed_set_state_commitment->'appIdentityHash',
+            signed_set_state_commitment->>'appIdentityHash',
             signed_set_state_commitment->'appIdentity',
-            signed_set_state_commitment->'appStateHash',
-            signed_set_state_commitment->'challengeRegistryAddress',
+            signed_set_state_commitment->>'appStateHash',
+            signed_set_state_commitment->>'challengeRegistryAddress',
             signed_set_state_commitment->'signatures',
-            signed_set_state_commitment->'stateTimeout',
+            signed_set_state_commitment->>'stateTimeout',
             (signed_set_state_commitment->>'versionNumber')::INTEGER,
             DEFAULT, 
             DEFAULT
@@ -107,11 +103,11 @@ export class storedProcedures1592148854323 implements MigrationInterface {
             "multisigOwners", 
             "signatures"
         ) VALUES (
-            signed_conditional_tx_commitment->'appIdentityHash',
-            signed_conditional_tx_commitment->'freeBalanceAppIdentityHash',
-            signed_conditional_tx_commitment->'interpreterAddr',
+            signed_conditional_tx_commitment->>'appIdentityHash',
+            signed_conditional_tx_commitment->>'freeBalanceAppIdentityHash',
+            signed_conditional_tx_commitment->>'interpreterAddr',
             signed_conditional_tx_commitment->'interpreterParams',
-            signed_conditional_tx_commitment->'multisigAddress',
+            signed_conditional_tx_commitment->>'multisigAddress',
             ARRAY(SELECT jsonb_array_elements_text(signed_conditional_tx_commitment->'multisigOwners')),
             ARRAY(SELECT jsonb_array_elements_text(signed_conditional_tx_commitment->'signatures'))
         ) ON CONFLICT ("appIdentityHash") DO NOTHING;
