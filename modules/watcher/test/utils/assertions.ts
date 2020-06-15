@@ -1,6 +1,6 @@
 import { waffleChai } from "@ethereum-waffle/chai";
 import { use } from "chai";
-import { Contract, Wallet, constants, utils } from "ethers";
+import { BigNumber, Contract, Wallet, constants, utils } from "ethers";
 import { MinimumViableMultisig } from "@connext/contracts";
 import {
   CONVENTION_FOR_ETH_ASSET_ID,
@@ -37,14 +37,14 @@ export { expect } from "chai";
 export const verifyOnchainBalancesPostChallenge = async (
   multisigAddress: string,
   signers: ChannelSigner[],
-  expected: { [assetId: string]: utils.BigNumber },
+  expected: { [assetId: string]: BigNumber },
   wallet: Wallet,
 ) => {
   const withdrawn = await new Contract(
     multisigAddress,
     MinimumViableMultisig.abi,
     wallet,
-  ).functions.totalAmountWithdrawn(CONVENTION_FOR_ETH_ASSET_ID);
+  ).totalAmountWithdrawn(CONVENTION_FOR_ETH_ASSET_ID);
   expect(withdrawn).to.be.eq(expected[CONVENTION_FOR_ETH_ASSET_ID]);
   expect(await wallet.provider.getBalance(multisigAddress)).to.be.eq(Zero);
   expect(await wallet.provider.getBalance(signers[0].address)).to.be.eq(

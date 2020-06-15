@@ -99,7 +99,7 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
         await provider.send("evm_mine", []);
       }
 
-      await appRegistry.functions.setOutcome(freeBalance.identity, freeBalance.encodedLatestState);
+      await appRegistry.setOutcome(freeBalance.identity, freeBalance.encodedLatestState);
 
       const setupCommitment = getSetupCommitment(context, stateChannel);
       const setupCommitmentHash = setupCommitment.hashToSign();
@@ -127,9 +127,9 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       done();
     });
 
-    await proxyFactory.functions.createProxyWithNonce(
+    await proxyFactory.createProxyWithNonce(
       contracts.MinimumViableMultisig,
-      new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+      new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
         [initiator, responder].map((x) => x.address),
       ]),
       0,

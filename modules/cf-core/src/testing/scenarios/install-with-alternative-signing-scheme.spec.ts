@@ -1,6 +1,6 @@
 import { ChannelSigner } from "@connext/utils";
 import { CONVENTION_FOR_ETH_ASSET_ID, ProposeMessage } from "@connext/types";
-import { providers, constants, utils } from "ethers";
+import { BigNumber, providers, constants } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
@@ -71,10 +71,10 @@ describe(`Uses a provided signing key generation function to sign channel state 
       it(`install app with ETH`, async (done) => {
         await collateralizeChannel(multisigAddress, nodeA, nodeB);
 
-        let preInstallETHBalanceNodeA: utils.BigNumber;
-        let postInstallETHBalanceNodeA: utils.BigNumber;
-        let preInstallETHBalanceNodeB: utils.BigNumber;
-        let postInstallETHBalanceNodeB: utils.BigNumber;
+        let preInstallETHBalanceNodeA: BigNumber;
+        let postInstallETHBalanceNodeA: BigNumber;
+        let preInstallETHBalanceNodeB: BigNumber;
+        let postInstallETHBalanceNodeB: BigNumber;
 
         nodeB.on(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
           [preInstallETHBalanceNodeA, preInstallETHBalanceNodeB] = await getBalances(

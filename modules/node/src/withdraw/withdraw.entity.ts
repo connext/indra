@@ -1,4 +1,4 @@
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 import {
   Column,
   CreateDateColumn,
@@ -27,11 +27,11 @@ export class Withdraw {
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  amount!: utils.BigNumber;
+  amount!: BigNumber;
 
   @Column("text")
   @IsEthAddress()

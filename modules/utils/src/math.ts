@@ -1,10 +1,10 @@
 import { DecString } from "@connext/types";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import { toBN } from "./bigNumbers";
 
 const { Zero, MaxUint256 } = constants;
-const { bigNumberify, parseEther, formatEther } = utils;
+const { parseEther, formatEther } = utils;
 
 export const toWad = (n: any) => parseEther(n.toString());
 
@@ -23,11 +23,8 @@ export const minBN = (lobn: any) =>
 
 export const inverse = (bn: any) => formatEther(toWad(toWad(`1`)).div(toWad(bn)));
 
-export const calculateExchange = (
-  amount: utils.BigNumber,
-  swapRate: DecString,
-): utils.BigNumber => {
+export const calculateExchange = (amount: BigNumber, swapRate: DecString): BigNumber => {
   const [integer, fractional] = swapRate.split(".");
   const safeSwapRate = [integer, (fractional || "0").substring(0, 18)].join(".");
-  return bigNumberify(formatEther(amount.mul(parseEther(safeSwapRate))).replace(/\.[0-9]*$/, ""));
+  return BigNumber.from(formatEther(amount.mul(parseEther(safeSwapRate))).replace(/\.[0-9]*$/, ""));
 };

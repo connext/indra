@@ -1,15 +1,15 @@
-import { utils } from "ethers";
+import { BigNumber, BigNumberish } from "ethers";
 
 declare global {
   namespace jest {
     interface Matchers<R, T> {
-      toBeEq(expected: utils.BigNumberish): utils.BigNumber;
-      toBeLt(expected: utils.BigNumberish): utils.BigNumber;
+      toBeEq(expected: BigNumberish): BigNumber;
+      toBeLt(expected: BigNumberish): BigNumber;
     }
   }
 }
 
-export function toBeEq(received: utils.BigNumber, argument: utils.BigNumberish) {
+export function toBeEq(received: BigNumber, argument: BigNumberish) {
   const pass = received.eq(argument);
   return {
     pass,
@@ -17,7 +17,7 @@ export function toBeEq(received: utils.BigNumber, argument: utils.BigNumberish) 
   };
 }
 
-export function toBeLt(received: utils.BigNumber, argument: utils.BigNumberish) {
+export function toBeLt(received: BigNumber, argument: BigNumberish) {
   const pass = received.lt(argument);
   return {
     pass,

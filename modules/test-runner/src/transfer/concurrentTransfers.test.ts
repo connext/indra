@@ -1,9 +1,8 @@
 import PQueue from "p-queue";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 import {
   ConditionalTransferTypes,
   IConnextClient,
-  BigNumber,
   PublicParams,
   Address,
   Receipt,

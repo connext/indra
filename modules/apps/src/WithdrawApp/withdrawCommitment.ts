@@ -5,6 +5,7 @@ import {
   MultisigTransaction,
   singleAssetSinglePartyCoinTransferEncoding,
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
+  BigNumberish,
 } from "@connext/types";
 import { utils } from "ethers";
 
@@ -18,7 +19,7 @@ export class WithdrawCommitment extends MultisigCommitment {
     public readonly multisigOwners: string[],
     public readonly recipient: string,
     public readonly assetId: string,
-    public readonly amount: utils.BigNumberish,
+    public readonly amount: BigNumberish,
     public readonly nonce: string,
   ) {
     super(multisigAddress, multisigOwners);

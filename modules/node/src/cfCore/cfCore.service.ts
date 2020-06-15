@@ -3,7 +3,6 @@ import { DEFAULT_APP_TIMEOUT, WithdrawCommitment } from "@connext/apps";
 import {
   AppAction,
   AppInstanceJson,
-  AppInstanceProposal,
   AssetId,
   ConnextNodeStorePrefix,
   CONVENTION_FOR_ETH_ASSET_ID,
@@ -25,7 +24,7 @@ import {
   TypedEmitter,
 } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
@@ -183,13 +182,13 @@ export class CFCoreService {
   async proposeAndWaitForInstallApp(
     channel: Channel,
     initialState: any,
-    initiatorDeposit: utils.BigNumber,
+    initiatorDeposit: BigNumber,
     initiatorDepositAssetId: AssetId,
-    responderDeposit: utils.BigNumber,
+    responderDeposit: BigNumber,
     responderDepositAssetId: AssetId,
     app: string,
     meta: object = {},
-    stateTimeout: utils.BigNumber = Zero,
+    stateTimeout: BigNumber = Zero,
   ): Promise<MethodResults.ProposeInstall | undefined> {
     const network = await this.configService.getEthNetwork();
 
@@ -249,7 +248,7 @@ export class CFCoreService {
       this.emitter.waitFor(
         EventNames.INSTALL_FAILED_EVENT,
         CF_METHOD_TIMEOUT * 3,
-        (msg) => msg.params.identityHash === proposeRes.appIdentityHash,
+        (msg) => msg.params.proposal.identityHash === proposeRes.appIdentityHash,
       ),
       this.emitter.waitFor(
         EventNames.REJECT_INSTALL_EVENT,
@@ -291,10 +290,12 @@ export class CFCoreService {
   async rejectInstallApp(
     appIdentityHash: string,
     multisigAddress: string,
+    reason: string,
   ): Promise<MethodResults.RejectInstall> {
     const parameters: MethodParams.RejectInstall = {
       appIdentityHash,
       multisigAddress,
+      reason,
     };
     this.logCfCoreMethodStart(MethodNames.chan_rejectInstall, parameters);
     const rejectRes = await this.cfCore.rpcRouter.dispatch({
@@ -317,7 +318,7 @@ export class CFCoreService {
     appIdentityHash: string,
     multisigAddress: string,
     action: AppAction,
-    stateTimeout?: utils.BigNumber,
+    stateTimeout?: BigNumber,
   ): Promise<MethodResults.TakeAction> {
     const parameters = {
       action,
@@ -374,7 +375,7 @@ export class CFCoreService {
     return appInstanceResponse.result.result.appInstances as AppInstanceJson[];
   }
 
-  async getProposedAppInstances(multisigAddress?: string): Promise<AppInstanceProposal[]> {
+  async getProposedAppInstances(multisigAddress?: string): Promise<AppInstanceJson[]> {
     const parameters = {
       multisigAddress,
     } as MethodParams.GetProposedAppInstances;
@@ -389,7 +390,7 @@ export class CFCoreService {
       MethodNames.chan_getProposedAppInstances,
       appInstanceResponse.result.result,
     );
-    return appInstanceResponse.result.result.appInstances as AppInstanceProposal[];
+    return appInstanceResponse.result.result.appInstances as AppInstanceJson[];
   }
 
   async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson> {
@@ -430,7 +431,7 @@ export class CFCoreService {
       network.chainId,
     );
     const apps = await this.getAppInstances(multisigAddress);
-    return apps.filter((app) => app.appInterface.addr === appRegistry.appDefinitionAddress);
+    return apps.filter((app) => app.appDefinition === appRegistry.appDefinitionAddress);
   }
 
   /**

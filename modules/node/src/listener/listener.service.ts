@@ -154,7 +154,7 @@ export default class ListenerService implements OnModuleInit {
         const { newState, appIdentityHash, action } = data.data;
         const app = await this.cfCoreService.getAppInstance(appIdentityHash);
         const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
-          app.appInterface.addr,
+          app.appDefinition,
         );
         if (!appRegistryInfo) {
           throw new Error(
@@ -196,7 +196,7 @@ export default class ListenerService implements OnModuleInit {
       // update app with uninstalled state
       await this.appInstanceRepository.updateAppStateOnUninstall(uninstalledApp);
       const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
-        uninstalledApp.appInterface.addr,
+        uninstalledApp.appDefinition,
       );
       await this.appActionsService.handleAppAction(
         appRegistryInfo.name,

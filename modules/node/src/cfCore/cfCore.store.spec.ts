@@ -1,10 +1,5 @@
 import { AppInstanceJson } from "@connext/types";
-import {
-  getRandomAddress,
-  getRandomIdentifier,
-  toBN,
-  toBNJson,
-} from "@connext/utils";
+import { getRandomAddress, getRandomIdentifier, toBN, toBNJson, stringify } from "@connext/utils";
 import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { getConnection } from "typeorm";
@@ -21,7 +16,6 @@ import { DatabaseModule } from "../database/database.module";
 import { LoggerModule } from "../logger/logger.module";
 import {
   createAppInstanceJson,
-  createAppInstanceProposal,
   createChallengeUpdatedEventPayload,
   createConditionalTransactionCommitmentJSON,
   createMinimalTransaction,
@@ -36,6 +30,7 @@ import { ConfigService } from "../config/config.service";
 import { CFCoreRecordRepository } from "./cfCore.repository";
 import { CFCoreStore } from "./cfCore.store";
 import { ChallengeRepository, ProcessedBlockRepository } from "../challenge/challenge.repository";
+import { CacheModule } from "../caching/cache.module";
 
 const createTestStateChannelJSONs = (
   nodeIdentifier: string,
@@ -48,7 +43,7 @@ const createTestStateChannelJSONs = (
   });
   const setupCommitment = createMinimalTransaction();
   const freeBalanceUpdate = createSetStateCommitmentJSON({
-    appIdentityHash: channelJson.freeBalanceAppInstance.identityHash,
+    appIdentityHash: channelJson.freeBalanceAppInstance!.identityHash,
   });
   return { channelJson, setupCommitment, freeBalanceUpdate };
 };
@@ -83,12 +78,21 @@ const createTestChannelWithAppInstance = async (
   );
 
   const setStateCommitment = createSetStateCommitmentJSON();
-  const appProposal = createAppInstanceProposal({
+  const appProposal = createAppInstanceJson({
     appSeqNo: 2,
     initiatorIdentifier: userIdentifier,
     responderIdentifier: nodeIdentifier,
   });
-  await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2, setStateCommitment);
+  const conditionalCommitment = createConditionalTransactionCommitmentJSON({
+    appIdentityHash: appProposal.identityHash,
+  });
+  await cfCoreStore.createAppProposal(
+    multisigAddress,
+    appProposal,
+    2,
+    setStateCommitment,
+    conditionalCommitment,
+  );
 
   const appInstance = createAppInstanceJson({
     identityHash: appProposal.identityHash,
@@ -102,18 +106,14 @@ const createTestChannelWithAppInstance = async (
     latestState: { appState: "updated" },
   };
   const freeBalanceUpdateCommitment = createSetStateCommitmentJSON({
-    appIdentityHash: channelJson.freeBalanceAppInstance.identityHash,
+    appIdentityHash: channelJson.freeBalanceAppInstance!.identityHash,
     versionNumber: toBNJson(100),
-  });
-  const conditionalCommitment = createConditionalTransactionCommitmentJSON({
-    appIdentityHash: appInstance.identityHash,
   });
   await cfCoreStore.createAppInstance(
     multisigAddress,
     appInstance,
     updatedFreeBalance,
     freeBalanceUpdateCommitment,
-    conditionalCommitment,
   );
 
   return {
@@ -186,6 +186,7 @@ describe("CFCoreStore", () => {
           ChallengeRepository,
           ProcessedBlockRepository,
         ]),
+        CacheModule,
       ],
     }).compile();
 
@@ -206,61 +207,90 @@ describe("CFCoreStore", () => {
         nodeIdentifier,
       );
 
-      for (let index = 0; index < 3; index++) {
+      for (let index = 0; index < 1; index++) {
         await cfCoreStore.createStateChannel(channelJson, setupCommitment, freeBalanceUpdate);
         const channelFromStore = await cfCoreStore.getStateChannel(channelJson.multisigAddress);
-        const userIdentifier = channelJson.userIdentifiers.find((x) => x !== nodeIdentifier);
-        expect(channelFromStore).to.deep.equal({
-          ...channelJson,
-          userIdentifiers: [nodeIdentifier, userIdentifier],
-          freeBalanceAppInstance: {
-            ...channelJson.freeBalanceAppInstance,
-            initiatorIdentifier: nodeIdentifier,
-            responderIdentifier: userIdentifier,
-          },
-        });
+        expect(channelFromStore).to.containSubset(channelJson);
 
         const setupCommitmentFromStore = await cfCoreStore.getSetupCommitment(
           channelJson.multisigAddress,
         );
-        expect(setupCommitmentFromStore).to.deep.equal(setupCommitment);
+        expect(setupCommitmentFromStore).to.containSubset(setupCommitment);
 
         const freeBalanceUpdateFromStore = await cfCoreStore.getSetStateCommitment(
-          channelJson.freeBalanceAppInstance.identityHash,
+          channelJson.freeBalanceAppInstance!.identityHash,
         );
-        expect(freeBalanceUpdateFromStore).to.deep.equal(freeBalanceUpdate);
+        expect(freeBalanceUpdateFromStore).to.containSubset(freeBalanceUpdate);
       }
+    });
+
+    it("incrementNumProposedApps", async () => {
+      const nodeIdentifier = configService.getPublicIdentifier();
+      const { channelJson, setupCommitment, freeBalanceUpdate } = createTestStateChannelJSONs(
+        nodeIdentifier,
+      );
+
+      await cfCoreStore.createStateChannel(channelJson, setupCommitment, freeBalanceUpdate);
+      await cfCoreStore.incrementNumProposedApps(channelJson.multisigAddress);
+      const channelFromStore = await cfCoreStore.getStateChannel(channelJson.multisigAddress);
+      const userIdentifier = channelJson.userIdentifiers.find((x) => x !== nodeIdentifier);
+      expect(channelFromStore).to.containSubset({
+        ...channelJson,
+        monotonicNumProposedApps: channelJson.monotonicNumProposedApps + 1,
+        userIdentifiers: [nodeIdentifier, userIdentifier],
+        freeBalanceAppInstance: {
+          ...channelJson.freeBalanceAppInstance,
+          initiatorIdentifier: nodeIdentifier,
+          responderIdentifier: userIdentifier,
+        },
+      });
     });
   });
 
   describe("App Proposal", () => {
-    it("createAppInstanceProposal", async () => {
+    it("createAppProposal", async () => {
       const { multisigAddress } = await createTestChannel(
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
 
-      const appProposal = createAppInstanceProposal({ appSeqNo: 2 });
+      const appProposal = createAppInstanceJson({ appSeqNo: 2, multisigAddress });
       const setStateCommitment = createSetStateCommitmentJSON({
         appIdentityHash: appProposal.identityHash,
       });
 
+      const conditionalTx = createConditionalTransactionCommitmentJSON({
+        appIdentityHash: appProposal.identityHash,
+        contractAddresses: await configService.getContractAddresses(),
+      });
+
       for (let index = 0; index < 3; index++) {
-        await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2, setStateCommitment);
+        await cfCoreStore.createAppProposal(
+          multisigAddress,
+          appProposal,
+          2,
+          setStateCommitment,
+          conditionalTx,
+        );
 
         const received = await cfCoreStore.getAppProposal(appProposal.identityHash);
-        expect(received).to.deep.equal(appProposal);
+        expect(received).to.containSubset(appProposal);
 
         const channel = await cfCoreStore.getStateChannel(multisigAddress);
         expect(channel.proposedAppInstances.length).to.equal(1);
         const proposedMap = new Map(channel.proposedAppInstances);
         expect(proposedMap.has(appProposal.identityHash)).to.be.true;
-        expect(proposedMap.get(appProposal.identityHash)).to.deep.equal(appProposal);
+        expect(proposedMap.get(appProposal.identityHash)).to.containSubset(appProposal);
 
         const setStateCommitmentFromStore = await cfCoreStore.getSetStateCommitment(
           appProposal.identityHash,
         );
-        expect(setStateCommitmentFromStore).to.deep.equal(setStateCommitment);
+        expect(setStateCommitmentFromStore).to.containSubset(setStateCommitment);
+
+        const conditionalTxFromStore = await cfCoreStore.getConditionalTransactionCommitment(
+          appProposal.identityHash,
+        );
+        expect(conditionalTxFromStore).to.containSubset(conditionalTx);
       }
     });
 
@@ -274,12 +304,13 @@ describe("CFCoreStore", () => {
       let channelEntity = await channelRepository.findByMultisigAddressOrThrow(multisigAddress);
       expect(channelEntity.appInstances.length).to.equal(1);
 
-      const appProposal = createAppInstanceProposal();
+      const appProposal = createAppInstanceJson();
       await cfCoreStore.createAppProposal(
         multisigAddress,
         appProposal,
         2,
         createSetStateCommitmentJSON(),
+        createConditionalTransactionCommitmentJSON(),
       );
 
       channelEntity = await channelRepository.findByMultisigAddressOrThrow(multisigAddress);
@@ -310,13 +341,14 @@ describe("CFCoreStore", () => {
         ...channelJson.freeBalanceAppInstance!,
         latestState: { appState: "updated" },
       };
-      expect(cfCoreStore.createAppInstance(
-        multisigAddress,
-        appInstance,
-        updatedFreeBalance,
-        createSetStateCommitmentJSON(),
-        createConditionalTransactionCommitmentJSON(),
-      )).to.be.rejectedWith(/Could not find app with identity hash/);
+      expect(
+        cfCoreStore.createAppInstance(
+          multisigAddress,
+          appInstance,
+          updatedFreeBalance,
+          createSetStateCommitmentJSON(),
+        ),
+      ).to.be.rejectedWith(/Could not find app with identity hash/);
     });
 
     it("createAppInstance", async () => {
@@ -329,17 +361,19 @@ describe("CFCoreStore", () => {
         freeBalanceUpdate,
       } = await createTestChannel(cfCoreStore, configService.getPublicIdentifier());
 
-      const appProposal = createAppInstanceProposal({
+      const appProposal = createAppInstanceJson({
         appSeqNo: APP_SEQ_NO,
         initiatorIdentifier: userIdentifier,
         responderIdentifier: configService.getPublicIdentifier(),
       });
       const setStateCommitment = createSetStateCommitmentJSON();
+      const conditionalTx = createConditionalTransactionCommitmentJSON();
       await cfCoreStore.createAppProposal(
         multisigAddress,
         appProposal,
         APP_SEQ_NO,
         setStateCommitment,
+        conditionalTx,
       );
 
       const userParticipantAddr = userIdentifier;
@@ -360,10 +394,6 @@ describe("CFCoreStore", () => {
         ...freeBalanceUpdate,
         versionNumber: toBNJson(100),
       });
-      const conditionalTx = createConditionalTransactionCommitmentJSON({
-        appIdentityHash: appInstance.identityHash,
-        contractAddresses: await configService.getContractAddresses(),
-      });
 
       for (let index = 0; index < 3; index++) {
         await cfCoreStore.createAppInstance(
@@ -371,23 +401,19 @@ describe("CFCoreStore", () => {
           appInstance,
           updatedFreeBalance,
           updatedFreeBalanceCommitment,
-          conditionalTx,
         );
         const app = await cfCoreStore.getAppInstance(appInstance.identityHash);
-        expect(app).to.deep.equal(appInstance);
+        expect(app).to.containSubset(appInstance);
 
         const updatedFreeBalanceCommitmentFromStore = await cfCoreStore.getSetStateCommitment(
-          channelJson.freeBalanceAppInstance.identityHash,
+          channelJson.freeBalanceAppInstance!.identityHash,
         );
-        expect(updatedFreeBalanceCommitmentFromStore).to.deep.equal(updatedFreeBalanceCommitment);
-
-        const conditionalTxFromStore = await cfCoreStore.getConditionalTransactionCommitment(
-          appInstance.identityHash,
+        expect(updatedFreeBalanceCommitmentFromStore).to.containSubset(
+          updatedFreeBalanceCommitment,
         );
-        expect(conditionalTxFromStore).to.deep.equal(conditionalTx);
 
         const channel = await cfCoreStore.getStateChannel(multisigAddress);
-        expect(channel).to.deep.equal({
+        expect(channel).to.containSubset({
           ...channelJson,
           freeBalanceAppInstance: updatedFreeBalance,
           appInstances: [[appInstance.identityHash, appInstance]],
@@ -418,12 +444,12 @@ describe("CFCoreStore", () => {
       for (let index = 0; index < 3; index++) {
         await cfCoreStore.updateAppInstance(multisigAddress, updated, updatedSetStateCommitment);
         const app = await cfCoreStore.getAppInstance(appInstance.identityHash);
-        expect(app).to.deep.equal(updated);
+        expect(app).to.containSubset(updated);
 
         const updatedSetStateCommitmentFromStore = await cfCoreStore.getSetStateCommitment(
           appInstance.identityHash,
         );
-        expect(updatedSetStateCommitmentFromStore).to.deep.equal(updatedSetStateCommitment);
+        expect(updatedSetStateCommitmentFromStore).to.containSubset(updatedSetStateCommitment);
       }
     });
 
@@ -438,7 +464,7 @@ describe("CFCoreStore", () => {
         latestState: { appState: "removed app instance" },
       };
       const updatedFreeBalanceCommitment = createSetStateCommitmentJSON({
-        appIdentityHash: channelJson.freeBalanceAppInstance.identityHash,
+        appIdentityHash: channelJson.freeBalanceAppInstance!.identityHash,
         versionNumber: toBNJson(1337),
       });
 
@@ -456,7 +482,7 @@ describe("CFCoreStore", () => {
 
         const channel = await cfCoreStore.getStateChannel(multisigAddress);
         expect(channel.appInstances.length).to.equal(0);
-        expect(channel).to.deep.equal({
+        expect(channel).to.containSubset({
           ...channelJson,
           freeBalanceAppInstance: updatedFreeBalance,
           monotonicNumProposedApps: 2,
@@ -476,9 +502,9 @@ describe("CFCoreStore", () => {
       });
       await cfCoreStore.saveAppChallenge(challenge);
       const retrieved = await cfCoreStore.getAppChallenge(challenge.identityHash);
-      expect(retrieved).to.deep.equal(challenge);
+      expect(retrieved).to.containSubset(challenge);
       const byChannel = await cfCoreStore.getActiveChallenges();
-      expect(byChannel).to.deep.equal([challenge]);
+      expect(byChannel).to.containSubset([challenge]);
     });
 
     it("updates a challenge", async () => {
@@ -492,7 +518,7 @@ describe("CFCoreStore", () => {
       };
       await cfCoreStore.saveAppChallenge(updated);
       const retrieved = await cfCoreStore.getAppChallenge(challenge.identityHash);
-      expect(retrieved).to.deep.equal(updated);
+      expect(retrieved).to.containSubset(updated);
     });
   });
 
@@ -507,7 +533,7 @@ describe("CFCoreStore", () => {
       });
       await cfCoreStore.createStateProgressedEvent(event);
       const retrieved = await cfCoreStore.getStateProgressedEvents(appInstance.identityHash);
-      expect(retrieved).to.deep.equal([event]);
+      expect(retrieved).to.containSubset([event]);
     });
   });
 
@@ -522,7 +548,7 @@ describe("CFCoreStore", () => {
       });
       await cfCoreStore.createChallengeUpdatedEvent(event);
       const retrieved = await cfCoreStore.getChallengeUpdatedEvents(appInstance.identityHash);
-      expect(retrieved).to.deep.equal([event]);
+      expect(retrieved).to.containSubset([event]);
     });
   });
 });

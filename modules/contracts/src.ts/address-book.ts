@@ -34,7 +34,7 @@ export const getAddressBook = (path: string, chainId: string): AddressBook => {
 
   const getEntry = (contractName: string): AddressBookEntry => {
     try {
-      return addressBook[chainId][contractName];
+      return addressBook[chainId][contractName] || { address: AddressZero };
     } catch (e) {
       return { address: AddressZero };
     }

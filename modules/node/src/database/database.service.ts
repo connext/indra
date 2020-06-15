@@ -53,6 +53,7 @@ import { addLatestAction1587492602160 } from "../../migrations/1587492602160-add
 import { initWatcherMethods1587505874044 } from "../../migrations/1587505874044-init-watcher-methods";
 import { changePrimaryKeys1588583967151 } from "../../migrations/1588583967151-change-primary-keys";
 import { rebalanceTargets1589792004077 } from "../../migrations/1589792004077-rebalance-targets";
+import { removeAppProposal1591359031983 } from "../../migrations/1591359031983-remove-app-proposal";
 
 export const entities = [
   AppInstance,
@@ -105,20 +106,34 @@ export const migrations = [
   initWatcherMethods1587505874044,
   changePrimaryKeys1588583967151,
   rebalanceTargets1589792004077,
+  removeAppProposal1591359031983,
 ];
 
 @Injectable()
 export class TypeOrmConfigService implements TypeOrmOptionsFactory {
   constructor(private readonly config: ConfigService) {}
   createTypeOrmOptions(): TypeOrmModuleOptions {
+    const redisUrl = this.config.getRedisUrl().replace("redis://", "");
+    const hostPort = redisUrl.split(":");
+    if (hostPort.length !== 2) {
+      throw new Error("Invalid redis URL.");
+    }
+
     return {
       ...this.config.getPostgresConfig(),
       entities,
-      logging: ["error"],
+      logging: ["info"],
       migrations,
       migrationsRun: true,
       synchronize: false,
       type: "postgres",
+      cache: {
+        type: "ioredis",
+        options: {
+          host: hostPort[0],
+          port: Number(hostPort[1]),
+        },
+      },
     };
   }
 }

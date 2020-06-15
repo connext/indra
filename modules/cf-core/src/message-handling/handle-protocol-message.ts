@@ -31,7 +31,8 @@ export async function handleReceivedProtocolMessage(
   const { protocolRunner, store, router } = requestHandler;
   const log = requestHandler.log.newContext("CF-handleReceivedProtocolMessage");
 
-  const { data } = bigNumberifyJson(msg) as ProtocolMessage;
+  const msgBn = bigNumberifyJson(msg) as ProtocolMessage;
+  const { data } = msgBn;
 
   const { protocol, seq, params } = data;
 
@@ -39,10 +40,7 @@ export async function handleReceivedProtocolMessage(
 
   let postProtocolStateChannel: StateChannel;
   let appInstance: AppInstance | undefined;
-  const json = await store.getStateChannelByOwners([
-    params!.initiatorIdentifier,
-    params!.responderIdentifier,
-  ]);
+  const json = await store.getStateChannel(params!.multisigAddress);
   try {
     const { channel, appContext } = await protocolRunner.runProtocolWithMessage(
       router,
@@ -52,7 +50,13 @@ export async function handleReceivedProtocolMessage(
     postProtocolStateChannel = channel;
     appInstance = appContext || undefined;
   } catch (e) {
-    log.error(`Caught error running protocol, aborting. Error: ${e.message}`);
+    log.error(`Caught error running ${data.protocol} protocol, aborting. Error: ${e.stack}`);
+    // NOTE: see comments in IO_SEND_AND_WAIT opcode
+    const messageForCounterparty = prepareProtocolErrorMessage(msgBn, e.message);
+    await requestHandler.messagingService.send(
+      messageForCounterparty.data.to,
+      messageForCounterparty,
+    );
     return;
   }
 
@@ -99,9 +103,7 @@ async function getOutgoingEventDataFromProtocol(
         ...baseEvent,
         type: EventNames.INSTALL_EVENT,
         data: {
-          appIdentityHash: postProtocolStateChannel.getAppInstanceByAppSeqNo(
-            (params as ProtocolParams.Install).appSeqNo,
-          ).identityHash,
+          appIdentityHash: (params as ProtocolParams.Install).proposal.identityHash,
         },
       } as ProtocolEventMessage<typeof EventNames.INSTALL_EVENT>;
     }
@@ -169,3 +171,25 @@ function getSetupEventData(
 ): Omit<EventPayload["CREATE_CHANNEL_EVENT"], "counterpartyIdentifier"> {
   return { multisigAddress, owners };
 }
+
+const prepareProtocolErrorMessage = (
+  latestMsg: ProtocolMessage,
+  error: string,
+): ProtocolMessage => {
+  const {
+    data: { protocol, processID, to },
+    from,
+  } = latestMsg;
+  return {
+    data: {
+      protocol,
+      processID,
+      seq: UNASSIGNED_SEQ_NO,
+      to: from,
+      error,
+      customData: {},
+    },
+    type: EventNames.PROTOCOL_MESSAGE_EVENT,
+    from: to,
+  };
+};

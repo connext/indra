@@ -3,7 +3,6 @@ import {
   Address,
   AppABIEncodings,
   AppInstanceJson,
-  AppInstanceProposal,
   AssetId,
   ContractABI,
   CONVENTION_FOR_ETH_ASSET_ID,
@@ -32,12 +31,13 @@ import {
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
   toBN,
+  getRandomAddress,
 } from "@connext/utils";
-import { Contract, Wallet, providers, constants, utils } from "ethers";
+import { BigNumber, Contract, Wallet, providers, constants } from "ethers";
 
 import { CFCore } from "../cfCore";
 import { AppInstance, StateChannel } from "../models";
-import { CONTRACT_NOT_DEPLOYED } from "../errors";
+import { CONTRACT_NOT_DEPLOYED, CALL_EXCEPTION } from "../errors";
 import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
 
 import { TestContractAddresses } from "./contracts";
@@ -45,7 +45,6 @@ import { initialEmptyTTTState, tttAbiEncodings } from "./tic-tac-toe";
 import { toBeEq } from "./bignumber-jest-matcher";
 
 const { AddressZero, One, Zero } = constants;
-const { bigNumberify, getAddress, hexlify, randomBytes } = utils;
 
 expect.extend({ toBeEq });
 
@@ -66,68 +65,46 @@ export const newWallet = (wallet: Wallet) =>
     new providers.JsonRpcProvider((wallet.provider as providers.JsonRpcProvider).connection.url),
   );
 
-export function createAppInstanceProposalForTest(
+export function createAppInstanceJsonForTest(
   appIdentityHash: string,
   stateChannel?: StateChannel,
-): AppInstanceProposal {
-  const [initiator, responder] = StateChannel
-    ? [stateChannel!.userIdentifiers[0], stateChannel!.userIdentifiers[1]]
-    : [getRandomPublicIdentifier(), getRandomPublicIdentifier()];
-  return {
-    identityHash: appIdentityHash,
-    initiatorIdentifier: initiator,
-    responderIdentifier: responder,
-    appDefinition: AddressZero,
-    abiEncodings: {
-      stateEncoding: "tuple(address foo, uint256 bar)",
-      actionEncoding: undefined,
-    } as AppABIEncodings,
-    initiatorDeposit: "0x00",
-    responderDeposit: "0x00",
-    defaultTimeout: "0x01",
-    stateTimeout: "0x00",
-    initialState: {
-      foo: AddressZero,
-      bar: 0,
-    } as SolidityValueType,
-    appSeqNo: stateChannel ? stateChannel.numProposedApps : Math.ceil(1000 * Math.random()),
-    outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-    responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
-    initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
-  };
+): AppInstanceJson {
+  return createAppInstanceForTest(stateChannel).toJson();
 }
 
 export function createAppInstanceForTest(stateChannel?: StateChannel) {
   const [initiator, responder] = stateChannel
     ? [stateChannel!.userIdentifiers[0], stateChannel!.userIdentifiers[1]]
     : [getRandomPublicIdentifier(), getRandomPublicIdentifier()];
-  return new AppInstance(
-    /* initiator */ initiator,
-    /* responder */ responder,
-    /* defaultTimeout */ "0x00",
-    /* appInterface */ {
-      addr: getAddress(hexlify(randomBytes(20))),
+  return AppInstance.fromJson({
+    multisigAddress: stateChannel!.multisigAddress || getRandomAddress(),
+    identityHash: "", // gets calculated
+    initiatorIdentifier: initiator,
+    initiatorDeposit: "0x00",
+    initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
+    responderIdentifier: responder,
+    responderDeposit: "0x00",
+    responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
+    appDefinition: AddressZero,
+    abiEncodings: {
       stateEncoding: "tuple(address foo, uint256 bar)",
       actionEncoding: undefined,
-    },
-    /* appSeqNo */ stateChannel ? stateChannel.numProposedApps : Math.ceil(1000 * Math.random()),
-    /* latestState */ { foo: AddressZero, bar: bigNumberify(0) },
-    /* latestVersionNumber */ 0,
-    /* stateTimeout */ toBN(Math.ceil(1000 * Math.random())).toHexString(),
-    /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-    /* multisig */ stateChannel
-      ? stateChannel.multisigAddress
-      : getAddress(hexlify(randomBytes(20))),
-    /* meta */ undefined,
-    /* latestAction */ undefined,
-    /* twoPartyOutcomeInterpreterParams */ {
+    } as AppABIEncodings,
+    defaultTimeout: "0x01",
+    stateTimeout: "0x00",
+    latestState: {
+      foo: AddressZero,
+      bar: 0,
+    } as SolidityValueType,
+    latestVersionNumber: 10,
+    appSeqNo: stateChannel ? stateChannel.numProposedApps : Math.ceil(1000 * Math.random()),
+    outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+    outcomeInterpreterParameters: {
       playerAddrs: [AddressZero, AddressZero],
-      amount: Zero,
+      amount: bigNumberifyJson(Zero),
       tokenAddress: AddressZero,
     },
-    /* multiAssetMultiPartyCoinTransferInterpreterParams */ undefined,
-    /* singleAssetTwoPartyCoinTransferInterpreterParams */ undefined,
-  );
+  });
 }
 
 export async function requestDepositRights(
@@ -167,7 +144,7 @@ export async function rescindDepositRights(
   const apps = await getInstalledAppInstances(node, multisigAddress);
   const depositAppInstance = apps.filter(
     (app) =>
-      app.appInterface.addr === DepositApp &&
+      app.appDefinition === DepositApp &&
       (app.latestState as DepositAppState).assetId === getAddressFromAssetId(assetId),
   )[0];
   if (!depositAppInstance) {
@@ -187,7 +164,7 @@ export async function getDepositApps(
   if (apps.length === 0) {
     return [];
   }
-  const depositApps = apps.filter((app) => app.appInterface.addr === DepositApp);
+  const depositApps = apps.filter((app) => app.appDefinition === DepositApp);
   if (tokenAddresses.length === 0) {
     return depositApps;
   }
@@ -326,11 +303,11 @@ export async function getAppInstance(
   return appInstance;
 }
 
-export async function getAppInstanceProposal(
+export async function getAppInstanceJson(
   node: CFCore,
   appIdentityHash: string,
   multisigAddress: string,
-): Promise<AppInstanceProposal> {
+): Promise<AppInstanceJson> {
   const proposals = await getProposedAppInstances(node, multisigAddress);
   const candidates = proposals.filter((proposal) => proposal.identityHash === appIdentityHash);
 
@@ -398,7 +375,7 @@ export async function getInstalledAppInstances(
 export async function getProposedAppInstances(
   node: CFCore,
   multisigAddress: string,
-): Promise<AppInstanceProposal[]> {
+): Promise<AppInstanceJson[]> {
   const rpc = {
     id: Date.now(),
     methodName: MethodNames.chan_getProposedAppInstances,
@@ -412,13 +389,11 @@ export async function getProposedAppInstances(
 export async function getMultisigBalance(
   multisigAddr: string,
   tokenAddress: string = AddressZero,
-): Promise<utils.BigNumber> {
+): Promise<BigNumber> {
   const provider = global[`wallet`].provider;
   return tokenAddress === AddressZero
     ? await provider.getBalance(multisigAddr)
-    : await new Contract(tokenAddress, ERC20.abi as any, provider).functions.balanceOf(
-        multisigAddr,
-      );
+    : await new Contract(tokenAddress, ERC20.abi, provider).balanceOf(multisigAddr);
 }
 
 export async function getMultisigAmountWithdrawn(
@@ -426,13 +401,14 @@ export async function getMultisigAmountWithdrawn(
   tokenAddress: string = AddressZero,
 ) {
   const provider = global[`wallet`].provider;
-  const multisig = new Contract(multisigAddr, MinimumViableMultisig.abi as any, provider);
+  const multisig = new Contract(multisigAddr, MinimumViableMultisig.abi, provider);
   try {
-    return await multisig.functions.totalAmountWithdrawn(tokenAddress);
+    return await multisig.totalAmountWithdrawn(tokenAddress);
   } catch (e) {
     if (!e.message.includes(CONTRACT_NOT_DEPLOYED)) {
-      console.log(CONTRACT_NOT_DEPLOYED);
-      throw new Error(e);
+      if (!(e.message).toUpperCase().includes(CALL_EXCEPTION)) {
+        throw new Error(e);
+      }
     }
     // multisig is deployed on withdrawal, if not
     // deployed withdrawal amount is 0
@@ -491,7 +467,7 @@ export async function getProposeDepositAppParams(
 export async function deposit(
   node: CFCore,
   multisigAddress: string,
-  amount: utils.BigNumber = One,
+  amount: BigNumber = One,
   responderNode: CFCore,
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ) {
@@ -505,7 +481,7 @@ export async function deposit(
           value: amount,
           to: multisigAddress,
         })
-      : await new Contract(getAddressFromAssetId(assetId), ERC20.abi as any, wallet).transfer(
+      : await new Contract(getAddressFromAssetId(assetId), ERC20.abi, wallet).transfer(
           multisigAddress,
           amount,
         );
@@ -538,13 +514,18 @@ export function constructInstallRpc(appIdentityHash: string, multisigAddress: st
   };
 }
 
-export function constructRejectInstallRpc(appIdentityHash: string, multisigAddress: string): Rpc {
+export function constructRejectInstallRpc(
+  appIdentityHash: string,
+  multisigAddress: string,
+  reason: string = "Rejected",
+): Rpc {
   return {
     id: Date.now(),
     methodName: MethodNames.chan_rejectInstall,
     parameters: {
       appIdentityHash,
       multisigAddress,
+      reason,
     } as MethodParams.RejectInstall,
   };
 }
@@ -555,12 +536,12 @@ export function constructAppProposalRpc(
   appDefinition: string,
   abiEncodings: AppABIEncodings,
   initialState: SolidityValueType,
-  initiatorDeposit: utils.BigNumber = Zero,
+  initiatorDeposit: BigNumber = Zero,
   initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
-  responderDeposit: utils.BigNumber = Zero,
+  responderDeposit: BigNumber = Zero,
   responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
-  defaultTimeout: utils.BigNumber = Zero,
-  stateTimeout: utils.BigNumber = defaultTimeout,
+  defaultTimeout: BigNumber = Zero,
+  stateTimeout: BigNumber = defaultTimeout,
 ): Rpc {
   const { outcomeType } = getAppContext(appDefinition, initialState);
   return {
@@ -585,35 +566,35 @@ export function constructAppProposalRpc(
 
 /**
  * @param MethodParams.proposal The parameters of the installation proposal.
- * @param appInstanceProposal The proposed app instance contained in the Node.
+ * @param AppInstanceJson The proposed app instance contained in the Node.
  */
 export function confirmProposedAppInstance(
   methodParams: MethodParam,
-  appInstanceProposal: AppInstanceProposal,
+  AppInstanceJson: AppInstanceJson,
   nonInitiatingNode: boolean = false,
 ) {
   const proposalParams = methodParams as MethodParams.ProposeInstall;
-  expect(proposalParams.abiEncodings).toEqual(appInstanceProposal.abiEncodings);
-  expect(proposalParams.appDefinition).toEqual(appInstanceProposal.appDefinition);
+  expect(proposalParams.abiEncodings).toEqual(AppInstanceJson.abiEncodings);
+  expect(proposalParams.appDefinition).toEqual(AppInstanceJson.appDefinition);
 
   if (nonInitiatingNode) {
     expect(proposalParams.initiatorDeposit).toEqual(
-      bigNumberify(appInstanceProposal.responderDeposit),
+      BigNumber.from(AppInstanceJson.responderDeposit),
     );
     expect(proposalParams.responderDeposit).toEqual(
-      bigNumberify(appInstanceProposal.initiatorDeposit),
+      BigNumber.from(AppInstanceJson.initiatorDeposit),
     );
   } else {
     expect(proposalParams.initiatorDeposit).toEqual(
-      bigNumberify(appInstanceProposal.initiatorDeposit),
+      BigNumber.from(AppInstanceJson.initiatorDeposit),
     );
     expect(proposalParams.responderDeposit).toEqual(
-      bigNumberify(appInstanceProposal.responderDeposit),
+      BigNumber.from(AppInstanceJson.responderDeposit),
     );
   }
 
-  expect(proposalParams.defaultTimeout).toEqual(toBN(appInstanceProposal.defaultTimeout));
-  expect(proposalParams.stateTimeout).toEqual(toBN(appInstanceProposal.stateTimeout));
+  expect(proposalParams.defaultTimeout).toEqual(toBN(AppInstanceJson.defaultTimeout));
+  expect(proposalParams.stateTimeout).toEqual(toBN(AppInstanceJson.stateTimeout));
 
   // TODO: uncomment when getState is implemented
   // expect(proposalParams.initialState).toEqual(appInstanceInitialState);
@@ -673,7 +654,7 @@ export async function collateralizeChannel(
   multisigAddress: string,
   node1: CFCore,
   node2: CFCore,
-  amount: utils.BigNumber = One,
+  amount: BigNumber = One,
   assetId: string = CONVENTION_FOR_ETH_ASSET_ID,
   collateralizeNode2: boolean = true,
 ): Promise<void> {
@@ -734,12 +715,12 @@ export async function installApp(
   multisigAddress: string,
   appDefinition: string,
   initialState?: SolidityValueType,
-  initiatorDeposit: utils.BigNumber = Zero,
+  initiatorDeposit: BigNumber = Zero,
   initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
-  responderDeposit: utils.BigNumber = Zero,
+  responderDeposit: BigNumber = Zero,
   responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
-  defaultTimeout: utils.BigNumber = Zero,
-  stateTimeout: utils.BigNumber = defaultTimeout,
+  defaultTimeout: BigNumber = Zero,
+  stateTimeout: BigNumber = defaultTimeout,
 ): Promise<[string, ProtocolParams.Propose]> {
   const appContext = getAppContext(appDefinition, initialState);
 
@@ -791,7 +772,7 @@ export async function installApp(
       // Sanity-check
       confirmProposedAppInstance(
         installationProposalRpc.parameters,
-        await getAppInstanceProposal(nodeB, msg.data.appInstanceId, multisigAddress),
+        await getAppInstanceJson(nodeB, msg.data.appInstanceId, multisigAddress),
       );
       resolve(msg.data.appInstanceId);
     });
@@ -801,7 +782,7 @@ export async function installApp(
 
   confirmProposedAppInstance(
     installationProposalRpc.parameters,
-    await getAppInstanceProposal(nodeA, appIdentityHash, multisigAddress),
+    await getAppInstanceJson(nodeA, appIdentityHash, multisigAddress),
   );
 
   // send nodeB install call
@@ -862,9 +843,9 @@ export async function confirmAppInstanceInstallation(
   appInstance: AppInstanceJson,
 ) {
   const params = bigNumberifyJson(proposedParams) as ProtocolParams.Propose;
-  expect(appInstance.appInterface.addr).toEqual(params.appDefinition);
-  expect(appInstance.appInterface.stateEncoding).toEqual(params.abiEncodings.stateEncoding);
-  expect(appInstance.appInterface.actionEncoding).toEqual(params.abiEncodings.actionEncoding);
+  expect(appInstance.appDefinition).toEqual(params.appDefinition);
+  expect(appInstance.abiEncodings.stateEncoding).toEqual(params.abiEncodings.stateEncoding);
+  expect(appInstance.abiEncodings.actionEncoding).toEqual(params.abiEncodings.actionEncoding);
   expect(appInstance.defaultTimeout).toEqual(params.defaultTimeout.toHexString());
   expect(appInstance.stateTimeout).toEqual(params.stateTimeout.toHexString());
   expect(appInstance.latestState).toEqual(params.initialState);
@@ -883,9 +864,9 @@ export function makeProposeCall(
   appDefinition: string,
   multisigAddress: string,
   initialState?: SolidityValueType,
-  initiatorDeposit: utils.BigNumber = Zero,
+  initiatorDeposit: BigNumber = Zero,
   initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
-  responderDeposit: utils.BigNumber = Zero,
+  responderDeposit: BigNumber = Zero,
   responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
 ): Rpc {
   const appContext = getAppContext(appDefinition, initialState);
@@ -908,9 +889,9 @@ export async function makeAndSendProposeCall(
   appDefinition: string,
   multisigAddress: string,
   initialState?: SolidityValueType,
-  initiatorDeposit: utils.BigNumber = Zero,
+  initiatorDeposit: BigNumber = Zero,
   initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
-  responderDeposit: utils.BigNumber = Zero,
+  responderDeposit: BigNumber = Zero,
   responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
 ): Promise<{
   appIdentityHash: string;
@@ -945,14 +926,14 @@ export async function makeAndSendProposeCall(
 export async function transferERC20Tokens(
   toAddress: string,
   tokenAddress: string = DolphinCoin,
-  contractABI: ContractABI = ERC20.abi,
-  amount: utils.BigNumber = One,
-): Promise<utils.BigNumber> {
+  contractABI: ContractABI = ERC20.abi as any,
+  amount: BigNumber = One,
+): Promise<BigNumber> {
   const deployerAccount = global["wallet"];
   const contract = new Contract(tokenAddress, contractABI, deployerAccount);
-  const balanceBefore: utils.BigNumber = await contract.functions.balanceOf(toAddress);
-  await contract.functions.transfer(toAddress, amount);
-  const balanceAfter: utils.BigNumber = await contract.functions.balanceOf(toAddress);
+  const balanceBefore: BigNumber = await contract.balanceOf(toAddress);
+  await contract.transfer(toAddress, amount);
+  const balanceAfter: BigNumber = await contract.balanceOf(toAddress);
   expect(balanceAfter.sub(balanceBefore)).toEqual(amount);
   return balanceAfter;
 }
@@ -963,14 +944,6 @@ export function getAppContext(
   senderAddress?: string, // needed for both types of transfer apps
   receiverAddress?: string, // needed for both types of transfer apps
 ): AppContext {
-  const checkForAddresses = () => {
-    const missingAddr = !senderAddress || !receiverAddress;
-    if (missingAddr && !initialState) {
-      throw new Error(
-        `Must have sender and redeemer addresses to generate initial state for either transfer app context`,
-      );
-    }
-  };
   const checkForInitialState = () => {
     if (!initialState) {
       throw new Error(`Must have initial state to generate app context`);
@@ -1056,7 +1029,7 @@ export async function getBalances(
   nodeB: CFCore,
   multisigAddress: string,
   assetId: AssetId,
-): Promise<[utils.BigNumber, utils.BigNumber]> {
+): Promise<[BigNumber, BigNumber]> {
   let tokenFreeBalanceState = await getFreeBalanceState(nodeA, multisigAddress, assetId);
 
   const tokenBalanceNodeA = tokenFreeBalanceState[nodeA.signerAddress];

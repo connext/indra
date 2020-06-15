@@ -11,7 +11,7 @@ export const migrate = async (hubUrl, wallet, ethUrl) => {
   if (!hubUrl) {
     return;
   }
-  const legacy = await Connext.createClient({ ethUrl, hubUrl, mnemonic: wallet.mnemonic });
+  const legacy = await Connext.createClient({ ethUrl, hubUrl, mnemonic: wallet.mnemonic.phrase });
   await legacy.start();
   const state = await legacy.getState();
   const latestState = state.persistent.latestValidState;

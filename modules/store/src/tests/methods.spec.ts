@@ -5,7 +5,6 @@ import {
   SetStateCommitmentJSON,
 } from "@connext/types";
 import { toBNJson, toBN, getRandomBytes32 } from "@connext/utils";
-import { expect } from "chai";
 
 import { StoreTypes } from "../types";
 
@@ -31,7 +30,6 @@ const clearAndClose = async (store) => {
 };
 
 describe("Methods", () => {
-
   describe("getSchemaVersion", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
@@ -101,6 +99,31 @@ describe("Methods", () => {
     });
   });
 
+  describe("incrementNumProposedApps", () => {
+    storeTypes.forEach((type) => {
+      it(`${type} - should work`, async () => {
+        const store = await createStore(type as StoreTypes);
+        await store.updateSchemaVersion();
+        const channel = TEST_STORE_CHANNEL;
+        const owners = channel.userIdentifiers;
+        const nullValue = await store.getStateChannelByOwners(owners);
+        expect(nullValue).to.be.undefined;
+        await store.createStateChannel(
+          channel,
+          TEST_STORE_MINIMAL_TX,
+          TEST_STORE_SET_STATE_COMMITMENT,
+        );
+        await store.incrementNumProposedApps(channel.multisigAddress);
+        const retrieved = await store.getStateChannelByOwners(owners);
+        expect(retrieved).to.deep.eq({
+          ...channel,
+          monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
+        });
+        await clearAndClose(store);
+      });
+    });
+  });
+
   describe("getStateChannelByAppIdentityHash", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
@@ -157,7 +180,6 @@ describe("Methods", () => {
             app,
             channel.freeBalanceAppInstance!,
             freeBalanceSetState1,
-            TEST_STORE_CONDITIONAL_COMMITMENT,
           );
           const retrieved = await store.getAppInstance(app.identityHash);
           expect(retrieved).to.deep.eq(app);
@@ -166,11 +188,6 @@ describe("Methods", () => {
           );
           expect(freeBalance.length).to.be.eq(1);
           expect(freeBalance[0]).to.containSubset(freeBalanceSetState1);
-          const conditional = await store.getConditionalTransactionCommitment(app.identityHash);
-          expect(conditional).to.containSubset({
-            ...TEST_STORE_CONDITIONAL_COMMITMENT,
-            appIdentityHash: app.identityHash,
-          });
         }
 
         // can be called multiple times in a row and preserve the data

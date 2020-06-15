@@ -183,7 +183,7 @@ class App extends React.Component {
     const useWalletConnext = this.getWalletConnext() || false;
     console.debug("useWalletConnext: ", useWalletConnext);
     if (!mnemonic) {
-      mnemonic = Wallet.createRandom().mnemonic;
+      mnemonic = Wallet.createRandom().mnemonic.phrase;
       localStorage.setItem("mnemonic", mnemonic);
     }
 

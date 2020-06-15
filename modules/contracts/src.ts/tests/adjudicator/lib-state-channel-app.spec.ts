@@ -1,6 +1,6 @@
 import { AppChallenge, ChallengeStatus } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { Wallet, utils } from "ethers";
+import { BigNumberish, Wallet, utils } from "ethers";
 
 import { setupContext } from "../context";
 import {
@@ -16,15 +16,13 @@ import {
 describe("LibStateChannelApp", () => {
   let wallet: Wallet;
 
-  let snapshotId: any;
-
   // apps/constants
   let ONCHAIN_CHALLENGE_TIMEOUT: number;
   let bob: Wallet;
   let alice: Wallet;
 
   // helpers
-  let hasPassed: (timeout: utils.BigNumberish) => Promise<boolean>;
+  let hasPassed: (timeout: BigNumberish) => Promise<boolean>;
   let isDisputable: (challenge?: AppChallenge) => Promise<boolean>;
   let setState: (versionNumber: number) => Promise<void>;
   let verifyChallenge: (expected: Partial<AppChallenge>) => Promise<void>;
@@ -39,7 +37,6 @@ describe("LibStateChannelApp", () => {
   });
 
   beforeEach(async () => {
-    snapshotId = await snapshot();
     const context = await setupContext();
 
     // apps/constants
@@ -62,10 +59,6 @@ describe("LibStateChannelApp", () => {
       );
 
     verifySignatures = context["verifySignatures"];
-  });
-
-  afterEach(async () => {
-    await restore(snapshotId);
   });
 
   describe("hasPassed", () => {

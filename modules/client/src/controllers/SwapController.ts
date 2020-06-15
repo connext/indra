@@ -18,7 +18,7 @@ import {
   notPositive,
   toBN,
 } from "@connext/utils";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
@@ -130,7 +130,7 @@ export class SwapController extends AbstractController {
   ////// PRIVATE METHODS
 
   private swapAppInstall = async (
-    amount: utils.BigNumber,
+    amount: BigNumber,
     toTokenAddress: Address,
     fromTokenAddress: Address,
     swapRate: string,

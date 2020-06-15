@@ -90,7 +90,7 @@ const uninstallMiddleware = async (
   middlewareContext: UninstallMiddlewareContext,
 ) => {
   const { appInstance } = middlewareContext;
-  const appDef = appInstance.appInterface.addr;
+  const appDef = appInstance.appDefinition;
   switch (appDef) {
     case network.contractAddresses.DepositApp: {
       await uninstallDepositMiddleware(middlewareContext, network.provider);

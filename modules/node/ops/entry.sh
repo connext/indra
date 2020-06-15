@@ -55,6 +55,11 @@ then
     ./src/main.ts
 else
   echo "Starting indra node in prod-mode"
-  exec node --no-deprecation dist/src/main.js
+  if [[ -n "$INSPECT" ]]
+  then
+    exec node --inspect=0.0.0.0:9229 --no-deprecation dist/src/main.js
+  else
+    exec node --no-deprecation dist/src/main.js
+  fi
 fi
 

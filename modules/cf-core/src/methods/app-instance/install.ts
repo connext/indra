@@ -6,7 +6,6 @@ import {
   ProtocolParams,
   PublicIdentifier,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
 
 import {
   NO_APP_IDENTITY_HASH_TO_INSTALL,
@@ -104,33 +103,12 @@ export async function install(
     router,
     ProtocolNames.install,
     {
-      appInitiatorIdentifier: proposal.initiatorIdentifier,
-      appInterface: { ...proposal.abiEncodings, addr: proposal.appDefinition },
-      appResponderIdentifier: proposal.responderIdentifier,
-      appSeqNo: proposal.appSeqNo,
-      defaultTimeout: toBN(proposal.defaultTimeout),
-      disableLimit: false,
-      identityHash: proposal.identityHash,
-      initialState: proposal.initialState,
-      initiatorBalanceDecrement: isSame
-        ? toBN(proposal.initiatorDeposit)
-        : toBN(proposal.responderDeposit),
-      initiatorDepositAssetId: isSame
-        ? proposal.initiatorDepositAssetId
-        : proposal.responderDepositAssetId,
+      proposal,
       initiatorIdentifier,
-      meta: proposal.meta,
-      multisigAddress: preProtocolStateChannel.multisigAddress,
-      outcomeType: proposal.outcomeType,
-      responderBalanceDecrement: isSame
-        ? toBN(proposal.responderDeposit)
-        : toBN(proposal.initiatorDeposit),
-      responderDepositAssetId: isSame
-        ? proposal.responderDepositAssetId
-        : proposal.initiatorDepositAssetId,
       responderIdentifier: isSame ? proposal.responderIdentifier : proposal.initiatorIdentifier,
-      stateTimeout: toBN(proposal.stateTimeout),
+      multisigAddress: preProtocolStateChannel.multisigAddress,
     } as ProtocolParams.Install,
+    preProtocolStateChannel,
   );
 
   return postProtocolChannel;

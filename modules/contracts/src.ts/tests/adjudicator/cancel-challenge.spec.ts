@@ -12,8 +12,6 @@ import {
 } from "../utils";
 
 describe("cancelDispute", () => {
-  let snapshotId: number;
-
   let appInstance: AppWithCounterClass;
   let bob: Wallet;
 
@@ -30,7 +28,6 @@ describe("cancelDispute", () => {
   let cancelDisputeAndVerify: (versionNumber: number, signatures?: string[]) => Promise<void>;
 
   beforeEach(async () => {
-    snapshotId = await snapshot();
     const context = await setupContext();
 
     // app instance
@@ -56,10 +53,6 @@ describe("cancelDispute", () => {
       );
     cancelDispute = context["cancelDispute"];
     cancelDisputeAndVerify = context["cancelDisputeAndVerify"];
-  });
-
-  afterEach(async () => {
-    await restore(snapshotId);
   });
 
   it("works", async () => {
@@ -89,16 +82,11 @@ describe("cancelDispute", () => {
     expect(await isProgressable()).to.be.true;
 
     const digest = computeCancelDisputeHash(appInstance.identityHash, toBN(versionNumber));
-    const signatures = await sortSignaturesBySignerAddress(
-      digest,
-      [
-        await (new ChannelSigner(getRandomPrivateKey()).signMessage(digest)),
-        await (new ChannelSigner(bob.privateKey).signMessage(digest)),
-      ],
-    );
-    await expect(cancelDispute(versionNumber, signatures)).to.be.revertedWith(
-      "Invalid signature",
-    );
+    const signatures = await sortSignaturesBySignerAddress(digest, [
+      await new ChannelSigner(getRandomPrivateKey()).signMessage(digest),
+      await new ChannelSigner(bob.privateKey).signMessage(digest),
+    ]);
+    await expect(cancelDispute(versionNumber, signatures)).to.be.revertedWith("Invalid signature");
   });
 
   it("fails if wrong version number submitted", async () => {

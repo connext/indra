@@ -12,7 +12,6 @@ import {
 
 describe("setAndProgressState", () => {
   let wallet: Wallet;
-  let snapshotId: any;
 
   // constants
   let state0: AppWithCounterState;
@@ -28,7 +27,6 @@ describe("setAndProgressState", () => {
   });
 
   beforeEach(async () => {
-    snapshotId = await snapshot();
     const context = await setupContext();
 
     // get constants
@@ -40,15 +38,13 @@ describe("setAndProgressState", () => {
     setAndProgressStateAndVerify = context["setAndProgressStateAndVerify"];
   });
 
-  afterEach(async () => {
-    await restore(snapshotId);
-  });
-
   it("should work if the timeout is 0", async () => {
     await setAndProgressStateAndVerify(1, state0, action);
   });
 
   it("should fail if timeout is nonzero", async () => {
-    await expect(setAndProgressState(1, state0, action, 13)).to.be.revertedWith("progressState called on app not in a progressable state");
+    await expect(setAndProgressState(1, state0, action, 13)).to.be.revertedWith(
+      "progressState called on app not in a progressable state",
+    );
   });
 });

@@ -70,7 +70,7 @@ export const artifacts = {
   Token,
   TwoPartyFixedOutcomeInterpreter,
   WithdrawApp,
-} as Artifacts;
+} as any;
 
 export {
   AppApplyActionFails,

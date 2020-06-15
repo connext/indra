@@ -1,15 +1,15 @@
 import { expect } from "chai";
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 
-import { bigNumberifyJson, deBigNumberifyJson, safeJsonStringify, safeJsonParse } from "./json";
+import { bigNumberifyJson, deBigNumberifyJson, safeJsonParse, safeJsonStringify } from "./json";
 
 const TEST_JSON = { test: "something", nullfied: undefined };
 const TEST_JSON_WITH_NULL = { test: "something", nullfied: null };
 const VALID_JSON_STRING = `{"test":"something","nullfied":null}`;
 const INVALID_JSON_STRING = VALID_JSON_STRING.replace("{", "");
 
-const TEST_JSON_WITH_BN_OBJ = { amount: new utils.BigNumber(1) };
-const TEST_JSON_WITH_BN_JSON = { amount: { _hex: "0x01" } };
+const TEST_JSON_WITH_BN_OBJ = { amount: BigNumber.from(1) };
+const TEST_JSON_WITH_BN_JSON = { amount: { _hex: "0x01", _isBigNumber: true } };
 // const TEST_JSON_WITH_BN_JSON = { amount: { _hex: "0x01", _isBigNumber: true } };
 
 describe("JSON", () => {

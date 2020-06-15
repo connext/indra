@@ -310,7 +310,7 @@ export class ConnextListener {
         return;
       } else {
         this.log.error(`Caught error, rejecting install: ${e.message}`);
-        await this.connext.rejectInstallApp(appIdentityHash);
+        await this.connext.rejectInstallApp(appIdentityHash, e.message);
         return;
       }
     }
@@ -427,7 +427,7 @@ export class ConnextListener {
       return;
     }
     const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
-      return app.appDefinitionAddress === appInstance.appInterface.addr;
+      return app.appDefinitionAddress === appInstance.appDefinition;
     });
 
     switch (registryAppInfo.name) {
@@ -440,7 +440,7 @@ export class ConnextListener {
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.LinkedTransfer,
           amount: transferAmount,
-          assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+          assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
           paymentId: appInstance.meta.paymentId,
           sender: appInstance.meta.sender,
           recipient: appInstance.meta.recipient,
@@ -460,7 +460,7 @@ export class ConnextListener {
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.HashLockTransfer,
           amount: transferAmount,
-          assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+          assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
           paymentId: HashZero,
           sender: appInstance.meta.sender,
           recipient: appInstance.meta.recipient,
@@ -481,7 +481,7 @@ export class ConnextListener {
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
           type: ConditionalTransferTypes.SignedTransfer,
           amount: transferAmount,
-          assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+          assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
           paymentId: transferState.paymentId,
           sender: appInstance.meta.sender,
           recipient: appInstance.meta.recipient,
@@ -514,7 +514,7 @@ export class ConnextListener {
       return;
     }
     const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
-      return app.appDefinitionAddress === appInstance.appInterface.addr;
+      return app.appDefinitionAddress === appInstance.appDefinition;
     });
 
     switch (registryAppInfo.name) {
@@ -523,7 +523,7 @@ export class ConnextListener {
         const params = {
           amount: withdrawState.transfers[0].amount,
           recipient: withdrawState.transfers[0].to,
-          assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+          assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
           nonce: withdrawState.nonce,
         };
         await this.connext.saveWithdrawCommitmentToStore(params, withdrawState.signatures);

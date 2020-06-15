@@ -31,7 +31,7 @@ export const uninstallDepositMiddleware = async (
   const currentMultisigBalance =
     latestState.assetId === CONVENTION_FOR_ETH_ASSET_ID
       ? await provider.getBalance(stateChannel.multisigAddress)
-      : await new Contract(latestState.assetId, ERC20.abi as any, provider).functions.balanceOf(
+      : await new Contract(latestState.assetId, ERC20.abi, provider).balanceOf(
           stateChannel.multisigAddress,
         );
 
@@ -58,8 +58,8 @@ export const proposeDepositMiddleware = async (
   const { proposal, stateChannel, params } = context;
   const depositApp = stateChannel.appInstances.find(([id, app]) => {
     return (
-      app.appInterface.addr === proposal.appDefinition &&
-      app.latestState["assetId"] === proposal.initialState["assetId"]
+      app.appDefinition === proposal.appDefinition &&
+      app.latestState["assetId"] === proposal.latestState["assetId"]
     );
   });
   if (depositApp) {

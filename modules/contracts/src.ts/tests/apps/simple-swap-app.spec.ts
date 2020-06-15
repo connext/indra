@@ -1,5 +1,5 @@
 import { getRandomAddress } from "@connext/utils";
-import { Contract, ContractFactory, utils } from "ethers";
+import { BigNumber, Contract, ContractFactory, utils } from "ethers";
 
 import { SimpleTwoPartySwapApp } from "../../artifacts";
 
@@ -9,7 +9,7 @@ const { defaultAbiCoder } = utils;
 
 type CoinTransfer = {
   to: string;
-  amount: utils.BigNumber;
+  amount: BigNumber;
 };
 
 type SimpleSwapAppState = {
@@ -37,7 +37,7 @@ describe("SimpleTwoPartySwapApp", () => {
   let simpleSwapApp: Contract;
 
   const computeOutcome = async (state: SimpleSwapAppState): Promise<string> => {
-    return simpleSwapApp.functions.computeOutcome(encodeAppState(state));
+    return simpleSwapApp.computeOutcome(encodeAppState(state));
   };
 
   before(async () => {
@@ -53,8 +53,8 @@ describe("SimpleTwoPartySwapApp", () => {
     it("can compute outcome with update", async () => {
       const senderAddr = getRandomAddress();
       const receiverAddr = getRandomAddress();
-      const tokenAmt = new utils.BigNumber(10000);
-      const ethAmt = new utils.BigNumber(500);
+      const tokenAmt = BigNumber.from(10000);
+      const ethAmt = BigNumber.from(500);
 
       const preState: SimpleSwapAppState = {
         coinTransfers: [
