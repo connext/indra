@@ -194,7 +194,7 @@ export class Agent {
       this.client
         .conditionalTransfer(params)
         .then(() => {
-          this.log.debug(`Initiated transfer with ID ${id}.`);
+          this.log.info(`Sent transfer ${abrv(id)}.`);
         })
         .catch((e) => {
           delete this.payments[id];
@@ -209,9 +209,8 @@ export class Agent {
       const timeout = 7500;
       delay(timeout).then(() => {
         if (this.payments[id]) {
-          this.log.error(`Payment ${id} timed out after ${timeout/1000} s`);
           delete this.payments[id];
-          reject();
+          return reject(new Error(`Payment ${id} timed out after ${timeout/1000} s`));
         }
       });
     });
