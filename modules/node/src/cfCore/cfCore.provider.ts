@@ -65,7 +65,7 @@ export const cfCoreProviderFactory: Provider = {
       log.warn(`Warning: Node's Token balance is zero`);
     }
 
-    log.info("CFCore created");
+    log.info(`CFCore created with identifier: ${cfCore.publicIdentifier}`);
     return cfCore;
   },
 };

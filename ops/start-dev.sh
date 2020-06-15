@@ -7,6 +7,11 @@ project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
+# Deploy with an attachable network so tests & the daicard can connect to individual components
+# Delete/recreate the network first to delay docker network slowdowns that have been happening
+docker network rm $project 2> /dev/null || true
+docker network create --attachable --driver overlay $project
+
 ####################
 # Load env vars
 
@@ -175,13 +180,6 @@ function new_secret {
   fi
 }
 new_secret "${project}_database_dev" "$project"
-
-# Deploy with an attachable network so tests & the daicard can connect to individual components
-if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
-then
-  id="`docker network create --attachable --driver overlay $project`"
-  echo "Created ATTACHABLE network with id $id"
-fi
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
