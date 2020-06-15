@@ -19,7 +19,6 @@ import {
   notLessThanOrEqualTo,
   toBN,
   delayAndThrow,
-  stringify,
 } from "@connext/utils";
 import { BigNumber, Contract, constants } from "ethers";
 

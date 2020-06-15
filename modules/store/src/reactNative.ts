@@ -9,7 +9,6 @@ import { WrappedAsyncStorage } from "./wrappers/asyncStorage";
 // keep synced with indra/docs/reference/store
 
 export { IBackupService, IStoreService } from "@connext/types";
-export { PisaBackupService } from "./pisaClient";
 
 export const getAsyncStore = (storage: IAsyncStorage, opts: StoreOptions = {}): IStoreService =>
   new StoreService(new WrappedAsyncStorage(storage, opts.prefix), opts.backupService, opts.logger);

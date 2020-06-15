@@ -10,7 +10,7 @@ import { getProvider } from "../utils";
 const { EtherSymbol } = constants;
 const { formatEther } = utils;
 
-const coreContracts = [
+export const coreContracts = [
   "ChallengeRegistry",
   "ConditionalTransactionDelegateTarget",
   "DepositApp",
@@ -26,6 +26,7 @@ const coreContracts = [
   "TimeLockedPassThrough",
   "TwoPartyFixedOutcomeInterpreter",
   "WithdrawApp",
+  "WithdrawInterpreter"
 ];
 
 export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<void> => {
