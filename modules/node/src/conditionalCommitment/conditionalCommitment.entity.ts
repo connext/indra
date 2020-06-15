@@ -1,4 +1,4 @@
-import { OneToOne, JoinColumn, PrimaryGeneratedColumn, Entity, Column, PrimaryColumn } from "typeorm";
+import { OneToOne, JoinColumn, Entity, Column, PrimaryColumn } from "typeorm";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { IsEthAddress, IsKeccak256Hash } from "../validate";
@@ -30,7 +30,7 @@ export class ConditionalTransactionCommitment {
   @Column("text", { array: true, nullable: true })
   signatures!: string[];
 
-  @OneToOne((type: any) => AppInstance)
+  @OneToOne((type: any) => AppInstance, { cascade: true })
   @JoinColumn()
   app!: AppInstance;
 }

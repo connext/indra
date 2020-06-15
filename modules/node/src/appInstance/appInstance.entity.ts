@@ -113,7 +113,7 @@ export class AppInstance<T extends AppName = any> {
     | SingleAssetTwoPartyCoinTransferInterpreterParamsJson
     | {};
 
-  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances)
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances, { nullable: true })
   channel!: Channel;
 
   @CreateDateColumn()

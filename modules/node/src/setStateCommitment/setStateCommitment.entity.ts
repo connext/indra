@@ -1,4 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, PrimaryColumn } from "typeorm";
+import {
+  Entity,
+  Column,
+  OneToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  PrimaryColumn,
+} from "typeorm";
 import { AppIdentity, HexString } from "@connext/types";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
@@ -30,7 +38,7 @@ export class SetStateCommitment {
   @Column("integer")
   versionNumber!: number;
 
-  @OneToOne((type: any) => AppInstance)
+  @OneToOne((type: any) => AppInstance, { cascade: true })
   @JoinColumn()
   app!: AppInstance;
 

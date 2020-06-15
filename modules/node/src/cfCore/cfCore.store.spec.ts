@@ -304,13 +304,13 @@ describe("CFCoreStore", () => {
       let channelEntity = await channelRepository.findByMultisigAddressOrThrow(multisigAddress);
       expect(channelEntity.appInstances.length).to.equal(1);
 
-      const appProposal = createAppInstanceJson();
+      const appProposal = createAppInstanceJson({ multisigAddress });
       await cfCoreStore.createAppProposal(
         multisigAddress,
         appProposal,
         2,
-        createSetStateCommitmentJSON(),
-        createConditionalTransactionCommitmentJSON(),
+        createSetStateCommitmentJSON({ appIdentityHash: appProposal.identityHash }),
+        createConditionalTransactionCommitmentJSON({ appIdentityHash: appProposal.identityHash }),
       );
 
       channelEntity = await channelRepository.findByMultisigAddressOrThrow(multisigAddress);

@@ -59,6 +59,7 @@ import { ChallengeRegistry } from "@connext/contracts";
 import { LoggerService } from "../logger/logger.service";
 import { CacheService } from "../caching/cache.service";
 import { instrument } from "../logger/instrument";
+import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
 
 const { Zero, AddressZero } = constants;
 const { defaultAbiCoder } = utils;
@@ -388,30 +389,29 @@ export class CFCoreStore implements IStoreService {
 
   async removeAppProposal(multisigAddress: string, appIdentityHash: string): Promise<void> {
     await instrument("CFCoreStore:removeAppProposal", async () => {
-      // called in protocol during install and reject protocols
-      // but we dont "remove" app proposals, they get upgraded. so
-      // simply return without editing, and set the status to `REJECTED`
-      // in the listener
-      const app = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
-      if (!app || app.type !== AppType.PROPOSAL) {
-        return;
-      }
-      app.type = AppType.REJECTED;
-
-      app.channel = undefined;
       await getManager().transaction(async (transactionalEntityManager) => {
-        await transactionalEntityManager.save(app);
         await transactionalEntityManager
           .createQueryBuilder()
-          .relation(Channel, "appInstances")
-          .of(multisigAddress)
-          .remove(app.identityHash);
+          .delete()
+          .from(SetStateCommitment)
+          .where(`"appIdentityHash" = :appIdentityHash`, { appIdentityHash })
+          .execute();
 
-        await this.cache.mergeCacheValues(
-          `appInstance:identityHash:${appIdentityHash}`,
-          60,
-          AppInstanceSerializer.toJSON(app),
-        );
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .delete()
+          .from(ConditionalTransactionCommitment)
+          .where(`"appIdentityHash" = :appIdentityHash`, { appIdentityHash })
+          .execute();
+
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .delete()
+          .from(AppInstance)
+          .where(`"identityHash" = :appIdentityHash`, { appIdentityHash })
+          .execute();
+
+        await this.cache.del(`appInstance:identityHash:${appIdentityHash}`);
         await instrument("removeAppProposal:mergeCache:channel", async () => {
           await this.cache.mergeCacheValuesFn(
             `channel:multisig:${multisigAddress}`,
