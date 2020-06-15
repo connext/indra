@@ -12,7 +12,11 @@ import {
 } from "typeorm";
 import { constants } from "ethers";
 
-import { AppInstance, AppInstanceJSON, AppInstanceSerializer } from "../appInstance/appInstance.entity";
+import {
+  AppInstance,
+  AppInstanceJSON,
+  AppInstanceSerializer,
+} from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsValidPublicIdentifier } from "../validate";
@@ -83,43 +87,46 @@ export class Channel {
 }
 
 export interface ChannelJSON {
-  multisigAddress: string
-  schemaVersion: number
-  addresses: CriticalStateChannelAddresses
-  userIdentifier: string
-  nodeIdentifier: string
-  available: boolean
-  activeCollateralizations: Collateralizations
-  appInstances: AppInstanceJSON[]
-  monotonicNumProposedApps: number
+  multisigAddress: string;
+  schemaVersion: number;
+  addresses: CriticalStateChannelAddresses;
+  userIdentifier: string;
+  nodeIdentifier: string;
+  available: boolean;
+  activeCollateralizations: Collateralizations;
+  appInstances: AppInstanceJSON[];
+  monotonicNumProposedApps: number;
   // withdrawalCommitments: WithdrawCommitmentJSON[]
   // setupCommitment: SetupCommitmentJSON[]
   // rebalanceProfiles: RebalanceProfileJSON[]
   // transactions: OnchainTransactionJSON[]
-  createdAt: number
-  updatedAt: number
+  createdAt: number;
+  updatedAt: number;
 }
 
 export const ChannelSerializer: JSONSerializer<Channel, ChannelJSON> = class {
-  static fromJSON (input: ChannelJSON): Channel {
+  static fromJSON(input: ChannelJSON): Channel {
     const chan = new Channel();
-    Object.assign(chan, deBigNumberifyJson({
-      multisigAddress: input.multisigAddress,
-      schemaVersion: input.schemaVersion,
-      addresses: input.addresses,
-      userIdentifier: input.userIdentifier,
-      nodeIdentifier: input.nodeIdentifier,
-      available: input.available,
-      activeCollateralizations: input.activeCollateralizations,
-      monotonicNumProposedApps: input.monotonicNumProposedApps,
-    }));
+    Object.assign(
+      chan,
+      deBigNumberifyJson({
+        multisigAddress: input.multisigAddress,
+        schemaVersion: input.schemaVersion,
+        addresses: input.addresses,
+        userIdentifier: input.userIdentifier,
+        nodeIdentifier: input.nodeIdentifier,
+        available: input.available,
+        activeCollateralizations: input.activeCollateralizations,
+        monotonicNumProposedApps: input.monotonicNumProposedApps,
+      }),
+    );
     chan.appInstances = input.appInstances.map(AppInstanceSerializer.fromJSON);
     chan.createdAt = new Date(input.createdAt);
     chan.updatedAt = new Date(input.updatedAt);
     return chan;
   }
 
-  static toJSON (input: Channel): ChannelJSON {
+  static toJSON(input: Channel): ChannelJSON {
     const res = bigNumberifyJson({
       multisigAddress: input.multisigAddress,
       schemaVersion: input.schemaVersion,
