@@ -581,10 +581,10 @@
       "txHash": "0x759f888a52af605e3925ff9dd04935397bec714c174ffb994ed0ed2a5c212037"
     },
     "ConditionalTransactionDelegateTarget": {
-      "address": "0xF12b5dd4EAD5F743C6BaA640B0216200e89B60Da",
-      "creationCodeHash": "0x2980c87bb90ef73565de73408695995648f90c360d95cdb8bf17530fecb0e340",
-      "runtimeCodeHash": "0x703501801ef934f3201725e7bce964951f561644a97d2f7e5fd90032c9abdafd",
-      "txHash": "0xbbe2a5589afacbd0758d8d258fc8b1d03005b72349851aabe2a15e423a7d2989"
+      "address": "0x38cF23C52Bb4B13F051Aec09580a2dE845a7FA35",
+      "creationCodeHash": "0x9d06758bf6a357162a9834e7cc0031b999a32cc3212c778efacd388e77cc89d1",
+      "runtimeCodeHash": "0x60a1a0bd66a3a307e750851baeb7e49d918bb74c79c80434a08d221b34a83e4e",
+      "txHash": "0x13069dd4c72f282f5d70ef36709ba16cc6aba5c5e0f7f687f48dc7af679b8e34"
     },
     "DepositApp": {
       "address": "0x345cA3e014Aaf5dcA488057592ee47305D9B3e10",
