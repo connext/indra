@@ -15,7 +15,7 @@ import { parseUnits } from "ethers/lib/utils";
 
 const nodeUrl = "http://localhost:8080";
 
-describe.skip("Custom token", () => {
+describe("Custom token", () => {
   const log = new ColorfulLogger("TestStartup", env.logLevel, true, "T");
 
   let app: INestApplication;
