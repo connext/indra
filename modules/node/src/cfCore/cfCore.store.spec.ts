@@ -77,11 +77,14 @@ const createTestChannelWithAppInstance = async (
     multisigAddress,
   );
 
-  const setStateCommitment = createSetStateCommitmentJSON();
   const appProposal = createAppInstanceJson({
     appSeqNo: 2,
     initiatorIdentifier: userIdentifier,
     responderIdentifier: nodeIdentifier,
+    multisigAddress,
+  });
+  const setStateCommitment = createSetStateCommitmentJSON({
+    appIdentityHash: appProposal.identityHash,
   });
   const conditionalCommitment = createConditionalTransactionCommitmentJSON({
     appIdentityHash: appProposal.identityHash,
