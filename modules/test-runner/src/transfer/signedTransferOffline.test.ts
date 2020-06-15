@@ -186,6 +186,7 @@ describe("Signed Transfer Offline", () => {
     receiver: IConnextClient,
     amount: BigNumber = toBN(10),
     paymentId: string = getRandomBytes32(),
+    waitForReceiverInstall: boolean = true,
   ) => {
     const preTransferSenderBalance = await sender.getFreeBalance(tokenAddress);
     const { chainId } = await sender.ethProvider.getNetwork();
@@ -202,6 +203,9 @@ describe("Signed Transfer Offline", () => {
       subgraphDeploymentID: receipt.subgraphDeploymentID,
       recipient: receiver.publicIdentifier,
     });
+    if (waitForReceiverInstall) {
+      await receiver.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
+    }
     const postTransferSenderBalance = await sender.getFreeBalance(tokenAddress);
     // verify user balance changes
     expect(
@@ -401,7 +405,7 @@ describe("Signed Transfer Offline", () => {
     const [sender, receiver] = await createAndFundClients(undefined, receiverConfig);
     const paymentId = await new Promise<string>(async (resolve, reject) => {
       try {
-        const id = await sendSignedTransfer(sender, receiver);
+        const id = await sendSignedTransfer(sender, receiver, undefined, undefined, false);
         expect(id).to.be.ok;
         await resolveFailingSignedTransfer({
           sender,
