@@ -1,3 +1,4 @@
+import { artifacts } from "@connext/contracts";
 import {
   Address,
   AppInstanceJson,
@@ -111,8 +112,7 @@ export class CFCore {
   ) {
     this.log = log.newContext("CFCore");
     const pureBytecodesMap = pureContractAppNames.reduce((bytecodeMap, name) => {
-      const artifact = require(`@connext/contracts/artifacts/${name}.json`);
-      bytecodeMap[this.contractAddresses[name]] = artifact.deployedBytecode;
+      bytecodeMap[this.contractAddresses[name]] = artifacts[name].deployedBytecode;
       return bytecodeMap;
     }, {});
     this.networkContext = {
