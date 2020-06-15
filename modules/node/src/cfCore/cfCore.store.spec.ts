@@ -248,7 +248,7 @@ describe("CFCoreStore", () => {
   });
 
   describe("App Proposal", () => {
-    it.only("createAppProposal", async () => {
+    it("createAppProposal", async () => {
       const { multisigAddress } = await createTestChannel(
         cfCoreStore,
         configService.getPublicIdentifier(),

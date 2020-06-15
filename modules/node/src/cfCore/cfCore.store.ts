@@ -31,7 +31,6 @@ import {
   setStateToJson,
 } from "../setStateCommitment/setStateCommitment.repository";
 import { ConfigService } from "../config/config.service";
-// eslint-disable-next-line max-len
 import {
   ConditionalTransactionCommitmentRepository,
   convertConditionalCommitmentToJson,
@@ -41,7 +40,6 @@ import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.re
 import { AppInstance, AppInstanceSerializer, AppType } from "../appInstance/appInstance.entity";
 import { SetStateCommitment } from "../setStateCommitment/setStateCommitment.entity";
 import { Channel, ChannelSerializer } from "../channel/channel.entity";
-import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
 import {
   ChallengeRepository,
   entityToStoredChallenge,
@@ -341,6 +339,7 @@ export class CFCoreStore implements IStoreService {
           {
             ...signedSetStateCommitment,
             versionNumber: BigNumber.from(signedSetStateCommitment.versionNumber).toNumber(),
+            stateTimeout: BigNumber.from(signedSetStateCommitment.stateTimeout).toHexString(),
           },
           signedConditionalTxCommitment,
         ]);
@@ -357,22 +356,24 @@ export class CFCoreStore implements IStoreService {
           appValues,
         );
 
-        await instrument('createAppInstance:cacheMerge channel.multisigAddress', () => this.cache.mergeCacheValuesFn(
-          `channel:multisig:${multisigAddress}`,
-          60,
-          (channel: Channel) => {
-            const exists = channel.appInstances.findIndex(
-              (app) => app.identityHash === appProposal.identityHash,
-            );
-            if (exists !== -1) {
-              channel.appInstances[exists] = appValues as any;
-            } else {
-              channel.appInstances.push(appValues as any);
-            }
-            channel.monotonicNumProposedApps = numProposedApps;
-            return channel;
-          },
-        ));
+        await instrument("createAppInstance:cacheMerge channel.multisigAddress", () =>
+          this.cache.mergeCacheValuesFn(
+            `channel:multisig:${multisigAddress}`,
+            60,
+            (channel: Channel) => {
+              const exists = channel.appInstances.findIndex(
+                (app) => app.identityHash === appProposal.identityHash,
+              );
+              if (exists !== -1) {
+                channel.appInstances[exists] = appValues as any;
+              } else {
+                channel.appInstances.push(appValues as any);
+              }
+              channel.monotonicNumProposedApps = numProposedApps;
+              return channel;
+            },
+          ),
+        );
 
         await instrument("createAppInstance:cacheSet channel.appIdentityHash", async () => {
           await this.cache.set(
@@ -411,7 +412,7 @@ export class CFCoreStore implements IStoreService {
           60,
           AppInstanceSerializer.toJSON(app),
         );
-        await instrument('removeAppProposal:mergeCache:channel', async () => {
+        await instrument("removeAppProposal:mergeCache:channel", async () => {
           await this.cache.mergeCacheValuesFn(
             `channel:multisig:${multisigAddress}`,
             60,
