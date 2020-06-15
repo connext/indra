@@ -1,6 +1,6 @@
-const path = require('path');
-const nodeExternals = require('webpack-node-externals');
-const webpack = require('webpack');
+const path = require("path");
+const nodeExternals = require("webpack-node-externals");
+const webpack = require("webpack");
 
 const mode = process.env.MODE === "release" ? "release" : "staging";
 const whitelist = mode === "release" ? "" : [/@connext\/.*/];
@@ -18,7 +18,7 @@ module.exports = {
   ],
 
   resolve: {
-    extensions: [".js", ".ts", ".json"],
+    extensions: [".js", ".wasm", ".ts", ".json"],
     symlinks: false,
   },
 
@@ -52,6 +52,10 @@ module.exports = {
             configFile: path.join(__dirname, "../tsconfig.json"),
           },
         },
+      },
+      {
+        test: /\.wasm$/,
+        loaders: ["wasm-loader"],
       },
     ],
   },
