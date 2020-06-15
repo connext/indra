@@ -365,9 +365,14 @@ describe("CFCoreStore", () => {
         appSeqNo: APP_SEQ_NO,
         initiatorIdentifier: userIdentifier,
         responderIdentifier: configService.getPublicIdentifier(),
+        multisigAddress,
       });
-      const setStateCommitment = createSetStateCommitmentJSON();
-      const conditionalTx = createConditionalTransactionCommitmentJSON();
+      const setStateCommitment = createSetStateCommitmentJSON({
+        appIdentityHash: appProposal.identityHash,
+      });
+      const conditionalTx = createConditionalTransactionCommitmentJSON({
+        appIdentityHash: appProposal.identityHash,
+      });
       await cfCoreStore.createAppProposal(
         multisigAddress,
         appProposal,
