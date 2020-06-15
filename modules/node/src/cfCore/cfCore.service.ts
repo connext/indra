@@ -304,13 +304,6 @@ export class CFCoreService {
       parameters,
     });
     this.logCfCoreMethodResult(MethodNames.chan_rejectInstall, rejectRes.result.result);
-    // update app status
-    const rejectedApp = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
-    if (!rejectedApp) {
-      throw new Error(`No app found after being rejected for app ${appIdentityHash}`);
-    }
-    rejectedApp.type = AppType.REJECTED;
-    await this.appInstanceRepository.save(rejectedApp);
     return rejectRes.result.result as MethodResults.RejectInstall;
   }
 
