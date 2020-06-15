@@ -31,7 +31,8 @@ export async function handleReceivedProtocolMessage(
   const { protocolRunner, store, router } = requestHandler;
   const log = requestHandler.log.newContext("CF-handleReceivedProtocolMessage");
 
-  const { data } = bigNumberifyJson(msg) as ProtocolMessage;
+  const msgBn = bigNumberifyJson(msg) as ProtocolMessage;
+  const { data } = msgBn;
 
   const { protocol, seq, params } = data;
 
@@ -50,6 +51,12 @@ export async function handleReceivedProtocolMessage(
     appInstance = appContext || undefined;
   } catch (e) {
     log.error(`Caught error running ${data.protocol} protocol, aborting. Error: ${e.stack}`);
+    // NOTE: see comments in IO_SEND_AND_WAIT opcode
+    const messageForCounterparty = prepareProtocolErrorMessage(msgBn, e.message);
+    await requestHandler.messagingService.send(
+      messageForCounterparty.data.to,
+      messageForCounterparty,
+    );
     return;
   }
 
@@ -164,3 +171,25 @@ function getSetupEventData(
 ): Omit<EventPayload["CREATE_CHANNEL_EVENT"], "counterpartyIdentifier"> {
   return { multisigAddress, owners };
 }
+
+const prepareProtocolErrorMessage = (
+  latestMsg: ProtocolMessage,
+  error: string,
+): ProtocolMessage => {
+  const {
+    data: { protocol, processID, to },
+    from,
+  } = latestMsg;
+  return {
+    data: {
+      protocol,
+      processID,
+      seq: UNASSIGNED_SEQ_NO,
+      to: from,
+      error,
+      customData: {},
+    },
+    type: EventNames.PROTOCOL_MESSAGE_EVENT,
+    from: to,
+  };
+};

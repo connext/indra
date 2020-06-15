@@ -9,6 +9,8 @@ registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"
 docker swarm init 2> /dev/null || true
 
 # Deploy with an attachable network in test-mode
+# Delete/recreate the network first to delay docker network slowdowns that have been happening
+docker network rm $project 2> /dev/null || true
 docker network create --attachable --driver overlay $project 2> /dev/null || true
 
 ####################

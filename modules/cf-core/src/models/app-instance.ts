@@ -32,7 +32,6 @@ import { CounterfactualApp } from "../contracts";
 
 const { Zero } = constants;
 const { defaultAbiCoder, keccak256 } = utils;
-
 /**
  * Representation of an AppInstance.
  *
@@ -287,16 +286,15 @@ export class AppInstance {
     action: SolidityValueType,
     provider: providers.JsonRpcProvider,
   ): Promise<SolidityValueType> {
-    const computedNextState = this.decodeAppState(
-      await this.toEthersContract(provider).applyAction(
-        this.encodedLatestState,
-        this.encodeAction(action),
-      ),
+    const encoded = await this.toEthersContract(provider).applyAction(
+      this.encodedLatestState,
+      this.encodeAction(action),
     );
+    const computedNextState = this.decodeAppState(encoded);
 
     // ethers returns an array of [ <each value by index>, <each value by key> ]
     // so we need to recursively clean this response before returning
-    const keyify = (templateObj: any, dataObj: any, key?: string): any => {
+    const keyify = (templateObj: any, dataObj: any, key?: string): Promise<any> => {
       const template = key ? templateObj[key] : templateObj;
       const data = key ? dataObj[key] : dataObj;
       let output;
@@ -318,7 +316,8 @@ export class AppInstance {
       return output;
     };
 
-    return bigNumberifyJson(keyify(this.state, computedNextState)) as any;
+    const keyified = keyify(this.state, computedNextState);
+    return bigNumberifyJson(keyified);
   }
 
   public encodeAction(action: SolidityValueType) {
