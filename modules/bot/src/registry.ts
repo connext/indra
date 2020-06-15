@@ -12,7 +12,7 @@ const log = new ColorfulLogger("Bot Registry", 3, true);
 
 app.get("/agent", async (req, res) => {
   const botsArray = Array.from(bots);
-  log.info(`Returning botsArray: ${botsArray}`);
+  log.debug(`Returning botsArray: ${botsArray}`);
   res.json(Array.from(bots));
 });
 

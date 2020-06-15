@@ -64,14 +64,14 @@ echo "Starting bot registry container"
     ${project}_builder -c '
       set -e
       echo "Bot registry container launched!"
-      cd modules/bot-registry
+      cd modules/bot
       export PATH=./node_modules/.bin:$PATH
       function finish {
         echo && echo "Bot container exiting.." && exit
       }
       trap finish SIGTERM SIGINT
       echo "Launching agent!";echo
-      npm run start
+      npm run start:registry
     '
   docker logs --follow bot-registry &
 

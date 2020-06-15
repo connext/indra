@@ -150,10 +150,14 @@ export class SwapRateService implements OnModuleInit {
     const swaps = this.config.getAllowedSwaps();
 
     for (const swap of swaps) {
-      // Check rate at each new block
-      provider.on("block", (blockNumber: number) =>
-        this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber),
-      );
+      if (swap.priceOracleType === PriceOracleTypes.UNISWAP) {
+        this.log.info(`Registering chain listener for swaps from ${swap.from} to ${swap.to}`);
+        provider.on("block", (blockNumber: number) =>
+          this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber),
+        );
+      } else if (swap.priceOracleType === PriceOracleTypes.HARDCODED) {
+        this.log.info(`Using hardcoded value for swaps from ${swap.from} to ${swap.to}`);
+      }
     }
   }
 }
