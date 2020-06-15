@@ -15,7 +15,6 @@ import {
   AssetId,
   AppABIEncodings,
   Address,
-  PureBytecodesMap,
 } from "@connext/types";
 import {
   appIdentityToHash,
@@ -31,11 +30,8 @@ import { Memoize } from "typescript-memoize";
 
 import { CounterfactualApp } from "../contracts";
 
-// TODO: WHAT ABOUT BROWSER?
-const pure_evm = require("@connext/pure-evm-wasm");
-
 const { Zero } = constants;
-const { defaultAbiCoder, keccak256, Interface } = utils;
+const { defaultAbiCoder, keccak256 } = utils;
 /**
  * Representation of an AppInstance.
  *
@@ -269,24 +265,8 @@ export class AppInstance {
   public async computeOutcome(
     state: SolidityValueType,
     provider: providers.JsonRpcProvider,
-    pureBytecodesMap: PureBytecodesMap,
   ): Promise<string> {
-    if (pureBytecodesMap[this.appDefinition]) {
-      const contractInterface = this.toEthersInterface();
-      const functionData = contractInterface.encodeFunctionData("computeOutcome", [
-        this.encodedLatestState,
-      ]);
-      const formatted = Uint8Array.from(Buffer.from(functionData.replace("0x", ""), "hex"));
-      const output = pure_evm.exec(
-        Uint8Array.from(Buffer.from(pureBytecodesMap[this.appDefinition].replace("0x", ""), "hex")),
-        formatted,
-      );
-
-      const outputValues = contractInterface.decodeFunctionResult("computeOutcome", output);
-      return outputValues[0];
-    } else {
-      return this.toEthersContract(provider).computeOutcome(this.encodeState(state));
-    }
+    return this.toEthersContract(provider).computeOutcome(this.encodeState(state));
   }
 
   public async isStateTerminal(
@@ -298,38 +278,19 @@ export class AppInstance {
 
   public async computeOutcomeWithCurrentState(
     provider: providers.JsonRpcProvider,
-    pureBytecodesMap: PureBytecodesMap,
   ): Promise<string> {
-    return this.computeOutcome(this.state, provider, pureBytecodesMap);
+    return this.computeOutcome(this.state, provider);
   }
 
   public async computeStateTransition(
     action: SolidityValueType,
     provider: providers.JsonRpcProvider,
-    pureBytecodesMap: PureBytecodesMap,
   ): Promise<SolidityValueType> {
-    let computedNextState: SolidityValueType;
-    if (pureBytecodesMap[this.appDefinition]) {
-      const contractInterface = this.toEthersInterface();
-      const functionData = contractInterface.encodeFunctionData("applyAction", [
-        this.encodedLatestState,
-        this.encodeAction(action),
-      ]);
-      const formatted = Uint8Array.from(Buffer.from(functionData.replace("0x", ""), "hex"));
-      const output = pure_evm.exec(
-        Uint8Array.from(Buffer.from(pureBytecodesMap[this.appDefinition].replace("0x", ""), "hex")),
-        formatted,
-      );
-
-      const outputValues = contractInterface.decodeFunctionResult("applyAction", output);
-      computedNextState = this.decodeAppState(outputValues[0]);
-    } else {
-      const encoded = await this.toEthersContract(provider).applyAction(
-        this.encodedLatestState,
-        this.encodeAction(action),
-      );
-      computedNextState = this.decodeAppState(encoded);
-    }
+    const encoded = await this.toEthersContract(provider).applyAction(
+      this.encodedLatestState,
+      this.encodeAction(action),
+    );
+    const computedNextState = this.decodeAppState(encoded);
 
     // ethers returns an array of [ <each value by index>, <each value by key> ]
     // so we need to recursively clean this response before returning
@@ -373,9 +334,5 @@ export class AppInstance {
 
   public toEthersContract(provider: providers.JsonRpcProvider) {
     return new Contract(this.appDefinition, CounterfactualApp.abi, provider);
-  }
-
-  public toEthersInterface() {
-    return new Interface(CounterfactualApp.abi);
   }
 }

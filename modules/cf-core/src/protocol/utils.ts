@@ -8,7 +8,6 @@ import {
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
   AssetId,
-  PureBytecodesMap,
 } from "@connext/types";
 import { logTime, recoverAddressFromChannelMessage, getAddressFromAssetId } from "@connext/utils";
 import { BigNumber, providers, utils, constants } from "ethers";
@@ -68,7 +67,6 @@ export async function stateChannelClassFromStoreByMultisig(
 export async function computeTokenIndexedFreeBalanceIncrements(
   appInstance: AppInstance,
   provider: providers.JsonRpcProvider,
-  pureBytecodesMap: PureBytecodesMap,
   encodedOutcomeOverride: string = "",
   log?: ILoggerService,
 ): Promise<TokenIndexedCoinTransferMap> {
@@ -77,10 +75,7 @@ export async function computeTokenIndexedFreeBalanceIncrements(
   const checkpoint = Date.now();
   if (!encodedOutcomeOverride || encodedOutcomeOverride === "") {
     try {
-      encodedOutcomeOverride = await appInstance.computeOutcomeWithCurrentState(
-        provider,
-        pureBytecodesMap,
-      );
+      encodedOutcomeOverride = await appInstance.computeOutcomeWithCurrentState(provider);
     } catch (e) {
       throw new Error(`Unable to compute outcome: ${e.stack || e.message}`);
     }
