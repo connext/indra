@@ -59,7 +59,11 @@ describe("Signed Transfer Offline", () => {
   const createAndFundSender = async (
     config: Partial<ClientTestMessagingInputOpts> = {},
   ): Promise<IConnextClient> => {
-    const client = await createClientWithMessagingLimits({ ...config, signer: senderSigner });
+    const client = await createClientWithMessagingLimits({
+      ...config,
+      signer: senderSigner,
+      id: "sender",
+    });
     await fundChannel(client, TOKEN_AMOUNT, tokenAddress);
     return client;
   };
@@ -68,7 +72,11 @@ describe("Signed Transfer Offline", () => {
   const createAndCollateralizeReceiver = async (
     config: Partial<ClientTestMessagingInputOpts> = {},
   ): Promise<IConnextClient> => {
-    const client = await createClientWithMessagingLimits({ ...config, signer: receiverSigner });
+    const client = await createClientWithMessagingLimits({
+      ...config,
+      signer: receiverSigner,
+      id: "receiver",
+    });
     await new Promise(async (resolve) => {
       client.on(EventNames.UNINSTALL_EVENT, async (msg) => {
         const freeBalance = await client.getFreeBalance(tokenAddress);
@@ -215,13 +223,13 @@ describe("Signed Transfer Offline", () => {
     let receiver;
     switch (toRecreate) {
       case "sender": {
-        sender = await createClient({ signer, store });
+        sender = await createClient({ signer, store, id: "RecreatedSender" });
         receiver = counterparty;
         break;
       }
       case "receiver": {
         sender = counterparty;
-        receiver = await createClient({ signer, store });
+        receiver = await createClient({ signer, store, id: "RecreatedReceiver" });
         break;
       }
       default: {
