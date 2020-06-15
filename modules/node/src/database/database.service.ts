@@ -128,7 +128,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
     return {
       ...this.config.getPostgresConfig(),
       entities,
-      logging: ["info", "query"],
+      logging: ["info"],
       migrations,
       migrationsRun: true,
       synchronize: false,
