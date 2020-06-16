@@ -80,7 +80,6 @@ export class AppInstance {
       | SingleAssetTwoPartyCoinTransferInterpreterParams,
     public readonly meta?: any,
     public readonly latestAction?: any,
-    public readonly bytecode?: HexString,
   ) {}
 
   get outcomeInterpreterParameters() {
@@ -109,7 +108,6 @@ export class AppInstance {
       bigNumberifyJson(deserialized.outcomeInterpreterParameters),
       deserialized.meta,
       deserialized.latestAction,
-      deserialized.bytecode,
     );
   }
 
@@ -121,7 +119,6 @@ export class AppInstance {
       abiEncodings: this.abiEncodings,
       appDefinition: this.appDefinition,
       appSeqNo: this.appSeqNo,
-      bytecode: this.bytecode,
       defaultTimeout: this.defaultTimeout,
       identityHash: this.identityHash,
       initiatorDeposit: this.initiatorDeposit,
@@ -272,13 +269,14 @@ export class AppInstance {
   public async computeOutcome(
     state: SolidityValueType,
     provider: providers.JsonRpcProvider,
+    bytecode?: HexString,
   ): Promise<string> {
-    if (this.bytecode) {
+    if (bytecode) {
       const functionData = appInterface.encodeFunctionData("computeOutcome", [
         this.encodedLatestState,
       ]);
       const output = await execEvmBytecode(
-        this.bytecode,
+        bytecode,
         functionData,
       );
       return appInterface.decodeFunctionResult("computeOutcome", output)[0];
@@ -296,21 +294,23 @@ export class AppInstance {
 
   public async computeOutcomeWithCurrentState(
     provider: providers.JsonRpcProvider,
+    bytecode?: HexString,
   ): Promise<string> {
-    return this.computeOutcome(this.state, provider);
+    return this.computeOutcome(this.state, provider, bytecode);
   }
 
   public async computeStateTransition(
     action: SolidityValueType,
     provider: providers.JsonRpcProvider,
+    bytecode?: HexString,
   ): Promise<SolidityValueType> {
     let computedNextState: SolidityValueType;
-    if (this.bytecode) {
+    if (bytecode) {
       const functionData = appInterface.encodeFunctionData("applyAction", [
         this.encodedLatestState,
         this.encodeAction(action),
       ]);
-      const output = await execEvmBytecode(this.bytecode, functionData);
+      const output = await execEvmBytecode(bytecode, functionData);
       computedNextState = this.decodeAppState(
         appInterface.decodeFunctionResult("applyAction", output)[0],
       );

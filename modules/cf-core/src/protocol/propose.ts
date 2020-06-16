@@ -1,4 +1,3 @@
-import { artifacts } from "@connext/contracts";
 import {
   Opcode,
   ProposeMiddlewareContext,
@@ -6,7 +5,6 @@ import {
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
-  PureActionApps,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@connext/utils";
 
@@ -26,7 +24,7 @@ const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } 
  */
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
-    const { message, network, preProtocolStateChannel } = context;
+    const { message, preProtocolStateChannel } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
@@ -65,14 +63,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       true,
     );
 
-    // If this app's action is pure, provide bytecode to use for faster in-memory evm calls
-    const appEntry = Object.entries(network.contractAddresses).find(
-      entry => entry[1] === appDefinition,
-    );
-    const bytecode = appEntry && appEntry[0] && PureActionApps.includes(appEntry[0])
-      ? artifacts[appEntry[0]].deployedBytecode
-      : undefined;
-
     const proposal = new AppInstance(
       /* multisigAddres */ preProtocolStateChannel!.multisigAddress,
       /* initiator */ initiatorIdentifier,
@@ -91,8 +81,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       /* outcomeType */ outcomeType,
       /* interpreterParamsInternal*/ interpreterParams,
       /* meta */ meta,
-      /* latestAction */ undefined,
-      /* bytecode */ bytecode,
     );
     const proposalJson = proposal.toJson();
 

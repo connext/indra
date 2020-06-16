@@ -1,5 +1,4 @@
 import {
-  ILoggerService,
   Opcode,
   ProtocolMessageData,
   ProtocolNames,
@@ -7,15 +6,18 @@ import {
   ProtocolRoles,
   UninstallMiddlewareContext,
 } from "@connext/types";
-import { providers } from "ethers";
 import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import { AppInstance, StateChannel } from "../models";
+import { StateChannel } from "../models";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
-import { assertIsValidSignature, computeTokenIndexedFreeBalanceIncrements } from "./utils";
+import {
+  assertIsValidSignature,
+  computeTokenIndexedFreeBalanceIncrements,
+  getPureBytecode,
+} from "./utils";
 
 const protocol = ProtocolNames.uninstall;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
@@ -67,7 +69,14 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       log.info(`Action provided. Finalizing app before uninstall`);
       // apply action
       substart = Date.now();
-      const newState = await appToUninstall.computeStateTransition(action, network.provider);
+      const newState = await appToUninstall.computeStateTransition(
+        action,
+        network.provider,
+        getPureBytecode(
+          appToUninstall.appDefinition,
+          network.contractAddresses,
+        ),
+      );
       logTime(log, substart, `[${processID}] computeStateTransition for action complete`);
       // ensure state is finalized after applying action
       if (!(newState as any).finalized) {
@@ -88,12 +97,17 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const preUninstallApp = preUninstallStateChannel.appInstances.get(appToUninstall.identityHash)!;
 
     substart = Date.now();
-    const postProtocolStateChannel = await computeStateTransition(
-      network.provider,
-      preUninstallStateChannel,
+
+    const postProtocolStateChannel = preUninstallStateChannel.uninstallApp(
       preUninstallApp,
-      log,
+      await computeTokenIndexedFreeBalanceIncrements(
+        preUninstallApp,
+        network.provider,
+        undefined,
+        log,
+      ),
     );
+
     logTime(log, substart, `[${processID}] computeStateTransition for uninstall complete`);
 
     substart = Date.now();
@@ -200,7 +214,14 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       log.info(`Action provided. Finalizing app before uninstall`);
       // apply action
       substart = Date.now();
-      const newState = await appToUninstall.computeStateTransition(action, network.provider);
+      const newState = await appToUninstall.computeStateTransition(
+        action,
+        network.provider,
+        getPureBytecode(
+          appToUninstall.appDefinition,
+          network.contractAddresses,
+        ),
+      );
       logTime(log, substart, `[${processID}] computeStateTransition for action complete`);
       // ensure state is finalized after applying action
       if (!(newState as any).finalized) {
@@ -221,12 +242,17 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const preUninstallApp = preUninstallStateChannel.appInstances.get(appToUninstall.identityHash)!;
 
     substart = Date.now();
-    const postProtocolStateChannel = await computeStateTransition(
-      network.provider,
-      preUninstallStateChannel,
+
+    const postProtocolStateChannel = preUninstallStateChannel.uninstallApp(
       preUninstallApp,
-      log,
+      await computeTokenIndexedFreeBalanceIncrements(
+        preUninstallApp,
+        network.provider,
+        undefined,
+        log,
+      ),
     );
+
     logTime(log, substart, `[${processID}] computeStateTransition for uninstall complete`);
 
     substart = Date.now();
@@ -292,15 +318,3 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, start, `[${processID}] Response finished`);
   },
 };
-
-async function computeStateTransition(
-  provider: providers.JsonRpcProvider,
-  stateChannel: StateChannel,
-  appInstance: AppInstance,
-  log?: ILoggerService,
-) {
-  return stateChannel.uninstallApp(
-    appInstance,
-    await computeTokenIndexedFreeBalanceIncrements(appInstance, provider, undefined, log),
-  );
-}
