@@ -106,15 +106,40 @@ export default {
     log.info(`Registering address ${client.publicIdentifier}`);
     await addAgentIdentifierToIndex(client.publicIdentifier);
 
+    // Register protocol failure listeners
+    let failed: string | undefined = undefined;
+    client.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, (msg) => {
+      failed = `Stopping interval, caught propose install failed event: ${stringify(msg)}`;
+    });
+    client.on(EventNames.INSTALL_FAILED_EVENT, (msg) => {
+      failed = `Stopping interval, caught install failed event: ${stringify(msg)}`;
+    });
+    client.on(EventNames.UPDATE_STATE_FAILED_EVENT, (msg) => {
+      failed = `Stopping interval, caught take action failed event: ${stringify(msg)}`;
+    });
+    client.on(EventNames.UNINSTALL_FAILED_EVENT, (msg) => {
+      failed = `Stopping interval, caught uninstall failed event: ${stringify(msg)}`;
+    });
+
     // Setup agent logic to transfer on an interval
     let sentPayments = 1;
     await intervalPromise(
       async (_, stop) => {
         log.debug(`heartbeat thump thump`);
 
+        // stop on any protocol failures
+        if (failed) {
+          log.error(failed);
+          await removeAgentIdentifierFromIndex(client.publicIdentifier);
+          stop();
+          return;
+        }
+
         // Only send up to the limit of payments
         if (sentPayments >= limit) {
+          await removeAgentIdentifierFromIndex(client.publicIdentifier);
           stop();
+          return;
         }
 
         // Deposit if agent is out of funds + if a request isn't already in flight
@@ -145,7 +170,9 @@ export default {
         try {
           // Send transfer
           log.info(
-            `Sending transfer #${sentPayments}/${limit} to ${abrv(receiverIdentifier)} with id ${abrv(paymentId)}`,
+            `Sending transfer #${sentPayments}/${limit} to ${abrv(
+              receiverIdentifier,
+            )} with id ${abrv(paymentId)}`,
           );
           await agent.pay(receiverIdentifier, receiverSigner, TRANSFER_AMT, paymentId);
           end[paymentId] = Date.now();
@@ -156,7 +183,9 @@ export default {
         } catch (err) {
           log.error(`Error sending tranfer: ${err.message}`);
           exitCode += 1;
+          await removeAgentIdentifierFromIndex(client.publicIdentifier);
           stop();
+          return;
         }
       },
       // add slight randomness to interval so that it's somewhere between
@@ -187,7 +216,11 @@ export default {
 
     while (true) {
       if (Date.now() - agent.lastReceivedOn > argv.interval * 5) {
-        log.warn(`No payments recieved for ${Date.now() - agent.lastReceivedOn} ms. Bot ${client.publicIdentifier} is exiting.`);
+        log.warn(
+          `No payments recieved for ${Date.now() - agent.lastReceivedOn} ms. Bot ${
+            client.publicIdentifier
+          } is exiting.`,
+        );
         break;
       } else {
         await delay(argv.interval);
