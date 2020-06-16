@@ -16,7 +16,7 @@ export class storedProcedureUpdateAppInstance1592309341833 implements MigrationI
         "latestState" = app_instance_json->'latestState',
         "stateTimeout" = app_instance_json->>'stateTimeout', 
         "latestVersionNumber" = (app_instance_json->>'latestVersionNumber')::INTEGER,
-        "updatedAt" = DEFAULT 
+        "updatedAt" = CURRENT_TIMESTAMP 
       WHERE "identityHash" = app_instance_json->>'identityHash';
       
       UPDATE "set_state_commitment" SET 
@@ -26,8 +26,8 @@ export class storedProcedureUpdateAppInstance1592309341833 implements MigrationI
         "signatures" = signed_set_state_commitment->'signatures', 
         "stateTimeout" = signed_set_state_commitment->>'stateTimeout', 
         "versionNumber" = (signed_set_state_commitment->>'versionNumber')::INTEGER, 
-        "updatedAt" = DEFAULT
-      WHERE "appIdentityHash" = free_balance_app_instance->>'identityHash';
+        "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "appIdentityHash" = app_instance_json->>'identityHash';
     
         RETURN TRUE;
     END;

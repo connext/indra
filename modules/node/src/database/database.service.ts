@@ -59,6 +59,7 @@ import { dropIdentifiers1592148854323 } from "../../migrations/1592148854323-dro
 import { storedProcedureCreateAppProposal1592290983473 } from "../../migrations/1592290983473-stored-procedure-create-app-proposal";
 import { storedProcedureCreateAppInstance1592291092044 } from "../../migrations/1592291092044-stored-procedure-create-app-instance";
 import { storedProcedureUpdateAppInstance1592309341833 } from "../../migrations/1592309341833-stored-procedure-update-app-instance";
+import { storedProcedureRemoveAppInstance1592310334011 } from "../../migrations/1592310334011-stored-procedure-remove-app-instance";
 
 export const entities = [
   AppInstance,
@@ -117,6 +118,7 @@ export const migrations = [
   storedProcedureCreateAppProposal1592290983473,
   storedProcedureCreateAppInstance1592291092044,
   storedProcedureUpdateAppInstance1592309341833,
+  storedProcedureRemoveAppInstance1592310334011,
 ];
 
 @Injectable()
