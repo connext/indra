@@ -27,6 +27,6 @@
     "ethereum-waffle": "3.0.0-beta.2",
     "mocha": "7.2.0",
     "ts-mocha": "7.0.0",
-    "typescript": "3.9.3"
+    "typescript": "3.9.5"
   }
 }

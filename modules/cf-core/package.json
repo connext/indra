@@ -54,6 +54,6 @@
     "rollup-plugin-typescript2": "0.27.1",
     "ts-jest": "26.1.0",
     "ts-mockito": "2.5.0",
-    "typescript": "3.9.3"
+    "typescript": "3.9.5"
   }
 }
