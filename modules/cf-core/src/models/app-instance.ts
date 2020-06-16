@@ -32,9 +32,11 @@ import { Memoize } from "typescript-memoize";
 import { execEvmBytecode } from "../pure-evm";
 import { CounterfactualApp } from "../contracts";
 
-
 const { Zero } = constants;
 const { defaultAbiCoder, keccak256, Interface } = utils;
+
+const appInterface = new Interface(CounterfactualApp.abi);
+
 /**
  * Representation of an AppInstance.
  *
@@ -271,15 +273,14 @@ export class AppInstance {
     pureBytecodesMap: PureBytecodesMap,
   ): Promise<string> {
     if (pureBytecodesMap[this.appDefinition]) {
-      const contractInterface = this.toEthersInterface();
-      const functionData = contractInterface.encodeFunctionData("computeOutcome", [
+      const functionData = appInterface.encodeFunctionData("computeOutcome", [
         this.encodedLatestState,
       ]);
       const output = await execEvmBytecode(
         pureBytecodesMap[this.appDefinition],
         functionData,
       );
-      return contractInterface.decodeFunctionResult("computeOutcome", output)[0];
+      return appInterface.decodeFunctionResult("computeOutcome", output)[0];
     } else {
       return this.toEthersContract(provider).computeOutcome(this.encodeState(state));
     }
@@ -306,14 +307,13 @@ export class AppInstance {
   ): Promise<SolidityValueType> {
     let computedNextState: SolidityValueType;
     if (pureBytecodesMap[this.appDefinition]) {
-      const contractInterface = this.toEthersInterface();
-      const functionData = contractInterface.encodeFunctionData("applyAction", [
+      const functionData = appInterface.encodeFunctionData("applyAction", [
         this.encodedLatestState,
         this.encodeAction(action),
       ]);
       const output = await execEvmBytecode(pureBytecodesMap[this.appDefinition], functionData);
       computedNextState = this.decodeAppState(
-        contractInterface.decodeFunctionResult("applyAction", output)[0],
+        appInterface.decodeFunctionResult("applyAction", output)[0],
       );
     } else {
       const encoded = await this.toEthersContract(provider).applyAction(
@@ -365,9 +365,5 @@ export class AppInstance {
 
   public toEthersContract(provider: providers.JsonRpcProvider) {
     return new Contract(this.appDefinition, CounterfactualApp.abi, provider);
-  }
-
-  public toEthersInterface() {
-    return new Interface(CounterfactualApp.abi);
   }
 }

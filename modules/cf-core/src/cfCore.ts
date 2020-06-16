@@ -111,14 +111,13 @@ export class CFCore {
     private readonly lockService: ILockService,
   ) {
     this.log = log.newContext("CFCore");
-    const pureBytecodesMap = pureContractAppNames.reduce((bytecodeMap, name) => {
-      bytecodeMap[this.contractAddresses[name]] = artifacts[name].deployedBytecode;
-      return bytecodeMap;
-    }, {});
     this.networkContext = {
       contractAddresses: this.contractAddresses,
       provider: this.provider,
-      pureBytecodesMap,
+      pureBytecodesMap: pureContractAppNames.reduce((bytecodeMap, name) => {
+        bytecodeMap[this.contractAddresses[name]] = artifacts[name].deployedBytecode;
+        return bytecodeMap;
+      }, {}),
     };
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();

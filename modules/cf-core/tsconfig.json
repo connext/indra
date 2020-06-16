@@ -1,7 +1,6 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "allowJs": true,
     "declaration": true,
     "declarationDir": "dist/",
     "module": "commonjs",
@@ -11,5 +10,5 @@
     "typeRoots": ["../../node_modules/@types"],
     "types": ["jest"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src"]
 }
