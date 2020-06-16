@@ -17,6 +17,7 @@ import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { DepositService } from "../deposit/deposit.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
+import { DEFAULT_DECIMALS } from "../constants";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
@@ -219,9 +220,20 @@ export class ChannelService {
     // convert targets to proper units for token
     if (assetId !== AddressZero) {
       const token = new Contract(assetId, ERC20.abi, this.configService.getEthProvider());
-      const decimals = await token.decimals();
-      if (decimals !== 18) {
-        this.log.warn(`Token has ${decimals} decimals, converting rebalance targets`);
+      let decimals = DEFAULT_DECIMALS;
+      try {
+        decimals = await token.decimals();
+      } catch (e) {
+        this.log.error(
+          `Could not retrieve decimals from token, proceeding with decimals = 18... Error: ${e.message}`,
+        );
+      }
+      if (decimals !== DEFAULT_DECIMALS) {
+        this.log.warn(
+          `Token has ${decimals} decimals, converting rebalance targets. Pre-conversion: ${stringify(
+            targets,
+          )}`,
+        );
         targets.collateralizeThreshold = BigNumber.from(
           formatUnits(targets.collateralizeThreshold, decimals).split(".")[0],
         );
@@ -229,7 +241,7 @@ export class ChannelService {
         targets.reclaimThreshold = BigNumber.from(
           formatUnits(targets.reclaimThreshold, decimals).split(".")[0],
         );
-        this.log.warn(`Converted rebalance targets: ${targets}`);
+        this.log.warn(`Converted rebalance targets: ${stringify(targets)}`);
       }
     }
     this.log.debug(`Rebalancing target: ${stringify(targets)}`);

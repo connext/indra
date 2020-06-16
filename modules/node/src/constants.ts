@@ -11,6 +11,7 @@ export enum Network {
 // to account for 2 IO_SEND_AND_WAITs in install
 export const LOCK_SERVICE_TTL = 11_000;
 export const TIMEOUT_BUFFER = 100;
+export const DEFAULT_DECIMALS = 18;
 
 // PROVIDERS
 export const AdminMessagingProviderId = "ADMIN_MESSAGING";
