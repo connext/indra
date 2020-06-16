@@ -250,7 +250,11 @@ export class CFCore {
         // counterparty is waiting for a response should be sent
         const { error } = msg.data;
         if (error) {
-          throw new Error(`Counterparty execution of ${data.protocol} failed: ${error}`);
+          throw new Error(
+            `Counterparty execution of ${
+              data.protocol
+            } failed: ${error}. \nCounterparty was responding to: ${stringify(data)}`,
+          );
         }
 
         return { data: msg.data, channel, appContext };
