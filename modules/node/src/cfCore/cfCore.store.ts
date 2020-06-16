@@ -447,52 +447,15 @@ export class CFCoreStore implements IStoreService {
       nodeIdentifier: this.configService.getPublicIdentifier(),
     };
 
-    await getManager().transaction(async (transactionalEntityManager) => {
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .update(AppInstance)
-        .set(update)
-        .where("identityHash = :identityHash", {
-          identityHash,
-        })
-        .execute();
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .update(AppInstance)
-        .set({
-          latestState: freeBalanceAppInstance.latestState as any,
-          stateTimeout: freeBalanceAppInstance.stateTimeout,
-          latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
-        })
-        .where("identityHash = :identityHash", {
-          identityHash: freeBalanceAppInstance.identityHash,
-        })
-        .execute();
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .relation(AppInstance, "channel")
-        .of(identityHash)
-        .set(multisigAddress);
-
-      // 2.5ms
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .update(SetStateCommitment)
-        .set({
-          appIdentity: signedFreeBalanceUpdate.appIdentity,
-          appStateHash: signedFreeBalanceUpdate.appStateHash,
-          challengeRegistryAddress: signedFreeBalanceUpdate.challengeRegistryAddress,
-          signatures: signedFreeBalanceUpdate.signatures,
-          stateTimeout: toBN(signedFreeBalanceUpdate.stateTimeout).toString(),
-          versionNumber: toBN(signedFreeBalanceUpdate.versionNumber).toNumber(),
-        })
-        .where('"appIdentityHash" = :appIdentityHash', {
-          appIdentityHash: freeBalanceAppInstance.identityHash,
-        })
-        .execute();
-    });
+    await getManager().query("SELECT create_app_instance($1, $2, $3)", [
+      appJson,
+      freeBalanceAppInstance,
+      {
+        ...signedFreeBalanceUpdate,
+        versionNumber: BigNumber.from(signedFreeBalanceUpdate.versionNumber).toNumber(),
+        stateTimeout: BigNumber.from(signedFreeBalanceUpdate.stateTimeout).toHexString(),
+      },
+    ]);
 
     // 1ms
     await this.cache.mergeCacheValues(
@@ -548,34 +511,15 @@ export class CFCoreStore implements IStoreService {
   ): Promise<void> {
     const { identityHash, latestState, stateTimeout, latestVersionNumber } = appJson;
 
-    await getManager().transaction(async (transactionalEntityManager) => {
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .update(AppInstance)
-        .set({
-          latestState,
-          stateTimeout,
-          latestVersionNumber,
-        })
-        .where("identityHash = :identityHash", { identityHash })
-        .execute();
+    await getManager().query("SELECT update_app_instance($1, $2)", [
+      appJson,
+      {
+        ...signedSetStateCommitment,
+        versionNumber: BigNumber.from(signedSetStateCommitment.versionNumber).toNumber(),
+        stateTimeout: BigNumber.from(signedSetStateCommitment.stateTimeout).toHexString(),
+      },
+    ]);
 
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .update(SetStateCommitment)
-        .set({
-          appIdentity: signedSetStateCommitment.appIdentity,
-          appStateHash: signedSetStateCommitment.appStateHash,
-          challengeRegistryAddress: signedSetStateCommitment.challengeRegistryAddress,
-          signatures: signedSetStateCommitment.signatures,
-          stateTimeout: toBN(signedSetStateCommitment.stateTimeout).toString(),
-          versionNumber: toBN(signedSetStateCommitment.versionNumber).toNumber(),
-        })
-        .where('"appIdentityHash" = :appIdentityHash', {
-          appIdentityHash: signedSetStateCommitment.appIdentityHash,
-        })
-        .execute();
-    });
     await this.cache.mergeCacheValues(`appInstance:identityHash:${identityHash}`, 60, {
       latestState,
       stateTimeout,
@@ -616,51 +560,15 @@ export class CFCoreStore implements IStoreService {
     freeBalanceAppInstance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
-    await getManager().transaction(async (transactionalEntityManager) => {
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .update(AppInstance)
-        .set({
-          type: AppType.UNINSTALLED,
-        })
-        .where("identityHash = :identityHash", { identityHash: appIdentityHash })
-        .execute();
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .relation(Channel, "appInstances")
-        .of(multisigAddress)
-        .remove(appIdentityHash);
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .update(AppInstance)
-        .set({
-          latestState: freeBalanceAppInstance.latestState,
-          stateTimeout: freeBalanceAppInstance.stateTimeout,
-          latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
-        })
-        .where("identityHash = :identityHash", {
-          identityHash: freeBalanceAppInstance.identityHash,
-        })
-        .execute();
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .update(SetStateCommitment)
-        .set({
-          appIdentity: signedFreeBalanceUpdate.appIdentity,
-          appStateHash: signedFreeBalanceUpdate.appStateHash,
-          challengeRegistryAddress: signedFreeBalanceUpdate.challengeRegistryAddress,
-          signatures: signedFreeBalanceUpdate.signatures,
-          stateTimeout: toBN(signedFreeBalanceUpdate.stateTimeout).toString(),
-          versionNumber: toBN(signedFreeBalanceUpdate.versionNumber).toNumber(),
-        })
-        .where('"appIdentityHash" = :appIdentityHash', {
-          appIdentityHash: freeBalanceAppInstance.identityHash,
-        })
-        .execute();
-    });
+    await getManager().query("SELECT remove_app_instance($1, $2, $3)", [
+      appIdentityHash,
+      freeBalanceAppInstance,
+      {
+        ...signedFreeBalanceUpdate,
+        versionNumber: BigNumber.from(signedFreeBalanceUpdate.versionNumber).toNumber(),
+        stateTimeout: BigNumber.from(signedFreeBalanceUpdate.stateTimeout).toHexString(),
+      },
+    ]);
 
     await this.cache.mergeCacheValues(`appInstance:identityHash:${appIdentityHash}`, 60, {
       type: AppType.UNINSTALLED,
