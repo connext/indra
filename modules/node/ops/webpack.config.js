@@ -15,8 +15,14 @@ module.exports = {
     }),
   ],
 
+  node: {
+    __filename: true,
+    __dirname: true,
+  },
+
   resolve: {
-    extensions: [".js", ".ts", ".json"],
+    mainFields: ["main", "module"],
+    extensions: [".js", ".wasm", ".ts", ".json"],
     symlinks: false,
   },
 
@@ -48,6 +54,11 @@ module.exports = {
             configFile: path.join(__dirname, "../tsconfig.json"),
           },
         },
+      },
+      {
+        test: /\.wasm$/,
+        type: "javascript/auto",
+        loaders: ["wasm-loader"],
       },
     ],
   },
