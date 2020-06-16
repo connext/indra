@@ -218,7 +218,13 @@ export class Agent {
       delay(timeout).then(() => {
         if (this.payments[id]) {
           delete this.payments[id];
-          return reject(new Error(`Payment ${id} timed out after ${timeout / 1000} s`));
+          return reject(
+            new Error(
+              `Payment ${id} timed out after ${timeout / 1000}s for channel ${
+                this.client.multisigAddress
+              }`,
+            ),
+          );
         }
       });
     });
