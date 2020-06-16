@@ -102,7 +102,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       preUninstallApp,
       await computeTokenIndexedFreeBalanceIncrements(
         preUninstallApp,
-        network.provider,
+        network,
         undefined,
         log,
       ),
@@ -247,7 +247,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       preUninstallApp,
       await computeTokenIndexedFreeBalanceIncrements(
         preUninstallApp,
-        network.provider,
+        network,
         undefined,
         log,
       ),

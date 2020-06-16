@@ -8,6 +8,7 @@ import {
   IStoreService,
   multiAssetMultiPartyCoinTransferEncoding,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
+  NetworkContext,
   OutcomeType,
   PureActionApps,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
@@ -85,7 +86,7 @@ export async function stateChannelClassFromStoreByMultisig(
  */
 export async function computeTokenIndexedFreeBalanceIncrements(
   appInstance: AppInstance,
-  provider: providers.JsonRpcProvider,
+  network: NetworkContext,
   encodedOutcomeOverride: string = "",
   log?: ILoggerService,
 ): Promise<TokenIndexedCoinTransferMap> {
@@ -94,7 +95,10 @@ export async function computeTokenIndexedFreeBalanceIncrements(
   const checkpoint = Date.now();
   if (!encodedOutcomeOverride || encodedOutcomeOverride === "") {
     try {
-      encodedOutcomeOverride = await appInstance.computeOutcomeWithCurrentState(provider);
+      encodedOutcomeOverride = await appInstance.computeOutcomeWithCurrentState(
+        network.provider,
+        getPureBytecode(appInstance.appDefinition, network.contractAddresses),
+      );
     } catch (e) {
       throw new Error(`Unable to compute outcome: ${e.stack || e.message}`);
     }
