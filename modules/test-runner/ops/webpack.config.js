@@ -23,6 +23,7 @@ module.exports = {
   },
 
   resolve: {
+    mainFields: ["main", "module"],
     extensions: [".js", ".wasm", ".ts", ".json"],
     symlinks: false,
   },
