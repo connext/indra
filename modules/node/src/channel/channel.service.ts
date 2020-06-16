@@ -220,7 +220,6 @@ export class ChannelService {
     if (assetId !== AddressZero) {
       const token = new Contract(assetId, ERC20.abi, this.configService.getEthProvider());
       const decimals = await token.decimals();
-      console.log("decimals: ", decimals);
       if (decimals !== 18) {
         this.log.warn(`Token has ${decimals} decimals, converting rebalance targets`);
         targets.collateralizeThreshold = BigNumber.from(
@@ -231,7 +230,6 @@ export class ChannelService {
           formatUnits(targets.reclaimThreshold, decimals).split(".")[0],
         );
         this.log.warn(`Converted rebalance targets: ${targets}`);
-        console.log("targets: ", targets);
       }
     }
     this.log.debug(`Rebalancing target: ${stringify(targets)}`);
