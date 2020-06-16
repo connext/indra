@@ -91,6 +91,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       /* outcomeType */ outcomeType,
       /* interpreterParamsInternal*/ interpreterParams,
       /* meta */ meta,
+      /* latestAction */ undefined,
       /* bytecode */ bytecode,
     );
     const proposalJson = proposal.toJson();
