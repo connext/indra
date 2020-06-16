@@ -25,7 +25,10 @@ module.exports = {
   testPathIgnorePatterns: ["node_modules", "dist"],
   testRegex: "\\.spec\\.(jsx?|tsx?)$",
   testURL: "http://localhost/",
-  transform: { "^.+(?!\\.d)\\.ts$": "ts-jest" },
+  transform: {
+    "^.+(?!\\.d)\\.ts$": "ts-jest",
+    "^.+\\.[j]s$": "babel-jest",
+  },
   transformIgnorePatterns: [".*\\.d\\.ts$"],
   verbose: true,
 };

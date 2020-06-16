@@ -1,4 +1,3 @@
-import * as pure_evm from "@connext/pure-evm-wasm";
 import {
   AppIdentity,
   AppInstanceJson,
@@ -30,6 +29,7 @@ import {
 import { BigNumber, Contract, constants, utils, providers } from "ethers";
 import { Memoize } from "typescript-memoize";
 
+import { execEvmBytecode } from "../pure-evm";
 import { CounterfactualApp } from "../contracts";
 
 
@@ -275,14 +275,11 @@ export class AppInstance {
       const functionData = contractInterface.encodeFunctionData("computeOutcome", [
         this.encodedLatestState,
       ]);
-      const formatted = Uint8Array.from(Buffer.from(functionData.replace("0x", ""), "hex"));
-      const output = pure_evm.exec(
-        Uint8Array.from(Buffer.from(pureBytecodesMap[this.appDefinition].replace("0x", ""), "hex")),
-        formatted,
+      const output = await execEvmBytecode(
+        pureBytecodesMap[this.appDefinition],
+        functionData,
       );
-
-      const outputValues = contractInterface.decodeFunctionResult("computeOutcome", output);
-      return outputValues[0];
+      return contractInterface.decodeFunctionResult("computeOutcome", output)[0];
     } else {
       return this.toEthersContract(provider).computeOutcome(this.encodeState(state));
     }
@@ -314,14 +311,10 @@ export class AppInstance {
         this.encodedLatestState,
         this.encodeAction(action),
       ]);
-      const formatted = Uint8Array.from(Buffer.from(functionData.replace("0x", ""), "hex"));
-      const output = pure_evm.exec(
-        Uint8Array.from(Buffer.from(pureBytecodesMap[this.appDefinition].replace("0x", ""), "hex")),
-        formatted,
+      const output = await execEvmBytecode(pureBytecodesMap[this.appDefinition], functionData);
+      computedNextState = this.decodeAppState(
+        contractInterface.decodeFunctionResult("applyAction", output)[0],
       );
-
-      const outputValues = contractInterface.decodeFunctionResult("applyAction", output);
-      computedNextState = this.decodeAppState(outputValues[0]);
     } else {
       const encoded = await this.toEthersContract(provider).applyAction(
         this.encodedLatestState,
