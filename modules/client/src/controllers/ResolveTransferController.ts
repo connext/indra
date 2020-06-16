@@ -22,7 +22,17 @@ export class ResolveTransferController extends AbstractController {
     this.log.info(`[${paymentId}] resolveTransfer started: ${stringify(params)}`);
 
     const installedApps = await this.connext.getAppInstances();
+    const proposedApps = await this.connext.getProposedAppInstances();
     const existingReceiverApp = installedApps.find(
+      (app) =>
+        app.appDefinition ===
+          this.connext.appRegistry.find((app) => app.name === conditionType).appDefinitionAddress &&
+        app.meta.paymentId === paymentId &&
+        (app.latestState as GenericConditionalTransferAppState).coinTransfers[1].to ===
+          this.connext.signerAddress,
+    );
+
+    const existingReceiverAppProposal = proposedApps.appInstances.find(
       (app) =>
         app.appDefinition ===
           this.connext.appRegistry.find((app) => app.name === conditionType).appDefinitionAddress &&
@@ -73,6 +83,11 @@ export class ResolveTransferController extends AbstractController {
           // @ts-ignore
           return;
         }
+      }
+
+      if (existingReceiverAppProposal) {
+        this.log.warn(`[${paymentId}] Found existing app proposal, installing before proceeding`);
+        await this.connext.installApp(existingReceiverAppProposal.identityHash);
       }
 
       let action:
