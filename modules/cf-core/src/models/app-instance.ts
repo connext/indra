@@ -1,6 +1,10 @@
 import {
+  Address,
+  AppABIEncodings,
   AppIdentity,
   AppInstanceJson,
+  AssetId,
+  DecString,
   HexString,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   multiAssetMultiPartyCoinTransferInterpreterParamsEncoding,
@@ -11,11 +15,6 @@ import {
   SolidityValueType,
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
-  DecString,
-  AssetId,
-  AppABIEncodings,
-  Address,
-  PureBytecodesMap,
 } from "@connext/types";
 import {
   appIdentityToHash,
@@ -81,6 +80,7 @@ export class AppInstance {
       | SingleAssetTwoPartyCoinTransferInterpreterParams,
     public readonly meta?: any,
     public readonly latestAction?: any,
+    public readonly bytecode?: HexString,
   ) {}
 
   get outcomeInterpreterParameters() {
@@ -109,6 +109,7 @@ export class AppInstance {
       bigNumberifyJson(deserialized.outcomeInterpreterParameters),
       deserialized.meta,
       deserialized.latestAction,
+      deserialized.bytecode,
     );
   }
 
@@ -117,25 +118,26 @@ export class AppInstance {
     // an example would be having an `undefined` value for the `actionEncoding`
     // of an AppInstance that's not turn based
     return deBigNumberifyJson({
-      multisigAddress: this.multisigAddress,
-      identityHash: this.identityHash,
-      initiatorIdentifier: this.initiatorIdentifier,
-      initiatorDeposit: this.initiatorDeposit,
-      initiatorDepositAssetId: this.initiatorDepositAssetId,
-      responderIdentifier: this.responderIdentifier,
-      responderDeposit: this.responderDeposit,
-      responderDepositAssetId: this.responderDepositAssetId,
       abiEncodings: this.abiEncodings,
       appDefinition: this.appDefinition,
       appSeqNo: this.appSeqNo,
+      bytecode: this.bytecode,
       defaultTimeout: this.defaultTimeout,
-      stateTimeout: this.stateTimeout,
+      identityHash: this.identityHash,
+      initiatorDeposit: this.initiatorDeposit,
+      initiatorDepositAssetId: this.initiatorDepositAssetId,
+      initiatorIdentifier: this.initiatorIdentifier,
+      latestAction: this.latestAction,
       latestState: this.latestState,
       latestVersionNumber: this.latestVersionNumber,
-      outcomeType: this.outcomeType,
       meta: this.meta,
-      latestAction: this.latestAction,
+      multisigAddress: this.multisigAddress,
       outcomeInterpreterParameters: this.outcomeInterpreterParametersInternal,
+      outcomeType: this.outcomeType,
+      responderDeposit: this.responderDeposit,
+      responderDepositAssetId: this.responderDepositAssetId,
+      responderIdentifier: this.responderIdentifier,
+      stateTimeout: this.stateTimeout,
     });
   }
 
@@ -270,14 +272,13 @@ export class AppInstance {
   public async computeOutcome(
     state: SolidityValueType,
     provider: providers.JsonRpcProvider,
-    pureBytecodesMap: PureBytecodesMap,
   ): Promise<string> {
-    if (pureBytecodesMap[this.appDefinition]) {
+    if (this.bytecode) {
       const functionData = appInterface.encodeFunctionData("computeOutcome", [
         this.encodedLatestState,
       ]);
       const output = await execEvmBytecode(
-        pureBytecodesMap[this.appDefinition],
+        this.bytecode,
         functionData,
       );
       return appInterface.decodeFunctionResult("computeOutcome", output)[0];
@@ -295,23 +296,21 @@ export class AppInstance {
 
   public async computeOutcomeWithCurrentState(
     provider: providers.JsonRpcProvider,
-    pureBytecodesMap: PureBytecodesMap,
   ): Promise<string> {
-    return this.computeOutcome(this.state, provider, pureBytecodesMap);
+    return this.computeOutcome(this.state, provider);
   }
 
   public async computeStateTransition(
     action: SolidityValueType,
     provider: providers.JsonRpcProvider,
-    pureBytecodesMap: PureBytecodesMap,
   ): Promise<SolidityValueType> {
     let computedNextState: SolidityValueType;
-    if (pureBytecodesMap[this.appDefinition]) {
+    if (this.bytecode) {
       const functionData = appInterface.encodeFunctionData("applyAction", [
         this.encodedLatestState,
         this.encodeAction(action),
       ]);
-      const output = await execEvmBytecode(pureBytecodesMap[this.appDefinition], functionData);
+      const output = await execEvmBytecode(this.bytecode, functionData);
       computedNextState = this.decodeAppState(
         appInterface.decodeFunctionResult("applyAction", output)[0],
       );

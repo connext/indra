@@ -65,11 +65,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 40ms
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
-      await preAppInstance.computeStateTransition(
-        action,
-        network.provider,
-        network.pureBytecodesMap,
-      ),
+      await preAppInstance.computeStateTransition(action, network.provider),
       stateTimeout,
     );
     logTime(log, substart, `[${processID}] Updated channel with new app state`);
@@ -202,11 +198,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 48ms
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
-      await preAppInstance.computeStateTransition(
-        action,
-        network.provider,
-        network.pureBytecodesMap,
-      ),
+      await preAppInstance.computeStateTransition(action, network.provider),
       stateTimeout,
     );
 

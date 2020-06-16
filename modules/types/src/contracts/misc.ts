@@ -48,14 +48,9 @@ export type ContractAddresses = CriticalStateChannelAddresses & {
   WithdrawInterpreter: Address;
 };
 
-export type PureBytecodesMap = {
-  [AppDefinition: string]: string;
-};
-
 export interface NetworkContext {
   contractAddresses: ContractAddresses;
   provider: JsonRpcProvider;
-  pureBytecodesMap: PureBytecodesMap;
 }
 
 // Keep in sync with required addresses of ContractAddresses

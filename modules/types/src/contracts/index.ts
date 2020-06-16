@@ -93,4 +93,15 @@ export const SupportedApplicationNames = enumify({
   [DepositAppName]: DepositAppName,
 });
 
-export type SupportedApplicationNames = typeof SupportedApplicationNames[keyof typeof SupportedApplicationNames];
+export type SupportedApplicationNames = typeof SupportedApplicationNames[
+  keyof typeof SupportedApplicationNames
+];
+
+// These apps have actions which do not depend on contract storage & have zero side-effects
+// This array is used to determine whether or not it is safe to run some app's
+// computeOutcome or computeStateTransition in a local evm vs needing to make an eth_call
+export const PureActionApps = [
+  SimpleSignedTransferAppName,
+  SimpleLinkedTransferAppName,
+  SimpleTwoPartySwapAppName,
+];
