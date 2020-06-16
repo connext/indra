@@ -44,7 +44,7 @@ describe("Happy path", () => {
     await app.listen(configService.getPort());
 
     const ethProvider = configService.getEthProvider();
-    const sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC).connect(ethProvider);
+    const sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC!).connect(ethProvider);
     log.info(`node: ${await configService.getSignerAddress()}`);
     const nodeUrl = "http://localhost:8080";
 
