@@ -116,7 +116,7 @@ export class TransferService {
     const amount = senderAppState.coinTransfers[0].amount;
 
     const existing = await this.findReceiverAppByPaymentId(paymentId);
-    if (existing) {
+    if (existing && (existing.type === AppType.INSTANCE || existing.type === AppType.PROPOSAL)) {
       const result: PublicResults.ResolveCondition = {
         appIdentityHash: existing.identityHash,
         sender: senderIdentifier,
@@ -125,22 +125,8 @@ export class TransferService {
         amount,
         assetId,
       };
-      switch (existing.type) {
-        case AppType.INSTANCE: {
-          this.log.warn(`Found existing transfer app, returning: ${stringify(result)}`);
-          return result;
-        }
-        case AppType.PROPOSAL: {
-          throw new Error(
-            `Found existing transfer app proposal ${existing.identityHash}, waiting for client to install or reject`,
-          );
-        }
-        default: {
-          this.log.warn(
-            `Found existing app with payment id with incorrect type: ${existing.type}, proceeding to propose new app`,
-          );
-        }
-      }
+      this.log.warn(`Found existing transfer app, returning: ${stringify(result)}`);
+      return result;
     }
 
     const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
