@@ -134,8 +134,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     const responderSignerAddress = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
-    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== responderSignerAddress;
-
     // 7ms
     // always use free balance key to sign free balance update
     await assertIsValidSignature(
@@ -149,14 +147,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `[${processID}] Verified responder's sig on free balance update`);
     substart = Date.now();
 
-    // add signatures to commitment
     await freeBalanceUpdateData.addSignatures(
-      isChannelInitiator
-        ? (mySignatureOnFreeBalanceStateUpdate as any)
-        : counterpartySignatureOnFreeBalanceStateUpdate,
-      isChannelInitiator
-        ? counterpartySignatureOnFreeBalanceStateUpdate
-        : (mySignatureOnFreeBalanceStateUpdate as any),
+      counterpartySignatureOnFreeBalanceStateUpdate,
+      mySignatureOnFreeBalanceStateUpdate,
     );
 
     yield [
@@ -265,14 +258,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateDataHash];
 
     // add signature
-    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== protocolInitiatorAddr;
     await freeBalanceUpdateData.addSignatures(
-      isChannelInitiator
-        ? (mySignatureOnFreeBalanceStateUpdate as any)
-        : counterpartySignatureOnFreeBalanceStateUpdate,
-      isChannelInitiator
-        ? counterpartySignatureOnFreeBalanceStateUpdate
-        : (mySignatureOnFreeBalanceStateUpdate as any),
+      counterpartySignatureOnFreeBalanceStateUpdate,
+      mySignatureOnFreeBalanceStateUpdate,
     );
 
     // 13ms

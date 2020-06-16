@@ -87,11 +87,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // or removing previous set state commitment to allow watcher service
     // to dispute using the `progressState` or `setAndProgressState` paths
     // using only items in the store
-    const isAppInitiator = appInstance.initiatorIdentifier !== responderIdentifier;
-    await setStateCommitment.addSignatures(
-      isAppInitiator ? (mySignature as any) : undefined,
-      isAppInitiator ? undefined : (mySignature as any),
-    );
+    await setStateCommitment.addSignatures(mySignature);
 
     // also save the app instance with a `latestAction`
     yield [
@@ -134,10 +130,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
 
     // add signatures and write commitment to store
-    await setStateCommitment.addSignatures(
-      isAppInitiator ? (mySignature as any) : counterpartySig,
-      isAppInitiator ? counterpartySig : (mySignature as any),
-    );
+    await setStateCommitment.addSignatures(mySignature, counterpartySig);
 
     // add sigs to most recent set state
     yield [
@@ -227,11 +220,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const mySignature = yield [OP_SIGN, setStateCommitmentHash];
 
     // add signatures and write commitment to store
-    const isAppInitiator = appInstance.initiatorIdentifier !== initiatorIdentifier;
-    await setStateCommitment.addSignatures(
-      isAppInitiator ? (mySignature as any) : counterpartySignature,
-      isAppInitiator ? counterpartySignature : (mySignature as any),
-    );
+    await setStateCommitment.addSignatures(mySignature, counterpartySignature);
 
     // responder will not be able to call `progressState` or
     // `setAndProgressState` so only save double signed commitment

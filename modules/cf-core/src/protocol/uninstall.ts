@@ -64,7 +64,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     let preUninstallStateChannel: StateChannel;
     if (action) {
-      log.info(`Action provided. Finalizing app before uninstall`);
+      log.info(`[${processID}] Action provided. Finalizing app before uninstall`);
       // apply action
       substart = Date.now();
       const newState = await appToUninstall.computeStateTransition(action, network.provider);
@@ -73,7 +73,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       if (!(newState as any).finalized) {
         throw new Error(`Action provided did not lead to terminal state, refusing to uninstall.`);
       }
-      log.debug(`Resulting state is terminal state, proceeding with uninstall`);
+      log.debug(`[${processID}] Resulting state is terminal state, proceeding with uninstall`);
       substart = Date.now();
       preUninstallStateChannel = preProtocolStateChannel.setState(
         appToUninstall,
@@ -139,12 +139,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
     logTime(log, substart, `[${processID}] Verified responder's sig`);
 
-    const isInitiator = postProtocolStateChannel.multisigOwners[0] !== responderFreeBalanceKey;
-    // use channel initiator bc free balance app
-    await uninstallCommitment.addSignatures(
-      isInitiator ? (mySignature as any) : counterpartySignature,
-      isInitiator ? counterpartySignature : (mySignature as any),
-    );
+    await uninstallCommitment.addSignatures(counterpartySignature, mySignature);
 
     // 24ms
     yield [
@@ -198,7 +193,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     let preUninstallStateChannel: StateChannel;
     if (action) {
-      log.info(`Action provided. Finalizing app before uninstall`);
+      log.info(`[${processID}] Action provided. Finalizing app before uninstall`);
       // apply action
       substart = Date.now();
       const newState = await appToUninstall.computeStateTransition(action, network.provider);
@@ -207,7 +202,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       if (!(newState as any).finalized) {
         throw new Error(`Action provided did not lead to terminal state, refusing to uninstall.`);
       }
-      log.debug(`Resulting state is terminal state, proceeding with uninstall`);
+      log.debug(`[${processID}] Resulting state is terminal state, proceeding with uninstall`);
       substart = Date.now();
       preUninstallStateChannel = preProtocolStateChannel.setState(
         appToUninstall,
@@ -258,12 +253,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const mySignature = yield [OP_SIGN, uninstallCommitmentHash];
     logTime(log, substart, `[${processID}] Signed commitment in responding uninstall`);
 
-    const isInitiator = postProtocolStateChannel.multisigOwners[0] !== initiatorFreeBalanceKey;
-    // use channel initiator bc free balance app
-    await uninstallCommitment.addSignatures(
-      isInitiator ? mySignature : (counterpartySignature as any),
-      isInitiator ? counterpartySignature : (mySignature as any),
-    );
+    await uninstallCommitment.addSignatures(counterpartySignature, mySignature);
 
     // 59ms
     yield [

@@ -345,11 +345,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `[${processID}] Signed conditional tx commitment`);
     await setStateCommitment.addSignatures(
       initiatorSignatureOnInitialState,
-      responderSignatureOnInitialState as any,
+      responderSignatureOnInitialState,
     );
     await conditionalTxCommitment.addSignatures(
       initiatorSignatureOnConditionalTransaction,
-      responderSignatureOnConditionalTransaction as any,
+      responderSignatureOnConditionalTransaction,
     );
 
     substart = Date.now();
