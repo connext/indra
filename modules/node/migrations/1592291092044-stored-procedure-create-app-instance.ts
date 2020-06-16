@@ -1,6 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class storedProcedureCreateAppInstance1592291092044 implements MigrationInterface {
+  name = "storedProcedureCreateAppInstance1592291092044";
   public async up(queryRunner: QueryRunner): Promise<any> {
     await queryRunner.query(
       `DROP FUNCTION IF EXISTS create_app_instance(jsonb,jsonb,jsonb);`,

@@ -58,6 +58,7 @@ import { appIdentityHashPrimaryCommitmentKeys1591979802157 } from "../../migrati
 import { dropIdentifiers1592148854323 } from "../../migrations/1592148854323-drop-identifiers";
 import { storedProcedureCreateAppProposal1592290983473 } from "../../migrations/1592290983473-stored-procedure-create-app-proposal";
 import { storedProcedureCreateAppInstance1592291092044 } from "../../migrations/1592291092044-stored-procedure-create-app-instance";
+import { storedProcedureUpdateAppInstance1592309341833 } from "../../migrations/1592309341833-stored-procedure-update-app-instance";
 
 export const entities = [
   AppInstance,
@@ -115,6 +116,7 @@ export const migrations = [
   dropIdentifiers1592148854323,
   storedProcedureCreateAppProposal1592290983473,
   storedProcedureCreateAppInstance1592291092044,
+  storedProcedureUpdateAppInstance1592309341833,
 ];
 
 @Injectable()
