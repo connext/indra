@@ -191,10 +191,11 @@ export class Agent {
     );
 
     return new Promise((resolve, reject) => {
+      const start = Date.now();
       this.client
         .conditionalTransfer(params)
         .then(() => {
-          this.log.info(`Sent transfer ${abrv(id)}.`);
+          this.log.info(`Sent transfer ${abrv(id)}. Elapsed: ${Date.now() - start} ms`);
         })
         .catch((e) => {
           delete this.payments[id];

@@ -26,6 +26,7 @@ export const coreContracts = [
   "TimeLockedPassThrough",
   "TwoPartyFixedOutcomeInterpreter",
   "WithdrawApp",
+  "WithdrawInterpreter"
 ];
 
 export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<void> => {

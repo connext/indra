@@ -1,5 +1,5 @@
 import { AppInstanceJson } from "@connext/types";
-import { getRandomAddress, getRandomIdentifier, toBN, toBNJson, stringify } from "@connext/utils";
+import { getRandomAddress, getRandomIdentifier, toBN, toBNJson } from "@connext/utils";
 import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { getConnection } from "typeorm";
@@ -77,11 +77,14 @@ const createTestChannelWithAppInstance = async (
     multisigAddress,
   );
 
-  const setStateCommitment = createSetStateCommitmentJSON();
   const appProposal = createAppInstanceJson({
     appSeqNo: 2,
     initiatorIdentifier: userIdentifier,
     responderIdentifier: nodeIdentifier,
+    multisigAddress,
+  });
+  const setStateCommitment = createSetStateCommitmentJSON({
+    appIdentityHash: appProposal.identityHash,
   });
   const conditionalCommitment = createConditionalTransactionCommitmentJSON({
     appIdentityHash: appProposal.identityHash,
@@ -304,13 +307,13 @@ describe("CFCoreStore", () => {
       let channelEntity = await channelRepository.findByMultisigAddressOrThrow(multisigAddress);
       expect(channelEntity.appInstances.length).to.equal(1);
 
-      const appProposal = createAppInstanceJson();
+      const appProposal = createAppInstanceJson({ multisigAddress });
       await cfCoreStore.createAppProposal(
         multisigAddress,
         appProposal,
         2,
-        createSetStateCommitmentJSON(),
-        createConditionalTransactionCommitmentJSON(),
+        createSetStateCommitmentJSON({ appIdentityHash: appProposal.identityHash }),
+        createConditionalTransactionCommitmentJSON({ appIdentityHash: appProposal.identityHash }),
       );
 
       channelEntity = await channelRepository.findByMultisigAddressOrThrow(multisigAddress);
@@ -365,9 +368,14 @@ describe("CFCoreStore", () => {
         appSeqNo: APP_SEQ_NO,
         initiatorIdentifier: userIdentifier,
         responderIdentifier: configService.getPublicIdentifier(),
+        multisigAddress,
       });
-      const setStateCommitment = createSetStateCommitmentJSON();
-      const conditionalTx = createConditionalTransactionCommitmentJSON();
+      const setStateCommitment = createSetStateCommitmentJSON({
+        appIdentityHash: appProposal.identityHash,
+      });
+      const conditionalTx = createConditionalTransactionCommitmentJSON({
+        appIdentityHash: appProposal.identityHash,
+      });
       await cfCoreStore.createAppProposal(
         multisigAddress,
         appProposal,

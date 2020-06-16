@@ -45,6 +45,7 @@ export type ContractAddresses = CriticalStateChannelAddresses & {
   TimeLockedPassThrough: Address;
   Token?: Address;
   TwoPartyFixedOutcomeInterpreter: Address;
+  WithdrawInterpreter: Address;
 };
 
 export type PureBytecodesMap = {
@@ -69,10 +70,16 @@ export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "SingleAssetTwoPartyCoinTransferInterpreter",
   "TimeLockedPassThrough",
   "TwoPartyFixedOutcomeInterpreter",
+  "WithdrawInterpreter",
 ];
 
 ////////////////////////////////////////
 // Mixins, etc
+
+export const singleAssetSinglePartyCoinTransferEncoding = tidy(`tuple(
+  address to,
+  uint256 amount
+)[1]`);
 
 export const singleAssetTwoPartyCoinTransferEncoding = tidy(`tuple(
   address to,
