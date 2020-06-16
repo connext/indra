@@ -3,11 +3,10 @@
   "version": "0.2.4",
   "private": true,
   "scripts": {
-    "start": "./node_modules/.bin/react-scripts start",
+    "start": "react-app-rewired start",
     "test": "make test",
     "start-test": "make start-test",
-    "build": "./node_modules/.bin/react-scripts --max_old_space_size=4096 build",
-    "eject": "./node_modules/.bin/react-scripts eject",
+    "build": "react-app-rewired --max_old_space_size=4096 build",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*.js'",
     "logs": "bash ops/logs.sh",
     "format": "prettier --write \"src/**/*.js\""
@@ -34,11 +33,13 @@
     "qrcode.react": "1.0.0",
     "query-string": "6.12.1",
     "react": "16.13.1",
+    "react-app-rewired": "2.1.6",
     "react-copy-to-clipboard": "5.0.2",
     "react-dom": "16.13.1",
     "react-qr-reader": "2.2.1",
     "react-router-dom": "5.2.0",
     "react-scripts": "3.4.0",
+    "wasm-loader": "1.3.0",
     "xstate": "4.10.0"
   },
   "devDependencies": {
@@ -50,5 +51,6 @@
     "not dead",
     "not ie <= 11",
     "not op_mini all"
-  ]
+  ],
+  "config-overrides-path": "ops/config-overrides"
 }
