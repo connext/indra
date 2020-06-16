@@ -31,10 +31,18 @@ export async function assertIsValidSignature(
   loggingContext?: string,
 ): Promise<void> {
   if (typeof commitmentHash === "undefined") {
-    throw new Error("assertIsValidSignature received an undefined commitment");
+    throw new Error(
+      `assertIsValidSignature received an undefined commitment. ${
+        loggingContext ? `${loggingContext}` : ""
+      }`,
+    );
   }
   if (typeof signature === "undefined") {
-    throw new Error("assertIsValidSignature received an undefined signature");
+    throw new Error(
+      `assertIsValidSignature received an undefined signature. ${
+        loggingContext ? `${loggingContext}` : ""
+      }`,
+    );
   }
   // recoverAddressFromChannelMessage: 83 ms, hashToSign: 7 ms
   const signer = await recoverAddressFromChannelMessage(commitmentHash, signature);
