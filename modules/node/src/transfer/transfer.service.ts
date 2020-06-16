@@ -131,14 +131,9 @@ export class TransferService {
           return result;
         }
         case AppType.PROPOSAL: {
-          const msg = `Found existing transfer app proposal ${existing.identityHash}`;
-          this.log.warn(msg + `, rejecting and continuing`);
-          await this.cfCoreService.rejectInstallApp(
-            existing.identityHash,
-            receiverChannel.multisigAddress,
-            msg,
+          throw new Error(
+            `Found existing transfer app proposal ${existing.identityHash}, waiting for client to install or reject`,
           );
-          break;
         }
         default: {
           this.log.warn(

@@ -447,52 +447,15 @@ export class CFCoreStore implements IStoreService {
       nodeIdentifier: this.configService.getPublicIdentifier(),
     };
 
-    await getManager().transaction(async (transactionalEntityManager) => {
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .update(AppInstance)
-        .set(update)
-        .where("identityHash = :identityHash", {
-          identityHash,
-        })
-        .execute();
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .update(AppInstance)
-        .set({
-          latestState: freeBalanceAppInstance.latestState as any,
-          stateTimeout: freeBalanceAppInstance.stateTimeout,
-          latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
-        })
-        .where("identityHash = :identityHash", {
-          identityHash: freeBalanceAppInstance.identityHash,
-        })
-        .execute();
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .relation(AppInstance, "channel")
-        .of(identityHash)
-        .set(multisigAddress);
-
-      // 2.5ms
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .update(SetStateCommitment)
-        .set({
-          appIdentity: signedFreeBalanceUpdate.appIdentity,
-          appStateHash: signedFreeBalanceUpdate.appStateHash,
-          challengeRegistryAddress: signedFreeBalanceUpdate.challengeRegistryAddress,
-          signatures: signedFreeBalanceUpdate.signatures,
-          stateTimeout: toBN(signedFreeBalanceUpdate.stateTimeout).toString(),
-          versionNumber: toBN(signedFreeBalanceUpdate.versionNumber).toNumber(),
-        })
-        .where('"appIdentityHash" = :appIdentityHash', {
-          appIdentityHash: freeBalanceAppInstance.identityHash,
-        })
-        .execute();
-    });
+    await getManager().query("SELECT create_app_instance($1, $2, $3)", [
+      appJson,
+      freeBalanceAppInstance,
+      {
+        ...signedFreeBalanceUpdate,
+        versionNumber: BigNumber.from(signedFreeBalanceUpdate.versionNumber).toNumber(),
+        stateTimeout: BigNumber.from(signedFreeBalanceUpdate.stateTimeout).toHexString(),
+      },
+    ]);
 
     // 1ms
     await this.cache.mergeCacheValues(

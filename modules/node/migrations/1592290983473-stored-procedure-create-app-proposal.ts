@@ -1,10 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-/**
- * Keep all stored procedures in this file, this can be run at the end of the migrations.
- */
-export class storedProcedures9999999999999 implements MigrationInterface {
-  name = "storedProcedures9999999999999";
+export class storedProcedureCreateAppProposal1592290983473 implements MigrationInterface {
+  name = "storedProcedureCreateAppProposal1592290983473";
   public async up(queryRunner: QueryRunner): Promise<any> {
     await queryRunner.query(
       `DROP FUNCTION IF EXISTS create_app_proposal(jsonb,integer,jsonb,jsonb);`,
