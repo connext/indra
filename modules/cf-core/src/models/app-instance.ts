@@ -1,3 +1,4 @@
+import * as pure_evm from "@connext/pure-evm-wasm";
 import {
   AppIdentity,
   AppInstanceJson,
@@ -31,8 +32,6 @@ import { Memoize } from "typescript-memoize";
 
 import { CounterfactualApp } from "../contracts";
 
-// TODO: WHAT ABOUT BROWSER?
-const pure_evm = require("@connext/pure-evm-wasm");
 
 const { Zero } = constants;
 const { defaultAbiCoder, keccak256, Interface } = utils;
