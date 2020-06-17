@@ -16,37 +16,46 @@ export class CacheService {
     return this.redis.get(key);
   }
 
-  async set(key: string, expiry: number, value: any): Promise<void> {
+  async set<T = any>(key: string, expiry: number, value: T): Promise<any> {
     return this.redis.set(key, JSON.stringify(value), "EX", expiry);
   }
 
-  async del(key: string): Promise<void> {
+  async del(key: string): Promise<any> {
     return this.redis.del(key);
   }
 
-  async wrap<T>(
+  async deleteAll(): Promise<any> {
+    return this.redis.flushall();
+  }
+
+  async wrap<T, U>(
     key: string,
     expiry: number,
-    cb: () => Promise<T>,
-    ser: JSONSerializer<T, any>,
-  ): Promise<T> {
+    cb: () => Promise<U>,
+    ser: JSONSerializer<U, T>,
+  ): Promise<T | undefined> {
     const cached = await this.redis.get(key);
     if (cached) {
-      return ser.fromJSON(JSON.parse(cached));
+      return JSON.parse(cached);
     }
     const val = await cb();
     if (!val) {
-      return val;
+      return undefined;
     }
     await this.redis.set(key, JSON.stringify(ser.toJSON(val)), "EX", expiry);
-    return val;
+    console.log("ser.toJSON(val): ", ser.toJSON(val));
+    return ser.toJSON(val);
   }
 
-  async mergeCacheValues(key: string, expiry: number, toMerge: object): Promise<void> {
+  async mergeCacheValues<T = any>(key: string, expiry: number, toMerge: Partial<T>): Promise<void> {
     return this.mergeCacheValuesFn(key, expiry, (parsed) => Object.assign(parsed, toMerge));
   }
 
-  async mergeCacheValuesFn(key: string, expiry: number, mergeFn: (merge: any) => any) {
+  async mergeCacheValuesFn<T = any>(
+    key: string,
+    expiry: number,
+    mergeFn: (merge: T) => T,
+  ): Promise<void> {
     const cached = await this.redis.get(key);
     if (!cached) {
       return;
