@@ -96,6 +96,7 @@ clean: stop
 	rm -rf modules/*/node_modules/.bin
 	rm -rf modules/contracts/artifacts modules/*/build modules/*/dist docs/build
 	rm -rf modules/*/.*cache* modules/*/node_modules/.cache modules/contracts/cache/*.json
+	rm -rf modules/*/package-lock.json
 
 quick-reset:
 	bash ops/db.sh 'truncate table app_registry cascade;'
