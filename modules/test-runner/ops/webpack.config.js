@@ -8,7 +8,7 @@ const whitelist = mode === "release" ? "" : [/@connext\/.*/];
 console.log(`Building ${mode}-mode bundle`);
 
 module.exports = {
-  mode: "production",
+  mode: "development",
   target: "node",
 
   entry: path.join(__dirname, "../src/index.ts"),

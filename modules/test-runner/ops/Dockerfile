@@ -7,6 +7,10 @@ RUN npm install -g npm@6.12.0
 RUN curl https://raw.githubusercontent.com/vishnubob/wait-for-it/ed77b63706ea721766a62ff22d3a251d8b4a6a30/wait-for-it.sh > /bin/wait-for && chmod +x /bin/wait-for
 COPY modules/test-runner/package.json package.json
 RUN npm install --only=production > /dev/null 2>&1
-COPY modules/test-runner /root
+# In staging mode we bundle source from @connext packages into the node bundle
+# This means the node bundle needs access to the deps for @connext packages too
+RUN cp -r node_modules/@connext/*/node_modules/* node_modules
+COPY modules/test-runner/ops ops
+COPY modules/test-runner/dist dist
 ENV PATH="./node_modules/.bin:${PATH}"
 ENTRYPOINT ["bash", "ops/entry.sh"]

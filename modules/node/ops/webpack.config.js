@@ -6,7 +6,7 @@ const whitelist = mode === "release" ? "" : /@connext\/[^p].*/;
 console.log(`Building ${mode}-mode bundle`);
 
 module.exports = {
-  mode: "production",
+  mode: "development",
   target: "node",
 
   context: path.join(__dirname, ".."),
