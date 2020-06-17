@@ -14,7 +14,7 @@ import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { HashLockTransferService } from "./hashLockTransfer.service";
 
-const { AddressZero } = constants;
+const { AddressZero, HashZero } = constants;
 
 export class HashLockTransferMessaging extends AbstractMessagingProvider {
   constructor(
@@ -77,7 +77,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       lockHash: latestState.lockHash,
       status,
       meta,
-      preImage: receiverApp?.latestState?.preImage === AddressZero ? userApp.latestState.preImage : receiverApp?.latestState?.preImage,
+      preImage: receiverApp?.latestState?.preImage === HashZero ? userApp.latestState.preImage : receiverApp?.latestState?.preImage,
       expiry: latestState.expiry,
     };
   }
