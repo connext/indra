@@ -6,11 +6,16 @@ const whitelist = mode === "release" ? "" : /@connext\/[^p].*/;
 console.log(`Building ${mode}-mode bundle`);
 
 module.exports = {
-  mode: "development",
+  mode: "production",
   target: "node",
+
+  context: path.join(__dirname, ".."),
+
+  entry: path.join(__dirname, "../src/main.ts"),
+
   externals: [
     nodeExternals({
-      modulesDir: path.resolve(__dirname, "../../../node_modules"),
+      modulesDir: path.join(__dirname, "../../../node_modules"),
       whitelist,
     }),
   ],
@@ -25,8 +30,6 @@ module.exports = {
     extensions: [".js", ".wasm", ".ts", ".json"],
     symlinks: false,
   },
-
-  entry: path.join(__dirname, "../src/main.ts"),
 
   output: {
     path: path.join(__dirname, "../dist/src"),

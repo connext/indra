@@ -336,14 +336,14 @@ ethprovider: contracts $(shell find modules/contracts/ops $(find_options))
 
 node-release: node $(shell find modules/node/ops $(find_options))
 	$(log_start)
-	$(docker_run) "MODE=release cd modules/node && npm run build-bundle"
+	$(docker_run) "cd modules/node && MODE=release npm run build-bundle"
 	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node .
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 node-staging: node $(shell find modules/node/ops $(find_options))
 	$(log_start)
-	$(docker_run) "MODE=staging cd modules/node && npm run build-bundle"
+	$(docker_run) "cd modules/node && MODE=staging npm run build-bundle"
 	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node .
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
