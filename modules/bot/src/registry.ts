@@ -2,7 +2,7 @@ import { ColorfulLogger } from "@connext/utils";
 import express from "express";
 import bodyParser from "body-parser";
 
-let bots = new Set();
+const bots = new Set();
 
 const app = express();
 app.use(bodyParser.json());

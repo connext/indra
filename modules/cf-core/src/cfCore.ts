@@ -1,4 +1,3 @@
-import { artifacts } from "@connext/contracts";
 import {
   Address,
   AppInstanceJson,
@@ -30,7 +29,7 @@ import { providers } from "ethers";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
 
-import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
+import { UNASSIGNED_SEQ_NO, IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
 import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 import { ProtocolRunner } from "./machine";
@@ -197,6 +196,21 @@ export class CFCore {
       async (args: [ProtocolMessageData, StateChannel, AppInstance]) => {
         const [data, channel, appContext] = args;
 
+        // check if the protocol start time exists within the message
+        // and if it is a final protocol message (see note in
+        // types/messaging.ts)
+        const { prevMessageReceived, seq } = data;
+        if (prevMessageReceived && seq === UNASSIGNED_SEQ_NO) {
+          const diff = Date.now() - prevMessageReceived;
+          if (diff > IO_SEND_AND_WAIT_TIMEOUT) {
+            throw new Error(
+              `Execution took longer than ${
+                IO_SEND_AND_WAIT_TIMEOUT / 1000
+              }s. Aborting message: ${stringify(data)}`,
+            );
+          }
+        }
+
         await this.messagingService.send(data.to, {
           data,
           from: this.publicIdentifier,
@@ -250,7 +264,11 @@ export class CFCore {
         // counterparty is waiting for a response should be sent
         const { error } = msg.data;
         if (error) {
-          throw new Error(`Counterparty execution of ${data.protocol} failed: ${error}`);
+          throw new Error(
+            `Counterparty execution of ${
+              data.protocol
+            } failed: ${error}. \nCounterparty was responding to: ${stringify(data)}`,
+          );
         }
 
         return { data: msg.data, channel, appContext };

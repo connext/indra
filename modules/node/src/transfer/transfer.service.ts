@@ -84,7 +84,7 @@ export class TransferService {
           this.log.info(`Installed receiver app ${receiverInstall.appIdentityHash}`);
         })
         .catch((e) => {
-          this.log.error(`Error installing receiver app: ${e.message}`);
+          this.log.error(`Error installing receiver app: ${e.message || e}`);
           if (allowed === "RequireOnline") {
             throw e;
           }

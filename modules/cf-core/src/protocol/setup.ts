@@ -30,8 +30,9 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const start = Date.now();
     let substart;
     const { processID, params } = message;
-    log.info(`[${processID}] Initiation started`);
-    log.debug(`[${processID}] Protocol initiated with parameters ${stringify(params)}`);
+    const loggerId = params?.multisigAddress || processID;
+    log.info(`[${loggerId}] Initiation started`);
+    log.debug(`[${loggerId}] Protocol initiated with parameters ${stringify(params)}`);
 
     const {
       multisigAddress,
@@ -91,7 +92,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessageData,
     ] as any;
-    logTime(log, substart, `[${processID}] Received responder's sigs`);
+    logTime(log, substart, `[${loggerId}] Received responder's sigs`);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
@@ -108,7 +109,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceUpdateData.hashToSign(),
       responderSignatureOnFreeBalanceState,
     );
-    logTime(log, substart, `[${processID}] Verified responder's sigs`);
+    logTime(log, substart, `[${loggerId}] Verified responder's sigs`);
 
     // add sigs to commitments
     await setupCommitment.addSignatures(mySetupSignature as any, responderSetupSignature);
@@ -125,7 +126,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       [await setupCommitment.getSignedTransaction(), freeBalanceUpdateData],
     ];
 
-    logTime(log, start, `[${processID}] Initiation finished`);
+    logTime(log, start, `[${loggerId}] Initiation finished`);
   } as any,
 
   1 /* Responding */: async function* (context: Context) {
@@ -141,8 +142,9 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         setStateSignature: initiatorSignatureOnFreeBalanceState,
       },
     } = message;
-    log.info(`[${processID}] Response started`);
-    log.debug(`[${processID}] Protocol response started with parameters ${stringify(params)}`);
+    const loggerId = params?.multisigAddress || processID;
+    log.info(`[${loggerId}] Response started`);
+    log.debug(`[${loggerId}] Protocol response started with parameters ${stringify(params)}`);
 
     const {
       multisigAddress,
@@ -186,7 +188,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceUpdateData.hashToSign(),
       initiatorSignatureOnFreeBalanceState,
     );
-    logTime(log, substart, `[${processID}] Verified initator's sig`);
+    logTime(log, substart, `[${loggerId}] Verified initator's sig`);
 
     // 49 ms
     const mySetupSignature = yield [OP_SIGN, setupCommitment.hashToSign()];
@@ -213,6 +215,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         to: initiatorIdentifier,
         seq: UNASSIGNED_SEQ_NO,
+        prevMessageReceived: start,
         customData: {
           setupSignature: mySetupSignature,
           setStateSignature: mySignatureOnFreeBalanceState,
@@ -221,6 +224,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel,
     ];
 
-    logTime(log, start, `[${processID}] Response finished`);
+    logTime(log, start, `[${loggerId}] Response finished`);
   },
 };
