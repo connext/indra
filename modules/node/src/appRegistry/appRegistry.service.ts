@@ -197,7 +197,7 @@ export class AppRegistryService implements OnModuleInit {
         contractAddresses,
         provider: provider as providers.JsonRpcProvider,
       },
-      this.configService.getSupportedTokens(),
+      this.configService.getSupportedTokenAddresses(),
     );
 
     return async (protocol: ProtocolName, cxt: MiddlewareContext): Promise<void> => {
