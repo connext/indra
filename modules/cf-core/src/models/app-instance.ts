@@ -272,14 +272,18 @@ export class AppInstance {
     bytecode?: HexString,
   ): Promise<string> {
     if (bytecode) {
-      const functionData = appInterface.encodeFunctionData("computeOutcome", [
-        this.encodedLatestState,
-      ]);
-      const output = await execEvmBytecode(
-        bytecode,
-        functionData,
-      );
-      return appInterface.decodeFunctionResult("computeOutcome", output)[0];
+      try {
+        const functionData = appInterface.encodeFunctionData("computeOutcome", [
+          this.encodedLatestState,
+        ]);
+        const output = await execEvmBytecode(
+          bytecode,
+          functionData,
+        );
+        return appInterface.decodeFunctionResult("computeOutcome", output)[0];
+      } catch (e) {
+        return this.toEthersContract(provider).computeOutcome(this.encodeState(state));
+      }
     } else {
       return this.toEthersContract(provider).computeOutcome(this.encodeState(state));
     }
@@ -306,14 +310,22 @@ export class AppInstance {
   ): Promise<SolidityValueType> {
     let computedNextState: SolidityValueType;
     if (bytecode) {
-      const functionData = appInterface.encodeFunctionData("applyAction", [
-        this.encodedLatestState,
-        this.encodeAction(action),
-      ]);
-      const output = await execEvmBytecode(bytecode, functionData);
-      computedNextState = this.decodeAppState(
-        appInterface.decodeFunctionResult("applyAction", output)[0],
-      );
+      try {
+        const functionData = appInterface.encodeFunctionData("applyAction", [
+          this.encodedLatestState,
+          this.encodeAction(action),
+        ]);
+        const output = await execEvmBytecode(bytecode, functionData);
+        computedNextState = this.decodeAppState(
+          appInterface.decodeFunctionResult("applyAction", output)[0],
+        );
+      } catch (e) {
+        const encoded = await this.toEthersContract(provider).applyAction(
+          this.encodedLatestState,
+          this.encodeAction(action),
+        );
+        computedNextState = this.decodeAppState(encoded);
+      }
     } else {
       const encoded = await this.toEthersContract(provider).applyAction(
         this.encodedLatestState,
