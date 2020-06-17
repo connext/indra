@@ -18,6 +18,7 @@ import {
   addAgentIdentifierToIndex,
   getRandomAgentIdentifierFromIndex,
   removeAgentIdentifierFromIndex,
+  clearRegistry,
 } from "../helpers/agentIndex";
 
 import { Agent } from "./agent";
@@ -65,7 +66,7 @@ export default {
     const NAME = `Bot #${argv.concurrencyIndex}`;
     const log = new ColorfulLogger(NAME, 3, true, argv.concurrencyIndex);
     log.info(`Launched ${NAME}`);
-    const TRANSFER_AMT = parseEther("0.0001");
+    const TRANSFER_AMT = parseEther("0.001");
     const DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 1 eth
     const limit = argv.limit;
     const start: { [paymentId: string]: number } = {};
@@ -123,6 +124,7 @@ export default {
 
     // Setup agent logic to transfer on an interval
     let sentPayments = 1;
+    let unavailableCount = 0;
     await intervalPromise(
       async (_, stop) => {
         log.debug(`heartbeat thump thump`);
@@ -130,7 +132,7 @@ export default {
         // stop on any protocol failures
         if (failed) {
           log.error(failed);
-          await removeAgentIdentifierFromIndex(client.publicIdentifier);
+          await clearRegistry();
           stop();
           return;
         }
@@ -154,6 +156,13 @@ export default {
 
         if (!receiverIdentifier) {
           log.warn(`No recipients are available. Doing nothing..`);
+          unavailableCount += 1;
+        }
+
+        // break if no recipients available
+        if (unavailableCount > 5) {
+          log.warn(`Could not find recipient for ${unavailableCount} cycles, exiting poller.`);
+          stop();
           return;
         }
 
@@ -183,7 +192,7 @@ export default {
         } catch (err) {
           log.error(`Error sending tranfer: ${err.message}`);
           exitCode += 1;
-          await removeAgentIdentifierFromIndex(client.publicIdentifier);
+          await clearRegistry();
           stop();
           return;
         }
