@@ -23,7 +23,7 @@
     "p-waterfall": "2.1.0",
     "pg": "8.2.1",
     "pg-hstore": "2.3.3",
-    "sequelize": "5.21.11",
+    "sequelize": "5.21.13",
     "sqlite3": "4.2.0",
     "uuid": "8.1.0"
   },
