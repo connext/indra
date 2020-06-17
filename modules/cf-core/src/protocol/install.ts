@@ -283,6 +283,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         protocol,
         to: initiatorIdentifier,
+        prevMessageReceived: start,
         customData: {
           signature: mySignatureOnFreeBalanceStateUpdate,
         },

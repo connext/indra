@@ -215,6 +215,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         to: initiatorIdentifier,
         seq: UNASSIGNED_SEQ_NO,
+        prevMessageReceived: start,
         customData: {
           setupSignature: mySetupSignature,
           setStateSignature: mySignatureOnFreeBalanceState,

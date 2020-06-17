@@ -241,6 +241,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         to: initiatorIdentifier,
         seq: UNASSIGNED_SEQ_NO,
+        prevMessageReceived: start,
         customData: {
           signature: mySignature,
         },

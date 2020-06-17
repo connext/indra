@@ -371,6 +371,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         seq: UNASSIGNED_SEQ_NO,
         to: initiatorIdentifier,
+        prevMessageReceived: start,
         customData: {
           signature: responderSignatureOnInitialState,
           signature2: responderSignatureOnConditionalTransaction,

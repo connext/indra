@@ -90,7 +90,6 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     substart = Date.now();
     const postProtocolStateChannel = await computeStateTransition(
-      params as ProtocolParams.Uninstall,
       network.provider,
       preUninstallStateChannel,
       preUninstallApp,
@@ -220,7 +219,6 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     substart = Date.now();
     const postProtocolStateChannel = await computeStateTransition(
-      params as ProtocolParams.Uninstall,
       network.provider,
       preUninstallStateChannel,
       preUninstallApp,
@@ -274,6 +272,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         to: initiatorIdentifier,
         seq: UNASSIGNED_SEQ_NO,
+        prevMessageReceived: start,
         customData: {
           signature: mySignature,
         },
@@ -288,7 +287,6 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 };
 
 async function computeStateTransition(
-  params: ProtocolParams.Uninstall,
   provider: providers.JsonRpcProvider,
   stateChannel: StateChannel,
   appInstance: AppInstance,

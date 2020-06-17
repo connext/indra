@@ -293,6 +293,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       processID,
       params,
       seq: UNASSIGNED_SEQ_NO,
+      prevMessageReceived: start,
       to: initiatorIdentifier,
       customData: {
         channel: preProtocolStateChannel.toJson(),
