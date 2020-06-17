@@ -64,9 +64,12 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       seq: 1,
       to: responderIdentifier,
       customData: {
-        channel: preProtocolStateChannel.toJson(),
-        setStateCommitments,
-        conditionalCommitments,
+        numProposedApps: preProtocolStateChannel.numProposedApps,
+        proposedAppInstancesSize: preProtocolStateChannel.proposedAppInstances.size,
+        freeBalanceVersionNumber: preProtocolStateChannel.freeBalance.latestVersionNumber,
+        appVersionNumbers: [...preProtocolStateChannel.appInstances.values()].map((app) => {
+          return { identityHash: app.identityHash, latestVersionNumber: app.latestVersionNumber };
+        }),
       },
     } as ProtocolMessageData;
 
@@ -252,6 +255,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       message,
       store,
       network: { provider },
+      preProtocolStateChannel,
     } = context;
     const { params, processID } = message;
     const log = context.log.newContext("CF-SyncProtocol");
@@ -259,26 +263,21 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     let substart = start;
     log.info(`[${processID}] Response started ${stringify(params)}`);
 
-    const {
-      multisigAddress,
-      initiatorIdentifier,
-      responderIdentifier,
-    } = params as ProtocolParams.Sync;
+    if (!preProtocolStateChannel) {
+      throw new Error("No state channel found for sync");
+    }
+
+    const { initiatorIdentifier, responderIdentifier } = params as ProtocolParams.Sync;
     const ourIdentifier = responderIdentifier;
 
     const {
       customData: {
-        channel: initiatorChannelJson,
-        setStateCommitments: initiatorSetStateCommitments,
-        conditionalCommitments: initiatorConditionalCommitments,
+        numProposedApps: counterpartyNumProposedApps,
+        proposedAppInstancesSize: counterpartyProposedAppInstancesSize,
+        freeBalanceVersionNumber: counterpartyFreeBalanceVersionNumber,
+        appVersionNumbers: counterpartyAppVersionNumbers,
       },
     } = message;
-
-    const initiatorChannel = StateChannel.fromJson(initiatorChannelJson);
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
-      multisigAddress,
-      store,
-    );
 
     const { setStateCommitments, conditionalCommitments } = await getCommitmentsFromChannel(
       preProtocolStateChannel,
@@ -299,156 +298,215 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       },
     };
 
-    const syncType = needsSyncFromCounterparty(preProtocolStateChannel, initiatorChannel);
-    log.info(`[${processID}] Syncing channel with type: ${syncType}`);
-    substart = Date.now();
-    switch (syncType) {
-      case PersistStateChannelType.SyncNumProposedApps: {
-        const proposalSync = await syncNumProposedApps(postSyncStateChannel, initiatorChannel);
-        if (proposalSync) {
-          yield [
-            PERSIST_STATE_CHANNEL,
-            PersistStateChannelType.SyncNumProposedApps,
-            proposalSync.updatedChannel,
-          ];
-          postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
+    const syncType = needsSyncFromCounterparty(
+      preProtocolStateChannel,
+      counterpartyNumProposedApps,
+      counterpartyProposedAppInstancesSize,
+      counterpartyFreeBalanceVersionNumber,
+      counterpartyAppVersionNumbers,
+    );
+
+    const syncRequestData = { syncType };
+
+    // send them back the data they need
+    if (syncType.whosSync === "theirs") {
+      switch (syncType.syncType) {
+        case PersistStateChannelType.SyncNumProposedApps: {
+          break;
         }
-        logTime(log, substart, `[${processID}] Synced proposals with initiator`);
-        break;
-      }
-      case PersistStateChannelType.SyncProposal: {
-        // sync and save all proposals
-        const proposalSync = await syncUntrackedProposals(
-          postSyncStateChannel,
-          initiatorChannel,
-          initiatorSetStateCommitments,
-          initiatorConditionalCommitments,
-          ourIdentifier,
-        );
-        yield [
-          PERSIST_STATE_CHANNEL,
-          PersistStateChannelType.SyncProposal,
-          proposalSync!.updatedChannel,
-          proposalSync!.commitments,
-        ];
-        postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
-        logTime(log, substart, `[${processID}] Synced proposals with initiator`);
-        break;
-      }
-      case PersistStateChannelType.SyncFreeBalance: {
-        const freeBalanceSync = await syncFreeBalanceState(
-          postSyncStateChannel,
-          setStateCommitments,
-          initiatorChannel,
-          initiatorSetStateCommitments,
-          initiatorConditionalCommitments,
-          ourIdentifier,
-        );
-        yield [
-          PERSIST_STATE_CHANNEL,
-          PersistStateChannelType.SyncFreeBalance,
-          freeBalanceSync!.updatedChannel,
-          freeBalanceSync!.commitments,
-          freeBalanceSync!.appContext,
-        ];
-        postSyncStateChannel = StateChannel.fromJson(freeBalanceSync!.updatedChannel.toJson());
-        logTime(log, substart, `[${processID}] Synced free balance with initiator`);
-        break;
-      }
-      case PersistStateChannelType.SyncAppInstances: {
-        const appSync = await syncAppStates(
-          postSyncStateChannel,
-          initiatorChannel,
-          initiatorSetStateCommitments,
-          ourIdentifier,
-        );
-
-        const { commitments, updatedChannel } = appSync!;
-
-        // update the channel with any double signed commitments
-        if (updatedChannel) {
-          postSyncStateChannel = StateChannel.fromJson(updatedChannel.toJson());
+        case PersistStateChannelType.SyncProposal: {
+          break;
         }
-
-        const doubleSigned: SetStateCommitment[] = [];
-        // process single-signed commitments
-        for (const commitment of commitments) {
-          if (commitment.signatures.length === 2) {
-            doubleSigned.push(commitment);
-            continue;
-          }
-
-          const initiatorApp = initiatorChannel.appInstances.get(commitment.appIdentityHash)!;
-          const app = postSyncStateChannel.appInstances.get(commitment.appIdentityHash)!;
-
-          // signature has been validated, add our signature
-          const error = yield [
-            OP_VALIDATE,
-            ProtocolNames.takeAction,
-            {
-              params: {
-                initiatorIdentifier: responderIdentifier, // from *this* protocol
-                responderIdentifier: ourIdentifier,
-                multisigAddress: postSyncStateChannel.multisigAddress,
-                appIdentityHash: app.identityHash,
-                action: initiatorApp.latestAction,
-                stateTimeout: commitment.stateTimeout,
-              },
-              appInstance: app.toJson(),
-              role: ProtocolRoles.responder,
-            },
-          ];
-          if (!!error) {
-            throw new Error(error);
-          }
-
-          // update the app
-          postSyncStateChannel.setState(
-            app,
-            await app.computeStateTransition(initiatorApp!.latestAction, provider),
-            commitment.stateTimeout,
-          );
-
-          // counterparty sig has already been asserted, add sign to commitment
-          // and update channel
-          const isAppInitiator = app.initiatorIdentifier === ourIdentifier;
-          const mySig = yield [OP_SIGN, commitment.hashToSign()];
-          await commitment.addSignatures(
-            isAppInitiator ? (mySig as any) : commitment.signatures[0],
-            isAppInitiator ? commitment.signatures[1] : (mySig as any),
-          );
-          doubleSigned.push(commitment);
+        case PersistStateChannelType.SyncFreeBalance: {
+          break;
         }
-
-        yield [
-          PERSIST_STATE_CHANNEL,
-          PersistStateChannelType.SyncAppInstances,
-          postSyncStateChannel,
-          doubleSigned,
-        ];
-
-        logTime(log, substart, `[${processID}] Synced app states with initiator`);
-        break;
+        case PersistStateChannelType.SyncAppInstances: {
+          break;
+        }
+        case PersistStateChannelType.NoChange: {
+          break;
+        }
+        case PersistStateChannelType.CreateChannel: {
+          throw new Error(`Cannot sync type: ${syncType}`);
+        }
+        default: {
+          const c: never = syncType.syncType;
+          throw new Error(`Invalid sync type: ${c}`);
+        }
       }
-      case PersistStateChannelType.NoChange: {
-        // use yield syntax to properly return values from the protocol
-        // to the controllers
-        yield [PERSIST_STATE_CHANNEL, PersistStateChannelType.NoChange, postSyncStateChannel];
-        logTime(log, substart, `[${processID}] No sync from initiator needed`);
-        break;
-      }
-      case PersistStateChannelType.CreateChannel: {
-        throw new Error(`Cannot sync type: ${syncType}`);
-      }
-      default:
-        const c: never = syncType;
-        log.error(`Unreachable: ${c}`);
     }
 
-    logTime(log, substart, `[${processID}] Synced channel with initator`);
+    const m1 = {
+      protocol,
+      processID,
+      params,
+      seq: 1,
+      to: responderIdentifier,
+      customData: syncRequestData,
+    } as ProtocolMessageData;
 
-    yield [IO_SEND, messageToSend, postSyncStateChannel];
-    logTime(log, start, `[${processID}] Response finished`);
+    const m2: { data: ProtocolMessageData } = yield [IO_SEND_AND_WAIT, m1];
+    logTime(log, substart, `[${processID}] Received initators's m2`);
+    substart = Date.now();
+
+    if (syncType.whosSync === "ours") {
+      log.info(`[${processID}] Syncing channel with type: ${syncType.syncType}`);
+      substart = Date.now();
+      switch (syncType.syncType) {
+        case PersistStateChannelType.SyncNumProposedApps: {
+          const proposalSync = await syncNumProposedApps(
+            postSyncStateChannel,
+            counterpartyNumProposedApps,
+          );
+          if (proposalSync) {
+            yield [
+              PERSIST_STATE_CHANNEL,
+              PersistStateChannelType.SyncNumProposedApps,
+              proposalSync.updatedChannel,
+            ];
+            postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
+          }
+          logTime(log, substart, `[${processID}] Synced proposals with initiator`);
+          break;
+        }
+        case PersistStateChannelType.SyncProposal: {
+          if (postSyncStateChannel.numProposedApps !== counterpartyNumProposedApps - 1) {
+            throw new Error(`Cannot sync by more than one proposed app, use restore instead.`);
+          }
+          const proposalIds = m2!.data.customData.proposalIds;
+          // sync and save all proposals
+          const proposalSync = await syncUntrackedProposals(
+            postSyncStateChannel,
+            initiatorChannel,
+            initiatorSetStateCommitments,
+            initiatorConditionalCommitments,
+            ourIdentifier,
+          );
+          yield [
+            PERSIST_STATE_CHANNEL,
+            PersistStateChannelType.SyncProposal,
+            proposalSync!.updatedChannel,
+            proposalSync!.commitments,
+          ];
+          postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
+          logTime(log, substart, `[${processID}] Synced proposals with initiator`);
+          break;
+        }
+        case PersistStateChannelType.SyncFreeBalance: {
+          const freeBalanceSync = await syncFreeBalanceState(
+            postSyncStateChannel,
+            setStateCommitments,
+            initiatorChannel,
+            initiatorSetStateCommitments,
+            initiatorConditionalCommitments,
+            ourIdentifier,
+          );
+          yield [
+            PERSIST_STATE_CHANNEL,
+            PersistStateChannelType.SyncFreeBalance,
+            freeBalanceSync!.updatedChannel,
+            freeBalanceSync!.commitments,
+            freeBalanceSync!.appContext,
+          ];
+          postSyncStateChannel = StateChannel.fromJson(freeBalanceSync!.updatedChannel.toJson());
+          logTime(log, substart, `[${processID}] Synced free balance with initiator`);
+          break;
+        }
+        case PersistStateChannelType.SyncAppInstances: {
+          const appSync = await syncAppStates(
+            postSyncStateChannel,
+            initiatorChannel,
+            initiatorSetStateCommitments,
+            ourIdentifier,
+          );
+
+          const { commitments, updatedChannel } = appSync!;
+
+          // update the channel with any double signed commitments
+          if (updatedChannel) {
+            postSyncStateChannel = StateChannel.fromJson(updatedChannel.toJson());
+          }
+
+          const doubleSigned: SetStateCommitment[] = [];
+          // process single-signed commitments
+          for (const commitment of commitments) {
+            if (commitment.signatures.length === 2) {
+              doubleSigned.push(commitment);
+              continue;
+            }
+
+            const initiatorApp = initiatorChannel.appInstances.get(commitment.appIdentityHash)!;
+            const app = postSyncStateChannel.appInstances.get(commitment.appIdentityHash)!;
+
+            // signature has been validated, add our signature
+            const error = yield [
+              OP_VALIDATE,
+              ProtocolNames.takeAction,
+              {
+                params: {
+                  initiatorIdentifier: responderIdentifier, // from *this* protocol
+                  responderIdentifier: ourIdentifier,
+                  multisigAddress: postSyncStateChannel.multisigAddress,
+                  appIdentityHash: app.identityHash,
+                  action: initiatorApp.latestAction,
+                  stateTimeout: commitment.stateTimeout,
+                },
+                appInstance: app.toJson(),
+                role: ProtocolRoles.responder,
+              },
+            ];
+            if (!!error) {
+              throw new Error(error);
+            }
+
+            // update the app
+            postSyncStateChannel.setState(
+              app,
+              await app.computeStateTransition(initiatorApp!.latestAction, provider),
+              commitment.stateTimeout,
+            );
+
+            // counterparty sig has already been asserted, add sign to commitment
+            // and update channel
+            const isAppInitiator = app.initiatorIdentifier === ourIdentifier;
+            const mySig = yield [OP_SIGN, commitment.hashToSign()];
+            await commitment.addSignatures(
+              isAppInitiator ? (mySig as any) : commitment.signatures[0],
+              isAppInitiator ? commitment.signatures[1] : (mySig as any),
+            );
+            doubleSigned.push(commitment);
+          }
+
+          yield [
+            PERSIST_STATE_CHANNEL,
+            PersistStateChannelType.SyncAppInstances,
+            postSyncStateChannel,
+            doubleSigned,
+          ];
+
+          logTime(log, substart, `[${processID}] Synced app states with initiator`);
+          break;
+        }
+        case PersistStateChannelType.NoChange: {
+          // use yield syntax to properly return values from the protocol
+          // to the controllers
+          yield [PERSIST_STATE_CHANNEL, PersistStateChannelType.NoChange, postSyncStateChannel];
+          logTime(log, substart, `[${processID}] No sync from initiator needed`);
+          break;
+        }
+        case PersistStateChannelType.CreateChannel: {
+          throw new Error(`Cannot sync type: ${syncType}`);
+        }
+        default:
+          const c: never = syncType;
+          log.error(`Unreachable: ${c}`);
+      }
+
+      logTime(log, substart, `[${processID}] Synced channel with initator`);
+
+      yield [IO_SEND, messageToSend, postSyncStateChannel];
+      logTime(log, start, `[${processID}] Response finished`);
+    }
   },
 };
 
@@ -756,24 +814,38 @@ async function assertSignerPresent(
 // we must update with. Will return false if the responder
 function needsSyncFromCounterparty(
   ourChannel: StateChannel,
-  counterpartyChannel: StateChannel,
-): PersistStateChannelType {
+  counterpartyNumProposedApps: number,
+  counterpartyProposedAppInstancesSize: number,
+  counterpartyFreeBalanceVersionNumber: number,
+  counterpartyAppVersionNumbers: { identityHash: string; latestVersionNumber: number }[],
+): { whosSync: "ours" | "theirs"; syncType: PersistStateChannelType } {
   // check channel nonces
   // covers interruptions in: propose
-  if (ourChannel.numProposedApps < counterpartyChannel.numProposedApps) {
-    if (ourChannel.proposedAppInstances.size === counterpartyChannel.proposedAppInstances.size) {
+  let whosSync: "ours" | "theirs" | undefined = undefined;
+  if (ourChannel.numProposedApps < counterpartyNumProposedApps) {
+    whosSync = "ours";
+    if (ourChannel.proposedAppInstances.size === counterpartyProposedAppInstancesSize) {
       // their proposal was rejected
-      return PersistStateChannelType.SyncNumProposedApps;
+      return { whosSync, syncType: PersistStateChannelType.SyncNumProposedApps };
     }
-    return PersistStateChannelType.SyncProposal;
+    return { whosSync, syncType: PersistStateChannelType.SyncProposal };
+  } else if (ourChannel.numProposedApps > counterpartyNumProposedApps) {
+    whosSync = "theirs";
+    if (ourChannel.proposedAppInstances.size === counterpartyProposedAppInstancesSize) {
+      // their proposal was rejected
+      return { whosSync, syncType: PersistStateChannelType.SyncNumProposedApps };
+    }
+    return { whosSync, syncType: PersistStateChannelType.SyncProposal };
   }
 
   // check free balance nonces
   // covers interruptions in: uninstall, install
-  if (
-    ourChannel.freeBalance.latestVersionNumber < counterpartyChannel.freeBalance.latestVersionNumber
-  ) {
-    return PersistStateChannelType.SyncFreeBalance;
+  if (ourChannel.freeBalance.latestVersionNumber < counterpartyFreeBalanceVersionNumber) {
+    whosSync = "ours";
+    return { whosSync, syncType: PersistStateChannelType.SyncFreeBalance };
+  } else if (ourChannel.freeBalance.latestVersionNumber > counterpartyFreeBalanceVersionNumber) {
+    whosSync = "theirs";
+    return { whosSync, syncType: PersistStateChannelType.SyncFreeBalance };
   }
 
   // because we know we have the latest free balance nonce,
@@ -783,18 +855,27 @@ function needsSyncFromCounterparty(
 
   // make sure all apps have the same nonce
   // covers interruptions in: takeAction
-  let needCounterpartyAppData = false;
-  [...ourChannel.appInstances.values()].forEach((app) => {
-    if (needCounterpartyAppData) {
-      return;
-    }
-    const counterpartyCopy = counterpartyChannel.appInstances.get(app.identityHash);
-    if (counterpartyCopy && counterpartyCopy.latestVersionNumber > app.latestVersionNumber) {
-      needCounterpartyAppData = true;
-    }
-  });
+  const needCounterpartyAppData = counterpartyAppVersionNumbers.reduce(
+    (need, app) => {
+      const counterpartyCopy = ourChannel.appInstances.get(app.identityHash);
+      if (counterpartyCopy && counterpartyCopy.latestVersionNumber > app.latestVersionNumber) {
+        need.need = need.need || true;
+        need.ours = need.ours || true;
+      } else if (
+        counterpartyCopy &&
+        counterpartyCopy.latestVersionNumber < app.latestVersionNumber
+      ) {
+        need.need = need.need || true;
+        need.ours = need.ours && false;
+      }
+      return need;
+    },
+    { need: false, ours: false },
+  );
 
-  return needCounterpartyAppData
-    ? PersistStateChannelType.SyncAppInstances
-    : PersistStateChannelType.NoChange;
+  whosSync = needCounterpartyAppData.ours ? "ours" : "theirs";
+  const ret = needCounterpartyAppData.need
+    ? { whosSync, syncType: PersistStateChannelType.SyncAppInstances }
+    : { whosSync, syncType: PersistStateChannelType.NoChange };
+  return ret;
 }
