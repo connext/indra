@@ -41,7 +41,8 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     const start = Date.now();
     let substart = start;
     const { processID, params } = message;
-    log.info(`[${processID}] Initiation started: ${stringify(params)}`);
+    const loggerId = (params as ProtocolParams.Sync).multisigAddress || processID;
+    log.info(`[${loggerId}] Initiation started: ${stringify(params)}`);
 
     const {
       multisigAddress,
@@ -74,7 +75,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     // 200ms
     const m2 = yield [IO_SEND_AND_WAIT, m1];
-    logTime(log, substart, `[${processID}] Received responder's m2`);
+    logTime(log, substart, `[${loggerId}] Received responder's m2`);
     substart = Date.now();
 
     const {
@@ -99,7 +100,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     let postSyncStateChannel = StateChannel.fromJson(preProtocolStateChannel.toJson());
 
     const syncType = needsSyncFromCounterparty(preProtocolStateChannel, responderChannel);
-    log.info(`[${processID}] Syncing channel with type: ${syncType}`);
+    log.info(`[${loggerId}] Syncing channel with type: ${syncType}`);
     substart = Date.now();
     switch (syncType) {
       case PersistStateChannelType.SyncNumProposedApps: {
@@ -112,7 +113,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           ];
           postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
         }
-        logTime(log, substart, `[${processID}] Synced number of proposed apps with responder`);
+        logTime(log, substart, `[${loggerId}] Synced number of proposed apps with responder`);
         break;
       }
       case PersistStateChannelType.SyncProposal: {
@@ -131,7 +132,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           proposalSync!.commitments,
         ];
         postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
-        logTime(log, substart, `[${processID}] Synced proposals with responder`);
+        logTime(log, substart, `[${loggerId}] Synced proposals with responder`);
         break;
       }
       case PersistStateChannelType.SyncFreeBalance: {
@@ -151,7 +152,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           freeBalanceSync!.appContext,
         ];
         postSyncStateChannel = StateChannel.fromJson(freeBalanceSync!.updatedChannel.toJson());
-        logTime(log, substart, `[${processID}] Synced free balance with responder`);
+        logTime(log, substart, `[${loggerId}] Synced free balance with responder`);
         break;
       }
       case PersistStateChannelType.SyncAppInstances: {
@@ -226,14 +227,14 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           doubleSigned,
         ];
 
-        logTime(log, substart, `[${processID}] Synced app states with responder`);
+        logTime(log, substart, `[${loggerId}] Synced app states with responder`);
         break;
       }
       case PersistStateChannelType.NoChange: {
         // use yield syntax to properly return values from the protocol
         // to the controllers
         yield [PERSIST_STATE_CHANNEL, PersistStateChannelType.NoChange, postSyncStateChannel];
-        logTime(log, start, `[${processID}] No sync from responder needed`);
+        logTime(log, start, `[${loggerId}] No sync from responder needed`);
         break;
       }
       case PersistStateChannelType.CreateChannel: {
@@ -244,7 +245,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         log.error(`Unreachable: ${c}`);
     }
 
-    logTime(log, start, `[${processID}] Initiation finished`);
+    logTime(log, start, `[${loggerId}] Initiation finished`);
   },
 
   1 /* Responding */: async function* (context: Context) {
@@ -257,7 +258,8 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-SyncProtocol");
     const start = Date.now();
     let substart = start;
-    log.info(`[${processID}] Response started ${stringify(params)}`);
+    const loggerId = (params as ProtocolParams.Sync).multisigAddress || processID;
+    log.info(`[${loggerId}] Response started ${stringify(params)}`);
 
     const {
       multisigAddress,
@@ -300,7 +302,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     };
 
     const syncType = needsSyncFromCounterparty(preProtocolStateChannel, initiatorChannel);
-    log.info(`[${processID}] Syncing channel with type: ${syncType}`);
+    log.info(`[${loggerId}] Syncing channel with type: ${syncType}`);
     substart = Date.now();
     switch (syncType) {
       case PersistStateChannelType.SyncNumProposedApps: {
@@ -313,7 +315,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           ];
           postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
         }
-        logTime(log, substart, `[${processID}] Synced proposals with initiator`);
+        logTime(log, substart, `[${loggerId}] Synced proposals with initiator`);
         break;
       }
       case PersistStateChannelType.SyncProposal: {
@@ -332,7 +334,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           proposalSync!.commitments,
         ];
         postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
-        logTime(log, substart, `[${processID}] Synced proposals with initiator`);
+        logTime(log, substart, `[${loggerId}] Synced proposals with initiator`);
         break;
       }
       case PersistStateChannelType.SyncFreeBalance: {
@@ -352,7 +354,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           freeBalanceSync!.appContext,
         ];
         postSyncStateChannel = StateChannel.fromJson(freeBalanceSync!.updatedChannel.toJson());
-        logTime(log, substart, `[${processID}] Synced free balance with initiator`);
+        logTime(log, substart, `[${loggerId}] Synced free balance with initiator`);
         break;
       }
       case PersistStateChannelType.SyncAppInstances: {
@@ -427,14 +429,14 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           doubleSigned,
         ];
 
-        logTime(log, substart, `[${processID}] Synced app states with initiator`);
+        logTime(log, substart, `[${loggerId}] Synced app states with initiator`);
         break;
       }
       case PersistStateChannelType.NoChange: {
         // use yield syntax to properly return values from the protocol
         // to the controllers
         yield [PERSIST_STATE_CHANNEL, PersistStateChannelType.NoChange, postSyncStateChannel];
-        logTime(log, substart, `[${processID}] No sync from initiator needed`);
+        logTime(log, substart, `[${loggerId}] No sync from initiator needed`);
         break;
       }
       case PersistStateChannelType.CreateChannel: {
@@ -445,10 +447,10 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         log.error(`Unreachable: ${c}`);
     }
 
-    logTime(log, substart, `[${processID}] Synced channel with initator`);
+    logTime(log, substart, `[${loggerId}] Synced channel with initator`);
 
     yield [IO_SEND, messageToSend, postSyncStateChannel];
-    logTime(log, start, `[${processID}] Response finished`);
+    logTime(log, start, `[${loggerId}] Response finished`);
   },
 };
 
