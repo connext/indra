@@ -31,6 +31,7 @@ import { CFCoreRecordRepository } from "./cfCore.repository";
 import { CFCoreStore } from "./cfCore.store";
 import { ChallengeRepository, ProcessedBlockRepository } from "../challenge/challenge.repository";
 import { CacheModule } from "../caching/cache.module";
+import { CacheService } from "../caching/cache.service";
 
 const createTestStateChannelJSONs = (
   nodeIdentifier: string,
@@ -169,6 +170,7 @@ describe("CFCoreStore", () => {
   let cfCoreStore: CFCoreStore;
   let configService: ConfigService;
   let channelRepository: ChannelRepository;
+  let cacheService: CacheService;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -195,10 +197,12 @@ describe("CFCoreStore", () => {
 
     cfCoreStore = moduleRef.get<CFCoreStore>(CFCoreStore);
     configService = moduleRef.get<ConfigService>(ConfigService);
+    cacheService = moduleRef.get<CacheService>(CacheService);
     channelRepository = moduleRef.get<ChannelRepository>(ChannelRepository);
   });
 
   afterEach(async () => {
+    await cacheService.deleteAll();
     await getConnection().dropDatabase();
     await getConnection().close();
   });

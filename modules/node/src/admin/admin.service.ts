@@ -1,16 +1,12 @@
 import { StateChannelJSON } from "@connext/types";
 import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
 
-import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { ChannelService } from "../channel/channel.service";
-import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
-import { ChannelRepository, convertChannelToJSON } from "../channel/channel.repository";
+import { ChannelRepository, ChannelSerializer } from "../channel/channel.repository";
 import { CFCoreStore } from "../cfCore/cfCore.store";
-import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 export interface RepairCriticalAddressesResponse {
   fixed: string[];
@@ -22,13 +18,9 @@ export class AdminService implements OnApplicationBootstrap {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
-    private readonly configService: ConfigService,
     private readonly log: LoggerService,
     private readonly cfCoreStore: CFCoreStore,
-    private readonly setupCommitment: SetupCommitmentRepository,
     private readonly channelRepository: ChannelRepository,
-    private readonly cfCoreRepository: CFCoreRecordRepository,
-    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("AdminService");
   }
@@ -39,7 +31,7 @@ export class AdminService implements OnApplicationBootstrap {
   /**  Get channels by address */
   async getStateChannelByUserPublicIdentifier(userIdentifier: string): Promise<StateChannelJSON> {
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userIdentifier);
-    return convertChannelToJSON(channel);
+    return ChannelSerializer.toJSON(channel);
   }
 
   /**  Get channels by multisig */

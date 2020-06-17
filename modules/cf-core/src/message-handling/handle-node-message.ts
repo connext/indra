@@ -18,5 +18,9 @@ export const handleRejectProposalMessage = async (
     throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appInstance.identityHash));
   }
   const stateChannel = StateChannel.fromJson(json).removeProposal(appInstance.identityHash);
-  await store.removeAppProposal(stateChannel.multisigAddress, appInstance.identityHash);
+  await store.removeAppProposal(
+    stateChannel.multisigAddress,
+    appInstance.identityHash,
+    stateChannel.toJson(),
+  );
 };

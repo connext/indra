@@ -305,6 +305,7 @@ export class CFCore {
               stateChannel.numProposedApps,
               setState.toJson(),
               conditional.toJson(),
+              stateChannel.toJson(),
             );
             break;
           }
@@ -320,6 +321,7 @@ export class CFCore {
                 appContext.identityHash,
                 stateChannel.toJson().freeBalanceAppInstance!,
                 setState.toJson(),
+                stateChannel.toJson(),
               );
             } else {
               const latestInstalled = stateChannel
@@ -331,6 +333,7 @@ export class CFCore {
                 latestInstalled,
                 stateChannel.freeBalance.toJson(),
                 setState.toJson(),
+                stateChannel.toJson(),
               );
             }
             break;
@@ -341,6 +344,7 @@ export class CFCore {
                 stateChannel.multisigAddress,
                 stateChannel.appInstances.get(commitment.appIdentityHash)!.toJson(),
                 commitment.toJson(),
+                stateChannel.toJson(),
               );
             }
             break;
@@ -383,12 +387,17 @@ export class CFCore {
               numProposedApps,
               signedSetStateCommitment.toJson(),
               signedConditionalTxCommitment.toJson(),
+              postProtocolChannel.toJson(),
             );
             break;
           }
 
           case PersistAppType.RemoveProposal: {
-            await this.storeService.removeAppProposal(multisigAddress, identityHash);
+            await this.storeService.removeAppProposal(
+              multisigAddress,
+              identityHash,
+              postProtocolChannel.toJson(),
+            );
             break;
           }
 
@@ -398,6 +407,7 @@ export class CFCore {
               (app as AppInstance).toJson(),
               freeBalance.toJson(),
               signedSetStateCommitment.toJson(),
+              postProtocolChannel.toJson(),
             );
             break;
           }
@@ -407,6 +417,7 @@ export class CFCore {
               multisigAddress,
               (app as AppInstance).toJson(),
               signedSetStateCommitment.toJson(),
+              postProtocolChannel.toJson(),
             );
             break;
           }
@@ -417,6 +428,7 @@ export class CFCore {
               identityHash,
               freeBalance.toJson(),
               signedSetStateCommitment.toJson(),
+              postProtocolChannel.toJson(),
             );
             // final state of app before uninstall
             appContext = app;
@@ -424,7 +436,11 @@ export class CFCore {
           }
 
           case PersistAppType.Reject: {
-            await this.storeService.removeAppProposal(multisigAddress, identityHash);
+            await this.storeService.removeAppProposal(
+              multisigAddress,
+              identityHash,
+              postProtocolChannel.toJson(),
+            );
             break;
           }
 
