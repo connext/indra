@@ -8,6 +8,7 @@ import {
   getRandomBytes32,
   getSignerAddressFromPublicIdentifier,
   stringify,
+  ChannelSigner,
 } from "@connext/utils";
 import { utils } from "ethers";
 import intervalPromise from "interval-promise";
@@ -76,11 +77,12 @@ export default {
     const randomInterval = Math.round(argv.interval * 0.75 + Math.random() * (argv.interval * 0.5));
     log.info(`Using random inteval: ${randomInterval}`);
 
+    const signer = new ChannelSigner(argv.privateKey, env.ethProviderUrl);
     const client = await connect({
       ...env,
-      signer: argv.privateKey,
+      signer,
       loggerService: new ColorfulLogger(NAME, argv.logLevel, true, argv.concurrencyIndex),
-      store: getFileStore(`.connext-store/${argv.privateKey}`),
+      store: getFileStore(`.connext-store/${signer.address}`),
     });
 
     log.info(`Client ${argv.concurrencyIndex}:
