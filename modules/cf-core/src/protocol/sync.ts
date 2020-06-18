@@ -78,7 +78,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           appVersionNumbers: responderAppVersionNumbers,
           app: responderApp,
           commitments: responderCommitments,
-          unsyncedAppId,
+          unsyncedApp,
           freeBalanceSyncType,
         },
       },
@@ -94,7 +94,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
             conditional?: ConditionalTransactionCommitmentJSON;
           };
           app: AppInstanceJson;
-          unsyncedAppId?: string;
+          unsyncedApp?: AppInstanceJson;
           freeBalanceSyncType?: "install" | "uninstall";
         };
       };
@@ -174,7 +174,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       protocol,
       processID,
       params,
-      seq: 1,
+      seq: 2,
       to: responderIdentifier,
       customData: { ...counterpartySyncInfo },
     };
@@ -224,7 +224,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
             responderFreeBalanceVersionNumber,
             responderCommitments.setState,
             responderApp,
-            unsyncedAppId!,
+            unsyncedApp!,
             freeBalanceSyncType!,
           );
           yield [
@@ -457,7 +457,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         customData: {
           commitments: initiatorCommitments,
           app: initiatorApp,
-          unsyncedAppId,
+          unsyncedApp,
           freeBalanceSyncType,
         },
       },
@@ -469,7 +469,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
             conditional?: ConditionalTransactionCommitmentJSON;
           };
           app: AppInstanceJson;
-          unsyncedAppId?: string;
+          unsyncedApp?: AppInstanceJson;
           freeBalanceSyncType?: "install" | "uninstall";
         };
       };
@@ -517,7 +517,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
             initiatorFreeBalanceVersionNumber,
             initiatorCommitments.setState,
             initiatorApp,
-            unsyncedAppId!,
+            unsyncedApp!,
             freeBalanceSyncType!,
           );
           yield [
@@ -712,7 +712,7 @@ async function syncFreeBalanceState(
   counterpartyFreeBalanceVersionNumber: number,
   counterpartySetStateCommitment: SetStateCommitmentJSON,
   counterpartyFreeBalance: AppInstanceJson,
-  unsyncedAppId: string,
+  unsyncedApp: AppInstanceJson,
   freeBalanceSyncType: "install" | "uninstall",
 ) {
   if (ourChannel.freeBalance.latestVersionNumber >= counterpartyFreeBalanceVersionNumber) {
@@ -731,16 +731,13 @@ async function syncFreeBalanceState(
   );
 
   // get the unsynced app or proposal
-  const unsynced =
+  let unsynced =
     freeBalanceSyncType === "install"
-      ? ourChannel.proposedAppInstances.get(unsyncedAppId)
-      : ourChannel.appInstances.get(unsyncedAppId);
+      ? ourChannel.proposedAppInstances.get(unsyncedApp.identityHash)
+      : ourChannel.appInstances.get(unsyncedApp.identityHash);
   if (!unsynced) {
-    throw new Error(
-      `Could not find corresponding proposal or app for unsynced id ${unsyncedAppId} in our channel. Proposed apps: ${stringify(
-        [...ourChannel.proposedAppInstances.keys()],
-      )}, installed apps: ${stringify([...ourChannel.appInstances.keys()])}`,
-    );
+    // if we cant find it in our apps, it means we rejected it, so get it from their apps
+    unsynced = unsyncedApp;
   }
 
   // update the channel
@@ -748,11 +745,13 @@ async function syncFreeBalanceState(
   let appContext: AppInstance | undefined = undefined;
   if (freeBalanceSyncType === "install") {
     updatedChannel = ourChannel
-      .removeProposal(unsyncedAppId)
+      .removeProposal(unsynced.identityHash)
       .addAppInstance(AppInstance.fromJson(unsynced as AppInstanceJson))
       .setFreeBalance(freeBalance);
   } else {
-    updatedChannel = ourChannel.removeAppInstance(unsyncedAppId).setFreeBalance(freeBalance);
+    updatedChannel = ourChannel
+      .removeAppInstance(unsynced.identityHash)
+      .setFreeBalance(freeBalance);
     appContext = unsynced as AppInstance;
   }
 
@@ -991,10 +990,16 @@ function getFreeBalanceSyncInfoForCounterparty(
   );
   const counterpartyActiveApps = counterpartyAppVersionNumbers.map((x) => x.identityHash);
   const counterpartyProposals = counterpartyProposalVersionNumbers.map((x) => x.identityHash);
+  const counterpartyApps = counterpartyAppVersionNumbers.map((a) => a.identityHash);
   // free balance gets out of sync by either installing a proposal, or
   // uninstalling an active app
   const uninstalledAppId = counterpartyActiveApps.find((appId) => !activeAppIds.includes(appId));
-  const installedProposalId = activeAppIds.find((appId) => counterpartyProposals.includes(appId));
+
+  // if it's not in their proposals, they rejected it
+  const installedProposalId =
+    activeAppIds.find((appId) => counterpartyProposals.includes(appId)) ||
+    activeAppIds.find((appId) => !counterpartyApps.includes(appId));
+
   if (!installedProposalId && !uninstalledAppId) {
     throw new Error(
       `No corresponding out of sync proposal or app found. Our active apps: ${stringify(
@@ -1011,10 +1016,13 @@ function getFreeBalanceSyncInfoForCounterparty(
   }
 
   const unsyncedAppId = uninstalledAppId || installedProposalId;
+  const unsyncedApp =
+    ourChannel.appInstances.get(unsyncedAppId!)?.toJson() ||
+    ourChannel.proposedAppInstances.get(unsyncedAppId!);
   return {
     commitments: { setState: freeBalanceSetState },
     app: ourChannel.freeBalance.toJson(),
-    unsyncedAppId,
+    unsyncedApp: unsyncedApp || { identityHash: unsyncedAppId },
     freeBalanceSyncType: unsyncedAppId === uninstalledAppId ? "uninstall" : "install",
   };
 }
