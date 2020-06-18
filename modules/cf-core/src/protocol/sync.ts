@@ -892,20 +892,22 @@ function needsSyncFromCounterparty(
 
   // make sure all apps have the same nonce
   // covers interruptions in: takeAction
-  whosSync = "theirs";
-  let synced = true;
   counterpartyAppVersionNumbers.forEach(({ identityHash, latestVersionNumber }) => {
     const ours = ourChannel.appInstances.get(identityHash);
-    if (ours && ours.latestVersionNumber < latestVersionNumber) {
+    if (!ours) {
+      return;
+    }
+    if (ours.latestVersionNumber < latestVersionNumber) {
       whosSync = "ours";
-    } else if (ours && ours.latestVersionNumber !== latestVersionNumber) {
-      synced = synced && false;
+    } else if (ours.latestVersionNumber > latestVersionNumber) {
+      whosSync = "theirs";
     }
   });
-  if (!synced) {
-    return { whosSync, syncType: PersistStateChannelType.SyncAppInstances };
-  }
-  return { whosSync, syncType: PersistStateChannelType.NoChange };
+  // note: if you return NO_CHANGE here, then the initiator of the protocol
+  // will not be able to give the correct info to the counterparty
+  return !!whosSync
+    ? { whosSync, syncType: PersistStateChannelType.SyncAppInstances }
+    : { whosSync: "theirs", syncType: PersistStateChannelType.NoChange };
 }
 
 // needs missing set state commitment and missing conditional commitment

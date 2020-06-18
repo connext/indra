@@ -54,6 +54,11 @@ describe("Sync", () => {
 
   const log = new Logger("SyncTest", env.logLevel, true);
 
+  afterEach(async () => {
+    // cleanup
+    sharedEventEmitter.removeAllListeners();
+  }, 60_000);
+
   beforeEach(async () => {
     // test global fixtures
     sharedEventEmitter = new EventEmitter();
@@ -79,6 +84,7 @@ describe("Sync", () => {
     storeServiceB = getMemoryStore();
     channelSignerB = new ChannelSigner(B_PRIVATE_KEY, ethUrl);
     await storeServiceB.init();
+    await storeServiceB.clear();
     nodeB = await CFCore.create(
       messagingServiceB,
       storeServiceB,
@@ -150,10 +156,10 @@ describe("Sync", () => {
         new Logger("CreateClient", env.logLevel, true, "A-Recreated"),
         false,
       );
+      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
       await (newNodeA as CFCore).rpcRouter.dispatch(
         constructInstallRpc(identityHash, multisigAddress),
       );
-      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
       expect(syncedChannel).toMatchObject(expectedChannel!);
       const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
       const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
@@ -1021,15 +1027,13 @@ describe("Sync", () => {
         ),
       ]);
 
-      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
       expect(eventData).toMatchObject({
         from: nodeA.publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).toMatchObject(expectedChannel!);
 
-      //attempt to uninstall
+      // attempt to uninstall
       await uninstallApp(newNodeA as CFCore, nodeB, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
@@ -1057,13 +1061,11 @@ describe("Sync", () => {
         ),
       ]);
 
-      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
       expect(eventData).toMatchObject({
         from: nodeB.publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).toMatchObject(expectedChannel!);
 
       //attempt to uninstall
       await uninstallApp(nodeA, newNodeB as CFCore, appIdentityHash, multisigAddress);
