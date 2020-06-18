@@ -215,10 +215,7 @@
   },
   "4": {
     "Token": {
-      "address": "0xB08673303bA415203cBfaE2E559568538375e5E8",
-      "creationCodeHash": "0x0f5a7fec416c49bd9ff2c93dc9deaecefd6920a95c33c1a19013887603a40a80",
-      "runtimeCodeHash": "0xa52e3215610f412638ecf812b04abc3a1f261048fa0bb9b891a8237a448eeb61",
-      "txHash": "0x80a46fddb75852514d696a0f4bcb914f57f36a36d5d602abb45065e9c39e2f21"
+      "address": "0x16655FAf612D714039F92c408407D46c5A394a6C"
     },
     "SAIToken": {
       "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
