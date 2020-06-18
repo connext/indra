@@ -145,7 +145,9 @@ export default {
         try {
           // Send transfer
           log.info(
-            `Sending transfer #${sentPayments}/${limit} to ${abrv(receiverIdentifier)} with id ${abrv(paymentId)}`,
+            `Sending transfer #${sentPayments}/${limit} to ${abrv(
+              receiverIdentifier,
+            )} with id ${abrv(paymentId)}`,
           );
           await agent.pay(receiverIdentifier, receiverSigner, TRANSFER_AMT, paymentId);
           end[paymentId] = Date.now();
@@ -155,8 +157,10 @@ export default {
           sentPayments++;
         } catch (err) {
           log.error(`Error sending tranfer: ${err.message}`);
-          exitCode += 1;
-          stop();
+          if (!err.message.includes("timed out after")) {
+            exitCode += 1;
+            stop();
+          }
         }
       },
       // add slight randomness to interval so that it's somewhere between
@@ -187,7 +191,11 @@ export default {
 
     while (true) {
       if (Date.now() - agent.lastReceivedOn > argv.interval * 5) {
-        log.warn(`No payments recieved for ${Date.now() - agent.lastReceivedOn} ms. Bot ${client.publicIdentifier} is exiting.`);
+        log.warn(
+          `No payments recieved for ${Date.now() - agent.lastReceivedOn} ms. Bot ${
+            client.publicIdentifier
+          } is exiting.`,
+        );
         break;
       } else {
         await delay(argv.interval);
