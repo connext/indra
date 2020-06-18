@@ -5,6 +5,7 @@ import {
   IConnextClient,
   ILoggerService,
   PublicParams,
+  CF_METHOD_TIMEOUT,
 } from "@connext/types";
 import {
   abrv,

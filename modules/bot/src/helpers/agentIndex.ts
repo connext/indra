@@ -14,6 +14,10 @@ export const removeAgentIdentifierFromIndex = async (identifier: string): Promis
   });
 };
 
+export const clearRegistry = async (): Promise<void> => {
+  return axios.delete(`${BOT_REGISTRY_URL}/agent`, { data: {} });
+};
+
 const getRandomInt = (max: number) => {
   return Math.floor(Math.random() * Math.floor(max));
 };

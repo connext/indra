@@ -8,6 +8,7 @@ import {
   getRandomBytes32,
   getSignerAddressFromPublicIdentifier,
   stringify,
+  ChannelSigner,
 } from "@connext/utils";
 import { utils } from "ethers";
 import intervalPromise from "interval-promise";
@@ -18,6 +19,7 @@ import {
   addAgentIdentifierToIndex,
   getRandomAgentIdentifierFromIndex,
   removeAgentIdentifierFromIndex,
+  clearRegistry,
 } from "../helpers/agentIndex";
 
 import { Agent } from "./agent";
@@ -65,7 +67,7 @@ export default {
     const NAME = `Bot #${argv.concurrencyIndex}`;
     const log = new ColorfulLogger(NAME, 3, true, argv.concurrencyIndex);
     log.info(`Launched ${NAME}`);
-    const TRANSFER_AMT = parseEther("0.0001");
+    const TRANSFER_AMT = parseEther("0.001");
     const DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 1 eth
     const limit = argv.limit;
     const start: { [paymentId: string]: number } = {};
@@ -75,11 +77,12 @@ export default {
     const randomInterval = Math.round(argv.interval * 0.75 + Math.random() * (argv.interval * 0.5));
     log.info(`Using random inteval: ${randomInterval}`);
 
+    const signer = new ChannelSigner(argv.privateKey, env.ethProviderUrl);
     const client = await connect({
       ...env,
-      signer: argv.privateKey,
+      signer,
       loggerService: new ColorfulLogger(NAME, argv.logLevel, true, argv.concurrencyIndex),
-      store: getFileStore(`.connext-store/${argv.privateKey}`),
+      store: getFileStore(`.connext-store/${signer.address}`),
     });
 
     log.info(`Client ${argv.concurrencyIndex}:
@@ -106,15 +109,41 @@ export default {
     log.info(`Registering address ${client.publicIdentifier}`);
     await addAgentIdentifierToIndex(client.publicIdentifier);
 
+    // Register protocol failure listeners
+    let failed: string | undefined = undefined;
+    client.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, (msg) => {
+      failed = `Stopping interval, caught propose install failed event: ${stringify(msg)}`;
+    });
+    client.on(EventNames.INSTALL_FAILED_EVENT, (msg) => {
+      failed = `Stopping interval, caught install failed event: ${stringify(msg)}`;
+    });
+    client.on(EventNames.UPDATE_STATE_FAILED_EVENT, (msg) => {
+      failed = `Stopping interval, caught take action failed event: ${stringify(msg)}`;
+    });
+    client.on(EventNames.UNINSTALL_FAILED_EVENT, (msg) => {
+      failed = `Stopping interval, caught uninstall failed event: ${stringify(msg)}`;
+    });
+
     // Setup agent logic to transfer on an interval
     let sentPayments = 1;
+    let unavailableCount = 0;
     await intervalPromise(
       async (_, stop) => {
         log.debug(`heartbeat thump thump`);
 
+        // stop on any protocol failures
+        if (failed) {
+          log.error(failed);
+          await clearRegistry();
+          stop();
+          return;
+        }
+
         // Only send up to the limit of payments
         if (sentPayments >= limit) {
+          await removeAgentIdentifierFromIndex(client.publicIdentifier);
           stop();
+          return;
         }
 
         // Deposit if agent is out of funds + if a request isn't already in flight
@@ -129,6 +158,13 @@ export default {
 
         if (!receiverIdentifier) {
           log.warn(`No recipients are available. Doing nothing..`);
+          unavailableCount += 1;
+        }
+
+        // break if no recipients available
+        if (unavailableCount > 5) {
+          log.warn(`Could not find recipient for ${unavailableCount} cycles, exiting poller.`);
+          stop();
           return;
         }
 
@@ -160,6 +196,8 @@ export default {
           if (!err.message.includes("timed out after")) {
             exitCode += 1;
             stop();
+            // await clearRegistry();
+            return;
           }
         }
       },

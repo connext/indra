@@ -50,8 +50,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
     let substart = start;
-    log.info(`[${processID}] Initiation started`);
-    log.debug(`[${processID}] Protocol initiated with parameters ${stringify(params)}`);
+    const loggerId = (params as ProtocolParams.Install).proposal.identityHash || processID;
+    log.info(`[${loggerId}] Initiation started`);
+    log.debug(`[${loggerId}] Protocol initiated with parameters ${stringify(params)}`);
 
     if (!preProtocolStateChannel) {
       throw new Error("No state channel found for install");
@@ -98,7 +99,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     if (!!error) {
       throw new Error(error);
     }
-    logTime(log, substart, `[${processID}] Validated app ${newAppInstance.identityHash}`);
+    logTime(log, substart, `[${loggerId}] Validated app ${newAppInstance.identityHash}`);
     substart = Date.now();
 
     const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
@@ -134,8 +135,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     const responderSignerAddress = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
-    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== responderSignerAddress;
-
     // 7ms
     // always use free balance key to sign free balance update
     await assertIsValidSignature(
@@ -146,17 +145,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         freeBalanceUpdateData.toJson(),
       )}`,
     );
-    logTime(log, substart, `[${processID}] Verified responder's sig on free balance update`);
+    logTime(log, substart, `[${loggerId}] Verified responder's sig on free balance update`);
     substart = Date.now();
 
-    // add signatures to commitment
     await freeBalanceUpdateData.addSignatures(
-      isChannelInitiator
-        ? (mySignatureOnFreeBalanceStateUpdate as any)
-        : counterpartySignatureOnFreeBalanceStateUpdate,
-      isChannelInitiator
-        ? counterpartySignatureOnFreeBalanceStateUpdate
-        : (mySignatureOnFreeBalanceStateUpdate as any),
+      counterpartySignatureOnFreeBalanceStateUpdate,
+      mySignatureOnFreeBalanceStateUpdate,
     );
 
     yield [
@@ -168,7 +162,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 335ms
-    logTime(log, start, `[${processID}] Initiation finished`);
+    logTime(log, start, `[${loggerId}] Initiation finished`);
   } as any,
 
   /**
@@ -192,8 +186,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
     let substart = start;
-    log.info(`[${processID}] Response started`);
-    log.debug(`[${processID}] Protocol response started with parameters ${stringify(params)}`);
+    const loggerId = (params as ProtocolParams.Install).proposal.identityHash || processID;
+    log.info(`[${loggerId}] Response started`);
+    log.debug(`[${loggerId}] Protocol response started with parameters ${stringify(params)}`);
 
     // Aliasing `signature` to this variable name for code clarity
     const counterpartySignatureOnFreeBalanceStateUpdate = signature;
@@ -243,7 +238,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     if (!!error) {
       throw new Error(error);
     }
-    logTime(log, substart, `[${processID}] Validated app ${newAppInstance.identityHash}`);
+    logTime(log, substart, `[${loggerId}] Validated app ${newAppInstance.identityHash}`);
     substart = Date.now();
 
     // 7ms
@@ -259,20 +254,15 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         freeBalanceUpdateData.toJson(),
       )}`,
     );
-    logTime(log, substart, `[${processID}] Verified initiator's free balance update sig`);
+    logTime(log, substart, `[${loggerId}] Verified initiator's free balance update sig`);
     substart = Date.now();
 
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateDataHash];
 
     // add signature
-    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== protocolInitiatorAddr;
     await freeBalanceUpdateData.addSignatures(
-      isChannelInitiator
-        ? (mySignatureOnFreeBalanceStateUpdate as any)
-        : counterpartySignatureOnFreeBalanceStateUpdate,
-      isChannelInitiator
-        ? counterpartySignatureOnFreeBalanceStateUpdate
-        : (mySignatureOnFreeBalanceStateUpdate as any),
+      counterpartySignatureOnFreeBalanceStateUpdate,
+      mySignatureOnFreeBalanceStateUpdate,
     );
 
     // 13ms
@@ -283,7 +273,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       newAppInstance,
       freeBalanceUpdateData,
     ];
-    logTime(log, substart, `[${processID}] Persisted app ${newAppInstance.identityHash}`);
+    logTime(log, substart, `[${loggerId}] Persisted app ${newAppInstance.identityHash}`);
     substart = Date.now();
 
     // 154ms
@@ -293,6 +283,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         protocol,
         to: initiatorIdentifier,
+        prevMessageReceived: start,
         customData: {
           signature: mySignatureOnFreeBalanceStateUpdate,
         },
@@ -302,7 +293,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ] as any;
 
     // 272ms
-    logTime(log, start, `[${processID}] Response finished`);
+    logTime(log, start, `[${loggerId}] Response finished`);
   } as any,
 };
 
