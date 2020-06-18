@@ -75,9 +75,7 @@ export const createCFChannelProvider = async ({
     );
   } catch (e) {
     console.error(
-      `Could not setup cf-core with sync protocol on, Error: ${stringify(
-        e,
-      )}. Trying again without syncing on start...`,
+      `Could not setup cf-core with sync protocol on, Error: ${e.message}. Trying again without syncing on start...`,
     );
   }
   if (!cfCore) {
