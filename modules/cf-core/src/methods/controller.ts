@@ -1,4 +1,4 @@
-import { MethodName, MethodParam, MethodResult } from "@connext/types";
+import { MethodName, MethodParam, MethodResult, ProtocolNames } from "@connext/types";
 import { capitalize, logTime, stringify } from "@connext/utils";
 
 import { RequestHandler } from "../request-handler";
@@ -31,9 +31,9 @@ export abstract class MethodController {
 
     let result: MethodResult | undefined;
     let error: Error | undefined;
+    let preProtocolStateChannel: StateChannel | undefined;
     try {
       // GET CHANNEL BEFORE EXECUTION
-      let preProtocolStateChannel: StateChannel | undefined;
       if ((params as any).multisigAddress) {
         const json = await requestHandler.store.getStateChannel((params as any).multisigAddress);
         preProtocolStateChannel = json && StateChannel.fromJson(json);
@@ -65,6 +65,32 @@ export abstract class MethodController {
     } catch (e) {
       log.error(`Caught error in method controller: ${e.stack}`);
       error = e;
+    }
+
+    // retry if error
+    const outOfSyncErr =
+      (error?.message || "").includes(`Validating a signature`) ||
+      (error?.message || "").includes(`assertIsValidSignature`);
+    if (preProtocolStateChannel && outOfSyncErr) {
+      // dispatch sync rpc call
+      log.warn(`Caught error when validating a signature, syncing channels and retrying method.`);
+      const { publicIdentifier, protocolRunner, router } = requestHandler;
+      const responderIdentifier = [
+        preProtocolStateChannel.initiatorIdentifier,
+        preProtocolStateChannel.responderIdentifier,
+      ].find((identifier) => identifier !== publicIdentifier)!;
+      log.info(`Channel synced, retrying method`);
+      try {
+        const { channel } = await protocolRunner.initiateProtocol(router, ProtocolNames.sync, {
+          multisigAddress: preProtocolStateChannel.multisigAddress,
+          initiatorIdentifier: publicIdentifier,
+          responderIdentifier,
+        });
+        result = await this.executeMethodImplementation(requestHandler, params, channel);
+      } catch (e) {
+        log.error(`Caught error in method controller while attempting retry + sync: ${e.stack}`);
+        error = e;
+      }
     }
 
     // don't do this in a finally to ensure any errors with releasing the
@@ -114,4 +140,3 @@ export abstract class MethodController {
     returnValue: MethodResult,
   ): Promise<void> {}
 }
-
