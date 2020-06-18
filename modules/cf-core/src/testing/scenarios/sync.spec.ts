@@ -517,6 +517,147 @@ describe("Sync", () => {
     }, 30_000);
   });
 
+  describe("Sync::install + rejectInstall", () => {
+    let appIdentityHash: string;
+    let unsynced: StateChannelJSON | undefined;
+    // TODO: figure out how to fast-forward IO_SEND_AND_WAIT
+    beforeEach(async () => {
+      // install-specific setup
+      messagingServiceA = new MemoryMessagingServiceWithLimits(
+        sharedEventEmitter,
+        0,
+        ProtocolNames.install,
+        "send",
+      );
+      nodeA = await CFCore.create(
+        messagingServiceA,
+        storeServiceA,
+        global["contracts"],
+        nodeConfig,
+        provider,
+        channelSignerA,
+        lockService,
+        0,
+        new Logger("CreateClient", env.logLevel, true, "A"),
+      );
+
+      // create channel
+      multisigAddress = await createChannel(nodeA, nodeB);
+
+      // create proposal
+      const [ret] = await Promise.all([
+        makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress),
+        new Promise((resolve) => {
+          nodeB.once(EventNames.PROPOSE_INSTALL_EVENT, () => {
+            resolve();
+          });
+        }),
+      ]);
+      appIdentityHash = (ret as any).appIdentityHash;
+
+      await new Promise(async (res, rej) => {
+        nodeA.once(EventNames.INSTALL_EVENT, res);
+        try {
+          await nodeB.rpcRouter.dispatch(constructInstallRpc(appIdentityHash, multisigAddress));
+          rej(`Node B should not complete installation`);
+        } catch (e) {
+          log.info(`Caught error sending rpc: ${e.message}`);
+        }
+      });
+
+      // get expected channel from nodeB
+      expectedChannel = (await storeServiceA.getStateChannel(multisigAddress))!;
+      unsynced = await storeServiceB.getStateChannel(multisigAddress);
+      expect(unsynced?.appInstances.length).toBe(0);
+      expect(unsynced!.proposedAppInstances.length).toBe(1);
+      expect(expectedChannel?.appInstances.length).toBe(1);
+
+      // nodeB rejects proposal
+      await nodeB.rpcRouter.dispatch({
+        methodName: MethodNames.chan_rejectInstall,
+        parameters: {
+          appIdentityHash,
+          multisigAddress,
+        } as MethodParams.RejectInstall,
+      });
+
+      const postRejectChannel = await storeServiceB.getStateChannel(multisigAddress);
+      expect(postRejectChannel!.proposedAppInstances.length).toBe(0);
+
+      messagingServiceA.clearLimits();
+    }, 30_000);
+
+    test("sync protocol -- initiator is missing an app held by responder", async () => {
+      const [eventData, newNodeB] = await Promise.all([
+        new Promise(async (resolve) => {
+          nodeA.on(EventNames.SYNC, (data) => resolve(data));
+        }),
+        CFCore.create(
+          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+          storeServiceB,
+          global["contracts"],
+          nodeConfig,
+          provider,
+          channelSignerB,
+          lockService,
+          0,
+          new Logger("CreateClient", env.logLevel, true, "B"),
+        ),
+      ]);
+
+      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
+      expect(eventData).toMatchObject({
+        from: nodeB.publicIdentifier,
+        type: EventNames.SYNC,
+        data: { syncedChannel: expectedChannel },
+      });
+      expect(syncedChannel).toMatchObject(expectedChannel!);
+
+      await uninstallApp(newNodeB as CFCore, nodeA, appIdentityHash, multisigAddress);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newChannelA!.appInstances.length).toBe(0);
+      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
+      expect(newChannelA!.monotonicNumProposedApps).toBe(2);
+    }, 30_000);
+
+    test("sync protocol -- responder is missing an app held by initiator", async () => {
+      const [eventData, newNodeA] = await Promise.all([
+        new Promise(async (resolve) => {
+          nodeB.on(EventNames.SYNC, (data) => resolve(data));
+        }),
+        CFCore.create(
+          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+          storeServiceA,
+          global["contracts"],
+          nodeConfig,
+          provider,
+          channelSignerA,
+          lockService,
+          0,
+          new Logger("CreateClient", env.logLevel, true, "A"),
+        ),
+      ]);
+
+      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
+      expect(eventData).toMatchObject({
+        from: nodeA.publicIdentifier,
+        type: EventNames.SYNC,
+        data: { syncedChannel: expectedChannel },
+      });
+      expect(syncedChannel).toMatchObject(expectedChannel!);
+
+      await uninstallApp(nodeB, newNodeA as CFCore, appIdentityHash, multisigAddress);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newChannelB!.appInstances.length).toBe(0);
+      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
+      expect(newChannelB!.monotonicNumProposedApps).toBe(2);
+    }, 30_000);
+  });
+
   describe("Sync::uninstall", () => {
     let identityHash: string;
     beforeEach(async () => {
