@@ -66,27 +66,32 @@ export abstract class MethodController {
     }
 
     // retry if error
-    if (preProtocolStateChannel && error) {
+    const isntOfflineErr = !!error && !error.message.includes("IO_SEND_AND_WAIT timed out");
+    if (preProtocolStateChannel && isntOfflineErr) {
       // dispatch sync rpc call
       log.warn(
-        `Caught error while running protocol, syncing channels and retrying method. ${error.message}`,
+        `Caught error while running protocol, syncing channels and retrying ${this.methodName}. ${
+          error!.message
+        }`,
       );
+
       const { publicIdentifier, protocolRunner, router } = requestHandler;
       const responderIdentifier = [
         preProtocolStateChannel.initiatorIdentifier,
         preProtocolStateChannel.responderIdentifier,
       ].find((identifier) => identifier !== publicIdentifier)!;
       try {
-        const response = await protocolRunner.initiateProtocol(router, ProtocolNames.sync, {
+        const { channel } = await protocolRunner.initiateProtocol(router, ProtocolNames.sync, {
           multisigAddress: preProtocolStateChannel.multisigAddress,
           initiatorIdentifier: publicIdentifier,
           responderIdentifier,
         });
-        log.info(`Channel synced, retrying method`);
-        result = await this.beforeExecution(requestHandler, params, response.channel);
+        log.debug(`Channel synced, retrying ${this.methodName} with ${channel.toJson()}`);
+        result = await this.beforeExecution(requestHandler, params, channel);
         result =
-          result ||
-          (await this.executeMethodImplementation(requestHandler, params, response.channel));
+          result || (await this.executeMethodImplementation(requestHandler, params, channel));
+        log.info(`Protocol ${this.methodName} successfully executed after sync`);
+        error = undefined;
       } catch (e) {
         log.error(`Caught error in method controller while attempting retry + sync: ${e.stack}`);
         error = e;

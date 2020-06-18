@@ -63,14 +63,13 @@ export class UninstallController extends MethodController {
 
     // see notes in take-action method
     if (action) {
-      if (!preProtocolStateChannel.appInstances.has(appIdentityHash)) {
+      if (!preProtocolStateChannel.hasAppInstance(appIdentityHash)) {
         throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(preProtocolStateChannel.multisigAddress));
       }
       return undefined;
     }
 
-    const app = preProtocolStateChannel.appInstances.get(appIdentityHash);
-    if (!app) {
+    if (!preProtocolStateChannel.isAppInstanceInstalled(appIdentityHash)) {
       // TODO: how to get app ref if its been uninstalled?
       return {} as any;
     }

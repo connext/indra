@@ -90,7 +90,7 @@ describe("Sync", () => {
       0,
       new Logger("CreateClient", env.logLevel, true, "B"),
     );
-  }, 30_000);
+  }, 60_000);
 
   describe("Sync::propose", () => {
     let identityHash: string;
@@ -137,7 +137,7 @@ describe("Sync", () => {
       messagingServiceA.clearLimits();
     });
 
-    test("sync protocol responder is missing a proposal held by the protocol initiator", async () => {
+    test("sync protocol responder is missing a proposal held by the protocol initiator, sync on startup", async () => {
       const newNodeA = await CFCore.create(
         new MemoryMessagingServiceWithLimits(sharedEventEmitter),
         storeServiceA,
@@ -167,9 +167,9 @@ describe("Sync", () => {
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(2);
       expect(newChannelA!.monotonicNumProposedApps).toBe(2);
       expect(newChannelA!.appInstances.length).toBe(1);
-    }, 30_000);
+    }, 60_000);
 
-    test("sync protocol initiator is missing a proposal held by the protocol responder", async () => {
+    test("sync protocol initiator is missing a proposal held by the protocol responder, sync on startup", async () => {
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve, reject) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -210,7 +210,40 @@ describe("Sync", () => {
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(2);
       expect(newChannelB!.monotonicNumProposedApps).toBe(2);
       expect(newChannelB!.appInstances.length).toBe(1);
-    }, 30_000);
+    }, 60_000);
+
+    test("sync protocol responder is missing a proposal held by the protocol initiator, sync on error", async () => {
+      await nodeA.rpcRouter.dispatch(constructInstallRpc(identityHash, multisigAddress));
+
+      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
+      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceA!.identityHash).toBe(identityHash);
+      expect(newAppInstanceA!.appSeqNo).toBe(2);
+      expect(newAppInstanceA!.latestVersionNumber).toBe(1);
+      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(2);
+      expect(newChannelA!.monotonicNumProposedApps).toBe(2);
+      expect(newChannelA!.appInstances.length).toBe(1);
+    }, 60_000);
+
+    test("sync protocol initiator is missing a proposal held by the protocol responder, sync on error", async () => {
+      await nodeB.rpcRouter.dispatch(constructInstallRpc(identityHash, multisigAddress));
+      const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
+      const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceB!.identityHash).toBe(identityHash);
+      expect(newAppInstanceB!.appSeqNo).toBe(2);
+      expect(newAppInstanceB!.latestVersionNumber).toBe(1);
+      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(2);
+      expect(newChannelB!.monotonicNumProposedApps).toBe(2);
+      expect(newChannelB!.appInstances.length).toBe(1);
+    }, 60_000);
   });
 
   describe("Sync::propose + rejectInstall", () => {
@@ -268,9 +301,9 @@ describe("Sync", () => {
       expect(expectedChannel!.proposedAppInstances.length).toBe(0);
 
       messagingServiceA.clearLimits();
-    }, 30_000);
+    }, 60_000);
 
-    test("sync protocol responder is missing a proposal held by the protocol initiator", async () => {
+    test("sync protocol responder is missing a proposal held by the protocol initiator, sync on startup", async () => {
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve, reject) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -322,9 +355,9 @@ describe("Sync", () => {
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(1);
       expect(newChannelB!.monotonicNumProposedApps).toBe(3);
       expect(newChannelB!.proposedAppInstances.length).toBe(1);
-    }, 30_000);
+    }, 60_000);
 
-    test("sync protocol initiator is missing a proposal held by the protocol responder", async () => {
+    test("sync protocol initiator is missing a proposal held by the protocol responder, sync on startup", async () => {
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve, reject) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -376,10 +409,66 @@ describe("Sync", () => {
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(1);
       expect(newChannelB!.monotonicNumProposedApps).toBe(3);
       expect(newChannelB!.proposedAppInstances.length).toBe(1);
-    }, 30_000);
+    }, 60_000);
+
+    test("sync protocol responder is missing a proposal held by the protocol initiator, sync on error", async () => {
+      const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
+      const res: any = await new Promise(async (resolve) => {
+        nodeB.once("PROPOSE_INSTALL_EVENT", resolve);
+        try {
+          await nodeA.rpcRouter.dispatch({
+            ...rpc,
+            parameters: deBigNumberifyJson(rpc.parameters),
+          });
+        } catch (e) {
+          log.info(`Caught error sending rpc: ${e.message}`);
+        }
+      });
+
+      const newAppInstanceA = await storeServiceA.getAppProposal(res.data.appInstanceId);
+      const newAppInstanceB = await storeServiceB.getAppProposal(res.data.appInstanceId);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceB!.identityHash).toBe(res.data.appInstanceId);
+      expect(newAppInstanceB!.appSeqNo).toBe(3);
+      expect(newAppInstanceB!.latestVersionNumber).toBe(1);
+      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(1);
+      expect(newChannelB!.monotonicNumProposedApps).toBe(3);
+      expect(newChannelB!.proposedAppInstances.length).toBe(1);
+    }, 60_000);
+
+    test("sync protocol initiator is missing a proposal held by the protocol responder, sync on error", async () => {
+      const rpc = makeProposeCall(nodeA, TicTacToeApp, multisigAddress);
+      const res: any = await new Promise(async (resolve) => {
+        nodeA.once("PROPOSE_INSTALL_EVENT", resolve);
+        try {
+          await nodeB.rpcRouter.dispatch({
+            ...rpc,
+            parameters: deBigNumberifyJson(rpc.parameters),
+          });
+        } catch (e) {
+          log.info(`Caught error sending rpc: ${e.message}`);
+        }
+      });
+
+      const newAppInstanceA = await storeServiceA.getAppProposal(res.data.appInstanceId);
+      const newAppInstanceB = await storeServiceB.getAppProposal(res.data.appInstanceId);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceB!.identityHash).toBe(res.data.appInstanceId);
+      expect(newAppInstanceB!.appSeqNo).toBe(3);
+      expect(newAppInstanceB!.latestVersionNumber).toBe(1);
+      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(1);
+      expect(newChannelB!.monotonicNumProposedApps).toBe(3);
+      expect(newChannelB!.proposedAppInstances.length).toBe(1);
+    }, 60_000);
   });
 
-  describe.only("Sync::install", () => {
+  describe("Sync::install", () => {
     let appIdentityHash: string;
     let unsynced: StateChannelJSON | undefined;
     // TODO: figure out how to fast-forward IO_SEND_AND_WAIT
@@ -468,7 +557,7 @@ describe("Sync", () => {
       expect(newChannelA!.appInstances.length).toBe(0);
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelA!.monotonicNumProposedApps).toBe(2);
-    }, 30_000);
+    }, 60_000);
 
     test("sync protocol -- responder is missing an app held by initiator", async () => {
       const [eventData, newNodeA] = await Promise.all([
@@ -503,19 +592,10 @@ describe("Sync", () => {
       expect(newChannelB!.appInstances.length).toBe(0);
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelB!.monotonicNumProposedApps).toBe(2);
-    }, 30_000);
+    }, 60_000);
 
-    test("sync protocol -- initiator is missing an app held by responder, sync on error", async () => {
-      await uninstallApp(nodeB, nodeA, appIdentityHash, multisigAddress);
-
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).toMatchObject(newChannelB!);
-      expect(newChannelA!.appInstances.length).toBe(0);
-      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
-      expect(newChannelA!.monotonicNumProposedApps).toBe(2);
-    }, 30_000);
-
+    // NOTE: same test for initiator/responder ordering would fail bc storeB
+    // does not have installed app
     test("sync protocol -- responder is missing an app held by initiator, sync on error", async () => {
       await uninstallApp(nodeA, nodeB, appIdentityHash, multisigAddress);
 
@@ -525,7 +605,7 @@ describe("Sync", () => {
       expect(newChannelA!.appInstances.length).toBe(0);
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelA!.monotonicNumProposedApps).toBe(2);
-    }, 30_000);
+    }, 60_000);
   });
 
   describe("Sync::install + rejectInstall", () => {
@@ -596,9 +676,9 @@ describe("Sync", () => {
       expect(postRejectChannel!.proposedAppInstances.length).toBe(0);
 
       messagingServiceA.clearLimits();
-    }, 30_000);
+    }, 60_000);
 
-    test("sync protocol -- initiator is missing an app held by responder", async () => {
+    test("sync protocol -- initiator is missing an app held by responder, sync on startup", async () => {
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -631,9 +711,9 @@ describe("Sync", () => {
       expect(newChannelA!.appInstances.length).toBe(0);
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelA!.monotonicNumProposedApps).toBe(2);
-    }, 30_000);
+    }, 60_000);
 
-    test("sync protocol -- responder is missing an app held by initiator", async () => {
+    test("sync protocol -- responder is missing an app held by initiator, sync on startup", async () => {
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -666,7 +746,20 @@ describe("Sync", () => {
       expect(newChannelB!.appInstances.length).toBe(0);
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelB!.monotonicNumProposedApps).toBe(2);
-    }, 30_000);
+    }, 60_000);
+
+    // NOTE: same test for initiator/responder ordering would fail bc storeB
+    // does not have installed app
+    test("sync protocol -- responder is missing an app held by initiator, sync on error", async () => {
+      await uninstallApp(nodeA, nodeB, appIdentityHash, multisigAddress);
+
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newChannelA!.appInstances.length).toBe(0);
+      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
+      expect(newChannelA!.monotonicNumProposedApps).toBe(2);
+    }, 60_000);
   });
 
   describe("Sync::uninstall", () => {
@@ -715,9 +808,9 @@ describe("Sync", () => {
       expect(expectedChannel.appInstances.length).toBe(0);
       expect(unsynced?.appInstances.length).toBe(1);
       messagingServiceA.clearLimits();
-    }, 30_000);
+    }, 60_000);
 
-    test("sync protocol -- initiator has an app uninstalled by responder", async () => {
+    test("sync protocol -- initiator has an app uninstalled by responder, sync on startup", async () => {
       await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
@@ -762,9 +855,9 @@ describe("Sync", () => {
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(4);
       expect(newChannelA!.monotonicNumProposedApps).toBe(3);
       expect(newChannelA!.appInstances.length).toBe(1);
-    }, 30_000);
+    }, 60_000);
 
-    test("sync protocol -- responder has an app uninstalled by initiator", async () => {
+    test("sync protocol -- responder has an app uninstalled by initiator, sync on startup", async () => {
       await messagingServiceA.disconnect();
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve) => {
@@ -809,7 +902,49 @@ describe("Sync", () => {
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(4);
       expect(newChannelB!.monotonicNumProposedApps).toBe(3);
       expect(newChannelB!.appInstances.length).toBe(1);
-    }, 30_000);
+    }, 60_000);
+
+    test("sync protocol -- initiator has an app uninstalled by responder, sync on error", async () => {
+      // create new app
+      [identityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
+      const [newAppInstanceA, newAppInstanceB] = await Promise.all([
+        storeServiceA.getAppInstance(identityHash),
+        storeServiceB.getAppInstance(identityHash),
+      ]);
+      const [newChannelA, newChannelB] = await Promise.all([
+        storeServiceA.getStateChannel(multisigAddress),
+        storeServiceB.getStateChannel(multisigAddress),
+      ]);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceA!.identityHash).toBe(identityHash);
+      expect(newAppInstanceA!.appSeqNo).toBe(3);
+      expect(newAppInstanceA!.latestVersionNumber).toBe(1);
+      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(4);
+      expect(newChannelA!.monotonicNumProposedApps).toBe(3);
+      expect(newChannelA!.appInstances.length).toBe(1);
+    }, 60_000);
+
+    test("sync protocol -- responder has an app uninstalled by initiator, sync on error", async () => {
+      // create new app
+      [identityHash] = await installApp(nodeB, nodeA, multisigAddress, TicTacToeApp);
+      const [newAppInstanceA, newAppInstanceB] = await Promise.all([
+        storeServiceA.getAppInstance(identityHash),
+        storeServiceB.getAppInstance(identityHash),
+      ]);
+      const [newChannelA, newChannelB] = await Promise.all([
+        storeServiceA.getStateChannel(multisigAddress),
+        storeServiceB.getStateChannel(multisigAddress),
+      ]);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newAppInstanceA!).toMatchObject(newAppInstanceB!);
+      expect(newAppInstanceB!.identityHash).toBe(identityHash);
+      expect(newAppInstanceB!.appSeqNo).toBe(3);
+      expect(newAppInstanceB!.latestVersionNumber).toBe(1);
+      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(4);
+      expect(newChannelB!.monotonicNumProposedApps).toBe(3);
+      expect(newChannelB!.appInstances.length).toBe(1);
+    }, 60_000);
   });
 
   describe("Sync::takeAction", () => {
@@ -866,9 +1001,9 @@ describe("Sync", () => {
       const unsyncedAppInstance = behindApp![1];
       expect(unsyncedAppInstance.latestVersionNumber).toBe(1);
       messagingServiceA.clearLimits();
-    }, 30_000);
+    }, 60_000);
 
-    test("initiator has an app that has a single signed update that the responder does not have", async () => {
+    test("initiator has an app that has a single signed update that the responder does not have, sync on startup", async () => {
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -902,9 +1037,9 @@ describe("Sync", () => {
       expect(newChannelA!.appInstances.length).toBe(0);
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelA!.monotonicNumProposedApps).toBe(2);
-    }, 45_000);
+    }, 60_000);
 
-    test("responder has an app that has a single signed update that the initiator does not have", async () => {
+    test("responder has an app that has a single signed update that the initiator does not have, sync on startup", async () => {
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -938,6 +1073,28 @@ describe("Sync", () => {
       expect(newChannelB!.appInstances.length).toBe(0);
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelB!.monotonicNumProposedApps).toBe(2);
-    }, 30_000);
+    }, 60_000);
+
+    test("initiator has an app that has a single signed update that the responder does not have, sync on error", async () => {
+      //attempt to uninstall
+      await uninstallApp(nodeA, nodeB, appIdentityHash, multisigAddress);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newChannelB!.appInstances.length).toBe(0);
+      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
+      expect(newChannelB!.monotonicNumProposedApps).toBe(2);
+    }, 60_000);
+
+    test("responder has an app that has a single signed update that the initiator does not have, sync on error", async () => {
+      //attempt to uninstall
+      await uninstallApp(nodeB, nodeA, appIdentityHash, multisigAddress);
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newChannelB!.appInstances.length).toBe(0);
+      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
+      expect(newChannelB!.monotonicNumProposedApps).toBe(2);
+    }, 60_000);
   });
 });
