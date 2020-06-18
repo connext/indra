@@ -79,13 +79,13 @@ export abstract class MethodController {
         preProtocolStateChannel.initiatorIdentifier,
         preProtocolStateChannel.responderIdentifier,
       ].find((identifier) => identifier !== publicIdentifier)!;
-      log.info(`Channel synced, retrying method`);
       try {
         const { channel } = await protocolRunner.initiateProtocol(router, ProtocolNames.sync, {
           multisigAddress: preProtocolStateChannel.multisigAddress,
           initiatorIdentifier: publicIdentifier,
           responderIdentifier,
         });
+        log.info(`Channel synced, retrying method`);
         result = await this.executeMethodImplementation(requestHandler, params, channel);
       } catch (e) {
         log.error(`Caught error in method controller while attempting retry + sync: ${e.stack}`);

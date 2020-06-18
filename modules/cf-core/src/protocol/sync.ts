@@ -891,13 +891,19 @@ function needsSyncFromCounterparty(
   // make sure all apps have the same nonce
   // covers interruptions in: takeAction
   whosSync = "theirs";
+  let synced = true;
   counterpartyAppVersionNumbers.forEach(({ identityHash, latestVersionNumber }) => {
     const ours = ourChannel.appInstances.get(identityHash);
     if (ours && ours.latestVersionNumber < latestVersionNumber) {
       whosSync = "ours";
+    } else if (ours && ours.latestVersionNumber !== latestVersionNumber) {
+      synced = synced && false;
     }
   });
-  return { whosSync, syncType: PersistStateChannelType.SyncAppInstances };
+  if (!synced) {
+    return { whosSync, syncType: PersistStateChannelType.SyncAppInstances };
+  }
+  return { whosSync, syncType: PersistStateChannelType.NoChange };
 }
 
 // needs missing set state commitment and missing conditional commitment
