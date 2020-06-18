@@ -379,7 +379,7 @@ describe("Sync", () => {
     }, 30_000);
   });
 
-  describe("Sync::install", () => {
+  describe.only("Sync::install", () => {
     let appIdentityHash: string;
     let unsynced: StateChannelJSON | undefined;
     // TODO: figure out how to fast-forward IO_SEND_AND_WAIT
@@ -433,13 +433,35 @@ describe("Sync", () => {
       expect(unsynced?.appInstances.length).toBe(0);
       expect(expectedChannel?.appInstances.length).toBe(1);
       messagingServiceA.clearLimits();
-    }, 30_000);
+    }, 35_000);
 
-    test.only("sync protocol -- initiator is missing an app held by responder", async () => {
-      await uninstallApp(nodeB, nodeA, appIdentityHash, multisigAddress);
+    test("sync protocol -- initiator is missing an app held by responder", async () => {
+      const [eventData, newNodeB] = await Promise.all([
+        new Promise(async (resolve) => {
+          nodeA.on(EventNames.SYNC, (data) => resolve(data));
+        }),
+        CFCore.create(
+          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+          storeServiceB,
+          global["contracts"],
+          nodeConfig,
+          provider,
+          channelSignerB,
+          lockService,
+          0,
+          new Logger("CreateClient", env.logLevel, true, "B"),
+        ),
+      ]);
+
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
+      expect(eventData).toMatchObject({
+        from: nodeB.publicIdentifier,
+        type: EventNames.SYNC,
+        data: { syncedChannel: expectedChannel },
+      });
       expect(syncedChannel).toMatchObject(expectedChannel!);
 
+      await uninstallApp(newNodeB as CFCore, nodeA, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
       expect(newChannelA!).toMatchObject(newChannelB!);
@@ -481,6 +503,28 @@ describe("Sync", () => {
       expect(newChannelB!.appInstances.length).toBe(0);
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelB!.monotonicNumProposedApps).toBe(2);
+    }, 30_000);
+
+    test("sync protocol -- initiator is missing an app held by responder, sync on error", async () => {
+      await uninstallApp(nodeB, nodeA, appIdentityHash, multisigAddress);
+
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newChannelA!.appInstances.length).toBe(0);
+      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
+      expect(newChannelA!.monotonicNumProposedApps).toBe(2);
+    }, 30_000);
+
+    test("sync protocol -- responder is missing an app held by initiator, sync on error", async () => {
+      await uninstallApp(nodeA, nodeB, appIdentityHash, multisigAddress);
+
+      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(newChannelA!).toMatchObject(newChannelB!);
+      expect(newChannelA!.appInstances.length).toBe(0);
+      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
+      expect(newChannelA!.monotonicNumProposedApps).toBe(2);
     }, 30_000);
   });
 
