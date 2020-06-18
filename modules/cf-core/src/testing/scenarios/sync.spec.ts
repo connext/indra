@@ -24,7 +24,7 @@ import {
   uninstallApp,
 } from "../utils";
 import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
-import { deBigNumberifyJson, ChannelSigner, delay, stringify } from "@connext/utils";
+import { deBigNumberifyJson, ChannelSigner } from "@connext/utils";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { TestContractAddresses } from "../contracts";
 import { MemoryLockService } from "../services";
@@ -702,16 +702,16 @@ describe("Sync", () => {
       // get expected channel from nodeB
       expectedChannel = (await storeServiceA.getStateChannel(multisigAddress))!;
       expect(expectedChannel.appInstances.length).toBe(1);
-      let ret = expectedChannel.appInstances.find(([id, app]) => id === appIdentityHash);
-      expect(ret).toBeDefined();
-      const expectedAppInstance = ret![1];
+      const aheadApp = expectedChannel.appInstances.find(([id, app]) => id === appIdentityHash);
+      expect(aheadApp).toBeDefined();
+      const expectedAppInstance = aheadApp![1];
       expect(expectedAppInstance.latestVersionNumber).toBe(2);
 
       const unsynced = (await storeServiceB.getStateChannel(multisigAddress))!;
       expect(unsynced.appInstances.length).toBe(1);
-      ret = unsynced.appInstances.find(([id, app]) => id === appIdentityHash);
-      expect(ret).toBeDefined();
-      const unsyncedAppInstance = ret![1];
+      const behindApp = unsynced.appInstances.find(([id, app]) => id === appIdentityHash);
+      expect(behindApp).toBeDefined();
+      const unsyncedAppInstance = behindApp![1];
       expect(unsyncedAppInstance.latestVersionNumber).toBe(1);
       messagingServiceA.clearLimits();
     }, 30_000);
@@ -750,7 +750,7 @@ describe("Sync", () => {
       expect(newChannelA!.appInstances.length).toBe(0);
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).toBe(3);
       expect(newChannelA!.monotonicNumProposedApps).toBe(2);
-    }, 30_000);
+    }, 45_000);
 
     test("responder has an app that has a single signed update that the initiator does not have", async () => {
       const [eventData, newNodeB] = await Promise.all([

@@ -9,13 +9,7 @@ import {
   SetStateCommitmentJSON,
   AppInstanceJson,
 } from "@connext/types";
-import {
-  logTime,
-  stringify,
-  toBN,
-  getSignerAddressFromPublicIdentifier,
-  recoverAddressFromChannelMessage,
-} from "@connext/utils";
+import { logTime, stringify, toBN, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { StateChannel, FreeBalanceClass, AppInstance } from "../models";
 import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
@@ -71,7 +65,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
 
     // 200ms
-    const m2 = yield [IO_SEND_AND_WAIT, m1];
+    const m2 = yield [IO_SEND_AND_WAIT, m1, preProtocolStateChannel];
     logTime(log, substart, `[${processID}] Received responder's m2`);
     substart = Date.now();
 
@@ -144,6 +138,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
               postSyncStateChannel,
               responderFreeBalanceVersionNumber,
               responderAppVersionNumbers,
+              responderProposalVersionNumbers,
               setStateCommitments,
             ),
           };
@@ -184,15 +179,11 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       customData: { ...counterpartySyncInfo },
     };
 
-    const m4 = yield [IO_SEND_AND_WAIT, m3, postSyncStateChannel];
+    yield [IO_SEND_AND_WAIT, m3, postSyncStateChannel];
     logTime(log, substart, `[${processID}] Received responder's m4`);
     substart = Date.now();
 
-    log.info(`[${processID}] Syncing channel with type: ${syncType}`);
-    substart = Date.now();
-
     if (syncType.whosSync === "ours") {
-      log.info(`[${processID}] Syncing channel with type: ${syncType.syncType}`);
       substart = Date.now();
       switch (syncType.syncType) {
         case PersistStateChannelType.SyncNumProposedApps: {
@@ -205,7 +196,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
             ];
             postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
           }
-          logTime(log, substart, `[${processID}] Synced proposals with initiator`);
+          logTime(log, substart, `[${processID}] Synced proposals with responder`);
           break;
         }
         case PersistStateChannelType.SyncProposal: {
@@ -224,7 +215,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
             proposalSync!.commitments,
           ];
           postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
-          logTime(log, substart, `[${processID}] Synced proposals with initiator`);
+          logTime(log, substart, `[${processID}] Synced proposals with responder`);
           break;
         }
         case PersistStateChannelType.SyncFreeBalance: {
@@ -244,7 +235,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
             freeBalanceSync!.appContext,
           ];
           postSyncStateChannel = StateChannel.fromJson(freeBalanceSync!.updatedChannel.toJson());
-          logTime(log, substart, `[${processID}] Synced free balance with initiator`);
+          logTime(log, substart, `[${processID}] Synced free balance with responder`);
           break;
         }
         case PersistStateChannelType.SyncAppInstances: {
@@ -417,6 +408,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
               postSyncStateChannel,
               initiatorFreeBalanceVersionNumber,
               initiatorAppVersionNumbers,
+              initiatorProposalVersionNumbers,
               setStateCommitments,
             ),
           };
@@ -457,7 +449,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       customData: { ...syncTypeData, ...counterpartySyncInfo },
     };
 
-    const m2 = yield [IO_SEND_AND_WAIT, m1];
+    const m2 = yield [IO_SEND_AND_WAIT, m1, postSyncStateChannel];
     logTime(log, substart, `[${processID}] Received initators's m2`);
     substart = Date.now();
     const {
@@ -670,7 +662,7 @@ async function syncAppStates(
       }. Active apps: ${stringify(ourChannel.appInstances.keys())}`,
     );
   }
-  if (toBN(setState.versionNumber).lte(outOfSyncApp.latestVersionNumber)) {
+  if (toBN(setState.versionNumber).lt(outOfSyncApp.latestVersionNumber)) {
     // we are ahead
     return undefined;
   }
@@ -678,18 +670,10 @@ async function syncAppStates(
     throw new Error(`Cannot sync by more than one app update, use restore instead.`);
   }
 
-  // assert we signed commitment, note: may be single signed depending on
-  // when we went offline
-  if (setState.appStateHash !== outOfSyncApp.hashOfLatestState) {
-    throw new Error(
-      `Counterparty commitment and counterparty app do not have the same latest state hash, aborting`,
-    );
-  }
-
   // make sure we signed the commiment if it is double signed, if it is single
   // signed, check that it is a valid signature from the counterparty
   const ourSignerAddr = getSignerAddressFromPublicIdentifier(ourIdentifier);
-  if (counterpartySetState.signatures.length === 1) {
+  if (setState.signatures.length === 1) {
     await assertIsValidSignature(
       ourChannel.multisigOwners.find((addr) => addr !== ourSignerAddr)!,
       setState.hashToSign(),
@@ -862,25 +846,6 @@ async function getCommitmentsFromChannel(channel: StateChannel, store: IStoreSer
   };
 }
 
-async function assertSignerPresent(
-  signer: string,
-  commitment: SetStateCommitment | ConditionalTransactionCommitment,
-) {
-  const signers = await Promise.all(
-    commitment.signatures.map(
-      async (sig) => sig && (await recoverAddressFromChannelMessage(commitment.hashToSign(), sig)),
-    ),
-  );
-  const recovered = signers.find((addr) => addr === signer);
-  if (!recovered) {
-    throw new Error(
-      `Could not find valid signer in recovered addresses. Recovered: ${stringify(
-        signers,
-      )}, expected: ${signer}`,
-    );
-  }
-}
-
 // will return true IFF there is information in our counterparty's channel
 // we must update with. Will return false if the responder
 function needsSyncFromCounterparty(
@@ -926,29 +891,14 @@ function needsSyncFromCounterparty(
 
   // make sure all apps have the same nonce
   // covers interruptions in: takeAction
-  const needCounterpartyAppData = counterpartyAppVersionNumbers.reduce(
-    (need, app) => {
-      const counterpartyCopy = ourChannel.appInstances.get(app.identityHash);
-      if (counterpartyCopy && counterpartyCopy.latestVersionNumber > app.latestVersionNumber) {
-        need.need = need.need || true;
-        need.ours = need.ours || true;
-      } else if (
-        counterpartyCopy &&
-        counterpartyCopy.latestVersionNumber < app.latestVersionNumber
-      ) {
-        need.need = need.need || true;
-        need.ours = need.ours && false;
-      }
-      return need;
-    },
-    { need: false, ours: false },
-  );
-
-  whosSync = needCounterpartyAppData.ours ? "ours" : "theirs";
-  const ret = needCounterpartyAppData.need
-    ? { whosSync, syncType: PersistStateChannelType.SyncAppInstances }
-    : { whosSync, syncType: PersistStateChannelType.NoChange };
-  return ret;
+  whosSync = "theirs";
+  counterpartyAppVersionNumbers.forEach(({ identityHash, latestVersionNumber }) => {
+    const ours = ourChannel.appInstances.get(identityHash);
+    if (ours && ours.latestVersionNumber < latestVersionNumber) {
+      whosSync = "ours";
+    }
+  });
+  return { whosSync, syncType: PersistStateChannelType.SyncAppInstances };
 }
 
 // needs missing set state commitment and missing conditional commitment
@@ -1018,17 +968,21 @@ function getFreeBalanceSyncInfoForCounterparty(
   ourChannel: StateChannel,
   counterpartyFreeBalanceVersionNumber: number,
   counterpartyAppVersionNumbers: AppSyncObj[],
+  counterpartyProposalVersionNumbers: AppSyncObj[],
   setStateCommitments: SetStateCommitmentJSON[],
 ) {
   // get our free balance commitment
   const freeBalanceSetState = setStateCommitments.find(
-    (c) =>
-      c.appIdentityHash === ourChannel.freeBalance.identityHash &&
-      toBN(c.versionNumber).eq(counterpartyFreeBalanceVersionNumber),
+    (c) => c.appIdentityHash === ourChannel.freeBalance.identityHash,
   );
-  if (!freeBalanceSetState) {
+  if (
+    !freeBalanceSetState ||
+    toBN(freeBalanceSetState.versionNumber).lte(counterpartyFreeBalanceVersionNumber)
+  ) {
     throw new Error(
-      `No corresponding set state commitment found for free balance app at nonce ${counterpartyFreeBalanceVersionNumber}, aborting`,
+      `No corresponding set state commitment found for free balance app at nonce >${counterpartyFreeBalanceVersionNumber}, aborting. Our set state: ${stringify(
+        setStateCommitments.map((c) => c.appIdentityHash),
+      )}`,
     );
   }
   // get all our active apps
@@ -1036,22 +990,23 @@ function getFreeBalanceSyncInfoForCounterparty(
     FreeBalanceClass.fromAppInstance(ourChannel.freeBalance).toFreeBalanceState().activeAppsMap,
   );
   const counterpartyActiveApps = counterpartyAppVersionNumbers.map((x) => x.identityHash);
+  const counterpartyProposals = counterpartyProposalVersionNumbers.map((x) => x.identityHash);
   // free balance gets out of sync by either installing a proposal, or
   // uninstalling an active app
-  const uninstalledAppId = activeAppIds.find((appId) => {
-    return !counterpartyActiveApps.includes(appId);
-  });
-  const installedProposalId = counterpartyActiveApps.find(
+  const uninstalledAppId = counterpartyActiveApps.find(
     (appId) => !ourChannel.appInstances.has(appId),
   );
-  if (!installedProposalId && !uninstalledAppId) {
+  const installedProposal = [...ourChannel.appInstances.values()].find((app) =>
+    counterpartyProposals.includes(app.identityHash),
+  );
+  if (!installedProposal && !uninstalledAppId) {
     throw new Error(
       `No corresponding out of sync proposal or app found. Our active apps: ${stringify(
         activeAppIds,
       )}, their active apps: ${stringify(counterpartyActiveApps)}`,
     );
   }
-  if (installedProposalId && uninstalledAppId) {
+  if (installedProposal && uninstalledAppId) {
     throw new Error(
       `Found both an installed proposal and uninstalled app, aborting. Our active apps: ${stringify(
         activeAppIds,
@@ -1059,12 +1014,12 @@ function getFreeBalanceSyncInfoForCounterparty(
     );
   }
 
-  const unsyncedAppId = installedProposalId || uninstalledAppId;
+  const unsyncedAppId = uninstalledAppId || installedProposal!.identityHash;
   return {
     commitments: { setState: freeBalanceSetState },
     app: ourChannel.freeBalance.toJson(),
     unsyncedAppId,
-    freeBalanceSyncType: unsyncedAppId === installedProposalId ? "install" : "uninstall",
+    freeBalanceSyncType: unsyncedAppId === uninstalledAppId ? "uninstall" : "install",
   };
 }
 
@@ -1075,8 +1030,8 @@ function getAppStateSyncInfoForCounterparty(
   setStateCommitments: SetStateCommitmentJSON[],
 ) {
   const unsynced = counterpartyAppVersionNumbers.find(({ identityHash, latestVersionNumber }) => {
-    const ours = ourChannel.appInstances.get(identityHash);
-    return ours && ours.latestVersionNumber === latestVersionNumber + 1;
+    const app = ourChannel.appInstances.get(identityHash);
+    return app && app.latestVersionNumber !== latestVersionNumber;
   });
   if (!unsynced) {
     throw new Error(
@@ -1087,10 +1042,7 @@ function getAppStateSyncInfoForCounterparty(
   }
   // get set state commitment
   const setState = setStateCommitments.find((commitment) => {
-    return (
-      commitment.appIdentityHash === unsynced.identityHash &&
-      toBN(commitment.versionNumber).eq(unsynced.latestVersionNumber)
-    );
+    return commitment.appIdentityHash === unsynced.identityHash;
   });
   if (!setState) {
     throw new Error(
