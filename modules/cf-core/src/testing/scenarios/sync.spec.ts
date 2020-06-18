@@ -141,7 +141,7 @@ describe("Sync", () => {
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve, reject) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
-          nodeB.on(EventNames.SYNC_FAILED_EVENT, () => reject(`Sync failed`));
+          nodeB.on(EventNames.SYNC_FAILED_EVENT, (msg) => reject(`Sync failed. ${msg.data.error}`));
         }),
         CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
@@ -184,7 +184,7 @@ describe("Sync", () => {
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve, reject) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
-          nodeA.on(EventNames.SYNC_FAILED_EVENT, (data) => reject(`Sync failed`));
+          nodeA.on(EventNames.SYNC_FAILED_EVENT, (msg) => reject(`Sync failed. ${msg.data.error}`));
         }),
         CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),

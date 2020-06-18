@@ -82,7 +82,10 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           freeBalanceVersionNumber: responderFreeBalanceVersionNumber,
           proposedAppVersionNumbers: responderProposalVersionNumbers,
           appVersionNumbers: responderAppVersionNumbers,
-          syncInfo: responderSyncInfo,
+          app: responderApp,
+          commitments: responderCommitments,
+          unsyncedAppId,
+          freeBalanceSyncType,
         },
       },
     }: {
@@ -92,16 +95,13 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           freeBalanceVersionNumber: number;
           proposedAppVersionNumbers: AppSyncObj[];
           appVersionNumbers: AppSyncObj[];
-          syncInfo: {
-            syncType: { whosSync: "ours" | "theirs"; syncType: PersistStateChannelType };
-            commitments: {
-              setState: SetStateCommitmentJSON;
-              conditional?: ConditionalTransactionCommitmentJSON;
-            };
-            app: AppInstanceJson;
-            unsyncedAppId?: string;
-            freeBalanceSyncType?: "install" | "uninstall";
+          commitments: {
+            setState: SetStateCommitmentJSON;
+            conditional?: ConditionalTransactionCommitmentJSON;
           };
+          app: AppInstanceJson;
+          unsyncedAppId?: string;
+          freeBalanceSyncType?: "install" | "uninstall";
         };
       };
     } = m2!;
@@ -116,7 +116,8 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       responderFreeBalanceVersionNumber,
       responderAppVersionNumbers,
     );
-    let counterpartySyncInfo = { syncType } as any;
+    log.info(`[${processID}] Initiator syncing with: ${stringify(syncType)}`);
+    let counterpartySyncInfo: any;
     if (syncType.whosSync === "theirs") {
       switch (syncType.syncType) {
         case PersistStateChannelType.NoChange:
@@ -128,7 +129,6 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           // message needs missing set state commitment and missing
           // conditional commitment info
           counterpartySyncInfo = {
-            ...counterpartySyncInfo,
             ...getProposalSyncInfoForCounterparty(
               postSyncStateChannel,
               responderProposalVersionNumbers,
@@ -140,7 +140,6 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         }
         case PersistStateChannelType.SyncFreeBalance: {
           counterpartySyncInfo = {
-            ...counterpartySyncInfo,
             ...getFreeBalanceSyncInfoForCounterparty(
               postSyncStateChannel,
               responderFreeBalanceVersionNumber,
@@ -152,7 +151,6 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         }
         case PersistStateChannelType.SyncAppInstances: {
           counterpartySyncInfo = {
-            ...counterpartySyncInfo,
             ...getAppStateSyncInfoForCounterparty(
               postSyncStateChannel,
               responderAppVersionNumbers,
@@ -169,6 +167,12 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           throw new Error(`Invalid sync type: ${c}`);
         }
       }
+    } else {
+      // create empty object so counterparty can destructure
+      counterpartySyncInfo = {
+        commitments: {},
+        app: {},
+      };
     }
 
     const m3 = {
@@ -177,22 +181,16 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       params,
       seq: 1,
       to: responderIdentifier,
-      customData: { syncInfo: counterpartySyncInfo },
+      customData: { ...counterpartySyncInfo },
     };
 
-    const m4 = yield [IO_SEND_AND_WAIT, m3];
+    const m4 = yield [IO_SEND_AND_WAIT, m3, postSyncStateChannel];
     logTime(log, substart, `[${processID}] Received responder's m4`);
     substart = Date.now();
 
     log.info(`[${processID}] Syncing channel with type: ${syncType}`);
     substart = Date.now();
 
-    const {
-      app: responderApp,
-      commitments: responderCommitments,
-      unsyncedAppId,
-      freeBalanceSyncType,
-    } = responderSyncInfo;
     if (syncType.whosSync === "ours") {
       log.info(`[${processID}] Syncing channel with type: ${syncType.syncType}`);
       substart = Date.now();
@@ -391,7 +389,8 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // responder m1 will send back all info the counterparty needs to sync
-    let counterpartySyncInfo = { syncType } as any;
+    log.info(`[${processID}] Responder syncing with: ${stringify(syncType)}`);
+    let counterpartySyncInfo: any;
     if (syncType.whosSync === "theirs") {
       switch (syncType.syncType) {
         case PersistStateChannelType.NoChange:
@@ -403,7 +402,6 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           // message needs missing set state commitment and missing
           // conditional commitment info
           counterpartySyncInfo = {
-            ...counterpartySyncInfo,
             ...getProposalSyncInfoForCounterparty(
               postSyncStateChannel,
               initiatorProposalVersionNumbers,
@@ -415,7 +413,6 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         }
         case PersistStateChannelType.SyncFreeBalance: {
           counterpartySyncInfo = {
-            ...counterpartySyncInfo,
             ...getFreeBalanceSyncInfoForCounterparty(
               postSyncStateChannel,
               initiatorFreeBalanceVersionNumber,
@@ -427,7 +424,6 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         }
         case PersistStateChannelType.SyncAppInstances: {
           counterpartySyncInfo = {
-            ...counterpartySyncInfo,
             ...getAppStateSyncInfoForCounterparty(
               postSyncStateChannel,
               initiatorAppVersionNumbers,
@@ -444,6 +440,12 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           throw new Error(`Invalid sync type: ${c}`);
         }
       }
+    } else {
+      // create empty object so counterparty can destructure
+      counterpartySyncInfo = {
+        commitments: {},
+        app: {},
+      };
     }
 
     const m1 = {
@@ -452,7 +454,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       params,
       seq: 1,
       to: initiatorIdentifier,
-      customData: { ...syncTypeData, syncInfo: counterpartySyncInfo },
+      customData: { ...syncTypeData, ...counterpartySyncInfo },
     };
 
     const m2 = yield [IO_SEND_AND_WAIT, m1];
@@ -470,7 +472,6 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     }: {
       data: {
         customData: {
-          syncType: { whosSync: "ours" | "theirs"; syncType: PersistStateChannelType };
           commitments: {
             setState: SetStateCommitmentJSON;
             conditional?: ConditionalTransactionCommitmentJSON;
