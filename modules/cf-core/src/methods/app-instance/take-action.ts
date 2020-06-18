@@ -47,7 +47,7 @@ export class TakeActionController extends MethodController {
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<void> {
+  ): Promise<MethodResults.TakeAction | undefined> {
     const { appIdentityHash, action } = params;
 
     if (!appIdentityHash) {
@@ -71,6 +71,9 @@ export class TakeActionController extends MethodController {
       }
       throw new Error(STATE_OBJECT_NOT_ENCODABLE);
     }
+    // NOTE: there's nothing that prevents the same action from being applied
+    // multiple times, so always execute the method.
+    return undefined;
   }
 
   protected async executeMethodImplementation(

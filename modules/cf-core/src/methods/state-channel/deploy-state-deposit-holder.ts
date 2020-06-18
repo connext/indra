@@ -40,7 +40,7 @@ export class DeployStateDepositController extends MethodController {
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.DeployStateDepositHolder,
-  ): Promise<void> {
+  ): Promise<MethodResults.DeployStateDepositHolder | undefined> {
     const { store, networkContext } = requestHandler;
     const { multisigAddress } = params;
 
@@ -68,6 +68,7 @@ export class DeployStateDepositController extends MethodController {
     if (expectedMultisigAddress !== channel.multisigAddress) {
       throw new Error(INCORRECT_MULTISIG_ADDRESS);
     }
+    return undefined;
   }
 
   protected async executeMethodImplementation(

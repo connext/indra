@@ -40,11 +40,13 @@ export class InstallAppInstanceController extends MethodController {
     return params.multisigAddress;
   }
 
+  // should return true IFF the channel is in the correct state before
+  // method execution
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.Install,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<void> {
+  ): Promise<MethodResults.Install | undefined> {
     if (!preProtocolStateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(params.appIdentityHash));
     }
@@ -54,11 +56,16 @@ export class InstallAppInstanceController extends MethodController {
     if (!appIdentityHash || !appIdentityHash.trim()) {
       throw new Error(NO_APP_IDENTITY_HASH_TO_INSTALL);
     }
+    const installed = preProtocolStateChannel.appInstances.get(appIdentityHash);
+    if (installed) {
+      return { appInstance: installed.toJson() };
+    }
 
     const proposal = preProtocolStateChannel.proposedAppInstances.get(appIdentityHash);
     if (!proposal) {
       throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
+    return undefined;
   }
 
   protected async executeMethodImplementation(
