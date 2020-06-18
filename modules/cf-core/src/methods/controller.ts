@@ -1,4 +1,4 @@
-import { MethodName, MethodParam, MethodResult } from "@connext/types";
+import { MethodName, MethodParam, MethodResult, ProtocolNames } from "@connext/types";
 import { capitalize, logTime, stringify } from "@connext/utils";
 
 import { RequestHandler } from "../request-handler";
@@ -31,9 +31,9 @@ export abstract class MethodController {
 
     let result: MethodResult | undefined;
     let error: Error | undefined;
+    let preProtocolStateChannel: StateChannel | undefined;
     try {
       // GET CHANNEL BEFORE EXECUTION
-      let preProtocolStateChannel: StateChannel | undefined;
       if ((params as any).multisigAddress) {
         const json = await requestHandler.store.getStateChannel((params as any).multisigAddress);
         preProtocolStateChannel = json && StateChannel.fromJson(json);
@@ -45,16 +45,14 @@ export abstract class MethodController {
         ]);
         preProtocolStateChannel = json && StateChannel.fromJson(json);
       }
-      await this.beforeExecution(requestHandler, params, preProtocolStateChannel);
+      result = await this.beforeExecution(requestHandler, params, preProtocolStateChannel);
       logTime(log, substart, "Before execution complete");
       substart = Date.now();
 
       // GET UPDATED CHANNEL FROM EXECUTION
-      result = await this.executeMethodImplementation(
-        requestHandler,
-        params,
-        preProtocolStateChannel,
-      );
+      result =
+        result ||
+        (await this.executeMethodImplementation(requestHandler, params, preProtocolStateChannel));
       logTime(log, substart, "Executed method implementation");
       substart = Date.now();
 
@@ -65,6 +63,39 @@ export abstract class MethodController {
     } catch (e) {
       log.error(`Caught error in method controller: ${e.stack}`);
       error = e;
+    }
+
+    // retry if error
+    const isntOfflineErr = !!error && !error.message.includes("IO_SEND_AND_WAIT timed out");
+    if (preProtocolStateChannel && isntOfflineErr) {
+      // dispatch sync rpc call
+      log.warn(
+        `Caught error while running protocol, syncing channels and retrying ${this.methodName}. ${
+          error!.message
+        }`,
+      );
+
+      const { publicIdentifier, protocolRunner, router } = requestHandler;
+      const responderIdentifier = [
+        preProtocolStateChannel.initiatorIdentifier,
+        preProtocolStateChannel.responderIdentifier,
+      ].find((identifier) => identifier !== publicIdentifier)!;
+      try {
+        const { channel } = await protocolRunner.initiateProtocol(router, ProtocolNames.sync, {
+          multisigAddress: preProtocolStateChannel.multisigAddress,
+          initiatorIdentifier: publicIdentifier,
+          responderIdentifier,
+        });
+        log.debug(`Channel synced, retrying ${this.methodName} with ${channel.toJson()}`);
+        result = await this.beforeExecution(requestHandler, params, channel);
+        result =
+          result || (await this.executeMethodImplementation(requestHandler, params, channel));
+        log.info(`Protocol ${this.methodName} successfully executed after sync`);
+        error = undefined;
+      } catch (e) {
+        log.error(`Caught error in method controller while attempting retry + sync: ${e.stack}`);
+        error = e;
+      }
     }
 
     // don't do this in a finally to ensure any errors with releasing the
@@ -96,11 +127,15 @@ export abstract class MethodController {
     return "";
   }
 
+  // should return true IFF the channel is in the correct state before
+  // method execution
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParam,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<void> {}
+  ): Promise<MethodResult | undefined> {
+    return false;
+  }
 
   protected abstract executeMethodImplementation(
     requestHandler: RequestHandler,
@@ -114,4 +149,3 @@ export abstract class MethodController {
     returnValue: MethodResult,
   ): Promise<void> {}
 }
-

@@ -193,10 +193,12 @@ export default {
           sentPayments++;
         } catch (err) {
           log.error(`Error sending tranfer: ${err.message}`);
-          exitCode += 1;
-          await clearRegistry();
-          stop();
-          return;
+          if (!err.message.includes("timed out after")) {
+            exitCode += 1;
+            stop();
+            // await clearRegistry();
+            return;
+          }
         }
       },
       // add slight randomness to interval so that it's somewhere between

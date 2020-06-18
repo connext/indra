@@ -214,19 +214,13 @@ export class Agent {
         reject,
       };
 
-      const timeout = CF_METHOD_TIMEOUT * 4;
-      delay(timeout).then(() => {
-        if (this.payments[id]) {
-          delete this.payments[id];
-          return reject(
-            new Error(
-              `Payment ${id} timed out after ${timeout / 1000}s for channel ${
-                this.client.multisigAddress
-              }`,
-            ),
-          );
-        }
-      });
+      // const timeout = 35_000;
+      // delay(timeout).then(() => {
+      //   if (this.payments[id]) {
+      //     delete this.payments[id];
+      //     return reject(new Error(`Payment ${id} timed out after ${timeout / 1000} s`));
+      //   }
+      // });
     });
   }
 

@@ -61,6 +61,7 @@ export class NodeApiClient implements INodeApiClient {
       nodeUrl,
       messaging: providedMessaging,
       messagingUrl,
+      skipSync,
     } = opts;
     const log = logger.newContext("NodeApiClient");
 
@@ -115,6 +116,7 @@ export class NodeApiClient implements INodeApiClient {
         node,
         logger: log,
         store: opts.store,
+        skipSync,
       });
       log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
       node.channelProvider = channelProvider;

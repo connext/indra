@@ -128,7 +128,7 @@ export class SetStateCommitment implements EthereumCommitment {
     };
   }
 
-  private async assertSignatures() {
+  public async assertSignatures() {
     if (!this.signatures || this.signatures.length === 0) {
       throw new Error(`No signatures detected`);
     }

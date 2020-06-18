@@ -5,6 +5,7 @@ import {
   ProtocolNames,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
+import { appIdentityToHash, getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
 
 import {
   NULL_INITIAL_STATE_FOR_PROPOSAL,
@@ -41,8 +42,8 @@ export class ProposeInstallAppInstanceController extends MethodController {
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<void> {
-    const { initialState, responderIdentifier } = params;
+  ): Promise<MethodResults.ProposeInstall | undefined> {
+    const { initialState, responderIdentifier, appDefinition, defaultTimeout } = params;
     const { publicIdentifier } = requestHandler;
 
     if (!initialState) {
@@ -53,6 +54,21 @@ export class ProposeInstallAppInstanceController extends MethodController {
       throw new Error(
         NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, responderIdentifier].toString()),
       );
+    }
+
+    const appIdentity = {
+      participants: [
+        getSignerAddressFromPublicIdentifier(publicIdentifier),
+        getSignerAddressFromPublicIdentifier(responderIdentifier),
+      ],
+      multisigAddress: preProtocolStateChannel.multisigAddress,
+      appDefinition,
+      defaultTimeout,
+      channelNonce: toBN(preProtocolStateChannel.numProposedApps + 1),
+    };
+    const appIdentityHash = appIdentityToHash(appIdentity);
+    if (preProtocolStateChannel.proposedAppInstances.has(appIdentityHash)) {
+      return { appIdentityHash };
     }
 
     const {
@@ -66,6 +82,7 @@ export class ProposeInstallAppInstanceController extends MethodController {
 
     params.initiatorDepositAssetId = initiatorDepositAssetId;
     params.responderDepositAssetId = responderDepositAssetId;
+    return undefined;
   }
 
   protected async executeMethodImplementation(

@@ -406,7 +406,7 @@ export async function getMultisigAmountWithdrawn(
     return await multisig.totalAmountWithdrawn(tokenAddress);
   } catch (e) {
     if (!e.message.includes(CONTRACT_NOT_DEPLOYED)) {
-      if (!(e.message).toUpperCase().includes(CALL_EXCEPTION)) {
+      if (!e.message.toUpperCase().includes(CALL_EXCEPTION)) {
         throw new Error(e);
       }
     }

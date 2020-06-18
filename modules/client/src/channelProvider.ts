@@ -45,6 +45,7 @@ export const createCFChannelProvider = async ({
   node,
   logger,
   store,
+  skipSync,
 }: CFChannelProviderOptions): Promise<IChannelProvider> => {
   let config: NodeResponses.GetConfig;
   if (!node.config) {
@@ -59,7 +60,7 @@ export const createCFChannelProvider = async ({
     acquireLock: node.acquireLock.bind(node),
     releaseLock: node.releaseLock.bind(node),
   };
-  let cfCore;
+  let cfCore: CFCore;
   try {
     cfCore = await CFCore.create(
       messaging,
@@ -71,13 +72,11 @@ export const createCFChannelProvider = async ({
       lockService,
       undefined,
       logger,
-      true, // sync all client channels on start up
+      !skipSync, // sync all client channels on start up by default
     );
   } catch (e) {
     console.error(
-      `Could not setup cf-core with sync protocol on, Error: ${stringify(
-        e,
-      )}. Trying again without syncing on start...`,
+      `Could not setup cf-core with sync protocol on, Error: ${e.message}. Trying again without syncing on start...`,
     );
   }
   if (!cfCore) {
@@ -91,7 +90,7 @@ export const createCFChannelProvider = async ({
       lockService,
       undefined,
       logger,
-      false, // sync all client channels on start up
+      false, // skip sync on second try
     );
   }
 

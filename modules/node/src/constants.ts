@@ -1,3 +1,5 @@
+import { CF_METHOD_TIMEOUT } from "@connext/types";
+
 export enum Network {
   GANACHE = "ganache",
   KOVAN = "kovan",
@@ -7,9 +9,8 @@ export enum Network {
   HOMESTEAD = "homestead",
 }
 
-// should be 2x the IO_SEND_AND_WAIT_TIMEOUT of cf-core
-// to account for 2 IO_SEND_AND_WAITs in install
-export const LOCK_SERVICE_TTL = 11_000;
+// should account for error handling in cf method timeout
+export const LOCK_SERVICE_TTL = CF_METHOD_TIMEOUT + 1_000;
 export const TIMEOUT_BUFFER = 100;
 export const DEFAULT_DECIMALS = 18;
 
