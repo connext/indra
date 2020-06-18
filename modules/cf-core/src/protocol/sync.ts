@@ -732,14 +732,14 @@ async function syncFreeBalanceState(
 
   // get the unsynced app or proposal
   const unsynced =
-    ourChannel.appInstances.get(unsyncedAppId) ||
-    ourChannel.proposedAppInstances.get(unsyncedAppId);
-
+    freeBalanceSyncType === "install"
+      ? ourChannel.proposedAppInstances.get(unsyncedAppId)
+      : ourChannel.appInstances.get(unsyncedAppId);
   if (!unsynced) {
     throw new Error(
       `Could not find corresponding proposal or app for unsynced id ${unsyncedAppId} in our channel. Proposed apps: ${stringify(
-        ourChannel.proposedAppInstances.keys(),
-      )}, installed apps: ${stringify(ourChannel.appInstances.keys())}`,
+        [...ourChannel.proposedAppInstances.keys()],
+      )}, installed apps: ${stringify([...ourChannel.appInstances.keys()])}`,
     );
   }
 
@@ -748,7 +748,7 @@ async function syncFreeBalanceState(
   let appContext: AppInstance | undefined = undefined;
   if (freeBalanceSyncType === "install") {
     updatedChannel = ourChannel
-      .removeProposal(unsynced.identityHash)
+      .removeProposal(unsyncedAppId)
       .addAppInstance(AppInstance.fromJson(unsynced as AppInstanceJson))
       .setFreeBalance(freeBalance);
   } else {
@@ -993,20 +993,16 @@ function getFreeBalanceSyncInfoForCounterparty(
   const counterpartyProposals = counterpartyProposalVersionNumbers.map((x) => x.identityHash);
   // free balance gets out of sync by either installing a proposal, or
   // uninstalling an active app
-  const uninstalledAppId = counterpartyActiveApps.find(
-    (appId) => !ourChannel.appInstances.has(appId),
-  );
-  const installedProposal = [...ourChannel.appInstances.values()].find((app) =>
-    counterpartyProposals.includes(app.identityHash),
-  );
-  if (!installedProposal && !uninstalledAppId) {
+  const uninstalledAppId = counterpartyActiveApps.find((appId) => !activeAppIds.includes(appId));
+  const installedProposalId = activeAppIds.find((appId) => counterpartyProposals.includes(appId));
+  if (!installedProposalId && !uninstalledAppId) {
     throw new Error(
       `No corresponding out of sync proposal or app found. Our active apps: ${stringify(
         activeAppIds,
       )}, their active apps: ${stringify(counterpartyActiveApps)}`,
     );
   }
-  if (installedProposal && uninstalledAppId) {
+  if (installedProposalId && uninstalledAppId) {
     throw new Error(
       `Found both an installed proposal and uninstalled app, aborting. Our active apps: ${stringify(
         activeAppIds,
@@ -1014,7 +1010,7 @@ function getFreeBalanceSyncInfoForCounterparty(
     );
   }
 
-  const unsyncedAppId = uninstalledAppId || installedProposal!.identityHash;
+  const unsyncedAppId = uninstalledAppId || installedProposalId;
   return {
     commitments: { setState: freeBalanceSetState },
     app: ourChannel.freeBalance.toJson(),
