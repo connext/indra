@@ -45,16 +45,14 @@ export abstract class MethodController {
         ]);
         preProtocolStateChannel = json && StateChannel.fromJson(json);
       }
-      await this.beforeExecution(requestHandler, params, preProtocolStateChannel);
+      result = await this.beforeExecution(requestHandler, params, preProtocolStateChannel);
       logTime(log, substart, "Before execution complete");
       substart = Date.now();
 
       // GET UPDATED CHANNEL FROM EXECUTION
-      result = await this.executeMethodImplementation(
-        requestHandler,
-        params,
-        preProtocolStateChannel,
-      );
+      result =
+        result ||
+        (await this.executeMethodImplementation(requestHandler, params, preProtocolStateChannel));
       logTime(log, substart, "Executed method implementation");
       substart = Date.now();
 
@@ -68,12 +66,11 @@ export abstract class MethodController {
     }
 
     // retry if error
-    const outOfSyncErr =
-      (error?.message || "").includes(`Validating a signature`) ||
-      (error?.message || "").includes(`assertIsValidSignature`);
-    if (preProtocolStateChannel) {
+    if (preProtocolStateChannel && error) {
       // dispatch sync rpc call
-      log.warn(`Caught error while running protocol, syncing channels and retrying method.`);
+      log.warn(
+        `Caught error while running protocol, syncing channels and retrying method. ${error.message}`,
+      );
       const { publicIdentifier, protocolRunner, router } = requestHandler;
       const responderIdentifier = [
         preProtocolStateChannel.initiatorIdentifier,
@@ -85,10 +82,11 @@ export abstract class MethodController {
           initiatorIdentifier: publicIdentifier,
           responderIdentifier,
         });
-        console.log("response: ", response);
         log.info(`Channel synced, retrying method`);
-        await this.beforeExecution(requestHandler, params, response.channel);
-        result = await this.executeMethodImplementation(requestHandler, params, response.channel);
+        result = await this.beforeExecution(requestHandler, params, response.channel);
+        result =
+          result ||
+          (await this.executeMethodImplementation(requestHandler, params, response.channel));
       } catch (e) {
         log.error(`Caught error in method controller while attempting retry + sync: ${e.stack}`);
         error = e;
@@ -124,11 +122,15 @@ export abstract class MethodController {
     return "";
   }
 
+  // should return true IFF the channel is in the correct state before
+  // method execution
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParam,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<void> {}
+  ): Promise<MethodResult | undefined> {
+    return false;
+  }
 
   protected abstract executeMethodImplementation(
     requestHandler: RequestHandler,
