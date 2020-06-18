@@ -21,7 +21,7 @@ module.exports = function override(config, env) {
   config.module.rules.push({
     include: path.resolve(__dirname, "src"),
     test: wasmExtensionRegExp,
-    type: "webassembly/experimental",
+    type: "application/wasm",
     use: [{ loader: require.resolve("wasm-loader"), options: {} }],
   });
 
