@@ -71,22 +71,24 @@ export abstract class MethodController {
     const outOfSyncErr =
       (error?.message || "").includes(`Validating a signature`) ||
       (error?.message || "").includes(`assertIsValidSignature`);
-    if (preProtocolStateChannel && outOfSyncErr) {
+    if (preProtocolStateChannel) {
       // dispatch sync rpc call
-      log.warn(`Caught error when validating a signature, syncing channels and retrying method.`);
+      log.warn(`Caught error while running protocol, syncing channels and retrying method.`);
       const { publicIdentifier, protocolRunner, router } = requestHandler;
       const responderIdentifier = [
         preProtocolStateChannel.initiatorIdentifier,
         preProtocolStateChannel.responderIdentifier,
       ].find((identifier) => identifier !== publicIdentifier)!;
       try {
-        const { channel } = await protocolRunner.initiateProtocol(router, ProtocolNames.sync, {
+        const response = await protocolRunner.initiateProtocol(router, ProtocolNames.sync, {
           multisigAddress: preProtocolStateChannel.multisigAddress,
           initiatorIdentifier: publicIdentifier,
           responderIdentifier,
         });
+        console.log("response: ", response);
         log.info(`Channel synced, retrying method`);
-        result = await this.executeMethodImplementation(requestHandler, params, channel);
+        await this.beforeExecution(requestHandler, params, response.channel);
+        result = await this.executeMethodImplementation(requestHandler, params, response.channel);
       } catch (e) {
         log.error(`Caught error in method controller while attempting retry + sync: ${e.stack}`);
         error = e;

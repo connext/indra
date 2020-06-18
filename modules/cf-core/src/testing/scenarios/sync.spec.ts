@@ -24,7 +24,7 @@ import {
   uninstallApp,
 } from "../utils";
 import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
-import { deBigNumberifyJson, ChannelSigner } from "@connext/utils";
+import { deBigNumberifyJson, ChannelSigner, stringify } from "@connext/utils";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { TestContractAddresses } from "../contracts";
 import { MemoryLockService } from "../services";
@@ -138,34 +138,23 @@ describe("Sync", () => {
     });
 
     test("sync protocol responder is missing a proposal held by the protocol initiator", async () => {
-      const [eventData, newNodeA] = await Promise.all([
-        new Promise(async (resolve, reject) => {
-          nodeB.on(EventNames.SYNC, (data) => resolve(data));
-          nodeB.on(EventNames.SYNC_FAILED_EVENT, (msg) => reject(`Sync failed. ${msg.data.error}`));
-        }),
-        CFCore.create(
-          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
-          storeServiceA,
-          global["contracts"],
-          nodeConfig,
-          provider,
-          channelSignerA,
-          lockService,
-          0,
-          new Logger("CreateClient", env.logLevel, true, "A"),
-        ),
-      ]);
-
-      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      expect(eventData).toMatchObject({
-        from: nodeA.publicIdentifier,
-        type: EventNames.SYNC,
-        data: { syncedChannel: expectedChannel },
-      });
-      expect(syncedChannel).toMatchObject(expectedChannel!);
+      const newNodeA = await CFCore.create(
+        new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+        storeServiceA,
+        global["contracts"],
+        nodeConfig,
+        provider,
+        channelSignerA,
+        lockService,
+        0,
+        new Logger("CreateClient", env.logLevel, true, "A-Recreated"),
+        false,
+      );
       await (newNodeA as CFCore).rpcRouter.dispatch(
         constructInstallRpc(identityHash, multisigAddress),
       );
+      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
+      expect(syncedChannel).toMatchObject(expectedChannel!);
       const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
       const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
@@ -391,8 +380,8 @@ describe("Sync", () => {
   });
 
   describe("Sync::install", () => {
-    let appIdentityHash;
-    let unsynced;
+    let appIdentityHash: string;
+    let unsynced: StateChannelJSON | undefined;
     // TODO: figure out how to fast-forward IO_SEND_AND_WAIT
     beforeEach(async () => {
       // install-specific setup
@@ -446,33 +435,11 @@ describe("Sync", () => {
       messagingServiceA.clearLimits();
     }, 30_000);
 
-    test("sync protocol -- initiator is missing an app held by responder", async () => {
-      const [eventData, newNodeB] = await Promise.all([
-        new Promise(async (resolve) => {
-          nodeA.on(EventNames.SYNC, (data) => resolve(data));
-        }),
-        CFCore.create(
-          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
-          storeServiceB,
-          global["contracts"],
-          nodeConfig,
-          provider,
-          channelSignerB,
-          lockService,
-          0,
-          new Logger("CreateClient", env.logLevel, true, "B"),
-        ),
-      ]);
-
+    test.only("sync protocol -- initiator is missing an app held by responder", async () => {
+      await uninstallApp(nodeB, nodeA, appIdentityHash, multisigAddress);
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      expect(eventData).toMatchObject({
-        from: nodeB.publicIdentifier,
-        type: EventNames.SYNC,
-        data: { syncedChannel: expectedChannel },
-      });
       expect(syncedChannel).toMatchObject(expectedChannel!);
 
-      await uninstallApp(newNodeB as CFCore, nodeA, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
       expect(newChannelA!).toMatchObject(newChannelB!);
@@ -802,7 +769,7 @@ describe("Sync", () => {
   });
 
   describe("Sync::takeAction", () => {
-    let appIdentityHash;
+    let appIdentityHash: string;
     beforeEach(async () => {
       // uninstall-specific setup
       messagingServiceA = new MemoryMessagingServiceWithLimits(
