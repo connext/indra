@@ -397,7 +397,7 @@ describe("Signed Transfer Offline", () => {
     );
   });
 
-  it.only("sender installs transfer successfully, receiver install protocol times out", async () => {
+  it("sender installs transfer successfully, receiver install protocol times out", async () => {
     const receiverConfig = {
       ceiling: { [SEND]: 0, [RECEIVED]: 0 },
       protocol: ProtocolNames.install,
