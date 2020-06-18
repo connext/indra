@@ -169,7 +169,7 @@ describe("Deposit offline tests", () => {
     await recreateClientAndRetryDepositCall(signer, client, store);
   });
 
-  it.only("client successfully proposed deposit app, but went offline during execution of install protocol", async () => {
+  it("client successfully proposed deposit app, but went offline during execution of install protocol", async () => {
     client = await createClientWithMessagingLimits({
       protocol: ProtocolNames.install,
       ceiling: { [SEND]: 0 },
