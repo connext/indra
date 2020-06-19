@@ -24,7 +24,6 @@ import {
 import {
   IChannelSigner,
   IConnextClient,
-  BigNumber,
   ConditionalTransferTypes,
   EventNames,
   EventName,
@@ -35,13 +34,13 @@ import {
   PrivateKey,
 } from "@connext/types";
 import { addressBook } from "@connext/contracts";
-import { constants } from "ethers";
+import { BigNumber, constants } from "ethers";
 
 const { Zero } = constants;
 
 describe("Signed Transfer Offline", () => {
-  const tokenAddress = addressBook[4447].Token.address;
-  const addr = addressBook[4447].SimpleSignedTransferApp.address;
+  const tokenAddress = addressBook[1337].Token.address;
+  const addr = addressBook[1337].SimpleSignedTransferApp.address;
 
   let senderPrivateKey: PrivateKey;
   let senderSigner: IChannelSigner;
@@ -60,7 +59,11 @@ describe("Signed Transfer Offline", () => {
   const createAndFundSender = async (
     config: Partial<ClientTestMessagingInputOpts> = {},
   ): Promise<IConnextClient> => {
-    const client = await createClientWithMessagingLimits({ ...config, signer: senderSigner });
+    const client = await createClientWithMessagingLimits({
+      ...config,
+      signer: senderSigner,
+      id: "sender",
+    });
     await fundChannel(client, TOKEN_AMOUNT, tokenAddress);
     return client;
   };
@@ -69,7 +72,11 @@ describe("Signed Transfer Offline", () => {
   const createAndCollateralizeReceiver = async (
     config: Partial<ClientTestMessagingInputOpts> = {},
   ): Promise<IConnextClient> => {
-    const client = await createClientWithMessagingLimits({ ...config, signer: receiverSigner });
+    const client = await createClientWithMessagingLimits({
+      ...config,
+      signer: receiverSigner,
+      id: "receiver",
+    });
     await new Promise(async (resolve) => {
       client.on(EventNames.UNINSTALL_EVENT, async (msg) => {
         const freeBalance = await client.getFreeBalance(tokenAddress);
@@ -179,6 +186,7 @@ describe("Signed Transfer Offline", () => {
     receiver: IConnextClient,
     amount: BigNumber = toBN(10),
     paymentId: string = getRandomBytes32(),
+    waitForReceiverInstall: boolean = true,
   ) => {
     const preTransferSenderBalance = await sender.getFreeBalance(tokenAddress);
     const { chainId } = await sender.ethProvider.getNetwork();
@@ -195,6 +203,9 @@ describe("Signed Transfer Offline", () => {
       subgraphDeploymentID: receipt.subgraphDeploymentID,
       recipient: receiver.publicIdentifier,
     });
+    if (waitForReceiverInstall) {
+      await receiver.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
+    }
     const postTransferSenderBalance = await sender.getFreeBalance(tokenAddress);
     // verify user balance changes
     expect(
@@ -211,18 +222,19 @@ describe("Signed Transfer Offline", () => {
     signer: IChannelSigner,
     store: IStoreService,
     paymentId?: string, // if supplied, will only resolve
+    skipSync?: boolean,
   ): Promise<void> => {
-    let sender;
-    let receiver;
+    let sender: IConnextClient | undefined;
+    let receiver: IConnextClient;
     switch (toRecreate) {
       case "sender": {
-        sender = await createClient({ signer, store });
+        sender = await createClient({ signer, store, id: "RecreatedSender", skipSync });
         receiver = counterparty;
         break;
       }
       case "receiver": {
         sender = counterparty;
-        receiver = await createClient({ signer, store });
+        receiver = await createClient({ signer, store, id: "RecreatedReceiver", skipSync });
         break;
       }
       default: {
@@ -394,7 +406,7 @@ describe("Signed Transfer Offline", () => {
     const [sender, receiver] = await createAndFundClients(undefined, receiverConfig);
     const paymentId = await new Promise<string>(async (resolve, reject) => {
       try {
-        const id = await sendSignedTransfer(sender, receiver);
+        const id = await sendSignedTransfer(sender, receiver, undefined, undefined, false);
         expect(id).to.be.ok;
         await resolveFailingSignedTransfer({
           sender,
@@ -420,6 +432,7 @@ describe("Signed Transfer Offline", () => {
       receiverSigner,
       receiver.store,
       paymentId,
+      true,
     );
   });
 

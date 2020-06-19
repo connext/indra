@@ -6,7 +6,7 @@ import {
   ProtocolParams,
   ProtocolRoles,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime, stringify, delay } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment, getConditionalTransactionCommitment } from "../ethereum";
@@ -29,8 +29,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const start = Date.now();
     let substart = start;
     const { processID, params } = message;
-    log.info(`[${processID}] Initiation started`);
-    log.debug(`[${processID}] Initiation started: ${stringify(params)}`);
+    const loggerId = params?.multisigAddress || processID;
+    log.info(`[${loggerId}] Initiation started`);
+    log.debug(`[${loggerId}] Initiation started: ${stringify(params)}`);
 
     const {
       abiEncodings,
@@ -97,7 +98,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     if (!!error) {
       throw new Error(error);
     }
-    logTime(log, substart, `[${processID}] Validated proposal`);
+    logTime(log, substart, `[${loggerId}] Validated proposal ${proposal.identityHash}`);
     substart = Date.now();
 
     // 0 ms
@@ -112,13 +113,17 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     substart = Date.now();
+
     const setStateCommitmentHash = setStateCommitment.hashToSign();
     const initiatorSignatureOnInitialState = yield [OP_SIGN, setStateCommitmentHash];
 
-    // free balance addr signs conditional transactions
     const conditionalTxCommitmentHash = conditionalTxCommitment.hashToSign();
     const initiatorSignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
-    logTime(log, substart, `[${processID}] Signed initial state initiator propose`);
+    logTime(
+      log,
+      substart,
+      `[${loggerId}] Signed set state commitment ${setStateCommitmentHash} & conditional transfer commitment ${conditionalTxCommitmentHash}`,
+    );
 
     const m1 = {
       protocol,
@@ -136,7 +141,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     // 200ms
     const m2 = yield [IO_SEND_AND_WAIT, m1];
-    logTime(log, substart, `[${processID}] Received responder's m2`);
+    logTime(log, substart, `[${loggerId}] Received responder's m2`);
     substart = Date.now();
 
     const {
@@ -157,11 +162,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         setStateCommitment.toJson(),
       )}. Initial state: ${stringify(initialState)}`,
     );
-    logTime(
-      log,
-      substart,
-      `[${processID}] Asserted valid responder signature set state commitment`,
-    );
+    logTime(log, substart, `[${loggerId}] Asserted valid responder signature set state commitment`);
 
     substart = Date.now();
     await assertIsValidSignature(
@@ -175,7 +176,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     logTime(
       log,
       substart,
-      `[${processID}] Asserted valid responder signature on conditional transaction`,
+      `[${loggerId}] Asserted valid responder signature on conditional transaction`,
     );
 
     // add signatures to commitment and save
@@ -199,11 +200,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       setStateCommitment,
       conditionalTxCommitment,
     ];
-    logTime(log, substart, `[${processID}] Persisted app instance ${proposalJson.identityHash}`);
+    logTime(log, substart, `[${loggerId}] Persisted app instance ${proposalJson.identityHash}`);
     substart = Date.now();
 
     // Total 298ms
-    logTime(log, start, `[${processID}] Initiation finished`);
+    logTime(log, start, `[${loggerId}] Initiation finished`);
   },
 
   1 /* Responding */: async function* (context: Context) {
@@ -212,8 +213,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
-    log.info(`[${processID}] Response started`);
-    log.debug(`[${processID}] Protocol response started with parameters ${stringify(params)}`);
+    const loggerId = params?.multisigAddress || processID;
+    log.info(`[${loggerId}] Response started`);
+    log.debug(`[${loggerId}] Protocol response started with parameters ${stringify(params)}`);
 
     const {
       abiEncodings,
@@ -291,7 +293,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     if (!!error) {
       throw new Error(error);
     }
-    logTime(log, substart, `[${processID}] Validated proposal`);
+    logTime(log, substart, `[${loggerId}] Validated proposal ${proposal.identityHash}`);
     substart = Date.now();
 
     // 0ms
@@ -316,7 +318,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         setStateCommitment.toJson(),
       )}. Initial state: ${stringify(initialState)}`,
     );
-    logTime(log, substart, `[${processID}] Asserted valid signature responder propose`);
+    logTime(log, substart, `[${loggerId}] Asserted valid signature responder propose`);
 
     substart = Date.now();
     await assertIsValidSignature(
@@ -330,18 +332,18 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     logTime(
       log,
       substart,
-      `[${processID}] Asserted valid initiator signature on conditional transaction`,
+      `[${loggerId}] Asserted valid initiator signature on conditional transaction`,
     );
 
     substart = Date.now();
     // 12ms
     const responderSignatureOnInitialState = yield [OP_SIGN, setStateCommitmentHash];
-    logTime(log, substart, `[${processID}] Signed initial state responder propose`);
+    logTime(log, substart, `[${loggerId}] Signed initial state responder propose`);
     const responderSignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
-    logTime(log, substart, `[${processID}] Signed conditional tx commitment`);
+    logTime(log, substart, `[${loggerId}] Signed conditional tx commitment`);
     await setStateCommitment.addSignatures(
       initiatorSignatureOnInitialState,
-      responderSignatureOnInitialState as any,
+      responderSignatureOnInitialState,
     );
     await conditionalTxCommitment.addSignatures(
       initiatorSignatureOnConditionalTransaction,
@@ -359,7 +361,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       setStateCommitment,
       conditionalTxCommitment,
     ];
-    logTime(log, substart, `[${processID}] Persisted app instance ${proposalJson.identityHash}`);
+    logTime(log, substart, `[${loggerId}] Persisted app instance ${proposalJson.identityHash}`);
 
     // 0ms
     yield [
@@ -369,6 +371,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         seq: UNASSIGNED_SEQ_NO,
         to: initiatorIdentifier,
+        prevMessageReceived: start,
         customData: {
           signature: responderSignatureOnInitialState,
           signature2: responderSignatureOnConditionalTransaction,
@@ -378,6 +381,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     substart = Date.now();
-    logTime(log, start, `[${processID}] Response finished`);
+    logTime(log, start, `[${loggerId}] Response finished`);
   },
 };

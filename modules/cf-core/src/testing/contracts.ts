@@ -12,6 +12,7 @@ import {
   TimeLockedPassThrough,
   TwoPartyFixedOutcomeInterpreter,
   WithdrawApp,
+  WithdrawInterpreter,
   SimpleLinkedTransferApp,
 } from "@connext/contracts";
 import { ContractAddresses } from "@connext/types";
@@ -49,6 +50,12 @@ export const deployTestArtifactsToChain = async (
     wallet,
   ).deploy();
 
+  const withdrawInterpreterContract = await new ContractFactory(
+    WithdrawInterpreter.abi,
+    WithdrawInterpreter.bytecode,
+    wallet,
+  ).deploy();
+
   const dolphinCoin = await new ContractFactory(
     DolphinCoin.abi,
     DolphinCoin.bytecode,
@@ -62,7 +69,7 @@ export const deployTestArtifactsToChain = async (
   ).deploy();
 
   const mvmContract = await new ContractFactory(
-    MinimumViableMultisig.abi as any,
+    MinimumViableMultisig.abi,
     MinimumViableMultisig.bytecode,
     wallet,
   ).deploy();
@@ -129,6 +136,7 @@ export const deployTestArtifactsToChain = async (
     TimeLockedPassThrough: timeLockedPassThrough.address,
     TwoPartyFixedOutcomeInterpreter: twoPartyFixedOutcomeInterpreter.address,
     WithdrawApp: withdrawAppContract.address,
+    WithdrawInterpreter: withdrawInterpreterContract.address,
     SimpleLinkedTransferApp: linkedTransferAppContract.address,
   };
 };

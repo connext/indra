@@ -3,7 +3,7 @@ import { ILogger, ILoggerService } from "@connext/types";
 export const logTime = (log: ILogger, start: number, msg: string) => {
   const diff = Date.now() - start;
   const message = `${msg} in ${diff} ms`;
-  if (diff < 20) {
+  if (diff < 2) {
     log.debug(message);
   } else if (diff < 200) {
     log.info(message);
@@ -19,7 +19,7 @@ export const nullLogger: ILoggerService = {
   warn: (msg: string): void => {},
   error: (msg: string): void => {},
   setContext: (context: string): void => {},
-  newContext: function(context: string): ILoggerService {
+  newContext: function (context: string): ILoggerService {
     return this;
   },
 };

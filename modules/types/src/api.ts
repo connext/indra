@@ -25,6 +25,7 @@ export interface AsyncNodeInitializationParameters extends NodeInitializationPar
   store?: IStoreService;
   signer?: IChannelSigner;
   channelProvider?: IChannelProvider;
+  skipSync?: boolean;
 }
 
 export interface NodeInitializationParameters {

@@ -4,7 +4,7 @@ import { waffle as buidler } from "@nomiclabs/buidler";
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
 import { use } from "chai";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 const { HashZero, Zero } = constants;
 const { defaultAbiCoder, keccak256, solidityPack } = utils;
@@ -54,7 +54,7 @@ export const emptyChallenge = {
 
 // App State With Action types for testing
 export type AppWithCounterState = {
-  counter: utils.BigNumber;
+  counter: BigNumber;
 };
 
 export const encodeState = (state: AppWithCounterState) => {
@@ -68,7 +68,7 @@ export enum ActionType {
 
 export type AppWithCounterAction = {
   actionType: ActionType;
-  increment: utils.BigNumber;
+  increment: BigNumber;
 };
 
 export const encodeAction = (action: AppWithCounterAction) => {

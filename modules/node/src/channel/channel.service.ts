@@ -5,10 +5,11 @@ import {
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
 } from "@connext/types";
+import { ERC20 } from "@connext/contracts";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
-import { providers, constants, utils } from "ethers";
+import { BigNumber, providers, constants, utils, Contract } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -16,12 +17,13 @@ import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { DepositService } from "../deposit/deposit.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
+import { DEFAULT_DECIMALS } from "../constants";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
 
 const { AddressZero } = constants;
-const { getAddress, toUtf8Bytes, sha256, bigNumberify } = utils;
+const { getAddress, toUtf8Bytes, sha256, formatUnits } = utils;
 
 export enum RebalanceType {
   COLLATERALIZE = "COLLATERALIZE",
@@ -163,9 +165,9 @@ export class ChannelService {
   async getCollateralAmountToCoverPaymentAndRebalance(
     userPublicIdentifier: string,
     assetId: string,
-    paymentAmount: utils.BigNumber,
-    currentBalance: utils.BigNumber,
-  ): Promise<utils.BigNumber> {
+    paymentAmount: BigNumber,
+    currentBalance: BigNumber,
+  ): Promise<BigNumber> {
     const { collateralizeThreshold, target } = await this.getRebalancingTargets(
       userPublicIdentifier,
       assetId,
@@ -213,6 +215,34 @@ export class ChannelService {
       throw new Error(
         `Node is not configured to rebalance asset ${assetId} for user ${userPublicIdentifier}`,
       );
+    }
+
+    // convert targets to proper units for token
+    if (assetId !== AddressZero) {
+      const token = new Contract(assetId, ERC20.abi, this.configService.getEthProvider());
+      let decimals = DEFAULT_DECIMALS;
+      try {
+        decimals = await token.decimals();
+      } catch (e) {
+        this.log.error(
+          `Could not retrieve decimals from token, proceeding with decimals = 18... Error: ${e.message}`,
+        );
+      }
+      if (decimals !== DEFAULT_DECIMALS) {
+        this.log.warn(
+          `Token has ${decimals} decimals, converting rebalance targets. Pre-conversion: ${stringify(
+            targets,
+          )}`,
+        );
+        targets.collateralizeThreshold = BigNumber.from(
+          formatUnits(targets.collateralizeThreshold, decimals).split(".")[0],
+        );
+        targets.target = BigNumber.from(formatUnits(targets.target, decimals).split(".")[0]);
+        targets.reclaimThreshold = BigNumber.from(
+          formatUnits(targets.reclaimThreshold, decimals).split(".")[0],
+        );
+        this.log.warn(`Converted rebalance targets: ${stringify(targets)}`);
+      }
     }
     this.log.debug(`Rebalancing target: ${stringify(targets)}`);
     return targets;
@@ -279,7 +309,9 @@ export class ChannelService {
       !creationData.data.owners.includes(existingOwners[1])
     ) {
       throw new Error(
-        `Channel has already been created with owners ${stringify(existingOwners)}. Event data: ${stringify(creationData)}`,
+        `Channel has already been created with owners ${stringify(
+          existingOwners,
+        )}. Event data: ${stringify(creationData)}`,
       );
     }
     if (existing.available) {
@@ -323,9 +355,9 @@ export class ChannelService {
     }
     const response: RebalanceProfileType = {
       assetId: rebalancingTargets.assetId,
-      collateralizeThreshold: bigNumberify(rebalancingTargets.collateralizeThreshold),
-      target: bigNumberify(rebalancingTargets.target),
-      reclaimThreshold: bigNumberify(rebalancingTargets.reclaimThreshold),
+      collateralizeThreshold: BigNumber.from(rebalancingTargets.collateralizeThreshold),
+      target: BigNumber.from(rebalancingTargets.target),
+      reclaimThreshold: BigNumber.from(rebalancingTargets.reclaimThreshold),
     };
     this.log.info(
       `getDataFromRebalancingService for ${userPublicIdentifier} asset ${assetId} complete: ${JSON.stringify(

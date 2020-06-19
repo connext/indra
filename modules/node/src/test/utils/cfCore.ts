@@ -44,7 +44,7 @@ export const createAppInstanceJson = (
     multisigAddress: getRandomAddress(),
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
     outcomeInterpreterParameters: {
-      limit: { _hex: Zero.toHexString() },
+      limit: { _hex: Zero.toHexString(), _isBigNumber: true },
       tokenAddress: AddressZero,
     } as SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
     initiatorDeposit: Zero.toString(),

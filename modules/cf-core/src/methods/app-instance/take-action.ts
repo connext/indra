@@ -10,7 +10,7 @@ import {
   PublicIdentifier,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { errors, utils } from "ethers";
+import { BigNumber, errors } from "ethers";
 
 import {
   IMPROPERLY_FORMATTED_STRUCT,
@@ -47,7 +47,7 @@ export class TakeActionController extends MethodController {
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<void> {
+  ): Promise<MethodResults.TakeAction | undefined> {
     const { appIdentityHash, action } = params;
 
     if (!appIdentityHash) {
@@ -71,6 +71,9 @@ export class TakeActionController extends MethodController {
       }
       throw new Error(STATE_OBJECT_NOT_ENCODABLE);
     }
+    // NOTE: there's nothing that prevents the same action from being applied
+    // multiple times, so always execute the method.
+    return undefined;
   }
 
   protected async executeMethodImplementation(
@@ -128,7 +131,7 @@ async function runTakeActionProtocol(
   initiatorIdentifier: PublicIdentifier,
   responderIdentifier: PublicIdentifier,
   action: SolidityValueType,
-  stateTimeout: utils.BigNumber,
+  stateTimeout: BigNumber,
 ) {
   try {
     return await protocolRunner.initiateProtocol(
@@ -149,6 +152,6 @@ async function runTakeActionProtocol(
       // TODO: Fetch the revert reason
       throw new Error(`${INVALID_ACTION}: ${e.message}`);
     }
-    throw new Error(`Couldn't run TakeAction protocol: ${e.message}`);
+    throw new Error(`Couldn't run TakeAction protocol: ${e.stack}`);
   }
 }

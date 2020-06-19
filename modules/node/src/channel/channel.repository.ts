@@ -1,38 +1,46 @@
-import { StateChannelJSON } from "@connext/types";
+import { StateChannelJSON, JSONSerializer } from "@connext/types";
 import { NotFoundException } from "@nestjs/common";
 import { constants } from "ethers";
 import { EntityManager, EntityRepository, Repository } from "typeorm";
 
-import { convertAppToInstanceJSON } from "../appInstance/appInstance.repository";
 import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
+import { AppInstanceSerializer } from "../appInstance/appInstance.repository";
+import { AppType } from "../appInstance/appInstance.entity";
 
 import { Channel } from "./channel.entity";
-import { AppType } from "../appInstance/appInstance.entity";
 
 const { AddressZero } = constants;
 
 const log = new LoggerService("ChannelRepository");
 
-export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
-  const json: StateChannelJSON = {
-    addresses: channel.addresses,
-    appInstances: (channel.appInstances || [])
-      .filter((app) => app.type === AppType.INSTANCE)
-      .map((app) => [app.identityHash, convertAppToInstanceJSON(app, channel)]),
-    freeBalanceAppInstance: convertAppToInstanceJSON(
-      (channel.appInstances || []).find((app) => app.type === AppType.FREE_BALANCE),
-      channel,
-    ),
-    monotonicNumProposedApps: channel.monotonicNumProposedApps,
-    multisigAddress: channel.multisigAddress,
-    proposedAppInstances: (channel.appInstances || [])
-      .filter((app) => app.type === AppType.PROPOSAL)
-      .map((app) => [app.identityHash, convertAppToInstanceJSON(app, channel)]),
-    schemaVersion: channel.schemaVersion,
-    userIdentifiers: [channel.nodeIdentifier, channel.userIdentifier], // always [initiator, responder] -- node will always be initiator
-  };
-  return json;
+export const ChannelSerializer: JSONSerializer<Channel, StateChannelJSON> = class {
+  static toJSON(channel: Channel): StateChannelJSON {
+    const json: StateChannelJSON = {
+      addresses: channel.addresses,
+      appInstances: (channel.appInstances || [])
+        .filter((app) => app.type === AppType.INSTANCE)
+        .map((app) => [
+          app.identityHash,
+          AppInstanceSerializer.toJSON({
+            ...app,
+            channel,
+          }),
+        ]),
+      freeBalanceAppInstance: AppInstanceSerializer.toJSON({
+        ...(channel.appInstances || []).find((app) => app.type === AppType.FREE_BALANCE),
+        channel,
+      }),
+      monotonicNumProposedApps: channel.monotonicNumProposedApps,
+      multisigAddress: channel.multisigAddress,
+      proposedAppInstances: (channel.appInstances || [])
+        .filter((app) => app.type === AppType.PROPOSAL)
+        .map((app) => [app.identityHash, AppInstanceSerializer.toJSON({ ...app, channel })]),
+      schemaVersion: channel.schemaVersion,
+      userIdentifiers: [channel.nodeIdentifier, channel.userIdentifier], // always [initiator, responder] -- node will always be initiator
+    };
+    return json;
+  }
 };
 
 @EntityRepository(Channel)
@@ -40,17 +48,15 @@ export class ChannelRepository extends Repository<Channel> {
   // CF-CORE STORE METHODS
   async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
     const channel = await this.findByMultisigAddress(multisigAddress);
-    return channel && convertChannelToJSON(channel);
+    return channel && ChannelSerializer.toJSON(channel);
   }
 
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
-    const [channel] = (
-      await Promise.all(owners.map((owner) => this.findByUserPublicIdentifier(owner)))
-    ).filter((chan) => !!chan);
+    const channel = await this.findByOwners(owners);
     if (!channel) {
       return undefined;
     }
-    return convertChannelToJSON(channel);
+    return channel && ChannelSerializer.toJSON(channel);
   }
 
   async getStateChannelByAppIdentityHash(
@@ -60,13 +66,20 @@ export class ChannelRepository extends Repository<Channel> {
     if (!channel) {
       return undefined;
     }
-    return convertChannelToJSON(channel);
+    return ChannelSerializer.toJSON(channel);
   }
 
   // NODE-SPECIFIC METHODS
 
   async findAll(available: boolean = true): Promise<Channel[]> {
     return this.find({ where: { available } });
+  }
+
+  async findByOwners(owners: string[]): Promise<Channel | undefined> {
+    return this.createQueryBuilder("channel")
+      .leftJoinAndSelect("channel.appInstances", "appInstance")
+      .where("channel.userIdentifier IN (:...owners)", { owners })
+      .getOne();
   }
 
   async findByMultisigAddress(multisigAddress: string): Promise<Channel | undefined> {

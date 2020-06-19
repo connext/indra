@@ -525,7 +525,7 @@ describe("Signed Transfers", () => {
       const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKeyB);
       // eslint-disable-next-line no-loop-func
       await new Promise(async (res) => {
-        clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
+        clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
           res();
         });
         await clientB.resolveCondition({

@@ -7,7 +7,7 @@ import {
   getRandomBytes32,
   toBN,
 } from "@connext/utils";
-import { Contract, ContractFactory, Wallet, constants, utils } from "ethers";
+import { BigNumberish, Contract, ContractFactory, Wallet, constants, utils } from "ethers";
 
 import { AppWithAction, ChallengeRegistry } from "../artifacts";
 
@@ -51,7 +51,7 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
   // Internal Helpers
 
   const appRegistry = await new ContractFactory(
-    ChallengeRegistry.abi as any,
+    ChallengeRegistry.abi,
     ChallengeRegistry.bytecode,
     deployer,
   ).deploy();
@@ -59,11 +59,7 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
 
   const appDefinition =
     givenAppDefinition ||
-    (await new ContractFactory(
-      AppWithAction.abi as any,
-      AppWithAction.bytecode,
-      deployer,
-    ).deploy());
+    (await new ContractFactory(AppWithAction.abi, AppWithAction.bytecode, deployer).deploy());
   await appDefinition.deployed();
 
   const appInstance = new AppWithCounterClass(
@@ -84,45 +80,38 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
   // Exported Methods
 
   const getChallenge = async (): Promise<AppChallenge> => {
-    const [
-      status,
-      appStateHash,
-      versionNumber,
-      finalizesAt,
-    ] = await appRegistry.functions.getAppChallenge(appInstance.identityHash);
+    const [status, appStateHash, versionNumber, finalizesAt] = await appRegistry.getAppChallenge(
+      appInstance.identityHash,
+    );
     return { status, appStateHash, versionNumber, finalizesAt };
   };
 
-  const getOutcome = async (): Promise<string> =>
-    appRegistry.functions.getOutcome(appInstance.identityHash);
+  const getOutcome = async (): Promise<string> => appRegistry.getOutcome(appInstance.identityHash);
 
   const verifyChallenge = async (expected: Partial<AppChallenge>) => {
     expect(await getChallenge()).to.containSubset(expected);
   };
 
   const isProgressable = async () =>
-    appRegistry.functions.isProgressable(await getChallenge(), appInstance.defaultTimeout);
+    appRegistry.isProgressable(await getChallenge(), appInstance.defaultTimeout);
 
   const isDisputable = async (challenge?: AppChallenge) =>
-    appRegistry.functions.isDisputable(challenge || (await getChallenge()));
+    appRegistry.isDisputable(challenge || (await getChallenge()));
 
   const isFinalized = async () =>
-    appRegistry.functions.isFinalized(await getChallenge(), appInstance.defaultTimeout);
+    appRegistry.isFinalized(await getChallenge(), appInstance.defaultTimeout);
 
   const isCancellable = async (challenge?: AppChallenge) =>
-    appRegistry.functions.isCancellable(
-      challenge || (await getChallenge()),
-      appInstance.defaultTimeout,
-    );
+    appRegistry.isCancellable(challenge || (await getChallenge()), appInstance.defaultTimeout);
 
-  const hasPassed = (timeout: utils.BigNumberish) => appRegistry.functions.hasPassed(toBN(timeout));
+  const hasPassed = (timeout: BigNumberish) => appRegistry.hasPassed(toBN(timeout));
 
   const verifySignatures = async (
     digest: string = getRandomBytes32(),
     signatures?: string[],
     signers?: string[],
   ) =>
-    appRegistry.functions.verifySignatures(
+    appRegistry.verifySignatures(
       signatures || (await getSignatures(digest)),
       digest,
       signers || [alice.address, bob.address],
@@ -147,7 +136,7 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
   // State Progression methods
   const setOutcome = async (encodedFinalState?: string): Promise<void> =>
     wrapInEventVerification(
-      appRegistry.functions.setOutcome(appInstance.appIdentity, encodedFinalState || HashZero),
+      appRegistry.setOutcome(appInstance.appIdentity, encodedFinalState || HashZero),
       { status: ChallengeStatus.OUTCOME_SET },
     );
 
@@ -169,18 +158,20 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
       versionNumber,
       timeout,
     );
-    const call = appRegistry.functions.setState(appInstance.appIdentity, {
+    const call = appRegistry.setState(appInstance.appIdentity, {
       versionNumber,
       appStateHash: stateHash,
       timeout,
       signatures: await getSignatures(digest),
     });
+    const blockNumber = await provider.getBlockNumber();
+    // FIXME: why is this off by one?
+    const finalizesAt = toBN(blockNumber).add(timeout).add(1);
     await wrapInEventVerification(call, {
       status: ChallengeStatus.IN_DISPUTE,
       appStateHash: stateHash,
       versionNumber: toBN(versionNumber),
-      // FIXME: why is this off by one?
-      finalizesAt: toBN((await provider.getBlockNumber()) + timeout + 1),
+      finalizesAt,
     });
   };
 
@@ -202,7 +193,7 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
     action: AppWithCounterAction,
     signer: Wallet,
     resultingState?: AppWithCounterState,
-    resultingStateVersionNumber?: utils.BigNumberish,
+    resultingStateVersionNumber?: BigNumberish,
     resultingStateTimeout?: number,
   ) => {
     resultingState = resultingState ?? {
@@ -227,8 +218,12 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
       timeout: resultingStateTimeout,
       signatures: [await new ChannelSigner(signer.privateKey).signMessage(digest)],
     };
+    const blockNumber = await provider.getBlockNumber();
+    const timeout = appInstance.defaultTimeout;
+    // FIXME: why is this off by one?
+    const finalizesAt = toBN(blockNumber).add(timeout).add(1);
     await wrapInEventVerification(
-      appRegistry.functions.progressState(
+      appRegistry.progressState(
         appInstance.appIdentity,
         req,
         encodeState(state),
@@ -240,8 +235,7 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
           : ChallengeStatus.IN_ONCHAIN_PROGRESSION,
         appStateHash: resultingStateHash,
         versionNumber: toBN(resultingStateVersionNumber),
-        // FIXME: why is this off by one?
-        finalizesAt: toBN((await provider.getBlockNumber()) + appInstance.defaultTimeout + 1),
+        finalizesAt,
       },
     );
   };
@@ -342,7 +336,7 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
       timeout: timeout2,
       signatures: [await new ChannelSigner(turnTaker.privateKey).signMessage(resultingStateDigest)],
     };
-    await appRegistry.functions.setAndProgressState(
+    await appRegistry.setAndProgressState(
       appInstance.appIdentity,
       req1,
       req2,
@@ -355,7 +349,7 @@ export const setupContext = async (givenAppDefinition?: Contract) => {
   // await wrapInEventVerification(
   const cancelDispute = async (versionNumber: number, signatures?: string[]): Promise<void> => {
     const digest = computeCancelDisputeHash(appInstance.identityHash, toBN(versionNumber));
-    await appRegistry.functions.cancelDispute(appInstance.appIdentity, {
+    await appRegistry.cancelDispute(appInstance.appIdentity, {
       versionNumber: toBN(versionNumber),
       signatures: signatures || (await getSignatures(digest)),
     });

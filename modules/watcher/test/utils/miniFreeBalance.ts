@@ -1,4 +1,4 @@
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 import {
   CoinTransfer,
   Address,
@@ -40,7 +40,7 @@ export class MiniFreeBalance {
     public readonly multisigAddress: string,
     private balancesIndexedByToken: TokenIndexedBalance,
     private readonly networkContext: TestNetworkContext,
-    public versionNumber: utils.BigNumber = One,
+    public versionNumber: BigNumber = One,
     private activeApps: string[] = [],
   ) {}
 

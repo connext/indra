@@ -45,6 +45,7 @@ export const createCFChannelProvider = async ({
   node,
   logger,
   store,
+  skipSync,
 }: CFChannelProviderOptions): Promise<IChannelProvider> => {
   let config: NodeResponses.GetConfig;
   if (!node.config) {
@@ -59,7 +60,7 @@ export const createCFChannelProvider = async ({
     acquireLock: node.acquireLock.bind(node),
     releaseLock: node.releaseLock.bind(node),
   };
-  let cfCore;
+  let cfCore: CFCore;
   try {
     cfCore = await CFCore.create(
       messaging,
@@ -71,13 +72,11 @@ export const createCFChannelProvider = async ({
       lockService,
       undefined,
       logger,
-      true, // sync all client channels on start up
+      !skipSync, // sync all client channels on start up by default
     );
   } catch (e) {
     console.error(
-      `Could not setup cf-core with sync protocol on, Error: ${stringify(
-        e,
-      )}. Trying again without syncing on start...`,
+      `Could not setup cf-core with sync protocol on, Error: ${e.message}. Trying again without syncing on start...`,
     );
   }
   if (!cfCore) {
@@ -91,7 +90,7 @@ export const createCFChannelProvider = async ({
       lockService,
       undefined,
       logger,
-      false, // sync all client channels on start up
+      false, // skip sync on second try
     );
   }
 
@@ -270,9 +269,8 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   private setStateChannel = async (
     channel: StateChannelJSON,
     setupCommitment: MinimalTransaction,
-    setStateCommitments: [string, SetStateCommitmentJSON][], // [appId, json]
-    conditionalCommitments: [string, ConditionalTransactionCommitmentJSON][],
-    // [appId, json]
+    setStateCommitments: [string /* appIdentityHash */, SetStateCommitmentJSON][],
+    conditionalCommitments: [string /* appIdentityHash */, ConditionalTransactionCommitmentJSON][],
   ): Promise<void> => {
     await this.store.updateSchemaVersion();
     // save the channel + setup commitment + latest free balance set state
@@ -293,23 +291,27 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       .map(([id, json]) => json)
       .sort((a, b) => a.appSeqNo - b.appSeqNo);
     for (const proposal of proposals) {
-      const [_, setState] = setStateCommitments.find(
+      const setState = setStateCommitments.find(
         ([id, json]) => id === proposal.identityHash && toBN(json.versionNumber).eq(1),
       );
-      const [_ignore, conditional] = conditionalCommitments.find(
-        ([id, json]) => id === proposal.identityHash,
-      );
-      if (!setState || !conditional) {
+      if (!setState) {
         throw new Error(
           `Could not find set state commitment for proposal ${proposal.identityHash}`,
+        );
+      }
+      const conditional = conditionalCommitments.find(([id, json]) => id === proposal.identityHash);
+      if (!conditional) {
+        throw new Error(
+          `Could not find conditional commitment for proposal ${proposal.identityHash}`,
         );
       }
       await this.store.createAppProposal(
         channel.multisigAddress,
         proposal,
         proposal.appSeqNo,
-        setState,
-        conditional,
+        setState[1],
+        conditional[1],
+        channel,
       );
     }
     // save all the app instances + conditionals
@@ -320,7 +322,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       if (app.identityHash === channel.freeBalanceAppInstance.identityHash) {
         continue;
       }
-      const [_, conditional] = conditionalCommitments.find(([id, _]) => id === app.identityHash);
+      const conditional = conditionalCommitments.find(([id, _]) => id === app.identityHash);
       if (!conditional) {
         throw new Error(`Could not find set state commitment for proposal ${app.identityHash}`);
       }
@@ -332,6 +334,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
           appIdentityHash: channel.freeBalanceAppInstance.identityHash,
           versionNumber: app.appSeqNo,
         } as unknown) as SetStateCommitmentJSON,
+        channel,
       );
     }
   };
@@ -369,7 +372,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
         try {
           const creationData = await this.node.createChannel();
-          this.logger.debug(`created channel, transaction: ${stringify(creationData)}`);
+          this.logger.debug(`Created channel, transaction: ${stringify(creationData)}`);
         } catch (e) {
           return reject(e);
         }

@@ -309,7 +309,7 @@ export class ConnextListener {
       if (e.message.includes("No proposed AppInstance exists")) {
         return;
       } else {
-        this.log.error(`Caught error, rejecting install: ${e.message}`);
+        this.log.error(`Caught error, rejecting install of ${appIdentityHash}: ${e.message}`);
         await this.connext.rejectInstallApp(appIdentityHash, e.message);
         return;
       }

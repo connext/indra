@@ -29,6 +29,7 @@ export type PersistCommitmentType = typeof PersistCommitmentType[keyof typeof Pe
 
 export const PersistStateChannelType = {
   CreateChannel: "CreateChannel",
+  SyncNumProposedApps: "SyncNumProposedApps",
   SyncProposal: "SyncProposal",
   NoChange: "NoChange",
   SyncFreeBalance: "SyncFreeBalance",

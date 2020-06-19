@@ -48,24 +48,7 @@ export interface IStoreService extends IWatcherStoreService {
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void>;
 
-  ///// App instances
-  createAppInstance(
-    multisigAddress: Address,
-    appInstance: AppInstanceJson,
-    freeBalanceAppInstance: AppInstanceJson,
-    signedFreeBalanceUpdate: SetStateCommitmentJSON,
-  ): Promise<void>;
-  updateAppInstance(
-    multisigAddress: Address,
-    appInstance: AppInstanceJson,
-    signedSetStateCommitment: SetStateCommitmentJSON,
-  ): Promise<void>;
-  removeAppInstance(
-    multisigAddress: Address,
-    appIdentityHash: Bytes32,
-    freeBalanceAppInstance: AppInstanceJson,
-    signedFreeBalanceUpdate: SetStateCommitmentJSON,
-  ): Promise<void>;
+  incrementNumProposedApps(multisigAddress: string): Promise<void>;
 
   ///// App proposals
   createAppProposal(
@@ -74,9 +57,36 @@ export interface IStoreService extends IWatcherStoreService {
     numProposedApps: number,
     signedSetStateCommitment: SetStateCommitmentJSON,
     signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
+    stateChannel?: StateChannelJSON,
   ): Promise<void>;
-  removeAppProposal(multisigAddress: Address, appIdentityHash: Bytes32): Promise<void>;
+  removeAppProposal(
+    multisigAddress: Address,
+    appIdentityHash: Bytes32,
+    stateChannel?: StateChannelJSON,
+  ): Promise<void>;
   // proposals dont need to be updated
+
+  ///// App instances
+  createAppInstance(
+    multisigAddress: Address,
+    appInstance: AppInstanceJson,
+    freeBalanceAppInstance: AppInstanceJson,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+    stateChannel?: StateChannelJSON,
+  ): Promise<void>;
+  updateAppInstance(
+    multisigAddress: Address,
+    appInstance: AppInstanceJson,
+    signedSetStateCommitment: SetStateCommitmentJSON,
+    stateChannel?: StateChannelJSON,
+  ): Promise<void>;
+  removeAppInstance(
+    multisigAddress: Address,
+    appIdentityHash: Bytes32,
+    freeBalanceAppInstance: AppInstanceJson,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+    stateChannel?: StateChannelJSON,
+  ): Promise<void>;
 
   ///// Resetting methods
   clear(): Promise<void>;

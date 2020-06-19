@@ -42,7 +42,7 @@ const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
   },
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
   outcomeInterpreterParameters: {
-    amount: { _hex: "0x42" } as any,
+    amount: { _hex: "0x42", _isBigNumber: true } as any,
     playerAddrs: [AddressZero, AddressZero],
     tokenAddress: AddressZero,
   },

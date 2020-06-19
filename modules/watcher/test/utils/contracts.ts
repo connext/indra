@@ -13,17 +13,17 @@ import {
   DepositApp,
   WithdrawApp,
 } from "@connext/contracts";
-import { ContractAddresses } from "@connext/types";
-import { ContractFactory, Wallet, providers, utils } from "ethers";
+import { NetworkContext } from "@connext/types";
+import { BigNumber, ContractFactory, Wallet, providers, utils } from "ethers";
 import { toBN } from "@connext/utils";
 import { expect } from "./assertions";
 
 export const moveToBlock = async (
-  blockNumber: utils.BigNumberish,
+  blockNumber: BigNumberish,
   provider: providers.JsonRpcProvider,
 ) => {
-  const desired: utils.BigNumber = toBN(blockNumber);
-  const current: utils.BigNumber = toBN(await provider.getBlockNumber());
+  const desired: BigNumber = toBN(blockNumber);
+  const current: BigNumber = toBN(await provider.getBlockNumber());
   if (current.gt(desired)) {
     throw new Error(
       `Already at block ${current.toNumber()}, cannot rewind to ${blockNumber.toString()}`,
@@ -35,7 +35,7 @@ export const moveToBlock = async (
   for (const _ of Array(desired.sub(current).toNumber())) {
     await mineBlock(provider);
   }
-  const final: utils.BigNumber = toBN(await provider.getBlockNumber());
+  const final: BigNumber = toBN(await provider.getBlockNumber());
   expect(final).to.be.eq(desired);
 };
 
@@ -80,7 +80,7 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<TestNe
   ).deploy();
 
   const mvmContract = await new ContractFactory(
-    MinimumViableMultisig.abi as any,
+    MinimumViableMultisig.abi,
     MinimumViableMultisig.bytecode,
     wallet,
   ).deploy();

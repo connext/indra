@@ -2,7 +2,6 @@ import { DEFAULT_APP_TIMEOUT, DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
 import { ERC20, MinimumViableMultisig } from "@connext/contracts";
 import {
   AppInstanceJson,
-  BigNumber,
   DefaultApp,
   DepositAppName,
   DepositAppState,
@@ -21,7 +20,7 @@ import {
   toBN,
   delayAndThrow,
 } from "@connext/utils";
-import { Contract, constants } from "ethers";
+import { BigNumber, Contract, constants } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
@@ -41,7 +40,7 @@ export class DepositController extends AbstractController {
     const startingBalance =
       tokenAddress === AddressZero
         ? await this.ethProvider.getBalance(this.connext.signerAddress)
-        : await new Contract(tokenAddress, ERC20.abi, this.ethProvider).functions.balanceOf(
+        : await new Contract(tokenAddress, ERC20.abi, this.ethProvider).balanceOf(
             this.connext.signerAddress,
           );
     this.throwIfAny(notLessThanOrEqualTo(amount, startingBalance), notGreaterThan(amount, Zero));
@@ -207,18 +206,19 @@ export class DepositController extends AbstractController {
     // generate initial totalAmountWithdrawn
     const multisig = new Contract(
       this.connext.multisigAddress,
-      MinimumViableMultisig.abi as any,
+      MinimumViableMultisig.abi,
       this.ethProvider,
     );
 
     let startingTotalAmountWithdrawn: BigNumber;
     try {
-      startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(tokenAddress);
+      startingTotalAmountWithdrawn = await multisig.totalAmountWithdrawn(tokenAddress);
     } catch (e) {
-      const NOT_DEPLOYED_ERR = `contract not deployed (contractAddress="${this.connext.multisigAddress}"`;
+      const NOT_DEPLOYED_ERR = `CALL_EXCEPTION`;
       if (!e.message.includes(NOT_DEPLOYED_ERR)) {
         throw new Error(e);
       }
+
       // multisig is deployed on withdrawal, if not
       // deployed withdrawal amount is 0
       startingTotalAmountWithdrawn = Zero;
@@ -228,7 +228,7 @@ export class DepositController extends AbstractController {
     const startingMultisigBalance =
       tokenAddress === AddressZero
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
-        : await new Contract(tokenAddress, ERC20.abi, this.ethProvider).functions.balanceOf(
+        : await new Contract(tokenAddress, ERC20.abi, this.ethProvider).balanceOf(
             this.connext.multisigAddress,
           );
 

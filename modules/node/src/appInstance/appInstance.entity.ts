@@ -1,24 +1,21 @@
 import {
   AppActions,
-  AppStates,
   AppName,
+  AppStates,
   HexString,
   OutcomeType,
-  MultiAssetMultiPartyCoinTransferInterpreterParams,
-  TwoPartyFixedOutcomeInterpreterParams,
-  SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParamsJson,
   MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 import {
-  Entity,
   Column,
-  ManyToOne,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
+  ManyToOne,
   PrimaryColumn,
+  UpdateDateColumn,
 } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
@@ -62,11 +59,11 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  initiatorDeposit!: utils.BigNumber;
+  initiatorDeposit!: BigNumber;
 
   @Column("text")
   @IsEthAddress()
@@ -85,11 +82,11 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  responderDeposit!: utils.BigNumber;
+  responderDeposit!: BigNumber;
 
   @Column("text")
   @IsEthAddress()
@@ -100,14 +97,6 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("text", { nullable: true })
   stateTimeout!: HexString;
-
-  @Column("text")
-  @IsValidPublicIdentifier()
-  userIdentifier!: string;
-
-  @Column("text")
-  @IsValidPublicIdentifier()
-  nodeIdentifier!: string;
 
   @Column("jsonb", { nullable: true })
   meta!: any;
@@ -122,7 +111,7 @@ export class AppInstance<T extends AppName = any> {
     | SingleAssetTwoPartyCoinTransferInterpreterParamsJson
     | {};
 
-  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances)
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances, { nullable: true })
   channel!: Channel;
 
   @CreateDateColumn()

@@ -24,12 +24,12 @@ import {
   ValidationMiddleware,
   EventName,
 } from "@connext/types";
-import { delay, nullLogger } from "@connext/utils";
+import { delay, nullLogger, stringify } from "@connext/utils";
 import { providers } from "ethers";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
 
-import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
+import { UNASSIGNED_SEQ_NO, IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
 import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 import { ProtocolRunner } from "./machine";
@@ -196,6 +196,21 @@ export class CFCore {
       async (args: [ProtocolMessageData, StateChannel, AppInstance]) => {
         const [data, channel, appContext] = args;
 
+        // check if the protocol start time exists within the message
+        // and if it is a final protocol message (see note in
+        // types/messaging.ts)
+        const { prevMessageReceived, seq } = data;
+        if (prevMessageReceived && seq === UNASSIGNED_SEQ_NO) {
+          const diff = Date.now() - prevMessageReceived;
+          if (diff > IO_SEND_AND_WAIT_TIMEOUT) {
+            throw new Error(
+              `Execution took longer than ${
+                IO_SEND_AND_WAIT_TIMEOUT / 1000
+              }s. Aborting message: ${stringify(data)}`,
+            );
+          }
+        }
+
         await this.messagingService.send(data.to, {
           data,
           from: this.publicIdentifier,
@@ -224,9 +239,12 @@ export class CFCore {
         } as ProtocolMessage);
 
         // 10 seconds is the default lock acquiring time time
-        const msg = await Promise.race([counterpartyResponse, delay(IO_SEND_AND_WAIT_TIMEOUT)]);
+        const msg = await Promise.race<ProtocolMessage | void>([
+          counterpartyResponse,
+          delay(IO_SEND_AND_WAIT_TIMEOUT),
+        ]);
 
-        if (!msg || !("data" in (msg as ProtocolMessage))) {
+        if (!msg || !msg.data) {
           throw new Error(
             `IO_SEND_AND_WAIT timed out after ${
               IO_SEND_AND_WAIT_TIMEOUT / 1000
@@ -240,7 +258,20 @@ export class CFCore {
         // per counterparty at the moment.
         this.ioSendDeferrals.delete(data.processID);
 
-        return { data: (msg as ProtocolMessage).data, channel, appContext };
+        // Check if there is an error reason in the response, and throw
+        // the error here if so
+        // NOTE: only errors that are thrown from protocol execution when the
+        // counterparty is waiting for a response should be sent
+        const { error } = msg.data;
+        if (error) {
+          throw new Error(
+            `Counterparty execution of ${
+              data.protocol
+            } failed: ${error}. \nCounterparty was responding to: ${stringify(data)}`,
+          );
+        }
+
+        return { data: msg.data, channel, appContext };
       },
     );
 
@@ -251,9 +282,10 @@ export class CFCore {
           PersistStateChannelType,
           StateChannel,
           (MinimalTransaction | SetStateCommitment | ConditionalTransactionCommitment)[],
+          AppInstance, // uninstalled app context
         ],
       ) => {
-        const [type, stateChannel, signedCommitments] = args;
+        const [type, stateChannel, signedCommitments, appContext] = args;
         switch (type) {
           case PersistStateChannelType.CreateChannel: {
             const [setup, freeBalance] = signedCommitments as [
@@ -267,6 +299,11 @@ export class CFCore {
             );
 
             await this.storeService.updateSchemaVersion(STORE_SCHEMA_VERSION);
+            break;
+          }
+
+          case PersistStateChannelType.SyncNumProposedApps: {
+            await this.storeService.incrementNumProposedApps(stateChannel.multisigAddress);
             break;
           }
 
@@ -286,6 +323,7 @@ export class CFCore {
               stateChannel.numProposedApps,
               setState.toJson(),
               conditional.toJson(),
+              stateChannel.toJson(),
             );
             break;
           }
@@ -294,21 +332,14 @@ export class CFCore {
           }
           case PersistStateChannelType.SyncFreeBalance: {
             const [setState] = signedCommitments as [SetStateCommitment];
-            let latestInstalled;
-            try {
-              latestInstalled = stateChannel
-                .getAppInstanceByAppSeqNo(stateChannel.numProposedApps)
-                .toJson();
-            } catch (e) {
-              latestInstalled = undefined;
-            }
-            if (!latestInstalled) {
+            if (appContext) {
               // this was an uninstall, so remove app instance
               await this.storeService.removeAppInstance(
                 stateChannel.multisigAddress,
-                setState.appIdentityHash,
-                stateChannel.freeBalance.toJson(),
+                appContext.identityHash,
+                stateChannel.toJson().freeBalanceAppInstance!,
                 setState.toJson(),
+                stateChannel.toJson(),
               );
             } else {
               // this was an install, add app and remove proposals
@@ -317,6 +348,7 @@ export class CFCore {
                 latestInstalled,
                 stateChannel.freeBalance.toJson(),
                 setState.toJson(),
+                stateChannel.toJson(),
               );
             }
             break;
@@ -327,12 +359,14 @@ export class CFCore {
                 stateChannel.multisigAddress,
                 stateChannel.appInstances.get(commitment.appIdentityHash)!.toJson(),
                 commitment.toJson(),
+                stateChannel.toJson(),
               );
             }
             break;
           }
           default: {
-            throw new Error(`Unrecognized persist state channel type: ${type}`);
+            const c: never = type;
+            throw new Error(`Unrecognized persist state channel type: ${c}`);
           }
         }
         return { channel: stateChannel };
@@ -368,12 +402,17 @@ export class CFCore {
               numProposedApps,
               signedSetStateCommitment.toJson(),
               signedConditionalTxCommitment.toJson(),
+              postProtocolChannel.toJson(),
             );
             break;
           }
 
           case PersistAppType.RemoveProposal: {
-            await this.storeService.removeAppProposal(multisigAddress, identityHash);
+            await this.storeService.removeAppProposal(
+              multisigAddress,
+              identityHash,
+              postProtocolChannel.toJson(),
+            );
             break;
           }
 
@@ -383,6 +422,7 @@ export class CFCore {
               (app as AppInstance).toJson(),
               freeBalance.toJson(),
               signedSetStateCommitment.toJson(),
+              postProtocolChannel.toJson(),
             );
             break;
           }
@@ -392,6 +432,7 @@ export class CFCore {
               multisigAddress,
               (app as AppInstance).toJson(),
               signedSetStateCommitment.toJson(),
+              postProtocolChannel.toJson(),
             );
             break;
           }
@@ -402,6 +443,7 @@ export class CFCore {
               identityHash,
               freeBalance.toJson(),
               signedSetStateCommitment.toJson(),
+              postProtocolChannel.toJson(),
             );
             // final state of app before uninstall
             appContext = app;
@@ -409,7 +451,11 @@ export class CFCore {
           }
 
           case PersistAppType.Reject: {
-            await this.storeService.removeAppProposal(multisigAddress, identityHash);
+            await this.storeService.removeAppProposal(
+              multisigAddress,
+              identityHash,
+              postProtocolChannel.toJson(),
+            );
             break;
           }
 
@@ -487,8 +533,14 @@ export class CFCore {
     this.messagingService.onReceive(
       this.publicIdentifier,
       async (msg: ProtocolEventMessage<any>) => {
-        await this.handleReceivedMessage(msg);
-        this.rpcRouter.emit(msg.type, msg, "outgoing");
+        try {
+          await this.handleReceivedMessage(msg);
+          this.rpcRouter.emit(msg.type, msg, "outgoing");
+        } catch (e) {
+          // No need to crash the entire cfCore if we receive an invalid message.
+          // Just log & wait for the next one
+          this.log.error(`Failed to handle ${msg.type} message: ${e.message}`);
+        }
       },
     );
   }

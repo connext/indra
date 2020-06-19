@@ -1,6 +1,6 @@
 /* global before */
 import { SolidityValueType } from "@connext/types";
-import { Contract, ContractFactory, utils } from "ethers";
+import { BigNumber, Contract, ContractFactory, utils } from "ethers";
 
 import { NimApp } from "../../artifacts";
 
@@ -9,8 +9,8 @@ import { expect, provider } from "../utils";
 const { defaultAbiCoder } = utils;
 
 type NimAppState = {
-  versionNumber: utils.BigNumber;
-  pileHeights: utils.BigNumber[];
+  versionNumber: BigNumber;
+  pileHeights: BigNumber[];
 };
 
 const decodeBytesToAppState = (encodedAppState: string): NimAppState => {
@@ -52,11 +52,11 @@ describe("Nim", () => {
   };
 
   const applyAction = async (state: SolidityValueType, action: SolidityValueType) => {
-    return nim.functions.applyAction(encodeState(state), encodeAction(action));
+    return nim.applyAction(encodeState(state), encodeAction(action));
   };
 
   const isStateTerminal = async (state: SolidityValueType) => {
-    return nim.functions.isStateTerminal(encodeState(state));
+    return nim.isStateTerminal(encodeState(state));
   };
 
   before(async () => {

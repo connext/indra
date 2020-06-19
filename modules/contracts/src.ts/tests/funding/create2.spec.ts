@@ -29,9 +29,9 @@ describe("ProxyFactory with CREATE2", () => {
 
   before(async () => {
     wallet = (await provider.getWallets())[0];
-    pf = await new ContractFactory(ProxyFactory.abi as any, ProxyFactory.bytecode, wallet).deploy();
+    pf = await new ContractFactory(ProxyFactory.abi, ProxyFactory.bytecode, wallet).deploy();
 
-    echo = await new ContractFactory(Echo.abi as any, Echo.bytecode, wallet).deploy();
+    echo = await new ContractFactory(Echo.abi, Echo.bytecode, wallet).deploy();
   });
 
   describe("createProxy", async () => {
@@ -59,9 +59,9 @@ describe("ProxyFactory with CREATE2", () => {
       expect(event.eventSignature).to.eq("ProxyCreation(address)");
       expect(event.args![0]).to.eq(create2(initcode, saltNonce));
 
-      const echoProxy = new Contract(create2(initcode), Echo.abi as any, wallet);
+      const echoProxy = new Contract(create2(initcode), Echo.abi, wallet);
 
-      expect(await echoProxy.functions.helloWorld()).to.eq("hello world");
+      expect(await echoProxy.helloWorld()).to.eq("hello world");
     });
   });
 });

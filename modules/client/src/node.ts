@@ -16,7 +16,7 @@ import {
 } from "@connext/types";
 import { bigNumberifyJson, logTime, stringify, formatMessagingUrl } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
-import { utils } from "ethers";
+import { utils, providers } from "ethers";
 import { v4 as uuid } from "uuid";
 
 import { createCFChannelProvider } from "./channelProvider";
@@ -61,6 +61,7 @@ export class NodeApiClient implements INodeApiClient {
       nodeUrl,
       messaging: providedMessaging,
       messagingUrl,
+      skipSync,
     } = opts;
     const log = logger.newContext("NodeApiClient");
 
@@ -115,6 +116,7 @@ export class NodeApiClient implements INodeApiClient {
         node,
         logger: log,
         store: opts.store,
+        skipSync,
       });
       log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
       node.channelProvider = channelProvider;
@@ -350,7 +352,7 @@ export class NodeApiClient implements INodeApiClient {
     return this.send(`${this.userIdentifier}.channel.restore`);
   }
 
-  public async getLatestWithdrawal(): Promise<utils.Transaction> {
+  public async getLatestWithdrawal(): Promise<providers.TransactionRequest> {
     return this.send(`${this.userIdentifier}.channel.latestWithdrawal`);
   }
 

@@ -10,7 +10,7 @@ import {
   ContractAddresses,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { Contract, Event, providers, utils } from "ethers";
+import { BigNumber, Contract, Event, providers, utils } from "ethers";
 import EventEmitter from "eventemitter3";
 
 const { Interface } = utils;
@@ -111,7 +111,7 @@ export class ChainListener implements IChainListener {
     );
 
     progressedLogs.concat(updatedLogs).forEach((log) => {
-      const parsed = new Interface(ChallengeRegistry.abi as any).parseLog(log);
+      const parsed = new Interface(ChallengeRegistry.abi).parseLog(log);
       const { identityHash, versionNumber } = parsed.values;
       switch (parsed.name) {
         case ChallengeEvents.ChallengeUpdated: {
@@ -174,7 +174,7 @@ export class ChainListener implements IChainListener {
   private removeChallengeRegistryListeners = (): void => {
     const challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
-      ChallengeRegistry.abi as any,
+      ChallengeRegistry.abi,
       this.provider,
     );
 
@@ -190,8 +190,8 @@ export class ChainListener implements IChainListener {
       (
         identityHash: string,
         action: string,
-        versionNumber: utils.BigNumber,
-        timeout: utils.BigNumber,
+        versionNumber: BigNumber,
+        timeout: BigNumber,
         turnTaker: Address,
         signature: string,
         event: Event,
@@ -213,8 +213,8 @@ export class ChainListener implements IChainListener {
         identityHash: string,
         status: ChallengeStatus,
         appStateHash: string,
-        versionNumber: utils.BigNumber,
-        finalizesAt: utils.BigNumber,
+        versionNumber: BigNumber,
+        finalizesAt: BigNumber,
       ) => {
         this.emit(ChallengeEvents.ChallengeUpdated, {
           identityHash,
