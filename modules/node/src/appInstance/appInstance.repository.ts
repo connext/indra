@@ -114,7 +114,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
   ): Promise<AppInstance[]> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere("app_instance.type = :type", { type })
       .andWhere("app_instance.appDefinition = :appDefinition", { appDefinition })
@@ -130,7 +129,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     const senderAddress = getSignerAddressFromPublicIdentifier(senderIdentifier);
     return await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere("app_instance.appDefinition = :appDefinition", { appDefinition })
       .andWhere(
@@ -147,7 +145,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     const receiverAddress = getSignerAddressFromPublicIdentifier(receiverIdentifier);
     return await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere("app_instance.appDefinition = :appDefinition", { appDefinition })
       // receiver is recipient
@@ -164,7 +161,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
   ): Promise<AppInstance> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       // if uninstalled, redeemed
       .andWhere("app_instance.type = :type", { type: AppType.UNINSTALLED })
       .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
@@ -184,7 +180,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
   ): Promise<AppInstance[]> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
       // node is receiver of transfer
       .andWhere(
@@ -206,7 +201,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
   ): Promise<AppInstance[]> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
       // sender is sender of transfer
       .andWhere(
@@ -231,7 +225,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
   ): Promise<AppInstance[]> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere(`app_instance."meta"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere("app_instance.appDefinition = :appDefinition", { appDefinition })
       .getMany();
