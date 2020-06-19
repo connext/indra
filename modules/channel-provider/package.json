@@ -1,6 +1,6 @@
 {
   "name": "@connext/channel-provider",
-  "version": "7.0.0-alpha.2",
+  "version": "7.0.0-alpha.3",
   "description": "Channel Provider module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -16,7 +16,7 @@
     "test": "./node_modules/.bin/ts-mocha --watch"
   },
   "dependencies": {
-    "@connext/types": "7.0.0-alpha.2",
+    "@connext/types": "7.0.0-alpha.3",
     "eventemitter3": "4.0.4"
   },
   "devDependencies": {

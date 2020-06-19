@@ -24,7 +24,7 @@ import {
   TypedEmitter,
 } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
-import { BigNumber, constants, utils } from "ethers";
+import { BigNumber, constants } from "ethers";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
@@ -33,7 +33,6 @@ import { CFCoreProviderId, MessagingProviderId, TIMEOUT_BUFFER } from "../consta
 import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
-import { AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { MessagingService } from "@connext/messaging";
 
@@ -304,13 +303,6 @@ export class CFCoreService {
       parameters,
     });
     this.logCfCoreMethodResult(MethodNames.chan_rejectInstall, rejectRes.result.result);
-    // update app status
-    const rejectedApp = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
-    if (!rejectedApp) {
-      throw new Error(`No app found after being rejected for app ${appIdentityHash}`);
-    }
-    rejectedApp.type = AppType.REJECTED;
-    await this.appInstanceRepository.save(rejectedApp);
     return rejectRes.result.result as MethodResults.RejectInstall;
   }
 

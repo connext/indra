@@ -3,14 +3,13 @@
 pragma solidity ^0.6.4;
 pragma experimental "ABIEncoderV2";
 
-import "./state-deposit-holders/MultisigTransfer.sol";
 import "../adjudicator/ChallengeRegistry.sol";
 import "./libs/LibOutcome.sol";
 
 
 /// @title ConditionalTransactionDelegateTarget
 /// @author Liam Horne - <liam@l4v.io>
-contract ConditionalTransactionDelegateTarget is MultisigTransfer {
+contract ConditionalTransactionDelegateTarget {
 
     uint256 constant MAX_UINT256 = 2 ** 256 - 1;
 
@@ -28,15 +27,26 @@ contract ConditionalTransactionDelegateTarget is MultisigTransfer {
         address[] tokenAddresses;
     }
 
-    function withdrawWrapper(
-        address payable recipient,
-        address assetId,
-        uint256 amount,
-        bytes32 /* nonce */
+    function executeWithdraw(
+        address interpreterAddress,
+        bytes32 /* nonce */,
+        bytes memory encodedOutput,
+        bytes memory encodedParams
     )
         public
     {
-        multisigTransfer(recipient, assetId, amount);
+        (bool success, ) = interpreterAddress.delegatecall(
+            abi.encodeWithSignature(
+                "interpretOutcomeAndExecuteEffect(bytes,bytes)",
+                encodedOutput,
+                encodedParams
+            )
+        );
+
+        require(
+            success,
+            "Execution of executeWithdraw failed"
+        );
     }
 
     function executeEffectOfFreeBalance(

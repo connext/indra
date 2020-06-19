@@ -77,6 +77,7 @@ kill "$loading_pid" && pkill nc
 
 if [[ -z "$DOMAINNAME" ]]
 then
+  cp /etc/ssl/cert.pem ca-certs.pem
   echo "Entrypoint finished, executing haproxy..."; echo
   exec haproxy -db -f http.cfg
 fi

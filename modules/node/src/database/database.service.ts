@@ -54,6 +54,12 @@ import { initWatcherMethods1587505874044 } from "../../migrations/1587505874044-
 import { changePrimaryKeys1588583967151 } from "../../migrations/1588583967151-change-primary-keys";
 import { rebalanceTargets1589792004077 } from "../../migrations/1589792004077-rebalance-targets";
 import { removeAppProposal1591359031983 } from "../../migrations/1591359031983-remove-app-proposal";
+import { appIdentityHashPrimaryCommitmentKeys1591979802157 } from "../../migrations/1591979802157-app-identity-hash-primary-commitment-keys";
+import { dropIdentifiers1592148854323 } from "../../migrations/1592148854323-drop-identifiers";
+import { storedProcedureCreateAppProposal1592290983473 } from "../../migrations/1592290983473-stored-procedure-create-app-proposal";
+import { storedProcedureCreateAppInstance1592291092044 } from "../../migrations/1592291092044-stored-procedure-create-app-instance";
+import { storedProcedureUpdateAppInstance1592309341833 } from "../../migrations/1592309341833-stored-procedure-update-app-instance";
+import { storedProcedureRemoveAppInstance1592310334011 } from "../../migrations/1592310334011-stored-procedure-remove-app-instance";
 
 export const entities = [
   AppInstance,
@@ -107,6 +113,12 @@ export const migrations = [
   changePrimaryKeys1588583967151,
   rebalanceTargets1589792004077,
   removeAppProposal1591359031983,
+  appIdentityHashPrimaryCommitmentKeys1591979802157,
+  dropIdentifiers1592148854323,
+  storedProcedureCreateAppProposal1592290983473,
+  storedProcedureCreateAppInstance1592291092044,
+  storedProcedureUpdateAppInstance1592309341833,
+  storedProcedureRemoveAppInstance1592310334011,
 ];
 
 @Injectable()

@@ -95,14 +95,14 @@ export class DepositService {
     let receipt: TransactionReceipt;
 
     const cleanUpDepositRights = async () => {
-      this.log.info(`Releasing in flight collateralization`);
-      await this.channelRepository.setInflightCollateralization(channel, assetId, false);
-      this.log.info(`Released in flight collateralization`);
       if (appIdentityHash) {
         this.log.info(`Releasing deposit rights`);
         await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
         this.log.info(`Released deposit rights`);
       }
+      this.log.info(`Releasing in flight collateralization`);
+      await this.channelRepository.setInflightCollateralization(channel, assetId, false);
+      this.log.info(`Released in flight collateralization`);
     };
 
     try {
@@ -136,7 +136,7 @@ export class DepositService {
   }
 
   async rescindDepositRights(appIdentityHash: string, multisigAddress: string): Promise<void> {
-    this.log.debug(`Uninstalling deposit app`);
+    this.log.debug(`Uninstalling deposit app for ${multisigAddress} with ${appIdentityHash}`);
     await this.cfCoreService.uninstallApp(appIdentityHash, multisigAddress);
   }
 

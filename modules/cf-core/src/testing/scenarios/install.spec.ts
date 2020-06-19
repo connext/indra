@@ -214,7 +214,7 @@ describe("Node method follows spec - install", () => {
             // Delay because propose event fires before params are set
             await delay(500);
             // Delete the responders channel
-            await storeA.removeAppProposal(multisigAddress, msg.data.appInstanceId);
+            await storeA.removeAppProposal(multisigAddress, msg.data.appInstanceId, {} as any);
             await expect(
               makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress),
             ).rejects.toThrow(

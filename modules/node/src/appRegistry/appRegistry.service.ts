@@ -26,7 +26,7 @@ import {
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { BigNumber, providers, utils } from "ethers";
+import { BigNumber, providers } from "ethers";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -46,6 +46,7 @@ import { AppRegistryRepository } from "./appRegistry.repository";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
+  public appRegistryArray: AppRegistry[];
   constructor(
     private readonly cfCoreStore: CFCoreStore,
     private readonly cfCoreService: CFCoreService,
@@ -196,7 +197,7 @@ export class AppRegistryService implements OnModuleInit {
         contractAddresses,
         provider: provider as providers.JsonRpcProvider,
       },
-      this.configService.getSupportedTokens(),
+      this.configService.getSupportedTokenAddresses(),
     );
 
     return async (protocol: ProtocolName, cxt: MiddlewareContext): Promise<void> => {
@@ -389,7 +390,9 @@ export class AppRegistryService implements OnModuleInit {
       return;
     }
 
-    const channel = await this.cfCoreStore.getChannel(appInstance.multisigAddress);
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(
+      appInstance.multisigAddress,
+    );
     if (channel.activeCollateralizations[latestState.assetId]) {
       throw new Error(`Cannot uninstall deposit app with active collateralization`);
     }
@@ -414,6 +417,7 @@ export class AppRegistryService implements OnModuleInit {
   async onModuleInit() {
     const ethNetwork = await this.configService.getEthNetwork();
     const contractAddresses = await this.configService.getContractAddresses();
+    const appRegistryArray = [];
     for (const app of RegistryOfApps) {
       let appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
         app.name,
@@ -433,8 +437,11 @@ export class AppRegistryService implements OnModuleInit {
       appRegistry.outcomeType = app.outcomeType;
       appRegistry.stateEncoding = app.stateEncoding;
       appRegistry.allowNodeInstall = app.allowNodeInstall;
+      appRegistryArray.push(appRegistry);
       await this.appRegistryRepository.save(appRegistry);
     }
+
+    this.appRegistryArray = appRegistryArray;
 
     this.log.info(`Injecting CF Core middleware`);
     this.cfCoreService.cfCore.injectMiddleware(Opcode.OP_VALIDATE, await this.generateMiddleware());

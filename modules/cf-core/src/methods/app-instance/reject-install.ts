@@ -6,11 +6,7 @@ import {
   RejectProposalMessage,
 } from "@connext/types";
 
-import {
-  NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
-  NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH,
-  NO_MULTISIG_IN_PARAMS,
-} from "../../errors";
+import { NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH, NO_MULTISIG_IN_PARAMS } from "../../errors";
 import { StateChannel } from "../../models/state-channel";
 import { RequestHandler } from "../../request-handler";
 
@@ -34,15 +30,16 @@ export class RejectInstallController extends MethodController {
     requestHandler: RequestHandler,
     params: MethodParams.RejectInstall,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<void> {
+  ): Promise<MethodResults.RejectInstall | undefined> {
     const { appIdentityHash } = params;
     if (!preProtocolStateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
     const proposal = preProtocolStateChannel.proposedAppInstances.get(appIdentityHash);
     if (!proposal) {
-      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(appIdentityHash));
+      return {};
     }
+    return undefined;
   }
 
   protected async executeMethodImplementation(
@@ -56,7 +53,11 @@ export class RejectInstallController extends MethodController {
 
     const proposal = preProtocolStateChannel!.proposedAppInstances.get(appIdentityHash);
 
-    await store.removeAppProposal(preProtocolStateChannel!.multisigAddress, appIdentityHash);
+    await store.removeAppProposal(
+      preProtocolStateChannel!.multisigAddress,
+      appIdentityHash,
+      preProtocolStateChannel!.removeProposal(appIdentityHash).toJson(),
+    );
 
     const rejectProposalMsg: RejectProposalMessage = {
       from: publicIdentifier,

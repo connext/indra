@@ -1,6 +1,6 @@
 {
   "name": "@connext/utils",
-  "version": "7.0.0-alpha.2",
+  "version": "7.0.0-alpha.3",
   "description": "Crypto module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -15,7 +15,7 @@
     "test": "./node_modules/.bin/ts-mocha --bail --check-leaks --exit src/**/*.spec.ts"
   },
   "dependencies": {
-    "@connext/types": "7.0.0-alpha.2",
+    "@connext/types": "7.0.0-alpha.3",
     "evt": "1.7.11",
     "bs58check": "2.1.2",
     "eccrypto-js": "4.5.4"
