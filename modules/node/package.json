@@ -20,13 +20,13 @@
     "watch": "ts-mocha --bail --check-leaks --watch --timeout 10000 src/**/*.spec.ts"
   },
   "dependencies": {
-    "@connext/apps": "7.0.0-alpha.2",
-    "@connext/cf-core": "7.0.0-alpha.2",
+    "@connext/apps": "7.0.0-alpha.3",
+    "@connext/cf-core": "7.0.0-alpha.3",
     "@connext/contracts": "3.2.3",
-    "@connext/messaging": "7.0.0-alpha.2",
-    "@connext/store": "7.0.0-alpha.2",
-    "@connext/types": "7.0.0-alpha.2",
-    "@connext/utils": "7.0.0-alpha.2",
+    "@connext/messaging": "7.0.0-alpha.3",
+    "@connext/store": "7.0.0-alpha.3",
+    "@connext/types": "7.0.0-alpha.3",
+    "@connext/utils": "7.0.0-alpha.3",
     "@nestjs/common": "7.1.2",
     "@nestjs/core": "7.1.2",
     "@nestjs/microservices": "7.1.2",
@@ -50,7 +50,7 @@
   },
   "devDependencies": {
     "@ethereum-waffle/chai": "3.0.0-beta.2",
-    "@connext/client": "7.0.0-alpha.2",
+    "@connext/client": "7.0.0-alpha.3",
     "@nestjs/testing": "7.1.2",
     "@openzeppelin/contracts": "3.0.1",
     "@types/chai": "4.2.11",
