@@ -1,6 +1,5 @@
 import {
   AppIdentity,
-  AppInterface,
   AppInstanceJson,
   Address,
   OutcomeType,

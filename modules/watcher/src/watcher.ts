@@ -13,7 +13,6 @@ import {
   IWatcher,
   IWatcherStoreService,
   MinimalTransaction,
-  NetworkContext,
   SignedCancelChallengeRequest,
   StateChannelJSON,
   WatcherEvent,
@@ -204,35 +203,40 @@ export class Watcher implements IWatcher {
     this.log.info(`Watcher disabled`);
   };
 
+  /////////////////////////////////////
   //////// Listener methods
   public emit<T extends WatcherEvent>(event: T, data: WatcherEventData[T]): void {
-    this.emitter.emit(event, data);
+    throw new Error("Implement with evt");
   }
 
   public on<T extends WatcherEvent>(
     event: T,
     callback: (data: WatcherEventData[T]) => Promise<void>,
+    filter?: (payload: WatcherEventData[T]) => boolean,
   ): void {
     this.log.debug(`Registering callback for ${event}`);
-    this.emitter.on(event, callback);
+    throw new Error("Implement with evt");
   }
 
   public once<T extends WatcherEvent>(
     event: T,
     callback: (data: WatcherEventData[T]) => Promise<void>,
+    filter?: (payload: WatcherEventData[T]) => boolean,
   ): void {
     this.log.debug(`Registering callback for ${event}`);
-    this.emitter.once(event, callback);
+    throw new Error("Implement with evt");
   }
 
-  public removeListener<T extends WatcherEvent>(event: T): void {
-    this.log.debug(`Removing callback for ${event}`);
-    this.emitter.removeListener(event);
+  public waitFor<T extends WatcherEvent>(
+    event: T,
+    timeout: number,
+    filter?: (payload: WatcherEventData[T]) => boolean,
+  ): Promise<WatcherEventData[T]> {
+    throw new Error("Implement with evt");
   }
 
-  public removeAllListeners(): void {
-    this.log.debug(`Removing all listeners`);
-    this.emitter.removeAllListeners();
+  public off<T extends WatcherEvent>(): void {
+    throw new Error("Implement with evt");
   }
 
   /////////////////////////////////////
@@ -267,7 +271,7 @@ export class Watcher implements IWatcher {
   // should check every block for challenges that should be advanced,
   // and respond to any listener emitted chain events
   private registerListeners = () => {
-    this.listener.on(
+    this.listener.attach(
       ChallengeEvents.ChallengeUpdated,
       async (event: ChallengeUpdatedEventPayload) => {
         await this.processChallengeUpdated(event);
@@ -275,7 +279,7 @@ export class Watcher implements IWatcher {
         this.emit(WatcherEvents.ChallengeUpdatedEvent, event);
       },
     );
-    this.listener.on(
+    this.listener.attach(
       ChallengeEvents.StateProgressed,
       async (event: StateProgressedEventPayload) => {
         // add events to store + process
@@ -290,7 +294,7 @@ export class Watcher implements IWatcher {
   };
 
   private removeListeners = () => {
-    this.listener.removeAllListeners();
+    this.listener.detach();
     this.provider.removeAllListeners();
   };
 

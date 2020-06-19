@@ -12,9 +12,10 @@ import {
   TwoPartyFixedOutcomeInterpreter,
   DepositApp,
   WithdrawApp,
+  WithdrawInterpreter,
 } from "@connext/contracts";
-import { NetworkContext } from "@connext/types";
-import { BigNumber, ContractFactory, Wallet, providers, utils } from "ethers";
+import { ContractAddresses } from "@connext/types";
+import { BigNumber, ContractFactory, Wallet, providers, BigNumberish } from "ethers";
 import { toBN } from "@connext/utils";
 import { expect } from "./assertions";
 
@@ -62,6 +63,12 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<TestNe
   const withdrawAppContract = await new ContractFactory(
     WithdrawApp.abi,
     WithdrawApp.bytecode,
+    wallet,
+  ).deploy();
+
+  const withdrawInterpreterContract = await new ContractFactory(
+    WithdrawInterpreter.abi,
+    WithdrawInterpreter.bytecode,
     wallet,
   ).deploy();
 
@@ -141,6 +148,7 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<TestNe
     TimeLockedPassThrough: timeLockedPassThrough.address,
     TwoPartyFixedOutcomeInterpreter: twoPartyFixedOutcomeInterpreter.address,
     WithdrawApp: withdrawAppContract.address,
+    WithdrawInterpreter: withdrawInterpreterContract.address,
     Token: token.address,
   };
 };
