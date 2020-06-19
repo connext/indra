@@ -25,7 +25,6 @@ import {
   TransactionReason,
 } from "../onchainTransactions/onchainTransaction.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
-import { AppRegistryService } from "../appRegistry/appRegistry.service";
 
 const { Zero, AddressZero } = constants;
 
@@ -33,7 +32,6 @@ const { Zero, AddressZero } = constants;
 export class DepositService {
   constructor(
     private readonly configService: ConfigService,
-    private readonly appRegistryService: AppRegistryService,
     private readonly cfCoreService: CFCoreService,
     private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
@@ -47,7 +45,7 @@ export class DepositService {
       `Deposit started: ${JSON.stringify({ channel: channel.multisigAddress, amount, assetId })}`,
     );
     // don't allow deposit if user's balance refund app is installed
-    const depositRegistry = this.appRegistryService.findByName(DepositAppName);
+    const depositRegistry = this.cfCoreService.getAppInfoByName(DepositAppName);
     const depositApp: AppInstance<"DepositApp"> = channel.appInstances.find(
       (app) =>
         app.appDefinition === depositRegistry.appDefinitionAddress &&
@@ -157,9 +155,9 @@ export class DepositService {
     const BLOCKS_TO_WAIT = 5;
 
     // get all deposit appIds
-    const depositApps = await this.cfCoreService.getAppInstancesByAppName(
+    const depositApps = await this.cfCoreService.getAppInstancesByAppDefinition(
       multisigAddress,
-      DepositAppName,
+      this.cfCoreService.getAppInfoByName(DepositAppName).appDefinitionAddress,
     );
     const ourDepositAppIds = depositApps
       .filter((app) => {
@@ -290,7 +288,7 @@ export class DepositService {
       tokenAddress,
       Zero,
       tokenAddress,
-      DepositAppName,
+      this.cfCoreService.getAppInfoByName(DepositAppName),
       { reason: "Node deposit" }, // meta
       DEPOSIT_STATE_TIMEOUT,
     );

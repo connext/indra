@@ -13,7 +13,6 @@ import { DatabaseModule } from "../database/database.module";
 import { LockModule } from "../lock/lock.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
-import { AppRegistryModule } from "../appRegistry/appRegistry.module";
 
 import { cfCoreProviderFactory } from "./cfCore.provider";
 import { CFCoreRecordRepository } from "./cfCore.repository";
@@ -25,7 +24,6 @@ import { CacheModule } from "../caching/cache.module";
 @Module({
   exports: [cfCoreProviderFactory, CFCoreService, CFCoreStore],
   imports: [
-    AppRegistryModule,
     ConfigModule,
     DatabaseModule,
     LockModule,

@@ -9,7 +9,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { LoggerService } from "../logger/logger.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 import { SignedTransferRepository } from "./signedTransfer.repository";
-import { AppRegistryService } from "../appRegistry/appRegistry.service";
 
 const appStatusesToSignedTransferStatus = (
   senderApp: AppInstance<typeof SimpleSignedTransferAppName>,
@@ -50,7 +49,6 @@ export class SignedTransferService {
   constructor(
     private readonly log: LoggerService,
     private readonly cfCoreService: CFCoreService,
-    private readonly appRegistryService: AppRegistryService,
     private readonly signedTransferRepository: SignedTransferRepository,
   ) {
     this.log.setContext("SignedTransferService");
@@ -76,7 +74,7 @@ export class SignedTransferService {
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndReceiver(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
-      this.appRegistryService.findByName(SimpleSignedTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByName(SimpleSignedTransferAppName).appDefinitionAddress,
     );
     const result = normalizeSignedTransferAppState(app);
     this.log.info(`findSenderAppByPaymentId ${paymentId} completed: ${JSON.stringify(result)}`);
@@ -89,7 +87,7 @@ export class SignedTransferService {
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndSender(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
-      this.appRegistryService.findByName(SimpleSignedTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByName(SimpleSignedTransferAppName).appDefinitionAddress,
     );
     const result = normalizeSignedTransferAppState(app);
     this.log.info(`findReceiverAppByPaymentId ${paymentId} completed: ${JSON.stringify(result)}`);

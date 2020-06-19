@@ -10,7 +10,6 @@ import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { DepositModule } from "../deposit/deposit.module";
-import { AppRegistryModule } from "../appRegistry/appRegistry.module";
 
 import { LinkedTransferService } from "./linkedTransfer.service";
 import { linkedTransferProviderFactory } from "./linkedTransfer.provider";
@@ -18,7 +17,6 @@ import { linkedTransferProviderFactory } from "./linkedTransfer.provider";
   controllers: [],
   exports: [LinkedTransferService],
   imports: [
-    AppRegistryModule,
     AuthModule,
     CFCoreModule,
     ChannelModule,

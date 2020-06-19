@@ -7,7 +7,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { LoggerService } from "../logger/logger.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
-import { AppRegistryService } from "../appRegistry/appRegistry.service";
 
 const { HashZero } = constants;
 
@@ -48,7 +47,6 @@ export class LinkedTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly log: LoggerService,
-    private readonly appRegistryService: AppRegistryService,
     private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("LinkedTransferService");
@@ -63,12 +61,12 @@ export class LinkedTransferService {
     const senderApp = await this.appInstanceRepository.findTransferAppByAppDefinitionPaymentIdAndReceiver(
       paymentId,
       this.cfCoreService.cfCore.publicIdentifier,
-      this.appRegistryService.findByName(SimpleLinkedTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
     );
     const receiverApp = await this.appInstanceRepository.findTransferAppByAppDefinitionPaymentIdAndSender(
       paymentId,
       this.cfCoreService.cfCore.publicIdentifier,
-      this.appRegistryService.findByName(SimpleLinkedTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
     );
     // if sender app is uninstalled, transfer has been unlocked by node
     const status = appStatusesToLinkedTransferStatus(
@@ -94,7 +92,7 @@ export class LinkedTransferService {
     const transfersFromNodeToUser = await this.appInstanceRepository.findActiveTransferAppsByAppDefinitionToRecipient(
       userIdentifier,
       this.cfCoreService.cfCore.signerAddress,
-      this.appRegistryService.findByName(SimpleLinkedTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
     );
     const existingReceiverApps = (
       await Promise.all(
@@ -103,7 +101,7 @@ export class LinkedTransferService {
             await this.appInstanceRepository.findTransferAppByAppDefinitionPaymentIdAndSender(
               transfer.latestState["paymentId"],
               this.cfCoreService.cfCore.publicIdentifier,
-              this.appRegistryService.findByName(SimpleLinkedTransferAppName).appDefinitionAddress,
+              this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
             ),
         ),
       )
@@ -140,14 +138,14 @@ export class LinkedTransferService {
     const transfersFromUserToNode = await this.appInstanceRepository.findActiveTransferAppsByAppDefinitionFromSenderToNode(
       getSignerAddressFromPublicIdentifier(userIdentifier),
       this.cfCoreService.cfCore.signerAddress,
-      this.appRegistryService.findByName(SimpleLinkedTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
     );
     const receiverRedeemed = await Promise.all(
       transfersFromUserToNode.map(async (transfer) =>
         this.appInstanceRepository.findRedeemedTransferAppByAppDefinitionPaymentIdFromNode(
           transfer.latestState["paymentId"],
           this.cfCoreService.cfCore.signerAddress,
-          this.appRegistryService.findByName(SimpleLinkedTransferAppName).appDefinitionAddress,
+          this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
         ),
       ),
     );

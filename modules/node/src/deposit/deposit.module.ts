@@ -7,7 +7,6 @@ import { LoggerModule } from "../logger/logger.module";
 import { OnchainTransactionModule } from "../onchainTransactions/onchainTransaction.module";
 import { ChannelRepository } from "../channel/channel.repository";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { AppRegistryModule } from "../appRegistry/appRegistry.module";
 
 import { DepositService } from "./deposit.service";
 
@@ -15,7 +14,6 @@ import { DepositService } from "./deposit.service";
   controllers: [],
   exports: [DepositService],
   imports: [
-    AppRegistryModule,
     ConfigModule,
     CFCoreModule,
     OnchainTransactionModule,

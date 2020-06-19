@@ -5,15 +5,14 @@ import {
   SyncMessage,
   ProtocolEventMessage,
   EventName,
+  SupportedApplicationNames,
 } from "@connext/types";
-import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
-import { MessagingService } from "@connext/messaging";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
-import { MessagingProviderId } from "../constants";
 import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -146,7 +145,7 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(UPDATE_STATE_EVENT, data);
         const { newState, appIdentityHash, action } = data.data;
         const app = await this.cfCoreService.getAppInstance(appIdentityHash);
-        const appRegistryInfo = this.appRegistryService.findByAppDefinitionAddress(
+        const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
           app.appDefinition,
         );
         if (!appRegistryInfo) {
@@ -155,7 +154,7 @@ export default class ListenerService implements OnModuleInit {
           );
         }
         await this.appActionsService.handleAppAction(
-          appRegistryInfo.name,
+          appRegistryInfo.name as SupportedApplicationNames,
           app,
           newState as any, // AppState (excluding simple swap app)
           action as AppAction,
@@ -188,11 +187,11 @@ export default class ListenerService implements OnModuleInit {
     if (action) {
       // update app with uninstalled state
       await this.appInstanceRepository.updateAppStateOnUninstall(uninstalledApp);
-      const appRegistryInfo = this.appRegistryService.findByAppDefinitionAddress(
+      const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
         uninstalledApp.appDefinition,
       );
       await this.appActionsService.handleAppAction(
-        appRegistryInfo.name,
+        appRegistryInfo.name as SupportedApplicationNames,
         uninstalledApp,
         uninstalledApp.latestState as any, // AppState (excluding simple swap app)
         action as AppAction,

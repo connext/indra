@@ -9,7 +9,6 @@ import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { DepositModule } from "../deposit/deposit.module";
-import { AppRegistryModule } from "../appRegistry/appRegistry.module";
 
 import { HashLockTransferService } from "./hashLockTransfer.service";
 import { hashLockTransferProviderFactory } from "./hashLockTransfer.provider";
@@ -19,7 +18,6 @@ import { HashlockTransferRepository } from "./hashlockTransfer.repository";
   controllers: [],
   exports: [HashLockTransferService],
   imports: [
-    AppRegistryModule,
     AuthModule,
     CFCoreModule,
     ChannelModule,

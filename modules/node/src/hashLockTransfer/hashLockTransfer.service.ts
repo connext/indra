@@ -12,7 +12,6 @@ import { constants } from "ethers";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
-import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 
 import { HashlockTransferRepository } from "./hashlockTransfer.repository";
@@ -66,7 +65,6 @@ export class HashLockTransferService {
     private readonly cfCoreService: CFCoreService,
     private readonly configService: ConfigService,
     private readonly log: LoggerService,
-    private readonly appRegistryService: AppRegistryService,
     private readonly hashlockTransferRepository: HashlockTransferRepository,
   ) {
     this.log.setContext("HashLockTransferService");
@@ -99,7 +97,7 @@ export class HashLockTransferService {
       lockHash,
       this.cfCoreService.cfCore.signerAddress,
       assetId,
-      this.appRegistryService.findByName(HashLockTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByName(HashLockTransferAppName).appDefinitionAddress,
     );
     this.log.info(`findSenderAppByLockHash ${lockHash} completed: ${JSON.stringify(app)}`);
     return app;
@@ -116,7 +114,7 @@ export class HashLockTransferService {
       lockHash,
       this.cfCoreService.cfCore.signerAddress,
       assetId,
-      this.appRegistryService.findByName(HashLockTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByName(HashLockTransferAppName).appDefinitionAddress,
     );
     this.log.info(`findReceiverAppByLockHash ${lockHash} completed: ${JSON.stringify(app)}`);
     return app;
