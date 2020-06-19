@@ -222,18 +222,19 @@ describe("Signed Transfer Offline", () => {
     signer: IChannelSigner,
     store: IStoreService,
     paymentId?: string, // if supplied, will only resolve
+    skipSync?: boolean,
   ): Promise<void> => {
-    let sender;
-    let receiver;
+    let sender: IConnextClient | undefined;
+    let receiver: IConnextClient;
     switch (toRecreate) {
       case "sender": {
-        sender = await createClient({ signer, store, id: "RecreatedSender" });
+        sender = await createClient({ signer, store, id: "RecreatedSender", skipSync });
         receiver = counterparty;
         break;
       }
       case "receiver": {
         sender = counterparty;
-        receiver = await createClient({ signer, store, id: "RecreatedReceiver" });
+        receiver = await createClient({ signer, store, id: "RecreatedReceiver", skipSync });
         break;
       }
       default: {
@@ -431,6 +432,7 @@ describe("Signed Transfer Offline", () => {
       receiverSigner,
       receiver.store,
       paymentId,
+      true,
     );
   });
 

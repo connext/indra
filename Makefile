@@ -169,7 +169,7 @@ test-bot: bot
 	bash ops/test/bot.sh 2 1000 10
 
 test-bot-farm: bot
-	bash ops/test/bot.sh 10 1000 10
+	bash ops/test/bot.sh 10 1000 50
 
 test-cf: cf-core
 	bash ops/test/cf.sh

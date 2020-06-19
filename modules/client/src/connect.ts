@@ -35,6 +35,7 @@ export const connect = async (
     loggerService,
     messagingUrl,
     logLevel,
+    skipSync,
   } = opts;
   let { store, messaging, nodeUrl } = opts;
   if (store) {
@@ -83,6 +84,7 @@ export const connect = async (
       logger,
       nodeUrl,
       channelProvider,
+      skipSync,
     });
     config = node.config;
     messaging = node.messaging;
@@ -106,6 +108,7 @@ export const connect = async (
       logger,
       nodeUrl,
       signer,
+      skipSync,
     });
     config = node.config;
     messaging = node.messaging;
@@ -175,9 +178,7 @@ export const connect = async (
     await client.getFreeBalance();
   } catch (e) {
     if (e.message.includes("StateChannel does not exist yet")) {
-      logger.info(
-        `Our store does not contain channel, attempting to restore: ${e.message}`,
-      );
+      logger.info(`Our store does not contain channel, attempting to restore: ${e.message}`);
       await client.restoreState();
       logger.info(`State restored successfully`);
     } else {
@@ -189,7 +190,9 @@ export const connect = async (
   // Make sure our store schema is up-to-date
   const schemaVersion = await client.channelProvider.getSchemaVersion();
   if (!schemaVersion || schemaVersion !== STORE_SCHEMA_VERSION) {
-    logger.info(`Store schema is out-of-date (${schemaVersion} !== ${STORE_SCHEMA_VERSION}), restoring state`);
+    logger.info(
+      `Store schema is out-of-date (${schemaVersion} !== ${STORE_SCHEMA_VERSION}), restoring state`,
+    );
     await client.restoreState();
     logger.info(`State restored successfully`);
     // increment / update store schema version, defaults to types const of `STORE_SCHEMA_VERSION`
@@ -199,7 +202,9 @@ export const connect = async (
   // Make sure our state schema is up-to-date
   const { data: sc } = await client.getStateChannel();
   if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion || !sc.addresses) {
-    logger.info(`State schema is out-of-date (${sc.schemaVersion} !== ${StateSchemaVersion}), restoring state`);
+    logger.info(
+      `State schema is out-of-date (${sc.schemaVersion} !== ${StateSchemaVersion}), restoring state`,
+    );
     await client.restoreState();
     logger.info(`State restored successfully`);
   }

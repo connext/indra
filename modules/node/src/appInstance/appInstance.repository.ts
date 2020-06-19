@@ -1,40 +1,48 @@
-import { AppInstanceJson, AppState, SimpleLinkedTransferAppName } from "@connext/types";
+import {
+  AppInstanceJson,
+  AppState,
+  SimpleLinkedTransferAppName,
+  JSONSerializer,
+} from "@connext/types";
 import { constants } from "ethers";
 import { getSignerAddressFromPublicIdentifier, safeJsonParse } from "@connext/utils";
 import { EntityRepository, Repository } from "typeorm";
 
-import { Channel } from "../channel/channel.entity";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
-
 import { AppInstance, AppType } from "./appInstance.entity";
 
 const { HashZero } = constants;
 
-export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
-  if (!app) {
-    return undefined;
+export const AppInstanceSerializer: JSONSerializer<AppInstance, AppInstanceJson> = class {
+  static toJSON(app: AppInstance): AppInstanceJson {
+    if (!app) {
+      return undefined;
+    }
+    const json: AppInstanceJson = {
+      appDefinition: app.appDefinition,
+      abiEncodings: {
+        stateEncoding: app.stateEncoding,
+        actionEncoding: app.actionEncoding || null,
+      },
+      appSeqNo: app.appSeqNo,
+      defaultTimeout: app.defaultTimeout,
+      identityHash: app.identityHash,
+      latestState: app.latestState,
+      stateTimeout: app.stateTimeout,
+      latestVersionNumber: app.latestVersionNumber,
+      multisigAddress: app.channel.multisigAddress,
+      outcomeType: app.outcomeType,
+      initiatorIdentifier: app.initiatorIdentifier,
+      responderIdentifier: app.responderIdentifier,
+      outcomeInterpreterParameters: safeJsonParse(app.outcomeInterpreterParameters),
+      meta: app.meta,
+      initiatorDeposit: app.initiatorDeposit.toString(),
+      initiatorDepositAssetId: app.initiatorDepositAssetId,
+      responderDeposit: app.responderDeposit.toString(),
+      responderDepositAssetId: app.responderDepositAssetId,
+    };
+    return json;
   }
-  const json: AppInstanceJson = {
-    appDefinition: app.appDefinition,
-    abiEncodings: { stateEncoding: app.stateEncoding, actionEncoding: app.actionEncoding || null },
-    appSeqNo: app.appSeqNo,
-    defaultTimeout: app.defaultTimeout,
-    identityHash: app.identityHash,
-    latestState: app.latestState,
-    stateTimeout: app.stateTimeout,
-    latestVersionNumber: app.latestVersionNumber,
-    multisigAddress: channel.multisigAddress,
-    outcomeType: app.outcomeType,
-    initiatorIdentifier: app.initiatorIdentifier,
-    responderIdentifier: app.responderIdentifier,
-    outcomeInterpreterParameters: safeJsonParse(app.outcomeInterpreterParameters),
-    meta: app.meta,
-    initiatorDeposit: app.initiatorDeposit.toString(),
-    initiatorDepositAssetId: app.initiatorDepositAssetId,
-    responderDeposit: app.responderDeposit.toString(),
-    responderDepositAssetId: app.responderDepositAssetId,
-  };
-  return json;
 };
 
 @EntityRepository(AppInstance)
@@ -66,25 +74,26 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .getMany();
   }
 
+  findByIdentityHashAndType(identityHash: string, type: AppType): Promise<AppInstance | undefined> {
+    return this.findOne({
+      where: { identityHash, type: AppType.PROPOSAL },
+      relations: ["channel"],
+    });
+  }
+
   async getAppProposal(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
-    const app = await this.findByIdentityHash(appIdentityHash);
-    if (!app || app.type !== AppType.PROPOSAL) {
-      return undefined;
-    }
-    return convertAppToInstanceJSON(app, app.channel);
+    const app = await this.findByIdentityHashAndType(appIdentityHash, AppType.PROPOSAL);
+    return AppInstanceSerializer.toJSON(app);
   }
 
   async getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined> {
     const [app] = await this.findByMultisigAddressAndType(multisigAddress, AppType.FREE_BALANCE);
-    return app && convertAppToInstanceJSON(app, app.channel);
+    return app && AppInstanceSerializer.toJSON(app);
   }
 
   async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
-    const app = await this.findByIdentityHash(appIdentityHash);
-    if (!app || app.type !== AppType.INSTANCE) {
-      return undefined;
-    }
-    return convertAppToInstanceJSON(app, app.channel);
+    const app = await this.findByIdentityHashAndType(appIdentityHash, AppType.INSTANCE);
+    return AppInstanceSerializer.toJSON(app);
   }
 
   async findInstalledAppsByAppDefinition(

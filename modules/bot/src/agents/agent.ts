@@ -5,6 +5,7 @@ import {
   IConnextClient,
   ILoggerService,
   PublicParams,
+  CF_METHOD_TIMEOUT,
 } from "@connext/types";
 import {
   abrv,
@@ -48,7 +49,11 @@ export class Agent {
         return;
       }
 
-      this.log.info(`Receiving transfer from ${abrv(eventData.sender)} with id ${abrv(eventData.paymentId || "???")}`);
+      this.log.info(
+        `Receiving transfer from ${abrv(eventData.sender)} with id ${abrv(
+          eventData.paymentId || "???",
+        )}`,
+      );
 
       if (this.client.signerAddress !== eventData.transferMeta.signerAddress) {
         this.log.error(
@@ -73,7 +78,9 @@ export class Agent {
         responseCID: receipt.responseCID,
         signature,
       } as PublicParams.ResolveSignedTransfer);
-      this.log.info(`Received transfer ${abrv(eventData.paymentId || "???")}. Elapsed: ${Date.now() - start}`);
+      this.log.info(
+        `Received transfer ${abrv(eventData.paymentId || "???")}. Elapsed: ${Date.now() - start}`,
+      );
     });
 
     this.client.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (eData) => {
@@ -207,13 +214,13 @@ export class Agent {
         reject,
       };
 
-      const timeout = 7500;
-      delay(timeout).then(() => {
-        if (this.payments[id]) {
-          delete this.payments[id];
-          return reject(new Error(`Payment ${id} timed out after ${timeout/1000} s`));
-        }
-      });
+      // const timeout = 35_000;
+      // delay(timeout).then(() => {
+      //   if (this.payments[id]) {
+      //     delete this.payments[id];
+      //     return reject(new Error(`Payment ${id} timed out after ${timeout / 1000} s`));
+      //   }
+      // });
     });
   }
 

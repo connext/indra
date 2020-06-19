@@ -29,8 +29,9 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const start = Date.now();
     let substart = start;
     const { processID, params } = message;
-    log.info(`[${processID}] Initiation started`);
-    log.debug(`[${processID}] Protocol initiated with params: ${stringify(params)}`);
+    const loggerId = (params as ProtocolParams.TakeAction).appIdentityHash || processID;
+    log.info(`[${loggerId}] Initiation started`);
+    log.debug(`[${loggerId}] Protocol initiated with params: ${stringify(params)}`);
 
     const {
       appIdentityHash,
@@ -59,7 +60,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     if (!!error) {
       throw new Error(error);
     }
-    logTime(log, substart, `[${processID}] Validated action`);
+    logTime(log, substart, `[${loggerId}] Validated action`);
     substart = Date.now();
 
     // 40ms
@@ -75,7 +76,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       ),
       stateTimeout,
     );
-    logTime(log, substart, `[${processID}] Updated channel with new app state`);
+    logTime(log, substart, `[${loggerId}] Updated channel with new app state`);
     substart = Date.now();
 
     // 0ms
@@ -94,11 +95,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // or removing previous set state commitment to allow watcher service
     // to dispute using the `progressState` or `setAndProgressState` paths
     // using only items in the store
-    const isAppInitiator = appInstance.initiatorIdentifier !== responderIdentifier;
-    await setStateCommitment.addSignatures(
-      isAppInitiator ? (mySignature as any) : undefined,
-      isAppInitiator ? undefined : (mySignature as any),
-    );
+    await setStateCommitment.addSignatures(mySignature);
 
     // also save the app instance with a `latestAction`
     yield [
@@ -137,14 +134,11 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         setStateCommitment.toJson(),
       )}`,
     );
-    logTime(log, substart, `[${processID}] Verified responders signature`);
+    logTime(log, substart, `[${loggerId}] Verified responders signature`);
     substart = Date.now();
 
     // add signatures and write commitment to store
-    await setStateCommitment.addSignatures(
-      isAppInitiator ? (mySignature as any) : counterpartySig,
-      isAppInitiator ? counterpartySig : (mySignature as any),
-    );
+    await setStateCommitment.addSignatures(mySignature, counterpartySig);
 
     // add sigs to most recent set state
     yield [
@@ -155,7 +149,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       setStateCommitment,
     ];
 
-    logTime(log, start, `[${processID}] Finished Initiating`);
+    logTime(log, start, `[${loggerId}] Finished Initiating`);
   } as any,
 
   1 /* Responding */: async function* (context: Context) {
@@ -168,9 +162,9 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       params,
       customData: { signature: counterpartySignature },
     } = message;
-
-    log.info(`[${processID}] Response started`);
-    log.debug(`[${processID}] Protocol response started with parameters ${stringify(params)}`);
+    const loggerId = (params as ProtocolParams.TakeAction).appIdentityHash || processID;
+    log.info(`[${loggerId}] Response started`);
+    log.debug(`[${loggerId}] Protocol response started with parameters ${stringify(params)}`);
 
     const {
       appIdentityHash,
@@ -199,7 +193,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     if (!!error) {
       throw new Error(error);
     }
-    logTime(log, substart, `[${processID}] Validated action`);
+    logTime(log, substart, `[${loggerId}] Validated action`);
     substart = Date.now();
 
     // 48ms
@@ -234,18 +228,14 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         setStateCommitment.toJson(),
       )}`,
     );
-    logTime(log, substart, `[${processID}] Verified initiators signature`);
+    logTime(log, substart, `[${loggerId}] Verified initiators signature`);
     substart = Date.now();
 
     // 7ms
     const mySignature = yield [OP_SIGN, setStateCommitmentHash];
 
     // add signatures and write commitment to store
-    const isAppInitiator = appInstance.initiatorIdentifier !== initiatorIdentifier;
-    await setStateCommitment.addSignatures(
-      isAppInitiator ? (mySignature as any) : counterpartySignature,
-      isAppInitiator ? counterpartySignature : (mySignature as any),
-    );
+    await setStateCommitment.addSignatures(mySignature, counterpartySignature);
 
     // responder will not be able to call `progressState` or
     // `setAndProgressState` so only save double signed commitment
@@ -265,6 +255,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         to: initiatorIdentifier,
         seq: UNASSIGNED_SEQ_NO,
+        prevMessageReceived: start,
         customData: {
           signature: mySignature,
         },
@@ -273,6 +264,6 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 149ms
-    logTime(log, start, `[${processID}] Finished responding`);
+    logTime(log, start, `[${loggerId}] Finished responding`);
   },
 };
