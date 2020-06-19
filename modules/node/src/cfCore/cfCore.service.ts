@@ -1,5 +1,9 @@
 import { CFCore } from "@connext/cf-core";
-import { DEFAULT_APP_TIMEOUT, WithdrawCommitment } from "@connext/apps";
+import {
+  DEFAULT_APP_TIMEOUT,
+  WithdrawCommitment,
+  AppRegistry as RegistryOfApps,
+} from "@connext/apps";
 import {
   AppAction,
   AppInstanceJson,
@@ -15,7 +19,10 @@ import {
   EventName,
   CF_METHOD_TIMEOUT,
   ProtocolEventMessage,
+  DefaultApp,
+  Address,
   SupportedApplicationNames,
+  AppRegistry,
 } from "@connext/types";
 import {
   getSignerAddressFromPublicIdentifier,
@@ -24,22 +31,21 @@ import {
   TypedEmitter,
 } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
+import { MessagingService } from "@connext/messaging";
 import { BigNumber, constants } from "ethers";
 
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { CFCoreProviderId, MessagingProviderId, TIMEOUT_BUFFER } from "../constants";
 import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { MessagingService } from "@connext/messaging";
 
 const { Zero } = constants;
 
 Injectable();
 export class CFCoreService {
+  private appRegistryMap: Map<string, DefaultApp>;
   public emitter: TypedEmitter;
   constructor(
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
@@ -47,8 +53,6 @@ export class CFCoreService {
     private readonly configService: ConfigService,
     @Inject(CFCoreProviderId) public readonly cfCore: CFCore,
     private readonly cfCoreRepository: CFCoreRecordRepository,
-    private readonly appRegistryRepository: AppRegistryRepository,
-    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.emitter = new TypedEmitter();
     this.cfCore = cfCore;
@@ -185,14 +189,10 @@ export class CFCoreService {
     initiatorDepositAssetId: AssetId,
     responderDeposit: BigNumber,
     responderDepositAssetId: AssetId,
-    app: string,
+    appInfo: DefaultApp,
     meta: object = {},
     stateTimeout: BigNumber = Zero,
   ): Promise<MethodResults.ProposeInstall | undefined> {
-    const network = await this.configService.getEthNetwork();
-
-    const appInfo = await this.appRegistryRepository.findByNameAndNetwork(app, network.chainId);
-
     // Decrement timeout so that receiver app MUST finalize before sender app
     // See: https://github.com/connext/indra/issues/1046
     const timeout = DEFAULT_APP_TIMEOUT.sub(TIMEOUT_BUFFER);
@@ -223,7 +223,7 @@ export class CFCoreService {
     };
     this.log.info(`Attempting to install ${appInfo.name} in channel ${channel.multisigAddress}`);
 
-    let proposeRes;
+    let proposeRes: MethodResults.ProposeInstall;
     try {
       proposeRes = await this.proposeInstallApp(params);
     } catch (err) {
@@ -413,17 +413,22 @@ export class CFCoreService {
     return appInstance as AppInstanceJson;
   }
 
+  async getAppInstancesByAppDefinition(
+    multisigAddress: Address,
+    appDefinition: Address,
+  ): Promise<AppInstanceJson[]> {
+    const apps = await this.getAppInstances(multisigAddress);
+    return apps.filter((app) => app.appDefinition === appDefinition);
+  }
+
   async getAppInstancesByAppName(
-    multisigAddress: string,
+    multisigAddress: Address,
     appName: SupportedApplicationNames,
   ): Promise<AppInstanceJson[]> {
-    const network = await this.configService.getEthNetwork();
-    const appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
-      appName,
-      network.chainId,
-    );
     const apps = await this.getAppInstances(multisigAddress);
-    return apps.filter((app) => app.appDefinition === appRegistry.appDefinitionAddress);
+    return apps.filter(
+      (app) => app.appDefinition === this.getAppInfoByName(appName).appDefinitionAddress,
+    );
   }
 
   /**
@@ -445,5 +450,48 @@ export class CFCoreService {
       this.emitter.post(event, data.data);
       return callback(data);
     });
+  }
+
+  public getAppInfoByAppDefinitionAddress(appDefinition: string): DefaultApp {
+    return this.appRegistryMap.get(appDefinition);
+  }
+
+  public getAppInfoByName(name: SupportedApplicationNames): DefaultApp {
+    return this.appRegistryMap.get(name);
+  }
+
+  public getAppRegistry(): AppRegistry {
+    return Object.values(SupportedApplicationNames).map((name) => this.getAppInfoByName(name));
+  }
+
+  async onModuleInit() {
+    const ethNetwork = await this.configService.getEthNetwork();
+    const contractAddresses = await this.configService.getContractAddresses();
+    this.appRegistryMap = RegistryOfApps.reduce((appMap, app) => {
+      const appDefinitionAddress = contractAddresses[app.name];
+      this.log.info(
+        `Creating ${app.name} app on chain ${ethNetwork.chainId}: ${appDefinitionAddress}`,
+      );
+      // set both name and app definition as keys for better lookup
+      appMap.set(appDefinitionAddress, {
+        actionEncoding: app.actionEncoding,
+        appDefinitionAddress: appDefinitionAddress,
+        name: app.name,
+        chainId: ethNetwork.chainId,
+        outcomeType: app.outcomeType,
+        stateEncoding: app.stateEncoding,
+        allowNodeInstall: app.allowNodeInstall,
+      } as DefaultApp);
+      appMap.set(app.name, {
+        actionEncoding: app.actionEncoding,
+        appDefinitionAddress: appDefinitionAddress,
+        name: app.name,
+        chainId: ethNetwork.chainId,
+        outcomeType: app.outcomeType,
+        stateEncoding: app.stateEncoding,
+        allowNodeInstall: app.allowNodeInstall,
+      } as DefaultApp);
+      return appMap;
+    }, new Map<string, DefaultApp>());
   }
 }

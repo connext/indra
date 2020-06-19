@@ -13,8 +13,9 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { HashLockTransferService } from "./hashLockTransfer.service";
+import { AppInstance } from "src/appInstance/appInstance.entity";
 
-const { AddressZero, HashZero } = constants;
+const { AddressZero } = constants;
 
 export class HashLockTransferMessaging extends AbstractMessagingProvider {
   constructor(
@@ -51,7 +52,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       return undefined;
     }
 
-    let userApp;
+    let userApp: AppInstance<"HashLockTransferApp">;
     if (pubId === receiverApp?.responderIdentifier) {
       userApp = receiverApp;
     } else if (pubId === senderApp?.initiatorIdentifier) {

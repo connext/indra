@@ -32,10 +32,10 @@ const { hexlify, randomBytes } = utils;
 @Injectable()
 export class WithdrawService {
   constructor(
-    private readonly cfCoreService: CFCoreService,
     private readonly configService: ConfigService,
-    private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
+    private readonly cfCoreService: CFCoreService,
+    private readonly onchainTransactionService: OnchainTransactionService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly withdrawRepository: WithdrawRepository,
     private readonly channelRepository: ChannelRepository,
@@ -243,7 +243,7 @@ export class WithdrawService {
       assetId,
       Zero,
       assetId,
-      WithdrawAppName,
+      this.cfCoreService.getAppInfoByName(WithdrawAppName),
       { reason: "Node withdrawal" },
       WITHDRAW_STATE_TIMEOUT,
     );

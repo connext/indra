@@ -187,7 +187,7 @@ export class TransferService {
       assetId,
       Zero,
       assetId,
-      transferType,
+      this.cfCoreService.getAppInfoByName(transferType as SupportedApplicationNames),
       meta,
       TRANSFER_TIMEOUT,
     );

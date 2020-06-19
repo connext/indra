@@ -1,4 +1,4 @@
-import { utils, providers } from "ethers";
+import { providers } from "ethers";
 import { EntityRepository, Repository, Between, getManager } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";

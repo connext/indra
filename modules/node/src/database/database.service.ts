@@ -2,7 +2,6 @@
 import { Injectable } from "@nestjs/common";
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from "@nestjs/typeorm";
 
-import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
@@ -63,7 +62,6 @@ import { storedProcedureRemoveAppInstance1592310334011 } from "../../migrations/
 
 export const entities = [
   AppInstance,
-  AppRegistry,
   Channel,
   CFCoreRecord,
   RebalanceProfile,
