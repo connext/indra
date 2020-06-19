@@ -24,17 +24,16 @@ import {
   TypedEmitter,
 } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
+import { MessagingService } from "@connext/messaging";
 import { BigNumber, constants } from "ethers";
 
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { CFCoreProviderId, MessagingProviderId, TIMEOUT_BUFFER } from "../constants";
 import { Channel } from "../channel/channel.entity";
+import { AppRegistryService } from "../appRegistry/appRegistry.service";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { MessagingService } from "@connext/messaging";
 
 const { Zero } = constants;
 
@@ -45,10 +44,9 @@ export class CFCoreService {
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly log: LoggerService,
     private readonly configService: ConfigService,
+    private readonly appRegistryService: AppRegistryService,
     @Inject(CFCoreProviderId) public readonly cfCore: CFCore,
     private readonly cfCoreRepository: CFCoreRecordRepository,
-    private readonly appRegistryRepository: AppRegistryRepository,
-    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.emitter = new TypedEmitter();
     this.cfCore = cfCore;
@@ -189,9 +187,7 @@ export class CFCoreService {
     meta: object = {},
     stateTimeout: BigNumber = Zero,
   ): Promise<MethodResults.ProposeInstall | undefined> {
-    const network = await this.configService.getEthNetwork();
-
-    const appInfo = await this.appRegistryRepository.findByNameAndNetwork(app, network.chainId);
+    const appInfo = this.appRegistryService.findByName(app);
 
     // Decrement timeout so that receiver app MUST finalize before sender app
     // See: https://github.com/connext/indra/issues/1046
@@ -223,7 +219,7 @@ export class CFCoreService {
     };
     this.log.info(`Attempting to install ${appInfo.name} in channel ${channel.multisigAddress}`);
 
-    let proposeRes;
+    let proposeRes: MethodResults.ProposeInstall;
     try {
       proposeRes = await this.proposeInstallApp(params);
     } catch (err) {
@@ -417,11 +413,7 @@ export class CFCoreService {
     multisigAddress: string,
     appName: SupportedApplicationNames,
   ): Promise<AppInstanceJson[]> {
-    const network = await this.configService.getEthNetwork();
-    const appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
-      appName,
-      network.chainId,
-    );
+    const appRegistry = this.appRegistryService.findByName(appName);
     const apps = await this.getAppInstances(multisigAddress);
     return apps.filter((app) => app.appDefinition === appRegistry.appDefinitionAddress);
   }

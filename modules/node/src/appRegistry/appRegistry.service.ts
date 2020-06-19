@@ -23,6 +23,8 @@ import {
   DepositAppName,
   GenericConditionalTransferAppState,
   getTransferTypeFromAppName,
+  OutcomeType,
+  SupportedApplicationNames,
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
@@ -30,7 +32,6 @@ import { BigNumber, providers } from "ethers";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { CFCoreStore } from "../cfCore/cfCore.store";
 import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
@@ -41,14 +42,20 @@ import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { TransferService } from "../transfer/transfer.service";
 
-import { AppRegistry } from "./appRegistry.entity";
-import { AppRegistryRepository } from "./appRegistry.repository";
+export type AppRegistry = {
+  actionEncoding: string;
+  appDefinitionAddress: string;
+  name: SupportedApplicationNames;
+  chainId: number;
+  outcomeType: OutcomeType;
+  stateEncoding: string;
+  allowNodeInstall: boolean;
+};
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
-  public appRegistryArray: AppRegistry[];
+  public appRegistryMap: Map<string, AppRegistry>;
   constructor(
-    private readonly cfCoreStore: CFCoreStore,
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
@@ -57,7 +64,6 @@ export class AppRegistryService implements OnModuleInit {
     private readonly swapRateService: SwapRateService,
     private readonly withdrawService: WithdrawService,
     private readonly depositService: DepositService,
-    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("AppRegistryService");
@@ -80,9 +86,7 @@ export class AppRegistryService implements OnModuleInit {
     let installerChannel: Channel;
     try {
       installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
-      registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
-        proposeInstallParams.appDefinition,
-      );
+      registryAppInfo = this.findByAppDefinitionAddress(proposeInstallParams.appDefinition);
 
       if (!registryAppInfo.allowNodeInstall) {
         throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
@@ -236,9 +240,7 @@ export class AppRegistryService implements OnModuleInit {
       return;
     }
 
-    const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
-      appInstance.appDefinition,
-    );
+    const registryAppInfo = this.findByAppDefinitionAddress(appInstance.appDefinition);
 
     // this middleware is only relevant for require online
     if (getTransferTypeFromAppName(registryAppInfo.name) === "AllowOffline") {
@@ -284,7 +286,7 @@ export class AppRegistryService implements OnModuleInit {
     const { appInstance } = cxt;
     const appDef = appInstance.appDefinition;
 
-    const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
+    const appRegistryInfo = this.findByAppDefinitionAddress(appDef);
 
     if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo.name)) {
       await this.installTransferMiddleware(appInstance);
@@ -403,7 +405,7 @@ export class AppRegistryService implements OnModuleInit {
     const { appInstance, role } = cxt;
     const appDef = appInstance.appDefinition;
 
-    const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
+    const appRegistryInfo = this.findByAppDefinitionAddress(appDef);
 
     if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo.name)) {
       return this.uninstallTransferMiddleware(appInstance, role);
@@ -414,34 +416,47 @@ export class AppRegistryService implements OnModuleInit {
     }
   };
 
+  public findByAppDefinitionAddress(appDefinition: string): AppRegistry {
+    return this.appRegistryMap.get(appDefinition);
+  }
+
+  public findByName(name: string): AppRegistry {
+    return this.appRegistryMap.get(name);
+  }
+
+  public find(): AppRegistry[] {
+    return Object.values(SupportedApplicationNames).map((name) => this.findByName(name));
+  }
+
   async onModuleInit() {
     const ethNetwork = await this.configService.getEthNetwork();
     const contractAddresses = await this.configService.getContractAddresses();
-    const appRegistryArray = [];
-    for (const app of RegistryOfApps) {
-      let appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
-        app.name,
-        ethNetwork.chainId,
-      );
-      if (!appRegistry) {
-        appRegistry = new AppRegistry();
-      }
+    this.appRegistryMap = RegistryOfApps.reduce((appMap, app) => {
       const appDefinitionAddress = contractAddresses[app.name];
       this.log.info(
         `Creating ${app.name} app on chain ${ethNetwork.chainId}: ${appDefinitionAddress}`,
       );
-      appRegistry.actionEncoding = app.actionEncoding;
-      appRegistry.appDefinitionAddress = appDefinitionAddress;
-      appRegistry.name = app.name;
-      appRegistry.chainId = ethNetwork.chainId;
-      appRegistry.outcomeType = app.outcomeType;
-      appRegistry.stateEncoding = app.stateEncoding;
-      appRegistry.allowNodeInstall = app.allowNodeInstall;
-      appRegistryArray.push(appRegistry);
-      await this.appRegistryRepository.save(appRegistry);
-    }
-
-    this.appRegistryArray = appRegistryArray;
+      // set both name and app definition as keys for better lookup
+      appMap.set(appDefinitionAddress, {
+        actionEncoding: app.actionEncoding,
+        appDefinitionAddress: appDefinitionAddress,
+        name: app.name,
+        chainId: ethNetwork.chainId,
+        outcomeType: app.outcomeType,
+        stateEncoding: app.stateEncoding,
+        allowNodeInstall: app.allowNodeInstall,
+      } as AppRegistry);
+      appMap.set(app.name, {
+        actionEncoding: app.actionEncoding,
+        appDefinitionAddress: appDefinitionAddress,
+        name: app.name,
+        chainId: ethNetwork.chainId,
+        outcomeType: app.outcomeType,
+        stateEncoding: app.stateEncoding,
+        allowNodeInstall: app.allowNodeInstall,
+      } as AppRegistry);
+      return appMap;
+    }, new Map<string, AppRegistry>());
 
     this.log.info(`Injecting CF Core middleware`);
     this.cfCoreService.cfCore.injectMiddleware(Opcode.OP_VALIDATE, await this.generateMiddleware());

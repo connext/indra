@@ -18,7 +18,6 @@ import { HashLockTransferModule } from "../hashLockTransfer/hashLockTransfer.mod
 import { DepositModule } from "../deposit/deposit.module";
 
 import { AppRegistryController } from "./appRegistry.controller";
-import { AppRegistryRepository } from "./appRegistry.repository";
 import { AppRegistryService } from "./appRegistry.service";
 import { AppActionsService } from "./appActions.service";
 
@@ -38,12 +37,7 @@ import { AppActionsService } from "./appActions.service";
     SwapRateModule,
     MessagingModule,
     TransferModule,
-    TypeOrmModule.forFeature([
-      AppInstanceRepository,
-      AppRegistryRepository,
-      ChannelRepository,
-      WithdrawRepository,
-    ]),
+    TypeOrmModule.forFeature([AppInstanceRepository, ChannelRepository, WithdrawRepository]),
     WithdrawModule,
   ],
   providers: [AppRegistryService, AppActionsService],

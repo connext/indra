@@ -14,7 +14,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId } from "../constants";
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -56,10 +55,8 @@ export default class ListenerService implements OnModuleInit {
     private readonly appActionsService: AppActionsService,
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
-    @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly log: LoggerService,
     private readonly channelRepository: ChannelRepository,
-    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("ListenerService");
@@ -149,7 +146,7 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(UPDATE_STATE_EVENT, data);
         const { newState, appIdentityHash, action } = data.data;
         const app = await this.cfCoreService.getAppInstance(appIdentityHash);
-        const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+        const appRegistryInfo = this.appRegistryService.findByAppDefinitionAddress(
           app.appDefinition,
         );
         if (!appRegistryInfo) {
@@ -191,7 +188,7 @@ export default class ListenerService implements OnModuleInit {
     if (action) {
       // update app with uninstalled state
       await this.appInstanceRepository.updateAppStateOnUninstall(uninstalledApp);
-      const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+      const appRegistryInfo = this.appRegistryService.findByAppDefinitionAddress(
         uninstalledApp.appDefinition,
       );
       await this.appActionsService.handleAppAction(

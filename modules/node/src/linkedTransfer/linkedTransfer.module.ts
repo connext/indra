@@ -1,7 +1,6 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { AuthModule } from "../auth/auth.module";
 import { CFCoreModule } from "../cfCore/cfCore.module";
 import { ChannelModule } from "../channel/channel.module";
@@ -11,6 +10,7 @@ import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { DepositModule } from "../deposit/deposit.module";
+import { AppRegistryModule } from "../appRegistry/appRegistry.module";
 
 import { LinkedTransferService } from "./linkedTransfer.service";
 import { linkedTransferProviderFactory } from "./linkedTransfer.provider";
@@ -18,6 +18,7 @@ import { linkedTransferProviderFactory } from "./linkedTransfer.provider";
   controllers: [],
   exports: [LinkedTransferService],
   imports: [
+    AppRegistryModule,
     AuthModule,
     CFCoreModule,
     ChannelModule,
@@ -25,7 +26,7 @@ import { linkedTransferProviderFactory } from "./linkedTransfer.provider";
     ConfigModule,
     LoggerModule,
     MessagingModule,
-    TypeOrmModule.forFeature([ChannelRepository, AppRegistryRepository, AppInstanceRepository]),
+    TypeOrmModule.forFeature([ChannelRepository, AppInstanceRepository]),
   ],
   providers: [LinkedTransferService, linkedTransferProviderFactory],
 })

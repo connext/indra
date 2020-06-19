@@ -18,7 +18,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
 import {
@@ -26,6 +25,7 @@ import {
   TransactionReason,
 } from "../onchainTransactions/onchainTransaction.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
+import { AppRegistryService } from "../appRegistry/appRegistry.service";
 
 const { Zero, AddressZero } = constants;
 
@@ -33,10 +33,10 @@ const { Zero, AddressZero } = constants;
 export class DepositService {
   constructor(
     private readonly configService: ConfigService,
+    private readonly appRegistryService: AppRegistryService,
     private readonly cfCoreService: CFCoreService,
     private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
-    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("DepositService");
@@ -47,10 +47,7 @@ export class DepositService {
       `Deposit started: ${JSON.stringify({ channel: channel.multisigAddress, amount, assetId })}`,
     );
     // don't allow deposit if user's balance refund app is installed
-    const depositRegistry = await this.appRegistryRepository.findByNameAndNetwork(
-      DepositAppName,
-      (await this.configService.getEthNetwork()).chainId,
-    );
+    const depositRegistry = this.appRegistryService.findByName(DepositAppName);
     const depositApp: AppInstance<"DepositApp"> = channel.appInstances.find(
       (app) =>
         app.appDefinition === depositRegistry.appDefinitionAddress &&

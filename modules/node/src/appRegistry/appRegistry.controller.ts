@@ -1,14 +1,12 @@
 import { Controller, Get } from "@nestjs/common";
-
-import { AppRegistry } from "./appRegistry.entity";
-import { AppRegistryRepository } from "./appRegistry.repository";
+import { AppRegistryService, AppRegistry } from "./appRegistry.service";
 
 @Controller("app-registry")
 export class AppRegistryController {
-  constructor(private readonly appRegistryRepository: AppRegistryRepository) {}
+  constructor(private readonly appRegistryService: AppRegistryService) {}
 
   @Get()
   async get(): Promise<AppRegistry[]> {
-    return this.appRegistryRepository.find();
+    return this.appRegistryService.find();
   }
 }
