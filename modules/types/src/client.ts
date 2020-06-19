@@ -27,6 +27,7 @@ export interface ClientOptions {
   messaging?: IMessagingService;
   nodeUrl?: string; // node's HTTP endpoint
   messagingUrl?: string; // optional override for messaging endpoint
+  skipSync?: boolean;
 }
 
 export interface IConnextClient {

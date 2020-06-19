@@ -52,7 +52,7 @@ export async function handleReceivedProtocolMessage(
   } catch (e) {
     log.error(`Caught error running ${data.protocol} protocol, aborting. Error: ${e.stack}`);
     // NOTE: see comments in IO_SEND_AND_WAIT opcode
-    const messageForCounterparty = prepareProtocolErrorMessage(msgBn, e.message);
+    const messageForCounterparty = prepareProtocolErrorMessage(msgBn, e.message || e);
     await requestHandler.messagingService.send(
       messageForCounterparty.data.to,
       messageForCounterparty,

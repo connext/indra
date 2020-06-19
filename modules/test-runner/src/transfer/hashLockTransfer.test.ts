@@ -8,7 +8,7 @@ import {
   PublicParams,
   EventPayloads,
 } from "@connext/types";
-import { getRandomBytes32 } from "@connext/utils";
+import { getRandomBytes32, delay } from "@connext/utils";
 import { BigNumber, providers, constants, utils } from "ethers";
 
 import {
@@ -276,9 +276,9 @@ describe("HashLock Transfers", () => {
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
       // Note: MUST wait for uninstall, bc UNLOCKED gets thrown on takeAction
-      // at the moment, there's no way to filter the uninstalled app here so we're just gonna
-      // resolve and hope for the best
-      clientB.on(EventNames.UNINSTALL_EVENT, resolve);
+      // at the moment, there's no way to filter the uninstalled app here so
+      // we're just gonna resolve and hope for the best
+      clientB.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve);
       clientB.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,

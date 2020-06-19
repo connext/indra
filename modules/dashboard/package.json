@@ -10,9 +10,9 @@
     "eject": "./node_modules/.bin/react-scripts eject"
   },
   "dependencies": {
-    "@connext/cf-core": "7.0.0-alpha.2",
-    "@connext/messaging": "7.0.0-alpha.2",
-    "@connext/types": "7.0.0-alpha.2",
+    "@connext/cf-core": "7.0.0-alpha.3",
+    "@connext/messaging": "7.0.0-alpha.3",
+    "@connext/types": "7.0.0-alpha.3",
     "@material-ui/core": "4.10.1",
     "@material-ui/icons": "4.9.1",
     "react": "16.13.1",

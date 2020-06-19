@@ -15,6 +15,7 @@ export class ConfigController {
       supportedTokenAddresses: this.configService.getSupportedTokenAddresses(),
       messagingUrl: this.configService.getMessagingConfig().messagingUrl,
       nodeIdentifier: this.configService.getPublicIdentifier(),
+      signerAddress: await this.configService.getSignerAddress(),
     } as NodeResponses.GetConfig);
   }
 }

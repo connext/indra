@@ -1,6 +1,6 @@
 {
   "name": "@connext/store",
-  "version": "7.0.0-alpha.2",
+  "version": "7.0.0-alpha.3",
   "description": "Store module for Connext client",
   "browser": "dist/browser.js",
   "react-native": "dist/reactNative.js",
@@ -17,8 +17,8 @@
   },
   "dependencies": {
     "@connext/contracts": "3.2.3",
-    "@connext/types": "7.0.0-alpha.2",
-    "@connext/utils": "7.0.0-alpha.2",
+    "@connext/types": "7.0.0-alpha.3",
+    "@connext/utils": "7.0.0-alpha.3",
     "localStorage": "1.0.4",
     "p-waterfall": "2.1.0",
     "pg": "8.2.1",

@@ -13,6 +13,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { HashLockTransferService } from "./hashLockTransfer.service";
+import { AppInstance } from "src/appInstance/appInstance.entity";
 
 const { AddressZero } = constants;
 
@@ -51,7 +52,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       return undefined;
     }
 
-    let userApp;
+    let userApp: AppInstance<"HashLockTransferApp">;
     if (pubId === receiverApp?.responderIdentifier) {
       userApp = receiverApp;
     } else if (pubId === senderApp?.initiatorIdentifier) {
@@ -77,7 +78,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       lockHash: latestState.lockHash,
       status,
       meta,
-      preImage: receiverApp?.latestState?.preImage === AddressZero ? userApp.latestState.preImage : receiverApp?.latestState?.preImage,
+      preImage: receiverApp?.latestState?.preImage || userApp.latestState.preImage,
       expiry: latestState.expiry,
     };
   }

@@ -1,4 +1,4 @@
-import { LinkedTransferStatus } from "@connext/types";
+import { LinkedTransferStatus, SimpleLinkedTransferAppName } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { constants } from "ethers";
@@ -6,7 +6,6 @@ import { constants } from "ethers";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { LoggerService } from "../logger/logger.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 
 const { HashZero } = constants;
@@ -59,13 +58,15 @@ export class LinkedTransferService {
     { senderApp: AppInstance; receiverApp: AppInstance; status: LinkedTransferStatus } | undefined
   > {
     this.log.info(`findSenderAndReceiverAppsWithStatus ${paymentId} started`);
-    const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
+    const senderApp = await this.appInstanceRepository.findTransferAppByAppDefinitionPaymentIdAndReceiver(
       paymentId,
       this.cfCoreService.cfCore.publicIdentifier,
+      this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
     );
-    const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
+    const receiverApp = await this.appInstanceRepository.findTransferAppByAppDefinitionPaymentIdAndSender(
       paymentId,
       this.cfCoreService.cfCore.publicIdentifier,
+      this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
     );
     // if sender app is uninstalled, transfer has been unlocked by node
     const status = appStatusesToLinkedTransferStatus(
@@ -88,17 +89,19 @@ export class LinkedTransferService {
   async getLinkedTransfersForReceiverUnlock(userIdentifier: string): Promise<AppInstance[]> {
     this.log.info(`getLinkedTransfersForReceiverUnlock for ${userIdentifier} started`);
     // eslint-disable-next-line max-len
-    const transfersFromNodeToUser = await this.appInstanceRepository.findActiveLinkedTransferAppsToRecipient(
+    const transfersFromNodeToUser = await this.appInstanceRepository.findActiveTransferAppsByAppDefinitionToRecipient(
       userIdentifier,
       this.cfCoreService.cfCore.signerAddress,
+      this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
     );
     const existingReceiverApps = (
       await Promise.all(
         transfersFromNodeToUser.map(
           async (transfer) =>
-            await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
+            await this.appInstanceRepository.findTransferAppByAppDefinitionPaymentIdAndSender(
               transfer.latestState["paymentId"],
               this.cfCoreService.cfCore.publicIdentifier,
+              this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
             ),
         ),
       )
@@ -132,15 +135,17 @@ export class LinkedTransferService {
   async unlockLinkedTransfersFromUser(userIdentifier: string): Promise<string[]> {
     this.log.info(`unlockLinkedTransfersFromUser for ${userIdentifier} started`);
     // eslint-disable-next-line max-len
-    const transfersFromUserToNode = await this.appInstanceRepository.findActiveLinkedTransferAppsFromSenderToNode(
+    const transfersFromUserToNode = await this.appInstanceRepository.findActiveTransferAppsByAppDefinitionFromSenderToNode(
       getSignerAddressFromPublicIdentifier(userIdentifier),
       this.cfCoreService.cfCore.signerAddress,
+      this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
     );
     const receiverRedeemed = await Promise.all(
       transfersFromUserToNode.map(async (transfer) =>
-        this.appInstanceRepository.findRedeemedLinkedTransferAppByPaymentIdFromNode(
+        this.appInstanceRepository.findRedeemedTransferAppByAppDefinitionPaymentIdFromNode(
           transfer.latestState["paymentId"],
           this.cfCoreService.cfCore.signerAddress,
+          this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
         ),
       ),
     );

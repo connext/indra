@@ -26,6 +26,11 @@ export type ProtocolMessageData = {
   to: PublicIdentifier;
   error?: string;
   seq: number;
+  // protocol responders should not send messages + error if the protocol
+  // timeout has elapsed during their execution. this edgecase
+  // is handled within the IO_SEND opcode for the final protocol message,
+  // and by default when using IO_SEND_AND_WAIT
+  prevMessageReceived?: number;
   // customData: Additional data which depends on the protocol (or even the specific message
   // number in a protocol) lives here. Includes signatures
   customData: { [key: string]: any };

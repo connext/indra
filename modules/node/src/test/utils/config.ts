@@ -1,5 +1,5 @@
 import { ChannelSigner } from "@connext/utils";
-import { constants, providers, Wallet } from "ethers";
+import { providers, Wallet } from "ethers";
 
 import { ConfigService } from "../../config/config.service";
 
@@ -15,18 +15,28 @@ export const defaultSigner = new ChannelSigner(
   env.ethProviderUrl,
 );
 
+// add overrides as needed in tests
+export type ConfigOverrides = {
+  signer: ChannelSigner;
+  extraSupportedTokens: string[];
+};
+
 export class MockConfigService extends ConfigService {
-  private nodeSigner;
-  constructor(signer: ChannelSigner = defaultSigner) {
+  private nodeSigner: ChannelSigner;
+  private supportedTokens: string[];
+
+  constructor(overrides: Partial<ConfigOverrides> = {}) {
     super();
-    this.nodeSigner = signer;
+    this.nodeSigner = overrides.signer || defaultSigner;
+    this.supportedTokens = super
+      .getSupportedTokenAddresses()
+      .concat(overrides.extraSupportedTokens || []);
   }
   getEthProvider = () => new providers.JsonRpcProvider(this.getEthRpcUrl());
-  getEthRpcUrl = () => env.ethProviderUrl;
+  getEthRpcUrl = () => env.ethProviderUrl!;
   getLogLevel = (): number => env.indraLogLevel;
   getPublicIdentifier = () => this.getSigner().publicIdentifier;
   getSigner = () => this.nodeSigner;
   getSignerAddress = async () => this.getSigner().address;
-  getSupportedTokenAddresses = (): string[] => this.getSupportedTokens();
-  getSupportedTokens = (): string[] => [constants.AddressZero];
+  getSupportedTokenAddresses = (): string[] => this.supportedTokens;
 }

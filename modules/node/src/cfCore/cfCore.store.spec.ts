@@ -1,11 +1,10 @@
 import { AppInstanceJson } from "@connext/types";
-import { getRandomAddress, getRandomIdentifier, toBN, toBNJson, stringify } from "@connext/utils";
+import { getRandomAddress, getRandomIdentifier, toBN, toBNJson } from "@connext/utils";
 import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { getConnection } from "typeorm";
 
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ChannelRepository } from "../channel/channel.repository";
 import { SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
 import { WithdrawCommitmentRepository } from "../withdrawCommitment/withdrawCommitment.repository";
@@ -31,6 +30,7 @@ import { CFCoreRecordRepository } from "./cfCore.repository";
 import { CFCoreStore } from "./cfCore.store";
 import { ChallengeRepository, ProcessedBlockRepository } from "../challenge/challenge.repository";
 import { CacheModule } from "../caching/cache.module";
+import { CacheService } from "../caching/cache.service";
 
 const createTestStateChannelJSONs = (
   nodeIdentifier: string,
@@ -77,11 +77,14 @@ const createTestChannelWithAppInstance = async (
     multisigAddress,
   );
 
-  const setStateCommitment = createSetStateCommitmentJSON();
   const appProposal = createAppInstanceJson({
     appSeqNo: 2,
     initiatorIdentifier: userIdentifier,
     responderIdentifier: nodeIdentifier,
+    multisigAddress,
+  });
+  const setStateCommitment = createSetStateCommitmentJSON({
+    appIdentityHash: appProposal.identityHash,
   });
   const conditionalCommitment = createConditionalTransactionCommitmentJSON({
     appIdentityHash: appProposal.identityHash,
@@ -166,6 +169,7 @@ describe("CFCoreStore", () => {
   let cfCoreStore: CFCoreStore;
   let configService: ConfigService;
   let channelRepository: ChannelRepository;
+  let cacheService: CacheService;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -176,7 +180,6 @@ describe("CFCoreStore", () => {
         LoggerModule,
         TypeOrmModule.forFeature([
           CFCoreRecordRepository,
-          AppRegistryRepository,
           ChannelRepository,
           AppInstanceRepository,
           ConditionalTransactionCommitmentRepository,
@@ -192,10 +195,12 @@ describe("CFCoreStore", () => {
 
     cfCoreStore = moduleRef.get<CFCoreStore>(CFCoreStore);
     configService = moduleRef.get<ConfigService>(ConfigService);
+    cacheService = moduleRef.get<CacheService>(CacheService);
     channelRepository = moduleRef.get<ChannelRepository>(ChannelRepository);
   });
 
   afterEach(async () => {
+    await cacheService.deleteAll();
     await getConnection().dropDatabase();
     await getConnection().close();
   });
@@ -304,13 +309,13 @@ describe("CFCoreStore", () => {
       let channelEntity = await channelRepository.findByMultisigAddressOrThrow(multisigAddress);
       expect(channelEntity.appInstances.length).to.equal(1);
 
-      const appProposal = createAppInstanceJson();
+      const appProposal = createAppInstanceJson({ multisigAddress });
       await cfCoreStore.createAppProposal(
         multisigAddress,
         appProposal,
         2,
-        createSetStateCommitmentJSON(),
-        createConditionalTransactionCommitmentJSON(),
+        createSetStateCommitmentJSON({ appIdentityHash: appProposal.identityHash }),
+        createConditionalTransactionCommitmentJSON({ appIdentityHash: appProposal.identityHash }),
       );
 
       channelEntity = await channelRepository.findByMultisigAddressOrThrow(multisigAddress);
@@ -365,9 +370,14 @@ describe("CFCoreStore", () => {
         appSeqNo: APP_SEQ_NO,
         initiatorIdentifier: userIdentifier,
         responderIdentifier: configService.getPublicIdentifier(),
+        multisigAddress,
       });
-      const setStateCommitment = createSetStateCommitmentJSON();
-      const conditionalTx = createConditionalTransactionCommitmentJSON();
+      const setStateCommitment = createSetStateCommitmentJSON({
+        appIdentityHash: appProposal.identityHash,
+      });
+      const conditionalTx = createConditionalTransactionCommitmentJSON({
+        appIdentityHash: appProposal.identityHash,
+      });
       await cfCoreStore.createAppProposal(
         multisigAddress,
         appProposal,

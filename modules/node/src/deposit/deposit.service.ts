@@ -18,7 +18,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
 import {
@@ -36,7 +35,6 @@ export class DepositService {
     private readonly cfCoreService: CFCoreService,
     private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
-    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("DepositService");
@@ -47,10 +45,7 @@ export class DepositService {
       `Deposit started: ${JSON.stringify({ channel: channel.multisigAddress, amount, assetId })}`,
     );
     // don't allow deposit if user's balance refund app is installed
-    const depositRegistry = await this.appRegistryRepository.findByNameAndNetwork(
-      DepositAppName,
-      (await this.configService.getEthNetwork()).chainId,
-    );
+    const depositRegistry = this.cfCoreService.getAppInfoByName(DepositAppName);
     const depositApp: AppInstance<"DepositApp"> = channel.appInstances.find(
       (app) =>
         app.appDefinition === depositRegistry.appDefinitionAddress &&
@@ -95,14 +90,14 @@ export class DepositService {
     let receipt: TransactionReceipt;
 
     const cleanUpDepositRights = async () => {
-      this.log.info(`Releasing in flight collateralization`);
-      await this.channelRepository.setInflightCollateralization(channel, assetId, false);
-      this.log.info(`Released in flight collateralization`);
       if (appIdentityHash) {
         this.log.info(`Releasing deposit rights`);
         await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
         this.log.info(`Released deposit rights`);
       }
+      this.log.info(`Releasing in flight collateralization`);
+      await this.channelRepository.setInflightCollateralization(channel, assetId, false);
+      this.log.info(`Released in flight collateralization`);
     };
 
     try {
@@ -136,7 +131,7 @@ export class DepositService {
   }
 
   async rescindDepositRights(appIdentityHash: string, multisigAddress: string): Promise<void> {
-    this.log.debug(`Uninstalling deposit app`);
+    this.log.debug(`Uninstalling deposit app for ${multisigAddress} with ${appIdentityHash}`);
     await this.cfCoreService.uninstallApp(appIdentityHash, multisigAddress);
   }
 
@@ -160,9 +155,9 @@ export class DepositService {
     const BLOCKS_TO_WAIT = 5;
 
     // get all deposit appIds
-    const depositApps = await this.cfCoreService.getAppInstancesByAppName(
+    const depositApps = await this.cfCoreService.getAppInstancesByAppDefinition(
       multisigAddress,
-      DepositAppName,
+      this.cfCoreService.getAppInfoByName(DepositAppName).appDefinitionAddress,
     );
     const ourDepositAppIds = depositApps
       .filter((app) => {
@@ -293,7 +288,7 @@ export class DepositService {
       tokenAddress,
       Zero,
       tokenAddress,
-      DepositAppName,
+      this.cfCoreService.getAppInfoByName(DepositAppName),
       { reason: "Node deposit" }, // meta
       DEPOSIT_STATE_TIMEOUT,
     );

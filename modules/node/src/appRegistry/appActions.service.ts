@@ -7,7 +7,6 @@ import {
   AppInstanceJson,
   ConditionalTransferAppNames,
   SupportedApplicationNames,
-  SingleAssetTwoPartyCoinTransferInterpreterParams,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";

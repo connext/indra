@@ -13,6 +13,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
+
 import { HashlockTransferRepository } from "./hashlockTransfer.repository";
 
 const { HashZero } = constants;
@@ -32,15 +33,14 @@ const appStatusesToHashLockTransferStatus = (
   // pending iff no receiver app + not expired
   if (!senderApp) {
     return isSenderExpired ? HashLockTransferStatus.EXPIRED : HashLockTransferStatus.PENDING;
-  } else if (
-    senderApp?.type === AppType.UNINSTALLED ||
-    receiverApp?.type === AppType.UNINSTALLED ||
-    senderApp.latestState.preImage !== HashZero ||
-    latestState.preImage !== HashZero
-  ) {
-    // iff sender uninstalled, payment is unlocked
+  } else if (senderApp.latestState.preImage !== HashZero || latestState.preImage !== HashZero) {
     return HashLockTransferStatus.COMPLETED;
-  } else if (senderApp.type === AppType.REJECTED || receiverApp.type === AppType.REJECTED) {
+  } else if (
+    senderApp.type === AppType.REJECTED ||
+    receiverApp.type === AppType.REJECTED ||
+    senderApp.type === AppType.UNINSTALLED ||
+    receiverApp.type === AppType.UNINSTALLED
+  ) {
     return HashLockTransferStatus.FAILED;
   } else if (isReceiverExpired && receiverApp.type === AppType.INSTANCE) {
     // iff there is a receiver app, check for expiry
@@ -97,6 +97,7 @@ export class HashLockTransferService {
       lockHash,
       this.cfCoreService.cfCore.signerAddress,
       assetId,
+      this.cfCoreService.getAppInfoByName(HashLockTransferAppName).appDefinitionAddress,
     );
     this.log.info(`findSenderAppByLockHash ${lockHash} completed: ${JSON.stringify(app)}`);
     return app;
@@ -113,6 +114,7 @@ export class HashLockTransferService {
       lockHash,
       this.cfCoreService.cfCore.signerAddress,
       assetId,
+      this.cfCoreService.getAppInfoByName(HashLockTransferAppName).appDefinitionAddress,
     );
     this.log.info(`findReceiverAppByLockHash ${lockHash} completed: ${JSON.stringify(app)}`);
     return app;
