@@ -53,10 +53,8 @@ const WITHDRAW_ESTIMATED_GAS = toBN("300000");
 const DEPOSIT_ESTIMATED_GAS = toBN("25000");
 const MAX_CHANNEL_VALUE = Currency.DAI("30");
 
-// it is important to add a default payment
-// profile on initial load in the case the
-// user is being paid without depositing, or
-// in the case where the user is redeeming a link
+// change to use token with custom decimals
+export const TOKEN_DECIMALS = 18;
 
 const style = withStyles((theme) => ({
   paper: {

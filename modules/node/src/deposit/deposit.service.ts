@@ -232,6 +232,7 @@ export class DepositService {
         data: token.interface.encodeFunctionData("transfer", [channel.multisigAddress, amount]),
       };
     }
+    this.log.info(`Creating transaction for amount ${amount.toString()}: ${stringify(tx)}`);
     return this.onchainTransactionService.sendDeposit(channel, tx);
   }
 
