@@ -145,6 +145,7 @@ export class Currency {
       DEI: this.toRay(parseUnits(this.daiRate, 18).toString()),
       ETH: this.toRay("1"),
       FIN: this.toRay(parseUnits("1", 3).toString()),
+      GWEI: this.toRay(parseUnits("1", 9).toString()),
       WEI: this.toRay(parseUnits("1", 18).toString()),
     };
     if (
@@ -165,6 +166,7 @@ export class Currency {
   public toETH = (daiRate: any) => this._convert("ETH", daiRate);
   public toFIN = (daiRate: any) => this._convert("FIN", daiRate);
   public toWEI = (daiRate: any) => this._convert("WEI", daiRate);
+  public toGWEI = (daiRate: any) => this._convert("GWEI", daiRate);
 
   ////////////////////////////////////////
   // Private Methods
