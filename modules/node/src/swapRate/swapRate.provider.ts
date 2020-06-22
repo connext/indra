@@ -41,8 +41,8 @@ export const swapRateProviderFactory: FactoryProvider<Promise<MessagingService>>
   useFactory: async (
     log: LoggerService,
     messaging: MessagingService,
-    configService: ConfigService,
     swapRateService: SwapRateService,
+    configService: ConfigService,
   ): Promise<MessagingService> => {
     const swapRate = new SwapRateMessaging(log, messaging, configService, swapRateService);
     await swapRate.setupSubscriptions();
