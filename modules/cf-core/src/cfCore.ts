@@ -342,6 +342,9 @@ export class CFCore {
                 stateChannel.toJson(),
               );
             } else {
+              const latestInstalled = stateChannel
+                .getAppInstanceByAppSeqNo(stateChannel.numProposedApps)
+                .toJson();
               // this was an install, add app and remove proposals
               await this.storeService.createAppInstance(
                 stateChannel.multisigAddress,
