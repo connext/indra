@@ -7,7 +7,7 @@ import {
 import {
   AppIdentity,
   AppInstanceJson,
-  ChallengeEvents,
+  WatcherEvents,
   IChannelSigner,
   ILoggerService,
   IWatcher,
@@ -22,11 +22,11 @@ import {
   StateProgressedEventPayload,
   StoredAppChallenge,
   SetStateCommitmentJSON,
-  WatcherEvents,
   StoredAppChallengeStatus,
   ConditionalTransactionCommitmentJSON,
   ChallengeInitiatedResponse,
   ContractAddresses,
+  ChallengeEvents,
 } from "@connext/types";
 import {
   ConsoleLogger,
@@ -37,10 +37,10 @@ import {
   stringify,
   bigNumberifyJson,
 } from "@connext/utils";
-import EventEmitter from "eventemitter3";
 import { Contract, providers, constants, utils } from "ethers";
 
 import { ChainListener } from "./chainListener";
+import { Evt } from "evt";
 
 const { Zero, HashZero } = constants;
 const { Interface, defaultAbiCoder } = utils;
@@ -52,11 +52,17 @@ const { Interface, defaultAbiCoder } = utils;
  * To use the watcher class, call `await Watcher.init(opts)`, this will
  * automatically begin the dispute response process.
  */
+
+type EvtContainer = {
+  [event in WatcherEvent]: Evt<WatcherEventData[WatcherEvent]>;
+};
+
 export class Watcher implements IWatcher {
   private log: ILoggerService;
   private enabled: boolean = false;
-  private emitter: EventEmitter;
   private challengeRegistry: Contract;
+
+  private readonly evts: EvtContainer;
 
   constructor(
     private readonly signer: IChannelSigner,
@@ -66,13 +72,19 @@ export class Watcher implements IWatcher {
     private readonly listener: ChainListener,
     log: ILoggerService,
   ) {
-    this.emitter = new EventEmitter();
     this.log = log.newContext("Watcher");
     this.challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
       ChallengeRegistry.abi,
       this.provider,
     );
+    // Create all evt instances for watcher events
+    const evts = {} as any;
+    Object.keys(WatcherEvents).forEach((event: string) => {
+      const typedIndex = event as WatcherEvent;
+      evts[event] = Evt.create<WatcherEventData[typeof typedIndex]>();
+    });
+    this.evts = evts;
   }
 
   /////////////////////////////////////
@@ -206,37 +218,58 @@ export class Watcher implements IWatcher {
   /////////////////////////////////////
   //////// Listener methods
   public emit<T extends WatcherEvent>(event: T, data: WatcherEventData[T]): void {
-    throw new Error("Implement with evt");
+    this.evts[event].post(data);
   }
 
   public on<T extends WatcherEvent>(
     event: T,
     callback: (data: WatcherEventData[T]) => Promise<void>,
-    filter?: (payload: WatcherEventData[T]) => boolean,
+    providedFilter?: (payload: WatcherEventData[T]) => boolean,
   ): void {
     this.log.debug(`Registering callback for ${event}`);
-    throw new Error("Implement with evt");
+    const filter = (data: WatcherEventData[T]) => {
+      if (providedFilter) {
+        return providedFilter(data);
+      }
+      return true;
+    };
+    this.evts[event as any].attach(filter, callback);
   }
 
   public once<T extends WatcherEvent>(
     event: T,
     callback: (data: WatcherEventData[T]) => Promise<void>,
-    filter?: (payload: WatcherEventData[T]) => boolean,
+    providedFilter?: (payload: WatcherEventData[T]) => boolean,
+    timeout?: number,
   ): void {
     this.log.debug(`Registering callback for ${event}`);
-    throw new Error("Implement with evt");
+    const filter = (data: WatcherEventData[T]) => {
+      if (providedFilter) {
+        return providedFilter(data);
+      }
+      return true;
+    };
+    this.evts[event as any].attachOnce(filter, timeout || 60_000, callback);
   }
 
   public waitFor<T extends WatcherEvent>(
     event: T,
     timeout: number,
-    filter?: (payload: WatcherEventData[T]) => boolean,
+    providedFilter?: (payload: WatcherEventData[T]) => boolean,
   ): Promise<WatcherEventData[T]> {
-    throw new Error("Implement with evt");
+    const filter = (data: WatcherEventData[T]) => {
+      if (providedFilter) {
+        return providedFilter(data);
+      }
+      return true;
+    };
+    return this.evts[event as any].waitFor(filter, timeout || 60_000);
   }
 
-  public off<T extends WatcherEvent>(): void {
-    throw new Error("Implement with evt");
+  public off(): void {
+    Object.keys(this.evts).forEach((k) => {
+      this.evts[k].detach();
+    });
   }
 
   /////////////////////////////////////
