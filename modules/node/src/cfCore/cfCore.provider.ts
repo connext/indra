@@ -56,7 +56,7 @@ export const cfCoreProviderFactory: Provider = {
     try {
       decimals = await tokenContract.decimals();
     } catch (e) {
-      this.log.error(`Could not retrieve decimals from token, proceeding with decimals = 18...`);
+      log.error(`Could not retrieve decimals from token, proceeding with decimals = 18...`);
     }
     const tknBalance = await tokenContract.balanceOf(signerAddress);
 
