@@ -8,12 +8,11 @@ import { constants } from "ethers";
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
-import { CFCoreService } from "../cfCore/cfCore.service";
-import { ChannelRepository } from "../channel/channel.repository";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { HashLockTransferService } from "./hashLockTransfer.service";
-import { AppInstance } from "src/appInstance/appInstance.entity";
+import { AppInstance } from "../appInstance/appInstance.entity";
+import { ConfigService } from "../config/config.service";
 
 const { AddressZero } = constants;
 
@@ -22,6 +21,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
     private readonly authService: AuthService,
     log: LoggerService,
     messaging: MessagingService,
+    private readonly configService: ConfigService,
     private readonly hashLockTransferService: HashLockTransferService,
   ) {
     super(log, messaging);
@@ -85,32 +85,27 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "*.transfer.get-hashlock",
+      `*.${this.configService.getPublicIdentifier()}.transfer.get-hashlock`,
       this.authService.parseIdentifier(this.getHashLockTransferByLockHash.bind(this)),
     );
   }
 }
 
 export const hashLockTransferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [
-    AuthService,
-    LoggerService,
-    MessagingProviderId,
-    HashLockTransferService,
-    CFCoreService,
-    ChannelRepository,
-  ],
+  inject: [AuthService, LoggerService, MessagingProviderId, ConfigService, HashLockTransferService],
   provide: LinkedTransferProviderId,
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
     messaging: MessagingService,
+    configService: ConfigService,
     hashLockTransferService: HashLockTransferService,
   ): Promise<void> => {
     const transfer = new HashLockTransferMessaging(
       authService,
       logging,
       messaging,
+      configService,
       hashLockTransferService,
     );
     await transfer.setupSubscriptions();
