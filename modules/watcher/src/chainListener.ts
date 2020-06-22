@@ -157,7 +157,7 @@ export class ChainListener implements IChainListener {
     providedFilter?: (data: ChallengeEventData[T]) => boolean,
     ctx?: Ctx<ChallengeEventData[T]>,
   ): void {
-    const filter = (data) => {
+    const filter = (data: ChallengeEventData[T]) => {
       if (providedFilter) {
         return providedFilter(data);
       }
@@ -184,7 +184,7 @@ export class ChainListener implements IChainListener {
     ctx?: Ctx<ChallengeEventData[T]>,
     timeout?: number,
   ): Promise<ChallengeEventData[T]> {
-    const filter = (data) => {
+    const filter = (data: ChallengeEventData[T]) => {
       if (providedFilter) {
         return providedFilter(data);
       }
@@ -209,7 +209,7 @@ export class ChainListener implements IChainListener {
     providedFilter?: (data: ChallengeEventData[T]) => boolean,
     ctx?: Ctx<ChallengeEventData[T]>,
   ): Promise<ChallengeEventData[T]> {
-    const filter = (data) => {
+    const filter = (data: ChallengeEventData[T]) => {
       if (providedFilter) {
         return providedFilter(data);
       }
