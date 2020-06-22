@@ -1,6 +1,8 @@
 import { AllowedSwap, SwapRate, ProtocolParams } from "@connext/types";
 import { calculateExchange, getAddressFromAssetId, stringify } from "@connext/utils";
-import { BigNumber } from "ethers";
+import { BigNumber, utils } from "ethers";
+
+const { parseUnits, formatEther } = utils;
 
 const ALLOWED_DISCREPANCY_PCT = 5;
 
@@ -8,6 +10,7 @@ export const validateSimpleSwapApp = (
   params: ProtocolParams.Propose,
   allowedSwaps: SwapRate[],
   ourRate: string,
+  responderDecimals: number,
 ) => {
   const {
     responderDeposit,
@@ -32,18 +35,25 @@ export const validateSimpleSwapApp = (
     );
   }
 
-  const calculated = calculateExchange(initiatorDeposit, ourRate);
+  const calculatedResponderAmountInWeiUnits = calculateExchange(initiatorDeposit, ourRate);
+
+  const calculatedResponderDepositNormalized = parseUnits(
+    formatEther(calculatedResponderAmountInWeiUnits),
+    responderDecimals,
+  );
 
   // make sure calculated within allowed amount
-  const calculatedToActualDiscrepancy = calculated.sub(responderDeposit).abs();
+  const calculatedToActualDiscrepancy = calculatedResponderDepositNormalized
+    .sub(responderDeposit)
+    .abs();
   // i.e. (x * (100 - 5)) / 100 = 0.95 * x
-  const allowedDiscrepancy = calculated
+  const allowedDiscrepancy = calculatedResponderDepositNormalized
     .mul(BigNumber.from(100).sub(ALLOWED_DISCREPANCY_PCT))
     .div(100);
 
   if (calculatedToActualDiscrepancy.gt(allowedDiscrepancy)) {
     throw new Error(
-      `Responder deposit (${responderDeposit.toString()}) is greater than our expected deposit (${calculated.toString()}) based on our swap rate ${ourRate} by more than ${ALLOWED_DISCREPANCY_PCT}% (discrepancy: ${calculatedToActualDiscrepancy.toString()})`,
+      `Responder deposit (${responderDeposit.toString()}) is greater than our expected deposit (${calculatedResponderDepositNormalized.toString()}) based on our swap rate ${ourRate} by more than ${ALLOWED_DISCREPANCY_PCT}% (discrepancy: ${calculatedToActualDiscrepancy.toString()})`,
     );
   }
 };

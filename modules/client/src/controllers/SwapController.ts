@@ -1,5 +1,4 @@
 import { DEFAULT_APP_TIMEOUT, SWAP_STATE_TIMEOUT } from "@connext/apps";
-import { stringify } from "@connext/utils";
 import {
   DefaultApp,
   MethodParams,
@@ -8,6 +7,7 @@ import {
   SimpleSwapAppState,
   SimpleTwoPartySwapAppName,
   Address,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import {
   calculateExchange,
@@ -17,13 +17,15 @@ import {
   notLessThanOrEqualTo,
   notPositive,
   toBN,
+  stringify,
 } from "@connext/utils";
-import { BigNumber, constants, utils } from "ethers";
+import { ERC20 } from "@connext/contracts";
+import { BigNumber, constants, utils, Contract } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
 const { AddressZero, Zero } = constants;
-const { formatEther, parseEther } = utils;
+const { formatEther, parseEther, parseUnits } = utils;
 
 export class SwapController extends AbstractController {
   public async swap(params: PublicParams.Swap): Promise<PublicResults.Swap> {
@@ -35,9 +37,7 @@ export class SwapController extends AbstractController {
     const fromTokenAddress = getAddressFromAssetId(params.fromAssetId);
 
     const preSwapFromBal = await this.connext.getFreeBalance(fromTokenAddress);
-    const preSwapToBal = await this.connext.getFreeBalance(toTokenAddress);
     const userBal = preSwapFromBal[this.connext.signerAddress];
-    const swappedAmount = calculateExchange(amount, swapRate);
 
     this.throwIfAny(
       getAddressError(fromTokenAddress),
@@ -61,6 +61,7 @@ export class SwapController extends AbstractController {
 
     // install the swap app
     this.log.debug(`Installing swap app`);
+
     const appIdentityHash = await this.swapAppInstall(
       amount,
       toTokenAddress,
@@ -80,43 +81,6 @@ export class SwapController extends AbstractController {
       throw new Error(msg);
     }
 
-    // Sanity check to ensure swap was executed correctly
-    const postSwapFromBal = await this.connext.getFreeBalance(fromTokenAddress);
-    const postSwapToBal = await this.connext.getFreeBalance(toTokenAddress);
-    // balance decreases
-    const diffFrom = preSwapFromBal[this.connext.signerAddress].sub(
-      postSwapFromBal[this.connext.signerAddress],
-    );
-    // balance increases
-    const diffTo = postSwapToBal[this.connext.signerAddress].sub(
-      preSwapToBal[this.connext.signerAddress],
-    );
-    if (!diffFrom.eq(amount) || !diffTo.eq(swappedAmount)) {
-      const expectedTo = {
-        [this.connext.signerAddress]: preSwapToBal[this.connext.signerAddress].add(swappedAmount),
-        [this.connext.nodeSignerAddress]: preSwapToBal[this.connext.nodeSignerAddress].sub(
-          swappedAmount,
-        ),
-      };
-      const expectedFrom = {
-        [this.connext.signerAddress]: preSwapFromBal[this.connext.signerAddress].sub(amount),
-        [this.connext.nodeSignerAddress]: preSwapFromBal[this.connext.nodeSignerAddress].add(
-          amount,
-        ),
-      };
-      throw new Error(
-        `Invalid final swap amounts - this shouldn't happen!!\n` +
-          `Post swap free balance:\n` +
-          `   - ${toTokenAddress}: ${stringify(postSwapToBal)}\n` +
-          `   - ${fromTokenAddress}: ${stringify(postSwapFromBal)}\n` +
-          `Expected free balance: \n` +
-          `   - ${toTokenAddress}: ${stringify(expectedTo)}\n` +
-          `   - ${fromTokenAddress}: ${stringify(expectedFrom)}\n` +
-          `Amounts: \n` +
-          `   - ${toTokenAddress}: ${swappedAmount.toString()}\n` +
-          `   - ${fromTokenAddress}: ${amount.toString()}\n`,
-      );
-    }
     const res = await this.connext.getChannel();
 
     this.log.info(
@@ -144,6 +108,29 @@ export class SwapController extends AbstractController {
       } for ${formatEther(swappedAmount)} ${fromTokenAddress === AddressZero ? "ETH" : "Tokens"}`,
     );
 
+    const getDecimals = async (tokenAddress: string): Promise<number> => {
+      let decimals = 18;
+      if (tokenAddress !== CONVENTION_FOR_ETH_ASSET_ID) {
+        try {
+          const token = new Contract(tokenAddress, ERC20.abi, this.connext.ethProvider);
+          decimals = await token.functions.decimals();
+          console.log("decimals: ", decimals);
+          this.log.info(`Retrieved decimals for ${tokenAddress} from token contract: ${decimals}`);
+        } catch (error) {
+          this.log.error(
+            `Could not retrieve decimals from ${tokenAddress} token contract, proceeding with 18 decimals...: ${error.message}`,
+          );
+        }
+      }
+      return decimals;
+    };
+
+    const fromDecimals = await getDecimals(fromTokenAddress);
+    const initiatorDeposit = parseUnits(formatEther(amount), fromDecimals);
+
+    const toDecimals = await getDecimals(toTokenAddress);
+    const responderDeposit = parseUnits(formatEther(swappedAmount), toDecimals);
+
     // NOTE: always put the initiators swap information FIRST
     // followed by responders. If this is not included, the swap will
     // fail, causing the balances to be indexed on the wrong token
@@ -153,13 +140,13 @@ export class SwapController extends AbstractController {
       coinTransfers: [
         [
           {
-            amount,
+            amount: initiatorDeposit,
             to: this.connext.signerAddress,
           },
         ],
         [
           {
-            amount: swappedAmount,
+            amount: responderDeposit,
             to: this.connext.nodeSignerAddress,
           },
         ],
@@ -175,12 +162,12 @@ export class SwapController extends AbstractController {
       },
       appDefinition,
       initialState,
-      initiatorDeposit: amount,
+      initiatorDeposit,
       initiatorDepositAssetId: fromTokenAddress,
       multisigAddress: this.connext.multisigAddress,
       outcomeType: appInfo.outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
-      responderDeposit: swappedAmount,
+      responderDeposit,
       responderDepositAssetId: toTokenAddress,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: SWAP_STATE_TIMEOUT,
