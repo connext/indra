@@ -31,9 +31,9 @@ type FreeBalanceStateJSON = {
 const freeBalStateEncoding = `tuple(address[] tokenAddresses, tuple(address to, uint256 amount)[][] balances, bytes32[] activeApps)`;
 
 export class MiniFreeBalance {
-  private channelNonce = One;
-  private defaultTimeout = Zero;
-  private stateTimeout = Zero;
+  public channelNonce = One;
+  public defaultTimeout = Zero;
+  public stateTimeout = Zero;
 
   constructor(
     public readonly signerParticipants: ChannelSigner[],

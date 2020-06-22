@@ -143,6 +143,10 @@ export class AppWithCounterClass {
     return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
   }
 
+  public isStateTerminal() {
+    return this.latestState.counter.gt(5);
+  }
+
   public static encodeAction(action: AppWithCounterAction) {
     return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
   }
