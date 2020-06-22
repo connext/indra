@@ -66,8 +66,7 @@ export abstract class MethodController {
     }
 
     // retry if error
-    const isntOfflineErr = !!error && !error.message.includes("IO_SEND_AND_WAIT timed out");
-    if (preProtocolStateChannel && isntOfflineErr) {
+    if (preProtocolStateChannel && !!error) {
       // dispatch sync rpc call
       log.warn(
         `Caught error while running protocol, syncing channels and retrying ${this.methodName}. ${

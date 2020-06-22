@@ -24,7 +24,7 @@ import {
   uninstallApp,
 } from "../utils";
 import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
-import { deBigNumberifyJson, ChannelSigner, stringify } from "@connext/utils";
+import { deBigNumberifyJson, ChannelSigner, stringify, delay } from "@connext/utils";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { TestContractAddresses } from "../contracts";
 import { MemoryLockService } from "../services";
@@ -121,7 +121,7 @@ describe("Sync", () => {
       // load stores with proposal
       const rpc = makeProposeCall(nodeA, TicTacToeApp, multisigAddress);
       await new Promise(async (res) => {
-        nodeA.once("PROPOSE_INSTALL_EVENT", res);
+        nodeB.once(EventNames.SYNC_FAILED_EVENT, res);
         try {
           await nodeB.rpcRouter.dispatch({
             ...rpc,
@@ -140,8 +140,7 @@ describe("Sync", () => {
       expect(expectedChannel).toBeDefined();
       expect(expectedChannel!.proposedAppInstances.length).toBe(1);
       expect(unsynced?.proposedAppInstances.length).toBe(0);
-      messagingServiceA.clearLimits();
-    });
+    }, 60_000);
 
     test("sync protocol responder is missing a proposal held by the protocol initiator, sync on startup", async () => {
       const newNodeA = await CFCore.create(
@@ -176,6 +175,7 @@ describe("Sync", () => {
     }, 60_000);
 
     test("sync protocol initiator is missing a proposal held by the protocol responder, sync on startup", async () => {
+      messagingServiceA.clearLimits();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve, reject) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -219,6 +219,7 @@ describe("Sync", () => {
     }, 60_000);
 
     test("sync protocol responder is missing a proposal held by the protocol initiator, sync on error", async () => {
+      messagingServiceA.clearLimits();
       await nodeA.rpcRouter.dispatch(constructInstallRpc(identityHash, multisigAddress));
 
       const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
@@ -236,6 +237,7 @@ describe("Sync", () => {
     }, 60_000);
 
     test("sync protocol initiator is missing a proposal held by the protocol responder, sync on error", async () => {
+      messagingServiceA.clearLimits();
       await nodeB.rpcRouter.dispatch(constructInstallRpc(identityHash, multisigAddress));
       const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
       const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
@@ -275,7 +277,7 @@ describe("Sync", () => {
       // load stores with proposal
       const rpc = makeProposeCall(nodeA, TicTacToeApp, multisigAddress);
       const res: any = await new Promise(async (res) => {
-        nodeA.once("PROPOSE_INSTALL_EVENT", res);
+        nodeB.once(EventNames.SYNC_FAILED_EVENT, res);
         try {
           await nodeB.rpcRouter.dispatch({
             ...rpc,
@@ -295,6 +297,7 @@ describe("Sync", () => {
       expect(expectedChannel!.proposedAppInstances.length).toBe(1);
       expect(unsynced?.proposedAppInstances.length).toBe(0);
 
+      console.log("BEFORE REJECT expectedChannel: ", expectedChannel);
       await nodeA.rpcRouter.dispatch({
         methodName: MethodNames.chan_rejectInstall,
         parameters: {
@@ -304,12 +307,11 @@ describe("Sync", () => {
       });
 
       expectedChannel = await storeServiceA.getStateChannel(multisigAddress);
+      console.log("AFTER REJECT expectedChannel: ", expectedChannel);
       expect(expectedChannel!.proposedAppInstances.length).toBe(0);
-
-      messagingServiceA.clearLimits();
     }, 60_000);
 
-    test("sync protocol responder is missing a proposal held by the protocol initiator, sync on startup", async () => {
+    test.only("sync protocol responder is missing a proposal held by the protocol initiator, sync on startup", async () => {
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve, reject) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -338,7 +340,7 @@ describe("Sync", () => {
 
       const rpc = makeProposeCall(newNodeA as CFCore, TicTacToeApp, multisigAddress);
       const res: any = await new Promise(async (resolve) => {
-        (newNodeA as CFCore).once("PROPOSE_INSTALL_EVENT", resolve);
+        nodeB.once(EventNames.PROPOSE_INSTALL_EVENT, resolve);
         try {
           await nodeB.rpcRouter.dispatch({
             ...rpc,
@@ -364,6 +366,7 @@ describe("Sync", () => {
     }, 60_000);
 
     test("sync protocol initiator is missing a proposal held by the protocol responder, sync on startup", async () => {
+      messagingServiceA.clearLimits();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve, reject) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -418,6 +421,7 @@ describe("Sync", () => {
     }, 60_000);
 
     test("sync protocol responder is missing a proposal held by the protocol initiator, sync on error", async () => {
+      messagingServiceA.clearLimits();
       const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const res: any = await new Promise(async (resolve) => {
         nodeB.once("PROPOSE_INSTALL_EVENT", resolve);
@@ -446,6 +450,7 @@ describe("Sync", () => {
     }, 60_000);
 
     test("sync protocol initiator is missing a proposal held by the protocol responder, sync on error", async () => {
+      messagingServiceA.clearLimits();
       const rpc = makeProposeCall(nodeA, TicTacToeApp, multisigAddress);
       const res: any = await new Promise(async (resolve) => {
         nodeA.once("PROPOSE_INSTALL_EVENT", resolve);
@@ -505,7 +510,7 @@ describe("Sync", () => {
       const [ret] = await Promise.all([
         makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress),
         new Promise((resolve) => {
-          nodeB.once(EventNames.PROPOSE_INSTALL_EVENT, () => {
+          nodeB.once(EventNames.SYNC_FAILED_EVENT, () => {
             resolve();
           });
         }),
@@ -527,10 +532,10 @@ describe("Sync", () => {
       unsynced = await storeServiceB.getStateChannel(multisigAddress);
       expect(unsynced?.appInstances.length).toBe(0);
       expect(expectedChannel?.appInstances.length).toBe(1);
-      messagingServiceA.clearLimits();
     }, 35_000);
 
     test("sync protocol -- initiator is missing an app held by responder", async () => {
+      messagingServiceA.clearLimits();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -603,6 +608,7 @@ describe("Sync", () => {
     // NOTE: same test for initiator/responder ordering would fail bc storeB
     // does not have installed app
     test("sync protocol -- responder is missing an app held by initiator, sync on error", async () => {
+      messagingServiceA.clearLimits();
       await uninstallApp(nodeA, nodeB, appIdentityHash, multisigAddress);
 
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
@@ -680,11 +686,10 @@ describe("Sync", () => {
 
       const postRejectChannel = await storeServiceB.getStateChannel(multisigAddress);
       expect(postRejectChannel!.proposedAppInstances.length).toBe(0);
-
-      messagingServiceA.clearLimits();
     }, 60_000);
 
     test("sync protocol -- initiator is missing an app held by responder, sync on startup", async () => {
+      messagingServiceA.clearLimits();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -757,6 +762,7 @@ describe("Sync", () => {
     // NOTE: same test for initiator/responder ordering would fail bc storeB
     // does not have installed app
     test("sync protocol -- responder is missing an app held by initiator, sync on error", async () => {
+      messagingServiceA.clearLimits();
       await uninstallApp(nodeA, nodeB, appIdentityHash, multisigAddress);
 
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
@@ -799,7 +805,7 @@ describe("Sync", () => {
       // nodeB should respond to the uninstall, nodeA will not get the
       // message, but nodeB thinks its sent
       await new Promise(async (resolve, reject) => {
-        nodeA.once(EventNames.UNINSTALL_EVENT, () => resolve);
+        nodeB.once(EventNames.SYNC_FAILED_EVENT, () => resolve);
         try {
           await nodeB.rpcRouter.dispatch(constructUninstallRpc(identityHash, multisigAddress));
           return reject(`Node B should be able to complete uninstall`);
@@ -813,11 +819,11 @@ describe("Sync", () => {
       const unsynced = await storeServiceB.getStateChannel(multisigAddress);
       expect(expectedChannel.appInstances.length).toBe(0);
       expect(unsynced?.appInstances.length).toBe(1);
-      messagingServiceA.clearLimits();
     }, 60_000);
 
     test("sync protocol -- initiator has an app uninstalled by responder, sync on startup", async () => {
       await messagingServiceB.disconnect();
+      messagingServiceA.clearLimits();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -911,6 +917,7 @@ describe("Sync", () => {
     }, 60_000);
 
     test("sync protocol -- initiator has an app uninstalled by responder, sync on error", async () => {
+      messagingServiceA.clearLimits();
       // create new app
       [identityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
       const [newAppInstanceA, newAppInstanceB] = await Promise.all([
@@ -932,6 +939,7 @@ describe("Sync", () => {
     }, 60_000);
 
     test("sync protocol -- responder has an app uninstalled by initiator, sync on error", async () => {
+      messagingServiceA.clearLimits();
       // create new app
       [identityHash] = await installApp(nodeB, nodeA, multisigAddress, TicTacToeApp);
       const [newAppInstanceA, newAppInstanceB] = await Promise.all([
@@ -981,7 +989,7 @@ describe("Sync", () => {
       [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
       await new Promise(async (resolve, reject) => {
-        nodeA.once(EventNames.UPDATE_STATE_EVENT, () => resolve());
+        nodeB.once(EventNames.SYNC_FAILED_EVENT, () => resolve());
         try {
           await nodeB.rpcRouter.dispatch(
             constructTakeActionRpc(appIdentityHash, multisigAddress, validAction),
@@ -1006,7 +1014,6 @@ describe("Sync", () => {
       expect(behindApp).toBeDefined();
       const unsyncedAppInstance = behindApp![1];
       expect(unsyncedAppInstance.latestVersionNumber).toBe(1);
-      messagingServiceA.clearLimits();
     }, 60_000);
 
     test("initiator has an app that has a single signed update that the responder does not have, sync on startup", async () => {
@@ -1044,6 +1051,7 @@ describe("Sync", () => {
     }, 60_000);
 
     test("responder has an app that has a single signed update that the initiator does not have, sync on startup", async () => {
+      messagingServiceA.clearLimits();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -1078,6 +1086,7 @@ describe("Sync", () => {
     }, 60_000);
 
     test("initiator has an app that has a single signed update that the responder does not have, sync on error", async () => {
+      messagingServiceA.clearLimits();
       //attempt to uninstall
       await uninstallApp(nodeA, nodeB, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
@@ -1089,6 +1098,7 @@ describe("Sync", () => {
     }, 60_000);
 
     test("responder has an app that has a single signed update that the initiator does not have, sync on error", async () => {
+      messagingServiceA.clearLimits();
       //attempt to uninstall
       await uninstallApp(nodeB, nodeA, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
