@@ -203,37 +203,44 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async createChannel(): Promise<NodeResponses.CreateChannel> {
-    return this.send(`${this.userIdentifier}.channel.create`);
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.channel.create`);
   }
 
   public async getChannel(): Promise<NodeResponses.GetChannel> {
-    return this.send(`${this.userIdentifier}.channel.get`);
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.channel.get`);
   }
 
   public async getPendingAsyncTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers> {
-    return (await this.send(`${this.userIdentifier}.transfer.get-pending`)) || [];
+    return (
+      (await this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-pending`)) || []
+    );
   }
 
   public async installPendingTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers> {
     const extendedTimeout = NATS_TIMEOUT * 5;
     return (
-      (await this.send(`${this.userIdentifier}.transfer.install-pending`, extendedTimeout)) || []
+      (await this.send(
+        `${this.userIdentifier}.${this.nodeIdentifier}.transfer.install-pending`,
+        extendedTimeout,
+      )) || []
     );
   }
 
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
-    return this.send(`${this.userIdentifier}.swap-rate.${from}.${to}`);
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.swap-rate.${from}.${to}`);
   }
 
   public async getTransferHistory(): Promise<NodeResponses.GetTransferHistory> {
-    return (await this.send(`${this.userIdentifier}.transfer.get-history`)) || [];
+    return (
+      (await this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-history`)) || []
+    );
   }
 
   public async getHashLockTransfer(
     lockHash: string,
     assetId: string,
   ): Promise<NodeResponses.GetHashLockTransfer> {
-    return this.send(`${this.userIdentifier}.transfer.get-hashlock`, {
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-hashlock`, {
       lockHash,
       assetId,
     });
@@ -245,7 +252,7 @@ export class NodeApiClient implements INodeApiClient {
     // will return after an onchain tx is submitted and mined in cases where
     // a rebalancing occurs
     try {
-      return this.send(`${this.userIdentifier}.channel.request-collateral`, {
+      return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.channel.request-collateral`, {
         assetId,
       });
     } catch (e) {
@@ -258,13 +265,13 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
-    return this.send(`${this.userIdentifier}.transfer.get-linked`, {
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-linked`, {
       paymentId,
     });
   }
 
   public async fetchSignedTransfer(paymentId: string): Promise<any> {
-    return this.send(`${this.userIdentifier}.transfer.get-signed`, {
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-signed`, {
       paymentId,
     });
   }
@@ -276,7 +283,7 @@ export class NodeApiClient implements INodeApiClient {
     this.log.info(`Start installConditionalTransferReceiverApp for ${paymentId}: ${conditionType}`);
     const extendedTimeout = NATS_TIMEOUT * 5; // 55s
     return this.send(
-      `${this.userIdentifier}.transfer.install-receiver`,
+      `${this.userIdentifier}.${this.nodeIdentifier}.transfer.install-receiver`,
       {
         paymentId,
         conditionType,
@@ -298,7 +305,7 @@ export class NodeApiClient implements INodeApiClient {
     // if the user is not already collateralized
     const extendedTimeout = NATS_TIMEOUT * 5; // 55s
     return this.send(
-      `${this.userIdentifier}.transfer.install-linked`,
+      `${this.userIdentifier}.${this.nodeIdentifier}.transfer.install-linked`,
       {
         paymentId,
       },
@@ -313,7 +320,7 @@ export class NodeApiClient implements INodeApiClient {
     // protocols are run (see comments in `resolveLinkedTransfer` for details)
     const extendedTimeout = NATS_TIMEOUT * 5; // 55s
     return this.send(
-      `${this.userIdentifier}.transfer.install-signed`,
+      `${this.userIdentifier}.${this.nodeIdentifier}.transfer.install-signed`,
       {
         paymentId,
       },
@@ -322,7 +329,7 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async getRebalanceProfile(assetId?: string): Promise<NodeResponses.GetRebalanceProfile> {
-    return this.send(`${this.userIdentifier}.channel.get-profile`, {
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.channel.get-profile`, {
       assetId: getAddress(assetId),
     });
   }
@@ -331,7 +338,7 @@ export class NodeApiClient implements INodeApiClient {
   // TODO -- What needs to happen here for JWT auth refactor?
   public recipientOnline = async (recipientIdentifier: string): Promise<boolean> => {
     try {
-      return this.send(`online.${recipientIdentifier}`);
+      return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.online`);
     } catch (e) {
       if (e.message.startsWith("Request timed out")) {
         return false;
@@ -349,15 +356,15 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async restoreState(): Promise<NodeResponses.ChannelRestore> {
-    return this.send(`${this.userIdentifier}.channel.restore`);
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.channel.restore`);
   }
 
   public async getLatestWithdrawal(): Promise<providers.TransactionRequest> {
-    return this.send(`${this.userIdentifier}.channel.latestWithdrawal`);
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.channel.latestWithdrawal`);
   }
 
   public async clientCheckIn(): Promise<void> {
-    return this.send(`${this.userIdentifier}.client.check-in`);
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.client.check-in`);
   }
 
   ////////////////////////////////////////
