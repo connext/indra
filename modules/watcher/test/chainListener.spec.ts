@@ -15,7 +15,7 @@ import { ChainListener } from "../src";
 
 const { Zero, One } = constants;
 
-describe.only("ChainListener", () => {
+describe("ChainListener", () => {
   let challengeRegistry: Contract;
   let provider: JsonRpcProvider;
   let chainListener: ChainListener;
