@@ -181,11 +181,13 @@ export class NodeApiClient implements INodeApiClient {
   // PUBLIC
 
   async acquireLock(lockName: string): Promise<string> {
-    return this.send(`${this.userIdentifier}.lock.acquire.${lockName}`);
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.lock.acquire.${lockName}`);
   }
 
   async releaseLock(lockName: string, lockValue: string): Promise<void> {
-    return this.send(`${this.userIdentifier}.lock.release.${lockName}`, { lockValue });
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.lock.release.${lockName}`, {
+      lockValue,
+    });
   }
 
   public async appRegistry(): Promise<AppRegistry> {
