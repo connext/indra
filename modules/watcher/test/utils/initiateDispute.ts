@@ -3,17 +3,12 @@ import {
   IWatcherStoreService,
   WatcherEvents,
   ChallengeUpdatedEventPayload,
-  ChallengeProgressedEventData,
   ChallengeStatus,
   ChallengeCompletedEventData,
-  ChallengeCompletionFailedEventData,
-  ChallengeOutcomeFailedEventData,
   ChallengeOutcomeSetEventData,
-  StoredAppChallengeStatus,
-  StateProgressedEventData,
   SetStateCommitmentJSON,
 } from "@connext/types";
-import { bigNumberifyJson, toBN } from "@connext/utils";
+import { toBN } from "@connext/utils";
 import { constants } from "ethers";
 
 import { expect } from ".";
