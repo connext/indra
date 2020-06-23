@@ -96,6 +96,7 @@ clean: stop
 	rm -rf modules/*/node_modules/.bin
 	rm -rf modules/contracts/artifacts modules/*/build modules/*/dist docs/build
 	rm -rf modules/*/.*cache* modules/*/node_modules/.cache modules/contracts/cache/*.json
+	rm -rf modules/*/package-lock.json
 
 quick-reset:
 	bash ops/db.sh 'truncate table app_registry cascade;'
@@ -336,14 +337,14 @@ ethprovider: contracts $(shell find modules/contracts/ops $(find_options))
 
 node-release: node $(shell find modules/node/ops $(find_options))
 	$(log_start)
-	$(docker_run) "MODE=release cd modules/node && npm run build-bundle"
+	$(docker_run) "cd modules/node && MODE=release npm run build-bundle"
 	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node .
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 node-staging: node $(shell find modules/node/ops $(find_options))
 	$(log_start)
-	$(docker_run) "MODE=staging cd modules/node && npm run build-bundle"
+	$(docker_run) "cd modules/node && MODE=staging npm run build-bundle"
 	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node .
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@

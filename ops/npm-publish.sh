@@ -100,7 +100,7 @@ do
   cat .package.json | sed 's/"version": ".*"/"version": "'$version'"/' > package.json
   rm .package.json
   echo "Publishing $fullname"
-  npm publish --access=public
+  npm publish --tag next --access=public
   echo
   cd ..
   for module in `ls */package.json`

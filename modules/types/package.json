@@ -1,6 +1,6 @@
 {
   "name": "@connext/types",
-  "version": "7.0.0-alpha.3",
+  "version": "7.0.0-alpha.4-experimental",
   "description": "TypeScript typings for common Connext types",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -18,12 +18,12 @@
   "dependencies": {
     "ethers": "5.0.2",
     "eventemitter3": "4.0.4",
-    "evt": "1.7.11",
-    "sequelize": "5.21.11"
+    "evt": "1.7.13",
+    "sequelize": "5.21.13"
   },
   "devDependencies": {
-    "rollup": "2.12.1",
+    "rollup": "2.17.1",
     "rollup-plugin-typescript2": "0.27.1",
-    "typescript": "3.9.3"
+    "typescript": "3.9.5"
   }
 }

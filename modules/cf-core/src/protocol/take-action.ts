@@ -12,7 +12,7 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
-import { assertIsValidSignature } from "./utils";
+import { assertIsValidSignature, getPureBytecode } from "./utils";
 
 const protocol = ProtocolNames.takeAction;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
@@ -66,7 +66,14 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 40ms
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
-      await preAppInstance.computeStateTransition(action, network.provider),
+      await preAppInstance.computeStateTransition(
+        action,
+        network.provider,
+        getPureBytecode(
+          preAppInstance.appDefinition,
+          network.contractAddresses,
+        ),
+      ),
       stateTimeout,
     );
     logTime(log, substart, `[${loggerId}] Updated channel with new app state`);
@@ -192,7 +199,14 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 48ms
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
-      await preAppInstance.computeStateTransition(action, network.provider),
+      await preAppInstance.computeStateTransition(
+        action,
+        network.provider,
+        getPureBytecode(
+          preAppInstance.appDefinition,
+          network.contractAddresses,
+        ),
+      ),
       stateTimeout,
     );
 
