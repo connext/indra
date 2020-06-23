@@ -4,6 +4,8 @@ import {
   MethodResults,
   ProtocolNames,
   CONVENTION_FOR_ETH_ASSET_ID,
+  EventNames,
+  ProposeMessage,
 } from "@connext/types";
 import { appIdentityToHash, getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
 
@@ -14,7 +16,6 @@ import {
 } from "../../errors";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
-
 import { MethodController } from "../controller";
 
 /**
@@ -106,5 +107,21 @@ export class ProposeInstallAppInstanceController extends MethodController {
       preProtocolStateChannel!,
     );
     return { appIdentityHash: updated.mostRecentlyProposedAppInstance().identityHash };
+  }
+
+  protected async afterExecution(
+    requestHandler: RequestHandler,
+    params: MethodParams.ProposeInstall,
+    returnValue: MethodResults.ProposeInstall,
+  ): Promise<void> {
+    const { router, publicIdentifier } = requestHandler;
+
+    const msg = {
+      from: publicIdentifier,
+      type: EventNames.PROPOSE_INSTALL_EVENT,
+      data: { params: params as any, appInstanceId: returnValue.appIdentityHash },
+    } as ProposeMessage;
+
+    await router.emit(msg.type, msg, `outgoing`);
   }
 }

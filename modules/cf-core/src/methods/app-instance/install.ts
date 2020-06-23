@@ -5,6 +5,8 @@ import {
   ProtocolNames,
   ProtocolParams,
   PublicIdentifier,
+  EventNames,
+  InstallMessage,
 } from "@connext/types";
 
 import {
@@ -93,6 +95,22 @@ export class InstallAppInstanceController extends MethodController {
     return {
       appInstance: appInstance.toJson(),
     };
+  }
+
+  protected async afterExecution(
+    requestHandler: RequestHandler,
+    params: MethodParams.Install,
+    returnValue: MethodResults.Install,
+  ): Promise<void> {
+    const { router, publicIdentifier } = requestHandler;
+
+    const msg = {
+      from: publicIdentifier,
+      type: EventNames.INSTALL_EVENT,
+      data: { appIdentityHash: params.appIdentityHash },
+    } as InstallMessage;
+
+    await router.emit(msg.type, msg, `outgoing`);
   }
 }
 
