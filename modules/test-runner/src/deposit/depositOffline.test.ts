@@ -176,6 +176,7 @@ describe("Deposit offline tests", () => {
       signer,
       store,
       id: "Pre-Offline",
+      stopOnCeilingReached: true,
     });
 
     await makeFailingDepositCall({

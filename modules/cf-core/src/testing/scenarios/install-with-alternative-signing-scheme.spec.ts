@@ -4,7 +4,6 @@ import { BigNumber, providers, constants } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
-import { toBeLt } from "../bignumber-jest-matcher";
 import { TestContractAddresses } from "../contracts";
 import { MemoryLockService, MemoryMessagingService, MemoryStoreServiceFactory } from "../services";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
@@ -17,14 +16,12 @@ import {
   makeProposeCall,
   newWallet,
 } from "../utils";
+import { expect } from "../assertions";
 
 const { One } = constants;
 
-expect.extend({ toBeLt });
-
 describe(`Uses a provided signing key generation function to sign channel state updates`, () => {
   let multisigAddress: string;
-  jest.setTimeout(10000);
   let nodeA: CFCore;
   let nodeB: CFCore;
 
@@ -68,56 +65,58 @@ describe(`Uses a provided signing key generation function to sign channel state 
         multisigAddress = await createChannel(nodeA, nodeB);
       });
 
-      it(`install app with ETH`, async (done) => {
-        await collateralizeChannel(multisigAddress, nodeA, nodeB);
+      it(`install app with ETH`, async () => {
+        return new Promise(async (done) => {
+          await collateralizeChannel(multisigAddress, nodeA, nodeB);
 
-        let preInstallETHBalanceNodeA: BigNumber;
-        let postInstallETHBalanceNodeA: BigNumber;
-        let preInstallETHBalanceNodeB: BigNumber;
-        let postInstallETHBalanceNodeB: BigNumber;
+          let preInstallETHBalanceNodeA: BigNumber;
+          let postInstallETHBalanceNodeA: BigNumber;
+          let preInstallETHBalanceNodeB: BigNumber;
+          let postInstallETHBalanceNodeB: BigNumber;
 
-        nodeB.on(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
-          [preInstallETHBalanceNodeA, preInstallETHBalanceNodeB] = await getBalances(
-            nodeA,
-            nodeB,
-            multisigAddress,
-            CONVENTION_FOR_ETH_ASSET_ID,
+          nodeB.on(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
+            [preInstallETHBalanceNodeA, preInstallETHBalanceNodeB] = await getBalances(
+              nodeA,
+              nodeB,
+              multisigAddress,
+              CONVENTION_FOR_ETH_ASSET_ID,
+            );
+            makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress);
+          });
+
+          nodeA.on(`INSTALL_EVENT`, async () => {
+            const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
+            const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
+            expect(appInstanceNodeA).to.be.ok;
+            expect(appInstanceNodeA).to.deep.eq(appInstanceNodeB);
+
+            [postInstallETHBalanceNodeA, postInstallETHBalanceNodeB] = await getBalances(
+              nodeA,
+              nodeB,
+              multisigAddress,
+              CONVENTION_FOR_ETH_ASSET_ID,
+            );
+
+            expect(postInstallETHBalanceNodeA).to.be.lt(preInstallETHBalanceNodeA);
+
+            expect(postInstallETHBalanceNodeB).to.be.lt(preInstallETHBalanceNodeB);
+
+            done();
+          });
+
+          nodeA.rpcRouter.dispatch(
+            makeProposeCall(
+              nodeB,
+              (global[`contracts`] as TestContractAddresses).TicTacToeApp,
+              multisigAddress,
+              undefined,
+              One,
+              CONVENTION_FOR_ETH_ASSET_ID,
+              One,
+              CONVENTION_FOR_ETH_ASSET_ID,
+            ),
           );
-          makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress);
         });
-
-        nodeA.on(`INSTALL_EVENT`, async () => {
-          const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
-          const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
-          expect(appInstanceNodeA).toBeDefined();
-          expect(appInstanceNodeA).toEqual(appInstanceNodeB);
-
-          [postInstallETHBalanceNodeA, postInstallETHBalanceNodeB] = await getBalances(
-            nodeA,
-            nodeB,
-            multisigAddress,
-            CONVENTION_FOR_ETH_ASSET_ID,
-          );
-
-          expect(postInstallETHBalanceNodeA).toBeLt(preInstallETHBalanceNodeA);
-
-          expect(postInstallETHBalanceNodeB).toBeLt(preInstallETHBalanceNodeB);
-
-          done();
-        });
-
-        nodeA.rpcRouter.dispatch(
-          await makeProposeCall(
-            nodeB,
-            (global[`contracts`] as TestContractAddresses).TicTacToeApp,
-            multisigAddress,
-            undefined,
-            One,
-            CONVENTION_FOR_ETH_ASSET_ID,
-            One,
-            CONVENTION_FOR_ETH_ASSET_ID,
-          ),
-        );
       });
     },
   );

@@ -4,7 +4,6 @@ import { constants, utils } from "ethers";
 import { CFCore } from "../../cfCore";
 
 import { TestContractAddresses } from "../contracts";
-import { toBeLt } from "../bignumber-jest-matcher";
 
 import { setup, SetupContext } from "../setup";
 import {
@@ -18,12 +17,6 @@ import {
 const { One } = constants;
 const { parseEther } = utils;
 
-expect.extend({ toBeLt });
-
-jest.setTimeout(7500);
-
-const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
-
 describe("Node method follows spec when happening concurrently - install / uninstall", () => {
   let multisigAddress: string;
   let nodeA: CFCore;
@@ -33,6 +26,7 @@ describe("Node method follows spec when happening concurrently - install / unins
 
   describe("NodeA can uninstall and install an app with nodeB concurrently", () => {
     beforeEach(async () => {
+      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       const context: SetupContext = await setup(global);
       nodeA = context["A"].node;
       nodeB = context["B"].node;
@@ -72,70 +66,76 @@ describe("Node method follows spec when happening concurrently - install / unins
       });
     });
 
-    it("install app with ETH then uninstall and install apps simultaneously from the same node", async (done) => {
-      let completedActions = 0;
+    it("install app with ETH then uninstall and install apps simultaneously from the same node", async () => {
+      return new Promise(async (done) => {
+        const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+        let completedActions = 0;
 
-      nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) =>
-        makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress),
-      );
+        nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) =>
+          makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress),
+        );
 
-      nodeA.once("INSTALL_EVENT", () => {
-        completedActions += 1;
-        if (completedActions === 2) done();
+        nodeA.once("INSTALL_EVENT", () => {
+          completedActions += 1;
+          if (completedActions === 2) done();
+        });
+
+        // if this is on nodeA, test fails
+        nodeB.once("UNINSTALL_EVENT", () => {
+          completedActions += 1;
+          if (completedActions === 2) done();
+        });
+
+        const installCall = makeProposeCall(
+          nodeB,
+          TicTacToeApp,
+          multisigAddress,
+          /* initialState */ undefined,
+          One,
+          CONVENTION_FOR_ETH_ASSET_ID,
+          One,
+          CONVENTION_FOR_ETH_ASSET_ID,
+        );
+
+        nodeA.rpcRouter.dispatch(installCall);
+        nodeA.rpcRouter.dispatch(constructUninstallRpc(installedAppIdentityHash, multisigAddress));
       });
-
-      // if this is on nodeA, test fails
-      nodeB.once("UNINSTALL_EVENT", () => {
-        completedActions += 1;
-        if (completedActions === 2) done();
-      });
-
-      const installCall = makeProposeCall(
-        nodeB,
-        TicTacToeApp,
-        multisigAddress,
-        /* initialState */ undefined,
-        One,
-        CONVENTION_FOR_ETH_ASSET_ID,
-        One,
-        CONVENTION_FOR_ETH_ASSET_ID,
-      );
-
-      nodeA.rpcRouter.dispatch(installCall);
-      nodeA.rpcRouter.dispatch(constructUninstallRpc(installedAppIdentityHash, multisigAddress));
     });
 
-    it("install app with ETH then uninstall and install apps simultaneously from separate nodes", async (done) => {
-      let completedActions = 0;
+    it("install app with ETH then uninstall and install apps simultaneously from separate nodes", async () => {
+      return new Promise(async (done) => {
+        const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+        let completedActions = 0;
 
-      nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) =>
-        makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress),
-      );
+        nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) =>
+          makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress),
+        );
 
-      nodeA.once("INSTALL_EVENT", () => {
-        completedActions += 1;
-        if (completedActions === 2) done();
+        nodeA.once("INSTALL_EVENT", () => {
+          completedActions += 1;
+          if (completedActions === 2) done();
+        });
+
+        // if this is on nodeB, test fails
+        nodeA.once("UNINSTALL_EVENT", () => {
+          completedActions += 1;
+          if (completedActions === 2) done();
+        });
+
+        const installCall = makeProposeCall(
+          nodeB,
+          TicTacToeApp,
+          multisigAddress,
+          /* initialState */ undefined,
+          One,
+          CONVENTION_FOR_ETH_ASSET_ID,
+          One,
+          CONVENTION_FOR_ETH_ASSET_ID,
+        );
+
+        nodeA.rpcRouter.dispatch(installCall);
+        nodeB.rpcRouter.dispatch(constructUninstallRpc(installedAppIdentityHash, multisigAddress));
       });
-
-      // if this is on nodeB, test fails
-      nodeA.once("UNINSTALL_EVENT", () => {
-        completedActions += 1;
-        if (completedActions === 2) done();
-      });
-
-      const installCall = makeProposeCall(
-        nodeB,
-        TicTacToeApp,
-        multisigAddress,
-        /* initialState */ undefined,
-        One,
-        CONVENTION_FOR_ETH_ASSET_ID,
-        One,
-        CONVENTION_FOR_ETH_ASSET_ID,
-      );
-
-      nodeA.rpcRouter.dispatch(installCall);
-      nodeB.rpcRouter.dispatch(constructUninstallRpc(installedAppIdentityHash, multisigAddress));
     });
   });
 });

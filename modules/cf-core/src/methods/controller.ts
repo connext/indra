@@ -66,8 +66,7 @@ export abstract class MethodController {
     }
 
     // retry if error
-    const isntOfflineErr = !!error && !error.message.includes("IO_SEND_AND_WAIT timed out");
-    if (preProtocolStateChannel && isntOfflineErr) {
+    if (preProtocolStateChannel && !!error) {
       // dispatch sync rpc call
       log.warn(
         `Caught error while running protocol, syncing channels and retrying ${this.methodName}. ${
@@ -91,6 +90,10 @@ export abstract class MethodController {
         result =
           result || (await this.executeMethodImplementation(requestHandler, params, channel));
         log.info(`Protocol ${this.methodName} successfully executed after sync`);
+
+        await this.afterExecution(requestHandler, params, result);
+        logTime(log, substart, "After execution complete");
+
         error = undefined;
       } catch (e) {
         log.error(`Caught error in method controller while attempting retry + sync: ${e.stack}`);

@@ -1,4 +1,4 @@
-import { CriticalStateChannelAddresses, Collateralizations, JSONSerializer } from "@connext/types";
+import { CriticalStateChannelAddresses, Collateralizations } from "@connext/types";
 import {
   Column,
   CreateDateColumn,

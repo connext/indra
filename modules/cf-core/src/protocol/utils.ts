@@ -1,13 +1,19 @@
+import { artifacts } from "@connext/contracts";
 import {
+  Address,
+  AssetId,
+  ContractAddresses,
+  HexString,
   ILoggerService,
   IStoreService,
   multiAssetMultiPartyCoinTransferEncoding,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
+  NetworkContext,
   OutcomeType,
+  PureActionApps,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
-  AssetId,
 } from "@connext/types";
 import { logTime, recoverAddressFromChannelMessage, getAddressFromAssetId } from "@connext/utils";
 import { BigNumber, providers, utils, constants } from "ethers";
@@ -23,6 +29,20 @@ import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR, TWO_PARTY_OUTCOME_DIFFERENT_ASSETS 
 
 const { MaxUint256 } = constants;
 const { defaultAbiCoder, getAddress } = utils;
+
+export const getPureBytecode = (
+  appDefinition: Address,
+  contractAddresses: ContractAddresses,
+): HexString | undefined => {
+  // If this app's action is pure, provide bytecode to use for faster in-memory evm calls
+  const appEntry = Object.entries(contractAddresses).find(
+    entry => entry[1] === appDefinition,
+  );
+  const bytecode = appEntry && appEntry[0] && PureActionApps.includes(appEntry[0])
+    ? artifacts[appEntry[0]].deployedBytecode
+    : undefined;
+  return bytecode;
+};
 
 export async function assertIsValidSignature(
   expectedSigner: string,
@@ -74,7 +94,7 @@ export async function stateChannelClassFromStoreByMultisig(
  */
 export async function computeTokenIndexedFreeBalanceIncrements(
   appInstance: AppInstance,
-  provider: providers.JsonRpcProvider,
+  network: NetworkContext,
   encodedOutcomeOverride: string = "",
   log?: ILoggerService,
 ): Promise<TokenIndexedCoinTransferMap> {
@@ -83,7 +103,10 @@ export async function computeTokenIndexedFreeBalanceIncrements(
   const checkpoint = Date.now();
   if (!encodedOutcomeOverride || encodedOutcomeOverride === "") {
     try {
-      encodedOutcomeOverride = await appInstance.computeOutcomeWithCurrentState(provider);
+      encodedOutcomeOverride = await appInstance.computeOutcomeWithCurrentState(
+        network.provider,
+        getPureBytecode(appInstance.appDefinition, network.contractAddresses),
+      );
     } catch (e) {
       throw new Error(`Unable to compute outcome: ${e.stack || e.message}`);
     }

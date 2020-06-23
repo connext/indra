@@ -1,4 +1,3 @@
-import * as connext from "@connext/client";
 import { ERC20 } from "@connext/contracts";
 import { getLocalStore } from "@connext/store";
 import { ConnextClientStorePrefix, EventNames } from "@connext/types";
@@ -53,10 +52,8 @@ const WITHDRAW_ESTIMATED_GAS = toBN("300000");
 const DEPOSIT_ESTIMATED_GAS = toBN("25000");
 const MAX_CHANNEL_VALUE = Currency.DAI("30");
 
-// it is important to add a default payment
-// profile on initial load in the case the
-// user is being paid without depositing, or
-// in the case where the user is redeeming a link
+// change to use token with custom decimals
+export const TOKEN_DECIMALS = 18;
 
 const style = withStyles((theme) => ({
   paper: {
@@ -212,7 +209,7 @@ class App extends React.Component {
       }
 
       const { privateKey } = Wallet.fromMnemonic(mnemonic);
-      channel = await connext.connect({
+      channel = await (await import(`@connext/client`)).connect({
         ethProviderUrl: urls.ethProviderUrl,
         signer: privateKey,
         logLevel: LOG_LEVEL,
@@ -237,7 +234,7 @@ class App extends React.Component {
         }
         cleanWalletConnect();
       });
-      channel = await connext.connect({
+      channel = await (await import(`@connext/client`)).connect({
         ethProviderUrl: urls.ethProviderUrl,
         logLevel: LOG_LEVEL,
         channelProvider,

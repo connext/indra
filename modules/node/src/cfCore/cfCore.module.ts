@@ -2,7 +2,6 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ChannelRepository } from "../channel/channel.repository";
 import { SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
 import { WithdrawCommitmentRepository } from "../withdrawCommitment/withdrawCommitment.repository";
@@ -32,7 +31,6 @@ import { CacheModule } from "../caching/cache.module";
     MessagingModule,
     TypeOrmModule.forFeature([
       CFCoreRecordRepository,
-      AppRegistryRepository,
       ChannelRepository,
       AppInstanceRepository,
       ConditionalTransactionCommitmentRepository,

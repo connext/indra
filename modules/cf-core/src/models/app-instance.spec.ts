@@ -4,6 +4,7 @@ import { constants, utils } from "ethers";
 
 import { AppInstance } from "./app-instance";
 import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
+import { expect } from "../testing/assertions";
 
 const { AddressZero, Zero } = constants;
 const { getAddress } = utils;
@@ -21,9 +22,9 @@ describe("AppInstance", () => {
       /* responderDeposit */ "0",
       /* responderDepositAssetId */ AddressZero,
       /* abiEncodings */ {
-          stateEncoding: "tuple(address foo, uint256 bar)",
-          actionEncoding: undefined,
-        },
+        stateEncoding: "tuple(address foo, uint256 bar)",
+        actionEncoding: undefined,
+      },
       /* appDefinition */ getAddress(getRandomAddress()),
       /* appSeqNo */ Math.ceil(Math.random() * 2e10),
       /* latestState */ { foo: getRandomAddress(), bar: 0 },
@@ -38,12 +39,12 @@ describe("AppInstance", () => {
       },
       /* meta */ undefined,
       /* latestAction */ undefined,
-    )
+    );
 
-    expect(appInstance).not.toBe(null);
-    expect(appInstance).not.toBe(undefined);
-    expect(appInstance.initiatorIdentifier).toBe(participants[0]);
-    expect(appInstance.responderIdentifier).toBe(participants[1]);
+    expect(appInstance).not.eq(null);
+    expect(appInstance).not.eq(undefined);
+    expect(appInstance.initiatorIdentifier).eq(participants[0]);
+    expect(appInstance.responderIdentifier).eq(participants[1]);
 
     // TODO: moar tests pl0x
   });

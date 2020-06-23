@@ -3,7 +3,6 @@ import { deBigNumberifyJson } from "@connext/utils";
 
 import { CFCore } from "../../cfCore";
 
-import { toBeLt } from "../bignumber-jest-matcher";
 import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
@@ -13,10 +12,7 @@ import {
   getProposedAppInstances,
   makeProposeCall,
 } from "../utils";
-
-expect.extend({ toBeLt });
-
-const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+import { expect } from "../assertions";
 
 async function assertEqualProposedApps(
   nodeA: CFCore,
@@ -26,14 +22,14 @@ async function assertEqualProposedApps(
 ): Promise<void> {
   const proposedA = await getProposedAppInstances(nodeA, multisigAddress);
   const proposedB = await getProposedAppInstances(nodeB, multisigAddress);
-  expect(proposedB.length).toEqual(proposedA.length);
-  expect(proposedB.length).toEqual(expectedAppIds.length);
-  expect(proposedA).toEqual(proposedB);
+  expect(proposedB.length).to.be.eq(proposedA.length);
+  expect(proposedB.length).to.be.eq(expectedAppIds.length);
+  expect(proposedA).to.deep.eq(proposedB);
   // check each appID
   for (const id of expectedAppIds) {
     const appA = await getAppInstanceJson(nodeA, id, multisigAddress);
     const appB = await getAppInstanceJson(nodeB, id, multisigAddress);
-    expect(appA).toEqual(appB);
+    expect(appA).to.deep.eq(appB);
   }
 }
 
@@ -51,7 +47,9 @@ describe("Node method follows spec - propose install", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
     });
 
-    it("propose install an app with eth and a meta", async (done: jest.DoneCallback) => {
+    it("propose install an app with eth and a meta", async () => {
+      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+
       const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const params = {
         ...(rpc.parameters as MethodParams.ProposeInstall),
@@ -91,7 +89,6 @@ describe("Node method follows spec - propose install", () => {
         }
       });
       await assertEqualProposedApps(nodeA, nodeB, multisigAddress, [appId] as string[]);
-      done();
     });
   });
 });

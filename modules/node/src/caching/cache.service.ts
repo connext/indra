@@ -43,7 +43,6 @@ export class CacheService {
       return undefined;
     }
     await this.redis.set(key, JSON.stringify(ser.toJSON(val)), "EX", expiry);
-    console.log("ser.toJSON(val): ", ser.toJSON(val));
     return ser.toJSON(val);
   }
 

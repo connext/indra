@@ -13,6 +13,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
+
 import { HashlockTransferRepository } from "./hashlockTransfer.repository";
 
 const { HashZero } = constants;
@@ -96,6 +97,7 @@ export class HashLockTransferService {
       lockHash,
       this.cfCoreService.cfCore.signerAddress,
       assetId,
+      this.cfCoreService.getAppInfoByName(HashLockTransferAppName).appDefinitionAddress,
     );
     this.log.info(`findSenderAppByLockHash ${lockHash} completed: ${JSON.stringify(app)}`);
     return app;
@@ -112,6 +114,7 @@ export class HashLockTransferService {
       lockHash,
       this.cfCoreService.cfCore.signerAddress,
       assetId,
+      this.cfCoreService.getAppInfoByName(HashLockTransferAppName).appDefinitionAddress,
     );
     this.log.info(`findReceiverAppByLockHash ${lockHash} completed: ${JSON.stringify(app)}`);
     return app;

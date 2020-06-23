@@ -47,8 +47,8 @@ export const normalizeSignedTransferAppState = (
 @Injectable()
 export class SignedTransferService {
   constructor(
-    private readonly cfCoreService: CFCoreService,
     private readonly log: LoggerService,
+    private readonly cfCoreService: CFCoreService,
     private readonly signedTransferRepository: SignedTransferRepository,
   ) {
     this.log.setContext("SignedTransferService");
@@ -74,6 +74,7 @@ export class SignedTransferService {
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndReceiver(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
+      this.cfCoreService.getAppInfoByName(SimpleSignedTransferAppName).appDefinitionAddress,
     );
     const result = normalizeSignedTransferAppState(app);
     this.log.info(`findSenderAppByPaymentId ${paymentId} completed: ${JSON.stringify(result)}`);
@@ -86,6 +87,7 @@ export class SignedTransferService {
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndSender(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
+      this.cfCoreService.getAppInfoByName(SimpleSignedTransferAppName).appDefinitionAddress,
     );
     const result = normalizeSignedTransferAppState(app);
     this.log.info(`findReceiverAppByPaymentId ${paymentId} completed: ${JSON.stringify(result)}`);

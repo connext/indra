@@ -3,6 +3,7 @@ import { Wallet, providers, utils } from "ethers";
 
 import { deployTestArtifactsToChain } from "./contracts";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY, C_PRIVATE_KEY } from "./test-constants.jest";
+import { stringify } from "@connext/utils";
 
 const { parseEther } = utils;
 
@@ -21,7 +22,7 @@ const fundAddress = async (to: string, ethProvider: providers.JsonRpcProvider): 
   await ethProvider.waitForTransaction(tx.hash);
 };
 
-export default async function globalSetup(): Promise<void> {
+async function globalSetup(): Promise<void> {
   const ethProvider = new providers.JsonRpcProvider(env.ETHPROVIDER_URL) as any;
   const fundedAccount = Wallet.createRandom().connect(ethProvider);
   const addresses = [A_PRIVATE_KEY, B_PRIVATE_KEY, C_PRIVATE_KEY].map(
@@ -37,3 +38,9 @@ export default async function globalSetup(): Promise<void> {
     throw new Error(`Oops didn't set: ${JSON.stringify(global["contracts"])}`);
   }
 }
+
+export const mochaHooks = {
+  async beforeAll() {
+    await globalSetup();
+  },
+};

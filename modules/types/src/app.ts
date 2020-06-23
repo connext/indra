@@ -10,33 +10,34 @@ import {
 // App Instances
 
 export type AppABIEncodings = {
-  stateEncoding: ABIEncoding;
   actionEncoding: ABIEncoding | undefined;
+  stateEncoding: ABIEncoding;
 };
 
 export type AppInstanceJson = {
-  multisigAddress: Address;
-  identityHash: HexString;
-  initiatorIdentifier: PublicIdentifier;
-  responderIdentifier: PublicIdentifier;
-  initiatorDeposit: DecString;
-  initiatorDepositAssetId: AssetId;
-  responderDeposit: DecString;
-  responderDepositAssetId: AssetId;
   abiEncodings: AppABIEncodings;
   appDefinition: Address;
   appSeqNo: number;
+  bytecode?: HexString;
   defaultTimeout: HexString;
-  stateTimeout: HexString;
+  identityHash: HexString;
+  initiatorDeposit: DecString;
+  initiatorDepositAssetId: AssetId;
+  initiatorIdentifier: PublicIdentifier;
+  latestAction?: any;
   latestState: any;
   latestVersionNumber: number;
-  outcomeType: OutcomeType;
   meta?: any;
-  latestAction?: any;
+  multisigAddress: Address;
   outcomeInterpreterParameters:
     | TwoPartyFixedOutcomeInterpreterParamsJson
     | MultiAssetMultiPartyCoinTransferInterpreterParamsJson
     | SingleAssetTwoPartyCoinTransferInterpreterParamsJson;
+  outcomeType: OutcomeType;
+  responderDeposit: DecString;
+  responderDepositAssetId: AssetId;
+  responderIdentifier: PublicIdentifier;
+  stateTimeout: HexString;
 };
 
 ////////////////////////////////////
@@ -46,8 +47,8 @@ export type DefaultApp = {
   actionEncoding?: ABIEncoding;
   allowNodeInstall: boolean;
   appDefinitionAddress: Address;
-  name: string;
   chainId: number;
+  name: string;
   outcomeType: OutcomeType;
   stateEncoding: ABIEncoding;
 };
