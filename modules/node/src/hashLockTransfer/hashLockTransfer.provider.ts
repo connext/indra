@@ -14,7 +14,7 @@ import { HashLockTransferService } from "./hashLockTransfer.service";
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { ConfigService } from "../config/config.service";
 
-const { AddressZero } = constants;
+const { AddressZero, HashZero } = constants;
 
 export class HashLockTransferMessaging extends AbstractMessagingProvider {
   constructor(
