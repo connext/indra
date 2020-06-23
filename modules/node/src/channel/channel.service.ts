@@ -227,7 +227,7 @@ export class ChannelService {
         decimals = await token.decimals();
       } catch (e) {
         this.log.error(
-          `Could not retrieve decimals from token, proceeding with decimals = 18... Error: ${e.message}`,
+          `Could not retrieve decimals from token ${assetId}, proceeding with decimals = ${DEFAULT_DECIMALS}: ${e.message}`,
         );
       }
       if (decimals !== DEFAULT_DECIMALS) {

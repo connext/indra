@@ -14,7 +14,7 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { StateChannel, FreeBalanceClass, AppInstance } from "../models";
 import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 
-import { stateChannelClassFromStoreByMultisig, assertIsValidSignature } from "./utils";
+import { stateChannelClassFromStoreByMultisig, assertIsValidSignature, getPureBytecode } from "./utils";
 import { ConditionalTransactionCommitment, SetStateCommitment } from "../ethereum";
 
 const protocol = ProtocolNames.sync;
@@ -31,7 +31,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     const {
       message,
       store,
-      network: { provider },
+      network: { contractAddresses, provider },
     } = context;
     const log = context.log.newContext("CF-SyncProtocol");
     const start = Date.now();
@@ -290,7 +290,14 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
             // update the app
             postSyncStateChannel.setState(
               app,
-              await app.computeStateTransition(responderApp.latestAction, provider),
+              await app.computeStateTransition(
+                responderApp.latestAction,
+                provider,
+                getPureBytecode(
+                  app.appDefinition,
+                  contractAddresses,
+                ),
+              ),
               commitment.stateTimeout,
             );
 
@@ -339,7 +346,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     const {
       message,
       store,
-      network: { provider },
+      network: { contractAddresses, provider },
       preProtocolStateChannel,
     } = context;
     const { params, processID } = message;
@@ -584,7 +591,14 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
             // update the app
             postSyncStateChannel.setState(
               app,
-              await app.computeStateTransition(initiatorApp!.latestAction, provider),
+              await app.computeStateTransition(
+                initiatorApp!.latestAction,
+                provider,
+                getPureBytecode(
+                  app.appDefinition,
+                  contractAddresses,
+                ),
+              ),
               commitment.stateTimeout,
             );
 

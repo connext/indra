@@ -1,4 +1,3 @@
-import { constants, utils } from "ethers";
 import { DEFAULT_APP_TIMEOUT } from "@connext/apps";
 import {
   ConditionalTransferTypes,
@@ -15,6 +14,7 @@ import {
   HashLockTransferAppState,
 } from "@connext/types";
 import { toBN, stringify } from "@connext/utils";
+import { constants, utils } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 

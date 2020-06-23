@@ -5,10 +5,11 @@ import { MemoryLockService } from "./testing/services/memory-lock-service";
 
 import { CFCore } from "./cfCore";
 import { memoryMessagingService } from "./testing/services";
+import { expect } from "./testing/assertions";
 
 describe("CFCore", () => {
   it("is defined", () => {
-    expect(CFCore).toBeDefined();
+    expect(CFCore).to.be.ok;
   });
 
   it("can be created", async () => {
@@ -26,6 +27,6 @@ describe("CFCore", () => {
       new MemoryLockService(),
     );
 
-    expect(node).toBeDefined();
+    expect(node).to.be.ok;
   });
 });
