@@ -32,8 +32,8 @@
     "uuid": "8.1.0"
   },
   "devDependencies": {
-    "@babel/core": "7.10.3",
-    "@babel/plugin-proposal-object-rest-spread": "7.10.3",
+    "@babel/core": "7.10.2",
+    "@babel/plugin-proposal-object-rest-spread": "7.10.1",
     "@connext/store": "7.0.0-alpha.4-experimental",
     "@types/chai": "4.2.11",
     "@types/dotenv-safe": "8.1.0",
@@ -46,13 +46,13 @@
     "jest": "26.0.1",
     "jest-cli": "26.0.1",
     "jest-dot-reporter": "1.0.14",
-    "rollup": "2.18.0",
+    "rollup": "2.17.1",
     "rollup-plugin-babel": "4.4.0",
     "rollup-plugin-commonjs": "10.1.0",
     "rollup-plugin-json": "4.0.0",
     "rollup-plugin-node-resolve": "5.2.0",
     "rollup-plugin-typescript2": "0.27.1",
-    "ts-jest": "26.1.1",
+    "ts-jest": "26.1.0",
     "ts-mockito": "2.6.1",
     "typescript": "3.9.5"
   }
