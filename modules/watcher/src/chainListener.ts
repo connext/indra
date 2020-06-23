@@ -182,8 +182,7 @@ export class ChainListener implements IChainListener {
     callback: (data: ChallengeEventData[T]) => Promise<void>,
     providedFilter?: (data: ChallengeEventData[T]) => boolean,
     ctx?: Ctx<ChallengeEventData[T]>,
-    timeout?: number,
-  ): Promise<ChallengeEventData[T]> {
+  ): void {
     const filter = (data: ChallengeEventData[T]) => {
       if (providedFilter) {
         return providedFilter(data);
@@ -192,9 +191,10 @@ export class ChainListener implements IChainListener {
     };
     const addToEvt = (evt: Evt<ChallengeEventData[T]>) => {
       if (!ctx) {
-        return evt.attachOnce(filter, timeout || 60_000, callback);
+        evt.attachOnce(filter, callback);
+        return;
       }
-      return evt.attachOnce(filter, ctx, timeout || 60_000, callback);
+      evt.attachOnce(filter, ctx, callback);
     };
     return addToEvt(
       event === ChallengeEvents.ChallengeUpdated
@@ -217,9 +217,9 @@ export class ChainListener implements IChainListener {
     };
     const addToEvt = (evt: Evt<ChallengeEventData[T]>) => {
       if (!ctx) {
-        return evt.waitFor(filter, timeout || 60_000);
+        return evt.waitFor(filter, timeout);
       }
-      return evt.waitFor(filter, ctx, timeout || 60_000);
+      return evt.waitFor(filter, ctx, timeout);
     };
     return addToEvt(
       event === ChallengeEvents.ChallengeUpdated

@@ -23,7 +23,7 @@ import {
 } from "./utils";
 
 import { Watcher } from "../src";
-import { ChannelSigner, getRandomAddress, toBN } from "@connext/utils";
+import { ChannelSigner, getRandomAddress, toBN, ColorfulLogger } from "@connext/utils";
 import { initiateDispute } from "./utils/initiateDispute";
 import { cancelDispute } from "./utils/cancelDispute";
 import { waitForSetOutcome } from "./utils/setOutcome";
@@ -101,7 +101,6 @@ describe("Watcher.initiate", () => {
 
   afterEach(async () => {
     await watcher.disable();
-    await store.clear();
   });
 
   it("should be able to initiate + complete a dispute with a double signed latest state", async () => {
@@ -147,13 +146,13 @@ describe("Watcher.initiate", () => {
     });
     await initiateDispute(activeApps[0], freeBalance, watcher, store, networkContext, true);
     await waitForSetOutcome(
-      [app.identityHash, freeBalance.identityHash],
+      [activeApps[0].identityHash, freeBalance.identityHash],
       watcher,
       store,
       networkContext,
     );
     await waitForDisputeCompletion(
-      [app.identityHash, freeBalance.identityHash],
+      [activeApps[0].identityHash, freeBalance.identityHash],
       watcher,
       store,
       networkContext,
@@ -199,7 +198,6 @@ describe("Watcher.cancel", () => {
 
   afterEach(async () => {
     await watcher.disable();
-    await store.clear();
   });
 
   it("should work if in onchain state progression phase", async () => {
@@ -223,12 +221,19 @@ describe("Watcher.cancel", () => {
     await initiateDispute(app, freeBalance, watcher, store, networkContext);
 
     // cancel the challenge with failure flag
-    await cancelDispute(app, watcher, store, `revert`);
+    await cancelDispute(
+      app,
+      watcher,
+      store,
+      `cancelDispute called on challenge that cannot be cancelled`,
+    );
   });
 
   it("should fail if outcome is set", async () => {
     // set and progress state
     await initiateDispute(app, freeBalance, watcher, store, networkContext, true);
+
+    await mineBlock(provider);
 
     // wait for outcome
     await waitForSetOutcome(
@@ -239,7 +244,12 @@ describe("Watcher.cancel", () => {
     );
 
     // cancel the challenge with failure flag
-    await cancelDispute(app, watcher, store, `revert`);
+    await cancelDispute(
+      app,
+      watcher,
+      store,
+      `cancelDispute called on challenge that cannot be cancelled`,
+    );
   });
 });
 
@@ -284,7 +294,6 @@ describe("Watcher responses", () => {
 
   afterEach(async () => {
     await watcher.disable();
-    await store.clear();
   });
 
   it("should respond with `setState` if it has a higher nonced state", async () => {

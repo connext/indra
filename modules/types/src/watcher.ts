@@ -179,8 +179,7 @@ export interface IChainListener {
     callback: (data: ChallengeEventData[T]) => Promise<void>,
     providedFilter?: (data: ChallengeEventData[T]) => boolean,
     ctx?: Ctx<ChallengeEventData[T]>,
-    timeout?: number,
-  ): Promise<ChallengeEventData[T]>;
+  ): void;
 
   waitFor<T extends ChallengeEvent>(
     event: T,

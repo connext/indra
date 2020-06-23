@@ -6,9 +6,8 @@ import {
   ChallengeStatus,
   ChallengeCompletedEventData,
   ChallengeOutcomeSetEventData,
-  SetStateCommitmentJSON,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
+import { toBN, delay } from "@connext/utils";
 import { constants } from "ethers";
 
 import { expect } from ".";
@@ -40,6 +39,11 @@ export const initiateDispute = async (
   const empty = await store.getAppChallenge(app.identityHash);
   expect(empty).to.be.undefined;
 
+  // Get expected values for free balance and app
+  const appSetState = callSetAndProgress
+    ? await app.getSingleSignedSetState(networkContext.ChallengeRegistry)
+    : await app.getDoubleSignedSetState(networkContext.ChallengeRegistry);
+
   // Initiate dispute and catch all watcher events
   const matchesId = (data: any, id: string = app.identityHash) => {
     const emitted = data["identityHash"] || data["appInstanceId"];
@@ -62,8 +66,20 @@ export const initiateDispute = async (
       // calls `setAndProgress` and should emit two ChallengeUpdated events
       // as well as one StateProgressed event
       const events = await Promise.all([
-        watcher.waitFor(WatcherEvents.ChallengeUpdatedEvent, EVENT_TIMEOUT, matchesId),
-        watcher.waitFor(WatcherEvents.ChallengeUpdatedEvent, EVENT_TIMEOUT, matchesId),
+        watcher.waitFor(
+          WatcherEvents.ChallengeUpdatedEvent,
+          EVENT_TIMEOUT,
+          (data) =>
+            matchesId(data, app.identityHash) &&
+            data.versionNumber.eq(toBN(appSetState.versionNumber)),
+        ),
+        watcher.waitFor(
+          WatcherEvents.ChallengeUpdatedEvent,
+          EVENT_TIMEOUT,
+          (data) =>
+            matchesId(data, app.identityHash) &&
+            data.versionNumber.eq(toBN(appSetState.versionNumber).sub(1)),
+        ),
         watcher.waitFor(WatcherEvents.StateProgressedEvent, EVENT_TIMEOUT, matchesId),
       ]);
       const sorted = events.sort((a, b) => a.versionNumber.sub(b.versionNumber).toNumber());
@@ -79,14 +95,12 @@ export const initiateDispute = async (
     watcher.initiate(app.identityHash),
   ]);
 
+  await delay(1000);
+
   // Verify watcher return values
   expect(watcherReturn.freeBalanceChallenge.transactionHash).to.be.ok;
   expect(watcherReturn.appChallenge.transactionHash).to.be.ok;
 
-  // Get expected values for free balance and app
-  const appSetState: SetStateCommitmentJSON = callSetAndProgress
-    ? await app.getSingleSignedSetState(networkContext.ChallengeRegistry)
-    : await app.getDoubleSignedSetState(networkContext.ChallengeRegistry);
   const status = app.isStateTerminal()
     ? ChallengeStatus.EXPLICITLY_FINALIZED
     : callSetAndProgress
@@ -99,10 +113,9 @@ export const initiateDispute = async (
 
   // get expected free balance values
   const fbSetState = await freeBalance.getSetState();
-  const fbFinalizesAt = freeBalance.stateTimeout.add(
-    await networkContext.provider.getBlockNumber(),
-  );
-  // .sub(1);
+  const fbFinalizesAt = toBN(await networkContext.provider.getBlockNumber())
+    .add(freeBalance.stateTimeout)
+    .sub(1); // ganache-trickery from 2 tx sends
 
   const expected = {
     [app.identityHash]: {
@@ -162,14 +175,17 @@ export const initiateDispute = async (
     } else {
       // called `setAndProgressState` in dispute path for appId
       // emitted events are sorted by version number from low - high
-      expect(challengeUpdated.length).to.be.eq(2);
-      expect(challengeUpdated[0]).to.containSubset({
+      const sorted = challengeUpdated.sort((a, b) =>
+        toBN(a.versionNumber).sub(toBN(b.versionNumber)).toNumber(),
+      );
+      expect(sorted.length).to.be.eq(2);
+      expect(sorted[0]).to.containSubset({
         status: ChallengeStatus.IN_DISPUTE,
         identityHash: appId,
         versionNumber: toBN(expected[appId].versionNumber).sub(1),
       });
-      await verifyStateProgressedEvent(app, stateProgressed as any, networkContext);
-      expect(challengeUpdated[1]).to.containSubset(expected[appId]);
+      await verifyStateProgressedEvent(app, stateProgressed[0], networkContext);
+      expect(sorted[1]).to.containSubset(expected[appId]);
     }
   }
   return;

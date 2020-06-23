@@ -11,6 +11,7 @@ modules/*/package-lock.json
 
 # Cache
 **/.bot-store
+**/.connext-store/**
 **/.buidler
 **/.cache
 **/.config

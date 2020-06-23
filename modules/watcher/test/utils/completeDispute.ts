@@ -3,7 +3,7 @@ import {
   IWatcherStoreService,
   WatcherEvents,
   ChallengeCompletedEventData,
-  ChallengeCompletionFailedEventData,
+  StoredAppChallengeStatus,
 } from "@connext/types";
 import { TestNetworkContext, expect } from ".";
 import { mineBlock } from "./contracts";
@@ -25,20 +25,13 @@ export const waitForDisputeCompletion = async (
     return emitted && emitted === id;
   };
   const [completed] = await Promise.all([
-    new Promise(async (resolve, reject) => {
-      watcher.once(
-        WatcherEvents.ChallengeCompletionFailedEvent,
-        async (data: ChallengeCompletionFailedEventData) => reject(data),
-      );
-      const evts = await Promise.all(
-        appIds.map((id) =>
-          watcher.waitFor(WatcherEvents.ChallengeCompletedEvent, 10_000, (data) =>
-            matchesId(data, id),
-          ),
+    Promise.all(
+      appIds.map((id) =>
+        watcher.waitFor(WatcherEvents.ChallengeCompletedEvent, 10_000, (data) =>
+          matchesId(data, id),
         ),
-      );
-      return resolve(evts);
-    }),
+      ),
+    ),
     mineBlock(networkContext.provider),
   ]);
 
@@ -46,7 +39,10 @@ export const waitForDisputeCompletion = async (
     // Verify stored challenge
     const expected = stored.find((c) => c?.identityHash === id);
     const challenge = await store.getAppChallenge(id);
-    expect(challenge).to.containSubset(expected);
+    expect(challenge).to.containSubset({
+      ...expected,
+      status: StoredAppChallengeStatus.CONDITIONAL_SENT,
+    });
 
     // Verify emitted events
     const evt = (completed as ChallengeCompletedEventData[]).find((c) => c.appInstanceId === id);

@@ -36,6 +36,7 @@ import {
   toBN,
   stringify,
   bigNumberifyJson,
+  delay,
 } from "@connext/utils";
 import { Contract, providers, constants, utils } from "ethers";
 
@@ -55,6 +56,11 @@ const { Interface, defaultAbiCoder } = utils;
 
 type EvtContainer = {
   [event in WatcherEvent]: Evt<WatcherEventData[WatcherEvent]>;
+};
+
+const getRandomJitter = (max: number = 500): number => {
+  // returns jitter between 0 and max
+  return Math.floor(Math.random() * (max + 1));
 };
 
 export class Watcher implements IWatcher {
@@ -210,6 +216,7 @@ export class Watcher implements IWatcher {
 
     this.log.debug(`Disabling listener`);
     await this.listener.disable();
+    this.off();
 
     this.enabled = false;
     this.log.info(`Watcher disabled`);
@@ -263,7 +270,7 @@ export class Watcher implements IWatcher {
       }
       return true;
     };
-    return this.evts[event as any].waitFor(filter, timeout || 60_000);
+    return this.evts[event as any].waitFor(filter, timeout);
   }
 
   public off(): void {
@@ -307,6 +314,7 @@ export class Watcher implements IWatcher {
     this.listener.attach(
       ChallengeEvents.ChallengeUpdated,
       async (event: ChallengeUpdatedEventPayload) => {
+        await delay(getRandomJitter());
         await this.processChallengeUpdated(event);
         // parrot listener event
         this.emit(WatcherEvents.ChallengeUpdatedEvent, event);
@@ -317,6 +325,7 @@ export class Watcher implements IWatcher {
       async (event: StateProgressedEventPayload) => {
         // add events to store + process
         await this.processStateProgressed(event);
+        // parrot listener event
         this.emit(WatcherEvents.StateProgressedEvent, event);
       },
     );
@@ -390,9 +399,16 @@ export class Watcher implements IWatcher {
   private processChallengeUpdated = async (event: ChallengeUpdatedEventPayload) => {
     this.log.info(`Processing challenge updated event: ${stringify(event)}`);
     await this.store.createChallengeUpdatedEvent(event);
+    const existing = await this.store.getAppChallenge(event.identityHash);
+    if (
+      existing &&
+      toBN(existing.versionNumber).gt(event.versionNumber) &&
+      !toBN(event.versionNumber).isZero()
+    ) {
+      return;
+    }
     await this.store.saveAppChallenge(event);
-    const challenge = await this.store.getAppChallenge(event.identityHash);
-    this.log.debug(`Saved challenge to store: ${stringify(challenge)}`);
+    this.log.debug(`Saved challenge to store: ${stringify(event)}`);
   };
 
   private respondToChallenge = async (
@@ -654,12 +670,12 @@ export class Watcher implements IWatcher {
         params: { setup, channel },
       });
     } else {
+      await this.updateChallengeStatus(StoredAppChallengeStatus.CONDITIONAL_SENT, challenge!);
       this.emit(WatcherEvents.ChallengeCompletedEvent, {
         appInstanceId: channel!.freeBalanceAppInstance!.identityHash,
         transaction: response as providers.TransactionReceipt,
         multisigAddress: channel.multisigAddress,
       });
-      await this.updateChallengeStatus(StoredAppChallengeStatus.CONDITIONAL_SENT, challenge!);
     }
     return response;
   };
@@ -682,14 +698,14 @@ export class Watcher implements IWatcher {
         params: { conditional, app, channel },
       });
     } else {
+      // update challenge of app and free balance
+      const appChallenge = await this.store.getAppChallenge(app.identityHash);
+      await this.updateChallengeStatus(StoredAppChallengeStatus.CONDITIONAL_SENT, appChallenge!);
       this.emit(WatcherEvents.ChallengeCompletedEvent, {
         appInstanceId: app.identityHash,
         transaction: response as providers.TransactionReceipt,
         multisigAddress: channel.multisigAddress,
       });
-      // update challenge of app and free balance
-      const appChallenge = await this.store.getAppChallenge(app.identityHash);
-      await this.updateChallengeStatus(StoredAppChallengeStatus.CONDITIONAL_SENT, appChallenge!);
     }
     return response;
   };

@@ -14,10 +14,7 @@ export const waitForSetOutcome = async (
   store: IWatcherStoreService,
   networkContext: TestNetworkContext,
 ) => {
-  // Get stored challenges before setting outcome
-  const stored = await (await Promise.all(appIds.map((id) => store.getAppChallenge(id)))).filter(
-    (x) => !!x,
-  );
+  const stored = await Promise.all(appIds.map((id) => store.getAppChallenge(id)));
 
   // Wait for the outcome to be set
   const matchesId = (data: any, id: string) => {
@@ -27,33 +24,27 @@ export const waitForSetOutcome = async (
   const EVENT_TIMEOUT = 10_000;
 
   // Get all outcome set and challenge updated events
-  const [outcomeSet, challengeUpdated] = await Promise.all([
-    Promise.all([
-      new Promise((_, reject) =>
-        watcher.once(WatcherEvents.ChallengeOutcomeFailedEvent, async () =>
-          reject("Failed to set outcome"),
-        ),
+  const events = ((await Promise.all([
+    ...appIds.map((id) =>
+      watcher.waitFor(WatcherEvents.ChallengeOutcomeSetEvent, EVENT_TIMEOUT, (data) =>
+        matchesId(data, id),
       ),
-      ...appIds.map((id) =>
-        watcher.waitFor(WatcherEvents.ChallengeOutcomeSetEvent, EVENT_TIMEOUT, (data) =>
-          matchesId(data, id),
-        ),
-      ),
-    ]),
-    Promise.all(
-      appIds.map((id) =>
-        watcher.waitFor(WatcherEvents.ChallengeUpdatedEvent, EVENT_TIMEOUT, (data) =>
-          matchesId(data, id),
-        ),
+    ),
+    ...appIds.map((id) =>
+      watcher.waitFor(WatcherEvents.ChallengeUpdatedEvent, EVENT_TIMEOUT, (data) =>
+        matchesId(data, id),
       ),
     ),
     mineBlock(networkContext.provider),
-  ]);
-
+  ])) as unknown) as any;
+  const outcomeSet = events.filter((e) => e && e["transaction"]);
+  const challengeUpdated = events.filter((e) => e && e["appStateHash"]);
   for (const id of appIds) {
     // Verify stored challenge
+    const existing = stored.find((c) => c && c.identityHash === id);
+    expect(existing).to.be.ok;
     const expected = {
-      ...stored.find((challenge) => challenge?.identityHash === id)!,
+      ...existing!,
       status: ChallengeStatus.OUTCOME_SET,
     };
     const updated = await store.getAppChallenge(id);
@@ -63,9 +54,10 @@ export const waitForSetOutcome = async (
     const events = await store.getChallengeUpdatedEvents(id);
     const event = events.find(
       (e) =>
-        e.versionNumber.eq(toBN(expected.versionNumber)) &&
+        toBN(e.versionNumber).eq(toBN(expected.versionNumber)) &&
         e.status === ChallengeStatus.OUTCOME_SET,
     );
+    expect(event).to.be.ok;
     expect(event).to.containSubset(expected);
 
     // Verify emitted events
