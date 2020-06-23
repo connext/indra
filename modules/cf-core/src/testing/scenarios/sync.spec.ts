@@ -24,7 +24,7 @@ import {
   uninstallApp,
 } from "../utils";
 import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
-import { deBigNumberifyJson, ChannelSigner, stringify, delay } from "@connext/utils";
+import { deBigNumberifyJson, ChannelSigner, bigNumberifyJson } from "@connext/utils";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import { TestContractAddresses } from "../contracts";
 import { MemoryLockService } from "../services";
@@ -34,7 +34,7 @@ import { expect } from "../assertions";
 
 const { isHexString } = utils;
 
-describe.skip("Sync", () => {
+describe("Sync", () => {
   let multisigAddress: string;
   let nodeA: CFCore;
   let nodeB: CFCore;
@@ -196,10 +196,10 @@ describe.skip("Sync", () => {
       ]);
 
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      expect(eventData).to.deep.eq({
+      expect(bigNumberifyJson(eventData)).to.deep.include({
         from: nodeB.publicIdentifier,
         type: EventNames.SYNC,
-        data: { syncedChannel: expectedChannel },
+        data: { syncedChannel: bigNumberifyJson(expectedChannel) },
       });
       expect(syncedChannel).to.deep.eq(expectedChannel!);
       await (newNodeB as CFCore).rpcRouter.dispatch(
