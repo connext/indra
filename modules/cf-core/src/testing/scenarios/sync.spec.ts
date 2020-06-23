@@ -256,11 +256,16 @@ describe("Sync", () => {
   });
 
   describe("Sync::propose + rejectInstall", () => {
-    let proposedAppIdentityHash: string;
     beforeEach(async () => {
       const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       // propose-specific setup
-      messagingServiceA = new MemoryMessagingServiceWithLimits(sharedEventEmitter, 0, "propose");
+      messagingServiceA = new MemoryMessagingServiceWithLimits(
+        sharedEventEmitter,
+        0,
+        "propose",
+        undefined,
+        "A-Initial",
+      );
       nodeA = await CFCore.create(
         messagingServiceA,
         storeServiceA,
@@ -278,7 +283,7 @@ describe("Sync", () => {
 
       // load stores with proposal
       const rpc = makeProposeCall(nodeA, TicTacToeApp, multisigAddress);
-      const res: any = await new Promise(async (res) => {
+      await new Promise(async (res) => {
         nodeB.once(EventNames.SYNC_FAILED_EVENT, res);
         try {
           await nodeB.rpcRouter.dispatch({
@@ -289,7 +294,6 @@ describe("Sync", () => {
           log.info(`Caught error sending rpc: ${e.message}`);
         }
       });
-      proposedAppIdentityHash = res.data.appInstanceId;
 
       // get expected channel from nodeB
       expect(isHexString(multisigAddress)).to.eq(true);
@@ -299,21 +303,20 @@ describe("Sync", () => {
       expect(expectedChannel!.proposedAppInstances.length).to.eq(1);
       expect(unsynced?.proposedAppInstances.length).to.eq(0);
 
-      console.log("BEFORE REJECT expectedChannel: ", expectedChannel);
       await nodeA.rpcRouter.dispatch({
         methodName: MethodNames.chan_rejectInstall,
         parameters: {
-          appIdentityHash: proposedAppIdentityHash,
+          appIdentityHash: expectedChannel!.proposedAppInstances[0][0],
           multisigAddress,
         } as MethodParams.RejectInstall,
       });
 
       expectedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      console.log("AFTER REJECT expectedChannel: ", expectedChannel);
       expect(expectedChannel!.proposedAppInstances.length).to.eq(0);
     });
 
-    it("sync protocol responder is missing a proposal held by the protocol initiator, sync on startup", async () => {
+    it("sync protocol responder is missing a proposal held by the protocol initiator, sync on startup", async function () {
+      this.timeout(90_000);
       const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve, reject) => {
@@ -321,7 +324,13 @@ describe("Sync", () => {
           nodeB.on(EventNames.SYNC_FAILED_EVENT, () => reject(`Sync failed`));
         }),
         CFCore.create(
-          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+          new MemoryMessagingServiceWithLimits(
+            sharedEventEmitter,
+            undefined,
+            undefined,
+            undefined,
+            "A-Recreated",
+          ),
           storeServiceA,
           global["contracts"],
           nodeConfig,
@@ -329,15 +338,15 @@ describe("Sync", () => {
           channelSignerA,
           lockService,
           0,
-          new Logger("CreateClient", env.logLevel, true, "A"),
+          new Logger("CreateClient", env.logLevel, true, "A-Recreated"),
         ),
       ]);
 
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      expect(eventData).to.deep.eq({
+      expect(bigNumberifyJson(eventData)).to.deep.eq({
         from: nodeA.publicIdentifier,
         type: EventNames.SYNC,
-        data: { syncedChannel: expectedChannel },
+        data: { syncedChannel: bigNumberifyJson(expectedChannel) },
       });
       expect(syncedChannel).to.deep.eq(expectedChannel!);
 
@@ -390,16 +399,16 @@ describe("Sync", () => {
       ]);
 
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      expect(eventData).to.deep.eq({
+      expect(bigNumberifyJson(eventData)).to.deep.eq({
         from: (newNodeB as CFCore).publicIdentifier,
         type: EventNames.SYNC,
-        data: { syncedChannel: expectedChannel },
+        data: { syncedChannel: bigNumberifyJson(expectedChannel) },
       });
       expect(syncedChannel).to.deep.eq(expectedChannel!);
 
       const rpc = makeProposeCall(nodeA, TicTacToeApp, multisigAddress);
       const res: any = await new Promise(async (resolve) => {
-        nodeA.once("PROPOSE_INSTALL_EVENT", resolve);
+        nodeA.once(EventNames.PROPOSE_INSTALL_EVENT, resolve);
         try {
           await (newNodeB as CFCore).rpcRouter.dispatch({
             ...rpc,
