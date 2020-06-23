@@ -16,7 +16,7 @@
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
-    "ethers": "5.0.0-beta.190",
+    "ethers": "5.0.2",
     "eventemitter3": "4.0.4",
     "evt": "1.7.11",
     "sequelize": "5.21.11"

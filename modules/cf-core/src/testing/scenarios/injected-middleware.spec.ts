@@ -12,8 +12,7 @@ import { getCreate2MultisigAddress } from "../../utils";
 
 import { SetupContext, setup } from "../setup";
 import { createChannel, assertMessage } from "../utils";
-
-jest.setTimeout(15_000);
+import { expect } from "../assertions";
 
 describe("injected validation middleware", () => {
   let nodeA: CFCore;
@@ -46,8 +45,8 @@ describe("injected validation middleware", () => {
     };
     nodeA.injectMiddleware(Opcode.OP_VALIDATE, middleware);
     await createChannel(nodeA, nodeB);
-    expect(capturedProtocol!).toBe(ProtocolNames.setup);
-    expect(capturedContext!).toEqual({
+    expect(capturedProtocol!).to.eq(ProtocolNames.setup);
+    expect(capturedContext!).to.deep.eq({
       params: {
         initiatorIdentifier: nodeA.publicIdentifier,
         responderIdentifier: nodeB.publicIdentifier,
@@ -66,7 +65,7 @@ describe("injected validation middleware", () => {
     nodeB.injectMiddleware(Opcode.OP_VALIDATE, middleware);
     await Promise.all([
       new Promise(async (resolve) => {
-        await expect(createChannel(nodeA, nodeB)).rejects.toThrowError(initiatorFailure);
+        await expect(createChannel(nodeA, nodeB)).to.eventually.be.rejectedWith(initiatorFailure);
         resolve();
       }),
       new Promise((resolve) => {
@@ -85,7 +84,7 @@ describe("injected validation middleware", () => {
             },
             ["data.params.multisigAddress", "data.error"],
           );
-          expect(msg.data.error.includes(FAILURE_MESSAGE)).toBe(true);
+          expect(msg.data.error.includes(FAILURE_MESSAGE)).to.eq(true);
           resolve();
         });
       }),
@@ -104,7 +103,7 @@ describe("injected validation middleware", () => {
             },
             ["data.params.multisigAddress", "data.error"],
           );
-          expect(msg.data.error.includes(initiatorFailure)).toBe(true);
+          expect(msg.data.error.includes(initiatorFailure)).to.eq(true);
           resolve();
         });
       }),
