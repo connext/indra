@@ -132,7 +132,9 @@ export class StoreService implements IStoreService {
     return Object.entries(store);
   }
 
-  clear(): Promise<void> {
+  async clear(): Promise<void> {
+    const keys = await this.storage.getKeys();
+    await Promise.all(keys.map((key) => this.storage.removeItem(key)));
     return this.storage.setItem(storeKeys.STORE, {});
   }
 
