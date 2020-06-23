@@ -102,6 +102,7 @@ export type TestMessagingConfig = {
   protocolLimits: ProtocolMessageLimitInputs;
   apiLimits: ApiLimits;
   signer: IChannelSigner;
+  stopOnCeilingReached: boolean;
 };
 
 type InternalMessagingConfig = Omit<TestMessagingConfig, "protocolLimits"> & {
@@ -166,11 +167,12 @@ const defaultOpts = (): TestMessagingConfig => {
     apiLimits: getDefaultApiLimits(),
     protocolLimits: getDefaultProtocolLimits(),
     signer: new ChannelSigner(Wallet.createRandom().privateKey, env.ethProviderUrl),
+    stopOnCeilingReached: false,
   };
 };
 
 export const initApiCounter = (): ApiCounter => {
-  let ret = {};
+  const ret = {};
   Object.keys(MessagingEvents).forEach((key) => {
     ret[key] = 0;
   });
@@ -178,7 +180,7 @@ export const initApiCounter = (): ApiCounter => {
 };
 
 export const initProtocolCounter = (): ProtocolMessageCounter => {
-  let ret = {};
+  const ret = {};
   Object.keys(ProtocolNames).forEach((key) => {
     ret[key] = { [SEND]: 0, [RECEIVED]: 0 };
   });
@@ -195,6 +197,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   private apiCounter: ApiCounter = initApiCounter();
   public providedOptions: Partial<TestMessagingConfig>;
   public options: InternalMessagingConfig;
+  private hasReachedCeiling: boolean = false;
 
   constructor(opts: Partial<TestMessagingConfig>) {
     super();
@@ -315,7 +318,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
         return callback(msg);
       }
       const canContinue = this.incrementProtocolCount(protocol, msg, RECEIVED);
-      if (!canContinue) {
+      if (!canContinue || (this.hasReachedCeiling && this.options.stopOnCeilingReached)) {
         const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached (received). ${stringify(
           this.protocolCounter[protocol],
         )}`;
@@ -349,7 +352,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       return this.connection.send(to, msg);
     }
     const canContinue = this.incrementProtocolCount(protocol, msg, SEND);
-    if (!canContinue) {
+    if (!canContinue || (this.hasReachedCeiling && this.options.stopOnCeilingReached)) {
       const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached (send). ${stringify(
         this.protocolCounter[protocol],
       )}`;
@@ -438,6 +441,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
     const evaluateCeiling = () => {
       if (this.protocolCounter[protocol][apiType] >= ceiling) {
+        this.hasReachedCeiling = true;
         return false;
       }
       this.protocolCounter[protocol][apiType]++;
