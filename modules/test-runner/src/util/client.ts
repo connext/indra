@@ -120,7 +120,10 @@ export const createClientWithMessagingLimits = async (
   const signer = signerOpts || getRandomChannelSigner(env.ethProviderUrl);
   // no defaults specified, exit early
   if (Object.keys(opts).length === 0) {
-    const messaging = new TestMessagingService({ signer: signer as ChannelSigner });
+    const messaging = new TestMessagingService({
+      signer: signer as ChannelSigner,
+      stopOnCeilingReached: opts.stopOnCeilingReached,
+    });
     const emptyCount = { [SEND]: 0, [RECEIVED]: 0 };
     const noLimit = { [SEND]: NO_LIMIT, [RECEIVED]: NO_LIMIT };
     expect(messaging.installCount).to.contain(emptyCount);
@@ -146,7 +149,11 @@ export const createClientWithMessagingLimits = async (
       },
     };
   }
-  const messaging = new TestMessagingService({ ...messageOptions, signer });
+  const messaging = new TestMessagingService({
+    ...messageOptions,
+    signer,
+    stopOnCeilingReached: opts.stopOnCeilingReached,
+  });
   // verification of messaging settings
   const expectedCount = {
     [SEND]: 0,
