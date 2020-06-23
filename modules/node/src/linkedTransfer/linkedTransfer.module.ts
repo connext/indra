@@ -1,7 +1,6 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { AuthModule } from "../auth/auth.module";
 import { CFCoreModule } from "../cfCore/cfCore.module";
 import { ChannelModule } from "../channel/channel.module";
@@ -25,7 +24,7 @@ import { linkedTransferProviderFactory } from "./linkedTransfer.provider";
     ConfigModule,
     LoggerModule,
     MessagingModule,
-    TypeOrmModule.forFeature([ChannelRepository, AppRegistryRepository, AppInstanceRepository]),
+    TypeOrmModule.forFeature([ChannelRepository, AppInstanceRepository]),
   ],
   providers: [LinkedTransferService, linkedTransferProviderFactory],
 })

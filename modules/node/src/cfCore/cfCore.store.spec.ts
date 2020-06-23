@@ -5,7 +5,6 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { getConnection } from "typeorm";
 
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ChannelRepository } from "../channel/channel.repository";
 import { SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
 import { WithdrawCommitmentRepository } from "../withdrawCommitment/withdrawCommitment.repository";
@@ -181,7 +180,6 @@ describe("CFCoreStore", () => {
         LoggerModule,
         TypeOrmModule.forFeature([
           CFCoreRecordRepository,
-          AppRegistryRepository,
           ChannelRepository,
           AppInstanceRepository,
           ConditionalTransactionCommitmentRepository,

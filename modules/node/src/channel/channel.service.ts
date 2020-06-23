@@ -177,9 +177,11 @@ export class ChannelService {
     // deposit again
     const resultingBalance = currentBalance.sub(paymentAmount);
     if (resultingBalance.lte(target)) {
+      const requiredAmount = collateralizeThreshold.add(paymentAmount).sub(currentBalance);
+      this.log.warn(`Need extra collateral to cover payment: ${requiredAmount.toString()}`);
       // return proper amount for balance to be the collateral limit
       // after the payment is performed
-      return collateralizeThreshold.add(paymentAmount).sub(currentBalance);
+      return requiredAmount;
     }
     // always default to the greater collateral value
     return paymentAmount.gt(collateralizeThreshold)
@@ -229,11 +231,7 @@ export class ChannelService {
         );
       }
       if (decimals !== DEFAULT_DECIMALS) {
-        this.log.warn(
-          `Token has ${decimals} decimals, converting rebalance targets. Pre-conversion: ${stringify(
-            targets,
-          )}`,
-        );
+        this.log.warn(`Token has ${decimals} decimals, converting rebalance targets`);
         targets.collateralizeThreshold = BigNumber.from(
           formatUnits(targets.collateralizeThreshold, decimals).split(".")[0],
         );

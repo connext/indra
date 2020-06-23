@@ -74,7 +74,7 @@ export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
 export const singleAssetSinglePartyCoinTransferEncoding = tidy(`tuple(
   address to,
   uint256 amount
-)[1]`);
+)`);
 
 export const singleAssetTwoPartyCoinTransferEncoding = tidy(`tuple(
   address to,

@@ -18,7 +18,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
 import {
@@ -36,7 +35,6 @@ export class DepositService {
     private readonly cfCoreService: CFCoreService,
     private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
-    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("DepositService");
@@ -47,10 +45,7 @@ export class DepositService {
       `Deposit started: ${JSON.stringify({ channel: channel.multisigAddress, amount, assetId })}`,
     );
     // don't allow deposit if user's balance refund app is installed
-    const depositRegistry = await this.appRegistryRepository.findByNameAndNetwork(
-      DepositAppName,
-      (await this.configService.getEthNetwork()).chainId,
-    );
+    const depositRegistry = this.cfCoreService.getAppInfoByName(DepositAppName);
     const depositApp: AppInstance<"DepositApp"> = channel.appInstances.find(
       (app) =>
         app.appDefinition === depositRegistry.appDefinitionAddress &&
@@ -160,9 +155,9 @@ export class DepositService {
     const BLOCKS_TO_WAIT = 5;
 
     // get all deposit appIds
-    const depositApps = await this.cfCoreService.getAppInstancesByAppName(
+    const depositApps = await this.cfCoreService.getAppInstancesByAppDefinition(
       multisigAddress,
-      DepositAppName,
+      this.cfCoreService.getAppInfoByName(DepositAppName).appDefinitionAddress,
     );
     const ourDepositAppIds = depositApps
       .filter((app) => {
@@ -237,6 +232,7 @@ export class DepositService {
         data: token.interface.encodeFunctionData("transfer", [channel.multisigAddress, amount]),
       };
     }
+    this.log.info(`Creating transaction for amount ${amount.toString()}: ${stringify(tx)}`);
     return this.onchainTransactionService.sendDeposit(channel, tx);
   }
 
@@ -293,7 +289,7 @@ export class DepositService {
       tokenAddress,
       Zero,
       tokenAddress,
-      DepositAppName,
+      this.cfCoreService.getAppInfoByName(DepositAppName),
       { reason: "Node deposit" }, // meta
       DEPOSIT_STATE_TIMEOUT,
     );

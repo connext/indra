@@ -27,7 +27,7 @@ export class WithdrawCommitment extends MultisigCommitment {
   public getTransactionDetails(): MultisigTransaction {
     const encodedOutcome: string = defaultAbiCoder.encode(
       [singleAssetSinglePartyCoinTransferEncoding],
-      [[{ to: this.recipient, amount: this.amount }]],
+      [{ to: this.recipient, amount: this.amount }],
     );
     const encodedParams: string = defaultAbiCoder.encode(
       [singleAssetTwoPartyCoinTransferInterpreterParamsEncoding],
