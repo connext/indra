@@ -90,6 +90,10 @@ export abstract class MethodController {
         result =
           result || (await this.executeMethodImplementation(requestHandler, params, channel));
         log.info(`Protocol ${this.methodName} successfully executed after sync`);
+
+        await this.afterExecution(requestHandler, params, result);
+        logTime(log, substart, "After execution complete");
+
         error = undefined;
       } catch (e) {
         log.error(`Caught error in method controller while attempting retry + sync: ${e.stack}`);

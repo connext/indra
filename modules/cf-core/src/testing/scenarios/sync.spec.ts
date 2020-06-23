@@ -316,7 +316,6 @@ describe("Sync", () => {
     });
 
     it("sync protocol responder is missing a proposal held by the protocol initiator, sync on startup", async function () {
-      this.timeout(90_000);
       const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve, reject) => {
@@ -526,15 +525,13 @@ describe("Sync", () => {
       const [ret] = await Promise.all([
         makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress),
         new Promise((resolve) => {
-          nodeB.once(EventNames.SYNC_FAILED_EVENT, () => {
-            resolve();
-          });
+          nodeB.once(EventNames.PROPOSE_INSTALL_EVENT, resolve);
         }),
       ]);
       appIdentityHash = (ret as any).appIdentityHash;
 
       await new Promise(async (res, rej) => {
-        nodeA.once(EventNames.INSTALL_EVENT, res);
+        nodeB.once(EventNames.SYNC_FAILED_EVENT, res);
         try {
           await nodeB.rpcRouter.dispatch(constructInstallRpc(appIdentityHash, multisigAddress));
           rej(`Node B should not complete installation`);
