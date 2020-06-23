@@ -3,12 +3,13 @@ import { MethodNames } from "@connext/types";
 import { CFCore } from "../../cfCore";
 
 import { setup, SetupContext } from "../setup";
+import { expect } from "../assertions";
 
 describe(`Node method follows spec - getStateDepositHolderAddress`, () => {
   let nodeA: CFCore;
   let nodeB: CFCore;
 
-  beforeAll(async () => {
+  before(async () => {
     const context: SetupContext = await setup(global);
     nodeA = context[`A`].node;
     nodeB = context[`B`].node;
@@ -27,6 +28,6 @@ describe(`Node method follows spec - getStateDepositHolderAddress`, () => {
       parameters: { owners },
     });
 
-    expect(address.length).toBe(42);
+    expect(address.length).to.eq(42);
   });
 });

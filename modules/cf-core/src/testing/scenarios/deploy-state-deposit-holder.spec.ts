@@ -2,13 +2,11 @@ import { providers, constants } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
-import { toBeEq } from "../bignumber-jest-matcher";
 import { setup, SetupContext } from "../setup";
 import { createChannel, deployStateDepositHolder, deposit } from "../utils";
+import { expect } from "../assertions";
 
 const { HashZero, One } = constants;
-
-expect.extend({ toBeEq });
 
 describe("Node method follows spec - deploy state deposit holder", () => {
   let nodeA: CFCore;
@@ -22,14 +20,14 @@ describe("Node method follows spec - deploy state deposit holder", () => {
     nodeA = context["A"].node;
     nodeB = context["B"].node;
     multisigAddress = await createChannel(nodeA, nodeB);
-    expect(multisigAddress).toBeDefined();
+    expect(multisigAddress).to.be.ok;
   });
 
   it("deploys the multisig when the method is called", async () => {
     const deployTxHash = await deployStateDepositHolder(nodeA, multisigAddress);
 
-    expect(deployTxHash).toBeDefined();
-    expect(deployTxHash !== HashZero).toBeTruthy();
+    expect(deployTxHash).to.be.ok;
+    expect(deployTxHash !== HashZero).to.be.ok;
   });
 
   it("can deposit when multisig has not been deployed", async () => {
@@ -38,6 +36,6 @@ describe("Node method follows spec - deploy state deposit holder", () => {
 
     const postDepositMultisigBalance = await provider.getBalance(multisigAddress);
 
-    expect(postDepositMultisigBalance).toBeEq(startingMultisigBalance.add(One));
+    expect(postDepositMultisigBalance).to.eq(startingMultisigBalance.add(One));
   });
 });

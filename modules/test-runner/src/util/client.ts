@@ -110,6 +110,7 @@ export type ClientTestMessagingInputOpts = {
   signer: IChannelSigner;
   params: Partial<ProtocolParam>;
   store?: IStoreService;
+  stopOnCeilingReached?: boolean;
 };
 
 export const createClientWithMessagingLimits = async (
