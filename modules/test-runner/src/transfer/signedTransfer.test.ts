@@ -349,7 +349,7 @@ describe("Signed Transfers", () => {
         responseCID: receipt.responseCID,
         signature: badSig,
       } as PublicParams.ResolveSignedTransfer),
-    ).to.eventually.be.rejectedWith(/VM Exception while processing transaction/);
+    ).to.eventually.be.rejectedWith(/invalid signature/);
   });
 
   it("if sender uninstalls, node should force uninstall receiver first", async () => {

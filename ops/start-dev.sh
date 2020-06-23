@@ -10,7 +10,7 @@ docker swarm init 2> /dev/null || true
 # Deploy with an attachable network so tests & the daicard can connect to individual components
 # Delete/recreate the network first to delay docker network slowdowns that have been happening
 docker network rm $project 2> /dev/null || true
-docker network create --attachable --driver overlay $project
+docker network create --attachable --driver overlay $project 2> /dev/null || true
 
 ####################
 # Load env vars
