@@ -20,10 +20,6 @@ function get_latest_version {
 ########################################
 ## Run some sanity checks to make sure we're really ready to npm publish
 
-if [[ -n "`git status -s`" ]]
-then echo "Aborting: Make sure you've committed all your changes before publishing" && exit 1
-fi
-
 if [[ ! "`pwd | sed 's|.*/\(.*\)|\1|'`" =~ "$project" ]]
 then echo "Aborting: Make sure you're in the $project project root" && exit 1
 fi
@@ -100,7 +96,7 @@ do
   cat .package.json | sed 's/"version": ".*"/"version": "'$version'"/' > package.json
   rm .package.json
   echo "Publishing $fullname"
-  npm publish --tag next --access=public
+  npm publish --access=public
   echo
   cd ..
   for module in `ls */package.json`
