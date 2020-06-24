@@ -137,6 +137,7 @@ async function sendMultisigDeployTx(
       const chainNonce = await provider.getTransactionCount(signerAddress);
       const nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
       log.debug(`chainNonce ${chainNonce} vs memoryNonce ${memoryNonce}`);
+      memoryNonce = nonce;
       const tx: providers.TransactionResponse = await proxyFactory.createProxyWithNonce(
         networkContext.contractAddresses.MinimumViableMultisig,
         new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
@@ -189,7 +190,7 @@ async function sendMultisigDeployTx(
       return tx;
     } catch (e) {
       if (e.body.error.message.includes("the tx doesn't have the correct nonce")) {
-        log.warn(`Nonce conflict, trying again real quick`);
+        log.warn(`Nonce conflict, trying again real quick: ${e.body.error.message}`);
         tryCount -= 1; // Nonce conflicts don't count as retrys bc no gas spent
         memoryNonce += 1;
         continue;
