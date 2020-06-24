@@ -794,10 +794,10 @@ export class StoreService implements IStoreService {
     // right now, it does not protect against that. Instead idempotent calls are serialized,
     // and the same call may be run multiple times. While this is not a problem, it is
     const store = await this.getStore();
-    // this.deferred.push((store) => instruction(store));
-    // const updatedStore = await pWaterfall(this.deferred, store);
-    // this.deferred = [];
-    const updatedStore = await instruction(store);
+    this.deferred.push((store) => instruction(store));
+    const updatedStore = await pWaterfall(this.deferred, store);
+    this.deferred = [];
+    // const updatedStore = await instruction(store);
     return updatedStore;
   };
 }
