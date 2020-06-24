@@ -1,9 +1,12 @@
+import { ERC20 } from "@connext/contracts";
+import { Address, ContractAddresses, IChannelSigner, MessagingConfig, SwapRate } from "@connext/types";
 import { ChannelSigner } from "@connext/utils";
-import { ContractAddresses, IChannelSigner, MessagingConfig, SwapRate } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { Wallet, providers, constants, utils } from "ethers";
+import { Wallet, Contract, providers, constants, utils } from "ethers";
 import { Memoize } from "typescript-memoize";
 
+import { DEFAULT_DECIMALS } from "../constants";
+import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
 const { AddressZero, Zero } = constants;
@@ -30,7 +33,9 @@ export class ConfigService implements OnModuleInit {
   private readonly ethProvider: providers.JsonRpcProvider;
   private signer: IChannelSigner;
 
-  constructor() {
+  constructor(
+    private readonly log: LoggerService,
+  ) {
     this.envConfig = process.env;
     this.ethProvider = new providers.JsonRpcProvider(this.getEthRpcUrl());
     this.signer = new ChannelSigner(this.getPrivateKey(), this.getEthRpcUrl());
@@ -89,9 +94,20 @@ export class ConfigService implements OnModuleInit {
 
   @Memoize()
   async getTokenAddress(): Promise<string> {
-    const chainId = (await this.getEthNetwork()).chainId.toString();
-    const ethAddressBook = JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
-    return getAddress(ethAddressBook[chainId].Token.address);
+    return (await this.getContractAddresses()).Token;
+  }
+
+  @Memoize()
+  async getTokenDecimals(providedAddress?: Address): Promise<number> {
+    const address = providedAddress || await this.getTokenAddress();
+    const tokenContract = new Contract(address, ERC20.abi, this.getSigner());
+    let decimals = DEFAULT_DECIMALS;
+    try {
+      decimals = await tokenContract.decimals();
+    } catch (e) {
+      this.log.warn(`Could not retrieve decimals from token ${address}, using ${DEFAULT_DECIMALS}`);
+    }
+    return decimals;
   }
 
   @Memoize()
