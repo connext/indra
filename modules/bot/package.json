@@ -21,6 +21,7 @@
     "yargs": "15.3.1"
   },
   "devDependencies": {
+    "@types/yargs": "15.0.5",
     "ts-node": "8.10.2",
     "typescript": "3.9.5"
   }
