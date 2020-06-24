@@ -100,7 +100,11 @@ do
   cat .package.json | sed 's/"version": ".*"/"version": "'$version'"/' > package.json
   rm .package.json
   echo "Publishing $fullname"
-  npm publish --tag next --access=public
+  # If the version has a suffix like "-alpha.4" then tag it as "next"
+  if [[ "$version" == *-* ]]
+  then npm publish --tag next --access=public
+  else npm publish --access=public
+  fi
   echo
   cd ..
   for module in `ls */package.json`
