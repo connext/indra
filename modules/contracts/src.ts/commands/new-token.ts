@@ -1,4 +1,4 @@
-import { Wallet } from "ethers";
+import { Wallet, utils } from "ethers";
 import { Argv } from "yargs";
 
 import { getAddressBook } from "../address-book";
@@ -15,7 +15,7 @@ const newToken = async (wallet: Wallet, addressBookPath: string, force: boolean)
     const token = await deployContract("Token", [], wallet, addressBook);
     console.log(`Success!`);
     const initalSupply = await token.INITIAL_SUPPLY();
-    console.log(`Minted ${initalSupply} tokens & gave them all to ${wallet.address}`);
+    console.log(`Minted ${utils.formatEther(initalSupply)} tokens & gave them all to ${wallet.address}`);
   } else {
     console.log(`Token is up to date, no action required`);
     console.log(`Address: ${savedAddress}`);
