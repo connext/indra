@@ -8,6 +8,16 @@ export const addAgentIdentifierToIndex = async (identifier: string): Promise<voi
   });
 };
 
+export const removeAgentIdentifierFromIndex = async (identifier: string): Promise<void> => {
+  return axios.delete(`${BOT_REGISTRY_URL}/agent`, {
+    data: { identifier },
+  });
+};
+
+export const clearRegistry = async (): Promise<void> => {
+  return axios.delete(`${BOT_REGISTRY_URL}/agent`, { data: {} });
+};
+
 const getRandomInt = (max: number) => {
   return Math.floor(Math.random() * Math.floor(max));
 };
@@ -17,4 +27,9 @@ export const getRandomAgentIdentifierFromIndex = async (exclude?: string): Promi
   addresses = addresses.filter((address) => address !== exclude);
   const index = getRandomInt(addresses.length);
   return addresses[index];
+};
+
+export const getAgentFromIndex = async (i: number): Promise<string> => {
+  const { data: addresses }: AxiosResponse<string[]> = await axios.get(`${BOT_REGISTRY_URL}/agent`);
+  return addresses[i];
 };

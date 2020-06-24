@@ -1,6 +1,11 @@
-import { AppInterface, OutcomeType, PublicIdentifier } from "@connext/types";
+import {
+  OutcomeType,
+  PublicIdentifier,
+  AppABIEncodings,
+  MultiAssetMultiPartyCoinTransferInterpreterParams,
+} from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import { HARD_CODED_ASSUMPTIONS } from "../constants";
 
@@ -8,12 +13,11 @@ import { AppInstance } from "./app-instance";
 import { merge } from "./utils";
 
 const { Zero, AddressZero } = constants;
-const { bigNumberify, getAddress } = utils;
+const { getAddress } = utils;
 
-export function getFreeBalanceAppInterface(addr: string): AppInterface {
+export function getFreeBalanceAbiEncoding(): AppABIEncodings {
   return {
     actionEncoding: undefined, // because no actions exist for FreeBalanceApp
-    addr,
     stateEncoding: `tuple(address[] tokenAddresses, tuple(address to, uint256 amount)[][] balances, bytes32[] activeApps)`,
   };
 }
@@ -23,7 +27,7 @@ Keep in sync with the solidity struct LibOutcome::CoinTransfer
 */
 export type CoinTransfer = {
   to: string;
-  amount: utils.BigNumber;
+  amount: BigNumber;
 };
 
 /*
@@ -55,7 +59,7 @@ in client-side code for easier access, but we cannot use it in solidity due to
 nonexistent support for non-storage mappings.
 */
 export type CoinTransferMap = {
-  [to: string]: utils.BigNumber;
+  [to: string]: BigNumber;
 };
 
 /*
@@ -101,7 +105,7 @@ export class FreeBalanceClass {
 
   public static createWithFundedTokenAmounts(
     addresses: string[],
-    amount: utils.BigNumber,
+    amount: BigNumber,
     tokenAddresses: string[],
   ): FreeBalanceClass {
     return new FreeBalanceClass(
@@ -197,7 +201,7 @@ export class FreeBalanceClass {
 
 /**
  * Note that the state of the Free Balance is held as plain types
- * and only converted to more complex types (i.e. utils.BigNumber) upon usage.
+ * and only converted to more complex types (i.e. BigNumber) upon usage.
  */
 export function createFreeBalance(
   initiatorId: PublicIdentifier,
@@ -222,17 +226,28 @@ export function createFreeBalance(
     },
   };
 
+  const interpreterParams: MultiAssetMultiPartyCoinTransferInterpreterParams = {
+    limit: [],
+    tokenAddresses: [],
+  };
+
   return new AppInstance(
+    /* multisigAddres */ multisigAddress,
     /* initiator */ initiatorId,
+    /* initiatorDeposit */ "0",
+    /* initiaotrDepositAssetId */ AddressZero,
     /* responder */ responderId,
-    /* defaultTimeout */ toBN(freeBalanceTimeout).toHexString(),
-    /* appInterface */ getFreeBalanceAppInterface(coinBucketAddress),
+    /* responderDeposit */ "0",
+    /* responderDepositAssetId */ AddressZero,
+    /* abiEncodings */ getFreeBalanceAbiEncoding(),
+    /* appDefinition */ coinBucketAddress,
     /* appSeqNo */ HARD_CODED_ASSUMPTIONS.appSequenceNumberForFreeBalance,
     /* latestState */ serializeFreeBalanceState(initialState),
     /* latestVersionNumber */ 1,
-    /* latestTimeout */ toBN(HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout).toHexString(),
+    /* defaultTimeout */ toBN(freeBalanceTimeout).toHexString(),
+    /* stateTimeout */ toBN(HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout).toHexString(),
     /* outcomeType */ OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
-    /* multisigAddr */ multisigAddress,
+    /* interpreterParamsInternal*/ interpreterParams,
   );
 }
 
@@ -244,7 +259,7 @@ function deserializeFreeBalanceState(freeBalanceStateJSON: FreeBalanceStateJSON)
         ...acc,
         [getAddress(tokenAddress)]: balances[idx].map(({ to, amount }) => ({
           to,
-          amount: bigNumberify(amount._hex),
+          amount: BigNumber.from(amount._hex),
         })),
       }),
       {},

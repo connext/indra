@@ -23,7 +23,7 @@ export class AuthController {
 
   @Post("")
   async verifyNonce(@Body() verifyNonceDto: VerifyNonceDto): Promise<string> {
-    let { sig, userIdentifier, adminToken } = verifyNonceDto;
+    const { sig, userIdentifier, adminToken } = verifyNonceDto;
     try {
       return this.authService.verifyAndVend(sig, userIdentifier, adminToken);
     } catch (e) {

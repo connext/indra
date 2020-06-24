@@ -14,10 +14,12 @@ import {
   HashLockTransferAppState,
 } from "@connext/types";
 import { toBN, stringify } from "@connext/utils";
-import { HashZero, Zero } from "ethers/constants";
+import { constants, utils } from "ethers";
 
 import { AbstractController } from "./AbstractController";
-import { soliditySha256 } from "ethers/utils";
+
+const { HashZero, Zero } = constants;
+const { soliditySha256 } = utils;
 
 export class CreateTransferController extends AbstractController {
   public createTransfer = async (
@@ -107,21 +109,27 @@ export class CreateTransferController extends AbstractController {
           signerAddress,
           chainId,
           verifyingContract,
+          requestCID,
+          subgraphDeploymentID,
           paymentId,
         } = params as PublicParams.SignedTransfer;
 
         initialState = {
           ...baseInitialState,
-          chainId,
           signerAddress,
+          chainId,
           verifyingContract,
+          requestCID,
+          subgraphDeploymentID,
           paymentId,
         } as SimpleSignedTransferAppState;
 
         transferMeta = {
           signerAddress,
-          verifyingContract,
           chainId,
+          verifyingContract,
+          requestCID,
+          subgraphDeploymentID,
         } as CreatedSignedTransferMeta;
 
         submittedMeta.paymentId = paymentId;

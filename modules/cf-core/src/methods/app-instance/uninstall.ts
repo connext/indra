@@ -43,8 +43,8 @@ export class UninstallController extends MethodController {
     requestHandler: RequestHandler,
     params: MethodParams.Uninstall,
     preProtocolStateChannel: StateChannel | undefined,
-  ) {
-    const { appIdentityHash } = params;
+  ): Promise<MethodResults.Uninstall | undefined> {
+    const { appIdentityHash, action } = params;
 
     if (!appIdentityHash) {
       throw new Error(NO_APP_IDENTITY_HASH_TO_UNINSTALL);
@@ -61,11 +61,20 @@ export class UninstallController extends MethodController {
       throw new Error(CANNOT_UNINSTALL_FREE_BALANCE(preProtocolStateChannel.multisigAddress));
     }
 
-    // check if its the balance refund app
-    const app = preProtocolStateChannel.appInstances.get(appIdentityHash);
-    if (!app) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(appIdentityHash));
+    // see notes in take-action method
+    if (action) {
+      if (!preProtocolStateChannel.hasAppInstance(appIdentityHash)) {
+        throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(preProtocolStateChannel.multisigAddress));
+      }
+      return undefined;
     }
+
+    if (!preProtocolStateChannel.isAppInstanceInstalled(appIdentityHash)) {
+      // TODO: how to get app ref if its been uninstalled?
+      return {} as any;
+    }
+
+    return undefined;
   }
 
   protected async executeMethodImplementation(
@@ -113,7 +122,7 @@ export class UninstallController extends MethodController {
 }
 
 export async function uninstallAppInstanceFromChannel(
-  stateChannel: StateChannel,
+  preProtocolStateChannel: StateChannel,
   router: RpcRouter,
   protocolRunner: ProtocolRunner,
   initiatorIdentifier: PublicIdentifier,
@@ -124,18 +133,23 @@ export async function uninstallAppInstanceFromChannel(
   uninstalledApp: AppInstance;
   action?: SolidityValueType;
 }> {
-  const appInstance = stateChannel.getAppInstance(params.appIdentityHash);
+  const appInstance = preProtocolStateChannel.getAppInstance(params.appIdentityHash);
 
   const {
     channel: updatedChannel,
     appContext: uninstalledApp,
-  } = await protocolRunner.initiateProtocol(router, ProtocolNames.uninstall, {
-    initiatorIdentifier,
-    responderIdentifier,
-    multisigAddress: stateChannel.multisigAddress,
-    appIdentityHash: appInstance.identityHash,
-    action: params.action,
-    stateTimeout: toBN(0), // Explicitly finalized states
-  });
+  } = await protocolRunner.initiateProtocol(
+    router,
+    ProtocolNames.uninstall,
+    {
+      initiatorIdentifier,
+      responderIdentifier,
+      multisigAddress: preProtocolStateChannel.multisigAddress,
+      appIdentityHash: appInstance.identityHash,
+      action: params.action,
+      stateTimeout: toBN(0), // Explicitly finalized states
+    },
+    preProtocolStateChannel,
+  );
   return { updatedChannel, uninstalledApp, action: params.action };
 }

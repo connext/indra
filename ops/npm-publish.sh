@@ -2,7 +2,10 @@
 set -e
 
 # This is the order they'll be published in
-packages="types,utils,cf-core,apps,messaging,store,channel-provider,client"
+default_packages="types,utils,cf-core,apps,messaging,store,channel-provider,client,watcher"
+
+# To publish contracts, run bash ops/npm-publish.sh contracts
+packages="${1:-$default_packages}"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
@@ -16,10 +19,6 @@ function get_latest_version {
 
 ########################################
 ## Run some sanity checks to make sure we're really ready to npm publish
-
-if [[ -n "`git status -s`" ]]
-then echo "Aborting: Make sure you've committed all your changes before publishing" && exit 1
-fi
 
 if [[ ! "`pwd | sed 's|.*/\(.*\)|\1|'`" =~ "$project" ]]
 then echo "Aborting: Make sure you're in the $project project root" && exit 1

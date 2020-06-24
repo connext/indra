@@ -1,11 +1,10 @@
 import { IConnextClient, EventNames } from "@connext/types";
 import { toBN } from "@connext/utils";
-import { constants, utils } from "ethers";
+import { BigNumber, constants } from "ethers";
 
 import { expect, createClient, fundChannel } from "../util";
 
 const { AddressZero } = constants;
-const { bigNumberify } = utils;
 
 // TODO: fix race condition
 describe.skip("Full Flow: Multi-client transfer", () => {
@@ -42,7 +41,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
     };
     const startTime = Date.now();
     await new Promise(async (res, rej) => {
-      await fundChannel(gateway, bigNumberify(100));
+      await fundChannel(gateway, BigNumber.from(100));
       gateway.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
         gatewayTransfers.received += 1;
         const freeBalance = await gateway.getFreeBalance();

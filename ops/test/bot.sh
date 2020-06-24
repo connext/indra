@@ -3,7 +3,8 @@ set -e
 
 agents="$1"
 interval="$2"
-echo "Starting bot test with $agents agents and interval $interval"
+limit="$3"
+echo "Starting bot test with: $agents agents | interval $interval | limit $limit"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
@@ -28,8 +29,8 @@ function cleanup {
       agent_code="`docker container inspect ${agent_name}_$n | jq '.[0].State.ExitCode'`"
       if [[ "$agent_code" != "0" ]]
       then
-        echo "agent failed: $agent_code";
-        exit_code="$agent_code";
+        echo "agent $n failed with exit code $agent_code";
+        exit_code="1";
       fi
       docker container rm ${agent_name}_$n &> /dev/null || true
     fi
@@ -41,7 +42,7 @@ function cleanup {
     agent_code="`docker container inspect bot-registry | jq '.[0].State.ExitCode'`"
     docker container rm bot-registry &> /dev/null || true
   fi
-exit $exit_code
+  exit $exit_code
 }
 trap cleanup EXIT SIGINT
 
@@ -51,25 +52,25 @@ else echo "Running in non-interactive mode"
 fi
 
 echo "Starting bot registry container"
-docker run \
-  --detach \
-  --entrypoint="bash" \
-  $interactive \
-  --name="bot-registry" \
-  --volume="`pwd`:/root" \
-  -p 3333:3333 \
-  ${project}_builder -c '
-    set -e
-    echo "Bot registry container launched!"
-    cd modules/bot-registry
-    export PATH=./node_modules/.bin:$PATH
-    function finish {
-      echo && echo "Bot container exiting.." && exit
-    }
-    trap finish SIGTERM SIGINT
-    echo "Launching agent!";echo
-    npm run start
-  '
+  docker run \
+    $interactive \
+    --detach \
+    --entrypoint="bash" \
+    --name="bot-registry" \
+    --publish "3333:3333" \
+    --publish="$((n + 8330)):9229" \
+    --volume="`pwd`:/root" \
+    ${project}_builder -c '
+      set -e
+      echo "Bot registry container launched!"
+      cd modules/bot
+      function finish {
+        echo && echo "Bot container exiting.." && exit
+      }
+      trap finish SIGTERM SIGINT
+      echo "Launching registry!";echo
+      npm run start:registry
+    '
   docker logs --follow bot-registry &
 
 for (( n=1; n<=$agents; n++ ))
@@ -80,26 +81,28 @@ do
   agent_key="0x`hexdump -n 32 -e '"%08X"' < /dev/urandom | tr '[:upper:]' '[:lower:]'`"
 
   agent_address="`node <<<'var eth = require("ethers"); console.log((new eth.Wallet("'"$agent_key"'")).address);'`"
-  agent_pub_key="`node <<<'var eth = require("ethers"); console.log((new eth.Wallet("'"$agent_key"'")).signingKey.publicKey);'`"
+  agent_pub_key="`node <<<'var eth = require("ethers"); console.log((new eth.Wallet("'"$agent_key"'")).publicKey);'`"
 
   echo "Funding agent: $agent_address (pubKey: ${agent_pub_key})"
   bash ops/fund.sh $agent_address
 
   echo "Starting agent container $n"
   docker run \
+    $interactive \
     --detach \
     --entrypoint="bash" \
-    --env="LOG_LEVEL=$LOG_LEVEL" \
-    --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
-    --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
-    --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
     --env="BOT_REGISTRY_URL"="$BOT_REGISTRY_URL" \
-    $interactive \
+    --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
+    --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
+    --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
+    --env="LOG_LEVEL=$LOG_LEVEL" \
     --name="$agent" \
+    --publish="$((n + 9330)):9229" \
     --volume="`pwd`:/root" \
     ${project}_builder -c '
       set -e
-      echo "Bot container launched!"
+      echo "Bot container launched! Waiting for others to launch.."
+      sleep '"$agents"'
       cd modules/bot
       export PATH=./node_modules/.bin:$PATH
       function finish {
@@ -107,7 +110,11 @@ do
       }
       trap finish SIGTERM SIGINT
       echo "Launching agent!";echo
-      npm run start -- bot --private-key '$agent_key' --concurrency-index '$n' --interval '$interval'
+      node --inspect=0.0.0.0:9229 dist/src/index.js bot \
+        --private-key '$agent_key' \
+        --concurrency-index '$n' \
+        --interval '$interval' \
+        --limit '$limit'
     '
 
   docker logs --follow $agent &

@@ -1,10 +1,16 @@
 import { MultisigCommitment, ConditionalTransactionDelegateTarget } from "@connext/contracts";
-import { MultisigTransaction, MultisigOperation, ContractAddresses } from "@connext/types";
+import {
+  ContractAddresses,
+  MultisigOperation,
+  MultisigTransaction,
+  singleAssetSinglePartyCoinTransferEncoding,
+  singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
+  BigNumberish,
+} from "@connext/types";
 import { utils } from "ethers";
 
-const { Interface } = utils;
+const { defaultAbiCoder, Interface } = utils;
 
-const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 export class WithdrawCommitment extends MultisigCommitment {
   public constructor(
     public readonly contractAddresses: ContractAddresses,
@@ -12,21 +18,32 @@ export class WithdrawCommitment extends MultisigCommitment {
     public readonly multisigOwners: string[],
     public readonly recipient: string,
     public readonly assetId: string,
-    public readonly amount: utils.BigNumberish,
+    public readonly amount: BigNumberish,
     public readonly nonce: string,
   ) {
     super(multisigAddress, multisigOwners);
   }
 
   public getTransactionDetails(): MultisigTransaction {
+    const encodedOutcome: string = defaultAbiCoder.encode(
+      [singleAssetSinglePartyCoinTransferEncoding],
+      [{ to: this.recipient, amount: this.amount }],
+    );
+    const encodedParams: string = defaultAbiCoder.encode(
+      [singleAssetTwoPartyCoinTransferInterpreterParamsEncoding],
+      [{ limit: this.amount, tokenAddress: this.assetId }],
+    );
+
     return {
       to: this.contractAddresses.ConditionalTransactionDelegateTarget,
       value: 0,
-      data: iface.functions.withdrawWrapper.encode([
-        this.recipient,
-        this.assetId,
-        this.amount,
+      data: new Interface(
+        ConditionalTransactionDelegateTarget.abi,
+      ).encodeFunctionData("executeWithdraw", [
+        this.contractAddresses.WithdrawInterpreter,
         this.nonce,
+        encodedOutcome,
+        encodedParams,
       ]),
       operation: MultisigOperation.DelegateCall,
     };

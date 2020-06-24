@@ -1,20 +1,20 @@
-import { utils } from "ethers";
+import { BigNumber } from "ethers";
 
 export interface ExistingBalancesAsyncTransfer {
-  freeBalanceClientA: utils.BigNumber;
-  freeBalanceNodeA: utils.BigNumber;
-  freeBalanceClientB: utils.BigNumber;
-  freeBalanceNodeB: utils.BigNumber;
+  freeBalanceClientA: BigNumber;
+  freeBalanceNodeA: BigNumber;
+  freeBalanceClientB: BigNumber;
+  freeBalanceNodeB: BigNumber;
 }
 
 export interface ExistingBalancesSwap {
-  freeBalanceClientEth: utils.BigNumber;
-  freeBalanceNodeEth: utils.BigNumber;
-  freeBalanceClientToken: utils.BigNumber;
-  freeBalanceNodeToken: utils.BigNumber;
+  freeBalanceClientEth: BigNumber;
+  freeBalanceNodeEth: BigNumber;
+  freeBalanceClientToken: BigNumber;
+  freeBalanceNodeToken: BigNumber;
 }
 
 export interface AssetOptions {
-  amount: utils.BigNumber;
+  amount: BigNumber;
   assetId: string;
 }

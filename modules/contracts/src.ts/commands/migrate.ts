@@ -10,7 +10,7 @@ import { getProvider } from "../utils";
 const { EtherSymbol } = constants;
 const { formatEther } = utils;
 
-const coreContracts = [
+export const coreContracts = [
   "ChallengeRegistry",
   "ConditionalTransactionDelegateTarget",
   "DepositApp",
@@ -26,6 +26,7 @@ const coreContracts = [
   "TimeLockedPassThrough",
   "TwoPartyFixedOutcomeInterpreter",
   "WithdrawApp",
+  "WithdrawInterpreter"
 ];
 
 export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<void> => {
@@ -47,8 +48,11 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
   // Deploy contracts
 
   for (const name of coreContracts) {
-    const savedAddress = addressBook.getEntry(name).address;
-    if (await isContractDeployed(name, savedAddress, addressBook, wallet.provider)) {
+    const savedAddress = addressBook.getEntry(name)["address"];
+    if (
+      savedAddress &&
+      (await isContractDeployed(name, savedAddress, addressBook, wallet.provider))
+    ) {
       console.log(`${name} is up to date, no action required`);
       console.log(`Address: ${savedAddress}\n`);
     } else {

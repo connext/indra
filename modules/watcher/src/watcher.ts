@@ -7,13 +7,12 @@ import {
 import {
   AppIdentity,
   AppInstanceJson,
-  ChallengeEvents,
+  WatcherEvents,
   IChannelSigner,
   ILoggerService,
   IWatcher,
   IWatcherStoreService,
   MinimalTransaction,
-  NetworkContext,
   SignedCancelChallengeRequest,
   StateChannelJSON,
   WatcherEvent,
@@ -23,10 +22,11 @@ import {
   StateProgressedEventPayload,
   StoredAppChallenge,
   SetStateCommitmentJSON,
-  WatcherEvents,
   StoredAppChallengeStatus,
   ConditionalTransactionCommitmentJSON,
   ChallengeInitiatedResponse,
+  ContractAddresses,
+  ChallengeEvents,
 } from "@connext/types";
 import {
   ConsoleLogger,
@@ -36,11 +36,12 @@ import {
   toBN,
   stringify,
   bigNumberifyJson,
+  delay,
 } from "@connext/utils";
-import EventEmitter from "eventemitter3";
 import { Contract, providers, constants, utils } from "ethers";
 
 import { ChainListener } from "./chainListener";
+import { Evt } from "evt";
 
 const { Zero, HashZero } = constants;
 const { Interface, defaultAbiCoder } = utils;
@@ -52,27 +53,44 @@ const { Interface, defaultAbiCoder } = utils;
  * To use the watcher class, call `await Watcher.init(opts)`, this will
  * automatically begin the dispute response process.
  */
+
+type EvtContainer = {
+  [event in WatcherEvent]: Evt<WatcherEventData[WatcherEvent]>;
+};
+
+const getRandomJitter = (max: number = 500): number => {
+  // returns jitter between 0 and max
+  return Math.floor(Math.random() * (max + 1));
+};
+
 export class Watcher implements IWatcher {
   private log: ILoggerService;
   private enabled: boolean = false;
-  private emitter: EventEmitter;
   private challengeRegistry: Contract;
+
+  private readonly evts: EvtContainer;
 
   constructor(
     private readonly signer: IChannelSigner,
     private readonly provider: providers.JsonRpcProvider,
-    private readonly context: NetworkContext,
+    private readonly context: ContractAddresses,
     private readonly store: IWatcherStoreService,
     private readonly listener: ChainListener,
     log: ILoggerService,
   ) {
-    this.emitter = new EventEmitter();
     this.log = log.newContext("Watcher");
     this.challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
-      ChallengeRegistry.abi as any,
+      ChallengeRegistry.abi,
       this.provider,
     );
+    // Create all evt instances for watcher events
+    const evts = {} as any;
+    Object.keys(WatcherEvents).forEach((event: string) => {
+      const typedIndex = event as WatcherEvent;
+      evts[event] = Evt.create<WatcherEventData[typeof typedIndex]>();
+    });
+    this.evts = evts;
   }
 
   /////////////////////////////////////
@@ -198,40 +216,67 @@ export class Watcher implements IWatcher {
 
     this.log.debug(`Disabling listener`);
     await this.listener.disable();
+    this.off();
 
     this.enabled = false;
     this.log.info(`Watcher disabled`);
   };
 
+  /////////////////////////////////////
   //////// Listener methods
   public emit<T extends WatcherEvent>(event: T, data: WatcherEventData[T]): void {
-    this.emitter.emit(event, data);
+    this.evts[event].post(data);
   }
 
   public on<T extends WatcherEvent>(
     event: T,
     callback: (data: WatcherEventData[T]) => Promise<void>,
+    providedFilter?: (payload: WatcherEventData[T]) => boolean,
   ): void {
     this.log.debug(`Registering callback for ${event}`);
-    this.emitter.on(event, callback);
+    const filter = (data: WatcherEventData[T]) => {
+      if (providedFilter) {
+        return providedFilter(data);
+      }
+      return true;
+    };
+    this.evts[event as any].attach(filter, callback);
   }
 
   public once<T extends WatcherEvent>(
     event: T,
     callback: (data: WatcherEventData[T]) => Promise<void>,
+    providedFilter?: (payload: WatcherEventData[T]) => boolean,
+    timeout?: number,
   ): void {
     this.log.debug(`Registering callback for ${event}`);
-    this.emitter.once(event, callback);
+    const filter = (data: WatcherEventData[T]) => {
+      if (providedFilter) {
+        return providedFilter(data);
+      }
+      return true;
+    };
+    this.evts[event as any].attachOnce(filter, timeout || 60_000, callback);
   }
 
-  public removeListener<T extends WatcherEvent>(event: T): void {
-    this.log.debug(`Removing callback for ${event}`);
-    this.emitter.removeListener(event);
+  public waitFor<T extends WatcherEvent>(
+    event: T,
+    timeout: number,
+    providedFilter?: (payload: WatcherEventData[T]) => boolean,
+  ): Promise<WatcherEventData[T]> {
+    const filter = (data: WatcherEventData[T]) => {
+      if (providedFilter) {
+        return providedFilter(data);
+      }
+      return true;
+    };
+    return this.evts[event as any].waitFor(filter, timeout);
   }
 
-  public removeAllListeners(): void {
-    this.log.debug(`Removing all listeners`);
-    this.emitter.removeAllListeners();
+  public off(): void {
+    Object.keys(this.evts).forEach((k) => {
+      this.evts[k].detach();
+    });
   }
 
   /////////////////////////////////////
@@ -266,19 +311,21 @@ export class Watcher implements IWatcher {
   // should check every block for challenges that should be advanced,
   // and respond to any listener emitted chain events
   private registerListeners = () => {
-    this.listener.on(
+    this.listener.attach(
       ChallengeEvents.ChallengeUpdated,
       async (event: ChallengeUpdatedEventPayload) => {
+        await delay(getRandomJitter());
         await this.processChallengeUpdated(event);
         // parrot listener event
         this.emit(WatcherEvents.ChallengeUpdatedEvent, event);
       },
     );
-    this.listener.on(
+    this.listener.attach(
       ChallengeEvents.StateProgressed,
       async (event: StateProgressedEventPayload) => {
         // add events to store + process
         await this.processStateProgressed(event);
+        // parrot listener event
         this.emit(WatcherEvents.StateProgressedEvent, event);
       },
     );
@@ -289,11 +336,13 @@ export class Watcher implements IWatcher {
   };
 
   private removeListeners = () => {
-    this.listener.removeAllListeners();
+    this.listener.detach();
     this.provider.removeAllListeners();
   };
 
-  private startAppChallenge = async (appInstanceId: string): Promise<providers.TransactionReceipt> => {
+  private startAppChallenge = async (
+    appInstanceId: string,
+  ): Promise<providers.TransactionReceipt> => {
     this.log.debug(`Starting challenge for ${appInstanceId}`);
     const challenge = (await this.store.getAppChallenge(appInstanceId)) || {
       identityHash: appInstanceId,
@@ -350,9 +399,16 @@ export class Watcher implements IWatcher {
   private processChallengeUpdated = async (event: ChallengeUpdatedEventPayload) => {
     this.log.info(`Processing challenge updated event: ${stringify(event)}`);
     await this.store.createChallengeUpdatedEvent(event);
+    const existing = await this.store.getAppChallenge(event.identityHash);
+    if (
+      existing &&
+      toBN(existing.versionNumber).gt(event.versionNumber) &&
+      !toBN(event.versionNumber).isZero()
+    ) {
+      return;
+    }
     await this.store.saveAppChallenge(event);
-    const challenge = await this.store.getAppChallenge(event.identityHash);
-    this.log.debug(`Saved challenge to store: ${stringify(challenge)}`);
+    this.log.debug(`Saved challenge to store: ${stringify(event)}`);
   };
 
   private respondToChallenge = async (
@@ -614,12 +670,12 @@ export class Watcher implements IWatcher {
         params: { setup, channel },
       });
     } else {
+      await this.updateChallengeStatus(StoredAppChallengeStatus.CONDITIONAL_SENT, challenge!);
       this.emit(WatcherEvents.ChallengeCompletedEvent, {
         appInstanceId: channel!.freeBalanceAppInstance!.identityHash,
         transaction: response as providers.TransactionReceipt,
         multisigAddress: channel.multisigAddress,
       });
-      await this.updateChallengeStatus(StoredAppChallengeStatus.CONDITIONAL_SENT, challenge!);
     }
     return response;
   };
@@ -642,14 +698,14 @@ export class Watcher implements IWatcher {
         params: { conditional, app, channel },
       });
     } else {
+      // update challenge of app and free balance
+      const appChallenge = await this.store.getAppChallenge(app.identityHash);
+      await this.updateChallengeStatus(StoredAppChallengeStatus.CONDITIONAL_SENT, appChallenge!);
       this.emit(WatcherEvents.ChallengeCompletedEvent, {
         appInstanceId: app.identityHash,
         transaction: response as providers.TransactionReceipt,
         multisigAddress: channel.multisigAddress,
       });
-      // update challenge of app and free balance
-      const appChallenge = await this.store.getAppChallenge(app.identityHash);
-      await this.updateChallengeStatus(StoredAppChallengeStatus.CONDITIONAL_SENT, appChallenge!);
     }
     return response;
   };
@@ -667,13 +723,13 @@ export class Watcher implements IWatcher {
     );
     const [latest] = sortedCommitments.map(SetStateCommitment.fromJson);
 
-    const action = defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]);
-    const state = defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
+    const action = defaultAbiCoder.encode([app.abiEncodings.actionEncoding!], [app.latestAction]);
+    const state = defaultAbiCoder.encode([app.abiEncodings.stateEncoding], [app.latestState]);
 
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi as any).functions.progressState.encode([
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("progressState", [
         this.getAppIdentity(app, channel.multisigAddress),
         await latest.getSignedAppChallengeUpdate(),
         state,
@@ -712,12 +768,12 @@ export class Watcher implements IWatcher {
     );
     const [latest, prev] = sortedCommitments.map(SetStateCommitment.fromJson);
 
-    const action = defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]);
-    const state = defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
+    const action = defaultAbiCoder.encode([app.abiEncodings.actionEncoding!], [app.latestAction]);
+    const state = defaultAbiCoder.encode([app.abiEncodings.stateEncoding], [app.latestState]);
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi as any).functions.setAndProgressState.encode([
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("setAndProgressState", [
         this.getAppIdentity(app, channel.multisigAddress),
         await prev.getSignedAppChallengeUpdate(),
         await latest.getSignedAppChallengeUpdate(),
@@ -770,24 +826,20 @@ export class Watcher implements IWatcher {
 
     // derive final state from action on app
     const encodedState = defaultAbiCoder.encode(
-      [app.appInterface.stateEncoding],
+      [app.abiEncodings.stateEncoding],
       [app.latestState],
     );
     const encodedFinalState = !!app.latestAction
-      ? await new Contract(
-          app.appInterface.addr,
-          CounterfactualApp.abi,
-          this.provider,
-        ).functions.applyAction(
+      ? await new Contract(app.appDefinition, CounterfactualApp.abi, this.provider).applyAction(
           encodedState,
-          defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]),
+          defaultAbiCoder.encode([app.abiEncodings.actionEncoding!], [app.latestAction]),
         )
       : encodedState;
 
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi).functions.setOutcome.encode([
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("setOutcome", [
         this.getAppIdentity(app, channel.multisigAddress),
         encodedFinalState,
       ]),
@@ -825,7 +877,7 @@ export class Watcher implements IWatcher {
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi).functions.cancelDispute.encode([
+      data: new Interface(ChallengeRegistry.abi).encodeFunctionData("cancelDispute", [
         this.getAppIdentity(app, channel.multisigAddress),
         req,
       ]),
@@ -903,7 +955,7 @@ export class Watcher implements IWatcher {
         getSignerAddressFromPublicIdentifier(app.responderIdentifier),
       ],
       multisigAddress,
-      appDefinition: app.appInterface.addr,
+      appDefinition: app.appDefinition,
       defaultTimeout: toBN(app.defaultTimeout),
     };
   };

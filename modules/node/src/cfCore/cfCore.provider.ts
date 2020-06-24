@@ -6,11 +6,12 @@ import { Provider } from "@nestjs/common";
 import { Contract, constants, utils } from "ethers";
 
 import { ConfigService } from "../config/config.service";
-import { CFCoreProviderId, MessagingProviderId } from "../constants";
+import { CFCoreProviderId, MessagingProviderId, DEFAULT_DECIMALS } from "../constants";
 import { LockService } from "../lock/lock.service";
 import { LoggerService } from "../logger/logger.service";
 
 import { CFCoreStore } from "./cfCore.store";
+import { formatUnits } from "ethers/lib/utils";
 
 const { EtherSymbol } = constants;
 const { formatEther } = utils;
@@ -51,17 +52,29 @@ export const cfCoreProviderFactory: Provider = {
 
     const ethBalance = await provider.getBalance(signerAddress);
     const tokenContract = new Contract(contractAddresses.Token, ERC20.abi, config.getSigner());
-    const tknBalance = formatEther(await tokenContract.balanceOf(signerAddress));
+    let decimals = DEFAULT_DECIMALS;
+    try {
+      decimals = await tokenContract.decimals();
+    } catch (e) {
+      log.error(`Could not retrieve decimals from token, proceeding with decimals = 18...`);
+    }
+    const tknBalance = await tokenContract.balanceOf(signerAddress);
 
     log.info(
-      `Balance of signer address ${signerAddress} on ${networkName} (chainId ${chainId}): ${EtherSymbol} ${formatEther(ethBalance)} & ${tknBalance} tokens`,
+      `Balance of signer address ${signerAddress} on ${networkName} (chainId ${chainId}): ${EtherSymbol} ${formatEther(
+        ethBalance,
+      )} & ${formatUnits(tknBalance, decimals)} tokens`,
     );
 
     if (ethBalance.eq(constants.Zero)) {
-      throw new Error(`Fatal: Node's ETH balance is zero`);
+      log.warn(`Warning: Node's ETH balance is zero`);
     }
 
-    log.info("CFCore created");
+    if (tknBalance.eq(constants.Zero)) {
+      log.warn(`Warning: Node's Token balance is zero`);
+    }
+
+    log.info(`CFCore created with identifier: ${cfCore.publicIdentifier}`);
     return cfCore;
   },
 };

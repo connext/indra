@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.6.4;
 pragma experimental "ABIEncoderV2";
 
@@ -10,63 +11,74 @@ import "../funding/libs/LibOutcome.sol";
 /// @notice This contract allows users to claim a payment locked in
 ///         the application if they provide the correct preImage
 contract SimpleLinkedTransferApp is CounterfactualApp {
-  using SafeMath for uint256;
 
-  struct AppState {
-    LibOutcome.CoinTransfer[2] coinTransfers;
-    bytes32 linkedHash;
-    bytes32 preImage;
-    bool finalized;
-  }
+    using SafeMath for uint256;
 
-  struct Action {
-    bytes32 preImage;
-  }
+    struct AppState {
+        LibOutcome.CoinTransfer[2] coinTransfers;
+        bytes32 linkedHash;
+        bytes32 preImage;
+        bool finalized;
+    }
 
-  function applyAction(bytes calldata encodedState, bytes calldata encodedAction)
-    external
-    override
-    view
-    returns (bytes memory)
-  {
-    AppState memory state = abi.decode(encodedState, (AppState));
-    Action memory action = abi.decode(encodedAction, (Action));
-    bytes32 generatedHash = sha256(abi.encode(action.preImage));
+    struct Action {
+        bytes32 preImage;
+    }
 
-    require(!state.finalized, "Cannot take action on finalized state");
-    require(
-      state.linkedHash == generatedHash,
-      "Hash generated from preimage does not match hash in state"
-    );
+    function applyAction(
+        bytes calldata encodedState,
+        bytes calldata encodedAction
+    )
+        override
+        external
+        view
+        returns (bytes memory)
+    {
+        AppState memory state = abi.decode(encodedState, (AppState));
+        Action memory action = abi.decode(encodedAction, (Action));
+        bytes32 generatedHash = sha256(abi.encode(action.preImage));
 
-    state.coinTransfers[1].amount = state.coinTransfers[0].amount;
-    state.coinTransfers[0].amount = 0;
-    state.preImage = action.preImage;
-    state.finalized = true;
+        require(!state.finalized, "Cannot take action on finalized state");
+        require(state.linkedHash == generatedHash, "Hash generated from preimage does not match hash in state");
 
-    return abi.encode(state);
-  }
+        state.coinTransfers[1].amount = state.coinTransfers[0].amount;
+        state.coinTransfers[0].amount = 0;
+        state.preImage = action.preImage;
+        state.finalized = true;
 
-  function computeOutcome(bytes calldata encodedState)
-    external
-    override
-    view
-    returns (bytes memory)
-  {
-    AppState memory state = abi.decode(encodedState, (AppState));
-    // Revert payment if it's uninstalled before being finalized
-    return abi.encode(state.coinTransfers);
-  }
+        return abi.encode(state);
+    }
 
-  function getTurnTaker(
-    bytes calldata, /* encodedState */
-    address[] calldata participants
-  ) external override view returns (address) {
-    return participants[1]; // receiver should always be indexed at [1]
-  }
+    function computeOutcome(bytes calldata encodedState)
+        override
+        external
+        view
+        returns (bytes memory)
+    {
+        AppState memory state = abi.decode(encodedState, (AppState));
+        // Revert payment if it's uninstalled before being finalized
+        return abi.encode(state.coinTransfers);
+    }
 
-  function isStateTerminal(bytes calldata encodedState) external override view returns (bool) {
-    AppState memory state = abi.decode(encodedState, (AppState));
-    return state.finalized;
-  }
+    function getTurnTaker(
+        bytes calldata /* encodedState */,
+        address[] calldata participants
+    )
+        override
+        external
+        view
+        returns (address)
+    {
+        return participants[1]; // receiver should always be indexed at [1]
+    }
+
+    function isStateTerminal(bytes calldata encodedState)
+        override
+        external
+        view
+        returns (bool)
+    {
+        AppState memory state = abi.decode(encodedState, (AppState));
+        return state.finalized;
+    }
 }

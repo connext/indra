@@ -1,6 +1,5 @@
 import {
   AppIdentity,
-  BigNumber,
   CommitmentTarget,
   EthereumCommitment,
   MinimalTransaction,
@@ -13,13 +12,13 @@ import {
   deBigNumberifyJson,
   recoverAddressFromChannelMessage,
 } from "@connext/utils";
-import { utils } from "ethers";
+import { BigNumber, utils } from "ethers";
 
 import * as ChallengeRegistry from "../../artifacts/ChallengeRegistry.json";
 
 const { Interface, keccak256, solidityPack } = utils;
 
-const iface = new Interface(ChallengeRegistry.abi as any);
+const iface = new Interface(ChallengeRegistry.abi);
 
 export class SetStateCommitment implements EthereumCommitment {
   constructor(
@@ -38,11 +37,24 @@ export class SetStateCommitment implements EthereumCommitment {
   }
 
   public async addSignatures(
-    initiatorSignature: string | undefined,
-    responderSignature: string | undefined,
+    signature1: string | undefined,
+    signature2: string | undefined = undefined,
   ): Promise<void> {
-    this.initiatorSignature = initiatorSignature;
-    this.responderSignature = responderSignature;
+    for (const sig of [signature1, signature2]) {
+      if (!sig) {
+        continue;
+      }
+      const recovered = await recoverAddressFromChannelMessage(this.hashToSign(), sig);
+      if (recovered === this.appIdentity.participants[0]) {
+        this.initiatorSignature = sig;
+      } else if (recovered === this.appIdentity.participants[1]) {
+        this.responderSignature = sig;
+      } else {
+        throw new Error(
+          `Invalid signer detected. Got ${recovered}, expected one of: ${this.appIdentity.participants}`,
+        );
+      }
+    }
   }
 
   set signatures(sigs: string[]) {
@@ -71,7 +83,7 @@ export class SetStateCommitment implements EthereumCommitment {
     return {
       to: this.challengeRegistryAddress,
       value: 0,
-      data: iface.functions.setState.encode([
+      data: iface.encodeFunctionData("setState", [
         this.appIdentity,
         await this.getSignedAppChallengeUpdate(),
       ]),
@@ -116,7 +128,7 @@ export class SetStateCommitment implements EthereumCommitment {
     };
   }
 
-  private async assertSignatures() {
+  public async assertSignatures() {
     if (!this.signatures || this.signatures.length === 0) {
       throw new Error(`No signatures detected`);
     }

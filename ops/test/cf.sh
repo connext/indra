@@ -4,13 +4,9 @@ set -e
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
-test_command='
-  jest --setupFiles dotenv-extended/config --runInBand --forceExit --passWithNoTests '"'$@'"'
-'
+test_command='exec ts-mocha --bail --check-leaks --global wallet,contracts --exit --timeout 45000 src/**/**/*.spec.ts --require src/testing/global-hooks.ts '"$@"
 
-watch_command='
-  CI=true exec jest --color --setupFiles dotenv-extended/config --runInBand --passWithNoTests --watch '"$@"'
-'
+watch_command='ts-mocha --bail --check-leaks --global wallet,contracts --exit --timeout 45000 src/**/**/*.spec.ts --require src/testing/global-hooks.ts '"$@"
 
 if [[ "$1" == "--watch" ]]
 then
@@ -21,6 +17,7 @@ else
   suffix="cf_tester"
   command="$test_command"
 fi
+echo $command
 
 ####################
 # Internal Config
@@ -67,7 +64,7 @@ docker run \
     --gasPrice="1000000000" \
     --host="0.0.0.0" \
     --mnemonic="$eth_mnemonic" \
-    --networkId="4447" \
+    --networkId="1337" \
     --port="$ethprovider_port"
 
 ########################################

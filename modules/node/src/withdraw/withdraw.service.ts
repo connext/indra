@@ -1,7 +1,6 @@
 import { WITHDRAW_STATE_TIMEOUT } from "@connext/apps";
 import {
   AppInstanceJson,
-  BigNumber,
   CoinTransfer,
   MinimalTransaction,
   PublicParams,
@@ -9,10 +8,11 @@ import {
   WithdrawAppName,
   WithdrawAppState,
   TransactionReceipt,
+  SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
@@ -27,15 +27,15 @@ import { WithdrawRepository } from "./withdraw.repository";
 import { Withdraw } from "./withdraw.entity";
 
 const { HashZero, Zero, AddressZero } = constants;
-const { bigNumberify, hexlify, randomBytes } = utils;
+const { hexlify, randomBytes } = utils;
 
 @Injectable()
 export class WithdrawService {
   constructor(
-    private readonly cfCoreService: CFCoreService,
     private readonly configService: ConfigService,
-    private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
+    private readonly cfCoreService: CFCoreService,
+    private readonly onchainTransactionService: OnchainTransactionService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly withdrawRepository: WithdrawRepository,
     private readonly channelRepository: ChannelRepository,
@@ -67,7 +67,8 @@ export class WithdrawService {
     const generatedCommitment = await this.cfCoreService.createWithdrawCommitment(
       {
         amount: state.transfers[0].amount,
-        assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+        assetId: (appInstance.outcomeInterpreterParameters as SingleAssetTwoPartyCoinTransferInterpreterParamsJson)
+          .tokenAddress,
         recipient: state.transfers[0].to,
         nonce: state.nonce,
       } as PublicParams.Withdraw,
@@ -242,14 +243,14 @@ export class WithdrawService {
       assetId,
       Zero,
       assetId,
-      WithdrawAppName,
+      this.cfCoreService.getAppInfoByName(WithdrawAppName),
       { reason: "Node withdrawal" },
       WITHDRAW_STATE_TIMEOUT,
     );
 
     await this.saveWithdrawal(
       appIdentityHash,
-      bigNumberify(amount),
+      BigNumber.from(amount),
       assetId,
       initialState.transfers[0].to,
       initialState.data,

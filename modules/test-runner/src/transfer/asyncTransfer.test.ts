@@ -285,7 +285,7 @@ describe("Async Transfers", () => {
         preImage,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`invalid hexidecimal string`);
+    ).to.be.rejectedWith(`invalid arrayify value`);
   });
 
   it("Experimental: Average latency of 10 async transfers with Eth", async () => {

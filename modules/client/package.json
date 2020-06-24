@@ -1,6 +1,6 @@
 {
   "name": "@connext/client",
-  "version": "6.7.1",
+  "version": "7.0.0-alpha.6",
   "description": "Client for Connext Network",
   "main": "dist/index.js",
   "files": [
@@ -17,27 +17,27 @@
   },
   "dependencies": {
     "axios": "0.19.2",
-    "@connext/apps": "6.7.1",
-    "@connext/cf-core": "6.7.1",
-    "@connext/channel-provider": "6.7.1",
-    "@connext/utils": "6.7.1",
-    "@connext/contracts": "3.2.1",
-    "@connext/messaging": "6.7.1",
-    "@connext/store": "6.7.1",
-    "@connext/types": "6.7.1",
+    "@connext/apps": "7.0.0-alpha.6",
+    "@connext/cf-core": "7.0.0-alpha.6",
+    "@connext/channel-provider": "7.0.0-alpha.6",
+    "@connext/utils": "7.0.0-alpha.6",
+    "@connext/contracts": "3.2.3",
+    "@connext/messaging": "7.0.0-alpha.6",
+    "@connext/store": "7.0.0-alpha.6",
+    "@connext/types": "7.0.0-alpha.6",
     "core-js": "3.6.5",
-    "ethers": "4.0.47",
-    "evt": "1.7.11",
+    "ethers": "5.0.2",
+    "evt": "1.7.13",
     "regenerator-runtime": "0.13.5",
     "ts-natsutil": "1.0.6",
     "uuid": "8.1.0"
   },
   "devDependencies": {
     "@babel/polyfill": "7.10.1",
-    "@types/jest": "25.2.3",
+    "@types/jest": "26.0.0",
     "@types/uuid": "8.0.0",
     "jest": "26.0.1",
     "ts-jest": "26.1.0",
-    "typescript": "3.9.3"
+    "typescript": "3.9.5"
   }
 }

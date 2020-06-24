@@ -7,13 +7,12 @@ import {
 } from "@connext/types";
 import { delay } from "@connext/utils";
 import { ERC20 } from "@connext/contracts";
-import { Contract, constants, utils } from "ethers";
+import { BigNumber, Contract, constants, utils } from "ethers";
 
 import { expect } from "../";
 import { ethProvider } from "../ethprovider";
 
 const { AddressZero, Zero } = constants;
-const { bigNumberify } = utils;
 
 export const requestDepositRights = async (
   client: IConnextClient,
@@ -24,9 +23,7 @@ export const requestDepositRights = async (
   const multisigBalance =
     assetId === AddressZero
       ? await ethProvider.getBalance(client.multisigAddress)
-      : await new Contract(assetId, ERC20.abi, ethProvider).functions.balanceOf(
-          client.multisigAddress,
-        );
+      : await new Contract(assetId, ERC20.abi, ethProvider).balanceOf(client.multisigAddress);
   // get coin balance app details
   const network = await ethProvider.getNetwork();
   const { appDefinitionAddress: appDefinition } = (await client.getAppRegistry({
@@ -43,7 +40,7 @@ export const requestDepositRights = async (
       (a: AppInstanceJson, b: AppInstanceJson) => b.appSeqNo - a.appSeqNo,
     )[0];
     // make sure its the coin balance refund app
-    expect(latestApp.appInterface.addr).to.be.eq(appDefinition);
+    expect(latestApp.appDefinition).to.be.eq(appDefinition);
     depositApp = latestApp.latestState as DepositAppState;
   } else {
     // node is installing, params must be manually generated
@@ -68,10 +65,10 @@ export const requestDepositRights = async (
   // verify the latest deposit state is correct
   expect(depositApp.multisigAddress).to.be.eq(client.multisigAddress);
   expect(depositApp.assetId).to.be.eq(assetId);
-  expect(bigNumberify(depositApp.startingMultisigBalance).toString()).to.be.eq(
+  expect(BigNumber.from(depositApp.startingMultisigBalance).toString()).to.be.eq(
     multisigBalance.toString(),
   );
-  expect(bigNumberify(depositApp.startingTotalAmountWithdrawn).toString()).to.be.eq(Zero);
+  expect(BigNumber.from(depositApp.startingTotalAmountWithdrawn).toString()).to.be.eq(Zero);
   const transfers = depositApp.transfers;
   expect(transfers[0].amount).to.be.eq(Zero);
   expect(transfers[1].amount).to.be.eq(Zero);

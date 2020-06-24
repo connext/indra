@@ -2,8 +2,6 @@ import { CONVENTION_FOR_ETH_ASSET_ID, EventNames, ProtocolEventMessage } from "@
 import { constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
-
-import { toBeEq } from "../bignumber-jest-matcher";
 import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
@@ -15,13 +13,10 @@ import {
   getInstalledAppInstances,
   installApp,
 } from "../utils";
+import { expect } from "../assertions";
 
 const { One, Two, Zero } = constants;
 const { isHexString } = utils;
-
-expect.extend({ toBeEq });
-
-const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
 
 function assertUninstallMessage(
   senderId: string,
@@ -64,22 +59,23 @@ describe("Node A and B install apps of different outcome types, then uninstall t
       nodeB = context["B"].node;
 
       multisigAddress = await createChannel(nodeA, nodeB);
-      expect(multisigAddress).toBeTruthy();
-      expect(isHexString(multisigAddress)).toBeTruthy();
+      expect(multisigAddress).to.be.ok;
+      expect(isHexString(multisigAddress)).to.be.ok;
 
       const balancesBefore = await getFreeBalanceState(nodeA, multisigAddress);
 
-      expect(balancesBefore[nodeA.signerAddress]).toBeEq(Zero);
-      expect(balancesBefore[nodeB.signerAddress]).toBeEq(Zero);
+      expect(balancesBefore[nodeA.signerAddress]).to.eq(Zero);
+      expect(balancesBefore[nodeB.signerAddress]).to.eq(Zero);
 
       await collateralizeChannel(multisigAddress, nodeA, nodeB, depositAmount);
 
       const balancesAfter = await getFreeBalanceState(nodeA, multisigAddress);
-      expect(balancesAfter[nodeA.signerAddress]).toBeEq(depositAmount);
-      expect(balancesAfter[nodeB.signerAddress]).toBeEq(depositAmount);
+      expect(balancesAfter[nodeA.signerAddress]).to.eq(depositAmount);
+      expect(balancesAfter[nodeB.signerAddress]).to.eq(depositAmount);
     });
 
-    it("installs an app with the TwoPartyFixedOutcome outcome and expects Node A to win total", async (done) => {
+    it("installs an app with the TwoPartyFixedOutcome outcome and expects Node A to win total", async () => {
+      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       [appIdentityHash] = await installApp(
         nodeA,
         nodeB,
@@ -102,9 +98,9 @@ describe("Node A and B install apps of different outcome types, then uninstall t
               assertUninstallMessage(nodeA.publicIdentifier, multisigAddress, appIdentityHash, msg);
 
               const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
-              expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(Zero);
-              expect(balancesSeenByB[nodeB.signerAddress]).toBeEq(Two);
-              expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
+              expect(balancesSeenByB[nodeA.signerAddress]).to.eq(Zero);
+              expect(balancesSeenByB[nodeB.signerAddress]).to.eq(Two);
+              expect(await getInstalledAppInstances(nodeB, multisigAddress)).to.deep.eq([]);
               resolve();
             } catch (e) {
               reject(e);
@@ -116,21 +112,20 @@ describe("Node A and B install apps of different outcome types, then uninstall t
             await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash, multisigAddress));
 
             const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
-            expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(Zero);
-            expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(Two);
+            expect(balancesSeenByA[nodeA.signerAddress]).to.eq(Zero);
+            expect(balancesSeenByA[nodeB.signerAddress]).to.eq(Two);
 
-            expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
+            expect(await getInstalledAppInstances(nodeA, multisigAddress)).to.deep.eq([]);
             resolve();
           } catch (e) {
             reject(e);
           }
         }),
       ]);
-
-      done();
     });
 
-    it("installs an app with the TwoPartyFixedOutcome outcome and expects Node B to win total", async (done) => {
+    it("installs an app with the TwoPartyFixedOutcome outcome and expects Node B to win total", async () => {
+      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       initialState.winner = 1;
 
       [appIdentityHash] = await installApp(
@@ -155,9 +150,9 @@ describe("Node A and B install apps of different outcome types, then uninstall t
               assertUninstallMessage(nodeA.publicIdentifier, multisigAddress, appIdentityHash, msg);
 
               const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
-              expect(balancesSeenByB[nodeB.signerAddress]).toBeEq(Zero);
-              expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(Two);
-              expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
+              expect(balancesSeenByB[nodeB.signerAddress]).to.eq(Zero);
+              expect(balancesSeenByB[nodeA.signerAddress]).to.eq(Two);
+              expect(await getInstalledAppInstances(nodeB, multisigAddress)).to.deep.eq([]);
               resolve();
             } catch (e) {
               reject(e);
@@ -169,20 +164,20 @@ describe("Node A and B install apps of different outcome types, then uninstall t
             await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash, multisigAddress));
 
             const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
-            expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(Zero);
-            expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(Two);
+            expect(balancesSeenByA[nodeB.signerAddress]).to.eq(Zero);
+            expect(balancesSeenByA[nodeA.signerAddress]).to.eq(Two);
 
-            expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
+            expect(await getInstalledAppInstances(nodeA, multisigAddress)).to.deep.eq([]);
             resolve();
           } catch (e) {
             reject(e);
           }
         }),
       ]);
-      done();
     });
 
-    it("installs an app with the TwoPartyFixedOutcome outcome and expects the funds to be split between the nodes", async (done) => {
+    it("installs an app with the TwoPartyFixedOutcome outcome and expects the funds to be split between the nodes", async () => {
+      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       initialState.winner = 3;
 
       [appIdentityHash] = await installApp(
@@ -207,9 +202,9 @@ describe("Node A and B install apps of different outcome types, then uninstall t
               assertUninstallMessage(nodeA.publicIdentifier, multisigAddress, appIdentityHash, msg);
 
               const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
-              expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(depositAmount);
-              expect(balancesSeenByB[nodeB.signerAddress]).toBeEq(depositAmount);
-              expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
+              expect(balancesSeenByB[nodeA.signerAddress]).to.eq(depositAmount);
+              expect(balancesSeenByB[nodeB.signerAddress]).to.eq(depositAmount);
+              expect(await getInstalledAppInstances(nodeB, multisigAddress)).to.deep.eq([]);
               resolve();
             } catch (e) {
               reject(e);
@@ -221,17 +216,16 @@ describe("Node A and B install apps of different outcome types, then uninstall t
             await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash, multisigAddress));
 
             const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
-            expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(depositAmount);
-            expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(depositAmount);
+            expect(balancesSeenByA[nodeA.signerAddress]).to.eq(depositAmount);
+            expect(balancesSeenByA[nodeB.signerAddress]).to.eq(depositAmount);
 
-            expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
+            expect(await getInstalledAppInstances(nodeA, multisigAddress)).to.deep.eq([]);
             resolve();
           } catch (e) {
             reject(e);
           }
         }),
       ]);
-      done();
     });
   });
 });

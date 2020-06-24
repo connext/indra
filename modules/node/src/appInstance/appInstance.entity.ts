@@ -1,12 +1,21 @@
-import { AppActions, AppStates, AppName, HexString, OutcomeType } from "@connext/types";
-import { utils } from "ethers";
 import {
-  Entity,
+  AppActions,
+  AppName,
+  AppStates,
+  HexString,
+  OutcomeType,
+  TwoPartyFixedOutcomeInterpreterParamsJson,
+  MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
+  SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
+} from "@connext/types";
+import { BigNumber } from "ethers";
+import {
   Column,
-  ManyToOne,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
+  ManyToOne,
   PrimaryColumn,
+  UpdateDateColumn,
 } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
@@ -43,9 +52,6 @@ export class AppInstance<T extends AppName = any> {
   appSeqNo!: number;
 
   @Column("jsonb")
-  initialState!: AppStates[T];
-
-  @Column("jsonb")
   latestState!: AppStates[T];
 
   @Column("integer")
@@ -53,11 +59,11 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  initiatorDeposit!: utils.BigNumber;
+  initiatorDeposit!: BigNumber;
 
   @Column("text")
   @IsEthAddress()
@@ -76,11 +82,11 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): utils.BigNumber => new utils.BigNumber(value),
-      to: (value: utils.BigNumber): string => value.toString(),
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
-  responderDeposit!: utils.BigNumber;
+  responderDeposit!: BigNumber;
 
   @Column("text")
   @IsEthAddress()
@@ -92,27 +98,20 @@ export class AppInstance<T extends AppName = any> {
   @Column("text", { nullable: true })
   stateTimeout!: HexString;
 
-  // assigned a value on installation not proposal
-  @Column("text", { nullable: true })
-  @IsValidPublicIdentifier()
-  userIdentifier?: string;
-
-  // assigned a value on installation not proposal
-  @Column("text", { nullable: true })
-  @IsValidPublicIdentifier()
-  nodeIdentifier?: string;
-
   @Column("jsonb", { nullable: true })
-  meta?: any;
+  meta!: any;
 
   @Column("jsonb", { nullable: true })
   latestAction!: AppActions[T];
 
-  // Interpreter-related Fields
-  @Column("jsonb", { nullable: true })
-  outcomeInterpreterParameters?: any;
+  @Column("jsonb")
+  outcomeInterpreterParameters!:
+    | TwoPartyFixedOutcomeInterpreterParamsJson
+    | MultiAssetMultiPartyCoinTransferInterpreterParamsJson
+    | SingleAssetTwoPartyCoinTransferInterpreterParamsJson
+    | {};
 
-  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances)
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.appInstances, { nullable: true })
   channel!: Channel;
 
   @CreateDateColumn()

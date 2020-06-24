@@ -7,6 +7,7 @@ import {
   AppInstanceJson,
   ConditionalTransferAppNames,
   SupportedApplicationNames,
+  SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 
@@ -78,7 +79,8 @@ export class AppActionsService {
     const commitment = await this.cfCoreService.createWithdrawCommitment(
       {
         amount: state.transfers[0].amount,
-        assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+        assetId: (appInstance.outcomeInterpreterParameters as SingleAssetTwoPartyCoinTransferInterpreterParamsJson)
+          .tokenAddress,
         recipient: this.cfCoreService.cfCore.signerAddress,
         nonce: state.nonce,
       },

@@ -29,6 +29,7 @@ import * as TicTacToeApp from "../artifacts/TicTacToeApp.json";
 import * as TimeLockedPassThrough from "../artifacts/TimeLockedPassThrough.json";
 import * as TwoPartyFixedOutcomeInterpreter from "../artifacts/TwoPartyFixedOutcomeInterpreter.json";
 import * as WithdrawApp from "../artifacts/WithdrawApp.json";
+import * as WithdrawInterpreter from "../artifacts/WithdrawInterpreter.json";
 
 type Abi = Array<string | utils.FunctionFragment | utils.EventFragment | utils.ParamType>;
 
@@ -70,7 +71,8 @@ export const artifacts = {
   Token,
   TwoPartyFixedOutcomeInterpreter,
   WithdrawApp,
-} as Artifacts;
+  WithdrawInterpreter
+} as any;
 
 export {
   AppApplyActionFails,
@@ -101,4 +103,5 @@ export {
   Token,
   TwoPartyFixedOutcomeInterpreter,
   WithdrawApp,
+  WithdrawInterpreter
 };

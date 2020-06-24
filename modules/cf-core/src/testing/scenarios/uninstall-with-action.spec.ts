@@ -13,7 +13,6 @@ import { constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
-import { toBeEq } from "../bignumber-jest-matcher";
 import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
@@ -28,14 +27,10 @@ import {
 } from "../utils";
 import { AppInstance } from "../../models";
 import { getRandomBytes32 } from "@connext/utils";
-import { HashZero } from "ethers/constants";
+import { expect } from "../assertions";
 
-const { One, Two, Zero } = constants;
+const { One, Two, Zero, HashZero } = constants;
 const { soliditySha256 } = utils;
-
-expect.extend({ toBeEq });
-
-const { SimpleLinkedTransferApp } = global["contracts"] as TestContractAddresses;
 
 function assertUninstallMessage(
   senderId: string,
@@ -90,7 +85,8 @@ describe("Node A and B install an app, then uninstall with a given action", () =
     };
   });
 
-  it("should take action + uninstall linked app", async (done) => {
+  it("should take action + uninstall SimpleLinkedTransferApp app", async () => {
+    const { SimpleLinkedTransferApp } = global["contracts"] as TestContractAddresses;
     [appIdentityHash] = await installApp(
       nodeA,
       nodeB,
@@ -124,9 +120,9 @@ describe("Node A and B install an app, then uninstall with a given action", () =
             );
 
             const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
-            expect(balancesSeenByB[nodeA.signerAddress]).toBeEq(Zero);
-            expect(balancesSeenByB[nodeB.signerAddress]).toBeEq(Two);
-            expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
+            expect(balancesSeenByB[nodeA.signerAddress]).to.eq(Zero);
+            expect(balancesSeenByB[nodeB.signerAddress]).to.eq(Two);
+            expect(await getInstalledAppInstances(nodeB, multisigAddress)).to.deep.eq([]);
             resolve();
           } catch (e) {
             reject(e);
@@ -140,17 +136,15 @@ describe("Node A and B install an app, then uninstall with a given action", () =
           );
 
           const balancesSeenByA = await getFreeBalanceState(nodeA, multisigAddress);
-          expect(balancesSeenByA[nodeA.signerAddress]).toBeEq(Zero);
-          expect(balancesSeenByA[nodeB.signerAddress]).toBeEq(Two);
+          expect(balancesSeenByA[nodeA.signerAddress]).to.eq(Zero);
+          expect(balancesSeenByA[nodeB.signerAddress]).to.eq(Two);
 
-          expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
+          expect(await getInstalledAppInstances(nodeA, multisigAddress)).to.deep.eq([]);
           resolve();
         } catch (e) {
           reject(e);
         }
       }),
     ]);
-
-    done();
   });
 });

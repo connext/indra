@@ -117,22 +117,13 @@ export class SwapRateService implements OnModuleInit {
   }
 
   async getUniswapRate(from: string, to: string): Promise<string> {
-    let fromReserves = undefined;
-    if (from !== AddressZero) {
-      const fromMainnetAddress = await this.config.getTokenAddressForSwap(from);
-      fromReserves = await getTokenReserves(fromMainnetAddress);
-    }
-
-    let toReserves = undefined;
-    if (to !== AddressZero) {
-      const toMainnetAddress = await this.config.getTokenAddressForSwap(to);
-      toReserves = await getTokenReserves(toMainnetAddress);
-    }
-
-    const marketDetails = getMarketDetails(fromReserves, toReserves);
-
-    const newRate = marketDetails.marketRate.rate.toString();
-    return newRate;
+    const fromReserves = from !== AddressZero
+      ? await getTokenReserves(await this.config.getTokenAddressForSwap(from))
+      : undefined;
+    const toReserves = to !== AddressZero
+      ? await getTokenReserves(await this.config.getTokenAddressForSwap(to))
+      : undefined;
+    return getMarketDetails(fromReserves, toReserves).marketRate.rate.toString();
   }
 
   async broadcastRate(from: string, to: string): Promise<void> {
@@ -150,10 +141,14 @@ export class SwapRateService implements OnModuleInit {
     const swaps = this.config.getAllowedSwaps();
 
     for (const swap of swaps) {
-      // Check rate at each new block
-      provider.on("block", (blockNumber: number) =>
-        this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber),
-      );
+      if (swap.priceOracleType === PriceOracleTypes.UNISWAP) {
+        this.log.info(`Registering chain listener for swaps from ${swap.from} to ${swap.to}`);
+        provider.on("block", (blockNumber: number) =>
+          this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber),
+        );
+      } else if (swap.priceOracleType === PriceOracleTypes.HARDCODED) {
+        this.log.info(`Using hardcoded value for swaps from ${swap.from} to ${swap.to}`);
+      }
     }
   }
 }

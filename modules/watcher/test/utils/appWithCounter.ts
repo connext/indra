@@ -1,7 +1,5 @@
 import {
   AppIdentity,
-  BigNumber,
-  AppInterface,
   AppInstanceJson,
   Address,
   OutcomeType,
@@ -11,8 +9,8 @@ import {
   ConditionalTransactionCommitmentJSON,
   CoinTransfer,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
-  AppInstanceProposal,
   SignedCancelChallengeRequest,
+  AppABIEncodings,
 } from "@connext/types";
 import {
   ChannelSigner,
@@ -22,7 +20,7 @@ import {
   toBN,
 } from "@connext/utils";
 import { ConditionalTransactionCommitment, SetStateCommitment } from "@connext/contracts";
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import { stateToHash } from "./utils";
 import { TestNetworkContext } from "./contracts";
@@ -98,11 +96,10 @@ export class AppWithCounterClass {
     };
   }
 
-  get appInterface(): AppInterface {
+  get abiEncodings(): AppABIEncodings {
     return {
       stateEncoding: `tuple(uint256 counter)`,
       actionEncoding: `tuple(uint8 actionType, uint256 increment)`,
-      addr: this.appDefinition,
     };
   }
 
@@ -146,6 +143,10 @@ export class AppWithCounterClass {
     return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
   }
 
+  public isStateTerminal() {
+    return this.latestState.counter.gt(5);
+  }
+
   public static encodeAction(action: AppWithCounterAction) {
     return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
   }
@@ -157,38 +158,24 @@ export class AppWithCounterClass {
       initiatorIdentifier: this.signerParticipants[0].publicIdentifier,
       responderIdentifier: this.signerParticipants[1].publicIdentifier,
       defaultTimeout: this.defaultTimeout.toHexString(),
-      appInterface: this.appInterface,
+      abiEncodings: this.abiEncodings,
       appSeqNo: this.channelNonce.toNumber(),
       latestState: this.latestState,
       latestVersionNumber: this.latestVersionNumber.toNumber(),
       stateTimeout: this.stateTimeout.toString(),
       outcomeType: this.outcomeType,
       latestAction: this.latestAction,
-      twoPartyOutcomeInterpreterParams: this.interpreterParams,
-    };
-  }
-
-  public getProposal(): AppInstanceProposal {
-    return {
-      identityHash: this.identityHash,
-      initiatorIdentifier: this.signerParticipants[0].publicIdentifier,
-      responderIdentifier: this.signerParticipants[1].publicIdentifier,
-      appSeqNo: this.channelNonce.toNumber(),
-      defaultTimeout: this.defaultTimeout.toString(),
-      stateTimeout: this.stateTimeout.toString(),
-      abiEncodings: {
-        stateEncoding: this.appInterface.stateEncoding,
-        actionEncoding: this.appInterface.actionEncoding,
-      },
-      outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-      appDefinition: this.appInterface.addr,
-      initialState: { counter: Zero },
+      outcomeInterpreterParameters: bigNumberifyJson(this.interpreterParams),
       initiatorDeposit: this.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][0].amount.toString(),
       initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
       responderDeposit: this.tokenIndexedBalances[CONVENTION_FOR_ETH_ASSET_ID][1].amount.toString(),
       responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
-      twoPartyOutcomeInterpreterParams: bigNumberifyJson(this.interpreterParams),
+      appDefinition: this.appDefinition,
     };
+  }
+
+  public getProposal(): AppInstanceJson {
+    return this.toJson();
   }
 
   public async getInitialSetState(

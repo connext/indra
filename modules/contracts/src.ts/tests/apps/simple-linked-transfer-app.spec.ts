@@ -7,7 +7,7 @@ import {
   SimpleLinkedTransferAppActionEncoding,
 } from "@connext/types";
 import { getRandomAddress, getRandomBytes32 } from "@connext/utils";
-import { Contract, ContractFactory, constants, utils } from "ethers";
+import { BigNumber, Contract, ContractFactory, constants, utils } from "ethers";
 
 import { SimpleLinkedTransferApp } from "../../artifacts";
 
@@ -44,7 +44,7 @@ describe("SimpleLinkedTransferApp", () => {
   let simpleLinkedTransferApp: Contract;
 
   const computeOutcome = async (state: SimpleLinkedTransferAppState): Promise<CoinTransfer[]> => {
-    const result = await simpleLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
+    const result = await simpleLinkedTransferApp.computeOutcome(encodeAppState(state));
     return decodeTransfers(result);
   };
 
@@ -52,7 +52,7 @@ describe("SimpleLinkedTransferApp", () => {
     state: SimpleLinkedTransferAppState,
     action: SimpleLinkedTransferAppAction,
   ): Promise<SimpleLinkedTransferAppState> => {
-    const result = await simpleLinkedTransferApp.functions.applyAction(
+    const result = await simpleLinkedTransferApp.applyAction(
       encodeAppState(state),
       encodeAppAction(action),
     );
@@ -62,7 +62,7 @@ describe("SimpleLinkedTransferApp", () => {
   const createInitialState = async (preImage: string): Promise<SimpleLinkedTransferAppState> => {
     const senderAddr = getRandomAddress();
     const receiverAddr = getRandomAddress();
-    const transferAmount = new utils.BigNumber(10000);
+    const transferAmount = BigNumber.from(10000);
     const linkedHash = createLinkedHash(preImage);
     return {
       coinTransfers: [

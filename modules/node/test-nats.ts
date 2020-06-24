@@ -7,7 +7,6 @@ async function start(): Promise<void> {
     10000,
     JSON.stringify({ id: "myid2", data: { hello: "world" } }),
   );
-  console.log("req: ", req);
 }
 
 start();

@@ -7,7 +7,6 @@ import {
 } from "@connext/contracts";
 import {
   JsonRpcProvider,
-  BigNumber,
   CONVENTION_FOR_ETH_ASSET_ID,
   CoinTransfer,
   SetStateCommitmentJSON,
@@ -16,7 +15,7 @@ import {
   IStoreService,
 } from "@connext/types";
 import { toBN, getRandomChannelSigner } from "@connext/utils";
-import { Wallet, Contract, constants, utils } from "ethers";
+import { BigNumber, Wallet, Contract, constants, utils } from "ethers";
 
 import { AppWithCounterClass, AppWithCounterAction, ActionType } from "./appWithCounter";
 import { getMemoryStore } from "@connext/store";
@@ -81,9 +80,9 @@ export const setupContext = async (
   const proxyFactory = new Contract(networkContext.ProxyFactory, ProxyFactory.abi, wallet);
   const multisigAddress: string = await new Promise(async (resolve) => {
     proxyFactory.once("ProxyCreation", async (proxyAddress: string) => resolve(proxyAddress));
-    await proxyFactory.functions.createProxyWithNonce(
+    await proxyFactory.createProxyWithNonce(
       networkContext.MinimumViableMultisig,
-      new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+      new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
         [signers[0].address, signers[1].address],
       ]),
       0,
@@ -95,7 +94,7 @@ export const setupContext = async (
     multisigAddress,
     MinimumViableMultisig.abi,
     wallet,
-  ).functions.totalAmountWithdrawn(CONVENTION_FOR_ETH_ASSET_ID);
+  ).totalAmountWithdrawn(CONVENTION_FOR_ETH_ASSET_ID);
   expect(withdrawn).to.be.eq(Zero);
 
   // create objects from provided overrides
@@ -171,7 +170,7 @@ export const setupContext = async (
     try {
       const tx = await token.transfer(multisigAddress, channelBalances[networkContext.Token]);
       await tx.wait();
-      expect(await token.functions.balanceOf(multisigAddress)).to.be.eq(
+      expect(await token.balanceOf(multisigAddress)).to.be.eq(
         channelBalances[networkContext.Token],
       );
       break;
@@ -195,7 +194,7 @@ export const setupContext = async (
     );
 
     await wallet.getTransactionCount();
-    const tx = await challengeRegistry.functions.setAndProgressState(
+    const tx = await challengeRegistry.setAndProgressState(
       app.appIdentity,
       await setState0.getSignedAppChallengeUpdate(),
       await setState1.getSignedAppChallengeUpdate(),
@@ -234,7 +233,7 @@ export const setupContext = async (
       }),
       new Promise(async (resolve, reject) => {
         try {
-          const tx = await challengeRegistry.functions.setState(
+          const tx = await challengeRegistry.setState(
             setState.appIdentity,
             await setState.getSignedAppChallengeUpdate(),
           );
@@ -255,7 +254,7 @@ export const setupContext = async (
     const setState = SetStateCommitment.fromJson(
       await app.getSingleSignedSetState(networkContext.ChallengeRegistry),
     );
-    const tx = await challengeRegistry.functions.progressState(
+    const tx = await challengeRegistry.progressState(
       app.appIdentity,
       await setState.getSignedAppChallengeUpdate(),
       AppWithCounterClass.encodeState(app.latestState),
@@ -265,7 +264,7 @@ export const setupContext = async (
   };
 
   const cancelChallenge = async (app: AppWithCounterClass = activeApps[0]) => {
-    const tx = await challengeRegistry.functions.cancelDispute(
+    const tx = await challengeRegistry.cancelDispute(
       app.appIdentity,
       await app.getCancelDisputeRequest(),
     );
@@ -289,6 +288,7 @@ export const setupContext = async (
         app.getProposal(),
         app.toJson().appSeqNo,
         await app.getInitialSetState(networkContext.ChallengeRegistry),
+        await app.getConditional(freeBalance.identityHash, networkContext),
       );
 
       // no need to create intermediate free balance state, since
@@ -299,7 +299,6 @@ export const setupContext = async (
         app.toJson(),
         freeBalance.toJson(),
         await freeBalance.getSetState(),
-        await app.getConditional(freeBalance.identityHash, networkContext),
       );
 
       await store.updateAppInstance(

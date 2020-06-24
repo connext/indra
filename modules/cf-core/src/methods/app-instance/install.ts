@@ -5,8 +5,9 @@ import {
   ProtocolNames,
   ProtocolParams,
   PublicIdentifier,
+  EventNames,
+  InstallMessage,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
 
 import {
   NO_APP_IDENTITY_HASH_TO_INSTALL,
@@ -41,11 +42,13 @@ export class InstallAppInstanceController extends MethodController {
     return params.multisigAddress;
   }
 
+  // should return true IFF the channel is in the correct state before
+  // method execution
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.Install,
     preProtocolStateChannel: StateChannel | undefined,
-  ): Promise<void> {
+  ): Promise<MethodResults.Install | undefined> {
     if (!preProtocolStateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(params.appIdentityHash));
     }
@@ -55,11 +58,16 @@ export class InstallAppInstanceController extends MethodController {
     if (!appIdentityHash || !appIdentityHash.trim()) {
       throw new Error(NO_APP_IDENTITY_HASH_TO_INSTALL);
     }
+    const installed = preProtocolStateChannel.appInstances.get(appIdentityHash);
+    if (installed) {
+      return { appInstance: installed.toJson() };
+    }
 
     const proposal = preProtocolStateChannel.proposedAppInstances.get(appIdentityHash);
     if (!proposal) {
       throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
+    return undefined;
   }
 
   protected async executeMethodImplementation(
@@ -88,6 +96,22 @@ export class InstallAppInstanceController extends MethodController {
       appInstance: appInstance.toJson(),
     };
   }
+
+  protected async afterExecution(
+    requestHandler: RequestHandler,
+    params: MethodParams.Install,
+    returnValue: MethodResults.Install,
+  ): Promise<void> {
+    const { router, publicIdentifier } = requestHandler;
+
+    const msg = {
+      from: publicIdentifier,
+      type: EventNames.INSTALL_EVENT,
+      data: { appIdentityHash: params.appIdentityHash },
+    } as InstallMessage;
+
+    await router.emit(msg.type, msg, `outgoing`);
+  }
 }
 
 export async function install(
@@ -104,33 +128,12 @@ export async function install(
     router,
     ProtocolNames.install,
     {
-      appInitiatorIdentifier: proposal.initiatorIdentifier,
-      appInterface: { ...proposal.abiEncodings, addr: proposal.appDefinition },
-      appResponderIdentifier: proposal.responderIdentifier,
-      appSeqNo: proposal.appSeqNo,
-      defaultTimeout: toBN(proposal.defaultTimeout),
-      disableLimit: false,
-      identityHash: proposal.identityHash,
-      initialState: proposal.initialState,
-      initiatorBalanceDecrement: isSame
-        ? toBN(proposal.initiatorDeposit)
-        : toBN(proposal.responderDeposit),
-      initiatorDepositAssetId: isSame
-        ? proposal.initiatorDepositAssetId
-        : proposal.responderDepositAssetId,
+      proposal,
       initiatorIdentifier,
-      meta: proposal.meta,
-      multisigAddress: preProtocolStateChannel.multisigAddress,
-      outcomeType: proposal.outcomeType,
-      responderBalanceDecrement: isSame
-        ? toBN(proposal.responderDeposit)
-        : toBN(proposal.initiatorDeposit),
-      responderDepositAssetId: isSame
-        ? proposal.responderDepositAssetId
-        : proposal.initiatorDepositAssetId,
       responderIdentifier: isSame ? proposal.responderIdentifier : proposal.initiatorIdentifier,
-      stateTimeout: toBN(proposal.stateTimeout),
+      multisigAddress: preProtocolStateChannel.multisigAddress,
     } as ProtocolParams.Install,
+    preProtocolStateChannel,
   );
 
   return postProtocolChannel;

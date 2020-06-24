@@ -1,12 +1,14 @@
 import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { constants, utils } from "ethers";
+import { before } from "mocha";
 
-import { createAppInstanceForTest, createAppInstanceProposalForTest } from "../../testing/utils";
+import { createAppInstanceForTest, createAppInstanceJsonForTest } from "../../testing/utils";
 import { getRandomContractAddresses } from "../../testing/mocks";
 
 import { StateChannel } from "../state-channel";
 import { FreeBalanceClass } from "../free-balance";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
+import { expect } from "../../testing/assertions";
 
 const { WeiPerEther, Zero, AddressZero } = constants;
 const { getAddress } = utils;
@@ -19,7 +21,7 @@ describe("StateChannel::uninstallApp", () => {
 
   let appIdentityHash: string;
 
-  beforeAll(() => {
+  before(() => {
     const multisigAddress = getAddress(getRandomAddress());
     const ids = getRandomPublicIdentifiers(2);
 
@@ -32,7 +34,7 @@ describe("StateChannel::uninstallApp", () => {
     );
 
     const appInstance = createAppInstanceForTest(sc1);
-    sc1 = sc1.addProposal(createAppInstanceProposalForTest(appInstance.identityHash, sc1));
+    sc1 = sc1.addProposal(createAppInstanceJsonForTest(appInstance.identityHash, sc1));
 
     appIdentityHash = appInstance.identityHash;
 
@@ -58,24 +60,24 @@ describe("StateChannel::uninstallApp", () => {
   });
 
   it("should not alter any of the base properties", () => {
-    expect(sc2.multisigAddress).toBe(sc1.multisigAddress);
-    expect(sc2.userIdentifiers).toMatchObject(sc1.userIdentifiers);
+    expect(sc2.multisigAddress).to.eq(sc1.multisigAddress);
+    expect(sc2.userIdentifiers).to.deep.eq(sc1.userIdentifiers);
   });
 
   it("should have added something at the id of thew new app", () => {
-    expect(sc2.getAppInstance(appIdentityHash)).not.toBe(undefined);
+    expect(sc2.getAppInstance(appIdentityHash)).not.to.eq(undefined);
   });
 
   describe("the updated ETH Free Balance", () => {
     let fb: FreeBalanceClass;
 
-    beforeAll(() => {
+    before(() => {
       fb = sc2.getFreeBalanceClass();
     });
 
     it("should have updated balances for Alice and Bob", () => {
       for (const amount of Object.values(fb.withTokenAddress(AddressZero) || {})) {
-        expect(amount).toEqual(Zero);
+        expect(amount).to.eq(Zero);
       }
     });
   });

@@ -48,6 +48,7 @@ export interface CFChannelProviderOptions {
   node: INodeApiClient;
   logger?: ILoggerService;
   store: IStoreService;
+  skipSync?: boolean;
 }
 
 export type WalletDepositParams = {

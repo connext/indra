@@ -1,76 +1,43 @@
+import { ABIEncoding, Address, AssetId, DecString, HexString, PublicIdentifier } from "./basic";
 import {
-  ABIEncoding,
-  Address,
-  AssetId,
-  DecString,
-  HexString,
-  PublicIdentifier,
-  SolidityValueType,
-} from "./basic";
-import {
-  MultiAssetMultiPartyCoinTransferInterpreterParams,
   MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
   OutcomeType,
-  SingleAssetTwoPartyCoinTransferInterpreterParams,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
-  TwoPartyFixedOutcomeInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParamsJson,
 } from "./contracts";
 
 ////////////////////////////////////
 // App Instances
 
-export type AppInterface = {
-  addr: Address;
-  stateEncoding: ABIEncoding;
-  actionEncoding: ABIEncoding | undefined;
-};
-
 export type AppABIEncodings = {
-  stateEncoding: ABIEncoding;
   actionEncoding: ABIEncoding | undefined;
+  stateEncoding: ABIEncoding;
 };
 
-export type AppInstanceJson<T = any> = {
-  identityHash: HexString;
-  multisigAddress: Address;
-  initiatorIdentifier: PublicIdentifier;
-  responderIdentifier: PublicIdentifier;
-  defaultTimeout: HexString;
-  appInterface: AppInterface;
-  appSeqNo: number;
-  latestState: SolidityValueType;
-  latestVersionNumber: number;
-  stateTimeout: HexString;
-  outcomeType: string;
-  meta?: T;
-  latestAction?: SolidityValueType;
-  // Interpreter Params
-  twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParamsJson;
-  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParamsJson;
-  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParamsJson;
-};
-
-export type AppInstanceProposal = {
+export type AppInstanceJson = {
   abiEncodings: AppABIEncodings;
   appDefinition: Address;
   appSeqNo: number;
+  bytecode?: HexString;
+  defaultTimeout: HexString;
   identityHash: HexString;
-  initialState: SolidityValueType;
   initiatorDeposit: DecString;
   initiatorDepositAssetId: AssetId;
-  outcomeType: OutcomeType;
   initiatorIdentifier: PublicIdentifier;
-  responderIdentifier: PublicIdentifier;
+  latestAction?: any;
+  latestState: any;
+  latestVersionNumber: number;
+  meta?: any;
+  multisigAddress: Address;
+  outcomeInterpreterParameters:
+    | TwoPartyFixedOutcomeInterpreterParamsJson
+    | MultiAssetMultiPartyCoinTransferInterpreterParamsJson
+    | SingleAssetTwoPartyCoinTransferInterpreterParamsJson;
+  outcomeType: OutcomeType;
   responderDeposit: DecString;
   responderDepositAssetId: AssetId;
-  defaultTimeout: HexString;
+  responderIdentifier: PublicIdentifier;
   stateTimeout: HexString;
-  meta?: object;
-  // Interpreter Params
-  twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
 };
 
 ////////////////////////////////////
@@ -80,8 +47,8 @@ export type DefaultApp = {
   actionEncoding?: ABIEncoding;
   allowNodeInstall: boolean;
   appDefinitionAddress: Address;
-  name: string;
   chainId: number;
+  name: string;
   outcomeType: OutcomeType;
   stateEncoding: ABIEncoding;
 };

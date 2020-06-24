@@ -1,8 +1,4 @@
-import {
-  AppRegistry as RegistryOfApps, // TODO: fix collision
-  validateSimpleSwapApp,
-  generateValidationMiddleware,
-} from "@connext/apps";
+import { validateSimpleSwapApp, generateValidationMiddleware } from "@connext/apps";
 import {
   AppInstanceJson,
   MethodParams,
@@ -23,14 +19,17 @@ import {
   DepositAppName,
   GenericConditionalTransferAppState,
   getTransferTypeFromAppName,
+  DefaultApp,
+  SupportedApplicationNames,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
+import { ERC20 } from "@connext/contracts";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { providers, utils } from "ethers";
+import { BigNumber, providers, Contract } from "ethers";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { CFCoreStore } from "../cfCore/cfCore.store";
 import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
@@ -41,15 +40,9 @@ import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { TransferService } from "../transfer/transfer.service";
 
-import { AppRegistry } from "./appRegistry.entity";
-import { AppRegistryRepository } from "./appRegistry.repository";
-
-const { bigNumberify } = utils;
-
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
   constructor(
-    private readonly cfCoreStore: CFCoreStore,
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
@@ -58,7 +51,6 @@ export class AppRegistryService implements OnModuleInit {
     private readonly swapRateService: SwapRateService,
     private readonly withdrawService: WithdrawService,
     private readonly depositService: DepositService,
-    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("AppRegistryService");
@@ -75,13 +67,13 @@ export class AppRegistryService implements OnModuleInit {
       )} from ${from} started`,
     );
 
-    let registryAppInfo: AppRegistry;
+    let registryAppInfo: DefaultApp;
 
     // if error, reject install
     let installerChannel: Channel;
     try {
       installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
-      registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+      registryAppInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
         proposeInstallParams.appDefinition,
       );
 
@@ -116,13 +108,16 @@ export class AppRegistryService implements OnModuleInit {
           installerChannel.multisigAddress,
           proposeInstallParams.responderDepositAssetId,
         );
-        const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
+        const responderDepositBigNumber = BigNumber.from(proposeInstallParams.responderDeposit);
         if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
           const amount = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
             from,
             proposeInstallParams.responderDepositAssetId,
             responderDepositBigNumber,
             freeBal[this.cfCoreService.cfCore.signerAddress],
+          );
+          this.log.info(
+            `Calculated collateral amount to cover payment and rebalance: ${amount.toString()}`,
           );
           const depositReceipt = await this.depositService.deposit(
             installerChannel,
@@ -142,13 +137,17 @@ export class AppRegistryService implements OnModuleInit {
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.stack || e.message}`);
-      await this.cfCoreService.rejectInstallApp(appIdentityHash, installerChannel.multisigAddress);
+      await this.cfCoreService.rejectInstallApp(
+        appIdentityHash,
+        installerChannel.multisigAddress,
+        e.message,
+      );
       return;
     }
   }
 
   private async runPostInstallTasks(
-    registryAppInfo: AppRegistry,
+    registryAppInfo: DefaultApp,
     appIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
   ): Promise<void> {
@@ -164,7 +163,7 @@ export class AppRegistryService implements OnModuleInit {
         this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`);
         await this.withdrawService.saveWithdrawal(
           appIdentityHash,
-          bigNumberify(proposeInstallParams.initiatorDeposit),
+          BigNumber.from(proposeInstallParams.initiatorDeposit),
           proposeInstallParams.initiatorDepositAssetId,
           initialState.transfers[0].to,
           initialState.data,
@@ -172,7 +171,7 @@ export class AppRegistryService implements OnModuleInit {
           initialState.signatures[1],
           appInstance.multisigAddress,
         );
-        this.withdrawService.handleUserWithdraw(appInstance);
+        await this.withdrawService.handleUserWithdraw(appInstance);
         break;
       }
       default:
@@ -194,7 +193,7 @@ export class AppRegistryService implements OnModuleInit {
         contractAddresses,
         provider: provider as providers.JsonRpcProvider,
       },
-      this.configService.getSupportedTokens(),
+      this.configService.getSupportedTokenAddresses(),
     );
 
     return async (protocol: ProtocolName, cxt: MiddlewareContext): Promise<void> => {
@@ -233,12 +232,15 @@ export class AppRegistryService implements OnModuleInit {
       return;
     }
 
-    const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
-      appInstance.appInterface.addr,
+    const registryAppInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
+      appInstance.appDefinition,
     );
 
     // this middleware is only relevant for require online
-    if (getTransferTypeFromAppName(registryAppInfo.name) === "AllowOffline") {
+    if (
+      getTransferTypeFromAppName(registryAppInfo.name as SupportedApplicationNames) ===
+      "AllowOffline"
+    ) {
       return;
     }
 
@@ -271,6 +273,7 @@ export class AppRegistryService implements OnModuleInit {
       await this.cfCoreService.rejectInstallApp(
         existingSenderApp.identityHash,
         existingSenderApp.channel.multisigAddress,
+        e.message,
       );
       return;
     }
@@ -278,9 +281,9 @@ export class AppRegistryService implements OnModuleInit {
 
   private installMiddleware = async (cxt: InstallMiddlewareContext) => {
     const { appInstance } = cxt;
-    const appDef = appInstance.appInterface.addr;
+    const appDef = appInstance.appDefinition;
 
-    const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
+    const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(appDef);
 
     if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo.name)) {
       await this.installTransferMiddleware(appInstance);
@@ -293,6 +296,31 @@ export class AppRegistryService implements OnModuleInit {
 
     switch (proposal.appDefinition) {
       case contractAddresses.SimpleTwoPartySwapApp: {
+        const getDecimals = async (tokenAddress: string): Promise<number> => {
+          let decimals = 18;
+          if (tokenAddress !== CONVENTION_FOR_ETH_ASSET_ID) {
+            try {
+              const token = new Contract(
+                tokenAddress,
+                ERC20.abi,
+                this.configService.getEthProvider(),
+              );
+              decimals = await token.functions.decimals();
+              console.log("decimals: ", decimals);
+              this.log.info(
+                `Retrieved decimals for ${tokenAddress} from token contract: ${decimals}`,
+              );
+            } catch (error) {
+              this.log.error(
+                `Could not retrieve decimals from ${tokenAddress} token contract, proceeding with 18 decimals...: ${error.message}`,
+              );
+            }
+          }
+          return decimals;
+        };
+
+        const responderDecimals = await getDecimals(params.responderDepositAssetId);
+
         return validateSimpleSwapApp(
           params as any,
           this.configService.getAllowedSwaps(),
@@ -300,6 +328,7 @@ export class AppRegistryService implements OnModuleInit {
             getAddressFromAssetId(params.initiatorDepositAssetId),
             getAddressFromAssetId(params.responderDepositAssetId),
           ),
+          responderDecimals,
         );
       }
     }
@@ -386,7 +415,9 @@ export class AppRegistryService implements OnModuleInit {
       return;
     }
 
-    const channel = await this.cfCoreStore.getChannel(appInstance.multisigAddress);
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(
+      appInstance.multisigAddress,
+    );
     if (channel.activeCollateralizations[latestState.assetId]) {
       throw new Error(`Cannot uninstall deposit app with active collateralization`);
     }
@@ -395,9 +426,9 @@ export class AppRegistryService implements OnModuleInit {
 
   private uninstallMiddleware = async (cxt: UninstallMiddlewareContext): Promise<void> => {
     const { appInstance, role } = cxt;
-    const appDef = appInstance.appInterface.addr;
+    const appDef = appInstance.appDefinition;
 
-    const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(appDef);
+    const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(appDef);
 
     if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo.name)) {
       return this.uninstallTransferMiddleware(appInstance, role);
@@ -409,30 +440,6 @@ export class AppRegistryService implements OnModuleInit {
   };
 
   async onModuleInit() {
-    const ethNetwork = await this.configService.getEthNetwork();
-    const contractAddresses = await this.configService.getContractAddresses();
-    for (const app of RegistryOfApps) {
-      let appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
-        app.name,
-        ethNetwork.chainId,
-      );
-      if (!appRegistry) {
-        appRegistry = new AppRegistry();
-      }
-      const appDefinitionAddress = contractAddresses[app.name];
-      this.log.info(
-        `Creating ${app.name} app on chain ${ethNetwork.chainId}: ${appDefinitionAddress}`,
-      );
-      appRegistry.actionEncoding = app.actionEncoding;
-      appRegistry.appDefinitionAddress = appDefinitionAddress;
-      appRegistry.name = app.name;
-      appRegistry.chainId = ethNetwork.chainId;
-      appRegistry.outcomeType = app.outcomeType;
-      appRegistry.stateEncoding = app.stateEncoding;
-      appRegistry.allowNodeInstall = app.allowNodeInstall;
-      await this.appRegistryRepository.save(appRegistry);
-    }
-
     this.log.info(`Injecting CF Core middleware`);
     this.cfCoreService.cfCore.injectMiddleware(Opcode.OP_VALIDATE, await this.generateMiddleware());
     this.log.info(`Injected CF Core middleware`);

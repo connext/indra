@@ -1,7 +1,7 @@
-import { constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 const { EtherSymbol } = constants;
-const { bigNumberify, commify, parseUnits, formatUnits } = utils;
+const { commify, parseUnits, formatUnits } = utils;
 
 export class Currency {
   ////////////////////////////////////////
@@ -36,8 +36,8 @@ export class Currency {
   // ray is in units like MakerDAO's ray aka an integer w 36 extra units of precision
   // So: this.wad is to the currency amount as wei is to an ether amount
   // These let us handle divisions & decimals cleanly w/out needing a BigDecimal library
-  public wad: utils.BigNumber;
-  public ray: utils.BigNumber;
+  public wad: BigNumber;
+  public ray: BigNumber;
   public type: string;
 
   public daiRate: string;
@@ -51,8 +51,8 @@ export class Currency {
     this.daiRate = typeof daiRate !== "undefined" ? daiRate : "1";
     this.daiRateGiven = !!daiRate;
     try {
-      this.wad = this.toWad(amount._hex ? bigNumberify(amount._hex) : amount);
-      this.ray = this.toRay(amount._hex ? bigNumberify(amount._hex) : amount);
+      this.wad = this.toWad(amount._hex ? BigNumber.from(amount._hex) : amount);
+      this.ray = this.toRay(amount._hex ? BigNumber.from(amount._hex) : amount);
     } catch (e) {
       throw new Error(`Invalid currency amount (${amount}): ${e}`);
     }
@@ -97,7 +97,7 @@ export class Currency {
   }
 
   public toBN() {
-    return bigNumberify(this._round(this.amount));
+    return BigNumber.from(this._round(this.amount));
   }
 
   public format(_options: any) {
@@ -129,7 +129,7 @@ export class Currency {
     // Note: rounding n=1099.9 to nearest int is same as floor(n + 0.5)
     // roundUp plays same role as 0.5 in above example
     if (typeof decimals === "number" && decimals < nDecimals) {
-      const roundUp = bigNumberify(`5${"0".repeat(18 - decimals - 1)}`);
+      const roundUp = BigNumber.from(`5${"0".repeat(18 - decimals - 1)}`);
       const rounded = this.fromWad(this.wad.add(roundUp));
       return rounded.slice(0, amt.length - (nDecimals - decimals)).replace(/\.$/, "");
     }
@@ -145,6 +145,7 @@ export class Currency {
       DEI: this.toRay(parseUnits(this.daiRate, 18).toString()),
       ETH: this.toRay("1"),
       FIN: this.toRay(parseUnits("1", 3).toString()),
+      GWEI: this.toRay(parseUnits("1", 9).toString()),
       WEI: this.toRay(parseUnits("1", 18).toString()),
     };
     if (
@@ -165,6 +166,7 @@ export class Currency {
   public toETH = (daiRate: any) => this._convert("ETH", daiRate);
   public toFIN = (daiRate: any) => this._convert("FIN", daiRate);
   public toWEI = (daiRate: any) => this._convert("WEI", daiRate);
+  public toGWEI = (daiRate: any) => this._convert("GWEI", daiRate);
 
   ////////////////////////////////////////
   // Private Methods

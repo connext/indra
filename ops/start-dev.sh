@@ -7,6 +7,11 @@ project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
+# Deploy with an attachable network so tests & the daicard can connect to individual components
+# Delete/recreate the network first to delay docker network slowdowns that have been happening
+docker network rm $project 2> /dev/null || true
+docker network create --attachable --driver overlay $project 2> /dev/null || true
+
 ####################
 # Load env vars
 
@@ -56,7 +61,7 @@ nats_port=4222
 node_port=8080
 dash_port=9999
 webserver_port=3000
-ganacheId="4447"
+ganacheId="1337"
 
 if [[ "$INDRA_ETH_PROVIDER" == "$ganacheProvider" ]]
 then chainId="$ganacheId"
@@ -176,13 +181,6 @@ function new_secret {
 }
 new_secret "${project}_database_dev" "$project"
 
-# Deploy with an attachable network so tests & the daicard can connect to individual components
-if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
-then
-  id="`docker network create --attachable --driver overlay $project`"
-  echo "Created ATTACHABLE network with id $id"
-fi
-
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
@@ -231,6 +229,7 @@ services:
       - '$project'
     ports:
       - '$node_port:$node_port'
+      - '9229:9229'
     secrets:
       - '${project}_database_dev'
     volumes:

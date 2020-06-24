@@ -1,7 +1,6 @@
 import { EntityRepository, Repository } from "typeorm";
 
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
-import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { SimpleSignedTransferAppName } from "@connext/types";
 
 @EntityRepository(AppInstance)
@@ -10,70 +9,54 @@ export class SignedTransferRepository extends Repository<
 > {
   findInstalledSignedTransferAppsByPaymentId(
     paymentId: string,
+    appDefinition: string,
   ): Promise<AppInstance<typeof SimpleSignedTransferAppName>> {
     return this.createQueryBuilder("app_instance")
-      .leftJoinAndSelect(
-        AppRegistry,
-        "app_registry",
-        "app_registry.appDefinitionAddress = app_instance.appDefinition",
-      )
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleSignedTransferAppName })
       .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+      .andWhere("app_instance.appDefinition = :appDefinition", { appDefinition })
       .getOne();
   }
 
   findSignedTransferAppsByPaymentId(
     paymentId: string,
+    appDefinition: string,
   ): Promise<AppInstance<typeof SimpleSignedTransferAppName>[]> {
     return this.createQueryBuilder("app_instance")
-      .leftJoinAndSelect(
-        AppRegistry,
-        "app_registry",
-        "app_registry.appDefinitionAddress = app_instance.appDefinition",
-      )
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleSignedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+      .andWhere("app_instance.appDefinition = :appDefinition", { appDefinition })
       .getMany();
   }
 
   findSignedTransferAppByPaymentIdAndSender(
     paymentId: string,
     senderSignerAddress: string,
+    appDefinition: string,
   ): Promise<AppInstance<typeof SimpleSignedTransferAppName> | undefined> {
     return this.createQueryBuilder("app_instance")
-      .leftJoinAndSelect(
-        AppRegistry,
-        "app_registry",
-        "app_registry.appDefinitionAddress = app_instance.appDefinition",
-      )
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleSignedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`,
       )
+      .andWhere("app_instance.appDefinition = :appDefinition", { appDefinition })
       .getOne();
   }
 
   findSignedTransferAppByPaymentIdAndReceiver(
     paymentId: string,
     receiverSignerAddress: string,
+    appDefinition: string,
   ): Promise<AppInstance<typeof SimpleSignedTransferAppName> | undefined> {
     return this.createQueryBuilder("app_instance")
-      .leftJoinAndSelect(
-        AppRegistry,
-        "app_registry",
-        "app_registry.appDefinitionAddress = app_instance.appDefinition",
-      )
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleSignedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`,
       )
+      .andWhere("app_instance.appDefinition = :appDefinition", { appDefinition })
       .getOne();
   }
 }

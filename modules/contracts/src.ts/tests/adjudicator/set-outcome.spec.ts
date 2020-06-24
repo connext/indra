@@ -1,6 +1,6 @@
 import { Wallet, ContractFactory } from "ethers";
 
-import { AppComputeOutcomeFails }  from "../../artifacts";
+import { AppComputeOutcomeFails } from "../../artifacts";
 
 import { setupContext } from "../context";
 import {
@@ -15,8 +15,6 @@ import {
 
 describe("setOutcome", () => {
   let wallet: Wallet;
-
-  let snapshotId: any;
 
   // constants
   let ONCHAIN_CHALLENGE_TIMEOUT: number;
@@ -39,7 +37,6 @@ describe("setOutcome", () => {
   });
 
   beforeEach(async () => {
-    snapshotId = await snapshot();
     const context = await setupContext();
 
     // apps/constants
@@ -50,8 +47,12 @@ describe("setOutcome", () => {
     // helpers
     setOutcome = context["setOutcomeAndVerify"];
     isFinalized = context["isFinalized"];
-    setAndProgressState = 
-      (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => context["setAndProgressStateAndVerify"](
+    setAndProgressState = (
+      versionNumber: number,
+      state?: AppWithCounterState,
+      turnTaker?: Wallet,
+    ) =>
+      context["setAndProgressStateAndVerify"](
         versionNumber, // nonce
         state || state0, // state
         context["action"], // action
@@ -59,11 +60,6 @@ describe("setOutcome", () => {
         turnTaker || context["bob"], // turn taker
       );
   });
-
-  afterEach(async () => {
-    await restore(snapshotId);
-  });
-
 
   it("works", async () => {
     await setAndProgressState(1);
@@ -86,14 +82,18 @@ describe("setOutcome", () => {
 
     expect(await isFinalized()).to.be.true;
 
-    await expect(setOutcome(encodeState(state0))).to.be.revertedWith("setOutcome called with incorrect witness data of finalState");
+    await expect(setOutcome(encodeState(state0))).to.be.revertedWith(
+      "setOutcome called with incorrect witness data of finalState",
+    );
   });
 
   it("fails if not finalized", async () => {
     await setAndProgressState(1);
     expect(await isFinalized()).to.be.false;
 
-    await expect(setOutcome(encodeState(state0))).to.be.revertedWith("setOutcome can only be called after a challenge has been finalized");
+    await expect(setOutcome(encodeState(state0))).to.be.revertedWith(
+      "setOutcome can only be called after a challenge has been finalized",
+    );
   });
 
   it("fails if compute outcome fails", async () => {
@@ -118,6 +118,8 @@ describe("setOutcome", () => {
 
     expect(await context["isFinalized"]()).to.be.true;
 
-    await expect(context["setOutcomeAndVerify"](encodeState(context["state1"]))).to.be.revertedWith("computeOutcome always fails for this app");
+    await expect(context["setOutcomeAndVerify"](encodeState(context["state1"]))).to.be.revertedWith(
+      "computeOutcome always fails for this app",
+    );
   });
 });

@@ -8,14 +8,16 @@ import {
   LinkedTransferStatus,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
+import { RpcException } from "@nestjs/microservices";
+import { stringify } from "@connext/utils";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, TransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
-import { RpcException } from "@nestjs/microservices";
-import { stringify } from "@connext/utils";
+import { ConfigService } from "../config/config.service";
+
 import { TransferService } from "./transfer.service";
 
 export class TransferMessaging extends AbstractMessagingProvider {
@@ -23,6 +25,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     private readonly authService: AuthService,
     log: LoggerService,
     messaging: MessagingService,
+    private readonly configService: ConfigService,
     private readonly linkedTransferService: LinkedTransferService,
     private readonly transferService: TransferService,
   ) {
@@ -137,44 +140,52 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "*.transfer.get-history",
+      `*.${this.configService.getPublicIdentifier()}.transfer.get-history`,
       this.authService.parseIdentifier(this.getTransferHistory.bind(this)),
     );
 
     await super.connectRequestReponse(
-      "*.transfer.install-linked",
+      `*.${this.configService.getPublicIdentifier()}.transfer.install-linked`,
       this.authService.parseIdentifier(this.resolveLinkedTransfer.bind(this)),
     );
 
     await super.connectRequestReponse(
-      "*.transfer.install-signed",
+      `*.${this.configService.getPublicIdentifier()}.transfer.install-signed`,
       this.authService.parseIdentifier(this.resolveSignedTransfer.bind(this)),
     );
 
     await super.connectRequestReponse(
-      "*.client.check-in",
+      `*.${this.configService.getPublicIdentifier()}.client.check-in`,
       this.authService.parseIdentifier(this.clientCheckIn.bind(this)),
     );
 
     await super.connectRequestReponse(
-      "*.transfer.install-receiver",
+      `*.${this.configService.getPublicIdentifier()}.transfer.install-receiver`,
       this.authService.parseIdentifier(this.installConditionalTransferReceiverApp.bind(this)),
     );
 
     await super.connectRequestReponse(
-      "*.transfer.install-pending",
+      `*.${this.configService.getPublicIdentifier()}.transfer.install-pending`,
       this.authService.parseIdentifier(this.installPendingTransfers.bind(this)),
     );
   }
 }
 
 export const transferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, LoggerService, MessagingProviderId, LinkedTransferService, TransferService],
+  inject: [
+    AuthService,
+    LoggerService,
+    MessagingProviderId,
+    ConfigService,
+    LinkedTransferService,
+    TransferService,
+  ],
   provide: TransferProviderId,
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
     messaging: MessagingService,
+    configService: ConfigService,
     linkedTransferService: LinkedTransferService,
     transferService: TransferService,
   ): Promise<void> => {
@@ -182,6 +193,7 @@ export const transferProviderFactory: FactoryProvider<Promise<void>> = {
       authService,
       logging,
       messaging,
+      configService,
       linkedTransferService,
       transferService,
     );

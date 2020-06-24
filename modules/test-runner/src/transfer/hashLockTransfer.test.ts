@@ -8,8 +8,8 @@ import {
   PublicParams,
   EventPayloads,
 } from "@connext/types";
-import { getRandomBytes32 } from "@connext/utils";
-import { providers, constants, utils } from "ethers";
+import { getRandomBytes32, delay } from "@connext/utils";
+import { BigNumber, providers, constants, utils } from "ethers";
 
 import {
   AssetOptions,
@@ -23,7 +23,7 @@ import {
 } from "../util";
 
 const { AddressZero, HashZero } = constants;
-const { soliditySha256, bigNumberify } = utils;
+const { soliditySha256 } = utils;
 
 describe("HashLock Transfers", () => {
   let clientA: IConnextClient;
@@ -61,7 +61,7 @@ describe("HashLock Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
-    const expiry = bigNumberify(timelock).add(await provider.getBlockNumber());
+    const expiry = BigNumber.from(timelock).add(await provider.getBlockNumber());
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
 
@@ -149,7 +149,7 @@ describe("HashLock Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
-    const expiry = bigNumberify(timelock).add(await provider.getBlockNumber());
+    const expiry = BigNumber.from(timelock).add(await provider.getBlockNumber());
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     // both sender + receiver apps installed, sender took action
@@ -219,7 +219,7 @@ describe("HashLock Transfers", () => {
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     const paymentId = soliditySha256(["address", "bytes32"], [transfer.assetId, lockHash]);
-    const expiry = bigNumberify(await provider.getBlockNumber())
+    const expiry = BigNumber.from(await provider.getBlockNumber())
       .add(timelock)
       .sub(TIMEOUT_BUFFER);
     // both sender + receiver apps installed, sender took action
@@ -254,7 +254,7 @@ describe("HashLock Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
-    const expiry = bigNumberify(await provider.getBlockNumber())
+    const expiry = BigNumber.from(await provider.getBlockNumber())
       .add(timelock)
       .sub(TIMEOUT_BUFFER);
 
@@ -276,9 +276,9 @@ describe("HashLock Transfers", () => {
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
       // Note: MUST wait for uninstall, bc UNLOCKED gets thrown on takeAction
-      // at the moment, there's no way to filter the uninstalled app here so we're just gonna
-      // resolve and hope for the best
-      clientB.on(EventNames.UNINSTALL_EVENT, resolve);
+      // at the moment, there's no way to filter the uninstalled app here so
+      // we're just gonna resolve and hope for the best
+      clientB.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve);
       clientB.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,

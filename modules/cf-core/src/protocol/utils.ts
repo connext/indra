@@ -1,15 +1,22 @@
+import { artifacts } from "@connext/contracts";
 import {
+  Address,
+  AssetId,
+  ContractAddresses,
+  HexString,
   ILoggerService,
   IStoreService,
   multiAssetMultiPartyCoinTransferEncoding,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
+  NetworkContext,
   OutcomeType,
+  PureActionApps,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "@connext/types";
-import { logTime, recoverAddressFromChannelMessage, stringify } from "@connext/utils";
-import { providers, utils } from "ethers";
+import { logTime, recoverAddressFromChannelMessage, getAddressFromAssetId } from "@connext/utils";
+import { BigNumber, utils, constants } from "ethers";
 
 import {
   AppInstance,
@@ -18,9 +25,24 @@ import {
   TokenIndexedCoinTransferMap,
   StateChannel,
 } from "../models";
-import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR, TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
 
+const { MaxUint256 } = constants;
 const { defaultAbiCoder, getAddress } = utils;
+
+export const getPureBytecode = (
+  appDefinition: Address,
+  contractAddresses: ContractAddresses,
+): HexString | undefined => {
+  // If this app's action is pure, provide bytecode to use for faster in-memory evm calls
+  const appEntry = Object.entries(contractAddresses).find(
+    entry => entry[1] === appDefinition,
+  );
+  const bytecode = appEntry && appEntry[0] && PureActionApps && PureActionApps.includes(appEntry[0])
+    ? artifacts[appEntry[0]].deployedBytecode
+    : undefined;
+  return bytecode;
+};
 
 export async function assertIsValidSignature(
   expectedSigner: string,
@@ -29,10 +51,18 @@ export async function assertIsValidSignature(
   loggingContext?: string,
 ): Promise<void> {
   if (typeof commitmentHash === "undefined") {
-    throw new Error("assertIsValidSignature received an undefined commitment");
+    throw new Error(
+      `assertIsValidSignature received an undefined commitment. ${
+        loggingContext ? `${loggingContext}` : ""
+      }`,
+    );
   }
   if (typeof signature === "undefined") {
-    throw new Error("assertIsValidSignature received an undefined signature");
+    throw new Error(
+      `assertIsValidSignature received an undefined signature. ${
+        loggingContext ? `${loggingContext}` : ""
+      }`,
+    );
   }
   // recoverAddressFromChannelMessage: 83 ms, hashToSign: 7 ms
   const signer = await recoverAddressFromChannelMessage(commitmentHash, signature);
@@ -64,9 +94,8 @@ export async function stateChannelClassFromStoreByMultisig(
  */
 export async function computeTokenIndexedFreeBalanceIncrements(
   appInstance: AppInstance,
-  provider: providers.JsonRpcProvider,
+  network: NetworkContext,
   encodedOutcomeOverride: string = "",
-  blockNumberToUseIfNecessary?: number,
   log?: ILoggerService,
 ): Promise<TokenIndexedCoinTransferMap> {
   const { outcomeType } = appInstance;
@@ -74,7 +103,10 @@ export async function computeTokenIndexedFreeBalanceIncrements(
   const checkpoint = Date.now();
   if (!encodedOutcomeOverride || encodedOutcomeOverride === "") {
     try {
-      encodedOutcomeOverride = await appInstance.computeOutcomeWithCurrentState(provider);
+      encodedOutcomeOverride = await appInstance.computeOutcomeWithCurrentState(
+        network.provider,
+        getPureBytecode(appInstance.appDefinition, network.contractAddresses),
+      );
     } catch (e) {
       throw new Error(`Unable to compute outcome: ${e.stack || e.message}`);
     }
@@ -87,20 +119,19 @@ export async function computeTokenIndexedFreeBalanceIncrements(
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
       return handleTwoPartyFixedOutcome(
         encodedOutcome,
-        appInstance.twoPartyOutcomeInterpreterParams,
+        appInstance.outcomeInterpreterParameters as TwoPartyFixedOutcomeInterpreterParams,
       );
     }
     case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
       return handleSingleAssetTwoPartyCoinTransfer(
         encodedOutcome,
-        appInstance.singleAssetTwoPartyCoinTransferInterpreterParams,
-        log,
+        appInstance.outcomeInterpreterParameters as SingleAssetTwoPartyCoinTransferInterpreterParams,
       );
     }
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
       return handleMultiAssetMultiPartyCoinTransfer(
         encodedOutcome,
-        appInstance.multiAssetMultiPartyCoinTransferInterpreterParams,
+        appInstance.outcomeInterpreterParameters as MultiAssetMultiPartyCoinTransferInterpreterParams,
       );
     }
     default: {
@@ -159,7 +190,6 @@ function handleMultiAssetMultiPartyCoinTransfer(
 function handleSingleAssetTwoPartyCoinTransfer(
   encodedOutcome: string,
   interpreterParams: SingleAssetTwoPartyCoinTransferInterpreterParams,
-  log?: ILoggerService,
 ): TokenIndexedCoinTransferMap {
   const { tokenAddress } = interpreterParams;
 
@@ -171,16 +201,14 @@ function handleSingleAssetTwoPartyCoinTransfer(
 
   return {
     [tokenAddress]: {
-      [to1 as string]: amount1 as utils.BigNumber,
-      [to2 as string]: amount2 as utils.BigNumber,
+      [to1 as string]: amount1 as BigNumber,
+      [to2 as string]: amount2 as BigNumber,
     },
   };
 }
 
 function decodeTwoPartyFixedOutcome(encodedOutcome: string): TwoPartyFixedOutcome {
-  const [twoPartyFixedOutcome] = defaultAbiCoder.decode(["uint256"], encodedOutcome) as [
-    utils.BigNumber,
-  ];
+  const [twoPartyFixedOutcome] = defaultAbiCoder.decode(["uint256"], encodedOutcome) as [BigNumber];
 
   return twoPartyFixedOutcome.toNumber();
 }
@@ -208,4 +236,99 @@ function decodeMultiAssetMultiPartyCoinTransfer(encodedOutcome: string): CoinTra
   return coinTransferListOfLists.map((coinTransferList) =>
     coinTransferList.map(({ to, amount }) => ({ to, amount })),
   );
+}
+
+/**
+ * Returns the parameters for two hard-coded possible interpreter types.
+ *
+ * Note that this is _not_ a built-in part of the protocol. Here we are _restricting_
+ * all newly installed AppInstances to be either of type COIN_TRANSFER or
+ * TWO_PARTY_FIXED_OUTCOME. In the future, we will be extending the ProtocolParams.Install
+ * to indidicate the interpreterAddress and interpreterParams so the developers
+ * installing apps have more control, however for now we are putting this logic
+ * inside of the client (the Node) by adding an "outcomeType" variable which
+ * is a simplification of the actual decision a developer has to make with their app.
+ *
+ * TODO: update doc on how MultiAssetMultiPartyCoinTransferInterpreterParams work
+ *
+ * @param {OutcomeType} outcomeType - either COIN_TRANSFER or TWO_PARTY_FIXED_OUTCOME
+ * @param {utils.BigNumber} initiatorBalanceDecrement - amount Wei initiator deposits
+ * @param {utils.BigNumber} responderBalanceDecrement - amount Wei responder deposits
+ * @param {string} initiatorFbAddress - the address of the recipient of initiator
+ * @param {string} responderFbAddress - the address of the recipient of responder
+ *
+ * @returns An object with the required parameters for both interpreter types, one
+ * will be undefined and the other will be a correctly structured POJO. The AppInstance
+ * object currently accepts both in its constructor and internally manages them.
+ */
+export function computeInterpreterParameters(
+  multisigOwners: string[],
+  outcomeType: OutcomeType,
+  initiatorAssetId: AssetId,
+  responderAssetId: AssetId,
+  initiatorBalanceDecrement: BigNumber,
+  responderBalanceDecrement: BigNumber,
+  initiatorFbAddress: string,
+  responderFbAddress: string,
+  disableLimit: boolean,
+):
+  | TwoPartyFixedOutcomeInterpreterParams
+  | MultiAssetMultiPartyCoinTransferInterpreterParams
+  | SingleAssetTwoPartyCoinTransferInterpreterParams {
+  const initiatorDepositAssetId = getAddressFromAssetId(initiatorAssetId);
+  const responderDepositAssetId = getAddressFromAssetId(responderAssetId);
+  // make sure the interpreter params ordering corr. with the fb
+  const sameOrder = initiatorFbAddress === multisigOwners[0];
+  switch (outcomeType) {
+    case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
+      if (initiatorDepositAssetId !== responderDepositAssetId) {
+        throw new Error(
+          TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(initiatorDepositAssetId, responderDepositAssetId),
+        );
+      }
+
+      return {
+        tokenAddress: initiatorDepositAssetId,
+        playerAddrs: sameOrder
+          ? [initiatorFbAddress, responderFbAddress]
+          : [responderFbAddress, initiatorFbAddress],
+        amount: initiatorBalanceDecrement.add(responderBalanceDecrement),
+      };
+    }
+    case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
+      if (initiatorDepositAssetId === responderDepositAssetId) {
+        return {
+          limit: [initiatorBalanceDecrement.add(responderBalanceDecrement)],
+          tokenAddresses: [initiatorDepositAssetId],
+        };
+      }
+      const limit = sameOrder
+        ? [initiatorBalanceDecrement, responderBalanceDecrement]
+        : [responderBalanceDecrement, initiatorBalanceDecrement];
+      const tokenAddresses = sameOrder
+        ? [initiatorDepositAssetId, responderDepositAssetId]
+        : [responderDepositAssetId, initiatorDepositAssetId];
+      return {
+        limit,
+        tokenAddresses,
+      };
+    }
+
+    case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
+      if (initiatorDepositAssetId !== responderDepositAssetId) {
+        throw new Error(
+          TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(initiatorDepositAssetId, responderDepositAssetId),
+        );
+      }
+
+      return {
+        limit: disableLimit ? MaxUint256 : initiatorBalanceDecrement.add(responderBalanceDecrement),
+        tokenAddress: initiatorDepositAssetId,
+      };
+    }
+
+    default: {
+      throw new Error("The outcome type in this application logic contract is not supported yet.");
+    }
+  }
 }

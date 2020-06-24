@@ -1,4 +1,4 @@
-import { AppInstanceJson, AppInstanceProposal } from "./app";
+import { AppInstanceJson } from "./app";
 import { Address, Bytes32 } from "./basic";
 import {
   ConditionalTransactionCommitmentJSON,
@@ -48,35 +48,45 @@ export interface IStoreService extends IWatcherStoreService {
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void>;
 
+  incrementNumProposedApps(multisigAddress: string): Promise<void>;
+
+  ///// App proposals
+  createAppProposal(
+    multisigAddress: Address,
+    appProposal: AppInstanceJson,
+    numProposedApps: number,
+    signedSetStateCommitment: SetStateCommitmentJSON,
+    signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
+    stateChannel?: StateChannelJSON,
+  ): Promise<void>;
+  removeAppProposal(
+    multisigAddress: Address,
+    appIdentityHash: Bytes32,
+    stateChannel?: StateChannelJSON,
+  ): Promise<void>;
+  // proposals dont need to be updated
+
   ///// App instances
   createAppInstance(
     multisigAddress: Address,
     appInstance: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
-    signedConditionalTxCommitment: ConditionalTransactionCommitmentJSON,
+    stateChannel?: StateChannelJSON,
   ): Promise<void>;
   updateAppInstance(
     multisigAddress: Address,
     appInstance: AppInstanceJson,
     signedSetStateCommitment: SetStateCommitmentJSON,
+    stateChannel?: StateChannelJSON,
   ): Promise<void>;
   removeAppInstance(
     multisigAddress: Address,
     appIdentityHash: Bytes32,
     freeBalanceAppInstance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
+    stateChannel?: StateChannelJSON,
   ): Promise<void>;
-
-  ///// App proposals
-  createAppProposal(
-    multisigAddress: Address,
-    appProposal: AppInstanceProposal,
-    numProposedApps: number,
-    signedSetStateCommitment: SetStateCommitmentJSON,
-  ): Promise<void>;
-  removeAppProposal(multisigAddress: Address, appIdentityHash: Bytes32): Promise<void>;
-  // proposals dont need to be updated
 
   ///// Resetting methods
   clear(): Promise<void>;

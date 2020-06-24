@@ -1,6 +1,5 @@
-import * as connext from "@connext/client";
 import { ERC20 } from "@connext/contracts";
-import { getLocalStore, PisaBackupService } from "@connext/store";
+import { getLocalStore } from "@connext/store";
 import { ConnextClientStorePrefix, EventNames } from "@connext/types";
 import { Currency, minBN, toBN, tokenToWei, weiToToken } from "@connext/utils";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
@@ -43,13 +42,6 @@ const urls = {
       : chainId.toString() === "4"
       ? "https://rinkeby.hub.connext.network/api/hub"
       : undefined,
-  // pisaUrl: chainId =>
-  //   chainId.toString() === "1"
-  //     ? "https://connext.pisa.watch"
-  //     : chainId.toString() === "4"
-  //     ? "https://connext-rinkeby.pisa.watch"
-  //     : undefined,
-  pisaUrl: (chainId) => undefined,
 };
 
 // LogLevel for testing ChannelProvider
@@ -60,10 +52,8 @@ const WITHDRAW_ESTIMATED_GAS = toBN("300000");
 const DEPOSIT_ESTIMATED_GAS = toBN("25000");
 const MAX_CHANNEL_VALUE = Currency.DAI("30");
 
-// it is important to add a default payment
-// profile on initial load in the case the
-// user is being paid without depositing, or
-// in the case where the user is redeeming a link
+// change to use token with custom decimals
+export const TOKEN_DECIMALS = 18;
 
 const style = withStyles((theme) => ({
   paper: {
@@ -183,7 +173,7 @@ class App extends React.Component {
     const useWalletConnext = this.getWalletConnext() || false;
     console.debug("useWalletConnext: ", useWalletConnext);
     if (!mnemonic) {
-      mnemonic = Wallet.createRandom().mnemonic;
+      mnemonic = Wallet.createRandom().mnemonic.phrase;
       localStorage.setItem("mnemonic", mnemonic);
     }
 
@@ -208,14 +198,7 @@ class App extends React.Component {
     // if choose mnemonic
     let channel;
     if (!useWalletConnext) {
-      let store;
-      const pisaUrl = urls.pisaUrl(network.chainId);
-      if (pisaUrl) {
-        console.log(`Using external state backup service: ${pisaUrl}`);
-        store = getLocalStore(new PisaBackupService({ pisaUrl, wallet }));
-      } else {
-        store = getLocalStore();
-      }
+      const store = getLocalStore();
 
       // If store has double prefixes, flush and restore
       for (const k of Object.keys(localStorage)) {
@@ -226,7 +209,7 @@ class App extends React.Component {
       }
 
       const { privateKey } = Wallet.fromMnemonic(mnemonic);
-      channel = await connext.connect({
+      channel = await (await import(`@connext/client`)).connect({
         ethProviderUrl: urls.ethProviderUrl,
         signer: privateKey,
         logLevel: LOG_LEVEL,
@@ -251,7 +234,7 @@ class App extends React.Component {
         }
         cleanWalletConnect();
       });
-      channel = await connext.connect({
+      channel = await (await import(`@connext/client`)).connect({
         ethProviderUrl: urls.ethProviderUrl,
         logLevel: LOG_LEVEL,
         channelProvider,

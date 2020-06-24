@@ -8,27 +8,15 @@ export * from "./constants";
 export * from "./contracts";
 export * from "./crypto";
 export * from "./events";
+export * from "./json";
 export * from "./lock";
 export * from "./logger";
 export * from "./messaging";
-export {
-  MethodName,
-  MethodNames,
-  MethodParam,
-  MethodParams,
-  MethodResult,
-  MethodResults,
-} from "./methods";
+export * from "./methods";
+export * from "./middleware";
 export * from "./misc";
 export * from "./node";
-export {
-  ProtocolName,
-  ProtocolNames,
-  ProtocolParam,
-  ProtocolParams,
-  Opcode,
-} from "./protocol";
-export * from "./middleware";
+export * from "./protocol";
 export * from "./public";
 export * from "./rpc";
 export * from "./state";

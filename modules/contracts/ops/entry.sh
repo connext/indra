@@ -17,7 +17,7 @@ then
     --gasPrice="10000000000" \
     --host="0.0.0.0" \
     --mnemonic="$ETH_MNEMONIC" \
-    --networkId="4447" \
+    --networkId="1337" \
     --port="8545" \
     --defaultBalanceEther="1000000000"
 
@@ -31,7 +31,7 @@ then
       --gasPrice="10000000000" \
       --host="0.0.0.0" \
       --mnemonic="$ETH_MNEMONIC" \
-      --networkId="4447" \
+      --networkId="1337" \
       --port="8545" \
       --defaultBalanceEther="1000000000" \
        > $dir/.ganache.log &

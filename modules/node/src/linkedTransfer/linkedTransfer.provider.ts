@@ -8,6 +8,7 @@ import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
+import { ConfigService } from "../config/config.service";
 
 import { LinkedTransferService } from "./linkedTransfer.service";
 
@@ -16,6 +17,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     private readonly authService: AuthService,
     log: LoggerService,
     messaging: MessagingService,
+    private readonly configService: ConfigService,
     private readonly linkedTransferService: LinkedTransferService,
   ) {
     super(log, messaging);
@@ -82,7 +84,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "*.transfer.get-linked",
+      `*.${this.configService.getPublicIdentifier()}.transfer.get-linked`,
       this.authService.parseIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
     );
     // await super.connectRequestReponse(
@@ -93,18 +95,20 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 }
 
 export const linkedTransferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, LoggerService, MessagingProviderId, LinkedTransferService],
+  inject: [AuthService, LoggerService, MessagingProviderId, ConfigService, LinkedTransferService],
   provide: LinkedTransferProviderId,
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
     messaging: MessagingService,
+    configService: ConfigService,
     linkedTransferService: LinkedTransferService,
   ): Promise<void> => {
     const transfer = new LinkedTransferMessaging(
       authService,
       logging,
       messaging,
+      configService,
       linkedTransferService,
     );
     await transfer.setupSubscriptions();

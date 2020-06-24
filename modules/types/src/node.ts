@@ -57,6 +57,7 @@ type GetConfigResponse = {
   contractAddresses: ContractAddresses;
   nodeIdentifier: PublicIdentifier;
   messagingUrl: string[];
+  signerAddress: Address;
   supportedTokenAddresses: Address[];
 };
 

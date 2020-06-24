@@ -11,6 +11,7 @@ modules/*/package-lock.json
 
 # Cache
 **/.bot-store
+**/.connext-store/**
 **/.buidler
 **/.cache
 **/.config
@@ -58,6 +59,8 @@ ops/database/snapshots
 ganache.http
 modules/bot/.connext-store/
 modules/bot-registry/.node-persist/
+
+.secret
 
 # Local address book
 address-book.json
