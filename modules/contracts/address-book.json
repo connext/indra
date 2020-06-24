@@ -684,9 +684,9 @@
     },
     "Token": {
       "address": "0xEcFcaB0A285d3380E488A39B4BB21e777f8A4EaC",
-      "creationCodeHash": "0x0f5a7fec416c49bd9ff2c93dc9deaecefd6920a95c33c1a19013887603a40a80",
-      "runtimeCodeHash": "0xa52e3215610f412638ecf812b04abc3a1f261048fa0bb9b891a8237a448eeb61",
-      "txHash": "0x3b77b20a9d0f292488f38138c5d3a2f148d6835fdeba8944116f342c718ebfa9"
+      "creationCodeHash": "0xc316d6442afee06f3c001fead5f1c392bc3c836679ffa2aabe9867a675bdb33c",
+      "runtimeCodeHash": "0xe8950fa6f566880f3eca53690500f41cb9aa5b23125609754d522c81535ee0fc",
+      "txHash": "0x8b2df8286af064ac0657dc6c33175e26fe041b906158a2b21805b354248e4c46"
     },
     "WithdrawInterpreter": {
       "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b",

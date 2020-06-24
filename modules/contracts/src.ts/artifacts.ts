@@ -1,5 +1,4 @@
 import { HexString } from "@connext/types";
-import * as Token from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
 import { utils } from "ethers";
 
 import * as AppApplyActionFails from "../artifacts/AppApplyActionFails.json";
@@ -10,7 +9,7 @@ import * as ConditionalTransactionDelegateTarget from "../artifacts/ConditionalT
 import * as CounterfactualApp from "../artifacts/CounterfactualApp.json";
 import * as DelegateProxy from "../artifacts/DelegateProxy.json";
 import * as DepositApp from "../artifacts/DepositApp.json";
-import * as DolphinCoin from "../artifacts/DolphinCoin.json";
+import * as Token from "../artifacts/DolphinCoin.json";
 import * as Echo from "../artifacts/Echo.json";
 import * as ERC20 from "../artifacts/ERC20.json";
 import * as HashLockTransferApp from "../artifacts/HashLockTransferApp.json";
@@ -42,6 +41,9 @@ type Artifact = {
 
 type Artifacts = { [contractName: string]: Artifact };
 
+// Alias for easy access
+const DolphinCoin = Token;
+
 export const artifacts = {
   AppApplyActionFails,
   AppComputeOutcomeFails,
@@ -71,7 +73,7 @@ export const artifacts = {
   Token,
   TwoPartyFixedOutcomeInterpreter,
   WithdrawApp,
-  WithdrawInterpreter
+  WithdrawInterpreter,
 } as any;
 
 export {
@@ -103,5 +105,5 @@ export {
   Token,
   TwoPartyFixedOutcomeInterpreter,
   WithdrawApp,
-  WithdrawInterpreter
+  WithdrawInterpreter,
 };
