@@ -16,12 +16,15 @@ export const KNOWN_ERRORS = ["the tx doesn't have the correct nonce", NO_TX_HASH
 
 @Injectable()
 export class OnchainTransactionService {
+  private nonce = Promise.resolve(0);
+
   constructor(
     private readonly configService: ConfigService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly log: LoggerService,
   ) {
     this.log.setContext("OnchainTransactionService");
+    this.nonce = this.configService.getSigner().getTransactionCount();
   }
 
   async sendWithdrawalCommitment(
@@ -63,10 +66,14 @@ export class OnchainTransactionService {
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
       try {
         this.log.info(`Attempt ${attempt}/${MAX_RETRIES} to send transaction to ${transaction.to}`);
+        const chainNonce = await wallet.getTransactionCount();
+        const memoryNonce = await this.nonce;
+        const nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
         const tx = await wallet.sendTransaction({
           ...transaction,
-          nonce: await wallet.provider.getTransactionCount(await wallet.getAddress()),
+          nonce,
         });
+        this.nonce = Promise.resolve(nonce + 1);
         const receipt = await tx.wait();
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
