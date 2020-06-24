@@ -395,7 +395,7 @@ export class ConnextClient implements IConnextClient {
               this.ethProvider.removeAllListeners("block");
               return resolve();
             }
-            if (blockNumber - startingBlock >= maxBlocks) {
+            if (blockNumber - startingBlock > maxBlocks) {
               this.ethProvider.removeAllListeners("block");
               return reject(`More than ${maxBlocks} have passed: ${blockNumber - startingBlock}`);
             }
