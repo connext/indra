@@ -12,8 +12,7 @@
     "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
     "rebuild": "npm run clean && npm run build",
     "clean": "rm -rf ./dist",
-    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
-    "test": "./node_modules/.bin/jest --runInBand"
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
     "axios": "0.19.2",
@@ -34,10 +33,7 @@
   },
   "devDependencies": {
     "@babel/polyfill": "7.10.1",
-    "@types/jest": "26.0.0",
     "@types/uuid": "8.0.0",
-    "jest": "26.0.1",
-    "ts-jest": "26.1.0",
     "typescript": "3.9.5"
   }
 }
