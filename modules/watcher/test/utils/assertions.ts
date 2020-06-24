@@ -14,6 +14,7 @@ import {
   Bytes32,
   Address,
   TransactionResponse,
+  TransactionReceipt,
 } from "@connext/types";
 import { expect } from "chai";
 import { ChannelSigner, toBN } from "@connext/utils";
@@ -116,7 +117,7 @@ export const verifyChallengeProgressedEvent = (
   appInstanceId: Bytes32,
   multisigAddress: Address,
   event: ChallengeProgressedEventData,
-  transaction?: TransactionResponse,
+  transaction?: TransactionReceipt,
 ) => {
   const expected = {
     appInstanceId,
