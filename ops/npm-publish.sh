@@ -2,7 +2,7 @@
 set -e
 
 # This is the order they'll be published in
-default_packages="types,utils,cf-core,apps,messaging,store,channel-provider,client"
+default_packages="types,utils,cf-core,apps,messaging,store,channel-provider,client,watcher"
 
 # To publish contracts, run bash ops/npm-publish.sh contracts
 packages="${1:-$default_packages}"
