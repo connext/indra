@@ -3,8 +3,8 @@ import {
   JsonRpcProvider,
   ChallengeUpdatedEventPayload,
   ChallengeStatus,
-  NetworkContext,
   StateProgressedEventPayload,
+  ContractAddresses,
 } from "@connext/types";
 import { ChannelSigner, ColorfulLogger, computeAppChallengeHash, toBN } from "@connext/utils";
 import { beforeEach } from "mocha";
@@ -80,13 +80,13 @@ describe("ChainListener", () => {
 
     chainListener = new ChainListener(
       provider,
-      { ChallengeRegistry: challengeRegistry.address } as NetworkContext,
+      { ChallengeRegistry: challengeRegistry.address } as ContractAddresses,
       new ColorfulLogger("Test", logLevel, true, " "),
     );
   });
 
   afterEach(() => {
-    chainListener.removeAllListeners();
+    chainListener.detach();
   });
 
   it("should parse ChallengeUpdated + StateProgressed events properly when enabled", async () => {
@@ -96,7 +96,7 @@ describe("ChainListener", () => {
     // trigger `ChallengeUpdated` event
     const [states, progressed, tx] = await Promise.all([
       new Promise(async (resolve) => {
-        chainListener.on("ChallengeUpdated", async (data: ChallengeUpdatedEventPayload) => {
+        chainListener.attach("ChallengeUpdated", async (data: ChallengeUpdatedEventPayload) => {
           statesUpdated.push(data);
           if (statesUpdated.length >= 2) {
             return resolve(
@@ -105,11 +105,7 @@ describe("ChainListener", () => {
           }
         });
       }),
-      new Promise(async (resolve) => {
-        chainListener.once("StateProgressed", async (data: StateProgressedEventPayload) => {
-          return resolve(data);
-        });
-      }),
+      chainListener.waitFor("StateProgressed", 30_000),
       setAndProgressState(action),
     ]);
     ////// verification
@@ -132,11 +128,11 @@ describe("ChainListener", () => {
 
     // track any emitted events
     let emitted = 0;
-    chainListener.on("ChallengeUpdated", () => {
+    chainListener.attach("ChallengeUpdated", () => {
       emitted += 1;
       return Promise.resolve();
     });
-    chainListener.on("StateProgressed", () => {
+    chainListener.attach("StateProgressed", () => {
       emitted += 1;
       return Promise.resolve();
     });
@@ -170,7 +166,7 @@ describe("ChainListener", () => {
     const statesUpdated: ChallengeUpdatedEventPayload[] = [];
     const [states, progressed] = await Promise.all([
       new Promise(async (resolve) => {
-        chainListener.on("ChallengeUpdated", async (data: ChallengeUpdatedEventPayload) => {
+        chainListener.attach("ChallengeUpdated", async (data: ChallengeUpdatedEventPayload) => {
           statesUpdated.push(data);
           if (statesUpdated.length >= 2) {
             return resolve(
@@ -179,11 +175,7 @@ describe("ChainListener", () => {
           }
         });
       }),
-      new Promise(async (resolve) => {
-        chainListener.once("StateProgressed", async (data: StateProgressedEventPayload) => {
-          return resolve(data);
-        });
-      }),
+      chainListener.waitFor("StateProgressed", 30_000),
       chainListener.parseLogsFrom(startingBlock),
     ]);
 
