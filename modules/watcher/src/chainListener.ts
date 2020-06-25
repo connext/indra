@@ -11,8 +11,7 @@ import {
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { BigNumber, Contract, Event, providers, utils } from "ethers";
-import { Evt } from "evt";
-import { Ctx } from "evt";
+import { Ctx, Evt } from "evt";
 
 const { Interface } = utils;
 
