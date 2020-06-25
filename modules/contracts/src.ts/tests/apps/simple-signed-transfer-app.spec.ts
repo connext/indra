@@ -13,6 +13,8 @@ import {
   getAddressFromPrivateKey,
   signChannelMessage,
   getTestEIP712Domain,
+  hashReceiptMessage,
+  hashDomainSeparator,
 } from "@connext/utils";
 import { BigNumber, Contract, ContractFactory, constants, utils } from "ethers";
 
@@ -95,10 +97,13 @@ describe.only("SimpleSignedTransferApp", () => {
     signerAddress = getAddressFromPrivateKey(privateKey);
 
     paymentId = getRandomBytes32();
+    data = getRandomBytes32();
+    const receipt = { paymentId, data };
 
     const network = await provider.getNetwork();
     domainSeparator = getTestEIP712Domain(network.chainId);
 
+    const digest = hashReceiptMessage(domainSeparator, receipt);
     goodSig = await signChannelMessage(digest, privateKey);
     badSig = getRandomBytes32();
 
@@ -116,9 +121,10 @@ describe.only("SimpleSignedTransferApp", () => {
           to: receiverAddr,
         },
       ],
-      finalized: false,
-      paymentId,
       signerAddress,
+      domainSeparator: hashDomainSeparator(domainSeparator),
+      paymentId,
+      finalized: false,
     };
   });
 
@@ -145,6 +151,7 @@ describe.only("SimpleSignedTransferApp", () => {
         ],
         paymentId,
         signerAddress,
+        domainSeparator: hashDomainSeparator(domainSeparator),
         finalized: true,
       };
 

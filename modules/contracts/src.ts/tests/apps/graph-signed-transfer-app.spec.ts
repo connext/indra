@@ -6,14 +6,14 @@ import {
   GraphSignedTransferAppStateEncoding,
   singleAssetTwoPartyCoinTransferEncoding,
   PrivateKey,
-  Receipt,
+  GraphReceipt,
 } from "@connext/types";
 import {
-  signReceiptMessage,
-  getTestReceiptToSign,
   getTestVerifyingContract,
   getRandomBytes32,
   getAddressFromPrivateKey,
+  getTestGraphReceiptToSign,
+  signGraphReceiptMessage,
 } from "@connext/utils";
 import { BigNumber, Contract, ContractFactory, constants, utils } from "ethers";
 
@@ -52,7 +52,7 @@ describe("GraphSignedTransferApp", () => {
   let signerAddress: string;
   let chainId: number;
   let verifyingContract: string;
-  let receipt: Receipt;
+  let receipt: GraphReceipt;
   let goodSig: string;
   let badSig: string;
   let graphSignedTransferApp: Contract;
@@ -94,9 +94,9 @@ describe("GraphSignedTransferApp", () => {
     signerAddress = getAddressFromPrivateKey(privateKey);
 
     chainId = (await wallet.provider.getNetwork()).chainId;
-    receipt = getTestReceiptToSign();
+    receipt = getTestGraphReceiptToSign();
     verifyingContract = getTestVerifyingContract();
-    goodSig = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
+    goodSig = await signGraphReceiptMessage(receipt, chainId, verifyingContract, privateKey);
     badSig = getRandomBytes32();
     paymentId = getRandomBytes32();
 
