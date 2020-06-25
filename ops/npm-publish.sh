@@ -50,8 +50,8 @@ target_version="$REPLY" # get version from user input
 
 if [[ -z "$target_version" ]]
 then echo "Aborting: A new, unique version is required" && exit 1
-elif [[ "$package_versions" =~ "$target_version" ]]
-then echo "Aborting: A new, unique version is required" && exit 1
+# elif [[ "$package_versions" =~ "$target_version" ]]
+# then echo "Aborting: A new, unique version is required" && exit 1
 elif [[ "`get_latest_version $package_versions $target_version`" != "$target_version" ]]
 then
   for package in `echo $packages | tr ',' ' '`
