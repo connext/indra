@@ -8,7 +8,7 @@ import {
   PublicParams,
   EventPayloads,
 } from "@connext/types";
-import { getRandomBytes32, delay } from "@connext/utils";
+import { getRandomBytes32 } from "@connext/utils";
 import { BigNumber, providers, constants, utils } from "ethers";
 
 import {
@@ -391,7 +391,7 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = getRandomBytes32();
-    const timelock = 101;
+    const timelock = 105;
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await new Promise((resolve, reject) => {
@@ -408,7 +408,10 @@ describe("HashLock Transfers", () => {
       clientA.once(EventNames.REJECT_INSTALL_EVENT, reject);
     });
 
-    await new Promise((resolve) => provider.once("block", resolve));
+    for (let i = 0; i < 5; i++) {
+      await new Promise((resolve) => provider.once("block", resolve));
+    }
+
     await expect(
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
@@ -487,6 +490,8 @@ describe("HashLock Transfers", () => {
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer);
+
+      // eslint-disable-next-line no-loop-func
       await new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res));
 
       // eslint-disable-next-line no-loop-func

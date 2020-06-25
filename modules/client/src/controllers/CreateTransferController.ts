@@ -81,16 +81,15 @@ export class CreateTransferController extends AbstractController {
         const { lockHash, timelock } = params as PublicParams.HashLockTransfer;
 
         // convert to block height
-        const expiry = toBN(timelock).add(await this.connext.ethProvider.getBlockNumber());
+        const currentBlock = await this.connext.ethProvider.getBlockNumber();
+        const expiry = toBN(timelock).add(currentBlock);
+        this.log.info(`HashLockTransfer with timelock ${timelock} will expire at block ${expiry} (currentBlock=${currentBlock})`);
         initialState = {
           ...baseInitialState,
           lockHash,
           preImage: HashZero,
           expiry,
         } as HashLockTransferAppState;
-        initialState.expiry = expiry;
-        initialState.lockHash = lockHash;
-        initialState.preImage = HashZero;
 
         const paymentId = soliditySha256(["address", "bytes32"], [assetId, lockHash]);
         submittedMeta.paymentId = paymentId;
