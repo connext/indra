@@ -64,6 +64,7 @@ Contents
     reference/store
     reference/types
     reference/utils
+    reference/watcher
 
 .. toctree::
     :maxdepth: 2

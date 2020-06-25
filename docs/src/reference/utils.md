@@ -1,13 +1,10 @@
-
 # @connext/utils
 
 **Exported Classes:**
- - [`ChannelSigner`](#channelsigner)
 
-
+- [`ChannelSigner`](#channelsigner)
 
 ## Classes
-
 
 ### ChannelSigner
 
@@ -16,7 +13,7 @@ An extended ethers `Signer` interface configured to add support for encrypting/d
 ```typescript
 import { Signer } from "ethers";
 
-class ChannelSigner extends Signer{
+class ChannelSigner extends Signer {
   constructor(privateKey: string, ethProviderUrl?: string);
 
   // Properties
@@ -30,5 +27,3 @@ class ChannelSigner extends Signer{
   signMessage(message: string): Promise<string>;
 }
 ```
-
-
