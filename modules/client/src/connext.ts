@@ -737,6 +737,8 @@ export class ConnextClient implements IConnextClient {
 
     await this.uninstallFinalizedApps();
 
+    await this.uninstallExpiredApps();
+
     // handle any existing apps
     await this.handleInstalledDepositApps();
   };
@@ -789,7 +791,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   /**
-   * Removes all finalized apps
+   * Removes all apps with a `true` `finalized` property in their `latestState`
    */
   private uninstallFinalizedApps = async (): Promise<void> => {
     this.log.info(`uninstallFinalizedApps starting...`);
@@ -798,7 +800,9 @@ export class ConnextClient implements IConnextClient {
     );
     for (const app of finalizedApps) {
       try {
+        this.log.info(`Uninstalling finalized app ${app.identityHash}...`);
         await this.uninstallApp(app.identityHash);
+        this.log.info(`Finished uninstalling finalized app ${app.identityHash}`);
       } catch (e) {
         this.log.error(
           `Could not uninstall app: ${app.identityHash}. Error: ${e.stack || e.message}`,
@@ -806,6 +810,29 @@ export class ConnextClient implements IConnextClient {
       }
     }
     this.log.info(`uninstallFinalizedApps complete!`);
+  };
+
+  /**
+   * Removes all apps with a `true` `finalized` property in their `latestState`
+   */
+  private uninstallExpiredApps = async (): Promise<void> => {
+    this.log.info(`uninstallExpiredApps starting...`);
+    const blockHeight = await this.ethProvider.getBlockNumber();
+    const expiredApps = (await this.getAppInstances()).filter(
+      (app: AppInstanceJson) => app.latestState.expiry && app.latestState.expiry >= blockHeight,
+    );
+    for (const app of expiredApps) {
+      try {
+        this.log.info(`Uninstalling expired app ${app.identityHash}...`);
+        await this.uninstallApp(app.identityHash);
+        this.log.info(`Finished uninstalling expired app ${app.identityHash}`);
+      } catch (e) {
+        this.log.error(
+          `Could not uninstall app: ${app.identityHash}. Error: ${e.stack || e.message}`,
+        );
+      }
+    }
+    this.log.info(`uninstallExpiredApps complete!`);
   };
 
   private handleInstalledDepositApps = async () => {

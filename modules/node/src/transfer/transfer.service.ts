@@ -297,27 +297,25 @@ export class TransferService {
       );
       if (!isEqual(senderApp.latestState, correspondingReceiverApp.latestState)) {
         this.log.info(
-          `Sender app latest state is not equal to receiver app, taking action before uninstalling. senderApp: ${stringify(
+          `Sender app latest state is not equal to receiver app, taking action and uninstalling. senderApp: ${stringify(
             senderApp.latestState,
             true,
             0,
           )} correspondingReceiverApp: ${stringify(correspondingReceiverApp.latestState, true, 0)}`,
         );
         // need to take action before uninstalling
-        await this.cfCoreService.takeAction(
+        await this.cfCoreService.uninstallApp(
           senderApp.identityHash,
           senderApp.channel.multisigAddress,
-          senderApp.latestAction,
+          correspondingReceiverApp.latestAction,
         );
-        this.log.info(
-          `Finished taking action on sender app with paymentId ${senderApp.meta.paymentId}`,
+      } else {
+        this.log.info(`Uninstalling sender app for paymentId ${senderApp.meta.paymentId}`);
+        await this.cfCoreService.uninstallApp(
+          senderApp.identityHash,
+          senderApp.channel.multisigAddress,
         );
       }
-      this.log.info(`Uninstalling sender app for paymentId ${senderApp.meta.paymentId}`);
-      await this.cfCoreService.uninstallApp(
-        senderApp.identityHash,
-        senderApp.channel.multisigAddress,
-      );
       this.log.info(`Finished uninstalling sender app with paymentId ${senderApp.meta.paymentId}`);
     }
 
