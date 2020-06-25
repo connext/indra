@@ -1,17 +1,17 @@
 import { expect } from "chai";
 
 import {
-  getTestReceiptToSign,
+  getTestGraphReceiptToSign,
   getTestVerifyingContract,
   recoverGraphAttestationSigner,
   signGraphReceiptMessage,
-} from "./attestations";
+} from "./graphTransfer";
 
-describe("Attestations", () => {
+describe("Graph Transfer", () => {
   it("sign receipt and create attestation", async () => {
     const privateKey = "0x8a62a0832558c6bea9e29d8dcc965d4c27528ef81f22a649ba0092946e2f04fa";
 
-    const receipt = getTestReceiptToSign();
+    const receipt = getTestGraphReceiptToSign();
     const chainId = 1;
     const verifyingContract = getTestVerifyingContract();
 
@@ -30,7 +30,7 @@ describe("Attestations", () => {
     const signature =
       "0xf935516901d11fdfeb3ce0816f3238084a7de131825c7a55054876d43aabe1643b1116d5b0e80fc89f3ed97de4a2839c4401742e5ec2de50b1549253288cc0fe1c";
     const signer = await recoverGraphAttestationSigner(
-      getTestReceiptToSign(),
+      getTestGraphReceiptToSign(),
       chainId,
       getTestVerifyingContract(),
       signature,
