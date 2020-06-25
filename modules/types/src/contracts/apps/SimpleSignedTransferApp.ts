@@ -30,6 +30,8 @@ export interface EIP712Domain {
 export type SimpleSignedTransferAppState = {
   coinTransfers: CoinTransfer[];
   signerAddress: Address;
+  chainId: number;
+  verifyingContract: Address;
   domainSeparator: Bytes32;
   paymentId: Bytes32;
   finalized: boolean;
@@ -39,6 +41,8 @@ export type SimpleSignedTransferAppState = {
 export const SimpleSignedTransferAppStateEncoding = tidy(`tuple(
   ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
   address signerAddress,
+  uint256 chainId,
+  address verifyingContract,
   bytes32 domainSeparator,
   bytes32 paymentId,
   bool finalized

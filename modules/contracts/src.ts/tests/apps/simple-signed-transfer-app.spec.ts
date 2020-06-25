@@ -11,9 +11,8 @@ import {
 import {
   getRandomBytes32,
   getAddressFromPrivateKey,
-  signChannelMessage,
+  signReceiptMessage,
   getTestEIP712Domain,
-  hashReceiptMessage,
   hashDomainSeparator,
 } from "@connext/utils";
 import { BigNumber, Contract, ContractFactory, constants, utils } from "ethers";
@@ -48,7 +47,7 @@ function encodeAppAction(state: SimpleSignedTransferAppAction): string {
   return defaultAbiCoder.encode([SimpleSignedTransferAppActionEncoding], [state]);
 }
 
-describe.only("SimpleSignedTransferApp", () => {
+describe("SimpleSignedTransferApp", () => {
   let privateKey: PrivateKey;
   let signerAddress: string;
   let data: string;
@@ -103,8 +102,7 @@ describe.only("SimpleSignedTransferApp", () => {
     const network = await provider.getNetwork();
     domainSeparator = getTestEIP712Domain(network.chainId);
 
-    const digest = hashReceiptMessage(domainSeparator, receipt);
-    goodSig = await signChannelMessage(digest, privateKey);
+    goodSig = await signReceiptMessage(domainSeparator, receipt, privateKey);
     badSig = getRandomBytes32();
 
     senderAddr = mkAddress("0xa");
@@ -125,10 +123,12 @@ describe.only("SimpleSignedTransferApp", () => {
       domainSeparator: hashDomainSeparator(domainSeparator),
       paymentId,
       finalized: false,
+      chainId: domainSeparator.chainId,
+      verifyingContract: domainSeparator.verifyingContract,
     };
   });
 
-  describe("update state", () => {
+  describe("applyAction", () => {
     it("will redeem a payment with correct signature", async () => {
       const action: SimpleSignedTransferAppAction = {
         data,
@@ -139,6 +139,7 @@ describe.only("SimpleSignedTransferApp", () => {
       const afterActionState = decodeAppState(ret);
 
       const expectedPostState: SimpleSignedTransferAppState = {
+        ...preState,
         coinTransfers: [
           {
             amount: Zero,
@@ -149,9 +150,6 @@ describe.only("SimpleSignedTransferApp", () => {
             to: receiverAddr,
           },
         ],
-        paymentId,
-        signerAddress,
-        domainSeparator: hashDomainSeparator(domainSeparator),
         finalized: true,
       };
 

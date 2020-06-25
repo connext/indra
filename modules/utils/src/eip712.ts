@@ -39,11 +39,7 @@ export const hashDomainSeparator = (domain: EIP712Domain) =>
 export const RECEIPT_TYPE_HASH = hashString("Receipt(bytes32 paymentId,bytes32 data)");
 
 export const hashReceiptData = (receipt: Receipt) =>
-  hashStruct(
-    RECEIPT_TYPE_HASH,
-    ["bytes32", "bytes32", "bytes32"],
-    [receipt.paymentId, receipt.data],
-  );
+  hashStruct(RECEIPT_TYPE_HASH, ["bytes32", "bytes32"], [receipt.paymentId, receipt.data]);
 
 export const hashReceiptMessage = (domain: EIP712Domain, receipt: Receipt): string =>
   hashTypedMessage(hashDomainSeparator(domain), hashReceiptData(receipt));
