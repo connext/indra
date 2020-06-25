@@ -1,5 +1,7 @@
 import { utils } from "ethers";
-import { EIP712Domain } from "@connext/types";
+import { EIP712Domain, Address, PrivateKey } from "@connext/types";
+import { hexlify } from "ethers/lib/utils";
+import { sign } from "eccrypto-js";
 
 const { keccak256, toUtf8Bytes, defaultAbiCoder, solidityKeccak256 } = utils;
 
@@ -39,8 +41,41 @@ export const hashDomainSeparator = (
     [domainName, domainVersion, chainId, verifyingContract, domainSalt],
   );
 
+export const hashSignedTransferData = (paymentId: string, data: string) =>
+  hashStruct(
+    RECEIPT_TYPE_HASH,
+    ["bytes32", "bytes32", "bytes32"],
+    [receipt.requestCID, receipt.responseCID, receipt.subgraphDeploymentID],
+  );
+
+export const hashEIP712TransferMessage = (
+  domainName: string,
+  domainVersion: string,
+  chainId: number,
+  verifyingContract: string,
+  domainSalt: string,
+): string =>
+  hashTypedMessage(
+    hashDomainSeparator(domainName, domainVersion, chainId, verifyingContract, domainSalt),
+    hashReceiptData(receipt),
+  );
+
+export const signEIP712TransferMessage = async (
+  receipt: Receipt,
+  chainId: number,
+  verifyingContract: Address,
+  privateKey: PrivateKey,
+) =>
+  hexlify(
+    await sign(
+      bufferify(privateKey),
+      bufferify(hashReceiptMessage(chainId, verifyingContract, receipt)),
+      true,
+    ),
+  );
+
 export const getTestEIP712Domain = (chainId: number): EIP712Domain => ({
-  name: "Test EIP712 Domain",
+  name: "Connext Signed Transfer",
   version: "0",
   chainId,
   verifyingContract: "0x1d85568eEAbad713fBB5293B45ea066e552A90De",

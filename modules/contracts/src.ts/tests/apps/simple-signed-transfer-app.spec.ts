@@ -6,14 +6,19 @@ import {
   SimpleSignedTransferAppStateEncoding,
   singleAssetTwoPartyCoinTransferEncoding,
   PrivateKey,
+  EIP712Domain,
 } from "@connext/types";
-import { getRandomBytes32, getAddressFromPrivateKey, signChannelMessage } from "@connext/utils";
+import {
+  getRandomBytes32,
+  getAddressFromPrivateKey,
+  signChannelMessage,
+  getTestEIP712Domain,
+} from "@connext/utils";
 import { BigNumber, Contract, ContractFactory, constants, utils } from "ethers";
 
 import { SimpleSignedTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
-import { solidityKeccak256 } from "ethers/lib/utils";
 
 const { Zero } = constants;
 const { defaultAbiCoder } = utils;
@@ -53,6 +58,7 @@ describe.only("SimpleSignedTransferApp", () => {
   let transferAmount: BigNumber;
   let preState: SimpleSignedTransferAppState;
   let paymentId: string;
+  let domainSeparator: EIP712Domain;
 
   async function computeOutcome(state: SimpleSignedTransferAppState): Promise<string> {
     return simpleSignedTransferApp.computeOutcome(encodeAppState(state));
@@ -89,11 +95,10 @@ describe.only("SimpleSignedTransferApp", () => {
     signerAddress = getAddressFromPrivateKey(privateKey);
 
     paymentId = getRandomBytes32();
-    data = getRandomBytes32();
-    const digest = solidityKeccak256(
-      ["string", "bytes32", "bytes32"],
-      ["\x19\x01", paymentId, data],
-    );
+
+    const network = await provider.getNetwork();
+    domainSeparator = getTestEIP712Domain(network.chainId);
+
     goodSig = await signChannelMessage(digest, privateKey);
     badSig = getRandomBytes32();
 

@@ -18,6 +18,8 @@ contract SimpleSignedTransferApp is CounterfactualApp {
     struct AppState {
         LibOutcome.CoinTransfer[2] coinTransfers;
         address signerAddress;
+        uint256 chainId;
+        address verifyingContract;
         bytes32 domainSeparator;
         bytes32 paymentId;
         bool finalized;
@@ -27,6 +29,14 @@ contract SimpleSignedTransferApp is CounterfactualApp {
         bytes32 data;
         bytes signature;
     }
+
+    // EIP-712 DOMAIN SEPARATOR CONSTANTS
+    bytes32 private constant DOMAIN_TYPE_HASH = keccak256(
+        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)"
+    );
+    bytes32 private constant DOMAIN_NAME_HASH = keccak256("Connext Signed Transfer");
+    bytes32 private constant DOMAIN_VERSION_HASH = keccak256("0");
+    bytes32 private constant DOMAIN_SALT = 0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188679b9c2;
 
 
     function recoverSigner(Action memory action, AppState memory state) public pure returns (address) {
