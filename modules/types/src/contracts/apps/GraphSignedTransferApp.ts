@@ -9,13 +9,13 @@ export const GraphSignedTransferAppName = "GraphSignedTransferApp";
 ////////////////////////////////////////
 // keep synced w contracts/app/GraphSignedTransferApp.sol
 
-export interface Receipt {
+export interface GraphReceipt {
   requestCID: Bytes32;
   responseCID: Bytes32;
   subgraphDeploymentID: Bytes32;
 }
 
-export interface Attestation extends Receipt {
+export interface GraphAttestation extends GraphReceipt {
   signature: SignatureString;
 }
 

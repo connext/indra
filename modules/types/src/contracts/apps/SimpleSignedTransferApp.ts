@@ -9,6 +9,15 @@ export const SimpleSignedTransferAppName = "SimpleSignedTransferApp";
 ////////////////////////////////////////
 // keep synced w contracts/app/SimpleSignedTransferApp.sol
 
+export interface Receipt {
+  paymentId: Bytes32;
+  data: Bytes32;
+}
+
+export interface Attestation extends Receipt {
+  signature: SignatureString;
+}
+
 export interface EIP712Domain {
   name: string;
   version: string;

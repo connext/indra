@@ -3,8 +3,8 @@ import { expect } from "chai";
 import {
   getTestReceiptToSign,
   getTestVerifyingContract,
-  recoverAttestationSigner,
-  signReceiptMessage,
+  recoverGraphAttestationSigner,
+  signGraphReceiptMessage,
 } from "./attestations";
 
 describe("Attestations", () => {
@@ -15,7 +15,12 @@ describe("Attestations", () => {
     const chainId = 1;
     const verifyingContract = getTestVerifyingContract();
 
-    const signature = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
+    const signature = await signGraphReceiptMessage(
+      receipt,
+      chainId,
+      verifyingContract,
+      privateKey,
+    );
     expect(signature).to.equal(
       "0x94f94cb0523051889b67adcf1e39358f69247722338563627d55b66f434402090c9e2cc9ada737d9b813c3bbea5628034ddfd25218cda41236aa0120f973037d1b",
     );
@@ -24,7 +29,7 @@ describe("Attestations", () => {
     const chainId = 1337;
     const signature =
       "0xf935516901d11fdfeb3ce0816f3238084a7de131825c7a55054876d43aabe1643b1116d5b0e80fc89f3ed97de4a2839c4401742e5ec2de50b1549253288cc0fe1c";
-    const signer = await recoverAttestationSigner(
+    const signer = await recoverGraphAttestationSigner(
       getTestReceiptToSign(),
       chainId,
       getTestVerifyingContract(),
