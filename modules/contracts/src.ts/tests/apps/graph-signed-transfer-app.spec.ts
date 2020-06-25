@@ -1,19 +1,25 @@
 import {
   CoinTransfer,
-  SimpleSignedTransferAppAction,
-  SimpleSignedTransferAppActionEncoding,
-  SimpleSignedTransferAppState,
-  SimpleSignedTransferAppStateEncoding,
+  GraphSignedTransferAppAction,
+  GraphSignedTransferAppActionEncoding,
+  GraphSignedTransferAppState,
+  GraphSignedTransferAppStateEncoding,
   singleAssetTwoPartyCoinTransferEncoding,
   PrivateKey,
+  Receipt,
 } from "@connext/types";
-import { getRandomBytes32, getAddressFromPrivateKey, signChannelMessage } from "@connext/utils";
+import {
+  signReceiptMessage,
+  getTestReceiptToSign,
+  getTestVerifyingContract,
+  getRandomBytes32,
+  getAddressFromPrivateKey,
+} from "@connext/utils";
 import { BigNumber, Contract, ContractFactory, constants, utils } from "ethers";
 
-import { SimpleSignedTransferApp } from "../../artifacts";
+import { GraphSignedTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
-import { solidityKeccak256 } from "ethers/lib/utils";
 
 const { Zero } = constants;
 const { defaultAbiCoder } = utils;
@@ -25,50 +31,49 @@ function mkAddress(prefix: string = "0xa"): string {
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
 
-const decodeAppState = (encodedAppState: string): SimpleSignedTransferAppState =>
-  defaultAbiCoder.decode([SimpleSignedTransferAppStateEncoding], encodedAppState)[0];
+const decodeAppState = (encodedAppState: string): GraphSignedTransferAppState =>
+  defaultAbiCoder.decode([GraphSignedTransferAppStateEncoding], encodedAppState)[0];
 
 const encodeAppState = (
-  state: SimpleSignedTransferAppState,
+  state: GraphSignedTransferAppState,
   onlyCoinTransfers: boolean = false,
 ): string => {
   if (!onlyCoinTransfers)
-    return defaultAbiCoder.encode([SimpleSignedTransferAppStateEncoding], [state]);
+    return defaultAbiCoder.encode([GraphSignedTransferAppStateEncoding], [state]);
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
 };
 
-function encodeAppAction(state: SimpleSignedTransferAppAction): string {
-  return defaultAbiCoder.encode([SimpleSignedTransferAppActionEncoding], [state]);
+function encodeAppAction(state: GraphSignedTransferAppAction): string {
+  return defaultAbiCoder.encode([GraphSignedTransferAppActionEncoding], [state]);
 }
 
-describe.only("SimpleSignedTransferApp", () => {
+describe("GraphSignedTransferApp", () => {
   let privateKey: PrivateKey;
   let signerAddress: string;
-  let data: string;
+  let chainId: number;
+  let verifyingContract: string;
+  let receipt: Receipt;
   let goodSig: string;
   let badSig: string;
-  let simpleSignedTransferApp: Contract;
+  let graphSignedTransferApp: Contract;
   let senderAddr: string;
   let receiverAddr: string;
   let transferAmount: BigNumber;
-  let preState: SimpleSignedTransferAppState;
+  let preState: GraphSignedTransferAppState;
   let paymentId: string;
 
-  async function computeOutcome(state: SimpleSignedTransferAppState): Promise<string> {
-    return simpleSignedTransferApp.computeOutcome(encodeAppState(state));
+  async function computeOutcome(state: GraphSignedTransferAppState): Promise<string> {
+    return graphSignedTransferApp.computeOutcome(encodeAppState(state));
   }
 
   async function applyAction(
-    state: SimpleSignedTransferAppState,
-    action: SimpleSignedTransferAppAction,
+    state: GraphSignedTransferAppState,
+    action: GraphSignedTransferAppAction,
   ): Promise<string> {
-    return simpleSignedTransferApp.applyAction(encodeAppState(state), encodeAppAction(action));
+    return graphSignedTransferApp.applyAction(encodeAppState(state), encodeAppAction(action));
   }
 
-  async function validateOutcome(
-    encodedTransfers: string,
-    postState: SimpleSignedTransferAppState,
-  ) {
+  async function validateOutcome(encodedTransfers: string, postState: GraphSignedTransferAppState) {
     const decoded = decodeTransfers(encodedTransfers);
     expect(encodedTransfers).to.eq(encodeAppState(postState, true));
     expect(decoded[0].to).eq(postState.coinTransfers[0].to);
@@ -79,23 +84,21 @@ describe.only("SimpleSignedTransferApp", () => {
 
   beforeEach(async () => {
     const wallet = provider.getWallets()[0];
-    simpleSignedTransferApp = await new ContractFactory(
-      SimpleSignedTransferApp.abi,
-      SimpleSignedTransferApp.bytecode,
+    graphSignedTransferApp = await new ContractFactory(
+      GraphSignedTransferApp.abi,
+      GraphSignedTransferApp.bytecode,
       wallet,
     ).deploy();
 
     privateKey = wallet.privateKey;
     signerAddress = getAddressFromPrivateKey(privateKey);
 
-    paymentId = getRandomBytes32();
-    data = getRandomBytes32();
-    const digest = solidityKeccak256(
-      ["string", "bytes32", "bytes32"],
-      ["\x19\x01", paymentId, data],
-    );
-    goodSig = await signChannelMessage(digest, privateKey);
+    chainId = (await wallet.provider.getNetwork()).chainId;
+    receipt = getTestReceiptToSign();
+    verifyingContract = getTestVerifyingContract();
+    goodSig = await signReceiptMessage(receipt, chainId, verifyingContract, privateKey);
     badSig = getRandomBytes32();
+    paymentId = getRandomBytes32();
 
     senderAddr = mkAddress("0xa");
     receiverAddr = mkAddress("0xB");
@@ -114,20 +117,24 @@ describe.only("SimpleSignedTransferApp", () => {
       finalized: false,
       paymentId,
       signerAddress,
+      chainId,
+      verifyingContract,
+      requestCID: receipt.requestCID,
+      subgraphDeploymentID: receipt.subgraphDeploymentID,
     };
   });
 
   describe("update state", () => {
     it("will redeem a payment with correct signature", async () => {
-      const action: SimpleSignedTransferAppAction = {
-        data,
+      const action: GraphSignedTransferAppAction = {
+        ...receipt,
         signature: goodSig,
       };
 
       let ret = await applyAction(preState, action);
       const afterActionState = decodeAppState(ret);
 
-      const expectedPostState: SimpleSignedTransferAppState = {
+      const expectedPostState: GraphSignedTransferAppState = {
         coinTransfers: [
           {
             amount: Zero,
@@ -140,6 +147,10 @@ describe.only("SimpleSignedTransferApp", () => {
         ],
         paymentId,
         signerAddress,
+        chainId,
+        verifyingContract,
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
         finalized: true,
       };
 
@@ -156,8 +167,8 @@ describe.only("SimpleSignedTransferApp", () => {
     });
 
     it("will revert action with incorrect signature", async () => {
-      const action: SimpleSignedTransferAppAction = {
-        data,
+      const action: GraphSignedTransferAppAction = {
+        ...receipt,
         signature: badSig,
       };
 
@@ -167,8 +178,8 @@ describe.only("SimpleSignedTransferApp", () => {
     });
 
     it("will revert action if already finalized", async () => {
-      const action: SimpleSignedTransferAppAction = {
-        data,
+      const action: GraphSignedTransferAppAction = {
+        ...receipt,
         signature: goodSig,
       };
       preState.finalized = true;
