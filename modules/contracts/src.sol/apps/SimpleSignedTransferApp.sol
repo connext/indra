@@ -34,6 +34,10 @@ contract SimpleSignedTransferApp is CounterfactualApp {
     bytes32 private constant DOMAIN_TYPE_HASH = keccak256(
         "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)"
     );
+    bytes32 private constant RECEIPT_TYPE_HASH = keccak256(
+        "Receipt(bytes32 paymentId,bytes32 data)"
+    );
+
     bytes32 private constant DOMAIN_NAME_HASH = keccak256("Connext Signed Transfer");
     bytes32 private constant DOMAIN_VERSION_HASH = keccak256("0");
     bytes32 private constant DOMAIN_SALT = 0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188679b9c2;
@@ -55,7 +59,8 @@ contract SimpleSignedTransferApp is CounterfactualApp {
                         )
                     ),
                     keccak256(
-                        abi.encodePacked(
+                        abi.encode(
+                            RECEIPT_TYPE_HASH,
                             state.paymentId,
                             action.data
                         )
