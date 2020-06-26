@@ -1,5 +1,10 @@
 import { MessagingService } from "@connext/messaging";
-import { NodeResponses, SimpleSignedTransferAppState } from "@connext/types";
+import {
+  NodeResponses,
+  SimpleSignedTransferAppState,
+  SimpleSignedTransferAppName,
+  GraphSignedTransferAppName,
+} from "@connext/types";
 import { bigNumberifyJson } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
@@ -24,23 +29,15 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
     log.setContext("LinkedTransferMessaging");
   }
 
-  async getSignedTransferByPaymentId(
-    pubId: string,
-    data: { paymentId: string },
+  private async getSignedTransfer(
+    paymentId: string,
+    name: typeof SimpleSignedTransferAppName | typeof GraphSignedTransferAppName,
   ): Promise<NodeResponses.GetSignedTransfer> {
-    const { paymentId } = data;
-    if (!paymentId) {
-      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
-    }
-    this.log.info(`Got fetch signed transfer request for: ${paymentId}`);
-
-    // determine status
-    // node receives transfer in sender app
     const {
       senderApp,
       status,
       receiverApp,
-    } = await this.signedTransferService.findSenderAndReceiverAppsWithStatus(paymentId);
+    } = await this.signedTransferService.findSenderAndReceiverAppsWithStatus(paymentId, name);
     if (!senderApp) {
       return undefined;
     }
@@ -61,10 +58,45 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
     };
   }
 
+  async getSignedTransferByPaymentId(
+    pubId: string,
+    data: { paymentId: string },
+  ): Promise<NodeResponses.GetSignedTransfer> {
+    const { paymentId } = data;
+    if (!paymentId) {
+      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
+    }
+    this.log.info(`Got fetch signed transfer request for: ${paymentId}`);
+
+    // determine status
+    // node receives transfer in sender app
+    return this.getSignedTransfer(paymentId, SimpleSignedTransferAppName);
+  }
+
+  async getGraphTransferByPaymentId(
+    pubId: string,
+    data: { paymentId: string },
+  ): Promise<NodeResponses.GetSignedTransfer> {
+    const { paymentId } = data;
+    if (!paymentId) {
+      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
+    }
+    this.log.info(`Got fetch graph transfer request for: ${paymentId}`);
+
+    // determine status
+    // node receives transfer in sender app
+    return this.getSignedTransfer(paymentId, GraphSignedTransferAppName);
+  }
+
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       `*.${this.configService.getPublicIdentifier()}.transfer.get-signed`,
       this.authService.parseIdentifier(this.getSignedTransferByPaymentId.bind(this)),
+    );
+
+    await super.connectRequestReponse(
+      `*.${this.configService.getPublicIdentifier()}.transfer.get-graph`,
+      this.authService.parseIdentifier(this.getGraphTransferByPaymentId.bind(this)),
     );
   }
 }

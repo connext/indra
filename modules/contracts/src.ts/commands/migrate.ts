@@ -14,6 +14,7 @@ export const coreContracts = [
   "ChallengeRegistry",
   "ConditionalTransactionDelegateTarget",
   "DepositApp",
+  "GraphSignedTransferApp",
   "HashLockTransferApp",
   "IdentityApp",
   "MinimumViableMultisig",
@@ -26,7 +27,7 @@ export const coreContracts = [
   "TimeLockedPassThrough",
   "TwoPartyFixedOutcomeInterpreter",
   "WithdrawApp",
-  "WithdrawInterpreter"
+  "WithdrawInterpreter",
 ];
 
 export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<void> => {

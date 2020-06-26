@@ -77,6 +77,7 @@ export interface INodeApiClient {
   requestCollateral(assetId: Address): Promise<NodeResponses.RequestCollateral | void>;
   fetchLinkedTransfer(paymentId: Bytes32): Promise<NodeResponses.GetLinkedTransfer>;
   fetchSignedTransfer(paymentId: Bytes32): Promise<NodeResponses.GetSignedTransfer>;
+  fetchGraphTransfer(paymentId: Bytes32): Promise<NodeResponses.GetSignedTransfer>;
   resolveLinkedTransfer(paymentId: Bytes32): Promise<NodeResponses.ResolveLinkedTransfer>;
   resolveSignedTransfer(paymentId: Bytes32): Promise<NodeResponses.ResolveSignedTransfer>;
   recipientOnline(recipientAddress: Address): Promise<boolean>;
