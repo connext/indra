@@ -58,7 +58,6 @@ export class CreateTransferController extends AbstractController {
       | SimpleSignedTransferAppState
       | GraphSignedTransferAppState;
 
-    console.log("conditionType: ", conditionType);
     switch (conditionType) {
       case ConditionalTransferTypes.LinkedTransfer: {
         const { preImage, paymentId } = params as PublicParams.LinkedTransfer;
@@ -172,11 +171,9 @@ export class CreateTransferController extends AbstractController {
       }
     }
 
-    console.log("appRegistry: ", this.connext.appRegistry);
     const transferAppRegistryInfo = this.connext.appRegistry.find(
       (app) => app.name === conditionType,
     );
-    console.log("transferAppRegistryInfo: ", transferAppRegistryInfo);
     if (!transferAppRegistryInfo) {
       throw new Error(`transferAppRegistryInfo not found for ${conditionType}`);
     }
