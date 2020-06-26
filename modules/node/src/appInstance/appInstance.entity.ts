@@ -8,7 +8,7 @@ import {
   MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
-import { BigNumber } from "ethers";
+import { BigNumber, constants } from "ethers";
 import {
   Column,
   CreateDateColumn,
@@ -20,6 +20,8 @@ import {
 
 import { Channel } from "../channel/channel.entity";
 import { IsEthAddress, IsKeccak256Hash, IsValidPublicIdentifier } from "../validate";
+
+const { Zero } = constants;
 
 export enum AppType {
   PROPOSAL = "PROPOSAL",
@@ -59,8 +61,8 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber): string => value.toString(),
+      from: (value: string = "0"): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber = Zero): string => value.toString(),
     },
   })
   initiatorDeposit!: BigNumber;
@@ -82,8 +84,8 @@ export class AppInstance<T extends AppName = any> {
 
   @Column("text", {
     transformer: {
-      from: (value: string): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber): string => value.toString(),
+      from: (value: string = "0"): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber = Zero): string => (value).toString(),
     },
   })
   responderDeposit!: BigNumber;
