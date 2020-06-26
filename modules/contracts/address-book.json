@@ -648,9 +648,9 @@
     },
     "SimpleSignedTransferApp": {
       "address": "0xAa588d3737B611baFD7bD713445b314BD453a5C8",
-      "creationCodeHash": "0x75f6069a07a105ae540136b3d7522257996f2fe5536c387e085e43c7a553705b",
-      "runtimeCodeHash": "0xfb31a41ea9d1d404ff774d4a9c57c746acf8608eb6fb1b3af4b2c1913584f45f",
-      "txHash": "0x0ea0e134fd3331914c9d8ea0171e3fb72a895fcd9eafc160f4261fda08791a31"
+      "creationCodeHash": "0x607fdb378f50f76d63f28bc450489943867b284ee532f35cffabea3e1245e437",
+      "runtimeCodeHash": "0x76de51dd29331977b6d89ac308f0f10f4baa4efc13def8f72ea8560b05705b0f",
+      "txHash": "0x556c4b6627b144c8f50bba37ce844803099285d94a7128bfc48b7c0e4433fb61"
     },
     "SimpleTwoPartySwapApp": {
       "address": "0xf204a4Ef082f5c04bB89F7D5E6568B796096735a",
