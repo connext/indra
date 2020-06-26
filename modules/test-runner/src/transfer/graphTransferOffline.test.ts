@@ -40,7 +40,7 @@ const { Zero } = constants;
 
 describe("Graph Signed Transfer Offline", () => {
   const tokenAddress = addressBook[1337].Token.address;
-  const addr = addressBook[1337].SimpleSignedTransferApp.address;
+  const addr = addressBook[1337].GraphSignedTransferApp.address;
 
   let senderPrivateKey: PrivateKey;
   let senderSigner: IChannelSigner;
