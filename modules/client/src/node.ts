@@ -278,6 +278,12 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
+  public async fetchGraphTransfer(paymentId: string): Promise<any> {
+    return this.send(`${this.userIdentifier}.${this.nodeIdentifier}.transfer.get-graph`, {
+      paymentId,
+    });
+  }
+
   public async installConditionalTransferReceiverApp(
     paymentId: string,
     conditionType: ConditionalTransferTypes,

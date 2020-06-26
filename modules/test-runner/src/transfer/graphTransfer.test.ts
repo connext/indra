@@ -277,7 +277,7 @@ describe("Graph Signed Transfers", () => {
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.GraphTransfer);
 
-    const retrievedTransfer = await clientB.getSignedTransfer(paymentId);
+    const retrievedTransfer = await clientB.getGraphTransfer(paymentId);
     expect(retrievedTransfer).to.deep.equal({
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
@@ -326,7 +326,7 @@ describe("Graph Signed Transfers", () => {
         signature,
       });
     });
-    const retrievedTransfer = await clientB.getSignedTransfer(paymentId);
+    const retrievedTransfer = await clientB.getGraphTransfer(paymentId);
     expect(retrievedTransfer).to.deep.equal({
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,

@@ -105,7 +105,8 @@ export interface IConnextClient {
     lockHash: Bytes32,
     assetId?: Address,
   ): Promise<NodeResponses.GetHashLockTransfer>;
-  getSignedTransfer(lockHash: Bytes32): Promise<NodeResponses.GetSignedTransfer>;
+  getSignedTransfer(paymentId: Bytes32): Promise<NodeResponses.GetSignedTransfer>;
+  getGraphTransfer(paymentId: Bytes32): Promise<NodeResponses.GetSignedTransfer>;
   getAppRegistry(
     appDetails?:
       | {
