@@ -2,6 +2,7 @@ import {
   SignedTransferStatus,
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
+  GraphSignedTransferAppName,
 } from "@connext/types";
 import { bigNumberifyJson } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
@@ -74,7 +75,7 @@ export class SignedTransferService {
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndReceiver(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
-      this.cfCoreService.getAppInfoByName(SimpleSignedTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByName(GraphSignedTransferAppName).appDefinitionAddress,
     );
     const result = normalizeSignedTransferAppState(app);
     this.log.info(`findSenderAppByPaymentId ${paymentId} completed: ${JSON.stringify(result)}`);
@@ -87,7 +88,7 @@ export class SignedTransferService {
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndSender(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
-      this.cfCoreService.getAppInfoByName(SimpleSignedTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByName(GraphSignedTransferAppName).appDefinitionAddress,
     );
     const result = normalizeSignedTransferAppState(app);
     this.log.info(`findReceiverAppByPaymentId ${paymentId} completed: ${JSON.stringify(result)}`);
