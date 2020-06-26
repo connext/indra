@@ -3,7 +3,6 @@ import { Address, ContractAddresses, IChannelSigner, MessagingConfig, SwapRate }
 import { ChannelSigner } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet, Contract, providers, constants, utils } from "ethers";
-import { Memoize } from "typescript-memoize";
 
 import { DEFAULT_DECIMALS } from "../constants";
 import { LoggerService } from "../logger/logger.service";
@@ -45,27 +44,22 @@ export class ConfigService implements OnModuleInit {
     return this.envConfig[key];
   }
 
-  @Memoize()
   private getPrivateKey(): string {
     return Wallet.fromMnemonic(this.get(`INDRA_ETH_MNEMONIC`)).privateKey;
   }
 
-  @Memoize()
   getSigner(): IChannelSigner {
     return this.signer;
   }
 
-  @Memoize()
   getEthRpcUrl(): string {
     return this.get(`INDRA_ETH_RPC_URL`);
   }
 
-  @Memoize()
   getEthProvider(): providers.JsonRpcProvider {
     return this.ethProvider;
   }
 
-  @Memoize()
   async getEthNetwork(): Promise<providers.Network> {
     const ethNetwork = await this.getEthProvider().getNetwork();
     if (ethNetwork.name === `unknown` && ethNetwork.chainId === 1337) {
@@ -80,7 +74,6 @@ export class ConfigService implements OnModuleInit {
     return JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
   }
 
-  @Memoize()
   async getContractAddresses(chainId?: string): Promise<ContractAddresses> {
     chainId = chainId ? chainId : (await this.getEthNetwork()).chainId.toString();
     const ethAddresses = {} as any;
@@ -92,12 +85,10 @@ export class ConfigService implements OnModuleInit {
     return ethAddresses as ContractAddresses;
   }
 
-  @Memoize()
   async getTokenAddress(): Promise<string> {
     return (await this.getContractAddresses()).Token;
   }
 
-  @Memoize()
   async getTokenDecimals(providedAddress?: Address): Promise<number> {
     const address = providedAddress || await this.getTokenAddress();
     const tokenContract = new Contract(address, ERC20.abi, this.getSigner());
@@ -110,7 +101,6 @@ export class ConfigService implements OnModuleInit {
     return decimals;
   }
 
-  @Memoize()
   async getTestnetTokenConfig(): Promise<TestnetTokenConfig> {
     const testnetTokenConfig: TokenConfig[] = this.get("INDRA_TESTNET_TOKEN_CONFIG")
       ? JSON.parse(this.get("INDRA_TESTNET_TOKEN_CONFIG"))
@@ -131,7 +121,6 @@ export class ConfigService implements OnModuleInit {
     return testnetTokenConfig;
   }
 
-  @Memoize()
   async getTokenAddressForSwap(tokenAddress: string): Promise<string> {
     const currentChainId = (await this.getEthNetwork()).chainId;
 
@@ -151,7 +140,6 @@ export class ConfigService implements OnModuleInit {
   /**
    * Combination of swaps plus extra supported tokens.
    */
-  @Memoize()
   getSupportedTokenAddresses(): string[] {
     const swaps = this.getAllowedSwaps();
     const tokens = swaps.reduce(
@@ -164,7 +152,6 @@ export class ConfigService implements OnModuleInit {
     return [...tokenSet].map((token) => getAddress(token));
   }
 
-  @Memoize()
   getAllowedSwaps(): SwapRate[] {
     return JSON.parse(this.get("INDRA_ALLOWED_SWAPS"));
   }
@@ -172,7 +159,6 @@ export class ConfigService implements OnModuleInit {
   /**
    * Can add supported tokens to collateralize in addition to swap based tokens.
    */
-  @Memoize()
   getSupportedTokens(): string[] {
     const tokens = this.get("INDRA_SUPPORTED_TOKENS")?.split(",");
     const dedup = new Set(tokens || []);
@@ -200,27 +186,22 @@ export class ConfigService implements OnModuleInit {
     return undefined;
   }
 
-  @Memoize()
   getPublicIdentifier(): string {
     return this.signer.publicIdentifier;
   }
 
-  @Memoize()
   async getSignerAddress(): Promise<string> {
     return this.signer.getAddress();
   }
 
-  @Memoize()
   getLogLevel(): number {
     return parseInt(this.get(`INDRA_LOG_LEVEL`) || `3`, 10);
   }
 
-  @Memoize()
   isDevMode(): boolean {
     return this.get(`NODE_ENV`) !== `production`;
   }
 
-  @Memoize()
   getMessagingConfig(): MessagingConfig {
     return {
       clusterId: this.get(`INDRA_NATS_CLUSTER_ID`),
@@ -232,17 +213,14 @@ export class ConfigService implements OnModuleInit {
     };
   }
 
-  @Memoize()
   getMessagingKey(): string {
     return `INDRA`;
   }
 
-  @Memoize()
   getPort(): number {
     return parseInt(this.get(`INDRA_PORT`), 10);
   }
 
-  @Memoize()
   getPostgresConfig(): PostgresConfig {
     return {
       database: this.get(`INDRA_PG_DATABASE`),
@@ -253,17 +231,14 @@ export class ConfigService implements OnModuleInit {
     };
   }
 
-  @Memoize()
   getRedisUrl(): string {
     return this.get(`INDRA_REDIS_URL`);
   }
 
-  @Memoize()
   getRebalancingServiceUrl(): string | undefined {
     return this.get(`INDRA_REBALANCING_SERVICE_URL`);
   }
 
-  @Memoize()
   async getDefaultRebalanceProfile(
     assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
@@ -287,7 +262,6 @@ export class ConfigService implements OnModuleInit {
     };
   }
 
-  @Memoize()
   async getZeroRebalanceProfile(
     assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {

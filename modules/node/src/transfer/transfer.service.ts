@@ -15,6 +15,7 @@ import {
 import { stringify, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { TRANSFER_TIMEOUT } from "@connext/apps";
 import { constants } from "ethers";
+import { isEqual } from "lodash";
 
 import { LoggerService } from "../logger/logger.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -263,5 +264,61 @@ export class TransferService {
     );
     this.log.debug(`findReceiverAppByPaymentId ${paymentId} completed: ${JSON.stringify(app)}`);
     return app;
+  }
+
+  // unlockable transfer:
+  // sender app is installed with node as recipient
+  // receiver app with same paymentId is uninstalled
+  // latest state on receiver app is different than sender app
+  //
+  // eg:
+  // sender installs app, goes offline
+  // receiver redeems, app is installed and uninstalled
+  // sender comes back online, node can unlock transfer
+  async unlockSenderApps(senderIdentifier: string): Promise<void> {
+    this.log.info(`unlockSenderApps: ${senderIdentifier}`);
+    const senderTransferApps = await this.transferRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
+      senderIdentifier,
+      this.cfCoreService.cfCore.signerAddress,
+    );
+
+    for (const senderApp of senderTransferApps) {
+      const correspondingReceiverApp = await this.transferRepository.findTransferAppByPaymentIdAndSender(
+        senderApp.meta.paymentId,
+        this.cfCoreService.cfCore.signerAddress,
+      );
+
+      if (correspondingReceiverApp.type !== AppType.UNINSTALLED) {
+        continue;
+      }
+
+      this.log.info(
+        `Found uninstalled corresponding receiver app for transfer app with paymentId: ${senderApp.meta.paymentId}`,
+      );
+      if (!isEqual(senderApp.latestState, correspondingReceiverApp.latestState)) {
+        this.log.info(
+          `Sender app latest state is not equal to receiver app, taking action and uninstalling. senderApp: ${stringify(
+            senderApp.latestState,
+            true,
+            0,
+          )} correspondingReceiverApp: ${stringify(correspondingReceiverApp.latestState, true, 0)}`,
+        );
+        // need to take action before uninstalling
+        await this.cfCoreService.uninstallApp(
+          senderApp.identityHash,
+          senderApp.channel.multisigAddress,
+          correspondingReceiverApp.latestAction,
+        );
+      } else {
+        this.log.info(`Uninstalling sender app for paymentId ${senderApp.meta.paymentId}`);
+        await this.cfCoreService.uninstallApp(
+          senderApp.identityHash,
+          senderApp.channel.multisigAddress,
+        );
+      }
+      this.log.info(`Finished uninstalling sender app with paymentId ${senderApp.meta.paymentId}`);
+    }
+
+    this.log.info(`unlockSenderApps: ${senderIdentifier} complete`);
   }
 }

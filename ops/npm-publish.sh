@@ -2,7 +2,7 @@
 set -e
 
 # This is the order they'll be published in
-default_packages="types,utils,cf-core,apps,messaging,store,channel-provider,client"
+default_packages="types,utils,cf-core,apps,messaging,store,channel-provider,client,watcher"
 
 # To publish contracts, run bash ops/npm-publish.sh contracts
 packages="${1:-$default_packages}"
@@ -19,10 +19,6 @@ function get_latest_version {
 
 ########################################
 ## Run some sanity checks to make sure we're really ready to npm publish
-
-if [[ -n "`git status -s`" ]]
-then echo "Aborting: Make sure you've committed all your changes before publishing" && exit 1
-fi
 
 if [[ ! "`pwd | sed 's|.*/\(.*\)|\1|'`" =~ "$project" ]]
 then echo "Aborting: Make sure you're in the $project project root" && exit 1
@@ -54,8 +50,8 @@ target_version="$REPLY" # get version from user input
 
 if [[ -z "$target_version" ]]
 then echo "Aborting: A new, unique version is required" && exit 1
-elif [[ "$package_versions" =~ "$target_version" ]]
-then echo "Aborting: A new, unique version is required" && exit 1
+# elif [[ "$package_versions" =~ "$target_version" ]]
+# then echo "Aborting: A new, unique version is required" && exit 1
 elif [[ "`get_latest_version $package_versions $target_version`" != "$target_version" ]]
 then
   for package in `echo $packages | tr ',' ' '`
@@ -100,11 +96,13 @@ do
   cat .package.json | sed 's/"version": ".*"/"version": "'$version'"/' > package.json
   rm .package.json
   echo "Publishing $fullname"
+
   # If the version has a suffix like "-alpha.4" then tag it as "next"
   if [[ "$version" == *-* ]]
   then npm publish --tag next --access=public
   else npm publish --access=public
   fi
+
   echo
   cd ..
   for module in `ls */package.json`
