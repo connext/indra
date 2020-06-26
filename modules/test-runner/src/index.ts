@@ -23,5 +23,6 @@ import "./transfer/linkedTransfer.test";
 import "./transfer/hashLockTransfer.test";
 import "./transfer/graphTransfer.test";
 import "./transfer/graphTransferOffline.test";
+import "./transfer/signedTransfer.test";
 import "./withdraw/withdraw.test";
 import "./withdraw/withdrawOffline.test";
