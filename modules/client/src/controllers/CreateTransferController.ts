@@ -12,6 +12,8 @@ import {
   SimpleLinkedTransferAppState,
   SimpleSignedTransferAppState,
   HashLockTransferAppState,
+  GraphSignedTransferAppState,
+  CreatedGraphSignedTransferMeta,
 } from "@connext/types";
 import { toBN, stringify } from "@connext/utils";
 import { constants, utils } from "ethers";
@@ -53,7 +55,8 @@ export class CreateTransferController extends AbstractController {
     let initialState:
       | SimpleLinkedTransferAppState
       | HashLockTransferAppState
-      | SimpleSignedTransferAppState;
+      | SimpleSignedTransferAppState
+      | GraphSignedTransferAppState;
 
     switch (conditionType) {
       case ConditionalTransferTypes.LinkedTransfer: {
@@ -104,7 +107,7 @@ export class CreateTransferController extends AbstractController {
 
         break;
       }
-      case ConditionalTransferTypes.SignedTransfer: {
+      case ConditionalTransferTypes.GraphTransfer: {
         const {
           signerAddress,
           chainId,
@@ -112,7 +115,7 @@ export class CreateTransferController extends AbstractController {
           requestCID,
           subgraphDeploymentID,
           paymentId,
-        } = params as PublicParams.SignedTransfer;
+        } = params as PublicParams.GraphTransfer;
 
         initialState = {
           ...baseInitialState,
@@ -122,7 +125,7 @@ export class CreateTransferController extends AbstractController {
           requestCID,
           subgraphDeploymentID,
           paymentId,
-        } as SimpleSignedTransferAppState;
+        } as GraphSignedTransferAppState;
 
         transferMeta = {
           signerAddress,
@@ -130,6 +133,32 @@ export class CreateTransferController extends AbstractController {
           verifyingContract,
           requestCID,
           subgraphDeploymentID,
+        } as CreatedGraphSignedTransferMeta;
+
+        submittedMeta.paymentId = paymentId;
+
+        break;
+      }
+      case ConditionalTransferTypes.SignedTransfer: {
+        const {
+          signerAddress,
+          chainId,
+          verifyingContract,
+          paymentId,
+        } = params as PublicParams.SignedTransfer;
+
+        initialState = {
+          ...baseInitialState,
+          signerAddress,
+          chainId,
+          verifyingContract,
+          paymentId,
+        } as SimpleSignedTransferAppState;
+
+        transferMeta = {
+          signerAddress,
+          chainId,
+          verifyingContract,
         } as CreatedSignedTransferMeta;
 
         submittedMeta.paymentId = paymentId;
