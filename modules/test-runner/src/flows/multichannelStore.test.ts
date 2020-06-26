@@ -379,7 +379,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
         const transferRes = await sender.conditionalTransfer({
           amount: TRANSFER_AMT,
           paymentId,
-          conditionType: ConditionalTransferTypes.SignedTransfer,
+          conditionType: ConditionalTransferTypes.GraphTransfer,
           signerAddress: recipient.signerAddress,
           chainId,
           verifyingContract,
@@ -387,7 +387,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
           subgraphDeploymentID: receipt.subgraphDeploymentID,
           assetId: ASSET,
           recipient: recipient.publicIdentifier,
-        } as PublicParams.SignedTransfer);
+        } as PublicParams.GraphTransfer);
         console.log(`[${intervals}/${MIN_TRANSFERS}] senderApp: ${transferRes.appIdentityHash}`);
       } catch (e) {
         clearInterval(interval);
