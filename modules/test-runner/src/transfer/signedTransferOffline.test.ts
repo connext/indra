@@ -1,3 +1,29 @@
+import { addressBook } from "@connext/contracts";
+import { getMemoryStore } from "@connext/store";
+import {
+  IChannelSigner,
+  IConnextClient,
+  ConditionalTransferTypes,
+  EventNames,
+  EventName,
+  ProtocolNames,
+  IStoreService,
+  PublicParams,
+  ProtocolParams,
+  PrivateKey,
+} from "@connext/types";
+import {
+  toBN,
+  getRandomBytes32,
+  getTestVerifyingContract,
+  getTestReceiptToSign,
+  getRandomPrivateKey,
+  ChannelSigner,
+  signReceiptMessage,
+  delay,
+} from "@connext/utils";
+import { BigNumber, constants } from "ethers";
+
 import {
   env,
   ClientTestMessagingInputOpts,
@@ -11,34 +37,10 @@ import {
   SEND,
   CLIENT_INSTALL_FAILED,
 } from "../util";
-import {
-  toBN,
-  getRandomBytes32,
-  getTestVerifyingContract,
-  getTestReceiptToSign,
-  getRandomPrivateKey,
-  ChannelSigner,
-  signReceiptMessage,
-  delay,
-} from "@connext/utils";
-import {
-  IChannelSigner,
-  IConnextClient,
-  ConditionalTransferTypes,
-  EventNames,
-  EventName,
-  ProtocolNames,
-  IStoreService,
-  PublicParams,
-  ProtocolParams,
-  PrivateKey,
-} from "@connext/types";
-import { addressBook } from "@connext/contracts";
-import { BigNumber, constants } from "ethers";
 
 const { Zero } = constants;
 
-describe("Signed Transfer Offline", () => {
+describe.only("Signed Transfer Offline", () => {
   const tokenAddress = addressBook[1337].Token.address;
   const addr = addressBook[1337].SimpleSignedTransferApp.address;
 
@@ -221,7 +223,7 @@ describe("Signed Transfer Offline", () => {
     counterparty: IConnextClient,
     signer: IChannelSigner,
     store: IStoreService,
-    paymentId?: string, // if supplied, will only resolve
+    paymentId?: string, // if supplied, will resolve
     skipSync?: boolean,
   ): Promise<void> => {
     let sender: IConnextClient | undefined;
@@ -423,7 +425,9 @@ describe("Signed Transfer Offline", () => {
     });
     receiver.off();
     await receiver.messaging.disconnect();
-    // Add delay to make sure messaging properly disconnects
+    // Remove the receiver's store so that it's rejectInstall doesn't do anything
+    receiver.store = getMemoryStore();
+    // Add delay to make sure messaging properly deactivates
     await delay(1000);
 
     await recreateClientAndRetryTransfer(
@@ -454,6 +458,8 @@ describe("Signed Transfer Offline", () => {
     });
     receiver.off();
     await receiver.messaging.disconnect();
+    // Remove the receiver's store so that it's rejectInstall doesn't do anything
+    receiver.store = getMemoryStore();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
 
