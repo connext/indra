@@ -91,7 +91,7 @@ const performConditionalTransfer = async (params: {
     case ConditionalTransferTypes.HashLockTransfer: {
       throw new Error(`Test util not yet configured for hashlock transfer`);
     }
-    case ConditionalTransferTypes.SignedTransfer: {
+    case ConditionalTransferTypes.GraphTransfer: {
       TRANSFER_PARAMS = {
         ...baseParams,
         signerAddress: recipient.signerAddress,
@@ -101,6 +101,9 @@ const performConditionalTransfer = async (params: {
         subgraphDeploymentID: subgraphDeploymentID || receipt.subgraphDeploymentID,
       } as PublicParams.SignedTransfer;
       break;
+    }
+    case ConditionalTransferTypes.SignedTransfer: {
+      throw new Error(`Test util not yet configured for signed transfer`);
     }
   }
 
@@ -236,7 +239,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     });
 
     await performConditionalTransfer({
-      conditionType: ConditionalTransferTypes.SignedTransfer,
+      conditionType: ConditionalTransferTypes.GraphTransfer,
       sender,
       chainId,
       verifyingContract,
