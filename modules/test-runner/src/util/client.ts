@@ -30,15 +30,8 @@ export const createClient = async (
   fund: boolean = true,
 ): Promise<IConnextClient> => {
   const log = new ColorfulLogger("CreateClient", opts.logLevel || env.logLevel);
-  let store;
-  if (opts.store) {
-    store = opts.store;
-    log.debug(`Using provided store with ${(await store.getAllChannels()).length} channels`);
-  } else {
-    store = getMemoryStore({ prefix: getRandomBytes32() });
-    await store.init();
-    log.debug(`Using fresh store with ${(await store.getAllChannels()).length} channels`);
-  }
+  const store = opts.store || getMemoryStore({ prefix: getRandomBytes32() });
+  await store.init();
   const clientOpts: ClientOptions = {
     ...opts,
     ethProviderUrl: opts.ethProviderUrl || env.ethProviderUrl,

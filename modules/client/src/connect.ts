@@ -51,15 +51,9 @@ export const connect = async (
     }`,
   );
 
-  let store;
-  if (opts.store) {
-    store = opts.store;
-    logger.info(`Using given store containing ${(await store.getAllChannels()).length} channels`);
-  } else {
-    store = getLocalStore();
-    logger.info(`Using local store containing ${(await store.getAllChannels()).length} channels`);
-  }
+  const store = opts.store || getLocalStore();
   await store.init();
+  logger.info(`Using ${opts.store ? "given" : "local"} store containing ${(await store.getAllChannels()).length} channels`);
 
   // setup ethProvider + network information
   logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
