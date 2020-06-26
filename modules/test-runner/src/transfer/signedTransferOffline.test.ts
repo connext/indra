@@ -1,5 +1,4 @@
 import { addressBook } from "@connext/contracts";
-import { getMemoryStore } from "@connext/store";
 import {
   IChannelSigner,
   IConnextClient,
@@ -17,6 +16,7 @@ import {
   getRandomBytes32,
   getTestVerifyingContract,
   getTestReceiptToSign,
+  getRandomChannelSigner,
   getRandomPrivateKey,
   ChannelSigner,
   signReceiptMessage,
@@ -40,63 +40,48 @@ import {
 
 const { Zero } = constants;
 
-describe.only("Signed Transfer Offline", () => {
+describe("Signed Transfer Offline", () => {
   const tokenAddress = addressBook[1337].Token.address;
   const addr = addressBook[1337].SimpleSignedTransferApp.address;
 
-  let senderPrivateKey: PrivateKey;
   let senderSigner: IChannelSigner;
-
   let receiverPrivateKey: PrivateKey;
   let receiverSigner: IChannelSigner;
 
   beforeEach(async () => {
-    senderPrivateKey = getRandomPrivateKey();
-    senderSigner = new ChannelSigner(senderPrivateKey, env.ethProviderUrl);
-
+    senderSigner = getRandomChannelSigner(env.ethProviderUrl);
     receiverPrivateKey = getRandomPrivateKey();
     receiverSigner = new ChannelSigner(receiverPrivateKey, env.ethProviderUrl);
   });
-
-  const createAndFundSender = async (
-    config: Partial<ClientTestMessagingInputOpts> = {},
-  ): Promise<IConnextClient> => {
-    const client = await createClientWithMessagingLimits({
-      ...config,
-      signer: senderSigner,
-      id: "sender",
-    });
-    await fundChannel(client, TOKEN_AMOUNT, tokenAddress);
-    return client;
-  };
-
-  // NOTE: will timeout if multisig balance does not change
-  const createAndCollateralizeReceiver = async (
-    config: Partial<ClientTestMessagingInputOpts> = {},
-  ): Promise<IConnextClient> => {
-    const client = await createClientWithMessagingLimits({
-      ...config,
-      signer: receiverSigner,
-      id: "receiver",
-    });
-    await new Promise(async (resolve) => {
-      client.on(EventNames.UNINSTALL_EVENT, async (msg) => {
-        const freeBalance = await client.getFreeBalance(tokenAddress);
-        if (freeBalance[client.nodeSignerAddress].gt(Zero)) {
-          resolve();
-        }
-      });
-      await client.requestCollateral(tokenAddress);
-    });
-    return client;
-  };
 
   const createAndFundClients = async (
     senderConfig: Partial<ClientTestMessagingInputOpts> = {},
     receiverConfig: Partial<ClientTestMessagingInputOpts> = {},
   ): Promise<[IConnextClient, IConnextClient]> => {
-    const sender = await createAndFundSender(senderConfig);
-    const receiver = await createAndCollateralizeReceiver(receiverConfig);
+
+    const sender = await createClientWithMessagingLimits({
+      ...senderConfig,
+      signer: senderSigner,
+      id: "sender",
+    });
+    await fundChannel(sender, TOKEN_AMOUNT, tokenAddress);
+
+    // NOTE: will timeout if multisig balance does not change
+    const receiver = await createClientWithMessagingLimits({
+      ...receiverConfig,
+      signer: receiverSigner,
+      id: "receiver",
+    });
+    await new Promise(async (resolve) => {
+      receiver.on(EventNames.UNINSTALL_EVENT, async (msg) => {
+        const freeBalance = await receiver.getFreeBalance(tokenAddress);
+        if (freeBalance[receiver.nodeSignerAddress].gt(Zero)) {
+          resolve();
+        }
+      });
+      await receiver.requestCollateral(tokenAddress);
+    });
+
     return [sender, receiver];
   };
 
@@ -340,7 +325,6 @@ describe.only("Signed Transfer Offline", () => {
     await sender.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
-
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
   });
 
@@ -362,7 +346,6 @@ describe.only("Signed Transfer Offline", () => {
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
     console.log(`retrying`);
-
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
   });
 
@@ -389,7 +372,6 @@ describe.only("Signed Transfer Offline", () => {
     await receiver.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
-
     await recreateClientAndRetryTransfer(
       "receiver",
       sender,
@@ -425,11 +407,7 @@ describe.only("Signed Transfer Offline", () => {
     });
     receiver.off();
     await receiver.messaging.disconnect();
-    // Remove the receiver's store so that it's rejectInstall doesn't do anything
-    receiver.store = getMemoryStore();
-    // Add delay to make sure messaging properly deactivates
-    await delay(1000);
-
+    await delay(1000); // Add delay to make sure messaging properly deactivates
     await recreateClientAndRetryTransfer(
       "receiver",
       sender,
@@ -458,11 +436,7 @@ describe.only("Signed Transfer Offline", () => {
     });
     receiver.off();
     await receiver.messaging.disconnect();
-    // Remove the receiver's store so that it's rejectInstall doesn't do anything
-    receiver.store = getMemoryStore();
-    // Add delay to make sure messaging properly disconnects
-    await delay(1000);
-
+    await delay(1000); // Add delay to make sure messaging properly deactivates
     await recreateClientAndRetryTransfer("receiver", sender, receiverSigner, receiver.store);
   });
 
@@ -478,7 +452,6 @@ describe.only("Signed Transfer Offline", () => {
     const paymentId = await sendSignedTransfer(sender, receiver);
     const postTransfer = await sender.getFreeBalance(tokenAddress);
     expect(paymentId).to.be.ok;
-    console.log(`created and funded clients! beginning real test...`);
     const failureEvent = (await new Promise(async (resolve) => {
       sender.once(EventNames.UNINSTALL_FAILED_EVENT, (msg) => {
         return resolve(msg);
@@ -488,7 +461,6 @@ describe.only("Signed Transfer Offline", () => {
     })) as any;
     expect(failureEvent.data.params).to.be.ok;
     expect(failureEvent.data.error).to.include(APP_PROTOCOL_TOO_LONG(ProtocolNames.uninstall));
-    console.log(`correctly asserted failure!`);
     // recreate client, node should reclaim
     await sender.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
@@ -498,7 +470,6 @@ describe.only("Signed Transfer Offline", () => {
     expect(postReclaim[recreatedSender.nodeSignerAddress]).to.be.greaterThan(
       postTransfer[recreatedSender.nodeSignerAddress],
     );
-
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store, paymentId);
   });
 });
