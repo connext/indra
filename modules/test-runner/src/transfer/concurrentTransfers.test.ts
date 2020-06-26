@@ -5,13 +5,13 @@ import {
   IConnextClient,
   PublicParams,
   Address,
-  Receipt,
+  GraphReceipt,
 } from "@connext/types";
 import {
   delay,
   ColorfulLogger,
   getTestVerifyingContract,
-  getTestReceiptToSign,
+  getTestGraphReceiptToSign,
 } from "@connext/utils";
 
 import { createClient, fundChannel } from "../util";
@@ -30,7 +30,7 @@ describe("Concurrent transfers", async () => {
   let indexerB: IConnextClient;
   let chainId: number;
   let verifyingContract: Address;
-  let receipt: Receipt;
+  let receipt: GraphReceipt;
   let subgraphChannels: { signer: string; publicIdentifier: string }[];
 
   beforeEach(async () => {
@@ -48,7 +48,7 @@ describe("Concurrent transfers", async () => {
 
     chainId = (await indexerA.ethProvider.getNetwork()).chainId;
     verifyingContract = getTestVerifyingContract();
-    receipt = getTestReceiptToSign();
+    receipt = getTestGraphReceiptToSign();
 
     console.log("Signer address:", channel.signerAddress);
 
