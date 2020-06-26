@@ -16,7 +16,7 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
 } from "@connext/types";
 import { logTime, recoverAddressFromChannelMessage, getAddressFromAssetId } from "@connext/utils";
-import { BigNumber, providers, utils, constants } from "ethers";
+import { BigNumber, utils, constants } from "ethers";
 
 import {
   AppInstance,
@@ -38,7 +38,7 @@ export const getPureBytecode = (
   const appEntry = Object.entries(contractAddresses).find(
     entry => entry[1] === appDefinition,
   );
-  const bytecode = appEntry && appEntry[0] && PureActionApps.includes(appEntry[0])
+  const bytecode = appEntry && appEntry[0] && PureActionApps && PureActionApps.includes(appEntry[0])
     ? artifacts[appEntry[0]].deployedBytecode
     : undefined;
   return bytecode;

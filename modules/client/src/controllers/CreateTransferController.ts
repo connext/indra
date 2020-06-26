@@ -12,8 +12,14 @@ import {
   SimpleLinkedTransferAppState,
   SimpleSignedTransferAppState,
   HashLockTransferAppState,
+  GraphSignedTransferAppState,
+  CreatedGraphSignedTransferMeta,
+  EIP712Domain,
+  DOMAIN_NAME,
+  DOMAIN_VERSION,
+  DOMAIN_SALT,
 } from "@connext/types";
-import { toBN, stringify } from "@connext/utils";
+import { toBN, stringify, hashDomainSeparator } from "@connext/utils";
 import { constants, utils } from "ethers";
 
 import { AbstractController } from "./AbstractController";
@@ -53,7 +59,8 @@ export class CreateTransferController extends AbstractController {
     let initialState:
       | SimpleLinkedTransferAppState
       | HashLockTransferAppState
-      | SimpleSignedTransferAppState;
+      | SimpleSignedTransferAppState
+      | GraphSignedTransferAppState;
 
     switch (conditionType) {
       case ConditionalTransferTypes.LinkedTransfer: {
@@ -104,7 +111,7 @@ export class CreateTransferController extends AbstractController {
 
         break;
       }
-      case ConditionalTransferTypes.SignedTransfer: {
+      case ConditionalTransferTypes.GraphTransfer: {
         const {
           signerAddress,
           chainId,
@@ -112,7 +119,7 @@ export class CreateTransferController extends AbstractController {
           requestCID,
           subgraphDeploymentID,
           paymentId,
-        } = params as PublicParams.SignedTransfer;
+        } = params as PublicParams.GraphTransfer;
 
         initialState = {
           ...baseInitialState,
@@ -122,7 +129,7 @@ export class CreateTransferController extends AbstractController {
           requestCID,
           subgraphDeploymentID,
           paymentId,
-        } as SimpleSignedTransferAppState;
+        } as GraphSignedTransferAppState;
 
         transferMeta = {
           signerAddress,
@@ -130,6 +137,41 @@ export class CreateTransferController extends AbstractController {
           verifyingContract,
           requestCID,
           subgraphDeploymentID,
+        } as CreatedGraphSignedTransferMeta;
+
+        submittedMeta.paymentId = paymentId;
+
+        break;
+      }
+      case ConditionalTransferTypes.SignedTransfer: {
+        const {
+          signerAddress,
+          chainId,
+          verifyingContract,
+          paymentId,
+        } = params as PublicParams.SignedTransfer;
+
+        const domainSeparator: EIP712Domain = {
+          name: DOMAIN_NAME,
+          version: DOMAIN_VERSION,
+          chainId,
+          verifyingContract,
+          salt: DOMAIN_SALT,
+        };
+
+        initialState = {
+          ...baseInitialState,
+          signerAddress,
+          chainId,
+          verifyingContract,
+          paymentId,
+          domainSeparator: hashDomainSeparator(domainSeparator),
+        } as SimpleSignedTransferAppState;
+
+        transferMeta = {
+          signerAddress,
+          chainId,
+          verifyingContract,
         } as CreatedSignedTransferMeta;
 
         submittedMeta.paymentId = paymentId;

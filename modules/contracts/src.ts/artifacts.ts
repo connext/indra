@@ -13,6 +13,7 @@ import * as DepositApp from "../artifacts/DepositApp.json";
 import * as DolphinCoin from "../artifacts/DolphinCoin.json";
 import * as Echo from "../artifacts/Echo.json";
 import * as ERC20 from "../artifacts/ERC20.json";
+import * as GraphSignedTransferApp from "../artifacts/GraphSignedTransferApp.json";
 import * as HashLockTransferApp from "../artifacts/HashLockTransferApp.json";
 import * as HighRollerApp from "../artifacts/HighRollerApp.json";
 import * as IdentityApp from "../artifacts/IdentityApp.json";
@@ -42,7 +43,7 @@ type Artifact = {
 
 type Artifacts = { [contractName: string]: Artifact };
 
-export const artifacts = {
+export const artifacts: Artifacts = {
   AppApplyActionFails,
   AppComputeOutcomeFails,
   AppWithAction,
@@ -54,6 +55,7 @@ export const artifacts = {
   DolphinCoin,
   Echo,
   ERC20,
+  GraphSignedTransferApp,
   HashLockTransferApp,
   HighRollerApp,
   IdentityApp,
@@ -71,7 +73,7 @@ export const artifacts = {
   Token,
   TwoPartyFixedOutcomeInterpreter,
   WithdrawApp,
-  WithdrawInterpreter
+  WithdrawInterpreter,
 } as any;
 
 export {
@@ -86,6 +88,7 @@ export {
   DolphinCoin,
   Echo,
   ERC20,
+  GraphSignedTransferApp,
   HashLockTransferApp,
   HighRollerApp,
   IdentityApp,
@@ -103,5 +106,5 @@ export {
   Token,
   TwoPartyFixedOutcomeInterpreter,
   WithdrawApp,
-  WithdrawInterpreter
+  WithdrawInterpreter,
 };

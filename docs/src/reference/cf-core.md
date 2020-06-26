@@ -1,12 +1,10 @@
 # @connext/cf-core
 
 **Exported Classes:**
- - [`CFCore`](#cfcore)
 
-
+- [`CFCore`](#cfcore)
 
 ## Classes
-
 
 ### CFCore
 
@@ -38,35 +36,35 @@ CFCore doesn't have a traditional constructor because some required setup steps 
 4. `nodeConfig`: `NodeConfig`: Basically just the store prefix which idk if this is even needed any more.
 5. `provider`: `JsonRpcProvider`
 6. `signer`: `IChannelSigner`
-7. `lockService`?:` ILockService`
-8. `blocksNeededForConfirmation`?:` number`: This should probably just be hard coded.
-9. `logger`?:` ILoggerService`
+7. `lockService`?:`ILockService`
+8. `blocksNeededForConfirmation`?:`number`: This should probably just be hard coded.
+9. `logger`?:`ILoggerService`
 
 #### Properties
 
- - `rpcRouter`!: `RpcRouter`
- - `networkContext`: `NetworkContext`
- - `blocksNeededForConfirmation`: `number`
- - `log`: `ILoggerService`
- - `signerAddress`: `string`
- - `publicIdentifie`: `string`
+- `rpcRouter`!: `RpcRouter`
+- `networkContext`: `NetworkContext`
+- `blocksNeededForConfirmation`: `number`
+- `log`: `ILoggerService`
+- `signerAddress`: `string`
+- `publicIdentifie`: `string`
 
 #### Methods
 
- - `injectMiddleware(opcode: Opcode, middleware: ValidationMiddleware): void`
- - `on(event: EventNames | MethodName, callback: (res: any) => void)`
- - `off(event: EventNames | MethodName, callback?: (res: any) => void)`
- - `once(event: EventNames | MethodName, callback: (res: any) => void)`
- - `emit(event: EventNames | MethodName, req: MethodRequest)`
- - `async call(method: MethodName, req: MethodRequest): Promise<MethodResponse>`
+- `injectMiddleware(opcode: Opcode, middleware: ValidationMiddleware): void`
+- `on(event: EventNames | MethodName, callback: (res: any) => void)`
+- `off(event: EventNames | MethodName, callback?: (res: any) => void)`
+- `once(event: EventNames | MethodName, callback: (res: any) => void)`
+- `emit(event: EventNames | MethodName, req: MethodRequest)`
+- `async call(method: MethodName, req: MethodRequest): Promise<MethodResponse>`
 
------
+---
 
 Legacy Docs: Probably out of date
 
------
+---
 
------
+---
 
 ## Message Format
 

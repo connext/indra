@@ -1,5 +1,4 @@
 import { constants } from "ethers";
-
 const { AddressZero } = constants;
 
 // used in generating AssetId type
@@ -15,3 +14,8 @@ export const CF_METHOD_TIMEOUT = 15_000;
 // longest timeout
 export const NATS_TIMEOUT = 60_000;
 export const NATS_ATTEMPTS = 1;
+
+// eip712 stuff
+export const DOMAIN_NAME = "Connext Signed Transfer";
+export const DOMAIN_VERSION = "0";
+export const DOMAIN_SALT = "0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188679b9c2";

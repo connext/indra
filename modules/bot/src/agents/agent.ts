@@ -5,16 +5,14 @@ import {
   IConnextClient,
   ILoggerService,
   PublicParams,
-  CF_METHOD_TIMEOUT,
 } from "@connext/types";
 import {
   abrv,
-  delay,
   getRandomBytes32,
-  getTestReceiptToSign,
+  getTestGraphReceiptToSign,
   getTestVerifyingContract,
-  signReceiptMessage,
   stringify,
+  signGraphReceiptMessage,
 } from "@connext/utils";
 import { constants, BigNumber } from "ethers";
 const { AddressZero } = constants;
@@ -38,12 +36,12 @@ export class Agent {
   ) {}
 
   async start() {
-    const receipt = getTestReceiptToSign();
+    const receipt = getTestGraphReceiptToSign();
     const { chainId } = await this.client.ethProvider.getNetwork();
     const verifyingContract = getTestVerifyingContract();
 
     this.client.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (eData) => {
-      const eventData = eData as EventPayloads.SignedTransferCreated;
+      const eventData = eData as EventPayloads.GraphTransferCreated;
       // ignore transfers from self
       if (eventData.sender === this.client.publicIdentifier) {
         return;
@@ -64,7 +62,7 @@ export class Agent {
 
       this.lastReceivedOn = Date.now();
 
-      const signature = await signReceiptMessage(
+      const signature = await signGraphReceiptMessage(
         receipt,
         chainId,
         verifyingContract,
@@ -73,11 +71,11 @@ export class Agent {
       this.log.debug(`Unlocking transfer with signature ${signature}`);
       const start = Date.now();
       await this.client.resolveCondition({
-        conditionType: ConditionalTransferTypes.SignedTransfer,
+        conditionType: ConditionalTransferTypes.GraphTransfer,
         paymentId: eventData.paymentId,
         responseCID: receipt.responseCID,
         signature,
-      } as PublicParams.ResolveSignedTransfer);
+      } as PublicParams.ResolveGraphTransfer);
       this.log.info(
         `Received transfer ${abrv(eventData.paymentId || "???")}. Elapsed: ${Date.now() - start}`,
       );
@@ -254,7 +252,7 @@ export class Agent {
     switch (type) {
       case ConditionalTransferTypes.SignedTransfer: {
         const { chainId } = await this.client.ethProvider.getNetwork();
-        const receipt = getTestReceiptToSign();
+        const receipt = getTestGraphReceiptToSign();
         const verifyingContract = getTestVerifyingContract();
         return {
           ...baseParams,

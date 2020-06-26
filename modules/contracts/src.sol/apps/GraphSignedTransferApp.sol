@@ -3,16 +3,16 @@ pragma solidity ^0.6.4;
 pragma experimental "ABIEncoderV2";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "../adjudicator/interfaces/CounterfactualApp.sol";
 import "../funding/libs/LibOutcome.sol";
-import "../shared/libs/LibChannelCrypto.sol";
 
 
 /// @title Simple Signed Transfer App
 /// @notice This contract allows users to claim a payment locked in
 ///         the application if the specified signed submits the correct
 ///         signature for the provided data
-contract SimpleSignedTransferApp is CounterfactualApp {
+contract GraphSignedTransferApp is CounterfactualApp {
     using SafeMath for uint256;
 
     struct AppState {
@@ -20,30 +20,34 @@ contract SimpleSignedTransferApp is CounterfactualApp {
         address signerAddress;
         uint256 chainId;
         address verifyingContract;
-        bytes32 domainSeparator;
+        bytes32 requestCID;
+        bytes32 subgraphDeploymentID;
         bytes32 paymentId;
         bool finalized;
     }
 
     struct Action {
-        bytes32 data;
+        bytes32 responseCID;
         bytes signature;
     }
 
-    // EIP-712 DOMAIN SEPARATOR CONSTANTS
+    // EIP-712 TYPE HASH CONSTANTS
+
     bytes32 private constant DOMAIN_TYPE_HASH = keccak256(
         "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)"
     );
     bytes32 private constant RECEIPT_TYPE_HASH = keccak256(
-        "Receipt(bytes32 paymentId,bytes32 data)"
+        "Receipt(bytes32 requestCID,bytes32 responseCID,bytes32 subgraphDeploymentID)"
     );
 
-    bytes32 private constant DOMAIN_NAME_HASH = keccak256("Connext Signed Transfer");
+    // EIP-712 DOMAIN SEPARATOR CONSTANTS
+ 
+    bytes32 private constant DOMAIN_NAME_HASH = keccak256("Graph Protocol");
     bytes32 private constant DOMAIN_VERSION_HASH = keccak256("0");
     bytes32 private constant DOMAIN_SALT = 0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188679b9c2;
 
 
-    function recoverSigner(Action memory action, AppState memory state) public pure returns (address) {
+    function recoverAttestationSigner(Action memory action, AppState memory state) public pure returns (address) {
         return ECDSA.recover(
             keccak256(
                 abi.encodePacked(
@@ -61,8 +65,9 @@ contract SimpleSignedTransferApp is CounterfactualApp {
                     keccak256(
                         abi.encode(
                             RECEIPT_TYPE_HASH,
-                            state.paymentId,
-                            action.data
+                            state.requestCID,
+                            action.responseCID,
+                            state.subgraphDeploymentID
                         )
                     )
                 )
@@ -85,8 +90,8 @@ contract SimpleSignedTransferApp is CounterfactualApp {
         Action memory action = abi.decode(encodedAction, (Action));
 
         require(!state.finalized, "Cannot take action on finalized state");
-
-        require(state.signerAddress == recoverSigner(action, state), "Incorrect signer recovered from signature");
+        
+        require(state.signerAddress == recoverAttestationSigner(action, state), "Incorrect signer recovered from signature");
 
         state.coinTransfers[1].amount = state.coinTransfers[0].amount;
         state.coinTransfers[0].amount = 0;
