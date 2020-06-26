@@ -34,7 +34,7 @@ import {
 const { AddressZero } = constants;
 const { hexlify, randomBytes } = utils;
 
-describe("Graph Signed Transfers", () => {
+describe.only("Graph Signed Transfers", () => {
   let privateKeyA: PrivateKey;
   let clientA: IConnextClient;
   let privateKeyB: PrivateKey;
@@ -75,7 +75,7 @@ describe("Graph Signed Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
+  it.only("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
