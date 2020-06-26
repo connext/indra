@@ -37,10 +37,7 @@ export const connect = async (
     logLevel,
     skipSync,
   } = opts;
-  let { store, messaging, nodeUrl } = opts;
-  if (store) {
-    await store.init();
-  }
+  let { messaging, nodeUrl } = opts;
 
   const logger = loggerService
     ? loggerService.newContext("ConnextConnect")
@@ -53,6 +50,16 @@ export const connect = async (
         : `signer ${typeof opts.signer === "string" ? `using private key` : `with injected signer`}`
     }`,
   );
+
+  let store;
+  if (opts.store) {
+    store = opts.store;
+    logger.info(`Using given store containing ${(await store.getAllChannels()).length} channels`);
+  } else {
+    store = getLocalStore();
+    logger.info(`Using local store containing ${(await store.getAllChannels()).length} channels`);
+  }
+  await store.init();
 
   // setup ethProvider + network information
   logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
@@ -97,8 +104,6 @@ export const connect = async (
       typeof opts.signer === "string"
         ? new ChannelSigner(opts.signer, ethProviderUrl)
         : opts.signer;
-
-    store = store || getLocalStore();
 
     node = await NodeApiClient.init({
       store,
