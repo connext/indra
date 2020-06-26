@@ -9,7 +9,6 @@ import {
   HashLockTransferAppState,
   IChannelProvider,
   ILoggerService,
-  MethodNames,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   SimpleSignedTransferAppName,
