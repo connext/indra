@@ -1,5 +1,12 @@
 import { utils } from "ethers";
-import { EIP712Domain, PrivateKey, Receipt } from "@connext/types";
+import {
+  EIP712Domain,
+  PrivateKey,
+  Receipt,
+  DOMAIN_NAME,
+  DOMAIN_SALT,
+  DOMAIN_VERSION,
+} from "@connext/types";
 import { hexlify } from "ethers/lib/utils";
 import { sign } from "eccrypto-js";
 import { bufferify } from "./crypto";
@@ -52,9 +59,9 @@ export const signReceiptMessage = async (
   hexlify(await sign(bufferify(privateKey), bufferify(hashReceiptMessage(domain, receipt)), true));
 
 export const getTestEIP712Domain = (chainId: number): EIP712Domain => ({
-  name: "Connext Signed Transfer",
-  version: "0",
+  name: DOMAIN_NAME,
+  version: DOMAIN_VERSION,
   chainId,
   verifyingContract: "0x1d85568eEAbad713fBB5293B45ea066e552A90De",
-  salt: "0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188679b9c2",
+  salt: DOMAIN_SALT,
 });
