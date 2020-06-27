@@ -1,4 +1,3 @@
-
 # How To Deploy an Indra Node
 
 Lets say you want to deploy an Indra payment node to `https://indra.example.com` (we'll call this url `$DOMAINNAME`)
@@ -18,12 +17,13 @@ SSH_KEY=$HOME/.ssh/id_rsa bash ops/setup-ubuntu.sh $SERVER_IP
 (`$HOME/.ssh/id_rsa` is the default `SSH_KEY`, if this is what you're using then no need to supply it)
 
 If this is a fresh Ubuntu server from DigitalOcean or AWS then the above script should:
- - configure an "ubuntu" user and disable root login (if enabled)
- - give an additional ssh public key login access if key specified by the `PUB_KEY` env var is available (defaults to `$HOME/.ssh/autodeployer.pub`)
- - install docker & make & other dependencies
- - upgrade everything to the latest version
- - save your mnemonic in a docker secret called `indra_mnemonic`
- - reboot
+
+- configure an "ubuntu" user and disable root login (if enabled)
+- give an additional ssh public key login access if key specified by the `PUB_KEY` env var is available (defaults to `$HOME/.ssh/autodeployer.pub`)
+- install docker & make & other dependencies
+- upgrade everything to the latest version
+- save your mnemonic in a docker secret called `indra_mnemonic`
+- reboot
 
 Note: this script is idempotent aka you can run it over and over again w/out causing any problems. In fact, re-running it every month or so will help keep things up-to-date (you can skip inputting the mnemonic on subsequent runs).
 
@@ -69,3 +69,5 @@ The above will download & run docker images associated with the commit/release y
 ```bash
 git checkout indra-6.0.8 && make restart-prod
 ```
+
+Before you are able to start sending payments, you will have to make sure to properly collateralize your node. The signer address is available as `accounts[0]` off of your mnemonic. Node's should have collateral in all supported tokens, as well as sufficient eth to pay for all transactions from the wallet to the channels. By default, the supported token addresses will include ETH and the `Token` address from the network context of your node (available in `address-book.json`).
