@@ -10,6 +10,7 @@ import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
 import { DepositModule } from "../deposit/deposit.module";
+import { SwapRateModule } from "../swapRate/swapRate.module";
 
 import { transferProviderFactory } from "./transfer.provider";
 import { TransferService } from "./transfer.service";
@@ -27,6 +28,7 @@ import { TransferRepository } from "./transfer.repository";
     LoggerModule,
     LinkedTransferModule,
     MessagingModule,
+    SwapRateModule,
     TypeOrmModule.forFeature([ChannelRepository, TransferRepository]),
   ],
   providers: [TransferService, transferProviderFactory],
