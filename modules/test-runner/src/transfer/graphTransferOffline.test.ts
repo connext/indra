@@ -12,37 +12,37 @@ import {
   PrivateKey,
 } from "@connext/types";
 import {
-  toBN,
+  ChannelSigner,
+  delay,
   getRandomBytes32,
-  getTestVerifyingContract,
-  getTestReceiptToSign,
   getRandomChannelSigner,
   getRandomPrivateKey,
-  ChannelSigner,
-  signReceiptMessage,
-  delay,
+  getTestGraphReceiptToSign,
+  getTestVerifyingContract,
+  signGraphReceiptMessage,
+  toBN,
 } from "@connext/utils";
 import { BigNumber, constants } from "ethers";
 
 import {
-  env,
+  APP_PROTOCOL_TOO_LONG,
+  CLIENT_INSTALL_FAILED,
   ClientTestMessagingInputOpts,
+  createClient,
   createClientWithMessagingLimits,
+  env,
   expect,
   fundChannel,
-  TOKEN_AMOUNT,
   RECEIVED,
-  APP_PROTOCOL_TOO_LONG,
-  createClient,
   SEND,
-  CLIENT_INSTALL_FAILED,
+  TOKEN_AMOUNT,
 } from "../util";
 
 const { Zero } = constants;
 
-describe("Signed Transfer Offline", () => {
+describe("Graph Signed Transfer Offline", () => {
   const tokenAddress = addressBook[1337].Token.address;
-  const addr = addressBook[1337].SimpleSignedTransferApp.address;
+  const addr = addressBook[1337].GraphSignedTransferApp.address;
 
   let senderSigner: IChannelSigner;
   let receiverPrivateKey: PrivateKey;
@@ -93,9 +93,9 @@ describe("Signed Transfer Offline", () => {
   ) => {
     const preTransferBalance = await receiver.getFreeBalance(tokenAddress);
     const verifyingContract = getTestVerifyingContract();
-    const receipt = getTestReceiptToSign();
+    const receipt = getTestGraphReceiptToSign();
     const { chainId } = await receiver.ethProvider.getNetwork();
-    const signature = await signReceiptMessage(
+    const signature = await signGraphReceiptMessage(
       receipt,
       chainId,
       verifyingContract,
@@ -148,11 +148,11 @@ describe("Signed Transfer Offline", () => {
       }
       try {
         await receiver.resolveCondition({
-          conditionType: ConditionalTransferTypes.SignedTransfer,
+          conditionType: ConditionalTransferTypes.GraphTransfer,
           paymentId,
           responseCID: receipt.responseCID,
           signature,
-        } as PublicParams.ResolveSignedTransfer);
+        } as PublicParams.ResolveGraphTransfer);
         if (!resolves) {
           return reject(new Error(`Signed transfer successfully resolved`));
         }
@@ -177,11 +177,11 @@ describe("Signed Transfer Offline", () => {
   ) => {
     const preTransferSenderBalance = await sender.getFreeBalance(tokenAddress);
     const { chainId } = await sender.ethProvider.getNetwork();
-    const receipt = getTestReceiptToSign();
+    const receipt = getTestGraphReceiptToSign();
     await sender.conditionalTransfer({
       amount,
       paymentId,
-      conditionType: ConditionalTransferTypes.SignedTransfer,
+      conditionType: ConditionalTransferTypes.GraphTransfer,
       assetId: tokenAddress,
       signerAddress: receiver.signerAddress,
       chainId,

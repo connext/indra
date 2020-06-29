@@ -8,13 +8,7 @@ import { ContractAddresses } from "./contracts";
 import { MethodResults } from "./methods";
 import { PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
-import {
-  LinkedTransferStatus,
-  HashLockTransferStatus,
-  SignedTransferStatus,
-  CreatedConditionalTransferMetaMap,
-  ConditionalTransferTypes,
-} from "./transfers";
+import { LinkedTransferStatus, HashLockTransferStatus, SignedTransferStatus } from "./transfers";
 import { Collateralizations, RebalanceProfile } from "./misc";
 
 type GetRebalanceProfileResponse = RebalanceProfile;

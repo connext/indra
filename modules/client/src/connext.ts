@@ -205,6 +205,10 @@ export class ConnextClient implements IConnextClient {
     return this.node.fetchSignedTransfer(paymentId);
   };
 
+  public getGraphTransfer = async (paymentId: string): Promise<NodeResponses.GetSignedTransfer> => {
+    return this.node.fetchGraphTransfer(paymentId);
+  };
+
   public getAppRegistry = async (
     appDetails?:
       | {

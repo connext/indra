@@ -6,8 +6,8 @@ import {
   ConditionalTransferTypes,
   Address,
   PrivateKey,
-  Receipt,
   Bytes32,
+  GraphReceipt,
 } from "@connext/types";
 import { getPostgresStore } from "@connext/store";
 import { ConnextClient } from "@connext/client";
@@ -15,9 +15,9 @@ import {
   abrv,
   getRandomBytes32,
   getRandomPrivateKey,
-  getTestReceiptToSign,
+  getTestGraphReceiptToSign,
   getTestVerifyingContract,
-  signReceiptMessage,
+  signGraphReceiptMessage,
   toBN,
 } from "@connext/utils";
 import { Sequelize } from "sequelize";
@@ -80,7 +80,7 @@ const performConditionalTransfer = async (params: {
     meta,
   };
   const networkContext = await sender.ethProvider.getNetwork();
-  const receipt = getTestReceiptToSign();
+  const receipt = getTestGraphReceiptToSign();
   switch (conditionType) {
     case ConditionalTransferTypes.LinkedTransfer: {
       TRANSFER_PARAMS = {
@@ -92,7 +92,7 @@ const performConditionalTransfer = async (params: {
     case ConditionalTransferTypes.HashLockTransfer: {
       throw new Error(`Test util not yet configured for hashlock transfer`);
     }
-    case ConditionalTransferTypes.SignedTransfer: {
+    case ConditionalTransferTypes.GraphTransfer: {
       TRANSFER_PARAMS = {
         ...baseParams,
         signerAddress: recipient.signerAddress,
@@ -102,6 +102,9 @@ const performConditionalTransfer = async (params: {
         subgraphDeploymentID: subgraphDeploymentID || receipt.subgraphDeploymentID,
       } as PublicParams.SignedTransfer;
       break;
+    }
+    case ConditionalTransferTypes.SignedTransfer: {
+      throw new Error(`Test util not yet configured for signed transfer`);
     }
   }
 
@@ -140,7 +143,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
   let sender: ConnextClient;
   let recipientPrivateKey: PrivateKey;
   let recipient: ConnextClient;
-  let receipt: Receipt;
+  let receipt: GraphReceipt;
   let chainId: number;
   let verifyingContract: Address;
   let initialSenderFb: { [x: string]: string | BigNumber };
@@ -176,7 +179,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       store: recipientStore,
       id: "R",
     })) as ConnextClient;
-    receipt = getTestReceiptToSign();
+    receipt = getTestGraphReceiptToSign();
     chainId = (await sender.ethProvider.getNetwork()).chainId;
     verifyingContract = getTestVerifyingContract();
     await fundChannel(sender, DEPOSIT_AMT, ASSET);
@@ -221,7 +224,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
 
     // register listener to resolve payment
     recipient.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
-      const signature = await signReceiptMessage(
+      const signature = await signGraphReceiptMessage(
         receipt,
         chainId,
         verifyingContract,
@@ -229,15 +232,15 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       );
 
       await recipient.resolveCondition({
-        conditionType: ConditionalTransferTypes.SignedTransfer,
+        conditionType: ConditionalTransferTypes.GraphTransfer,
         paymentId: payload.paymentId,
         responseCID: receipt.responseCID,
         signature,
-      } as PublicParams.ResolveSignedTransfer);
+      } as PublicParams.ResolveGraphTransfer);
     });
 
     await performConditionalTransfer({
-      conditionType: ConditionalTransferTypes.SignedTransfer,
+      conditionType: ConditionalTransferTypes.GraphTransfer,
       sender,
       chainId,
       verifyingContract,
@@ -347,18 +350,19 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
 
     recipient.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
       console.log(`[${receivedTransfers}/${MIN_TRANSFERS}] Received transfer ${abrv(payload.paymentId)}`);
-      const signature = await signReceiptMessage(
+      const signature = await signGraphReceiptMessage(
         receipt,
         chainId,
         verifyingContract,
         recipientPrivateKey,
       );
       await recipient.resolveCondition({
-        conditionType: ConditionalTransferTypes.SignedTransfer,
+        conditionType: ConditionalTransferTypes.GraphTransfer,
         paymentId: payload.paymentId,
         responseCID: receipt.responseCID,
         signature,
-      } as PublicParams.ResolveSignedTransfer);
+      } as PublicParams.ResolveGraphTransfer);
+      console.log(`Resolved signed transfer: ${payload.paymentId}`);
     });
 
     // call transfers on interval
@@ -374,7 +378,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
         await sender.conditionalTransfer({
           amount: TRANSFER_AMT,
           paymentId,
-          conditionType: ConditionalTransferTypes.SignedTransfer,
+          conditionType: ConditionalTransferTypes.GraphTransfer,
           signerAddress: recipient.signerAddress,
           chainId,
           verifyingContract,
@@ -382,7 +386,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
           subgraphDeploymentID: receipt.subgraphDeploymentID,
           assetId: ASSET,
           recipient: recipient.publicIdentifier,
-        } as PublicParams.SignedTransfer);
+        } as PublicParams.GraphTransfer);
         console.log(`[${intervals}/${MIN_TRANSFERS}] Sent transfer with paymentId ${abrv(paymentId)}`);
       } catch (e) {
         clearInterval(interval);

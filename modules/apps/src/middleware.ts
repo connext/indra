@@ -19,6 +19,7 @@ import { proposeWithdrawMiddleware } from "./WithdrawApp";
 import { proposeSwapMiddleware } from "./SimpleTwoPartySwapApp";
 import { commonAppProposalValidation } from "./shared/validation";
 import { AppRegistry } from "./registry";
+import { proposeGraphSignedTransferMiddleware } from "./GraphSignedTransferApp";
 
 const getNameFromAddress = (contractAddress: ContractAddresses, appDefinition: Address) => {
   const [name] =
@@ -114,6 +115,10 @@ const proposeMiddleware = async (
   switch (appDef) {
     case contractAddresses.DepositApp: {
       await proposeDepositMiddleware(middlewareContext, network.provider);
+      break;
+    }
+    case contractAddresses.GraphSignedTransferApp: {
+      proposeGraphSignedTransferMiddleware(middlewareContext);
       break;
     }
     case contractAddresses.SimpleTwoPartySwapApp: {
