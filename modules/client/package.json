@@ -29,7 +29,7 @@
     "evt": "1.7.13",
     "regenerator-runtime": "0.13.5",
     "ts-natsutil": "1.0.6",
-    "uuid": "8.1.0"
+    "uuid": "8.2.0"
   },
   "devDependencies": {
     "@babel/polyfill": "7.10.1",
