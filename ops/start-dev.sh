@@ -55,7 +55,7 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 # config & hard-coded stuff you might want to change
 
 ganacheProvider="http://ethprovider:8545"
-number_of_services=5 # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services=6 # NOTE: Gotta update this manually when adding/removing services :(
 
 nats_port=4222
 node_port=8080
@@ -196,6 +196,7 @@ secrets:
 volumes:
   certs:
   chain_dev:
+  chain_dev_2:
   database_dev:
 
 services:
@@ -248,6 +249,20 @@ services:
     volumes:
       - '`pwd`:/root'
       - 'chain_dev:/data'
+
+  ethprovider2:
+    image: '$ethprovider_image'
+    entrypoint: bash testnet2-ops/entry.sh
+    command: 'start'
+    environment:
+      ETH_MNEMONIC: '$eth_mnemonic'
+    networks:
+      - '$project'
+    ports:
+      - '8546:8545'
+    volumes:
+      - '`pwd`/modules/contracts:/root'
+      - 'chain_dev_2:/data'
 
   database:
     image: '$database_image'

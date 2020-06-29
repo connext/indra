@@ -29,6 +29,7 @@ const config: BuidlerConfig = {
       url: "http://localhost:8545",
     },
     buidlerevm: {
+      chainId: 1338,
       loggingEnabled: false,
       accounts: [
         {
