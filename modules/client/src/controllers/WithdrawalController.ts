@@ -85,19 +85,17 @@ export class WithdrawalController extends AbstractController {
         ),
         new Promise(async (resolve, reject) => {
           try {
-            const [tx] = (await this.connext.watchForUserWithdrawal());
+            const [tx] = await this.connext.watchForUserWithdrawal();
             return resolve(tx);
           } catch (e) {
             return reject(new Error(e));
           }
         }),
       ])) as EventPayloads.UpdateStateFailed | providers.TransactionResponse;
-      this.log.warn(`Got raceRes: ${stringify(raceRes)}`);
-      if ((raceRes as EventPayloads.UpdateStateFailed).error) {
+      if ((raceRes as EventPayloads.UpdateStateFailed)?.error) {
         throw new Error((raceRes as EventPayloads.UpdateStateFailed).error);
       }
       transaction = raceRes as providers.TransactionResponse;
-      this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
       this.log.debug(`Transaction details: ${stringify(transaction)}`);
 
       this.connext.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction });
