@@ -72,20 +72,28 @@ export class ConfigService implements OnModuleInit {
       const ret = JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
       return ret;
     } catch (e) {
-      err = `Failed to get contract addresses: ${e.message}. Env: ${stringify(process.env)}`;
+      err = `Failed to get address book: ${e.message}. Env: ${stringify(process.env)}`;
     }
     throw new Error(err);
   }
 
   async getContractAddresses(chainId?: string): Promise<ContractAddresses> {
-    chainId = chainId ? chainId : (await this.getEthNetwork()).chainId.toString();
-    const ethAddresses = {} as any;
-    const ethAddressBook = this.getEthAddressBook();
-    Object.keys(ethAddressBook[chainId]).forEach(
-      (contract: string) =>
-        (ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address)),
-    );
-    return ethAddresses as ContractAddresses;
+    let err: string = "";
+    try {
+      chainId = chainId ? chainId : (await this.getEthNetwork()).chainId.toString();
+      const ethAddresses = {} as any;
+      const ethAddressBook = this.getEthAddressBook();
+      Object.keys(ethAddressBook[chainId]).forEach(
+        (contract: string) =>
+          (ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address)),
+      );
+      return ethAddresses as ContractAddresses;
+    } catch (e) {
+      err = `Failed to get contract addresses for ${chainId}: ${e.message}. Env: ${stringify(
+        process.env,
+      )}`;
+    }
+    throw new Error(err);
   }
 
   async getTokenAddress(): Promise<string> {
