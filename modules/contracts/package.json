@@ -33,7 +33,7 @@
     "@connext/types": "7.0.0-alpha.8",
     "@connext/utils": "7.0.0-alpha.8",
     "@openzeppelin/contracts": "3.0.2",
-    "ethers": "5.0.2",
+    "ethers": "5.0.3",
     "ganache-cli": "6.9.1",
     "yargs": "15.3.1"
   },
