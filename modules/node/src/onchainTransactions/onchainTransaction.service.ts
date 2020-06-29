@@ -78,7 +78,7 @@ export class OnchainTransactionService {
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
         }
-        this.log.info(`Success sending transaction! Tx hash: ${receipt.transactionHash}`);
+        this.log.info(`Success sending transaction! Tx mined at block ${receipt.blockNumber}: ${receipt.transactionHash}`);
         return [receipt, tx];
       } catch (e) {
         errors[attempt] = e.message;

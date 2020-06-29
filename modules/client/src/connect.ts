@@ -244,20 +244,16 @@ export const connect = async (
   logger.info("Checked in with node");
 
   // watch for/prune lingering withdrawals
-  logger.info("Getting user withdrawals");
+  logger.debug("Getting user withdrawals");
   const previouslyActive = await client.getUserWithdrawals();
   if (previouslyActive.length === 0) {
-    logger.info("No user withdrawals found");
+    logger.debug("No user withdrawals found");
     logTime(logger, start, `Client successfully connected`);
     return client;
   }
 
   try {
-    logger.info(`Watching for user withdrawals`);
-    const transactions = await client.watchForUserWithdrawal();
-    if (transactions.length > 0) {
-      logger.info(`Found node submitted user withdrawals: ${transactions.map((tx) => tx.hash)}`);
-    }
+    await client.watchForUserWithdrawal();
   } catch (e) {
     logger.error(
       `Could not complete watching for user withdrawals: ${

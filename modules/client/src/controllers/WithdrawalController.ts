@@ -85,13 +85,14 @@ export class WithdrawalController extends AbstractController {
         ),
         new Promise(async (resolve, reject) => {
           try {
-            const [tx] = await this.connext.watchForUserWithdrawal();
+            const [tx] = (await this.connext.watchForUserWithdrawal());
             return resolve(tx);
           } catch (e) {
             return reject(new Error(e));
           }
         }),
       ])) as EventPayloads.UpdateStateFailed | providers.TransactionResponse;
+      this.log.warn(`Got raceRes: ${stringify(raceRes)}`);
       if ((raceRes as EventPayloads.UpdateStateFailed).error) {
         throw new Error((raceRes as EventPayloads.UpdateStateFailed).error);
       }
@@ -135,9 +136,8 @@ export class WithdrawalController extends AbstractController {
     this.log.debug(`Signing withdrawal commitment: ${hash}`);
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
-      hash,
-    );
+    const counterpartySignatureOnWithdrawCommitment =
+      await this.connext.channelProvider.signMessage(hash);
     this.log.debug(`Taking action on ${appInstance.identityHash}`);
     await this.connext.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
