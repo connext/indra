@@ -8,7 +8,6 @@ BOT_REGISTRY_URL="${BOT_REGISTRY_URL:-http://172.17.0.1:3333}"
 
 echo "Bot registry container launched!"
 
-cd modules/bot
 function finish {
   echo && echo "Bot container exiting.." && exit
 }
