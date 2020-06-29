@@ -40,8 +40,8 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 default: dev
 all: dev staging release
 dev: bot database proxy node test-runner
-staging: database ethprovider proxy node-staging test-runner-staging webserver bot
-release: database ethprovider proxy node-release test-runner-release webserver bot
+staging: database ethprovider proxy node-staging test-runner-staging webserver bot-staging
+release: database ethprovider proxy node-release test-runner-release webserver bot-staging
 
 ########################################
 # Command & Control Shortcuts
@@ -347,6 +347,13 @@ node-staging: node $(shell find modules/node/ops $(find_options))
 	$(docker_run) "cd modules/node && MODE=staging npm run build-bundle"
 	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node .
 	docker tag $(project)_node $(project)_node:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+bot-staging: bot $(shell find modules/bot/ops $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/bot && MODE=staging npm run build"
+	docker build --file modules/bot/ops/Dockerfile $(image_cache) --tag $(project)_bot .
+	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 proxy: $(shell find ops/proxy $(find_options))
