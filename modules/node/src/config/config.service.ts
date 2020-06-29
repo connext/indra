@@ -66,8 +66,15 @@ export class ConfigService implements OnModuleInit {
   }
 
   getEthAddressBook() {
-    throw new Error(`process.env: ${stringify(process.env)}`);
-    // return JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
+    // throw new Error(`process.env: ${stringify(process.env)}`);
+    let err;
+    try {
+      const ret = JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
+      return ret;
+    } catch (e) {
+      err = `Failed to get contract addresses: ${e.message}. Env: ${stringify(process.env)}`;
+    }
+    throw new Error(err);
   }
 
   async getContractAddresses(chainId?: string): Promise<ContractAddresses> {
