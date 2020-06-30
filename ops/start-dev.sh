@@ -252,7 +252,7 @@ services:
 
   ethprovider2:
     image: '$ethprovider_image'
-    entrypoint: bash testnet2-ops/entry.sh
+    entrypoint: bash modules/contracts/testnet2-ops/entry.sh
     command: 'start'
     environment:
       ETH_MNEMONIC: '$eth_mnemonic'
@@ -261,7 +261,7 @@ services:
     ports:
       - '8546:8545'
     volumes:
-      - '`pwd`/modules/contracts:/root'
+      - '`pwd`:/root'
       - 'chain_dev_2:/data'
 
   database:

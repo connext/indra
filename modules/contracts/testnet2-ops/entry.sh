@@ -11,17 +11,18 @@ mkdir -p /data
 if [[ "$1" == "start" ]]
 then
   echo "Starting BuidlerEVM.."
-  ls -l
-  exec npx buidler node
+  cd modules/contracts
+  exec npx buidler node --hostname 0.0.0.0
 
 elif [[ "$1" == "deploy" ]]
 then
   if [[ "${ETH_PROVIDER#*://}" == "localhost"* ]]
   then
     echo "Starting BuidlerEVM for deployment.."
-    npx buidler node
+    cd modules/contracts
+    npx buidler node --hostname 0.0.0.0
        > $dir/.buidlerevm.log &
-    wait-for localhost:8545
+    wait-for localhost:8546
   fi
 
   touch $address_book
