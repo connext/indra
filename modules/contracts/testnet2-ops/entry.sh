@@ -19,7 +19,8 @@ then
   if [[ "${ETH_PROVIDER#*://}" == "localhost"* ]]
   then
     echo "Starting BuidlerEVM for deployment.."
-    cd modules/contracts
+    # TODO: why doesnt this need to be done?
+    # cd modules/contracts
     npx buidler node --hostname 0.0.0.0
        > $dir/.buidlerevm.log &
     wait-for localhost:8546

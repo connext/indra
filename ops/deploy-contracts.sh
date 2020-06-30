@@ -60,7 +60,7 @@ fi
 if [[ "$mode" == "local" ]]
 then
   echo "Deploying $mode-mode contract deployer (image: builder)..."
-  exec docker run \
+  docker run \
     $interactive \
     "$SECRET_ENV" \
     --entrypoint="bash" \
@@ -69,8 +69,8 @@ then
     --mount="type=volume,source=${project}_chain_dev,target=/data" \
     --name="$name" \
     --rm \
-    ${project}_builder -c "cd modules/contracts && bash ops/entry.sh deploy" && \
-  echo "Deploying $mode-mode contract deployer 2 (image: builder)..." \
+    ${project}_builder -c "cd modules/contracts && bash ops/entry.sh deploy"
+  echo "Deploying $mode-mode contract deployer 2 (image: builder)..."
   docker run \
     $interactive \
     "$SECRET_ENV" \
