@@ -15,7 +15,6 @@ then
   exec $ganache \
     --db="/data" \
     --gasPrice="10000000000" \
-    --blockTime="1" \
     --host="0.0.0.0" \
     --mnemonic="$ETH_MNEMONIC" \
     --networkId="1337" \
