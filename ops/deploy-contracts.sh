@@ -75,10 +75,10 @@ then
     $interactive \
     "$SECRET_ENV" \
     --entrypoint="bash" \
-    --env="ETH_PROVIDER=$ETH_PROVIDER_2" \
+    --env="ETH_PROVIDER=$ETH_PROVIDER" \
     --mount="type=bind,source=$cwd,target=/root" \
     --mount="type=volume,source=${project}_chain_dev_2,target=/data" \
-    --name="$name" \
+    --name="$name_2" \
     --rm \
     ${project}_builder -c "cd modules/contracts && bash testnet2-ops/entry.sh deploy"
 

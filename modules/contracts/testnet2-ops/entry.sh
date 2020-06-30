@@ -21,9 +21,9 @@ then
     echo "Starting BuidlerEVM for deployment.."
     # TODO: why doesnt this need to be done?
     # cd modules/contracts
-    npx buidler node --hostname 0.0.0.0
+    npx buidler node --hostname 0.0.0.0 \
        > $dir/.buidlerevm.log &
-    wait-for localhost:8546
+    wait-for localhost:8545
   fi
 
   touch $address_book
