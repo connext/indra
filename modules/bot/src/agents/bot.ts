@@ -2,7 +2,7 @@ import { connect } from "@connext/client";
 import { getFileStore } from "@connext/store";
 import { EventNames } from "@connext/types";
 import {
-  abrv,
+  abbreviate,
   ColorfulLogger,
   delay,
   getRandomBytes32,
@@ -10,7 +10,7 @@ import {
   stringify,
   ChannelSigner,
 } from "@connext/utils";
-import { utils } from "ethers";
+import { utils, constants } from "ethers";
 import intervalPromise from "interval-promise";
 import { Argv } from "yargs";
 
@@ -25,6 +25,7 @@ import {
 import { Agent } from "./agent";
 
 const { parseEther, formatEther } = utils;
+const { AddressZero } = constants;
 
 // Bot should crash if an unhandled promise rejection slips through.
 process.on("unhandledRejection", () => {
@@ -57,6 +58,11 @@ export default {
         type: "number",
         default: -1,
       })
+      .option("token-address", {
+        describe: "Asset id for payments",
+        type: "string",
+        default: AddressZero,
+      })
       .option("private-key", {
         describe: "Ethereum Private Key",
         type: "string",
@@ -66,7 +72,7 @@ export default {
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
     const NAME = `Bot #${argv.concurrencyIndex}`;
     const log = new ColorfulLogger(NAME, 3, true, argv.concurrencyIndex);
-    log.info(`Launched ${NAME}`);
+    log.info(`Launched ${NAME}, paying in ${argv.tokenAddress}`);
     const TRANSFER_AMT = parseEther("0.001");
     const DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 1 eth
     const limit = argv.limit;
@@ -91,7 +97,7 @@ export default {
         nodeIdentifier: ${client.nodeIdentifier}
         nodeSignerAddress: ${client.nodeSignerAddress}`);
 
-    log.setContext(abrv(client.publicIdentifier));
+    log.setContext(abbreviate(client.publicIdentifier));
     const agent = new Agent(log, client, argv.privateKey);
     log.info("Agent starting up.");
     await agent.start();
@@ -181,14 +187,22 @@ export default {
         try {
           // Send transfer
           log.info(
-            `Sending transfer #${sentPayments}/${limit} to ${abrv(
+            `Sending transfer #${sentPayments}/${limit} to ${abbreviate(
               receiverIdentifier,
-            )} with id ${abrv(paymentId)}`,
+            )} with id ${abbreviate(paymentId)}`,
           );
-          await agent.pay(receiverIdentifier, receiverSigner, TRANSFER_AMT, paymentId);
+          await agent.pay(
+            receiverIdentifier,
+            receiverSigner,
+            TRANSFER_AMT,
+            argv.tokenAddress,
+            paymentId,
+          );
           end[paymentId] = Date.now();
           log.info(
-            `Finished transfer ${abrv(paymentId)} after ${end[paymentId] - start[paymentId]} ms`,
+            `Finished transfer ${abbreviate(paymentId)} after ${
+              end[paymentId] - start[paymentId]
+            } ms`,
           );
           sentPayments++;
         } catch (err) {
