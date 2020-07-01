@@ -96,6 +96,7 @@ clean: stop
 	rm -rf modules/*/node_modules/.bin
 	rm -rf modules/contracts/artifacts modules/*/build modules/*/dist docs/build
 	rm -rf modules/*/.*cache* modules/*/node_modules/.cache modules/contracts/cache/*.json
+	rm -rf modules/*/.connext-store
 	rm -rf modules/*/package-lock.json
 
 quick-reset:
@@ -107,6 +108,7 @@ quick-reset:
 	bash ops/db.sh 'truncate table rebalance_profile cascade;'
 	bash ops/db.sh 'truncate table app_instance cascade;'
 	bash ops/redis.sh 'flushall'
+	rm -rf modules/*/.connext-store
 	touch modules/node/src/main.ts
 
 reset: stop
