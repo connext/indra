@@ -9,6 +9,7 @@ import {
 } from "@connext/types";
 import {
   abrv,
+  delay,
   getRandomBytes32,
   getTestGraphReceiptToSign,
   getTestVerifyingContract,
@@ -215,13 +216,13 @@ export class Agent {
         reject,
       };
 
-      // const timeout = 35_000;
-      // delay(timeout).then(() => {
-      //   if (this.payments[id]) {
-      //     delete this.payments[id];
-      //     return reject(new Error(`Payment ${id} timed out after ${timeout / 1000} s`));
-      //   }
-      // });
+      const timeout = 10_000;
+      delay(timeout).then(() => {
+        if (this.payments[id]) {
+          delete this.payments[id];
+          return reject(new Error(`Payment ${id} timed out after ${timeout / 1000} s`));
+        }
+      });
     });
   }
 
