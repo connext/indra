@@ -768,7 +768,7 @@ async function syncFreeBalanceState(
   if (freeBalanceSyncType === "install") {
     updatedChannel = ourChannel
       .removeProposal(unsynced.identityHash)
-      .addAppInstance(AppInstance.fromJson(unsynced as AppInstanceJson))
+      .addAppInstance(unsynced)
       .setFreeBalance(freeBalance);
   } else {
     updatedChannel = ourChannel
