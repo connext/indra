@@ -34,7 +34,6 @@ export const startBot = async (
   code: number;
   txTimestamps: number[];
 }> => {
-
   const NAME = `Bot #${concurrencyIndex}`;
   const log = new ColorfulLogger(NAME, 3, true, concurrencyIndex);
   log.info(`Launched ${NAME}, paying in ${tokenAddress}`);
@@ -52,7 +51,7 @@ export const startBot = async (
     ...env,
     signer,
     loggerService: new ColorfulLogger(NAME, logLevel, true, concurrencyIndex),
-    store: getFileStore(`.connext-store/${signer.address}`),
+    store: getFileStore(`.connext-store/${signer.publicIdentifier}`),
   });
 
   log.info(`Client ${concurrencyIndex}:
@@ -155,13 +154,7 @@ export const startBot = async (
             receiverIdentifier,
           )} with id ${abbreviate(paymentId)}`,
         );
-        await agent.pay(
-          receiverIdentifier,
-          receiverSigner,
-          TRANSFER_AMT,
-          tokenAddress,
-          paymentId,
-        );
+        await agent.pay(receiverIdentifier, receiverSigner, TRANSFER_AMT, tokenAddress, paymentId);
         end[paymentId] = Date.now();
         log.info(
           `Finished transfer ${abbreviate(paymentId)} after ${
@@ -221,10 +214,11 @@ export const startBot = async (
   await delay((interval + 100) * 5); // make sure any in-process payments have time to finish
 
   const txTimestamps: number[] = [];
-  Object.values(end).forEach(tx => { txTimestamps.push(tx); });
+  Object.values(end).forEach((tx) => {
+    txTimestamps.push(tx);
+  });
 
   return { code: exitCode, txTimestamps };
-
 };
 
 export default {
