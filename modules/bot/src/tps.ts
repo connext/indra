@@ -63,7 +63,9 @@ export const command = {
     // Abort if sugarDaddy doesn't have enough ETH to fund all the bots
     if (startEthBalance.lt(parseEther(ethGrant).mul(toBN(argv.concurrency)))) {
       throw new Error(
-        `Account ${sugarDaddy.address} has insufficient ETH. ${ethGrant} x ${argv.concurrency} required, got ${formatEther(startEthBalance)}`,
+        `Account ${sugarDaddy.address} has insufficient ETH. ${ethGrant} x ${
+          argv.concurrency
+        } required, got ${formatEther(startEthBalance)}`,
       );
     }
 
@@ -75,24 +77,33 @@ export const command = {
       startTokenBalance = await token.balanceOf(sugarDaddy.address);
       if (startTokenBalance.lt(parseEther(tokenGrant).mul(toBN(argv.concurrency)))) {
         throw new Error(
-          `Account ${sugarDaddy.address} has insufficient ${argv.tokenAddress} tokens. ${tokenGrant} x ${argv.concurrency} required, got ${formatEther(startTokenBalance)}`,
+          `Account ${sugarDaddy.address} has insufficient ${
+            argv.tokenAddress
+          } tokens. ${tokenGrant} x ${argv.concurrency} required, got ${formatEther(
+            startTokenBalance,
+          )}`,
         );
       }
-      console.log(`SugarDaddy ${abrv(sugarDaddy.address)} has ${formatEther(startEthBalance)} ETH & ${formatEther(startTokenBalance)} tokens`);
+      console.log(
+        `SugarDaddy ${abrv(sugarDaddy.address)} has ${formatEther(
+          startEthBalance,
+        )} ETH & ${formatEther(startTokenBalance)} tokens`,
+      );
     } else {
       console.log(`SugarDaddy ${abrv(sugarDaddy.address)} has ${formatEther(startEthBalance)} ETH`);
     }
 
     // First loop: derive bot keys & provide funding
     const keys: string[] = [];
-    for (let concurrencyIndex = 0; concurrencyIndex < argv.concurrency; concurrencyIndex +=1 ) {
-      const newKey = keys.length === 0
-        ? sha256(argv.entropySeed)
-        : sha256(keys[concurrencyIndex - 1]);
+    for (let concurrencyIndex = 0; concurrencyIndex < argv.concurrency; concurrencyIndex += 1) {
+      const newKey =
+        keys.length === 0 ? sha256(argv.entropySeed) : sha256(keys[concurrencyIndex - 1]);
       keys[concurrencyIndex] = newKey;
       const bot = new Wallet(newKey, ethProvider);
       if ((await bot.getBalance()).lt(parseEther(ethGrant).div(Two))) {
-        console.log(`Sending ${ethGrant} ETH to bot #${concurrencyIndex + 1}: ${abrv(bot.address)}`);
+        console.log(
+          `Sending ${ethGrant} ETH to bot #${concurrencyIndex + 1}: ${abrv(bot.address)}`,
+        );
         await sugarDaddy.sendTransaction({
           to: bot.address,
           value: parseEther(ethGrant),
@@ -102,7 +113,9 @@ export const command = {
         argv.tokenAddress !== AddressZero &&
         (await token.balanceOf(bot.address)).lt(parseEther(tokenGrant).div(Two))
       ) {
-        console.log(`Sending ${tokenGrant} tokens to bot #${concurrencyIndex + 1}: ${abrv(bot.address)}`);
+        console.log(
+          `Sending ${tokenGrant} tokens to bot #${concurrencyIndex + 1}: ${abrv(bot.address)}`,
+        );
         await token.transfer(bot.address, tokenGrant);
       }
     }
@@ -114,30 +127,37 @@ export const command = {
     }
 
     // Second loop: start up all of our bots at once & wait for them all to exit
-    const botResults = await Promise.all(zeroToIndex.map(async concurrencyIndex => {
-      // start bot & wait until it exits
-      try {
-        console.log(`Starting bot #${concurrencyIndex + 1}`);
-        const result = await startBot(
-          concurrencyIndex + 1,
-          argv.interval,
-          argv.limit,
-          argv.logLevel,
-          keys[concurrencyIndex],
-          argv.tokenAddress,
-          internalBotRegistry,
-        );
-        return result;
-      } catch (e) {
-        return { code: 1, txTimestamps: [] };
-      }
-    }));
+    const botResults = await Promise.all(
+      zeroToIndex.map(async (concurrencyIndex) => {
+        // start bot & wait until it exits
+        try {
+          console.log(`Starting bot #${concurrencyIndex + 1}`);
+          const result = await startBot(
+            concurrencyIndex + 1,
+            argv.interval,
+            argv.limit,
+            argv.logLevel,
+            keys[concurrencyIndex],
+            argv.tokenAddress,
+            internalBotRegistry,
+            false,
+          );
+          return result;
+        } catch (e) {
+          return { code: 1, txTimestamps: [] };
+        }
+      }),
+    );
 
     // Print the amount we spent during the course of these tests
     const endEthBalance = await sugarDaddy.getBalance();
     if (argv.tokenAddress !== AddressZero) {
       const endTokenBalance = await token.balanceOf(sugarDaddy.address);
-      console.log(`SugarDaddy spent ${formatEther(startEthBalance.sub(endEthBalance))} ETH & ${formatEther(startTokenBalance.sub(endTokenBalance))} tokens`);
+      console.log(
+        `SugarDaddy spent ${formatEther(startEthBalance.sub(endEthBalance))} ETH & ${formatEther(
+          startTokenBalance.sub(endTokenBalance),
+        )} tokens`,
+      );
     } else {
       console.log(`SugarDaddy spent ${formatEther(startEthBalance.sub(endEthBalance))} ETH`);
     }
@@ -145,7 +165,7 @@ export const command = {
     // Print our TPS aka transactions-per-second report
     let tpsData: number[] = [];
 
-    zeroToIndex.forEach(i => {
+    zeroToIndex.forEach((i) => {
       tpsData = tpsData.concat(botResults[i].txTimestamps);
     });
     tpsData = tpsData.sort();
@@ -158,15 +178,15 @@ export const command = {
 
     for (let t = start; t <= end; t++) {
       movingAverage[t] = 0;
-      tpsData.forEach(tx => {
-        if (Math.abs((tx / 1000) - t) <= (avgSpan / 2)) {
-          movingAverage[t] += (1/avgSpan);
+      tpsData.forEach((tx) => {
+        if (Math.abs(tx / 1000 - t) <= avgSpan / 2) {
+          movingAverage[t] += 1 / avgSpan;
         }
       });
     }
 
     // Identify the TPS peak & round all numbers so output is a little prettier
-    Object.keys(movingAverage).forEach(key => {
+    Object.keys(movingAverage).forEach((key) => {
       movingAverage[key] = Math.round(movingAverage[key] * 100) / 100;
       if (movingAverage[key] > movingAverage[peak]) {
         peak = parseInt(key, 10);
