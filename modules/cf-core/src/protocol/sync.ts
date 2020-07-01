@@ -14,7 +14,11 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { StateChannel, FreeBalanceClass, AppInstance } from "../models";
 import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 
-import { stateChannelClassFromStoreByMultisig, assertIsValidSignature, getPureBytecode } from "./utils";
+import {
+  stateChannelClassFromStoreByMultisig,
+  assertIsValidSignature,
+  getPureBytecode,
+} from "./utils";
 import { ConditionalTransactionCommitment, SetStateCommitment } from "../ethereum";
 
 const protocol = ProtocolNames.sync;
@@ -234,6 +238,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
             freeBalanceSync!.updatedChannel,
             freeBalanceSync!.commitments,
             freeBalanceSync!.appContext,
+            freeBalanceSync!.syncType,
           ];
           postSyncStateChannel = StateChannel.fromJson(freeBalanceSync!.updatedChannel.toJson());
           logTime(log, substart, `[${loggerId}] Synced free balance with responder`);
@@ -293,10 +298,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
               await app.computeStateTransition(
                 responderApp.latestAction,
                 provider,
-                getPureBytecode(
-                  app.appDefinition,
-                  contractAddresses,
-                ),
+                getPureBytecode(app.appDefinition, contractAddresses),
               ),
               commitment.stateTimeout,
             );
@@ -535,6 +537,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
             freeBalanceSync!.updatedChannel,
             freeBalanceSync!.commitments,
             freeBalanceSync!.appContext,
+            freeBalanceSync!.syncType,
           ];
           postSyncStateChannel = StateChannel.fromJson(freeBalanceSync!.updatedChannel.toJson());
           logTime(log, substart, `[${loggerId}] Synced free balance with initiator`);
@@ -594,10 +597,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
               await app.computeStateTransition(
                 initiatorApp!.latestAction,
                 provider,
-                getPureBytecode(
-                  app.appDefinition,
-                  contractAddresses,
-                ),
+                getPureBytecode(app.appDefinition, contractAddresses),
               ),
               commitment.stateTimeout,
             );
@@ -758,7 +758,6 @@ async function syncFreeBalanceState(
 
   // update the channel
   let updatedChannel: StateChannel;
-  let appContext: AppInstance | undefined = undefined;
   if (freeBalanceSyncType === "install") {
     updatedChannel = ourChannel
       .removeProposal(unsynced.identityHash)
@@ -768,13 +767,13 @@ async function syncFreeBalanceState(
     updatedChannel = ourChannel
       .removeAppInstance(unsynced.identityHash)
       .setFreeBalance(freeBalance);
-    appContext = unsynced as AppInstance;
   }
 
   return {
     updatedChannel,
     commitments: [setState],
-    appContext,
+    appContext: unsynced,
+    syncType: freeBalanceSyncType,
   };
 }
 

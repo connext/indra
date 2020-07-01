@@ -279,10 +279,11 @@ export class CFCore {
           PersistStateChannelType,
           StateChannel,
           (MinimalTransaction | SetStateCommitment | ConditionalTransactionCommitment)[],
-          AppInstance, // uninstalled app context
+          AppInstance, // app context for fb sync
+          ("install" | "uninstall")?, // fb sync type
         ],
       ) => {
-        const [type, stateChannel, signedCommitments, appContext] = args;
+        const [type, stateChannel, signedCommitments, appContext, syncType] = args;
         switch (type) {
           case PersistStateChannelType.CreateChannel: {
             const [setup, freeBalance] = signedCommitments as [
@@ -329,7 +330,7 @@ export class CFCore {
           }
           case PersistStateChannelType.SyncFreeBalance: {
             const [setState] = signedCommitments as [SetStateCommitment];
-            if (appContext) {
+            if (syncType && syncType === "uninstall") {
               // this was an uninstall, so remove app instance
               await this.storeService.removeAppInstance(
                 stateChannel.multisigAddress,
@@ -338,18 +339,17 @@ export class CFCore {
                 setState.toJson(),
                 stateChannel.toJson(),
               );
-            } else {
-              const latestInstalled = stateChannel
-                .getAppInstanceByAppSeqNo(stateChannel.numProposedApps)
-                .toJson();
+            } else if (syncType && syncType === "install") {
               // this was an install, add app and remove proposals
               await this.storeService.createAppInstance(
                 stateChannel.multisigAddress,
-                latestInstalled,
+                appContext.toJson(),
                 stateChannel.freeBalance.toJson(),
                 setState.toJson(),
                 stateChannel.toJson(),
               );
+            } else {
+              throw new Error(`Unrecognized (or unavailable) free balance sync type: ${syncType}`);
             }
             break;
           }
