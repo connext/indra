@@ -7,6 +7,7 @@ import {
   OnchainTransaction,
   TransactionReason,
   AnonymizedOnchainTransaction,
+  TransactionStatus,
 } from "./onchainTransaction.entity";
 
 @EntityRepository(OnchainTransaction)
@@ -41,15 +42,17 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return tx;
   }
 
-  async addWithdrawal(tx: providers.TransactionResponse, channel: Channel): Promise<void> {
+  async addWithdrawal(tx: providers.TransactionReceipt, channel: Channel): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
       const { identifiers } = await transactionalEntityManager
         .createQueryBuilder()
         .insert()
         .into(OnchainTransaction)
         .values({
-          ...tx,
+          gasUsed: tx.gasUsed,
+          logsBloom: tx.logsBloom,
           reason: TransactionReason.USER_WITHDRAWAL,
+          status: TransactionStatus.SUCCESS,
           channel,
         })
         .execute();
@@ -62,15 +65,17 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     });
   }
 
-  async addCollateralization(tx: providers.TransactionResponse, channel: Channel): Promise<void> {
+  async addCollateralization(tx: providers.TransactionReceipt, channel: Channel): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
       const { identifiers } = await transactionalEntityManager
         .createQueryBuilder()
         .insert()
         .into(OnchainTransaction)
         .values({
-          ...tx,
+          gasUsed: tx.gasUsed,
+          logsBloom: tx.logsBloom,
           reason: TransactionReason.COLLATERALIZATION,
+          status: TransactionStatus.SUCCESS,
           channel,
         })
         .execute();
@@ -83,15 +88,17 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     });
   }
 
-  async addReclaim(tx: providers.TransactionResponse, channel: Channel): Promise<void> {
+  async addReclaim(tx: providers.TransactionReceipt, channel: Channel): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
       const { identifiers } = await transactionalEntityManager
         .createQueryBuilder()
         .insert()
         .into(OnchainTransaction)
         .values({
-          ...tx,
+          gasUsed: tx.gasUsed,
+          logsBloom: tx.logsBloom,
           reason: TransactionReason.NODE_WITHDRAWAL,
+          status: TransactionStatus.SUCCESS,
           channel,
         })
         .execute();
@@ -101,6 +108,46 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
         .relation(Channel, "transactions")
         .of(channel.multisigAddress)
         .add((identifiers[0] as OnchainTransaction).id);
+    });
+  }
+
+  async addPending(tx: providers.TransactionResponse, channel: Channel): Promise<void> {
+    return getManager().transaction(async (transactionalEntityManager) => {
+      const { identifiers } = await transactionalEntityManager
+        .createQueryBuilder()
+        .insert()
+        .into(OnchainTransaction)
+        .values({
+          ...tx,
+          status: TransactionStatus.PENDING,
+          channel,
+        })
+        .execute();
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .relation(Channel, "transactions")
+        .of(channel.multisigAddress)
+        .add((identifiers[0] as OnchainTransaction).id);
+    });
+  }
+
+  async markFailed(
+    tx: providers.TransactionResponse,
+    errors: { [k: number]: string },
+  ): Promise<void> {
+    return getManager().transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(OnchainTransaction)
+        .set({
+          status: TransactionStatus.FAILED,
+          errors,
+        })
+        .where("transaction.hash = :txHash", {
+          txHash: tx.hash,
+        })
+        .execute();
     });
   }
 }

@@ -11,7 +11,7 @@ import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction } from "./onchainTransaction.entity";
 
 const NO_TX_HASH = "no transaction hash found in tx response";
-export const MAX_RETRIES = 3;
+export const MAX_RETRIES = 5;
 export const KNOWN_ERRORS = ["the tx doesn't have the correct nonce", NO_TX_HASH];
 
 @Injectable()
@@ -28,8 +28,8 @@ export class OnchainTransactionService {
     channel: Channel,
     transaction: MinimalTransaction,
   ): Promise<providers.TransactionReceipt> {
-    const [receipt, tx] = await this.sendTransaction(transaction);
-    await this.onchainTransactionRepository.addReclaim(tx, channel);
+    const receipt = await this.sendTransaction(transaction, channel);
+    await this.onchainTransactionRepository.addReclaim(receipt, channel);
     return receipt;
   }
 
@@ -37,8 +37,8 @@ export class OnchainTransactionService {
     channel: Channel,
     transaction: MinimalTransaction,
   ): Promise<providers.TransactionReceipt> {
-    const [receipt, tx] = await this.sendTransaction(transaction);
-    await this.onchainTransactionRepository.addWithdrawal(tx, channel);
+    const receipt = await this.sendTransaction(transaction, channel);
+    await this.onchainTransactionRepository.addWithdrawal(receipt, channel);
     return receipt;
   }
 
@@ -46,8 +46,8 @@ export class OnchainTransactionService {
     channel: Channel,
     transaction: MinimalTransaction,
   ): Promise<providers.TransactionReceipt> {
-    const [receipt, tx] = await this.sendTransaction(transaction);
-    await this.onchainTransactionRepository.addCollateralization(tx, channel);
+    const receipt = await this.sendTransaction(transaction, channel);
+    await this.onchainTransactionRepository.addCollateralization(receipt, channel);
     return receipt;
   }
 
@@ -57,22 +57,26 @@ export class OnchainTransactionService {
 
   private async sendTransaction(
     transaction: MinimalTransaction,
-  ): Promise<[providers.TransactionReceipt, providers.TransactionResponse]> {
+    channel: Channel,
+  ): Promise<providers.TransactionReceipt> {
     const wallet = this.configService.getSigner();
     const errors: { [k: number]: string } = [];
+    let tx: providers.TransactionResponse;
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
       try {
         this.log.info(`Attempt ${attempt}/${MAX_RETRIES} to send transaction to ${transaction.to}`);
-        const tx = await wallet.sendTransaction({
+        tx = await wallet.sendTransaction({
           ...transaction,
           nonce: await wallet.provider.getTransactionCount(await wallet.getAddress()),
         });
+        await this.onchainTransactionRepository.addPending(tx, channel);
+        // create the pending transaction in the db
         const receipt = await tx.wait();
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
         }
         this.log.info(`Success sending transaction! Tx hash: ${receipt.transactionHash}`);
-        return [receipt, tx];
+        return receipt;
       } catch (e) {
         errors[attempt] = e.message;
         const knownErr = KNOWN_ERRORS.find((err) => e.message.includes(err));
@@ -86,6 +90,7 @@ export class OnchainTransactionService {
         );
       }
     }
+    await this.onchainTransactionRepository.markFailed(tx, errors);
     throw new Error(`Failed to send transaction (errors indexed by attempt): ${stringify(errors)}`);
   }
 }
