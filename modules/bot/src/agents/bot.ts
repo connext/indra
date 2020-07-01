@@ -147,7 +147,6 @@ export default {
 
         // Only send up to the limit of payments
         if (sentPayments >= limit) {
-          await removeAgentIdentifierFromIndex(client.publicIdentifier);
           stop();
           return;
         }
