@@ -5,6 +5,7 @@ import {
   IConnextClient,
   ILoggerService,
   PublicParams,
+  Address,
 } from "@connext/types";
 import {
   abrv,
@@ -184,6 +185,7 @@ export class Agent {
     receiverIdentifier: string,
     signerAddress: string,
     amount: BigNumber,
+    assetId: Address = AddressZero,
     id: string = getRandomBytes32(),
     type: ConditionalTransferTypes = ConditionalTransferTypes.SignedTransfer,
   ) {
@@ -191,6 +193,7 @@ export class Agent {
       receiverIdentifier,
       signerAddress,
       amount,
+      assetId,
       id,
       type,
     );
@@ -240,13 +243,14 @@ export class Agent {
     receiverIdentifier: string,
     signerAddress: string,
     amount: BigNumber,
+    assetId: string,
     id: string,
     type: ConditionalTransferTypes,
   ) {
     const baseParams = {
       conditionType: type as any,
       amount,
-      assetId: AddressZero,
+      assetId,
       recipient: receiverIdentifier,
     };
     switch (type) {
