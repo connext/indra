@@ -20,7 +20,6 @@ import {
   addAgentIdentifierToIndex,
   getRandomAgentIdentifierFromIndex,
   removeAgentIdentifierFromIndex,
-  clearRegistry,
 } from "../helpers/agentIndex";
 
 import { Agent } from "./agent";
@@ -141,7 +140,6 @@ export default {
         // stop on any protocol failures
         if (failed) {
           log.error(failed);
-          await clearRegistry();
           stop();
           return;
         }
@@ -211,7 +209,6 @@ export default {
           if (!err.message.includes("timed out after")) {
             exitCode += 1;
             stop();
-            // await clearRegistry();
             return;
           }
         }
@@ -243,7 +240,7 @@ export default {
     log.warn(`Waiting for other bots to stop sending us payments..`);
 
     while (true) {
-      if (Date.now() - agent.lastReceivedOn > argv.interval * 5) {
+      if (Date.now() - agent.lastReceivedOn > (argv.interval + 100) * 5) {
         log.warn(
           `No payments recieved for ${Date.now() - agent.lastReceivedOn} ms. Bot ${
             client.publicIdentifier
