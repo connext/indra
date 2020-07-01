@@ -65,10 +65,10 @@ start-prod:
 	bash ops/start-prod.sh
 
 start-bot: bot
-	bash ops/test/farm.sh 2 1000
+	bash ops/test/tps.sh 2 1000
 
 start-bot-farm: bot
-	bash ops/test/farm.sh 10 1000
+	bash ops/test/tps.sh 10 1000
 
 stop:
 	bash ops/stop.sh
@@ -165,11 +165,13 @@ watch: watch-integration
 test-backwards-compatibility: pull-backwards-compatible
 	bash ops/test/integration.sh $(backwards_compatible_version)
 
-test-bot: bot
-	bash ops/test/farm.sh 2 0 10
-
-test-bot-farm: bot
-	bash ops/test/farm.sh 10 0 10
+test-tps: test-tps-md
+test-tps-sm: bot
+	bash ops/test/tps.sh 2 0 10
+test-tps-md: bot
+	bash ops/test/tps.sh 10 0 10
+test-tps-lg: bot
+	bash ops/test/tps.sh 40 0 10
 
 test-cf: cf-core
 	bash ops/test/cf.sh

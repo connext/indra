@@ -14,7 +14,7 @@ INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:3000/api}"
 
 echo "Starting bot in env: LOG_LEVEL=$LOG_LEVEL | INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL | INDRA_NODE_URL=$INDRA_NODE_URL"
 
-farm_name="${project}_bot_farm"
+tps_name="${project}_bot_tps"
 
 if [[ -t 0 && -t 1 && -t 2 ]]
 then interactive="--interactive --tty"
@@ -27,19 +27,19 @@ exec docker run \
   --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
   --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
   --env="LOG_LEVEL=$LOG_LEVEL" \
-  --name="$farm_name" \
+  --name="$tps_name" \
   --publish="9231:9229" \
   --rm \
   --volume="`pwd`:/root" \
   ${project}_builder -c '
     set -e
-    echo "Bot farm launched!"
+    echo "Bot tps launched!"
     cd modules/bot
     function finish {
-      echo && echo "Bot farm exiting.." && exit
+      echo && echo "Bot tps exiting.." && exit
     }
     trap finish EXIT SIGTERM SIGINT
-    node --inspect=0.0.0.0:9229 dist/src/index.js farm \
+    node --inspect=0.0.0.0:9229 dist/src/index.js tps \
       --concurrency '$agents' \
       --interval '$interval' \
       --limit '$limit' \

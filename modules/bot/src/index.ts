@@ -1,6 +1,6 @@
 require("yargs")
   .command(require("./agents/bot").default)
-  .command(require("./farm").command)
+  .command(require("./tps").command)
   .command(require("./agents/bench").default)
   .demandCommand(1, "Choose a command from the above list")
   .help().argv;

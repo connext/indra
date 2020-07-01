@@ -11,8 +11,8 @@ const { AddressZero, HashZero, Two } = constants;
 const { formatEther, sha256, parseEther } = utils;
 
 export const command = {
-  command: "farm",
-  describe: "Start a bunch of bots",
+  command: "tps",
+  describe: "Start a bunch of bots & measure transactions per second",
   builder: (yargs: Argv) => {
     return yargs
       .option("concurrency", {
@@ -52,7 +52,6 @@ export const command = {
       });
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
-    console.log(`\nLet's farm!`);
     const ethProvider = new providers.JsonRpcProvider(env.ethProviderUrl);
     const sugarDaddy = Wallet.fromMnemonic(argv.funderMnemonic).connect(ethProvider);
     const startEthBalance = await sugarDaddy.getBalance();
