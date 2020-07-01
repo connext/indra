@@ -58,41 +58,45 @@ else echo "Running in non-interactive mode"
 fi
 
 echo "Starting bot registry container"
-  docker run \
-    $interactive \
-    --detach \
-    --entrypoint="bash" \
-    --name="bot-registry" \
-    --publish "3333:3333" \
-    --publish="$((n + 8330)):9229" \
-    --volume="`pwd`:/root" \
-    ${project}_builder -c '
-      set -e
-      echo "Bot registry container launched!"
-      cd modules/bot
-      function finish {
-        echo && echo "Bot container exiting.." && exit
-      }
-      trap finish SIGTERM SIGINT
-      echo "Launching registry!";echo
-      npm run start:registry
-    '
-  docker logs --follow bot-registry &
+docker run \
+  $interactive \
+  --detach \
+  --entrypoint="bash" \
+  --name="bot-registry" \
+  --publish "3333:3333" \
+  --publish="$((n + 8330)):9229" \
+  --volume="`pwd`:/root" \
+  ${project}_builder -c '
+    set -e
+    echo "Bot registry container launched!"
+    cd modules/bot
+    function finish {
+      echo && echo "Bot container exiting.." && exit
+    }
+    trap finish SIGTERM SIGINT
+    echo "Launching registry!";echo
+    npm run start:registry
+  '
+docker logs --follow bot-registry &
+
+agent_keys=()
 
 for (( n=1; n<=$agents; n++ ))
 do
   agent="${agent_name}_$n"
-
   echo "Creating new private keys"
   agent_key="0x`hexdump -n 32 -e '"%08X"' < /dev/urandom | tr '[:upper:]' '[:lower:]'`"
-
+  agent_keys[$n]=$agent_key;
   agent_address="`node <<<'var eth = require("ethers"); console.log((new eth.Wallet("'"$agent_key"'")).address);'`"
   agent_pub_key="`node <<<'var eth = require("ethers"); console.log((new eth.Wallet("'"$agent_key"'")).publicKey);'`"
-
   echo "Funding agent: $agent_address (pubKey: ${agent_pub_key})"
   bash ops/fund.sh $agent_address
+done
 
+for (( n=1; n<=$agents; n++ ))
+do
   echo "Starting agent container $n"
+  agent="${agent_name}_$n"
   docker run \
     $interactive \
     --detach \
@@ -108,23 +112,22 @@ do
     --volume="`pwd`/.tps:/tps" \
     ${project}_builder -c '
       set -e
-      echo "Bot container launched! Waiting for others to launch.."
-      sleep '"$agents"'
       cd modules/bot
       export PATH=./node_modules/.bin:$PATH
       function finish {
         echo && echo "Bot container exiting.." && exit
       }
       trap finish SIGTERM SIGINT
+      echo "Bot container launched! Waiting for others to launch.."
+      sleep '"$agents"'
       echo "Launching agent!";echo
       node --inspect=0.0.0.0:9229 dist/src/index.js bot \
-        --private-key '$agent_key' \
+        --private-key '${agent_keys[$n]}' \
         --concurrency-index '$n' \
         --interval '$interval' \
         --log-level $LOG_LEVEL \
         --limit '$limit'
     '
-
   docker logs --follow $agent &
 done
 
