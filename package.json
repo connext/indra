@@ -1,7 +1,7 @@
 {
   "name": "indra",
-  "version": "7.0.0-alpha.6",
-  "backwardsCompatibleWith": "7.0.0-alpha.5",
+  "version": "7.0.0-alpha.9",
+  "backwardsCompatibleWith": "7.0.0-alpha.8",
   "registry": "docker.io/connextproject",
   "description": "",
   "repository": {
@@ -31,5 +31,8 @@
     "ethers": "5.0.2",
     "lerna": "3.22.1",
     "prettier": "2.0.5"
+  },
+  "dependencies": {
+    "@types/lodash": "^4.14.157"
   }
 }

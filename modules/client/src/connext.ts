@@ -205,6 +205,10 @@ export class ConnextClient implements IConnextClient {
     return this.node.fetchSignedTransfer(paymentId);
   };
 
+  public getGraphTransfer = async (paymentId: string): Promise<NodeResponses.GetSignedTransfer> => {
+    return this.node.fetchGraphTransfer(paymentId);
+  };
+
   public getAppRegistry = async (
     appDetails?:
       | {
@@ -708,18 +712,18 @@ export class ConnextClient implements IConnextClient {
    * - installed linked transfer: leave installed for the hub to uninstall
    */
   public cleanupRegistryApps = async (): Promise<void> => {
-    const swapAppRegistryInfo = this.appRegistry.filter(
+    const swapAppRegistryInfo = this.appRegistry.find(
       (app: DefaultApp) => app.name === SimpleTwoPartySwapAppName,
-    )[0];
-    const linkedRegistryInfo = this.appRegistry.filter(
+    );
+    const linkedRegistryInfo = this.appRegistry.find(
       (app: DefaultApp) => app.name === SimpleLinkedTransferAppName,
-    )[0];
-    const withdrawRegistryInfo = this.appRegistry.filter(
+    );
+    const withdrawRegistryInfo = this.appRegistry.find(
       (app: DefaultApp) => app.name === WithdrawAppName,
-    )[0];
-    const depositRegistryInfo = this.appRegistry.filter(
+    );
+    const depositRegistryInfo = this.appRegistry.find(
       (app: DefaultApp) => app.name === DepositAppName,
-    )[0];
+    );
 
     await this.removeHangingProposalsByDefinition([
       swapAppRegistryInfo.appDefinitionAddress,
@@ -735,6 +739,10 @@ export class ConnextClient implements IConnextClient {
       withdrawRegistryInfo.appDefinitionAddress,
     ]);
 
+    await this.uninstallFinalizedApps();
+
+    await this.uninstallExpiredApps();
+
     // handle any existing apps
     await this.handleInstalledDepositApps();
   };
@@ -743,6 +751,7 @@ export class ConnextClient implements IConnextClient {
    * Removes all proposals of a give app definition type
    */
   private removeHangingProposalsByDefinition = async (appDefinitions: string[]): Promise<void> => {
+    this.log.info(`removeHangingProposalsByDefinition starting...: ${appDefinitions}`);
     // first get all proposed apps
     const { appInstances: proposed } = await this.getProposedAppInstances();
 
@@ -760,12 +769,15 @@ export class ConnextClient implements IConnextClient {
         );
       }
     }
+    this.log.info(`removeHangingProposalsByDefinition complete!`);
   };
 
   /**
    * Removes all apps of a given app definition type
    */
   private uninstallAllAppsByDefintion = async (appDefinitions: string[]): Promise<void> => {
+    this.log.info(`uninstallAllAppsByDefintion starting...: ${appDefinitions}`);
+
     const apps = (await this.getAppInstances()).filter((app: AppInstanceJson) =>
       appDefinitions.includes(app.appDefinition),
     );
@@ -779,6 +791,52 @@ export class ConnextClient implements IConnextClient {
         );
       }
     }
+    this.log.info(`uninstallAllAppsByDefintion complete!`);
+  };
+
+  /**
+   * Removes all apps with a `true` `finalized` property in their `latestState`
+   */
+  private uninstallFinalizedApps = async (): Promise<void> => {
+    this.log.info(`uninstallFinalizedApps starting...`);
+    const finalizedApps = (await this.getAppInstances()).filter(
+      (app: AppInstanceJson) => app.latestState.finalized === true,
+    );
+    for (const app of finalizedApps) {
+      try {
+        this.log.info(`Uninstalling finalized app ${app.identityHash}...`);
+        await this.uninstallApp(app.identityHash);
+        this.log.info(`Finished uninstalling finalized app ${app.identityHash}`);
+      } catch (e) {
+        this.log.error(
+          `Could not uninstall app: ${app.identityHash}. Error: ${e.stack || e.message}`,
+        );
+      }
+    }
+    this.log.info(`uninstallFinalizedApps complete!`);
+  };
+
+  /**
+   * Removes all apps with a `true` `finalized` property in their `latestState`
+   */
+  private uninstallExpiredApps = async (): Promise<void> => {
+    this.log.info(`uninstallExpiredApps starting...`);
+    const blockHeight = await this.ethProvider.getBlockNumber();
+    const expiredApps = (await this.getAppInstances()).filter(
+      (app: AppInstanceJson) => app.latestState.expiry && app.latestState.expiry >= blockHeight,
+    );
+    for (const app of expiredApps) {
+      try {
+        this.log.info(`Uninstalling expired app ${app.identityHash}...`);
+        await this.uninstallApp(app.identityHash);
+        this.log.info(`Finished uninstalling expired app ${app.identityHash}`);
+      } catch (e) {
+        this.log.error(
+          `Could not uninstall app: ${app.identityHash}. Error: ${e.stack || e.message}`,
+        );
+      }
+    }
+    this.log.info(`uninstallExpiredApps complete!`);
   };
 
   private handleInstalledDepositApps = async () => {

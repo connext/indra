@@ -26,7 +26,6 @@ import {
   toBN,
 } from "@connext/utils";
 import { BigNumber, Contract, constants, utils, providers } from "ethers";
-import { Memoize } from "typescript-memoize";
 
 import { execEvmBytecode } from "../pure-evm";
 import { CounterfactualApp } from "../contracts";
@@ -138,12 +137,10 @@ export class AppInstance {
     });
   }
 
-  @Memoize()
   public get identityHash() {
     return appIdentityToHash(this.identity);
   }
 
-  @Memoize()
   public get participants() {
     return [
       getSignerAddressFromPublicIdentifier(this.initiatorIdentifier),
@@ -151,7 +148,6 @@ export class AppInstance {
     ];
   }
 
-  @Memoize()
   public get identity(): AppIdentity {
     return {
       participants: this.participants,
@@ -162,17 +158,14 @@ export class AppInstance {
     };
   }
 
-  @Memoize()
   public get hashOfLatestState() {
     return keccak256(this.encodedLatestState);
   }
 
-  @Memoize()
   public get encodedLatestState() {
     return defaultAbiCoder.encode([this.abiEncodings.stateEncoding], [this.latestState]);
   }
 
-  @Memoize()
   public get encodedInterpreterParams() {
     switch (this.outcomeType) {
       case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
@@ -276,10 +269,7 @@ export class AppInstance {
         const functionData = appInterface.encodeFunctionData("computeOutcome", [
           this.encodedLatestState,
         ]);
-        const output = await execEvmBytecode(
-          bytecode,
-          functionData,
-        );
+        const output = await execEvmBytecode(bytecode, functionData);
         return appInterface.decodeFunctionResult("computeOutcome", output)[0];
       } catch (e) {
         return this.toEthersContract(provider).computeOutcome(this.encodeState(state));

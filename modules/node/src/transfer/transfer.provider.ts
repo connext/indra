@@ -43,7 +43,8 @@ export class TransferMessaging extends AbstractMessagingProvider {
    */
   async clientCheckIn(userIdentifier: string): Promise<void> {
     // reclaim collateral from redeemed transfers
-    await this.linkedTransferService.unlockLinkedTransfersFromUser(userIdentifier);
+    await this.transferService.unlockSenderApps(userIdentifier);
+    // unlock all transfers by looking up by payment Id and using last action
   }
 
   async resolveLinkedTransfer(

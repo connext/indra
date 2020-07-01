@@ -117,12 +117,14 @@ export class SwapRateService implements OnModuleInit {
   }
 
   async getUniswapRate(from: string, to: string): Promise<string> {
-    const fromReserves = from !== AddressZero
-      ? await getTokenReserves(await this.config.getTokenAddressForSwap(from))
-      : undefined;
-    const toReserves = to !== AddressZero
-      ? await getTokenReserves(await this.config.getTokenAddressForSwap(to))
-      : undefined;
+    const fromReserves =
+      from !== AddressZero
+        ? await getTokenReserves(await this.config.getTokenAddressForSwap(from))
+        : undefined;
+    const toReserves =
+      to !== AddressZero
+        ? await getTokenReserves(await this.config.getTokenAddressForSwap(to))
+        : undefined;
     return getMarketDetails(fromReserves, toReserves).marketRate.rate.toString();
   }
 

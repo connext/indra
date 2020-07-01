@@ -12,9 +12,10 @@ import {
   getTransferTypeFromAppName,
   SupportedApplicationNames,
 } from "@connext/types";
-import { stringify, getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { stringify, getSignerAddressFromPublicIdentifier, calculateExchange } from "@connext/utils";
 import { TRANSFER_TIMEOUT } from "@connext/apps";
 import { constants } from "ethers";
+import { isEqual } from "lodash";
 
 import { LoggerService } from "../logger/logger.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -24,6 +25,7 @@ import { ChannelService } from "../channel/channel.service";
 import { DepositService } from "../deposit/deposit.service";
 import { TIMEOUT_BUFFER } from "../constants";
 import { Channel } from "../channel/channel.entity";
+import { SwapRateService } from "../swapRate/swapRate.service";
 
 import { TransferRepository } from "./transfer.repository";
 
@@ -36,6 +38,7 @@ export class TransferService {
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly depositService: DepositService,
+    private readonly swapRateService: SwapRateService,
     private readonly transferRepository: TransferRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
@@ -100,7 +103,7 @@ export class TransferService {
     senderIdentifier: string,
     receiverIdentifier: Address,
     paymentId: Bytes32,
-    assetId: Address,
+    senderAssetId: Address,
     senderAppState: AppStates[ConditionalTransferAppNames],
     meta: any = {},
     transferType: ConditionalTransferAppNames,
@@ -112,8 +115,17 @@ export class TransferService {
       receiverIdentifier,
     );
 
-    // sender amount
-    const amount = senderAppState.coinTransfers[0].amount;
+    const senderAmount = senderAppState.coinTransfers[0].amount;
+
+    // inflight swap
+    const receiverAssetId = meta.receiverAssetId ? meta.receiverAssetId : senderAssetId;
+    let receiverAmount = senderAmount;
+    if (receiverAssetId !== senderAssetId) {
+      this.log.warn(`Detected an inflight swap from ${senderAssetId} to ${receiverAssetId}!`);
+      const currentRate = await this.swapRateService.getOrFetchRate(senderAssetId, receiverAssetId);
+      this.log.warn(`Using swap rate ${currentRate} for inflight swap`);
+      receiverAmount = calculateExchange(senderAmount, currentRate);
+    }
 
     const existing = await this.findReceiverAppByPaymentId(paymentId);
     if (existing && (existing.type === AppType.INSTANCE || existing.type === AppType.PROPOSAL)) {
@@ -122,8 +134,8 @@ export class TransferService {
         sender: senderIdentifier,
         paymentId,
         meta,
-        amount,
-        assetId,
+        amount: receiverAmount,
+        assetId: receiverAssetId,
       };
       this.log.warn(`Found existing transfer app, returning: ${stringify(result)}`);
       return result;
@@ -134,22 +146,26 @@ export class TransferService {
     const freeBal = await this.cfCoreService.getFreeBalance(
       receiverIdentifier,
       receiverChannel.multisigAddress,
-      assetId,
+      receiverAssetId,
     );
 
-    if (freeBal[freeBalanceAddr].lt(amount)) {
+    if (freeBal[freeBalanceAddr].lt(receiverAmount)) {
       // request collateral and wait for deposit to come through
       this.log.warn(
         `Collateralizing ${receiverIdentifier} before proceeding with transfer payment`,
       );
       const deposit = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
         receiverIdentifier,
-        assetId,
-        amount,
+        receiverAssetId,
+        receiverAmount,
         freeBal[freeBalanceAddr],
       );
       // request collateral and wait for deposit to come through
-      const depositReceipt = await this.depositService.deposit(receiverChannel, deposit, assetId);
+      const depositReceipt = await this.depositService.deposit(
+        receiverChannel,
+        deposit,
+        receiverAssetId,
+      );
       if (!depositReceipt) {
         throw new Error(
           `Could not deposit sufficient collateral to resolve transfer for receiver: ${receiverIdentifier}`,
@@ -159,7 +175,7 @@ export class TransferService {
 
     const receiverCoinTransfers: CoinTransfer[] = [
       {
-        amount,
+        amount: receiverAmount,
         to: freeBalanceAddr,
       },
       {
@@ -183,10 +199,10 @@ export class TransferService {
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
       receiverChannel,
       initialState,
-      amount,
-      assetId,
+      receiverAmount,
+      receiverAssetId,
       Zero,
-      assetId,
+      receiverAssetId, // receiverAssetId is same because swap happens between sender and receiver apps, not within the app
       this.cfCoreService.getAppInfoByName(transferType as SupportedApplicationNames),
       meta,
       TRANSFER_TIMEOUT,
@@ -201,8 +217,8 @@ export class TransferService {
       paymentId,
       sender: senderIdentifier,
       meta,
-      amount,
-      assetId,
+      amount: receiverAmount,
+      assetId: receiverAssetId,
     };
 
     this.log.info(
@@ -263,5 +279,61 @@ export class TransferService {
     );
     this.log.debug(`findReceiverAppByPaymentId ${paymentId} completed: ${JSON.stringify(app)}`);
     return app;
+  }
+
+  // unlockable transfer:
+  // sender app is installed with node as recipient
+  // receiver app with same paymentId is uninstalled
+  // latest state on receiver app is different than sender app
+  //
+  // eg:
+  // sender installs app, goes offline
+  // receiver redeems, app is installed and uninstalled
+  // sender comes back online, node can unlock transfer
+  async unlockSenderApps(senderIdentifier: string): Promise<void> {
+    this.log.info(`unlockSenderApps: ${senderIdentifier}`);
+    const senderTransferApps = await this.transferRepository.findTransferAppsByChannelUserIdentifierAndReceiver(
+      senderIdentifier,
+      this.cfCoreService.cfCore.signerAddress,
+    );
+
+    for (const senderApp of senderTransferApps) {
+      const correspondingReceiverApp = await this.transferRepository.findTransferAppByPaymentIdAndSender(
+        senderApp.meta.paymentId,
+        this.cfCoreService.cfCore.signerAddress,
+      );
+
+      if (correspondingReceiverApp.type !== AppType.UNINSTALLED) {
+        continue;
+      }
+
+      this.log.info(
+        `Found uninstalled corresponding receiver app for transfer app with paymentId: ${senderApp.meta.paymentId}`,
+      );
+      if (!isEqual(senderApp.latestState, correspondingReceiverApp.latestState)) {
+        this.log.info(
+          `Sender app latest state is not equal to receiver app, taking action and uninstalling. senderApp: ${stringify(
+            senderApp.latestState,
+            true,
+            0,
+          )} correspondingReceiverApp: ${stringify(correspondingReceiverApp.latestState, true, 0)}`,
+        );
+        // need to take action before uninstalling
+        await this.cfCoreService.uninstallApp(
+          senderApp.identityHash,
+          senderApp.channel.multisigAddress,
+          correspondingReceiverApp.latestAction,
+        );
+      } else {
+        this.log.info(`Uninstalling sender app for paymentId ${senderApp.meta.paymentId}`);
+        await this.cfCoreService.uninstallApp(
+          senderApp.identityHash,
+          senderApp.channel.multisigAddress,
+        );
+      }
+      this.log.info(`Finished uninstalling sender app with paymentId ${senderApp.meta.paymentId}`);
+    }
+
+    this.log.info(`unlockSenderApps: ${senderIdentifier} complete`);
   }
 }

@@ -8,6 +8,7 @@ import {
   GenericConditionalTransferAppState,
   SimpleSignedTransferAppAction,
   SimpleLinkedTransferAppAction,
+  GraphSignedTransferAppAction,
 } from "@connext/types";
 import { stringify } from "@connext/utils";
 import { BigNumber } from "ethers";
@@ -93,6 +94,7 @@ export class ResolveTransferController extends AbstractController {
       let action:
         | HashLockTransferAppAction
         | SimpleSignedTransferAppAction
+        | GraphSignedTransferAppAction
         | SimpleLinkedTransferAppAction;
       switch (conditionType) {
         case ConditionalTransferTypes.HashLockTransfer: {
@@ -100,12 +102,17 @@ export class ResolveTransferController extends AbstractController {
           action = preImage && ({ preImage } as HashLockTransferAppAction);
           break;
         }
-        case ConditionalTransferTypes.SignedTransfer: {
-          const { responseCID, signature } = params as PublicParams.ResolveSignedTransfer;
+        case ConditionalTransferTypes.GraphTransfer: {
+          const { responseCID, signature } = params as PublicParams.ResolveGraphTransfer;
           action =
             responseCID &&
             signature &&
-            ({ responseCID, signature } as SimpleSignedTransferAppAction);
+            ({ responseCID, signature } as GraphSignedTransferAppAction);
+          break;
+        }
+        case ConditionalTransferTypes.SignedTransfer: {
+          const { data, signature } = params as PublicParams.ResolveSignedTransfer;
+          action = data && signature && ({ data, signature } as SimpleSignedTransferAppAction);
           break;
         }
         case ConditionalTransferTypes.LinkedTransfer: {
