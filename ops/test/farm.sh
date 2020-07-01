@@ -11,7 +11,6 @@ project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' 
 
 INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:3000/api/ethprovider}"
 INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:3000/api}"
-INDRA_NATS_URL="${INDRA_NATS_URL:-nats://172.17.0.1:4222}"
 
 echo "Starting bot in env: LOG_LEVEL=$LOG_LEVEL | INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL | INDRA_NODE_URL=$INDRA_NODE_URL"
 
@@ -26,7 +25,6 @@ exec docker run \
   $interactive \
   --entrypoint="bash" \
   --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
-  --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
   --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
   --env="LOG_LEVEL=$LOG_LEVEL" \
   --name="$farm_name" \
