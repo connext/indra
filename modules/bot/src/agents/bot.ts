@@ -165,6 +165,7 @@ export default {
         if (!receiverIdentifier) {
           log.warn(`No recipients are available. Doing nothing..`);
           unavailableCount += 1;
+          await delay(500); // Add a little extra delay so other bots have a chance to wake up
         }
 
         // break if no recipients available
@@ -250,12 +251,12 @@ export default {
         );
         break;
       } else {
-        await delay(argv.interval);
+        await delay(argv.interval + 100);
       }
     }
 
     await removeAgentIdentifierFromIndex(client.publicIdentifier);
-    await delay(argv.interval * 5); // make sure any in-process payments have time to finish
+    await delay((argv.interval + 100) * 5); // make sure any in-process payments have time to finish
 
     try {
       // Try to write timestamps for each finished payment to help calculate tps
