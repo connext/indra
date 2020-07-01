@@ -131,7 +131,7 @@ export default {
     });
 
     // Setup agent logic to transfer on an interval
-    let sentPayments = 1;
+    let sentPayments = 0;
     let unavailableCount = 0;
     await intervalPromise(
       async (_, stop) => {
@@ -168,7 +168,7 @@ export default {
         }
 
         // break if no recipients available
-        if (unavailableCount > 5) {
+        if (unavailableCount > 10) {
           log.warn(`Could not find recipient for ${unavailableCount} cycles, exiting poller.`);
           stop();
           return;
