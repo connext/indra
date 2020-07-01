@@ -187,7 +187,7 @@ export class Agent {
     amount: BigNumber,
     assetId: Address = AddressZero,
     id: string = getRandomBytes32(),
-    type: ConditionalTransferTypes = ConditionalTransferTypes.SignedTransfer,
+    type: ConditionalTransferTypes = ConditionalTransferTypes.GraphTransfer,
   ) {
     const params = await this.getTransferParameters(
       receiverIdentifier,
@@ -254,7 +254,7 @@ export class Agent {
       recipient: receiverIdentifier,
     };
     switch (type) {
-      case ConditionalTransferTypes.SignedTransfer: {
+      case ConditionalTransferTypes.GraphTransfer: {
         const { chainId } = await this.client.ethProvider.getNetwork();
         const receipt = getTestGraphReceiptToSign();
         const verifyingContract = getTestVerifyingContract();
