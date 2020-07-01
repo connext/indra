@@ -4,7 +4,7 @@ set -e
 agents="$1"
 interval="$2"
 limit="$3"
-echo "Starting bot test with: $agents agents | interval $interval | limit $limit"
+echo "Starting bot test with options: $agents agents | interval $interval | limit $limit"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
@@ -13,6 +13,8 @@ INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:3000/api/ethprovider}"
 INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:3000/api}"
 INDRA_NATS_URL="${INDRA_NATS_URL:-nats://172.17.0.1:4222}"
 BOT_REGISTRY_URL="${BOT_REGISTRY_URL:-http://172.17.0.1:3333}"
+
+echo "Starting bot in env: LOG_LEVEL=$LOG_LEVEL | INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL | INDRA_NODE_URL=$INDRA_NODE_URL"
 
 agent_name="${project}_bot"
 
@@ -114,6 +116,7 @@ do
         --private-key '$agent_key' \
         --concurrency-index '$n' \
         --interval '$interval' \
+        --log-level $LOG_LEVEL \
         --limit '$limit'
     '
 
