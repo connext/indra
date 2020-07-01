@@ -9,7 +9,7 @@ export type BotRegistry = {
   getRandom: (exclude: string) => Promise<string>;
 };
 
-const registry = new Set();
+const registry: Set<string> = new Set();
 export const internalBotRegistry: BotRegistry = {
   add: async (identifier: string): Promise<void> => {
     registry.add(identifier);

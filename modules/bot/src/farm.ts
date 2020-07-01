@@ -3,9 +3,9 @@ import { abrv, toBN } from "@connext/utils";
 import { constants, Contract, providers, utils, Wallet } from "ethers";
 import { Argv } from "yargs";
 
-import { env } from "./env";
 import { startBot } from "./agents/bot";
-import { internalBotRegistry } from "../helpers/agentIndex";
+import { env } from "./env";
+import { internalBotRegistry } from "./helpers/agentIndex";
 
 const { AddressZero, HashZero, Two } = constants;
 const { formatEther, sha256, parseEther } = utils;
