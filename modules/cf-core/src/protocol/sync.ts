@@ -211,13 +211,14 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
             responderNumProposedApps,
             responderApp,
             responderCommitments.setState,
-            responderCommitments.conditional!,
+            responderCommitments.conditional,
           );
           yield [
             PERSIST_STATE_CHANNEL,
             PersistStateChannelType.SyncProposal,
             proposalSync!.updatedChannel,
             proposalSync!.commitments,
+            proposalSync!.proposal,
           ];
           postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
           logTime(log, substart, `[${loggerId}] Synced proposals with responder`);
@@ -510,13 +511,14 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
             initiatorNumProposedApps,
             initiatorApp,
             initiatorCommitments.setState,
-            initiatorCommitments.conditional!,
+            initiatorCommitments.conditional,
           );
           yield [
             PERSIST_STATE_CHANNEL,
             PersistStateChannelType.SyncProposal,
             proposalSync!.updatedChannel,
             proposalSync!.commitments,
+            proposalSync!.proposal,
           ];
           postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
           logTime(log, substart, `[${loggerId}] Synced proposals with initiator`);
@@ -747,13 +749,18 @@ async function syncFreeBalanceState(
   );
 
   // get the unsynced app or proposal
-  let unsynced =
-    freeBalanceSyncType === "install"
-      ? ourChannel.proposedAppInstances.get(unsyncedApp.identityHash)
-      : ourChannel.appInstances.get(unsyncedApp.identityHash);
+  let unsynced: AppInstance | undefined = undefined;
+  if (freeBalanceSyncType === "install") {
+    // handle proposals as json casting issues
+    const inChannel = ourChannel.proposedAppInstances.get(unsyncedApp.identityHash);
+    unsynced = !!inChannel ? AppInstance.fromJson(inChannel) : undefined;
+  } else {
+    unsynced = ourChannel.appInstances.get(unsyncedApp.identityHash);
+  }
+  // handle final undefined case
   if (!unsynced) {
     // if we cant find it in our apps, it means we rejected it, so get it from their apps
-    unsynced = unsyncedApp;
+    unsynced = AppInstance.fromJson(unsyncedApp);
   }
 
   // update the channel
@@ -797,8 +804,8 @@ async function syncUntrackedProposals(
   ourChannel: StateChannel,
   counterpartyNumProposedApps: number,
   counterpartyProposal: AppInstanceJson, // installed proposal
-  counterpartySetState: SetStateCommitmentJSON,
-  counterpartyConditional: ConditionalTransactionCommitmentJSON,
+  counterpartySetState: SetStateCommitmentJSON | undefined,
+  counterpartyConditional: ConditionalTransactionCommitmentJSON | undefined,
 ) {
   // handle case where we have to add a proposal to our store
   if (ourChannel.numProposedApps >= counterpartyNumProposedApps) {
@@ -809,14 +816,28 @@ async function syncUntrackedProposals(
     throw new Error(`Cannot sync by more than one proposed app, use restore instead.`);
   }
 
+  // get proposal
+  const proposal = AppInstance.fromJson(counterpartyProposal);
+
+  // if there are no commitments, we are syncing a proposal rejection
+  if (!counterpartySetState && !counterpartyConditional) {
+    const updatedChannel = ourChannel.removeProposal(counterpartyProposal.identityHash);
+    return {
+      updatedChannel,
+      commitments: [],
+      proposal,
+    };
+  } else if (!counterpartySetState || !counterpartyConditional) {
+    throw new Error(`Need both set state and conditional commitments to sync proposal`);
+  }
+
   // generate the commitment and verify we signed it
   const setStateCommitment = SetStateCommitment.fromJson(counterpartySetState);
   const conditionalCommitment = ConditionalTransactionCommitment.fromJson(counterpartyConditional);
   await setStateCommitment.assertSignatures();
   await conditionalCommitment.assertSignatures();
 
-  // get proposal + verify it is for commitments
-  const proposal = AppInstance.fromJson(counterpartyProposal);
+  // verify it is for commitments
   if (
     setStateCommitment.appStateHash !== proposal.hashOfLatestState ||
     conditionalCommitment.appIdentityHash !== proposal.identityHash
@@ -829,6 +850,7 @@ async function syncUntrackedProposals(
   return {
     updatedChannel,
     commitments: [setStateCommitment, conditionalCommitment],
+    proposal,
   };
 }
 
@@ -954,11 +976,14 @@ function getProposalSyncInfoForCounterparty(
     (proposal) => !ids.includes(proposal.identityHash),
   );
   if (!unsynced) {
-    throw new Error(
-      `Could not find out of sync proposal. Our proposals: ${stringify(
-        ourChannel.toJson().proposedAppInstances,
-      )}, counterparty app info: ${stringify(counterpartyProposalVersionNumbers)}`,
-    );
+    // if we cannot find the unsynced proposal, it was rejected
+    // the store will not have any record of the synced proposal or
+    // relevant commitments.
+    // return empty object so counterparty can properly destructure info
+    return {
+      commitments: { setState: undefined, conditional: undefined },
+      app: {},
+    };
   }
   // get set state commitment
   const setState = setStateCommitments.find((commitment) => {

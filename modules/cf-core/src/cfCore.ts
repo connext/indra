@@ -306,18 +306,26 @@ export class CFCore {
           }
 
           case PersistStateChannelType.SyncProposal: {
+            // if there are no commitments, syncing rejection
+            if (signedCommitments.length === 0) {
+              await this.storeService.removeAppProposal(
+                stateChannel.multisigAddress,
+                appContext.identityHash,
+                stateChannel.toJson(),
+              );
+              break;
+            }
             const [setState, conditional] = signedCommitments as [
               SetStateCommitment,
               ConditionalTransactionCommitment,
             ];
-            const proposal = stateChannel.proposedAppInstances.get(setState.appIdentityHash);
-            if (!proposal) {
-              throw new Error("Could not find proposal in post protocol channel");
+            if (!appContext) {
+              throw new Error("Could not find proposal in app context");
             }
             // this is adding a proposal
             await this.storeService.createAppProposal(
               stateChannel.multisigAddress,
-              proposal,
+              appContext.toJson(),
               stateChannel.numProposedApps,
               setState.toJson(),
               conditional.toJson(),
