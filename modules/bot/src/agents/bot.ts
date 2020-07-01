@@ -11,6 +11,7 @@ import {
   ChannelSigner,
 } from "@connext/utils";
 import { utils, constants } from "ethers";
+import fs from "fs";
 import intervalPromise from "interval-promise";
 import { Argv } from "yargs";
 
@@ -255,6 +256,16 @@ export default {
 
     await removeAgentIdentifierFromIndex(client.publicIdentifier);
     await delay(argv.interval * 5); // make sure any in-process payments have time to finish
+
+    try {
+      // Try to write timestamps for each finished payment to help calculate tps
+      let tpsData = ``;
+      Object.values(end).forEach(ts => { tpsData += `${ts}\n`; });
+      fs.writeFileSync(`/tps/${argv.concurrencyIndex}.log`, tpsData);
+    } catch (e) {
+      log.warn(`Unable to save TPS log: ${e.message}`);
+    }
+
     process.exit(exitCode);
   },
 };

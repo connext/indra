@@ -18,6 +18,10 @@ echo "Starting bot in env: LOG_LEVEL=$LOG_LEVEL | INDRA_ETH_RPC_URL=$INDRA_ETH_R
 
 agent_name="${project}_bot"
 
+# Reset TPS data dir
+rm -rf .tps
+mkdir -p .tps
+
 # Kill the dependency containers when this script exits
 function cleanup {
   exit_code="0"
@@ -101,6 +105,7 @@ do
     --name="$agent" \
     --publish="$((n + 9330)):9229" \
     --volume="`pwd`:/root" \
+    --volume="`pwd`/.tps:/tps" \
     ${project}_builder -c '
       set -e
       echo "Bot container launched! Waiting for others to launch.."
@@ -133,3 +138,7 @@ do
   else sleep 3;
   fi
 done
+
+# Print tps report
+cat .tps/*.log | sort > .tps/all.log
+node ops/tps-report.js .tps/all.log

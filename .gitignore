@@ -11,10 +11,10 @@ modules/*/package-lock.json
 
 # Cache
 **/.bot-store
-**/.connext-store/**
 **/.buidler
 **/.cache
 **/.config
+**/.connext-store/**
 **/.git
 **/.jest.cache
 **/.local
@@ -23,6 +23,7 @@ modules/*/package-lock.json
 **/.pyEnv
 **/.rpt2_cache
 **/.test-store
+**/.tps
 **/cache/**
 
 # Docs
