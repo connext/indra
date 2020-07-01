@@ -13,17 +13,23 @@ const registry: Set<string> = new Set();
 export const internalBotRegistry: BotRegistry = {
   add: async (identifier: string): Promise<void> => {
     registry.add(identifier);
+    console.debug(`[Registry] Added ${identifier}`);
+    return Promise.resolve();
   },
   remove: async (identifier: string): Promise<void> => {
     registry.delete(identifier);
+    console.debug(`[Registry] Removed ${identifier}`);
+    return Promise.resolve();
   },
   getRandom: async (exclude?: string): Promise<string> => {
     const regArray = Array.from(registry).filter(id => id !== exclude);
     const index = Math.floor(Math.random() * Math.floor(regArray.length));
+    console.debug(`[Registry] Randomly returning not ${exclude}: ${regArray[index]}`);
     return regArray[index];
   },
   get: async (index: number): Promise<string> => {
     const regArray = Array.from(registry);
+    console.debug(`[Registry] Returning #${index}: ${regArray[index]}`);
     return regArray[index];
   },
 };

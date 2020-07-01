@@ -78,6 +78,7 @@ export const startBot = async (
 
   log.info(`Registering address ${client.publicIdentifier}`);
   await registry.add(client.publicIdentifier);
+  log.info(`Address registered`);
 
   // Register protocol failure listeners
   let failed: string | undefined = undefined;
