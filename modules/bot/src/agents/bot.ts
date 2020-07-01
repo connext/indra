@@ -112,7 +112,7 @@ export const startBot = async (
       }
 
       // Only send up to the limit of payments
-      if (sentPayments >= limit) {
+      if (limit > 0 && sentPayments >= limit) {
         stop();
         return;
       }
