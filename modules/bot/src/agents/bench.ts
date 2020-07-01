@@ -58,7 +58,7 @@ export default {
         nodeIdentifier: ${client.nodeIdentifier}
         nodeSignerAddress: ${client.nodeSignerAddress}`);
 
-    const agent = new Agent(log, client, argv.privateKey);
+    const agent = new Agent(log, client, argv.privateKey, true);
     log.info("Agent starting up.");
     await agent.start();
     log.info("Agent started.");
