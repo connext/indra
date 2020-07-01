@@ -2,34 +2,55 @@ import axios, { AxiosResponse } from "axios";
 
 const BOT_REGISTRY_URL = process.env.BOT_REGISTRY_URL;
 
-export const addAgentIdentifierToIndex = async (identifier: string): Promise<void> => {
-  return axios.post(`${BOT_REGISTRY_URL}/agent`, {
-    identifier,
-  });
+export type BotRegistry = {
+  add: (identifier: string) => Promise<void>;
+  remove: (identifier: string) => Promise<void>;
+  get: (index: number) => Promise<string>;
+  getRandom: (exclude: string) => Promise<string>;
 };
 
-export const removeAgentIdentifierFromIndex = async (identifier: string): Promise<void> => {
-  return axios.delete(`${BOT_REGISTRY_URL}/agent`, {
-    data: { identifier },
-  });
+const registry = new Set();
+export const internalBotRegistry: BotRegistry = {
+  add: async (identifier: string): Promise<void> => {
+    registry.add(identifier);
+  },
+  remove: async (identifier: string): Promise<void> => {
+    registry.delete(identifier);
+  },
+  getRandom: async (exclude?: string): Promise<string> => {
+    const regArray = Array.from(registry).filter(id => id !== exclude);
+    const index = Math.floor(Math.random() * Math.floor(regArray.length));
+    return regArray[index];
+  },
+  get: async (index: number): Promise<string> => {
+    const regArray = Array.from(registry);
+    return regArray[index];
+  },
 };
 
-export const clearRegistry = async (): Promise<void> => {
-  return axios.delete(`${BOT_REGISTRY_URL}/agent`, { data: {} });
-};
+export const externalBotRegistry: BotRegistry = {
+  add: async (identifier: string): Promise<void> => {
+    return axios.post(`${BOT_REGISTRY_URL}/agent`, {
+      identifier,
+    });
+  },
 
-const getRandomInt = (max: number) => {
-  return Math.floor(Math.random() * Math.floor(max));
-};
+  remove: async (identifier: string): Promise<void> => {
+    return axios.delete(`${BOT_REGISTRY_URL}/agent`, {
+      data: { identifier },
+    });
+  },
 
-export const getRandomAgentIdentifierFromIndex = async (exclude?: string): Promise<string> => {
-  let { data: addresses }: AxiosResponse<string[]> = await axios.get(`${BOT_REGISTRY_URL}/agent`);
-  addresses = addresses.filter((address) => address !== exclude);
-  const index = getRandomInt(addresses.length);
-  return addresses[index];
-};
+  getRandom: async (exclude?: string): Promise<string> => {
+    let { data: addresses }: AxiosResponse<string[]> = await axios.get(`${BOT_REGISTRY_URL}/agent`);
+    addresses = addresses.filter((address) => address !== exclude);
+    const index = Math.floor(Math.random() * Math.floor(addresses.length));
+    return addresses[index];
+  },
 
-export const getAgentFromIndex = async (i: number): Promise<string> => {
-  const { data: addresses }: AxiosResponse<string[]> = await axios.get(`${BOT_REGISTRY_URL}/agent`);
-  return addresses[i];
+  get: async (index: number): Promise<string> => {
+    const { data: addresses }: AxiosResponse<string[]> = await axios.get(`${BOT_REGISTRY_URL}/agent`);
+    return addresses[index];
+  },
+
 };

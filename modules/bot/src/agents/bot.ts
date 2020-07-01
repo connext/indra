@@ -15,11 +15,7 @@ import intervalPromise from "interval-promise";
 import { Argv } from "yargs";
 
 import { env } from "../env";
-import {
-  addAgentIdentifierToIndex,
-  getRandomAgentIdentifierFromIndex,
-  removeAgentIdentifierFromIndex,
-} from "../helpers/agentIndex";
+import { BotRegistry, externalBotRegistry } from "../helpers/agentIndex";
 
 import { Agent } from "./agent";
 
@@ -33,6 +29,7 @@ export const startBot = async (
   logLevel: number,
   privateKey: string,
   tokenAddress: string,
+  registry: BotRegistry = externalBotRegistry,
 ): Promise<{
   code: number;
   txTimestamps: number[];
@@ -80,7 +77,7 @@ export const startBot = async (
   });
 
   log.info(`Registering address ${client.publicIdentifier}`);
-  await addAgentIdentifierToIndex(client.publicIdentifier);
+  await registry.add(client.publicIdentifier);
 
   // Register protocol failure listeners
   let failed: string | undefined = undefined;
@@ -125,7 +122,7 @@ export const startBot = async (
       }
 
       // Get random agent from registry and setup params
-      const receiverIdentifier = await getRandomAgentIdentifierFromIndex(client.publicIdentifier);
+      const receiverIdentifier = await registry.getRandom(client.publicIdentifier);
 
       if (!receiverIdentifier) {
         log.warn(`No recipients are available. Doing nothing..`);
@@ -219,7 +216,7 @@ export const startBot = async (
     }
   }
 
-  await removeAgentIdentifierFromIndex(client.publicIdentifier);
+  await registry.remove(client.publicIdentifier);
   await delay((interval + 100) * 5); // make sure any in-process payments have time to finish
 
   const txTimestamps: number[] = [];

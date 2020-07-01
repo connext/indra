@@ -6,7 +6,7 @@ import { utils } from "ethers";
 import { Argv } from "yargs";
 
 import { env } from "../env";
-import { addAgentIdentifierToIndex, getAgentFromIndex } from "../helpers/agentIndex";
+import { externalBotRegistry } from "../helpers/agentIndex";
 
 import { Agent } from "./agent";
 
@@ -64,12 +64,12 @@ export default {
     log.info("Agent started.");
 
     log.info(`Registering address ${client.publicIdentifier}`);
-    await addAgentIdentifierToIndex(client.publicIdentifier);
+    await externalBotRegistry.add(client.publicIdentifier);
 
     await agent.depositIfNeeded(TRANSFER_AMT, DEPOSIT_AMT);
     await client.requestCollateral(CONVENTION_FOR_ETH_ASSET_ID);
 
-    const receiverIdentifier = await getAgentFromIndex(0);
+    const receiverIdentifier = await externalBotRegistry.get(0);
     // the first bot should sit and unlock transactions
     if (receiverIdentifier === client.publicIdentifier) {
       return;

@@ -5,6 +5,7 @@ import { Argv } from "yargs";
 
 import { env } from "./env";
 import { startBot } from "./agents/bot";
+import { internalBotRegistry } from "../helpers/agentIndex";
 
 const { AddressZero, HashZero, Two } = constants;
 const { formatEther, sha256, parseEther } = utils;
@@ -125,6 +126,7 @@ export const command = {
           argv.logLevel,
           keys[concurrencyIndex],
           argv.tokenAddress,
+          internalBotRegistry,
         );
         return result;
       } catch (e) {
