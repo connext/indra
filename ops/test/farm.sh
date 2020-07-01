@@ -20,10 +20,6 @@ registry_name="${project}_bot_registry"
 farm_name="${project}_bot_farm"
 agent_name="${project}_bot"
 
-# Reset TPS data dir
-rm -rf .tps
-mkdir -p .tps
-
 # Kill the dependency containers when this script exits
 function cleanup {
   exit_code="0"
@@ -82,7 +78,6 @@ docker logs --follow $registry_name &
 
 docker run \
   $interactive \
-  --detach \
   --entrypoint="bash" \
   --env="BOT_REGISTRY_URL"="$BOT_REGISTRY_URL" \
   --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
@@ -92,7 +87,6 @@ docker run \
   --name="$farm_name" \
   --publish="9231:9229" \
   --volume="`pwd`:/root" \
-  --volume="`pwd`/.tps:/tps" \
   ${project}_builder -c '
     set -e
     echo "Bot farm launched!"
@@ -107,20 +101,3 @@ docker run \
       --limit '$limit' \
       --log-level $LOG_LEVEL
   '
-
-docker logs --follow $farm_name &
-sleep 3
-
-# wait for bots to finish
-while true
-do
-  if [[ -z "`docker container ls | grep $farm_name | grep "Up"`" ]]
-  then break
-  else sleep 3;
-  fi
-done
-
-# Print tps report
-# TODO: move this stuff into the bot's farm command
-cat .tps/*.log | sort > .tps/all.log
-node ops/tps-report.js .tps/all.log

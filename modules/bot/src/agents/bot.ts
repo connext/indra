@@ -11,7 +11,6 @@ import {
   ChannelSigner,
 } from "@connext/utils";
 import { utils, constants } from "ethers";
-import fs from "fs";
 import intervalPromise from "interval-promise";
 import { Argv } from "yargs";
 
@@ -34,7 +33,10 @@ export const startBot = async (
   logLevel: number,
   privateKey: string,
   tokenAddress: string,
-): Promise<number> => {
+): Promise<{
+  code: number;
+  txTimestamps: number[];
+}> => {
 
   const NAME = `Bot #${concurrencyIndex}`;
   const log = new ColorfulLogger(NAME, 3, true, concurrencyIndex);
@@ -220,16 +222,10 @@ export const startBot = async (
   await removeAgentIdentifierFromIndex(client.publicIdentifier);
   await delay((interval + 100) * 5); // make sure any in-process payments have time to finish
 
-  try {
-    // Try to write timestamps for each finished payment to help calculate tps
-    let tpsData = ``;
-    Object.values(end).forEach(ts => { tpsData += `${ts}\n`; });
-    fs.writeFileSync(`/tps/${concurrencyIndex}.log`, tpsData);
-  } catch (e) {
-    log.warn(`Unable to save TPS log: ${e.message}`);
-  }
+  const txTimestamps: number[] = [];
+  Object.values(end).forEach(tx => { txTimestamps.push(tx); });
 
-  return exitCode;
+  return { code: exitCode, txTimestamps };
 
 };
 
@@ -270,7 +266,7 @@ export default {
       .demandOption(["private-key"]);
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
-    const exitCode = await startBot(
+    const result = await startBot(
       argv.concurrencyIndex,
       argv.interval,
       argv.limit,
@@ -278,6 +274,6 @@ export default {
       argv.privateKey,
       argv.tokenAddress,
     );
-    process.exit(exitCode);
+    process.exit(result.code);
   },
 };

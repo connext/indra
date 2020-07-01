@@ -23,7 +23,6 @@ modules/*/package-lock.json
 **/.pyEnv
 **/.rpt2_cache
 **/.test-store
-**/.tps
 **/cache/**
 
 # Docs

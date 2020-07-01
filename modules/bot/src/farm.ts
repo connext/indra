@@ -114,11 +114,11 @@ export const command = {
     }
 
     // Second loop: start up all of our bots at once & wait for them all to exit
-    const botExitCodes = await Promise.all(zeroToIndex.map(concurrencyIndex => {
+    const botResults = await Promise.all(zeroToIndex.map(async concurrencyIndex => {
       // start bot & wait until it exits
       try {
         console.log(`Starting bot #${concurrencyIndex + 1}`);
-        return startBot(
+        const result = await startBot(
           concurrencyIndex + 1,
           argv.interval,
           argv.limit,
@@ -126,11 +126,13 @@ export const command = {
           keys[concurrencyIndex],
           argv.tokenAddress,
         );
+        return result;
       } catch (e) {
-        return 1;
+        return { code: 1, txTimestamps: [] };
       }
     }));
 
+    // Print the amount we spent during the course of these tests
     const endEthBalance = await sugarDaddy.getBalance();
     if (argv.tokenAddress !== AddressZero) {
       const endTokenBalance = await token.balanceOf(sugarDaddy.address);
@@ -139,6 +141,40 @@ export const command = {
       console.log(`SugarDaddy spent ${formatEther(startEthBalance.sub(endEthBalance))} ETH`);
     }
 
-    process.exit(botExitCodes.reduce((acc, cur) => acc + cur, 0));
+    // Print our TPS aka transactions-per-second report
+    let tpsData: number[] = [];
+
+    zeroToIndex.forEach(i => {
+      tpsData = tpsData.concat(botResults[i].txTimestamps);
+    });
+    tpsData = tpsData.sort();
+
+    const start = Math.floor(tpsData[0] / 1000);
+    const end = Math.floor(tpsData[tpsData.length - 1] / 1000);
+    const avgSpan = 5;
+    const movingAverage = {};
+    let peak = start;
+
+    for (let t = start; t <= end; t++) {
+      movingAverage[t] = 0;
+      tpsData.forEach(tx => {
+        if (Math.abs((tx / 1000) - t) <= (avgSpan / 2)) {
+          movingAverage[t] += (1/avgSpan);
+        }
+      });
+    }
+
+    // Identify the TPS peak & round all numbers so output is a little prettier
+    Object.keys(movingAverage).forEach(key => {
+      movingAverage[key] = Math.round(movingAverage[key] * 100) / 100;
+      if (movingAverage[key] > movingAverage[peak]) {
+        peak = parseInt(key, 10);
+      }
+    });
+
+    console.log(`${avgSpan} second moving average TPS: ${JSON.stringify(movingAverage, null, 2)}`);
+    console.log(`Peak TPS: ${movingAverage[peak]} at ${peak}`);
+
+    process.exit(botResults.reduce((acc, cur) => acc + cur.code, 0));
   },
 };
