@@ -35,6 +35,7 @@ export class Agent {
     private readonly log: ILoggerService,
     private readonly client: IConnextClient,
     private readonly privateKey: string,
+    private readonly errorOnProtocolFailure: boolean,
   ) {}
 
   async start() {
@@ -106,6 +107,7 @@ export class Agent {
     });
 
     // Add failure listeners
+    // Always fail on a conditional transfer failed event
     this.client.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, async (eData) => {
       if (!eData.paymentId) {
         this.log.warn(`Ignoring untracked transfer ${eData.paymentId}.`);
@@ -114,13 +116,14 @@ export class Agent {
       this.retrieveResolverAndReject(eData.paymentId, eData.error);
     });
 
+    // Fail on protocol events IFF specified
     this.client.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async (eData) => {
       const paymentId = eData.params.meta?.["paymentId"];
       if (!paymentId) {
         this.log.warn(`Ignoring untracked proposal failure ${stringify(eData)}.`);
         return;
       }
-      this.retrieveResolverAndReject(paymentId, eData.error);
+      this.errorOnProtocolFailure && this.retrieveResolverAndReject(paymentId, eData.error);
     });
 
     this.client.on(EventNames.INSTALL_FAILED_EVENT, async (eData) => {
@@ -129,7 +132,7 @@ export class Agent {
         this.log.warn(`Ignoring untracked install failure ${stringify(eData)}.`);
         return;
       }
-      this.retrieveResolverAndReject(paymentId, eData.error);
+      this.errorOnProtocolFailure && this.retrieveResolverAndReject(paymentId, eData.error);
     });
 
     this.client.on(EventNames.UPDATE_STATE_FAILED_EVENT, async (eData) => {
@@ -138,7 +141,7 @@ export class Agent {
         this.log.warn(`Ignoring untracked take action failure ${stringify(eData)}.`);
         return;
       }
-      this.retrieveResolverAndReject(this.apps[appId], eData.error);
+      this.errorOnProtocolFailure && this.retrieveResolverAndReject(this.apps[appId], eData.error);
     });
 
     this.client.on(EventNames.UNINSTALL_FAILED_EVENT, async (eData) => {
@@ -147,7 +150,7 @@ export class Agent {
         this.log.warn(`Ignoring untracked uninstall failure ${stringify(eData)}.`);
         return;
       }
-      this.retrieveResolverAndReject(this.apps[appId], eData.error);
+      this.errorOnProtocolFailure && this.retrieveResolverAndReject(this.apps[appId], eData.error);
     });
   }
 

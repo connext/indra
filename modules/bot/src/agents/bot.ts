@@ -30,6 +30,7 @@ export const startBot = async (
   privateKey: string,
   tokenAddress: string,
   registry: BotRegistry = externalBotRegistry,
+  errorOnProtocolFailure: boolean = true,
 ): Promise<{
   code: number;
   txTimestamps: number[];
@@ -61,7 +62,7 @@ export const startBot = async (
       nodeSignerAddress: ${client.nodeSignerAddress}`);
 
   log.setContext(abbreviate(client.publicIdentifier));
-  const agent = new Agent(log, client, privateKey);
+  const agent = new Agent(log, client, privateKey, errorOnProtocolFailure);
   log.info("Agent starting up.");
   await agent.start();
   log.info("Agent started.");
@@ -80,18 +81,18 @@ export const startBot = async (
   log.info(`Address registered`);
 
   // Register protocol failure listeners
-  let failed: string | undefined = undefined;
+  let protocolFailure: string | undefined = undefined;
   client.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, (msg) => {
-    failed = `Stopping interval, caught propose install failed event: ${stringify(msg)}`;
+    protocolFailure = `Stopping interval, caught propose install failed event: ${stringify(msg)}`;
   });
   client.on(EventNames.INSTALL_FAILED_EVENT, (msg) => {
-    failed = `Stopping interval, caught install failed event: ${stringify(msg)}`;
+    protocolFailure = `Stopping interval, caught install failed event: ${stringify(msg)}`;
   });
   client.on(EventNames.UPDATE_STATE_FAILED_EVENT, (msg) => {
-    failed = `Stopping interval, caught take action failed event: ${stringify(msg)}`;
+    protocolFailure = `Stopping interval, caught take action failed event: ${stringify(msg)}`;
   });
   client.on(EventNames.UNINSTALL_FAILED_EVENT, (msg) => {
-    failed = `Stopping interval, caught uninstall failed event: ${stringify(msg)}`;
+    protocolFailure = `Stopping interval, caught uninstall failed event: ${stringify(msg)}`;
   });
 
   // Setup agent logic to transfer on an interval
@@ -102,8 +103,8 @@ export const startBot = async (
       log.debug(`heartbeat thump thump`);
 
       // stop on any protocol failures
-      if (failed) {
-        log.error(failed);
+      if (protocolFailure && errorOnProtocolFailure) {
+        log.error(protocolFailure);
         stop();
         return;
       }
