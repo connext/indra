@@ -77,38 +77,29 @@ export const command = {
       console.log(`SugarDaddy ${abrv(sugarDaddy.address)} has ${formatEther(ethBalance)} ETH`);
     }
 
+    // First loop: set up new bot keys & provide funding
+    const keys: string[] = [];
+    for (let concurrencyIndex = 0; concurrencyIndex < argv.concurrency; concurrencyIndex +=1 ) {
+      const newKey = getRandomPrivateKey();
+      const bot = new Wallet(newKey, ethProvider);
+      console.log(`Funding bot #${concurrencyIndex + 1}: ${abrv(bot.address)}`);
+      keys[concurrencyIndex] = newKey;
+      await sugarDaddy.sendTransaction({
+        to: bot.address,
+        value: parseEther("0.05"),
+      });
+      if (argv.tokenAddress !== AddressZero) {
+        await token.transfer(bot.address, "100");
+      }
+    }
+
+    console.log(`Done funding bots`);
+
     // Setup loop for numbers from 0 to concurrencyIndex-1
     const zeroToIndex: number[] = [];
     for (let index = 0; index < argv.concurrency; index += 1) {
       zeroToIndex.push(index);
     }
-
-    // First pass: set up new bot keys & provide funding
-    const keys: string[] = [];
-    const nonce = await sugarDaddy.getTransactionCount();
-    await Promise.all(zeroToIndex.map(concurrencyIndex => {
-      const newKey = getRandomPrivateKey();
-      const bot = new Wallet(newKey, ethProvider);
-      console.log(`Funding bot #${concurrencyIndex + 1}: ${abrv(bot.address)}`);
-      keys[concurrencyIndex] = newKey;
-      return new Promise(async (res, rej) => {
-        await sugarDaddy.sendTransaction({
-          nonce: nonce + concurrencyIndex,
-          to: bot.address,
-          value: parseEther("0.05"),
-        });
-        if (argv.tokenAddress !== AddressZero) {
-          await token.transfer(
-            bot.address,
-            "100",
-            { nonce: nonce + concurrencyIndex + argv.concurrency },
-          );
-        }
-        res();
-      });
-    }));
-
-    console.log(`Done funding bots`);
 
     // Second pass: start up all of our bots at once & wait for them all to exit
     const botExitCodes = await Promise.all(zeroToIndex.map(concurrencyIndex => {
