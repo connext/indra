@@ -46,8 +46,17 @@ export const deployContract = async (
   wallet: Wallet,
   addressBook: AddressBook,
 ): Promise<Contract> => {
-  const factory = ContractFactory.fromSolidity(artifacts[name]);
-  const contract = await factory.connect(wallet).deploy(...args.map((a) => a.value));
+  const chainId = (await wallet.provider.getNetwork()).chainId;
+  // special case for drippable token
+  const deployDrippable = name === "Token" && chainId === 1337;
+  deployDrippable && console.log(`Deploying drippable token`);
+  const factory = ContractFactory.fromSolidity(
+    deployDrippable ? artifacts["ConnextToken"] : artifacts[name],
+  );
+  const constructorArgs = deployDrippable
+    ? ["CXT", "ConnextToken", "1.0", chainId]
+    : args.map((a) => a.value);
+  const contract = await factory.connect(wallet).deploy(...constructorArgs);
   const txHash = contract.deployTransaction.hash;
   console.log(`Sent transaction to deploy ${name}, txHash: ${txHash}`);
   await wallet.provider.waitForTransaction(txHash!);
