@@ -1,13 +1,13 @@
 import { artifacts } from "@connext/contracts";
-import { abrv, getRandomPrivateKey, toBN } from "@connext/utils";
+import { abrv, toBN } from "@connext/utils";
 import { constants, Contract, providers, utils, Wallet } from "ethers";
 import { Argv } from "yargs";
 
 import { env } from "./env";
 import { startBot } from "./agents/bot";
 
-const { AddressZero } = constants;
-const { formatEther, parseEther } = utils;
+const { AddressZero, HashZero, Two } = constants;
+const { formatEther, sha256, parseEther } = utils;
 
 export const command = {
   command: "farm",
@@ -34,6 +34,11 @@ export const command = {
         type: "number",
         default: 0,
       })
+      .option("entropy-seed", {
+        describe: "Used to deterministally create multiple bot private keys",
+        type: "string",
+        default: HashZero,
+      })
       .option("funder-mnemonic", {
         describe: "Mnemonic for the account that can give funds to the bots",
         type: "string",
@@ -49,51 +54,58 @@ export const command = {
     console.log(`\nLet's farm!`);
     const ethProvider = new providers.JsonRpcProvider(env.ethProviderUrl);
     const sugarDaddy = Wallet.fromMnemonic(argv.funderMnemonic).connect(ethProvider);
-    const ethBalance = await sugarDaddy.getBalance();
+    const startEthBalance = await sugarDaddy.getBalance();
 
     // sugarDaddy grants each bot some funds to start with
     const ethGrant = "0.05";
     const tokenGrant = "100";
 
     // Abort if sugarDaddy doesn't have enough ETH to fund all the bots
-    if (ethBalance.lt(parseEther(ethGrant).mul(toBN(argv.concurrency)))) {
+    if (startEthBalance.lt(parseEther(ethGrant).mul(toBN(argv.concurrency)))) {
       throw new Error(
-        `Account ${sugarDaddy.address} has insufficient ETH. ${ethGrant} x ${argv.concurrency} required, got ${formatEther(ethBalance)}`,
+        `Account ${sugarDaddy.address} has insufficient ETH. ${ethGrant} x ${argv.concurrency} required, got ${formatEther(startEthBalance)}`,
       );
     }
 
     // Abort if sugarDaddy doesn't have enough tokens to fund all the bots
     let token;
+    let startTokenBalance;
     if (argv.tokenAddress !== AddressZero) {
       token = new Contract(argv.tokenAddress, artifacts.Token.abi, sugarDaddy);
-      const tokenBalance = await token.balanceOf(sugarDaddy.address);
-      if (tokenBalance.lt(parseEther(tokenGrant).mul(toBN(argv.concurrency)))) {
+      startTokenBalance = await token.balanceOf(sugarDaddy.address);
+      if (startTokenBalance.lt(parseEther(tokenGrant).mul(toBN(argv.concurrency)))) {
         throw new Error(
-          `Account ${sugarDaddy.address} has insufficient ${argv.tokenAddress} tokens. ${tokenGrant} x ${argv.concurrency} required, got ${formatEther(tokenBalance)}`,
+          `Account ${sugarDaddy.address} has insufficient ${argv.tokenAddress} tokens. ${tokenGrant} x ${argv.concurrency} required, got ${formatEther(startTokenBalance)}`,
         );
       }
-      console.log(`SugarDaddy ${abrv(sugarDaddy.address)} has ${formatEther(ethBalance)} ETH & ${formatEther(tokenBalance)} tokens`);
+      console.log(`SugarDaddy ${abrv(sugarDaddy.address)} has ${formatEther(startEthBalance)} ETH & ${formatEther(startTokenBalance)} tokens`);
     } else {
-      console.log(`SugarDaddy ${abrv(sugarDaddy.address)} has ${formatEther(ethBalance)} ETH`);
+      console.log(`SugarDaddy ${abrv(sugarDaddy.address)} has ${formatEther(startEthBalance)} ETH`);
     }
 
-    // First loop: set up new bot keys & provide funding
+    // First loop: derive bot keys & provide funding
     const keys: string[] = [];
     for (let concurrencyIndex = 0; concurrencyIndex < argv.concurrency; concurrencyIndex +=1 ) {
-      const newKey = getRandomPrivateKey();
-      const bot = new Wallet(newKey, ethProvider);
-      console.log(`Funding bot #${concurrencyIndex + 1}: ${abrv(bot.address)}`);
+      const newKey = keys.length === 0
+        ? sha256(argv.entropySeed)
+        : sha256(keys[concurrencyIndex - 1]);
       keys[concurrencyIndex] = newKey;
-      await sugarDaddy.sendTransaction({
-        to: bot.address,
-        value: parseEther("0.05"),
-      });
-      if (argv.tokenAddress !== AddressZero) {
-        await token.transfer(bot.address, "100");
+      const bot = new Wallet(newKey, ethProvider);
+      if ((await bot.getBalance()).lt(parseEther(ethGrant).div(Two))) {
+        console.log(`Sending ${ethGrant} ETH to bot #${concurrencyIndex + 1}: ${abrv(bot.address)}`);
+        await sugarDaddy.sendTransaction({
+          to: bot.address,
+          value: parseEther(ethGrant),
+        });
+      }
+      if (
+        argv.tokenAddress !== AddressZero &&
+        (await token.balanceOf(bot.address)).lt(parseEther(tokenGrant).div(Two))
+      ) {
+        console.log(`Sending ${tokenGrant} tokens to bot #${concurrencyIndex + 1}: ${abrv(bot.address)}`);
+        await token.transfer(bot.address, tokenGrant);
       }
     }
-
-    console.log(`Done funding bots`);
 
     // Setup loop for numbers from 0 to concurrencyIndex-1
     const zeroToIndex: number[] = [];
@@ -101,7 +113,7 @@ export const command = {
       zeroToIndex.push(index);
     }
 
-    // Second pass: start up all of our bots at once & wait for them all to exit
+    // Second loop: start up all of our bots at once & wait for them all to exit
     const botExitCodes = await Promise.all(zeroToIndex.map(concurrencyIndex => {
       // start bot & wait until it exits
       try {
@@ -119,7 +131,13 @@ export const command = {
       }
     }));
 
-    // TODO: Bots should return all excess funds to sugarDaddy before exiting
+    const endEthBalance = await sugarDaddy.getBalance();
+    if (argv.tokenAddress !== AddressZero) {
+      const endTokenBalance = await token.balanceOf(sugarDaddy.address);
+      console.log(`SugarDaddy spent ${formatEther(startEthBalance.sub(endEthBalance))} ETH & ${formatEther(startTokenBalance.sub(endTokenBalance))} tokens`);
+    } else {
+      console.log(`SugarDaddy spent ${formatEther(startEthBalance.sub(endEthBalance))} ETH`);
+    }
 
     process.exit(botExitCodes.reduce((acc, cur) => acc + cur, 0));
   },
