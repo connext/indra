@@ -26,7 +26,7 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
     private readonly signedTransferService: SignedTransferService,
   ) {
     super(log, messaging);
-    log.setContext("LinkedTransferMessaging");
+    log.setContext("GrapgTransferMessaging");
   }
 
   private async getSignedTransfer(
