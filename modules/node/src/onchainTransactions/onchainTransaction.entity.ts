@@ -95,8 +95,18 @@ export class OnchainTransaction {
   @Column("text", {
     nullable: true,
     transformer: {
-      from: (value: string): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber): string => value.toString(),
+      from: (value: string | undefined): BigNumber | undefined => {
+        if (value === undefined) {
+          return undefined;
+        }
+        return BigNumber.from(value);
+      },
+      to: (value: BigNumber | undefined): string | undefined => {
+        if (value === undefined) {
+          return undefined;
+        }
+        return value.toString();
+      },
     },
   })
   gasUsed: BigNumber;
