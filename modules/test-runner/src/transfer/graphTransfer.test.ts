@@ -346,6 +346,10 @@ describe("Graph Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
 
+    const receiverInstalled = clientB.waitFor(
+      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
+      10_000,
+    );
     await clientA.conditionalTransfer({
       amount: transfer.amount,
       conditionType: ConditionalTransferTypes.GraphTransfer,
@@ -359,6 +363,7 @@ describe("Graph Signed Transfers", () => {
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.GraphTransfer);
+    await receiverInstalled;
 
     const badSig = hexlify(randomBytes(65));
     await expect(
