@@ -685,8 +685,8 @@
     "Token": {
       "address": "0x38cF23C52Bb4B13F051Aec09580a2dE845a7FA35",
       "creationCodeHash": "0x0f5a7fec416c49bd9ff2c93dc9deaecefd6920a95c33c1a19013887603a40a80",
-      "runtimeCodeHash": "0xa52e3215610f412638ecf812b04abc3a1f261048fa0bb9b891a8237a448eeb61",
-      "txHash": "0x81e4403fb417093b9a2b7ce0b39b5eee7dad78741620e3ee654823cbb234e6ab"
+      "runtimeCodeHash": "0xf995caffd143622dde4976800a7b57d98dade82728d7ff68ad96eb5004ab95b0",
+      "txHash": "0x3bddbf05a371ea970ee7d8d4ed79d02aff1caad5d19f060284eba797e81c8163"
     },
     "WithdrawInterpreter": {
       "address": "0xEcFcaB0A285d3380E488A39B4BB21e777f8A4EaC",
