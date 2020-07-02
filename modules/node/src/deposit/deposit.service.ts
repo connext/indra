@@ -6,7 +6,6 @@ import {
   DepositAppName,
   DepositAppState,
   MinimalTransaction,
-  TransactionReceipt,
   EventNames,
   Bytes32,
 } from "@connext/types";
@@ -40,7 +39,7 @@ export class DepositService {
     this.log.setContext("DepositService");
   }
 
-  async deposit(channel: Channel, amount: BigNumber, assetId: string): Promise<TransactionReceipt> {
+  async deposit(channel: Channel, amount: BigNumber, assetId: string): Promise<OnchainTransaction> {
     this.log.info(
       `Deposit started: ${JSON.stringify({ channel: channel.multisigAddress, amount, assetId })}`,
     );
@@ -87,7 +86,7 @@ export class DepositService {
     // deposit app for asset id with node as initiator is already installed
     // send deposit to chain
     let appIdentityHash: Bytes32;
-    let receipt: TransactionReceipt;
+    let receipt: OnchainTransaction;
 
     const cleanUpDepositRights = async () => {
       if (appIdentityHash) {
@@ -214,7 +213,7 @@ export class DepositService {
     channel: Channel,
     amount: BigNumber,
     tokenAddress: Address,
-  ): Promise<TransactionReceipt> {
+  ): Promise<OnchainTransaction> {
     // derive the proper minimal transaction for the
     // onchain transaction service
     let tx: MinimalTransaction;

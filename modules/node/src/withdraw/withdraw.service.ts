@@ -106,7 +106,7 @@ export class WithdrawService {
       state.signatures[0], // user sig
     );
     const signedWithdrawalCommitment = await generatedCommitment.getSignedTransaction();
-    const transaction = await this.submitWithdrawToChain(
+    const onchainTransaction = await this.submitWithdrawToChain(
       appInstance.multisigAddress,
       signedWithdrawalCommitment,
     );
@@ -119,25 +119,16 @@ export class WithdrawService {
       );
     }
 
-    const onchainTransaction = await this.onchainTransactionRepository.findByHash(
-      transaction.transactionHash,
-    );
-    if (!onchainTransaction) {
-      this.log.error(
-        `Unable to find onchain tx that we just submitted in db. Hash: ${transaction.transactionHash}`,
-      );
-    }
-
     await this.withdrawRepository.addOnchainTransaction(withdraw, onchainTransaction);
-    this.log.info(`Node responded with transaction: ${transaction.transactionHash}`);
-    this.log.debug(`Transaction details: ${stringify(transaction)}`);
+    this.log.info(`Node responded with transaction: ${onchainTransaction.hash}`);
+    this.log.debug(`Transaction details: ${stringify(onchainTransaction)}`);
     return;
   }
 
   async submitWithdrawToChain(
     multisigAddress: string,
     tx: MinimalTransaction,
-  ): Promise<TransactionReceipt> {
+  ): Promise<OnchainTransaction> {
     this.log.info(`submitWithdrawToChain for ${multisigAddress}`);
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
 
@@ -156,8 +147,8 @@ export class WithdrawService {
     }
 
     this.log.info(`Sending withdrawal to chain`);
-    const txRes = await this.onchainTransactionService.sendWithdrawal(channel, tx);
-    this.log.info(`Withdrawal tx sent! Hash: ${txRes.transactionHash}`);
+    const txRes = await this.onchainTransactionService.sendUserWithdrawal(channel, tx);
+    this.log.info(`Withdrawal tx sent! Hash: ${txRes.hash}`);
     return txRes;
   }
 

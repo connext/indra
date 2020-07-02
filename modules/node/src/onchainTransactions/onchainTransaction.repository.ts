@@ -10,6 +10,33 @@ import {
   TransactionStatus,
 } from "./onchainTransaction.entity";
 
+export const onchainEntityToReceipt = (
+  entity: OnchainTransaction | undefined,
+): providers.TransactionReceipt | undefined => {
+  if (!entity) {
+    return undefined;
+  }
+  const { to, from, gasUsed, logsBloom, blockHash, hash: transactionHash, blockNumber } = entity;
+  return {
+    to,
+    from,
+    gasUsed,
+    logsBloom,
+    blockHash,
+    transactionHash,
+    blockNumber,
+  } as providers.TransactionReceipt;
+  // Missing the following fields:
+  // contractAddress: string;
+  // transactionIndex: number;
+  // root?: string;
+  // logs: Array<Log>;
+  // confirmations: number;
+  // cumulativeGasUsed: BigNumber;
+  // byzantium: boolean;
+  // status?: number;
+};
+
 @EntityRepository(OnchainTransaction)
 export class OnchainTransactionRepository extends Repository<OnchainTransaction> {
   async findByHash(txHash: string): Promise<OnchainTransaction | undefined> {
@@ -30,6 +57,19 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return txs;
   }
 
+  async findLatestTransactionToChannel(
+    multisigAddress: string,
+    reason: TransactionReason,
+  ): Promise<OnchainTransaction | undefined> {
+    const tx = await this.createQueryBuilder("onchainTransaction")
+      .leftJoinAndSelect("onchainTransaction.channel", "channel")
+      .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
+      .where("onchainTransaction.reason = :reason", { reason })
+      .orderBy("onchainTransaction.nonce", "DESC")
+      .getOne();
+    return tx;
+  }
+
   async findLatestWithdrawalByUserPublicIdentifier(
     userIdentifier: string,
   ): Promise<OnchainTransaction | undefined> {
@@ -40,75 +80,6 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
       .orderBy("onchainTransaction.id", "DESC")
       .getOne();
     return tx;
-  }
-
-  async addWithdrawal(tx: providers.TransactionReceipt, channel: Channel): Promise<void> {
-    return getManager().transaction(async (transactionalEntityManager) => {
-      const { identifiers } = await transactionalEntityManager
-        .createQueryBuilder()
-        .insert()
-        .into(OnchainTransaction)
-        .values({
-          gasUsed: tx.gasUsed,
-          logsBloom: tx.logsBloom,
-          reason: TransactionReason.USER_WITHDRAWAL,
-          status: TransactionStatus.SUCCESS,
-          channel,
-        })
-        .execute();
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .relation(Channel, "transactions")
-        .of(channel.multisigAddress)
-        .add((identifiers[0] as OnchainTransaction).id);
-    });
-  }
-
-  async addCollateralization(tx: providers.TransactionReceipt, channel: Channel): Promise<void> {
-    return getManager().transaction(async (transactionalEntityManager) => {
-      const { identifiers } = await transactionalEntityManager
-        .createQueryBuilder()
-        .insert()
-        .into(OnchainTransaction)
-        .values({
-          gasUsed: tx.gasUsed,
-          logsBloom: tx.logsBloom,
-          reason: TransactionReason.COLLATERALIZATION,
-          status: TransactionStatus.SUCCESS,
-          channel,
-        })
-        .execute();
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .relation(Channel, "transactions")
-        .of(channel.multisigAddress)
-        .add((identifiers[0] as OnchainTransaction).id);
-    });
-  }
-
-  async addReclaim(tx: providers.TransactionReceipt, channel: Channel): Promise<void> {
-    return getManager().transaction(async (transactionalEntityManager) => {
-      const { identifiers } = await transactionalEntityManager
-        .createQueryBuilder()
-        .insert()
-        .into(OnchainTransaction)
-        .values({
-          gasUsed: tx.gasUsed,
-          logsBloom: tx.logsBloom,
-          reason: TransactionReason.NODE_WITHDRAWAL,
-          status: TransactionStatus.SUCCESS,
-          channel,
-        })
-        .execute();
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .relation(Channel, "transactions")
-        .of(channel.multisigAddress)
-        .add((identifiers[0] as OnchainTransaction).id);
-    });
   }
 
   async addPending(tx: providers.TransactionResponse, channel: Channel): Promise<void> {
@@ -146,6 +117,24 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
         })
         .where("transaction.hash = :txHash", {
           txHash: tx.hash,
+        })
+        .execute();
+    });
+  }
+
+  async addReceipt(tx: providers.TransactionReceipt, reason: TransactionReason): Promise<void> {
+    return getManager().transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(OnchainTransaction)
+        .set({
+          status: TransactionStatus.SUCCESS,
+          gasUsed: tx.gasUsed,
+          logsBloom: tx.logsBloom,
+          reason,
+        })
+        .where("transaction.hash = :txHash", {
+          txHash: tx.transactionHash,
         })
         .execute();
     });
