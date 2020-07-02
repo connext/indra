@@ -96,7 +96,6 @@ clean: stop
 	rm -rf modules/*/node_modules/.bin
 	rm -rf modules/contracts/artifacts modules/*/build modules/*/dist docs/build
 	rm -rf modules/*/.*cache* modules/*/node_modules/.cache modules/contracts/cache/*.json
-	rm -rf modules/*/.connext-store
 	rm -rf modules/*/package-lock.json
 
 quick-reset:
@@ -117,7 +116,6 @@ reset: stop
 	docker secret rm $(project)_database_dev 2> /dev/null || true
 	docker volume rm $(project)_chain_dev $(project)_database_dev  2> /dev/null || true
 	docker volume rm `docker volume ls -q -f name=$(project)_database_test_*` 2> /dev/null || true
-	rm -rf modules/*/.connext-store
 	rm -rf .flags/deployed-contracts
 
 push-commit:
