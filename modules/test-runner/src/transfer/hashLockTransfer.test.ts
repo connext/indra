@@ -8,7 +8,7 @@ import {
   PublicParams,
   EventPayloads,
 } from "@connext/types";
-import { getRandomBytes32, delay } from "@connext/utils";
+import { getRandomBytes32, delay, getChainId } from "@connext/utils";
 import { BigNumber, providers, constants, utils } from "ethers";
 
 import {
@@ -29,9 +29,13 @@ describe("HashLock Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
-  const provider = new providers.JsonRpcProvider(env.ethProviderUrl);
+  let provider: providers.JsonRpcProvider;
 
   before(async () => {
+    provider = new providers.JsonRpcProvider(
+      env.ethProviderUrl,
+      await getChainId(env.ethProviderUrl),
+    );
     const currBlock = await provider.getBlockNumber();
     // the node uses a `TIMEOUT_BUFFER` on recipient of 100 blocks
     // so make sure the current block

@@ -10,7 +10,14 @@ import {
   STORE_SCHEMA_VERSION,
   IChannelSigner,
 } from "@connext/types";
-import { ChannelSigner, ConsoleLogger, logTime, stringify, delay } from "@connext/utils";
+import {
+  ChannelSigner,
+  ConsoleLogger,
+  logTime,
+  stringify,
+  delay,
+  getChainId,
+} from "@connext/utils";
 
 import { Contract, providers } from "ethers";
 
@@ -56,7 +63,9 @@ export const connect = async (
 
   // setup ethProvider + network information
   logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
-  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
+  // get the chainId
+  const chainId = await getChainId(ethProviderUrl);
+  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl, chainId);
   const network = await ethProvider.getNetwork();
 
   // setup messaging and node api

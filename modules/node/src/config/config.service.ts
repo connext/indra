@@ -1,4 +1,4 @@
-import { ChannelSigner, stringify } from "@connext/utils";
+import { ChannelSigner, getChainId } from "@connext/utils";
 import { ContractAddresses, IChannelSigner, MessagingConfig, SwapRate } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet, providers, constants, utils } from "ethers";
@@ -26,13 +26,11 @@ type TokenConfig = {
 @Injectable()
 export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
-  private readonly ethProvider: providers.JsonRpcProvider;
+  private ethProvider: providers.JsonRpcProvider;
   private signer: IChannelSigner;
 
   constructor() {
     this.envConfig = process.env;
-    this.ethProvider = new providers.JsonRpcProvider(this.getEthRpcUrl());
-    this.signer = new ChannelSigner(this.getPrivateKey(), this.getEthRpcUrl());
   }
 
   get(key: string): string {
@@ -270,5 +268,9 @@ export class ConfigService implements OnModuleInit {
     };
   }
 
-  async onModuleInit(): Promise<void> {}
+  async onModuleInit(): Promise<void> {
+    const providerUrl = this.getEthRpcUrl();
+    this.ethProvider = new providers.JsonRpcProvider(providerUrl, await getChainId(providerUrl));
+    this.signer = new ChannelSigner(this.getPrivateKey(), this.ethProvider);
+  }
 }

@@ -15,6 +15,7 @@
     "test": "./node_modules/.bin/ts-mocha --bail --check-leaks --exit src/**/*.spec.ts"
   },
   "dependencies": {
+    "axios": "0.19.2",
     "@connext/types": "7.0.0-alpha.10",
     "evt": "1.7.13",
     "bs58check": "2.1.2",

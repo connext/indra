@@ -2,7 +2,7 @@ import { MessagingService } from "@connext/messaging";
 import { AllowedSwap, PriceOracleTypes, SwapRate } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { getMarketDetails, getTokenReserves } from "@uniswap/sdk";
-import { getDefaultProvider, constants, utils } from "ethers";
+import { constants, utils } from "ethers";
 
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
@@ -139,7 +139,7 @@ export class SwapRateService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    const provider = getDefaultProvider();
+    const provider = this.config.getEthProvider();
     const swaps = this.config.getAllowedSwaps();
 
     for (const swap of swaps) {

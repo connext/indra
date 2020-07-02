@@ -1,4 +1,4 @@
-import { ColorfulLogger, logTime, getRandomChannelSigner, delay } from "@connext/utils";
+import { ColorfulLogger, logTime, getRandomChannelSigner, getChainId } from "@connext/utils";
 import { INestApplication } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { Wallet, ContractFactory, Contract, providers, BigNumber } from "ethers";
@@ -31,7 +31,7 @@ describe.skip("Custom token", () => {
     const start = Date.now();
 
     sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC!).connect(
-      new providers.JsonRpcProvider(env.ethProviderUrl),
+      new providers.JsonRpcProvider(env.ethProviderUrl, await getChainId(env.ethProviderUrl)),
     );
 
     const factory = new ContractFactory(token.abi, token.bytecode, sugarDaddy);
