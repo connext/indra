@@ -43,6 +43,7 @@
     "lodash": "^4.17.15",
     "nats": "1.4.9",
     "pg": "8.2.1",
+    "p-queue": "6.5.0",
     "redlock": "4.1.0",
     "reflect-metadata": "0.1.13",
     "rxjs": "6.5.5",

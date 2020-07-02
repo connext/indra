@@ -553,14 +553,17 @@ export class ConnextClient implements IConnextClient {
   public getAppInstance = async (
     appIdentityHash: string,
   ): Promise<MethodResults.GetAppInstanceDetails | undefined> => {
-    const err = await this.appNotInstalled(appIdentityHash);
-    if (err) {
-      this.log.warn(err);
-      return undefined;
+    try {
+      const ret = await this.channelProvider.send(MethodNames.chan_getAppInstance, {
+        appIdentityHash,
+      } as MethodParams.GetAppInstanceDetails);
+      return ret;
+    } catch (e) {
+      if (e.message.includes(`No appInstance exists for identity hash`)) {
+        return undefined;
+      }
+      throw e;
     }
-    return this.channelProvider.send(MethodNames.chan_getAppInstance, {
-      appIdentityHash,
-    } as MethodParams.GetAppInstanceDetails);
   };
 
   public takeAction = async (

@@ -1,4 +1,4 @@
-import { ChannelSigner } from "@connext/utils";
+import { ChannelSigner, stringify } from "@connext/utils";
 import { ContractAddresses, IChannelSigner, MessagingConfig, SwapRate } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet, providers, constants, utils } from "ethers";
@@ -82,7 +82,7 @@ export class ConfigService implements OnModuleInit {
 
   async getTokenAddress(): Promise<string> {
     const chainId = (await this.getEthNetwork()).chainId.toString();
-    const ethAddressBook = JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
+    const ethAddressBook = this.getEthAddressBook();
     return getAddress(ethAddressBook[chainId].Token.address);
   }
 

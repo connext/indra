@@ -64,7 +64,7 @@ export class UninstallController extends MethodController {
     // see notes in take-action method
     if (action) {
       if (!preProtocolStateChannel.hasAppInstance(appIdentityHash)) {
-        throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(preProtocolStateChannel.multisigAddress));
+        throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH(appIdentityHash));
       }
       return undefined;
     }
