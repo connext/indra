@@ -12,8 +12,13 @@ export class pendingTransactions1593637047546 implements MigrationInterface {
     await queryRunner.query(`ALTER TABLE "onchain_transaction" DROP COLUMN "v"`, undefined);
     await queryRunner.query(`ALTER TABLE "onchain_transaction" DROP COLUMN "r"`, undefined);
     await queryRunner.query(`ALTER TABLE "onchain_transaction" DROP COLUMN "s"`, undefined);
+    await queryRunner.query(`ALTER TABLE "onchain_transaction" ADD "status" text`, undefined);
     await queryRunner.query(
-      `ALTER TABLE "onchain_transaction" ADD "status" text NOT NULL`,
+      `UPDATE "onchain_transaction" SET "status" = 'PENDING' WHERE "status" IS NULL`,
+      undefined,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "onchain_transaction" ALTER COLUMN "status" SET NOT NULL`,
       undefined,
     );
     await queryRunner.query(
