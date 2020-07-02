@@ -147,7 +147,7 @@ type GraphSignedTransferParameters = {
   verifyingContract: Address;
   requestCID: Bytes32;
   subgraphDeploymentID: Bytes32;
-  recipient?: PublicIdentifier;
+  recipient: PublicIdentifier;
   meta?: any;
 };
 
