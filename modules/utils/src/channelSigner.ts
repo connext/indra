@@ -59,7 +59,7 @@ export class ChannelSigner extends Signer implements IChannelSigner {
   }
 
   public connect(provider: providers.Provider): Signer {
-    this.connectProvider(provider);
+    this.provider = provider;
     return this;
   }
 

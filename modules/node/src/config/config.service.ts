@@ -26,11 +26,12 @@ type TokenConfig = {
 @Injectable()
 export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
+  private readonly signer: IChannelSigner;
   private ethProvider: providers.JsonRpcProvider;
-  private signer: IChannelSigner;
 
   constructor() {
     this.envConfig = process.env;
+    this.signer = new ChannelSigner(this.getPrivateKey());
   }
 
   get(key: string): string {
@@ -271,6 +272,6 @@ export class ConfigService implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     const providerUrl = this.getEthRpcUrl();
     this.ethProvider = new providers.JsonRpcProvider(providerUrl, await getChainId(providerUrl));
-    this.signer = new ChannelSigner(this.getPrivateKey(), this.ethProvider);
+    this.signer.connect(this.ethProvider);
   }
 }
