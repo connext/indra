@@ -32,7 +32,6 @@ import {
   getSignerAddressFromPublicIdentifier,
   toBN,
   getRandomAddress,
-  stringify,
 } from "@connext/utils";
 import { BigNumber, Contract, Wallet, providers, constants } from "ethers";
 
