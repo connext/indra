@@ -31,7 +31,10 @@ export class ConfigService implements OnModuleInit {
 
   constructor() {
     this.envConfig = process.env;
-    this.signer = new ChannelSigner(this.getPrivateKey());
+    // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY
+    // WAITS FOR)
+    this.ethProvider = new providers.JsonRpcProvider(this.getEthRpcUrl());
+    this.signer = new ChannelSigner(this.getPrivateKey(), this.ethProvider);
   }
 
   get(key: string): string {
