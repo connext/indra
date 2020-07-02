@@ -27,7 +27,7 @@
     "@openzeppelin/contracts": "3.0.2",
     "eventemitter3": "4.0.4",
     "memoizee": "0.4.14",
-    "p-queue": "6.4.0",
+    "p-queue": "6.5.0",
     "uuid": "8.1.0"
   },
   "devDependencies": {
