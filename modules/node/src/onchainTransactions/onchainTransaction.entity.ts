@@ -79,13 +79,13 @@ export class OnchainTransaction {
   @Column("text")
   hash!: string;
 
-  @Column("integer")
+  @Column("integer", { nullable: true })
   blockNumber!: number;
 
-  @Column("text")
+  @Column("text", { nullable: true })
   blockHash!: string;
 
-  @Column("text")
+  @Column("text", { nullable: true })
   raw!: string;
 
   @Column("text")
