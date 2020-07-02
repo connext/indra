@@ -336,6 +336,8 @@ export class ConnextListener {
     this.log.info(
       `runPostInstallTasks for app ${registryAppInfo.name} ${appIdentityHash} started: ${stringify(
         params,
+        true,
+        0,
       )}`,
     );
     switch (registryAppInfo.name) {
