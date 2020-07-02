@@ -87,14 +87,14 @@ export class OnchainTransactionService {
         });
         if (attempt === 1) {
           // create the pending transaction in the db
-          await this.onchainTransactionRepository.addPending(tx, channel);
+          await this.onchainTransactionRepository.addPending(tx, reason, channel);
         }
         const receipt = await tx.wait();
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
         }
         this.log.info(`Success sending transaction! Tx hash: ${receipt.transactionHash}`);
-        await this.onchainTransactionRepository.addReceipt(receipt, reason);
+        await this.onchainTransactionRepository.addReceipt(receipt);
         return;
       } catch (e) {
         errors[attempt] = e.message;

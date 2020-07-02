@@ -82,7 +82,11 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return tx;
   }
 
-  async addPending(tx: providers.TransactionResponse, channel: Channel): Promise<void> {
+  async addPending(
+    tx: providers.TransactionResponse,
+    reason: TransactionReason,
+    channel: Channel,
+  ): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
       const { identifiers } = await transactionalEntityManager
         .createQueryBuilder()
@@ -90,6 +94,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
         .into(OnchainTransaction)
         .values({
           ...tx,
+          reason,
           status: TransactionStatus.PENDING,
           channel,
         })
@@ -122,7 +127,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     });
   }
 
-  async addReceipt(tx: providers.TransactionReceipt, reason: TransactionReason): Promise<void> {
+  async addReceipt(tx: providers.TransactionReceipt): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager
         .createQueryBuilder()
@@ -131,7 +136,6 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
           status: TransactionStatus.SUCCESS,
           gasUsed: tx.gasUsed,
           logsBloom: tx.logsBloom,
-          reason,
         })
         .where("transaction.hash = :txHash", {
           txHash: tx.transactionHash,
