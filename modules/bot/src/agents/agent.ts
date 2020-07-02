@@ -5,9 +5,11 @@ import {
   IConnextClient,
   ILoggerService,
   PublicParams,
+  Address,
 } from "@connext/types";
 import {
   abrv,
+  delay,
   getRandomBytes32,
   getTestGraphReceiptToSign,
   getTestVerifyingContract,
@@ -33,6 +35,7 @@ export class Agent {
     private readonly log: ILoggerService,
     private readonly client: IConnextClient,
     private readonly privateKey: string,
+    private readonly errorOnProtocolFailure: boolean,
   ) {}
 
   async start() {
@@ -104,6 +107,7 @@ export class Agent {
     });
 
     // Add failure listeners
+    // Always fail on a conditional transfer failed event
     this.client.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, async (eData) => {
       if (!eData.paymentId) {
         this.log.warn(`Ignoring untracked transfer ${eData.paymentId}.`);
@@ -112,13 +116,14 @@ export class Agent {
       this.retrieveResolverAndReject(eData.paymentId, eData.error);
     });
 
+    // Fail on protocol events IFF specified
     this.client.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async (eData) => {
       const paymentId = eData.params.meta?.["paymentId"];
       if (!paymentId) {
         this.log.warn(`Ignoring untracked proposal failure ${stringify(eData)}.`);
         return;
       }
-      this.retrieveResolverAndReject(paymentId, eData.error);
+      this.errorOnProtocolFailure && this.retrieveResolverAndReject(paymentId, eData.error);
     });
 
     this.client.on(EventNames.INSTALL_FAILED_EVENT, async (eData) => {
@@ -127,7 +132,7 @@ export class Agent {
         this.log.warn(`Ignoring untracked install failure ${stringify(eData)}.`);
         return;
       }
-      this.retrieveResolverAndReject(paymentId, eData.error);
+      this.errorOnProtocolFailure && this.retrieveResolverAndReject(paymentId, eData.error);
     });
 
     this.client.on(EventNames.UPDATE_STATE_FAILED_EVENT, async (eData) => {
@@ -136,7 +141,7 @@ export class Agent {
         this.log.warn(`Ignoring untracked take action failure ${stringify(eData)}.`);
         return;
       }
-      this.retrieveResolverAndReject(this.apps[appId], eData.error);
+      this.errorOnProtocolFailure && this.retrieveResolverAndReject(this.apps[appId], eData.error);
     });
 
     this.client.on(EventNames.UNINSTALL_FAILED_EVENT, async (eData) => {
@@ -145,7 +150,7 @@ export class Agent {
         this.log.warn(`Ignoring untracked uninstall failure ${stringify(eData)}.`);
         return;
       }
-      this.retrieveResolverAndReject(this.apps[appId], eData.error);
+      this.errorOnProtocolFailure && this.retrieveResolverAndReject(this.apps[appId], eData.error);
     });
   }
 
@@ -184,13 +189,15 @@ export class Agent {
     receiverIdentifier: string,
     signerAddress: string,
     amount: BigNumber,
+    assetId: Address = AddressZero,
     id: string = getRandomBytes32(),
-    type: ConditionalTransferTypes = ConditionalTransferTypes.SignedTransfer,
+    type: ConditionalTransferTypes = ConditionalTransferTypes.GraphTransfer,
   ) {
     const params = await this.getTransferParameters(
       receiverIdentifier,
       signerAddress,
       amount,
+      assetId,
       id,
       type,
     );
@@ -212,13 +219,13 @@ export class Agent {
         reject,
       };
 
-      // const timeout = 35_000;
-      // delay(timeout).then(() => {
-      //   if (this.payments[id]) {
-      //     delete this.payments[id];
-      //     return reject(new Error(`Payment ${id} timed out after ${timeout / 1000} s`));
-      //   }
-      // });
+      const timeout = 10_000;
+      delay(timeout).then(() => {
+        if (this.payments[id]) {
+          delete this.payments[id];
+          return reject(new Error(`Payment ${id} timed out after ${timeout / 1000} s`));
+        }
+      });
     });
   }
 
@@ -240,17 +247,18 @@ export class Agent {
     receiverIdentifier: string,
     signerAddress: string,
     amount: BigNumber,
+    assetId: string,
     id: string,
     type: ConditionalTransferTypes,
   ) {
     const baseParams = {
       conditionType: type as any,
       amount,
-      assetId: AddressZero,
+      assetId,
       recipient: receiverIdentifier,
     };
     switch (type) {
-      case ConditionalTransferTypes.SignedTransfer: {
+      case ConditionalTransferTypes.GraphTransfer: {
         const { chainId } = await this.client.ethProvider.getNetwork();
         const receipt = getTestGraphReceiptToSign();
         const verifyingContract = getTestVerifyingContract();
