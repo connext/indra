@@ -109,7 +109,7 @@ export class DepositService {
       receipt = await this.sendDepositToChain(channel, amount, assetId);
       this.log.info(`Finished sending deposit to chain`);
     } catch (e) {
-      this.log.error(`Caught error collateralizing: ${e.message}`);
+      this.log.error(`Caught error collateralizing: ${e.stack}`);
     } finally {
       await cleanUpDepositRights();
     }

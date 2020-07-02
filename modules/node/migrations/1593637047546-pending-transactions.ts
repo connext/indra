@@ -23,6 +23,10 @@ export class pendingTransactions1593637047546 implements MigrationInterface {
     await queryRunner.query(`ALTER TABLE "onchain_transaction" ADD "blockHash" text`, undefined);
     await queryRunner.query(`ALTER TABLE "onchain_transaction" ADD "raw" text `, undefined);
     await queryRunner.query(`ALTER TABLE "onchain_transaction" ADD "gasUsed" text`, undefined);
+    await queryRunner.query(
+      `ALTER TABLE "onchain_transaction" ALTER COLUMN "gasUsed" SET DEFAULT '0'`,
+      undefined,
+    );
     await queryRunner.query(`ALTER TABLE "onchain_transaction" ADD "logsBloom" text`, undefined);
     await queryRunner.query(`ALTER TABLE "onchain_transaction" ADD "errors" jsonb`, undefined);
     await queryRunner.query(

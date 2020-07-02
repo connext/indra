@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers";
+import { BigNumber, constants } from "ethers";
 import {
   Column,
   Entity,
@@ -93,20 +93,10 @@ export class OnchainTransaction {
 
   // Fields from TransactionReceipt (after mined)
   @Column("text", {
-    nullable: true,
+    default: constants.Zero,
     transformer: {
-      from: (value: string | undefined): BigNumber | undefined => {
-        if (value === undefined) {
-          return undefined;
-        }
-        return BigNumber.from(value);
-      },
-      to: (value: BigNumber | undefined): string | undefined => {
-        if (value === undefined) {
-          return undefined;
-        }
-        return value.toString();
-      },
+      from: (value: string): BigNumber => BigNumber.from(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
   gasUsed: BigNumber;

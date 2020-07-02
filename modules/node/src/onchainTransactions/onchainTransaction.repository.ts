@@ -1,4 +1,4 @@
-import { providers } from "ethers";
+import { providers, constants } from "ethers";
 import { EntityRepository, Repository, Between, getManager } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
@@ -9,6 +9,7 @@ import {
   AnonymizedOnchainTransaction,
   TransactionStatus,
 } from "./onchainTransaction.entity";
+const { Zero } = constants;
 
 export const onchainEntityToReceipt = (
   entity: OnchainTransaction | undefined,
@@ -94,6 +95,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
         .into(OnchainTransaction)
         .values({
           ...tx,
+          gasUsed: Zero,
           reason,
           status: TransactionStatus.PENDING,
           channel,
@@ -120,7 +122,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
           status: TransactionStatus.FAILED,
           errors,
         })
-        .where("transaction.hash = :txHash", {
+        .where("onchain_transaction.hash = :txHash", {
           txHash: tx.hash,
         })
         .execute();
@@ -134,10 +136,10 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
         .update(OnchainTransaction)
         .set({
           status: TransactionStatus.SUCCESS,
-          gasUsed: tx.gasUsed,
+          gasUsed: tx.gasUsed || Zero,
           logsBloom: tx.logsBloom,
         })
-        .where("transaction.hash = :txHash", {
+        .where("onchain_transaction.hash = :txHash", {
           txHash: tx.transactionHash,
         })
         .execute();
