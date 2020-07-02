@@ -27,6 +27,7 @@ exec docker run \
   --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
   --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
   --env="LOG_LEVEL=$LOG_LEVEL" \
+  --env="MNEMONIC=$MNEMONIC" \
   --name="$tps_name" \
   --publish="9231:9229" \
   --rm \
@@ -41,6 +42,7 @@ exec docker run \
     trap finish EXIT SIGTERM SIGINT
     node --inspect=0.0.0.0:9229 dist/src/index.js tps \
       --concurrency '$agents' \
+      --funder-mnemonic $MNEMONIC \
       --interval '$interval' \
       --limit '$limit' \
       --log-level $LOG_LEVEL
