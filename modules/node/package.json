@@ -22,7 +22,7 @@
   "dependencies": {
     "@connext/apps": "7.0.0-alpha.10",
     "@connext/cf-core": "7.0.0-alpha.10",
-    "@connext/contracts": "3.2.3",
+    "@connext/contracts": "3.3.0-alpha.0",
     "@connext/messaging": "7.0.0-alpha.10",
     "@connext/pure-evm-wasm": "0.1.4",
     "@connext/store": "7.0.0-alpha.10",
