@@ -17,13 +17,14 @@ export const KNOWN_ERRORS = ["the tx doesn't have the correct nonce", NO_TX_HASH
 
 @Injectable()
 export class OnchainTransactionService {
+  private readonly queue: PriorityQueue;
   constructor(
     private readonly configService: ConfigService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly log: LoggerService,
-    private readonly queue: PriorityQueue = new PriorityQueue({ concurrency: 1 }),
   ) {
     this.log.setContext("OnchainTransactionService");
+    this.queue = new PriorityQueue({ concurrency: 1 });
   }
 
   async sendUserWithdrawal(
