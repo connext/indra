@@ -16,7 +16,7 @@
     "@connext/cf-core": "7.0.0-alpha.10",
     "@connext/channel-provider": "7.0.0-alpha.10",
     "@connext/client": "7.0.0-alpha.10",
-    "@connext/contracts": "3.3.0-alpha.0",
+    "@connext/contracts": "3.3.0",
     "@connext/utils": "7.0.0-alpha.10",
     "@connext/messaging": "7.0.0-alpha.10",
     "@connext/pure-evm-wasm": "0.1.4",
