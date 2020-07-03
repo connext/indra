@@ -5,11 +5,11 @@ const { Zero, MaxUint256 } = constants;
 const { parseUnits, formatUnits } = utils;
 
 export const toWad = (amount: string, decimals = 18): BigNumber => {
-  return parseUnits(sanitizeDecimals(amount), decimals);
+  return parseUnits(sanitizeDecimals(amount, decimals), decimals);
 };
 
 export const fromWad = (wad: BigNumberish, decimals = 18): string => {
-  return sanitizeDecimals(formatUnits(wad, decimals));
+  return sanitizeDecimals(formatUnits(wad, decimals), decimals);
 };
 
 export const maxBN = (lobn: any) =>
