@@ -23,7 +23,7 @@ export const inverse = (value: string, decimals = 18): string =>
 
 export const sanitizeDecimals = (value: string, decimals = 18): string => {
   const [integer, fractional] = value.split(".");
-  return fractional && fractional !== "0"
+  return fractional && fractional !== "0".repeat(fractional.length)
     ? [integer, fractional.substring(0, decimals)].join(".")
     : integer;
 };
