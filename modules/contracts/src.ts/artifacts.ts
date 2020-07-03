@@ -7,6 +7,7 @@ import * as AppComputeOutcomeFails from "../artifacts/AppComputeOutcomeFails.jso
 import * as AppWithAction from "../artifacts/AppWithAction.json";
 import * as ChallengeRegistry from "../artifacts/ChallengeRegistry.json";
 import * as ConditionalTransactionDelegateTarget from "../artifacts/ConditionalTransactionDelegateTarget.json";
+import * as ConnextToken from "../artifacts/ConnextToken.json";
 import * as CounterfactualApp from "../artifacts/CounterfactualApp.json";
 import * as DelegateProxy from "../artifacts/DelegateProxy.json";
 import * as DepositApp from "../artifacts/DepositApp.json";
@@ -49,6 +50,7 @@ export const artifacts: Artifacts = {
   AppWithAction,
   ChallengeRegistry,
   ConditionalTransactionDelegateTarget,
+  ConnextToken,
   CounterfactualApp,
   DelegateProxy,
   DepositApp,
@@ -82,6 +84,7 @@ export {
   AppWithAction,
   ChallengeRegistry,
   ConditionalTransactionDelegateTarget,
+  ConnextToken,
   CounterfactualApp,
   DelegateProxy,
   DepositApp,

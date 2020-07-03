@@ -1,3 +1,4 @@
+import * as connext from "@connext/client";
 import { ERC20 } from "@connext/contracts";
 import { getLocalStore } from "@connext/store";
 import { ConnextClientStorePrefix, EventNames } from "@connext/types";
@@ -209,7 +210,7 @@ class App extends React.Component {
       }
 
       const { privateKey } = Wallet.fromMnemonic(mnemonic);
-      channel = await (await import(`@connext/client`)).connect({
+      channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
         signer: privateKey,
         logLevel: LOG_LEVEL,
@@ -234,7 +235,7 @@ class App extends React.Component {
         }
         cleanWalletConnect();
       });
-      channel = await (await import(`@connext/client`)).connect({
+      channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
         logLevel: LOG_LEVEL,
         channelProvider,

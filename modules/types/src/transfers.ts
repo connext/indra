@@ -13,11 +13,11 @@ import {
 // Types
 
 const RequireOnlineAppNames: SupportedApplicationNames[] = [
+  SupportedApplicationNames.GraphSignedTransferApp,
   SupportedApplicationNames.HashLockTransferApp,
 ];
 const AllowOfflineAppNames: SupportedApplicationNames[] = [
   SupportedApplicationNames.SimpleSignedTransferApp,
-  SupportedApplicationNames.GraphSignedTransferApp,
   SupportedApplicationNames.SimpleLinkedTransferApp,
 ];
 

@@ -7,8 +7,9 @@ import {
   NodeResponses,
   PublicParams,
   EventPayloads,
+  UnlockedHashLockTransferMeta,
 } from "@connext/types";
-import { getRandomBytes32, delay } from "@connext/utils";
+import { getRandomBytes32, getChainId } from "@connext/utils";
 import { BigNumber, providers, constants, utils } from "ethers";
 
 import {
@@ -29,9 +30,13 @@ describe("HashLock Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
-  const provider = new providers.JsonRpcProvider(env.ethProviderUrl);
+  let provider: providers.JsonRpcProvider;
 
   before(async () => {
+    provider = new providers.JsonRpcProvider(
+      env.ethProviderUrl,
+      await getChainId(env.ethProviderUrl),
+    );
     const currBlock = await provider.getBlockNumber();
     // the node uses a `TIMEOUT_BUFFER` on recipient of 100 blocks
     // so make sure the current block
@@ -262,23 +267,31 @@ describe("HashLock Transfers", () => {
     const paymentId = soliditySha256(["address", "bytes32"], [transfer.assetId, lockHash]);
 
     // both sender + receiver apps installed, sender took action
-    clientA.conditionalTransfer({
-      amount: transfer.amount.toString(),
-      conditionType: ConditionalTransferTypes.HashLockTransfer,
-      lockHash,
-      timelock,
-      assetId: transfer.assetId,
-      meta: { foo: "bar", sender: clientA.publicIdentifier },
-      recipient: clientB.publicIdentifier,
-    } as PublicParams.HashLockTransfer);
-    await new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res));
+    await new Promise((resolve, reject) => {
+      clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, resolve);
+      clientA
+        .conditionalTransfer({
+          amount: transfer.amount.toString(),
+          conditionType: ConditionalTransferTypes.HashLockTransfer,
+          lockHash,
+          timelock,
+          assetId: transfer.assetId,
+          meta: { foo: "bar", sender: clientA.publicIdentifier },
+          recipient: clientB.publicIdentifier,
+        } as PublicParams.HashLockTransfer)
+        .catch((e) => reject(e.message));
+    });
 
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
       // Note: MUST wait for uninstall, bc UNLOCKED gets thrown on takeAction
       // at the moment, there's no way to filter the uninstalled app here so
       // we're just gonna resolve and hope for the best
-      clientB.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve);
+      clientB.once(
+        EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+        resolve,
+        (data) => (data.transferMeta as UnlockedHashLockTransferMeta).preImage === preImage,
+      );
       clientB.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,

@@ -9,7 +9,10 @@ import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
-import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
+import {
+  OnchainTransactionRepository,
+  onchainEntityToReceipt,
+} from "../onchainTransactions/onchainTransaction.repository";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
@@ -69,7 +72,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
         getAddress(data.assetId),
         RebalanceType.COLLATERALIZE,
       );
-      return tx;
+      return onchainEntityToReceipt(tx);
     } catch (e) {
       this.log.debug(`Failed to collateralize: ${e.message}`);
       return undefined;
