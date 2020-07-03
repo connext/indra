@@ -55,19 +55,17 @@ export const createCFChannelProvider = async ({
   }
   const { contractAddresses, supportedTokenAddresses } = config;
   const messaging = node.messaging;
-  const nodeConfig = { STORE_KEY_PREFIX: ConnextClientStorePrefix };
   const lockService = {
     acquireLock: node.acquireLock.bind(node),
     releaseLock: node.releaseLock.bind(node),
   };
+  const network = await ethProvider.getNetwork();
   let cfCore: CFCore;
   try {
     cfCore = await CFCore.create(
       messaging,
       store,
-      contractAddresses,
-      nodeConfig,
-      ethProvider,
+      { [network.chainId]: { contractAddresses, provider: ethProvider } },
       signer,
       lockService,
       undefined,
@@ -83,9 +81,7 @@ export const createCFChannelProvider = async ({
     cfCore = await CFCore.create(
       messaging,
       store,
-      contractAddresses,
-      nodeConfig,
-      ethProvider,
+      { [network.chainId]: { contractAddresses, provider: ethProvider } },
       signer,
       lockService,
       undefined,

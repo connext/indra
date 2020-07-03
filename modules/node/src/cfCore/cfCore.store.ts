@@ -118,7 +118,10 @@ export class CFCoreStore implements IStoreService {
     return cacheRes;
   }
 
-  async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON> {
+  async getStateChannelByOwnersAndChainId(
+    owners: string[],
+    chainId: number,
+  ): Promise<StateChannelJSON> {
     const multisig = await this.cache.get(`channel:owners:${this.canonicalizeOwners(owners)}`);
     if (multisig) {
       return this.getStateChannel(JSON.parse(multisig));

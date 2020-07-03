@@ -37,9 +37,7 @@ export const cfCoreProviderFactory: Provider = {
     const cfCore = await CFCore.create(
       messaging,
       store,
-      contractAddresses,
-      { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
-      provider,
+      { [chainId]: { contractAddresses, provider } },
       config.getSigner(),
       {
         acquireLock: lockService.acquireLock.bind(lockService),
