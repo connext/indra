@@ -92,11 +92,10 @@ export class WithdrawalController extends AbstractController {
           }
         }),
       ])) as EventPayloads.UpdateStateFailed | providers.TransactionResponse;
-      if ((raceRes as EventPayloads.UpdateStateFailed).error) {
+      if ((raceRes as EventPayloads.UpdateStateFailed)?.error) {
         throw new Error((raceRes as EventPayloads.UpdateStateFailed).error);
       }
       transaction = raceRes as providers.TransactionResponse;
-      this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
       this.log.debug(`Transaction details: ${stringify(transaction)}`);
 
       this.connext.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction });
@@ -135,9 +134,8 @@ export class WithdrawalController extends AbstractController {
     this.log.debug(`Signing withdrawal commitment: ${hash}`);
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
-      hash,
-    );
+    const counterpartySignatureOnWithdrawCommitment =
+      await this.connext.channelProvider.signMessage(hash);
     this.log.debug(`Taking action on ${appInstance.identityHash}`);
     await this.connext.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,

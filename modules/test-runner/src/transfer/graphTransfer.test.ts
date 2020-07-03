@@ -16,6 +16,7 @@ import {
   getTestGraphReceiptToSign,
   getRandomPrivateKey,
   signGraphReceiptMessage,
+  getChainId,
 } from "@connext/utils";
 
 import { providers, constants, utils } from "ethers";
@@ -43,9 +44,12 @@ describe("Graph Signed Transfers", () => {
   let receipt: GraphReceipt;
   let chainId: number;
   let verifyingContract: Address;
-  const provider = new providers.JsonRpcProvider(env.ethProviderUrl);
-
+  let provider: providers.JsonRpcProvider;
   before(async () => {
+    provider = new providers.JsonRpcProvider(
+      env.ethProviderUrl,
+      await getChainId(env.ethProviderUrl),
+    );
     const currBlock = await provider.getBlockNumber();
     // the node uses a `TIMEOUT_BUFFER` on recipient of 100 blocks
     // so make sure the current block
@@ -320,8 +324,16 @@ describe("Graph Signed Transfers", () => {
 
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
-      clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve);
-      clientB.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
+      clientB.once(
+        EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+        resolve,
+        (data) => !!data.paymentId && data.paymentId === paymentId,
+      );
+      clientB.once(
+        EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT,
+        reject,
+        (data) => !!data.paymentId && data.paymentId === paymentId,
+      );
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.GraphTransfer,
         paymentId,

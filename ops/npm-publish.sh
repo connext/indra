@@ -96,7 +96,14 @@ do
   cat .package.json | sed 's/"version": ".*"/"version": "'$version'"/' > package.json
   rm .package.json
   echo "Publishing $fullname"
+
   npm publish --access=public
+
+  echo "Updating $fullname references in root"
+  mv package.json .package.json
+  cat .package.json | sed 's|"'"$fullname"'": ".*"|"'"$fullname"'": "'$version'"|' > package.json
+  rm .package.json
+
   echo
   cd ..
   for module in `ls */package.json`
@@ -116,8 +123,11 @@ echo
 echo "Commiting & tagging our changes"
 echo
 
+# Create git tag
+tag="npm-publish-${1:-"all"}-$target_version"
+
 git add .
 git commit --allow-empty -m "npm publish @connext/{$packages}@$target_version"
-git tag npm-publish-$target_version
+git tag $tag
 git push origin HEAD --no-verify
-git push origin npm-publish-$target_version --no-verify
+git push origin $tag --no-verify

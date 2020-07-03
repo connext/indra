@@ -1,3 +1,4 @@
+import { MessagingService } from "@connext/messaging";
 import {
   AppRegistry,
   IChannelProvider,
@@ -20,11 +21,8 @@ import { utils, providers } from "ethers";
 import { v4 as uuid } from "uuid";
 
 import { createCFChannelProvider } from "./channelProvider";
-import { MessagingService } from "@connext/messaging";
 
 const { getAddress } = utils;
-
-const sendFailed = "Failed to send message";
 
 // NOTE: swap rates are given as a decimal string describing:
 // Given 1 unit of `from`, how many units `to` are received.
@@ -84,7 +82,7 @@ export class NodeApiClient implements INodeApiClient {
       messaging = new MessagingService(
         {
           messagingUrl: messagingUrl || formatMessagingUrl(nodeUrl),
-          logger: log,
+          logger: log.newContext("Messaging"),
         },
         "INDRA",
         () => NodeApiClient.getBearerToken(nodeUrl, userIdentifier, getSignature),
@@ -383,14 +381,6 @@ export class NodeApiClient implements INodeApiClient {
     data?: any,
     timeout: number = NATS_TIMEOUT,
   ): Promise<any | undefined> {
-    return this.sendAttempt(timeout, subject, data);
-  }
-
-  private async sendAttempt(
-    timeout: number,
-    subject: string,
-    data?: any,
-  ): Promise<any | undefined> {
     const start = Date.now();
     const payload = {
       ...data,
@@ -400,7 +390,7 @@ export class NodeApiClient implements INodeApiClient {
     try {
       msg = await this.messaging.request(subject, timeout, payload);
     } catch (e) {
-      throw new Error(`${sendFailed}: ${e.message}`);
+      throw new Error(`Failed to send message: ${e.message}`);
     }
     const parsedData = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
     const error = msg
