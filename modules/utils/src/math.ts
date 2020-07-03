@@ -23,14 +23,19 @@ export const inverse = (value: string, decimals = 18): string =>
 
 export const sanitizeDecimals = (value: string, decimals = 18): string => {
   const [integer, fractional] = value.split(".");
+  console.log("fractional", fractional);
   return fractional && fractional !== "0".repeat(fractional.length)
     ? [integer, fractional.substring(0, decimals)].join(".")
     : integer;
 };
 
-export const calculateExchange = (inputAmount: string, swapRate: DecString): string => {
-  const swapRateWad = sanitizeDecimals(swapRate);
-  const inputWad = toWad(inputAmount);
+export const calculateExchange = (
+  inputAmount: string,
+  swapRate: DecString,
+  decimals = 18,
+): string => {
+  const swapRateWad = toWad(swapRate, decimals);
+  const inputWad = toWad(inputAmount, decimals * 2);
   const outputWad = inputWad.mul(swapRateWad);
-  return fromWad(outputWad);
+  return fromWad(outputWad, decimals * 3);
 };

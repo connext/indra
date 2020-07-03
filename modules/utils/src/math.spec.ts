@@ -28,6 +28,8 @@ describe("Math", () => {
   });
   it("calculateExchange", () => {
     expect(calculateExchange("0.1", "100")).to.be.equal("10");
-    expect(calculateExchange("10", "0.1")).to.be.equal("100");
+    expect(calculateExchange("0.1", "212.5")).to.be.equal("21.25");
+    expect(calculateExchange("10", inverse("100"))).to.be.equal("0.1");
+    expect(calculateExchange("21.25", inverse("212.5"))).to.be.equal("0.09999999999999999");
   });
 });
