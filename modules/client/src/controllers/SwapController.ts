@@ -95,7 +95,7 @@ export class SwapController extends AbstractController {
   ////// PRIVATE METHODS
 
   private swapAppInstall = async (
-    amount: BigNumber,
+    initiatorDeposit: BigNumber,
     toTokenAddress: Address,
     fromTokenAddress: Address,
     swapRate: string,
@@ -121,18 +121,20 @@ export class SwapController extends AbstractController {
     const fromDecimals = await getDecimals(fromTokenAddress);
     const toDecimals = await getDecimals(toTokenAddress);
 
-    const swappedAmount = calculateExchangeWad(amount, fromDecimals, swapRate, toDecimals);
+    const responderDeposit = calculateExchangeWad(
+      initiatorDeposit,
+      fromDecimals,
+      swapRate,
+      toDecimals,
+    );
 
     this.log.debug(
-      `Swapping ${fromWad(amount, fromDecimals)} ${
+      `Swapping ${fromWad(initiatorDeposit, fromDecimals)} ${
         toTokenAddress === AddressZero ? "ETH" : "Tokens"
-      } for ${fromWad(swappedAmount, toDecimals)} ${
+      } for ${fromWad(responderDeposit, toDecimals)} ${
         fromTokenAddress === AddressZero ? "ETH" : "Tokens"
       }`,
     );
-
-    const initiatorDeposit = amount;
-    const responderDeposit = swappedAmount;
 
     // NOTE: always put the initiators swap information FIRST
     // followed by responders. If this is not included, the swap will
