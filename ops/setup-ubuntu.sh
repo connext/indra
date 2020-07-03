@@ -161,6 +161,8 @@ if [[ ! -d indra ]]
 then git clone https://github.com/ConnextProject/indra.git
 fi
 
+chown -R $user:$user .
+
 echo
 echo "Done configuring server, rebooting now.."
 echo
