@@ -97,11 +97,7 @@ do
   rm .package.json
   echo "Publishing $fullname"
 
-  # If the version has a suffix like "-alpha.4" then tag it as "next"
-  if [[ "$version" == *-* ]]
-  then npm publish --tag next --access=public
-  else npm publish --access=public
-  fi
+  npm publish --access=public
 
   echo "Updating $fullname references in root"
   mv package.json .package.json
