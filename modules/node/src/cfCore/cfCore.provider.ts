@@ -1,7 +1,6 @@
 import { CFCore } from "@connext/cf-core";
 import { ERC20 } from "@connext/contracts";
 import { MessagingService } from "@connext/messaging";
-import { ConnextNodeStorePrefix } from "@connext/types";
 import { Provider } from "@nestjs/common";
 import { Contract, constants, utils } from "ethers";
 
