@@ -7,7 +7,7 @@ describe("Math", () => {
     expect(toWad("1").toString()).to.be.equal("1000000000000000000");
   });
   it("fromWad", () => {
-    expect(fromWad("1000000000000000000")).to.be.equal("1.0");
+    expect(fromWad("1000000000000000000")).to.be.equal("1");
   });
   it("inverse", () => {
     expect(inverse("100")).to.be.equal("0.01");
