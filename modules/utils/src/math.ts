@@ -26,14 +26,9 @@ export const sanitizeDecimals = (value: string, decimals = 18): string => {
   return [integer, fractional ? fractional.substring(0, decimals) : "0"].join(".");
 };
 
-export const calculateExchange = (
-  inputAmount: string,
-  swapRate: DecString,
-  inputDecimals = 18,
-  outputDecimals = 18,
-): string => {
-  const inputWad = toWad(inputAmount, inputDecimals);
-  const swapRateWad = toWad(swapRate, inputDecimals);
-  const outputAmount = fromWad(inputWad.mul(swapRateWad), inputDecimals);
-  return fromWad(toWad(outputAmount, outputDecimals), outputDecimals);
+export const calculateExchange = (inputAmount: string, swapRate: DecString): string => {
+  const inputWad = toWad(inputAmount);
+  const swapRateWad = toWad(swapRate);
+  const outputWad = inputWad.mul(swapRateWad);
+  return fromWad(outputWad);
 };
