@@ -1,14 +1,15 @@
 import { DecString } from "@connext/types";
-import { BigNumber, BigNumberish, constants } from "ethers";
+import { BigNumber, BigNumberish, constants, utils } from "ethers";
 
 const { Zero, MaxUint256 } = constants;
+const { parseUnits, formatUnits } = utils;
 
-export const toWad = (amount: BigNumberish, decimals = 18): BigNumber => {
-  return BigNumber.from(amount).mul(BigNumber.from("10").pow(decimals));
+export const toWad = (amount: string, decimals = 18): BigNumber => {
+  return parseUnits(sanitizeDecimals(amount), decimals);
 };
 
-export const fromWad = (wad: BigNumberish, decimals = 18): BigNumber => {
-  return BigNumber.from(wad).div(BigNumber.from("10").pow(decimals));
+export const fromWad = (wad: BigNumberish, decimals = 18): string => {
+  return sanitizeDecimals(formatUnits(wad, decimals));
 };
 
 export const maxBN = (lobn: any) =>
@@ -17,20 +18,22 @@ export const maxBN = (lobn: any) =>
 export const minBN = (lobn: any) =>
   lobn.reduce((min: any, current: any) => (min.lt(current) ? min : current), MaxUint256);
 
-export const inverse = (bn: any) => fromWad(toWad(toWad(`1`)).div(toWad(bn)));
+export const inverse = (value: string, decimals = 18): string =>
+  fromWad(toWad("1", decimals * 2).div(toWad(value, decimals)), decimals);
 
-export const toFixed = (value: string, decimals = 18) => {
+export const sanitizeDecimals = (value: string, decimals = 18): string => {
   const [integer, fractional] = value.split(".");
-  return [integer, (fractional || "0").substring(0, decimals)].join(".");
+  return [integer, fractional ? fractional.substring(0, decimals) : "0"].join(".");
 };
 
 export const calculateExchange = (
-  inputAmount: BigNumber,
+  inputAmount: string,
   swapRate: DecString,
   inputDecimals = 18,
   outputDecimals = 18,
-): BigNumber => {
-  const swapRateWad = toWad(toFixed(swapRate));
-  const outputAmount = fromWad(toWad(fromWad(inputAmount, inputDecimals)).mul(swapRateWad));
-  return fromWad(toWad(outputAmount, outputDecimals));
+): string => {
+  const inputWad = toWad(inputAmount, inputDecimals);
+  const swapRateWad = toWad(swapRate, inputDecimals);
+  const outputAmount = fromWad(inputWad.mul(swapRateWad), inputDecimals);
+  return fromWad(toWad(outputAmount, outputDecimals), outputDecimals);
 };
