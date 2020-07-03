@@ -25,7 +25,7 @@ import { BigNumber, constants, utils, Contract } from "ethers";
 import { AbstractController } from "./AbstractController";
 
 const { AddressZero, Zero } = constants;
-const { formatEther, parseEther, parseUnits } = utils;
+const { formatEther, parseEther, parseUnits, formatUnits } = utils;
 
 export class SwapController extends AbstractController {
   public async swap(params: PublicParams.Swap): Promise<PublicResults.Swap> {
@@ -114,7 +114,6 @@ export class SwapController extends AbstractController {
         try {
           const token = new Contract(tokenAddress, ERC20.abi, this.connext.ethProvider);
           decimals = await token.functions.decimals();
-          console.log("decimals: ", decimals);
           this.log.info(`Retrieved decimals for ${tokenAddress} from token contract: ${decimals}`);
         } catch (error) {
           this.log.error(
@@ -125,11 +124,11 @@ export class SwapController extends AbstractController {
       return decimals;
     };
 
-    const fromDecimals = await getDecimals(fromTokenAddress);
-    const initiatorDeposit = parseUnits(formatEther(amount), fromDecimals);
+    const initiatorDeposit = amount;
 
     const toDecimals = await getDecimals(toTokenAddress);
-    const responderDeposit = parseUnits(formatEther(swappedAmount), toDecimals);
+    const fromDecimals = await getDecimals(fromTokenAddress);
+    const responderDeposit = parseUnits(formatUnits(swappedAmount, fromDecimals), toDecimals);
 
     // NOTE: always put the initiators swap information FIRST
     // followed by responders. If this is not included, the swap will
