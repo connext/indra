@@ -456,12 +456,21 @@ export class CFCoreService {
     return this.appRegistryMap.get(appDefinition);
   }
 
-  public getAppInfoByName(name: SupportedApplicationNames): DefaultApp {
-    return this.appRegistryMap.get(name);
+  public getAppInfoByDefinition(addr: Address): DefaultApp {
+    return this.appRegistryMap.get(addr);
   }
 
-  public getAppRegistry(): AppRegistry {
-    return Object.values(SupportedApplicationNames).map((name) => this.getAppInfoByName(name));
+  public getAppInfoByNameAndChain(name: SupportedApplicationNames, chainId: number): DefaultApp {
+    return this.appRegistryMap.get(`${name}:${chainId}`);
+  }
+
+  public getAppRegistry(chainId?: number): AppRegistry {
+    if (chainId) {
+      return Object.values(SupportedApplicationNames).map((name) =>
+        this.getAppInfoByNameAndChain(name, chainId),
+      );
+    }
+    throw new Error("FIXME: Implement fetching app registry with a specified chainId");
   }
 
   async onModuleInit() {
@@ -482,7 +491,7 @@ export class CFCoreService {
         stateEncoding: app.stateEncoding,
         allowNodeInstall: app.allowNodeInstall,
       } as DefaultApp);
-      appMap.set(app.name, {
+      appMap.set(`${app.name}:${ethNetwork.chainId}`, {
         actionEncoding: app.actionEncoding,
         appDefinitionAddress: appDefinitionAddress,
         name: app.name,

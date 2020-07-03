@@ -34,12 +34,19 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     }
     this.log.info(`Got fetch link request for: ${paymentId}`);
 
+    // TODO: fix for multiple chains!!!
+    this.log.error(`FIX ME: DOES NOT WORK FOR 1 PAYMENTID ACROSS MULTIPLE CHAINS`);
+    const { chainId } = await this.configService.getEthNetwork();
+
     // determine status
     // node receives transfer in sender app
     const {
       senderApp,
       status,
-    } = await this.linkedTransferService.findSenderAndReceiverAppsWithStatus(paymentId);
+    } = await this.linkedTransferService.findSenderAndReceiverAppsWithStatusOnChain(
+      paymentId,
+      chainId,
+    );
     if (!senderApp) {
       return undefined;
     }
@@ -63,9 +70,11 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 
   async getPendingTransfers(
     userIdentifier: string,
+    chainId: number,
   ): Promise<NodeResponses.GetPendingAsyncTransfers> {
-    const transfers = await this.linkedTransferService.getLinkedTransfersForReceiverUnlock(
+    const transfers = await this.linkedTransferService.getLinkedTransfersForReceiverUnlockOnChain(
       userIdentifier,
+      chainId,
     );
     return transfers.map((transfer) => {
       return {
@@ -83,6 +92,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
+    // TODO: use chainId auth here?
     await super.connectRequestReponse(
       `*.${this.configService.getPublicIdentifier()}.transfer.get-linked`,
       this.authService.parseIdentifier(this.getLinkedTransferByPaymentId.bind(this)),

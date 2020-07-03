@@ -71,17 +71,17 @@ export class ConfigService implements OnModuleInit {
     return JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
   }
 
-  getSupportedChains() {
+  getSupportedChains(): number[] {
     return JSON.parse(this.get(`INDRA_SUPPORTED_CHAINS`));
   }
 
-  async getContractAddresses(chainId?: string): Promise<ContractAddresses> {
-    chainId = chainId ? chainId : (await this.getEthNetwork()).chainId.toString();
+  async getContractAddresses(providedChainId?: string): Promise<ContractAddresses> {
+    const chainId = providedChainId || (await this.getEthNetwork()).chainId.toString();
     const ethAddresses = {} as any;
     const ethAddressBook = this.getEthAddressBook();
     Object.keys(ethAddressBook[chainId]).forEach(
       (contract: string) =>
-        (ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address)),
+        (ethAddresses[chainId][contract] = getAddress(ethAddressBook[chainId][contract].address)),
     );
     return ethAddresses as ContractAddresses;
   }
