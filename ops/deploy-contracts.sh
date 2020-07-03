@@ -59,7 +59,8 @@ fi
 
 if [[ "$mode" == "local" ]]
 then
-  echo "Deploying $mode-mode contract deployer (image: builder)..."
+  image=${project}_builder
+  echo "Deploying $mode-mode contract deployer (image: $image)..."
   docker run \
     $interactive \
     "$SECRET_ENV" \
@@ -69,8 +70,9 @@ then
     --mount="type=volume,source=${project}_chain_dev,target=/data" \
     --name="$name" \
     --rm \
-    ${project}_builder -c "cd modules/contracts && bash ops/entry.sh deploy"
-  echo "Deploying $mode-mode contract deployer 2 (image: builder)..."
+    $image -c "cd modules/contracts && bash ops/entry.sh deploy"
+
+  echo "Deploying $mode-mode contract deployer 2 (image: $image)..."
   docker run \
     $interactive \
     "$SECRET_ENV" \
@@ -80,7 +82,9 @@ then
     --mount="type=volume,source=${project}_chain_dev_2,target=/data" \
     --name="$name_2" \
     --rm \
-    ${project}_builder -c "cd modules/contracts && bash testnet2-ops/entry.sh deploy"
+    $image -c "cd modules/contracts && bash testnet2-ops/entry.sh deploy"
+  
+  exit
 
 elif [[ "$mode" == "release" ]]
 then image="${registry}/${project}_ethprovider:$release"
