@@ -2,7 +2,7 @@ import { MessagingService } from "@connext/messaging";
 import { AllowedSwap, PriceOracleTypes, SwapRate } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { getMarketDetails, getTokenReserves } from "@uniswap/sdk";
-import { getDefaultProvider, constants, utils } from "ethers";
+import { constants, utils, providers } from "ethers";
 
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
@@ -117,12 +117,14 @@ export class SwapRateService implements OnModuleInit {
   }
 
   async getUniswapRate(from: string, to: string): Promise<string> {
-    const fromReserves = from !== AddressZero
-      ? await getTokenReserves(await this.config.getTokenAddressForSwap(from))
-      : undefined;
-    const toReserves = to !== AddressZero
-      ? await getTokenReserves(await this.config.getTokenAddressForSwap(to))
-      : undefined;
+    const fromReserves =
+      from !== AddressZero
+        ? await getTokenReserves(await this.config.getTokenAddressForSwap(from))
+        : undefined;
+    const toReserves =
+      to !== AddressZero
+        ? await getTokenReserves(await this.config.getTokenAddressForSwap(to))
+        : undefined;
     return getMarketDetails(fromReserves, toReserves).marketRate.rate.toString();
   }
 
@@ -137,18 +139,22 @@ export class SwapRateService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    const provider = getDefaultProvider();
+    const provider = this.config.getEthProvider();
     const swaps = this.config.getAllowedSwaps();
 
-    for (const swap of swaps) {
-      if (swap.priceOracleType === PriceOracleTypes.UNISWAP) {
-        this.log.info(`Registering chain listener for swaps from ${swap.from} to ${swap.to}`);
-        provider.on("block", (blockNumber: number) =>
-          this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber),
-        );
-      } else if (swap.priceOracleType === PriceOracleTypes.HARDCODED) {
-        this.log.info(`Using hardcoded value for swaps from ${swap.from} to ${swap.to}`);
+    const handler = async () => {
+      const blockNumber = await provider.getBlockNumber();
+      for (const swap of swaps) {
+        if (swap.priceOracleType === PriceOracleTypes.UNISWAP) {
+          this.log.info(`Registering chain listener for swaps from ${swap.from} to ${swap.to}`);
+          this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber);
+        } else if (swap.priceOracleType === PriceOracleTypes.HARDCODED) {
+          this.log.info(`Using hardcoded value for swaps from ${swap.from} to ${swap.to}`);
+        }
       }
-    }
+    };
+
+    // setup interval for swaps
+    setInterval(() => handler(), 15_000);
   }
 }

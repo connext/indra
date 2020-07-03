@@ -59,6 +59,7 @@ import { storedProcedureCreateAppProposal1592290983473 } from "../../migrations/
 import { storedProcedureCreateAppInstance1592291092044 } from "../../migrations/1592291092044-stored-procedure-create-app-instance";
 import { storedProcedureUpdateAppInstance1592309341833 } from "../../migrations/1592309341833-stored-procedure-update-app-instance";
 import { storedProcedureRemoveAppInstance1592310334011 } from "../../migrations/1592310334011-stored-procedure-remove-app-instance";
+import { pendingTransactions1593637047546 } from "../../migrations/1593637047546-pending-transactions";
 
 export const entities = [
   AppInstance,
@@ -117,6 +118,7 @@ export const migrations = [
   storedProcedureCreateAppInstance1592291092044,
   storedProcedureUpdateAppInstance1592309341833,
   storedProcedureRemoveAppInstance1592310334011,
+  pendingTransactions1593637047546,
 ];
 
 @Injectable()
@@ -132,7 +134,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
     return {
       ...this.config.getPostgresConfig(),
       entities,
-      logging: ["info"],
+      logging: ["info", "error"],
       migrations,
       migrationsRun: true,
       synchronize: false,
