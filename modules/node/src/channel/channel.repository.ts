@@ -90,13 +90,25 @@ export class ChannelRepository extends Repository<Channel> {
       .getOne();
   }
 
-  async findByUserPublicIdentifier(userIdentifier: string): Promise<Channel | undefined> {
-    log.debug(`Retrieving channel for user ${userIdentifier}`);
+  async findByUserPublicIdentifierAndChain(
+    userIdentifier: string,
+    chainId: number,
+  ): Promise<Channel | undefined> {
+    log.debug(`Retrieving channel for user ${userIdentifier} on ${chainId}`);
     return this.createQueryBuilder("channel")
       .leftJoinAndSelect("channel.appInstances", "appInstance")
       .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
+      .andWhere("channel.chainId = :chainId", { chainId })
       .getOne();
   }
+
+  // async findByUserPublicIdentifier(userIdentifier: string): Promise<Channel[]> {
+  //   log.debug(`Retrieving channels for user ${userIdentifier}`);
+  //   return this.createQueryBuilder("channel")
+  //     .leftJoinAndSelect("channel.appInstances", "appInstance")
+  //     .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
+  //     .getMany();
+  // }
 
   async findByAppIdentityHash(appIdentityHash: string): Promise<Channel | undefined> {
     // TODO: fix this query
@@ -130,10 +142,13 @@ export class ChannelRepository extends Repository<Channel> {
     return channel;
   }
 
-  async findByUserPublicIdentifierOrThrow(userIdentifier: string): Promise<Channel> {
-    const channel = await this.findByUserPublicIdentifier(userIdentifier);
+  async findByUserPublicIdentifierAndChainOrThrow(
+    userIdentifier: string,
+    chainId: number,
+  ): Promise<Channel> {
+    const channel = await this.findByUserPublicIdentifierAndChain(userIdentifier, chainId);
     if (!channel) {
-      throw new Error(`Channel does not exist for userIdentifier ${userIdentifier}`);
+      throw new Error(`Channel does not exist for userIdentifier ${userIdentifier} on ${chainId}`);
     }
 
     return channel;
@@ -141,15 +156,19 @@ export class ChannelRepository extends Repository<Channel> {
 
   async addRebalanceProfileToChannel(
     userIdentifier: string,
+    chainId: number,
     rebalanceProfile: RebalanceProfile,
   ): Promise<RebalanceProfile> {
     const channel = await this.createQueryBuilder("channel")
       .leftJoinAndSelect("channel.rebalanceProfiles", "rebalanceProfiles")
       .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
+      .andWhere("channel.chainId = :chainId", { chainId })
       .getOne();
 
     if (!channel) {
-      throw new NotFoundException(`Channel does not exist for userIdentifier ${userIdentifier}`);
+      throw new NotFoundException(
+        `Channel does not exist for userIdentifier ${userIdentifier} on ${chainId}`,
+      );
     }
 
     const existing = channel.rebalanceProfiles.find(
@@ -179,15 +198,19 @@ export class ChannelRepository extends Repository<Channel> {
 
   async getRebalanceProfileForChannelAndAsset(
     userIdentifier: string,
+    chainId: number,
     assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
     const channel = await this.createQueryBuilder("channel")
       .leftJoinAndSelect("channel.rebalanceProfiles", "rebalanceProfiles")
       .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
+      .andWhere("channel.chainId = :chainId", { chainId })
       .getOne();
 
     if (!channel) {
-      throw new NotFoundException(`Channel does not exist for userIdentifier ${userIdentifier}`);
+      throw new NotFoundException(
+        `Channel does not exist for userIdentifier ${userIdentifier} on ${chainId}`,
+      );
     }
 
     const profile = channel.rebalanceProfiles.find(
