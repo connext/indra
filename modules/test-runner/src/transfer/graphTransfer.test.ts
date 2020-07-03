@@ -324,8 +324,16 @@ describe("Graph Signed Transfers", () => {
 
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
-      clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve);
-      clientB.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
+      clientB.once(
+        EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+        resolve,
+        (data) => !!data.paymentId && data.paymentId === paymentId,
+      );
+      clientB.once(
+        EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT,
+        reject,
+        (data) => !!data.paymentId && data.paymentId === paymentId,
+      );
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.GraphTransfer,
         paymentId,
