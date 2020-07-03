@@ -88,7 +88,7 @@ export class ConfigService implements OnModuleInit {
   }
 
   async getTokenAddress(): Promise<string> {
-    return getAddress(await this.getContractAddresses()).Token;
+    return getAddress((await this.getContractAddresses()).Token);
   }
 
   async getTokenDecimals(providedAddress?: Address): Promise<number> {
