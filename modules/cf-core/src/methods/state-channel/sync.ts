@@ -57,6 +57,7 @@ export class SyncController extends MethodController {
         responderIdentifier,
         chainId: preProtocolStateChannel.chainId,
       },
+      preProtocolStateChannel,
     );
 
     return { syncedChannel: updated.toJson() };
