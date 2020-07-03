@@ -103,6 +103,11 @@ do
   else npm publish --access=public
   fi
 
+  echo "Updating $fullname references in root"
+  mv package.json .package.json
+  cat .package.json | sed 's|"'"$fullname"'": ".*"|"'"$fullname"'": "'$version'"|' > package.json
+  rm .package.json
+
   echo
   cd ..
   for module in `ls */package.json`
