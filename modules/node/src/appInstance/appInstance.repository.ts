@@ -1,11 +1,10 @@
 import {
   AppInstanceJson,
   AppState,
-  SimpleLinkedTransferAppName,
   JSONSerializer,
 } from "@connext/types";
-import { constants } from "ethers";
 import { getSignerAddressFromPublicIdentifier, safeJsonParse } from "@connext/utils";
+import { constants } from "ethers";
 import { EntityRepository, Repository } from "typeorm";
 
 import { AppInstance, AppType } from "./appInstance.entity";
@@ -35,9 +34,9 @@ export const AppInstanceSerializer: JSONSerializer<AppInstance, AppInstanceJson>
       responderIdentifier: app.responderIdentifier,
       outcomeInterpreterParameters: safeJsonParse(app.outcomeInterpreterParameters),
       meta: app.meta,
-      initiatorDeposit: app.initiatorDeposit.toString(),
+      initiatorDeposit: (app.initiatorDeposit || 0).toString(),
       initiatorDepositAssetId: app.initiatorDepositAssetId,
-      responderDeposit: app.responderDeposit.toString(),
+      responderDeposit: (app.responderDeposit || 0).toString(),
       responderDepositAssetId: app.responderDepositAssetId,
     };
     return json;

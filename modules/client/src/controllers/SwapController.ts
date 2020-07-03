@@ -116,8 +116,8 @@ export class SwapController extends AbstractController {
           decimals = await token.functions.decimals();
           this.log.info(`Retrieved decimals for ${tokenAddress} from token contract: ${decimals}`);
         } catch (error) {
-          this.log.error(
-            `Could not retrieve decimals from ${tokenAddress} token contract, proceeding with 18 decimals...: ${error.message}`,
+          this.log.warn(
+            `Could not retrieve decimals from token ${tokenAddress}, defaulting to 18`,
           );
         }
       }

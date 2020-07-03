@@ -48,12 +48,12 @@ export class ResolveTransferController extends AbstractController {
     let meta: any;
 
     if (existingReceiverApp) {
+      appIdentityHash = existingReceiverApp.identityHash;
       this.log.info(
         `[${paymentId}] Found existing transfer app, proceeding with ${appIdentityHash}: ${JSON.stringify(
           existingReceiverApp.latestState,
         )}`,
       );
-      appIdentityHash = existingReceiverApp.identityHash;
       amount = (existingReceiverApp.latestState as GenericConditionalTransferAppState)
         .coinTransfers[0].amount;
       assetId = existingReceiverApp.outcomeInterpreterParameters["tokenAddress"];

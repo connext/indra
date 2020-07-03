@@ -1,8 +1,11 @@
+import { ERC20 } from "@connext/contracts";
+import { Address, ContractAddresses, IChannelSigner, MessagingConfig, SwapRate } from "@connext/types";
 import { ChannelSigner, getChainId } from "@connext/utils";
-import { ContractAddresses, IChannelSigner, MessagingConfig, SwapRate } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { Wallet, providers, constants, utils } from "ethers";
+import { Wallet, Contract, providers, constants, utils } from "ethers";
 
+import { DEFAULT_DECIMALS } from "../constants";
+import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
 const { AddressZero, Zero } = constants;
@@ -29,7 +32,9 @@ export class ConfigService implements OnModuleInit {
   private readonly signer: IChannelSigner;
   private ethProvider: providers.JsonRpcProvider;
 
-  constructor() {
+  constructor(
+    private readonly log: LoggerService,
+  ) {
     this.envConfig = process.env;
     // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY
     // WAITS FOR)
@@ -83,9 +88,19 @@ export class ConfigService implements OnModuleInit {
   }
 
   async getTokenAddress(): Promise<string> {
-    const chainId = (await this.getEthNetwork()).chainId.toString();
-    const ethAddressBook = this.getEthAddressBook();
-    return getAddress(ethAddressBook[chainId].Token.address);
+    return getAddress((await this.getContractAddresses()).Token);
+  }
+
+  async getTokenDecimals(providedAddress?: Address): Promise<number> {
+    const address = providedAddress || await this.getTokenAddress();
+    const tokenContract = new Contract(address, ERC20.abi, this.getSigner());
+    let decimals = DEFAULT_DECIMALS;
+    try {
+      decimals = await tokenContract.decimals();
+    } catch (e) {
+      this.log.warn(`Could not retrieve decimals from token ${address}, using ${DEFAULT_DECIMALS}`);
+    }
+    return decimals;
   }
 
   async getTestnetTokenConfig(): Promise<TestnetTokenConfig> {
