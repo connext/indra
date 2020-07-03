@@ -1,5 +1,5 @@
 import { IConnextClient, PublicParams } from "@connext/types";
-import { calculateExchange, getAddressFromAssetId, inverse } from "@connext/utils";
+import { calculateExchangeWad, getAddressFromAssetId, inverse } from "@connext/utils";
 import { constants } from "ethers";
 
 import { expect } from "../";
@@ -53,7 +53,7 @@ export async function swapAsset(
   };
   await client.swap(swapParams);
 
-  const expectedOutputSwapAmount = calculateExchange(inputSwapAmount.toString(), swapRate);
+  const expectedOutputSwapAmount = calculateExchangeWad(inputSwapAmount, 18, swapRate, 18);
   const {
     [client.signerAddress]: postSwapFreeBalanceClientEth,
     [nodeSignerAddress]: postSwapFreeBalanceNodeEth,

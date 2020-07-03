@@ -1,6 +1,14 @@
 import { expect } from "chai";
 
-import { toWad, fromWad, inverse, sanitizeDecimals, calculateExchange } from "./math";
+import {
+  toWad,
+  fromWad,
+  inverse,
+  sanitizeDecimals,
+  removeDecimals,
+  calculateExchangeAmount,
+  calculateExchangeWad,
+} from "./math";
 
 describe("Math", () => {
   it("toWad", () => {
@@ -27,10 +35,24 @@ describe("Math", () => {
     expect(sanitizeDecimals("100.0000000")).to.be.equal("100");
     expect(sanitizeDecimals("100.0002000")).to.be.equal("100.0002");
   });
-  it("calculateExchange", () => {
-    expect(calculateExchange("0.1", "100")).to.be.equal("10");
-    expect(calculateExchange("0.1", "212.5")).to.be.equal("21.25");
-    expect(calculateExchange("10", inverse("100"))).to.be.equal("0.1");
-    expect(calculateExchange("21.25", inverse("212.5"))).to.be.equal("0.09999999999999999");
+  it("removeDecimals", () => {
+    expect(removeDecimals("100.29")).to.be.equal("100");
+    expect(removeDecimals("100")).to.be.equal("100");
+  });
+  it("calculateExchangeAmount", () => {
+    expect(calculateExchangeAmount("0.1", "100")).to.be.equal("10");
+    expect(calculateExchangeAmount("0.1", "212.5")).to.be.equal("21.25");
+    expect(calculateExchangeAmount("10", inverse("100"))).to.be.equal("0.1");
+    expect(calculateExchangeAmount("21.25", inverse("212.5"))).to.be.equal("0.09999999999999999");
+  });
+  it("calculateExchangeWad", () => {
+    expect(calculateExchangeWad(toWad("0.1"), 18, "100", 8).toString()).to.be.equal("1000000000");
+    expect(calculateExchangeWad(toWad("0.1"), 18, "212.5", 8).toString()).to.be.equal("2125000000");
+    expect(calculateExchangeWad(toWad("10"), 8, inverse("100"), 18).toString()).to.be.equal(
+      "1000000000000000000000000000",
+    );
+    expect(calculateExchangeWad(toWad("21.25"), 8, inverse("212.5"), 18).toString()).to.be.equal(
+      "999999999999999900000000000",
+    );
   });
 });

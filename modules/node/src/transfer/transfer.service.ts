@@ -12,9 +12,13 @@ import {
   getTransferTypeFromAppName,
   SupportedApplicationNames,
 } from "@connext/types";
-import { stringify, getSignerAddressFromPublicIdentifier, calculateExchange } from "@connext/utils";
+import {
+  stringify,
+  getSignerAddressFromPublicIdentifier,
+  calculateExchangeWad,
+} from "@connext/utils";
 import { TRANSFER_TIMEOUT } from "@connext/apps";
-import { BigNumber, constants } from "ethers";
+import { constants } from "ethers";
 import { isEqual } from "lodash";
 
 import { LoggerService } from "../logger/logger.service";
@@ -124,7 +128,7 @@ export class TransferService {
       this.log.warn(`Detected an inflight swap from ${senderAssetId} to ${receiverAssetId}!`);
       const currentRate = await this.swapRateService.getOrFetchRate(senderAssetId, receiverAssetId);
       this.log.warn(`Using swap rate ${currentRate} for inflight swap`);
-      receiverAmount = BigNumber.from(calculateExchange(senderAmount.toString(), currentRate));
+      receiverAmount = calculateExchangeWad(senderAmount, 18, currentRate, 18);
     }
 
     const existing = await this.findReceiverAppByPaymentId(paymentId);

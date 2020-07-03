@@ -18,8 +18,8 @@ export const maxBN = (lobn: any) =>
 export const minBN = (lobn: any) =>
   lobn.reduce((min: any, current: any) => (min.lt(current) ? min : current), MaxUint256);
 
-export const inverse = (value: string, decimals = 18): string =>
-  fromWad(toWad("1", decimals * 2).div(toWad(value, decimals)), decimals);
+export const inverse = (value: string, precision = 18): string =>
+  fromWad(toWad("1", precision * 2).div(toWad(value, precision)), precision);
 
 export const sanitizeDecimals = (value: string, decimals = 18): string => {
   const [integer, fractional] = value.split(".");
@@ -29,13 +29,31 @@ export const sanitizeDecimals = (value: string, decimals = 18): string => {
   return _fractional ? [integer, _fractional].join(".") : integer;
 };
 
-export const calculateExchange = (
+export const removeDecimals = (value: string): string => {
+  const [integer] = value.split(".");
+  return integer;
+};
+
+export const calculateExchangeAmount = (
   inputAmount: string,
   swapRate: DecString,
-  decimals = 18,
+  precision = 18,
 ): string => {
-  const swapRateWad = toWad(swapRate, decimals);
-  const inputWad = toWad(inputAmount, decimals * 2);
+  const swapRateWad = toWad(swapRate, precision);
+  const inputWad = toWad(inputAmount, precision * 2);
   const outputWad = inputWad.mul(swapRateWad);
-  return fromWad(outputWad, decimals * 3);
+  const outputAmount = fromWad(outputWad, precision * 3);
+  return outputAmount;
+};
+
+export const calculateExchangeWad = (
+  inputWad: BigNumber,
+  inputDecimals: number,
+  swapRate: DecString,
+  outputDecimals: number,
+): BigNumber => {
+  const inputAmount = fromWad(inputWad, inputDecimals);
+  const outputAmount = calculateExchangeAmount(inputAmount, swapRate);
+  const outputWad = toWad(outputAmount, outputDecimals);
+  return outputWad;
 };

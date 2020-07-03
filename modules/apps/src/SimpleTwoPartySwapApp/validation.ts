@@ -1,5 +1,5 @@
 import { AllowedSwap, SwapRate, ProtocolParams } from "@connext/types";
-import { calculateExchange, getAddressFromAssetId, stringify } from "@connext/utils";
+import { calculateExchangeWad, getAddressFromAssetId, stringify } from "@connext/utils";
 import { BigNumber, utils } from "ethers";
 
 const { parseUnits, formatEther } = utils;
@@ -35,9 +35,11 @@ export const validateSimpleSwapApp = (
     );
   }
 
-  const calculatedResponderAmountInWeiUnits = calculateExchange(
-    initiatorDeposit.toString(),
+  const calculatedResponderAmountInWeiUnits = calculateExchangeWad(
+    initiatorDeposit,
+    18,
     ourRate,
+    responderDecimals,
   );
 
   const calculatedResponderDepositNormalized = parseUnits(
