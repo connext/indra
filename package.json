@@ -1,7 +1,7 @@
 {
   "name": "indra",
-  "version": "7.0.0-alpha.8",
-  "backwardsCompatibleWith": "7.0.0-alpha.8",
+  "version": "7.0.0-alpha.11",
+  "backwardsCompatibleWith": "7.0.0-alpha.11",
   "registry": "docker.io/connextproject",
   "description": "",
   "repository": {
@@ -18,7 +18,10 @@
     "lint": "bash ops/lint.sh"
   },
   "devDependencies": {
+    "@connext/types": "7.0.0-alpha.10",
+    "@connext/utils": "7.0.0-alpha.10",
     "@openzeppelin/contracts": "3.0.2",
+    "@types/lodash": "4.14.157",
     "@typescript-eslint/eslint-plugin": "3.4.0",
     "@typescript-eslint/parser": "3.4.0",
     "bn.js": "5.1.2",
@@ -31,8 +34,5 @@
     "ethers": "5.0.3",
     "lerna": "3.22.1",
     "prettier": "2.0.5"
-  },
-  "dependencies": {
-    "@types/lodash": "^4.14.157"
   }
 }

@@ -326,7 +326,7 @@ export class ConnextClient implements IConnextClient {
     params: PublicParams.ResolveCondition,
   ): Promise<PublicResults.ResolveCondition> => {
     // paymentId is generated for hashlock transfer
-    if (params.conditionType === ConditionalTransferTypes.HashLockTransfer) {
+    if (params.conditionType === ConditionalTransferTypes.HashLockTransfer && !params.paymentId) {
       const lockHash = soliditySha256(["bytes32"], [params.preImage]);
       const paymentId = soliditySha256(["address", "bytes32"], [params.assetId, lockHash]);
       params.paymentId = paymentId;
@@ -617,14 +617,17 @@ export class ConnextClient implements IConnextClient {
   public getAppInstance = async (
     appIdentityHash: string,
   ): Promise<MethodResults.GetAppInstanceDetails | undefined> => {
-    const err = await this.appNotInstalled(appIdentityHash);
-    if (err) {
-      this.log.warn(err);
-      return undefined;
+    try {
+      const ret = await this.channelProvider.send(MethodNames.chan_getAppInstance, {
+        appIdentityHash,
+      } as MethodParams.GetAppInstanceDetails);
+      return ret;
+    } catch (e) {
+      if (e.message.includes(`No appInstance exists for identity hash`)) {
+        return undefined;
+      }
+      throw e;
     }
-    return this.channelProvider.send(MethodNames.chan_getAppInstance, {
-      appIdentityHash,
-    } as MethodParams.GetAppInstanceDetails);
   };
 
   public takeAction = async (

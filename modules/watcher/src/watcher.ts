@@ -37,6 +37,7 @@ import {
   stringify,
   bigNumberifyJson,
   delay,
+  getChainId,
 } from "@connext/utils";
 import { Contract, providers, constants, utils } from "ethers";
 import { Evt } from "evt";
@@ -118,7 +119,9 @@ export class Watcher implements IWatcher {
     log.debug(`Creating new Watcher`);
 
     const provider =
-      typeof ethProvider === "string" ? new providers.JsonRpcProvider(ethProvider) : ethProvider;
+      typeof ethProvider === "string"
+        ? new providers.JsonRpcProvider(ethProvider, await getChainId(ethProvider))
+        : ethProvider;
 
     const signer =
       typeof providedSigner === "string"

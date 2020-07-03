@@ -303,7 +303,7 @@ export class TransferService {
         this.cfCoreService.cfCore.signerAddress,
       );
 
-      if (correspondingReceiverApp.type !== AppType.UNINSTALLED) {
+      if (!correspondingReceiverApp || correspondingReceiverApp.type !== AppType.UNINSTALLED) {
         continue;
       }
 

@@ -336,12 +336,17 @@ export class ConnextListener {
     this.log.info(
       `runPostInstallTasks for app ${registryAppInfo.name} ${appIdentityHash} started: ${stringify(
         params,
+        true,
+        0,
       )}`,
     );
     switch (registryAppInfo.name) {
       case WithdrawAppName: {
-        const appInstance = (await this.connext.getAppInstance(appIdentityHash)).appInstance;
-        this.connext.respondToNodeWithdraw(appInstance);
+        const { appInstance } = (await this.connext.getAppInstance(appIdentityHash)) || {};
+        if (!appInstance) {
+          this.log.warn(`Could not fund app instance for node withdraw to respond to, ignoring.`);
+        }
+        await this.connext.respondToNodeWithdraw(appInstance);
         break;
       }
       case GraphSignedTransferAppName: {

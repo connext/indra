@@ -381,43 +381,6 @@ describe("Graph Signed Transfer Offline", () => {
     );
   });
 
-  it("sender installs transfer successfully, receiver install protocol times out", async () => {
-    const receiverConfig = {
-      ceiling: { [SEND]: 0, [RECEIVED]: 0 },
-      protocol: ProtocolNames.install,
-      params: { proposal: { appDefinition: addr } } as ProtocolParams.Install,
-    };
-    const [sender, receiver] = await createAndFundClients(undefined, receiverConfig);
-    const paymentId = await new Promise<string>(async (resolve, reject) => {
-      try {
-        const id = await sendSignedTransfer(sender, receiver, undefined, undefined, false);
-        expect(id).to.be.ok;
-        await resolveFailingSignedTransfer({
-          sender,
-          receiver,
-          paymentId: id,
-          whichFails: "receiver",
-          error: APP_PROTOCOL_TOO_LONG(ProtocolNames.install),
-          event: EventNames.INSTALL_FAILED_EVENT,
-        });
-        resolve(id);
-      } catch (err) {
-        reject(err);
-      }
-    });
-    receiver.off();
-    await receiver.messaging.disconnect();
-    await delay(1000); // Add delay to make sure messaging properly deactivates
-    await recreateClientAndRetryTransfer(
-      "receiver",
-      sender,
-      receiverSigner,
-      receiver.store,
-      paymentId,
-      true,
-    );
-  });
-
   it("sender + receiver install transfer successfully, receiver takes action, receiver uninstall protocol times out", async () => {
     const receiverConfig = {
       ceiling: { [RECEIVED]: 2 }, // collateral

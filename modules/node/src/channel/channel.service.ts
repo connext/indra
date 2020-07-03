@@ -8,7 +8,7 @@ import {
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
-import { BigNumber, providers, constants, utils } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -20,6 +20,7 @@ import { DEFAULT_DECIMALS } from "../constants";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
+import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 
 const { AddressZero } = constants;
 const { getAddress, toUtf8Bytes, sha256, formatUnits } = utils;
@@ -93,7 +94,7 @@ export class ChannelService {
     channel: Channel,
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
-  ): Promise<providers.TransactionReceipt | undefined> {
+  ): Promise<OnchainTransaction | undefined> {
     this.log.info(
       `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started`,
     );
@@ -127,7 +128,7 @@ export class ChannelService {
       normalizedAssetId,
     );
 
-    let receipt: providers.TransactionReceipt;
+    let receipt: OnchainTransaction | undefined = undefined;
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // If free balance is too low, collateralize up to upper bound
       if (nodeFreeBalance.lt(collateralizeThreshold)) {
@@ -158,7 +159,7 @@ export class ChannelService {
       }
     }
     this.log.info(`Rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`);
-    return receipt as providers.TransactionReceipt | undefined;
+    return receipt;
   }
 
   async getCollateralAmountToCoverPaymentAndRebalance(

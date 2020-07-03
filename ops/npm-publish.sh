@@ -122,8 +122,11 @@ echo
 echo "Commiting & tagging our changes"
 echo
 
+# Create git tag
+tag="npm-publish-${1:-"all"}-$target_version"
+
 git add .
 git commit --allow-empty -m "npm publish @connext/{$packages}@$target_version"
-git tag npm-publish-$target_version
+git tag $tag
 git push origin HEAD --no-verify
-git push origin npm-publish-$target_version --no-verify
+git push origin $tag --no-verify
