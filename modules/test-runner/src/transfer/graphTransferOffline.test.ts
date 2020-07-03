@@ -1,26 +1,4 @@
-import {
-  env,
-  ClientTestMessagingInputOpts,
-  createClientWithMessagingLimits,
-  expect,
-  fundChannel,
-  TOKEN_AMOUNT,
-  RECEIVED,
-  APP_PROTOCOL_TOO_LONG,
-  createClient,
-  SEND,
-  CLIENT_INSTALL_FAILED,
-} from "../util";
-import {
-  toBN,
-  getRandomBytes32,
-  getTestVerifyingContract,
-  getTestGraphReceiptToSign,
-  getRandomPrivateKey,
-  ChannelSigner,
-  signGraphReceiptMessage,
-  delay,
-} from "@connext/utils";
+import { addressBook } from "@connext/contracts";
 import {
   IChannelSigner,
   IConnextClient,
@@ -33,8 +11,32 @@ import {
   ProtocolParams,
   PrivateKey,
 } from "@connext/types";
-import { addressBook } from "@connext/contracts";
+import {
+  ChannelSigner,
+  delay,
+  getRandomBytes32,
+  getRandomChannelSigner,
+  getRandomPrivateKey,
+  getTestGraphReceiptToSign,
+  getTestVerifyingContract,
+  signGraphReceiptMessage,
+  toBN,
+} from "@connext/utils";
 import { BigNumber, constants } from "ethers";
+
+import {
+  APP_PROTOCOL_TOO_LONG,
+  CLIENT_INSTALL_FAILED,
+  ClientTestMessagingInputOpts,
+  createClient,
+  createClientWithMessagingLimits,
+  env,
+  expect,
+  fundChannel,
+  RECEIVED,
+  SEND,
+  TOKEN_AMOUNT,
+} from "../util";
 
 const { Zero } = constants;
 
@@ -42,59 +44,44 @@ describe("Graph Signed Transfer Offline", () => {
   const tokenAddress = addressBook[1337].Token.address;
   const addr = addressBook[1337].GraphSignedTransferApp.address;
 
-  let senderPrivateKey: PrivateKey;
   let senderSigner: IChannelSigner;
-
   let receiverPrivateKey: PrivateKey;
   let receiverSigner: IChannelSigner;
 
   beforeEach(async () => {
-    senderPrivateKey = getRandomPrivateKey();
-    senderSigner = new ChannelSigner(senderPrivateKey, env.ethProviderUrl);
-
+    senderSigner = getRandomChannelSigner(env.ethProviderUrl);
     receiverPrivateKey = getRandomPrivateKey();
     receiverSigner = new ChannelSigner(receiverPrivateKey, env.ethProviderUrl);
   });
-
-  const createAndFundSender = async (
-    config: Partial<ClientTestMessagingInputOpts> = {},
-  ): Promise<IConnextClient> => {
-    const client = await createClientWithMessagingLimits({
-      ...config,
-      signer: senderSigner,
-      id: "sender",
-    });
-    await fundChannel(client, TOKEN_AMOUNT, tokenAddress);
-    return client;
-  };
-
-  // NOTE: will timeout if multisig balance does not change
-  const createAndCollateralizeReceiver = async (
-    config: Partial<ClientTestMessagingInputOpts> = {},
-  ): Promise<IConnextClient> => {
-    const client = await createClientWithMessagingLimits({
-      ...config,
-      signer: receiverSigner,
-      id: "receiver",
-    });
-    await new Promise(async (resolve) => {
-      client.on(EventNames.UNINSTALL_EVENT, async (msg) => {
-        const freeBalance = await client.getFreeBalance(tokenAddress);
-        if (freeBalance[client.nodeSignerAddress].gt(Zero)) {
-          resolve();
-        }
-      });
-      await client.requestCollateral(tokenAddress);
-    });
-    return client;
-  };
 
   const createAndFundClients = async (
     senderConfig: Partial<ClientTestMessagingInputOpts> = {},
     receiverConfig: Partial<ClientTestMessagingInputOpts> = {},
   ): Promise<[IConnextClient, IConnextClient]> => {
-    const sender = await createAndFundSender(senderConfig);
-    const receiver = await createAndCollateralizeReceiver(receiverConfig);
+
+    const sender = await createClientWithMessagingLimits({
+      ...senderConfig,
+      signer: senderSigner,
+      id: "sender",
+    });
+    await fundChannel(sender, TOKEN_AMOUNT, tokenAddress);
+
+    // NOTE: will timeout if multisig balance does not change
+    const receiver = await createClientWithMessagingLimits({
+      ...receiverConfig,
+      signer: receiverSigner,
+      id: "receiver",
+    });
+    await new Promise(async (resolve) => {
+      receiver.on(EventNames.UNINSTALL_EVENT, async (msg) => {
+        const freeBalance = await receiver.getFreeBalance(tokenAddress);
+        if (freeBalance[receiver.nodeSignerAddress].gt(Zero)) {
+          resolve();
+        }
+      });
+      await receiver.requestCollateral(tokenAddress);
+    });
+
     return [sender, receiver];
   };
 
@@ -221,7 +208,7 @@ describe("Graph Signed Transfer Offline", () => {
     counterparty: IConnextClient,
     signer: IChannelSigner,
     store: IStoreService,
-    paymentId?: string, // if supplied, will only resolve
+    paymentId?: string, // if supplied, will resolve
     skipSync?: boolean,
   ): Promise<void> => {
     let sender: IConnextClient | undefined;
@@ -338,7 +325,6 @@ describe("Graph Signed Transfer Offline", () => {
     await sender.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
-
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
   });
 
@@ -360,7 +346,6 @@ describe("Graph Signed Transfer Offline", () => {
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
     console.log(`retrying`);
-
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
   });
 
@@ -387,7 +372,6 @@ describe("Graph Signed Transfer Offline", () => {
     await receiver.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
-
     await recreateClientAndRetryTransfer(
       "receiver",
       sender,
@@ -415,9 +399,7 @@ describe("Graph Signed Transfer Offline", () => {
     });
     receiver.off();
     await receiver.messaging.disconnect();
-    // Add delay to make sure messaging properly disconnects
-    await delay(1000);
-
+    await delay(1000); // Add delay to make sure messaging properly deactivates
     await recreateClientAndRetryTransfer("receiver", sender, receiverSigner, receiver.store);
   });
 
@@ -433,7 +415,6 @@ describe("Graph Signed Transfer Offline", () => {
     const paymentId = await sendSignedTransfer(sender, receiver);
     const postTransfer = await sender.getFreeBalance(tokenAddress);
     expect(paymentId).to.be.ok;
-    console.log(`created and funded clients! beginning real test...`);
     const failureEvent = (await new Promise(async (resolve) => {
       sender.once(EventNames.UNINSTALL_FAILED_EVENT, (msg) => {
         return resolve(msg);
@@ -443,7 +424,6 @@ describe("Graph Signed Transfer Offline", () => {
     })) as any;
     expect(failureEvent.data.params).to.be.ok;
     expect(failureEvent.data.error).to.include(APP_PROTOCOL_TOO_LONG(ProtocolNames.uninstall));
-    console.log(`correctly asserted failure!`);
     // recreate client, node should reclaim
     await sender.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
@@ -453,7 +433,6 @@ describe("Graph Signed Transfer Offline", () => {
     expect(postReclaim[recreatedSender.nodeSignerAddress]).to.be.greaterThan(
       postTransfer[recreatedSender.nodeSignerAddress],
     );
-
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store, paymentId);
   });
 });
