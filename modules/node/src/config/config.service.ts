@@ -71,6 +71,10 @@ export class ConfigService implements OnModuleInit {
     return JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
   }
 
+  getSupportedChains() {
+    return JSON.parse(this.get(`INDRA_SUPPORTED_CHAINS`));
+  }
+
   async getContractAddresses(chainId?: string): Promise<ContractAddresses> {
     chainId = chainId ? chainId : (await this.getEthNetwork()).chainId.toString();
     const ethAddresses = {} as any;

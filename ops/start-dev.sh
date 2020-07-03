@@ -85,6 +85,7 @@ token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.addre
 allowed_swaps='[{"from":"'"$token_address"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"HARDCODED"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address"'","priceOracleType":"HARDCODED"}]'
 
 supported_tokens="$token_address,0x0000000000000000000000000000000000000000"
+supported_chains="[$chainId]"
 
 if [[ -z "$chainId" || "$chainId" == "null" ]]
 then echo "Failed to fetch chainId from provider ${INDRA_ETH_PROVIDER}" && exit 1;
@@ -213,6 +214,7 @@ services:
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC: '$eth_mnemonic'
       INDRA_ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
+      INDRA_SUPPORTED_CHAINS: '$supported_chains',
       INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
