@@ -66,6 +66,7 @@ export const createStateChannelJSON = (
       MinimumViableMultisig: "",
       ProxyFactory: "",
     },
+    chainId: 1337,
     appInstances: [],
     monotonicNumProposedApps: 0,
     multisigAddress: getRandomAddress(),

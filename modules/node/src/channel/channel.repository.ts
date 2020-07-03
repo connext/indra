@@ -27,6 +27,7 @@ export const ChannelSerializer: JSONSerializer<Channel, StateChannelJSON> = clas
             channel,
           }),
         ]),
+      chainId: channel.chainId,
       freeBalanceAppInstance: AppInstanceSerializer.toJSON({
         ...(channel.appInstances || []).find((app) => app.type === AppType.FREE_BALANCE),
         channel,
