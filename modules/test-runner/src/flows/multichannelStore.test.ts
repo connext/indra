@@ -12,12 +12,13 @@ import {
 import { getPostgresStore } from "@connext/store";
 import { ConnextClient } from "@connext/client";
 import {
-  toBN,
+  abrv,
   getRandomBytes32,
-  getTestVerifyingContract,
-  getTestGraphReceiptToSign,
   getRandomPrivateKey,
+  getTestGraphReceiptToSign,
+  getTestVerifyingContract,
   signGraphReceiptMessage,
+  toBN,
 } from "@connext/utils";
 import { Sequelize } from "sequelize";
 import { BigNumber } from "ethers";
@@ -344,12 +345,11 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
 
     let receivedTransfers = 0;
     let intervals = 0;
-    let pollerError: any;
 
     const { chainId } = await sender.ethProvider.getNetwork();
 
     recipient.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
-      console.log(`Got signed transfer event: ${payload.paymentId}`);
+      console.log(`[${receivedTransfers}/${MIN_TRANSFERS}] Received transfer ${abrv(payload.paymentId)}`);
       const signature = await signGraphReceiptMessage(
         receipt,
         chainId,
@@ -375,8 +375,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       }
       try {
         const paymentId = getRandomBytes32();
-        console.log(`[${intervals}/${MIN_TRANSFERS}] creating transfer with ${paymentId}`);
-        const transferRes = await sender.conditionalTransfer({
+        await sender.conditionalTransfer({
           amount: TRANSFER_AMT,
           paymentId,
           conditionType: ConditionalTransferTypes.GraphTransfer,
@@ -388,7 +387,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
           assetId: ASSET,
           recipient: recipient.publicIdentifier,
         } as PublicParams.GraphTransfer);
-        console.log(`[${intervals}/${MIN_TRANSFERS}] senderApp: ${transferRes.appIdentityHash}`);
+        console.log(`[${intervals}/${MIN_TRANSFERS}] Sent transfer with paymentId ${abrv(paymentId)}`);
       } catch (e) {
         clearInterval(interval);
         throw e;
@@ -402,18 +401,11 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       // setup listeners (increment on reclaim)
       recipient.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (msg) => {
         receivedTransfers += 1;
-        console.log(`received ${receivedTransfers}/${MIN_TRANSFERS}: ${msg.paymentId}`);
+        console.log(`[${receivedTransfers}/${MIN_TRANSFERS}] Unlocked transfer with payment Id: ${abrv(msg.paymentId)}`);
         if (receivedTransfers >= MIN_TRANSFERS) {
           resolve();
         }
       });
-
-      // register a check to see if the poller has been cleared
-      setInterval(() => {
-        if (pollerError) {
-          reject(pollerError);
-        }
-      }, 250);
     });
     const end = Date.now();
     console.log(

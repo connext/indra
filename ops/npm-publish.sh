@@ -96,6 +96,7 @@ do
   cat .package.json | sed 's/"version": ".*"/"version": "'$version'"/' > package.json
   rm .package.json
   echo "Publishing $fullname"
+
   npm publish --access=public
 
   echo "Updating $fullname references in root"

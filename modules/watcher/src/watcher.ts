@@ -40,9 +40,9 @@ import {
   getChainId,
 } from "@connext/utils";
 import { Contract, providers, constants, utils } from "ethers";
+import { Evt } from "evt";
 
 import { ChainListener } from "./chainListener";
-import { Evt } from "evt";
 
 const { Zero, HashZero } = constants;
 const { Interface, defaultAbiCoder } = utils;

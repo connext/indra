@@ -9,15 +9,9 @@ import { LoggerService } from "./logger/logger.service";
 (async () => {
   const log = new LoggerService("Main");
   log.info(`Deploying Indra ${version}`);
-
   process.on("unhandledRejection", (e: Error) => {
-    if (e.message.includes("Error: failed to meet quorum")) {
-      log.error(`Unhandled Promise Rejection: Connection error in ethers fallback provider`);
-    } else {
-      log.error(`Unhandled Promise Rejection: ${e.stack}`);
-    }
+    log.error(`Unhandled Promise Rejection: ${e.stack}`);
   });
-
   const app = await NestFactory.create(AppModule, { logger: log });
   app.enableCors();
   const config = app.get(ConfigService);
