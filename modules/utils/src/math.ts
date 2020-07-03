@@ -23,10 +23,10 @@ export const inverse = (value: string, decimals = 18): string =>
 
 export const sanitizeDecimals = (value: string, decimals = 18): string => {
   const [integer, fractional] = value.split(".");
-  console.log("fractional", fractional);
-  return fractional && fractional !== "0".repeat(fractional.length)
-    ? [integer, fractional.substring(0, decimals)].join(".")
-    : integer;
+  const _fractional = fractional
+    ? fractional.substring(0, decimals).replace(/0+$/gi, "")
+    : undefined;
+  return _fractional ? [integer, _fractional].join(".") : integer;
 };
 
 export const calculateExchange = (
