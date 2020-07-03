@@ -256,6 +256,7 @@ export function constructChannelCreationRpc(owners: string[]) {
     methodName: MethodNames.chan_create,
     parameters: {
       owners,
+      chainId: 1337,
     } as MethodParams.CreateChannel,
   };
 }

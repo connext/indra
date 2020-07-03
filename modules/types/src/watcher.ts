@@ -241,7 +241,10 @@ export interface IWatcherStoreService {
   // State channels
   getAllChannels(): Promise<StateChannelJSON[]>;
   getStateChannel(multisigAddress: Address): Promise<StateChannelJSON | undefined>;
-  getStateChannelByOwners(owners: Address[]): Promise<StateChannelJSON | undefined>;
+  getStateChannelByOwnersAndChainId(
+    owners: Address[],
+    chainId: number,
+  ): Promise<StateChannelJSON | undefined>;
   getStateChannelByAppIdentityHash(appIdentityHash: Bytes32): Promise<StateChannelJSON | undefined>;
 
   // App instances

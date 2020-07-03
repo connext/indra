@@ -56,9 +56,7 @@ export async function setup(
   const nodeA = await CFCore.create(
     messagingService,
     storeServiceA,
-    global["contracts"],
-    nodeConfig,
-    provider,
+    { 1337: { contractAddresses: global["contracts"], provider } },
     channelSignerA,
     lockService,
     0,
@@ -76,9 +74,7 @@ export async function setup(
   const nodeB = await CFCore.create(
     messagingService,
     storeServiceB,
-    global["contracts"],
-    nodeConfig,
-    provider,
+    { 1337: { contractAddresses: global["contracts"], provider } },
     channelSignerB,
     lockService,
     0,
@@ -97,9 +93,7 @@ export async function setup(
     nodeC = await CFCore.create(
       messagingService,
       storeServiceC,
-      global["contracts"],
-      nodeConfig,
-      provider,
+      { 1337: { contractAddresses: global["contracts"], provider } },
       channelSignerC,
       lockService,
       0,

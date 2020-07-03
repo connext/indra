@@ -55,6 +55,7 @@ export class SyncController extends MethodController {
         multisigAddress,
         initiatorIdentifier: publicIdentifier,
         responderIdentifier,
+        chainId: preProtocolStateChannel.chainId,
       },
     );
 

@@ -21,7 +21,7 @@ import {
 } from "@connext/types";
 import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import pWaterfall from "p-waterfall";
-import { constants, utils } from "ethers";
+import { utils } from "ethers";
 
 import { storeKeys } from "./constants";
 import { KeyValueStorage } from "./types";
@@ -168,10 +168,15 @@ export class StoreService implements IStoreService {
     return item ? properlyConvertChannelNullVals(item) : undefined;
   }
 
-  async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
+  async getStateChannelByOwnersAndChainId(
+    owners: string[],
+    chainId: number,
+  ): Promise<StateChannelJSON | undefined> {
     const channels = await this.getAllChannels();
     return channels.find(
-      (channel) => [...channel.userIdentifiers].sort().toString() === owners.sort().toString(),
+      (channel) =>
+        [...channel.userIdentifiers].sort().toString() === owners.sort().toString() &&
+        channel.chainId === chainId,
     );
   }
 

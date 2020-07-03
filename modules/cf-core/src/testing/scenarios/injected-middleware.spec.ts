@@ -28,8 +28,8 @@ describe("injected validation middleware", () => {
     multisigAddress = await getCreate2MultisigAddress(
       nodeA.publicIdentifier,
       nodeB.publicIdentifier,
-      nodeA.networkContext.contractAddresses,
-      nodeA.networkContext.provider,
+      nodeA.networkContexts[1337].contractAddresses,
+      nodeA.networkContexts[1337].provider,
     );
   });
 
@@ -51,6 +51,7 @@ describe("injected validation middleware", () => {
         initiatorIdentifier: nodeA.publicIdentifier,
         responderIdentifier: nodeB.publicIdentifier,
         multisigAddress,
+        chainId: 1337,
       },
       role: ProtocolRoles.initiator,
     });

@@ -11,6 +11,7 @@ import {
   ProtocolParams,
   EventNames,
   ProtocolEventMessage,
+  NetworkContexts,
 } from "@connext/types";
 import { v4 as uuid } from "uuid";
 
@@ -32,7 +33,7 @@ export class ProtocolRunner {
   public middlewares: MiddlewareContainer;
 
   constructor(
-    public readonly network: NetworkContext,
+    public readonly networks: NetworkContexts,
     public readonly store: IStoreService,
     public readonly log: ILoggerService,
   ) {
@@ -126,7 +127,7 @@ export class ProtocolRunner {
       log: this.log,
       message,
       store: this.store,
-      network: this.network,
+      networks: this.networks,
       preProtocolStateChannel,
     };
 

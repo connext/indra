@@ -20,9 +20,7 @@ describe("CFCore", () => {
     const node = await CFCore.create(
       memoryMessagingService,
       store,
-      global["contracts"],
-      { STORE_KEY_PREFIX: "./node.spec.ts-test-file" },
-      provider,
+      { 1337: { contractAddresses: global["contracts"], provider } },
       getRandomChannelSigner(),
       new MemoryLockService(),
     );

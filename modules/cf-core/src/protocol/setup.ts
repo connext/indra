@@ -6,7 +6,7 @@ import {
   ProtocolRoles,
   SetupMiddlewareContext,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime, stringify, delay } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment, getSetStateCommitment } from "../ethereum";
@@ -24,11 +24,11 @@ const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL }
  * specs.counterfactual.com/04-setup-protocol
  */
 export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
-  0 /* Initiating */: async function* (context: Context & { preProtocolChannel: StateChannel }) {
-    const { message, network } = context;
+  0 /* Initiating */: async function* (context: Context) {
+    const { message, networks } = context;
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
-    let substart;
+    let substart: number;
     const { processID, params } = message;
     const loggerId = params?.multisigAddress || processID;
     log.info(`[${loggerId}] Initiation started`);
@@ -38,6 +38,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       responderIdentifier,
       initiatorIdentifier,
+      chainId,
     } = params as ProtocolParams.Setup;
 
     const error = yield [
@@ -50,15 +51,17 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     }
 
     // 56 ms
+    const network = networks[chainId];
     const stateChannel = StateChannel.setupChannel(
       network.contractAddresses.IdentityApp,
       network.contractAddresses,
       multisigAddress,
+      chainId,
       initiatorIdentifier,
       responderIdentifier,
     );
 
-    const setupCommitment = getSetupCommitment(context, stateChannel);
+    const setupCommitment = getSetupCommitment(network, stateChannel);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
@@ -66,7 +69,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const mySetupSignature = yield [OP_SIGN, setupCommitment.hashToSign()];
 
     // 32 ms
-    const freeBalanceUpdateData = getSetStateCommitment(context, stateChannel.freeBalance);
+    const freeBalanceUpdateData = getSetStateCommitment(network, stateChannel.freeBalance);
     const mySignatureOnFreeBalanceState = yield [OP_SIGN, freeBalanceUpdateData.hashToSign()];
 
     // 201 ms (waits for responder to respond)
@@ -130,10 +133,10 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
   } as any,
 
   1 /* Responding */: async function* (context: Context) {
-    const { message, network } = context;
+    const { message, networks } = context;
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
-    let substart;
+    let substart: number;
     const {
       processID,
       params,
@@ -148,6 +151,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     const {
       multisigAddress,
+      chainId,
       initiatorIdentifier,
       responderIdentifier,
     } = params as ProtocolParams.Setup;
@@ -161,21 +165,24 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       throw new Error(error);
     }
 
+    const network = networks[chainId];
     // 73 ms
     const stateChannel = StateChannel.setupChannel(
       network.contractAddresses.IdentityApp,
       network.contractAddresses,
       multisigAddress,
+      chainId,
       initiatorIdentifier,
       responderIdentifier,
     );
 
-    const setupCommitment = getSetupCommitment(context, stateChannel);
-    const freeBalanceUpdateData = getSetStateCommitment(context, stateChannel.freeBalance);
+    const setupCommitment = getSetupCommitment(network, stateChannel);
+    const freeBalanceUpdateData = getSetStateCommitment(network, stateChannel.freeBalance);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
     // 94 ms
+    // eslint-disable-next-line prefer-const
     substart = Date.now();
     const initatorAddr = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
     await assertIsValidSignature(

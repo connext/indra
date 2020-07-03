@@ -40,32 +40,35 @@ export class DeployStateDepositController extends MethodController {
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.DeployStateDepositHolder,
+    preProtocolStateChannel: StateChannel,
   ): Promise<MethodResults.DeployStateDepositHolder | undefined> {
-    const { store, networkContext } = requestHandler;
+    const { networkContexts } = requestHandler;
     const { multisigAddress } = params;
 
-    const json = await store.getStateChannel(multisigAddress);
-    if (!json) {
+    if (!preProtocolStateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
     }
-    const channel = StateChannel.fromJson(json);
 
-    if (!channel.addresses.ProxyFactory) {
-      throw new Error(INVALID_FACTORY_ADDRESS(channel.addresses.ProxyFactory));
+    if (!preProtocolStateChannel.addresses.ProxyFactory) {
+      throw new Error(INVALID_FACTORY_ADDRESS(preProtocolStateChannel.addresses.ProxyFactory));
     }
 
-    if (!channel.addresses.MinimumViableMultisig) {
-      throw new Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.MinimumViableMultisig));
+    if (!preProtocolStateChannel.addresses.MinimumViableMultisig) {
+      throw new Error(
+        INVALID_MASTERCOPY_ADDRESS(preProtocolStateChannel.addresses.MinimumViableMultisig),
+      );
     }
+
+    const networkContext = networkContexts[preProtocolStateChannel.chainId];
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
-      channel.userIdentifiers[0],
-      channel.userIdentifiers[1],
-      channel.addresses,
+      preProtocolStateChannel.userIdentifiers[0],
+      preProtocolStateChannel.userIdentifiers[1],
+      preProtocolStateChannel.addresses,
       networkContext.provider,
     );
 
-    if (expectedMultisigAddress !== channel.multisigAddress) {
+    if (expectedMultisigAddress !== preProtocolStateChannel.multisigAddress) {
       throw new Error(INCORRECT_MULTISIG_ADDRESS);
     }
     return undefined;
@@ -74,35 +77,41 @@ export class DeployStateDepositController extends MethodController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.DeployStateDepositHolder,
+    preProtocolStateChannel: StateChannel,
   ): Promise<MethodResults.DeployStateDepositHolder> {
     const { multisigAddress, retryCount } = params;
-    const { log, networkContext, store, signer } = requestHandler;
+    const { log, networkContexts, signer } = requestHandler;
 
     // By default, if the contract has been deployed and
     // DB has records of it, controller will return HashZero
     let tx = { hash: HashZero } as providers.TransactionResponse;
 
-    const json = await store.getStateChannel(multisigAddress);
-    if (!json) {
+    if (!preProtocolStateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
     }
-    const channel = StateChannel.fromJson(json);
+    const networkContext = networkContexts[preProtocolStateChannel.chainId];
 
     // make sure it is deployed to the right address
     const expectedMultisigAddress = await getCreate2MultisigAddress(
-      channel.userIdentifiers[0],
-      channel.userIdentifiers[1],
-      channel.addresses,
+      preProtocolStateChannel.userIdentifiers[0],
+      preProtocolStateChannel.userIdentifiers[1],
+      preProtocolStateChannel.addresses,
       networkContext.provider,
     );
 
-    if (expectedMultisigAddress !== channel.multisigAddress) {
+    if (expectedMultisigAddress !== preProtocolStateChannel.multisigAddress) {
       throw new Error(INCORRECT_MULTISIG_ADDRESS);
     }
 
     // Check if the contract has already been deployed on-chain
     if ((await networkContext.provider.getCode(multisigAddress)) === `0x`) {
-      tx = await sendMultisigDeployTx(signer, channel, networkContext, retryCount, log);
+      tx = await sendMultisigDeployTx(
+        signer,
+        preProtocolStateChannel,
+        networkContext,
+        retryCount,
+        log,
+      );
     }
 
     return { transactionHash: tx.hash! };
@@ -129,7 +138,7 @@ async function sendMultisigDeployTx(
 
   const signerAddress = await signer.getAddress();
 
-  let error;
+  let error: any;
   for (let tryCount = 1; tryCount < retryCount + 1; tryCount += 1) {
     try {
       const tx: providers.TransactionResponse = await proxyFactory.createProxyWithNonce(

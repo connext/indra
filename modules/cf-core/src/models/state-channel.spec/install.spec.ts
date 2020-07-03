@@ -29,6 +29,7 @@ describe("StateChannel::uninstallApp", () => {
       contractAddresses.IdentityApp,
       contractAddresses,
       multisigAddress,
+      1337,
       ids[0],
       ids[1],
     );

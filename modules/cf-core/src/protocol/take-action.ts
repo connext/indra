@@ -24,7 +24,7 @@ const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } 
  */
 export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
-    const { message, network, preProtocolStateChannel } = context;
+    const { message, networks, preProtocolStateChannel } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
     let substart = start;
@@ -63,16 +63,15 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `[${loggerId}] Validated action`);
     substart = Date.now();
 
+    const network = networks[preProtocolStateChannel.chainId];
+
     // 40ms
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
       await preAppInstance.computeStateTransition(
         action,
         network.provider,
-        getPureBytecode(
-          preAppInstance.appDefinition,
-          network.contractAddresses,
-        ),
+        getPureBytecode(preAppInstance.appDefinition, network.contractAddresses),
       ),
       stateTimeout,
     );
@@ -85,7 +84,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     const responderAddr = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
-    const setStateCommitment = getSetStateCommitment(context, appInstance);
+    const setStateCommitment = getSetStateCommitment(network, appInstance);
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     // 6ms
@@ -153,7 +152,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
   } as any,
 
   1 /* Responding */: async function* (context: Context) {
-    const { preProtocolStateChannel, message, network } = context;
+    const { preProtocolStateChannel, message, networks } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
     let substart = start;
@@ -196,16 +195,15 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `[${loggerId}] Validated action`);
     substart = Date.now();
 
+    const network = networks[preProtocolStateChannel.chainId];
+
     // 48ms
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
       await preAppInstance.computeStateTransition(
         action,
         network.provider,
-        getPureBytecode(
-          preAppInstance.appDefinition,
-          network.contractAddresses,
-        ),
+        getPureBytecode(preAppInstance.appDefinition, network.contractAddresses),
       ),
       stateTimeout,
     );
@@ -216,7 +214,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     const initiatorAddr = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
 
-    const setStateCommitment = getSetStateCommitment(context, appInstance);
+    const setStateCommitment = getSetStateCommitment(network, appInstance);
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     // 9ms

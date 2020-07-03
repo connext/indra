@@ -68,7 +68,7 @@ describe("Node A and B install an app, then uninstall with a given action", () =
     const context: SetupContext = await setup(global);
     nodeA = context["A"].node;
     nodeB = context["B"].node;
-    provider = nodeA.networkContext.provider;
+    provider = nodeA.networkContexts[1337].provider;
 
     multisigAddress = await createChannel(nodeA, nodeB);
     await collateralizeChannel(multisigAddress, nodeA, nodeB, depositAmount);

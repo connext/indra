@@ -26,6 +26,7 @@ describe("StateChannel::setupChannel", () => {
       contractAddresses.IdentityApp,
       contractAddresses,
       multisigAddress,
+      1337,
       ids[0],
       ids[1],
     );

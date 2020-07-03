@@ -14,11 +14,7 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { StateChannel, FreeBalanceClass, AppInstance } from "../models";
 import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 
-import {
-  stateChannelClassFromStoreByMultisig,
-  assertIsValidSignature,
-  getPureBytecode,
-} from "./utils";
+import { assertIsValidSignature, getPureBytecode } from "./utils";
 import { ConditionalTransactionCommitment, SetStateCommitment } from "../ethereum";
 
 const protocol = ProtocolNames.sync;
@@ -32,11 +28,7 @@ type AppSyncObj = { identityHash: string; latestVersionNumber: number };
  */
 export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
-    const {
-      message,
-      store,
-      network: { contractAddresses, provider },
-    } = context;
+    const { message, store, networks, preProtocolStateChannel } = context;
     const log = context.log.newContext("CF-SyncProtocol");
     const start = Date.now();
     let substart = start;
@@ -44,16 +36,14 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     const loggerId = (params as ProtocolParams.Sync).multisigAddress || processID;
     log.info(`[${loggerId}] Initiation started: ${stringify(params)}`);
 
-    const {
-      multisigAddress,
-      responderIdentifier,
-      initiatorIdentifier,
-    } = params as ProtocolParams.Sync;
+    if (!preProtocolStateChannel) {
+      throw new Error("No state channel found for sync");
+    }
+
+    const { contractAddresses, provider } = networks[preProtocolStateChannel.chainId];
+
+    const { responderIdentifier, initiatorIdentifier } = params as ProtocolParams.Sync;
     const ourIdentifier = initiatorIdentifier;
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
-      multisigAddress,
-      store,
-    );
     const { setStateCommitments, conditionalCommitments } = await getCommitmentsFromChannel(
       preProtocolStateChannel,
       store,
@@ -346,12 +336,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Responding */: async function* (context: Context) {
-    const {
-      message,
-      store,
-      network: { contractAddresses, provider },
-      preProtocolStateChannel,
-    } = context;
+    const { message, store, networks, preProtocolStateChannel } = context;
     const { params, processID } = message;
     const log = context.log.newContext("CF-SyncProtocol");
     const start = Date.now();
@@ -362,6 +347,8 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     if (!preProtocolStateChannel) {
       throw new Error("No state channel found for sync");
     }
+
+    const { contractAddresses, provider } = networks[preProtocolStateChannel.chainId];
 
     const { initiatorIdentifier, responderIdentifier } = params as ProtocolParams.Sync;
     const ourIdentifier = responderIdentifier;

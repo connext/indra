@@ -63,6 +63,7 @@ describe("Node method follows spec - install", () => {
           let preInstallETHBalanceNodeB: BigNumber;
           let postInstallETHBalanceNodeB: BigNumber;
 
+          // eslint-disable-next-line prefer-const
           let proposeInstallParams: ProtocolParams.Propose;
 
           nodeB.on(
@@ -137,6 +138,7 @@ describe("Node method follows spec - install", () => {
         let preInstallERC20BalanceNodeB: BigNumber;
         let postInstallERC20BalanceNodeB: BigNumber;
 
+        // eslint-disable-next-line prefer-const
         let proposedParams: ProtocolParams.Propose;
 
         nodeB.on("PROPOSE_INSTALL_EVENT", async (msg) => {

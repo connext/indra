@@ -37,12 +37,12 @@ export abstract class MethodController {
       if ((params as any).multisigAddress) {
         const json = await requestHandler.store.getStateChannel((params as any).multisigAddress);
         preProtocolStateChannel = json && StateChannel.fromJson(json);
-      } else if ((params as any).responderIdentifier) {
+      } else if ((params as any).responderIdentifier && (params as any).chainId) {
         // TODO: should be able to to all of this with multisig address but its not showing up in some cases
-        const json = await requestHandler.store.getStateChannelByOwners([
-          (params as any).responderIdentifier,
-          requestHandler.publicIdentifier,
-        ]);
+        const json = await requestHandler.store.getStateChannelByOwnersAndChainId(
+          [(params as any).responderIdentifier, requestHandler.publicIdentifier],
+          (params as any).chainId,
+        );
         preProtocolStateChannel = json && StateChannel.fromJson(json);
       }
       result = await this.beforeExecution(requestHandler, params, preProtocolStateChannel);
@@ -80,11 +80,17 @@ export abstract class MethodController {
         preProtocolStateChannel.responderIdentifier,
       ].find((identifier) => identifier !== publicIdentifier)!;
       try {
-        const { channel } = await protocolRunner.initiateProtocol(router, ProtocolNames.sync, {
-          multisigAddress: preProtocolStateChannel.multisigAddress,
-          initiatorIdentifier: publicIdentifier,
-          responderIdentifier,
-        });
+        const { channel } = await protocolRunner.initiateProtocol(
+          router,
+          ProtocolNames.sync,
+          {
+            multisigAddress: preProtocolStateChannel.multisigAddress,
+            initiatorIdentifier: publicIdentifier,
+            responderIdentifier,
+            chainId: preProtocolStateChannel.chainId,
+          },
+          preProtocolStateChannel,
+        );
         log.debug(`Channel synced, retrying ${this.methodName} with ${channel.toJson()}`);
         result = await this.beforeExecution(requestHandler, params, channel);
         result =

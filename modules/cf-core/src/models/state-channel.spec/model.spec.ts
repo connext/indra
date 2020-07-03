@@ -22,6 +22,7 @@ describe("StateChannel", () => {
 
     const sc = new StateChannel(
       multisigAddress,
+      1337,
       { ProxyFactory, MinimumViableMultisig },
       initiator,
       responder,
@@ -57,6 +58,7 @@ describe("StateChannel", () => {
         IdentityApp,
         { ProxyFactory, MinimumViableMultisig },
         multisigAddress,
+        1337,
         initiator,
         responder,
       );
@@ -157,6 +159,7 @@ describe("StateChannel", () => {
         IdentityApp,
         { ProxyFactory, MinimumViableMultisig },
         multisigAddress,
+        1337,
         initiator,
         responder,
       );
@@ -208,6 +211,7 @@ describe("StateChannel", () => {
         IdentityApp,
         { ProxyFactory, MinimumViableMultisig },
         multisigAddress,
+        1337,
         initiator,
         responder,
       );

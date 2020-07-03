@@ -42,6 +42,7 @@ describe("set state on free balance", () => {
       contracts.IdentityApp,
       contracts,
       getAddress(getRandomAddress()),
+      1337,
       initiatorNode.publicIdentifier,
       responderNode.publicIdentifier,
     );

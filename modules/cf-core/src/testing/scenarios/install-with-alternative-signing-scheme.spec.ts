@@ -33,7 +33,6 @@ describe(`Uses a provided signing key generation function to sign channel state 
         const wallet = newWallet(global["wallet"]);
         const provider = wallet.provider as providers.JsonRpcProvider;
         const messagingService = new MemoryMessagingService();
-        const nodeConfig = { STORE_KEY_PREFIX: `test` };
 
         const lockService = new MemoryLockService();
 
@@ -43,9 +42,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         nodeA = await CFCore.create(
           messagingService,
           storeServiceA,
-          global[`contracts`],
-          nodeConfig,
-          provider,
+          { 1337: { contractAddresses: global["contracts"], provider } },
           new ChannelSigner(A_PRIVATE_KEY),
           lockService,
         );
@@ -55,9 +52,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         nodeB = await CFCore.create(
           messagingService,
           storeServiceB,
-          global[`contracts`],
-          nodeConfig,
-          provider,
+          { 1337: { contractAddresses: global["contracts"], provider } },
           new ChannelSigner(B_PRIVATE_KEY),
           lockService,
         );

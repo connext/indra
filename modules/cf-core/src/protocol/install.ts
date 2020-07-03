@@ -46,6 +46,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const {
       preProtocolStateChannel,
       message: { params, processID },
+      networks,
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
@@ -102,7 +103,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `[${loggerId}] Validated app ${newAppInstance.identityHash}`);
     substart = Date.now();
 
-    const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
+    const freeBalanceUpdateData = getSetStateCommitment(
+      networks[stateChannelAfter.chainId],
+      stateChannelAfter.freeBalance,
+    );
     const freeBalanceUpdateDataHash = freeBalanceUpdateData.hashToSign();
 
     // 12ms
@@ -182,6 +186,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         customData: { signature },
       },
       preProtocolStateChannel,
+      networks,
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
@@ -244,7 +249,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 7ms
     // multisig owner always signs conditional tx
     const protocolInitiatorAddr = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
-    const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
+    const freeBalanceUpdateData = getSetStateCommitment(
+      networks[stateChannelAfter.chainId],
+      stateChannelAfter.freeBalance,
+    );
     const freeBalanceUpdateDataHash = freeBalanceUpdateData.hashToSign();
     await assertIsValidSignature(
       protocolInitiatorAddr,

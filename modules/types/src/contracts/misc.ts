@@ -49,6 +49,10 @@ export type ContractAddresses = CriticalStateChannelAddresses & {
   WithdrawInterpreter: Address;
 };
 
+export interface NetworkContexts {
+  [chainId: number]: NetworkContext;
+}
+
 export interface NetworkContext {
   contractAddresses: ContractAddresses;
   provider: JsonRpcProvider;

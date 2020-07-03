@@ -8,6 +8,7 @@ import {
   NetworkContext,
   Opcode,
   ProtocolMessageData,
+  NetworkContexts,
 } from "@connext/types";
 import { StateChannel } from "./models";
 
@@ -52,7 +53,7 @@ export interface Context {
   store: IStoreService;
   log: ILoggerService;
   message: ProtocolMessageData;
-  network: NetworkContext;
+  networks: NetworkContexts;
   preProtocolStateChannel?: StateChannel;
 }
 

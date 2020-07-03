@@ -25,7 +25,7 @@ describe(`Node method follows spec - getStateDepositHolderAddress`, () => {
     } = await nodeA.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_getStateDepositHolderAddress,
-      parameters: { owners },
+      parameters: { owners, chainId: 1337 },
     });
 
     expect(address.length).to.eq(42);

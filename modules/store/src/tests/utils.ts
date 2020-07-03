@@ -229,6 +229,7 @@ export const TEST_STORE_PROPOSAL: AppInstanceJson = {
 export const TEST_STORE_CHANNEL: StateChannelJSON = {
   schemaVersion: 1,
   multisigAddress: TEST_STORE_ETH_ADDRESS,
+  chainId: 1337,
   addresses: {
     MinimumViableMultisig: TEST_STORE_ETH_ADDRESS,
     ProxyFactory: TEST_STORE_ETH_ADDRESS,
