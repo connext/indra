@@ -19,6 +19,8 @@ export const validateSimpleSwapApp = (
     responderDepositAssetId,
   } = params;
 
+  const initiatorDecimals = 18;
+
   const initiatorDepositTokenAddress = getAddressFromAssetId(initiatorDepositAssetId);
   const responderDepositTokenAddress = getAddressFromAssetId(responderDepositAssetId);
 
@@ -37,7 +39,7 @@ export const validateSimpleSwapApp = (
 
   const calculatedResponderAmountInWeiUnits = calculateExchangeWad(
     initiatorDeposit,
-    18,
+    initiatorDecimals,
     ourRate,
     responderDecimals,
   );

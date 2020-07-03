@@ -128,7 +128,14 @@ export class TransferService {
       this.log.warn(`Detected an inflight swap from ${senderAssetId} to ${receiverAssetId}!`);
       const currentRate = await this.swapRateService.getOrFetchRate(senderAssetId, receiverAssetId);
       this.log.warn(`Using swap rate ${currentRate} for inflight swap`);
-      receiverAmount = calculateExchangeWad(senderAmount, 18, currentRate, 18);
+      const senderDecimals = 18;
+      const receiverDecimals = 18;
+      receiverAmount = calculateExchangeWad(
+        senderAmount,
+        senderDecimals,
+        currentRate,
+        receiverDecimals,
+      );
     }
 
     const existing = await this.findReceiverAppByPaymentId(paymentId);
