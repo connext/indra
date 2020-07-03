@@ -25,6 +25,7 @@ describe("Math", () => {
       "100.290138578927389572",
     );
     expect(sanitizeDecimals("100.0000000")).to.be.equal("100");
+    expect(sanitizeDecimals("100.0002000")).to.be.equal("100.0002");
   });
   it("calculateExchange", () => {
     expect(calculateExchange("0.1", "100")).to.be.equal("10");

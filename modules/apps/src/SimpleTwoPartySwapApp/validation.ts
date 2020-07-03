@@ -35,7 +35,10 @@ export const validateSimpleSwapApp = (
     );
   }
 
-  const calculatedResponderAmountInWeiUnits = calculateExchange(initiatorDeposit, ourRate);
+  const calculatedResponderAmountInWeiUnits = calculateExchange(
+    initiatorDeposit.toString(),
+    ourRate,
+  );
 
   const calculatedResponderDepositNormalized = parseUnits(
     formatEther(calculatedResponderAmountInWeiUnits),

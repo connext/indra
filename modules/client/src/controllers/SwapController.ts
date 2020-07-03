@@ -100,7 +100,7 @@ export class SwapController extends AbstractController {
     swapRate: string,
     appInfo: DefaultApp,
   ): Promise<string> => {
-    const swappedAmount = calculateExchange(amount, swapRate);
+    const swappedAmount = calculateExchange(amount.toString(), swapRate);
 
     this.log.debug(
       `Swapping ${formatEther(amount)} ${

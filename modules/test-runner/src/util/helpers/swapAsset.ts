@@ -53,7 +53,7 @@ export async function swapAsset(
   };
   await client.swap(swapParams);
 
-  const expectedOutputSwapAmount = calculateExchange(inputSwapAmount, swapRate);
+  const expectedOutputSwapAmount = calculateExchange(inputSwapAmount.toString(), swapRate);
   const {
     [client.signerAddress]: postSwapFreeBalanceClientEth,
     [nodeSignerAddress]: postSwapFreeBalanceNodeEth,
