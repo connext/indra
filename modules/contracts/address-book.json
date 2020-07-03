@@ -702,7 +702,7 @@
     },
     "Token": {
       "address": "0x38cF23C52Bb4B13F051Aec09580a2dE845a7FA35",
-      "creationCodeHash": "0x0f5a7fec416c49bd9ff2c93dc9deaecefd6920a95c33c1a19013887603a40a80",
+      "creationCodeHash": "0x58857d9ae95648f3c072c3f1ac949067b6b93dfeb8a1988d763d921edfa443a8",
       "runtimeCodeHash": "0xf995caffd143622dde4976800a7b57d98dade82728d7ff68ad96eb5004ab95b0",
       "txHash": "0x520926dc07ab000736227efafe0c06ac419d55e986a04ead1d72a40700d72330"
     },

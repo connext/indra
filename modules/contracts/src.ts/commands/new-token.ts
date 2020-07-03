@@ -6,6 +6,8 @@ import { cliOpts } from "../constants";
 import { isContractDeployed, deployContract } from "../deploy";
 import { getProvider } from "../utils";
 
+const initialSupply = utils.parseEther("100000000");
+
 const newToken = async (wallet: Wallet, addressBookPath: string, force: boolean) => {
   const chainId = (await wallet.provider.getNetwork()).chainId;
   const addressBook = getAddressBook(addressBookPath, chainId.toString());
@@ -14,8 +16,8 @@ const newToken = async (wallet: Wallet, addressBookPath: string, force: boolean)
     console.log(`Preparing to deploy new token to chain w id: ${chainId}\n`);
     const token = await deployContract("Token", [], wallet, addressBook);
     console.log(`Success!`);
-    const initalSupply = await token.INITIAL_SUPPLY();
-    console.log(`Minted ${utils.formatEther(initalSupply)} tokens & gave them all to ${wallet.address}`);
+    await token.ownerMint(wallet.address, initialSupply);
+    console.log(`Minted ${utils.formatEther(initialSupply)} tokens & gave them all to ${wallet.address}`);
   } else {
     console.log(`Token is up to date, no action required`);
     console.log(`Address: ${savedAddress}`);
