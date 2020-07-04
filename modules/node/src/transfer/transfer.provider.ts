@@ -41,7 +41,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
    * Check in endpoint for client to call when it comes online to handle pending tasks
    * @param userIdentifier
    */
-  async clientCheckIn(userIdentifier: string): Promise<void> {
+  async clientCheckIn(userIdentifier: string, chainId: number): Promise<void> {
     // reclaim collateral from redeemed transfers
     await this.transferService.unlockSenderApps(userIdentifier);
     // unlock all transfers by looking up by payment Id and using last action
@@ -49,6 +49,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async resolveLinkedTransfer(
     pubId: string,
+    chainId: number,
     { paymentId }: { paymentId: string },
   ): Promise<NodeResponses.ResolveLinkedTransfer> {
     this.log.debug(`Got resolve link request with data: ${stringify(paymentId)}`);
@@ -58,6 +59,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
     const response = await this.transferService.resolveByPaymentId(
       pubId,
+      chainId,
       paymentId,
       SimpleLinkedTransferAppName,
     );
@@ -69,6 +71,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async resolveSignedTransfer(
     pubId: string,
+    chainId: number,
     data: { paymentId: string },
   ): Promise<NodeResponses.ResolveSignedTransfer> {
     if (!data.paymentId) {
@@ -78,6 +81,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
     const response = await this.transferService.resolveByPaymentId(
       pubId,
+      chainId,
       data.paymentId,
       SimpleSignedTransferAppName,
     );
@@ -89,13 +93,16 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async installPendingTransfers(
     userIdentifier: string,
+    chainId: number,
   ): Promise<NodeResponses.GetPendingAsyncTransfers> {
-    const transfers = await this.linkedTransferService.getLinkedTransfersForReceiverUnlock(
+    const transfers = await this.linkedTransferService.getLinkedTransfersForReceiverUnlockOnChain(
       userIdentifier,
+      chainId,
     );
     for (const transfer of transfers) {
       await this.transferService.resolveByPaymentId(
         userIdentifier,
+        chainId,
         transfer.meta.paymentId,
         ConditionalTransferTypes.LinkedTransfer,
       );
@@ -117,6 +124,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async installConditionalTransferReceiverApp(
     pubId: string,
+    chainId: number,
     data: { paymentId: string; conditionType: ConditionalTransferTypes },
   ): Promise<NodeResponses.InstallConditionalTransferReceiverApp> {
     if (!data.paymentId || !data.conditionType) {
@@ -130,6 +138,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
     const response = await this.transferService.resolveByPaymentId(
       pubId,
+      chainId,
       data.paymentId,
       data.conditionType,
     );
@@ -142,32 +151,34 @@ export class TransferMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       `*.${this.configService.getPublicIdentifier()}.transfer.get-history`,
-      this.authService.parseIdentifier(this.getTransferHistory.bind(this)),
+      this.authService.parseIdentifierAndChain(this.getTransferHistory.bind(this)),
     );
 
     await super.connectRequestReponse(
       `*.${this.configService.getPublicIdentifier()}.transfer.install-linked`,
-      this.authService.parseIdentifier(this.resolveLinkedTransfer.bind(this)),
+      this.authService.parseIdentifierAndChain(this.resolveLinkedTransfer.bind(this)),
     );
 
     await super.connectRequestReponse(
       `*.${this.configService.getPublicIdentifier()}.transfer.install-signed`,
-      this.authService.parseIdentifier(this.resolveSignedTransfer.bind(this)),
+      this.authService.parseIdentifierAndChain(this.resolveSignedTransfer.bind(this)),
     );
 
     await super.connectRequestReponse(
       `*.${this.configService.getPublicIdentifier()}.client.check-in`,
-      this.authService.parseIdentifier(this.clientCheckIn.bind(this)),
+      this.authService.parseIdentifierAndChain(this.clientCheckIn.bind(this)),
     );
 
     await super.connectRequestReponse(
       `*.${this.configService.getPublicIdentifier()}.transfer.install-receiver`,
-      this.authService.parseIdentifier(this.installConditionalTransferReceiverApp.bind(this)),
+      this.authService.parseIdentifierAndChain(
+        this.installConditionalTransferReceiverApp.bind(this),
+      ),
     );
 
     await super.connectRequestReponse(
       `*.${this.configService.getPublicIdentifier()}.transfer.install-pending`,
-      this.authService.parseIdentifier(this.installPendingTransfers.bind(this)),
+      this.authService.parseIdentifierAndChain(this.installPendingTransfers.bind(this)),
     );
   }
 }

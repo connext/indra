@@ -121,6 +121,7 @@ export class ChannelService {
 
     const rebalancingTargets = await this.getRebalancingTargets(
       channel.userIdentifier,
+      channel.chainId,
       normalizedAssetId,
     );
 
@@ -177,12 +178,14 @@ export class ChannelService {
 
   async getCollateralAmountToCoverPaymentAndRebalance(
     userPublicIdentifier: string,
+    chainId: number,
     assetId: string,
     paymentAmount: BigNumber,
     currentBalance: BigNumber,
   ): Promise<BigNumber> {
     const { collateralizeThreshold, target } = await this.getRebalancingTargets(
       userPublicIdentifier,
+      chainId,
       assetId,
     );
     // if the payment reduces the nodes current balance to below the lower
@@ -204,10 +207,11 @@ export class ChannelService {
 
   async getRebalancingTargets(
     userPublicIdentifier: string,
+    chainId: number,
     assetId: string = AddressZero,
   ): Promise<RebalanceProfileType> {
     this.log.debug(
-      `Getting rebalancing targets for user: ${userPublicIdentifier}, assetId: ${assetId}`,
+      `Getting rebalancing targets for user: ${userPublicIdentifier} on ${chainId}, assetId: ${assetId}`,
     );
     let targets: RebalanceProfileType;
     // option 1: rebalancing service, option 2: rebalance profile, option 3: default
@@ -217,6 +221,7 @@ export class ChannelService {
       this.log.debug(`Unable to get rebalancing targets from service, falling back to profile`);
       targets = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
         userPublicIdentifier,
+        chainId,
         assetId,
       );
     }
@@ -384,11 +389,13 @@ export class ChannelService {
 
   async getRebalanceProfileForChannelAndAsset(
     userIdentifier: string,
+    chainId: number,
     assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
     // try to get rebalance profile configured
     const profile = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
       userIdentifier,
+      chainId,
       assetId,
     );
     return profile;

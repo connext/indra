@@ -31,13 +31,18 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
 
   private async getSignedTransfer(
     paymentId: string,
+    chainId: number,
     name: typeof SimpleSignedTransferAppName | typeof GraphSignedTransferAppName,
   ): Promise<NodeResponses.GetSignedTransfer> {
     const {
       senderApp,
       status,
       receiverApp,
-    } = await this.signedTransferService.findSenderAndReceiverAppsWithStatus(paymentId, name);
+    } = await this.signedTransferService.findSenderAndReceiverAppsWithStatus(
+      paymentId,
+      name,
+      chainId,
+    );
     if (!senderApp) {
       return undefined;
     }
@@ -60,6 +65,7 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
 
   async getSignedTransferByPaymentId(
     pubId: string,
+    chainId: number,
     data: { paymentId: string },
   ): Promise<NodeResponses.GetSignedTransfer> {
     const { paymentId } = data;
@@ -70,11 +76,12 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
 
     // determine status
     // node receives transfer in sender app
-    return this.getSignedTransfer(paymentId, SimpleSignedTransferAppName);
+    return this.getSignedTransfer(paymentId, chainId, SimpleSignedTransferAppName);
   }
 
   async getGraphTransferByPaymentId(
     pubId: string,
+    chainId: number,
     data: { paymentId: string },
   ): Promise<NodeResponses.GetSignedTransfer> {
     const { paymentId } = data;
@@ -85,18 +92,18 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
 
     // determine status
     // node receives transfer in sender app
-    return this.getSignedTransfer(paymentId, GraphSignedTransferAppName);
+    return this.getSignedTransfer(paymentId, chainId, GraphSignedTransferAppName);
   }
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       `*.${this.configService.getPublicIdentifier()}.transfer.get-signed`,
-      this.authService.parseIdentifier(this.getSignedTransferByPaymentId.bind(this)),
+      this.authService.parseIdentifierAndChain(this.getSignedTransferByPaymentId.bind(this)),
     );
 
     await super.connectRequestReponse(
       `*.${this.configService.getPublicIdentifier()}.transfer.get-graph`,
-      this.authService.parseIdentifier(this.getGraphTransferByPaymentId.bind(this)),
+      this.authService.parseIdentifierAndChain(this.getGraphTransferByPaymentId.bind(this)),
     );
   }
 }

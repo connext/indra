@@ -72,7 +72,7 @@ export class AppRegistryService implements OnModuleInit {
     // if error, reject install
     let installerChannel: Channel;
     try {
-      installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
+      installerChannel = await this.channelRepository.findByAppIdentityHashOrThrow(appIdentityHash);
       registryAppInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
         proposeInstallParams.appDefinition,
       );
@@ -112,6 +112,7 @@ export class AppRegistryService implements OnModuleInit {
         if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
           const amount = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
             from,
+            installerChannel.chainId,
             proposeInstallParams.responderDepositAssetId,
             responderDepositBigNumber,
             freeBal[this.cfCoreService.cfCore.signerAddress],

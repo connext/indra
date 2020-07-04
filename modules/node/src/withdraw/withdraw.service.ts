@@ -176,14 +176,15 @@ export class WithdrawService {
     return this.withdrawRepository.save(withdraw);
   }
 
-  async getLatestWithdrawal(userIdentifier: string): Promise<OnchainTransaction | undefined> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userIdentifier);
-    if (!channel) {
-      throw new Error(`No channel exists for userIdentifier ${userIdentifier}`);
-    }
+  async getLatestWithdrawal(
+    userIdentifier: string,
+    chainId: number,
+  ): Promise<OnchainTransaction | undefined> {
+    await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(userIdentifier, chainId);
 
-    return this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
+    return this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifierAndChain(
       userIdentifier,
+      chainId,
     );
   }
 
@@ -234,7 +235,7 @@ export class WithdrawService {
       assetId,
       Zero,
       assetId,
-      this.cfCoreService.getAppInfoByName(WithdrawAppName),
+      this.cfCoreService.getAppInfoByNameAndChain(WithdrawAppName, channel.chainId),
       { reason: "Node withdrawal" },
       WITHDRAW_STATE_TIMEOUT,
     );

@@ -60,6 +60,7 @@ export class SignedTransferService {
   async findSenderAndReceiverAppsWithStatus<T extends SignedTransferTypes>(
     paymentId: string,
     appName: T,
+    chainId: number,
   ): Promise<
     | {
         senderApp: AppInstance<T>;
@@ -69,8 +70,8 @@ export class SignedTransferService {
     | undefined
   > {
     this.log.info(`findSenderAndReceiverAppsWithStatus ${paymentId} started`);
-    const senderApp = await this.findSenderAppByPaymentId(paymentId, appName);
-    const receiverApp = await this.findReceiverAppByPaymentId(paymentId, appName);
+    const senderApp = await this.findSenderAppByPaymentId(paymentId, appName, chainId);
+    const receiverApp = await this.findReceiverAppByPaymentId(paymentId, appName, chainId);
     const status = appStatusesToSignedTransferStatus(senderApp, receiverApp);
     const result = { senderApp, receiverApp, status };
     this.log.info(
@@ -82,13 +83,14 @@ export class SignedTransferService {
   async findSenderAppByPaymentId<T extends SignedTransferTypes>(
     paymentId: string,
     appName: T,
+    chainId: number,
   ): Promise<AppInstance<T>> {
     this.log.info(`findSenderAppByPaymentId ${paymentId} started`);
     // node receives from sender
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndReceiver(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
-      this.cfCoreService.getAppInfoByName(appName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByNameAndChain(appName, chainId).appDefinitionAddress,
     );
     const result = normalizeSignedTransferAppState<T>(app);
     this.log.info(`findSenderAppByPaymentId ${paymentId} completed: ${JSON.stringify(result)}`);
@@ -98,13 +100,14 @@ export class SignedTransferService {
   async findReceiverAppByPaymentId<T extends SignedTransferTypes>(
     paymentId: string,
     appName: T,
+    chainId: number,
   ): Promise<AppInstance<T>> {
     this.log.info(`findReceiverAppByPaymentId ${paymentId} started`);
     // node sends to receiver
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndSender(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
-      this.cfCoreService.getAppInfoByName(appName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByNameAndChain(appName, chainId).appDefinitionAddress,
     );
     const result = normalizeSignedTransferAppState<T>(app);
     this.log.info(`findReceiverAppByPaymentId ${paymentId} completed: ${JSON.stringify(result)}`);

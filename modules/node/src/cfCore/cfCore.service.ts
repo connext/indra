@@ -425,9 +425,12 @@ export class CFCoreService {
     multisigAddress: Address,
     appName: SupportedApplicationNames,
   ): Promise<AppInstanceJson[]> {
+    const { data: channel } = await this.getStateChannel(multisigAddress);
     const apps = await this.getAppInstances(multisigAddress);
     return apps.filter(
-      (app) => app.appDefinition === this.getAppInfoByName(appName).appDefinitionAddress,
+      (app) =>
+        app.appDefinition ===
+        this.getAppInfoByNameAndChain(appName, channel.chainId).appDefinitionAddress,
     );
   }
 

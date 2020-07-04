@@ -73,10 +73,11 @@ export class HashLockTransferService {
   async findSenderAndReceiverAppsWithStatus(
     lockHash: Bytes32,
     assetId: Address,
+    chainId: number,
   ): Promise<{ senderApp: AppInstance; receiverApp: AppInstance; status: any } | undefined> {
     this.log.info(`findSenderAndReceiverAppsWithStatus ${lockHash} started`);
-    const senderApp = await this.findSenderAppByLockHashAndAssetId(lockHash, assetId);
-    const receiverApp = await this.findReceiverAppByLockHashAndAssetId(lockHash, assetId);
+    const senderApp = await this.findSenderAppByLockHashAndAssetId(lockHash, assetId, chainId);
+    const receiverApp = await this.findReceiverAppByLockHashAndAssetId(lockHash, assetId, chainId);
     const block = await this.configService.getEthProvider().getBlockNumber();
     const status = appStatusesToHashLockTransferStatus(block, senderApp, receiverApp);
     const result = { senderApp, receiverApp, status };
@@ -89,6 +90,7 @@ export class HashLockTransferService {
   async findSenderAppByLockHashAndAssetId(
     lockHash: Bytes32,
     assetId: Address,
+    chainId: number,
   ): Promise<AppInstance<"HashLockTransferApp">> {
     this.log.info(`findSenderAppByLockHash ${lockHash} started`);
     // node receives from sender
@@ -97,7 +99,8 @@ export class HashLockTransferService {
       lockHash,
       this.cfCoreService.cfCore.signerAddress,
       assetId,
-      this.cfCoreService.getAppInfoByName(HashLockTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByNameAndChain(HashLockTransferAppName, chainId)
+        .appDefinitionAddress,
     );
     this.log.info(`findSenderAppByLockHash ${lockHash} completed: ${JSON.stringify(app)}`);
     return app;
@@ -106,6 +109,7 @@ export class HashLockTransferService {
   async findReceiverAppByLockHashAndAssetId(
     lockHash: Bytes32,
     assetId: Address,
+    chainId: number,
   ): Promise<AppInstance<"HashLockTransferApp">> {
     this.log.info(`findReceiverAppByLockHash ${lockHash} started`);
     // node sends to receiver
@@ -114,7 +118,8 @@ export class HashLockTransferService {
       lockHash,
       this.cfCoreService.cfCore.signerAddress,
       assetId,
-      this.cfCoreService.getAppInfoByName(HashLockTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByNameAndChain(HashLockTransferAppName, chainId)
+        .appDefinitionAddress,
     );
     this.log.info(`findReceiverAppByLockHash ${lockHash} completed: ${JSON.stringify(app)}`);
     return app;

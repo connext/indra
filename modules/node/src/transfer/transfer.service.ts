@@ -74,9 +74,14 @@ export class TransferService {
     // install for receiver or error
     // https://github.com/ConnextProject/indra/issues/942
     if (proposeInstallParams.meta.recipient) {
+      // FIXME: determine receiver chainId from input
+      this.log.error(
+        "FIXME: determine receiver chainId from input, right now installer chain === receiver chain",
+      );
       const receiverInstallPromise = this.installReceiverAppByPaymentId(
         from,
         proposeInstallParams.meta.recipient,
+        installerChannel.chainId,
         paymentId,
         proposeInstallParams.initiatorDepositAssetId,
         proposeInstallParams.initialState as AppStates[typeof transferType],
@@ -101,7 +106,8 @@ export class TransferService {
 
   async installReceiverAppByPaymentId(
     senderIdentifier: string,
-    receiverIdentifier: Address,
+    receiverIdentifier: string,
+    receiverChainId: number,
     paymentId: Bytes32,
     senderAssetId: Address,
     senderAppState: AppStates[ConditionalTransferAppNames],
@@ -111,8 +117,10 @@ export class TransferService {
     this.log.info(
       `installReceiverAppByPaymentId for ${receiverIdentifier} paymentId ${paymentId} started`,
     );
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
       receiverIdentifier,
+      receiverChainId,
     );
 
     const senderAmount = senderAppState.coinTransfers[0].amount;
@@ -156,6 +164,7 @@ export class TransferService {
       );
       const deposit = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
         receiverIdentifier,
+        receiverChainId,
         receiverAssetId,
         receiverAmount,
         freeBal[freeBalanceAddr],
@@ -203,7 +212,10 @@ export class TransferService {
       receiverAssetId,
       Zero,
       receiverAssetId, // receiverAssetId is same because swap happens between sender and receiver apps, not within the app
-      this.cfCoreService.getAppInfoByName(transferType as SupportedApplicationNames),
+      this.cfCoreService.getAppInfoByNameAndChain(
+        transferType as SupportedApplicationNames,
+        receiverChainId,
+      ),
       meta,
       TRANSFER_TIMEOUT,
     );
@@ -231,6 +243,7 @@ export class TransferService {
 
   async resolveByPaymentId(
     receiverIdentifier: string,
+    receiverChainId: number,
     paymentId: string,
     transferType: ConditionalTransferAppNames,
   ): Promise<PublicResults.ResolveCondition> {
@@ -247,6 +260,7 @@ export class TransferService {
     return this.installReceiverAppByPaymentId(
       senderApp.initiatorIdentifier,
       receiverIdentifier,
+      receiverChainId,
       paymentId,
       senderApp.initiatorDepositAssetId,
       senderApp.latestState,

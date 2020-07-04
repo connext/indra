@@ -26,6 +26,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 
   async getLinkedTransferByPaymentId(
     pubId: string,
+    chainId: number,
     data: { paymentId: string },
   ): Promise<NodeResponses.GetLinkedTransfer | undefined> {
     const { paymentId } = data;
@@ -33,10 +34,6 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
     this.log.info(`Got fetch link request for: ${paymentId}`);
-
-    // TODO: fix for multiple chains!!!
-    this.log.error(`FIX ME: DOES NOT WORK FOR 1 PAYMENTID ACROSS MULTIPLE CHAINS`);
-    const { chainId } = await this.configService.getEthNetwork();
 
     // determine status
     // node receives transfer in sender app
@@ -95,7 +92,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     // TODO: use chainId auth here?
     await super.connectRequestReponse(
       `*.${this.configService.getPublicIdentifier()}.transfer.get-linked`,
-      this.authService.parseIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
+      this.authService.parseIdentifierAndChain(this.getLinkedTransferByPaymentId.bind(this)),
     );
     // await super.connectRequestReponse(
     //   "*.transfer.get-pending",

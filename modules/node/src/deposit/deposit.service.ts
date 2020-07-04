@@ -44,7 +44,10 @@ export class DepositService {
       `Deposit started: ${JSON.stringify({ channel: channel.multisigAddress, amount, assetId })}`,
     );
     // don't allow deposit if user's balance refund app is installed
-    const depositRegistry = this.cfCoreService.getAppInfoByName(DepositAppName);
+    const depositRegistry = this.cfCoreService.getAppInfoByNameAndChain(
+      DepositAppName,
+      channel.chainId,
+    );
     const depositApp: AppInstance<"DepositApp"> = channel.appInstances.find(
       (app) =>
         app.appDefinition === depositRegistry.appDefinitionAddress &&
@@ -154,9 +157,11 @@ export class DepositService {
     const BLOCKS_TO_WAIT = 5;
 
     // get all deposit appIds
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     const depositApps = await this.cfCoreService.getAppInstancesByAppDefinition(
       multisigAddress,
-      this.cfCoreService.getAppInfoByName(DepositAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByNameAndChain(DepositAppName, channel.chainId)
+        .appDefinitionAddress,
     );
     const ourDepositAppIds = depositApps
       .filter((app) => {
@@ -288,7 +293,7 @@ export class DepositService {
       tokenAddress,
       Zero,
       tokenAddress,
-      this.cfCoreService.getAppInfoByName(DepositAppName),
+      this.cfCoreService.getAppInfoByNameAndChain(DepositAppName, channel.chainId),
       { reason: "Node deposit" }, // meta
       DEPOSIT_STATE_TIMEOUT,
     );

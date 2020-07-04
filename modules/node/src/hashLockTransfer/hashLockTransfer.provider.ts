@@ -30,6 +30,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
 
   async getHashLockTransferByLockHash(
     pubId: string,
+    chainId: number,
     data: { lockHash: string; assetId: string },
   ): Promise<NodeResponses.GetHashLockTransfer> {
     const { lockHash, assetId } = data;
@@ -47,6 +48,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
     } = await this.hashLockTransferService.findSenderAndReceiverAppsWithStatus(
       lockHash,
       assetId || AddressZero,
+      chainId,
     );
     if (!senderApp && !receiverApp) {
       return undefined;
@@ -89,7 +91,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       `*.${this.configService.getPublicIdentifier()}.transfer.get-hashlock`,
-      this.authService.parseIdentifier(this.getHashLockTransferByLockHash.bind(this)),
+      this.authService.parseIdentifierAndChain(this.getHashLockTransferByLockHash.bind(this)),
     );
   }
 }
