@@ -74,14 +74,16 @@ export class TransferService {
     // install for receiver or error
     // https://github.com/ConnextProject/indra/issues/942
     if (proposeInstallParams.meta.recipient) {
-      // FIXME: determine receiver chainId from input
-      this.log.error(
-        "FIXME: determine receiver chainId from input, right now installer chain === receiver chain",
-      );
+      // get receiverChainId from meta if it is included
+      const receiverChainId = proposeInstallParams.meta.receiverChainId
+        ? proposeInstallParams.meta.receiverChainId
+        : installerChannel.chainId;
+
+      this.log.info(`Installing receiver app to chainId ${receiverChainId}`);
       const receiverInstallPromise = this.installReceiverAppByPaymentId(
         from,
         proposeInstallParams.meta.recipient,
-        installerChannel.chainId,
+        receiverChainId,
         paymentId,
         proposeInstallParams.initiatorDepositAssetId,
         proposeInstallParams.initialState as AppStates[typeof transferType],
