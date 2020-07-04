@@ -66,7 +66,6 @@ export interface INodeApiClient {
     lockHash: Bytes32,
     assetId?: Address,
   ): Promise<NodeResponses.GetHashLockTransfer>;
-  getPendingAsyncTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers>;
   installPendingTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers>;
   getTransferHistory(userAddress?: Address): Promise<NodeResponses.GetTransferHistory>;
   getLatestWithdrawal(): Promise<Transaction>;
@@ -80,7 +79,6 @@ export interface INodeApiClient {
   fetchGraphTransfer(paymentId: Bytes32): Promise<NodeResponses.GetSignedTransfer>;
   resolveLinkedTransfer(paymentId: Bytes32): Promise<NodeResponses.ResolveLinkedTransfer>;
   resolveSignedTransfer(paymentId: Bytes32): Promise<NodeResponses.ResolveSignedTransfer>;
-  recipientOnline(recipientAddress: Address): Promise<boolean>;
   restoreState(userAddress: Address): Promise<NodeResponses.ChannelRestore>;
   subscribeToSwapRates(from: Address, to: Address, callback: any): Promise<void>;
   unsubscribeFromSwapRates(from: Address, to: Address): Promise<void>;
