@@ -17,13 +17,16 @@ export const KNOWN_ERRORS = ["the tx doesn't have the correct nonce", NO_TX_HASH
 
 @Injectable()
 export class OnchainTransactionService {
+  private nonce = Promise.resolve(0);
   private readonly queue: PriorityQueue;
+
   constructor(
     private readonly configService: ConfigService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly log: LoggerService,
   ) {
     this.log.setContext("OnchainTransactionService");
+    this.nonce = this.configService.getSigner().getTransactionCount();
     this.queue = new PriorityQueue({ concurrency: 1 });
   }
 
@@ -81,10 +84,14 @@ export class OnchainTransactionService {
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
       try {
         this.log.info(`Attempt ${attempt}/${MAX_RETRIES} to send transaction to ${transaction.to}`);
+        const chainNonce = await wallet.getTransactionCount();
+        const memoryNonce = await this.nonce;
+        const nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
         tx = await wallet.sendTransaction({
           ...transaction,
-          nonce: await wallet.provider.getTransactionCount(await wallet.getAddress()),
+          nonce,
         });
+        this.nonce = Promise.resolve(nonce + 1);
         if (attempt === 1) {
           // create the pending transaction in the db
           await this.onchainTransactionRepository.addPending(tx, reason, channel);
@@ -93,7 +100,7 @@ export class OnchainTransactionService {
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
         }
-        this.log.info(`Success sending transaction! Tx hash: ${receipt.transactionHash}`);
+        this.log.info(`Success sending transaction! Tx mined at block ${receipt.blockNumber}: ${receipt.transactionHash}`);
         await this.onchainTransactionRepository.addReceipt(receipt);
         return;
       } catch (e) {

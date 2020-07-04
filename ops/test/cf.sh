@@ -4,9 +4,9 @@ set -e
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
-test_command='exec ts-mocha --bail --check-leaks --global wallet,contracts --exit --timeout 45000 src/**/**/*.spec.ts --require src/testing/global-hooks.ts '"$@"
+test_command='exec ts-mocha --bail --check-leaks --global wallet,contracts --exit --timeout 60000 src/**/**/*.spec.ts --require src/testing/global-hooks.ts '"$@"
 
-watch_command='ts-mocha --bail --check-leaks --global wallet,contracts --exit --timeout 45000 src/**/**/*.spec.ts --require src/testing/global-hooks.ts '"$@"
+watch_command='ts-mocha --bail --check-leaks --global wallet,contracts --exit --timeout 60000 src/**/**/*.spec.ts --require src/testing/global-hooks.ts '"$@"
 
 if [[ "$1" == "--watch" ]]
 then

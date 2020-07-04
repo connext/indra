@@ -146,10 +146,10 @@ export class SwapRateService implements OnModuleInit {
       const blockNumber = await provider.getBlockNumber();
       for (const swap of swaps) {
         if (swap.priceOracleType === PriceOracleTypes.UNISWAP) {
-          this.log.info(`Registering chain listener for swaps from ${swap.from} to ${swap.to}`);
+          this.log.debug(`Querying chain listener for swaps from ${swap.from} to ${swap.to}`);
           this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber);
         } else if (swap.priceOracleType === PriceOracleTypes.HARDCODED) {
-          this.log.info(`Using hardcoded value for swaps from ${swap.from} to ${swap.to}`);
+          this.log.debug(`Using hardcoded value for swaps from ${swap.from} to ${swap.to}`);
         }
       }
     };

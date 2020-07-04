@@ -1,43 +1,31 @@
-import { Client as DBClient } from "pg";
+import { Pool } from "pg";
 import SQL from "sql-template-strings";
 
 import { env } from "./env";
 
-let dbConnected = false;
-const dbClient = new DBClient(env.dbConfig);
+const dbPool = new Pool(env.dbConfig);
 
-export const connectDb = async () => {
-  dbClient.connect();
-  dbConnected = true;
-};
-
-export const disconnectDb = async () => {
-  dbClient.end();
-  dbConnected = false;
-};
-
-export const getDbClient = () => {
-  if (!dbConnected) {
-    throw new Error(`DB is not connected, use connectDb first`);
-  }
-
-  return dbClient;
-};
+// the pool will emit an error on behalf of any idle clients
+// it contains if a backend error or network partition happens
+dbPool.on("error", (err, client) => {
+  console.error("Unexpected error on idle pg client", err);
+  process.exit(1);
+});
 
 export const clearDb = async (): Promise<void> => {
-  await dbClient.query("truncate table channel cascade;");
-  await dbClient.query("truncate table channel_payment_profiles_payment_profile cascade;");
-  await dbClient.query("truncate table linked_transfer cascade;");
-  await dbClient.query("truncate table node_records cascade;");
-  await dbClient.query("truncate table onchain_transaction cascade;");
-  await dbClient.query("truncate table payment_profile cascade;");
-  await dbClient.query("truncate table peer_to_peer_transfer cascade;");
+  await dbPool.query("truncate table channel cascade;");
+  await dbPool.query("truncate table channel_payment_profiles_payment_profile cascade;");
+  await dbPool.query("truncate table linked_transfer cascade;");
+  await dbPool.query("truncate table node_records cascade;");
+  await dbPool.query("truncate table onchain_transaction cascade;");
+  await dbPool.query("truncate table payment_profile cascade;");
+  await dbPool.query("truncate table peer_to_peer_transfer cascade;");
 };
 
 export const getOnchainTransactionsForChannel = async (
   userIdentifier: string,
 ): Promise<any[]> => {
-  const { rows: onchainTransactions } = await dbClient.query(SQL`
+  const { rows: onchainTransactions } = await dbPool.query(SQL`
       SELECT * FROM onchain_transaction 
       WHERE "channelMultisigAddress" = (
         SELECT "multisigAddress" FROM channel
