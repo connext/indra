@@ -72,7 +72,9 @@ export class ConfigService implements OnModuleInit {
   }
 
   getSupportedChains(): number[] {
-    return JSON.parse(this.get(`INDRA_SUPPORTED_CHAINS`));
+    const chains = this.get("INDRA_SUPPORTED_CHAINS")?.split(",");
+    const dedup = new Set(chains || []);
+    return [...dedup].map((chain) => parseInt(chain, 10));
   }
 
   async getContractAddresses(providedChainId?: string): Promise<ContractAddresses> {

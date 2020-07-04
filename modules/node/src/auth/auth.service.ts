@@ -146,8 +146,13 @@ export class AuthService {
       ) {
         throw new Error(`Subject's second item isn't valid node identifier: ${nodeIdentifier}`);
       }
-      if (!Number.isInteger(chainId) || this.configService.getSupportedChains().includes(chainId)) {
-        throw new Error(`Subject's third item isn't valid chainId: ${chainId}`);
+      if (
+        !Number.isInteger(chainId) ||
+        !this.configService.getSupportedChains().includes(chainId)
+      ) {
+        throw new Error(
+          `Subject's third item isn't a valid or supported chainId: ${chainId}, supported chains: ${this.configService.getSupportedChains()}`,
+        );
       }
       this.log.debug(`Parsed identifier ${userIdentifier}`);
       return callback(userIdentifier, chainId, data);
