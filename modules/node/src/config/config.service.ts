@@ -77,13 +77,13 @@ export class ConfigService implements OnModuleInit {
 
   async getContractAddresses(providedChainId?: string): Promise<ContractAddresses> {
     const chainId = providedChainId || (await this.getEthNetwork()).chainId.toString();
-    const ethAddresses = {} as any;
+    const ethAddresses = { [chainId]: {} } as any;
     const ethAddressBook = this.getEthAddressBook();
     Object.keys(ethAddressBook[chainId]).forEach(
       (contract: string) =>
         (ethAddresses[chainId][contract] = getAddress(ethAddressBook[chainId][contract].address)),
     );
-    return ethAddresses as ContractAddresses;
+    return ethAddresses[chainId] as ContractAddresses;
   }
 
   async getTokenAddress(): Promise<string> {

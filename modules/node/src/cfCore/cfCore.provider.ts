@@ -48,7 +48,7 @@ export const cfCoreProviderFactory: Provider = {
     );
 
     const ethBalance = await provider.getBalance(signerAddress);
-    const tokenContract = new Contract(contractAddresses.Token, ERC20.abi, config.getSigner());
+    const tokenContract = new Contract(contractAddresses.Token, ERC20.abi, provider);
     let decimals = DEFAULT_DECIMALS;
     try {
       decimals = await tokenContract.decimals();
