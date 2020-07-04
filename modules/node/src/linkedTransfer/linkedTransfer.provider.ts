@@ -91,7 +91,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     // TODO: use chainId auth here?
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.transfer.get-linked`,
+      `*.${this.configService.getPublicIdentifier()}.*.transfer.get-linked`,
       this.authService.parseIdentifierAndChain(this.getLinkedTransferByPaymentId.bind(this)),
     );
     // await super.connectRequestReponse(

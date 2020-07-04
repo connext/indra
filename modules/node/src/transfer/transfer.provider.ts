@@ -150,34 +150,34 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.transfer.get-history`,
+      `*.${this.configService.getPublicIdentifier()}.*.transfer.get-history`,
       this.authService.parseIdentifierAndChain(this.getTransferHistory.bind(this)),
     );
 
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.transfer.install-linked`,
+      `*.${this.configService.getPublicIdentifier()}.*.transfer.install-linked`,
       this.authService.parseIdentifierAndChain(this.resolveLinkedTransfer.bind(this)),
     );
 
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.transfer.install-signed`,
+      `*.${this.configService.getPublicIdentifier()}.*.transfer.install-signed`,
       this.authService.parseIdentifierAndChain(this.resolveSignedTransfer.bind(this)),
     );
 
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.client.check-in`,
+      `*.${this.configService.getPublicIdentifier()}.*.client.check-in`,
       this.authService.parseIdentifierAndChain(this.clientCheckIn.bind(this)),
     );
 
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.transfer.install-receiver`,
+      `*.${this.configService.getPublicIdentifier()}.*.transfer.install-receiver`,
       this.authService.parseIdentifierAndChain(
         this.installConditionalTransferReceiverApp.bind(this),
       ),
     );
 
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.transfer.install-pending`,
+      `*.${this.configService.getPublicIdentifier()}.*.transfer.install-pending`,
       this.authService.parseIdentifierAndChain(this.installPendingTransfers.bind(this)),
     );
   }

@@ -97,12 +97,12 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.transfer.get-signed`,
+      `*.${this.configService.getPublicIdentifier()}.*.transfer.get-signed`,
       this.authService.parseIdentifierAndChain(this.getSignedTransferByPaymentId.bind(this)),
     );
 
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.transfer.get-graph`,
+      `*.${this.configService.getPublicIdentifier()}.*.transfer.get-graph`,
       this.authService.parseIdentifierAndChain(this.getGraphTransferByPaymentId.bind(this)),
     );
   }

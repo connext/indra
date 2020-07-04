@@ -155,27 +155,27 @@ class ChannelMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.channel.get`,
+      `*.${this.configService.getPublicIdentifier()}.*.channel.get`,
       this.authService.parseIdentifierAndChain(this.getChannel.bind(this)),
     );
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.channel.create`,
+      `*.${this.configService.getPublicIdentifier()}.*.channel.create`,
       this.authService.parseIdentifierAndChain(this.createChannel.bind(this)),
     );
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.channel.request-collateral`,
+      `*.${this.configService.getPublicIdentifier()}.*.channel.request-collateral`,
       this.authService.parseIdentifierAndChain(this.requestCollateral.bind(this)),
     );
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.channel.get-profile`,
+      `*.${this.configService.getPublicIdentifier()}.*.channel.get-profile`,
       this.authService.parseIdentifierAndChain(this.getRebalanceProfile.bind(this)),
     );
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.channel.restore`,
+      `*.${this.configService.getPublicIdentifier()}.*.channel.restore`,
       this.authService.parseIdentifierAndChain(this.getChannelInformationForRestore.bind(this)),
     );
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.channel.latestWithdrawal`,
+      `*.${this.configService.getPublicIdentifier()}.*.channel.latestWithdrawal`,
       this.authService.parseIdentifierAndChain(this.getLatestWithdrawal.bind(this)),
     );
   }
