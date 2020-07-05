@@ -471,13 +471,10 @@ export class CFCoreService {
     return this.appRegistryMap.get(`${name}:${chainId}`);
   }
 
-  public getAppRegistry(chainId?: number): AppRegistry {
-    if (chainId) {
-      return Object.values(SupportedApplicationNames).map((name) =>
-        this.getAppInfoByNameAndChain(name, chainId),
-      );
-    }
-    throw new Error("FIXME: Implement fetching app registry with a specified chainId");
+  public getAppRegistry(chainId: number): AppRegistry {
+    return Object.values(SupportedApplicationNames).map((name) =>
+      this.getAppInfoByNameAndChain(name, chainId),
+    );
   }
 
   async onModuleInit() {

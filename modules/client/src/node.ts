@@ -200,7 +200,9 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async appRegistry(): Promise<AppRegistry> {
-    const response: AxiosResponse<AppRegistry> = await axios.get(`${this.nodeUrl}/app-registry`);
+    const response: AxiosResponse<AppRegistry> = await axios.get(
+      `${this.nodeUrl}/app-registry/${this.chainId}`,
+    );
     return response.data;
   }
 
