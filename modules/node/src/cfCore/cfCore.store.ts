@@ -122,7 +122,9 @@ export class CFCoreStore implements IStoreService {
     owners: string[],
     chainId: number,
   ): Promise<StateChannelJSON> {
-    const multisig = await this.cache.get(`channel:owners:${this.canonicalizeOwners(owners)}`);
+    const multisig = await this.cache.get(
+      `channel:owners:${this.canonicalizeOwners(owners)}:${chainId}`,
+    );
     if (multisig) {
       return this.getStateChannel(JSON.parse(multisig));
     }
@@ -132,7 +134,10 @@ export class CFCoreStore implements IStoreService {
       return undefined;
     }
     await this.cache.set(
-      `channel:owners:${this.canonicalizeOwners([chan.nodeIdentifier, chan.userIdentifier])}`,
+      `channel:owners:${this.canonicalizeOwners([
+        chan.nodeIdentifier,
+        chan.userIdentifier,
+      ])}:${chainId}`,
       70,
       chan.multisigAddress,
     );
