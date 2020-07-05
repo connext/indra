@@ -94,6 +94,7 @@ export const connect = async (
       nodeUrl,
       channelProvider,
       skipSync,
+      chainId,
     });
     config = node.config;
     messaging = node.messaging;
@@ -118,6 +119,7 @@ export const connect = async (
       nodeUrl,
       signer,
       skipSync,
+      chainId,
     });
     config = node.config;
     messaging = node.messaging;
@@ -145,6 +147,7 @@ export const connect = async (
     signer,
     store,
     token,
+    chainId,
   });
 
   logger.info(`Done creating connext client`);

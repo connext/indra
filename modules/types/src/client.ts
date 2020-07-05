@@ -19,6 +19,7 @@ import { AppAction } from ".";
 export interface ClientOptions {
   channelProvider?: IChannelProvider;
   ethProviderUrl: string;
+  chainId?: number;
   signer?: string | IChannelSigner;
   store?: IStoreService;
   logger?: ILogger;
@@ -38,6 +39,7 @@ export interface IConnextClient {
   config: NodeResponses.GetConfig;
   channelProvider: IChannelProvider;
   ethProvider: providers.JsonRpcProvider;
+  chainId: number;
   signerAddress: Address;
   multisigAddress: Address;
   nodeIdentifier: PublicIdentifier;

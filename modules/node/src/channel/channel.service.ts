@@ -96,7 +96,7 @@ export class ChannelService {
       );
     }
 
-    const createResult = await this.cfCoreService.createChannel(counterpartyIdentifier);
+    const createResult = await this.cfCoreService.createChannel(counterpartyIdentifier, chainId);
     this.log.info(
       `create ${counterpartyIdentifier} on ${chainId} finished: ${JSON.stringify(createResult)}`,
     );

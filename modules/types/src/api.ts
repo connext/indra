@@ -20,6 +20,7 @@ import { ConditionalTransferTypes } from "./transfers";
 
 export interface AsyncNodeInitializationParameters extends NodeInitializationParameters {
   ethProvider: providers.JsonRpcProvider;
+  chainId: number;
   messaging: IMessagingService;
   messagingUrl?: string;
   store?: IStoreService;
@@ -39,6 +40,7 @@ export interface NodeInitializationParameters {
 
 export interface INodeApiClient {
   nodeUrl: UrlString;
+  chainId: number;
   messaging: IMessagingService;
   latestSwapRates: StringMapping;
   log: ILoggerService;
