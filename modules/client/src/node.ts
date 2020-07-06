@@ -62,6 +62,7 @@ export class NodeApiClient implements INodeApiClient {
       messaging: providedMessaging,
       messagingUrl,
       skipSync,
+      chainId,
     } = opts;
     const log = logger.newContext("NodeApiClient");
 
@@ -96,6 +97,11 @@ export class NodeApiClient implements INodeApiClient {
 
     const node = new NodeApiClient({ ...opts, messaging });
     const config = await node.getConfig();
+    if (config.ethNetwork.chainId !== chainId) {
+      throw new Error(
+        `Node config does not include info for ${chainId}, only for ${config.ethNetwork.chainId}`,
+      );
+    }
     node.userIdentifier = userIdentifier;
 
     if (!providedChannelProvider) {
@@ -208,7 +214,7 @@ export class NodeApiClient implements INodeApiClient {
 
   public async getConfig(): Promise<NodeResponses.GetConfig> {
     const { data: config }: AxiosResponse<NodeResponses.GetConfig> = await axios.get(
-      `${this.nodeUrl}/config`,
+      `${this.nodeUrl}/config/${this.chainId}`,
     );
     this.config = config;
     this.nodeIdentifier = config.nodeIdentifier;
