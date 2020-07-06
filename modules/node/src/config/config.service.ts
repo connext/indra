@@ -33,8 +33,7 @@ export class ConfigService implements OnModuleInit {
 
   constructor() {
     this.envConfig = process.env;
-    // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY
-    // WAITS FOR)
+    // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY WAITS FOR)
     const urls = this.getProviderUrls();
     this.getSupportedChains().forEach((chainId, idx) => {
       const provider = new providers.JsonRpcProvider(urls[idx], chainId);
@@ -55,14 +54,9 @@ export class ConfigService implements OnModuleInit {
     return this.signers.get(chainId);
   }
 
-  getEthRpcUrl(): string {
+  getProviderUrls(): string[] {
     // default to first option in env
-    return JSON.parse(this.get(`INDRA_PROVIDER_URLS`))[0];
-  }
-
-  getProviderUrls(): string {
-    // default to first option in env
-    return JSON.parse(this.get(`INDRA_PROVIDER_URLS`));
+    return Object.keys(JSON.parse(this.get(`INDRA_CHAIN_PROVIDERS`)));
   }
 
   getProvider(chainId: number): providers.JsonRpcProvider {

@@ -32,8 +32,8 @@ export class MockConfigService extends ConfigService {
       .getSupportedTokenAddresses()
       .concat(overrides.extraSupportedTokens || []);
   }
-  getEthProvider = () => new providers.JsonRpcProvider(this.getEthRpcUrl());
-  getEthRpcUrl = () => env.ethProviderUrl!;
+  getEthProvider = () => new providers.JsonRpcProvider(this.getProviderUrls()[0]);
+  getProviderUrls = () => [env.ethProviderUrl!];
   getLogLevel = (): number => env.indraLogLevel;
   getPublicIdentifier = () => this.getSigner().publicIdentifier;
   getSigner = () => this.nodeSigner;

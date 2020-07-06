@@ -102,8 +102,7 @@ allowed_swaps='[{"from":"'"$token_address_1"'","to":"0x0000000000000000000000000
 # comma-separated lists
 supported_tokens="$token_address_1,$token_address_2,0x0000000000000000000000000000000000000000"
 # chainId and provider should be aligned in order
-supported_chains="$chainId_1,$chainId_2"
-indra_providers="$INDRA_ETH_PROVIDER,$INDRA_ETH_PROVIDER_2"
+chain_providers='{"'$chainId_1'":"'$INDRA_ETH_PROVIDER'","'$chainId_2'":"'$INDRA_ETH_PROVIDER_2'"}'
 
 if [[ -z "$chainId_1" || "$chainId_1" == "null" ]]
 then echo "Failed to fetch chainId from provider ${INDRA_ETH_PROVIDER}" && exit 1;
@@ -232,8 +231,7 @@ services:
       INDRA_SUPPORTED_TOKENS: '$supported_tokens'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC: '$eth_mnemonic'
-      INDRA_PROVIDER_URLS: '$indra_providers'
-      INDRA_SUPPORTED_CHAINS: '$supported_chains'
+      INDRA_CHAIN_PROVIDERS: '$chain_providers'
       INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'

@@ -21,6 +21,7 @@ describe.skip("Custom token", () => {
 
   let app: INestApplication;
   let configService: ConfigService;
+  let ethProviderUrl: string;
   let channelService: ChannelService;
   let tokenContract: Contract;
   let sugarDaddy: Wallet;
@@ -30,8 +31,9 @@ describe.skip("Custom token", () => {
   before(async () => {
     const start = Date.now();
 
+    ethProviderUrl = env.ethProviderUrl;
     sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC!).connect(
-      new providers.JsonRpcProvider(env.ethProviderUrl, await getChainId(env.ethProviderUrl)),
+      new providers.JsonRpcProvider(ethProviderUrl, await getChainId(ethProviderUrl)),
     );
 
     const factory = new ContractFactory(token.abi, token.bytecode, sugarDaddy);
@@ -87,7 +89,7 @@ describe.skip("Custom token", () => {
     const clientA = await connect({
       store: getMemoryStore(),
       signer: getRandomChannelSigner(configService.getEthProvider()),
-      ethProviderUrl: configService.getEthRpcUrl(),
+      ethProviderUrl,
       messagingUrl: configService.getMessagingConfig().messagingUrl[0],
       nodeUrl,
       loggerService: new ColorfulLogger("", 0, true, "A"),
