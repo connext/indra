@@ -97,10 +97,7 @@ eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble swe
 
 token_address_1="`echo $eth_contract_addresses | jq '.["'"$chainId_1"'"].Token.address' | tr -d '"'`"
 token_address_2="`echo $eth_contract_addresses | jq '.["'"$chainId_2"'"].Token.address' | tr -d '"'`"
-allowed_swaps='[{"from":"'"$token_address_1"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"HARDCODED"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address_1"'","priceOracleType":"HARDCODED"},{"from":"'"$token_address_2"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"HARDCODED"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address_2"'","priceOracleType":"HARDCODED"}]'
 
-# comma-separated lists
-supported_tokens="$token_address_1,$token_address_2,0x0000000000000000000000000000000000000000"
 # chainId and provider should be aligned in order
 chain_providers='{"'$chainId_1'":"'$INDRA_ETH_PROVIDER'","'$chainId_2'":"'$INDRA_ETH_PROVIDER_2'"}'
 
@@ -227,8 +224,6 @@ services:
     entrypoint: 'bash modules/node/ops/entry.sh'
     environment:
       INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
-      INDRA_ALLOWED_SWAPS: '$allowed_swaps'
-      INDRA_SUPPORTED_TOKENS: '$supported_tokens'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC: '$eth_mnemonic'
       INDRA_CHAIN_PROVIDERS: '$chain_providers'

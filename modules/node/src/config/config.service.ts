@@ -1,5 +1,5 @@
 import { ChannelSigner } from "@connext/utils";
-import { ContractAddresses, IChannelSigner, MessagingConfig, SwapRate } from "@connext/types";
+import { ContractAddresses, IChannelSigner, MessagingConfig, PriceOracleTypes, SwapRate } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet, providers, constants, utils } from "ethers";
 
@@ -52,10 +52,6 @@ export class ConfigService implements OnModuleInit {
 
   getSigner(chainId: number): IChannelSigner {
     return this.signers.get(chainId);
-  }
-
-  getProvider(chainId: number): providers.JsonRpcProvider {
-    return this.providers.get(chainId);
   }
 
   getAddressBook() {
@@ -144,32 +140,27 @@ export class ConfigService implements OnModuleInit {
     return tokenAddress;
   }
 
-  /**
-   * Combination of swaps plus extra supported tokens.
-   */
-  getSupportedTokenAddresses(): string[] {
-    const swaps = this.getAllowedSwaps();
-    const tokens = swaps.reduce(
-      (tokensArray, swap) => tokensArray.concat([swap.from, swap.to]),
-      [],
-    );
-    tokens.push(AddressZero);
-    tokens.push(...this.getSupportedTokens());
-    const tokenSet = new Set(tokens);
-    return [...tokenSet].map((token) => getAddress(token));
-  }
-
   getAllowedSwaps(): SwapRate[] {
-    return JSON.parse(this.get("INDRA_ALLOWED_SWAPS"));
+    const supportedTokens = this.getSupportedTokens();
+    const priceOracleType = this.get("NODE_ENV") === "development"
+      ? PriceOracleTypes.HARDCODED
+      : PriceOracleTypes.UNISWAP;
+    const allowedSwaps: SwapRate[] = [];
+    supportedTokens.forEach(token => {
+      allowedSwaps.push({ from: token, to: AddressZero, priceOracleType });
+      allowedSwaps.push({ from: AddressZero, to: token, priceOracleType });
+    });
+    return supportedTokens;
   }
 
   /**
    * Can add supported tokens to collateralize in addition to swap based tokens.
    */
   getSupportedTokens(): string[] {
-    const tokens = this.get("INDRA_SUPPORTED_TOKENS")?.split(",");
-    const dedup = new Set(tokens || []);
-    return [...dedup];
+    const addressBook = await this.getAddressBook();
+    const chains = await this.getSupportedChains();
+    const tokens = chains.map(chainId => addressBook[chainId].Token).filter(a => !!a);
+    return [...(new Set([AddressZero].concat(tokens)))];
   }
 
   async getHardcodedRate(from: string, to: string, chainId: number): Promise<string | undefined> {
