@@ -78,7 +78,7 @@ export class HashLockTransferService {
     this.log.info(`findSenderAndReceiverAppsWithStatus ${lockHash} started`);
     const senderApp = await this.findSenderAppByLockHashAndAssetId(lockHash, assetId, chainId);
     const receiverApp = await this.findReceiverAppByLockHashAndAssetId(lockHash, assetId, chainId);
-    const block = await this.configService.getEthProvider().getBlockNumber();
+    const block = await this.configService.getEthProvider(chainId).getBlockNumber();
     const status = appStatusesToHashLockTransferStatus(block, senderApp, receiverApp);
     const result = { senderApp, receiverApp, status };
     this.log.info(

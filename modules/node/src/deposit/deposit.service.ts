@@ -151,7 +151,9 @@ export class DepositService {
     assetId: string,
   ): Promise<string[] | undefined> {
     this.log.info(`Collateralization in flight for user ${userId}, waiting`);
-    const ethProvider = this.configService.getEthProvider();
+    const ethProvider = this.configService.getEthProvider(
+      await this.channelRepository.getChainIdByMultisigAddress(multisigAddress),
+    );
     const signerAddr = await this.configService.getSignerAddress();
     const startingBlock = await ethProvider.getBlockNumber();
     const BLOCKS_TO_WAIT = 5;
@@ -229,7 +231,11 @@ export class DepositService {
         data: "0x",
       };
     } else {
-      const token = new Contract(tokenAddress, ERC20.abi, this.configService.getEthProvider());
+      const token = new Contract(
+        tokenAddress,
+        ERC20.abi,
+        this.configService.getEthProvider(channel.chainId),
+      );
       tx = {
         to: tokenAddress,
         value: 0,
@@ -244,7 +250,7 @@ export class DepositService {
     channel: Channel,
     tokenAddress: string = AddressZero,
   ): Promise<string | undefined> {
-    const ethProvider = this.configService.getEthProvider();
+    const ethProvider = this.configService.getEthProvider(channel.chainId);
 
     // generate initial totalAmountWithdrawn
     const multisig = new Contract(channel.multisigAddress, MinimumViableMultisig.abi, ethProvider);
@@ -265,9 +271,13 @@ export class DepositService {
     const startingMultisigBalance =
       tokenAddress === AddressZero
         ? await ethProvider.getBalance(channel.multisigAddress)
-        : await new Contract(tokenAddress, ERC20.abi, this.configService.getSigner()).balanceOf(
-            channel.multisigAddress,
-          );
+        : await new Contract(
+          tokenAddress,
+          ERC20.abi,
+          this.configService.getSigner(channel.chainId),
+        ).balanceOf(
+          channel.multisigAddress,
+        );
 
     const initialState: DepositAppState = {
       transfers: [

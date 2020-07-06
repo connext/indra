@@ -7,7 +7,6 @@ import {
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
-  TransactionReceipt,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
@@ -75,7 +74,9 @@ export class WithdrawService {
       appInstance.multisigAddress,
     );
 
-    const signer = this.configService.getSigner();
+    const signer = this.configService.getSigner(
+      await this.channelRepository.getChainIdByMultisigAddress(appInstance.multisigAddress),
+    );
 
     // Sign commitment
     const hash = generatedCommitment.hashToSign();
@@ -137,7 +138,7 @@ export class WithdrawService {
     );
     this.log.info(`Deploy multisig tx: ${deployTx}`);
 
-    const wallet = this.configService.getSigner();
+    const wallet = this.configService.getSigner(channel.chainId);
     if (deployTx !== HashZero) {
       this.log.info(`Waiting for deployment transaction...`);
       wallet.provider.waitForTransaction(deployTx);
@@ -206,7 +207,7 @@ export class WithdrawService {
       channel.multisigAddress,
     );
 
-    const signer = this.configService.getSigner();
+    const signer = this.configService.getSigner(channel.chainId);
     const hash = commitment.hashToSign();
     const withdrawerSignatureOnCommitment = await signer.signMessage(hash);
 

@@ -239,7 +239,7 @@ export class ChannelService {
 
     // convert targets to proper units for token
     if (assetId !== AddressZero) {
-      const token = new Contract(assetId, ERC20.abi, this.configService.getEthProvider());
+      const token = new Contract(assetId, ERC20.abi, this.configService.getEthProvider(chainId));
       let decimals = DEFAULT_DECIMALS;
       try {
         decimals = await token.decimals();

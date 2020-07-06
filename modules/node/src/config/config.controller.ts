@@ -13,7 +13,7 @@ export class ConfigController {
     return JSON.stringify({
       contractAddresses: await this.configService.getContractAddresses(chainIdInt),
       ethNetwork: await this.configService.getNetwork(chainIdInt),
-      supportedTokenAddresses: this.configService.getSupportedTokenAddresses(),
+      supportedTokenAddresses: this.configService.getSupportedTokens(),
       messagingUrl: this.configService.getMessagingConfig().messagingUrl,
       nodeIdentifier: this.configService.getPublicIdentifier(),
       signerAddress: await this.configService.getSignerAddress(),

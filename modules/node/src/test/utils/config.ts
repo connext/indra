@@ -29,7 +29,7 @@ export class MockConfigService extends ConfigService {
     super();
     this.nodeSigner = overrides.signer || defaultSigner;
     this.supportedTokens = super
-      .getSupportedTokenAddresses()
+      .getSupportedTokens()
       .concat(overrides.extraSupportedTokens || []);
   }
   getEthProvider = () => new providers.JsonRpcProvider(this.getProviderUrls()[0]);
@@ -38,5 +38,5 @@ export class MockConfigService extends ConfigService {
   getPublicIdentifier = () => this.getSigner().publicIdentifier;
   getSigner = () => this.nodeSigner;
   getSignerAddress = async () => this.getSigner().address;
-  getSupportedTokenAddresses = (): string[] => this.supportedTokens;
+  getSupportedTokens = (): string[] => this.supportedTokens;
 }

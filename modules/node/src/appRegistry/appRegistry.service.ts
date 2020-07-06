@@ -187,14 +187,15 @@ export class AppRegistryService implements OnModuleInit {
   public generateMiddleware = async (): Promise<
     (protocol: ProtocolName, cxt: MiddlewareContext) => Promise<void>
   > => {
-    const contractAddresses = await this.configService.getContractAddresses();
-    const provider = this.configService.getEthProvider();
+    const chainId = this.configService.getSupportedChains()[0];
+    const contractAddresses = await this.configService.getContractAddresses(chainId);
+    const provider = this.configService.getEthProvider(chainId);
     const defaultValidation = await generateValidationMiddleware(
       {
         contractAddresses,
         provider: provider as providers.JsonRpcProvider,
       },
-      this.configService.getSupportedTokenAddresses(),
+      this.configService.getSupportedTokens(),
     );
 
     return async (protocol: ProtocolName, cxt: MiddlewareContext): Promise<void> => {
@@ -293,7 +294,9 @@ export class AppRegistryService implements OnModuleInit {
 
   private proposeMiddleware = async (cxt: ProposeMiddlewareContext) => {
     const { proposal, params } = cxt;
-    const contractAddresses = await this.configService.getContractAddresses();
+    const contractAddresses = await this.configService.getContractAddresses(
+      cxt.stateChannel.chainId,
+    );
 
     switch (proposal.appDefinition) {
       case contractAddresses.SimpleTwoPartySwapApp: {
@@ -304,7 +307,7 @@ export class AppRegistryService implements OnModuleInit {
               const token = new Contract(
                 tokenAddress,
                 ERC20.abi,
-                this.configService.getEthProvider(),
+                this.configService.getEthProvider(cxt.stateChannel.chainId),
               );
               decimals = await token.functions.decimals();
               console.log("decimals: ", decimals);

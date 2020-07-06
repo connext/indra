@@ -197,10 +197,10 @@ export class CFCoreStore implements IStoreService {
     channel.addresses = addresses;
     channel.monotonicNumProposedApps = monotonicNumProposedApps;
     channel.chainId = chainId;
-    const swaps = this.configService.getAllowedSwaps();
+    const tokens = this.configService.getSupportedTokens();
     const activeCollateralizations = {};
-    swaps.forEach((swap) => {
-      activeCollateralizations[swap.to] = false;
+    tokens.forEach((token) => {
+      activeCollateralizations[token] = false;
     });
     channel.activeCollateralizations = activeCollateralizations;
 
@@ -618,11 +618,12 @@ export class CFCoreStore implements IStoreService {
     const commitment = await this.conditionalTransactionCommitmentRepository.findByAppIdentityHash(
       appIdentityHash,
     );
+    const channel = await this.channelRepository.getStateChannelByAppIdentityHash(appIdentityHash);
     return (
       commitment &&
       convertConditionalCommitmentToJson(
         commitment,
-        await this.configService.getContractAddresses(),
+        await this.configService.getContractAddresses(channel.chainId),
       )
     );
   }

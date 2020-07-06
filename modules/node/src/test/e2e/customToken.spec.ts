@@ -70,7 +70,7 @@ describe.skip("Custom token", () => {
 
     const decimals = await tokenContract.functions.decimals();
     expect(decimals.toString()).to.eq("9");
-    const supportedTokens = configService.getSupportedTokenAddresses();
+    const supportedTokens = configService.getSupportedTokens();
     expect(supportedTokens).to.include(tokenContract.address);
 
     logTime(log, start, "Done setting up test env");

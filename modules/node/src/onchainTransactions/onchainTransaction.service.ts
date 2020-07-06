@@ -75,7 +75,7 @@ export class OnchainTransactionService {
     reason: TransactionReason,
     channel: Channel,
   ): Promise<void> {
-    const wallet = this.configService.getSigner();
+    const wallet = this.configService.getSigner(channel.chainId);
     const errors: { [k: number]: string } = [];
     let tx: providers.TransactionResponse;
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {

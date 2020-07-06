@@ -155,9 +155,10 @@ export class CFCoreService {
     const amount = toBN(params.amount);
     const { assetId, nonce, recipient } = params;
     const { data: channel } = await this.getStateChannel(multisigAddress);
-    const contractAddresses = await this.configService.getContractAddresses(
-      (await this.configService.getEthNetwork()).chainId.toString(),
-    );
+    // TODO: do something more like this:
+    // const chainId = await this.channelRepository.getChainIdByMultisigAddress(multisigAddress);
+    const chainId = await this.configService.getSupportedChains()[0];
+    const contractAddresses = await this.configService.getContractAddresses(chainId);
     const multisigOwners = [
       getSignerAddressFromPublicIdentifier(channel.userIdentifiers[0]),
       getSignerAddressFromPublicIdentifier(channel.userIdentifiers[1]),
@@ -478,33 +479,34 @@ export class CFCoreService {
   }
 
   async onModuleInit() {
-    const ethNetwork = await this.configService.getEthNetwork();
-    const contractAddresses = await this.configService.getContractAddresses();
-    this.appRegistryMap = RegistryOfApps.reduce((appMap, app) => {
-      const appDefinitionAddress = contractAddresses[app.name];
-      this.log.info(
-        `Creating ${app.name} app on chain ${ethNetwork.chainId}: ${appDefinitionAddress}`,
-      );
-      // set both name and app definition as keys for better lookup
-      appMap.set(appDefinitionAddress, {
-        actionEncoding: app.actionEncoding,
-        appDefinitionAddress: appDefinitionAddress,
-        name: app.name,
-        chainId: ethNetwork.chainId,
-        outcomeType: app.outcomeType,
-        stateEncoding: app.stateEncoding,
-        allowNodeInstall: app.allowNodeInstall,
-      } as DefaultApp);
-      appMap.set(`${app.name}:${ethNetwork.chainId}`, {
-        actionEncoding: app.actionEncoding,
-        appDefinitionAddress: appDefinitionAddress,
-        name: app.name,
-        chainId: ethNetwork.chainId,
-        outcomeType: app.outcomeType,
-        stateEncoding: app.stateEncoding,
-        allowNodeInstall: app.allowNodeInstall,
-      } as DefaultApp);
-      return appMap;
-    }, new Map<string, DefaultApp>());
+    this.appRegistryMap = new Map();
+    this.configService.getSupportedChains().forEach(chainId => {
+      const contractAddresses = this.configService.getContractAddresses(chainId);
+      RegistryOfApps.forEach(app => {
+        const appDefinitionAddress = contractAddresses[app.name];
+        this.log.info(
+          `Creating ${app.name} app on chain ${chainId}: ${appDefinitionAddress}`,
+        );
+        // set both name and app definition as keys for better lookup
+        this.appRegistryMap.set(appDefinitionAddress, {
+          actionEncoding: app.actionEncoding,
+          appDefinitionAddress: appDefinitionAddress,
+          name: app.name,
+          chainId: chainId,
+          outcomeType: app.outcomeType,
+          stateEncoding: app.stateEncoding,
+          allowNodeInstall: app.allowNodeInstall,
+        } as DefaultApp);
+        this.appRegistryMap.set(`${app.name}:${chainId}`, {
+          actionEncoding: app.actionEncoding,
+          appDefinitionAddress: appDefinitionAddress,
+          name: app.name,
+          chainId: chainId,
+          outcomeType: app.outcomeType,
+          stateEncoding: app.stateEncoding,
+          allowNodeInstall: app.allowNodeInstall,
+        } as DefaultApp);
+      });
+    });
   }
 }

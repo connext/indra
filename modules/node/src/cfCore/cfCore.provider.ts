@@ -25,19 +25,22 @@ export const cfCoreProviderFactory: Provider = {
     messaging: MessagingService,
     store: CFCoreStore,
   ): Promise<CFCore> => {
-    const provider = config.getEthProvider();
-    const signer = config.getSigner();
+
+    // TODO: forEach chainId?
+    const chainId = config.getSupportedChains()[0];
+
+    const provider = config.getEthProvider(chainId);
+    const signer = config.getSigner(chainId);
     const signerAddress = await signer.getAddress();
     log.setContext("CFCoreProvider");
 
     // test that provider works
-    const { chainId, name: networkName } = await config.getEthNetwork();
-    const contractAddresses = await config.getContractAddresses();
+    const contractAddresses = await config.getContractAddresses(chainId);
     const cfCore = await CFCore.create(
       messaging,
       store,
       { [chainId]: { contractAddresses, provider } },
-      config.getSigner(),
+      signer,
       {
         acquireLock: lockService.acquireLock.bind(lockService),
         releaseLock: lockService.releaseLock.bind(lockService),
@@ -58,7 +61,7 @@ export const cfCoreProviderFactory: Provider = {
     const tknBalance = await tokenContract.balanceOf(signerAddress);
 
     log.info(
-      `Balance of signer address ${signerAddress} on ${networkName} (chainId ${chainId}): ${EtherSymbol} ${formatEther(
+      `Balance of signer address ${signerAddress} on chainId ${chainId}: ${EtherSymbol} ${formatEther(
         ethBalance,
       )} & ${formatUnits(tknBalance, decimals)} tokens`,
     );

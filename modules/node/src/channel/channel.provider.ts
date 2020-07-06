@@ -141,7 +141,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     const conditionalCommitments = await this.conditionalTransactionCommitmentRepository.findAllActiveCommitmentsByMultisig(
       channel.multisigAddress,
     );
-    const network = await this.configService.getContractAddresses();
+    const network = await this.configService.getContractAddresses(chainId);
     return {
       channel,
       setupCommitment: convertSetupEntityToMinimalTransaction(setupCommitment),

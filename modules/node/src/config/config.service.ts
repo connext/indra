@@ -1,5 +1,6 @@
+import { AddressBookJson } from "@connext/contracts";
 import { ChannelSigner } from "@connext/utils";
-import { ContractAddresses, IChannelSigner, MessagingConfig, PriceOracleTypes, SwapRate } from "@connext/types";
+import { ContractAddresses, IChannelSigner, MessagingConfig, PriceOracleTypes, AllowedSwap } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet, providers, constants, utils } from "ethers";
 
@@ -54,21 +55,29 @@ export class ConfigService implements OnModuleInit {
     return this.signers.get(chainId);
   }
 
-  getAddressBook() {
-    return JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
-  }
-
   getProviderUrls(): string[] {
     // default to first option in env
     return Object.keys(JSON.parse(this.get(`INDRA_CHAIN_PROVIDERS`)));
   }
 
+  getEthProvider(chainId: number): providers.JsonRpcProvider {
+    return this.providers.get(chainId);
+  }
+
+  getEthProviders(): providers.JsonRpcProvider[] {
+    return Array.from(this.providers.values());
+  }
+
+  getAddressBook(): AddressBookJson {
+    return JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
+  }
+
   getSupportedChains(): number[] {
-    return Object.keys(JSON.parse(this.get("INDRA_CHAIN_PROVIDERS")));
+    return Object.keys(JSON.parse(this.get("INDRA_CHAIN_PROVIDERS"))).map(k => parseInt(k, 10));
   }
 
   async getNetwork(chainId: number): Promise<providers.Network> {
-    const network = await this.getProvider(chainId).getNetwork();
+    const network = await this.getEthProvider(chainId).getNetwork();
     if (network.name === `unknown` && network.chainId === 1337) {
       network.name = `ganache`;
     } else if (network.chainId === 1) {
@@ -77,7 +86,7 @@ export class ConfigService implements OnModuleInit {
     return network;
   }
 
-  async getContractAddresses(chainId: number): Promise<ContractAddresses> {
+  getContractAddresses(chainId: number): ContractAddresses {
     const ethAddresses = { [chainId]: {} } as any;
     const ethAddressBook = this.getAddressBook();
     Object.keys(ethAddressBook[chainId]).forEach(
@@ -106,82 +115,34 @@ export class ConfigService implements OnModuleInit {
     return getAddress(ethAddressBook[chainId].Token.address);
   }
 
-  async getTestnetTokenConfig(): Promise<TestnetTokenConfig> {
-    const testnetTokenConfig: TokenConfig[] = this.get("INDRA_TESTNET_TOKEN_CONFIG")
-      ? JSON.parse(this.get("INDRA_TESTNET_TOKEN_CONFIG"))
-      : [];
-    const currentChainId = (await this.getAddressBook()).chainId;
-
-    // by default, map token address to mainnet token address
-    if (currentChainId !== 1) {
-      const contractAddresses = await this.getContractAddresses(1);
-      testnetTokenConfig.push([
-        {
-          address: contractAddresses.Token,
-          chainId: 1,
-        },
-        { address: await this.getTokenAddress(currentChainId), chainId: currentChainId },
-      ]);
-    }
-    return testnetTokenConfig;
-  }
-
-  async getTokenAddressForSwap(currentChainId: number, tokenAddress: string): Promise<string> {
-    if (currentChainId !== 1) {
-      const tokenConfig = await this.getTestnetTokenConfig();
-      const configIndex = tokenConfig.findIndex((tc) =>
-        tc.find((t) => t.chainId === currentChainId && t.address === tokenAddress),
-      );
-      const configExists =
-        configIndex < 0 ? undefined : tokenConfig[configIndex].find((tc) => tc.chainId === 1);
-      tokenAddress = configExists ? configExists.address : tokenAddress;
-    }
-
-    return tokenAddress;
-  }
-
-  getAllowedSwaps(): SwapRate[] {
+  getAllowedSwaps(): AllowedSwap[] {
     const supportedTokens = this.getSupportedTokens();
     const priceOracleType = this.get("NODE_ENV") === "development"
       ? PriceOracleTypes.HARDCODED
       : PriceOracleTypes.UNISWAP;
-    const allowedSwaps: SwapRate[] = [];
+    const allowedSwaps: AllowedSwap[] = [];
     supportedTokens.forEach(token => {
       allowedSwaps.push({ from: token, to: AddressZero, priceOracleType });
       allowedSwaps.push({ from: AddressZero, to: token, priceOracleType });
     });
-    return supportedTokens;
+    return allowedSwaps;
   }
 
-  /**
-   * Can add supported tokens to collateralize in addition to swap based tokens.
-   */
   getSupportedTokens(): string[] {
-    const addressBook = await this.getAddressBook();
-    const chains = await this.getSupportedChains();
-    const tokens = chains.map(chainId => addressBook[chainId].Token).filter(a => !!a);
+    const addressBook = this.getAddressBook();
+    const chains = this.getSupportedChains();
+    const tokens = chains.map(chainId => addressBook[chainId].Token.address).filter(a => !!a);
     return [...(new Set([AddressZero].concat(tokens)))];
   }
 
-  async getHardcodedRate(from: string, to: string, chainId: number): Promise<string | undefined> {
-    const swaps = this.getAllowedSwaps();
-    const swap = swaps.find((s) => s.from === from && s.to === to);
-    if (swap && swap.rate) {
-      return swap.rate;
-    } else {
-      return this.getDefaultSwapRate(from, to, chainId);
-    }
-  }
-
-  async getDefaultSwapRate(from: string, to: string, chainId: number): Promise<string | undefined> {
-    const tokenAddress = await this.getTokenAddress(chainId);
-    if (from === AddressZero && to === tokenAddress) {
+  async getHardcodedRate(from: string, to: string): Promise<string | undefined> {
+    if (from === AddressZero && to !== AddressZero) {
       return "100.0";
     }
-    if (from === tokenAddress && to === AddressZero) {
+    if (from !== AddressZero && to === AddressZero) {
       return "0.01";
     }
-    return undefined;
+    return "1";
   }
 
   // NOTE: assumes same signer accross chains
