@@ -28,9 +28,7 @@ export class MockConfigService extends ConfigService {
   constructor(overrides: Partial<ConfigOverrides> = {}) {
     super();
     this.nodeSigner = overrides.signer || defaultSigner;
-    this.supportedTokens = super
-      .getSupportedTokens()
-      .concat(overrides.extraSupportedTokens || []);
+    this.supportedTokens = super.getSupportedTokens().concat(overrides.extraSupportedTokens || []);
   }
   getEthProvider = () => new providers.JsonRpcProvider(this.getProviderUrls()[0]);
   getProviderUrls = () => [env.ethProviderUrl!];

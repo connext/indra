@@ -63,8 +63,8 @@ if [[ -f address-book.json ]]
 then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
 fi
-eth_rpc_url="http://$ethprovider_1337_host:8545"
-eth_rpc_url="http://$ethprovider_1338_host:8546"
+eth_rpc_url_1337="http://$ethprovider_1337_host:8545"
+eth_rpc_url_1338="http://$ethprovider_1338_host:8545"
 
 # get supported addresses
 token_address="`echo $eth_contract_addresses | jq '.["'"$ganacheId"'"].Token.address' | tr -d '"'`"
@@ -164,7 +164,7 @@ docker run \
 ########################################
 # Run Tests
 
-chain_providers='{"1337":"'$ethprovider_1337_host':8545","1338":"'$ethprovider_1338_host':8546"}'
+chain_providers='{"1337":"'$eth_rpc_url_1337'"}'
 
 echo "Starting $node_host.."
 docker run \

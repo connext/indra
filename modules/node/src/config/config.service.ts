@@ -1,6 +1,12 @@
 import { AddressBookJson } from "@connext/contracts";
 import { ChannelSigner } from "@connext/utils";
-import { ContractAddresses, IChannelSigner, MessagingConfig, PriceOracleTypes, AllowedSwap } from "@connext/types";
+import {
+  ContractAddresses,
+  IChannelSigner,
+  MessagingConfig,
+  PriceOracleTypes,
+  AllowedSwap,
+} from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet, providers, constants, utils } from "ethers";
 
@@ -17,20 +23,13 @@ type PostgresConfig = {
   username: string;
 };
 
-type TestnetTokenConfig = TokenConfig[];
-
-type TokenConfig = {
-  chainId: number;
-  address: string;
-}[];
-
 @Injectable()
 export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
   // signer on same mnemonic, connected to different providers
   private readonly signers: Map<number, IChannelSigner> = new Map();
   // keyed on chainId
-  private providers: Map<number, providers.JsonRpcProvider> = new Map();
+  public readonly providers: Map<number, providers.JsonRpcProvider> = new Map();
 
   constructor() {
     this.envConfig = process.env;
@@ -57,7 +56,7 @@ export class ConfigService implements OnModuleInit {
 
   getProviderUrls(): string[] {
     // default to first option in env
-    return Object.keys(JSON.parse(this.get(`INDRA_CHAIN_PROVIDERS`)));
+    return Object.values(JSON.parse(this.get(`INDRA_CHAIN_PROVIDERS`)));
   }
 
   getEthProvider(chainId: number): providers.JsonRpcProvider {
@@ -73,7 +72,7 @@ export class ConfigService implements OnModuleInit {
   }
 
   getSupportedChains(): number[] {
-    return Object.keys(JSON.parse(this.get("INDRA_CHAIN_PROVIDERS"))).map(k => parseInt(k, 10));
+    return Object.keys(JSON.parse(this.get("INDRA_CHAIN_PROVIDERS"))).map((k) => parseInt(k, 10));
   }
 
   async getNetwork(chainId: number): Promise<providers.Network> {
@@ -117,11 +116,12 @@ export class ConfigService implements OnModuleInit {
 
   getAllowedSwaps(): AllowedSwap[] {
     const supportedTokens = this.getSupportedTokens();
-    const priceOracleType = this.get("NODE_ENV") === "development"
-      ? PriceOracleTypes.HARDCODED
-      : PriceOracleTypes.UNISWAP;
+    const priceOracleType =
+      this.get("NODE_ENV") === "development"
+        ? PriceOracleTypes.HARDCODED
+        : PriceOracleTypes.UNISWAP;
     const allowedSwaps: AllowedSwap[] = [];
-    supportedTokens.forEach(token => {
+    supportedTokens.forEach((token) => {
       allowedSwaps.push({ from: token, to: AddressZero, priceOracleType });
       allowedSwaps.push({ from: AddressZero, to: token, priceOracleType });
     });
@@ -131,8 +131,8 @@ export class ConfigService implements OnModuleInit {
   getSupportedTokens(): string[] {
     const addressBook = this.getAddressBook();
     const chains = this.getSupportedChains();
-    const tokens = chains.map(chainId => addressBook[chainId].Token.address).filter(a => !!a);
-    return [...(new Set([AddressZero].concat(tokens)))];
+    const tokens = chains.map((chainId) => addressBook[chainId].Token.address).filter((a) => !!a);
+    return [...new Set([AddressZero].concat(tokens))];
   }
 
   async getHardcodedRate(from: string, to: string): Promise<string | undefined> {
