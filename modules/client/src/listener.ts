@@ -321,7 +321,11 @@ export class ConnextListener {
     // install and run post-install tasks
     await this.runPostInstallTasks(appIdentityHash, registryAppInfo, params);
     this.log.info(`handleAppProposal for app ${registryAppInfo.name} ${appIdentityHash} completed`);
-    const { appInstance } = await this.connext.getAppInstance(appIdentityHash);
+    const { appInstance } = (await this.connext.getAppInstance(appIdentityHash)) || {};
+    if (!appInstance) {
+      this.log.warn(`Not able to find app instance post proposal with hash: ${appIdentityHash}`);
+      return;
+    }
     await this.connext.node.messaging.publish(
       `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
       stringify(appInstance),

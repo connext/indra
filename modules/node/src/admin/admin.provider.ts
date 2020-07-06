@@ -86,50 +86,49 @@ class AdminMessaging extends AbstractMessagingProvider {
     return this.adminService.getChannelsForMerging();
   }
 
-  async addRebalanceProfile(
-    subject: string,
-    data: { profile: RebalanceProfile; chainId: number },
-  ): Promise<void> {
-    const address = subject.split(".")[1];
+  async addRebalanceProfile(subject: string, data: { profile: RebalanceProfile }): Promise<void> {
+    const [, address, chainId] = subject.split(".");
     const profile = bigNumberifyJson(data.profile) as RebalanceProfile;
-    await this.channelService.addRebalanceProfileToChannel(address, data.chainId, profile);
+    await this.channelService.addRebalanceProfileToChannel(address, parseInt(chainId), profile);
   }
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "admin.get-no-free-balance",
+      "admin.*.get-no-free-balance",
       this.getNoFreeBalance.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.get-state-channel-by-address",
+      "admin.*.get-state-channel-by-address",
       this.getStateChannelByUserPublicIdentifierAndChain.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.get-state-channel-by-multisig",
+      "admin.*.get-state-channel-by-multisig",
       this.getStateChannelByMultisig.bind(this),
     );
 
-    await super.connectRequestReponse("admin.get-all-channels", this.getAllChannels.bind(this));
+    await super.connectRequestReponse("admin.*.get-all-channels", this.getAllChannels.bind(this));
 
     await super.connectRequestReponse(
-      "admin.get-all-linked-transfers",
+      "admin.*.get-all-linked-transfers",
       this.getAllLinkedTransfers.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.get-linked-transfer-by-payment-id",
+      "admin.*.get-linked-transfer-by-payment-id",
       this.getLinkedTransferByPaymentId.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.get-channels-for-merging",
+      "admin.*.get-channels-for-merging",
       this.getChannelsForMerging.bind(this),
     );
 
+    // e.g.
+    // `admin.${client.publicIdentifier}.${client.chainId}.channel.add-profile`
     await super.connectRequestReponse(
-      "admin.*.channel.add-profile",
+      "admin.*.*.channel.add-profile",
       this.addRebalanceProfile.bind(this),
     );
   }
