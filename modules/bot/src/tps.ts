@@ -130,7 +130,7 @@ export const command = {
         break;
       }
       toTest.push(top);
-      const testResult = await runTpsTest(toTest, token.address);
+      const testResult = await runTpsTest(toTest, argv.tokenAddress);
       results.push(testResult);
       // wait 15s for payments/queues to clear
       console.log(`Waiting 15s for agents to complete or timeout payments`);
@@ -162,7 +162,7 @@ export const command = {
 type TpsResult = { numberBots: number; paymentsSent: number; paymentsResolved: number };
 export const runTpsTest = async (
   agents: Agent[],
-  assetId: Address = AddressZero,
+  assetId: Address,
   registry: BotRegistry = internalBotRegistry,
 ): Promise<TpsResult> => {
   // Setup tracking + listeners
