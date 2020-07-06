@@ -4,14 +4,18 @@ import {
   MinimalTransaction,
   SetStateCommitmentJSON,
 } from "./commitments";
-import { ContractAddresses } from "./contracts";
 import { MethodResults } from "./methods";
 import { PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
 import { LinkedTransferStatus, HashLockTransferStatus, SignedTransferStatus } from "./transfers";
 import { Collateralizations, RebalanceProfile } from "./misc";
+import { ContractAddresses } from "./contracts";
 
 type GetRebalanceProfileResponse = RebalanceProfile;
+
+export type ContractAddressBook = {
+  [chainId: string]: ContractAddresses;
+};
 
 type GetHashLockTransferResponse =
   | {
@@ -48,7 +52,7 @@ type GetTransferResponse = {
 
 type GetConfigResponse = {
   ethNetwork: Network;
-  contractAddresses: ContractAddresses;
+  contractAddresses: ContractAddressBook;
   nodeIdentifier: PublicIdentifier;
   messagingUrl: string[];
   signerAddress: Address;
