@@ -16,6 +16,7 @@ import { AppModule } from "../../app.module";
 import { ConfigService } from "../../config/config.service";
 
 import { env, expect, MockConfigService } from "../utils";
+import { TransactionResponse } from "@ethersproject/providers";
 
 const { AddressZero } = constants;
 const { parseEther } = utils;
@@ -30,7 +31,7 @@ describe("Happy path", () => {
 
   before(async () => {
     const start = Date.now();
-    let tx;
+    let tx: TransactionResponse;
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -44,7 +45,7 @@ describe("Happy path", () => {
     await app.listen(configService.getPort());
 
     const ethProviderUrl = Object.values(configService.getProviderUrls())[0];
-    const ethProvider = configService.getEthProvider();
+    const ethProvider = configService.getEthProvider(1337);
     const sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC!).connect(ethProvider);
     log.info(`node: ${await configService.getSignerAddress()}`);
     const nodeUrl = "http://localhost:8080";
@@ -87,7 +88,7 @@ describe("Happy path", () => {
     }
   });
 
-  it("should let a client deposit, transfer, and withdraw ", async () => {
+  it.only("should let a client deposit, transfer, and withdraw ", async () => {
     const depositRes = await clientA.deposit({
       assetId: AddressZero,
       amount: parseEther("0.03"),
