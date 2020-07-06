@@ -1,24 +1,13 @@
 import { artifacts } from "@connext/contracts";
-import {
-  abrv,
-  toBN,
-  getSignerAddressFromPublicIdentifier,
-  getRandomBytes32,
-  ColorfulLogger,
-  delay,
-  stringify,
-} from "@connext/utils";
+import { abrv, toBN } from "@connext/utils";
 import { constants, Contract, providers, utils, Wallet } from "ethers";
 import { Argv } from "yargs";
 
+import { startBot } from "./agents/bot";
 import { env } from "./env";
-import { internalBotRegistry, BotRegistry } from "./helpers/agentIndex";
-import { createAndFundClient } from "./helpers/createAndFundBot";
-import { Agent } from "./agents/agent";
-import { Address } from "@connext/types";
-import { writeJson } from "./helpers/writeJson";
+import { internalBotRegistry } from "./helpers/agentIndex";
 
-const { AddressZero, HashZero } = constants;
+const { AddressZero, HashZero, Two } = constants;
 const { formatEther, sha256, parseEther } = utils;
 
 export const command = {
@@ -27,7 +16,7 @@ export const command = {
   builder: (yargs: Argv) => {
     return yargs
       .option("concurrency", {
-        description: "Max number of bots to run in parallel",
+        description: "Number of bots to run in parallel",
         type: "string",
         default: "1",
       })
@@ -35,6 +24,16 @@ export const command = {
         description: "0 = print no logs, 5 = print all logs",
         type: "number",
         default: 1,
+      })
+      .option("interval", {
+        describe: "The time interval between consecutive payments from this agent (in ms)",
+        type: "number",
+        default: 1000,
+      })
+      .option("limit", {
+        describe: "The maximum number of payments to send before exiting (0 for no limit)",
+        type: "number",
+        default: 0,
       })
       .option("entropy-seed", {
         describe: "Used to deterministally create multiple bot private keys",
@@ -94,54 +93,61 @@ export const command = {
       console.log(`SugarDaddy ${abrv(sugarDaddy.address)} has ${formatEther(startEthBalance)} ETH`);
     }
 
-    // Derive bot keys & provide channel funding
+    // First loop: derive bot keys & provide funding
     const keys: string[] = [];
-    const agents: Agent[] = [];
     for (let concurrencyIndex = 0; concurrencyIndex < argv.concurrency; concurrencyIndex += 1) {
       const newKey =
         keys.length === 0 ? sha256(argv.entropySeed) : sha256(keys[concurrencyIndex - 1]);
       keys[concurrencyIndex] = newKey;
-      const client = await createAndFundClient(
-        sugarDaddy,
-        [
-          { grantAmt: ethGrant, assetId: AddressZero },
-          { grantAmt: tokenGrant, assetId: token.address },
-        ],
-        newKey,
-      );
-
-      // Add client to registry
-      await internalBotRegistry.add(client.publicIdentifier);
-
-      // Create and start agent
-      const NAME = `Bot #${concurrencyIndex}`;
-      const log = new ColorfulLogger(NAME, 3, true, concurrencyIndex);
-      const agent = new Agent(log, client, newKey, false);
-      agents.push(agent);
-    }
-
-    // Begin TPS testing
-    const toTest: Agent[] = [];
-    const results: TpsResult[] = [];
-    for (let i = 0; i < agents.length; i++) {
-      const top = agents.shift();
-      if (!top) {
-        console.log("No more agents, tps tests completed");
-        break;
+      const bot = new Wallet(newKey, ethProvider);
+      if ((await bot.getBalance()).lt(parseEther(ethGrant).div(Two))) {
+        console.log(
+          `Sending ${ethGrant} ETH to bot #${concurrencyIndex + 1}: ${abrv(bot.address)}`,
+        );
+        await sugarDaddy.sendTransaction({
+          to: bot.address,
+          value: parseEther(ethGrant),
+        });
       }
-      toTest.push(top);
-      const testResult = await runTpsTest(toTest);
-      results.push(testResult);
-      // wait 15s for payments/queues to clear
-      console.log(`Waiting 15s for agents to complete or timeout payments`);
-      await delay(15000);
+      if (
+        argv.tokenAddress !== AddressZero &&
+        (await token.balanceOf(bot.address)).lt(parseEther(tokenGrant).div(Two))
+      ) {
+        console.log(
+          `Sending ${tokenGrant} tokens to bot #${concurrencyIndex + 1}: ${abrv(bot.address)}`,
+        );
+        await token.transfer(bot.address, tokenGrant);
+      }
     }
 
-    // Write results to file
-    console.log(`Tests complete, storing data`);
-    const path = `.results/${Date.now()}`;
-    writeJson(results, path);
-    console.log(`TPS testing with ${argv.concurrency} bots complete, results:`, stringify(results));
+    // Setup loop for numbers from 0 to concurrencyIndex-1
+    const zeroToIndex: number[] = [];
+    for (let index = 0; index < argv.concurrency; index += 1) {
+      zeroToIndex.push(index);
+    }
+
+    // Second loop: start up all of our bots at once & wait for them all to exit
+    const botResults = await Promise.all(
+      zeroToIndex.map(async (concurrencyIndex) => {
+        // start bot & wait until it exits
+        try {
+          console.log(`Starting bot #${concurrencyIndex + 1}`);
+          const result = await startBot(
+            concurrencyIndex + 1,
+            argv.interval,
+            argv.limit,
+            argv.logLevel,
+            keys[concurrencyIndex],
+            argv.tokenAddress,
+            internalBotRegistry,
+            false,
+          );
+          return result;
+        } catch (e) {
+          return { code: 1, txTimestamps: [] };
+        }
+      }),
+    );
 
     // Print the amount we spent during the course of these tests
     const endEthBalance = await sugarDaddy.getBalance();
@@ -155,41 +161,41 @@ export const command = {
     } else {
       console.log(`SugarDaddy spent ${formatEther(startEthBalance.sub(endEthBalance))} ETH`);
     }
-    process.exit(0);
-  },
-};
 
-type TpsResult = { numberBots: number; paymentsSent: number; paymentsResolved: number };
-export const runTpsTest = async (
-  agents: Agent[],
-  assetId: Address = AddressZero,
-  registry: BotRegistry = internalBotRegistry,
-): Promise<TpsResult> => {
-  // Setup tracking + listeners
-  let paymentsSent = 0;
-  let paymentsResolved = 0;
+    // Print our TPS aka transactions-per-second report
+    let tpsData: number[] = [];
 
-  agents.forEach((agent) => {
-    agent.nodeReclaim.attach((data) => (paymentsResolved += 1));
-  });
+    zeroToIndex.forEach((i) => {
+      tpsData = tpsData.concat(botResults[i].txTimestamps);
+    });
+    tpsData = tpsData.sort();
 
-  // Begin sending payments
-  const end = Date.now() + 1000;
-  let idx = 0;
-  while (Date.now() < end) {
-    const sender = agents[idx];
-    const recipient = await registry.getRandom(sender.client.publicIdentifier);
-    if (!recipient) {
-      // ignore
-      continue;
+    const start = Math.floor(tpsData[0] / 1000);
+    const end = Math.floor(tpsData[tpsData.length - 1] / 1000);
+    const avgSpan = 5;
+    const movingAverage = {};
+    let peak = start;
+
+    for (let t = start; t <= end; t++) {
+      movingAverage[t] = 0;
+      tpsData.forEach((tx) => {
+        if (Math.abs(tx / 1000 - t) <= avgSpan / 2) {
+          movingAverage[t] += 1 / avgSpan;
+        }
+      });
     }
-    const paymentId = getRandomBytes32();
-    agents[idx]
-      .pay(recipient, getSignerAddressFromPublicIdentifier(recipient), toBN(1), assetId, paymentId)
-      .then((res) => (paymentsSent += 1));
-    // Move to next bot in array or wrap
-    idx = idx === agents.length - 1 ? 0 : idx + 1;
-  }
 
-  return { numberBots: agents.length, paymentsSent, paymentsResolved };
+    // Identify the TPS peak & round all numbers so output is a little prettier
+    Object.keys(movingAverage).forEach((key) => {
+      movingAverage[key] = Math.round(movingAverage[key] * 100) / 100;
+      if (movingAverage[key] > movingAverage[peak]) {
+        peak = parseInt(key, 10);
+      }
+    });
+
+    console.log(`${avgSpan} second moving average TPS: ${JSON.stringify(movingAverage, null, 2)}`);
+    console.log(`Peak TPS: ${movingAverage[peak]} at ${peak}`);
+
+    process.exit(botResults.reduce((acc, cur) => acc + cur.code, 0));
+  },
 };

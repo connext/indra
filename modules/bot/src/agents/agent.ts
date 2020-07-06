@@ -6,6 +6,7 @@ import {
   ILoggerService,
   PublicParams,
   Address,
+  ConditionalTransferUnlockedEventData,
 } from "@connext/types";
 import {
   abrv,
@@ -17,9 +18,11 @@ import {
   signGraphReceiptMessage,
 } from "@connext/utils";
 import { constants, BigNumber } from "ethers";
+import { Evt } from "evt";
 const { AddressZero } = constants;
 
 export class Agent {
+  public nodeReclaim = Evt.create<ConditionalTransferUnlockedEventData<any>>();
   private payments: {
     [k: string]: { resolve: () => void; reject: (msg?: string | Error) => void };
   } = {};
@@ -33,7 +36,7 @@ export class Agent {
 
   constructor(
     private readonly log: ILoggerService,
-    private readonly client: IConnextClient,
+    public readonly client: IConnextClient,
     private readonly privateKey: string,
     private readonly errorOnProtocolFailure: boolean,
   ) {}
@@ -92,6 +95,10 @@ export class Agent {
       const resolver = this.payments[eData.paymentId];
       if (!resolver) {
         return;
+      }
+      // emit event if we sent payment and node is reclaiming
+      if (eData.sender === this.client.publicIdentifier) {
+        this.nodeReclaim.post(eData);
       }
       delete this.payments[eData.paymentId];
       resolver.resolve();
