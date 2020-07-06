@@ -23,13 +23,13 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
   }
 
   async getLatestSwapRate(subject: string): Promise<string> {
-    const [, , , from, to] = subject.split(".");
+    const [, , , , from, to] = subject.split(".");
     return this.swapRateService.getOrFetchRate(getAddress(from), getAddress(to));
   }
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.swap-rate.>`,
+      `*.${this.configService.getPublicIdentifier()}.*.swap-rate.>`,
       this.getLatestSwapRate.bind(this),
     );
   }
