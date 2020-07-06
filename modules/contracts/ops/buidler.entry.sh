@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Ethprovider2 entrypoint activated!"
+echo "Buidler entrypoint activated!"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/.."
 address_book="$dir/address-book.json"
@@ -12,7 +12,7 @@ if [[ "$1" == "start" ]]
 then
   echo "Starting BuidlerEVM.."
   cd modules/contracts
-  exec npx buidler node --hostname 0.0.0.0
+  exec npx buidler node --hostname 0.0.0.0 --port 8546
 
 elif [[ "$1" == "deploy" ]]
 then
@@ -21,9 +21,9 @@ then
     echo "Starting BuidlerEVM for deployment.."
     # TODO: why doesnt this need to be done?
     # cd modules/contracts
-    npx buidler node --hostname 0.0.0.0 \
+    npx buidler node --hostname 0.0.0.0 --port 8546 \
        > $dir/.buidlerevm.log &
-    wait-for localhost:8545
+    wait-for localhost:8546
   fi
 
   touch $address_book

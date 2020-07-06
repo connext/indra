@@ -33,9 +33,20 @@ fi
 # Load private key into secret store
 # Unless we're using ganache, in which case we'll use the ETH_MNEMONIC
 
-if [[ "$ETH_PROVIDER" == "$localProvider" ]]
+if [[ "$ETH_PROVIDER" == "${localProvider%8545}"* ]]
 then
   SECRET_ENV="--env=ETH_MNEMONIC=candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+
+  if [[ "$ETH_PROVIDER" == *"8545" ]]
+  then
+    mount="--mount=type=volume,source=${project}_chain_1337,target=/data" 
+    entry="ops/ganache.entry.sh"
+  elif [[ "$ETH_PROVIDER" == *"8546" ]]
+  then
+    mount="--mount=type=volume,source=${project}_chain_1338,target=/data" 
+    entry="ops/buidler.entry.sh"
+  fi
+
 else
   echo "Copy the mnemonic for an account that holds funds for given provider to your clipboard"
   echo "Paste it below & hit enter (no echo)"
@@ -64,10 +75,10 @@ then
     --entrypoint="bash" \
     --env="ETH_PROVIDER=$ETH_PROVIDER" \
     --mount="type=bind,source=$cwd,target=/root" \
-    --mount="type=volume,source=${project}_chain_dev,target=/data" \
+    "$mount" \
     --name="$name" \
     --rm \
-    $image -c "cd modules/contracts && bash ops/ganache.entry.sh deploy"
+    $image -c "cd modules/contracts && bash $entry deploy"
   exit
 
 elif [[ "$mode" == "release" ]]
@@ -83,7 +94,7 @@ exec docker run \
   "$SECRET_ENV" \
   --env="ETH_PROVIDER=$ETH_PROVIDER" \
   --mount="type=bind,source=$address_book,target=/root/address-book.json" \
-  --mount="type=volume,source=${project}_chain_dev,target=/data" \
+  "$mount" \
   --name="$name" \
   --rm \
   $image deploy

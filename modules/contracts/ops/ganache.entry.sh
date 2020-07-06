@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Ethprovider entrypoint activated!"
+echo "Ganache entrypoint activated!"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/.."
 ganache="$dir/node_modules/.bin/ganache-cli"

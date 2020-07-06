@@ -55,13 +55,16 @@ network="${project}_$suffix"
 eth_network="ganache"
 ganacheId="1337"
 
-ethprovider_host="${project}_ethprovider_$suffix"
+ethprovider_1337_host="${project}_ethprovider_1337_$suffix"
+ethprovider_1338_host="${project}_ethprovider_1338_$suffix"
+
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 if [[ -f address-book.json ]]
 then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
 fi
-eth_rpc_url="http://$ethprovider_host:8545"
+eth_rpc_url="http://$ethprovider_1337_host:8545"
+eth_rpc_url="http://$ethprovider_1338_host:8546"
 
 # get supported addresses
 token_address="`echo $eth_contract_addresses | jq '.["'"$ganacheId"'"].Token.address' | tr -d '"'`"
@@ -84,7 +87,8 @@ make deployed-contracts
 # Kill the dependency containers when this script exits
 function cleanup {
   echo;echo "Tests finished, stopping test containers.."
-  docker container stop $ethprovider_host 2> /dev/null || true
+  docker container stop $ethprovider_1337_host 2> /dev/null || true
+  docker container stop $ethprovider_1338_host 2> /dev/null || true
   docker container stop $postgres_host 2> /dev/null || true
   docker container stop $nats_host 2> /dev/null || true
   docker container stop $redis_host 2> /dev/null || true
@@ -106,16 +110,27 @@ cwd="`pwd`"
 
 echo "Node tester activated!";echo;
 
-echo "Starting $ethprovider_host.."
+echo "Starting $ethprovider_1337_host.."
 docker run \
   --detach \
   --env="ETH_MENMONIC=$eth_mnemonic" \
-  --name="$ethprovider_host" \
+  --name="$ethprovider_1337_host" \
   --network="$network" \
   --rm \
   --mount="type=bind,source=$cwd,target=/root" \
-  --mount="type=volume,source=${project}_chain_dev,target=/data" \
-  ${project}_builder -c "cd modules/contracts && bash ops/entry.sh start"
+  --mount="type=volume,source=${project}_chain_1337,target=/data" \
+  ${project}_builder -c "cd modules/contracts && bash ops/ganache.entry.sh start"
+
+echo "Starting $ethprovider_1338_host.."
+docker run \
+  --detach \
+  --env="ETH_MENMONIC=$eth_mnemonic" \
+  --name="$ethprovider_1338_host" \
+  --network="$network" \
+  --rm \
+  --mount="type=bind,source=$cwd,target=/root" \
+  --mount="type=volume,source=${project}_chain_1338,target=/data" \
+  ${project}_builder -c "cd modules/contracts && bash ops/buidler.entry.sh start"
 
 echo "Starting $postgres_host.."
 docker run \
@@ -149,13 +164,15 @@ docker run \
 ########################################
 # Run Tests
 
+chain_providers='{"1337":"'$ethprovider_1337_host':8545","1338":"'$ethprovider_1338_host':8546"}'
+
 echo "Starting $node_host.."
 docker run \
   --entrypoint="bash" \
   --env="INDRA_ADMIN_TOKEN=$admin_token" \
   --env="INDRA_ETH_CONTRACT_ADDRESSES=$eth_contract_addresses" \
   --env="INDRA_ETH_MNEMONIC=$eth_mnemonic" \
-  --env="INDRA_ETH_RPC_URL=$eth_rpc_url" \
+  --env="INDRA_CHAIN_PROVIDERS=$chain_providers" \
   --env="INDRA_LOG_LEVEL=${INDRA_LOG_LEVEL:-0}" \
   --env="LOG_LEVEL=${LOG_LEVEL:-0}" \
   --env="INDRA_NATS_CLUSTER_ID=" \
