@@ -1,4 +1,4 @@
-import { ChannelSigner, getChainId } from "@connext/utils";
+import { ChannelSigner } from "@connext/utils";
 import { ContractAddresses, IChannelSigner, MessagingConfig, SwapRate } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet, providers, constants, utils } from "ethers";
@@ -26,15 +26,21 @@ type TokenConfig = {
 @Injectable()
 export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
-  private readonly signer: IChannelSigner;
-  private ethProvider: providers.JsonRpcProvider;
+  // signer on same mnemonic, connected to different providers
+  private readonly signers: Map<number, IChannelSigner> = new Map();
+  // keyed on chainId
+  private providers: Map<number, providers.JsonRpcProvider> = new Map();
 
   constructor() {
     this.envConfig = process.env;
     // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY
     // WAITS FOR)
-    this.ethProvider = new providers.JsonRpcProvider(this.getEthRpcUrl());
-    this.signer = new ChannelSigner(this.getPrivateKey(), this.ethProvider);
+    const urls = this.getProviderUrls();
+    this.getSupportedChains().forEach((chainId, idx) => {
+      const provider = new providers.JsonRpcProvider(urls[idx], chainId);
+      this.providers.set(chainId, provider);
+      this.signers.set(chainId, new ChannelSigner(this.getPrivateKey(), provider));
+    });
   }
 
   get(key: string): string {
@@ -45,29 +51,35 @@ export class ConfigService implements OnModuleInit {
     return Wallet.fromMnemonic(this.get(`INDRA_ETH_MNEMONIC`)).privateKey;
   }
 
-  getSigner(): IChannelSigner {
-    return this.signer;
+  getSigner(chainId: number): IChannelSigner {
+    return this.signers.get(chainId);
   }
 
   getEthRpcUrl(): string {
-    return this.get(`INDRA_ETH_RPC_URL`);
+    // default to first option in env
+    return JSON.parse(this.get(`INDRA_PROVIDER_URLS`))[0];
   }
 
-  getEthProvider(): providers.JsonRpcProvider {
-    return this.ethProvider;
+  getProviderUrls(): string {
+    // default to first option in env
+    return JSON.parse(this.get(`INDRA_PROVIDER_URLS`));
   }
 
-  async getEthNetwork(): Promise<providers.Network> {
-    const ethNetwork = await this.getEthProvider().getNetwork();
-    if (ethNetwork.name === `unknown` && ethNetwork.chainId === 1337) {
-      ethNetwork.name = `ganache`;
-    } else if (ethNetwork.chainId === 1) {
-      ethNetwork.name = `homestead`;
+  getProvider(chainId: number): providers.JsonRpcProvider {
+    return this.providers.get(chainId);
+  }
+
+  async getNetwork(chainId: number): Promise<providers.Network> {
+    const network = await this.getProvider(chainId).getNetwork();
+    if (network.name === `unknown` && network.chainId === 1337) {
+      network.name = `ganache`;
+    } else if (network.chainId === 1) {
+      network.name = `homestead`;
     }
-    return ethNetwork;
+    return network;
   }
 
-  getEthAddressBook() {
+  getAddressBook() {
     return JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
   }
 
@@ -77,10 +89,9 @@ export class ConfigService implements OnModuleInit {
     return [...dedup].map((chain) => parseInt(chain, 10));
   }
 
-  async getContractAddresses(providedChainId?: string): Promise<ContractAddresses> {
-    const chainId = providedChainId || (await this.getEthNetwork()).chainId.toString();
+  async getContractAddresses(chainId: number): Promise<ContractAddresses> {
     const ethAddresses = { [chainId]: {} } as any;
-    const ethAddressBook = this.getEthAddressBook();
+    const ethAddressBook = this.getAddressBook();
     Object.keys(ethAddressBook[chainId]).forEach(
       (contract: string) =>
         (ethAddresses[chainId][contract] = getAddress(ethAddressBook[chainId][contract].address)),
@@ -88,9 +99,22 @@ export class ConfigService implements OnModuleInit {
     return ethAddresses[chainId] as ContractAddresses;
   }
 
-  async getTokenAddress(): Promise<string> {
-    const chainId = (await this.getEthNetwork()).chainId.toString();
-    const ethAddressBook = this.getEthAddressBook();
+  async getNetworkContexts(): Promise<{ [chainId: number]: ContractAddresses }> {
+    const ethAddressBook = this.getAddressBook();
+    const supportedChains = this.getSupportedChains();
+
+    const ethAddresses = {};
+    supportedChains.forEach((chainId) => {
+      Object.keys(ethAddressBook[chainId]).forEach(
+        (contract: string) =>
+          (ethAddresses[chainId][contract] = getAddress(ethAddressBook[chainId][contract].address)),
+      );
+    });
+    return ethAddresses as { [chainId: string]: ContractAddresses };
+  }
+
+  async getTokenAddress(chainId: number): Promise<string> {
+    const ethAddressBook = this.getAddressBook();
     return getAddress(ethAddressBook[chainId].Token.address);
   }
 
@@ -98,25 +122,23 @@ export class ConfigService implements OnModuleInit {
     const testnetTokenConfig: TokenConfig[] = this.get("INDRA_TESTNET_TOKEN_CONFIG")
       ? JSON.parse(this.get("INDRA_TESTNET_TOKEN_CONFIG"))
       : [];
-    const currentChainId = (await this.getEthNetwork()).chainId;
+    const currentChainId = (await this.getAddressBook()).chainId;
 
     // by default, map token address to mainnet token address
     if (currentChainId !== 1) {
-      const contractAddresses = await this.getContractAddresses("1");
+      const contractAddresses = await this.getContractAddresses(1);
       testnetTokenConfig.push([
         {
           address: contractAddresses.Token,
           chainId: 1,
         },
-        { address: await this.getTokenAddress(), chainId: currentChainId },
+        { address: await this.getTokenAddress(currentChainId), chainId: currentChainId },
       ]);
     }
     return testnetTokenConfig;
   }
 
-  async getTokenAddressForSwap(tokenAddress: string): Promise<string> {
-    const currentChainId = (await this.getEthNetwork()).chainId;
-
+  async getTokenAddressForSwap(currentChainId: number, tokenAddress: string): Promise<string> {
     if (currentChainId !== 1) {
       const tokenConfig = await this.getTestnetTokenConfig();
       const configIndex = tokenConfig.findIndex((tc) =>
@@ -158,18 +180,18 @@ export class ConfigService implements OnModuleInit {
     return [...dedup];
   }
 
-  async getHardcodedRate(from: string, to: string): Promise<string | undefined> {
+  async getHardcodedRate(from: string, to: string, chainId: number): Promise<string | undefined> {
     const swaps = this.getAllowedSwaps();
     const swap = swaps.find((s) => s.from === from && s.to === to);
     if (swap && swap.rate) {
       return swap.rate;
     } else {
-      return this.getDefaultSwapRate(from, to);
+      return this.getDefaultSwapRate(from, to, chainId);
     }
   }
 
-  async getDefaultSwapRate(from: string, to: string): Promise<string | undefined> {
-    const tokenAddress = await this.getTokenAddress();
+  async getDefaultSwapRate(from: string, to: string, chainId: number): Promise<string | undefined> {
+    const tokenAddress = await this.getTokenAddress(chainId);
     if (from === AddressZero && to === tokenAddress) {
       return "100.0";
     }
@@ -179,12 +201,16 @@ export class ConfigService implements OnModuleInit {
     return undefined;
   }
 
+  // NOTE: assumes same signer accross chains
   getPublicIdentifier(): string {
-    return this.signer.publicIdentifier;
+    const [signer] = [...this.signers.values()];
+    return signer.publicIdentifier;
   }
 
+  // NOTE: assumes same signer accross chains
   async getSignerAddress(): Promise<string> {
-    return this.signer.getAddress();
+    const [signer] = [...this.signers.values()];
+    return signer.getAddress();
   }
 
   getLogLevel(): number {
@@ -278,9 +304,5 @@ export class ConfigService implements OnModuleInit {
     };
   }
 
-  async onModuleInit(): Promise<void> {
-    const providerUrl = this.getEthRpcUrl();
-    this.ethProvider = new providers.JsonRpcProvider(providerUrl, await getChainId(providerUrl));
-    this.signer.connect(this.ethProvider);
-  }
+  async onModuleInit(): Promise<void> {}
 }

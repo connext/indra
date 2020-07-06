@@ -56,6 +56,7 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 # config & hard-coded stuff you might want to change
 
 ganacheProvider="http://ethprovider:8545"
+buidlerProvider="http://ethprovider2:8545"
 number_of_services=6 # NOTE: Gotta update this manually when adding/removing services :(
 
 nats_port=4222
@@ -63,15 +64,27 @@ node_port=8080
 dash_port=9999
 webserver_port=3000
 ganacheId="1337"
+buidlerId="1338"
 
+# TODO: should be able to take in an array of providers
+# Fetch chainId from provider 1
 if [[ "$INDRA_ETH_PROVIDER" == "$ganacheProvider" ]]
-then chainId="$ganacheId"
+then chainId_1="$ganacheId"
 else
   echo "Fetching chainId from ${INDRA_ETH_PROVIDER}"
-  chainId="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_ETH_PROVIDER | jq .result | tr -d '"'`"
+  chainId_1="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_ETH_PROVIDER | jq .result | tr -d '"'`"
 fi
 
-if [[ "$chainId" == "$ganacheId" ]]
+# Fetch chainId from provider 2
+if [[ "$INDRA_ETH_PROVIDER_2" == "$buidlerProvider" ]]
+then chainId_2="$buidlerId"
+else
+  echo "Fetching chainId from ${INDRA_ETH_PROVIDER_2}"
+  chainId_2="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_ETH_PROVIDER_2 | jq .result | tr -d '"'`"
+fi
+
+
+if [[ "$chainId_1" == "$ganacheId" ]]
 then make deployed-contracts
 fi
 
@@ -82,16 +95,19 @@ else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' 
 fi
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
-token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.address' | tr -d '"'`"
-allowed_swaps='[{"from":"'"$token_address"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"HARDCODED"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address"'","priceOracleType":"HARDCODED"}]'
+token_address_1="`echo $eth_contract_addresses | jq '.["'"$chainId_1"'"].Token.address' | tr -d '"'`"
+token_address_2="`echo $eth_contract_addresses | jq '.["'"$chainId_2"'"].Token.address' | tr -d '"'`"
+allowed_swaps='[{"from":"'"$token_address_1"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"HARDCODED"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address_1"'","priceOracleType":"HARDCODED"},{"from":"'"$token_address_2"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"HARDCODED"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address_2"'","priceOracleType":"HARDCODED"}]'
 
 # comma-separated lists
-supported_tokens="$token_address,0x0000000000000000000000000000000000000000"
-supported_chains="$chainId"
+supported_tokens="$token_address_1,$token_address_2,0x0000000000000000000000000000000000000000"
+# chainId and provider should be aligned in order
+supported_chains="$chainId_1,$chainId_2"
+indra_providers="$INDRA_ETH_PROVIDER,$INDRA_ETH_PROVIDER_2"
 
-if [[ -z "$chainId" || "$chainId" == "null" ]]
+if [[ -z "$chainId_1" || "$chainId_1" == "null" ]]
 then echo "Failed to fetch chainId from provider ${INDRA_ETH_PROVIDER}" && exit 1;
-else echo "Got chainId $chainId, using token $token_address"
+else echo "Got chainId $chainId_1, using token $token_address_1"
 fi
 
 # database connection settings
@@ -216,7 +232,7 @@ services:
       INDRA_SUPPORTED_TOKENS: '$supported_tokens'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC: '$eth_mnemonic'
-      INDRA_ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
+      INDRA_PROVIDER_URLS: '$indra_providers'
       INDRA_SUPPORTED_CHAINS: '$supported_chains'
       INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
