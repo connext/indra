@@ -94,7 +94,7 @@ export const command = {
       console.log(`SugarDaddy ${abrv(sugarDaddy.address)} has ${formatEther(startEthBalance)} ETH`);
     }
 
-    // Derive bot keys & provide channel funding
+    // Derive agents & provide channel funding
     const keys: string[] = [];
     const agents: Agent[] = [];
     for (let concurrencyIndex = 0; concurrencyIndex < argv.concurrency; concurrencyIndex += 1) {
@@ -139,8 +139,7 @@ export const command = {
 
     // Write results to file
     console.log(`Tests complete, storing data`);
-    const path = `.results/${Date.now()}`;
-    writeJson(results, path);
+    writeJson(results, `.results/${Date.now()}`);
     console.log(`TPS testing with ${argv.concurrency} bots complete, results:`, stringify(results));
 
     // Print the amount we spent during the course of these tests
@@ -160,7 +159,7 @@ export const command = {
 };
 
 type TpsResult = { numberBots: number; paymentsSent: number; paymentsResolved: number };
-export const runTpsTest = async (
+const runTpsTest = async (
   agents: Agent[],
   assetId: Address,
   registry: BotRegistry = internalBotRegistry,

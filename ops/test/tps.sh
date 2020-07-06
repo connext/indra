@@ -2,8 +2,8 @@
 set -e
 
 agents="$1"
-interval="$2"
-limit="$3"
+assetId="${2:-0x0000000000000000000000000000000000000000}"
+
 echo "Starting bot test with options: $agents agents | interval $interval | limit $limit"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -42,8 +42,7 @@ exec docker run \
     trap finish EXIT SIGTERM SIGINT
     node --inspect=0.0.0.0:9229 dist/src/index.js tps \
       --concurrency '$agents' \
+      --token-address '$assetId' \
       --funder-mnemonic $MNEMONIC \
-      --interval '$interval' \
-      --limit '$limit' \
       --log-level $LOG_LEVEL
   '

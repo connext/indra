@@ -168,11 +168,11 @@ test-backwards-compatibility: pull-backwards-compatible
 
 test-tps: test-tps-md
 test-tps-sm: bot
-	bash ops/test/tps.sh 2 0 10
+	bash ops/test/tps.sh 2
 test-tps-md: bot
-	bash ops/test/tps.sh 10 0 10
+	bash ops/test/tps.sh 10
 test-tps-lg: bot
-	bash ops/test/tps.sh 40 0 10
+	bash ops/test/tps.sh 40
 
 test-cf: cf-core
 	bash ops/test/cf.sh

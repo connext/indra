@@ -11,7 +11,7 @@ const { AddressZero, HashZero, Two } = constants;
 const { formatEther, sha256, parseEther } = utils;
 
 export const command = {
-  command: "tps",
+  command: "tps-old",
   describe: "Start a bunch of bots & measure transactions per second",
   builder: (yargs: Argv) => {
     return yargs
