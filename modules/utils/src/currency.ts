@@ -100,7 +100,7 @@ export class Currency {
     return BigNumber.from(this._round(this.amount));
   }
 
-  public format(_options: any) {
+  public format(_options?: any) {
     const amt = this.amount;
     const options = {
       ...this.defaultOptions[this.type],
