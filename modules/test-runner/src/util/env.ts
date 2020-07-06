@@ -11,6 +11,7 @@ export const env = {
     user: process.env.INDRA_PG_USERNAME || "",
   },
   ethProviderUrl: process.env.INDRA_ETH_RPC_URL || "",
+  ethProviderUrl2: process.env.INDRA_ETH_RPC_URL_2 || "",
   logLevel: parseInt(process.env.INDRA_CLIENT_LOG_LEVEL || "3", 10),
   mnemonic: process.env.INDRA_ETH_MNEMONIC || "",
   nodeUrl: process.env.INDRA_NODE_URL || "",

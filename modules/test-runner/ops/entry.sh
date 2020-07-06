@@ -7,6 +7,7 @@ cmd="${1:-test}"
 export STORE_DIR="./.test-store"
 export INDRA_CLIENT_LOG_LEVEL="${INDRA_CLIENT_LOG_LEVEL:-0}"
 export INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://ethprovider:8545}"
+export INDRA_ETH_RPC_URL_2="${INDRA_ETH_RPC_URL_2:-http://ethprovider2:8545}"
 export INDRA_ETH_MNEMONIC="${INDRA_ETH_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 export INDRA_NODE_URL="${INDRA_NODE_URL:-http://node:8080}"
 export INDRA_NATS_URL="${INDRA_NATS_URL:-nats://nats:4222}"
@@ -50,6 +51,7 @@ wait_for "ethprovider" "$INDRA_ETH_RPC_URL"
 wait_for "node" "$INDRA_NODE_URL"
 wait_for "redis" "$INDRA_REDIS_URL"
 wait_for "nats" "$INDRA_NATS_URL"
+wait_for "ethprovider2" "$INDRA_ETH_RPC_URL_2"
 
 bundle=dist/tests.bundle.js
 
