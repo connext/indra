@@ -10,4 +10,5 @@ RUN npm install --only=production > /dev/null 2>&1
 COPY ops ops
 COPY artifacts artifacts
 COPY dist dist
-ENTRYPOINT ["bash", "ops/entry.sh"]
+COPY buidler.config.ts buidler.config.ts
+ENTRYPOINT ["bash", "ops/ganache.entry.sh"]

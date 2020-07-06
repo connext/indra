@@ -9,12 +9,9 @@ project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 
 registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
 localProvider="http://localhost:8545"
-localProvider2="http://localhost:8546"
 ETH_PROVIDER="${1:-$localProvider}"
-ETH_PROVIDER_2="${2:-$localProvider2}"
 mode="${MODE:-local}"
 echo ethprovider: $ETH_PROVIDER
-echo ethprovider2: $ETH_PROVIDER_2
 
 ########################################
 # Calculate stuff based on env
@@ -70,20 +67,7 @@ then
     --mount="type=volume,source=${project}_chain_dev,target=/data" \
     --name="$name" \
     --rm \
-    $image -c "cd modules/contracts && bash ops/entry.sh deploy"
-
-  echo "Deploying $mode-mode contract deployer 2 (image: $image)..."
-  docker run \
-    $interactive \
-    "$SECRET_ENV" \
-    --entrypoint="bash" \
-    --env="ETH_PROVIDER=$ETH_PROVIDER" \
-    --mount="type=bind,source=$cwd,target=/root" \
-    --mount="type=volume,source=${project}_chain_dev_2,target=/data" \
-    --name="$name_2" \
-    --rm \
-    $image -c "cd modules/contracts && bash testnet2-ops/entry.sh deploy"
-  
+    $image -c "cd modules/contracts && bash ops/ganache.entry.sh deploy"
   exit
 
 elif [[ "$mode" == "release" ]]

@@ -54,13 +54,21 @@ export class ConfigService implements OnModuleInit {
     return this.signers.get(chainId);
   }
 
+  getProvider(chainId: number): providers.JsonRpcProvider {
+    return this.providers.get(chainId);
+  }
+
+  getAddressBook() {
+    return JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
+  }
+
   getProviderUrls(): string[] {
     // default to first option in env
     return Object.keys(JSON.parse(this.get(`INDRA_CHAIN_PROVIDERS`)));
   }
 
-  getProvider(chainId: number): providers.JsonRpcProvider {
-    return this.providers.get(chainId);
+  getSupportedChains(): number[] {
+    return Object.keys(JSON.parse(this.get("INDRA_CHAIN_PROVIDERS")));
   }
 
   async getNetwork(chainId: number): Promise<providers.Network> {
@@ -71,16 +79,6 @@ export class ConfigService implements OnModuleInit {
       network.name = `homestead`;
     }
     return network;
-  }
-
-  getAddressBook() {
-    return JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
-  }
-
-  getSupportedChains(): number[] {
-    const chains = this.get("INDRA_SUPPORTED_CHAINS")?.split(",");
-    const dedup = new Set(chains || []);
-    return [...dedup].map((chain) => parseInt(chain, 10));
   }
 
   async getContractAddresses(chainId: number): Promise<ContractAddresses> {

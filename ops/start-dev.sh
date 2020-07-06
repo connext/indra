@@ -39,8 +39,7 @@ export INDRA_LOG_LEVEL="${INDRA_LOG_LEVEL:-`dotEnv INDRA_LOG_LEVEL`}"
 INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PRIVATE_KEY`}"
 INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PUBLIC_KEY`}"
 
-# Make sure keys have proper newlines inserted
-# (bc GitHub Actions strips newlines from secrets)
+# Make sure keys have proper newlines inserted (bc GitHub Actions strips newlines from secrets)
 export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=`
   echo $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY | tr -d '\n\r' |\
   sed 's/-----BEGIN RSA PRIVATE KEY-----/\\\n-----BEGIN RSA PRIVATE KEY-----\\\n/' |\
@@ -55,9 +54,10 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 # Internal Config
 # config & hard-coded stuff you might want to change
 
-ganacheProvider="http://ethprovider:8545"
-buidlerProvider="http://ethprovider2:8545"
 number_of_services=6 # NOTE: Gotta update this manually when adding/removing services :(
+
+ganacheProvider="http://ethprovider_1337:8545"
+buidlerProvider="http://ethprovider_1338:8545"
 
 nats_port=4222
 node_port=8080
@@ -71,16 +71,16 @@ buidlerId="1338"
 if [[ "$INDRA_ETH_PROVIDER" == "$ganacheProvider" ]]
 then chainId_1="$ganacheId"
 else
-  echo "Fetching chainId from ${INDRA_ETH_PROVIDER}"
   chainId_1="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_ETH_PROVIDER | jq .result | tr -d '"'`"
+  echo "Fetched chainId from ${INDRA_ETH_PROVIDER}: $chainId_1"
 fi
 
 # Fetch chainId from provider 2
 if [[ "$INDRA_ETH_PROVIDER_2" == "$buidlerProvider" ]]
 then chainId_2="$buidlerId"
 else
-  echo "Fetching chainId from ${INDRA_ETH_PROVIDER_2}"
   chainId_2="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_ETH_PROVIDER_2 | jq .result | tr -d '"'`"
+  echo "Fetched chainId from ${INDRA_ETH_PROVIDER_2}: $chainId_2"
 fi
 
 
@@ -214,8 +214,8 @@ secrets:
 
 volumes:
   certs:
-  chain_dev:
-  chain_dev_2:
+  chain_1337:
+  chain_1338:
   database_dev:
 
 services:
@@ -255,9 +255,9 @@ services:
     volumes:
       - '`pwd`:/root'
 
-  ethprovider:
+  ethprovider_1337:
     image: '$ethprovider_image'
-    entrypoint: bash modules/contracts/ops/entry.sh
+    entrypoint: bash modules/contracts/ops/ganache.entry.sh
     command: 'start'
     environment:
       ETH_MNEMONIC: '$eth_mnemonic'
@@ -267,11 +267,11 @@ services:
       - '8545:8545'
     volumes:
       - '`pwd`:/root'
-      - 'chain_dev:/data'
+      - 'chain_1337:/data'
 
-  ethprovider2:
+  ethprovider_1338:
     image: '$ethprovider_image'
-    entrypoint: bash modules/contracts/testnet2-ops/entry.sh
+    entrypoint: bash modules/contracts/ops/buidler.entry.sh
     command: 'start'
     environment:
       ETH_MNEMONIC: '$eth_mnemonic'
@@ -281,7 +281,7 @@ services:
       - '8546:8545'
     volumes:
       - '`pwd`:/root'
-      - 'chain_dev_2:/data'
+      - 'chain_1338:/data'
 
   database:
     image: '$database_image'

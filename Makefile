@@ -137,7 +137,8 @@ pull-backwards-compatible:
 	bash ops/pull-images.sh $(backwards_compatible_version)
 
 deployed-contracts: contracts
-	bash ops/deploy-contracts.sh
+	bash ops/deploy-contracts.sh http://localhost:8545
+	bash ops/deploy-contracts.sh http://localhost:8546
 	touch .flags/$@
 
 build-report:
