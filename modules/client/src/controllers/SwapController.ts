@@ -114,7 +114,6 @@ export class SwapController extends AbstractController {
         try {
           const token = new Contract(tokenAddress, ERC20.abi, this.connext.ethProvider);
           decimals = await token.functions.decimals();
-          console.log("decimals: ", decimals);
           this.log.info(`Retrieved decimals for ${tokenAddress} from token contract: ${decimals}`);
         } catch (error) {
           this.log.error(
