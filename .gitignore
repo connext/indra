@@ -15,6 +15,7 @@ modules/*/package-lock.json
 **/.cache
 **/.config
 **/.connext-store/**
+**/.results/**
 **/.git
 **/.jest.cache
 **/.local

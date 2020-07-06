@@ -1,5 +1,5 @@
 import { safeJsonStringify } from "@connext/utils";
-import { mkdirSync, writeFile } from "fs";
+import { mkdirSync, writeFileSync } from "fs";
 import { dirname } from "path";
 
 export const writeJson = (json: any, path: string) => {
@@ -8,9 +8,5 @@ export const writeJson = (json: any, path: string) => {
   mkdirSync(dir, { recursive: true });
   // write file
   const data = safeJsonStringify(json);
-  return writeFile(dir, data, (error) => {
-    if (error) {
-      throw error;
-    }
-  });
+  return writeFileSync(path, data);
 };

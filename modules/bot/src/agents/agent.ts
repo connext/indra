@@ -7,6 +7,7 @@ import {
   PublicParams,
   Address,
   ConditionalTransferUnlockedEventData,
+  ConditionalTransferCreatedEventData,
 } from "@connext/types";
 import {
   abrv,
@@ -23,6 +24,7 @@ const { AddressZero } = constants;
 
 export class Agent {
   public nodeReclaim = Evt.create<ConditionalTransferUnlockedEventData<any>>();
+  public senderCreated = Evt.create<ConditionalTransferCreatedEventData<any>>();
   private payments: {
     [k: string]: { resolve: () => void; reject: (msg?: string | Error) => void };
   } = {};
@@ -50,6 +52,7 @@ export class Agent {
       const eventData = eData as EventPayloads.GraphTransferCreated;
       // ignore transfers from self
       if (eventData.sender === this.client.publicIdentifier) {
+        this.senderCreated.post(eData);
         return;
       }
 

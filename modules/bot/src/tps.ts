@@ -13,7 +13,7 @@ import { Argv } from "yargs";
 
 import { env } from "./env";
 import { internalBotRegistry, BotRegistry } from "./helpers/agentIndex";
-import { createAndFundClient } from "./helpers/createAndFundBot";
+import { createAndFundClient } from "./helpers/createAndFundClient";
 import { Agent } from "./agents/agent";
 import { Address } from "@connext/types";
 import { writeJson } from "./helpers/writeJson";
@@ -101,14 +101,13 @@ export const command = {
       const newKey =
         keys.length === 0 ? sha256(argv.entropySeed) : sha256(keys[concurrencyIndex - 1]);
       keys[concurrencyIndex] = newKey;
-      const client = await createAndFundClient(
-        sugarDaddy,
-        [
-          { grantAmt: ethGrant, assetId: AddressZero },
-          { grantAmt: tokenGrant, assetId: token.address },
-        ],
-        newKey,
-      );
+      const grants = [
+        {
+          grantAmt: argv.tokenAddress === AddressZero ? ethGrant : tokenGrant,
+          assetId: argv.tokenAddress,
+        },
+      ];
+      const client = await createAndFundClient(sugarDaddy, grants, newKey);
 
       // Add client to registry
       await internalBotRegistry.add(client.publicIdentifier);
@@ -121,28 +120,38 @@ export const command = {
     }
 
     // Begin TPS testing
+    console.log(`Created and funded bots, beginning tps test with up to ${agents.length} bots`);
     const toTest: Agent[] = [];
     const results: TpsResult[] = [];
+    const copy = [...agents];
     for (let i = 0; i < agents.length; i++) {
-      const top = agents.shift();
+      const top = copy.shift();
       if (!top) {
         console.log("No more agents, tps tests completed");
         break;
       }
       toTest.push(top);
+      console.log(`Starting tps cycle with ${toTest.length} bots`);
       const testResult = await runTpsTest(toTest, argv.tokenAddress);
+      console.log(`Test cycle complete: ${stringify(testResult)}`);
       results.push(testResult);
       // wait 15s for payments/queues to clear
-      console.log(`Waiting 15s for agents to complete or timeout payments`);
-      await delay(15000);
+      if (testResult.paymentsSent > 0) {
+        console.log(`Waiting 15s for agents to complete or timeout payments`);
+        await delay(15000);
+      }
     }
 
     // Write results to file
     console.log(`Tests complete, storing data`);
-    writeJson(results, `.results/${Date.now()}`);
-    console.log(`TPS testing with ${argv.concurrency} bots complete, results:`, stringify(results));
+    writeJson(results, `.results/${Date.now()}.json`);
+    console.log(
+      `TPS testing with total of ${argv.concurrency} bots complete, results:`,
+      stringify(results),
+    );
 
     // Print the amount we spent during the course of these tests
+    console.log(`TRYING TO GET END ETH BALANCE`);
     const endEthBalance = await sugarDaddy.getBalance();
     if (argv.tokenAddress !== AddressZero) {
       const endTokenBalance = await token.balanceOf(sugarDaddy.address);
@@ -169,8 +178,21 @@ const runTpsTest = async (
   let paymentsResolved = 0;
 
   agents.forEach((agent) => {
-    agent.nodeReclaim.attach((data) => (paymentsResolved += 1));
+    agent.nodeReclaim.attach((data) => {
+      paymentsResolved += 1;
+      console.log(`Resolved payment #${paymentsResolved}`);
+    });
+
+    agent.senderCreated.attach((data) => {
+      paymentsSent += 1;
+      console.log(`Sent payment #${paymentsSent}`);
+    });
   });
+
+  // Wait until recipients are available before starting test
+  while (!(await registry.getRandom(agents[0].client.publicIdentifier))) {
+    await delay(1000);
+  }
 
   // Begin sending payments
   const end = Date.now() + 1000;
@@ -185,7 +207,9 @@ const runTpsTest = async (
     const paymentId = getRandomBytes32();
     agents[idx]
       .pay(recipient, getSignerAddressFromPublicIdentifier(recipient), toBN(1), assetId, paymentId)
-      .then((res) => (paymentsSent += 1));
+      .catch((e) => {
+        // console.error(`Error sending payment: ${e.message}`);
+      });
     // Move to next bot in array or wrap
     idx = idx === agents.length - 1 ? 0 : idx + 1;
   }

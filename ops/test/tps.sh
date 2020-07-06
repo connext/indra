@@ -12,6 +12,28 @@ project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' 
 INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:3000/api/ethprovider}"
 INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:3000/api}"
 
+function wait_for {
+  name=$1
+  target=$2
+  tmp=${target#*://} # remove protocol
+  host=${tmp%%/*} # remove path if present
+  if [[ ! "$host" =~ .*:[0-9]{1,5} ]] # no port provided
+  then
+    echo "$host has no port, trying to add one.."
+    if [[ "${target%://*}" == "http" ]]
+    then host="$host:80"
+    elif [[ "${target%://*}" == "https" ]]
+    then host="$host:443"
+    else echo "Error: missing port for host $host derived from target $target" && exit 1
+    fi
+  fi
+  echo "Waiting for $name at $target ($host) to wake up..."
+  wait-for -t 60 $host 2> /dev/null
+}
+
+# wait_for "node" "$INDRA_NODE_URL"
+# wait_for "ethprovider" "$INDRA_ETH_RPC_URL"
+
 echo "Starting bot in env: LOG_LEVEL=$LOG_LEVEL | INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL | INDRA_NODE_URL=$INDRA_NODE_URL"
 
 tps_name="${project}_bot_tps"

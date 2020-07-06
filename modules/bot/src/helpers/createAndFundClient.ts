@@ -8,7 +8,7 @@ import {
   EventNames,
 } from "@connext/types";
 import { Token } from "@connext/contracts";
-import { abrv, ChannelSigner, toBN } from "@connext/utils";
+import { abrv, ChannelSigner, toBN, delay } from "@connext/utils";
 import { connect } from "@connext/client";
 import { env } from "../env";
 import { getFileStore } from "@connext/store";
@@ -21,7 +21,7 @@ export const createAndFundClient = async (
   sugarDaddy: Wallet,
   grants: { grantAmt: DecString; assetId: Address }[],
   privateKey: string,
-  logLevel: number = 3,
+  logLevel: number = 0,
 ): Promise<IConnextClient> => {
   const bot = new Wallet(privateKey, new JsonRpcProvider(env.ethProviderUrl));
   for (const grant of grants) {
@@ -76,22 +76,23 @@ export const createAndFundClient = async (
   for (const grant of grants) {
     // User funds
     await new Promise((resolve, reject) => {
-      const GAS_AMT = toBN("100_000"); // leave funds for gas
-      const amount = parseEther(grant.grantAmt).sub(grant.assetId === AddressZero ? Zero : GAS_AMT);
+      const GAS_AMT = toBN("210000000000000"); // leave funds for gas
+      const amount = parseEther(grant.grantAmt).sub(grant.assetId === AddressZero ? GAS_AMT : Zero);
       client.deposit({ amount, assetId: grant.assetId }).then(resolve);
       client.on(EventNames.DEPOSIT_FAILED_EVENT, reject);
     });
     console.log(`Client ${abrv(client.publicIdentifier)} channel funded with ${grant.assetId}`);
 
     // Collateral
-    await new Promise((resolve, reject) => {
-      client.requestCollateral(grant.assetId);
-      client.on(EventNames.DEPOSIT_FAILED_EVENT, reject);
-      client.on(
-        EventNames.DEPOSIT_CONFIRMED_EVENT,
-        resolve,
-        (data) => data.assetId === grant.assetId,
-      );
+    await client.requestCollateral(grant.assetId);
+    await new Promise(async (resolve, reject) => {
+      let fb = await client.getFreeBalance(grant.assetId);
+      while (fb[client.nodeSignerAddress].lte(Zero)) {
+        await delay(500);
+        fb = await client.getFreeBalance(grant.assetId);
+      }
+      setTimeout(reject, 15_000);
+      resolve();
     });
     console.log(
       `Client ${abrv(client.publicIdentifier)} channel collateralized with ${grant.assetId}`,
