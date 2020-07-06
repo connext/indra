@@ -161,12 +161,12 @@ export class Currency {
     return exchangeRates[currency];
   };
 
-  public toDAI = (daiRate: any) => this._convert("DAI", daiRate);
-  public toDEI = (daiRate: any) => this._convert("DEI", daiRate);
-  public toETH = (daiRate: any) => this._convert("ETH", daiRate);
-  public toFIN = (daiRate: any) => this._convert("FIN", daiRate);
-  public toWEI = (daiRate: any) => this._convert("WEI", daiRate);
-  public toGWEI = (daiRate: any) => this._convert("GWEI", daiRate);
+  public toDAI = (daiRate?: any) => this._convert("DAI", daiRate);
+  public toDEI = (daiRate?: any) => this._convert("DEI", daiRate);
+  public toETH = (daiRate?: any) => this._convert("ETH", daiRate);
+  public toFIN = (daiRate?: any) => this._convert("FIN", daiRate);
+  public toWEI = (daiRate?: any) => this._convert("WEI", daiRate);
+  public toGWEI = (daiRate?: any) => this._convert("GWEI", daiRate);
 
   ////////////////////////////////////////
   // Private Methods
