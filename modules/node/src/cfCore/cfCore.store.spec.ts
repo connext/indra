@@ -266,7 +266,7 @@ describe("CFCoreStore", () => {
 
       const conditionalTx = createConditionalTransactionCommitmentJSON({
         appIdentityHash: appProposal.identityHash,
-        contractAddresses: await configService.getContractAddresses(),
+        contractAddresses: configService.getContractAddresses(1337),
       });
 
       for (let index = 0; index < 3; index++) {
