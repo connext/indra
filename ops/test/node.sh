@@ -173,7 +173,7 @@ docker run \
   --env="INDRA_ETH_CONTRACT_ADDRESSES=$eth_contract_addresses" \
   --env="INDRA_ETH_MNEMONIC=$eth_mnemonic" \
   --env="INDRA_CHAIN_PROVIDERS=$chain_providers" \
-  --env="INDRA_ETH_RPC_URL=$ethprovider_1337_host" \
+  --env="INDRA_ETH_RPC_URL=$eth_rpc_url_1337" \
   --env="INDRA_LOG_LEVEL=${INDRA_LOG_LEVEL:-0}" \
   --env="LOG_LEVEL=${LOG_LEVEL:-0}" \
   --env="INDRA_NATS_CLUSTER_ID=" \
