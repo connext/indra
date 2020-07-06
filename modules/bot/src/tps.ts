@@ -130,7 +130,7 @@ export const command = {
         break;
       }
       toTest.push(top);
-      const testResult = await runTpsTest(toTest);
+      const testResult = await runTpsTest(toTest, token.address);
       results.push(testResult);
       // wait 15s for payments/queues to clear
       console.log(`Waiting 15s for agents to complete or timeout payments`);
