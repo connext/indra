@@ -62,7 +62,7 @@ export class ResolveTransferController extends AbstractController {
     );
     if (existingReceiverApp) {
       appIdentityHash = existingReceiverApp.identityHash;
-      this.log.info(
+      this.log.debug(
         `[${paymentId}] Found existing transfer app, proceeding with ${appIdentityHash}: ${JSON.stringify(
           existingReceiverApp.latestState,
         )}`,
@@ -73,7 +73,11 @@ export class ResolveTransferController extends AbstractController {
       meta = existingReceiverApp.meta;
     } else if (existingReceiverAppProposal) {
       try {
-        this.log.warn(`[${paymentId}] Found existing app proposal, installing before proceeding`);
+        this.log.debug(
+          `[${paymentId}] Found existing transfer proposal, proceeding with install of ${
+            existingReceiverAppProposal.identityHash
+          } using state: ${JSON.stringify(existingReceiverAppProposal.latestState)}`,
+        );
         await this.connext.installApp(existingReceiverAppProposal.identityHash);
         appIdentityHash = existingReceiverAppProposal.identityHash;
         amount = (existingReceiverAppProposal.latestState as GenericConditionalTransferAppState)
@@ -98,7 +102,7 @@ export class ResolveTransferController extends AbstractController {
               )}`,
             );
           }
-          this.log.info(`[${paymentId}] Requesting node install app`);
+          this.log.debug(`[${paymentId}] Requesting node install app`);
           const installRes = await this.connext.node.installConditionalTransferReceiverApp(
             paymentId,
             conditionType,
@@ -116,12 +120,39 @@ export class ResolveTransferController extends AbstractController {
             // @ts-ignore
             return;
           }
+        } else {
+          // See node about race condition with queue
+          appIdentityHash = existingReceiverApp.identityHash;
+          this.log.debug(
+            `[${paymentId}] Found existing transfer app, proceeding with ${appIdentityHash}: ${JSON.stringify(
+              existingReceiverApp.latestState,
+            )}`,
+          );
+          amount = (existingReceiverApp.latestState as GenericConditionalTransferAppState)
+            .coinTransfers[0].amount;
+          assetId = existingReceiverApp.outcomeInterpreterParameters["tokenAddress"];
+          meta = existingReceiverApp.meta;
         }
       } catch (e) {
         emitFailureEvent(e);
         throw e;
       }
     }
+
+    // Ensure all values are properly defined before proceeding
+    if (!appIdentityHash || !amount || !assetId || !meta) {
+      const message =
+        `Failed to install receiver app properly for ${paymentId}, missing one of:\n` +
+        `   - appIdentityHash: ${appIdentityHash}\n` +
+        `   - amount: ${stringify(amount)}\n` +
+        `   - assetId: ${assetId}\n` +
+        `   - meta: ${stringify(meta)}`;
+      const e = { message };
+      emitFailureEvent(e as any);
+      throw new Error(message);
+    }
+
+    this.log.info(`[${paymentId}] Taking action on receiver app: ${appIdentityHash}`);
 
     // Take action + uninstall app
     try {
