@@ -297,6 +297,7 @@ export class AppRegistryService implements OnModuleInit {
     switch (proposal.appDefinition) {
       case contractAddresses.SimpleTwoPartySwapApp: {
         const responderDecimals = await this.configService.getTokenDecimals(
+          cxt.stateChannel.chainId,
           params.responderDepositAssetId,
         );
         return validateSimpleSwapApp(

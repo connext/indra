@@ -17,8 +17,8 @@ export const KNOWN_ERRORS = ["the tx doesn't have the correct nonce", NO_TX_HASH
 
 @Injectable()
 export class OnchainTransactionService {
-  private nonce = Promise.resolve(0);
-  private readonly queue: PriorityQueue;
+  private nonces: Map<number, Promise<number>> = new Map();
+  private queues: Map<number, PriorityQueue> = new Map();
 
   constructor(
     private readonly configService: ConfigService,
@@ -26,17 +26,19 @@ export class OnchainTransactionService {
     private readonly log: LoggerService,
   ) {
     this.log.setContext("OnchainTransactionService");
-    this.nonce = this.configService.getSigner().getTransactionCount();
-    this.queue = new PriorityQueue({ concurrency: 1 });
+    this.configService.signers.forEach((signer, chainId) => {
+      this.nonces.set(chainId, signer.getTransactionCount());
+      this.queues.set(chainId, new PriorityQueue({ concurrency: 1 }));
+    });
   }
 
   async sendUserWithdrawal(
     channel: Channel,
     transaction: MinimalTransaction,
   ): Promise<OnchainTransaction> {
-    await this.queue.add(() =>
-      this.sendTransaction(transaction, TransactionReason.USER_WITHDRAWAL, channel),
-    );
+    await this.queues
+      .get(channel.chainId)
+      .add(() => this.sendTransaction(transaction, TransactionReason.USER_WITHDRAWAL, channel));
     return this.onchainTransactionRepository.findLatestTransactionToChannel(
       channel.multisigAddress,
       TransactionReason.USER_WITHDRAWAL,
@@ -47,9 +49,9 @@ export class OnchainTransactionService {
     channel: Channel,
     transaction: MinimalTransaction,
   ): Promise<OnchainTransaction> {
-    await this.queue.add(() =>
-      this.sendTransaction(transaction, TransactionReason.NODE_WITHDRAWAL, channel),
-    );
+    await this.queues
+      .get(channel.chainId)
+      .add(() => this.sendTransaction(transaction, TransactionReason.NODE_WITHDRAWAL, channel));
     return this.onchainTransactionRepository.findLatestTransactionToChannel(
       channel.multisigAddress,
       TransactionReason.NODE_WITHDRAWAL,
@@ -60,9 +62,9 @@ export class OnchainTransactionService {
     channel: Channel,
     transaction: MinimalTransaction,
   ): Promise<OnchainTransaction> {
-    await this.queue.add(() =>
-      this.sendTransaction(transaction, TransactionReason.COLLATERALIZATION, channel),
-    );
+    await this.queues
+      .get(channel.chainId)
+      .add(() => this.sendTransaction(transaction, TransactionReason.COLLATERALIZATION, channel));
     return this.onchainTransactionRepository.findLatestTransactionToChannel(
       channel.multisigAddress,
       TransactionReason.COLLATERALIZATION,
@@ -85,13 +87,13 @@ export class OnchainTransactionService {
       try {
         this.log.info(`Attempt ${attempt}/${MAX_RETRIES} to send transaction to ${transaction.to}`);
         const chainNonce = await wallet.getTransactionCount();
-        const memoryNonce = await this.nonce;
+        const memoryNonce = await this.nonces.get(channel.chainId);
         const nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
         tx = await wallet.sendTransaction({
           ...transaction,
           nonce,
         });
-        this.nonce = Promise.resolve(nonce + 1);
+        this.nonces.set(channel.chainId, Promise.resolve(nonce + 1));
         if (attempt === 1) {
           // create the pending transaction in the db
           await this.onchainTransactionRepository.addPending(tx, reason, channel);
@@ -100,7 +102,9 @@ export class OnchainTransactionService {
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
         }
-        this.log.info(`Success sending transaction! Tx mined at block ${receipt.blockNumber}: ${receipt.transactionHash}`);
+        this.log.info(
+          `Success sending transaction! Tx mined at block ${receipt.blockNumber}: ${receipt.transactionHash}`,
+        );
         await this.onchainTransactionRepository.addReceipt(receipt);
         return;
       } catch (e) {
@@ -118,9 +122,5 @@ export class OnchainTransactionService {
     }
     await this.onchainTransactionRepository.markFailed(tx, errors);
     throw new Error(`Failed to send transaction (errors indexed by attempt): ${stringify(errors)}`);
-  }
-
-  private enqueue(task: () => Promise<void>): Promise<void> {
-    return this.queue.add(task);
   }
 }

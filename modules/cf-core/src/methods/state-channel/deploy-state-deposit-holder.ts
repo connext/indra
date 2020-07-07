@@ -76,12 +76,11 @@ export class DeployStateDepositController extends MethodController {
   ): Promise<MethodResults.DeployStateDepositHolder> {
     const multisigAddress = params.multisigAddress;
     const retryCount = params.retryCount || 1;
-    const { networkContexts, store, signer } = requestHandler;
+    const { networkContexts, signer } = requestHandler;
     const log = requestHandler.log.newContext("CF-DeployStateDepositHolder");
-    const networkContext = networkContexts[params.chainId];
+    const networkContext = networkContexts[preProtocolStateChannel.chainId];
 
     // No need to re-assert what we already asserted in beforeExecution
-    const channel = StateChannel.fromJson((await store.getStateChannel(multisigAddress))!);
 
     if (!signer.provider || !Signer.isSigner(signer)) {
       throw new Error(`Signer must be connected to provider`);
@@ -116,17 +115,17 @@ export class DeployStateDepositController extends MethodController {
           log.debug(`chainNonce ${chainNonce} vs memoryNonce ${memoryNonce}`);
           memoryNonce = nonce;
           const proxyFactory = new Contract(
-            channel.addresses.ProxyFactory,
+            preProtocolStateChannel.addresses.ProxyFactory,
             ProxyFactory.abi,
             signer,
           );
           const tx: providers.TransactionResponse = await proxyFactory.createProxyWithNonce(
             networkContext.contractAddresses.MinimumViableMultisig,
             new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
-              channel.multisigOwners,
+              preProtocolStateChannel.multisigOwners,
             ]),
             // hash chainId plus nonce for x-chain replay protection
-            solidityKeccak256(["uint256", "uint256"], [(await provider.getNetwork()).chainId, 0]),
+            solidityKeccak256(["uint256", "uint256"], [preProtocolStateChannel.chainId, 0]),
             {
               gasLimit: CREATE_PROXY_AND_SETUP_GAS,
               gasPrice: provider.getGasPrice(),
@@ -143,13 +142,13 @@ export class DeployStateDepositController extends MethodController {
           log.info(`Done waiting for tx hash: ${tx.hash}`);
 
           const multisig = new Contract(
-            channel.multisigAddress,
+            preProtocolStateChannel.multisigAddress,
             MinimumViableMultisig.abi,
             provider,
           );
           const expectedOwners = [
-            getSignerAddressFromPublicIdentifier(channel.userIdentifiers[0]),
-            getSignerAddressFromPublicIdentifier(channel.userIdentifiers[1]),
+            getSignerAddressFromPublicIdentifier(preProtocolStateChannel.userIdentifiers[0]),
+            getSignerAddressFromPublicIdentifier(preProtocolStateChannel.userIdentifiers[1]),
           ];
           const actualOwners = await multisig.getOwners();
 
@@ -161,7 +160,7 @@ export class DeployStateDepositController extends MethodController {
             );
           }
 
-          log.info(`Multisig deployment complete for ${channel.multisigAddress}`);
+          log.info(`Multisig deployment complete for ${preProtocolStateChannel.multisigAddress}`);
           result = { transactionHash: tx.hash! };
           break;
         } catch (e) {

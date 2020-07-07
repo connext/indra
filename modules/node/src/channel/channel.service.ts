@@ -238,7 +238,7 @@ export class ChannelService {
 
     // convert targets to proper units for token
     if (assetId !== AddressZero) {
-      const decimals = await this.configService.getTokenDecimals();
+      const decimals = await this.configService.getTokenDecimals(chainId, assetId);
       if (decimals !== DEFAULT_DECIMALS) {
         this.log.info(`Token has ${decimals} decimals, converting rebalance targets`);
         targets.collateralizeThreshold = BigNumber.from(

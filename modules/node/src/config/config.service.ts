@@ -32,7 +32,7 @@ type PostgresConfig = {
 export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
   // signer on same mnemonic, connected to different providers
-  private readonly signers: Map<number, IChannelSigner> = new Map();
+  public readonly signers: Map<number, IChannelSigner> = new Map();
   // keyed on chainId
   public readonly providers: Map<number, providers.JsonRpcProvider> = new Map();
 
