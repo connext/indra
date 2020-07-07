@@ -120,8 +120,13 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     if (syncType.whosSync === "theirs") {
       switch (syncType.syncType) {
         case PersistStateChannelType.NoChange:
+        case PersistStateChannelType.SyncRejectedProposal:
         case PersistStateChannelType.SyncNumProposedApps: {
           // have all info in message to send already
+          counterpartySyncInfo = {
+            commitments: {},
+            app: {},
+          };
           break;
         }
         case PersistStateChannelType.SyncProposal: {
@@ -222,6 +227,25 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           ];
           postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
           logTime(log, substart, `[${loggerId}] Synced proposals with responder`);
+          break;
+        }
+        case PersistStateChannelType.SyncRejectedProposal: {
+          // make sure both channels have rejected the same proposals
+          const rejectedProposalSync = await syncRejectedProposals(
+            postSyncStateChannel,
+            responderProposalVersionNumbers,
+          );
+          yield [
+            PERSIST_STATE_CHANNEL,
+            PersistStateChannelType.SyncRejectedProposal,
+            rejectedProposalSync!.updatedChannel,
+            rejectedProposalSync!.commitments,
+            rejectedProposalSync!.proposal,
+          ];
+          postSyncStateChannel = StateChannel.fromJson(
+            rejectedProposalSync!.updatedChannel.toJson(),
+          );
+          logTime(log, substart, `[${loggerId}] Synced rejected proposals with initiator`);
           break;
         }
         case PersistStateChannelType.SyncFreeBalance: {
@@ -396,9 +420,14 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     let counterpartySyncInfo: any;
     if (syncType.whosSync === "theirs") {
       switch (syncType.syncType) {
+        case PersistStateChannelType.SyncRejectedProposal:
         case PersistStateChannelType.NoChange:
         case PersistStateChannelType.SyncNumProposedApps: {
           // have all info in message to send already
+          counterpartySyncInfo = {
+            commitments: {},
+            app: {},
+          };
           break;
         }
         case PersistStateChannelType.SyncProposal: {
@@ -522,6 +551,25 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           ];
           postSyncStateChannel = StateChannel.fromJson(proposalSync!.updatedChannel.toJson());
           logTime(log, substart, `[${loggerId}] Synced proposals with initiator`);
+          break;
+        }
+        case PersistStateChannelType.SyncRejectedProposal: {
+          // make sure both channels have rejected the same proposals
+          const rejectedProposalSync = await syncRejectedProposals(
+            postSyncStateChannel,
+            initiatorProposalVersionNumbers,
+          );
+          yield [
+            PERSIST_STATE_CHANNEL,
+            PersistStateChannelType.SyncRejectedProposal,
+            rejectedProposalSync!.updatedChannel,
+            rejectedProposalSync!.commitments,
+            rejectedProposalSync!.proposal,
+          ];
+          postSyncStateChannel = StateChannel.fromJson(
+            rejectedProposalSync!.updatedChannel.toJson(),
+          );
+          logTime(log, substart, `[${loggerId}] Synced rejected proposals with initiator`);
           break;
         }
         case PersistStateChannelType.SyncFreeBalance: {
@@ -797,6 +845,45 @@ function syncNumProposedApps(ourChannel: StateChannel, counterpartyNumProposedAp
   return { updatedChannel: ourChannel.incrementNumProposedApps() };
 }
 
+// removes a proposal your counterparty has rejected
+// to be used IFF a proposal is successfully installed by both
+async function syncRejectedProposals(
+  ourChannel: StateChannel,
+  counterpartyProposalVersionNumbers: AppSyncObj[],
+) {
+  // if counterparty has more proposals than we do, they should sync
+  if (counterpartyProposalVersionNumbers.length >= ourChannel.proposedAppInstances.size) {
+    return undefined;
+  }
+  if (counterpartyProposalVersionNumbers.length + 1 !== ourChannel.proposedAppInstances.size) {
+    throw new Error(`Cannot sync by more than one rejected proposal, use restore instead.`);
+  }
+
+  // find the proposal that we have, but our counterparty does not
+  const proposal = [...ourChannel.proposedAppInstances.values()].find(
+    (proposal) =>
+      counterpartyProposalVersionNumbers.findIndex(
+        (syncObj) => syncObj.identityHash === proposal.identityHash,
+      ) === -1,
+  );
+
+  if (!proposal) {
+    throw new Error(
+      `Could not find proposal counterparty has rejected in our channel. Our proposals: ${stringify(
+        ourChannel.proposedAppInstances.keys(),
+      )}, counterparty proposals: ${stringify(
+        counterpartyProposalVersionNumbers.map((x) => x.identityHash),
+      )}`,
+    );
+  }
+
+  return {
+    updatedChannel: ourChannel.removeProposal(proposal.identityHash),
+    commitments: [],
+    proposal,
+  };
+}
+
 // adds a missing proposal from the responder channel to our channel. Is only
 // safe for use when there is one proposal missing. Verifies we have signed
 // the update before adding the proposal to our channel.s
@@ -807,11 +894,12 @@ async function syncUntrackedProposals(
   counterpartySetState: SetStateCommitmentJSON | undefined,
   counterpartyConditional: ConditionalTransactionCommitmentJSON | undefined,
 ) {
-  // handle case where we have to add a proposal to our store
+  // first check against the number of proposed apps
   if (ourChannel.numProposedApps >= counterpartyNumProposedApps) {
     // our proposals are ahead, counterparty should sync if needed
     return undefined;
   }
+
   if (ourChannel.numProposedApps !== counterpartyNumProposedApps - 1) {
     throw new Error(`Cannot sync by more than one proposed app, use restore instead.`);
   }
@@ -908,6 +996,17 @@ function needsSyncFromCounterparty(
       return { whosSync, syncType: PersistStateChannelType.SyncNumProposedApps };
     }
     return { whosSync, syncType: PersistStateChannelType.SyncProposal };
+  } else if (ourChannel.proposedAppInstances.size !== counterpartyProposalVersionNumbers.length) {
+    // If the numProposedApps is in sync, but the actual stored proposals
+    // are *not*, then someone was offline during a reject install, and
+    // the proposal should be resurrected
+    return {
+      whosSync:
+        ourChannel.proposedAppInstances.size < counterpartyProposalVersionNumbers.length
+          ? "theirs"
+          : "ours",
+      syncType: PersistStateChannelType.SyncRejectedProposal,
+    };
   }
 
   // check free balance nonces
