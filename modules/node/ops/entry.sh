@@ -37,8 +37,32 @@ function wait_for {
 
 wait_for "database" "$INDRA_PG_HOST:$INDRA_PG_PORT"
 wait_for "nats" "$INDRA_NATS_SERVERS"
-wait_for "ethprovider" "$INDRA_ETH_RPC_URL"
 wait_for "redis" "$INDRA_REDIS_URL"
+
+
+# FIXME: the below works, as in it parses the connection info correctly:
+# Waiting for ethprovider_1337 at http://ethprovider_1337:8545 (ethprovider_1337:8545) to wake up...
+# Waiting for ethprovider_1338 at http://ethprovider_1338:8545 (ethprovider_1338:8545) to wake up...
+# But it seems the second eth provider is not found....
+
+# Wait for all eth providers
+chains=()
+urls=()
+
+# Parse json string
+for chain in `echo ${INDRA_CHAIN_PROVIDERS} | jq 'keys[]' | sed -e 's/^"//' -e 's/"$//'`
+do
+  chains+=($chain)
+done
+for url in `echo ${INDRA_CHAIN_PROVIDERS} | jq '.[]' | sed -e 's/^"//' -e 's/"$//'`
+do
+  urls+=("$url")
+done
+
+for index in "${!chains[@]}"
+do
+  wait_for "ethprovider_${chains[$index]}" "${urls[$index]}"
+done
 
 if [[ "$NODE_ENV" == "development" ]]
 then
