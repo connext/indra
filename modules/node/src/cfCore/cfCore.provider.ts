@@ -29,11 +29,13 @@ export const cfCoreProviderFactory: Provider = {
     log.setContext("CFCoreProvider");
 
     const networkContexts: NetworkContexts = [...config.providers.entries()].reduce(
-      (nc, [chainId, provider]) =>
-        (nc[chainId] = {
+      (nc, [chainId, provider]) => {
+        nc[chainId] = {
           contractAddresses: config.getContractAddresses(chainId),
           provider,
-        }),
+        };
+        return nc;
+      },
       {},
     );
 
