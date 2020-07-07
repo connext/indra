@@ -205,7 +205,7 @@ const runTpsTest = async (
       continue;
     }
     const paymentId = getRandomBytes32();
-    agents[idx]
+    await agents[idx]
       .pay(recipient, getSignerAddressFromPublicIdentifier(recipient), toBN(1), assetId, paymentId)
       .catch((e) => {
         // console.error(`Error sending payment: ${e.message}`);

@@ -49,7 +49,7 @@ exec docker run \
   --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
   --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
   --env="LOG_LEVEL=$LOG_LEVEL" \
-  --env="MNEMONIC=$MNEMONIC" \
+  --env="MNEMONIC=${MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}" \
   --name="$tps_name" \
   --publish="9231:9229" \
   --rm \
@@ -65,6 +65,6 @@ exec docker run \
     node --inspect=0.0.0.0:9229 dist/src/index.js tps \
       --concurrency '$agents' \
       --token-address '$assetId' \
-      --funder-mnemonic $MNEMONIC \
-      --log-level $LOG_LEVEL
+      --funder-mnemonic "$MNEMONIC" \
+      --log-level "$LOG_LEVEL"
   '
