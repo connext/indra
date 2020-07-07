@@ -1,4 +1,3 @@
-import { AddressBookJson } from "@connext/contracts";
 import { ChannelSigner } from "@connext/utils";
 import {
   ContractAddresses,
@@ -6,6 +5,8 @@ import {
   MessagingConfig,
   PriceOracleTypes,
   AllowedSwap,
+  ContractAddressBook,
+  AddressBook,
 } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet, providers, constants, utils } from "ethers";
@@ -67,7 +68,7 @@ export class ConfigService implements OnModuleInit {
     return Array.from(this.providers.values());
   }
 
-  getAddressBook(): AddressBookJson {
+  getAddressBook(): AddressBook {
     return JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
   }
 
@@ -88,7 +89,6 @@ export class ConfigService implements OnModuleInit {
   getContractAddresses(chainId: number): ContractAddresses {
     const ethAddresses = { [chainId]: {} } as any;
     const ethAddressBook = this.getAddressBook();
-    console.log("ethAddressBook: ", ethAddressBook);
     Object.keys(ethAddressBook[chainId]).forEach(
       (contract: string) =>
         (ethAddresses[chainId][contract] = getAddress(ethAddressBook[chainId][contract].address)),
@@ -97,14 +97,16 @@ export class ConfigService implements OnModuleInit {
   }
 
   getContractAddressBook(): ContractAddressBook {
-    const ethAddresses = { [chainId]: {} } as any;
+    const ethAddresses = {} as any;
     const ethAddressBook = this.getAddressBook();
-    console.log("ethAddressBook: ", ethAddressBook);
-    Object.keys(ethAddressBook[chainId]).forEach(
-      (contract: string) =>
-        (ethAddresses[chainId][contract] = getAddress(ethAddressBook[chainId][contract].address)),
-    );
-    return ethAddresses[chainId] as ContractAddresses;
+    this.getSupportedChains().forEach((chainId) => {
+      Object.keys(ethAddressBook[chainId]).forEach((contractName) => {
+        ethAddresses[chainId][contractName] = getAddress(
+          ethAddressBook[chainId][contractName].address,
+        );
+      });
+    });
+    return ethAddresses;
   }
 
   async getNetworkContexts(): Promise<{ [chainId: number]: ContractAddresses }> {

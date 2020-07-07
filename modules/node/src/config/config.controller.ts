@@ -11,7 +11,7 @@ export class ConfigController {
   async getConfigByChain(@Param("chainId") chainId: string): Promise<string> {
     const chainIdInt = parseInt(chainId);
     return JSON.stringify({
-      contractAddresses: this.configService.getAddressBook(chainIdInt),
+      contractAddresses: this.configService.getContractAddressBook(),
       ethNetwork: await this.configService.getNetwork(chainIdInt),
       supportedTokenAddresses: this.configService.getSupportedTokens(),
       messagingUrl: this.configService.getMessagingConfig().messagingUrl,
