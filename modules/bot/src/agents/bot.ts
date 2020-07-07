@@ -9,6 +9,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   stringify,
   ChannelSigner,
+  toBN,
 } from "@connext/utils";
 import { utils, constants } from "ethers";
 import intervalPromise from "interval-promise";
@@ -38,8 +39,15 @@ export const startBot = async (
   const NAME = `Bot #${concurrencyIndex}`;
   const log = new ColorfulLogger(NAME, 3, true, concurrencyIndex);
   log.info(`Launched ${NAME}, paying in ${tokenAddress}`);
-  const TRANSFER_AMT = parseEther("0.001");
-  const DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 1 eth
+  let TRANSFER_AMT, DEPOSIT_AMT;
+  if(tokenAddress === AddressZero) {
+    TRANSFER_AMT = parseEther("0.001");
+    DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 1 eth
+  } else {
+    TRANSFER_AMT = toBN("1");
+    DEPOSIT_AMT = toBN("1000"); // Note: max amount in signer address is 1 eth
+  }
+
   const start: { [paymentId: string]: number } = {};
   const end: { [paymentId: string]: number } = {};
   let exitCode = 0;

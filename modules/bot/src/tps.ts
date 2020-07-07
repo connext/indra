@@ -58,7 +58,7 @@ export const command = {
 
     // sugarDaddy grants each bot some funds to start with
     const ethGrant = "0.05";
-    const tokenGrant = "100";
+    const tokenGrant = "1000";
 
     // Abort if sugarDaddy doesn't have enough ETH to fund all the bots
     if (startEthBalance.lt(parseEther(ethGrant).mul(toBN(argv.concurrency)))) {
