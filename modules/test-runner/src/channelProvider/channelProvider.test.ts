@@ -29,7 +29,7 @@ describe("ChannelProvider", () => {
     remoteClient = await createRemoteClient(await createChannelProvider(client));
     nodeIdentifier = client.config.nodeIdentifier;
     nodeSignerAddress = client.nodeSignerAddress;
-    tokenAddress = client.config.contractAddresses.Token!;
+    tokenAddress = client.config.contractAddresses[client.chainId].Token!;
   });
 
   afterEach(async () => {

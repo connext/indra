@@ -36,7 +36,7 @@ const fundForTransfers = async (
   assetId?: string,
 ): Promise<void> => {
   // make sure the tokenAddress is set
-  const tokenAddress = senderClient.config.contractAddresses.Token!;
+  const tokenAddress = senderClient.config.contractAddresses[senderClient.chainId].Token!;
   await fundChannel(senderClient, amount, assetId || tokenAddress);
   await requestCollateral(receiverClient, assetId || tokenAddress, true);
 };
@@ -108,7 +108,7 @@ describe.skip("Async transfer offline tests", () => {
       signer,
       store,
     });
-    const tokenAddress = senderClient.config.contractAddresses.Token!;
+    const tokenAddress = senderClient.config.contractAddresses[senderClient.chainId].Token!;
     await fundForTransfers(receiverClient, senderClient);
     (receiverClient.messaging as TestMessagingService).on(
       REQUEST,
@@ -144,7 +144,7 @@ describe.skip("Async transfer offline tests", () => {
       signer: senderSigner,
     });
     receiverClient = await createClientWithMessagingLimits({ signer: receiverSigner });
-    const tokenAddress = senderClient.config.contractAddresses.Token!;
+    const tokenAddress = senderClient.config.contractAddresses[senderClient.chainId].Token!;
     await fundForTransfers(receiverClient, senderClient);
 
     // disconnect messaging on take action event, ensuring transfer received
