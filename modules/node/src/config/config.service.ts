@@ -1,8 +1,11 @@
-import { ChannelSigner } from "@connext/utils";
-import { ContractAddresses, IChannelSigner, MessagingConfig, SwapRate } from "@connext/types";
+import { ERC20 } from "@connext/contracts";
+import { Address, ContractAddresses, IChannelSigner, MessagingConfig, SwapRate } from "@connext/types";
+import { ChannelSigner, getChainId } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { Wallet, providers, constants, utils } from "ethers";
+import { Wallet, Contract, providers, constants, utils } from "ethers";
 
+import { DEFAULT_DECIMALS } from "../constants";
+import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
 const { AddressZero, Zero } = constants;
@@ -26,13 +29,17 @@ type TokenConfig = {
 @Injectable()
 export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
-  private readonly ethProvider: providers.JsonRpcProvider;
-  private signer: IChannelSigner;
+  private readonly signer: IChannelSigner;
+  private ethProvider: providers.JsonRpcProvider;
 
-  constructor() {
+  constructor(
+    private readonly log: LoggerService,
+  ) {
     this.envConfig = process.env;
+    // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY
+    // WAITS FOR)
     this.ethProvider = new providers.JsonRpcProvider(this.getEthRpcUrl());
-    this.signer = new ChannelSigner(this.getPrivateKey(), this.getEthRpcUrl());
+    this.signer = new ChannelSigner(this.getPrivateKey(), this.ethProvider);
   }
 
   get(key: string): string {
@@ -81,9 +88,19 @@ export class ConfigService implements OnModuleInit {
   }
 
   async getTokenAddress(): Promise<string> {
-    const chainId = (await this.getEthNetwork()).chainId.toString();
-    const ethAddressBook = JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
-    return getAddress(ethAddressBook[chainId].Token.address);
+    return getAddress((await this.getContractAddresses()).Token);
+  }
+
+  async getTokenDecimals(providedAddress?: Address): Promise<number> {
+    const address = providedAddress || await this.getTokenAddress();
+    const tokenContract = new Contract(address, ERC20.abi, this.getSigner());
+    let decimals = DEFAULT_DECIMALS;
+    try {
+      decimals = await tokenContract.decimals();
+    } catch (e) {
+      this.log.warn(`Could not retrieve decimals from token ${address}, using ${DEFAULT_DECIMALS}`);
+    }
+    return decimals;
   }
 
   async getTestnetTokenConfig(): Promise<TestnetTokenConfig> {
@@ -270,5 +287,9 @@ export class ConfigService implements OnModuleInit {
     };
   }
 
-  async onModuleInit(): Promise<void> {}
+  async onModuleInit(): Promise<void> {
+    const providerUrl = this.getEthRpcUrl();
+    this.ethProvider = new providers.JsonRpcProvider(providerUrl, await getChainId(providerUrl));
+    this.signer.connect(this.ethProvider);
+  }
 }

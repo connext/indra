@@ -12,7 +12,11 @@ import {
   getTransferTypeFromAppName,
   SupportedApplicationNames,
 } from "@connext/types";
-import { stringify, getSignerAddressFromPublicIdentifier, calculateExchange } from "@connext/utils";
+import {
+  stringify,
+  getSignerAddressFromPublicIdentifier,
+  calculateExchangeWad,
+} from "@connext/utils";
 import { TRANSFER_TIMEOUT } from "@connext/apps";
 import { constants } from "ethers";
 import { isEqual } from "lodash";
@@ -124,7 +128,14 @@ export class TransferService {
       this.log.warn(`Detected an inflight swap from ${senderAssetId} to ${receiverAssetId}!`);
       const currentRate = await this.swapRateService.getOrFetchRate(senderAssetId, receiverAssetId);
       this.log.warn(`Using swap rate ${currentRate} for inflight swap`);
-      receiverAmount = calculateExchange(senderAmount, currentRate);
+      const senderDecimals = 18;
+      const receiverDecimals = 18;
+      receiverAmount = calculateExchangeWad(
+        senderAmount,
+        senderDecimals,
+        currentRate,
+        receiverDecimals,
+      );
     }
 
     const existing = await this.findReceiverAppByPaymentId(paymentId);
@@ -303,7 +314,7 @@ export class TransferService {
         this.cfCoreService.cfCore.signerAddress,
       );
 
-      if (correspondingReceiverApp.type !== AppType.UNINSTALLED) {
+      if (!correspondingReceiverApp || correspondingReceiverApp.type !== AppType.UNINSTALLED) {
         continue;
       }
 

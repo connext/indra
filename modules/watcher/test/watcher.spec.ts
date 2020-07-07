@@ -94,7 +94,7 @@ describe("Watcher.initiate", () => {
       provider,
       store,
       signer: context["wallet"].privateKey,
-      // logger: new ColorfulLogger("Watcher", 5, true, ""),
+      logger: new ColorfulLogger("Watcher", 0, true, ""),
     });
     expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
   });
@@ -289,7 +289,7 @@ describe("Watcher responses", () => {
       signer: context["wallet"].privateKey,
       // logger: new ColorfulLogger("Watcher", 5, true, ""),
     });
-    expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
+    expect(await store.getLatestProcessedBlock()).to.be.gte((await provider.getBlockNumber()) - 1);
   });
 
   afterEach(async () => {

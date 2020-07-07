@@ -16,6 +16,7 @@ import {
   getTestGraphReceiptToSign,
   getRandomPrivateKey,
   signGraphReceiptMessage,
+  getChainId,
 } from "@connext/utils";
 
 import { providers, constants, utils } from "ethers";
@@ -43,9 +44,12 @@ describe("Graph Signed Transfers", () => {
   let receipt: GraphReceipt;
   let chainId: number;
   let verifyingContract: Address;
-  const provider = new providers.JsonRpcProvider(env.ethProviderUrl);
-
+  let provider: providers.JsonRpcProvider;
   before(async () => {
+    provider = new providers.JsonRpcProvider(
+      env.ethProviderUrl,
+      await getChainId(env.ethProviderUrl),
+    );
     const currBlock = await provider.getBlockNumber();
     // the node uses a `TIMEOUT_BUFFER` on recipient of 100 blocks
     // so make sure the current block
@@ -273,6 +277,7 @@ describe("Graph Signed Transfers", () => {
       verifyingContract,
       requestCID: receipt.requestCID,
       subgraphDeploymentID: receipt.subgraphDeploymentID,
+      recipient: clientB.publicIdentifier,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.GraphTransfer);
@@ -283,6 +288,7 @@ describe("Graph Signed Transfers", () => {
       assetId: transfer.assetId,
       paymentId,
       senderIdentifier: clientA.publicIdentifier,
+      receiverIdentifier: clientB.publicIdentifier,
       status: SignedTransferStatus.PENDING,
       meta: { foo: "bar", sender: clientA.publicIdentifier, paymentId },
     } as NodeResponses.GetSignedTransfer);
@@ -297,6 +303,7 @@ describe("Graph Signed Transfers", () => {
       amount: transfer.amount,
       conditionType: ConditionalTransferTypes.GraphTransfer,
       paymentId,
+      recipient: clientB.publicIdentifier,
       signerAddress: clientB.signerAddress,
       chainId,
       verifyingContract,
@@ -317,8 +324,16 @@ describe("Graph Signed Transfers", () => {
 
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
-      clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve);
-      clientB.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
+      clientB.once(
+        EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+        resolve,
+        (data) => !!data.paymentId && data.paymentId === paymentId,
+      );
+      clientB.once(
+        EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT,
+        reject,
+        (data) => !!data.paymentId && data.paymentId === paymentId,
+      );
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.GraphTransfer,
         paymentId,
@@ -343,18 +358,24 @@ describe("Graph Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
 
+    const receiverInstalled = clientB.waitFor(
+      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
+      10_000,
+    );
     await clientA.conditionalTransfer({
       amount: transfer.amount,
       conditionType: ConditionalTransferTypes.GraphTransfer,
       paymentId,
       signerAddress: clientB.signerAddress,
       chainId,
+      recipient: clientB.publicIdentifier,
       verifyingContract,
       requestCID: receipt.requestCID,
       subgraphDeploymentID: receipt.subgraphDeploymentID,
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.GraphTransfer);
+    await receiverInstalled;
 
     const badSig = hexlify(randomBytes(65));
     await expect(

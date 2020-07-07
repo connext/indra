@@ -24,7 +24,7 @@ import {
   ValidationMiddleware,
   EventName,
 } from "@connext/types";
-import { delay, nullLogger, stringify } from "@connext/utils";
+import { abrv, delay, nullLogger, stringify } from "@connext/utils";
 import { providers } from "ethers";
 import EventEmitter from "eventemitter3";
 
@@ -115,7 +115,7 @@ export class CFCore {
   }
 
   private async asynchronouslySetupUsingRemoteServices(syncOnStart: boolean): Promise<CFCore> {
-    this.log.info(`CFCore signer address: ${await this.signer.getAddress()}`);
+    this.log.info(`Signer address: ${this.signer.address} | public id: ${this.signer.publicIdentifier}`);
     this.requestHandler = new RequestHandler(
       this.publicIdentifier,
       this.incoming,
@@ -132,12 +132,18 @@ export class CFCore {
     this.registerMessagingConnection();
     this.rpcRouter = new RpcRouter(this.requestHandler);
     this.requestHandler.injectRouter(this.rpcRouter);
+    const channels = await this.storeService.getAllChannels();
+    this.log.info(`Given store contains ${channels.length} channels: [${
+      channels.length > 10
+        ? channels.map(c => abrv(c.multisigAddress)).slice(0, 10).toString() + ", ..."
+        : channels.map(c => abrv(c.multisigAddress))
+    }]`);
     if (!syncOnStart) {
       return this;
     }
-    const channels = await this.storeService.getAllChannels();
     await Promise.all(
       channels.map(async (channel) => {
+        this.log.info(`Syncing channel ${channel.multisigAddress}`);
         await this.rpcRouter.dispatch({
           methodName: MethodNames.chan_sync,
           parameters: { multisigAddress: channel.multisigAddress } as MethodParams.Sync,
@@ -279,10 +285,11 @@ export class CFCore {
           PersistStateChannelType,
           StateChannel,
           (MinimalTransaction | SetStateCommitment | ConditionalTransactionCommitment)[],
-          AppInstance, // uninstalled app context
+          AppInstance, // app context for fb sync
+          ("install" | "uninstall")?, // fb sync type
         ],
       ) => {
-        const [type, stateChannel, signedCommitments, appContext] = args;
+        const [type, stateChannel, signedCommitments, appContext, syncType] = args;
         switch (type) {
           case PersistStateChannelType.CreateChannel: {
             const [setup, freeBalance] = signedCommitments as [
@@ -305,18 +312,26 @@ export class CFCore {
           }
 
           case PersistStateChannelType.SyncProposal: {
+            // if there are no commitments, syncing rejection
+            if (signedCommitments.length === 0) {
+              await this.storeService.removeAppProposal(
+                stateChannel.multisigAddress,
+                appContext.identityHash,
+                stateChannel.toJson(),
+              );
+              break;
+            }
             const [setState, conditional] = signedCommitments as [
               SetStateCommitment,
               ConditionalTransactionCommitment,
             ];
-            const proposal = stateChannel.proposedAppInstances.get(setState.appIdentityHash);
-            if (!proposal) {
-              throw new Error("Could not find proposal in post protocol channel");
+            if (!appContext) {
+              throw new Error("Could not find proposal in app context");
             }
             // this is adding a proposal
             await this.storeService.createAppProposal(
               stateChannel.multisigAddress,
-              proposal,
+              appContext.toJson(),
               stateChannel.numProposedApps,
               setState.toJson(),
               conditional.toJson(),
@@ -329,7 +344,7 @@ export class CFCore {
           }
           case PersistStateChannelType.SyncFreeBalance: {
             const [setState] = signedCommitments as [SetStateCommitment];
-            if (appContext) {
+            if (syncType && syncType === "uninstall") {
               // this was an uninstall, so remove app instance
               await this.storeService.removeAppInstance(
                 stateChannel.multisigAddress,
@@ -338,18 +353,17 @@ export class CFCore {
                 setState.toJson(),
                 stateChannel.toJson(),
               );
-            } else {
-              const latestInstalled = stateChannel
-                .getAppInstanceByAppSeqNo(stateChannel.numProposedApps)
-                .toJson();
+            } else if (syncType && syncType === "install") {
               // this was an install, add app and remove proposals
               await this.storeService.createAppInstance(
                 stateChannel.multisigAddress,
-                latestInstalled,
+                appContext.toJson(),
                 stateChannel.freeBalance.toJson(),
                 setState.toJson(),
                 stateChannel.toJson(),
               );
+            } else {
+              throw new Error(`Unrecognized (or unavailable) free balance sync type: ${syncType}`);
             }
             break;
           }

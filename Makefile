@@ -40,8 +40,8 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 default: dev
 all: dev staging release
 dev: bot database proxy node test-runner
-staging: database ethprovider proxy node-staging test-runner-staging webserver
-release: database ethprovider proxy node-release test-runner-release webserver
+staging: database ethprovider proxy node-staging test-runner-staging webserver bot-staging
+release: database ethprovider proxy node-release test-runner-release webserver bot-staging
 
 ########################################
 # Command & Control Shortcuts
@@ -65,10 +65,10 @@ start-prod:
 	bash ops/start-prod.sh
 
 start-bot: bot
-	bash ops/test/bot.sh 2 1000
+	bash ops/test/tps.sh 2 1000
 
 start-bot-farm: bot
-	bash ops/test/bot.sh 10 1000
+	bash ops/test/tps.sh 10 1000
 
 stop:
 	bash ops/stop.sh
@@ -107,6 +107,7 @@ quick-reset:
 	bash ops/db.sh 'truncate table rebalance_profile cascade;'
 	bash ops/db.sh 'truncate table app_instance cascade;'
 	bash ops/redis.sh 'flushall'
+	rm -rf modules/*/.connext-store
 	touch modules/node/src/main.ts
 
 reset: stop
@@ -165,11 +166,13 @@ watch: watch-integration
 test-backwards-compatibility: pull-backwards-compatible
 	bash ops/test/integration.sh $(backwards_compatible_version)
 
-test-bot: bot
-	bash ops/test/bot.sh 2 1000 10
-
-test-bot-farm: bot
-	bash ops/test/bot.sh 10 1000 50
+test-tps: test-tps-md
+test-tps-sm: bot
+	bash ops/test/tps.sh 2 0 10
+test-tps-md: bot
+	bash ops/test/tps.sh 10 0 10
+test-tps-lg: bot
+	bash ops/test/tps.sh 40 0 10
 
 test-cf: cf-core
 	bash ops/test/cf.sh
@@ -338,15 +341,22 @@ ethprovider: contracts $(shell find modules/contracts/ops $(find_options))
 node-release: node $(shell find modules/node/ops $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && MODE=release npm run build-bundle"
-	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node .
+	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node modules/node
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 node-staging: node $(shell find modules/node/ops $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && MODE=staging npm run build-bundle"
-	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node .
+	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node modules/node
 	docker tag $(project)_node $(project)_node:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+bot-staging: bot $(shell find modules/bot/ops $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/bot && MODE=staging npm run build"
+	docker build --file modules/bot/ops/Dockerfile $(image_cache) --tag $(project)_bot .
+	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 proxy: $(shell find ops/proxy $(find_options))

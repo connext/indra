@@ -3,7 +3,6 @@ import { Wallet, providers, utils } from "ethers";
 
 import { deployTestArtifactsToChain } from "./contracts";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY, C_PRIVATE_KEY } from "./test-constants.jest";
-import { stringify } from "@connext/utils";
 
 const { parseEther } = utils;
 

@@ -24,7 +24,7 @@ export class TransferRepository extends Repository<AppInstance> {
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`,
       )
-      .getOne() as Promise<AppInstance<T>>;
+      .getOne() as Promise<AppInstance<T> | undefined>;
   }
 
   findTransferAppByPaymentIdAndReceiver<
