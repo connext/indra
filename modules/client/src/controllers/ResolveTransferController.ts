@@ -39,6 +39,16 @@ export class ResolveTransferController extends AbstractController {
       });
     };
 
+    const emitFailureEvent = (error: Error) => {
+      this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
+        error: error.message,
+        paymentId,
+        type: conditionType,
+      });
+      return;
+    };
+
+    // Install app with receiver
     let appIdentityHash: string;
     let amount: BigNumber;
     let assetId: string;
@@ -47,6 +57,9 @@ export class ResolveTransferController extends AbstractController {
     // NOTE: there are cases where the app may be installed from the
     // queue, so make sure all values pulled from store are fresh
     let existingReceiverApp = findApp(await this.connext.getAppInstances());
+    const existingReceiverAppProposal = findApp(
+      (await this.connext.getProposedAppInstances()).appInstances,
+    );
     if (existingReceiverApp) {
       appIdentityHash = existingReceiverApp.identityHash;
       this.log.info(
@@ -58,48 +71,60 @@ export class ResolveTransferController extends AbstractController {
         .coinTransfers[0].amount;
       assetId = existingReceiverApp.outcomeInterpreterParameters["tokenAddress"];
       meta = existingReceiverApp.meta;
-    }
-
-    try {
-      const transferType = getTransferTypeFromAppName(conditionType);
-      // See note line 67
-      existingReceiverApp = findApp(await this.connext.getAppInstances());
-      if (!existingReceiverApp) {
-        if (transferType === "RequireOnline") {
-          throw new Error(
-            `Receiver app has not been installed, channel: ${stringify(
-              await this.connext.getStateChannel(),
-            )}`,
-          );
-        }
-        this.log.info(`[${paymentId}] Requesting node install app`);
-        const installRes = await this.connext.node.installConditionalTransferReceiverApp(
-          paymentId,
-          conditionType,
-        );
-        appIdentityHash = installRes.appIdentityHash;
-        amount = installRes.amount;
-        assetId = installRes.assetId;
-        meta = installRes.meta;
-        if (
-          conditionType === ConditionalTransferTypes.LinkedTransfer &&
-          installRes.meta.recipient
-        ) {
-          // TODO: this is hacky
-          this.log.error(`Returning early from install, unlock will happen through listener`);
-          // @ts-ignore
-          return;
-        }
-      }
-
-      const existingReceiverAppProposal = findApp(
-        (await this.connext.getProposedAppInstances()).appInstances,
-      );
-      if (existingReceiverAppProposal) {
+    } else if (existingReceiverAppProposal) {
+      try {
         this.log.warn(`[${paymentId}] Found existing app proposal, installing before proceeding`);
         await this.connext.installApp(existingReceiverAppProposal.identityHash);
+        appIdentityHash = existingReceiverAppProposal.identityHash;
+        amount = (existingReceiverAppProposal.latestState as GenericConditionalTransferAppState)
+          .coinTransfers[0].amount;
+        assetId = existingReceiverAppProposal.outcomeInterpreterParameters["tokenAddress"];
+        meta = existingReceiverAppProposal.meta;
+      } catch (e) {
+        emitFailureEvent(e);
+        throw e;
       }
+    } else {
+      try {
+        // App is not installed
+        const transferType = getTransferTypeFromAppName(conditionType);
+        // See note about fresh data
+        existingReceiverApp = findApp(await this.connext.getAppInstances());
+        if (!existingReceiverApp) {
+          if (transferType === "RequireOnline") {
+            throw new Error(
+              `Receiver app has not been installed, channel: ${stringify(
+                await this.connext.getStateChannel(),
+              )}`,
+            );
+          }
+          this.log.info(`[${paymentId}] Requesting node install app`);
+          const installRes = await this.connext.node.installConditionalTransferReceiverApp(
+            paymentId,
+            conditionType,
+          );
+          appIdentityHash = installRes.appIdentityHash;
+          amount = installRes.amount;
+          assetId = installRes.assetId;
+          meta = installRes.meta;
+          if (
+            conditionType === ConditionalTransferTypes.LinkedTransfer &&
+            installRes.meta.recipient
+          ) {
+            // TODO: this is hacky
+            this.log.error(`Returning early from install, unlock will happen through listener`);
+            // @ts-ignore
+            return;
+          }
+        }
+      } catch (e) {
+        emitFailureEvent(e);
+        throw e;
+      }
+    }
 
+    // Take action + uninstall app
+    try {
       let action:
         | HashLockTransferAppAction
         | SimpleSignedTransferAppAction
@@ -138,11 +163,7 @@ export class ResolveTransferController extends AbstractController {
       await this.connext.uninstallApp(appIdentityHash, action);
       this.log.info(`[${paymentId}] Finished uninstalling transfer app ${appIdentityHash}`);
     } catch (e) {
-      this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
-        error: e.message,
-        paymentId,
-        type: conditionType,
-      });
+      emitFailureEvent(e);
       throw e;
     }
     const sender = meta.sender;
