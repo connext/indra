@@ -61,9 +61,6 @@ export class CreateChannelController extends MethodController {
       throw new Error(NO_NETWORK_PROVIDER_FOR_CHAIN_ID(chainId));
     }
 
-    if (!storedMultisig) {
-      throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
-    }
     const multisigAddress =
       storedMultisig ||
       (await getCreate2MultisigAddress(
