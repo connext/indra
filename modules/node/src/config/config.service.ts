@@ -97,16 +97,17 @@ export class ConfigService implements OnModuleInit {
   }
 
   getContractAddressBook(): ContractAddressBook {
-    const ethAddresses = {} as any;
+    const ethAddresses = {};
     const ethAddressBook = this.getAddressBook();
     this.getSupportedChains().forEach((chainId) => {
+      ethAddresses[chainId] = {};
       Object.keys(ethAddressBook[chainId]).forEach((contractName) => {
         ethAddresses[chainId][contractName] = getAddress(
           ethAddressBook[chainId][contractName].address,
         );
       });
     });
-    return ethAddresses;
+    return ethAddresses as ContractAddressBook;
   }
 
   async getNetworkContexts(): Promise<{ [chainId: number]: ContractAddresses }> {
