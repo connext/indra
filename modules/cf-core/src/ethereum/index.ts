@@ -9,6 +9,7 @@ import { toBN } from "@connext/utils";
 import { constants } from "ethers";
 
 import { StateChannel, AppInstance } from "../models";
+import { Context } from "../types";
 
 const { AddressZero } = constants;
 
