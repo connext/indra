@@ -9,6 +9,7 @@ import {
   SimpleSignedTransferAppAction,
   SimpleLinkedTransferAppAction,
   GraphSignedTransferAppAction,
+  AppInstanceJson,
 } from "@connext/types";
 import { stringify } from "@connext/utils";
 import { BigNumber } from "ethers";
@@ -22,31 +23,30 @@ export class ResolveTransferController extends AbstractController {
     const { conditionType, paymentId } = params;
     this.log.info(`[${paymentId}] resolveTransfer started: ${stringify(params)}`);
 
-    const installedApps = await this.connext.getAppInstances();
-    const proposedApps = await this.connext.getProposedAppInstances();
-    const existingReceiverApp = installedApps.find(
-      (app) =>
-        app.appDefinition ===
-          this.connext.appRegistry.find((app) => app.name === conditionType).appDefinitionAddress &&
-        app.meta.paymentId === paymentId &&
-        (app.latestState as GenericConditionalTransferAppState).coinTransfers[1].to ===
-          this.connext.signerAddress,
-    );
+    // Get app def
+    const appDefinition = this.connext.appRegistry.find((app) => app.name === conditionType)
+      .appDefinitionAddress;
 
-    const existingReceiverAppProposal = proposedApps.appInstances.find(
-      (app) =>
-        app.appDefinition ===
-          this.connext.appRegistry.find((app) => app.name === conditionType).appDefinitionAddress &&
-        app.meta.paymentId === paymentId &&
-        (app.latestState as GenericConditionalTransferAppState).coinTransfers[1].to ===
-          this.connext.signerAddress,
-    );
+    // Helper fns
+    const findApp = (apps: AppInstanceJson[]) => {
+      return apps.find((app) => {
+        return (
+          app.appDefinition === appDefinition &&
+          app.meta.paymentId === paymentId &&
+          (app.latestState as GenericConditionalTransferAppState).coinTransfers[1].to ===
+            this.connext.signerAddress
+        );
+      });
+    };
 
     let appIdentityHash: string;
     let amount: BigNumber;
     let assetId: string;
     let meta: any;
 
+    // NOTE: there are cases where the app may be installed from the
+    // queue, so make sure all values pulled from store are fresh
+    let existingReceiverApp = findApp(await this.connext.getAppInstances());
     if (existingReceiverApp) {
       appIdentityHash = existingReceiverApp.identityHash;
       this.log.info(
@@ -62,11 +62,17 @@ export class ResolveTransferController extends AbstractController {
 
     try {
       const transferType = getTransferTypeFromAppName(conditionType);
+      // See note line 67
+      existingReceiverApp = findApp(await this.connext.getAppInstances());
       if (!existingReceiverApp) {
         if (transferType === "RequireOnline") {
-          throw new Error(`Receiver app has not been installed`);
+          throw new Error(
+            `Receiver app has not been installed, channel: ${stringify(
+              await this.connext.getStateChannel(),
+            )}`,
+          );
         }
-        this.log.info(`[${paymentId}] Requesting node to install app`);
+        this.log.info(`[${paymentId}] Requesting node install app`);
         const installRes = await this.connext.node.installConditionalTransferReceiverApp(
           paymentId,
           conditionType,
@@ -86,6 +92,9 @@ export class ResolveTransferController extends AbstractController {
         }
       }
 
+      const existingReceiverAppProposal = findApp(
+        (await this.connext.getProposedAppInstances()).appInstances,
+      );
       if (existingReceiverAppProposal) {
         this.log.warn(`[${paymentId}] Found existing app proposal, installing before proceeding`);
         await this.connext.installApp(existingReceiverAppProposal.identityHash);
