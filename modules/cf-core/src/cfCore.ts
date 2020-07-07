@@ -23,7 +23,7 @@ import {
   ValidationMiddleware,
   EventName,
 } from "@connext/types";
-import { delay, nullLogger, stringify } from "@connext/utils";
+import { abrv, delay, nullLogger, stringify } from "@connext/utils";
 import EventEmitter from "eventemitter3";
 
 import { UNASSIGNED_SEQ_NO, IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
@@ -104,7 +104,9 @@ export class CFCore {
   }
 
   private async asynchronouslySetupUsingRemoteServices(syncOnStart: boolean): Promise<CFCore> {
-    this.log.info(`CFCore signer address: ${await this.signer.getAddress()}`);
+    this.log.info(
+      `Signer address: ${this.signer.address} | public id: ${this.signer.publicIdentifier}`,
+    );
     this.requestHandler = new RequestHandler(
       this.publicIdentifier,
       this.incoming,
@@ -121,12 +123,23 @@ export class CFCore {
     this.registerMessagingConnection();
     this.rpcRouter = new RpcRouter(this.requestHandler);
     this.requestHandler.injectRouter(this.rpcRouter);
+    const channels = await this.storeService.getAllChannels();
+    this.log.info(
+      `Given store contains ${channels.length} channels: [${
+        channels.length > 10
+          ? channels
+              .map((c) => abrv(c.multisigAddress))
+              .slice(0, 10)
+              .toString() + ", ..."
+          : channels.map((c) => abrv(c.multisigAddress))
+      }]`,
+    );
     if (!syncOnStart) {
       return this;
     }
-    const channels = await this.storeService.getAllChannels();
     await Promise.all(
       channels.map(async (channel) => {
+        this.log.info(`Syncing channel ${channel.multisigAddress}`);
         await this.rpcRouter.dispatch({
           methodName: MethodNames.chan_sync,
           parameters: { multisigAddress: channel.multisigAddress } as MethodParams.Sync,

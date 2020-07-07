@@ -68,7 +68,7 @@ describe.skip("Custom token", () => {
     const balance: BigNumber = await tokenContract.balanceOf(nodeSignerAddress);
     expect(balance.gt(0)).to.be.true;
 
-    const decimals = await tokenContract.functions.decimals();
+    const decimals = await configService.getTokenDecimals();
     expect(decimals.toString()).to.eq("9");
     const supportedTokens = configService.getSupportedTokens();
     expect(supportedTokens).to.include(tokenContract.address);

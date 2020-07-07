@@ -2,6 +2,7 @@ import { ChannelSigner } from "@connext/utils";
 import { providers, Wallet } from "ethers";
 
 import { ConfigService } from "../../config/config.service";
+import { LoggerService } from "../../logger/logger.service";
 
 export const env = {
   ethProviderUrl: process.env.INDRA_ETH_RPC_URL,
@@ -26,7 +27,7 @@ export class MockConfigService extends ConfigService {
   private supportedTokens: string[];
 
   constructor(overrides: Partial<ConfigOverrides> = {}) {
-    super();
+    super(new LoggerService("Test"));
     this.nodeSigner = overrides.signer || defaultSigner;
     this.supportedTokens = super.getSupportedTokens().concat(overrides.extraSupportedTokens || []);
   }

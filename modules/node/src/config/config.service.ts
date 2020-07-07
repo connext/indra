@@ -1,16 +1,20 @@
-import { ChannelSigner } from "@connext/utils";
+import { ERC20 } from "@connext/contracts";
 import {
+  Address,
   ContractAddresses,
   IChannelSigner,
   MessagingConfig,
-  PriceOracleTypes,
-  AllowedSwap,
   ContractAddressBook,
   AddressBook,
+  AllowedSwap,
+  PriceOracleTypes,
 } from "@connext/types";
+import { ChannelSigner } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { Wallet, providers, constants, utils } from "ethers";
+import { Wallet, Contract, providers, constants, utils } from "ethers";
 
+import { DEFAULT_DECIMALS } from "../constants";
+import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
 const { AddressZero, Zero } = constants;
@@ -32,7 +36,7 @@ export class ConfigService implements OnModuleInit {
   // keyed on chainId
   public readonly providers: Map<number, providers.JsonRpcProvider> = new Map();
 
-  constructor() {
+  constructor(private readonly log: LoggerService) {
     this.envConfig = process.env;
     // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY WAITS FOR)
     const urls = this.getProviderUrls();
@@ -94,6 +98,18 @@ export class ConfigService implements OnModuleInit {
         (ethAddresses[chainId][contract] = getAddress(ethAddressBook[chainId][contract].address)),
     );
     return ethAddresses[chainId] as ContractAddresses;
+  }
+
+  async getTokenDecimals(chainId: number, providedAddress?: Address): Promise<number> {
+    const address = providedAddress || (await this.getTokenAddress(chainId));
+    const tokenContract = new Contract(address, ERC20.abi, this.getSigner(chainId));
+    let decimals = DEFAULT_DECIMALS;
+    try {
+      decimals = await tokenContract.decimals();
+    } catch (e) {
+      this.log.warn(`Could not retrieve decimals from token ${address}, using ${DEFAULT_DECIMALS}`);
+    }
+    return decimals;
   }
 
   getContractAddressBook(): ContractAddressBook {

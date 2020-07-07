@@ -421,7 +421,12 @@ describe("HashLock Transfers", () => {
       clientA.once(EventNames.REJECT_INSTALL_EVENT, reject);
     });
 
+    // Wait for more than one block if blocktime > 0
+    // for (let i = 0; i < 5; i++) {
+    // eslint-disable-next-line no-loop-func
     await new Promise((resolve) => provider.once("block", resolve));
+    // }
+
     await expect(
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
@@ -500,6 +505,8 @@ describe("HashLock Transfers", () => {
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer);
+
+      // eslint-disable-next-line no-loop-func
       await new Promise((res) => clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res));
 
       // eslint-disable-next-line no-loop-func

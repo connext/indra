@@ -117,14 +117,8 @@ export class SwapRateService implements OnModuleInit {
   }
 
   async getUniswapRate(from: string, to: string): Promise<string> {
-    const fromReserves =
-      from !== AddressZero
-        ? await getTokenReserves(from)
-        : undefined;
-    const toReserves =
-      to !== AddressZero
-        ? await getTokenReserves(to)
-        : undefined;
+    const fromReserves = from !== AddressZero ? await getTokenReserves(from) : undefined;
+    const toReserves = to !== AddressZero ? await getTokenReserves(to) : undefined;
     return getMarketDetails(fromReserves, toReserves).marketRate.rate.toString();
   }
 
@@ -141,13 +135,13 @@ export class SwapRateService implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     const swaps = this.config.getAllowedSwaps();
 
-    this.config.getEthProviders().forEach(provider => {
+    this.config.getEthProviders().forEach((provider) => {
       // setup interval for swaps
       setInterval(async () => {
         const blockNumber = await provider.getBlockNumber();
         for (const swap of swaps) {
           if (swap.priceOracleType === PriceOracleTypes.UNISWAP) {
-            this.log.info(`Registering chain listener for swaps from ${swap.from} to ${swap.to}`);
+            this.log.info(`Querying chain listener for swaps from ${swap.from} to ${swap.to}`);
             this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber);
           } else if (swap.priceOracleType === PriceOracleTypes.HARDCODED) {
             this.log.info(`Using hardcoded value for swaps from ${swap.from} to ${swap.to}`);
@@ -155,6 +149,5 @@ export class SwapRateService implements OnModuleInit {
         }
       }, 15_000);
     });
-
   }
 }

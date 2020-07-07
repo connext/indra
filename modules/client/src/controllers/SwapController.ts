@@ -10,7 +10,7 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import {
-  calculateExchange,
+  calculateExchangeWad,
   getAddressFromAssetId,
   getAddressError,
   notGreaterThan,
@@ -18,14 +18,15 @@ import {
   notPositive,
   toBN,
   stringify,
+  fromWad,
+  toWad,
 } from "@connext/utils";
 import { ERC20 } from "@connext/contracts";
-import { BigNumber, constants, utils, Contract } from "ethers";
+import { BigNumber, constants, Contract } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
 const { AddressZero, Zero } = constants;
-const { formatEther, parseEther, parseUnits } = utils;
 
 export class SwapController extends AbstractController {
   public async swap(params: PublicParams.Swap): Promise<PublicResults.Swap> {
@@ -44,7 +45,7 @@ export class SwapController extends AbstractController {
       getAddressError(toTokenAddress),
       notLessThanOrEqualTo(amount, userBal),
       notGreaterThan(amount, Zero),
-      notPositive(parseEther(swapRate)),
+      notPositive(toWad(swapRate)),
     );
 
     const error = notLessThanOrEqualTo(amount, toBN(preSwapFromBal[this.connext.signerAddress]));
@@ -94,20 +95,12 @@ export class SwapController extends AbstractController {
   ////// PRIVATE METHODS
 
   private swapAppInstall = async (
-    amount: BigNumber,
+    initiatorDeposit: BigNumber,
     toTokenAddress: Address,
     fromTokenAddress: Address,
     swapRate: string,
     appInfo: DefaultApp,
   ): Promise<string> => {
-    const swappedAmount = calculateExchange(amount, swapRate);
-
-    this.log.debug(
-      `Swapping ${formatEther(amount)} ${
-        toTokenAddress === AddressZero ? "ETH" : "Tokens"
-      } for ${formatEther(swappedAmount)} ${fromTokenAddress === AddressZero ? "ETH" : "Tokens"}`,
-    );
-
     const getDecimals = async (tokenAddress: string): Promise<number> => {
       let decimals = 18;
       if (tokenAddress !== CONVENTION_FOR_ETH_ASSET_ID) {
@@ -116,8 +109,8 @@ export class SwapController extends AbstractController {
           decimals = await token.functions.decimals();
           this.log.info(`Retrieved decimals for ${tokenAddress} from token contract: ${decimals}`);
         } catch (error) {
-          this.log.error(
-            `Could not retrieve decimals from ${tokenAddress} token contract, proceeding with 18 decimals...: ${error.message}`,
+          this.log.warn(
+            `Could not retrieve decimals from token ${tokenAddress}, defaulting to 18`,
           );
         }
       }
@@ -125,10 +118,22 @@ export class SwapController extends AbstractController {
     };
 
     const fromDecimals = await getDecimals(fromTokenAddress);
-    const initiatorDeposit = parseUnits(formatEther(amount), fromDecimals);
-
     const toDecimals = await getDecimals(toTokenAddress);
-    const responderDeposit = parseUnits(formatEther(swappedAmount), toDecimals);
+
+    const responderDeposit = calculateExchangeWad(
+      initiatorDeposit,
+      fromDecimals,
+      swapRate,
+      toDecimals,
+    );
+
+    this.log.debug(
+      `Swapping ${fromWad(initiatorDeposit, fromDecimals)} ${
+        toTokenAddress === AddressZero ? "ETH" : "Tokens"
+      } for ${fromWad(responderDeposit, toDecimals)} ${
+        fromTokenAddress === AddressZero ? "ETH" : "Tokens"
+      }`,
+    );
 
     // NOTE: always put the initiators swap information FIRST
     // followed by responders. If this is not included, the swap will

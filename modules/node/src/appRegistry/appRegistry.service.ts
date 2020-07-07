@@ -21,12 +21,10 @@ import {
   getTransferTypeFromAppName,
   DefaultApp,
   SupportedApplicationNames,
-  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
-import { ERC20 } from "@connext/contracts";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { BigNumber, providers, Contract } from "ethers";
+import { BigNumber, providers } from "ethers";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -294,37 +292,13 @@ export class AppRegistryService implements OnModuleInit {
 
   private proposeMiddleware = async (cxt: ProposeMiddlewareContext) => {
     const { proposal, params } = cxt;
-    const contractAddresses = await this.configService.getContractAddresses(
-      cxt.stateChannel.chainId,
-    );
+    const contractAddresses = this.configService.getContractAddresses(cxt.stateChannel.chainId);
 
     switch (proposal.appDefinition) {
       case contractAddresses.SimpleTwoPartySwapApp: {
-        const getDecimals = async (tokenAddress: string): Promise<number> => {
-          let decimals = 18;
-          if (tokenAddress !== CONVENTION_FOR_ETH_ASSET_ID) {
-            try {
-              const token = new Contract(
-                tokenAddress,
-                ERC20.abi,
-                this.configService.getEthProvider(cxt.stateChannel.chainId),
-              );
-              decimals = await token.functions.decimals();
-              console.log("decimals: ", decimals);
-              this.log.info(
-                `Retrieved decimals for ${tokenAddress} from token contract: ${decimals}`,
-              );
-            } catch (error) {
-              this.log.error(
-                `Could not retrieve decimals from ${tokenAddress} token contract, proceeding with 18 decimals...: ${error.message}`,
-              );
-            }
-          }
-          return decimals;
-        };
-
-        const responderDecimals = await getDecimals(params.responderDepositAssetId);
-
+        const responderDecimals = await this.configService.getTokenDecimals(
+          params.responderDepositAssetId,
+        );
         return validateSimpleSwapApp(
           params as any,
           this.configService.getAllowedSwaps(),
