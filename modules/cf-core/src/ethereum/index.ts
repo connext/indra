@@ -8,7 +8,6 @@ import { OutcomeType } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { constants } from "ethers";
 
-import { Context } from "../types";
 import { StateChannel, AppInstance } from "../models";
 
 const { AddressZero } = constants;
