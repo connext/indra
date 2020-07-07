@@ -129,7 +129,7 @@ export const connect = async (
   }
 
   // create a token contract based on the provided token
-  const token = new Contract(config.contractAddresses.Token, ERC20.abi, ethProvider);
+  const token = new Contract(config.contractAddresses[chainId].Token, ERC20.abi, ethProvider);
 
   // create appRegistry
   const appRegistry = await node.appRegistry();

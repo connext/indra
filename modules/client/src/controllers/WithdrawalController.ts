@@ -156,7 +156,7 @@ export class WithdrawalController extends AbstractController {
       getSignerAddressFromPublicIdentifier(channel.userIdentifiers[1]),
     ];
     return new WithdrawCommitment(
-      this.connext.config.contractAddresses,
+      this.connext.config.contractAddresses[this.connext.chainId],
       channel.multisigAddress,
       multisigOwners,
       recipient,
