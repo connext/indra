@@ -57,6 +57,9 @@ export const INVALID_MASTERCOPY_ADDRESS = (address: string): string =>
 export const NO_NETWORK_PROVIDER_CREATE2 =
   "`getCreate2MultisigAddress` needs access to an eth provider within the network context";
 
+export const NO_NETWORK_PROVIDER_FOR_CHAIN_ID = (chainId: number): string =>
+  `Method needs access to an eth provider within the network context for chainId ${chainId}`;
+
 export const INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT = (
   address: string,
   tokenAddress: string,

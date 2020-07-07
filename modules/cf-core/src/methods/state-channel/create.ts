@@ -7,7 +7,7 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
-import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
+import { NO_MULTISIG_FOR_COUNTERPARTIES, NO_NETWORK_PROVIDER_FOR_CHAIN_ID } from "../../errors";
 import { RequestHandler } from "../../request-handler";
 import { getCreate2MultisigAddress } from "../../utils";
 
@@ -57,7 +57,11 @@ export class CreateChannelController extends MethodController {
     };
 
     const networkContext = networkContexts[chainId];
-    if (!networkContext.provider && !storedMultisig) {
+    if (!networkContext?.provider) {
+      throw new Error(NO_NETWORK_PROVIDER_FOR_CHAIN_ID(chainId));
+    }
+
+    if (!storedMultisig) {
       throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
     }
     const multisigAddress =
