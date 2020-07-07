@@ -41,10 +41,11 @@ export const connect = async (
     ethProviderUrl,
     loggerService,
     messagingUrl,
+    nodeUrl,
     logLevel,
     skipSync,
   } = opts;
-  let { messaging, nodeUrl } = opts;
+  let { messaging } = opts;
 
   const logger = loggerService
     ? loggerService.newContext("ConnextConnect")
@@ -86,13 +87,12 @@ export const connect = async (
     }
     logger.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
-    nodeUrl = channelProvider.config.nodeUrl;
     node = await NodeApiClient.init({
       ethProvider,
       messaging,
       messagingUrl,
       logger,
-      nodeUrl,
+      nodeUrl: channelProvider.config.nodeUrl,
       channelProvider,
       skipSync,
     });
