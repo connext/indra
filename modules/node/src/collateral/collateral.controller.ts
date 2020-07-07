@@ -3,7 +3,7 @@ import { Controller, Get, Query } from "@nestjs/common";
 import { GetAnonymizedCollateralDataDto } from "./collateral.dto";
 import { CollateralService } from "./collateral.service";
 
-@Controller("collateral")
+@Controller("api/collateral")
 export class CollateralController {
   constructor(private readonly collateralService: CollateralService) {}
 
