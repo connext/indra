@@ -75,6 +75,7 @@ export class NodeApiClient implements INodeApiClient {
         : nodeUrl.startsWith("https://") ? `wss://${extractHost(nodeUrl)}/api/messaging`
         : `ws://${extractHost(nodeUrl)}/api/messaging`
     );
+
     if (!opts.messagingUrl) {
       log.warn(`No messagingUrl provided, using ${messagingUrl} derived from nodeUrl ${nodeUrl}`);
     }
