@@ -28,9 +28,12 @@ export class SetStateCommitment implements EthereumCommitment {
     public readonly versionNumber: BigNumber,
     public readonly stateTimeout: BigNumber,
     public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
+    public readonly transactionData: string = "",
     private initiatorSignature?: string,
     private responderSignature?: string,
-  ) {}
+  ) {
+    this.transactionData = this.transactionData || this.getTransactionData();
+  }
 
   get signatures(): string[] {
     return [this.initiatorSignature!, this.responderSignature!];
@@ -78,26 +81,31 @@ export class SetStateCommitment implements EthereumCommitment {
     return keccak256(this.encode());
   }
 
+  private getTransactionData(): string {
+    return iface.encodeFunctionData("setState", [
+      this.appIdentity,
+      this.getSignedAppChallengeUpdate(),
+    ]);
+  }
+
   public async getSignedTransaction(): Promise<MinimalTransaction> {
     await this.assertSignatures();
     return {
       to: this.challengeRegistryAddress,
       value: 0,
-      data: iface.encodeFunctionData("setState", [
-        this.appIdentity,
-        await this.getSignedAppChallengeUpdate(),
-      ]),
+      data: this.transactionData!,
     };
   }
 
   public toJson(): SetStateCommitmentJSON {
-    return deBigNumberifyJson({
+    return deBigNumberifyJson<SetStateCommitmentJSON>({
       appIdentityHash: this.appIdentityHash,
       appIdentity: this.appIdentity,
       appStateHash: this.appStateHash,
       challengeRegistryAddress: this.challengeRegistryAddress,
       signatures: this.signatures,
       stateTimeout: this.stateTimeout,
+      transactionData: this.transactionData,
       versionNumber: this.versionNumber,
     });
   }
@@ -111,13 +119,15 @@ export class SetStateCommitment implements EthereumCommitment {
       bnJson.versionNumber,
       bnJson.stateTimeout,
       bnJson.appIdentityHash,
+      bnJson.transactionData,
       bnJson.signatures[0],
       bnJson.signatures[1],
     );
   }
 
-  public async getSignedAppChallengeUpdate(): Promise<SignedAppChallengeUpdate> {
-    await this.assertSignatures();
+  public getSignedAppChallengeUpdate(): SignedAppChallengeUpdate {
+    // TODO: figure out where to do this rather than in this function
+    // await this.assertSignatures();
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,

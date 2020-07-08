@@ -335,7 +335,7 @@ describe("CFCoreStore", () => {
   });
 
   describe("App Instance", () => {
-    it("should not create an app instance if there is no app proposal", async () => {
+    it.skip("should not create an app instance if there is no app proposal", async () => {
       const { multisigAddress, channelJson } = await createTestChannel(
         cfCoreStore,
         configService.getPublicIdentifier(),
@@ -346,7 +346,7 @@ describe("CFCoreStore", () => {
         ...channelJson.freeBalanceAppInstance!,
         latestState: { appState: "updated" },
       };
-      expect(
+      await expect(
         cfCoreStore.createAppInstance(
           multisigAddress,
           appInstance,

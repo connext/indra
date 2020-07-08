@@ -14,6 +14,7 @@ export const setStateToJson = (entity: SetStateCommitment): SetStateCommitmentJS
     challengeRegistryAddress: entity.challengeRegistryAddress,
     signatures: entity.signatures as any,
     stateTimeout: toBNJson(entity.stateTimeout),
+    transactionData: entity.transactionData,
     versionNumber: toBNJson(entity.versionNumber),
   };
 };
