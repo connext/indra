@@ -1,45 +1,17 @@
 import { LinkedTransferStatus, SimpleLinkedTransferAppName } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { LoggerService } from "../logger/logger.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { AppType, AppInstance } from "../appInstance/appInstance.entity";
-
-const { HashZero } = constants;
+import { AppInstance } from "../appInstance/appInstance.entity";
+import { appStatusesToTransferStatus } from "../utils";
 
 const appStatusesToLinkedTransferStatus = (
-  senderAppType: AppType,
-  receiverAppType?: AppType,
+  senderApp: AppInstance<typeof SimpleLinkedTransferAppName>,
+  receiverApp?: AppInstance<typeof SimpleLinkedTransferAppName>,
 ): LinkedTransferStatus | undefined => {
-  if (!senderAppType) {
-    return undefined;
-  }
-
-  if (!receiverAppType) {
-    return LinkedTransferStatus.PENDING;
-  }
-
-  if (senderAppType === AppType.UNINSTALLED || receiverAppType === AppType.UNINSTALLED) {
-    return LinkedTransferStatus.COMPLETED;
-  }
-
-  if (senderAppType === AppType.REJECTED || receiverAppType === AppType.REJECTED) {
-    return LinkedTransferStatus.FAILED;
-  }
-
-  if (
-    (senderAppType === AppType.INSTANCE || senderAppType === AppType.PROPOSAL) &&
-    (receiverAppType === AppType.INSTANCE || receiverAppType === AppType.PROPOSAL)
-  ) {
-    return LinkedTransferStatus.PENDING;
-  }
-
-  throw new Error(
-    `Unable to determine linked transfer status from senderAppType (${senderAppType}) and receiverAppType (${receiverAppType})`,
-  );
+  return appStatusesToTransferStatus<typeof SimpleLinkedTransferAppName>(senderApp, receiverApp);
 };
 
 @Injectable()
@@ -69,10 +41,7 @@ export class LinkedTransferService {
       this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
     );
     // if sender app is uninstalled, transfer has been unlocked by node
-    const status = appStatusesToLinkedTransferStatus(
-      senderApp ? senderApp.type : undefined,
-      receiverApp ? receiverApp.type : undefined,
-    );
+    const status = appStatusesToLinkedTransferStatus(senderApp, receiverApp);
 
     return { senderApp, receiverApp, status };
   }
