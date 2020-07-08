@@ -30,6 +30,10 @@ export function appStatusesToTransferStatus<T extends AppName>(
       // FIXME: How will you be able to determine if this was a
       // collaborative payment cancellation/failure instead of a
       // success?
+      // cant check latest state preimage on app because there is no
+      // guarantee the app state in our db corresponds to the latest
+      // state of the app (updating state to include preimage does not
+      // happen under lock)
       return TransferStatuses.COMPLETED;
     }
     case AppType.INSTANCE: {
