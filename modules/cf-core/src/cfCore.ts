@@ -115,7 +115,9 @@ export class CFCore {
   }
 
   private async asynchronouslySetupUsingRemoteServices(syncOnStart: boolean): Promise<CFCore> {
-    this.log.info(`Signer address: ${this.signer.address} | public id: ${this.signer.publicIdentifier}`);
+    this.log.info(
+      `Signer address: ${this.signer.address} | public id: ${this.signer.publicIdentifier}`,
+    );
     this.requestHandler = new RequestHandler(
       this.publicIdentifier,
       this.incoming,
@@ -133,11 +135,16 @@ export class CFCore {
     this.rpcRouter = new RpcRouter(this.requestHandler);
     this.requestHandler.injectRouter(this.rpcRouter);
     const channels = await this.storeService.getAllChannels();
-    this.log.info(`Given store contains ${channels.length} channels: [${
-      channels.length > 10
-        ? channels.map(c => abrv(c.multisigAddress)).slice(0, 10).toString() + ", ..."
-        : channels.map(c => abrv(c.multisigAddress))
-    }]`);
+    this.log.info(
+      `Given store contains ${channels.length} channels: [${
+        channels.length > 10
+          ? channels
+              .map((c) => abrv(c.multisigAddress))
+              .slice(0, 10)
+              .toString() + ", ..."
+          : channels.map((c) => abrv(c.multisigAddress))
+      }]`,
+    );
     if (!syncOnStart) {
       return this;
     }
@@ -308,6 +315,15 @@ export class CFCore {
 
           case PersistStateChannelType.SyncNumProposedApps: {
             await this.storeService.incrementNumProposedApps(stateChannel.multisigAddress);
+            break;
+          }
+
+          case PersistStateChannelType.SyncRejectedProposal: {
+            await this.storeService.removeAppProposal(
+              stateChannel.multisigAddress,
+              appContext.identityHash,
+              stateChannel.toJson(),
+            );
             break;
           }
 

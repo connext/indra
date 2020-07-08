@@ -21,7 +21,11 @@ const appStatusesToSignedTransferStatus = (
   }
 
   // if receiver app is installed, it has not been unlocked
-  if (!receiverApp || receiverApp.type === AppType.INSTANCE) {
+  if (
+    !receiverApp ||
+    receiverApp.type === AppType.INSTANCE ||
+    receiverApp.type === AppType.PROPOSAL
+  ) {
     return SignedTransferStatus.PENDING;
   } else if (senderApp.type === AppType.UNINSTALLED || receiverApp.type === AppType.UNINSTALLED) {
     return SignedTransferStatus.COMPLETED;
