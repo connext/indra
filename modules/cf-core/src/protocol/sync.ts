@@ -979,8 +979,22 @@ function needsSyncFromCounterparty(
   counterpartyFreeBalanceVersionNumber: number,
   counterpartyAppVersionNumbers: AppSyncObj[],
 ): { whosSync: "ours" | "theirs"; syncType: PersistStateChannelType } {
-  // check channel nonces
-  // covers interruptions in: propose
+  // check free balance nonces
+  // covers interruptions in: uninstall, install
+  // NOTE: must check this before proposal/rejectInstall sync otherwise
+  // the syncType will be incorrect
+  if (ourChannel.freeBalance.latestVersionNumber !== counterpartyFreeBalanceVersionNumber) {
+    return {
+      whosSync:
+        counterpartyFreeBalanceVersionNumber > ourChannel.freeBalance.latestVersionNumber
+          ? "ours"
+          : "theirs",
+      syncType: PersistStateChannelType.SyncFreeBalance,
+    };
+  }
+
+  // check channel nonces and proposal sizes
+  // covers interruptions in: propose, rejectInstall
   let whosSync: "ours" | "theirs" | undefined = undefined;
   if (ourChannel.numProposedApps < counterpartyNumProposedApps) {
     whosSync = "ours";
@@ -1007,16 +1021,6 @@ function needsSyncFromCounterparty(
           : "ours",
       syncType: PersistStateChannelType.SyncRejectedProposal,
     };
-  }
-
-  // check free balance nonces
-  // covers interruptions in: uninstall, install
-  if (ourChannel.freeBalance.latestVersionNumber < counterpartyFreeBalanceVersionNumber) {
-    whosSync = "ours";
-    return { whosSync, syncType: PersistStateChannelType.SyncFreeBalance };
-  } else if (ourChannel.freeBalance.latestVersionNumber > counterpartyFreeBalanceVersionNumber) {
-    whosSync = "theirs";
-    return { whosSync, syncType: PersistStateChannelType.SyncFreeBalance };
   }
 
   // because we know we have the latest free balance nonce,
