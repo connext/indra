@@ -34,6 +34,7 @@ export const PersistStateChannelType = {
   NoChange: "NoChange",
   SyncFreeBalance: "SyncFreeBalance",
   SyncAppInstances: "SyncAppInstances",
+  SyncRejectedProposal: "SyncRejectedProposal",
 } as const;
 export type PersistStateChannelType = keyof typeof PersistStateChannelType;
 
