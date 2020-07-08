@@ -30,11 +30,13 @@ export class LinkedTransferService {
     { senderApp: AppInstance; receiverApp: AppInstance; status: LinkedTransferStatus } | undefined
   > {
     this.log.info(`findSenderAndReceiverAppsWithStatus ${paymentId} started`);
+    // eslint-disable-next-line max-len
     const senderApp = await this.appInstanceRepository.findTransferAppByAppDefinitionPaymentIdAndReceiver(
       paymentId,
       this.cfCoreService.cfCore.publicIdentifier,
       this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
     );
+    // eslint-disable-next-line max-len
     const receiverApp = await this.appInstanceRepository.findTransferAppByAppDefinitionPaymentIdAndSender(
       paymentId,
       this.cfCoreService.cfCore.publicIdentifier,

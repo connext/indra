@@ -13,6 +13,10 @@ export function appStatusesToTransferStatus<T extends AppName>(
   senderApp: AppInstance<T>,
   receiverApp?: AppInstance<T>,
 ): TransferStatus | undefined {
+  if (!senderApp) {
+    return undefined;
+  }
+
   switch (senderApp.type) {
     case AppType.PROPOSAL: {
       return TransferStatuses.PENDING;
