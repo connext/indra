@@ -28,7 +28,7 @@ export class SetStateCommitment implements EthereumCommitment {
     public readonly versionNumber: BigNumber,
     public readonly stateTimeout: BigNumber,
     public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
-    public readonly transactionData: string = "",
+    private transactionData: string = "",
     private initiatorSignature?: string,
     private responderSignature?: string,
   ) {
@@ -58,6 +58,8 @@ export class SetStateCommitment implements EthereumCommitment {
         );
       }
     }
+
+    this.transactionData = this.getTransactionData();
   }
 
   set signatures(sigs: string[]) {
@@ -93,7 +95,7 @@ export class SetStateCommitment implements EthereumCommitment {
     return {
       to: this.challengeRegistryAddress,
       value: 0,
-      data: this.transactionData!,
+      data: this.transactionData,
     };
   }
 

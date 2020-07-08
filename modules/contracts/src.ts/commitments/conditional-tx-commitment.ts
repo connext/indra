@@ -25,7 +25,7 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
     public readonly freeBalanceAppIdentityHash: string,
     public readonly interpreterAddr: string,
     public readonly interpreterParams: string,
-    public readonly transactionData: string = "",
+    private readonly transactionData: string = "",
     initiatorSignature?: string,
     responderSignature?: string,
   ) {
@@ -77,13 +77,7 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
     return {
       to: this.contractAddresses.ConditionalTransactionDelegateTarget,
       value: 0,
-      data: iface.encodeFunctionData("executeEffectOfInterpretedAppOutcome", [
-        this.contractAddresses.ChallengeRegistry,
-        this.freeBalanceAppIdentityHash,
-        this.appIdentityHash,
-        this.interpreterAddr,
-        this.interpreterParams,
-      ]),
+      data: this.transactionData,
       operation: MultisigOperation.DelegateCall,
     };
   }
