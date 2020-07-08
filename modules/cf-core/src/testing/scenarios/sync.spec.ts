@@ -540,8 +540,6 @@ describe("Sync", () => {
         StateChannel.fromJson(postProposalA!).removeProposal(identityHash).toJson(),
       );
       expectedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      console.log("expectedChannel:", expectedChannel);
-      console.log("unsynced:", unsynced);
       expect(expectedChannel!.proposedAppInstances.length).to.eq(0);
     });
 
@@ -678,7 +676,10 @@ describe("Sync", () => {
       expectedChannel = (await storeServiceA.getStateChannel(multisigAddress))!;
       unsynced = await storeServiceB.getStateChannel(multisigAddress);
       expect(unsynced?.appInstances.length).to.eq(0);
-      expect(expectedChannel?.appInstances.length).to.eq(1);
+      expect(expectedChannel.appInstances.length).to.eq(1);
+      expect(expectedChannel.freeBalanceAppInstance!.latestVersionNumber).to.eq(
+        unsynced!.freeBalanceAppInstance!.latestVersionNumber + 1,
+      );
     });
 
     it("sync protocol -- initiator is missing an app held by responder", async () => {
