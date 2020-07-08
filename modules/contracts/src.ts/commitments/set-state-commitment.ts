@@ -28,7 +28,7 @@ export class SetStateCommitment implements EthereumCommitment {
     public readonly versionNumber: BigNumber,
     public readonly stateTimeout: BigNumber,
     public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
-    private transactionData: string = "",
+    public transactionData: string = "",
     private initiatorSignature?: string,
     private responderSignature?: string,
   ) {
