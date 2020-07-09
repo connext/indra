@@ -873,8 +873,6 @@ async function syncChannel(
         );
       }
       // verify the expected commitment is included
-      console.log("free balance app:", freeBalanceApp.toJson());
-      console.log("commitments:", commitments);
       const setState = commitments.find((c) => {
         const json = c.toJson();
         const isSetState = !!json["appStateHash"];

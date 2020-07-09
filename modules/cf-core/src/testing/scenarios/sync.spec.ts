@@ -36,7 +36,7 @@ import { StateChannel } from "../../models";
 
 const { isHexString } = utils;
 
-describe.only("Sync", () => {
+describe("Sync", () => {
   let multisigAddress: string;
   let nodeA: CFCore;
   let nodeB: CFCore;
@@ -842,7 +842,7 @@ describe.only("Sync", () => {
       expect(postRejectChannel!.proposedAppInstances.length).to.eq(0);
     });
 
-    it.only("sync protocol -- initiator is missing an app held by responder, sync on startup", async () => {
+    it("sync protocol -- initiator is missing an app held by responder, sync on startup", async () => {
       messagingServiceA.clearLimits();
       await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
