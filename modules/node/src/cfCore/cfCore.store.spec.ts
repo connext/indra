@@ -335,7 +335,10 @@ describe("CFCoreStore", () => {
   });
 
   describe("App Instance", () => {
-    it("should not create an app instance if there is no app proposal", async () => {
+    // this test is currently skipped because the sync protocol needs to be able to install apps that do
+    // not have proposals in some cases.
+    // TODO: revisit this at some point
+    it.skip("should not create an app instance if there is no app proposal", async () => {
       const { multisigAddress, channelJson } = await createTestChannel(
         cfCoreStore,
         configService.getPublicIdentifier(),
@@ -346,14 +349,14 @@ describe("CFCoreStore", () => {
         ...channelJson.freeBalanceAppInstance!,
         latestState: { appState: "updated" },
       };
-      expect(
+      await expect(
         cfCoreStore.createAppInstance(
           multisigAddress,
           appInstance,
           updatedFreeBalance,
           createSetStateCommitmentJSON(),
         ),
-      ).to.be.rejectedWith(/Could not find app with identity hash/);
+      ).to.be.rejectedWith(/Operation could not be completed/);
     });
 
     it("createAppInstance", async () => {

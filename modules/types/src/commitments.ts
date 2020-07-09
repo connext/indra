@@ -25,7 +25,7 @@ export const CommitmentTypes = enumify({
   Setup: "setup",
   Withdraw: "withdraw",
 });
-export type CommitmentTypes = (typeof CommitmentTypes)[keyof typeof CommitmentTypes];
+export type CommitmentTypes = typeof CommitmentTypes[keyof typeof CommitmentTypes];
 
 export type MultisigTransaction = MinimalTransaction & {
   operation: MultisigOperation;
@@ -39,6 +39,7 @@ export type SetStateCommitmentJSON = {
   readonly signatures: string[];
   readonly stateTimeout: BigNumberJson;
   readonly versionNumber: BigNumberJson;
+  readonly transactionData: HexString;
 };
 
 export type ConditionalTransactionCommitmentJSON = {
@@ -50,4 +51,5 @@ export type ConditionalTransactionCommitmentJSON = {
   readonly multisigAddress: Address;
   readonly multisigOwners: Address[];
   readonly signatures: string[];
+  readonly transactionData: HexString;
 };

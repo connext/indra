@@ -60,6 +60,8 @@ import { storedProcedureCreateAppInstance1592291092044 } from "../../migrations/
 import { storedProcedureUpdateAppInstance1592309341833 } from "../../migrations/1592309341833-stored-procedure-update-app-instance";
 import { storedProcedureRemoveAppInstance1592310334011 } from "../../migrations/1592310334011-stored-procedure-remove-app-instance";
 import { pendingTransactions1593637047546 } from "../../migrations/1593637047546-pending-transactions";
+import { txDataToCommitments1594196149518 } from "../../migrations/1594196149518-tx-data-to-commitments";
+import { txDataStoredProcedures1594196572552 } from "../../migrations/1594196572552-tx-data-stored-procedures";
 
 export const entities = [
   AppInstance,
@@ -119,6 +121,8 @@ export const migrations = [
   storedProcedureUpdateAppInstance1592309341833,
   storedProcedureRemoveAppInstance1592310334011,
   pendingTransactions1593637047546,
+  txDataToCommitments1594196149518,
+  txDataStoredProcedures1594196572552,
 ];
 
 @Injectable()
