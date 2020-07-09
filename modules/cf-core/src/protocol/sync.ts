@@ -5,6 +5,7 @@ import {
   IStoreService,
   ProtocolMessage,
   ProtocolRoles,
+  ILoggerService,
 } from "@connext/types";
 import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 import { stringify, logTime, toBN } from "@connext/utils";
@@ -77,7 +78,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     // Determine how channel is out of sync, and get the info needed
     // for counterparty to sync (if any) to send
-    const syncType = makeSyncDetermination(counterpartyData, preProtocolStateChannel);
+    const syncType = makeSyncDetermination(counterpartyData, preProtocolStateChannel, log);
     log.info(`Initiator syncing with: ${stringify(syncType)}`);
     const syncInfoForCounterparty = await getInfoForSync(syncType, preProtocolStateChannel, store);
 
@@ -107,7 +108,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         preProtocolStateChannel,
         syncType.type,
         commitments,
-        affectedApp || syncType.identityHash,
+        affectedApp || syncType.identityHash!,
         freeBalanceApp,
       );
       postSyncStateChannel = updatedChannel;
@@ -260,6 +261,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     const syncType = makeSyncDetermination(
       m1.customData as SyncDeterminationData,
       preProtocolStateChannel,
+      log,
     );
     log.info(`Responder syncing with: ${stringify(syncType)}`);
     const syncInfoForCounterparty = await getInfoForSync(syncType, preProtocolStateChannel, store);
@@ -300,7 +302,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         preProtocolStateChannel,
         syncType.type,
         commitments,
-        affectedApp || syncType.identityHash,
+        affectedApp || syncType.identityHash!,
         freeBalanceApp,
       );
       postSyncStateChannel = updatedChannel;
@@ -469,13 +471,14 @@ const { sync, setup, ...SyncableProtocols } = ProtocolNames;
 type SyncDetermination = {
   type: keyof typeof SyncableProtocols;
   counterpartyIsBehind: boolean;
-  identityHash: string; // hash of app or proposal thats out of sync
+  identityHash?: string; // hash of app or proposal thats out of sync
   // in the case of free balance sync issues, this is the hash of the
   // installed or uninstalled app
 };
 function makeSyncDetermination(
   counterpartyData: SyncDeterminationData | undefined, // just cus types are sketch
   myChannel: StateChannel,
+  log: ILoggerService,
 ): SyncDetermination | undefined {
   // Get information from counterparty, and make sure it is defined.
   const { freeBalanceVersionNumber, numProposedApps, proposals, apps } = counterpartyData || {};
@@ -561,7 +564,7 @@ function makeSyncDetermination(
       // this as a defective proposal, and treat this as a rejection. however,
       // doing that is in a future iteration
       if (!proposal) {
-        throw new Error(
+        log.error(
           `Could not find out of sync proposal (counterparty behind). My proposals: ${stringify(
             myProposals,
           )}, counterparty proposals: ${stringify(proposals)}.`,
@@ -570,13 +573,13 @@ function makeSyncDetermination(
       return {
         counterpartyIsBehind: true,
         type: "propose",
-        identityHash: proposal.identityHash,
+        identityHash: proposal?.identityHash,
       };
     } else if (myChannel.numProposedApps < numProposedApps!) {
       // we need sync from counterparty
       const proposal = proposals!.find((p) => p.appSeqNo === numProposedApps);
       if (!proposal) {
-        throw new Error(
+        log.error(
           `Could not find out of sync proposal (counterparty ahead). My proposals: ${stringify([
             ...myChannel.proposedAppInstances.keys(),
           ])}, counterparty proposals: ${stringify(proposals)}`,
@@ -585,7 +588,7 @@ function makeSyncDetermination(
       return {
         counterpartyIsBehind: false,
         type: "propose",
-        identityHash: proposal.identityHash,
+        identityHash: proposal?.identityHash,
       };
     } else {
       throw new Error("Something is off -- not gt or lt and already checked for eq...");
@@ -658,8 +661,8 @@ async function getInfoForSync(
   }
 
   // Get commitments and object for effected app
-  const conditional = await store.getConditionalTransactionCommitment(identityHash);
-  const [setState] = await store.getSetStateCommitments(identityHash);
+  const conditional = await store.getConditionalTransactionCommitment(identityHash!);
+  const [setState] = await store.getSetStateCommitments(identityHash!);
 
   // Get data for counterparty dep. on type
   switch (type) {
@@ -668,25 +671,23 @@ async function getInfoForSync(
       // - set state commitment for unsynced proposal
       // - conditional commitment for unsynced proposal
       // - unsynced proposal obj
-      const proposal = myChannel.proposedAppInstances.get(identityHash);
+      const proposal = myChannel.proposedAppInstances.get(identityHash!);
       if (!setState || !conditional || !proposal) {
-        throw new Error(
-          `Failed to retrieve proposal sync info for counterparty for: ${identityHash}`,
-        );
+        return { commitments: [], affectedApp: undefined };
       }
       return {
         commitments: [
-          SetStateCommitment.fromJson(setState),
-          ConditionalTransactionCommitment.fromJson(conditional),
+          setState && SetStateCommitment.fromJson(setState),
+          conditional && ConditionalTransactionCommitment.fromJson(conditional),
         ],
-        affectedApp: AppInstance.fromJson(proposal),
+        affectedApp: proposal && AppInstance.fromJson(proposal),
       };
     }
     case "install": {
       // send counterparty:
       // - set state commitment for free balance
       // - unsynced app obj
-      const app = myChannel.appInstances.get(identityHash);
+      const app = myChannel.appInstances.get(identityHash!);
       if (!setState || !app) {
         throw new Error(
           `Failed to retrieve install sync info for counterparty for: ${identityHash}`,
@@ -701,7 +702,7 @@ async function getInfoForSync(
       // send counterparty:
       // - set state commitment for app
       // - unsynced app obj
-      const app = myChannel.appInstances.get(identityHash);
+      const app = myChannel.appInstances.get(identityHash!);
       if (!setState || !app) {
         throw new Error(
           `Failed to retrieve takeAction sync info for counterparty for: ${identityHash}`,
@@ -761,29 +762,37 @@ async function syncChannel(
     case "propose": {
       if (typeof affectedApp === "string") {
         throw new Error(
-          `Received valid commitments, but no effected app for proposal sync of channel ${myChannel.multisigAddress}`,
-        );
-      }
-      // should have received a set state and conditional tx as the commitments
-      // and both should correspond to the effected app
-      const generatedSetState = getSetStateCommitment(context, affectedApp);
-      const generatedConditional = getConditionalTransactionCommitment(
-        context,
-        myChannel,
-        affectedApp,
-      );
-      const setState = commitments.find((c) => c.hashToSign === generatedSetState.hashToSign);
-      const conditional = commitments.find((c) => c.hashToSign === generatedConditional.hashToSign);
-      if (!setState || !conditional) {
-        throw new Error(
-          "Verified commitments are signed, but could not find one that corresponds to the effected app when syncing channel from proposal",
+          `Received valid commitments, but no affected app for proposal sync of channel ${myChannel.multisigAddress}`,
         );
       }
 
-      // set return values
-      updatedChannel = myChannel.addProposal(affectedApp.toJson());
+      if (affectedApp) {
+        // should have received a set state and conditional tx as the commitments
+        // and both should correspond to the effected app
+        const generatedSetState = getSetStateCommitment(context, affectedApp);
+        const generatedConditional = getConditionalTransactionCommitment(
+          context,
+          myChannel,
+          affectedApp,
+        );
+        const setState = commitments.find((c) => c.hashToSign === generatedSetState.hashToSign);
+        const conditional = commitments.find(
+          (c) => c.hashToSign === generatedConditional.hashToSign,
+        );
+        if (!setState || !conditional) {
+          throw new Error(
+            "Verified commitments are signed, but could not find one that corresponds to the effected app when syncing channel from proposal",
+          );
+        }
+        // set return values
+        verifiedCommitments = [setState, conditional];
+        updatedChannel = myChannel.addProposal(affectedApp.toJson());
+      } else {
+        verifiedCommitments = [];
+        updatedChannel = myChannel.incrementNumProposedApps();
+      }
+
       persistType = PersistStateChannelType.SyncProposal;
-      verifiedCommitments = [setState, conditional];
       break;
     }
 
