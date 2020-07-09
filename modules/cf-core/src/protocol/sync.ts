@@ -54,7 +54,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       store,
     );
     const syncDeterminationData = getSyncDeterminationData(preProtocolStateChannel);
-    console.log(`initiator syncDeterminationData: ${stringify(syncDeterminationData)}`);
+    console.log(`sending m1 custom data`, { ...syncDeterminationData });
     const m2 = yield [
       IO_SEND_AND_WAIT,
       {
@@ -66,6 +66,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         customData: { ...syncDeterminationData },
       },
     ];
+    console.log("Initiation continuing with m2:", stringify((m2 as any).data.customData));
     logTime(log, substart, `[${loggerId}] Received responder's m2`);
     substart = Date.now();
 
@@ -78,8 +79,9 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     // Determine how channel is out of sync, and get the info needed
     // for counterparty to sync (if any) to send
     const syncType = makeSyncDetermination(counterpartyData, preProtocolStateChannel);
-    log.info(`Initiator syncing with: ${stringify(syncType)}`);
+    console.log(`Initiator syncing with: ${stringify(syncType)}`);
     const syncInfoForCounterparty = await getInfoForSync(syncType, preProtocolStateChannel, store);
+    console.log(`Initiator sync info for responder: ${stringify(syncInfoForCounterparty)}`);
 
     // Should already have information from counterparty needed to sync your
     // channel included in m2
@@ -211,6 +213,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         },
       },
     ];
+    console.log("Initiation continuing with m4:", stringify((m2 as any).data.customData));
     logTime(log, substart, `[${loggerId}] Received responder's m4`);
     substart = Date.now();
 
@@ -259,13 +262,14 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     // Determine the sync type needed, and fetch any information the
     // counterparty would need to sync and send to them
-    console.log("Response started with message", stringify(m1));
+    console.log("Response started with m1:", stringify(m1.customData));
     const syncType = makeSyncDetermination(
       m1.customData as SyncDeterminationData,
       preProtocolStateChannel,
     );
-    log.info(`Responder syncing with: ${stringify(syncType)}`);
+    console.log(`Responder syncing with: ${stringify(syncType)}`);
     const syncInfoForCounterparty = await getInfoForSync(syncType, preProtocolStateChannel, store);
+    console.log(`Responder sync info for initiator: ${stringify(syncInfoForCounterparty)}`);
 
     const m3 = yield [
       IO_SEND_AND_WAIT,
@@ -283,6 +287,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     ];
     logTime(log, substart, `[${loggerId}] Received initiator's m3`);
     substart = Date.now();
+    console.log("Response continuing with m3:", stringify((m3 as any).data.customData));
 
     // Determine how channel is out of sync + sync channel
     const counterpartyData = (m3! as ProtocolMessage).data.customData as {
@@ -554,7 +559,7 @@ function makeSyncDetermination(
       );
     }
 
-    const counterpartyIsBehind = myChannel.numProposedApps > numProposedApps!;
+    const counterpartyIsBehind = myChannel.numProposedApps >= numProposedApps!;
     const latestProposalSeqNo = counterpartyIsBehind ? myChannel.numProposedApps : numProposedApps!;
     const myProposals = [...myChannel.proposedAppInstances.values()].map((proposal) => {
       return { appSeqNo: proposal.appSeqNo, identityHash: proposal.identityHash };
