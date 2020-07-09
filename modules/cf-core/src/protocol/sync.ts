@@ -704,13 +704,20 @@ async function getInfoForSync(
       // - set state commitment for free balance
       // - unsynced app obj
       const app = myChannel.appInstances.get(identityHash!);
-      if (!setState || !app) {
+      const [fbCommitment] = await store.getSetStateCommitments(myChannel.freeBalance.identityHash);
+      if (!fbCommitment) {
         throw new Error(
-          `Failed to retrieve install sync info for counterparty for: ${identityHash}`,
+          `Failed to retrieve uninstall sync info for counterparty for: ${identityHash}`,
+        );
+      }
+      if (!fbCommitment || !app) {
+        // both may be undefined IFF a proposal was rejected
+        throw new Error(
+          `Failed to retrieve install sync info for counterparty for: ${identityHash}. Found app: ${!!app}, found commitment: ${!!fbCommitment}`,
         );
       }
       return {
-        commitments: [setState],
+        commitments: [fbCommitment],
         affectedApp: app.toJson(),
       };
     }
