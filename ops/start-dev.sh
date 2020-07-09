@@ -55,7 +55,7 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 # config & hard-coded stuff you might want to change
 
 ganacheProvider="http://ethprovider:8545"
-number_of_services=5 # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services=6 # NOTE: Gotta update this manually when adding/removing services :(
 
 nats_port=4222
 node_port=8080
@@ -117,6 +117,7 @@ redis_image="redis:5-alpine"
 if [[ "$INDRA_UI" == "headless" ]]
 then
   webserver_service=""
+  webserver_url="localhost"
 else
   if [[ "$INDRA_UI" == "dashboard" ]]
   then webserver_working_dir=/root/modules/dashboard
@@ -126,22 +127,9 @@ else
     echo "INDRA_UI: Expected headless, dashboard, or daicard"
     exit 1
   fi
-  number_of_services=$(( $number_of_services + 2 ))
+  number_of_services=$(( $number_of_services + 1 ))
+  webserver_url="webserver:3000"
   webserver_services="
-  proxy:
-    image: '$proxy_image'
-    environment:
-      ETH_PROVIDER_URL: '$INDRA_ETH_PROVIDER'
-      MESSAGING_TCP_URL: 'nats:4222'
-      MESSAGING_WS_URL: 'nats:4221'
-      NODE_URL: 'node:8080'
-      WEBSERVER_URL: 'webserver:3000'
-    networks:
-      - '$project'
-    ports:
-      - '3000:80'
-    volumes:
-      - 'certs:/etc/letsencrypt'
 
   webserver:
     image: '$webserver_image'
@@ -201,6 +189,21 @@ volumes:
 services:
 
   $webserver_services
+
+  proxy:
+    image: '$proxy_image'
+    environment:
+      ETH_PROVIDER_URL: '$INDRA_ETH_PROVIDER'
+      MESSAGING_TCP_URL: 'nats:4222'
+      MESSAGING_WS_URL: 'nats:4221'
+      NODE_URL: 'node:8080'
+      WEBSERVER_URL: '$webserver_url'
+    networks:
+      - '$project'
+    ports:
+      - '3000:80'
+    volumes:
+      - 'certs:/etc/letsencrypt'
 
   node:
     image: '$node_image'
