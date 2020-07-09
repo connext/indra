@@ -295,7 +295,7 @@ export class CFCore {
           AppInstance[], // effected apps (multiple for reject)
         ],
       ) => {
-        const [type, stateChannel, signedCommitments, effectedApps] = args;
+        const [type, stateChannel, signedCommitments, affectedApps] = args;
         switch (type) {
           case PersistStateChannelType.CreateChannel: {
             const [setup, freeBalance] = signedCommitments as [
@@ -316,7 +316,7 @@ export class CFCore {
             // NOTE: this relies on `removeAppProposal` being idempotent
             // and functional concurrent writes of the store
             await Promise.all(
-              effectedApps.map((app) =>
+              affectedApps.map((app) =>
                 this.storeService.removeAppProposal(
                   stateChannel.multisigAddress,
                   app.identityHash,
@@ -332,11 +332,11 @@ export class CFCore {
               SetStateCommitment,
               ConditionalTransactionCommitment,
             ];
-            const [appContext] = effectedApps;
+            const [appContext] = affectedApps;
             if (!appContext || !setState || !conditional) {
-              throw new Error(
-                "Could not find sufficient information to store proposal from sync method. Check middlewares.",
-              );
+              // adding a rejected proposal
+              await this.storeService.incrementNumProposedApps(stateChannel.multisigAddress);
+              break;
             }
             // this is adding a proposal
             await this.storeService.createAppProposal(
@@ -352,7 +352,7 @@ export class CFCore {
 
           case PersistStateChannelType.SyncInstall: {
             const [setState] = signedCommitments as [SetStateCommitment];
-            const [appContext] = effectedApps;
+            const [appContext] = affectedApps;
             if (!appContext || !setState) {
               throw new Error(
                 "Could not find sufficient information to store channel with installed app from sync method. Check middlewares.",
@@ -370,7 +370,7 @@ export class CFCore {
 
           case PersistStateChannelType.SyncUninstall: {
             const [setState] = signedCommitments as [SetStateCommitment];
-            const [appContext] = effectedApps;
+            const [appContext] = affectedApps;
             if (!appContext || !setState) {
               throw new Error(
                 "Could not find sufficient information to store channel with uninstalled app from sync method. Check middlewares.",
