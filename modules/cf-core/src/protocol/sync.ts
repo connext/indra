@@ -88,7 +88,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       .customData as SyncDeterminationData & SyncFromData;
 
     const validCommitments = commitments && commitments.length > 0;
-    if (syncType && !syncType.counterpartyIsBehind && !validCommitments) {
+    if (syncType && !syncType.counterpartyIsBehind && !validCommitments && !!affectedApp) {
       throw new Error(
         `Need to sync from counterparty with ${
           syncType.type
