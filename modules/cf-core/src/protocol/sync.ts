@@ -65,7 +65,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         customData: { ...syncDeterminationData },
       },
     ];
-    console.log("Initiation continuing with m2:", stringify((m2 as any).data.customData));
+    log.info(`Initiation continuing with m2: ${stringify((m2 as any).data.customData)}`);
     logTime(log, substart, `[${loggerId}] Received responder's m2`);
     substart = Date.now();
 
@@ -78,7 +78,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     // Determine how channel is out of sync, and get the info needed
     // for counterparty to sync (if any) to send
     const syncType = makeSyncDetermination(counterpartyData, preProtocolStateChannel);
-    console.log(`Initiator syncing with: ${stringify(syncType)}`);
+    log.info(`Initiator syncing with: ${stringify(syncType)}`);
     const syncInfoForCounterparty = await getInfoForSync(syncType, preProtocolStateChannel, store);
 
     // Should already have information from counterparty needed to sync your
@@ -250,22 +250,18 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       throw new Error("No state channel found for sync");
     }
     log.info(`[${loggerId}] Response started ${stringify(params)}`);
-    const {
-      multisigAddress,
-      responderIdentifier,
-      initiatorIdentifier,
-    } = params as ProtocolParams.Sync;
+    const { responderIdentifier, initiatorIdentifier } = params as ProtocolParams.Sync;
     const counterpartyIdentifier = initiatorIdentifier;
     const myIdentifier = responderIdentifier;
 
     // Determine the sync type needed, and fetch any information the
     // counterparty would need to sync and send to them
-    console.log("Response started with m1:", stringify(m1.customData));
+    log.info(`Response started with m1: ${stringify(m1.customData)}`);
     const syncType = makeSyncDetermination(
       m1.customData as SyncDeterminationData,
       preProtocolStateChannel,
     );
-    console.log(`Responder syncing with: ${stringify(syncType)}`);
+    log.info(`Responder syncing with: ${stringify(syncType)}`);
     const syncInfoForCounterparty = await getInfoForSync(syncType, preProtocolStateChannel, store);
 
     const m3 = yield [
@@ -511,8 +507,8 @@ function makeSyncDetermination(
       );
     }
 
-    let counterpartyIsBehind;
-    let type;
+    let counterpartyIsBehind: boolean;
+    let type: keyof typeof SyncableProtocols;
     if (myChannel.freeBalance.latestVersionNumber > freeBalanceVersionNumber!) {
       // we are ahead, our apps are the source of truth
       counterpartyIsBehind = true;
