@@ -21,11 +21,11 @@
     "ethers": "5.0.5",
     "express": "4.17.1",
     "interval-promise": "1.4.0",
-    "yargs": "15.3.1"
+    "yargs": "15.4.0"
   },
   "devDependencies": {
     "@types/yargs": "15.0.5",
     "ts-node": "8.10.2",
-    "typescript": "3.9.5"
+    "typescript": "3.9.6"
   }
 }

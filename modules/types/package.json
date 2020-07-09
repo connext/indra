@@ -22,8 +22,8 @@
     "sequelize": "5.21.13"
   },
   "devDependencies": {
-    "rollup": "2.18.1",
+    "rollup": "2.21.0",
     "rollup-plugin-typescript2": "0.27.1",
-    "typescript": "3.9.5"
+    "typescript": "3.9.6"
   }
 }
