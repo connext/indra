@@ -53,6 +53,8 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       store,
     );
+    const syncDeterminationData = getSyncDeterminationData(preProtocolStateChannel);
+    console.log(`initiator syncDeterminationData: ${stringify(syncDeterminationData)}`);
     const m2 = yield [
       IO_SEND_AND_WAIT,
       {
@@ -61,7 +63,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         params,
         seq: 1,
         to: counterpartyIdentifier,
-        customData: { ...getSyncDeterminationData(preProtocolStateChannel) },
+        customData: { ...syncDeterminationData },
       },
     ];
     logTime(log, substart, `[${loggerId}] Received responder's m2`);
@@ -85,7 +87,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       .customData as SyncDeterminationData & SyncFromData;
 
     const validCommitments = commitments && commitments.length > 0;
-    if (syncType && syncType.counterpartyIsBehind && !validCommitments) {
+    if (syncType && !syncType.counterpartyIsBehind && !validCommitments) {
       throw new Error(
         `Need to sync from counterparty with ${
           syncType.type
@@ -225,6 +227,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_STATE_CHANNEL,
+      PersistStateChannelType.SyncRejectedProposals,
       postRejectChannel,
       [], // no commitments effected during proposal rejection
       rejected,
@@ -256,6 +259,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     // Determine the sync type needed, and fetch any information the
     // counterparty would need to sync and send to them
+    console.log("Response started with message", stringify(m1));
     const syncType = makeSyncDetermination(
       m1.customData as SyncDeterminationData,
       preProtocolStateChannel,
@@ -271,7 +275,10 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         params,
         seq: 1,
         to: counterpartyIdentifier,
-        customData: { ...(syncType || {}), ...syncInfoForCounterparty },
+        customData: {
+          ...getSyncDeterminationData(preProtocolStateChannel),
+          ...syncInfoForCounterparty,
+        },
       },
     ];
     logTime(log, substart, `[${loggerId}] Received initiator's m3`);
@@ -391,6 +398,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_STATE_CHANNEL,
+      PersistStateChannelType.SyncRejectedProposals,
       postRejectChannel,
       [], // no commitments effected during proposal rejection
       rejected,
@@ -547,11 +555,12 @@ function makeSyncDetermination(
     }
 
     const counterpartyIsBehind = myChannel.numProposedApps > numProposedApps!;
+    const latestProposalSeqNo = counterpartyIsBehind ? myChannel.numProposedApps : numProposedApps!;
     const myProposals = [...myChannel.proposedAppInstances.values()].map((proposal) => {
       return { appSeqNo: proposal.appSeqNo, identityHash: proposal.identityHash };
     });
     const proposal = (counterpartyIsBehind ? myProposals : proposals!).find(
-      (proposal) => proposal.appSeqNo === myChannel.numProposedApps,
+      (proposal) => proposal.appSeqNo === latestProposalSeqNo,
     );
     // FIXME: ideally, this would not throw an error. instead it would recognize
     // this as a defective proposal, and treat this as a rejection. however,
@@ -560,7 +569,9 @@ function makeSyncDetermination(
       throw new Error(
         `Could not find out of sync proposal. My proposals: ${stringify(
           myProposals,
-        )}, counterparty proposals: ${stringify(proposals)}`,
+        )}, counterparty proposals: ${stringify(proposals)}. searching through: ${stringify(
+          counterpartyIsBehind ? myProposals : proposals!,
+        )}`,
       );
     }
     return {

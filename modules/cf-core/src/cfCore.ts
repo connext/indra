@@ -404,7 +404,7 @@ export class CFCore {
 
           default: {
             const c: never = type;
-            throw new Error(`Unrecognized persist state channel type: ${c}`);
+            throw new Error(`Unrecognized persist state channel type: ${stringify(c)}`);
           }
         }
         return { channel: stateChannel };
