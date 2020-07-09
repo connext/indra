@@ -95,7 +95,7 @@ describe("Sync", () => {
       channelSignerB,
       lockService,
       0,
-      new Logger("CreateClient", env.logLevel, true, "B"),
+      new Logger("CreateClient", env.logLevel, true, "B-initial"),
     );
   });
 
@@ -115,7 +115,7 @@ describe("Sync", () => {
         channelSignerA,
         lockService,
         0,
-        new Logger("CreateClient", env.logLevel, true, "A"),
+        new Logger("CreateClient", env.logLevel, true, "A-initial"),
       );
 
       // create channel
@@ -179,6 +179,7 @@ describe("Sync", () => {
 
     it("sync protocol initiator is missing a proposal held by the protocol responder, sync on startup", async () => {
       messagingServiceA.clearLimits();
+      await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve, reject) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -193,7 +194,7 @@ describe("Sync", () => {
           channelSignerB,
           lockService,
           0,
-          new Logger("CreateClient", env.logLevel, true, "B"),
+          new Logger("CreateClient", env.logLevel, true, "B-recreated"),
         ),
       ]);
 
@@ -381,6 +382,7 @@ describe("Sync", () => {
     it("sync protocol initiator is missing a proposal held by the protocol responder, sync on startup", async () => {
       const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       messagingServiceA.clearLimits();
+      await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve, reject) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -515,7 +517,7 @@ describe("Sync", () => {
         channelSignerA,
         lockService,
         0,
-        new Logger("CreateClient", env.logLevel, true, "A"),
+        new Logger("CreateClient", env.logLevel, true, "A-initial"),
       );
 
       // create channel
@@ -545,6 +547,7 @@ describe("Sync", () => {
 
     it("sync protocol -- initiator has rejected a proposal responder has record of, sync on startup", async () => {
       // recreate nodeA (unsynced, missing proposal)
+      await messagingServiceA.disconnect();
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -558,7 +561,7 @@ describe("Sync", () => {
           channelSignerA,
           lockService,
           0,
-          new Logger("CreateClient", env.logLevel, true, "A"),
+          new Logger("CreateClient", env.logLevel, true, "A-recreated"),
         ),
       ]);
 
@@ -577,6 +580,7 @@ describe("Sync", () => {
 
     it("sync protocol -- responder has rejected a proposal initiator has record of, sync on startup", async () => {
       // recreate nodeA (unsynced, missing proposal)
+      await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -684,6 +688,7 @@ describe("Sync", () => {
 
     it("sync protocol -- initiator is missing an app held by responder", async () => {
       messagingServiceA.clearLimits();
+      await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -839,6 +844,7 @@ describe("Sync", () => {
 
     it("sync protocol -- initiator is missing an app held by responder, sync on startup", async () => {
       messagingServiceA.clearLimits();
+      await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -1207,6 +1213,7 @@ describe("Sync", () => {
 
     it("responder has an app that has a single signed update that the initiator does not have, sync on startup", async () => {
       messagingServiceA.clearLimits();
+      await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
