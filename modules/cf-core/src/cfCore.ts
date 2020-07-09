@@ -373,7 +373,7 @@ export class CFCore {
             const [appContext] = affectedApps;
             if (!appContext || !setState) {
               throw new Error(
-                "Could not find sufficient information to store channel with uninstalled app from sync method. Check middlewares.",
+                `Could not find sufficient information to store channel with uninstalled app from sync method. Check middlewares. Missing appContext: ${!!appContext}, missing setState: ${!!setState}`,
               );
             }
             await this.storeService.removeAppInstance(
