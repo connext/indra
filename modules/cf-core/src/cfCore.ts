@@ -292,7 +292,7 @@ export class CFCore {
           PersistStateChannelType,
           StateChannel, // post protocol channel
           (MinimalTransaction | SetStateCommitment | ConditionalTransactionCommitment)[], // signed commitments
-          AppInstance[], // effected apps (multiple for reject)
+          AppInstance[], // affected apps (multiple for reject)
         ],
       ) => {
         const [type, stateChannel, signedCommitments, affectedApps] = args;
