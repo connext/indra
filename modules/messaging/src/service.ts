@@ -25,7 +25,7 @@ export class MessagingService implements IMessagingService {
     const service = natsutil.natsServiceFactory({
       bearerToken: this.bearerToken,
       natsServers: typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl, // FIXME-- rename to servers instead of natsServers
-    });
+    }, this.log.newContext(`Messaging-Nats`));
 
     const natsConnection = await service.connect();
     this.service = service;
