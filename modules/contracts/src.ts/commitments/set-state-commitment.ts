@@ -104,6 +104,7 @@ export class SetStateCommitment implements EthereumCommitment {
 
   public static fromJson(json: SetStateCommitmentJSON) {
     const bnJson = bigNumberifyJson(json);
+    const sigs = bnJson.signatures || [bnJson["initiatorSignature"], bnJson["responderSignature"]];
     return new SetStateCommitment(
       bnJson.challengeRegistryAddress,
       bnJson.appIdentity,
@@ -111,8 +112,8 @@ export class SetStateCommitment implements EthereumCommitment {
       bnJson.versionNumber,
       bnJson.stateTimeout,
       bnJson.appIdentityHash,
-      bnJson.signatures[0],
-      bnJson.signatures[1],
+      sigs[0],
+      sigs[1],
     );
   }
 

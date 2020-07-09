@@ -48,6 +48,10 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
   }
 
   public static fromJson(json: ConditionalTransactionCommitmentJSON) {
+    const sigs = json.signatures || [
+      (json as any)["initiatorSignature"],
+      (json as any)["responderSignature"],
+    ];
     return new ConditionalTransactionCommitment(
       json.contractAddresses,
       json.multisigAddress,
@@ -56,8 +60,8 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
       json.freeBalanceAppIdentityHash,
       json.interpreterAddr,
       json.interpreterParams,
-      json.signatures[0],
-      json.signatures[1],
+      sigs[0],
+      sigs[1],
     );
   }
 
