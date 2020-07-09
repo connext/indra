@@ -304,7 +304,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
  * @param {StateChannel} stateChannel - The pre-protocol state of the channel
  * @returns {Promise<StateChannel>} - The post-protocol state of the channel
  */
-function computeInstallStateChannelTransition(
+export function computeInstallStateChannelTransition(
   stateChannel: StateChannel,
   proposal: AppInstance,
 ): StateChannel {

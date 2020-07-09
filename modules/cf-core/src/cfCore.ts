@@ -290,13 +290,12 @@ export class CFCore {
       async (
         args: [
           PersistStateChannelType,
-          StateChannel,
-          (MinimalTransaction | SetStateCommitment | ConditionalTransactionCommitment)[],
-          AppInstance, // app context for fb sync
-          ("install" | "uninstall")?, // fb sync type
+          StateChannel, // post protocol channel
+          (MinimalTransaction | SetStateCommitment | ConditionalTransactionCommitment)[], // signed commitments
+          AppInstance[], // effected apps (multiple for reject)
         ],
       ) => {
-        const [type, stateChannel, signedCommitments, appContext, syncType] = args;
+        const [type, stateChannel, signedCommitments, effectedApps] = args;
         switch (type) {
           case PersistStateChannelType.CreateChannel: {
             const [setup, freeBalance] = signedCommitments as [
@@ -313,36 +312,31 @@ export class CFCore {
             break;
           }
 
-          case PersistStateChannelType.SyncNumProposedApps: {
-            await this.storeService.incrementNumProposedApps(stateChannel.multisigAddress);
-            break;
-          }
-
-          case PersistStateChannelType.SyncRejectedProposal: {
-            await this.storeService.removeAppProposal(
-              stateChannel.multisigAddress,
-              appContext.identityHash,
-              stateChannel.toJson(),
+          case PersistStateChannelType.SyncRejectedProposals: {
+            // NOTE: this relies on `removeAppProposal` being idempotent
+            // and functional concurrent writes of the store
+            await Promise.all(
+              effectedApps.map((app) =>
+                this.storeService.removeAppProposal(
+                  stateChannel.multisigAddress,
+                  app.identityHash,
+                  stateChannel.toJson(),
+                ),
+              ),
             );
             break;
           }
 
           case PersistStateChannelType.SyncProposal: {
-            // if there are no commitments, syncing rejection
-            if (signedCommitments.length === 0) {
-              await this.storeService.removeAppProposal(
-                stateChannel.multisigAddress,
-                appContext.identityHash,
-                stateChannel.toJson(),
-              );
-              break;
-            }
             const [setState, conditional] = signedCommitments as [
               SetStateCommitment,
               ConditionalTransactionCommitment,
             ];
-            if (!appContext) {
-              throw new Error("Could not find proposal in app context");
+            const [appContext] = effectedApps;
+            if (!appContext || !setState || !conditional) {
+              throw new Error(
+                "Could not find sufficient information to store proposal from sync method. Check middlewares.",
+              );
             }
             // this is adding a proposal
             await this.storeService.createAppProposal(
@@ -355,34 +349,43 @@ export class CFCore {
             );
             break;
           }
-          case PersistStateChannelType.NoChange: {
-            break;
-          }
-          case PersistStateChannelType.SyncFreeBalance: {
+
+          case PersistStateChannelType.SyncInstall: {
             const [setState] = signedCommitments as [SetStateCommitment];
-            if (syncType && syncType === "uninstall") {
-              // this was an uninstall, so remove app instance
-              await this.storeService.removeAppInstance(
-                stateChannel.multisigAddress,
-                appContext.identityHash,
-                stateChannel.toJson().freeBalanceAppInstance!,
-                setState.toJson(),
-                stateChannel.toJson(),
+            const [appContext] = effectedApps;
+            if (!appContext || !setState) {
+              throw new Error(
+                "Could not find sufficient information to store channel with installed app from sync method. Check middlewares.",
               );
-            } else if (syncType && syncType === "install") {
-              // this was an install, add app and remove proposals
-              await this.storeService.createAppInstance(
-                stateChannel.multisigAddress,
-                appContext.toJson(),
-                stateChannel.freeBalance.toJson(),
-                setState.toJson(),
-                stateChannel.toJson(),
-              );
-            } else {
-              throw new Error(`Unrecognized (or unavailable) free balance sync type: ${syncType}`);
             }
+            await this.storeService.createAppInstance(
+              stateChannel.multisigAddress,
+              appContext.toJson(),
+              stateChannel.freeBalance.toJson(),
+              setState.toJson(),
+              stateChannel.toJson(),
+            );
             break;
           }
+
+          case PersistStateChannelType.SyncUninstall: {
+            const [setState] = signedCommitments as [SetStateCommitment];
+            const [appContext] = effectedApps;
+            if (!appContext || !setState) {
+              throw new Error(
+                "Could not find sufficient information to store channel with uninstalled app from sync method. Check middlewares.",
+              );
+            }
+            await this.storeService.removeAppInstance(
+              stateChannel.multisigAddress,
+              appContext.identityHash,
+              stateChannel.freeBalance.toJson(),
+              setState.toJson(),
+              stateChannel.toJson(),
+            );
+            break;
+          }
+
           case PersistStateChannelType.SyncAppInstances: {
             for (const commitment of signedCommitments as SetStateCommitment[]) {
               await this.storeService.updateAppInstance(
@@ -394,6 +397,11 @@ export class CFCore {
             }
             break;
           }
+
+          case PersistStateChannelType.NoChange: {
+            break;
+          }
+
           default: {
             const c: never = type;
             throw new Error(`Unrecognized persist state channel type: ${c}`);
