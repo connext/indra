@@ -1,8 +1,8 @@
 import { OneToOne, JoinColumn, Entity, Column, PrimaryColumn } from "typeorm";
+import { HexString } from "@connext/types";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { IsEthAddress, IsKeccak256Hash } from "../validate";
-import { HexString } from "@connext/types";
 
 @Entity()
 export class ConditionalTransactionCommitment {

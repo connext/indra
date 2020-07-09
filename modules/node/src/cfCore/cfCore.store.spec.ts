@@ -335,7 +335,8 @@ describe("CFCoreStore", () => {
   });
 
   describe("App Instance", () => {
-    it.skip("should not create an app instance if there is no app proposal", async () => {
+    it("should not create an app instance if there is no app proposal", async () => {
+      // FIXME: This test is failing because the stored proc call is not properly throwing an error
       const { multisigAddress, channelJson } = await createTestChannel(
         cfCoreStore,
         configService.getPublicIdentifier(),

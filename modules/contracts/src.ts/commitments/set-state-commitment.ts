@@ -128,8 +128,6 @@ export class SetStateCommitment implements EthereumCommitment {
   }
 
   public getSignedAppChallengeUpdate(): SignedAppChallengeUpdate {
-    // TODO: figure out where to do this rather than in this function
-    // await this.assertSignatures();
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
