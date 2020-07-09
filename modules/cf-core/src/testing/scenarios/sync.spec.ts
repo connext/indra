@@ -36,7 +36,7 @@ import { StateChannel } from "../../models";
 
 const { isHexString } = utils;
 
-describe("Sync", () => {
+describe.only("Sync", () => {
   let multisigAddress: string;
   let nodeA: CFCore;
   let nodeB: CFCore;
