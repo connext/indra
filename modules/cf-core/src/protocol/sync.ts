@@ -745,15 +745,29 @@ async function syncChannel(
   context: Context,
   myChannel: StateChannel,
   type: keyof typeof SyncableProtocols,
-  commitments: (SetStateCommitment | ConditionalTransactionCommitment)[],
+  commitmentObjs: (SetStateCommitment | ConditionalTransactionCommitment)[],
   affectedApp: AppInstance | string,
   freeBalanceApp: AppInstance | undefined,
   log: ILoggerService,
 ): Promise<
   [StateChannel, PersistStateChannelType, (SetStateCommitment | ConditionalTransactionCommitment)[]]
 > {
+  // Properly assert that the commitment is a commitment object
+  // (this should be fixed, but)
+  const commitments = commitmentObjs.map((c: any) => {
+    const hasFn = !!c["toJson"] && typeof c["toJson"] == "function";
+    const isConditional = !!c["contractAddresses"];
+    // assume its already the correct type
+    return isConditional
+      ? ConditionalTransactionCommitment.fromJson(hasFn ? c.toJson() : c)
+      : SetStateCommitment.fromJson(hasFn ? c.toJson() : c);
+  });
   // Verify signatures on any provided commitments
-  await Promise.all(commitments.map((c) => c.assertSignatures()));
+  await Promise.all(
+    commitments.map((c) => {
+      c.assertSignatures();
+    }),
+  );
 
   // Update channel
   let updatedChannel: StateChannel;
