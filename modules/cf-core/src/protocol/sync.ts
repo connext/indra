@@ -54,7 +54,6 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       store,
     );
     const syncDeterminationData = getSyncDeterminationData(preProtocolStateChannel);
-    console.log(`sending m1 custom data`, { ...syncDeterminationData });
     const m2 = yield [
       IO_SEND_AND_WAIT,
       {
@@ -81,7 +80,6 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     const syncType = makeSyncDetermination(counterpartyData, preProtocolStateChannel);
     console.log(`Initiator syncing with: ${stringify(syncType)}`);
     const syncInfoForCounterparty = await getInfoForSync(syncType, preProtocolStateChannel, store);
-    console.log(`Initiator sync info for responder: ${stringify(syncInfoForCounterparty)}`);
 
     // Should already have information from counterparty needed to sync your
     // channel included in m2
@@ -269,7 +267,6 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     );
     console.log(`Responder syncing with: ${stringify(syncType)}`);
     const syncInfoForCounterparty = await getInfoForSync(syncType, preProtocolStateChannel, store);
-    console.log(`Responder sync info for initiator: ${stringify(syncInfoForCounterparty)}`);
 
     const m3 = yield [
       IO_SEND_AND_WAIT,
@@ -559,31 +556,44 @@ function makeSyncDetermination(
       );
     }
 
-    const counterpartyIsBehind = myChannel.numProposedApps >= numProposedApps!;
-    const latestProposalSeqNo = counterpartyIsBehind ? myChannel.numProposedApps : numProposedApps!;
-    const myProposals = [...myChannel.proposedAppInstances.values()].map((proposal) => {
-      return { appSeqNo: proposal.appSeqNo, identityHash: proposal.identityHash };
-    });
-    const proposal = (counterpartyIsBehind ? myProposals : proposals!).find(
-      (proposal) => proposal.appSeqNo === latestProposalSeqNo,
-    );
-    // FIXME: ideally, this would not throw an error. instead it would recognize
-    // this as a defective proposal, and treat this as a rejection. however,
-    // doing that is in a future iteration
-    if (!proposal) {
-      throw new Error(
-        `Could not find out of sync proposal. My proposals: ${stringify(
-          myProposals,
-        )}, counterparty proposals: ${stringify(proposals)}. searching through: ${stringify(
-          counterpartyIsBehind ? myProposals : proposals!,
-        )}`,
-      );
+    if (myChannel.numProposedApps > numProposedApps!) {
+      const myProposals = [...myChannel.proposedAppInstances.values()].map((proposal) => {
+        return { appSeqNo: proposal.appSeqNo, identityHash: proposal.identityHash };
+      });
+      const proposal = myProposals.find((p) => p.appSeqNo === myChannel.numProposedApps);
+      // FIXME: ideally, this would not throw an error. instead it would recognize
+      // this as a defective proposal, and treat this as a rejection. however,
+      // doing that is in a future iteration
+      if (!proposal) {
+        throw new Error(
+          `Could not find out of sync proposal (counterparty behind). My proposals: ${stringify(
+            myProposals,
+          )}, counterparty proposals: ${stringify(proposals)}.`,
+        );
+      }
+      return {
+        counterpartyIsBehind: true,
+        type: "propose",
+        identityHash: proposal.identityHash,
+      };
+    } else if (myChannel.numProposedApps < numProposedApps!) {
+      // we need sync from counterparty
+      const proposal = proposals!.find((p) => p.appSeqNo === numProposedApps);
+      if (!proposal) {
+        throw new Error(
+          `Could not find out of sync proposal (counterparty ahead). My proposals: ${stringify([
+            ...myChannel.proposedAppInstances.keys(),
+          ])}, counterparty proposals: ${stringify(proposals)}`,
+        );
+      }
+      return {
+        counterpartyIsBehind: false,
+        type: "propose",
+        identityHash: proposal.identityHash,
+      };
+    } else {
+      throw new Error("Something is off -- not gt or lt and already checked for eq...");
     }
-    return {
-      type: "propose",
-      counterpartyIsBehind,
-      identityHash: proposal!.identityHash,
-    };
   }
 
   // Now determine if any apps are out of sync from errors in the `takeAction`
