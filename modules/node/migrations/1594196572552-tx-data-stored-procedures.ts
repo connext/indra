@@ -15,8 +15,12 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
           num_proposed_apps INTEGER, 
           signed_set_state_commitment JSONB, 
           signed_conditional_tx_commitment JSONB
-      ) RETURNS BOOLEAN AS $$
+      ) RETURNS TEXT AS $$
       DECLARE
+          create_app_result TEXT;
+          increment_num_proposed_apps_result TEXT;
+          create_set_state_result TEXT;
+          create_conditional_tx_result TEXT;
       BEGIN
           INSERT INTO "app_instance"(
               "identityHash", 
@@ -66,13 +70,15 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
               app_proposal->>'multisigAddress',
               DEFAULT, 
               DEFAULT
-          ) ON CONFLICT ("identityHash") DO NOTHING;
+          ) ON CONFLICT ("identityHash") DO NOTHING
+          RETURNING "identityHash" INTO create_app_result;
           
           UPDATE "channel" 
           SET 
               "monotonicNumProposedApps" = num_proposed_apps, 
               "updatedAt" = CURRENT_TIMESTAMP 
-          WHERE "multisigAddress" = app_proposal->>'multisigAddress';
+          WHERE "multisigAddress" = app_proposal->>'multisigAddress'
+          RETURNING "multisigAddress" INTO increment_num_proposed_apps_result;
           
           INSERT INTO "set_state_commitment"(
               "appIdentityHash", 
@@ -96,7 +102,8 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
               signed_set_state_commitment->>'transactionData',
               DEFAULT, 
               DEFAULT
-          ) ON CONFLICT ("appIdentityHash") DO NOTHING;
+          ) ON CONFLICT ("appIdentityHash") DO NOTHING
+          RETURNING "appIdentityHash" INTO create_set_state_result;
           
           INSERT INTO "conditional_transaction_commitment"(
               "appIdentityHash", 
@@ -116,9 +123,17 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
               ARRAY(SELECT jsonb_array_elements_text(signed_conditional_tx_commitment->'multisigOwners')),
               signed_conditional_tx_commitment->>'transactionData',
               ARRAY(SELECT jsonb_array_elements_text(signed_conditional_tx_commitment->'signatures'))
-          ) ON CONFLICT ("appIdentityHash") DO NOTHING;
+          ) ON CONFLICT ("appIdentityHash") DO NOTHING
+          RETURNING "appIdentityHash" INTO create_conditional_tx_result;
+
+          IF increment_num_proposed_apps_result IS NULL
+          THEN
+              RAISE EXCEPTION 
+              'Operation could not be completed: increment_num_proposed_apps_result -> %', 
+              increment_num_proposed_apps_result;
+          END IF;
           
-          RETURN TRUE;
+          RETURN create_app_result;
       END;
       $$ LANGUAGE plpgsql;
       `,
@@ -135,8 +150,11 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
         app_instance_json JSONB, 
         free_balance_app_instance JSONB, 
         signed_free_balance_update JSONB
-    ) RETURNS BOOLEAN AS $$
+    ) RETURNS TEXT AS $$
     DECLARE
+      update_app_result TEXT;
+      update_free_balance_result TEXT;
+      update_set_state_result TEXT;
     BEGIN
       UPDATE "app_instance" SET 
         "type" = 'INSTANCE', 
@@ -145,14 +163,16 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
         "latestVersionNumber" = (app_instance_json->>'latestVersionNumber')::INTEGER,
         "channelMultisigAddress" = app_instance_json->>'multisigAddress',
         "updatedAt" = CURRENT_TIMESTAMP 
-      WHERE "identityHash" = app_instance_json->>'identityHash';
+      WHERE "identityHash" = app_instance_json->>'identityHash'
+      RETURNING "identityHash" INTO update_app_result;
       
       UPDATE "app_instance" SET 
         "latestState" = free_balance_app_instance->'latestState',
         "stateTimeout" = free_balance_app_instance->>'stateTimeout', 
         "latestVersionNumber" = (free_balance_app_instance->>'latestVersionNumber')::INTEGER, 
         "updatedAt" = CURRENT_TIMESTAMP 
-      WHERE "identityHash" = free_balance_app_instance->>'identityHash';
+      WHERE "identityHash" = free_balance_app_instance->>'identityHash'
+      RETURNING "identityHash" INTO update_free_balance_result;
       
       UPDATE "set_state_commitment" SET 
         "appIdentity" = signed_free_balance_update->'appIdentity', 
@@ -163,9 +183,19 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
         "versionNumber" = (signed_free_balance_update->>'versionNumber')::INTEGER, 
         "transactionData" = signed_free_balance_update->>'transactionData',
         "updatedAt" = CURRENT_TIMESTAMP
-      WHERE "appIdentityHash" = free_balance_app_instance->>'identityHash';
+      WHERE "appIdentityHash" = free_balance_app_instance->>'identityHash'
+      RETURNING "appIdentityHash" INTO update_set_state_result;
+
+      IF update_app_result IS NULL OR update_free_balance_result IS NULL OR update_set_state_result IS NULL
+      THEN
+          RAISE EXCEPTION 
+          'Operation could not be completed: update_app_result -> %, update_free_balance_result -> %, update_set_state_result -> %', 
+          update_app_result, 
+          update_free_balance_result, 
+          update_set_state_result;
+      END IF;
     
-      RETURN TRUE;
+      RETURN update_app_result;
     END;
     $$ LANGUAGE plpgsql;
         `,
@@ -178,15 +208,18 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
     CREATE OR REPLACE FUNCTION update_app_instance(
         app_instance_json JSONB,
         signed_set_state_commitment JSONB
-    ) RETURNS BOOLEAN AS $$
+    ) RETURNS TEXT AS $$
     DECLARE
+      update_app_result TEXT;
+      update_set_state_result TEXT;
     BEGIN
       UPDATE "app_instance" SET 
         "latestState" = app_instance_json->'latestState',
         "stateTimeout" = app_instance_json->>'stateTimeout', 
         "latestVersionNumber" = (app_instance_json->>'latestVersionNumber')::INTEGER,
         "updatedAt" = CURRENT_TIMESTAMP 
-      WHERE "identityHash" = app_instance_json->>'identityHash';
+      WHERE "identityHash" = app_instance_json->>'identityHash'
+      RETURNING "identityHash" INTO update_app_result;
       
       UPDATE "set_state_commitment" SET 
         "appIdentity" = signed_set_state_commitment->'appIdentity', 
@@ -197,9 +230,18 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
         "versionNumber" = (signed_set_state_commitment->>'versionNumber')::INTEGER, 
         "transactionData" = signed_set_state_commitment->>'transactionData',
         "updatedAt" = CURRENT_TIMESTAMP
-      WHERE "appIdentityHash" = app_instance_json->>'identityHash';
-    
-        RETURN TRUE;
+      WHERE "appIdentityHash" = app_instance_json->>'identityHash'
+      RETURNING "appIdentityHash" INTO update_set_state_result;
+
+      IF update_app_result IS NULL OR update_set_state_result IS NULL
+      THEN
+          RAISE EXCEPTION 
+          'Operation could not be completed: update_app_result -> %, update_set_state_result -> %', 
+          update_app_result, 
+          update_set_state_result;
+      END IF;
+
+      RETURN update_app_result;
     END;
     $$ LANGUAGE plpgsql;
           `,
@@ -213,24 +255,29 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
     await queryRunner.query(
       `
     CREATE OR REPLACE FUNCTION remove_app_instance(
-        app_identity_hash TEXT,
-        free_balance_app_instance JSONB,
-        signed_free_balance_update JSONB
-    ) RETURNS BOOLEAN AS $$
+      app_identity_hash TEXT,
+      free_balance_app_instance JSONB,
+      signed_free_balance_update JSONB
+    ) RETURNS TEXT AS $$
     DECLARE
+      remove_app_result TEXT;
+      update_free_balance_result TEXT;
+      update_set_state_result TEXT;
     BEGIN
       UPDATE "app_instance" SET 
         "type" = 'UNINSTALLED',
         "channelMultisigAddress" = NULL, 
         "updatedAt" = CURRENT_TIMESTAMP 
-      WHERE "identityHash" = app_identity_hash;
+      WHERE "identityHash" = app_identity_hash
+      RETURNING "identityHash" INTO remove_app_result;
     
       UPDATE "app_instance" SET 
         "latestState" = free_balance_app_instance->'latestState',
         "stateTimeout" = free_balance_app_instance->>'stateTimeout', 
         "latestVersionNumber" = (free_balance_app_instance->>'latestVersionNumber')::INTEGER,
         "updatedAt" = CURRENT_TIMESTAMP 
-      WHERE "identityHash" = free_balance_app_instance->>'identityHash';
+      WHERE "identityHash" = free_balance_app_instance->>'identityHash'
+      RETURNING "identityHash" INTO update_free_balance_result;
       
       UPDATE "set_state_commitment" SET 
         "appIdentity" = signed_free_balance_update->'appIdentity', 
@@ -241,9 +288,19 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
         "versionNumber" = (signed_free_balance_update->>'versionNumber')::INTEGER, 
         "transactionData" = signed_free_balance_update->>'transactionData',
         "updatedAt" = CURRENT_TIMESTAMP
-      WHERE "appIdentityHash" = free_balance_app_instance->>'identityHash';
+      WHERE "appIdentityHash" = free_balance_app_instance->>'identityHash'
+      RETURNING "appIdentityHash" INTO update_set_state_result;
+
+      IF remove_app_result IS NULL OR update_free_balance_result IS NULL OR update_set_state_result IS NULL
+      THEN
+        RAISE EXCEPTION 
+        'Operation could not be completed: remove_app_result -> %, update_free_balance_result -> %, update_set_state_result -> %', 
+        remove_app_result, 
+        update_free_balance_result,
+        update_set_state_result;
+      END IF;
     
-      RETURN TRUE;
+      RETURN remove_app_result;
     END;
     $$ LANGUAGE plpgsql;
           `,

@@ -335,7 +335,7 @@ describe("CFCoreStore", () => {
   });
 
   describe("App Instance", () => {
-    it.skip("should not create an app instance if there is no app proposal", async () => {
+    it("should not create an app instance if there is no app proposal", async () => {
       const { multisigAddress, channelJson } = await createTestChannel(
         cfCoreStore,
         configService.getPublicIdentifier(),
@@ -353,7 +353,7 @@ describe("CFCoreStore", () => {
           updatedFreeBalance,
           createSetStateCommitmentJSON(),
         ),
-      ).to.be.rejectedWith(/Could not find app with identity hash/);
+      ).to.be.rejectedWith(/Operation could not be completed/);
     });
 
     it("createAppInstance", async () => {
