@@ -6,6 +6,7 @@ import {
   ProtocolMessage,
   ProtocolRoles,
   ILoggerService,
+  SetStateCommitmentJSON,
 } from "@connext/types";
 import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 import { stringify, logTime, toBN } from "@connext/utils";
@@ -124,7 +125,8 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           persistType,
           postSyncStateChannel,
           verifiedCommitments, // all signed commitments
-          [affectedApp],
+          [affectedApp || { identityHash: syncType.identityHash }],
+          // ^^ in the case of uninstall the affectedApp is undefined
         ];
       } else {
         // NOTE: must update single signed set state commitments here
@@ -319,7 +321,8 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           persistType,
           postSyncStateChannel,
           verifiedCommitments, // all signed commitments
-          [affectedApp],
+          [affectedApp || { identityHash: syncType.identityHash }],
+          // ^^ in the case of uninstall the affectedApp is undefined
         ];
       } else {
         // NOTE: must update single signed set state commitments here
@@ -716,13 +719,14 @@ async function getInfoForSync(
       // send counterparty:
       // - set state commitment for free balance
       // - latest free balance app (so they dont have to compute with evm)
-      if (!setState) {
+      const [fbCommitment] = await store.getSetStateCommitments(myChannel.freeBalance.identityHash);
+      if (!fbCommitment) {
         throw new Error(
-          `Failed to retrieve install sync info for counterparty for: ${identityHash}`,
+          `Failed to retrieve uninstall sync info for counterparty for: ${identityHash}`,
         );
       }
       return {
-        commitments: [SetStateCommitment.fromJson(setState)],
+        commitments: [SetStateCommitment.fromJson(fbCommitment)],
         freeBalanceApp: myChannel.freeBalance,
       };
     }
@@ -869,9 +873,20 @@ async function syncChannel(
         );
       }
       // verify the expected commitment is included
-      const setState = commitments.find(
-        (c) => c.toJson()["appStateHash"] === freeBalanceApp.hashOfLatestState,
-      );
+      console.log("free balance app:", freeBalanceApp.toJson());
+      console.log("commitments:", commitments);
+      const setState = commitments.find((c) => {
+        const json = c.toJson();
+        const isSetState = !!json["appStateHash"];
+        if (!isSetState) {
+          return false;
+        }
+        return (
+          toBN((json as SetStateCommitmentJSON).versionNumber).eq(
+            freeBalanceApp.latestVersionNumber,
+          ) && json.appIdentityHash === freeBalanceApp.identityHash
+        );
+      });
       if (!setState) {
         throw new Error(
           `Could not find commitment matching expected to sync channel with uninstall of ${affectedApp}`,
