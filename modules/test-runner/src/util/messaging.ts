@@ -218,10 +218,11 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       getSignature: (nonce: string) => Promise<string>,
     ): Promise<string> => {
       try {
-        const nonce = await axios.get(`${this.options.nodeUrl}/auth/${userIdentifier}`);
+        const authUrl = `${this.options.nodeUrl.replace(/\/api$/, "")}/api/auth`;
+        const nonce = await axios.get(`${authUrl}/${userIdentifier}`);
         const sig = await getSignature(nonce.data);
         const bearerToken: AxiosResponse<string> = await axios.post(
-          `${this.options.nodeUrl}/auth`,
+          authUrl,
           {
             sig,
             userIdentifier: userIdentifier,
@@ -234,7 +235,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     };
 
     // NOTE: high maxPingOut prevents stale connection errors while time-travelling
-    log.info(`Creating test messaging service w opts: ${stringify(this.options.messagingConfig)}`);
+    log.info(`Creating test messaging service w opts: ${stringify(this.options)}`);
     this.connection = new MessagingService(
       { ...this.options.messagingConfig, logger: log.newContext("TestMessagingService") },
       `INDRA`,
