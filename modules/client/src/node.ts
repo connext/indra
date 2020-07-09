@@ -68,7 +68,7 @@ export class NodeApiClient implements INodeApiClient {
     const nodeProtocol = opts.nodeUrl.replace(/:\/\/.*/, "://");
     const nodeUrl = `${nodeProtocol}${extractHost(opts.nodeUrl)}/api`;
 
-    // In no messagingUrl given, attempt to derive one from the nodeUrl
+    // If no messagingUrl given, attempt to derive one from the nodeUrl
     const messagingUrl = opts.messagingUrl || (
       isNode() ? `nats://${extractHost(nodeUrl).replace(/:[0-9]+$/, "")}:4222`
         : nodeUrl.startsWith("https://") ? `wss://${extractHost(nodeUrl)}/api/messaging`
@@ -76,19 +76,19 @@ export class NodeApiClient implements INodeApiClient {
     );
 
     if (!opts.messagingUrl) {
-      log.warn(`No messagingUrl provided, using ${messagingUrl} derived from nodeUrl ${nodeUrl}`);
+      log.info(`No messagingUrl provided, using ${messagingUrl} derived from nodeUrl ${nodeUrl}`);
+    } else {
+      log.debug(`Initializing messaging with nodeUrl ${nodeUrl} & messagingUrl ${messagingUrl}`);
     }
 
     if (signer) {
       getSignature = (msg: string) => signer.signMessage(msg);
       userIdentifier = signer.publicIdentifier;
     } else if (providedChannelProvider) {
-      getSignature = async (message: string) => {
-        const sig = await providedChannelProvider.send(ChannelMethods.chan_signMessage, {
-          message,
-        });
-        return sig;
-      };
+      getSignature = async (message: string) => providedChannelProvider.send(
+        ChannelMethods.chan_signMessage,
+        { message },
+      );
       userIdentifier = providedChannelProvider.config.userIdentifier;
     } else {
       throw new Error("Must provide channelProvider or signer");

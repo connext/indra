@@ -63,12 +63,12 @@ export const connect = async (
   await store.init();
   logger.info(`Using ${opts.store ? "given" : "local"} store containing ${(await store.getAllChannels()).length} channels`);
 
-  // setup ethProvider + network information
-  logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
-  // get the chainId
-  const chainId = await getChainId(ethProviderUrl);
-  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl, chainId);
-  const network = await ethProvider.getNetwork();
+  // setup ethProvider
+  logger.debug(`Creating ethereum provider from url: ${ethProviderUrl}`);
+  const ethProvider = new providers.JsonRpcProvider(
+    ethProviderUrl,
+    await getChainId(ethProviderUrl),
+  );
 
   // setup messaging and node api
   let node: INodeApiClient;
@@ -139,7 +139,7 @@ export const connect = async (
     ethProvider,
     logger,
     messaging,
-    network,
+    network: await ethProvider.getNetwork(),
     node,
     signer,
     store,
