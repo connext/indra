@@ -176,7 +176,7 @@ export default class ListenerService implements OnModuleInit {
   }
 
   async handleUninstall(data: UninstallMessage) {
-    const { action, uninstalledApp, multisigAddress, appIdentityHash } = data.data;
+    const { multisigAddress, appIdentityHash } = data.data;
     if (!multisigAddress) {
       this.log.error(
         `Unexpected error - no multisigAddress found in uninstall event data: ${appIdentityHash}`,
@@ -184,19 +184,6 @@ export default class ListenerService implements OnModuleInit {
       return;
     }
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
-    if (action) {
-      // update app with uninstalled state
-      await this.appInstanceRepository.updateAppStateOnUninstall(uninstalledApp);
-      const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
-        uninstalledApp.appDefinition,
-      );
-      await this.appActionsService.handleAppAction(
-        appRegistryInfo.name as SupportedApplicationNames,
-        uninstalledApp,
-        uninstalledApp.latestState as any, // AppState (excluding simple swap app)
-        action as AppAction,
-      );
-    }
     const assetIdResponder = (
       await this.appInstanceRepository.findByIdentityHashOrThrow(data.data.appIdentityHash)
     ).responderDepositAssetId;
