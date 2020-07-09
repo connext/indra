@@ -1,4 +1,4 @@
-import { DataTypes, Op, Sequelize } from "sequelize";
+import { DataTypes, Op, Sequelize, Transaction } from "sequelize";
 import { mkdirSync } from "fs";
 import { dirname } from "path";
 
@@ -49,7 +49,10 @@ export class WrappedSequelizeStorage implements KeyValueStorage {
           this.shouldUseTransaction = false;
         }
       }
-      this.sequelize = new Sequelize(_sequelize as string, { logging: false });
+      this.sequelize = new Sequelize(_sequelize as string, {
+        logging: false,
+        isolationLevel: Transaction.ISOLATION_LEVELS.READ_UNCOMMITTED,
+      });
     } else {
       this.sequelize = _sequelize as Sequelize;
     }
