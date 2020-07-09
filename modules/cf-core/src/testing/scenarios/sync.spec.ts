@@ -395,7 +395,7 @@ describe("Sync", () => {
           channelSignerB,
           lockService,
           0,
-          new Logger("CreateClient", env.logLevel, true, "B"),
+          new Logger("CreateClient", env.logLevel, true, "B-recreated"),
         ),
       ]);
 

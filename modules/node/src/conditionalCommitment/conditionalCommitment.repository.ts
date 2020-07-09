@@ -16,6 +16,7 @@ export const convertConditionalCommitmentToJson = (
     interpreterParams: commitment.interpreterParams,
     multisigAddress: commitment.multisigAddress,
     multisigOwners: commitment.multisigOwners,
+    transactionData: commitment.transactionData,
   };
 };
 

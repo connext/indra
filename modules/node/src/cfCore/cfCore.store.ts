@@ -267,6 +267,7 @@ export class CFCoreStore implements IStoreService {
     freeBalanceUpdateCommitment.versionNumber = toBN(
       signedFreeBalanceUpdate.versionNumber,
     ).toNumber();
+    freeBalanceUpdateCommitment.transactionData = signedFreeBalanceUpdate.transactionData;
 
     await getManager().transaction(async (transactionalEntityManager) => {
       channel = await transactionalEntityManager.save(channel);
