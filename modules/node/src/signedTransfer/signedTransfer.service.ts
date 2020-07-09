@@ -7,8 +7,9 @@ import { bigNumberifyJson } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { LoggerService } from "../logger/logger.service";
-import { AppType, AppInstance } from "../appInstance/appInstance.entity";
+import { AppInstance } from "../appInstance/appInstance.entity";
 import { SignedTransferRepository } from "./signedTransfer.repository";
+import { appStatusesToTransferStatus } from "../utils";
 
 type SignedTransferTypes = typeof SimpleSignedTransferAppName | typeof GraphSignedTransferAppName;
 
@@ -16,28 +17,7 @@ const appStatusesToSignedTransferStatus = (
   senderApp: AppInstance<SignedTransferTypes>,
   receiverApp?: AppInstance<SignedTransferTypes>,
 ): SignedTransferStatus | undefined => {
-  if (!senderApp) {
-    return undefined;
-  }
-
-  // if receiver app is installed, it has not been unlocked
-  if (
-    !receiverApp ||
-    receiverApp.type === AppType.INSTANCE ||
-    receiverApp.type === AppType.PROPOSAL
-  ) {
-    return SignedTransferStatus.PENDING;
-  } else if (senderApp.type === AppType.UNINSTALLED || receiverApp.type === AppType.UNINSTALLED) {
-    return SignedTransferStatus.COMPLETED;
-  } else if (senderApp.type === AppType.REJECTED || receiverApp.type === AppType.REJECTED) {
-    return SignedTransferStatus.FAILED;
-  } else {
-    throw new Error(
-      `Could not determine signed transfer status. Sender app type: ${
-        senderApp && senderApp.type
-      }, receiver app type: ${receiverApp && receiverApp.type}`,
-    );
-  }
+  return appStatusesToTransferStatus<SignedTransferTypes>(senderApp, receiverApp);
 };
 
 export function normalizeSignedTransferAppState<T extends SignedTransferTypes>(

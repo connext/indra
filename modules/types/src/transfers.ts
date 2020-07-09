@@ -121,30 +121,33 @@ export type UnlockedSignedTransferMeta = {
 ////////////////////////////////////////
 // Statuses
 
-export const LinkedTransferStatus = enumify({
+export const TransferStatuses = {
   PENDING: "PENDING",
   COMPLETED: "COMPLETED",
   FAILED: "FAILED",
-});
-export type LinkedTransferStatus = typeof LinkedTransferStatus[keyof typeof LinkedTransferStatus];
-
-export const HashLockTransferStatus = enumify({
-  PENDING: "PENDING",
+} as const;
+export const TransferWithExpiryStatuses = {
+  ...TransferStatuses,
   EXPIRED: "EXPIRED",
-  COMPLETED: "COMPLETED",
-  FAILED: "FAILED",
-});
-export type HashLockTransferStatus = typeof HashLockTransferStatus[keyof typeof HashLockTransferStatus];
+} as const;
+export type TransferWithExpiryStatus = typeof TransferWithExpiryStatuses[keyof typeof TransferWithExpiryStatuses];
+export type TransferStatus = typeof TransferStatuses[keyof Omit<
+  typeof TransferStatuses,
+  "EXPIRED"
+>];
 
-export const SignedTransferStatus = enumify({
-  PENDING: "PENDING",
-  COMPLETED: "COMPLETED",
-  FAILED: "FAILED",
-});
-export type SignedTransferStatus = typeof SignedTransferStatus[keyof typeof SignedTransferStatus];
+// Type Aliases
+export const LinkedTransferStatus = TransferStatuses;
+export type LinkedTransferStatus = TransferStatus;
 
-export const GraphSignedTransferStatus = SignedTransferStatus;
-export type GraphSignedTransferStatus = typeof GraphSignedTransferStatus[keyof typeof GraphSignedTransferStatus];
+export const HashLockTransferStatus = TransferWithExpiryStatuses;
+export type HashLockTransferStatus = TransferWithExpiryStatus;
+
+export const SignedTransferStatus = TransferStatuses;
+export type SignedTransferStatus = TransferStatus;
+
+export const GraphSignedTransferStatus = TransferStatuses;
+export type GraphSignedTransferStatus = TransferStatus;
 
 ////////////////////////////////////////
 // Misc
