@@ -68,8 +68,11 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         customData: { ...syncDeterminationData },
       },
     ];
-    log.info(`Initiation continuing with m2: ${stringify((m2 as any).data.customData)}`);
-    logTime(log, substart, `[${loggerId}] Received responder's m2`);
+    logTime(
+      log,
+      substart,
+      `[${loggerId}] Received responder's m2: ${stringify((m2 as any).data.customData)}`,
+    );
     substart = Date.now();
 
     // Parse responder's m2. This should contain all of the information
@@ -223,8 +226,11 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         },
       },
     ];
-    log.info(`Initiation continuing with m4: ${stringify((m2 as any).data.customData)}`);
-    logTime(log, substart, `[${loggerId}] Received responder's m4`);
+    logTime(
+      log,
+      substart,
+      `[${loggerId}] Received responder's m4: ${stringify((m2 as any).data.customData)}`,
+    );
     substart = Date.now();
 
     // m4 includes the responders post-sync proposal ids. Handle all
@@ -268,7 +274,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     // Determine the sync type needed, and fetch any information the
     // counterparty would need to sync and send to them
-    log.info(`Response started with m1: ${stringify(m1.customData)}`);
+    log.debug(`Response started with m1: ${stringify(m1.customData)}`);
     const syncType = makeSyncDetermination(
       m1.customData as SyncDeterminationData,
       preProtocolStateChannel,
@@ -291,9 +297,12 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         },
       },
     ];
-    logTime(log, substart, `[${loggerId}] Received initiator's m3`);
+    logTime(
+      log,
+      substart,
+      `[${loggerId}] Received initiator's m3: ${stringify((m3 as any).data.customData)}`,
+    );
     substart = Date.now();
-    log.info(`Response continuing with m3: ${stringify((m3 as any).data.customData)}`);
 
     // Determine how channel is out of sync + sync channel
     const counterpartyData = (m3! as ProtocolMessage).data.customData as {
