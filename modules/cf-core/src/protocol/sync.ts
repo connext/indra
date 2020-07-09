@@ -17,7 +17,7 @@ import {
   getSetStateCommitment,
   getConditionalTransactionCommitment,
 } from "../ethereum";
-import { computeInstallStateChannelTransition } from "./install";
+import { getTokenBalanceDecrementForInstall } from "./install";
 import { UNASSIGNED_SEQ_NO } from "../constants";
 
 const protocol = ProtocolNames.sync;
@@ -802,18 +802,13 @@ async function syncChannel(
           `Received valid commitments, but no effected app for install sync of channel ${myChannel.multisigAddress}`,
         );
       }
-      // FIXME: ideally in this case, the proposal could be added to the channel
-      console.log("affectedApp: ", affectedApp);
-      if (!myChannel.proposedAppInstances.has(affectedApp.identityHash)) {
-        log.error(
-          `Could not find record of unsynced installed app in our proposed app instances. Affected app: ${stringify(
-            affectedApp,
-          )}`,
-        );
-      }
-
       persistType = PersistStateChannelType.SyncInstall;
-      updatedChannel = computeInstallStateChannelTransition(myChannel, affectedApp);
+      // calculate the new channel after installation
+      // NOTE: this will NOT fail if we do not have
+      updatedChannel = myChannel.installApp(
+        affectedApp,
+        getTokenBalanceDecrementForInstall(myChannel, affectedApp),
+      );
       // verify the expected commitment is included
       const generatedSetState = getSetStateCommitment(context, updatedChannel.freeBalance);
       const setState = commitments.find((c) => c.hashToSign === generatedSetState.hashToSign);
