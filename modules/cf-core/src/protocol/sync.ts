@@ -763,11 +763,7 @@ async function syncChannel(
       : SetStateCommitment.fromJson(hasFn ? c.toJson() : c);
   });
   // Verify signatures on any provided commitments
-  await Promise.all(
-    commitments.map((c) => {
-      c.assertSignatures();
-    }),
-  );
+  await Promise.all(commitments.map((c) => c.assertSignatures()));
 
   // Update channel
   let updatedChannel: StateChannel;
