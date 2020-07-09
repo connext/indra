@@ -82,7 +82,7 @@ export interface IStoreService extends IWatcherStoreService {
   ): Promise<void>;
   removeAppInstance(
     multisigAddress: Address,
-    appIdentityHash: Bytes32,
+    appInstance: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
     stateChannel?: StateChannelJSON,

@@ -475,13 +475,13 @@ export class CFCoreStore implements IStoreService {
 
   async removeAppInstance(
     multisigAddress: string,
-    appIdentityHash: string,
+    appInstance: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
     stateChannelJson?: StateChannelJSON,
   ): Promise<void> {
     await getManager().query("SELECT remove_app_instance($1, $2, $3)", [
-      appIdentityHash,
+      appInstance.identityHash,
       freeBalanceAppInstance,
       {
         ...signedFreeBalanceUpdate,
@@ -495,8 +495,8 @@ export class CFCoreStore implements IStoreService {
       60,
       freeBalanceAppInstance,
     );
-    await this.cache.del(`appInstance:identityHash:${appIdentityHash}`);
-    await this.cache.del(`channel:appIdentityHash:${appIdentityHash}`);
+    await this.cache.del(`appInstance:identityHash:${appInstance.identityHash}`);
+    await this.cache.del(`channel:appIdentityHash:${appInstance.identityHash}`);
     await this.cache.set<StateChannelJSON>(
       `channel:multisig:${multisigAddress}`,
       60,

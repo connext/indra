@@ -364,7 +364,7 @@ export class CFCore {
               // this was an uninstall, so remove app instance
               await this.storeService.removeAppInstance(
                 stateChannel.multisigAddress,
-                appContext.identityHash,
+                appContext.toJson(),
                 stateChannel.toJson().freeBalanceAppInstance!,
                 setState.toJson(),
                 stateChannel.toJson(),
@@ -470,7 +470,7 @@ export class CFCore {
           case PersistAppType.RemoveInstance: {
             await this.storeService.removeAppInstance(
               multisigAddress,
-              identityHash,
+              (app as AppInstance).toJson(),
               freeBalance.toJson(),
               signedSetStateCommitment.toJson(),
               postProtocolChannel.toJson(),

@@ -338,7 +338,7 @@ export class StoreService implements IStoreService {
 
   async removeAppInstance(
     multisigAddress: string,
-    appIdentityHash: string,
+    appInstance: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
@@ -350,14 +350,14 @@ export class StoreService implements IStoreService {
         );
         return store;
       }
-      if (!this.hasAppIdentityHash(appIdentityHash, channel.appInstances)) {
+      if (!this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
         // does not exist
         this.log.debug(
-          `No app with hash ${appIdentityHash} found in channel with multisig ${multisigAddress}`,
+          `No app with hash ${appInstance.identityHash} found in channel with multisig ${multisigAddress}`,
         );
         return store;
       }
-      const idx = channel.appInstances.findIndex(([app]) => app === appIdentityHash);
+      const idx = channel.appInstances.findIndex(([app]) => app === appInstance.identityHash);
       const presplice = channel.appInstances.length;
       channel.appInstances.splice(idx, 1);
       this.log.debug(
