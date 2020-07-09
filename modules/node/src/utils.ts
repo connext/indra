@@ -5,9 +5,10 @@ import {
   TransferStatuses,
   TransferWithExpiryStatuses,
   HashLockTransferAppState,
+  GenericConditionalTransferAppState,
 } from "@connext/types";
 import { AppInstance, AppType } from "./appInstance/appInstance.entity";
-import { bigNumberifyJson } from "@connext/utils";
+import { bigNumberifyJson, toBN } from "@connext/utils";
 
 export function appStatusesToTransferStatus<T extends AppName>(
   senderApp: AppInstance<T>,
@@ -30,21 +31,18 @@ export function appStatusesToTransferStatus<T extends AppName>(
         // receiver app exists, while sender app has been uninstalled
         return TransferStatuses.FAILED;
       }
-      // sender and receiver have uninstalled their apps
-      // FIXME: How will you be able to determine if this was a
-      // collaborative payment cancellation/failure instead of a
-      // success?
-      // cant check latest state preimage on app because there is no
-      // guarantee the app state in our db corresponds to the latest
-      // state of the app (updating state to include preimage does not
-      // happen under lock)
-      return TransferStatuses.COMPLETED;
+      const transfers = (receiverApp.latestState as GenericConditionalTransferAppState)
+        .coinTransfers;
+
+      // if the transfer in the state has moved from the sender to
+      // the receiver of the payment in the receivers app, the
+      // payment is complete. otherwise, it failed/was cancelled
+      return toBN(transfers[0].amount).isZero()
+        ? TransferStatuses.FAILED
+        : TransferStatuses.COMPLETED;
     }
     case AppType.INSTANCE: {
       if (!receiverApp) {
-        // FIXME: if a receiver app is rejected, we won't be able to retrieve
-        // it. how to tell here if app has not yet been installed vs has been
-        // rejected?
         return TransferStatuses.PENDING;
       }
       switch (receiverApp.type) {
@@ -53,9 +51,15 @@ export function appStatusesToTransferStatus<T extends AppName>(
           return TransferStatuses.PENDING;
         }
         case AppType.UNINSTALLED: {
-          // FIXME: How to tell if this was a collaborative payment failure
-          // (ie. closing an app before the expiry to revert payment)
-          return TransferStatuses.COMPLETED;
+          const transfers = (receiverApp.latestState as GenericConditionalTransferAppState)
+            .coinTransfers;
+
+          // if the transfer in the state has moved from the sender to
+          // the receiver of the payment in the receivers app, the
+          // payment is complete. otherwise, it failed/was cancelled
+          return toBN(transfers[0].amount).isZero()
+            ? TransferStatuses.FAILED
+            : TransferStatuses.COMPLETED;
         }
         case AppType.FREE_BALANCE:
         default: {
