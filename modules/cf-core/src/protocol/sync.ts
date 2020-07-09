@@ -110,6 +110,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         commitments,
         affectedApp || syncType.identityHash!,
         freeBalanceApp,
+        log,
       );
       postSyncStateChannel = updatedChannel;
       const singleSignedCommitments = verifiedCommitments.filter((c) => {
@@ -304,6 +305,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         commitments,
         affectedApp || syncType.identityHash!,
         freeBalanceApp,
+        log,
       );
       postSyncStateChannel = updatedChannel;
       const singleSignedCommitments = verifiedCommitments.filter((c) => {
@@ -560,9 +562,6 @@ function makeSyncDetermination(
         return { appSeqNo: proposal.appSeqNo, identityHash: proposal.identityHash };
       });
       const proposal = myProposals.find((p) => p.appSeqNo === myChannel.numProposedApps);
-      // FIXME: ideally, this would not throw an error. instead it would recognize
-      // this as a defective proposal, and treat this as a rejection. however,
-      // doing that is in a future iteration
       if (!proposal) {
         log.error(
           `Could not find out of sync proposal (counterparty behind). My proposals: ${stringify(
@@ -745,6 +744,7 @@ async function syncChannel(
   commitments: (SetStateCommitment | ConditionalTransactionCommitment)[],
   affectedApp: AppInstance | string,
   freeBalanceApp: AppInstance | undefined,
+  log: ILoggerService,
 ): Promise<
   [StateChannel, PersistStateChannelType, (SetStateCommitment | ConditionalTransactionCommitment)[]]
 > {
@@ -803,9 +803,10 @@ async function syncChannel(
         );
       }
       // FIXME: ideally in this case, the proposal could be added to the channel
+      console.log("affectedApp: ", affectedApp);
       if (!myChannel.proposedAppInstances.has(affectedApp.identityHash)) {
-        throw new Error(
-          `Could not find record of unsynced installed app in our proposed app instances. Effected app: ${stringify(
+        log.error(
+          `Could not find record of unsynced installed app in our proposed app instances. Affected app: ${stringify(
             affectedApp,
           )}`,
         );
@@ -828,7 +829,7 @@ async function syncChannel(
     case "takeAction": {
       if (typeof affectedApp === "string") {
         throw new Error(
-          `Received valid commitments, but no effected app for take action sync of channel ${myChannel.multisigAddress}`,
+          `Received valid commitments, but no affected app for take action sync of channel ${myChannel.multisigAddress}`,
         );
       }
       const app = myChannel.appInstances.get(affectedApp.identityHash);
