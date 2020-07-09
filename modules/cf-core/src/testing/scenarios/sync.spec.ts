@@ -517,7 +517,7 @@ describe.only("Sync", () => {
         channelSignerA,
         lockService,
         0,
-        new Logger("CreateClient", env.logLevel, true, "A"),
+        new Logger("CreateClient", env.logLevel, true, "A-initial"),
       );
 
       // create channel
@@ -547,6 +547,7 @@ describe.only("Sync", () => {
 
     it("sync protocol -- initiator has rejected a proposal responder has record of, sync on startup", async () => {
       // recreate nodeA (unsynced, missing proposal)
+      await messagingServiceA.disconnect();
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -560,7 +561,7 @@ describe.only("Sync", () => {
           channelSignerA,
           lockService,
           0,
-          new Logger("CreateClient", env.logLevel, true, "A"),
+          new Logger("CreateClient", env.logLevel, true, "A-recreated"),
         ),
       ]);
 
