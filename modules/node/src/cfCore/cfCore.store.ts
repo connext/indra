@@ -481,7 +481,7 @@ export class CFCoreStore implements IStoreService {
     stateChannelJson?: StateChannelJSON,
   ): Promise<void> {
     await getManager().query("SELECT remove_app_instance($1, $2, $3)", [
-      appInstance.identityHash,
+      appInstance,
       freeBalanceAppInstance,
       {
         ...signedFreeBalanceUpdate,
