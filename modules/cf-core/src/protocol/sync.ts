@@ -595,8 +595,8 @@ function makeSyncDetermination(
   // Now determine if any apps are out of sync from errors in the `takeAction`
   // protocol. This would come from a discrepancy in app version numbers
   let outOfSync = false;
-  let counterpartyIsBehind;
-  let identityHash;
+  let counterpartyIsBehind: boolean = false;
+  let identityHash: string = "";
   apps!.forEach((app) => {
     if (!myChannel.appInstances.has(app.identityHash)) {
       throw new Error(
