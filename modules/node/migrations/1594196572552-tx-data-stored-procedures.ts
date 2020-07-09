@@ -19,8 +19,6 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
       DECLARE
           create_app_result TEXT;
           increment_num_proposed_apps_result TEXT;
-          create_set_state_result TEXT;
-          create_conditional_tx_result TEXT;
       BEGIN
           INSERT INTO "app_instance"(
               "identityHash", 
@@ -79,6 +77,13 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
               "updatedAt" = CURRENT_TIMESTAMP 
           WHERE "multisigAddress" = app_proposal->>'multisigAddress'
           RETURNING "multisigAddress" INTO increment_num_proposed_apps_result;
+
+          IF increment_num_proposed_apps_result IS NULL
+          THEN
+              RAISE EXCEPTION 
+              'Operation could not be completed: increment_num_proposed_apps_result -> %', 
+              increment_num_proposed_apps_result;
+          END IF;
           
           INSERT INTO "set_state_commitment"(
               "appIdentityHash", 
@@ -102,8 +107,7 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
               signed_set_state_commitment->>'transactionData',
               DEFAULT, 
               DEFAULT
-          ) ON CONFLICT ("appIdentityHash") DO NOTHING
-          RETURNING "appIdentityHash" INTO create_set_state_result;
+          ) ON CONFLICT ("appIdentityHash") DO NOTHING;
           
           INSERT INTO "conditional_transaction_commitment"(
               "appIdentityHash", 
@@ -123,15 +127,7 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
               ARRAY(SELECT jsonb_array_elements_text(signed_conditional_tx_commitment->'multisigOwners')),
               signed_conditional_tx_commitment->>'transactionData',
               ARRAY(SELECT jsonb_array_elements_text(signed_conditional_tx_commitment->'signatures'))
-          ) ON CONFLICT ("appIdentityHash") DO NOTHING
-          RETURNING "appIdentityHash" INTO create_conditional_tx_result;
-
-          IF increment_num_proposed_apps_result IS NULL
-          THEN
-              RAISE EXCEPTION 
-              'Operation could not be completed: increment_num_proposed_apps_result -> %', 
-              increment_num_proposed_apps_result;
-          END IF;
+          ) ON CONFLICT ("appIdentityHash") DO NOTHING;
           
           RETURN create_app_result;
       END;
@@ -156,6 +152,55 @@ export class txDataStoredProcedures1594196572552 implements MigrationInterface {
       update_free_balance_result TEXT;
       update_set_state_result TEXT;
     BEGIN
+        INSERT INTO "app_instance"(
+          "identityHash", 
+          "type", 
+          "appDefinition", 
+          "stateEncoding", 
+          "actionEncoding", 
+          "appSeqNo", 
+          "latestState", 
+          "latestVersionNumber", 
+          "initiatorDeposit", 
+          "initiatorDepositAssetId", 
+          "outcomeType", 
+          "initiatorIdentifier", 
+          "responderIdentifier", 
+          "responderDeposit", 
+          "responderDepositAssetId", 
+          "defaultTimeout", 
+          "stateTimeout", 
+          "meta", 
+          "latestAction", 
+          "outcomeInterpreterParameters", 
+          "channelMultisigAddress",
+          "createdAt", 
+          "updatedAt"
+      ) VALUES (
+          app_instance_json->>'identityHash',
+          'PROPOSAL',
+          app_instance_json->>'appDefinition',
+          app_instance_json#>>'{abiEncodings,stateEncoding}',
+          app_instance_json#>>'{abiEncodings,actionEncoding}',
+          (app_instance_json->>'appSeqNo')::INTEGER,
+          app_instance_json->'latestState',
+          (app_instance_json->>'latestVersionNumber')::INTEGER,
+          app_instance_json->>'initiatorDeposit',
+          app_instance_json->>'initiatorDepositAssetId', 
+          (app_instance_json->>'outcomeType')::app_instance_outcometype_enum, 
+          app_instance_json->>'initiatorIdentifier', 
+          app_instance_json->>'responderIdentifier', 
+          app_instance_json->>'responderDeposit', 
+          app_instance_json->>'responderDepositAssetId', 
+          app_instance_json->>'defaultTimeout', 
+          app_instance_json->>'stateTimeout', 
+          app_instance_json->'meta', 
+          app_instance_json->'latestAction', 
+          app_instance_json->'outcomeInterpreterParameters', 
+          app_instance_json->>'multisigAddress',
+          DEFAULT, 
+          DEFAULT
+      ) ON CONFLICT ("identityHash") DO NOTHING;
       UPDATE "app_instance" SET 
         "type" = 'INSTANCE', 
         "latestState" = app_instance_json->'latestState',
