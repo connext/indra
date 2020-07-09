@@ -83,7 +83,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     // Should already have information from counterparty needed to sync your
     // channel included in m2
-    const { commitments, effectedApp, freeBalanceApp } = (m2! as ProtocolMessage).data
+    const { commitments, affectedApp, freeBalanceApp } = (m2! as ProtocolMessage).data
       .customData as SyncDeterminationData & SyncFromData;
 
     const validCommitments = commitments && commitments.length > 0;
@@ -107,7 +107,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         preProtocolStateChannel,
         syncType.type,
         commitments,
-        effectedApp || syncType.identityHash,
+        affectedApp || syncType.identityHash,
         freeBalanceApp,
       );
       postSyncStateChannel = updatedChannel;
@@ -122,7 +122,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           persistType,
           postSyncStateChannel,
           verifiedCommitments, // all signed commitments
-          [effectedApp],
+          [affectedApp],
         ];
       } else {
         // NOTE: must update single signed set state commitments here
@@ -152,7 +152,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
               responderIdentifier: myIdentifier,
               multisigAddress: postSyncStateChannel.multisigAddress,
               appIdentityHash: app.identityHash,
-              action: effectedApp!.latestAction,
+              action: affectedApp!.latestAction,
               stateTimeout: singleSignedCommitments[0].stateTimeout,
             },
             appInstance: app.toJson(),
@@ -167,7 +167,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         postSyncStateChannel = postSyncStateChannel.setState(
           app,
           await app.computeStateTransition(
-            effectedApp!.latestAction,
+            affectedApp!.latestAction,
             provider,
             getPureBytecode(app.appDefinition, contractAddresses),
           ),
@@ -187,7 +187,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           PersistStateChannelType.SyncAppInstances,
           postSyncStateChannel,
           singleSignedCommitments[0], // all signed commitments
-          [effectedApp],
+          [affectedApp],
         ];
 
         logTime(log, substart, `[${loggerId}] Synced single signed app states with responder`);
@@ -211,7 +211,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         },
       },
     ];
-    console.log("Initiation continuing with m4:", stringify((m2 as any).data.customData));
+    log.info(`Initiation continuing with m4: ${stringify((m2 as any).data.customData)}`);
     logTime(log, substart, `[${loggerId}] Received responder's m4`);
     substart = Date.now();
 
@@ -280,7 +280,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     ];
     logTime(log, substart, `[${loggerId}] Received initiator's m3`);
     substart = Date.now();
-    console.log("Response continuing with m3:", stringify((m3 as any).data.customData));
+    log.info(`Response continuing with m3: ${stringify((m3 as any).data.customData)}`);
 
     // Determine how channel is out of sync + sync channel
     const counterpartyData = (m3! as ProtocolMessage).data.customData as {
@@ -293,14 +293,14 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       // We do not need to sync our channel
       postSyncStateChannel = StateChannel.fromJson(preProtocolStateChannel.toJson());
     } else {
-      const { commitments, effectedApp, freeBalanceApp } = counterpartyData;
+      const { commitments, affectedApp, freeBalanceApp } = counterpartyData;
       // we should update our channel
       const [updatedChannel, persistType, verifiedCommitments] = await syncChannel(
         context,
         preProtocolStateChannel,
         syncType.type,
         commitments,
-        effectedApp || syncType.identityHash,
+        affectedApp || syncType.identityHash,
         freeBalanceApp,
       );
       postSyncStateChannel = updatedChannel;
@@ -315,7 +315,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           persistType,
           postSyncStateChannel,
           verifiedCommitments, // all signed commitments
-          [effectedApp],
+          [affectedApp],
         ];
       } else {
         // NOTE: must update single signed set state commitments here
@@ -345,7 +345,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
               responderIdentifier: myIdentifier,
               multisigAddress: postSyncStateChannel.multisigAddress,
               appIdentityHash: app.identityHash,
-              action: effectedApp!.latestAction,
+              action: affectedApp!.latestAction,
               stateTimeout: singleSignedCommitments[0].stateTimeout,
             },
             appInstance: app.toJson(),
@@ -360,7 +360,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         postSyncStateChannel = postSyncStateChannel.setState(
           app,
           await app.computeStateTransition(
-            effectedApp!.latestAction,
+            affectedApp!.latestAction,
             provider,
             getPureBytecode(app.appDefinition, contractAddresses),
           ),
@@ -380,7 +380,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           PersistStateChannelType.SyncAppInstances,
           postSyncStateChannel,
           singleSignedCommitments[0], // all signed commitments
-          [effectedApp],
+          [affectedApp],
         ];
 
         logTime(log, substart, `[${loggerId}] Synced single signed app states with responder`);
@@ -635,7 +635,7 @@ function makeSyncDetermination(
 
 type SyncFromData = {
   commitments: (SetStateCommitment | ConditionalTransactionCommitment)[];
-  effectedApp?: AppInstance; // not provided iff syncing from uninstall
+  affectedApp?: AppInstance; // not provided iff syncing from uninstall
   freeBalanceApp?: AppInstance; // provided iff syncing from uninstall
 };
 async function getInfoForSync(
@@ -679,7 +679,7 @@ async function getInfoForSync(
           SetStateCommitment.fromJson(setState),
           ConditionalTransactionCommitment.fromJson(conditional),
         ],
-        effectedApp: AppInstance.fromJson(proposal),
+        affectedApp: AppInstance.fromJson(proposal),
       };
     }
     case "install": {
@@ -694,7 +694,7 @@ async function getInfoForSync(
       }
       return {
         commitments: [SetStateCommitment.fromJson(setState)],
-        effectedApp: app,
+        affectedApp: app,
       };
     }
     case "takeAction": {
@@ -709,7 +709,7 @@ async function getInfoForSync(
       }
       return {
         commitments: [SetStateCommitment.fromJson(setState)],
-        effectedApp: app,
+        affectedApp: app,
       };
     }
     case "uninstall": {
@@ -742,7 +742,7 @@ async function syncChannel(
   myChannel: StateChannel,
   type: keyof typeof SyncableProtocols,
   commitments: (SetStateCommitment | ConditionalTransactionCommitment)[],
-  effectedApp: AppInstance | string,
+  affectedApp: AppInstance | string,
   freeBalanceApp: AppInstance | undefined,
 ): Promise<
   [StateChannel, PersistStateChannelType, (SetStateCommitment | ConditionalTransactionCommitment)[]]
@@ -759,18 +759,18 @@ async function syncChannel(
 
   switch (type) {
     case "propose": {
-      if (typeof effectedApp === "string") {
+      if (typeof affectedApp === "string") {
         throw new Error(
           `Received valid commitments, but no effected app for proposal sync of channel ${myChannel.multisigAddress}`,
         );
       }
       // should have received a set state and conditional tx as the commitments
       // and both should correspond to the effected app
-      const generatedSetState = getSetStateCommitment(context, effectedApp);
+      const generatedSetState = getSetStateCommitment(context, affectedApp);
       const generatedConditional = getConditionalTransactionCommitment(
         context,
         myChannel,
-        effectedApp,
+        affectedApp,
       );
       const setState = commitments.find((c) => c.hashToSign === generatedSetState.hashToSign);
       const conditional = commitments.find((c) => c.hashToSign === generatedConditional.hashToSign);
@@ -781,35 +781,35 @@ async function syncChannel(
       }
 
       // set return values
-      updatedChannel = myChannel.addProposal(effectedApp.toJson());
+      updatedChannel = myChannel.addProposal(affectedApp.toJson());
       persistType = PersistStateChannelType.SyncProposal;
       verifiedCommitments = [setState, conditional];
       break;
     }
 
     case "install": {
-      if (typeof effectedApp === "string") {
+      if (typeof affectedApp === "string") {
         throw new Error(
           `Received valid commitments, but no effected app for install sync of channel ${myChannel.multisigAddress}`,
         );
       }
       // FIXME: ideally in this case, the proposal could be added to the channel
-      if (!myChannel.proposedAppInstances.has(effectedApp.identityHash)) {
+      if (!myChannel.proposedAppInstances.has(affectedApp.identityHash)) {
         throw new Error(
           `Could not find record of unsynced installed app in our proposed app instances. Effected app: ${stringify(
-            effectedApp,
+            affectedApp,
           )}`,
         );
       }
 
       persistType = PersistStateChannelType.SyncInstall;
-      updatedChannel = computeInstallStateChannelTransition(myChannel, effectedApp);
+      updatedChannel = computeInstallStateChannelTransition(myChannel, affectedApp);
       // verify the expected commitment is included
       const generatedSetState = getSetStateCommitment(context, updatedChannel.freeBalance);
       const setState = commitments.find((c) => c.hashToSign === generatedSetState.hashToSign);
       if (!setState) {
         throw new Error(
-          `Could not find commitment matching expected to sync channel with install of ${effectedApp.identityHash}`,
+          `Could not find commitment matching expected to sync channel with install of ${affectedApp.identityHash}`,
         );
       }
       verifiedCommitments = [setState];
@@ -817,17 +817,17 @@ async function syncChannel(
     }
 
     case "takeAction": {
-      if (typeof effectedApp === "string") {
+      if (typeof affectedApp === "string") {
         throw new Error(
           `Received valid commitments, but no effected app for take action sync of channel ${myChannel.multisigAddress}`,
         );
       }
-      const app = myChannel.appInstances.get(effectedApp.identityHash);
+      const app = myChannel.appInstances.get(affectedApp.identityHash);
       if (!app) {
-        throw new Error(`Channel has no record of out of sync app: ${effectedApp.identityHash}`);
+        throw new Error(`Channel has no record of out of sync app: ${affectedApp.identityHash}`);
       }
       const commitment = commitments.find(
-        (c) => c.appIdentityHash === effectedApp.identityHash,
+        (c) => c.appIdentityHash === affectedApp.identityHash,
       ) as SetStateCommitment;
       // if the commitment is single signed, return only the single signed
       // commitment without making any updates to the channel
@@ -837,10 +837,10 @@ async function syncChannel(
       } else {
         updatedChannel = myChannel.setState(
           app,
-          effectedApp.latestState,
-          toBN(effectedApp.stateTimeout),
+          affectedApp.latestState,
+          toBN(affectedApp.stateTimeout),
         );
-        const updatedApp = updatedChannel.appInstances.get(effectedApp.identityHash);
+        const updatedApp = updatedChannel.appInstances.get(affectedApp.identityHash);
         if (updatedApp?.hashOfLatestState !== commitment.toJson().appStateHash) {
           throw new Error(`Provided set state commitment for app does not match expected`);
         }
@@ -851,10 +851,10 @@ async function syncChannel(
     }
 
     case "uninstall": {
-      if (typeof effectedApp !== "string") {
+      if (typeof affectedApp !== "string") {
         throw new Error(
           `Expected counterparty to return a string representing the uninstalled appId, got: ${stringify(
-            effectedApp,
+            affectedApp,
           )}`,
         );
       }
@@ -869,12 +869,12 @@ async function syncChannel(
       );
       if (!setState) {
         throw new Error(
-          `Could not find commitment matching expected to sync channel with uninstall of ${effectedApp}`,
+          `Could not find commitment matching expected to sync channel with uninstall of ${affectedApp}`,
         );
       }
       verifiedCommitments = [setState];
       updatedChannel = myChannel
-        .removeAppInstance(effectedApp)
+        .removeAppInstance(affectedApp)
         .setFreeBalance(FreeBalanceClass.fromAppInstance(freeBalanceApp));
       persistType = PersistStateChannelType.SyncUninstall;
       break;
