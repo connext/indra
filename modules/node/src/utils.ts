@@ -8,14 +8,12 @@ import {
   GenericConditionalTransferAppState,
 } from "@connext/types";
 import { AppInstance, AppType } from "./appInstance/appInstance.entity";
-import { bigNumberifyJson, toBN, stringify } from "@connext/utils";
+import { bigNumberifyJson, toBN } from "@connext/utils";
 
 export function appStatusesToTransferStatus<T extends AppName>(
   senderApp: AppInstance<T>,
   receiverApp?: AppInstance<T>,
 ): TransferStatus | undefined {
-  console.log(`trying to determine status of payment with sender app: ${stringify(senderApp)}`);
-  console.log(`receiver app: ${stringify(senderApp)}`);
   if (!senderApp) {
     return undefined;
   }
