@@ -61,7 +61,6 @@ export abstract class MethodController {
       logTime(log, substart, "After execution complete");
       substart = Date.now();
     } catch (e) {
-      log.error(`Caught error in method controller: ${e.stack}`);
       error = e;
     }
 
