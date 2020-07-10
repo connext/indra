@@ -292,7 +292,7 @@ export class CFCore {
           PersistStateChannelType,
           StateChannel, // post protocol channel
           (MinimalTransaction | SetStateCommitment | ConditionalTransactionCommitment)[], // signed commitments
-          AppInstance[], // effected apps (multiple for reject)
+          AppInstance[], // affected apps (multiple for reject)
         ],
       ) => {
         const [type, stateChannel, signedCommitments, affectedApps] = args;
@@ -378,7 +378,7 @@ export class CFCore {
             }
             await this.storeService.removeAppInstance(
               stateChannel.multisigAddress,
-              appContext.identityHash,
+              appContext.toJson(),
               stateChannel.freeBalance.toJson(),
               setState.toJson(),
               stateChannel.toJson(),
@@ -478,7 +478,7 @@ export class CFCore {
           case PersistAppType.RemoveInstance: {
             await this.storeService.removeAppInstance(
               multisigAddress,
-              identityHash,
+              (app as AppInstance).toJson(),
               freeBalance.toJson(),
               signedSetStateCommitment.toJson(),
               postProtocolChannel.toJson(),

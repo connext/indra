@@ -484,7 +484,7 @@ describe("CFCoreStore", () => {
       for (let index = 0; index < 3; index++) {
         await cfCoreStore.removeAppInstance(
           multisigAddress,
-          appInstance.identityHash,
+          appInstance,
           updatedFreeBalance,
           updatedFreeBalanceCommitment,
         );

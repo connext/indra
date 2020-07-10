@@ -109,7 +109,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     } else {
       // we should update our channel
       const param = affectedApp ? AppInstance.fromJson(affectedApp) : undefined;
-      const [updatedChannel, persistType, verifiedCommitments] = await syncChannel(
+      const [updatedChannel, persistType, verifiedCommitments, uninstalledApp] = await syncChannel(
         context,
         preProtocolStateChannel,
         syncType.type,
@@ -137,7 +137,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           persistType,
           postSyncStateChannel,
           verifiedCommitments, // all signed commitments
-          [param || { identityHash: syncType.identityHash }],
+          [param || uninstalledApp],
           // ^^ in the case of uninstall the affectedApp is undefined
         ];
       } else {
@@ -318,7 +318,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       const { commitments, affectedApp, freeBalanceApp } = counterpartyData;
       // we should update our channel
       const param = affectedApp ? AppInstance.fromJson(affectedApp) : undefined;
-      const [updatedChannel, persistType, verifiedCommitments] = await syncChannel(
+      const [updatedChannel, persistType, verifiedCommitments, uninstalledApp] = await syncChannel(
         context,
         preProtocolStateChannel,
         syncType.type,
@@ -343,7 +343,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
           persistType,
           postSyncStateChannel,
           verifiedCommitments, // all signed commitments
-          [param || { identityHash: syncType.identityHash }],
+          [param || uninstalledApp],
           // ^^ in the case of uninstall the affectedApp is undefined
         ];
       } else {
@@ -780,7 +780,12 @@ async function syncChannel(
   freeBalanceApp: AppInstance | undefined,
   log: ILoggerService,
 ): Promise<
-  [StateChannel, PersistStateChannelType, (SetStateCommitment | ConditionalTransactionCommitment)[]]
+  [
+    StateChannel,
+    PersistStateChannelType,
+    (SetStateCommitment | ConditionalTransactionCommitment)[],
+    AppInstance?,
+  ] // app inc. iff uninstalled
 > {
   // Verify signatures on any provided commitments
   await Promise.all(commitments.map((c) => c.assertSignatures()));
@@ -789,6 +794,7 @@ async function syncChannel(
   let updatedChannel: StateChannel;
   let persistType: PersistStateChannelType;
   let verifiedCommitments: (SetStateCommitment | ConditionalTransactionCommitment)[];
+  let uninstalledApp: AppInstance | undefined = undefined;
   // ^^ commitments in order expected by store middleware
   // that we have verified are contextually correct and have our sigs on them
 
@@ -928,6 +934,7 @@ async function syncChannel(
         .removeAppInstance(affectedApp)
         .setFreeBalance(FreeBalanceClass.fromAppInstance(freeBalanceApp));
       persistType = PersistStateChannelType.SyncUninstall;
+      uninstalledApp = myChannel.appInstances.get(affectedApp);
       break;
     }
 
@@ -937,7 +944,7 @@ async function syncChannel(
     }
   }
 
-  return [updatedChannel, persistType, verifiedCommitments];
+  return [updatedChannel, persistType, verifiedCommitments, uninstalledApp];
 }
 
 function syncRejectedApps(

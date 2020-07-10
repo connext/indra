@@ -16,6 +16,7 @@ import { LoggerService } from "../logger/logger.service";
 import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { ChannelRepository } from "../channel/channel.repository";
+import { stringify } from "@connext/utils";
 
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
@@ -185,8 +186,6 @@ export default class ListenerService implements OnModuleInit {
     }
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     if (action) {
-      // update app with uninstalled state
-      await this.appInstanceRepository.updateAppStateOnUninstall(uninstalledApp);
       const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
         uninstalledApp.appDefinition,
       );
