@@ -16,6 +16,7 @@ export const convertConditionalCommitmentToJson = (
     interpreterParams: commitment.interpreterParams,
     multisigAddress: commitment.multisigAddress,
     multisigOwners: commitment.multisigOwners,
+    transactionData: commitment.transactionData,
   };
 };
 
@@ -45,14 +46,9 @@ export class ConditionalTransactionCommitmentRepository extends Repository<
   ): Promise<ConditionalTransactionCommitment[]> {
     return this.createQueryBuilder("conditional")
       .leftJoinAndSelect("conditional.app", "app")
-      .where(
-        "app.type <> :rejected", { rejected: AppType.REJECTED },
-      )
-      .andWhere("app.type <> :uninstalled", { uninstalled: AppType.UNINSTALLED })
+      .where("app.type <> :uninstalled", { uninstalled: AppType.UNINSTALLED })
       .leftJoinAndSelect("app.channel", "channel")
-      .where(
-        "channel.multisigAddress = :multisigAddress", { multisigAddress },
-      )
+      .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
       .getMany();
   }
 }

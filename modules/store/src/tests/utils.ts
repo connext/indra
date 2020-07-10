@@ -262,6 +262,7 @@ export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   challengeRegistryAddress: TEST_STORE_ETH_ADDRESS,
   stateTimeout: toBNJson(17),
   versionNumber: toBNJson(23),
+  transactionData: "0xdeadbeef",
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
 
@@ -273,6 +274,7 @@ export const TEST_STORE_CONDITIONAL_COMMITMENT: ConditionalTransactionCommitment
   interpreterParams: "conditionalInterpreter",
   multisigAddress: TEST_STORE_ETH_ADDRESS,
   multisigOwners: TEST_STORE_CHANNEL.userIdentifiers,
+  transactionData: "0xdeadbeef",
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
 
