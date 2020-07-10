@@ -50,7 +50,10 @@ export async function handleReceivedProtocolMessage(
     postProtocolStateChannel = channel;
     appInstance = appContext || undefined;
   } catch (e) {
-    log.error(`Caught error running ${data.protocol} protocol, aborting. Error: ${e.stack}`);
+    log.warn(
+      `Caught error running ${data.protocol} protocol, aborting. Will be retried after syncing. Error: ${e.message}`,
+    );
+    log.debug(e.stack);
     // NOTE: see comments in IO_SEND_AND_WAIT opcode
     const messageForCounterparty = prepareProtocolErrorMessage(msgBn, e.message || e);
     await requestHandler.messagingService.send(
