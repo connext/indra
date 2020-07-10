@@ -6,6 +6,8 @@ import { LoggerService } from "../../logger/logger.service";
 
 export const env = {
   ethProviderUrl: process.env.INDRA_ETH_RPC_URL,
+  nodeUrl: "http://localhost:8080",
+  messagingUrl: "nats://indra_nats_node_tester:4222",
   indraLogLevel: parseInt(process.env.INDRA_LOG_LEVEL || "0", 10),
   logLevel: parseInt(process.env.LOG_LEVEL || "0", 10),
   mnemonic: process.env.INDRA_ETH_MNEMONIC,

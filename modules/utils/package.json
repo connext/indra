@@ -1,6 +1,6 @@
 {
   "name": "@connext/utils",
-  "version": "7.0.0-alpha.17",
+  "version": "7.0.0-alpha.16-rc",
   "description": "Crypto module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -16,21 +16,21 @@
   },
   "dependencies": {
     "axios": "0.19.2",
-    "@connext/types": "7.0.0-alpha.17",
+    "@connext/types": "7.0.0-alpha.16-rc",
     "evt": "1.7.13",
     "bs58check": "2.1.2",
     "eccrypto-js": "4.5.4"
   },
   "devDependencies": {
-    "@babel/polyfill": "7.10.1",
+    "@babel/polyfill": "7.10.4",
     "@types/chai": "4.2.11",
     "@types/mocha": "7.0.2",
-    "@types/node": "14.0.14",
+    "@types/node": "14.0.20",
     "chai": "4.2.0",
     "eth-crypto": "1.6.0",
-    "ethers": "5.0.3",
+    "ethers": "5.0.5",
     "mocha": "8.0.1",
     "ts-mocha": "7.0.0",
-    "typescript": "3.9.5"
+    "typescript": "3.9.6"
   }
 }

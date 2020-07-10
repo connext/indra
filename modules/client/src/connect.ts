@@ -41,11 +41,12 @@ export const connect = async (
     ethProviderUrl,
     loggerService,
     messagingUrl,
+    nodeUrl,
     logLevel,
     skipSync,
     skipInitStore,
   } = opts;
-  let { messaging, nodeUrl } = opts;
+  let { messaging } = opts;
 
   const logger = loggerService
     ? loggerService.newContext("ConnextConnect")
@@ -70,12 +71,12 @@ export const connect = async (
     } channels`,
   );
 
-  // setup ethProvider + network information
-  logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
-  // get the chainId
-  const chainId = await getChainId(ethProviderUrl);
-  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl, chainId);
-  const network = await ethProvider.getNetwork();
+  // setup ethProvider
+  logger.debug(`Creating ethereum provider from url: ${ethProviderUrl}`);
+  const ethProvider = new providers.JsonRpcProvider(
+    ethProviderUrl,
+    await getChainId(ethProviderUrl),
+  );
 
   // setup messaging and node api
   let node: INodeApiClient;
@@ -94,13 +95,12 @@ export const connect = async (
     }
     logger.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
-    nodeUrl = channelProvider.config.nodeUrl;
     node = await NodeApiClient.init({
       ethProvider,
       messaging,
       messagingUrl,
       logger,
-      nodeUrl,
+      nodeUrl: channelProvider.config.nodeUrl,
       channelProvider,
       skipSync,
     });
@@ -147,7 +147,7 @@ export const connect = async (
     ethProvider,
     logger,
     messaging,
-    network,
+    network: await ethProvider.getNetwork(),
     node,
     signer,
     store,

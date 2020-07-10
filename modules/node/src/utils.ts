@@ -7,8 +7,15 @@ import {
   HashLockTransferAppState,
   GenericConditionalTransferAppState,
 } from "@connext/types";
-import { AppInstance, AppType } from "./appInstance/appInstance.entity";
 import { bigNumberifyJson, toBN } from "@connext/utils";
+import { BigNumber, constants } from "ethers";
+
+import { AppInstance, AppType } from "./appInstance/appInstance.entity";
+
+export const transformBN = {
+  from: (value: string): BigNumber => toBN(value || "0"),
+  to: (value: BigNumber): string => (value || constants.Zero).toString(),
+};
 
 export function appStatusesToTransferStatus<T extends AppName>(
   senderApp: AppInstance<T>,

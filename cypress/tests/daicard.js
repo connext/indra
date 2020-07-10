@@ -12,6 +12,32 @@ describe("Daicard", () => {
     my.closeIntroModal();
   });
 
+  describe("Deposit, Send, Withdraw", () => {
+    it(`should perform key actions without error`, () => {
+      my.getMnemonic().then((recipientMnemonic) => {
+        my.burnCard();
+        my.deposit(depositEth).then((tokensDeposited) => {
+          my.linkPay(payTokens).then((redeemLink) => {
+            // TODO: has sender balance subtracted link amount?
+            my.restoreMnemonic(recipientMnemonic);
+            cy.visit(redeemLink);
+            cy.contains("button", /redeem/i).click();
+            cy.contains("button", /confirm/i).click();
+            cy.contains("h5", /redeemed successfully/i).should("exist");
+            cy.contains("button", /home/i).click();
+            cy.resolve(my.getChannelTokenBalance).should("contain", payTokens);
+            my.getOnchainEtherBalance().then((balanceBefore) => {
+              my.cashoutEther();
+              cy.resolve(my.getOnchainEtherBalance).should((balanceAfter) => {
+                expect(new BN(balanceAfter)).to.be.a.bignumber.greaterThan(new BN(balanceBefore));
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+
   describe("WalletConnext", () => {
     it(`should open a modal when activated`, () => {
       my.activateWalletConnext();
@@ -130,18 +156,6 @@ describe("Daicard", () => {
       });
     });
 
-    it(`should not withdraw to an invalid address`, () => {
-      my.deposit(depositEth).then((tokensDeposited) => {
-        my.goToCashout();
-        cy.get(`input[type="string"]`).clear().type("0xabc123");
-        cy.contains("p", /invalid/i).should("exist");
-      });
-    });
-  });
-
-  // Skipping because multisig's faulty replay protection causes this to fail
-  // See point A2 of Heiko's audit for more info
-  describe.skip("Withdraw then Deposit then Withdraw", () => {
     it(`should withdraw eth to a valid address the second time`, () => {
       my.deposit(depositEth).then((tokensDeposited) => {
         my.getOnchainEtherBalance().then((balanceBefore) => {
@@ -158,19 +172,11 @@ describe("Daicard", () => {
       });
     });
 
-    it(`should withdraw tokens to a valid address the second time`, () => {
-      my.depositToken(depositToken).then((tokensDeposited) => {
-        my.getOnchainTokenBalance().then((balanceBefore) => {
-          my.cashoutToken();
-          my.depositToken(`${depositToken}.1`).then((tokensDeposited) => {
-            my.getOnchainTokenBalance().then((balanceBefore) => {
-              my.cashoutToken();
-              cy.resolve(my.getOnchainTokenBalance).should((balanceAfter) => {
-                expect(new BN(balanceAfter)).to.be.a.bignumber.greaterThan(new BN(balanceBefore));
-              });
-            });
-          });
-        });
+    it(`should not withdraw to an invalid address`, () => {
+      my.deposit(depositEth).then((tokensDeposited) => {
+        my.goToCashout();
+        cy.get(`input[type="string"]`).clear().type("0xabc123");
+        cy.contains("p", /invalid/i).should("exist");
       });
     });
   });

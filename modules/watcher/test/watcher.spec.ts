@@ -31,6 +31,13 @@ import { waitForDisputeCompletion } from "./utils/completeDispute";
 
 const { One } = constants;
 
+const logger = new ColorfulLogger(
+  "WatcherTest",
+  parseInt(process.env.LOG_LEVEL || "0", 10),
+  true,
+  "T",
+);
+
 describe("Watcher.init", () => {
   let provider: JsonRpcProvider;
 
@@ -41,16 +48,18 @@ describe("Watcher.init", () => {
 
   it("should be able to instantiate with a private key", async () => {
     const watcher = await Watcher.init({
-      signer: Wallet.createRandom().privateKey,
-      provider: provider.connection.url,
-      store: await getAndInitStore(),
       context: { ChallengeRegistry: getRandomAddress() } as any,
+      logger,
+      provider: provider.connection.url,
+      signer: Wallet.createRandom().privateKey,
+      store: await getAndInitStore(),
     });
     expect(watcher).to.be.instanceOf(Watcher);
   });
 
   it("should be able to instantiate with a ChannelSigner", async () => {
     const watcher = await Watcher.init({
+      logger,
       signer: new ChannelSigner(Wallet.createRandom().privateKey, provider.connection.url),
       provider: provider,
       store: await getAndInitStore(),
@@ -91,10 +100,10 @@ describe("Watcher.initiate", () => {
     // create watcher
     watcher = await Watcher.init({
       context: networkContext,
+      logger,
       provider,
-      store,
       signer: context["wallet"].privateKey,
-      logger: new ColorfulLogger("Watcher", 0, true, ""),
+      store,
     });
     expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
   });
@@ -139,10 +148,10 @@ describe("Watcher.initiate", () => {
     // reinstantiate watcher
     watcher = await Watcher.init({
       context: networkContext,
+      logger,
       provider,
-      store,
       signer: wallet.privateKey,
-      // logger: new ColorfulLogger("Watcher", 5, true, ""),
+      store,
     });
     await initiateDispute(activeApps[0], freeBalance, watcher, store, networkContext, true);
     await waitForSetOutcome(
@@ -188,10 +197,10 @@ describe("Watcher.cancel", () => {
     // create watcher
     watcher = await Watcher.init({
       context: networkContext,
+      logger,
       provider,
-      store,
       signer: context["wallet"].privateKey,
-      // logger: new ColorfulLogger("Watcher", 3, true, ""),
+      store,
     });
     expect(await store.getLatestProcessedBlock()).to.be.eq(await provider.getBlockNumber());
   });
@@ -214,9 +223,10 @@ describe("Watcher.cancel", () => {
     // create watcher
     watcher = await Watcher.init({
       context: networkContext,
+      logger,
       provider,
-      store,
       signer: wallet.privateKey,
+      store,
     });
     await initiateDispute(app, freeBalance, watcher, store, networkContext);
 
@@ -284,10 +294,10 @@ describe("Watcher responses", () => {
     // create watcher
     watcher = await Watcher.init({
       context: networkContext,
+      logger,
       provider,
-      store,
       signer: context["wallet"].privateKey,
-      // logger: new ColorfulLogger("Watcher", 5, true, ""),
+      store,
     });
     expect(await store.getLatestProcessedBlock()).to.be.gte((await provider.getBlockNumber()) - 1);
   });
