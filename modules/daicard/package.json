@@ -12,11 +12,11 @@
     "format": "prettier --write \"src/**/*.js\""
   },
   "dependencies": {
-    "@connext/client": "7.0.0-alpha.16-rc",
+    "@connext/client": "7.0.0-alpha.18",
     "@connext/contracts": "3.3.1",
-    "@connext/utils": "7.0.0-alpha.16-rc",
-    "@connext/store": "7.0.0-alpha.16-rc",
-    "@connext/types": "7.0.0-alpha.16-rc",
+    "@connext/utils": "7.0.0-alpha.18",
+    "@connext/store": "7.0.0-alpha.18",
+    "@connext/types": "7.0.0-alpha.18",
     "@material-ui/core": "4.11.0",
     "@material-ui/icons": "4.9.1",
     "@walletconnect/browser": "1.0.0",
