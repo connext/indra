@@ -218,7 +218,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         protocol,
         processID,
         params,
-        seq: 2,
+        seq: 1,
         to: responderIdentifier,
         customData: {
           ...syncInfoForCounterparty,
@@ -289,7 +289,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         protocol,
         processID,
         params,
-        seq: 1,
+        seq: 0,
         to: counterpartyIdentifier,
         customData: {
           ...getSyncDeterminationData(preProtocolStateChannel),
@@ -323,7 +323,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         preProtocolStateChannel,
         syncType.type,
         commitments.map((c) =>
-          !!c["contractAddresses"]
+          !!(c as ConditionalTransactionCommitmentJSON).contractAddresses
             ? ConditionalTransactionCommitment.fromJson(c as ConditionalTransactionCommitmentJSON)
             : SetStateCommitment.fromJson(c as SetStateCommitmentJSON),
         ),
