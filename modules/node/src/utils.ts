@@ -8,12 +8,14 @@ import {
   GenericConditionalTransferAppState,
 } from "@connext/types";
 import { AppInstance, AppType } from "./appInstance/appInstance.entity";
-import { bigNumberifyJson, toBN } from "@connext/utils";
+import { bigNumberifyJson, toBN, stringify } from "@connext/utils";
 
 export function appStatusesToTransferStatus<T extends AppName>(
   senderApp: AppInstance<T>,
   receiverApp?: AppInstance<T>,
 ): TransferStatus | undefined {
+  console.log(`trying to determine status of payment with sender app: ${stringify(senderApp)}`);
+  console.log(`receiver app: ${stringify(senderApp)}`);
   if (!senderApp) {
     return undefined;
   }
@@ -38,8 +40,8 @@ export function appStatusesToTransferStatus<T extends AppName>(
       // the receiver of the payment in the receivers app, the
       // payment is complete. otherwise, it failed/was cancelled
       return toBN(transfers[0].amount).isZero()
-        ? TransferStatuses.FAILED
-        : TransferStatuses.COMPLETED;
+        ? TransferStatuses.COMPLETED
+        : TransferStatuses.FAILED;
     }
     case AppType.INSTANCE: {
       if (!receiverApp) {
@@ -58,8 +60,8 @@ export function appStatusesToTransferStatus<T extends AppName>(
           // the receiver of the payment in the receivers app, the
           // payment is complete. otherwise, it failed/was cancelled
           return toBN(transfers[0].amount).isZero()
-            ? TransferStatuses.FAILED
-            : TransferStatuses.COMPLETED;
+            ? TransferStatuses.COMPLETED
+            : TransferStatuses.FAILED;
         }
         case AppType.FREE_BALANCE:
         default: {
