@@ -37,7 +37,7 @@
     "mocha": "8.0.1",
     "mock-async-storage": "2.2.0",
     "pg": "8.3.0",
-    "sequelize": "5.21.13",
+    "sequelize": "6.3.1",
     "sql-template-strings": "2.2.2",
     "sqlite3": "5.0.0",
     "ts-mocha": "7.0.0",
