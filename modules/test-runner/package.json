@@ -39,7 +39,7 @@
     "pg": "8.3.0",
     "sequelize": "5.21.13",
     "sql-template-strings": "2.2.2",
-    "sqlite3": "4.2.0",
+    "sqlite3": "5.0.0",
     "ts-mocha": "7.0.0",
     "ts-nats": "1.2.15",
     "ts-natsutil": "1.1.1",
