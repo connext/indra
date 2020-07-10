@@ -99,7 +99,17 @@ describe("HashLockTransferApp", () => {
     };
   });
 
-  describe("update state", () => {
+  describe("getTurnTaker", () => {
+    it("will return payment recipient", async () => {
+      const ret = await hashLockTransferApp.getTurnTaker(encodeAppState(preState), [
+        senderAddr,
+        receiverAddr,
+      ]);
+      expect(ret).to.be.eq(receiverAddr);
+    });
+  });
+
+  describe("applyAction", () => {
     it("will redeem a payment with correct hash within expiry", async () => {
       const action: HashLockTransferAppAction = {
         preImage,
