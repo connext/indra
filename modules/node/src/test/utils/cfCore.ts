@@ -90,7 +90,7 @@ export const createStateChannelJSON = (
 export const createSetStateCommitmentJSON = (
   overrides: Partial<SetStateCommitmentJSON> = {},
 ): SetStateCommitmentJSON => {
-  return deBigNumberifyJson({
+  return deBigNumberifyJson<SetStateCommitmentJSON>({
     appIdentity: {
       channelNonce: Zero,
       participants: [getRandomAddress(), getRandomAddress()],
@@ -104,6 +104,7 @@ export const createSetStateCommitmentJSON = (
     signatures: [getRandomSignature(), getRandomSignature()],
     stateTimeout: Zero,
     versionNumber: Zero,
+    transactionData: getRandomBytes32(),
     ...overrides,
   });
 };
@@ -120,6 +121,7 @@ export const createConditionalTransactionCommitmentJSON = (
     multisigOwners: [getRandomAddress(), getRandomAddress()],
     contractAddresses: {} as ContractAddresses,
     signatures: [getRandomSignature(), getRandomSignature()],
+    transactionData: getRandomBytes32(),
     ...overrides,
   };
 };

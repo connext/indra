@@ -58,7 +58,6 @@ describe("Graph Signed Transfer Offline", () => {
     senderConfig: Partial<ClientTestMessagingInputOpts> = {},
     receiverConfig: Partial<ClientTestMessagingInputOpts> = {},
   ): Promise<[IConnextClient, IConnextClient]> => {
-
     const sender = await createClientWithMessagingLimits({
       ...senderConfig,
       signer: senderSigner,
@@ -345,7 +344,6 @@ describe("Graph Signed Transfer Offline", () => {
     await sender.messaging.disconnect();
     // Add delay to make sure messaging properly disconnects
     await delay(1000);
-    console.log(`retrying`);
     await recreateClientAndRetryTransfer("sender", receiver, senderSigner, sender.store);
   });
 

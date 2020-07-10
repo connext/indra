@@ -1,8 +1,4 @@
-import {
-  AppInstanceJson,
-  AppState,
-  JSONSerializer,
-} from "@connext/types";
+import { AppInstanceJson, JSONSerializer } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, safeJsonParse } from "@connext/utils";
 import { constants } from "ethers";
 import { EntityRepository, Repository } from "typeorm";
@@ -228,17 +224,5 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .andWhere("app_instance.appDefinition = :appDefinition", { appDefinition })
       .getMany();
     return res;
-  }
-
-  async updateAppStateOnUninstall(uninstalledApp: AppInstanceJson): Promise<void> {
-    await this.createQueryBuilder("app_instance")
-      .update(AppInstance)
-      .set({
-        latestState: uninstalledApp.latestState as AppState,
-        stateTimeout: uninstalledApp.stateTimeout,
-        latestVersionNumber: uninstalledApp.latestVersionNumber,
-      })
-      .where("identityHash = :identityHash", { identityHash: uninstalledApp.identityHash })
-      .execute();
   }
 }

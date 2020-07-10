@@ -246,7 +246,7 @@ describe("Methods", () => {
         for (let i = 0; i < 3; i++) {
           await store.removeAppInstance(
             multisigAddress,
-            app.identityHash,
+            app,
             channel.freeBalanceAppInstance!,
             freeBalanceSetState2,
           );

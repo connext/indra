@@ -26,9 +26,12 @@ describe("Inflight swap", () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
-    const receiverTransfer = clientB.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
-    const senderTransfer = clientA.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
-    const xfer = await clientA.transfer({
+    const receiverTransfer = clientB.waitFor(
+      EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+      10_000,
+    );
+    const senderTransfer = clientA.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 10_000);
+    await clientA.transfer({
       amount: transfer.amount,
       assetId: transfer.assetId,
       meta: { receiverAssetId: tokenAddress },
@@ -36,13 +39,6 @@ describe("Inflight swap", () => {
     });
     await receiverTransfer;
     await senderTransfer;
-    const { paymentId, preImage } = xfer;
-    await clientB.resolveCondition({
-      paymentId,
-      conditionType: ConditionalTransferTypes.LinkedTransfer,
-      assetId: transfer.assetId,
-      preImage,
-    } as PublicParams.ResolveLinkedTransfer);
 
     const freeBalanceToken = await clientB.getFreeBalance(tokenAddress);
     expect(freeBalanceToken[clientB.signerAddress]).to.be.gt(0);

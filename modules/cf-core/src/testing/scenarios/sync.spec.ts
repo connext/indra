@@ -22,6 +22,7 @@ import {
   constructUninstallRpc,
   constructTakeActionRpc,
   uninstallApp,
+  makeInstallCall,
 } from "../utils";
 import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
 import { deBigNumberifyJson, ChannelSigner, bigNumberifyJson } from "@connext/utils";
@@ -31,6 +32,7 @@ import { MemoryLockService } from "../services";
 import { Logger } from "../logger";
 import { validAction } from "../tic-tac-toe";
 import { expect } from "../assertions";
+import { StateChannel } from "../../models";
 
 const { isHexString } = utils;
 
@@ -93,7 +95,7 @@ describe("Sync", () => {
       channelSignerB,
       lockService,
       0,
-      new Logger("CreateClient", env.logLevel, true, "B"),
+      new Logger("CreateClient", env.logLevel, true, "B-initial"),
     );
   });
 
@@ -113,7 +115,7 @@ describe("Sync", () => {
         channelSignerA,
         lockService,
         0,
-        new Logger("CreateClient", env.logLevel, true, "A"),
+        new Logger("CreateClient", env.logLevel, true, "A-initial"),
       );
 
       // create channel
@@ -177,6 +179,7 @@ describe("Sync", () => {
 
     it("sync protocol initiator is missing a proposal held by the protocol responder, sync on startup", async () => {
       messagingServiceA.clearLimits();
+      await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve, reject) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -191,7 +194,7 @@ describe("Sync", () => {
           channelSignerB,
           lockService,
           0,
-          new Logger("CreateClient", env.logLevel, true, "B"),
+          new Logger("CreateClient", env.logLevel, true, "B-recreated"),
         ),
       ]);
 
@@ -379,6 +382,7 @@ describe("Sync", () => {
     it("sync protocol initiator is missing a proposal held by the protocol responder, sync on startup", async () => {
       const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       messagingServiceA.clearLimits();
+      await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve, reject) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -393,7 +397,7 @@ describe("Sync", () => {
           channelSignerB,
           lockService,
           0,
-          new Logger("CreateClient", env.logLevel, true, "B"),
+          new Logger("CreateClient", env.logLevel, true, "B-recreated"),
         ),
       ]);
 
@@ -493,6 +497,138 @@ describe("Sync", () => {
     });
   });
 
+  describe("Sync::rejectInstall", () => {
+    let identityHash: string;
+    beforeEach(async () => {
+      // create nodeA
+      messagingServiceA = new MemoryMessagingServiceWithLimits(
+        sharedEventEmitter,
+        undefined,
+        undefined,
+        undefined,
+        "NodeA",
+      );
+      nodeA = await CFCore.create(
+        messagingServiceA,
+        storeServiceA,
+        global["contracts"],
+        nodeConfig,
+        provider,
+        channelSignerA,
+        lockService,
+        0,
+        new Logger("CreateClient", env.logLevel, true, "A-initial"),
+      );
+
+      // create channel
+      multisigAddress = await createChannel(nodeA, nodeB);
+
+      // load stores with proposal
+      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+      await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
+
+      // verify channel in stores are in sync post-proposal
+      const postProposalA = await storeServiceA.getStateChannel(multisigAddress);
+      const unsynced = await storeServiceB.getStateChannel(multisigAddress);
+      expect(postProposalA!.proposedAppInstances.length).to.eq(1);
+      expect(unsynced!.proposedAppInstances.length).to.eq(1);
+      expect(unsynced!.monotonicNumProposedApps).to.eq(postProposalA!.monotonicNumProposedApps);
+      identityHash = postProposalA!.proposedAppInstances[0][0];
+
+      // remove proposal from storeA
+      await storeServiceA.removeAppProposal(
+        multisigAddress,
+        identityHash,
+        StateChannel.fromJson(postProposalA!).removeProposal(identityHash).toJson(),
+      );
+      expectedChannel = await storeServiceA.getStateChannel(multisigAddress);
+      expect(expectedChannel!.proposedAppInstances.length).to.eq(0);
+    });
+
+    it("sync protocol -- initiator has rejected a proposal responder has record of, sync on startup", async () => {
+      // recreate nodeA (unsynced, missing proposal)
+      await messagingServiceA.disconnect();
+      const [eventData, newNodeA] = await Promise.all([
+        new Promise(async (resolve) => {
+          nodeB.on(EventNames.SYNC, (data) => resolve(data));
+        }),
+        CFCore.create(
+          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+          storeServiceA,
+          global["contracts"],
+          nodeConfig,
+          provider,
+          channelSignerA,
+          lockService,
+          0,
+          new Logger("CreateClient", env.logLevel, true, "A-recreated"),
+        ),
+      ]);
+
+      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
+      expect(eventData).to.containSubset({
+        from: nodeA.publicIdentifier,
+        type: EventNames.SYNC,
+        data: { syncedChannel: expectedChannel },
+      });
+      expect(syncedChannel).to.deep.eq(expectedChannel!);
+
+      // propose new app
+      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+      await installApp(newNodeA, nodeB, multisigAddress, TicTacToeApp);
+    });
+
+    it("sync protocol -- responder has rejected a proposal initiator has record of, sync on startup", async () => {
+      // recreate nodeA (unsynced, missing proposal)
+      await messagingServiceB.disconnect();
+      const [eventData, newNodeB] = await Promise.all([
+        new Promise(async (resolve) => {
+          nodeA.on(EventNames.SYNC, (data) => resolve(data));
+        }),
+        CFCore.create(
+          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
+          storeServiceB,
+          global["contracts"],
+          nodeConfig,
+          provider,
+          channelSignerB,
+          lockService,
+          0,
+          new Logger("CreateClient", env.logLevel, true, "B"),
+        ),
+      ]);
+
+      const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
+      expect(eventData).to.containSubset({
+        from: nodeB.publicIdentifier,
+        type: EventNames.SYNC,
+        data: { syncedChannel: expectedChannel },
+      });
+      expect(syncedChannel).to.deep.eq(expectedChannel!);
+
+      // propose new app
+      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+      await installApp(newNodeB, nodeA, multisigAddress, TicTacToeApp);
+    });
+
+    it("sync protocol -- initiator has rejected a proposal responder has record of, sync on error", async () => {
+      // There are only two ways a channel in this state will error from being
+      // out of sync in this way. either:
+      // - reject is called -- channel gets back in sync without going
+      //   through protocol
+      // - install is called -- call fails after channel is synced. only person
+      //   with out of sync channel can call this
+      try {
+        await makeInstallCall(nodeA, identityHash, multisigAddress);
+      } catch (e) {}
+
+      const updatedChannelA = await storeServiceA.getStateChannel(multisigAddress);
+      const updatedChannelB = await storeServiceB.getStateChannel(multisigAddress);
+      expect(updatedChannelA?.proposedAppInstances.length).to.be.eq(0);
+      expect(updatedChannelB?.proposedAppInstances.length).to.be.eq(0);
+    });
+  });
+
   describe("Sync::install", () => {
     let appIdentityHash: string;
     let unsynced: StateChannelJSON | undefined;
@@ -544,11 +680,15 @@ describe("Sync", () => {
       expectedChannel = (await storeServiceA.getStateChannel(multisigAddress))!;
       unsynced = await storeServiceB.getStateChannel(multisigAddress);
       expect(unsynced?.appInstances.length).to.eq(0);
-      expect(expectedChannel?.appInstances.length).to.eq(1);
+      expect(expectedChannel.appInstances.length).to.eq(1);
+      expect(expectedChannel.freeBalanceAppInstance!.latestVersionNumber).to.eq(
+        unsynced!.freeBalanceAppInstance!.latestVersionNumber + 1,
+      );
     });
 
     it("sync protocol -- initiator is missing an app held by responder", async () => {
       messagingServiceA.clearLimits();
+      await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -704,6 +844,7 @@ describe("Sync", () => {
 
     it("sync protocol -- initiator is missing an app held by responder, sync on startup", async () => {
       messagingServiceA.clearLimits();
+      await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -1072,6 +1213,7 @@ describe("Sync", () => {
 
     it("responder has an app that has a single signed update that the initiator does not have, sync on startup", async () => {
       messagingServiceA.clearLimits();
+      await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
         new Promise(async (resolve) => {
           nodeA.on(EventNames.SYNC, (data) => resolve(data));
@@ -1107,7 +1249,7 @@ describe("Sync", () => {
 
     it("initiator has an app that has a single signed update that the responder does not have, sync on error", async () => {
       messagingServiceA.clearLimits();
-      //attempt to uninstall
+      // attempt to uninstall
       await uninstallApp(nodeA, nodeB, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);

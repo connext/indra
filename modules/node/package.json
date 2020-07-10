@@ -1,6 +1,6 @@
 {
   "name": "indra-node",
-  "version": "7.0.0-alpha.14",
+  "version": "7.0.0-alpha.16",
   "description": "",
   "author": "",
   "license": "MIT",
@@ -20,14 +20,14 @@
     "watch": "ts-mocha --bail --check-leaks --watch --timeout 10000 src/**/*.spec.ts"
   },
   "dependencies": {
-    "@connext/apps": "7.0.0-alpha.14",
-    "@connext/cf-core": "7.0.0-alpha.14",
+    "@connext/apps": "7.0.0-alpha.15",
+    "@connext/cf-core": "7.0.0-alpha.15",
     "@connext/contracts": "3.3.1",
-    "@connext/messaging": "7.0.0-alpha.14",
+    "@connext/messaging": "7.0.0-alpha.15",
     "@connext/pure-evm-wasm": "0.1.4",
-    "@connext/store": "7.0.0-alpha.14",
-    "@connext/types": "7.0.0-alpha.14",
-    "@connext/utils": "7.0.0-alpha.14",
+    "@connext/store": "7.0.0-alpha.15",
+    "@connext/types": "7.0.0-alpha.15",
+    "@connext/utils": "7.0.0-alpha.15",
     "@nestjs/common": "7.2.0",
     "@nestjs/core": "7.2.0",
     "@nestjs/microservices": "7.2.0",
@@ -53,7 +53,7 @@
   },
   "devDependencies": {
     "@ethereum-waffle/chai": "3.0.0",
-    "@connext/client": "7.0.0-alpha.14",
+    "@connext/client": "7.0.0-alpha.15",
     "@nestjs/testing": "7.2.0",
     "@openzeppelin/contracts": "3.0.2",
     "@types/chai": "4.2.11",

@@ -27,7 +27,6 @@ export enum AppType {
   PROPOSAL = "PROPOSAL",
   INSTANCE = "INSTANCE",
   FREE_BALANCE = "FREE_BALANCE",
-  REJECTED = "REJECTED", // removed proposal
   UNINSTALLED = "UNINSTALLED", // removed app
 }
 
@@ -85,7 +84,7 @@ export class AppInstance<T extends AppName = any> {
   @Column("text", {
     transformer: {
       from: (value: string = "0"): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber = Zero): string => (value).toString(),
+      to: (value: BigNumber = Zero): string => value.toString(),
     },
   })
   responderDeposit!: BigNumber;
