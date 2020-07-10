@@ -14,7 +14,7 @@ import { HashLockTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 
-const { Zero } = constants;
+const { Zero, HashZero } = constants;
 const { defaultAbiCoder, soliditySha256 } = utils;
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
@@ -137,14 +137,41 @@ describe("HashLockTransferApp", () => {
       validateOutcome(ret, expectedPostState);
     });
 
-    it("will revert action with incorrect hash", async () => {
+    it("will not redeem a payment if an incorrect hash is given", async () => {
       const action: HashLockTransferAppAction = {
         preImage: getRandomBytes32(), // incorrect hash
       };
 
-      await expect(applyAction(preState, action)).revertedWith(
-        "Hash generated from preimage does not match hash in state",
+      let ret = await applyAction(preState, action);
+      const afterActionState = decodeAppState(ret);
+
+      const expectedPostState: HashLockTransferAppState = {
+        coinTransfers: [
+          {
+            amount: transferAmount,
+            to: senderAddr,
+          },
+          {
+            amount: Zero,
+            to: receiverAddr,
+          },
+        ],
+        lockHash,
+        preImage: HashZero,
+        expiry,
+        finalized: true,
+      };
+
+      expect(afterActionState.finalized).to.eq(expectedPostState.finalized);
+      expect(afterActionState.coinTransfers[0].amount).to.eq(
+        expectedPostState.coinTransfers[0].amount,
       );
+      expect(afterActionState.coinTransfers[1].amount).to.eq(
+        expectedPostState.coinTransfers[1].amount,
+      );
+
+      ret = await computeOutcome(afterActionState);
+      validateOutcome(ret, expectedPostState);
     });
 
     it("will revert action if already finalized", async () => {
