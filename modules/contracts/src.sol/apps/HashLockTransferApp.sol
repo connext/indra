@@ -38,14 +38,12 @@ contract HashLockTransferApp is CounterfactualApp {
 
     require(!state.finalized, "Cannot take action on finalized state");
     require(block.number < state.expiry, "Cannot take action if expiry is expired");
-    require(
-      state.lockHash == generatedHash,
-      "Hash generated from preimage does not match hash in state"
-    );
-
-    state.coinTransfers[1].amount = state.coinTransfers[0].amount;
-    state.coinTransfers[0].amount = 0;
-    state.preImage = action.preImage;
+    if (state.lockHash == generatedHash) {
+      // correct preimage, send payment to receiver
+      state.coinTransfers[1].amount = state.coinTransfers[0].amount;
+      state.coinTransfers[0].amount = 0;
+      state.preImage = action.preImage;
+    }
     state.finalized = true;
 
     return abi.encode(state);
