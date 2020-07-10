@@ -26,10 +26,10 @@ export const cfCoreProviderFactory: Provider = {
     messaging: MessagingService,
     store: CFCoreStore,
   ): Promise<CFCore> => {
+    log.setContext("CFCoreProvider");
     const provider = config.getEthProvider();
     const signer = config.getSigner();
     const signerAddress = await signer.getAddress();
-    log.setContext("CFCoreProvider");
 
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();

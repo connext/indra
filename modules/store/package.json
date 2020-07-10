@@ -21,7 +21,7 @@
     "@connext/utils": "7.0.0-alpha.15",
     "localStorage": "1.0.4",
     "p-waterfall": "2.1.0",
-    "pg": "8.2.1",
+    "pg": "8.3.0",
     "pg-hstore": "2.3.3",
     "sequelize": "5.21.13",
     "sqlite3": "4.2.0",

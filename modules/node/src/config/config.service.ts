@@ -35,9 +35,9 @@ export class ConfigService implements OnModuleInit {
   constructor(
     private readonly log: LoggerService,
   ) {
+    this.log.setContext("ConfigService");
     this.envConfig = process.env;
-    // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY
-    // WAITS FOR)
+    // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY WAITS FOR)
     this.ethProvider = new providers.JsonRpcProvider(this.getEthRpcUrl());
     this.signer = new ChannelSigner(this.getPrivateKey(), this.ethProvider);
   }
