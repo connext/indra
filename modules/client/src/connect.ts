@@ -43,6 +43,7 @@ export const connect = async (
     messagingUrl,
     logLevel,
     skipSync,
+    skipInitStore,
   } = opts;
   let { messaging, nodeUrl } = opts;
 
@@ -59,8 +60,15 @@ export const connect = async (
   );
 
   const store = opts.store || getLocalStore();
-  await store.init();
-  logger.info(`Using ${opts.store ? "given" : "local"} store containing ${(await store.getAllChannels()).length} channels`);
+
+  if (!skipInitStore) {
+    await store.init();
+  }
+  logger.info(
+    `Using ${opts.store ? "given" : "local"} store containing ${
+      (await store.getAllChannels()).length
+    } channels`,
+  );
 
   // setup ethProvider + network information
   logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
