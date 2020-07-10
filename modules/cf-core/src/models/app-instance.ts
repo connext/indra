@@ -336,9 +336,10 @@ export class AppInstance {
     bytecode?: HexString,
   ): Promise<SolidityValueType> {
     let computedNextState: SolidityValueType;
-    if (!(await this.isCorrectTurnTaker(actionTaker, provider, bytecode))) {
+    const turnTaker = await this.computeTurnTaker(provider, bytecode);
+    if (actionTaker !== turnTaker) {
       throw new Error(
-        `Cannot compute state transition, got invalid turn taker (${actionTaker}) for action on app at ${this.appDefinition}`,
+        `Cannot compute state transition, got invalid turn taker for action on app at ${this.appDefinition}. Expected ${turnTaker}, got ${actionTaker}`,
       );
     }
     if (bytecode) {
