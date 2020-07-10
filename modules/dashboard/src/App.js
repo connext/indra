@@ -49,11 +49,11 @@ const env = {
   adminToken: process.env.REACT_APP_INDRA_NATS_TOKEN || "foo",
   nodeUrl:
     process.env.REACT_APP_NODE_URL_OVERRIDE ||
-    `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
+    `${window.location.origin.replace(/^http/, "ws")}`,
   urlPrefix: process.env.PUBLIC_URL || "",
 };
 
-// env.nodeUrl = "wss://staging.indra.connext.network/api/messaging";
+// env.nodeUrl = "wss://staging.indra.connext.network";
 // env.adminToken = "foo";
 
 const App = () => {

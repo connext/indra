@@ -15,7 +15,7 @@ import {
   Address,
   ConditionalTransferTypes,
 } from "@connext/types";
-import { bigNumberifyJson, logTime, stringify, formatMessagingUrl } from "@connext/utils";
+import { bigNumberifyJson, isNode, logTime, stringify } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { utils, providers } from "ethers";
 import { v4 as uuid } from "uuid";
@@ -56,23 +56,39 @@ export class NodeApiClient implements INodeApiClient {
       channelProvider: providedChannelProvider,
       signer,
       logger,
-      nodeUrl,
       messaging: providedMessaging,
-      messagingUrl,
       skipSync,
     } = opts;
     const log = logger.newContext("NodeApiClient");
+
+    // Removes the protocol + path
+    const extractHost = (url: string): string =>
+      url.replace(/^.*:\/\//, "").replace(/\/[\s\S]*$/, "");
+
+    const nodeProtocol = opts.nodeUrl.replace(/:\/\/.*/, "://");
+    const nodeUrl = `${nodeProtocol}${extractHost(opts.nodeUrl)}/api`;
+
+    // If no messagingUrl given, attempt to derive one from the nodeUrl
+    const messagingUrl = opts.messagingUrl || (
+      isNode() ? `nats://${extractHost(nodeUrl).replace(/:[0-9]+$/, "")}:4222`
+        : nodeUrl.startsWith("https://") ? `wss://${extractHost(nodeUrl)}/api/messaging`
+        : `ws://${extractHost(nodeUrl)}/api/messaging`
+    );
+
+    if (!opts.messagingUrl) {
+      log.info(`No messagingUrl provided, using ${messagingUrl} derived from nodeUrl ${nodeUrl}`);
+    } else {
+      log.debug(`Initializing messaging with nodeUrl ${nodeUrl} & messagingUrl ${messagingUrl}`);
+    }
 
     if (signer) {
       getSignature = (msg: string) => signer.signMessage(msg);
       userIdentifier = signer.publicIdentifier;
     } else if (providedChannelProvider) {
-      getSignature = async (message: string) => {
-        const sig = await providedChannelProvider.send(ChannelMethods.chan_signMessage, {
-          message,
-        });
-        return sig;
-      };
+      getSignature = async (message: string) => providedChannelProvider.send(
+        ChannelMethods.chan_signMessage,
+        { message },
+      );
       userIdentifier = providedChannelProvider.config.userIdentifier;
     } else {
       throw new Error("Must provide channelProvider or signer");
@@ -81,7 +97,7 @@ export class NodeApiClient implements INodeApiClient {
     if (!providedMessaging) {
       messaging = new MessagingService(
         {
-          messagingUrl: messagingUrl || formatMessagingUrl(nodeUrl),
+          messagingUrl,
           logger: log.newContext("Messaging"),
         },
         "INDRA",
@@ -92,7 +108,7 @@ export class NodeApiClient implements INodeApiClient {
     }
     await messaging.connect();
 
-    const node = new NodeApiClient({ ...opts, messaging });
+    const node = new NodeApiClient({ ...opts, nodeUrl, messaging });
     const config = await node.getConfig();
     node.userIdentifier = userIdentifier;
 

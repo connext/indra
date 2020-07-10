@@ -19,6 +19,7 @@ export class MessagingAuthService {
 
     this.defaultJWTAudience = this.config.messagingUrl as string;
     this.auth = new AuthService(
+      this.log.newContext("Messaging-Auth"),
       this.defaultJWTAudience,
       this.config.privateKey,
       this.config.publicKey,

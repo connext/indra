@@ -15,8 +15,8 @@ npm install @connext/client
 
 Connext exposes 2 Indra nodes for public use:
 
- - `https://rinkeby.indra.connext.network/api`: Good for testing & experimenting on the Rinkeby test net
- - `https://indra.connext.network/api`: To interact with mainnet channels in production.
+ - `https://rinkeby.indra.connext.network`: Good for testing & experimenting on the Rinkeby test net
+ - `https://indra.connext.network`: To interact with mainnet channels in production.
 
 You can also run your own Indra node locally by running the start command in an indra repo.
 
@@ -69,7 +69,7 @@ import { Wallet } from "ethers";
 
   const channel = await connect("rinkeby", {
     signer: Wallet.createRandom().privateKey,
-    nodeUrl: "https://rinkeby.indra.connext.network/api",
+    nodeUrl: "https://rinkeby.indra.connext.network",
   });
 
   console.log(`Successfully connected channel with public id: ${channel.publicIdentifier}`);

@@ -1,6 +1,6 @@
 import { artifacts } from "@connext/contracts";
 import { abrv, toBN } from "@connext/utils";
-import { constants, Contract, providers, utils, Wallet } from "ethers";
+import { constants, Contract, providers, utils, Wallet, BigNumber } from "ethers";
 import { Argv } from "yargs";
 
 import { startBot } from "./agents/bot";
@@ -70,8 +70,8 @@ export const command = {
     }
 
     // Abort if sugarDaddy doesn't have enough tokens to fund all the bots
-    let token;
-    let startTokenBalance;
+    let token: Contract;
+    let startTokenBalance: BigNumber;
     if (argv.tokenAddress !== AddressZero) {
       token = new Contract(argv.tokenAddress, artifacts.Token.abi, sugarDaddy);
       startTokenBalance = await token.balanceOf(sugarDaddy.address);
@@ -111,12 +111,12 @@ export const command = {
       }
       if (
         argv.tokenAddress !== AddressZero &&
-        (await token.balanceOf(bot.address)).lt(parseEther(tokenGrant).div(Two))
+        (await token!.balanceOf(bot.address)).lt(parseEther(tokenGrant).div(Two))
       ) {
         console.log(
           `Sending ${tokenGrant} tokens to bot #${concurrencyIndex + 1}: ${abrv(bot.address)}`,
         );
-        await token.transfer(bot.address, tokenGrant);
+        await token!.transfer(bot.address, tokenGrant);
       }
     }
 
@@ -152,10 +152,10 @@ export const command = {
     // Print the amount we spent during the course of these tests
     const endEthBalance = await sugarDaddy.getBalance();
     if (argv.tokenAddress !== AddressZero) {
-      const endTokenBalance = await token.balanceOf(sugarDaddy.address);
+      const endTokenBalance = await token!.balanceOf(sugarDaddy.address);
       console.log(
         `SugarDaddy spent ${formatEther(startEthBalance.sub(endEthBalance))} ETH & ${formatEther(
-          startTokenBalance.sub(endTokenBalance),
+          startTokenBalance!.sub(endTokenBalance),
         )} tokens`,
       );
     } else {
