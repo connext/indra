@@ -16,6 +16,7 @@ import { LoggerService } from "../logger/logger.service";
 import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { ChannelRepository } from "../channel/channel.repository";
+import { stringify } from "@connext/utils";
 
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
@@ -176,7 +177,7 @@ export default class ListenerService implements OnModuleInit {
   }
 
   async handleUninstall(data: UninstallMessage) {
-    const { multisigAddress, appIdentityHash } = data.data;
+    const { action, uninstalledApp, multisigAddress, appIdentityHash } = data.data;
     if (!multisigAddress) {
       this.log.error(
         `Unexpected error - no multisigAddress found in uninstall event data: ${appIdentityHash}`,
@@ -184,6 +185,17 @@ export default class ListenerService implements OnModuleInit {
       return;
     }
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    if (action) {
+      const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
+        uninstalledApp.appDefinition,
+      );
+      await this.appActionsService.handleAppAction(
+        appRegistryInfo.name as SupportedApplicationNames,
+        uninstalledApp,
+        uninstalledApp.latestState as any, // AppState (excluding simple swap app)
+        action as AppAction,
+      );
+    }
     const assetIdResponder = (
       await this.appInstanceRepository.findByIdentityHashOrThrow(data.data.appIdentityHash)
     ).responderDepositAssetId;
