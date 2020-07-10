@@ -236,7 +236,11 @@ describe("CFCoreStore", () => {
       );
 
       await cfCoreStore.createStateChannel(channelJson, setupCommitment, freeBalanceUpdate);
-      await cfCoreStore.incrementNumProposedApps(channelJson.multisigAddress);
+      await cfCoreStore.updateNumProposedApps(
+        channelJson.multisigAddress,
+        channelJson.monotonicNumProposedApps + 1,
+        { ...channelJson, monotonicNumProposedApps: channelJson.monotonicNumProposedApps + 1 },
+      );
       const channelFromStore = await cfCoreStore.getStateChannel(channelJson.multisigAddress);
       const userIdentifier = channelJson.userIdentifiers.find((x) => x !== nodeIdentifier);
       expect(channelFromStore).to.containSubset({

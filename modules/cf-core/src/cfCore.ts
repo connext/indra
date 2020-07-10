@@ -335,7 +335,11 @@ export class CFCore {
             const [appContext] = affectedApps;
             if (!appContext || !setState || !conditional) {
               // adding a rejected proposal
-              await this.storeService.incrementNumProposedApps(stateChannel.multisigAddress);
+              await this.storeService.updateNumProposedApps(
+                stateChannel.multisigAddress,
+                stateChannel.numProposedApps,
+                stateChannel.toJson(),
+              );
               break;
             }
             // this is adding a proposal
