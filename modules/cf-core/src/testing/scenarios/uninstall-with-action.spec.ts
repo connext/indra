@@ -102,7 +102,7 @@ describe("Node A and B install an app, then uninstall with a given action", () =
     const expected = appPreUninstall
       .setState(
         await appPreUninstall.computeStateTransition(
-          getSignerAddressFromPublicIdentifier(nodeA.publicIdentifier),
+          getSignerAddressFromPublicIdentifier(nodeB.publicIdentifier),
           action,
           provider,
         ),
@@ -112,13 +112,13 @@ describe("Node A and B install an app, then uninstall with a given action", () =
 
     await Promise.all([
       new Promise(async (resolve, reject) => {
-        nodeB.on(EventNames.UNINSTALL_EVENT, async (msg) => {
+        nodeA.on(EventNames.UNINSTALL_EVENT, async (msg) => {
           if (msg.data.appIdentityHash !== appIdentityHash) {
             return;
           }
           try {
             assertUninstallMessage(
-              nodeA.publicIdentifier,
+              nodeB.publicIdentifier,
               multisigAddress,
               appIdentityHash,
               expected,
@@ -138,7 +138,7 @@ describe("Node A and B install an app, then uninstall with a given action", () =
       }),
       new Promise(async (resolve, reject) => {
         try {
-          await nodeA.rpcRouter.dispatch(
+          await nodeB.rpcRouter.dispatch(
             constructUninstallRpc(appIdentityHash, multisigAddress, action),
           );
 
