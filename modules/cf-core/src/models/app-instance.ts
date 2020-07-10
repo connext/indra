@@ -293,12 +293,54 @@ export class AppInstance {
     return this.computeOutcome(this.state, provider, bytecode);
   }
 
+  public async computeTurnTaker(
+    provider: providers.JsonRpcProvider,
+    bytecode?: HexString,
+  ): Promise<string> {
+    let turnTaker: undefined | string = undefined;
+    // attempt evm if available
+    if (bytecode) {
+      try {
+        const functionData = appInterface.encodeFunctionData("getTurnTaker", [
+          this.encodedLatestState,
+          this.participants,
+        ]);
+        const output = await execEvmBytecode(bytecode, functionData);
+        turnTaker = appInterface.decodeFunctionResult("getTurnTaker", output)[0];
+      } catch (e) {}
+    }
+    if (turnTaker) {
+      return turnTaker;
+    }
+    // otherwise, if err or if no bytecode, execute read fn
+    turnTaker = (await this.toEthersContract(provider).getTurnTaker(
+      this.encodedLatestState,
+      this.participants,
+    )) as string;
+    return turnTaker;
+  }
+
+  public async isCorrectTurnTaker(
+    attemptedTurnTaker: string,
+    provider: providers.JsonRpcProvider,
+    bytecode?: HexString,
+  ) {
+    const turnTaker = await this.computeTurnTaker(provider, bytecode);
+    return attemptedTurnTaker === turnTaker;
+  }
+
   public async computeStateTransition(
+    actionTaker: Address,
     action: SolidityValueType,
     provider: providers.JsonRpcProvider,
     bytecode?: HexString,
   ): Promise<SolidityValueType> {
     let computedNextState: SolidityValueType;
+    if (!(await this.isCorrectTurnTaker(actionTaker, provider, bytecode))) {
+      throw new Error(
+        `Cannot compute state transition, got invalid turn taker (${actionTaker}) for action on app at ${this.appDefinition}`,
+      );
+    }
     if (bytecode) {
       try {
         const functionData = appInterface.encodeFunctionData("applyAction", [
