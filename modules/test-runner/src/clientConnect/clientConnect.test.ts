@@ -15,7 +15,7 @@ describe("Client Connect", () => {
     const client = await connect({
       ethProviderUrl: env.ethProviderUrl,
       loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
-      nodeUrl: "http://proxy/any/random/path",
+      nodeUrl: env.proxyUrl,
       signer,
       store: getMemoryStore({ prefix: signer.publicIdentifier }),
     });
@@ -27,8 +27,8 @@ describe("Client Connect", () => {
     const client = await connect({
       ethProviderUrl: env.ethProviderUrl,
       loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
-      messagingUrl: "nats://nats:4222/any/random/path",
-      nodeUrl: "http://node:8080/any/random/path",
+      messagingUrl: env.natsUrl,
+      nodeUrl: env.nodeUrl,
       signer,
       store: getMemoryStore({ prefix: signer.publicIdentifier }),
     });
