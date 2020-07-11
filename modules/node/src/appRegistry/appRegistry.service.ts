@@ -187,20 +187,22 @@ export class AppRegistryService implements OnModuleInit {
     );
   }
 
-  public async runPostUninstallTasks(
+  // should handle:
+  // - cancellation cases of conditional payments
+  public async handleAppUninstall(
     appName: SupportedApplicationNames,
     app: AppInstanceJson,
     latestState: AppState,
   ): Promise<void> {
     this.log.info(
-      `runPostUninstallTasks for ${appName} ${app.identityHash}, latest state ${safeJsonStringify(
+      `handleAppUninstall for ${appName} ${app.identityHash}, latest state ${safeJsonStringify(
         latestState,
       )} started`,
     );
     // if the uninstalled app was a cancelled transfer app or
     // payment, uninstall corresponding sender/receiver payment
     if (!Object.keys(ConditionalTransferAppNames).includes(appName)) {
-      this.log.info(`handleAppAction for app name ${appName} ${app.identityHash} complete`);
+      this.log.info(`handleAppUninstall for app name ${appName} ${app.identityHash} complete`);
       return;
     }
 
@@ -211,56 +213,29 @@ export class AppRegistryService implements OnModuleInit {
     if (toBN(state.coinTransfers[0].amount).isZero()) {
       // payment is not being cancelled, nothing to handle on uninstall
       this.log.info(`Payment was uninstalled but not cancelled, doing nothing.`);
-      this.log.info(`handleAppAction for app name ${appName} ${app.identityHash} complete`);
+      this.log.info(`handleAppUninstall for app name ${appName} ${app.identityHash} complete`);
       return;
     }
 
-    this.log.info(`Payment uninstalled without balance change, proceeding with cancellation`);
-
-    // get the sender app for the payment
+    // get the second leg for the payment (either party can cancel payment)
     const secondLeg = receiverAppUninstalled
       ? await this.transferService.findSenderAppByPaymentId(app.meta.paymentId)
       : await this.transferService.findReceiverAppByPaymentId(app.meta.paymentId);
     if (!secondLeg || secondLeg.type !== AppType.INSTANCE) {
       this.log.warn(`No installed app found for second leg of payment`);
-      this.log.info(`handleAppAction for app name ${appName} ${app.identityHash} complete`);
+      this.log.info(`handleAppUninstall for app name ${appName} ${app.identityHash} complete`);
       return;
     }
 
     // Proceed with cancelling second leg of payment
-    let action = undefined;
-    switch (appName as ConditionalTransferAppNames) {
-      case HashLockTransferAppName: {
-        // if the app isnt expired, and node is receiver, uninstall with invalid
-        // action
-        const current = await this.configService.getEthProvider().getBlockNumber();
-        if (
-          toBN((state as HashLockTransferAppState).expiry).gt(current) &&
-          receiverAppUninstalled
-        ) {
-          action = { preImage: getRandomBytes32() };
-        }
-        break;
-      }
-      case GraphSignedTransferAppName:
-      case SimpleSignedTransferAppName:
-      case SimpleLinkedTransferAppName: {
-        // No expiry, just uninstall without action
-        break;
-      }
-      default: {
-        throw new Error(
-          `Unable to cancel payment, unsupported conditional transfer app ${appName}`,
-        );
-      }
-    }
-
-    // uninstall app without any action
+    this.log.info(
+      `Payment uninstalled without balance change uninstalling second leg of payment ${secondLeg.identityHash}`,
+    );
     await this.cfCoreService.uninstallApp(
       secondLeg.identityHash,
       secondLeg.channel.multisigAddress,
-      action,
     );
+    this.log.info(`handleAppUninstall for app name ${appName} ${app.identityHash} complete`);
   }
 
   // APP SPECIFIC MIDDLEWARE
@@ -451,14 +426,18 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    // double check that the app was uninstalled
-    if (receiverApp.type !== AppType.UNINSTALLED) {
-      throw new Error(`Receiver app was unable to be uninstalled`);
+    // double check that receiver app state has not been finalized
+    // only allow sender uninstall prior to receiver uninstall IFF the hub
+    // has not paid receiver. Receiver app will be uninstalled again on event
+    if (
+      senderAppLatestState.coinTransfers[1].amount.isZero() && // not reclaimed
+      receiverApp.latestState.coinTransfers[0].amount.isZero() // finalized
+    ) {
+      throw new Error(
+        `Cannot uninstall unfinalized sender app, receiver app has payment has been completed`,
+      );
     }
 
-    if (!senderAppLatestState.finalized && receiverApp.latestState.finalized) {
-      throw new Error(`Cannot uninstall unfinalized sender app, receiver app has been finalized`);
-    }
     this.log.info(`Finished uninstallTransferMiddleware for ${appInstance.identityHash}`);
   };
 

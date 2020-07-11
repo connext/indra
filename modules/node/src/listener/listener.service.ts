@@ -195,13 +195,13 @@ export default class ListenerService implements OnModuleInit {
         uninstalledApp.latestState as any, // AppState (excluding simple swap app)
         action as AppAction,
       );
+    } else {
+      await this.appRegistryService.handleAppUninstall(
+        appRegistryInfo.name as SupportedApplicationNames,
+        uninstalledApp,
+        uninstalledApp.latestState as any, // AppState (excluding simple swap app)
+      );
     }
-
-    await this.appRegistryService.runPostUninstallTasks(
-      appRegistryInfo.name as SupportedApplicationNames,
-      uninstalledApp,
-      uninstalledApp.latestState as any, // AppState (excluding simple swap app)
-    );
 
     const assetIdResponder = (
       await this.appInstanceRepository.findByIdentityHashOrThrow(data.data.appIdentityHash)
