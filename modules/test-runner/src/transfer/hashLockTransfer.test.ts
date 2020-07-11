@@ -19,7 +19,6 @@ import {
   fundChannel,
   TOKEN_AMOUNT,
   env,
-  requestCollateral,
 } from "../util";
 
 const { AddressZero, HashZero } = constants;
@@ -117,12 +116,15 @@ describe.only("HashLock Transfers", () => {
     transfer: AssetOptions & { preImage: string; timelock: string },
     waitForSender: boolean = true,
   ) => {
+    const lockHash = soliditySha256(["bytes32"], [transfer.preImage]);
+    const paymentId = soliditySha256(["address", "bytes32"], [transfer.assetId, lockHash]);
     return Promise.all([
       // receiver result
       receiver.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage: transfer.preImage,
         assetId: transfer.assetId,
+        paymentId,
       }),
       // receiver event
       new Promise((resolve, reject) => {
@@ -169,12 +171,12 @@ describe.only("HashLock Transfers", () => {
       preImage: string;
       senderIdentifier: string;
       receiverIdentifier: string;
-      paymentId: string;
     },
     expected: Partial<NodeResponses.GetHashLockTransfer> = {},
   ) => {
     const lockHash = soliditySha256(["bytes32"], [transfer.preImage]);
     const retrieved = await client.getHashLockTransfer(lockHash, transfer.assetId);
+    const paymentId = soliditySha256(["address", "bytes32"], [transfer.assetId, lockHash]);
     expect(retrieved).to.containSubset({
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
@@ -184,7 +186,7 @@ describe.only("HashLock Transfers", () => {
       meta: {
         sender: transfer.senderIdentifier,
         timelock: transfer.timelock,
-        paymentId: transfer.paymentId,
+        paymentId,
       },
       ...expected,
     });
@@ -237,7 +239,7 @@ describe.only("HashLock Transfers", () => {
     const timelock = (5000).toString();
     const opts = { ...transfer, preImage, timelock };
 
-    const { paymentId } = await sendHashlockTransfer(clientA, clientB, opts);
+    await sendHashlockTransfer(clientA, clientB, opts);
 
     await assertRetrievedTransfer(
       clientB,
@@ -245,7 +247,6 @@ describe.only("HashLock Transfers", () => {
         ...opts,
         senderIdentifier: clientA.publicIdentifier,
         receiverIdentifier: clientB.publicIdentifier,
-        paymentId: paymentId!,
       },
       {
         status: HashLockTransferStatus.PENDING,
@@ -260,7 +261,7 @@ describe.only("HashLock Transfers", () => {
     const timelock = (5000).toString();
     const opts = { ...transfer, preImage, timelock };
 
-    const { paymentId } = await sendHashlockTransfer(clientA, clientB, opts);
+    await sendHashlockTransfer(clientA, clientB, opts);
 
     // wait for transfer to be picked up by receiver, but not reclaim
     // by node for sender
@@ -272,7 +273,6 @@ describe.only("HashLock Transfers", () => {
         ...opts,
         senderIdentifier: clientA.publicIdentifier,
         receiverIdentifier: clientB.publicIdentifier,
-        paymentId: paymentId!,
       },
       {
         status: HashLockTransferStatus.COMPLETED,
@@ -306,13 +306,14 @@ describe.only("HashLock Transfers", () => {
     const timelock = (5000).toString();
     const opts = { ...transfer, preImage, timelock };
 
-    await sendHashlockTransfer(clientA, clientB, opts);
+    const { paymentId } = await sendHashlockTransfer(clientA, clientB, opts);
 
     const badPreImage = getRandomBytes32();
     await expect(
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage: badPreImage,
+        paymentId: paymentId!,
         assetId: transfer.assetId,
       } as PublicParams.ResolveHashLockTransfer),
     ).to.eventually.be.rejectedWith(/app has not been installed/);
@@ -327,7 +328,7 @@ describe.only("HashLock Transfers", () => {
     const timelock = (101).toString();
     const opts = { ...transfer, preImage, timelock };
 
-    await sendHashlockTransfer(clientA, clientB, opts);
+    const { paymentId } = await sendHashlockTransfer(clientA, clientB, opts);
 
     await new Promise((resolve) => provider.once("block", resolve));
 
@@ -335,6 +336,7 @@ describe.only("HashLock Transfers", () => {
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage,
+        paymentId: paymentId!,
         assetId: transfer.assetId,
       } as PublicParams.ResolveHashLockTransfer),
     ).to.be.rejectedWith(/Cannot take action if expiry is expired/);
@@ -374,7 +376,118 @@ describe.only("HashLock Transfers", () => {
     ).to.be.fulfilled;
   });
 
-  it("should be able to cancel an active payment", async () => {});
+  it.only("receiver should be able to cancel an active payment", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const preImage = getRandomBytes32();
+    const timelock = (5000).toString();
+    const opts = { ...transfer, preImage, timelock };
 
-  it("should be able to refund an expired payment", async () => {});
+    const { paymentId } = await sendHashlockTransfer(clientA, clientB, opts);
+    await assertSenderDecrement(clientA, opts);
+    console.log("sender bal properly decremented");
+    const { [clientB.signerAddress]: initialBal } = await clientB.getFreeBalance(transfer.assetId);
+    expect(initialBal).to.eq(0);
+    console.log("receiver has 0 starting balance");
+
+    await new Promise((resolve, reject) => {
+      clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve);
+      clientB
+        .resolveCondition({
+          paymentId: paymentId!,
+          conditionType: ConditionalTransferTypes.HashLockTransfer,
+          assetId: transfer.assetId,
+        })
+        .catch((e) => reject(e));
+    });
+
+    const { [clientA.signerAddress]: senderBal } = await clientA.getFreeBalance(transfer.assetId);
+    const { [clientB.signerAddress]: receiverBal } = await clientB.getFreeBalance(transfer.assetId);
+    expect(senderBal).to.eq(transfer.amount);
+    console.log("sender bal reverted");
+    expect(receiverBal).to.eq(0);
+    console.log("receiver bal reverted");
+  });
+
+  it.only("receiver should be able to refund an expired payment", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const preImage = getRandomBytes32();
+    const timelock = (101).toString();
+    const opts = { ...transfer, preImage, timelock };
+
+    const { paymentId } = await sendHashlockTransfer(clientA, clientB, opts);
+    await assertSenderDecrement(clientA, opts);
+
+    await new Promise((resolve) => provider.on("block", resolve));
+
+    await new Promise((resolve, reject) => {
+      clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve);
+      clientB
+        .resolveCondition({
+          paymentId: paymentId!,
+          conditionType: ConditionalTransferTypes.HashLockTransfer,
+          assetId: transfer.assetId,
+        })
+        .catch((e) => reject(e));
+    });
+
+    const { [clientA.signerAddress]: senderBal } = await clientA.getFreeBalance(transfer.assetId);
+    const { [clientB.signerAddress]: receiverBal } = await clientB.getFreeBalance(transfer.assetId);
+    expect(senderBal).to.eq(transfer.amount);
+    expect(receiverBal).to.eq(0);
+  });
+
+  it.skip("sender should be able to refund an expired payment", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const preImage = getRandomBytes32();
+    const timelock = (1).toString();
+    const opts = { ...transfer, preImage, timelock };
+
+    const { paymentId } = await sendHashlockTransfer(clientA, clientB, opts);
+
+    await assertSenderDecrement(clientA, opts);
+
+    // FIXME: how to move blocks successfully?
+    // for (const i of Array(parseInt(timelock) + 5)) {
+    //   await new Promise((resolve) => provider.once("block", resolve));
+    // }
+
+    await assertRetrievedTransfer(
+      clientB,
+      {
+        ...opts,
+        senderIdentifier: clientA.publicIdentifier,
+        receiverIdentifier: clientB.publicIdentifier,
+      },
+      {
+        status: HashLockTransferStatus.EXPIRED,
+        preImage: HashZero,
+      },
+    );
+
+    await clientA.resolveCondition({
+      paymentId: paymentId!,
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      assetId: transfer.assetId,
+    });
+
+    // make sure payment was reverted in balances
+    const { [clientA.signerAddress]: senderBal } = await clientA.getFreeBalance(transfer.assetId);
+    const { [clientB.signerAddress]: receiverBal } = await clientB.getFreeBalance(transfer.assetId);
+    expect(senderBal).to.eq(transfer.amount);
+    expect(receiverBal).to.eq(0);
+
+    // make sure payment says failed on node
+    await assertRetrievedTransfer(
+      clientB,
+      {
+        ...opts,
+        senderIdentifier: clientA.publicIdentifier,
+        receiverIdentifier: clientB.publicIdentifier,
+      },
+      {
+        status: HashLockTransferStatus.FAILED,
+        preImage: HashZero,
+      },
+    );
+  });
 });
