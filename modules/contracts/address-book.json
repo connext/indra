@@ -635,10 +635,10 @@
       "txHash": "0x5280bbe977786401736d4156c559eb1e84bfb44b14fc114822873a8bde5bcdde"
     },
     "HashLockTransferApp": {
-      "address": "0x8f0483125FCb9aaAEFA9209D8E9d7b9C8B9Fb90F",
-      "creationCodeHash": "0x4978fb7ee1a6ff60d510d9f7242898d1040ed8af0414d3ebbb4cd4696e4a84b4",
-      "runtimeCodeHash": "0xfd55d382a4df61fbd807b7480abc0c202eb9840aea6c00e7e6f9073b08e0b193",
-      "txHash": "0x556cefd1241cc8a0597eb01b901e60c2736a0812f0b2faeeffc3415daf79a3a4"
+      "address": "0x2d63Bdb2efFC4C8f5bAEC9B4fE87e18E9818D384",
+      "creationCodeHash": "0x3c7dca6d6adb002d5fe9430ee5f5b6d1150a3dc2686aedde8e899ea59848b1e5",
+      "runtimeCodeHash": "0xc9abe7901965be973f7c944578049a100b7726859dd0ac87f96ee3ca397f89e6",
+      "txHash": "0xffd5fd631d6103792b751a70bcc3595c1702c227450d6f53371d46907e2b8491"
     },
     "IdentityApp": {
       "address": "0x9FBDa871d559710256a2502A2517b794B482Db40",
