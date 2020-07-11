@@ -12,6 +12,7 @@ import { WrappedAsyncStorage, WrappedLocalStorage, WrappedSequelizeStorage } fro
 
 export { IBackupService, IStoreService } from "@connext/types";
 export { IAsyncStorage } from "./types";
+export { defineSequelizeModels } from "./wrappers";
 
 export const getAsyncStore = (storage: IAsyncStorage, opts: StoreOptions = {}): IStoreService =>
   new StoreService(new WrappedAsyncStorage(storage, opts.prefix), opts.backupService, opts.logger);

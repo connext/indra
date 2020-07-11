@@ -1,4 +1,12 @@
-import { DataTypes, Op, Sequelize, Transaction, ModelAttributes } from "sequelize";
+import {
+  DataTypes,
+  Op,
+  Sequelize,
+  Transaction,
+  ModelAttributes,
+  Sequelize,
+  ModelCtor,
+} from "sequelize";
 import { mkdirSync } from "fs";
 import { dirname } from "path";
 
@@ -28,6 +36,16 @@ export const getSequelizeModelDefinitionData = (dialect: SupportedDialects): Mod
       type: valueDataType,
     },
   };
+};
+
+export const defineSequelizeModels = (
+  sequelize: Sequelize,
+  tableName: string = storeDefaults.DATABASE_TABLE_NAME,
+) => {
+  return sequelize.define(
+    tableName,
+    getSequelizeModelDefinitionData(sequelize.getDialect() as SupportedDialects),
+  );
 };
 
 export class WrappedSequelizeStorage implements KeyValueStorage {
@@ -64,10 +82,7 @@ export class WrappedSequelizeStorage implements KeyValueStorage {
       this.sequelize = _sequelize as Sequelize;
     }
 
-    this.ConnextClientData = this.sequelize.define(
-      this.tableName,
-      getSequelizeModelDefinitionData(this.sequelize.getDialect() as SupportedDialects),
-    );
+    this.ConnextClientData = defineSequelizeModels(this.sequelize, this.tableName);
   }
 
   async getItem<T>(key: string): Promise<T | undefined> {
