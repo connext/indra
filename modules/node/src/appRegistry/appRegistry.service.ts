@@ -22,15 +22,11 @@ import {
   DefaultApp,
   SupportedApplicationNames,
   AppState,
-  AppAction,
-  HashLockTransferAppName,
-  GraphSignedTransferAppName,
-  SimpleSignedTransferAppName,
-  SimpleLinkedTransferAppName,
+  HashLockTransferAppAction,
 } from "@connext/types";
-import { getAddressFromAssetId, safeJsonStringify, toBN, getRandomBytes32 } from "@connext/utils";
+import { getAddressFromAssetId, safeJsonStringify, toBN } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { BigNumber, providers } from "ethers";
+import { BigNumber, providers, constants } from "ethers";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -43,7 +39,8 @@ import { LoggerService } from "../logger/logger.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { TransferService } from "../transfer/transfer.service";
-import { GraphSignedTransferApp } from "@connext/contracts";
+
+const { HashZero } = constants;
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -246,9 +243,17 @@ export class AppRegistryService implements OnModuleInit {
     this.log.info(
       `Payment uninstalled without balance change uninstalling second leg of payment ${secondLeg.identityHash}`,
     );
+    // handle the case where this is an unexpired sendeder app
+    let action: HashLockTransferAppAction | undefined = undefined;
+    const block = await this.configService.getEthProvider().getBlockNumber();
+    if (secondLeg.latestState.expiry && toBN(secondLeg.latestState.expiry).gt(block)) {
+      this.log.info(`Second leg of payment not yet expired, uninstalling with invalid action`);
+      action = { preImage: HashZero };
+    }
     await this.cfCoreService.uninstallApp(
       secondLeg.identityHash,
       secondLeg.channel.multisigAddress,
+      action,
     );
     this.log.info(`handleAppUninstall for app name ${appName} ${app.identityHash} complete`);
   }
