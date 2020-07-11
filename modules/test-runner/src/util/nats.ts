@@ -18,7 +18,7 @@ export const getNatsClient = (): Client => {
 export const connectNats = async (): Promise<Client> => {
   const signer = getRandomChannelSigner();
   if (!natsClient) {
-    const adminJWT: AxiosResponse<string> = await axios.post(`${env.nodeUrl}/api/auth`, {
+    const adminJWT: AxiosResponse<string> = await axios.post(`${env.nodeUrl}/auth`, {
       sig: "0xbeef",
       userIdentifier: signer.publicIdentifier,
       adminToken: env.adminToken,

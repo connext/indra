@@ -61,9 +61,8 @@ export class NodeApiClient implements INodeApiClient {
     } = opts;
     const log = logger.newContext("NodeApiClient");
 
-    // Removes the protocol + path
-    const extractHost = (url: string): string =>
-      url.replace(/^.*:\/\//, "").replace(/\/[\s\S]*$/, "");
+    // Removes the protocol
+    const extractHost = (url: string): string => url.replace(/^.*:\/\//, "");
 
     const nodeProtocol = opts.nodeUrl.replace(/:\/\/.*/, "://");
     const nodeUrl = `${nodeProtocol}${extractHost(opts.nodeUrl)}`;
