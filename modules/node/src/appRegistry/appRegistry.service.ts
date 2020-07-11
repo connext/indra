@@ -221,9 +221,24 @@ export class AppRegistryService implements OnModuleInit {
     const secondLeg = receiverAppUninstalled
       ? await this.transferService.findSenderAppByPaymentId(app.meta.paymentId)
       : await this.transferService.findReceiverAppByPaymentId(app.meta.paymentId);
-    if (!secondLeg || secondLeg.type !== AppType.INSTANCE) {
-      this.log.warn(`No installed app found for second leg of payment`);
-      this.log.info(`handleAppUninstall for app name ${appName} ${app.identityHash} complete`);
+    if (!secondLeg) {
+      return;
+    }
+
+    // check case where sender app is cancelled, receiver never had proposal
+    if (secondLeg.type !== AppType.INSTANCE) {
+      if (!receiverAppUninstalled && secondLeg.type === AppType.PROPOSAL) {
+        this.log.info(`Sender cancelled payment, rejecting receiver proposal`);
+        await this.cfCoreService.rejectInstallApp(
+          secondLeg.identityHash,
+          secondLeg.channel.multisigAddress,
+          "Sender cancelled payment",
+        );
+        this.log.info(`handleAppUninstall for app name ${appName} ${app.identityHash} complete`);
+        return;
+      }
+      // otherwise no second leg installed, return
+      this.log.info(`No second leg found for cancelled transfer, doing nothing`);
       return;
     }
 
