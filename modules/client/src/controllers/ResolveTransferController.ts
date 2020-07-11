@@ -53,7 +53,7 @@ export class ResolveTransferController extends AbstractController {
     if (!this.hasSecret(params)) {
       // User is cancelling the payment
       try {
-        console.log(`trying to cancel payment`);
+        this.log.info(`[${paymentId}] Cancelling payment`);
         const ret = await this.handleCancellation(params);
         this.log.info(`[${paymentId}] resolveCondition complete: ${stringify(ret)}`);
         return ret;
@@ -292,7 +292,7 @@ export class ResolveTransferController extends AbstractController {
     const state = paymentApp.latestState as any;
     const block = await this.ethProvider.getBlockNumber();
     if (
-      state.coinTransfers[0].to === this.connext.signerAddress &&
+      state.coinTransfers[1].to === this.connext.signerAddress &&
       toBN(state.expiry || 0).gt(block)
     ) {
       action = { preImage: HashZero };
