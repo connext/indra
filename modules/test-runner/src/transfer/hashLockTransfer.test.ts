@@ -376,7 +376,7 @@ describe.only("HashLock Transfers", () => {
     ).to.be.fulfilled;
   });
 
-  it.only("receiver should be able to cancel an active payment", async () => {
+  it("receiver should be able to cancel an active payment", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     const preImage = getRandomBytes32();
     const timelock = (5000).toString();
@@ -384,10 +384,8 @@ describe.only("HashLock Transfers", () => {
 
     const { paymentId } = await sendHashlockTransfer(clientA, clientB, opts);
     await assertSenderDecrement(clientA, opts);
-    console.log("sender bal properly decremented");
     const { [clientB.signerAddress]: initialBal } = await clientB.getFreeBalance(transfer.assetId);
     expect(initialBal).to.eq(0);
-    console.log("receiver has 0 starting balance");
 
     await new Promise((resolve, reject) => {
       clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve);
@@ -403,12 +401,10 @@ describe.only("HashLock Transfers", () => {
     const { [clientA.signerAddress]: senderBal } = await clientA.getFreeBalance(transfer.assetId);
     const { [clientB.signerAddress]: receiverBal } = await clientB.getFreeBalance(transfer.assetId);
     expect(senderBal).to.eq(transfer.amount);
-    console.log("sender bal reverted");
     expect(receiverBal).to.eq(0);
-    console.log("receiver bal reverted");
   });
 
-  it.only("receiver should be able to refund an expired payment", async () => {
+  it("receiver should be able to cancel an expired payment", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     const preImage = getRandomBytes32();
     const timelock = (101).toString();
