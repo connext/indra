@@ -10,13 +10,13 @@ import {
   SimpleLinkedTransferAppAction,
   GraphSignedTransferAppAction,
   AppInstanceJson,
-  HashLockTransferAppState,
 } from "@connext/types";
-import { stringify, getRandomBytes32, toBN } from "@connext/utils";
-import { BigNumber } from "ethers";
+import { stringify, toBN } from "@connext/utils";
+import { BigNumber, constants } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
+const { HashZero } = constants;
 export class ResolveTransferController extends AbstractController {
   public resolveTransfer = async (
     params: PublicParams.ResolveCondition,
@@ -286,57 +286,20 @@ export class ResolveTransferController extends AbstractController {
       sender: paymentApp.meta.sender,
     };
 
-    switch (conditionType) {
-      case ConditionalTransferTypes.HashLockTransfer: {
-        // if it is the sender app, can only cancel if the app has expired
-        const state = paymentApp.latestState as HashLockTransferAppState;
-        const isSender = state.coinTransfers[0].to === this.connext.signerAddress;
-
-        if (isSender) {
-          // uninstall app
-          this.log.info(
-            `[${paymentId}] Uninstalling transfer app without action ${paymentApp.identityHash}`,
-          );
-          await this.connext.uninstallApp(paymentApp.identityHash);
-          this.log.info(
-            `[${paymentId}] Finished uninstalling transfer app ${paymentApp.identityHash}`,
-          );
-          return ret;
-        }
-
-        let action = undefined;
-        if (toBN(await this.ethProvider.getBlockNumber()).lt(toBN(state.expiry))) {
-          // uninstall with bad action iff the app is active, otherwise just
-          // uninstall
-          action = { preImage: getRandomBytes32() };
-        }
-        this.log.info(
-          `[${paymentId}] Uninstalling transfer app with empty action ${paymentApp.identityHash}`,
-        );
-        console.log(`uninstalling payment with action`, action);
-        await this.connext.uninstallApp(paymentApp.identityHash, action);
-        this.log.info(
-          `[${paymentId}] Finished uninstalling transfer app ${paymentApp.identityHash}`,
-        );
-        return ret;
-      }
-      case ConditionalTransferTypes.GraphTransfer:
-      case ConditionalTransferTypes.SignedTransfer:
-      case ConditionalTransferTypes.LinkedTransfer: {
-        // uninstall the app without taking action
-        this.log.info(
-          `[${paymentId}] Uninstalling transfer app without action ${paymentApp.identityHash}`,
-        );
-        await this.connext.uninstallApp(paymentApp.identityHash);
-        this.log.info(
-          `[${paymentId}] Finished uninstalling transfer app ${paymentApp.identityHash}`,
-        );
-        return ret;
-      }
-      default: {
-        const c: never = conditionType;
-        throw new Error(`Unable to cancel payment, unsupported condition ${c}`);
-      }
+    let action: HashLockTransferAppAction | undefined = undefined;
+    // IFF payment app has an expiry, the app has not expired, and the user
+    // is the receiver of the payment, play an invalid action
+    const state = paymentApp.latestState as any;
+    const block = await this.ethProvider.getBlockNumber();
+    if (
+      state.coinTransfers[0].to === this.connext.signerAddress &&
+      toBN(state.expiry || 0).gt(block)
+    ) {
+      action = { preImage: HashZero };
     }
+    this.log.info(`[${paymentId}] Uninstalling transfer app with action ${stringify(action)}`);
+    await this.connext.uninstallApp(paymentApp.identityHash, action);
+    this.log.info(`[${paymentId}] Uninstalled transfer app ${paymentApp.identityHash}`);
+    return ret;
   }
 }
