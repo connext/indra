@@ -1,12 +1,4 @@
-import {
-  DataTypes,
-  Op,
-  Sequelize,
-  Transaction,
-  ModelAttributes,
-  Sequelize,
-  ModelCtor,
-} from "sequelize";
+import { DataTypes, Op, Sequelize, Transaction, ModelAttributes } from "sequelize";
 import { mkdirSync } from "fs";
 import { dirname } from "path";
 
