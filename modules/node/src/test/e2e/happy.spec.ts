@@ -16,6 +16,7 @@ import { AppModule } from "../../app.module";
 import { ConfigService } from "../../config/config.service";
 
 import { env, expect, MockConfigService } from "../utils";
+import { TransactionResponse } from "@ethersproject/providers";
 
 const { AddressZero } = constants;
 const { parseEther } = utils;
@@ -30,7 +31,7 @@ describe("Happy path", () => {
 
   before(async () => {
     const start = Date.now();
-    let tx;
+    let tx: TransactionResponse;
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
