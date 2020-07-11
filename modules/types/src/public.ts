@@ -53,8 +53,8 @@ type HashLockTransferResponse = {
 type ResolveHashLockTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.HashLockTransfer;
   assetId: Address;
-  paymentId?: Bytes32;
-  preImage: Bytes32;
+  paymentId: Bytes32;
+  preImage?: Bytes32;
 };
 
 type ResolveHashLockTransferResponse = {
@@ -87,7 +87,7 @@ type LinkedTransferResponse = {
 type ResolveLinkedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.LinkedTransfer;
   paymentId: Bytes32;
-  preImage: Bytes32;
+  preImage?: Bytes32;
 };
 
 type ResolveLinkedTransferResponse = {
@@ -122,8 +122,8 @@ type SignedTransferResponse = {
 type ResolveSignedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.SignedTransfer;
   paymentId: Bytes32;
-  data: Bytes32;
-  signature: SignatureString;
+  data?: Bytes32;
+  signature?: SignatureString;
 };
 
 type ResolveSignedTransferResponse = {
@@ -159,8 +159,8 @@ type GraphSignedTransferResponse = {
 type ResolveGraphSignedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.GraphTransfer;
   paymentId: Bytes32;
-  responseCID: Bytes32;
-  signature: SignatureString;
+  responseCID?: Bytes32;
+  signature?: SignatureString;
 };
 
 type ResolveGraphSignedTransferResponse = {

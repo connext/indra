@@ -325,12 +325,6 @@ export class ConnextClient implements IConnextClient {
   public resolveCondition = async (
     params: PublicParams.ResolveCondition,
   ): Promise<PublicResults.ResolveCondition> => {
-    // paymentId is generated for hashlock transfer
-    if (params.conditionType === ConditionalTransferTypes.HashLockTransfer && !params.paymentId) {
-      const lockHash = soliditySha256(["bytes32"], [params.preImage]);
-      const paymentId = soliditySha256(["address", "bytes32"], [params.assetId, lockHash]);
-      params.paymentId = paymentId;
-    }
     return this.resolveTransferController.resolveTransfer(params);
   };
 
@@ -378,7 +372,11 @@ export class ConnextClient implements IConnextClient {
     // object might not be in the store yet. We should still wait for at least 1 withdrawal
     const withdrawalsToFind = (await this.getUserWithdrawals()).length || 1;
 
-    this.log.info(`Watching for ${withdrawalsToFind} withdrawal${withdrawalsToFind === 1 ? "s" : ""} starting at block ${startingBlock}`);
+    this.log.info(
+      `Watching for ${withdrawalsToFind} withdrawal${
+        withdrawalsToFind === 1 ? "s" : ""
+      } starting at block ${startingBlock}`,
+    );
 
     const getTransactionResponse = async (
       tx: MinimalTransaction,
@@ -424,17 +422,39 @@ export class ConnextClient implements IConnextClient {
       return responses;
     };
 
-    return new Promise(async (resolve: any, reject: any): Promise<any> => {
+    return new Promise(
+      async (resolve: any, reject: any): Promise<any> => {
+        // First, start listener & process the next n blocks. If no withdrawal found, reject.
+        this.ethProvider.on(
+          "block",
+          async (blockNumber: number): Promise<void> => {
+            // in the `WithdrawalController` the user does not store the
+            // commitment until `takeAction` happens, so this may be 0
+            // meaning the withdrawal has not been saved to the store yet
+            (await checkForUserWithdrawals(blockNumber)).forEach(async ([storedValue, tx]) => {
+              if (tx) {
+                // && !transactions.some(t => t.hash === tx.hash)) {
+                this.log.info(`Found new tx at block ${tx.blockNumber} for withdrawal: ${tx.hash}`);
+                transactions.push(tx);
+                await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
+                  withdrawalObject: storedValue,
+                  remove: true,
+                });
+              }
+            });
+            if (blockNumber - startingBlock > blocksAhead) {
+              this.ethProvider.removeAllListeners("block");
+              return reject(`More than ${blocksAhead} have passed`);
+            }
+          },
+        );
 
-      // First, start listener & process the next n blocks. If no withdrawal found, reject.
-      this.ethProvider.on(
-        "block",
-        async (blockNumber: number): Promise<void> => {
-          // in the `WithdrawalController` the user does not store the
-          // commitment until `takeAction` happens, so this may be 0
-          // meaning the withdrawal has not been saved to the store yet
-          (await checkForUserWithdrawals(blockNumber)).forEach(async ([storedValue, tx]) => {
-            if (tx) { // && !transactions.some(t => t.hash === tx.hash)) {
+        // Second, look for withdrawals in the previous n blocks
+        for (let i = 0; i < blocksBehind; i++) {
+          // eslint-disable-next-line no-loop-func
+          (await checkForUserWithdrawals(startingBlock - i)).forEach(async ([storedValue, tx]) => {
+            if (tx) {
+              // && !transactions.some(t => t.hash === tx.hash)) {
               this.log.info(`Found new tx at block ${tx.blockNumber} for withdrawal: ${tx.hash}`);
               transactions.push(tx);
               await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
@@ -443,41 +463,23 @@ export class ConnextClient implements IConnextClient {
               });
             }
           });
-          if (blockNumber - startingBlock > blocksAhead) {
-            this.ethProvider.removeAllListeners("block");
-            return reject(`More than ${blocksAhead} have passed`);
-          }
-        },
-      );
-
-      // Second, look for withdrawals in the previous n blocks
-      for (let i = 0; i < blocksBehind; i++) {
-        // eslint-disable-next-line no-loop-func
-        (await checkForUserWithdrawals(startingBlock - i)).forEach(async ([storedValue, tx]) => {
-          if (tx) { // && !transactions.some(t => t.hash === tx.hash)) {
-            this.log.info(`Found new tx at block ${tx.blockNumber} for withdrawal: ${tx.hash}`);
-            transactions.push(tx);
-            await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
-              withdrawalObject: storedValue,
-              remove: true,
-            });
-          }
-        });
-      }
-
-      // Third, wait until the previous two steps have found all the withdrawals
-      while (true) {
-        const withdrawals = await this.getUserWithdrawals();
-        if (transactions.length > 0 && withdrawals.length < 1) {
-          this.log.info(`Found ${transactions.length} transactions, done looking for withdrawals`);
-          this.ethProvider.removeAllListeners("block");
-          return resolve(transactions);
-        } else {
-          await delay(500);
         }
-      }
 
-    });
+        // Third, wait until the previous two steps have found all the withdrawals
+        while (true) {
+          const withdrawals = await this.getUserWithdrawals();
+          if (transactions.length > 0 && withdrawals.length < 1) {
+            this.log.info(
+              `Found ${transactions.length} transactions, done looking for withdrawals`,
+            );
+            this.ethProvider.removeAllListeners("block");
+            return resolve(transactions);
+          } else {
+            await delay(500);
+          }
+        }
+      },
+    );
   };
 
   ////////////////////////////////////////
@@ -995,5 +997,4 @@ export class ConnextClient implements IConnextClient {
     }
     return undefined;
   };
-
 }

@@ -10,8 +10,9 @@ import {
   SimpleLinkedTransferAppAction,
   GraphSignedTransferAppAction,
   AppInstanceJson,
+  HashLockTransferAppState,
 } from "@connext/types";
-import { stringify } from "@connext/utils";
+import { stringify, getRandomBytes32, toBN } from "@connext/utils";
 import { BigNumber } from "ethers";
 
 import { AbstractController } from "./AbstractController";
@@ -47,6 +48,20 @@ export class ResolveTransferController extends AbstractController {
       });
       return;
     };
+
+    // Extract the secret object from the params;
+    if (!this.hasSecret(params)) {
+      // User is cancelling the payment
+      try {
+        console.log(`trying to cancel payment`);
+        const ret = await this.handleCancellation(params);
+        this.log.info(`[${paymentId}] resolveCondition complete: ${stringify(ret)}`);
+        return ret;
+      } catch (e) {
+        emitFailureEvent(e);
+        throw e;
+      }
+    }
 
     // Install app with receiver
     let appIdentityHash: string;
@@ -210,4 +225,118 @@ export class ResolveTransferController extends AbstractController {
     this.log.info(`[${paymentId}] resolveCondition complete: ${stringify(result)}`);
     return result;
   };
+
+  // Helper functions
+  private hasSecret(params: PublicParams.ResolveCondition): boolean {
+    const { conditionType, paymentId } = params;
+    switch (conditionType) {
+      case ConditionalTransferTypes.HashLockTransfer: {
+        const { preImage } = params as PublicParams.ResolveHashLockTransfer;
+        return !!preImage;
+      }
+      case ConditionalTransferTypes.GraphTransfer: {
+        const { responseCID, signature } = params as PublicParams.ResolveGraphTransfer;
+        return !!responseCID && !!signature;
+      }
+      case ConditionalTransferTypes.SignedTransfer: {
+        const { data, signature } = params as PublicParams.ResolveSignedTransfer;
+        return !!data && !!signature;
+      }
+      case ConditionalTransferTypes.LinkedTransfer: {
+        const { preImage } = params as PublicParams.ResolveLinkedTransfer;
+        return !!preImage;
+      }
+      default: {
+        const c: never = conditionType;
+        this.log.error(`[${paymentId}] Unsupported conditionType ${c}`);
+      }
+    }
+    throw new Error(`Invalid condition type: ${conditionType}`);
+  }
+
+  private async handleCancellation(
+    params: PublicParams.ResolveCondition,
+  ): Promise<PublicResults.ResolveCondition> {
+    const { conditionType, paymentId } = params;
+    const appDefinition = this.connext.appRegistry.find((app) => app.name === conditionType)
+      .appDefinitionAddress;
+    const apps = await this.connext.getAppInstances();
+    const paymentApp = apps.find((app) => {
+      const participants = (app.latestState as GenericConditionalTransferAppState).coinTransfers.map(
+        (t) => t.to,
+      );
+      return (
+        app.appDefinition === appDefinition &&
+        app.meta.paymentId === paymentId &&
+        participants.includes(this.connext.signerAddress)
+      );
+    });
+
+    if (!paymentApp) {
+      throw new Error(`Cannot find payment associated with ${paymentId}`);
+    }
+
+    const ret = {
+      appIdentityHash: paymentApp.identityHash,
+      amount: (paymentApp.latestState as GenericConditionalTransferAppState).coinTransfers[0]
+        .amount,
+      assetId: paymentApp.outcomeInterpreterParameters["tokenAddress"],
+      meta: paymentApp.meta,
+      paymentId: params.paymentId,
+      sender: paymentApp.meta.sender,
+    };
+
+    switch (conditionType) {
+      case ConditionalTransferTypes.HashLockTransfer: {
+        // if it is the sender app, can only cancel if the app has expired
+        const state = paymentApp.latestState as HashLockTransferAppState;
+        const isSender = state.coinTransfers[0].to === this.connext.signerAddress;
+
+        if (isSender) {
+          // uninstall app
+          this.log.info(
+            `[${paymentId}] Uninstalling transfer app without action ${paymentApp.identityHash}`,
+          );
+          await this.connext.uninstallApp(paymentApp.identityHash);
+          this.log.info(
+            `[${paymentId}] Finished uninstalling transfer app ${paymentApp.identityHash}`,
+          );
+          return ret;
+        }
+
+        let action = undefined;
+        if (toBN(await this.ethProvider.getBlockNumber()).lt(toBN(state.expiry))) {
+          // uninstall with bad action iff the app is active, otherwise just
+          // uninstall
+          action = { preImage: getRandomBytes32() };
+        }
+        this.log.info(
+          `[${paymentId}] Uninstalling transfer app with empty action ${paymentApp.identityHash}`,
+        );
+        console.log(`uninstalling payment with action`, action);
+        await this.connext.uninstallApp(paymentApp.identityHash, action);
+        this.log.info(
+          `[${paymentId}] Finished uninstalling transfer app ${paymentApp.identityHash}`,
+        );
+        return ret;
+      }
+      case ConditionalTransferTypes.GraphTransfer:
+      case ConditionalTransferTypes.SignedTransfer:
+      case ConditionalTransferTypes.LinkedTransfer: {
+        // uninstall the app without taking action
+        this.log.info(
+          `[${paymentId}] Uninstalling transfer app without action ${paymentApp.identityHash}`,
+        );
+        await this.connext.uninstallApp(paymentApp.identityHash);
+        this.log.info(
+          `[${paymentId}] Finished uninstalling transfer app ${paymentApp.identityHash}`,
+        );
+        return ret;
+      }
+      default: {
+        const c: never = conditionType;
+        throw new Error(`Unable to cancel payment, unsupported condition ${c}`);
+      }
+    }
+  }
 }
