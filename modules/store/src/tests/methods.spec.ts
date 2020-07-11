@@ -99,7 +99,7 @@ describe("Methods", () => {
     });
   });
 
-  describe("incrementNumProposedApps", () => {
+  describe("updateNumProposedApps", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
         const store = await createStore(type as StoreTypes);
@@ -113,7 +113,14 @@ describe("Methods", () => {
           TEST_STORE_MINIMAL_TX,
           TEST_STORE_SET_STATE_COMMITMENT,
         );
-        await store.incrementNumProposedApps(channel.multisigAddress);
+        await store.updateNumProposedApps(
+          channel.multisigAddress,
+          channel.monotonicNumProposedApps + 1,
+          {
+            ...channel,
+            monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
+          },
+        );
         const retrieved = await store.getStateChannelByOwners(owners);
         expect(retrieved).to.deep.eq({
           ...channel,
@@ -239,7 +246,6 @@ describe("Methods", () => {
           app,
           channel.freeBalanceAppInstance!,
           freeBalanceSetState1,
-          TEST_STORE_CONDITIONAL_COMMITMENT,
         );
 
         // can be called multiple times in a row and preserve the data
@@ -287,6 +293,7 @@ describe("Methods", () => {
             proposal,
             channel.monotonicNumProposedApps,
             TEST_STORE_SET_STATE_COMMITMENT,
+            TEST_STORE_CONDITIONAL_COMMITMENT,
           );
           const retrieved = await store.getAppProposal(proposal.identityHash);
           expect(retrieved).to.deep.eq(proposal);
@@ -316,6 +323,7 @@ describe("Methods", () => {
           proposal,
           channel.monotonicNumProposedApps,
           TEST_STORE_SET_STATE_COMMITMENT,
+          TEST_STORE_CONDITIONAL_COMMITMENT,
         );
         // can be called multiple times in a row and preserve the data
         for (let i = 0; i < 3; i++) {

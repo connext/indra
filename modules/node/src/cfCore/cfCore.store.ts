@@ -291,20 +291,23 @@ export class CFCoreStore implements IStoreService {
     );
   }
 
-  async incrementNumProposedApps(multisigAddress: string): Promise<void> {
-    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+  async updateNumProposedApps(
+    multisigAddress: string,
+    numProposedApps: number,
+    stateChannel: StateChannelJSON,
+  ): Promise<void> {
     await getManager().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager
         .createQueryBuilder()
         .update(Channel)
         .set({
-          monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
+          monotonicNumProposedApps: numProposedApps,
         })
         .where("multisigAddress = :multisigAddress", { multisigAddress })
         .execute();
     });
     await this.cache.mergeCacheValues<StateChannelJSON>(`channel:multisig:${multisigAddress}`, 60, {
-      monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
+      monotonicNumProposedApps: numProposedApps,
     });
   }
 
