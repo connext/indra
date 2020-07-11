@@ -21,8 +21,14 @@ import {
   getTransferTypeFromAppName,
   DefaultApp,
   SupportedApplicationNames,
+  AppState,
+  AppAction,
+  HashLockTransferAppName,
+  GraphSignedTransferAppName,
+  SimpleSignedTransferAppName,
+  SimpleLinkedTransferAppName,
 } from "@connext/types";
-import { getAddressFromAssetId } from "@connext/utils";
+import { getAddressFromAssetId, safeJsonStringify, toBN, getRandomBytes32 } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { BigNumber, providers } from "ethers";
 
@@ -37,6 +43,7 @@ import { LoggerService } from "../logger/logger.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { TransferService } from "../transfer/transfer.service";
+import { GraphSignedTransferApp } from "@connext/contracts";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -177,6 +184,82 @@ export class AppRegistryService implements OnModuleInit {
     }
     this.log.info(
       `runPostInstallTasks for app ${registryAppInfo.name} ${appIdentityHash} completed`,
+    );
+  }
+
+  public async runPostUninstallTasks(
+    appName: SupportedApplicationNames,
+    app: AppInstanceJson,
+    latestState: AppState,
+  ): Promise<void> {
+    this.log.info(
+      `runPostUninstallTasks for ${appName} ${app.identityHash}, latest state ${safeJsonStringify(
+        latestState,
+      )} started`,
+    );
+    // if the uninstalled app was a cancelled transfer app or
+    // payment, uninstall corresponding sender/receiver payment
+    if (!Object.keys(ConditionalTransferAppNames).includes(appName)) {
+      this.log.info(`handleAppAction for app name ${appName} ${app.identityHash} complete`);
+      return;
+    }
+
+    const state = latestState as GenericConditionalTransferAppState;
+    const receiverAppUninstalled =
+      state.coinTransfers[0].to === (await this.configService.getSignerAddress());
+
+    if (toBN(state.coinTransfers[0].amount).isZero()) {
+      // payment is not being cancelled, nothing to handle on uninstall
+      this.log.info(`Payment was uninstalled but not cancelled, doing nothing.`);
+      this.log.info(`handleAppAction for app name ${appName} ${app.identityHash} complete`);
+      return;
+    }
+
+    this.log.info(`Payment uninstalled without balance change, proceeding with cancellation`);
+
+    // get the sender app for the payment
+    const secondLeg = receiverAppUninstalled
+      ? await this.transferService.findSenderAppByPaymentId(app.meta.paymentId)
+      : await this.transferService.findReceiverAppByPaymentId(app.meta.paymentId);
+    if (!secondLeg || secondLeg.type !== AppType.INSTANCE) {
+      this.log.warn(`No installed app found for second leg of payment`);
+      this.log.info(`handleAppAction for app name ${appName} ${app.identityHash} complete`);
+      return;
+    }
+
+    // Proceed with cancelling second leg of payment
+    let action = undefined;
+    switch (appName as ConditionalTransferAppNames) {
+      case HashLockTransferAppName: {
+        // if the app isnt expired, and node is receiver, uninstall with invalid
+        // action
+        const current = await this.configService.getEthProvider().getBlockNumber();
+        if (
+          toBN((state as HashLockTransferAppState).expiry).gt(current) &&
+          receiverAppUninstalled
+        ) {
+          action = { preImage: getRandomBytes32() };
+        }
+        break;
+      }
+      case GraphSignedTransferAppName:
+      case SimpleSignedTransferAppName:
+      case SimpleLinkedTransferAppName: {
+        // No expiry, just uninstall without action
+        break;
+      }
+      default: {
+        throw new Error(
+          `Unable to cancel payment, unsupported conditional transfer app ${appName}`,
+        );
+      }
+    }
+
+    // uninstall app without any action
+    await this.cfCoreService.uninstallApp(
+      secondLeg.identityHash,
+      secondLeg.channel.multisigAddress,
+      action,
     );
   }
 

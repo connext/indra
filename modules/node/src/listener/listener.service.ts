@@ -185,10 +185,10 @@ export default class ListenerService implements OnModuleInit {
       return;
     }
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
+      uninstalledApp.appDefinition,
+    );
     if (action) {
-      const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
-        uninstalledApp.appDefinition,
-      );
       await this.appActionsService.handleAppAction(
         appRegistryInfo.name as SupportedApplicationNames,
         uninstalledApp,
@@ -196,6 +196,13 @@ export default class ListenerService implements OnModuleInit {
         action as AppAction,
       );
     }
+
+    await this.appRegistryService.runPostUninstallTasks(
+      appRegistryInfo.name as SupportedApplicationNames,
+      uninstalledApp,
+      uninstalledApp.latestState as any, // AppState (excluding simple swap app)
+    );
+
     const assetIdResponder = (
       await this.appInstanceRepository.findByIdentityHashOrThrow(data.data.appIdentityHash)
     ).responderDepositAssetId;

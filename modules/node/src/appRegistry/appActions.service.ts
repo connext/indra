@@ -27,7 +27,7 @@ export class AppActionsService {
     private readonly transferService: TransferService,
     private readonly withdrawRepository: WithdrawRepository,
   ) {
-    this.log.setContext("AppRegistryService");
+    this.log.setContext("AppActionsService");
   }
 
   async handleAppAction(
