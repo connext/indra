@@ -450,8 +450,8 @@ export class AppRegistryService implements OnModuleInit {
     // only allow sender uninstall prior to receiver uninstall IFF the hub
     // has not paid receiver. Receiver app will be uninstalled again on event
     if (
-      senderAppLatestState.coinTransfers[1].amount.isZero() && // not reclaimed
-      receiverApp.latestState.coinTransfers[0].amount.isZero() // finalized
+      toBN(senderAppLatestState.coinTransfers[1].amount).isZero() && // not reclaimed
+      toBN(receiverApp.latestState.coinTransfers[0].amount).isZero() // finalized
     ) {
       throw new Error(
         `Cannot uninstall unfinalized sender app, receiver app has payment has been completed`,
