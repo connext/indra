@@ -26,7 +26,7 @@ const { soliditySha256 } = utils;
 
 const TIMEOUT_BUFFER = 100; // This currently isn't exported by the node so must be hardcoded
 
-describe.only("HashLock Transfers", () => {
+describe("HashLock Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
@@ -309,14 +309,16 @@ describe.only("HashLock Transfers", () => {
     const { paymentId } = await sendHashlockTransfer(clientA, clientB, opts);
 
     const badPreImage = getRandomBytes32();
-    await expect(
-      clientB.resolveCondition({
-        conditionType: ConditionalTransferTypes.HashLockTransfer,
-        preImage: badPreImage,
-        paymentId: paymentId!,
-        assetId: transfer.assetId,
-      } as PublicParams.ResolveHashLockTransfer),
-    ).to.eventually.be.rejectedWith(/app has not been installed/);
+    await clientB.resolveCondition({
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      preImage: badPreImage,
+      paymentId: paymentId!,
+      assetId: transfer.assetId,
+    } as PublicParams.ResolveHashLockTransfer);
+
+    // verfy payment did not go through
+    const { [clientB.signerAddress]: receiverBal } = await clientB.getFreeBalance(transfer.assetId);
+    expect(receiverBal).to.eq(0);
   });
 
   // NOTE: if the node tries to collateralize or send a transaction during
