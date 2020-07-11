@@ -49,14 +49,18 @@ export class RejectInstallController extends MethodController {
   ): Promise<MethodResults.RejectInstall> {
     const { store, messagingService, publicIdentifier } = requestHandler;
 
+    if (!preProtocolStateChannel) {
+      throw new Error("Could not find state channel in store to begin reject install with");
+    }
+
     const { appIdentityHash, reason } = params;
 
-    const proposal = preProtocolStateChannel!.proposedAppInstances.get(appIdentityHash);
+    const proposal = preProtocolStateChannel.proposedAppInstances.get(appIdentityHash);
 
     await store.removeAppProposal(
-      preProtocolStateChannel!.multisigAddress,
+      preProtocolStateChannel.multisigAddress,
       appIdentityHash,
-      preProtocolStateChannel!.removeProposal(appIdentityHash).toJson(),
+      preProtocolStateChannel.removeProposal(appIdentityHash).toJson(),
     );
 
     const rejectProposalMsg: RejectProposalMessage = {

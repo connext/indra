@@ -76,9 +76,12 @@ export class InstallAppInstanceController extends MethodController {
     preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.Install> {
     const { protocolRunner, publicIdentifier, router } = requestHandler;
+    if (!preProtocolStateChannel) {
+      throw new Error("Could not find state channel in store to begin install protocol with");
+    }
 
     const postProtocolChannel = await install(
-      preProtocolStateChannel!,
+      preProtocolStateChannel,
       router,
       protocolRunner,
       params,
@@ -124,6 +127,12 @@ export async function install(
   const proposal = preProtocolStateChannel.proposedAppInstances.get(params.appIdentityHash)!;
   const isSame = initiatorIdentifier === proposal.initiatorIdentifier;
 
+  console.log(
+    `[${preProtocolStateChannel.multisigAddress}:cf::install:::pre] fb nonce:`,
+    preProtocolStateChannel.freeBalance.latestVersionNumber,
+    `, numApps: `,
+    preProtocolStateChannel.numProposedApps,
+  );
   const { channel: postProtocolChannel } = await protocolRunner.initiateProtocol(
     router,
     ProtocolNames.install,
@@ -134,6 +143,12 @@ export async function install(
       multisigAddress: preProtocolStateChannel.multisigAddress,
     } as ProtocolParams.Install,
     preProtocolStateChannel,
+  );
+  console.log(
+    `[${postProtocolChannel.multisigAddress}:cf::install:::post] fb nonce:`,
+    postProtocolChannel.freeBalance.latestVersionNumber,
+    `, numApps: `,
+    postProtocolChannel.numProposedApps,
   );
 
   return postProtocolChannel;

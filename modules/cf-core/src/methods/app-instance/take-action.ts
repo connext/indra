@@ -79,12 +79,16 @@ export class TakeActionController extends MethodController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
-    preProtocolStateChannel: StateChannel,
+    preProtocolStateChannel: StateChannel | undefined,
   ): Promise<MethodResults.TakeAction> {
     const { publicIdentifier, protocolRunner, router } = requestHandler;
     const { appIdentityHash, action, stateTimeout } = params;
 
-    const app = preProtocolStateChannel!.appInstances.get(appIdentityHash)!;
+    if (!preProtocolStateChannel) {
+      throw new Error("Could not find state channel in store to begin takeAction protocol with");
+    }
+
+    const app = preProtocolStateChannel.appInstances.get(appIdentityHash)!;
 
     const { channel } = await runTakeActionProtocol(
       appIdentityHash,

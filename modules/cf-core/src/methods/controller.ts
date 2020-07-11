@@ -29,35 +29,41 @@ export abstract class MethodController {
       substart = Date.now();
     }
 
-    let result: MethodResult | undefined;
-    let error: Error | undefined;
-    let preProtocolStateChannel: StateChannel | undefined;
-    try {
-      // GET CHANNEL BEFORE EXECUTION
+    // Helper function
+    const fetchChannel = async (): Promise<StateChannel | undefined> => {
       if ((params as any).multisigAddress) {
         const json = await requestHandler.store.getStateChannel((params as any).multisigAddress);
-        preProtocolStateChannel = json && StateChannel.fromJson(json);
+        return json && StateChannel.fromJson(json);
       } else if ((params as any).responderIdentifier) {
         // TODO: should be able to to all of this with multisig address but its not showing up in some cases
         const json = await requestHandler.store.getStateChannelByOwners([
           (params as any).responderIdentifier,
           requestHandler.publicIdentifier,
         ]);
-        preProtocolStateChannel = json && StateChannel.fromJson(json);
+        return json && StateChannel.fromJson(json);
       }
+      return undefined;
+    };
+
+    let result: MethodResult | undefined;
+    let error: Error | undefined;
+    let preProtocolStateChannel: StateChannel | undefined;
+    try {
+      // GET CHANNEL BEFORE EXECUTION
+      preProtocolStateChannel = await fetchChannel();
       result = await this.beforeExecution(requestHandler, params, preProtocolStateChannel);
       logTime(log, substart, "Before execution complete");
       substart = Date.now();
 
       // GET UPDATED CHANNEL FROM EXECUTION
       result =
-        result ||
-        (await this.executeMethodImplementation(requestHandler, params, preProtocolStateChannel));
+        (await this.executeMethodImplementation(requestHandler, params, preProtocolStateChannel)) ||
+        result;
       logTime(log, substart, "Executed method implementation");
       substart = Date.now();
 
       // USE RETURNED VALUE IN AFTER EXECUTION
-      await this.afterExecution(requestHandler, params, result);
+      await this.afterExecution(requestHandler, params, result as any);
       logTime(log, substart, "After execution complete");
       substart = Date.now();
     } catch (e) {
@@ -65,12 +71,12 @@ export abstract class MethodController {
     }
 
     // retry if error
-    if (preProtocolStateChannel && !!error && this.methodName !== MethodNames.chan_sync) {
+    const syncable =
+      this.methodName !== MethodNames.chan_sync && this.methodName !== MethodNames.chan_create;
+    if (preProtocolStateChannel && !!error && syncable) {
       // dispatch sync rpc call
       log.warn(
-        `Caught error while running protocol, syncing channels and retrying ${this.methodName}. ${
-          error!.message
-        }`,
+        `Caught error while running protocol, syncing channels and retrying ${this.methodName}. ${error.message}`,
       );
 
       const { publicIdentifier, protocolRunner, router } = requestHandler;
@@ -78,19 +84,36 @@ export abstract class MethodController {
         preProtocolStateChannel.initiatorIdentifier,
         preProtocolStateChannel.responderIdentifier,
       ].find((identifier) => identifier !== publicIdentifier)!;
+      console.log(
+        `[${preProtocolStateChannel.multisigAddress}:cf::${this.methodName}:::pre-sync] fb nonce:`,
+        preProtocolStateChannel.freeBalance.latestVersionNumber,
+        `, numApps: `,
+        preProtocolStateChannel.numProposedApps,
+      );
       try {
-        const { channel } = await protocolRunner.initiateProtocol(router, ProtocolNames.sync, {
-          multisigAddress: preProtocolStateChannel.multisigAddress,
-          initiatorIdentifier: publicIdentifier,
-          responderIdentifier,
-        });
+        const { channel } = await protocolRunner.initiateProtocol(
+          router,
+          ProtocolNames.sync,
+          {
+            multisigAddress: preProtocolStateChannel.multisigAddress,
+            initiatorIdentifier: publicIdentifier,
+            responderIdentifier,
+          },
+          preProtocolStateChannel,
+        );
         log.debug(`Channel synced, retrying ${this.methodName} with ${channel.toJson()}`);
+        console.log(
+          `[${preProtocolStateChannel.multisigAddress}:cf::${this.methodName}:::post-sync] fb nonce:`,
+          preProtocolStateChannel.freeBalance.latestVersionNumber,
+          `, numApps: `,
+          preProtocolStateChannel.numProposedApps,
+        );
         result = await this.beforeExecution(requestHandler, params, channel);
         result =
-          result || (await this.executeMethodImplementation(requestHandler, params, channel));
+          (await this.executeMethodImplementation(requestHandler, params, channel)) || result;
         log.info(`Protocol ${this.methodName} successfully executed after sync`);
 
-        await this.afterExecution(requestHandler, params, result);
+        await this.afterExecution(requestHandler, params, result!);
         logTime(log, substart, "After execution complete");
 
         error = undefined;

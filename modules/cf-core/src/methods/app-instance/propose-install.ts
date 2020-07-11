@@ -94,7 +94,16 @@ export class ProposeInstallAppInstanceController extends MethodController {
     const { protocolRunner, publicIdentifier, router } = requestHandler;
 
     const { responderIdentifier, stateTimeout, defaultTimeout } = params;
+    if (!preProtocolStateChannel) {
+      throw new Error("Could not find state channel in store to begin propose protocol with");
+    }
 
+    console.log(
+      `[${preProtocolStateChannel!.multisigAddress}:cf::propose:::pre] fb nonce:`,
+      preProtocolStateChannel!.freeBalance.latestVersionNumber,
+      `, numApps: `,
+      preProtocolStateChannel!.numProposedApps,
+    );
     const { channel: updated }: { channel: StateChannel } = await protocolRunner.initiateProtocol(
       router,
       ProtocolNames.propose,
@@ -104,7 +113,13 @@ export class ProposeInstallAppInstanceController extends MethodController {
         initiatorIdentifier: publicIdentifier,
         responderIdentifier: responderIdentifier,
       },
-      preProtocolStateChannel!,
+      preProtocolStateChannel,
+    );
+    console.log(
+      `[${updated.multisigAddress}:cf::propose:::post] fb nonce:`,
+      updated.freeBalance.latestVersionNumber,
+      `, numApps: `,
+      updated.numProposedApps,
     );
     return { appIdentityHash: updated.mostRecentlyProposedAppInstance().identityHash };
   }
