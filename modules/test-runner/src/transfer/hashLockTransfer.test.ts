@@ -470,7 +470,9 @@ describe("HashLock Transfers", () => {
     ).to.be.fulfilled;
   });
 
-  it.only("can send concurrent hashlock transfers", async () => {
+  // FIXME: may not work depending on collateral, will expect some payment
+  // errors even with a small number of payments until this is handled better
+  it.skip("can send concurrent hashlock transfers", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT.div(5), assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount.mul(5), transfer.assetId);
     await fundChannel(clientB, transfer.amount.mul(5), transfer.assetId);
