@@ -79,6 +79,9 @@ export abstract class MethodController {
         `Caught error while running protocol, syncing channels and retrying ${this.methodName}. ${error.message}`,
       );
 
+      // FETCH ONE MORE TIME, NEEDED IN CASE ERROR HAPPENED IN AFTER EXECUTION
+      preProtocolStateChannel = (await fetchChannel())!;
+
       const { publicIdentifier, protocolRunner, router } = requestHandler;
       const responderIdentifier = [
         preProtocolStateChannel.initiatorIdentifier,
