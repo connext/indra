@@ -34,16 +34,26 @@ contract HashLockTransferApp is CounterfactualApp {
   {
     AppState memory state = abi.decode(encodedState, (AppState));
     Action memory action = abi.decode(encodedAction, (Action));
-    bytes32 generatedHash = sha256(abi.encode(action.preImage));
 
     require(!state.finalized, "Cannot take action on finalized state");
     require(block.number < state.expiry, "Cannot take action if expiry is expired");
-    if (state.lockHash == generatedHash) {
-      // correct preimage, send payment to receiver
-      state.coinTransfers[1].amount = state.coinTransfers[0].amount;
-      state.coinTransfers[0].amount = 0;
-      state.preImage = action.preImage;
+
+    // Handle cancellation
+    if (action.preImage == bytes32(0)) {
+      state.finalized = true;
+
+      return abi.encode(state);
     }
+
+    // Handle payment
+    bytes32 generatedHash = sha256(abi.encode(action.preImage));
+    require(
+      state.lockHash == generatedHash,
+      "Hash generated from preimage does not match hash in state"
+    );
+    state.coinTransfers[1].amount = state.coinTransfers[0].amount;
+    state.coinTransfers[0].amount = 0;
+    state.preImage = action.preImage;
     state.finalized = true;
 
     return abi.encode(state);

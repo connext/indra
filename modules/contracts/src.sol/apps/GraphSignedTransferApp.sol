@@ -91,6 +91,14 @@ contract GraphSignedTransferApp is CounterfactualApp {
 
     require(!state.finalized, "Cannot take action on finalized state");
 
+    // Handle cancellation
+    if (action.responseCID == bytes32(0)) {
+      state.finalized = true;
+
+      return abi.encode(state);
+    }
+
+    // Handle payment
     require(
       state.signerAddress == recoverAttestationSigner(action, state),
       "Incorrect signer recovered from signature"
