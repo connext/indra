@@ -1,7 +1,9 @@
-import { RedisModule } from "../redis/redis.module";
+import { delay } from "@connext/utils";
 import { Test } from "@nestjs/testing";
-import { RedisProviderId } from "../constants";
 import Redis from "ioredis";
+
+import { RedisModule } from "../redis/redis.module";
+import { RedisProviderId } from "../constants";
 import { MemoLock } from "./memo-lock";
 import { LoggerModule } from "../logger/logger.module";
 import { LoggerService } from "../logger/logger.service";
@@ -25,14 +27,32 @@ describe("MemoLock", () => {
 
   describe("with a common lock", () => {
     let module: MemoLock;
+    const TTL = 5000;
 
     beforeEach(async () => {
-      module = new MemoLock(log, redis, 5, 5000, 100);
+      module = new MemoLock(log, redis, 5, TTL, 100);
       await module.setupSubs();
     });
 
     afterEach(async () => {
       await module.stopSubs();
+    });
+
+    it("should not allow locks to simultaneously access resources", async () => {
+      const store = { test: "value" };
+      const callback = async (lockName: string, wait: number = TTL / 2) => {
+        await delay(wait);
+        store.test = lockName;
+      };
+      const lock = await module.acquireLock("foo");
+      callback("round1").then(async () => {
+        await module.releaseLock("foo", lock);
+      });
+      const nextLock = await module.acquireLock("foo");
+      expect(nextLock).to.not.eq(lock);
+      await callback("round2", TTL / 4);
+      await module.releaseLock("foo", nextLock);
+      expect(store.test).to.be.eq("round2");
     });
 
     it("should allow locking to occur", async () => {
