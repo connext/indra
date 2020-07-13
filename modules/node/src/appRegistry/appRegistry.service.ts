@@ -219,6 +219,19 @@ export class AppRegistryService implements OnModuleInit {
     };
   };
 
+  /**
+   * For `RequireOnline` transfers, the flow is:
+   * - Sender initiates propose with node <LOCK MULTISIG SENDER-NODE>
+   * - Node responds to sender propose and creates app proposal <UNLOCK MULTISIG SENDER-NODE>
+   * - Node hears PROPOSE_INSTALL event for sender app and initiates propose with receiver <LOCK MULTISIG RECEIVER-NODE>
+   * - Receiver responds to node propose and creates app proposal <UNLOCK MULTISIG RECEIVER-NODE>
+   * - Receiver initiates install with node <LOCK MULTISIG RECEIVER-NODE>
+   * - Node responds to install with receiver and hits this installTransferMiddleware function:
+   *   - Node asserts that there is a sender app proposal that corresponds to the receiver app proposal
+   *   - Node initiates install with sender <LOCK MULTISIG SENDER-NODE>
+   *   - Sender responds to install and installs app <UNLOCK MULTISIG SENDER-NODE>
+   * - Node finishes responding to receiver install and installs app <UNLOCK MULTISIG RECEIVER-NODE>
+   */
   private installTransferMiddleware = async (appInstance: AppInstanceJson) => {
     const latestState = appInstance.latestState as HashLockTransferAppState;
     const senderAddress = latestState.coinTransfers[0].to;
@@ -236,8 +249,8 @@ export class AppRegistryService implements OnModuleInit {
 
     // this middleware is only relevant for require online
     if (
-      getTransferTypeFromAppName(registryAppInfo.name as SupportedApplicationNames) ===
-      "AllowOffline"
+      getTransferTypeFromAppName(registryAppInfo.name as SupportedApplicationNames) !==
+      "RequireOnline"
     ) {
       return;
     }
