@@ -707,12 +707,6 @@ export class StoreService implements IStoreService {
       ]),
       appInstances: stateChannel.appInstances.map(([id, app]) => [id, app]),
     };
-    console.log(
-      `[${stateChannel.multisigAddress}:store] fb nonce:`,
-      stateChannel.freeBalanceAppInstance.latestVersionNumber,
-      `, numApps: `,
-      stateChannel.monotonicNumProposedApps,
-    );
     return store;
   }
 
