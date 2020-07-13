@@ -121,14 +121,11 @@ export type ClientTestMessagingInputOpts = {
 export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> & { id?: string; logLevel?: number } = {},
 ): Promise<IConnextClient> => {
-  const { protocol, ceiling, signer: signerOpts, params } = opts;
-  const signer = signerOpts || getRandomChannelSigner(env.ethProviderUrl);
+  const { protocol, ceiling, params } = opts;
+  const signer = opts.signer || getRandomChannelSigner(env.ethProviderUrl);
   // no defaults specified, exit early
   if (Object.keys(opts).length === 0) {
-    const messaging = new TestMessagingService({
-      signer: signer as ChannelSigner,
-      stopOnCeilingReached: opts.stopOnCeilingReached,
-    });
+    const messaging = new TestMessagingService({ signer: signer as ChannelSigner });
     const emptyCount = { [SEND]: 0, [RECEIVED]: 0 };
     const noLimit = { [SEND]: NO_LIMIT, [RECEIVED]: NO_LIMIT };
     expect(messaging.installCount).to.contain(emptyCount);

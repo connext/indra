@@ -321,7 +321,9 @@ export class StateChannel {
       this.proposedAppInstances.entries(),
     );
 
-    proposedAppInstances.delete(appIdentityHash);
+    if (proposedAppInstances.has(appIdentityHash)) {
+      proposedAppInstances.delete(appIdentityHash);
+    }
 
     return this.build({
       proposedAppInstances,
@@ -363,15 +365,6 @@ export class StateChannel {
   }
 
   public installApp(appInstance: AppInstance, tokenIndexedDecrements: TokenIndexedCoinTransferMap) {
-    // Verify appInstance has expected signingkeys
-    const proposal = this.proposedAppInstances.has(appInstance.identityHash)
-      ? this.proposedAppInstances.get(appInstance.identityHash)
-      : undefined;
-
-    if (!proposal) {
-      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(appInstance.identityHash));
-    }
-
     /// Add modified FB and new AppInstance to appInstances
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 

@@ -29,8 +29,8 @@ import {
 } from "@connext/types";
 import {
   deBigNumberifyJson,
-  stringify,
   getPublicKeyFromPublicIdentifier,
+  stringify,
   toBN,
 } from "@connext/utils";
 import { Contract, constants } from "ethers";
@@ -73,10 +73,9 @@ export const createCFChannelProvider = async ({
       !skipSync, // sync all client channels on start up by default
     );
   } catch (e) {
-    console.error(
-      `Could not setup cf-core with sync protocol on, Error: ${e.message}. Trying again without syncing on start...`,
-    );
+    logger.error(`Could not setup cf-core & sync: ${e.message}. Trying again without syncing`);
   }
+
   if (!cfCore) {
     cfCore = await CFCore.create(
       messaging,

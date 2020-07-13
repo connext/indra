@@ -222,7 +222,7 @@ describe("Node method follows spec - install", () => {
               await expect(
                 makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress),
               ).to.eventually.be.rejectedWith(
-                `Counterparty execution of install failed: No proposed AppInstance exists for the given appIdentityHash`,
+                `No proposed AppInstance exists for the given appIdentityHash`,
               );
               done();
             },

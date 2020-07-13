@@ -27,7 +27,6 @@ export const cfCoreProviderFactory: Provider = {
     store: CFCoreStore,
   ): Promise<CFCore> => {
     log.setContext("CFCoreProvider");
-
     const networkContexts: NetworkContexts = [...config.providers.entries()].reduce(
       (nc, [chainId, provider]) => {
         nc[chainId] = {

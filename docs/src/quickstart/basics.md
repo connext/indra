@@ -6,7 +6,7 @@ This quickstart will guide you through instantiating the Connext client with a r
 
 Instantiating with a private key _should not_ be used in production environments - once you get through this guide, we recommend looking through the [React Native Integration](../how-to/integrate-react-native) guide for better patterns.
 
-We will connect to a testnet (Rinkeby) node hosted at `https://rinkeby.indra.connext.network/api/messaging` using the Connext client. If you don't have any Rinkeby ETH, we recommend you get some from a [faucet](https://faucet.rinkeby.io/) before continuing with this guide.
+We will connect to a testnet (Rinkeby) node hosted at `https://rinkeby.indra.connext.network` using the Connext client. If you don't have any Rinkeby ETH, we recommend you get some from a [faucet](https://faucet.rinkeby.io/) before continuing with this guide.
 
 ## Setting up a Channel
 

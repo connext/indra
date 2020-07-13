@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from "ty
 import { BigNumber } from "ethers";
 
 import { Channel } from "../channel/channel.entity";
+import { transformBN } from "../utils";
 import { IsBytes32, IsEthAddress } from "../validate";
 
 @Entity()
@@ -9,12 +10,7 @@ export class SetupCommitment {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column("text", {
-    transformer: {
-      from: (value: string): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
+  @Column("text", { transformer: transformBN })
   value!: BigNumber;
 
   @Column("text")

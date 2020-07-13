@@ -16,24 +16,27 @@ import { IsKeccak256Hash, IsEthAddress } from "../validate";
 export class SetStateCommitment {
   @PrimaryColumn("text")
   @IsKeccak256Hash()
-  appIdentityHash!: string;
+  appIdentityHash!: HexString;
 
   @Column("jsonb")
   appIdentity!: AppIdentity;
 
   @Column("text")
   @IsKeccak256Hash()
-  appStateHash!: string;
+  appStateHash!: HexString;
 
   @Column("text")
   @IsEthAddress()
-  challengeRegistryAddress!: string;
+  challengeRegistryAddress!: HexString;
 
   @Column("jsonb", { nullable: true })
   signatures!: string[];
 
   @Column("text", { nullable: true })
   stateTimeout!: HexString;
+
+  @Column("text")
+  transactionData!: HexString;
 
   @Column("integer")
   versionNumber!: number;

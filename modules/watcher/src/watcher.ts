@@ -382,9 +382,9 @@ export class Watcher implements IWatcher {
         // something went wrong, remove pending status
         await this.updateChallengeStatus(challenge.status, challenge);
         this.log.warn(
-          `Failed to respond to challenge: ${e.stack || e.message}. Challenge: ${stringify(
-            challenge,
-          )}`,
+          `Failed to respond to challenge: ${e?.body?.error?.message || e.message}. Challenge: ${
+            stringify(challenge)
+          }`,
         );
       }
     }
@@ -927,17 +927,18 @@ export class Watcher implements IWatcher {
         this.log.info(`Successfully sent transaction ${receipt.transactionHash}`);
         return receipt;
       } catch (e) {
-        errors[attempt] = e.message;
-        const knownErr = KNOWN_ERRORS.find((err) => e.message.includes(err));
+        const message = e?.body?.error?.message || e.message;
+        errors[attempt] = message;
+        const knownErr = KNOWN_ERRORS.find((err) => message.includes(err));
         if (!knownErr) {
           // unknown error, do not retry
-          this.log.error(`Failed to send transaction: ${e.stack || e.message}`);
-          const msg = `Error sending transaction: ${e.stack || e.message}`;
+          this.log.error(`Failed to send transaction: ${message}`);
+          const msg = `Error sending transaction: ${message}`;
           return msg;
         }
         // known error, retry
         this.log.warn(
-          `Sending transaction attempt ${attempt}/${MAX_RETRIES} failed: ${e.message}. Retrying.`,
+          `Sending transaction attempt ${attempt}/${MAX_RETRIES} failed: ${message}. Retrying.`,
         );
       }
     }

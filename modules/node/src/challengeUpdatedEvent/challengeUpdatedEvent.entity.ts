@@ -1,3 +1,5 @@
+import { AppName, Bytes32, ChallengeUpdatedEventPayload, ChallengeStatus } from "@connext/types";
+import { BigNumber } from "ethers";
 import {
   PrimaryGeneratedColumn,
   Entity,
@@ -8,9 +10,7 @@ import {
 } from "typeorm";
 
 import { Challenge } from "../challenge/challenge.entity";
-import { AppName, Bytes32, ChallengeUpdatedEventPayload, ChallengeStatus } from "@connext/types";
-import { BigNumber } from "ethers";
-import { toBN } from "@connext/utils";
+import { transformBN } from "../utils";
 import { IsKeccak256Hash } from "../validate";
 
 export const entityToChallengeUpdatedPayload = (
@@ -42,20 +42,10 @@ export class ChallengeUpdatedEvent<T extends AppName = any> {
   @IsKeccak256Hash()
   appStateHash!: Bytes32;
 
-  @Column("text", {
-    transformer: {
-      from: (value: string): BigNumber => toBN(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
+  @Column("text", { transformer: transformBN })
   versionNumber!: BigNumber;
 
-  @Column("text", {
-    transformer: {
-      from: (value: string): BigNumber => toBN(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
+  @Column("text", { transformer: transformBN })
   finalizesAt!: BigNumber;
 
   @Column({ type: "enum", enum: ChallengeStatus })

@@ -1,62 +1,24 @@
-import {
-  HashLockTransferAppName,
-  HashLockTransferAppState,
-  HashLockTransferStatus,
-  Address,
-  Bytes32,
-} from "@connext/types";
-import { bigNumberifyJson } from "@connext/utils";
+import { HashLockTransferAppName, HashLockTransferStatus, Address, Bytes32 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
-import { constants } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
-import { AppType, AppInstance } from "../appInstance/appInstance.entity";
+import { AppInstance } from "../appInstance/appInstance.entity";
 
 import { HashlockTransferRepository } from "./hashlockTransfer.repository";
-
-const { HashZero } = constants;
+import { appStatusesToTransferWithExpiryStatus } from "../utils";
 
 const appStatusesToHashLockTransferStatus = (
   currentBlockNumber: number,
   senderApp: AppInstance<typeof HashLockTransferAppName>,
   receiverApp?: AppInstance<typeof HashLockTransferAppName>,
 ): HashLockTransferStatus | undefined => {
-  if (!receiverApp) {
-    return undefined;
-  }
-  const latestState = bigNumberifyJson(receiverApp.latestState) as HashLockTransferAppState;
-  const { expiry: senderExpiry } = latestState;
-  const isSenderExpired = senderExpiry.lt(currentBlockNumber);
-  const isReceiverExpired = !senderApp ? false : latestState.expiry.lt(currentBlockNumber);
-  // pending iff no receiver app + not expired
-  if (!senderApp) {
-    return isSenderExpired ? HashLockTransferStatus.EXPIRED : HashLockTransferStatus.PENDING;
-  } else if (senderApp.latestState.preImage !== HashZero || latestState.preImage !== HashZero) {
-    return HashLockTransferStatus.COMPLETED;
-  } else if (
-    senderApp.type === AppType.REJECTED ||
-    receiverApp.type === AppType.REJECTED ||
-    senderApp.type === AppType.UNINSTALLED ||
-    receiverApp.type === AppType.UNINSTALLED
-  ) {
-    return HashLockTransferStatus.FAILED;
-  } else if (isReceiverExpired && receiverApp.type === AppType.INSTANCE) {
-    // iff there is a receiver app, check for expiry
-    // do this last bc could be retrieving historically
-    return HashLockTransferStatus.EXPIRED;
-  } else if (!isReceiverExpired && receiverApp.type === AppType.INSTANCE) {
-    // iff there is a receiver app, check for expiry
-    // do this last bc could be retrieving historically
-    return HashLockTransferStatus.PENDING;
-  } else {
-    throw new Error(
-      `Could not determine hash lock transfer status. Sender app type: ${
-        senderApp && senderApp.type
-      }, receiver app type: ${receiverApp && receiverApp.type}`,
-    );
-  }
+  return appStatusesToTransferWithExpiryStatus<typeof HashLockTransferAppName>(
+    currentBlockNumber,
+    senderApp,
+    receiverApp,
+  );
 };
 
 @Injectable()

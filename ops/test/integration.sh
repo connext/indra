@@ -38,6 +38,7 @@ else
     --env="INDRA_ETH_RPC_URL_2=$ETH_RPC_URL_2" \
     --env="INDRA_NATS_URL=$NATS_URL" \
     --env="INDRA_NODE_URL=$NODE_URL" \
+    --env="INDRA_PROXY_URL=http://proxy:80" \
     --env="NODE_ENV=development" \
     --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
     --mount="type=bind,source=`pwd`,target=/root" \
@@ -58,6 +59,7 @@ exec docker run \
   --env="INDRA_ETH_RPC_URL_2=$ETH_RPC_URL_2" \
   --env="INDRA_NATS_URL=$NATS_URL" \
   --env="INDRA_NODE_URL=$NODE_URL" \
+  --env="INDRA_PROXY_URL=https://proxy:443" \
   --env="NODE_ENV=production" \
   --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
   --name="$name" \

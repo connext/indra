@@ -8,9 +8,6 @@ RUN curl https://raw.githubusercontent.com/vishnubob/wait-for-it/ed77b63706ea721
 
 COPY modules/bot/package.json package.json
 RUN npm install --only=production > /dev/null 2>&1
-# In staging mode we bundle source from @connext packages into the node bundle
-# This means the node bundle needs access to the deps for @connext packages too
-RUN cp -r node_modules/@connext/*/node_modules/* node_modules
 COPY modules/bot/ops ops
 COPY modules/bot/dist dist
 # used to fund agents

@@ -1,4 +1,4 @@
-import { MethodName, MethodParam, MethodResult, ProtocolNames } from "@connext/types";
+import { MethodName, MethodParam, MethodResult, ProtocolNames, MethodNames } from "@connext/types";
 import { capitalize, logTime, stringify } from "@connext/utils";
 
 import { RequestHandler } from "../request-handler";
@@ -61,12 +61,11 @@ export abstract class MethodController {
       logTime(log, substart, "After execution complete");
       substart = Date.now();
     } catch (e) {
-      log.error(`Caught error in method controller: ${e.stack}`);
       error = e;
     }
 
     // retry if error
-    if (preProtocolStateChannel && !!error) {
+    if (preProtocolStateChannel && !!error && this.methodName !== MethodNames.chan_sync) {
       // dispatch sync rpc call
       log.warn(
         `Caught error while running protocol, syncing channels and retrying ${this.methodName}. ${

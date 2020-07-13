@@ -48,7 +48,11 @@ export interface IStoreService extends IWatcherStoreService {
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void>;
 
-  incrementNumProposedApps(multisigAddress: string): Promise<void>;
+  updateNumProposedApps(
+    multisigAddress: string,
+    numProposedApps: number,
+    stateChannel?: StateChannelJSON,
+  ): Promise<void>;
 
   ///// App proposals
   createAppProposal(
@@ -82,7 +86,7 @@ export interface IStoreService extends IWatcherStoreService {
   ): Promise<void>;
   removeAppInstance(
     multisigAddress: Address,
-    appIdentityHash: Bytes32,
+    appInstance: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
     stateChannel?: StateChannelJSON,

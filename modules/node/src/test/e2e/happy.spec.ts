@@ -48,14 +48,13 @@ describe("Happy path", () => {
     const ethProvider = configService.getEthProvider(1337);
     const sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC!).connect(ethProvider);
     log.info(`node: ${await configService.getSignerAddress()}`);
-    const nodeUrl = "http://localhost:8080";
 
     clientA = await connect({
       store: getMemoryStore(),
       signer: getRandomChannelSigner(ethProvider),
       ethProviderUrl,
-      messagingUrl: configService.getMessagingConfig().messagingUrl[0],
-      nodeUrl,
+      messagingUrl: env.messagingUrl,
+      nodeUrl: env.nodeUrl,
       loggerService: new ColorfulLogger("", env.logLevel, true, "A"),
     });
     log.info(`clientA: ${clientA.signerAddress}`);
@@ -67,8 +66,8 @@ describe("Happy path", () => {
       store: getMemoryStore(),
       signer: getRandomPrivateKey(),
       ethProviderUrl,
-      messagingUrl: configService.getMessagingConfig().messagingUrl[0],
-      nodeUrl,
+      messagingUrl: env.messagingUrl,
+      nodeUrl: env.nodeUrl,
       loggerService: new ColorfulLogger("", env.logLevel, true, "B"),
     });
     log.info(`clientB: ${clientB.signerAddress}`);
