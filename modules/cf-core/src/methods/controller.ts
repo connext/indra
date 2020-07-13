@@ -114,8 +114,9 @@ export abstract class MethodController {
           preProtocolStateChannel.numProposedApps,
         );
         result = await this.beforeExecution(requestHandler, params, channel);
+        // if result exists, the operation is a no-op (i.e. already been done)
         result =
-          (await this.executeMethodImplementation(requestHandler, params, channel)) || result;
+          result || (await this.executeMethodImplementation(requestHandler, params, channel));
         log.info(`Protocol ${this.methodName} successfully executed after sync`);
 
         await this.afterExecution(requestHandler, params, result!);

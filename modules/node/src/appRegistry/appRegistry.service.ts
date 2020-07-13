@@ -234,12 +234,12 @@ export class AppRegistryService implements OnModuleInit {
    */
   private installTransferMiddleware = async (appInstance: AppInstanceJson) => {
     const latestState = appInstance.latestState as HashLockTransferAppState;
-    const senderAddress = latestState.coinTransfers[0].to;
+    const installingAppSender = latestState.coinTransfers[0].to;
 
     const nodeSignerAddress = await this.configService.getSignerAddress();
 
     // if node is not sending funds, we dont need to do anything
-    if (senderAddress !== nodeSignerAddress) {
+    if (installingAppSender !== nodeSignerAddress) {
       return;
     }
 

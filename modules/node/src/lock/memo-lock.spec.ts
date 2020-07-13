@@ -13,10 +13,7 @@ describe("MemoLock", () => {
 
   before(async () => {
     const module = await Test.createTestingModule({
-      imports: [
-        RedisModule,
-        LoggerModule,
-      ],
+      imports: [RedisModule, LoggerModule],
     }).compile();
     redis = module.get<Redis.Redis>(RedisProviderId);
     log = await module.resolve<LoggerService>(LoggerService);
@@ -30,7 +27,7 @@ describe("MemoLock", () => {
     let module: MemoLock;
 
     beforeEach(async () => {
-      module = new MemoLock(log, redis, 5, 1000, 100);
+      module = new MemoLock(log, redis, 5, 5000, 100);
       await module.setupSubs();
     });
 
@@ -70,6 +67,19 @@ describe("MemoLock", () => {
       const lock = await module.acquireLock("foo");
       await module.releaseLock("foo", lock);
     });
+
+    it("should handle concurrent locking", async () => {
+      const start = Date.now();
+      const array = [1, 2, 3, 4];
+      await Promise.all(
+        array.map(async (i) => {
+          const lock = await module.acquireLock("foo");
+          await new Promise((resolve) => setTimeout(resolve, 800));
+          await module.releaseLock("foo", lock);
+          expect(Date.now() - start).to.be.gte(800 * i);
+        }),
+      );
+    });
   });
 
   it("should expire locks in TTL order", async () => {
@@ -78,29 +88,38 @@ describe("MemoLock", () => {
     await customModule.acquireLock("foo");
     let err: Error;
     let done = false;
-    customModule.acquireLock("foo")
+    customModule
+      .acquireLock("foo")
       .then(() => console.error(`Lock was unlocked - should not happen!`))
       .catch((e) => {
         err = e;
       });
-    setTimeout(() => customModule.acquireLock("foo").then(() => {
-      done = true;
-    }).catch((e) => console.error(`Caught error acquiring lock: ${e.stack}`)), 500);
     setTimeout(
-      () => customModule.pulse()
-        .catch((e) => console.error(`Caught error pulsing: ${e.stack}`)),
+      () =>
+        customModule
+          .acquireLock("foo")
+          .then(() => {
+            done = true;
+          })
+          .catch((e) => console.error(`Caught error acquiring lock: ${e.stack}`)),
+      500,
+    );
+    setTimeout(
+      () => customModule.pulse().catch((e) => console.error(`Caught error pulsing: ${e.stack}`)),
       1200,
     );
-    await new Promise((resolve, reject) => setTimeout(() => {
-      try {
-        expect(err).not.to.be.undefined;
-        expect(err!.message).to.contain("expired after");
-        expect(done).to.be.true;
-        resolve();
-      } catch (e) {
-        reject(e);
-      }
-    }, 2000));
+    await new Promise((resolve, reject) =>
+      setTimeout(() => {
+        try {
+          expect(err).not.to.be.undefined;
+          expect(err!.message).to.contain("expired after");
+          expect(done).to.be.true;
+          resolve();
+        } catch (e) {
+          reject(e);
+        }
+      }, 2000),
+    );
     await customModule.stopSubs();
   });
 });
