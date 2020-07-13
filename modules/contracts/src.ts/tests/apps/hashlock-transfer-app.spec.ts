@@ -147,9 +147,9 @@ describe("HashLockTransferApp", () => {
       validateOutcome(ret, expectedPostState);
     });
 
-    it("will not redeem a payment if an incorrect hash is given", async () => {
+    it("will cancel a payment if an empty action is given", async () => {
       const action: HashLockTransferAppAction = {
-        preImage: getRandomBytes32(), // incorrect hash
+        preImage: HashZero, // cancel hash
       };
 
       let ret = await applyAction(preState, action);
@@ -182,6 +182,16 @@ describe("HashLockTransferApp", () => {
 
       ret = await computeOutcome(afterActionState);
       validateOutcome(ret, expectedPostState);
+    });
+
+    it("will not redeem a payment if an incorrect hash is given", async () => {
+      const action: HashLockTransferAppAction = {
+        preImage: getRandomBytes32(), // incorrect hash
+      };
+
+      await expect(applyAction(preState, action)).revertedWith(
+        "Hash generated from preimage does not match hash in state",
+      );
     });
 
     it("will revert action if already finalized", async () => {

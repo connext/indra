@@ -21,7 +21,7 @@ import { SimpleSignedTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 
-const { Zero } = constants;
+const { HashZero, Zero } = constants;
 const { defaultAbiCoder } = utils;
 
 function mkAddress(prefix: string = "0xa"): string {
@@ -147,6 +147,42 @@ describe("SimpleSignedTransferApp", () => {
           },
           {
             amount: transferAmount,
+            to: receiverAddr,
+          },
+        ],
+        finalized: true,
+      };
+
+      expect(afterActionState.finalized).to.eq(expectedPostState.finalized);
+      expect(afterActionState.coinTransfers[0].amount).to.eq(
+        expectedPostState.coinTransfers[0].amount,
+      );
+      expect(afterActionState.coinTransfers[1].amount).to.eq(
+        expectedPostState.coinTransfers[1].amount,
+      );
+
+      ret = await computeOutcome(afterActionState);
+      validateOutcome(ret, expectedPostState);
+    });
+
+    it("will cancel a payment", async () => {
+      const action: SimpleSignedTransferAppAction = {
+        data: HashZero,
+        signature: goodSig,
+      };
+
+      let ret = await applyAction(preState, action);
+      const afterActionState = decodeAppState(ret);
+
+      const expectedPostState: SimpleSignedTransferAppState = {
+        ...preState,
+        coinTransfers: [
+          {
+            amount: transferAmount,
+            to: senderAddr,
+          },
+          {
+            amount: Zero,
             to: receiverAddr,
           },
         ],
