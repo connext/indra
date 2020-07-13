@@ -124,7 +124,10 @@ export async function install(
   params: MethodParams.Install,
   initiatorIdentifier: PublicIdentifier,
 ): Promise<StateChannel> {
-  const proposal = preProtocolStateChannel.proposedAppInstances.get(params.appIdentityHash)!;
+  const proposal = preProtocolStateChannel.proposedAppInstances.get(params.appIdentityHash);
+  if (!proposal) {
+    throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(params.appIdentityHash));
+  }
   const isSame = initiatorIdentifier === proposal.initiatorIdentifier;
 
   console.log(
