@@ -76,7 +76,9 @@ export abstract class MethodController {
     if (preProtocolStateChannel && !!error && syncable) {
       // dispatch sync rpc call
       log.warn(
-        `Caught error while running protocol, syncing channels and retrying ${this.methodName}. ${error.message}`,
+        `Caught error while running protocol, syncing channels and retrying ${
+          this.methodName
+        } with params ${stringify(params, true, 0)}. ${error.message}`,
       );
 
       // FETCH ONE MORE TIME, NEEDED IN CASE ERROR HAPPENED IN AFTER EXECUTION
