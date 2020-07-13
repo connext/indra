@@ -73,10 +73,8 @@ export const connect = async (
 
   // setup ethProvider
   logger.debug(`Creating ethereum provider from url: ${ethProviderUrl}`);
-  const ethProvider = new providers.JsonRpcProvider(
-    ethProviderUrl,
-    await getChainId(ethProviderUrl),
-  );
+  const chainId = await getChainId(ethProviderUrl);
+  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl, chainId);
 
   // setup messaging and node api
   let node: INodeApiClient;

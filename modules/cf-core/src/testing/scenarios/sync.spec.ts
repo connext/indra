@@ -45,7 +45,6 @@ describe("Sync", () => {
   let sharedEventEmitter: EventEmitter;
   let ethUrl: string;
   let provider: JsonRpcProvider;
-  let nodeConfig: any;
   let lockService: MemoryLockService;
   let channelSignerA: ChannelSigner;
   let channelSignerB: ChannelSigner;
@@ -65,7 +64,6 @@ describe("Sync", () => {
     sharedEventEmitter = new EventEmitter();
     ethUrl = global["wallet"]["provider"].connection.url;
     provider = new JsonRpcProvider(ethUrl);
-    nodeConfig = { STORE_KEY_PREFIX: "test" };
     lockService = new MemoryLockService();
 
     // create nodeA values
@@ -498,8 +496,6 @@ describe("Sync", () => {
         messagingServiceA,
         storeServiceA,
         global["contracts"],
-        nodeConfig,
-        provider,
         channelSignerA,
         lockService,
         0,
@@ -542,8 +538,6 @@ describe("Sync", () => {
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
           global["contracts"],
-          nodeConfig,
-          provider,
           channelSignerA,
           lockService,
           0,
@@ -575,8 +569,6 @@ describe("Sync", () => {
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
           global["contracts"],
-          nodeConfig,
-          provider,
           channelSignerB,
           lockService,
           0,

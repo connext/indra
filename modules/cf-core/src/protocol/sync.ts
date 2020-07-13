@@ -29,19 +29,13 @@ const { IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, OP_SIGN, OP_VALIDATE }
 
 export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
-    const { message, store, networks, preProtocolStateChannel } = context;
+    const { message, store, networks } = context;
     const log = context.log.newContext("CF-SyncProtocol");
     const start = Date.now();
     let substart = start;
     const { processID, params } = message;
     const loggerId = (params as ProtocolParams.Sync).multisigAddress || processID;
     log.info(`[${loggerId}] Initiation started: ${stringify(params)}`);
-
-    if (!preProtocolStateChannel) {
-      throw new Error("No state channel found for sync");
-    }
-
-    const { contractAddresses, provider } = networks[preProtocolStateChannel.chainId];
 
     const {
       multisigAddress,
@@ -61,6 +55,13 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       store,
     );
+
+    if (!preProtocolStateChannel) {
+      throw new Error("No state channel found for sync");
+    }
+
+    const { contractAddresses, provider } = networks[preProtocolStateChannel.chainId];
+
     const syncDeterminationData = getSyncDeterminationData(preProtocolStateChannel);
     const m2 = yield [
       IO_SEND_AND_WAIT,
@@ -855,7 +856,10 @@ async function syncChannel(
         getTokenBalanceDecrementForInstall(myChannel, affectedApp),
       );
       // verify the expected commitment is included
-      const generatedSetState = getSetStateCommitment(context, updatedChannel.freeBalance);
+      const generatedSetState = getSetStateCommitment(
+        context.networks[myChannel.chainId],
+        updatedChannel.freeBalance,
+      );
       const setState = commitments.find((c) => c.hashToSign === generatedSetState.hashToSign);
       if (!setState) {
         throw new Error(

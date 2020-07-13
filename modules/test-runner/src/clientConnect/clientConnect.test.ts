@@ -4,7 +4,7 @@ import { ClientOptions } from "@connext/types";
 import { ColorfulLogger, getRandomChannelSigner } from "@connext/utils";
 import { Wallet, constants, utils } from "ethers";
 
-import { createClient, expect, sendOnchainValue, fundChannel, ETH_AMOUNT_SM } from "../util";
+import { createClient, env, expect, sendOnchainValue, fundChannel, ETH_AMOUNT_SM } from "../util";
 
 const { AddressZero, One } = constants;
 const { hexlify, randomBytes } = utils;
