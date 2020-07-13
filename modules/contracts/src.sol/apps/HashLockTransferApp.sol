@@ -36,7 +36,6 @@ contract HashLockTransferApp is CounterfactualApp {
     Action memory action = abi.decode(encodedAction, (Action));
 
     require(!state.finalized, "Cannot take action on finalized state");
-    require(block.number < state.expiry, "Cannot take action if expiry is expired");
 
     // Handle cancellation
     if (action.preImage == bytes32(0)) {
@@ -46,6 +45,9 @@ contract HashLockTransferApp is CounterfactualApp {
     }
 
     // Handle payment
+    // Check here to always allow cancellation of a payment if the payment
+    // itself has expired
+    require(block.number < state.expiry, "Cannot take action if expiry is expired");
     bytes32 generatedHash = sha256(abi.encode(action.preImage));
     require(
       state.lockHash == generatedHash,
