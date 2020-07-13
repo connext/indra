@@ -629,7 +629,9 @@ function makeSyncDetermination(
   apps!.forEach((app) => {
     if (!myChannel.appInstances.has(app.identityHash)) {
       throw new Error(
-        `Counterparty channel has record of app we do not, despite free balance nonces being in sync. App: ${app.identityHash}`,
+        `Counterparty channel has record of app we do not, despite free balance nonces being in sync. Our apps: ${stringify(
+          [...myChannel.appInstances.keys()],
+        )}, their apps: ${stringify(apps)}`,
       );
     }
     if (outOfSync) {
