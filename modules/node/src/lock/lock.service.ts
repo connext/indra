@@ -52,10 +52,10 @@ export class LockService {
   }
 
   async releaseLock(lockName: string, lockValue: string): Promise<void> {
-    this.log.info(`Releasing lock for ${lockName} after ${Date.now() - this.locks[lockName]} ms`);
+    this.log.warn(`Releasing lock for ${lockName} after ${Date.now() - this.locks[lockName]} ms`);
     try {
       await this.memoLock.releaseLock(lockName, lockValue);
-      this.log.info(`Done releasing lock for ${lockName}`);
+      this.log.warn(`Done releasing lock for ${lockName}`);
     } catch (e) {
       this.log.error(`Error unlocking resource ${lockName} (${lockValue}): ${e.stack}`);
     } finally {
