@@ -325,6 +325,12 @@ export class ConnextClient implements IConnextClient {
   public resolveCondition = async (
     params: PublicParams.ResolveCondition,
   ): Promise<PublicResults.ResolveCondition> => {
+    // paymentId is generated for hashlock transfer
+    if (params.conditionType === ConditionalTransferTypes.HashLockTransfer && !params.paymentId) {
+      const lockHash = soliditySha256(["bytes32"], [params.preImage]);
+      const paymentId = soliditySha256(["address", "bytes32"], [params.assetId, lockHash]);
+      params.paymentId = paymentId;
+    }
     return this.resolveTransferController.resolveTransfer(params);
   };
 

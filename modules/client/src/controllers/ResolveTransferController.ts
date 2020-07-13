@@ -11,12 +11,11 @@ import {
   GraphSignedTransferAppAction,
   AppInstanceJson,
 } from "@connext/types";
-import { stringify, toBN } from "@connext/utils";
-import { BigNumber, constants } from "ethers";
+import { stringify } from "@connext/utils";
+import { BigNumber } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
-const { HashZero } = constants;
 export class ResolveTransferController extends AbstractController {
   public resolveTransfer = async (
     params: PublicParams.ResolveCondition,
@@ -51,16 +50,11 @@ export class ResolveTransferController extends AbstractController {
 
     // Extract the secret object from the params;
     if (!this.hasSecret(params)) {
-      // User is cancelling the payment
-      try {
-        this.log.info(`[${paymentId}] Cancelling payment`);
-        const ret = await this.handleCancellation(params);
-        this.log.info(`[${paymentId}] resolveCondition complete: ${stringify(ret)}`);
-        return ret;
-      } catch (e) {
-        emitFailureEvent(e);
-        throw e;
-      }
+      const error = new Error(
+        `Cannot resolve payment without providing a secret. Params: ${stringify(params)}`,
+      );
+      emitFailureEvent(error);
+      throw error;
     }
 
     // Install app with receiver
@@ -252,54 +246,5 @@ export class ResolveTransferController extends AbstractController {
       }
     }
     throw new Error(`Invalid condition type: ${conditionType}`);
-  }
-
-  private async handleCancellation(
-    params: PublicParams.ResolveCondition,
-  ): Promise<PublicResults.ResolveCondition> {
-    const { conditionType, paymentId } = params;
-    const appDefinition = this.connext.appRegistry.find((app) => app.name === conditionType)
-      .appDefinitionAddress;
-    const apps = await this.connext.getAppInstances();
-    const paymentApp = apps.find((app) => {
-      const participants = (app.latestState as GenericConditionalTransferAppState).coinTransfers.map(
-        (t) => t.to,
-      );
-      return (
-        app.appDefinition === appDefinition &&
-        app.meta.paymentId === paymentId &&
-        participants.includes(this.connext.signerAddress)
-      );
-    });
-
-    if (!paymentApp) {
-      throw new Error(`Cannot find payment associated with ${paymentId}`);
-    }
-
-    const ret = {
-      appIdentityHash: paymentApp.identityHash,
-      amount: (paymentApp.latestState as GenericConditionalTransferAppState).coinTransfers[0]
-        .amount,
-      assetId: paymentApp.outcomeInterpreterParameters["tokenAddress"],
-      meta: paymentApp.meta,
-      paymentId: params.paymentId,
-      sender: paymentApp.meta.sender,
-    };
-
-    let action: HashLockTransferAppAction | undefined = undefined;
-    // IFF payment app has an expiry, the app has not expired, and the user
-    // is the receiver of the payment, play an invalid action
-    const state = paymentApp.latestState as any;
-    const block = await this.ethProvider.getBlockNumber();
-    if (
-      state.coinTransfers[1].to === this.connext.signerAddress &&
-      toBN(state.expiry || 0).gt(block)
-    ) {
-      action = { preImage: HashZero };
-    }
-    this.log.info(`[${paymentId}] Uninstalling transfer app with action ${stringify(action)}`);
-    await this.connext.uninstallApp(paymentApp.identityHash, action);
-    this.log.info(`[${paymentId}] Uninstalled transfer app ${paymentApp.identityHash}`);
-    return ret;
   }
 }
