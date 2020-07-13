@@ -9,7 +9,7 @@ import {
   EventPayloads,
   UnlockedHashLockTransferMeta,
 } from "@connext/types";
-import { getRandomBytes32, getChainId } from "@connext/utils";
+import { getRandomBytes32, getChainId, delay } from "@connext/utils";
 import { BigNumber, providers, constants, utils } from "ethers";
 
 import {
@@ -468,6 +468,74 @@ describe("HashLock Transfers", () => {
         setTimeout(res, 10_000);
       }),
     ).to.be.fulfilled;
+  });
+
+  it.only("can send concurrent hashlock transfers", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT.div(5), assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount.mul(5), transfer.assetId);
+    await fundChannel(clientB, transfer.amount.mul(5), transfer.assetId);
+    await clientA.requestCollateral(transfer.assetId);
+    await clientB.requestCollateral(transfer.assetId);
+
+    const timelock = (5000).toString();
+
+    let preImage = getRandomBytes32();
+    let lockHash = soliditySha256(["bytes32"], [preImage]);
+
+    clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
+      recipient: clientB.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+
+    preImage = getRandomBytes32();
+    lockHash = soliditySha256(["bytes32"], [preImage]);
+
+    clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
+      recipient: clientB.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+
+    await delay(100);
+
+    preImage = getRandomBytes32();
+    lockHash = soliditySha256(["bytes32"], [preImage]);
+
+    clientB.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientB.publicIdentifier },
+      recipient: clientA.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+
+    preImage = getRandomBytes32();
+    lockHash = soliditySha256(["bytes32"], [preImage]);
+
+    clientB.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientB.publicIdentifier },
+      recipient: clientA.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+
+    // TODO: assertions to make this work
+
+    await delay(20000);
   });
 
   it.skip("Experimental: Average latency of 5 hashlock transfers with Eth", async () => {
