@@ -2,7 +2,7 @@ import { Contract, ContractFactory, Wallet, providers, utils, BigNumber } from "
 
 import { AddressBook } from "./address-book";
 import { artifacts } from "./artifacts";
-import { stringify } from "@connext/utils";
+// import { stringify } from "@connext/utils";
 
 const { keccak256 } = utils;
 
@@ -49,7 +49,7 @@ export const deployContract = async (
 ): Promise<Contract> => {
   const chainId = (await wallet.provider.getNetwork()).chainId;
   // special case for drippable token
-  const deployDrippable = name === "Token" && chainId === 1337;
+  const deployDrippable = name === "Token" && (chainId === 1337 || chainId === 1338);
   deployDrippable && console.log(`Deploying drippable token`);
   const solidity = deployDrippable ? artifacts["ConnextToken"] : artifacts[name];
   const factory = ContractFactory.fromSolidity(solidity).connect(wallet);
@@ -62,8 +62,8 @@ export const deployContract = async (
     gasLimit: BigNumber.from("5000000"),
   });
   console.log(`Sent transaction to deploy ${name}, txHash: ${tx.hash}`);
-  const receipt = await tx.wait();
-  const { gasUsed, cumulativeGasUsed } = receipt;
+  // const receipt = await tx.wait();
+  // const { gasUsed, cumulativeGasUsed } = receipt;
   // console.log(`Gas from deploy:`, stringify({ gasUsed, cumulativeGasUsed }));
   const address = Contract.getContractAddress(tx);
   const contract = new Contract(address, solidity.abi, wallet);

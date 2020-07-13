@@ -124,11 +124,11 @@ echo "Starting $ethprovider_1338_host.."
 docker run \
   --detach \
   --env="ETH_MENMONIC=$eth_mnemonic" \
+  --mount="type=bind,source=$cwd,target=/root" \
+  --mount="type=volume,source=${project}_chain_1338,target=/data" \
   --name="$ethprovider_1338_host" \
   --network="$network" \
   --rm \
-  --mount="type=bind,source=$cwd,target=/root" \
-  --mount="type=volume,source=${project}_chain_1338,target=/data" \
   ${project}_builder -c "cd modules/contracts && bash ops/buidler.entry.sh start"
 
 echo "Starting $postgres_host.."

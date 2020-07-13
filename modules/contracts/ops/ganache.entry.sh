@@ -3,6 +3,10 @@ set -e
 
 echo "Ganache entrypoint activated!"
 
+if [[ -d "modules/contracts" ]]
+then cd modules/contracts
+fi
+
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/.."
 ganache="$dir/node_modules/.bin/ganache-cli"
 address_book="$dir/address-book.json"

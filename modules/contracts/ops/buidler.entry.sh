@@ -3,6 +3,10 @@ set -e
 
 echo "Buidler entrypoint activated!"
 
+if [[ -d "modules/contracts" ]]
+then cd modules/contracts
+fi
+
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/.."
 address_book="$dir/address-book.json"
 
@@ -11,7 +15,6 @@ mkdir -p /data
 if [[ "$1" == "start" ]]
 then
   echo "Starting BuidlerEVM.."
-  cd modules/contracts
   exec npx buidler node --hostname 0.0.0.0 --port 8546
 
 elif [[ "$1" == "deploy" ]]
@@ -19,8 +22,6 @@ then
   if [[ "${ETH_PROVIDER#*://}" == "localhost"* ]]
   then
     echo "Starting BuidlerEVM for deployment.."
-    # TODO: why doesnt this need to be done?
-    # cd modules/contracts
     npx buidler node --hostname 0.0.0.0 --port 8546 \
        > $dir/.buidlerevm.log &
     wait-for localhost:8546
