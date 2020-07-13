@@ -24,8 +24,8 @@
   "devDependencies": {
     "@babel/polyfill": "7.10.4",
     "@types/chai": "4.2.11",
-    "@types/mocha": "7.0.2",
-    "@types/node": "14.0.20",
+    "@types/mocha": "8.0.0",
+    "@types/node": "14.0.22",
     "chai": "4.2.0",
     "eth-crypto": "1.6.0",
     "ethers": "5.0.5",
