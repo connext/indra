@@ -87,7 +87,7 @@ describe("Happy path", () => {
     }
   });
 
-  it.only("should let a client deposit, transfer, and withdraw ", async () => {
+  it("should let a client deposit, transfer, and withdraw ", async () => {
     const depositRes = await clientA.deposit({
       assetId: AddressZero,
       amount: parseEther("0.03"),

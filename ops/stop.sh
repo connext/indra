@@ -5,6 +5,8 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 docker container stop ${project}_builder 2> /dev/null || true
+docker container stop ${project}_testnet_1337 2> /dev/null || true
+docker container stop ${project}_testnet_1338 2> /dev/null || true
 docker stack rm $project 2> /dev/null || true
 
 echo -n "Waiting for the $project stack to shutdown."

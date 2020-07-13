@@ -8,13 +8,12 @@ test_command='exec ts-mocha --bail --check-leaks --global wallet,contracts --exi
 
 watch_command='ts-mocha --bail --check-leaks --global wallet,contracts --exit --timeout 60000 src/**/**/*.spec.ts --require src/testing/global-hooks.ts '"$@"
 
+suffix="cf_tester"
 if [[ "$1" == "--watch" ]]
 then
-  suffix="cf_watcher"
   command="$watch_command"
   shift # forget $1 and replace it w $2, etc
 else
-  suffix="cf_tester"
   command="$test_command"
 fi
 echo $command
@@ -28,7 +27,6 @@ network="${project}_$suffix"
 ethprovider_host="${project}_ethprovider_$suffix"
 ethprovider_port="8545"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-ethprovider_url="http://$ethprovider_host:$ethprovider_port"
 
 # Kill the dependency containers when this script exits
 function cleanup {
@@ -42,13 +40,15 @@ docker network create --attachable $network 2> /dev/null || true
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
 if [[ -t 0 && -t 1 && -t 2 ]]
 then interactive="--interactive --tty"
-else echo "Running in non-interactive mode"
+else echo "Running in non-interactive mode."
 fi
 
 ########################################
 # Start dependencies
 
 # TODO: the gasLimit shouldn't need to be 1000x higher than mainnet..
+
+# ETH_PROVIDER_VOLUME=tmpfs bash ops/start-eth-provider.sh 1337
 
 echo "Starting $ethprovider_host.."
 docker run \
@@ -72,7 +72,7 @@ docker run \
 
 docker run \
   --entrypoint="bash" \
-  --env="ETHPROVIDER_URL=$ethprovider_url" \
+  --env="ETHPROVIDER_URL=http://$ethprovider_host:$ethprovider_port" \
   --env="SUGAR_DADDY=$eth_mnemonic" \
   --env="LOG_LEVEL=$LOG_LEVEL" \
   $interactive \

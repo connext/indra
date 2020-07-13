@@ -11,7 +11,6 @@ suffix="test_store"
 postgres_db="${project}_$suffix"
 postgres_host="${project}_database_$suffix"
 postgres_password="$project_$suffix"
-postgres_port="5432"
 postgres_user="$project_$suffix"
 
 network="${project}_$suffix"
@@ -49,7 +48,7 @@ docker run \
   --env="INDRA_PG_DATABASE=$postgres_db" \
   --env="INDRA_PG_HOST=$postgres_host" \
   --env="INDRA_PG_PASSWORD=$postgres_password" \
-  --env="INDRA_PG_PORT=$postgres_port" \
+  --env="INDRA_PG_PORT=5432" \
   --env="INDRA_PG_USERNAME=$postgres_user" \
   --env="LOG_LEVEL=$LOG_LEVEL" \
   $interactive \
