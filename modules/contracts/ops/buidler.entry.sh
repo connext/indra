@@ -15,15 +15,14 @@ mkdir -p /data
 if [[ "$1" == "start" ]]
 then
   echo "Starting BuidlerEVM.."
-  exec npx buidler node --hostname 0.0.0.0 --port 8546
+  exec npx buidler node --hostname 0.0.0.0 --port 8545
 
 elif [[ "$1" == "deploy" ]]
 then
   if [[ "${ETH_PROVIDER#*://}" == "localhost"* ]]
   then
     echo "Starting BuidlerEVM for deployment.."
-    npx buidler node --hostname 0.0.0.0 --port 8546 \
-       > $dir/.buidlerevm.log &
+    npx buidler node --hostname 0.0.0.0 --port 8545 > $dir/.buidlerevm.log &
     wait-for localhost:8546
   fi
 
