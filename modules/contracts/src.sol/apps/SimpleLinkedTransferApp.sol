@@ -36,6 +36,7 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
 
     // Handle cancellation
     if (action.preImage == bytes32(0)) {
+      state.preImage = action.preImage;
       state.finalized = true;
 
       return abi.encode(state);
