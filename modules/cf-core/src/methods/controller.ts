@@ -138,7 +138,7 @@ export abstract class MethodController {
         log.error(`Caught error trying to release lock: ${e.message}`);
         error = error || e;
       }
-      logTime(log, substart, "Released lock");
+      logTime(log, substart, `Released lock ${lockName}`);
       substart = Date.now();
     }
 
