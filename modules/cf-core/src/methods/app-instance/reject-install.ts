@@ -57,6 +57,10 @@ export class RejectInstallController extends MethodController {
 
     const proposal = preProtocolStateChannel.proposedAppInstances.get(appIdentityHash);
 
+    if (!proposal) {
+      return {};
+    }
+
     await store.removeAppProposal(
       preProtocolStateChannel.multisigAddress,
       appIdentityHash,
