@@ -139,12 +139,6 @@ export async function uninstallAppInstanceFromChannel(
 }> {
   const appInstance = preProtocolStateChannel.getAppInstance(params.appIdentityHash);
 
-  console.log(
-    `[${preProtocolStateChannel.multisigAddress}:cf::uninstall:::pre] fb nonce:`,
-    preProtocolStateChannel.freeBalance.latestVersionNumber,
-    `, numApps: `,
-    preProtocolStateChannel.numProposedApps,
-  );
   const {
     channel: updatedChannel,
     appContext: uninstalledApp,
@@ -160,12 +154,6 @@ export async function uninstallAppInstanceFromChannel(
       stateTimeout: toBN(0), // Explicitly finalized states
     },
     preProtocolStateChannel,
-  );
-  console.log(
-    `[${updatedChannel.multisigAddress}:cf::uninstall:::post] fb nonce:`,
-    updatedChannel.freeBalance.latestVersionNumber,
-    `, numApps: `,
-    updatedChannel.numProposedApps,
   );
   return { updatedChannel, uninstalledApp, action: params.action };
 }

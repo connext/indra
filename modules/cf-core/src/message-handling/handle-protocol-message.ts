@@ -42,19 +42,6 @@ export async function handleReceivedProtocolMessage(
   let appInstance: AppInstance | undefined;
   const json = await store.getStateChannel(params!.multisigAddress);
   try {
-    const logProtocol =
-      protocol === "propose" ||
-      protocol === "install" ||
-      protocol === "uninstall" ||
-      protocol === "sync";
-    if (json && logProtocol) {
-      console.log(
-        `[${json.multisigAddress}:cf::${protocol}:::pre] fb nonce:`,
-        json.freeBalanceAppInstance!.latestVersionNumber || 0,
-        `, numApps: `,
-        json.monotonicNumProposedApps,
-      );
-    }
     const { channel, appContext } = await protocolRunner.runProtocolWithMessage(
       router,
       data,
@@ -62,14 +49,6 @@ export async function handleReceivedProtocolMessage(
     );
     postProtocolStateChannel = channel;
     appInstance = appContext || undefined;
-    if (logProtocol) {
-      console.log(
-        `[${postProtocolStateChannel.multisigAddress}:cf::${protocol}:::post] fb nonce:`,
-        postProtocolStateChannel.freeBalance.latestVersionNumber || 0,
-        `, numApps: `,
-        postProtocolStateChannel.numProposedApps,
-      );
-    }
   } catch (e) {
     log.warn(
       `Caught error running ${data.protocol} protocol, aborting. Will be retried after syncing. ${

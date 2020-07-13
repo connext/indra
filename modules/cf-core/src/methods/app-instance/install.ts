@@ -130,12 +130,6 @@ export async function install(
   }
   const isSame = initiatorIdentifier === proposal.initiatorIdentifier;
 
-  console.log(
-    `[${preProtocolStateChannel.multisigAddress}:cf::install:::pre] fb nonce:`,
-    preProtocolStateChannel.freeBalance.latestVersionNumber,
-    `, numApps: `,
-    preProtocolStateChannel.numProposedApps,
-  );
   const { channel: postProtocolChannel } = await protocolRunner.initiateProtocol(
     router,
     ProtocolNames.install,
@@ -146,12 +140,6 @@ export async function install(
       multisigAddress: preProtocolStateChannel.multisigAddress,
     } as ProtocolParams.Install,
     preProtocolStateChannel,
-  );
-  console.log(
-    `[${postProtocolChannel.multisigAddress}:cf::install:::post] fb nonce:`,
-    postProtocolChannel.freeBalance.latestVersionNumber,
-    `, numApps: `,
-    postProtocolChannel.numProposedApps,
   );
 
   return postProtocolChannel;

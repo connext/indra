@@ -89,12 +89,6 @@ export abstract class MethodController {
         preProtocolStateChannel.initiatorIdentifier,
         preProtocolStateChannel.responderIdentifier,
       ].find((identifier) => identifier !== publicIdentifier)!;
-      console.log(
-        `[${preProtocolStateChannel.multisigAddress}:cf::${this.methodName}:::pre-sync] fb nonce:`,
-        preProtocolStateChannel.freeBalance.latestVersionNumber,
-        `, numApps: `,
-        preProtocolStateChannel.numProposedApps,
-      );
       try {
         const { channel } = await protocolRunner.initiateProtocol(
           router,
@@ -107,12 +101,6 @@ export abstract class MethodController {
           preProtocolStateChannel,
         );
         log.debug(`Channel synced, retrying ${this.methodName} with ${channel.toJson()}`);
-        console.log(
-          `[${preProtocolStateChannel.multisigAddress}:cf::${this.methodName}:::post-sync] fb nonce:`,
-          preProtocolStateChannel.freeBalance.latestVersionNumber,
-          `, numApps: `,
-          preProtocolStateChannel.numProposedApps,
-        );
         result = await this.beforeExecution(requestHandler, params, channel);
         // if result exists, the operation is a no-op (i.e. already been done)
         result =

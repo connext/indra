@@ -48,12 +48,6 @@ export class SyncController extends MethodController {
       throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
     }
 
-    console.log(
-      `[${preProtocolStateChannel.multisigAddress}:cf::sync:::pre] fb nonce:`,
-      preProtocolStateChannel.freeBalance.latestVersionNumber,
-      `, numApps: `,
-      preProtocolStateChannel.numProposedApps,
-    );
     const { channel: updated }: { channel: StateChannel } = await protocolRunner.initiateProtocol(
       router,
       ProtocolNames.sync,
@@ -62,12 +56,6 @@ export class SyncController extends MethodController {
         initiatorIdentifier: publicIdentifier,
         responderIdentifier,
       },
-    );
-    console.log(
-      `[${updated.multisigAddress}:cf::sync:::post] fb nonce:`,
-      updated.freeBalance.latestVersionNumber,
-      `, numApps: `,
-      updated.numProposedApps,
     );
 
     return { syncedChannel: updated.toJson() };
