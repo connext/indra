@@ -1,7 +1,6 @@
 import {
   InstallMiddlewareContext,
   Opcode,
-  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
@@ -20,7 +19,7 @@ import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../model
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
-import { assertIsValidSignature } from "./utils";
+import { assertIsValidSignature, generateProtocolMessage, parseProtocolMessage } from "./utils";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH } from "../errors";
 
 const protocol = ProtocolNames.install;
@@ -111,23 +110,18 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateDataHash];
 
     // 124ms
+    const m2 = yield [
+      IO_SEND_AND_WAIT,
+      generateProtocolMessage(responderIdentifier, protocol, processID, 1, {
+        customData: { signature: mySignatureOnFreeBalanceStateUpdate },
+        prevMessageReceived: start,
+      }),
+    ];
     const {
       data: {
         customData: { signature: counterpartySignatureOnFreeBalanceStateUpdate },
       },
-    } = yield [
-      IO_SEND_AND_WAIT,
-      {
-        processID,
-        params,
-        protocol,
-        to: responderIdentifier,
-        customData: {
-          signature: mySignatureOnFreeBalanceStateUpdate,
-        },
-        seq: 1,
-      } as ProtocolMessageData,
-    ] as any;
+    } = parseProtocolMessage(m2);
 
     // 7ms
     // free balance addr signs conditional transactions
@@ -280,16 +274,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 154ms
     yield [
       IO_SEND,
-      {
-        processID,
-        protocol,
-        to: initiatorIdentifier,
+      generateProtocolMessage(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
+        customData: { signature: mySignatureOnFreeBalanceStateUpdate },
         prevMessageReceived: start,
-        customData: {
-          signature: mySignatureOnFreeBalanceStateUpdate,
-        },
-        seq: UNASSIGNED_SEQ_NO,
-      } as ProtocolMessageData,
+      }),
       stateChannelAfter,
     ] as any;
 

@@ -1,19 +1,18 @@
 import {
   Opcode,
-  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
   SetupMiddlewareContext,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime, stringify, delay } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment, getSetStateCommitment } from "../ethereum";
 import { StateChannel } from "../models";
 import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 
-import { assertIsValidSignature } from "./utils";
+import { assertIsValidSignature, parseProtocolMessage, generateProtocolMessage } from "./utils";
 
 const protocol = ProtocolNames.setup;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
@@ -71,6 +70,17 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     // 201 ms (waits for responder to respond)
     substart = Date.now();
+    const m2 = yield [
+      IO_SEND_AND_WAIT,
+      generateProtocolMessage(responderIdentifier, protocol, processID, 1, {
+        prevMessageReceived: start,
+        customData: {
+          setupSignature: mySetupSignature,
+          setStateSignature: mySignatureOnFreeBalanceState,
+        },
+      }),
+    ];
+    logTime(log, substart, `[${loggerId}] Received responder's sigs`);
     const {
       data: {
         customData: {
@@ -78,21 +88,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
           setStateSignature: responderSignatureOnFreeBalanceState,
         },
       },
-    } = yield [
-      IO_SEND_AND_WAIT,
-      {
-        protocol,
-        processID,
-        params,
-        seq: 1,
-        to: responderIdentifier,
-        customData: {
-          setupSignature: mySetupSignature,
-          setStateSignature: mySignatureOnFreeBalanceState,
-        },
-      } as ProtocolMessageData,
-    ] as any;
-    logTime(log, substart, `[${loggerId}] Received responder's sigs`);
+    } = parseProtocolMessage(m2);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
@@ -210,17 +206,13 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       IO_SEND,
-      {
-        protocol,
-        processID,
-        to: initiatorIdentifier,
-        seq: UNASSIGNED_SEQ_NO,
+      generateProtocolMessage(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
         prevMessageReceived: start,
         customData: {
           setupSignature: mySetupSignature,
           setStateSignature: mySignatureOnFreeBalanceState,
         },
-      } as ProtocolMessageData,
+      }),
       stateChannel,
     ];
 

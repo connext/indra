@@ -1,7 +1,6 @@
 import {
   Opcode,
   ProposeMiddlewareContext,
-  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
@@ -13,7 +12,12 @@ import { getSetStateCommitment, getConditionalTransactionCommitment } from "../e
 import { AppInstance } from "../models";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
-import { assertIsValidSignature, computeInterpreterParameters } from "./utils";
+import {
+  assertIsValidSignature,
+  computeInterpreterParameters,
+  generateProtocolMessage,
+  parseProtocolMessage,
+} from "./utils";
 
 const protocol = ProtocolNames.propose;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
@@ -125,18 +129,13 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       `[${loggerId}] Signed set state commitment ${setStateCommitmentHash} & conditional transfer commitment ${conditionalTxCommitmentHash}`,
     );
 
-    const m1 = {
-      protocol,
-      processID,
-      params,
-      seq: 1,
-      to: responderIdentifier,
+    const m1 = generateProtocolMessage(responderIdentifier, protocol, processID, 1, {
       customData: {
         signature: initiatorSignatureOnInitialState,
         signature2: initiatorSignatureOnConditionalTransaction,
       },
-    } as ProtocolMessageData;
-
+      prevMessageReceived: start,
+    });
     substart = Date.now();
 
     // 200ms
@@ -151,7 +150,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
           signature2: responderSignatureOnConditionalTransaction,
         },
       },
-    } = m2!;
+    } = parseProtocolMessage(m2);
 
     substart = Date.now();
     await assertIsValidSignature(
@@ -366,17 +365,13 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     yield [
       IO_SEND,
-      {
-        protocol,
-        processID,
-        seq: UNASSIGNED_SEQ_NO,
-        to: initiatorIdentifier,
+      generateProtocolMessage(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
         prevMessageReceived: start,
         customData: {
           signature: responderSignatureOnInitialState,
           signature2: responderSignatureOnConditionalTransaction,
         },
-      } as ProtocolMessageData,
+      }),
       postProtocolStateChannel,
     ];
 

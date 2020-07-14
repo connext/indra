@@ -1,6 +1,5 @@
 import {
   Opcode,
-  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
@@ -12,7 +11,12 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
-import { assertIsValidSignature, getPureBytecode } from "./utils";
+import {
+  assertIsValidSignature,
+  getPureBytecode,
+  parseProtocolMessage,
+  generateProtocolMessage,
+} from "./utils";
 
 const protocol = ProtocolNames.takeAction;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
@@ -69,10 +73,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       await preAppInstance.computeStateTransition(
         action,
         network.provider,
-        getPureBytecode(
-          preAppInstance.appDefinition,
-          network.contractAddresses,
-        ),
+        getPureBytecode(preAppInstance.appDefinition, network.contractAddresses),
       ),
       stateTimeout,
     );
@@ -107,23 +108,20 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 117ms
+    const m2 = yield [
+      IO_SEND_AND_WAIT,
+      generateProtocolMessage(responderIdentifier, protocol, processID, 1, {
+        customData: {
+          signature: mySignature,
+        },
+        prevMessageReceived: start,
+      }),
+    ];
     const {
       data: {
         customData: { signature: counterpartySig },
       },
-    } = yield [
-      IO_SEND_AND_WAIT,
-      {
-        protocol,
-        processID,
-        params,
-        seq: 1,
-        to: responderIdentifier,
-        customData: {
-          signature: mySignature,
-        },
-      } as ProtocolMessageData,
-    ] as any;
+    } = parseProtocolMessage(m2);
 
     // 10ms
     await assertIsValidSignature(
@@ -202,10 +200,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       await preAppInstance.computeStateTransition(
         action,
         network.provider,
-        getPureBytecode(
-          preAppInstance.appDefinition,
-          network.contractAddresses,
-        ),
+        getPureBytecode(preAppInstance.appDefinition, network.contractAddresses),
       ),
       stateTimeout,
     );
@@ -250,16 +245,12 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     yield [
       IO_SEND,
-      {
-        protocol,
-        processID,
-        to: initiatorIdentifier,
-        seq: UNASSIGNED_SEQ_NO,
+      generateProtocolMessage(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
         prevMessageReceived: start,
         customData: {
           signature: mySignature,
         },
-      } as ProtocolMessageData,
+      }),
       postProtocolStateChannel,
     ];
 

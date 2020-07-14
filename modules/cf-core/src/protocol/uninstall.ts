@@ -1,6 +1,5 @@
 import {
   Opcode,
-  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
@@ -17,6 +16,8 @@ import {
   assertIsValidSignature,
   computeTokenIndexedFreeBalanceIncrements,
   getPureBytecode,
+  generateProtocolMessage,
+  parseProtocolMessage,
 } from "./utils";
 
 const protocol = ProtocolNames.uninstall;
@@ -118,21 +119,18 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
 
     // 94ms
+    const m2 = yield [
+      IO_SEND_AND_WAIT,
+      generateProtocolMessage(responderIdentifier, protocol, processID, 1, {
+        prevMessageReceived: start,
+        customData: { signature: mySignature },
+      }),
+    ];
     const {
       data: {
         customData: { signature: counterpartySignature },
       },
-    } = yield [
-      IO_SEND_AND_WAIT,
-      {
-        protocol,
-        processID,
-        params,
-        to: responderIdentifier,
-        customData: { signature: mySignature },
-        seq: 1,
-      } as ProtocolMessageData,
-    ] as any;
+    } = parseProtocolMessage(m2);
     logTime(log, substart, `[${loggerId}] Received responder's sig`);
     substart = Date.now();
 
@@ -279,17 +277,12 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     yield [
       IO_SEND,
-      {
-        protocol,
-        processID,
-        to: initiatorIdentifier,
-        seq: UNASSIGNED_SEQ_NO,
+      generateProtocolMessage(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
         prevMessageReceived: start,
         customData: {
           signature: mySignature,
         },
-      } as ProtocolMessageData,
-      postProtocolStateChannel,
+      }),
       preUninstallApp,
     ];
 
