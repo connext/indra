@@ -9,8 +9,8 @@ echo "Starting bot test with options: $agents agents | interval $interval | limi
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
-INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:3000/api/ethprovider}"
-INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:3000/api}"
+INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:8545}"
+INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:3000}"
 
 echo "Starting bot in env: LOG_LEVEL=$LOG_LEVEL | INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL | INDRA_NODE_URL=$INDRA_NODE_URL"
 

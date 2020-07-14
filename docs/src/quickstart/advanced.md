@@ -143,7 +143,7 @@ class BackupService implements IBackupService {
 const connectOptions: ClientOptions = {
   backupService: new BackupService("https://myawesomebackup.com"),
   ethProviderUrl: "https://rinkeby.indra.connext.network/api/ethprovider",
-  nodeUrl: "https://rinkeby.indra.connext.network/api/messaging",
+  nodeUrl: "https://rinkeby.indra.connext.network",
   mnemonic: "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat",
 };
 

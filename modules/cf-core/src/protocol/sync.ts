@@ -218,7 +218,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         protocol,
         processID,
         params,
-        seq: 2,
+        seq: 1,
         to: responderIdentifier,
         customData: {
           ...syncInfoForCounterparty,
@@ -289,7 +289,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         protocol,
         processID,
         params,
-        seq: 1,
+        seq: 0,
         to: counterpartyIdentifier,
         customData: {
           ...getSyncDeterminationData(preProtocolStateChannel),
@@ -323,7 +323,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         preProtocolStateChannel,
         syncType.type,
         commitments.map((c) =>
-          !!c["contractAddresses"]
+          !!(c as ConditionalTransactionCommitmentJSON).contractAddresses
             ? ConditionalTransactionCommitment.fromJson(c as ConditionalTransactionCommitmentJSON)
             : SetStateCommitment.fromJson(c as SetStateCommitmentJSON),
         ),
@@ -555,8 +555,8 @@ function makeSyncDetermination(
     const myApps = [...myChannel.appInstances.values()].map((app) => app.identityHash);
     const theirApps = apps!.map((app) => app.identityHash);
     const unsynced = myApps
-      .filter((x) => !theirApps.includes(x))
-      .concat(theirApps.filter((x) => !myApps.includes(x)));
+      .filter((x) => !(theirApps || []).includes(x))
+      .concat(theirApps.filter((x) => !(myApps || []).includes(x)));
     if (!unsynced || unsynced.length !== 1) {
       throw new Error(
         `Could not find an unsynced app, or there was more than one. My apps: ${stringify(
@@ -629,7 +629,9 @@ function makeSyncDetermination(
   apps!.forEach((app) => {
     if (!myChannel.appInstances.has(app.identityHash)) {
       throw new Error(
-        `Counterparty channel has record of app we do not, despite free balance nonces being in sync. App: ${app.identityHash}`,
+        `Counterparty channel has record of app we do not, despite free balance nonces being in sync. Our apps: ${stringify(
+          [...myChannel.appInstances.keys()],
+        )}, their apps: ${stringify(apps)}`,
       );
     }
     if (outOfSync) {
@@ -955,8 +957,8 @@ function syncRejectedApps(
 
   // find any rejected proposals and update your channel
   const rejectedIds = myProposals
-    .filter((x) => !counterpartyProposals.includes(x))
-    .concat(counterpartyProposals.filter((x) => !myProposals.includes(x)));
+    .filter((x) => !(counterpartyProposals || []).includes(x))
+    .concat(counterpartyProposals.filter((x) => !(myProposals || []).includes(x)));
 
   let postRejectChannel = StateChannel.fromJson(myChannel.toJson());
   const rejected: AppInstance[] = [];

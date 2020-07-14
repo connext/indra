@@ -1,4 +1,4 @@
-import { BigNumber, constants } from "ethers";
+import { BigNumber } from "ethers";
 import {
   Column,
   Entity,
@@ -10,6 +10,7 @@ import {
 } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
+import { transformBN } from "../utils";
 
 export enum TransactionReason {
   USER_WITHDRAWAL = "USER_WITHDRAWAL",
@@ -43,28 +44,13 @@ export class OnchainTransaction {
   channel!: Channel;
 
   // Transaction fields assigned by `TransactionResponse` (before mined)
-  @Column("text", {
-    transformer: {
-      from: (value: string): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
+  @Column("text", { transformer: transformBN })
   value!: BigNumber;
 
-  @Column("text", {
-    transformer: {
-      from: (value: string): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
+  @Column("text", { transformer: transformBN })
   gasPrice!: BigNumber;
 
-  @Column("text", {
-    transformer: {
-      from: (value: string): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
+  @Column("text", { transformer: transformBN })
   gasLimit!: BigNumber;
 
   @Column("integer")
@@ -92,13 +78,7 @@ export class OnchainTransaction {
   data!: string;
 
   // Fields from TransactionReceipt (after mined)
-  @Column("text", {
-    default: constants.Zero,
-    transformer: {
-      from: (value: string): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
+  @Column("text", { transformer: transformBN })
   gasUsed: BigNumber;
 
   @Column("text", { nullable: true })

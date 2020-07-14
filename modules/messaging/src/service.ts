@@ -22,10 +22,13 @@ export class MessagingService implements IMessagingService {
     if (!this.bearerToken) {
       this.bearerToken = await this.getBearerToken();
     }
-    const service = natsutil.natsServiceFactory({
-      bearerToken: this.bearerToken,
-      natsServers: typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl, // FIXME-- rename to servers instead of natsServers
-    });
+    const service = natsutil.natsServiceFactory(
+      {
+        bearerToken: this.bearerToken,
+        natsServers: typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl, // FIXME-- rename to servers instead of natsServers
+      },
+      this.log.newContext(`Messaging-Nats`),
+    );
 
     const natsConnection = await service.connect();
     this.service = service;
@@ -45,7 +48,7 @@ export class MessagingService implements IMessagingService {
   }
 
   disconnect(): Promise<void> {
-    if (this.service?.isConnected()) {
+    if (this.isConnected()) {
       return this.service!.disconnect();
     }
     return Promise.resolve();
@@ -141,5 +144,9 @@ export class MessagingService implements IMessagingService {
     });
 
     return unsubscribeFrom;
+  }
+
+  private isConnected(): boolean {
+    return !!this.service && this.service.isConnected();
   }
 }

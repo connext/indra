@@ -21,7 +21,7 @@ import {
 } from "@connext/types";
 import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import pWaterfall from "p-waterfall";
-import { constants, utils } from "ethers";
+import { utils } from "ethers";
 
 import { storeKeys } from "./constants";
 import { KeyValueStorage } from "./types";
@@ -207,7 +207,11 @@ export class StoreService implements IStoreService {
     });
   }
 
-  async incrementNumProposedApps(multisigAddress: string): Promise<void> {
+  async updateNumProposedApps(
+    multisigAddress: string,
+    numProposedApps: number,
+    stateChannel: StateChannelJSON,
+  ): Promise<void> {
     return this.execute((store) => {
       const channel = this.getStateChannelFromStore(store, multisigAddress);
       if (!channel) {
@@ -215,7 +219,7 @@ export class StoreService implements IStoreService {
       }
       const updatedStore = this.setStateChannel(store, {
         ...channel,
-        monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
+        monotonicNumProposedApps: numProposedApps,
       });
       return this.saveStore(updatedStore);
     });

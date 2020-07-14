@@ -1,6 +1,7 @@
+import { connect } from "@connext/client";
 import { getMemoryStore } from "@connext/store";
 import { ClientOptions } from "@connext/types";
-import { getRandomChannelSigner } from "@connext/utils";
+import { ColorfulLogger, getRandomChannelSigner } from "@connext/utils";
 import { Wallet, constants, utils } from "ethers";
 
 import { createClient, expect, sendOnchainValue, env, fundChannel, ETH_AMOUNT_SM } from "../util";
@@ -9,6 +10,31 @@ const { AddressZero, One } = constants;
 const { hexlify, randomBytes } = utils;
 
 describe("Client Connect", () => {
+  it("Client should be able to connect to proxy w/out a messaging url", async () => {
+    const signer = getRandomChannelSigner();
+    const client = await connect({
+      ethProviderUrl: env.ethProviderUrl,
+      loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
+      nodeUrl: env.proxyUrl,
+      signer,
+      store: getMemoryStore({ prefix: signer.publicIdentifier }),
+    });
+    expect(client.publicIdentifier).to.eq(signer.publicIdentifier);
+  });
+
+  it("Client should be able to connect to node w a messaging url", async () => {
+    const signer = getRandomChannelSigner();
+    const client = await connect({
+      ethProviderUrl: env.ethProviderUrl,
+      loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
+      messagingUrl: env.natsUrl,
+      nodeUrl: env.nodeUrl,
+      signer,
+      store: getMemoryStore({ prefix: signer.publicIdentifier }),
+    });
+    expect(client.publicIdentifier).to.eq(signer.publicIdentifier);
+  });
+
   it("Client should not rescind deposit rights if no transfers have been made to the multisig", async () => {
     const signer = getRandomChannelSigner();
     let client = await createClient({ signer });

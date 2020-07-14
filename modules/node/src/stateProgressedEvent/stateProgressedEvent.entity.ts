@@ -1,3 +1,5 @@
+import { StateProgressedEventPayload, AppName, AppActions, Address } from "@connext/types";
+import { BigNumber, utils } from "ethers";
 import {
   PrimaryGeneratedColumn,
   Entity,
@@ -8,10 +10,8 @@ import {
 } from "typeorm";
 
 import { Challenge } from "../challenge/challenge.entity";
-import { StateProgressedEventPayload, AppName, AppActions, Address } from "@connext/types";
+import { transformBN } from "../utils";
 import { IsEthAddress } from "../validate";
-import { BigNumber, utils } from "ethers";
-import { toBN } from "@connext/utils";
 
 const { defaultAbiCoder } = utils;
 
@@ -45,20 +45,10 @@ export class StateProgressedEvent<T extends AppName = any> {
   @Column("jsonb")
   action!: AppActions[T];
 
-  @Column("text", {
-    transformer: {
-      from: (value: string): BigNumber => toBN(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
+  @Column("text", { transformer: transformBN })
   versionNumber!: BigNumber;
 
-  @Column("text", {
-    transformer: {
-      from: (value: string): BigNumber => toBN(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
+  @Column("text", { transformer: transformBN })
   timeout!: BigNumber;
 
   @Column("text")

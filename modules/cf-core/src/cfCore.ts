@@ -171,12 +171,23 @@ export class CFCore {
     }
     this.protocolRunner.register(opcode, async (args: [ProtocolName, MiddlewareContext]) => {
       const [protocol, context] = args;
-      try {
-        await middleware(protocol, context);
-        return undefined;
-      } catch (e) {
-        return e.stack || e.message;
-      }
+      const middlewareRet = await Promise.race([
+        new Promise((resolve) => {
+          middleware(protocol, context)
+            .catch((e) => resolve(e.stack || e.message))
+            .then(() => resolve(undefined));
+        }),
+        new Promise((resolve) => {
+          delay(IO_SEND_AND_WAIT_TIMEOUT).then(() =>
+            resolve(
+              `Failed to execute validation middleware for ${protocol} within ${
+                IO_SEND_AND_WAIT_TIMEOUT / 1000
+              }s.`,
+            ),
+          );
+        }),
+      ]);
+      return middlewareRet;
     });
   }
 
@@ -335,7 +346,11 @@ export class CFCore {
             const [appContext] = affectedApps;
             if (!appContext || !setState || !conditional) {
               // adding a rejected proposal
-              await this.storeService.incrementNumProposedApps(stateChannel.multisigAddress);
+              await this.storeService.updateNumProposedApps(
+                stateChannel.multisigAddress,
+                stateChannel.numProposedApps,
+                stateChannel.toJson(),
+              );
               break;
             }
             // this is adding a proposal

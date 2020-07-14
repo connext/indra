@@ -97,7 +97,11 @@ do
   rm .package.json
   echo "Publishing $fullname"
 
-  npm publish --access=public
+  # If the version has a release-candidate suffix like "-rc.2" then tag it as "next"
+  if [[ "$version" == *-rc* ]]
+  then npm publish --tag next --access=public
+  else npm publish --access=public
+  fi
 
   echo "Updating $fullname references in root"
   mv package.json .package.json
