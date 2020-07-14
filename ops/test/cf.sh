@@ -4,38 +4,34 @@ set -e
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
-test_command='exec ts-mocha --bail --check-leaks --global wallet,contracts --exit --timeout 60000 src/**/**/*.spec.ts --require src/testing/global-hooks.ts '"$@"
+cmd="${1:-test}"
+shift # $1 is the command to npm run. Extra options, if any, come after
 
-watch_command='ts-mocha --bail --check-leaks --global wallet,contracts --exit --timeout 60000 src/**/**/*.spec.ts --require src/testing/global-hooks.ts '"$@"
+########################################
+# Start testnet & stop it when we're done
 
-suffix="cf_tester"
-if [[ "$1" == "--watch" ]]
-then
-  command="$watch_command"
-  shift # forget $1 and replace it w $2, etc
-else
-  command="$test_command"
-fi
-echo $command
+tag="cf_tester"
 
-####################
-# Internal Config
-# config & hard-coded stuff you might want to change
-
-network="${project}_$suffix"
-
-ethprovider_host="${project}_ethprovider_$suffix"
-ethprovider_port="8545"
+ethprovider_host="${project}_testnet_$tag"
+ethprovider_port="8547"
+ethprovider_chain_id="1339"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
 # Kill the dependency containers when this script exits
 function cleanup {
-  echo;echo "Tests finished, stopping test containers.."
+  echo "Tests finished, stopping testnet.."
   docker container stop $ethprovider_host 2> /dev/null || true
 }
-trap cleanup EXIT
+trap cleanup EXIT SIGINT SIGTERM
 
-docker network create --attachable $network 2> /dev/null || true
+echo "Starting $ethprovider_host.."
+export INDRA_TESTNET_DATA_DIR=/tmpfs
+export INDRA_TESTNET_PORT=$ethprovider_port
+export INDRA_TESTNET_MNEMONIC=$eth_mnemonic
+bash ops/start-eth-provider.sh $ethprovider_chain_id $tag
+
+########################################
+# Run Tests
 
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
 if [[ -t 0 && -t 1 && -t 2 ]]
@@ -43,48 +39,20 @@ then interactive="--interactive --tty"
 else echo "Running in non-interactive mode."
 fi
 
-########################################
-# Start dependencies
-
-# TODO: the gasLimit shouldn't need to be 1000x higher than mainnet..
-
-# ETH_PROVIDER_VOLUME=tmpfs bash ops/start-eth-provider.sh 1337
-
-echo "Starting $ethprovider_host.."
 docker run \
-  --detach \
-  --name="$ethprovider_host" \
-  --network="$network" \
-  --rm \
-  --tmpfs="/data" \
-  trufflesuite/ganache-cli:v6.9.1 \
-    --db="/data" \
-    --defaultBalanceEther="10000" \
-    --gasLimit="9000000000" \
-    --gasPrice="1000000000" \
-    --host="0.0.0.0" \
-    --mnemonic="$eth_mnemonic" \
-    --networkId="1337" \
-    --port="$ethprovider_port"
-
-########################################
-# Run Tests
-
-docker run \
-  --entrypoint="bash" \
-  --env="ETHPROVIDER_URL=http://$ethprovider_host:$ethprovider_port" \
-  --env="SUGAR_DADDY=$eth_mnemonic" \
-  --env="LOG_LEVEL=$LOG_LEVEL" \
   $interactive \
+  --entrypoint="bash" \
+  --env="ETHPROVIDER_URL=http://172.17.0.1:$ethprovider_port" \
+  --env="LOG_LEVEL=$LOG_LEVEL" \
+  --env="SUGAR_DADDY=$eth_mnemonic" \
   --name="${project}_test_cf_core" \
-  --network="$network" \
   --rm \
   --volume="`pwd`:/root" \
   ${project}_builder -c '
     set -e
     echo "CF tester container launched!"
     echo "Waiting for ethprovider to wake up.."
-    wait-for ${ETHPROVIDER_URL#*://} &> /dev/null
+    wait-for ${ETHPROVIDER_URL#*://}
     cd modules/cf-core
     export PATH=./node_modules/.bin:$PATH
     function finish {
@@ -92,5 +60,5 @@ docker run \
     }
     trap finish SIGTERM SIGINT
     echo "Launching tests!";echo
-    '"$command"'
+    npm run '"$cmd"' -- '"$@"'
   '

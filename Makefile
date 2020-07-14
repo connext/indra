@@ -179,7 +179,7 @@ test-tps-lg: bot
 	bash ops/test/tps.sh 40 0 10
 
 test-cf: cf-core
-	bash ops/test/cf.sh
+	bash ops/test/cf.sh test
 
 test-contracts: contracts utils
 	bash ops/test/unit.sh contracts
@@ -206,7 +206,7 @@ test-watcher: watcher
 	bash ops/test/watcher.sh
 
 watch-cf: cf-core
-	bash ops/test/cf.sh --watch
+	bash ops/test/cf.sh watch
 
 watch-integration:
 	bash ops/test/integration.sh watch

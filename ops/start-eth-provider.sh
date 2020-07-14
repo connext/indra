@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 set -e
 
-chainId="${1:-1337}"
-data_dir="${INDRA_ETH_PROVIDER_DATA_DIR:-/data}"
-port="${INDRA_ETH_PROVIDER_PORT:-8545}"
+chain_id="${1:-1337}"
+tag="${2:-$chain_id}"
+
+data_dir="${INDRA_TESTNET_DATA_DIR:-/data}"
+port="${INDRA_TESTNET_PORT:-8545}"
+mnemonic="${INDRA_TESTNET_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
-ethprovider_host="${project}_testnet_$chainId"
+ethprovider_host="${project}_testnet_$tag"
 
 if [[ -n `docker container ls | grep ${ethprovider_host}` ]]
 then
@@ -19,11 +22,13 @@ fi
 docker run \
   --detach \
   --entrypoint "bash" \
-  --env "DATA_DIR=$data_dir}" \
+  --env "DATA_DIR=$data_dir" \
+  --env "CHAIN_ID=$chain_id" \
+  --env "MNEMONIC=$mnemonic" \
   --mount "type=bind,source=`pwd`,target=/root" \
-  --mount "type=volume,source=${project}_chain_${chainId},target=/data" \
+  --mount "type=volume,source=${project}_chain_${chain_id},target=/data" \
   --name "$ethprovider_host" \
   --publish "$port:8545" \
   --rm \
-  --tmpfs "/tmp" \
+  --tmpfs "/tmpfs" \
   ${project}_builder -c "cd modules/contracts && bash ops/ganache.entry.sh start"
