@@ -15,7 +15,7 @@ import { stringify, logTime, toBN } from "@connext/utils";
 import {
   stateChannelClassFromStoreByMultisig,
   getPureBytecode,
-  generateProtocolMessage,
+  generateProtocolMessageData,
   parseProtocolMessage,
 } from "./utils";
 import { StateChannel, AppInstance, FreeBalanceClass } from "../models";
@@ -64,7 +64,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     const syncDeterminationData = getSyncDeterminationData(preProtocolStateChannel);
     const m2 = yield [
       IO_SEND_AND_WAIT,
-      generateProtocolMessage(counterpartyIdentifier, protocol, processID, 1, {
+      generateProtocolMessageData(counterpartyIdentifier, protocol, processID, 1, {
         customData: { ...syncDeterminationData },
         prevMessageReceived: substart,
       }),
@@ -215,7 +215,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     const m4 = yield [
       IO_SEND_AND_WAIT,
-      generateProtocolMessage(responderIdentifier, protocol, processID, 1, {
+      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, {
         customData: {
           ...syncInfoForCounterparty,
           syncedProposals: mySyncedProposals,
@@ -282,7 +282,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     const m3 = yield [
       IO_SEND_AND_WAIT,
-      generateProtocolMessage(counterpartyIdentifier, protocol, processID, 0, {
+      generateProtocolMessageData(counterpartyIdentifier, protocol, processID, 0, {
         customData: {
           ...getSyncDeterminationData(preProtocolStateChannel),
           ...syncInfoForCounterparty,
@@ -431,7 +431,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     // send counterparty final list of proposal IDs
     yield [
       IO_SEND,
-      generateProtocolMessage(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
+      generateProtocolMessageData(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
         customData: {
           syncedProposals: [...postRejectChannel.proposedAppInstances.keys()],
         },

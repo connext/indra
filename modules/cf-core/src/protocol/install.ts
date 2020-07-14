@@ -19,7 +19,7 @@ import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../model
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
-import { assertIsValidSignature, generateProtocolMessage, parseProtocolMessage } from "./utils";
+import { assertIsValidSignature, generateProtocolMessageData, parseProtocolMessage } from "./utils";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH } from "../errors";
 
 const protocol = ProtocolNames.install;
@@ -112,7 +112,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 124ms
     const m2 = yield [
       IO_SEND_AND_WAIT,
-      generateProtocolMessage(responderIdentifier, protocol, processID, 1, {
+      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, {
         customData: { signature: mySignatureOnFreeBalanceStateUpdate },
         prevMessageReceived: start,
       }),
@@ -274,7 +274,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 154ms
     yield [
       IO_SEND,
-      generateProtocolMessage(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
+      generateProtocolMessageData(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
         customData: { signature: mySignatureOnFreeBalanceStateUpdate },
         prevMessageReceived: start,
       }),

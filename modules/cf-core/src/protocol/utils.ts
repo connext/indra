@@ -20,6 +20,7 @@ import {
   CHANNEL_PROTOCOL_VERSION,
   ProtocolParam,
   GenericMessage,
+  ProtocolMessage,
 } from "@connext/types";
 import {
   logTime,
@@ -41,9 +42,7 @@ import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR, TWO_PARTY_OUTCOME_DIFFERENT_ASSETS 
 const { MaxUint256 } = constants;
 const { defaultAbiCoder, getAddress } = utils;
 
-export const parseProtocolMessage = (
-  message?: GenericMessage,
-): GenericMessage<ProtocolMessageData> => {
+export const parseProtocolMessage = (message?: ProtocolMessage): ProtocolMessage => {
   const { data, type, from } = message || {};
   const {
     to,
@@ -96,13 +95,13 @@ export const parseProtocolMessage = (
     type: type as any,
     from: from!,
     data: {
-      processID, // uuid
-      protocol,
+      processID: processID!, // uuid
+      protocol: protocol as any,
       protocolVersion,
       params,
-      to,
+      to: to!,
       error,
-      seq,
+      seq: seq!,
       // protocol responders should not send messages + error if the protocol
       // timeout has elapsed during their execution. this edgecase
       // is handled within the IO_SEND opcode for the final protocol message,
@@ -110,12 +109,12 @@ export const parseProtocolMessage = (
       prevMessageReceived,
       // customData: Additional data which depends on the protocol (or even the specific message
       // number in a protocol) lives here. Includes signatures
-      customData,
+      customData: customData!,
     },
   };
 };
 
-export const generateProtocolMessage = (
+export const generateProtocolMessageData = (
   to: PublicIdentifier,
   protocol: ProtocolName,
   processID: string,

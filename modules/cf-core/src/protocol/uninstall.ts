@@ -16,7 +16,7 @@ import {
   assertIsValidSignature,
   computeTokenIndexedFreeBalanceIncrements,
   getPureBytecode,
-  generateProtocolMessage,
+  generateProtocolMessageData,
   parseProtocolMessage,
 } from "./utils";
 
@@ -121,7 +121,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 94ms
     const m2 = yield [
       IO_SEND_AND_WAIT,
-      generateProtocolMessage(responderIdentifier, protocol, processID, 1, {
+      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, {
         prevMessageReceived: start,
         customData: { signature: mySignature },
       }),
@@ -277,7 +277,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     yield [
       IO_SEND,
-      generateProtocolMessage(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
+      generateProtocolMessageData(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
         prevMessageReceived: start,
         customData: {
           signature: mySignature,

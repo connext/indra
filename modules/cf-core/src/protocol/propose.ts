@@ -15,7 +15,7 @@ import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 import {
   assertIsValidSignature,
   computeInterpreterParameters,
-  generateProtocolMessage,
+  generateProtocolMessageData,
   parseProtocolMessage,
 } from "./utils";
 
@@ -129,7 +129,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       `[${loggerId}] Signed set state commitment ${setStateCommitmentHash} & conditional transfer commitment ${conditionalTxCommitmentHash}`,
     );
 
-    const m1 = generateProtocolMessage(responderIdentifier, protocol, processID, 1, {
+    const m1 = generateProtocolMessageData(responderIdentifier, protocol, processID, 1, {
       customData: {
         signature: initiatorSignatureOnInitialState,
         signature2: initiatorSignatureOnConditionalTransaction,
@@ -365,7 +365,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     yield [
       IO_SEND,
-      generateProtocolMessage(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
+      generateProtocolMessageData(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
         prevMessageReceived: start,
         customData: {
           signature: responderSignatureOnInitialState,

@@ -12,7 +12,7 @@ import { getSetupCommitment, getSetStateCommitment } from "../ethereum";
 import { StateChannel } from "../models";
 import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 
-import { assertIsValidSignature, parseProtocolMessage, generateProtocolMessage } from "./utils";
+import { assertIsValidSignature, parseProtocolMessage, generateProtocolMessageData } from "./utils";
 
 const protocol = ProtocolNames.setup;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
@@ -72,7 +72,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
     const m2 = yield [
       IO_SEND_AND_WAIT,
-      generateProtocolMessage(responderIdentifier, protocol, processID, 1, {
+      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, {
         prevMessageReceived: start,
         customData: {
           setupSignature: mySetupSignature,
@@ -206,7 +206,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       IO_SEND,
-      generateProtocolMessage(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
+      generateProtocolMessageData(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
         prevMessageReceived: start,
         customData: {
           setupSignature: mySetupSignature,
