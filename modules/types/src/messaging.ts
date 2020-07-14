@@ -24,7 +24,7 @@ export type ProtocolMessageData = {
   processID: string; // uuid?
   protocol: ProtocolName;
   protocolVersion: string;
-  params?: ProtocolParam;
+  params: ProtocolParam;
   to: PublicIdentifier;
   error?: string;
   seq: number;

@@ -19,7 +19,6 @@ import {
   PublicIdentifier,
   CHANNEL_PROTOCOL_VERSION,
   ProtocolParam,
-  GenericMessage,
   ProtocolMessage,
 } from "@connext/types";
 import {
@@ -80,10 +79,11 @@ export const parseProtocolMessage = (message?: ProtocolMessage): ProtocolMessage
     !exists(protocol) ||
     !exists(processID) ||
     !exists(seq) ||
+    !exists(params) ||
     !exists(customData)
   ) {
     throw new Error(
-      `Malformed protocol message data, missing one of the following fields within the data object: to, protocol, processID, seq, customData. Message: ${stringify(
+      `Malformed protocol message data, missing one of the following fields within the data object: to, protocol, processID, seq, params, customData. Message: ${stringify(
         message?.data,
         false,
         1,
@@ -92,13 +92,13 @@ export const parseProtocolMessage = (message?: ProtocolMessage): ProtocolMessage
   }
 
   return {
-    type: type as any,
+    type: type!,
     from: from!,
     data: {
       processID: processID!, // uuid
-      protocol: protocol as any,
+      protocol: protocol!,
       protocolVersion,
-      params,
+      params: params!,
       to: to!,
       error,
       seq: seq!,
@@ -119,14 +119,14 @@ export const generateProtocolMessageData = (
   protocol: ProtocolName,
   processID: string,
   seq: number,
+  params: ProtocolParam,
   messageData: Partial<{
-    params: ProtocolParam;
     error: string;
     prevMessageReceived: number;
     customData: { [key: string]: any };
   }> = {},
 ): ProtocolMessageData => {
-  const { params, error, prevMessageReceived, customData } = messageData;
+  const { error, prevMessageReceived, customData } = messageData;
   return {
     processID, // uuid
     protocol,
