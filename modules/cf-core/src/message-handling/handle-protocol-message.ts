@@ -186,11 +186,13 @@ const prepareProtocolErrorMessage = (
   error: string,
 ): ProtocolMessage => {
   const {
-    data: { protocol, processID, to },
+    data: { protocol, processID, to, params },
     from,
   } = latestMsg;
   return {
-    data: generateProtocolMessageData(from, protocol, processID, UNASSIGNED_SEQ_NO, { error }),
+    data: generateProtocolMessageData(from, protocol, processID, UNASSIGNED_SEQ_NO, params, {
+      error,
+    }),
     type: EventNames.PROTOCOL_MESSAGE_EVENT,
     from: to,
   };

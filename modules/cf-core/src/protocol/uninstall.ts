@@ -119,9 +119,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
 
     // 94ms
-    const m2 = yield [
+    const { message: m2 } = yield [
       IO_SEND_AND_WAIT,
-      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, {
+      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, params!, {
         prevMessageReceived: start,
         customData: { signature: mySignature },
       }),
@@ -277,12 +277,19 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     yield [
       IO_SEND,
-      generateProtocolMessageData(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
-        prevMessageReceived: start,
-        customData: {
-          signature: mySignature,
+      generateProtocolMessageData(
+        initiatorIdentifier,
+        protocol,
+        processID,
+        UNASSIGNED_SEQ_NO,
+        params!,
+        {
+          prevMessageReceived: start,
+          customData: {
+            signature: mySignature,
+          },
         },
-      }),
+      ),
       preUninstallApp,
     ];
 

@@ -110,9 +110,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateDataHash];
 
     // 124ms
-    const m2 = yield [
+    const { message: m2 } = yield [
       IO_SEND_AND_WAIT,
-      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, {
+      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, params!, {
         customData: { signature: mySignatureOnFreeBalanceStateUpdate },
         prevMessageReceived: start,
       }),
@@ -274,10 +274,17 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 154ms
     yield [
       IO_SEND,
-      generateProtocolMessageData(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
-        customData: { signature: mySignatureOnFreeBalanceStateUpdate },
-        prevMessageReceived: start,
-      }),
+      generateProtocolMessageData(
+        initiatorIdentifier,
+        protocol,
+        processID,
+        UNASSIGNED_SEQ_NO,
+        params!,
+        {
+          customData: { signature: mySignatureOnFreeBalanceStateUpdate },
+          prevMessageReceived: start,
+        },
+      ),
       stateChannelAfter,
     ] as any;
 

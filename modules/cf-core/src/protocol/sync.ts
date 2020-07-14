@@ -62,13 +62,13 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       store,
     );
     const syncDeterminationData = getSyncDeterminationData(preProtocolStateChannel);
-    const m2 = yield [
+    const { message: m2 } = (yield [
       IO_SEND_AND_WAIT,
-      generateProtocolMessageData(counterpartyIdentifier, protocol, processID, 1, {
+      generateProtocolMessageData(counterpartyIdentifier, protocol, processID, 1, params!, {
         customData: { ...syncDeterminationData },
         prevMessageReceived: substart,
       }),
-    ];
+    ] as any)!;
     logTime(
       log,
       substart,
@@ -213,16 +213,16 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     // counterparty so rejections may be synced
     const mySyncedProposals = [...postSyncStateChannel.proposedAppInstances.keys()];
 
-    const m4 = yield [
+    const { message: m4 } = (yield [
       IO_SEND_AND_WAIT,
-      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, {
+      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, params!, {
         customData: {
           ...syncInfoForCounterparty,
           syncedProposals: mySyncedProposals,
         },
         prevMessageReceived: substart,
       }),
-    ];
+    ])!;
     logTime(
       log,
       substart,
@@ -280,16 +280,16 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     log.info(`Responder syncing with: ${stringify(syncType)}`);
     const syncInfoForCounterparty = await getInfoForSync(syncType, preProtocolStateChannel, store);
 
-    const m3 = yield [
+    const { message: m3 } = (yield [
       IO_SEND_AND_WAIT,
-      generateProtocolMessageData(counterpartyIdentifier, protocol, processID, 0, {
+      generateProtocolMessageData(counterpartyIdentifier, protocol, processID, 0, params!, {
         customData: {
           ...getSyncDeterminationData(preProtocolStateChannel),
           ...syncInfoForCounterparty,
         },
         prevMessageReceived: substart,
       }),
-    ];
+    ])!;
     logTime(
       log,
       substart,
@@ -431,12 +431,19 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     // send counterparty final list of proposal IDs
     yield [
       IO_SEND,
-      generateProtocolMessageData(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
-        customData: {
-          syncedProposals: [...postRejectChannel.proposedAppInstances.keys()],
+      generateProtocolMessageData(
+        initiatorIdentifier,
+        protocol,
+        processID,
+        UNASSIGNED_SEQ_NO,
+        params!,
+        {
+          customData: {
+            syncedProposals: [...postRejectChannel.proposedAppInstances.keys()],
+          },
+          prevMessageReceived: substart,
         },
-        prevMessageReceived: substart,
-      }),
+      ),
       postSyncStateChannel,
     ];
     logTime(log, start, `[${loggerId}] Response finished`);

@@ -70,9 +70,9 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     // 201 ms (waits for responder to respond)
     substart = Date.now();
-    const m2 = yield [
+    const { message: m2 } = yield [
       IO_SEND_AND_WAIT,
-      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, {
+      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, params, {
         prevMessageReceived: start,
         customData: {
           setupSignature: mySetupSignature,
@@ -80,6 +80,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         },
       }),
     ];
+    console.log(`IO_SEND_AND_WAIT returned`, m2);
     logTime(log, substart, `[${loggerId}] Received responder's sigs`);
     const {
       data: {
@@ -129,7 +130,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const { message, network } = context;
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
-    let substart;
+    let substart = start;
     const {
       processID,
       params,
@@ -206,13 +207,20 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       IO_SEND,
-      generateProtocolMessageData(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
-        prevMessageReceived: start,
-        customData: {
-          setupSignature: mySetupSignature,
-          setStateSignature: mySignatureOnFreeBalanceState,
+      generateProtocolMessageData(
+        initiatorIdentifier,
+        protocol,
+        processID,
+        UNASSIGNED_SEQ_NO,
+        params,
+        {
+          prevMessageReceived: start,
+          customData: {
+            setupSignature: mySetupSignature,
+            setStateSignature: mySignatureOnFreeBalanceState,
+          },
         },
-      }),
+      ),
       stateChannel,
     ];
 

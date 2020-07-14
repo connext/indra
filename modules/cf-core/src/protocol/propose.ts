@@ -129,7 +129,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       `[${loggerId}] Signed set state commitment ${setStateCommitmentHash} & conditional transfer commitment ${conditionalTxCommitmentHash}`,
     );
 
-    const m1 = generateProtocolMessageData(responderIdentifier, protocol, processID, 1, {
+    const m1 = generateProtocolMessageData(responderIdentifier, protocol, processID, 1, params, {
       customData: {
         signature: initiatorSignatureOnInitialState,
         signature2: initiatorSignatureOnConditionalTransaction,
@@ -139,7 +139,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
 
     // 200ms
-    const m2 = yield [IO_SEND_AND_WAIT, m1];
+    const { message: m2 } = (yield [IO_SEND_AND_WAIT, m1])!;
     logTime(log, substart, `[${loggerId}] Received responder's m2`);
     substart = Date.now();
 
@@ -365,13 +365,20 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     yield [
       IO_SEND,
-      generateProtocolMessageData(initiatorIdentifier, protocol, processID, UNASSIGNED_SEQ_NO, {
-        prevMessageReceived: start,
-        customData: {
-          signature: responderSignatureOnInitialState,
-          signature2: responderSignatureOnConditionalTransaction,
+      generateProtocolMessageData(
+        initiatorIdentifier,
+        protocol,
+        processID,
+        UNASSIGNED_SEQ_NO,
+        params,
+        {
+          prevMessageReceived: start,
+          customData: {
+            signature: responderSignatureOnInitialState,
+            signature2: responderSignatureOnConditionalTransaction,
+          },
         },
-      }),
+      ),
       postProtocolStateChannel,
     ];
 
