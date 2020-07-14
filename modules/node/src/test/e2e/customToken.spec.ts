@@ -108,11 +108,9 @@ describe.skip("Custom token", () => {
       RebalanceType.COLLATERALIZE,
     );
 
-    console.log("tx: ", tx);
     expect(tx).to.be.ok;
 
     const freeBalance = await clientA.getFreeBalance(tokenContract.address);
-    console.log("freeBalance: ", freeBalance);
     expect(freeBalance[nodeSignerAddress].gt(0)).to.be.true;
   });
 });

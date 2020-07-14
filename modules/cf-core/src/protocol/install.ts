@@ -192,7 +192,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
     let substart = start;
-    const loggerId = (params as ProtocolParams.Install).proposal.identityHash || processID;
+    const { proposal: proposalJson, initiatorIdentifier } =
+      (params as ProtocolParams.Install) || {};
+    const loggerId = proposalJson?.identityHash || processID;
     log.info(`[${loggerId}] Response started`);
     log.debug(`[${loggerId}] Protocol response started with parameters ${stringify(params)}`);
 
@@ -202,8 +204,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     if (!preProtocolStateChannel) {
       throw new Error("No state channel found for install");
     }
-
-    const { proposal: proposalJson, initiatorIdentifier } = params as ProtocolParams.Install;
 
     const proposal = AppInstance.fromJson(proposalJson);
 

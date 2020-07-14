@@ -27,7 +27,6 @@ before(async () => {
       `Contracts missing: ${JSON.stringify(global["contracts"])} | ${Object.keys(global)}`,
     );
   }
-  console.log(``);
   appRegistry = new Contract(contracts.ChallengeRegistry, ChallengeRegistry.abi, wallet);
 });
 
