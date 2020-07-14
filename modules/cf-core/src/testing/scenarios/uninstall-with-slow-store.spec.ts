@@ -3,11 +3,11 @@ import { delay } from "@connext/utils";
 
 import { CFCore } from "../../cfCore";
 
-import { TestContractAddresses } from "../contracts";
 import { SetupContext, setup } from "../setup";
 import {
   constructUninstallRpc,
   createChannel,
+  getContractAddresses,
   getInstalledAppInstances,
   installApp,
 } from "../utils";
@@ -26,7 +26,7 @@ describe("Node method follows spec - uninstall", () => {
   describe("Node A and B install TTT, then uninstall it", () => {
     it("sends proposal with non-null initial state", async () => {
       return new Promise(async (done) => {
-        const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+        const { TicTacToeApp } = getContractAddresses();
         const initialState = {
           versionNumber: 1,
           winner: 1, // Hard-coded winner for test

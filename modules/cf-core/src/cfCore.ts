@@ -93,6 +93,7 @@ export class CFCore {
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
     this.protocolRunner = this.buildProtocolRunner();
+    this.log.info(`Using network contexts with chain ids: ${Object.keys(networkContexts)}`);
   }
 
   get signerAddress(): Address {

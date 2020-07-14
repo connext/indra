@@ -1,10 +1,14 @@
 import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { constants, utils } from "ethers";
 
-import { createAppInstanceForTest, createAppInstanceJsonForTest } from "../../testing/utils";
-import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
-import { getRandomContractAddresses } from "../../testing/mocks";
 import { expect } from "../../testing/assertions";
+import { getRandomContractAddresses } from "../../testing/mocks";
+import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
+import {
+  createAppInstanceForTest,
+  createAppInstanceJsonForTest,
+  getChainId,
+} from "../../testing/utils";
 
 import { AppInstance } from "../app-instance";
 import { StateChannel } from "../state-channel";
@@ -32,7 +36,7 @@ describe("StateChannel::setState", () => {
       contractAddresses.IdentityApp,
       contractAddresses,
       multisigAddress,
-      1337,
+      getChainId(),
       ids[0],
       ids[1],
     );

@@ -10,7 +10,6 @@ import { BigNumber, constants, utils } from "ethers";
 import { expect } from "../assertions";
 import { CFCore } from "../../cfCore";
 import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
-import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertInstallMessage,
@@ -20,6 +19,7 @@ import {
   createChannel,
   getAppContext,
   getBalances,
+  getContractAddresses,
   getInstalledAppInstances,
   getProposedAppInstances,
   makeAndSendProposeCall,
@@ -35,6 +35,7 @@ describe("Node method follows spec - install", () => {
   let nodeA: CFCore;
   let nodeB: CFCore;
   let storeA: IStoreService;
+  let TicTacToeApp: string;
 
   describe(
     "Node A gets app install proposal, sends to node B, B approves it, installs it, " +
@@ -49,12 +50,11 @@ describe("Node method follows spec - install", () => {
         multisigAddress = await createChannel(nodeA, nodeB);
         expect(multisigAddress).to.be.ok;
         expect(isHexString(multisigAddress)).to.be.ok;
+        TicTacToeApp = getContractAddresses().TicTacToeApp;
       });
 
       it("install app with ETH", async () => {
         return new Promise(async (done) => {
-          const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
-
           await collateralizeChannel(multisigAddress, nodeA, nodeB);
           const appDeposit = One;
 
@@ -123,12 +123,10 @@ describe("Node method follows spec - install", () => {
       });
 
       it("install app with ERC20", async () => {
-        const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
-
         await transferERC20Tokens(nodeA.signerAddress);
         await transferERC20Tokens(nodeB.signerAddress);
 
-        const erc20TokenAddress = (global["contracts"] as TestContractAddresses).DolphinCoin;
+        const erc20TokenAddress = getContractAddresses().DolphinCoin;
         const assetId = getAddressFromAssetId(erc20TokenAddress);
 
         await collateralizeChannel(multisigAddress, nodeA, nodeB, One, assetId);
@@ -188,8 +186,6 @@ describe("Node method follows spec - install", () => {
       });
 
       it("sends proposal with null initial state", async () => {
-        const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
-
         const appContext = getAppContext(TicTacToeApp);
         const AppInstanceJsonReq = constructAppProposalRpc(
           multisigAddress,
@@ -208,7 +204,6 @@ describe("Node method follows spec - install", () => {
 
       it("should error on initiating node if there is an error for the responder", async () => {
         return new Promise(async (done) => {
-          const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
           await collateralizeChannel(multisigAddress, nodeA, nodeB);
           const appDeposit = One;
 

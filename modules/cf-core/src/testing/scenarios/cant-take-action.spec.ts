@@ -1,8 +1,7 @@
 import { CFCore } from "../../cfCore";
 import { INVALID_ACTION } from "../../errors";
 
-import { TestContractAddresses } from "../contracts";
-import { constructTakeActionRpc, createChannel, installApp } from "../utils";
+import { constructTakeActionRpc, createChannel, getContractAddresses, installApp } from "../utils";
 import { setup, SetupContext } from "../setup";
 import { expect } from "../../testing/assertions";
 
@@ -18,7 +17,7 @@ describe("Node method follows spec - fails with improper action taken", () => {
 
   describe("Node A and B install an AppInstance, Node A takes invalid action", () => {
     it("can't take invalid action", async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+      const { TicTacToeApp } = getContractAddresses();
       const validAction = {
         actionType: 1,
         playX: 0,

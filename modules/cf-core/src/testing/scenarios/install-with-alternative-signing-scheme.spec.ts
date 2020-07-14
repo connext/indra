@@ -1,20 +1,19 @@
 import { ChannelSigner } from "@connext/utils";
 import { CONVENTION_FOR_ETH_ASSET_ID, ProposeMessage } from "@connext/types";
-import { BigNumber, providers, constants } from "ethers";
+import { BigNumber, constants } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
-import { TestContractAddresses } from "../contracts";
 import { MemoryLockService, MemoryMessagingService, MemoryStoreServiceFactory } from "../services";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import {
   collateralizeChannel,
   createChannel,
   getBalances,
+  getContractAddresses,
   getInstalledAppInstances,
   makeInstallCall,
   makeProposeCall,
-  newWallet,
 } from "../utils";
 import { expect } from "../assertions";
 
@@ -30,19 +29,15 @@ describe(`Uses a provided signing key generation function to sign channel state 
       `sends acks back to A, A installs it, both nodes have the same app instance`,
     () => {
       beforeEach(async () => {
-        const wallet = newWallet(global["wallet"]);
-        const provider = wallet.provider as providers.JsonRpcProvider;
         const messagingService = new MemoryMessagingService();
-
         const lockService = new MemoryLockService();
-
         const storeServiceA = new MemoryStoreServiceFactory().createStoreService();
         await storeServiceA.init();
 
         nodeA = await CFCore.create(
           messagingService,
           storeServiceA,
-          { 1337: { contractAddresses: global["contracts"], provider } },
+          global["networks"],
           new ChannelSigner(A_PRIVATE_KEY),
           lockService,
         );
@@ -52,7 +47,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         nodeB = await CFCore.create(
           messagingService,
           storeServiceB,
-          { 1337: { contractAddresses: global["contracts"], provider } },
+          global["networks"],
           new ChannelSigner(B_PRIVATE_KEY),
           lockService,
         );
@@ -102,7 +97,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
           nodeA.rpcRouter.dispatch(
             makeProposeCall(
               nodeB,
-              (global[`contracts`] as TestContractAddresses).TicTacToeApp,
+              getContractAddresses().TicTacToeApp,
               multisigAddress,
               undefined,
               One,

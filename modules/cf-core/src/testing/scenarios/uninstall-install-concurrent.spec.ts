@@ -3,13 +3,12 @@ import { constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
-import { TestContractAddresses } from "../contracts";
-
 import { setup, SetupContext } from "../setup";
 import {
   collateralizeChannel,
   constructUninstallRpc,
   createChannel,
+  getContractAddresses,
   makeInstallCall,
   makeProposeCall,
 } from "../utils";
@@ -26,7 +25,7 @@ describe("Node method follows spec when happening concurrently - install / unins
 
   describe("NodeA can uninstall and install an app with nodeB concurrently", () => {
     beforeEach(async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+      const { TicTacToeApp } = getContractAddresses();
       const context: SetupContext = await setup(global);
       nodeA = context["A"].node;
       nodeB = context["B"].node;
@@ -68,7 +67,7 @@ describe("Node method follows spec when happening concurrently - install / unins
 
     it("install app with ETH then uninstall and install apps simultaneously from the same node", async () => {
       return new Promise(async (done) => {
-        const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+        const { TicTacToeApp } = getContractAddresses();
         let completedActions = 0;
 
         nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) =>
@@ -104,7 +103,7 @@ describe("Node method follows spec when happening concurrently - install / unins
 
     it("install app with ETH then uninstall and install apps simultaneously from separate nodes", async () => {
       return new Promise(async (done) => {
-        const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+        const { TicTacToeApp } = getContractAddresses();
         let completedActions = 0;
 
         nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) =>

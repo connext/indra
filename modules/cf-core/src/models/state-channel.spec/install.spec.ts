@@ -2,13 +2,13 @@ import { getRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext
 import { constants, utils } from "ethers";
 import { before } from "mocha";
 
-import { createAppInstanceForTest, createAppInstanceJsonForTest } from "../../testing/utils";
+import { createAppInstanceForTest, createAppInstanceJsonForTest, getChainId } from "../../testing/utils";
 import { getRandomContractAddresses } from "../../testing/mocks";
-
-import { StateChannel } from "../state-channel";
-import { FreeBalanceClass } from "../free-balance";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 import { expect } from "../../testing/assertions";
+
+import { FreeBalanceClass } from "../free-balance";
+import { StateChannel } from "../state-channel";
 
 const { WeiPerEther, Zero, AddressZero } = constants;
 const { getAddress } = utils;
@@ -29,7 +29,7 @@ describe("StateChannel::uninstallApp", () => {
       contractAddresses.IdentityApp,
       contractAddresses,
       multisigAddress,
-      1337,
+      getChainId(),
       ids[0],
       ids[1],
     );

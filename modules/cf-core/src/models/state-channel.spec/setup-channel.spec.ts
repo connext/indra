@@ -3,9 +3,10 @@ import { getRandomAddress, getSignerAddressFromPublicIdentifier, toBN } from "@c
 import { constants, utils } from "ethers";
 
 import { HARD_CODED_ASSUMPTIONS } from "../../constants";
-import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
-import { getRandomContractAddresses } from "../../testing/mocks";
 import { expect } from "../../testing/assertions";
+import { getRandomContractAddresses } from "../../testing/mocks";
+import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
+import { getChainId } from "../../testing/utils";
 
 import { AppInstance } from "../app-instance";
 import { StateChannel } from "../state-channel";
@@ -26,7 +27,7 @@ describe("StateChannel::setupChannel", () => {
       contractAddresses.IdentityApp,
       contractAddresses,
       multisigAddress,
-      1337,
+      getChainId(),
       ids[0],
       ids[1],
     );
