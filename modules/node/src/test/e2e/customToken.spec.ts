@@ -1,4 +1,4 @@
-import { ColorfulLogger, logTime, getRandomChannelSigner, delay } from "@connext/utils";
+import { ColorfulLogger, logTime, getRandomChannelSigner, getChainId } from "@connext/utils";
 import { INestApplication } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { Wallet, ContractFactory, Contract, providers, BigNumber } from "ethers";
@@ -31,7 +31,7 @@ describe.skip("Custom token", () => {
     const start = Date.now();
 
     sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC!).connect(
-      new providers.JsonRpcProvider(env.ethProviderUrl),
+      new providers.JsonRpcProvider(env.ethProviderUrl, await getChainId(env.ethProviderUrl)),
     );
 
     const factory = new ContractFactory(token.abi, token.bytecode, sugarDaddy);
@@ -66,7 +66,7 @@ describe.skip("Custom token", () => {
     const balance: BigNumber = await tokenContract.balanceOf(nodeSignerAddress);
     expect(balance.gt(0)).to.be.true;
 
-    const decimals = await tokenContract.functions.decimals();
+    const decimals = await configService.getTokenDecimals();
     expect(decimals.toString()).to.eq("9");
     const supportedTokens = configService.getSupportedTokenAddresses();
     expect(supportedTokens).to.include(tokenContract.address);
@@ -106,11 +106,9 @@ describe.skip("Custom token", () => {
       RebalanceType.COLLATERALIZE,
     );
 
-    console.log("tx: ", tx);
     expect(tx).to.be.ok;
 
     const freeBalance = await clientA.getFreeBalance(tokenContract.address);
-    console.log("freeBalance: ", freeBalance);
     expect(freeBalance[nodeSignerAddress].gt(0)).to.be.true;
   });
 });

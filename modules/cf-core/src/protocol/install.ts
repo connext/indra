@@ -21,6 +21,7 @@ import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
 import { assertIsValidSignature } from "./utils";
+import { NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH } from "../errors";
 
 const protocol = ProtocolNames.install;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
@@ -186,7 +187,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
     let substart = start;
-    const loggerId = (params as ProtocolParams.Install).proposal.identityHash || processID;
+    const { proposal: proposalJson, initiatorIdentifier } =
+      (params as ProtocolParams.Install) || {};
+    const loggerId = proposalJson?.identityHash || processID;
     log.info(`[${loggerId}] Response started`);
     log.debug(`[${loggerId}] Protocol response started with parameters ${stringify(params)}`);
 
@@ -196,8 +199,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     if (!preProtocolStateChannel) {
       throw new Error("No state channel found for install");
     }
-
-    const { proposal: proposalJson, initiatorIdentifier } = params as ProtocolParams.Install;
 
     const proposal = AppInstance.fromJson(proposalJson);
 
@@ -304,12 +305,26 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
  * @param {StateChannel} stateChannel - The pre-protocol state of the channel
  * @returns {Promise<StateChannel>} - The post-protocol state of the channel
  */
-function computeInstallStateChannelTransition(
+export function computeInstallStateChannelTransition(
   stateChannel: StateChannel,
   proposal: AppInstance,
 ): StateChannel {
-  // this state transition is calculated for the free balance app, so use
-  // the channel not app, ordering when calculating
+  // Verify that the proposal exists in the channel
+  const stored = stateChannel.proposedAppInstances.get(proposal.identityHash);
+
+  if (!stored) {
+    throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(proposal.identityHash));
+  }
+  return stateChannel.installApp(
+    proposal,
+    getTokenBalanceDecrementForInstall(stateChannel, proposal),
+  );
+}
+
+export function getTokenBalanceDecrementForInstall(
+  stateChannel: StateChannel,
+  proposal: AppInstance,
+): TokenIndexedCoinTransferMap {
   const appInitiatorToken = getAddressFromAssetId(proposal.initiatorDepositAssetId);
   const appResponderToken = getAddressFromAssetId(proposal.responderDepositAssetId);
 
@@ -343,5 +358,5 @@ function computeInstallStateChannelTransition(
     };
   }
 
-  return stateChannel.installApp(proposal, tokenIndexedBalanceDecrement);
+  return tokenIndexedBalanceDecrement;
 }

@@ -4,14 +4,13 @@ set -e
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
+suffix="node_tester"
 if [[ "$1" == "--watch" ]]
 then
-  suffix="node_watcher"
-  command='exec ts-mocha --bail --check-leaks --watch --timeout 45000 src/**/*.spec.ts '"$@"
+  command='exec ts-mocha --bail --check-leaks --watch --timeout 60000 src/**/*.spec.ts '"$@"
   shift # forget $1 and replace it w $2, etc
 else
-  suffix="node_tester"
-  command='ts-mocha --bail --check-leaks --exit --timeout 45000 src/**/*.spec.ts '"$@"
+  command='ts-mocha --bail --check-leaks --exit --timeout 60000 src/**/*.spec.ts '"$@"
 fi
 echo $command
 

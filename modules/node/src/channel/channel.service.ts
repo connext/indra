@@ -5,11 +5,10 @@ import {
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
 } from "@connext/types";
-import { ERC20 } from "@connext/contracts";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
-import { BigNumber, constants, utils, Contract } from "ethers";
+import { BigNumber, constants, utils } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -222,17 +221,9 @@ export class ChannelService {
 
     // convert targets to proper units for token
     if (assetId !== AddressZero) {
-      const token = new Contract(assetId, ERC20.abi, this.configService.getEthProvider());
-      let decimals = DEFAULT_DECIMALS;
-      try {
-        decimals = await token.decimals();
-      } catch (e) {
-        this.log.error(
-          `Could not retrieve decimals from token ${assetId}, proceeding with decimals = ${DEFAULT_DECIMALS}: ${e.message}`,
-        );
-      }
+      const decimals = await this.configService.getTokenDecimals();
       if (decimals !== DEFAULT_DECIMALS) {
-        this.log.warn(`Token has ${decimals} decimals, converting rebalance targets`);
+        this.log.info(`Token has ${decimals} decimals, converting rebalance targets`);
         targets.collateralizeThreshold = BigNumber.from(
           formatUnits(targets.collateralizeThreshold, decimals).split(".")[0],
         );

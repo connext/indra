@@ -236,7 +236,11 @@ describe("CFCoreStore", () => {
       );
 
       await cfCoreStore.createStateChannel(channelJson, setupCommitment, freeBalanceUpdate);
-      await cfCoreStore.incrementNumProposedApps(channelJson.multisigAddress);
+      await cfCoreStore.updateNumProposedApps(
+        channelJson.multisigAddress,
+        channelJson.monotonicNumProposedApps + 1,
+        { ...channelJson, monotonicNumProposedApps: channelJson.monotonicNumProposedApps + 1 },
+      );
       const channelFromStore = await cfCoreStore.getStateChannel(channelJson.multisigAddress);
       const userIdentifier = channelJson.userIdentifiers.find((x) => x !== nodeIdentifier);
       expect(channelFromStore).to.containSubset({
@@ -335,7 +339,10 @@ describe("CFCoreStore", () => {
   });
 
   describe("App Instance", () => {
-    it("should not create an app instance if there is no app proposal", async () => {
+    // this test is currently skipped because the sync protocol needs to be able to install apps that do
+    // not have proposals in some cases.
+    // TODO: revisit this at some point
+    it.skip("should not create an app instance if there is no app proposal", async () => {
       const { multisigAddress, channelJson } = await createTestChannel(
         cfCoreStore,
         configService.getPublicIdentifier(),
@@ -346,14 +353,14 @@ describe("CFCoreStore", () => {
         ...channelJson.freeBalanceAppInstance!,
         latestState: { appState: "updated" },
       };
-      expect(
+      await expect(
         cfCoreStore.createAppInstance(
           multisigAddress,
           appInstance,
           updatedFreeBalance,
           createSetStateCommitmentJSON(),
         ),
-      ).to.be.rejectedWith(/Could not find app with identity hash/);
+      ).to.be.rejectedWith(/Operation could not be completed/);
     });
 
     it("createAppInstance", async () => {
@@ -481,7 +488,7 @@ describe("CFCoreStore", () => {
       for (let index = 0; index < 3; index++) {
         await cfCoreStore.removeAppInstance(
           multisigAddress,
-          appInstance.identityHash,
+          appInstance,
           updatedFreeBalance,
           updatedFreeBalanceCommitment,
         );

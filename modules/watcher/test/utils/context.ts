@@ -14,7 +14,7 @@ import {
   ChallengeStatus,
   IStoreService,
 } from "@connext/types";
-import { toBN, getRandomChannelSigner } from "@connext/utils";
+import { toBN, getRandomChannelSigner, getChainId } from "@connext/utils";
 import { BigNumber, Wallet, Contract, constants, utils } from "ethers";
 
 import { AppWithCounterClass, AppWithCounterAction, ActionType } from "./appWithCounter";
@@ -52,7 +52,7 @@ export const setupContext = async (
 ) => {
   // setup constants / defaults
   const ethProvider = process.env.ETHPROVIDER_URL;
-  const provider = new JsonRpcProvider(ethProvider);
+  const provider = new JsonRpcProvider(ethProvider, await getChainId(ethProvider!));
 
   const wallet = Wallet.fromMnemonic(process.env.SUGAR_DADDY!).connect(provider);
   const signers = [getRandomChannelSigner(ethProvider), getRandomChannelSigner(ethProvider)];

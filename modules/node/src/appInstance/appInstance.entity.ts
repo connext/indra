@@ -8,7 +8,7 @@ import {
   MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
-import { BigNumber } from "ethers";
+import { BigNumber, constants } from "ethers";
 import {
   Column,
   CreateDateColumn,
@@ -20,12 +20,14 @@ import {
 
 import { Channel } from "../channel/channel.entity";
 import { IsEthAddress, IsKeccak256Hash, IsValidPublicIdentifier } from "../validate";
+import { transformBN } from "../utils";
+
+const { Zero } = constants;
 
 export enum AppType {
   PROPOSAL = "PROPOSAL",
   INSTANCE = "INSTANCE",
   FREE_BALANCE = "FREE_BALANCE",
-  REJECTED = "REJECTED", // removed proposal
   UNINSTALLED = "UNINSTALLED", // removed app
 }
 
@@ -57,12 +59,7 @@ export class AppInstance<T extends AppName = any> {
   @Column("integer")
   latestVersionNumber!: number;
 
-  @Column("text", {
-    transformer: {
-      from: (value: string): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
+  @Column("text", { transformer: transformBN })
   initiatorDeposit!: BigNumber;
 
   @Column("text")
@@ -80,12 +77,7 @@ export class AppInstance<T extends AppName = any> {
   @IsValidPublicIdentifier()
   responderIdentifier!: string;
 
-  @Column("text", {
-    transformer: {
-      from: (value: string): BigNumber => BigNumber.from(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
+  @Column("text", { transformer: transformBN })
   responderDeposit!: BigNumber;
 
   @Column("text")

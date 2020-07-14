@@ -1,5 +1,5 @@
 import { connect } from "@connext/client";
-import { getLocalStore, getMemoryStore } from "@connext/store";
+import { getMemoryStore } from "@connext/store";
 import {
   ClientOptions,
   IChannelProvider,
@@ -15,6 +15,7 @@ import {
   ChannelSigner,
   ColorfulLogger,
   getRandomPrivateKey,
+  getRandomBytes32,
 } from "@connext/utils";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
@@ -28,16 +29,17 @@ export const createClient = async (
   opts: Partial<ClientOptions & { id: string; logLevel: number }> = {},
   fund: boolean = true,
 ): Promise<IConnextClient> => {
-  const store = opts.store || getMemoryStore();
   const log = new ColorfulLogger("CreateClient", opts.logLevel || env.logLevel);
+  const store = opts.store || getMemoryStore({ prefix: getRandomBytes32() });
+  await store.init();
   const clientOpts: ClientOptions = {
-    ethProviderUrl: env.ethProviderUrl,
+    ...opts,
+    ethProviderUrl: opts.ethProviderUrl || env.ethProviderUrl,
     loggerService: new ColorfulLogger("Client", opts.logLevel || env.logLevel, true, opts.id),
     signer: opts.signer || getRandomPrivateKey(),
-    nodeUrl: env.nodeUrl,
-    messagingUrl: env.natsUrl,
+    nodeUrl: opts.nodeUrl || env.nodeUrl,
+    messagingUrl: opts.messagingUrl || env.natsUrl,
     store,
-    ...opts,
   };
   log.info(`connect() called`);
   let start = Date.now();
@@ -90,7 +92,6 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
     ...opts,
     ...urlOptions,
     loggerService: new ColorfulLogger("TestRunner", env.logLevel, true),
-    store: getLocalStore(), // TODO: replace with polyfilled window.localStorage
   };
   if (network === "mainnet") {
     clientOpts = {
@@ -116,14 +117,11 @@ export type ClientTestMessagingInputOpts = {
 export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> & { id?: string; logLevel?: number } = {},
 ): Promise<IConnextClient> => {
-  const { protocol, ceiling, signer: signerOpts, params } = opts;
-  const signer = signerOpts || getRandomChannelSigner(env.ethProviderUrl);
+  const { protocol, ceiling, params } = opts;
+  const signer = opts.signer || getRandomChannelSigner(env.ethProviderUrl);
   // no defaults specified, exit early
   if (Object.keys(opts).length === 0) {
-    const messaging = new TestMessagingService({
-      signer: signer as ChannelSigner,
-      stopOnCeilingReached: opts.stopOnCeilingReached,
-    });
+    const messaging = new TestMessagingService({ signer: signer as ChannelSigner });
     const emptyCount = { [SEND]: 0, [RECEIVED]: 0 };
     const noLimit = { [SEND]: NO_LIMIT, [RECEIVED]: NO_LIMIT };
     expect(messaging.installCount).to.contain(emptyCount);

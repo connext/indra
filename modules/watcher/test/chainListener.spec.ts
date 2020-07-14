@@ -15,6 +15,13 @@ import { ChainListener } from "../src";
 
 const { Zero, One } = constants;
 
+const logger = new ColorfulLogger(
+  "ChainListenerTest",
+  parseInt(process.env.LOG_LEVEL || "0", 10),
+  true,
+  "T",
+);
+
 describe("ChainListener", () => {
   let challengeRegistry: Contract;
   let provider: JsonRpcProvider;
@@ -22,9 +29,6 @@ describe("ChainListener", () => {
   let setAndProgressState: any;
   let appInstance: AppWithCounterClass;
   let signers: ChannelSigner[];
-
-  const logLevel = parseInt(process.env.LOG_LEVEL || "0");
-  const log = new ColorfulLogger("TestChainListener", logLevel, true, "T");
 
   const action = {
     actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
@@ -81,7 +85,7 @@ describe("ChainListener", () => {
     chainListener = new ChainListener(
       provider,
       { ChallengeRegistry: challengeRegistry.address } as ContractAddresses,
-      new ColorfulLogger("Test", logLevel, true, " "),
+      logger,
     );
   });
 
@@ -148,7 +152,7 @@ describe("ChainListener", () => {
 
     // submit transaction
     const startingBlock = await provider.getBlockNumber();
-    log.debug(`parsing past logs staring from block: ${startingBlock}`);
+    logger.debug(`parsing past logs staring from block: ${startingBlock}`);
     const tx = await setAndProgressState(action);
     expect(tx).to.be.ok;
 

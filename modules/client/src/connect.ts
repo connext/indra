@@ -10,7 +10,14 @@ import {
   STORE_SCHEMA_VERSION,
   IChannelSigner,
 } from "@connext/types";
-import { ChannelSigner, ConsoleLogger, logTime, stringify, delay } from "@connext/utils";
+import {
+  ChannelSigner,
+  ConsoleLogger,
+  logTime,
+  stringify,
+  delay,
+  getChainId,
+} from "@connext/utils";
 
 import { Contract, providers } from "ethers";
 
@@ -34,13 +41,12 @@ export const connect = async (
     ethProviderUrl,
     loggerService,
     messagingUrl,
+    nodeUrl,
     logLevel,
     skipSync,
+    skipInitStore,
   } = opts;
-  let { store, messaging, nodeUrl } = opts;
-  if (store) {
-    await store.init();
-  }
+  let { messaging } = opts;
 
   const logger = loggerService
     ? loggerService.newContext("ConnextConnect")
@@ -54,10 +60,23 @@ export const connect = async (
     }`,
   );
 
-  // setup ethProvider + network information
-  logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
-  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
-  const network = await ethProvider.getNetwork();
+  const store = opts.store || getLocalStore();
+
+  if (!skipInitStore) {
+    await store.init();
+  }
+  logger.info(
+    `Using ${opts.store ? "given" : "local"} store containing ${
+      (await store.getAllChannels()).length
+    } channels`,
+  );
+
+  // setup ethProvider
+  logger.debug(`Creating ethereum provider from url: ${ethProviderUrl}`);
+  const ethProvider = new providers.JsonRpcProvider(
+    ethProviderUrl,
+    await getChainId(ethProviderUrl),
+  );
 
   // setup messaging and node api
   let node: INodeApiClient;
@@ -76,13 +95,12 @@ export const connect = async (
     }
     logger.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
-    nodeUrl = channelProvider.config.nodeUrl;
     node = await NodeApiClient.init({
       ethProvider,
       messaging,
       messagingUrl,
       logger,
-      nodeUrl,
+      nodeUrl: channelProvider.config.nodeUrl,
       channelProvider,
       skipSync,
     });
@@ -97,8 +115,6 @@ export const connect = async (
       typeof opts.signer === "string"
         ? new ChannelSigner(opts.signer, ethProviderUrl)
         : opts.signer;
-
-    store = store || getLocalStore();
 
     node = await NodeApiClient.init({
       store,
@@ -131,7 +147,7 @@ export const connect = async (
     ethProvider,
     logger,
     messaging,
-    network,
+    network: await ethProvider.getNetwork(),
     node,
     signer,
     store,
@@ -245,20 +261,16 @@ export const connect = async (
   logger.info("Checked in with node");
 
   // watch for/prune lingering withdrawals
-  logger.info("Getting user withdrawals");
+  logger.debug("Getting user withdrawals");
   const previouslyActive = await client.getUserWithdrawals();
   if (previouslyActive.length === 0) {
-    logger.info("No user withdrawals found");
+    logger.debug("No user withdrawals found");
     logTime(logger, start, `Client successfully connected`);
     return client;
   }
 
   try {
-    logger.info(`Watching for user withdrawals`);
-    const transactions = await client.watchForUserWithdrawal();
-    if (transactions.length > 0) {
-      logger.info(`Found node submitted user withdrawals: ${transactions.map((tx) => tx.hash)}`);
-    }
+    await client.watchForUserWithdrawal();
   } catch (e) {
     logger.error(
       `Could not complete watching for user withdrawals: ${

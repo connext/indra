@@ -21,12 +21,10 @@ import {
   getTransferTypeFromAppName,
   DefaultApp,
   SupportedApplicationNames,
-  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
-import { ERC20 } from "@connext/contracts";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { BigNumber, providers, Contract } from "ethers";
+import { BigNumber, providers } from "ethers";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -221,14 +219,27 @@ export class AppRegistryService implements OnModuleInit {
     };
   };
 
+  /**
+   * For `RequireOnline` transfers, the flow is:
+   * - Sender initiates propose with node <LOCK MULTISIG SENDER-NODE>
+   * - Node responds to sender propose and creates app proposal <UNLOCK MULTISIG SENDER-NODE>
+   * - Node hears PROPOSE_INSTALL event for sender app and initiates propose with receiver <LOCK MULTISIG RECEIVER-NODE>
+   * - Receiver responds to node propose and creates app proposal <UNLOCK MULTISIG RECEIVER-NODE>
+   * - Receiver initiates install with node <LOCK MULTISIG RECEIVER-NODE>
+   * - Node responds to install with receiver and hits this installTransferMiddleware function:
+   *   - Node asserts that there is a sender app proposal that corresponds to the receiver app proposal
+   *   - Node initiates install with sender <LOCK MULTISIG SENDER-NODE>
+   *   - Sender responds to install and installs app <UNLOCK MULTISIG SENDER-NODE>
+   * - Node finishes responding to receiver install and installs app <UNLOCK MULTISIG RECEIVER-NODE>
+   */
   private installTransferMiddleware = async (appInstance: AppInstanceJson) => {
     const latestState = appInstance.latestState as HashLockTransferAppState;
-    const senderAddress = latestState.coinTransfers[0].to;
+    const installingAppSender = latestState.coinTransfers[0].to;
 
     const nodeSignerAddress = await this.configService.getSignerAddress();
 
     // if node is not sending funds, we dont need to do anything
-    if (senderAddress !== nodeSignerAddress) {
+    if (installingAppSender !== nodeSignerAddress) {
       return;
     }
 
@@ -238,8 +249,8 @@ export class AppRegistryService implements OnModuleInit {
 
     // this middleware is only relevant for require online
     if (
-      getTransferTypeFromAppName(registryAppInfo.name as SupportedApplicationNames) ===
-      "AllowOffline"
+      getTransferTypeFromAppName(registryAppInfo.name as SupportedApplicationNames) !==
+      "RequireOnline"
     ) {
       return;
     }
@@ -296,31 +307,9 @@ export class AppRegistryService implements OnModuleInit {
 
     switch (proposal.appDefinition) {
       case contractAddresses.SimpleTwoPartySwapApp: {
-        const getDecimals = async (tokenAddress: string): Promise<number> => {
-          let decimals = 18;
-          if (tokenAddress !== CONVENTION_FOR_ETH_ASSET_ID) {
-            try {
-              const token = new Contract(
-                tokenAddress,
-                ERC20.abi,
-                this.configService.getEthProvider(),
-              );
-              decimals = await token.functions.decimals();
-              console.log("decimals: ", decimals);
-              this.log.info(
-                `Retrieved decimals for ${tokenAddress} from token contract: ${decimals}`,
-              );
-            } catch (error) {
-              this.log.error(
-                `Could not retrieve decimals from ${tokenAddress} token contract, proceeding with 18 decimals...: ${error.message}`,
-              );
-            }
-          }
-          return decimals;
-        };
-
-        const responderDecimals = await getDecimals(params.responderDepositAssetId);
-
+        const responderDecimals = await this.configService.getTokenDecimals(
+          params.responderDepositAssetId,
+        );
         return validateSimpleSwapApp(
           params as any,
           this.configService.getAllowedSwaps(),

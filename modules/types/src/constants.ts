@@ -9,10 +9,10 @@ export const GANACHE_CHAIN_ID = 1337;
 export const CONVENTION_FOR_ETH_ASSET_ID = AddressZero;
 
 // always 1 protocol being run, use locking timeout
-export const CF_METHOD_TIMEOUT = 15_000;
+export const CF_METHOD_TIMEOUT = 20_000;
 
 // longest timeout
-export const NATS_TIMEOUT = 60_000;
+export const NATS_TIMEOUT = CF_METHOD_TIMEOUT * 3;
 export const NATS_ATTEMPTS = 1;
 
 // eip712 stuff

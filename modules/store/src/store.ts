@@ -21,7 +21,7 @@ import {
 } from "@connext/types";
 import { toBN, nullLogger, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import pWaterfall from "p-waterfall";
-import { constants, utils } from "ethers";
+import { utils } from "ethers";
 
 import { storeKeys } from "./constants";
 import { KeyValueStorage } from "./types";
@@ -207,7 +207,11 @@ export class StoreService implements IStoreService {
     });
   }
 
-  async incrementNumProposedApps(multisigAddress: string): Promise<void> {
+  async updateNumProposedApps(
+    multisigAddress: string,
+    numProposedApps: number,
+    stateChannel: StateChannelJSON,
+  ): Promise<void> {
     return this.execute((store) => {
       const channel = this.getStateChannelFromStore(store, multisigAddress);
       if (!channel) {
@@ -215,7 +219,7 @@ export class StoreService implements IStoreService {
       }
       const updatedStore = this.setStateChannel(store, {
         ...channel,
-        monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
+        monotonicNumProposedApps: numProposedApps,
       });
       return this.saveStore(updatedStore);
     });
@@ -338,7 +342,7 @@ export class StoreService implements IStoreService {
 
   async removeAppInstance(
     multisigAddress: string,
-    appIdentityHash: string,
+    appInstance: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
@@ -350,14 +354,14 @@ export class StoreService implements IStoreService {
         );
         return store;
       }
-      if (!this.hasAppIdentityHash(appIdentityHash, channel.appInstances)) {
+      if (!this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
         // does not exist
         this.log.debug(
-          `No app with hash ${appIdentityHash} found in channel with multisig ${multisigAddress}`,
+          `No app with hash ${appInstance.identityHash} found in channel with multisig ${multisigAddress}`,
         );
         return store;
       }
-      const idx = channel.appInstances.findIndex(([app]) => app === appIdentityHash);
+      const idx = channel.appInstances.findIndex(([app]) => app === appInstance.identityHash);
       const presplice = channel.appInstances.length;
       channel.appInstances.splice(idx, 1);
       this.log.debug(

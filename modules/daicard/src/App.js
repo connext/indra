@@ -2,7 +2,7 @@ import * as connext from "@connext/client";
 import { ERC20 } from "@connext/contracts";
 import { getLocalStore } from "@connext/store";
 import { ConnextClientStorePrefix, EventNames } from "@connext/types";
-import { Currency, minBN, toBN, tokenToWei, weiToToken } from "@connext/utils";
+import { Currency, minBN, toBN, calculateExchangeWad } from "@connext/utils";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, Wallet, providers, constants, utils } from "ethers";
@@ -36,7 +36,7 @@ const { formatEther } = utils;
 const urls = {
   ethProviderUrl:
     process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
-  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin}/api`,
+  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin}`,
   legacyUrl: (chainId) =>
     chainId.toString() === "1"
       ? "https://hub.connext.network/api/hub"
@@ -495,7 +495,12 @@ class App extends React.Component {
       return;
     }
 
-    const maxSwap = tokenToWei(maxDeposit.toDAI().wad.sub(balance.channel.token.wad), swapRate);
+    const maxSwap = calculateExchangeWad(
+      maxDeposit.toDAI().wad.sub(balance.channel.token.wad),
+      18,
+      swapRate,
+      18,
+    );
     const availableWeiToSwap = minBN([balance.channel.ether.wad, maxSwap]);
 
     if (availableWeiToSwap.isZero()) {
@@ -509,7 +514,7 @@ class App extends React.Component {
 
     console.log(
       `Attempting to swap ${formatEther(availableWeiToSwap)} eth for ${formatEther(
-        weiToToken(availableWeiToSwap, swapRate),
+        calculateExchangeWad(availableWeiToSwap, 18, swapRate, 18),
       )} dai at rate: ${swapRate}`,
     );
     machine.send(["START_SWAP"]);

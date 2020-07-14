@@ -29,9 +29,9 @@ const getUrlOptions = (network: string): { ethProviderUrl: string; nodeUrl: stri
   } else {
     const baseUrl =
       network.toLowerCase() === "mainnet"
-        ? "indra.connext.network/api"
+        ? "indra.connext.network"
         : network.toLowerCase() === "rinkeby"
-        ? "rinkeby.indra.connext.network/api"
+        ? "rinkeby.indra.connext.network"
         : null;
     if (!baseUrl) {
       throw new Error(`Provided network (${network.toLowerCase()}) is not supported`);

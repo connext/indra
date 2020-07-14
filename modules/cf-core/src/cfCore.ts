@@ -24,7 +24,7 @@ import {
   ValidationMiddleware,
   EventName,
 } from "@connext/types";
-import { delay, nullLogger, stringify } from "@connext/utils";
+import { abrv, delay, nullLogger, stringify } from "@connext/utils";
 import { providers } from "ethers";
 import EventEmitter from "eventemitter3";
 
@@ -115,7 +115,9 @@ export class CFCore {
   }
 
   private async asynchronouslySetupUsingRemoteServices(syncOnStart: boolean): Promise<CFCore> {
-    this.log.info(`CFCore signer address: ${await this.signer.getAddress()}`);
+    this.log.info(
+      `Signer address: ${this.signer.address} | public id: ${this.signer.publicIdentifier}`,
+    );
     this.requestHandler = new RequestHandler(
       this.publicIdentifier,
       this.incoming,
@@ -132,12 +134,23 @@ export class CFCore {
     this.registerMessagingConnection();
     this.rpcRouter = new RpcRouter(this.requestHandler);
     this.requestHandler.injectRouter(this.rpcRouter);
+    const channels = await this.storeService.getAllChannels();
+    this.log.info(
+      `Given store contains ${channels.length} channels: [${
+        channels.length > 10
+          ? channels
+              .map((c) => abrv(c.multisigAddress))
+              .slice(0, 10)
+              .toString() + ", ..."
+          : channels.map((c) => abrv(c.multisigAddress))
+      }]`,
+    );
     if (!syncOnStart) {
       return this;
     }
-    const channels = await this.storeService.getAllChannels();
     await Promise.all(
       channels.map(async (channel) => {
+        this.log.info(`Syncing channel ${channel.multisigAddress}`);
         await this.rpcRouter.dispatch({
           methodName: MethodNames.chan_sync,
           parameters: { multisigAddress: channel.multisigAddress } as MethodParams.Sync,
@@ -158,12 +171,23 @@ export class CFCore {
     }
     this.protocolRunner.register(opcode, async (args: [ProtocolName, MiddlewareContext]) => {
       const [protocol, context] = args;
-      try {
-        await middleware(protocol, context);
-        return undefined;
-      } catch (e) {
-        return e.stack || e.message;
-      }
+      const middlewareRet = await Promise.race([
+        new Promise((resolve) => {
+          middleware(protocol, context)
+            .catch((e) => resolve(e.stack || e.message))
+            .then(() => resolve(undefined));
+        }),
+        new Promise((resolve) => {
+          delay(IO_SEND_AND_WAIT_TIMEOUT).then(() =>
+            resolve(
+              `Failed to execute validation middleware for ${protocol} within ${
+                IO_SEND_AND_WAIT_TIMEOUT / 1000
+              }s.`,
+            ),
+          );
+        }),
+      ]);
+      return middlewareRet;
     });
   }
 
@@ -277,13 +301,12 @@ export class CFCore {
       async (
         args: [
           PersistStateChannelType,
-          StateChannel,
-          (MinimalTransaction | SetStateCommitment | ConditionalTransactionCommitment)[],
-          AppInstance, // app context for fb sync
-          ("install" | "uninstall")?, // fb sync type
+          StateChannel, // post protocol channel
+          (MinimalTransaction | SetStateCommitment | ConditionalTransactionCommitment)[], // signed commitments
+          AppInstance[], // affected apps (multiple for reject)
         ],
       ) => {
-        const [type, stateChannel, signedCommitments, appContext, syncType] = args;
+        const [type, stateChannel, signedCommitments, affectedApps] = args;
         switch (type) {
           case PersistStateChannelType.CreateChannel: {
             const [setup, freeBalance] = signedCommitments as [
@@ -300,27 +323,35 @@ export class CFCore {
             break;
           }
 
-          case PersistStateChannelType.SyncNumProposedApps: {
-            await this.storeService.incrementNumProposedApps(stateChannel.multisigAddress);
+          case PersistStateChannelType.SyncRejectedProposals: {
+            // NOTE: this relies on `removeAppProposal` being idempotent
+            // and functional concurrent writes of the store
+            await Promise.all(
+              affectedApps.map((app) =>
+                this.storeService.removeAppProposal(
+                  stateChannel.multisigAddress,
+                  app.identityHash,
+                  stateChannel.toJson(),
+                ),
+              ),
+            );
             break;
           }
 
           case PersistStateChannelType.SyncProposal: {
-            // if there are no commitments, syncing rejection
-            if (signedCommitments.length === 0) {
-              await this.storeService.removeAppProposal(
-                stateChannel.multisigAddress,
-                appContext.identityHash,
-                stateChannel.toJson(),
-              );
-              break;
-            }
             const [setState, conditional] = signedCommitments as [
               SetStateCommitment,
               ConditionalTransactionCommitment,
             ];
-            if (!appContext) {
-              throw new Error("Could not find proposal in app context");
+            const [appContext] = affectedApps;
+            if (!appContext || !setState || !conditional) {
+              // adding a rejected proposal
+              await this.storeService.updateNumProposedApps(
+                stateChannel.multisigAddress,
+                stateChannel.numProposedApps,
+                stateChannel.toJson(),
+              );
+              break;
             }
             // this is adding a proposal
             await this.storeService.createAppProposal(
@@ -333,34 +364,43 @@ export class CFCore {
             );
             break;
           }
-          case PersistStateChannelType.NoChange: {
-            break;
-          }
-          case PersistStateChannelType.SyncFreeBalance: {
+
+          case PersistStateChannelType.SyncInstall: {
             const [setState] = signedCommitments as [SetStateCommitment];
-            if (syncType && syncType === "uninstall") {
-              // this was an uninstall, so remove app instance
-              await this.storeService.removeAppInstance(
-                stateChannel.multisigAddress,
-                appContext.identityHash,
-                stateChannel.toJson().freeBalanceAppInstance!,
-                setState.toJson(),
-                stateChannel.toJson(),
+            const [appContext] = affectedApps;
+            if (!appContext || !setState) {
+              throw new Error(
+                "Could not find sufficient information to store channel with installed app from sync method. Check middlewares.",
               );
-            } else if (syncType && syncType === "install") {
-              // this was an install, add app and remove proposals
-              await this.storeService.createAppInstance(
-                stateChannel.multisigAddress,
-                appContext.toJson(),
-                stateChannel.freeBalance.toJson(),
-                setState.toJson(),
-                stateChannel.toJson(),
-              );
-            } else {
-              throw new Error(`Unrecognized (or unavailable) free balance sync type: ${syncType}`);
             }
+            await this.storeService.createAppInstance(
+              stateChannel.multisigAddress,
+              appContext.toJson(),
+              stateChannel.freeBalance.toJson(),
+              setState.toJson(),
+              stateChannel.toJson(),
+            );
             break;
           }
+
+          case PersistStateChannelType.SyncUninstall: {
+            const [setState] = signedCommitments as [SetStateCommitment];
+            const [appContext] = affectedApps;
+            if (!appContext || !setState) {
+              throw new Error(
+                `Could not find sufficient information to store channel with uninstalled app from sync method. Check middlewares. Missing appContext: ${!!appContext}, missing setState: ${!!setState}`,
+              );
+            }
+            await this.storeService.removeAppInstance(
+              stateChannel.multisigAddress,
+              appContext.toJson(),
+              stateChannel.freeBalance.toJson(),
+              setState.toJson(),
+              stateChannel.toJson(),
+            );
+            break;
+          }
+
           case PersistStateChannelType.SyncAppInstances: {
             for (const commitment of signedCommitments as SetStateCommitment[]) {
               await this.storeService.updateAppInstance(
@@ -372,9 +412,14 @@ export class CFCore {
             }
             break;
           }
+
+          case PersistStateChannelType.NoChange: {
+            break;
+          }
+
           default: {
             const c: never = type;
-            throw new Error(`Unrecognized persist state channel type: ${c}`);
+            throw new Error(`Unrecognized persist state channel type: ${stringify(c)}`);
           }
         }
         return { channel: stateChannel };
@@ -448,7 +493,7 @@ export class CFCore {
           case PersistAppType.RemoveInstance: {
             await this.storeService.removeAppInstance(
               multisigAddress,
-              identityHash,
+              (app as AppInstance).toJson(),
               freeBalance.toJson(),
               signedSetStateCommitment.toJson(),
               postProtocolChannel.toJson(),

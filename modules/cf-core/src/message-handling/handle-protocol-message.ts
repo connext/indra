@@ -50,9 +50,14 @@ export async function handleReceivedProtocolMessage(
     postProtocolStateChannel = channel;
     appInstance = appContext || undefined;
   } catch (e) {
-    log.error(`Caught error running ${data.protocol} protocol, aborting. Error: ${e.stack}`);
+    log.warn(
+      `Caught error running ${data.protocol} protocol, aborting. Will be retried after syncing. ${
+        e.stack || e.message
+      }`,
+    );
+    log.debug(e.stack);
     // NOTE: see comments in IO_SEND_AND_WAIT opcode
-    const messageForCounterparty = prepareProtocolErrorMessage(msgBn, e.message || e);
+    const messageForCounterparty = prepareProtocolErrorMessage(msgBn, e.stack || e.message);
     await requestHandler.messagingService.send(
       messageForCounterparty.data.to,
       messageForCounterparty,
@@ -108,10 +113,13 @@ async function getOutgoingEventDataFromProtocol(
       } as ProtocolEventMessage<typeof EventNames.INSTALL_EVENT>;
     }
     case ProtocolNames.uninstall: {
+      if (!appContext) {
+        throw new Error("Could not find app context to process event for uninstall protocol");
+      }
       return {
         ...baseEvent,
         type: EventNames.UNINSTALL_EVENT,
-        data: getUninstallEventData(params as ProtocolParams.Uninstall, appContext!),
+        data: getUninstallEventData(params as ProtocolParams.Uninstall, appContext),
       } as ProtocolEventMessage<typeof EventNames.UNINSTALL_EVENT>;
     }
     case ProtocolNames.setup: {
