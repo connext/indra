@@ -20,6 +20,7 @@ import { Context } from "../types";
 import { MiddlewareContainer } from "./middleware";
 import { StateChannel, AppInstance } from "../models";
 import { RpcRouter } from "../rpc-router";
+import { generateProtocolMessageData } from "../protocol/utils";
 
 const firstRecipientFromProtocolName = (protocolName: ProtocolName) => {
   if (Object.values(ProtocolNames).includes(protocolName)) {
@@ -76,14 +77,13 @@ export class ProtocolRunner {
     try {
       const protocolRet = await this.runProtocol(
         getProtocolFromName(protocolName)[0],
-        {
-          params,
-          protocol: protocolName,
-          processID: uuid(),
-          seq: 0,
-          to: params[firstRecipientFromProtocolName(protocolName)],
-          customData: {},
-        },
+        generateProtocolMessageData(
+          params[firstRecipientFromProtocolName(protocolName)],
+          protocolName,
+          uuid(),
+          0,
+          { customData: {} },
+        ),
         preProtocolStateChannel,
       );
       return protocolRet;
@@ -99,14 +99,13 @@ export class ProtocolRunner {
     try {
       const protocolRet = await this.runProtocol(
         getProtocolFromName(protocol)[0],
-        {
+        generateProtocolMessageData(
+          params[firstRecipientFromProtocolName(protocol)],
           protocol,
-          params,
-          processID: uuid(),
-          seq: 0,
-          to: params[firstRecipientFromProtocolName(protocol)],
-          customData: {},
-        },
+          uuid(),
+          0,
+          { customData: {} },
+        ),
         {} as any,
       );
       return protocolRet;

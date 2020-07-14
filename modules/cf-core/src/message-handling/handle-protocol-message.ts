@@ -18,6 +18,7 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { RequestHandler } from "../request-handler";
 import { RpcRouter } from "../rpc-router";
 import { StateChannel, AppInstance } from "../models";
+import { generateProtocolMessageData } from "../protocol/utils";
 
 /**
  * Forwards all received Messages that are for the machine's internal
@@ -189,14 +190,7 @@ const prepareProtocolErrorMessage = (
     from,
   } = latestMsg;
   return {
-    data: {
-      protocol,
-      processID,
-      seq: UNASSIGNED_SEQ_NO,
-      to: from,
-      error,
-      customData: {},
-    },
+    data: generateProtocolMessageData(from, protocol, processID, UNASSIGNED_SEQ_NO, { error }),
     type: EventNames.PROTOCOL_MESSAGE_EVENT,
     from: to,
   };
