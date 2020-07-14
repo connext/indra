@@ -309,12 +309,14 @@ describe("HashLock Transfers", () => {
     const { paymentId } = await sendHashlockTransfer(clientA, clientB, opts);
 
     const badPreImage = getRandomBytes32();
-    await clientB.resolveCondition({
-      conditionType: ConditionalTransferTypes.HashLockTransfer,
-      preImage: badPreImage,
-      paymentId: paymentId!,
-      assetId: transfer.assetId,
-    } as PublicParams.ResolveHashLockTransfer);
+    await expect(
+      clientB.resolveCondition({
+        conditionType: ConditionalTransferTypes.HashLockTransfer,
+        preImage: badPreImage,
+        paymentId: paymentId!,
+        assetId: transfer.assetId,
+      } as PublicParams.ResolveHashLockTransfer),
+    ).to.be.rejectedWith(/Hash generated from preimage does not match hash in state/);
 
     // verfy payment did not go through
     const { [clientB.signerAddress]: receiverBal } = await clientB.getFreeBalance(transfer.assetId);
@@ -394,6 +396,7 @@ describe("HashLock Transfers", () => {
       clientB
         .resolveCondition({
           paymentId: paymentId!,
+          preImage: HashZero,
           conditionType: ConditionalTransferTypes.HashLockTransfer,
           assetId: transfer.assetId,
         })
@@ -422,6 +425,7 @@ describe("HashLock Transfers", () => {
       clientB
         .resolveCondition({
           paymentId: paymentId!,
+          preImage: HashZero,
           conditionType: ConditionalTransferTypes.HashLockTransfer,
           assetId: transfer.assetId,
         })
@@ -464,6 +468,7 @@ describe("HashLock Transfers", () => {
 
     await clientA.resolveCondition({
       paymentId: paymentId!,
+      preImage: HashZero,
       conditionType: ConditionalTransferTypes.HashLockTransfer,
       assetId: transfer.assetId,
     });
