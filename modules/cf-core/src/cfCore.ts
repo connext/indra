@@ -244,7 +244,7 @@ export class CFCore {
 
     protocolRunner.register(
       Opcode.IO_SEND_AND_WAIT,
-      async (args: [ProtocolMessageData, StateChannel, AppInstance]) => {
+      async (args: [ProtocolMessageData, StateChannel?, AppInstance?]) => {
         const [data, channel, appContext] = args;
 
         const deferral = new Deferred<ProtocolMessage>();

@@ -45,14 +45,14 @@ export async function handleReceivedProtocolMessage(
   try {
     const { channel, appContext } = await protocolRunner.runProtocolWithMessage(
       router,
-      data,
+      msgBn,
       json && StateChannel.fromJson(json),
     );
     postProtocolStateChannel = channel;
     appInstance = appContext || undefined;
   } catch (e) {
     log.warn(
-      `Caught error running ${data.protocol} protocol, aborting. Will be retried after syncing. ${
+      `Caught error running ${protocol} protocol, aborting. Will be retried after syncing. ${
         e.stack || e.message
       }`,
     );
@@ -66,9 +66,9 @@ export async function handleReceivedProtocolMessage(
     return;
   }
 
-  const outgoingEventData = await getOutgoingEventDataFromProtocol(
+  const outgoingEventData = getOutgoingEventDataFromProtocol(
     protocol,
-    params!,
+    params,
     postProtocolStateChannel,
     appInstance,
   );
@@ -83,12 +83,12 @@ function emitOutgoingMessage(router: RpcRouter, msg: ProtocolEventMessage<any>) 
   return router.emit(msg["type"], msg, "outgoing");
 }
 
-async function getOutgoingEventDataFromProtocol(
+function getOutgoingEventDataFromProtocol(
   protocol: ProtocolName,
   params: ProtocolParam,
   postProtocolStateChannel: StateChannel,
   appContext?: AppInstance,
-): Promise<ProtocolEventMessage<any> | undefined> {
+): ProtocolEventMessage<any> | undefined {
   // default to the pubId that initiated the protocol
   const baseEvent = { from: params.initiatorIdentifier };
 
@@ -114,7 +114,7 @@ async function getOutgoingEventDataFromProtocol(
       } as ProtocolEventMessage<typeof EventNames.INSTALL_EVENT>;
     }
     case ProtocolNames.uninstall: {
-      if (!appContext) {
+      if (appContext === undefined || appContext === null) {
         throw new Error("Could not find app context to process event for uninstall protocol");
       }
       return {

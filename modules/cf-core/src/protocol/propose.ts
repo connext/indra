@@ -32,7 +32,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
-    const { processID, params } = message;
+    const { processID, params } = message.data;
     const loggerId = params?.multisigAddress || processID;
     log.info(`[${loggerId}] Initiation started`);
     log.debug(`[${loggerId}] Initiation started: ${stringify(params)}`);
@@ -208,7 +208,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
   1 /* Responding */: async function* (context: Context) {
     const { message, preProtocolStateChannel } = context;
-    const { params, processID } = message;
+    const { params, processID } = message.data;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
@@ -237,7 +237,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         signature: initiatorSignatureOnInitialState,
         signature2: initiatorSignatureOnConditionalTransaction,
       },
-    } = message;
+    } = message.data;
 
     if (!params) {
       throw new Error("No params found for proposal");

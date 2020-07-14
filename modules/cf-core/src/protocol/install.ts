@@ -45,7 +45,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
     const {
       preProtocolStateChannel,
-      message: { params, processID },
+      message: {
+        data: { params, processID },
+      },
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
@@ -172,9 +174,11 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
   1 /* Responding */: async function* (context: Context) {
     const {
       message: {
-        params,
-        processID,
-        customData: { signature },
+        data: {
+          params,
+          processID,
+          customData: { signature },
+        },
       },
       preProtocolStateChannel,
     } = context;

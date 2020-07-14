@@ -41,7 +41,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-SyncProtocol");
     const start = Date.now();
     let substart = start;
-    const { processID, params } = message;
+    const { processID, params } = message.data;
     const loggerId = (params as ProtocolParams.Sync).multisigAddress || processID;
     log.info(`[${loggerId}] Initiation started: ${stringify(params)}`);
     const {
@@ -256,7 +256,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       network: { contractAddresses, provider },
       preProtocolStateChannel,
     } = context;
-    const { params, processID } = m1;
+    const { params, processID, customData } = m1.data;
     const log = context.log.newContext("CF-SyncProtocol");
     const start = Date.now();
     let substart = start;
@@ -271,9 +271,9 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     // Determine the sync type needed, and fetch any information the
     // counterparty would need to sync and send to them
-    log.debug(`Response started with m1: ${stringify(m1.customData)}`);
+    log.debug(`Response started with m1: ${stringify(customData)}`);
     const syncType = makeSyncDetermination(
-      m1.customData as SyncDeterminationData,
+      customData as SyncDeterminationData,
       preProtocolStateChannel,
       log,
     );

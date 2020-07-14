@@ -4,13 +4,13 @@ import {
   IStoreService,
   NetworkContext,
   Opcode,
-  ProtocolMessageData,
   ProtocolName,
   ProtocolNames,
   ProtocolParam,
   ProtocolParams,
   EventNames,
   ProtocolEventMessage,
+  ProtocolMessage,
 } from "@connext/types";
 import { v4 as uuid } from "uuid";
 
@@ -49,19 +49,19 @@ export class ProtocolRunner {
   /// `IO_SEND_AND_WAIT`
   public async runProtocolWithMessage(
     router: RpcRouter,
-    msg: ProtocolMessageData,
+    msg: ProtocolMessage,
     preProtocolStateChannel?: StateChannel,
   ) {
-    const protocol = getProtocolFromName(msg.protocol);
-    const step = protocol[msg.seq];
+    const protocol = getProtocolFromName(msg.data.protocol);
+    const step = protocol[msg.data.seq];
     if (typeof step === "undefined") {
-      throw new Error(`Received invalid seq ${msg.seq} for protocol ${msg.protocol}`);
+      throw new Error(`Received invalid seq ${msg.data.seq} for protocol ${msg.data.protocol}`);
     }
     try {
       const protocolRet = await this.runProtocol(step, msg, preProtocolStateChannel);
       return protocolRet;
     } catch (error) {
-      const { protocol, params } = msg;
+      const { protocol, params } = msg.data;
       const outgoingData = getOutgoingEventFailureDataFromProtocol(protocol, params!, error);
       await emitOutgoingMessage(router, outgoingData);
       throw error;
@@ -77,14 +77,20 @@ export class ProtocolRunner {
     try {
       const protocolRet = await this.runProtocol(
         getProtocolFromName(protocolName)[0],
-        generateProtocolMessageData(
-          params[firstRecipientFromProtocolName(protocolName)],
-          protocolName,
-          uuid(),
-          0,
-          params,
-          { customData: {} },
-        ),
+        {
+          data: {
+            ...generateProtocolMessageData(
+              params[firstRecipientFromProtocolName(protocolName)],
+              protocolName,
+              uuid(),
+              0,
+              params,
+              { customData: {} },
+            ),
+          },
+          from: params.initiatorIdentifier,
+          type: EventNames.PROTOCOL_MESSAGE_EVENT,
+        },
         preProtocolStateChannel,
       );
       return protocolRet;
@@ -100,14 +106,20 @@ export class ProtocolRunner {
     try {
       const protocolRet = await this.runProtocol(
         getProtocolFromName(protocol)[0],
-        generateProtocolMessageData(
-          params[firstRecipientFromProtocolName(protocol)],
-          protocol,
-          uuid(),
-          0,
-          params,
-          { customData: {} },
-        ),
+        {
+          data: {
+            ...generateProtocolMessageData(
+              params[firstRecipientFromProtocolName(protocol)],
+              protocol,
+              uuid(),
+              0,
+              params,
+              { customData: {} },
+            ),
+          },
+          from: params.initiatorIdentifier,
+          type: EventNames.PROTOCOL_MESSAGE_EVENT,
+        },
         {} as any,
       );
       return protocolRet;
@@ -120,7 +132,7 @@ export class ProtocolRunner {
 
   private async runProtocol(
     instruction: (context: Context) => AsyncIterableIterator<any>,
-    message: ProtocolMessageData,
+    message: ProtocolMessage,
     preProtocolStateChannel?: StateChannel,
   ): Promise<{ channel: StateChannel; data: any; appContext: AppInstance }> {
     const context: Context = {

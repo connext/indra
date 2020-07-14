@@ -32,7 +32,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
     let substart = start;
-    const { processID, params } = message;
+    const { processID, params } = message.data;
     const loggerId = (params as ProtocolParams.TakeAction).appIdentityHash || processID;
     log.info(`[${loggerId}] Initiation started`);
     log.debug(`[${loggerId}] Protocol initiated with params: ${stringify(params)}`);
@@ -159,7 +159,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       processID,
       params,
       customData: { signature: counterpartySignature },
-    } = message;
+    } = message.data;
     const loggerId = (params as ProtocolParams.TakeAction).appIdentityHash || processID;
     log.info(`[${loggerId}] Response started`);
     log.debug(`[${loggerId}] Protocol response started with parameters ${stringify(params)}`);

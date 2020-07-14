@@ -28,7 +28,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
     let substart;
-    const { processID, params } = message;
+    const { processID, params } = message.data;
     const loggerId = params?.multisigAddress || processID;
     log.info(`[${loggerId}] Initiation started`);
     log.debug(`[${loggerId}] Protocol initiated with parameters ${stringify(params)}`);
@@ -137,7 +137,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         setupSignature: initiatorSetupSignature,
         setStateSignature: initiatorSignatureOnFreeBalanceState,
       },
-    } = message;
+    } = message.data;
     const loggerId = params?.multisigAddress || processID;
     log.info(`[${loggerId}] Response started`);
     log.debug(`[${loggerId}] Protocol response started with parameters ${stringify(params)}`);

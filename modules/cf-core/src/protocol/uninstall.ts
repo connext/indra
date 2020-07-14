@@ -33,7 +33,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
     let substart = start;
-    const { params, processID } = message;
+    const { params, processID } = message.data;
     const loggerId = (params as ProtocolParams.Uninstall).appIdentityHash || processID;
     log.info(`[${loggerId}] Initiation started`);
     log.debug(`[${loggerId}] Protocol initiated with params ${stringify(params)}`);
@@ -165,7 +165,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
     let substart = start;
-    const { params, processID } = message;
+    const { params, processID } = message.data;
     const loggerId = (params as ProtocolParams.Uninstall).appIdentityHash || processID;
     log.info(`[${loggerId}] Response started`);
     log.debug(`[${loggerId}] Protocol response started with params ${stringify(params)}`);
@@ -244,7 +244,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.freeBalance,
     );
 
-    const counterpartySignature = context.message.customData.signature;
+    const counterpartySignature = context.message.data.customData.signature;
     const uninstallCommitmentHash = uninstallCommitment.hashToSign();
 
     // 15ms
@@ -290,6 +290,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
           },
         },
       ),
+      postProtocolStateChannel,
       preUninstallApp,
     ];
 
