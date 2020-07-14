@@ -5,40 +5,33 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 cmd="${1:-test}"
-shift # $1 is the command to npm run. Extra options, if any, come after
+shift || true # $1 is the command to npm run. Extra options, if any, come after
 
 tag="node_tester"
 
-source dev.env
+source $dir/../../dev.env
+
+mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
 chain_id_1=1340
 chain_port_1=8548
 chain_url_1="http://172.17.0.1:$chain_port_1"
 chain_tag_1="${chain_id_1}_$tag"
+chain_host_1="${project}_testnet_$chain_tag_1"
 
 chain_id_2=1341
 chain_port_2=8549
 chain_url_2="http://172.17.0.1:$chain_port_2"
-chain_tag_1="${chain_id_1}_$tag"
+chain_tag_2="${chain_id_2}_$tag"
+chain_host_2="${project}_testnet_$chain_tag_2"
 
-export INDRA_CHAIN_PROVIDERS='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
+chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
 
 ####################
 # Internal Config
 # config & hard-coded stuff you might want to change
 
 network="${project}_$tag"
-
-ethprovider_1337_host="${project}_ethprovider_1337_$tag"
-ethprovider_1338_host="${project}_ethprovider_1338_$tag"
-
-eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-if [[ -f address-book.json ]]
-then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
-else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
-fi
-eth_rpc_url_1337="http://$ethprovider_1337_host:8545"
-eth_rpc_url_1338="http://$ethprovider_1338_host:8545"
 
 postgres_db="${project}_$tag"
 postgres_host="${project}_database_$tag"
@@ -53,13 +46,11 @@ redis_host="${project}_redis_$tag"
 node_port="8080"
 node_host="${project}_$tag"
 
-make deployed-contracts
-
 # Kill the dependency containers when this script exits
 function cleanup {
   echo;echo "Tests finished, stopping test containers.."
-  docker container stop $ethprovider_1337_host 2> /dev/null || true
-  docker container stop $ethprovider_1338_host 2> /dev/null || true
+  docker container stop $chain_host_1 2> /dev/null || true
+  docker container stop $chain_host_2 2> /dev/null || true
   docker container stop $postgres_host 2> /dev/null || true
   docker container stop $nats_host 2> /dev/null || true
   docker container stop $redis_host 2> /dev/null || true
@@ -80,30 +71,6 @@ fi
 cwd="`pwd`"
 
 echo "Node tester activated!";echo;
-
-export INDRA_TESTNET_DATA_DIR=/tmpfs
-
-echo "Starting $ethprovider_1337_host.."
-docker run \
-  --detach \
-  --env="ETH_MENMONIC=$eth_mnemonic" \
-  --name="$ethprovider_1337_host" \
-  --network="$network" \
-  --rm \
-  --mount="type=bind,source=$cwd,target=/root" \
-  --mount="type=volume,source=${project}_chain_1337,target=/data" \
-  ${project}_builder -c "cd modules/contracts && bash ops/ganache.entry.sh start"
-
-echo "Starting $ethprovider_1338_host.."
-docker run \
-  --detach \
-  --env="ETH_MENMONIC=$eth_mnemonic" \
-  --mount="type=bind,source=$cwd,target=/root" \
-  --mount="type=volume,source=${project}_chain_1338,target=/data" \
-  --name="$ethprovider_1338_host" \
-  --network="$network" \
-  --rm \
-  ${project}_builder -c "cd modules/contracts && bash ops/buidler.entry.sh start"
 
 echo "Starting $postgres_host.."
 docker run \
@@ -134,10 +101,33 @@ docker run \
   --rm \
   redis:5-alpine
 
+echo "Starting $chain_host_1 & $chain_host_2.."
+export INDRA_TESTNET_DATA_DIR=/tmpfs
+export INDRA_TESTNET_MNEMONIC=$mnemonic
+
+export INDRA_TESTNET_PORT=$chain_port_1
+bash ops/start-eth-provider.sh $chain_id_1 $chain_tag_1
+
+export INDRA_TESTNET_PORT=$chain_port_2
+bash ops/start-eth-provider.sh $chain_id_2 $chain_tag_2
+
+while ! curl -s $chain_url_1 > /dev/null
+do sleep 1
+done
+
+while ! curl -s $chain_url_2 > /dev/null
+do sleep 1
+done
+
+echo "$chain_host_1 & $chain_host_2 are done migrating contracts & are ready to go"
+
+# Pull the tmp address books out of chain providers & merge them into one
+address_book_1=`docker exec $chain_host_1 cat /tmpfs/address-book.json`
+address_book_2=`docker exec $chain_host_2 cat /tmpfs/address-book.json`
+eth_contract_addresses=`echo $address_book_1 $address_book_2 | jq -s '.[0] * .[1]'`
+
 ########################################
 # Run Tests
-
-chain_providers='{"1337":"'$eth_rpc_url_1337'"}'
 
 echo "Starting $node_host.."
 docker run \
@@ -145,8 +135,7 @@ docker run \
   --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
   --env="INDRA_CHAIN_PROVIDERS=$chain_providers" \
   --env="INDRA_ETH_CONTRACT_ADDRESSES=$eth_contract_addresses" \
-  --env="INDRA_ETH_MNEMONIC=$eth_mnemonic" \
-  --env="INDRA_ETH_RPC_URL=$eth_rpc_url_1337" \
+  --env="INDRA_ETH_MNEMONIC=$mnemonic" \
   --env="INDRA_LOG_LEVEL=${INDRA_LOG_LEVEL:-0}" \
   --env="INDRA_NATS_CLUSTER_ID=" \
   --env="INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" \
@@ -170,24 +159,6 @@ docker run \
   ${project}_builder -c '
     echo "Node Tester Container launched!";echo
     shopt -s globstar
-
-    echo "Waiting for ${INDRA_ETH_RPC_URL#*://}..."
-    wait-for -t 60 ${INDRA_ETH_RPC_URL#*://} 2> /dev/null
-    echo "Waiting for $INDRA_PG_HOST:$INDRA_PG_PORT..."
-    wait-for -t 60 $INDRA_PG_HOST:$INDRA_PG_PORT 2> /dev/null
-    echo "Waiting for ${INDRA_NATS_SERVERS#*://}..."
-    wait-for -t 60 ${INDRA_NATS_SERVERS#*://} 2> /dev/null
-    echo "Waiting for ${INDRA_REDIS_URL#*://}..."
-    wait-for -t 60 ${INDRA_REDIS_URL#*://} 2> /dev/null
-    echo
-
     cd modules/node
-    export PATH=./node_modules/.bin:$PATH
-
-    function finish {
-      echo && echo "Node tester container exiting.." && exit
-    }
-    trap finish SIGTERM SIGINT
-
     npm run '"$cmd"' -- '"$@"'
   '

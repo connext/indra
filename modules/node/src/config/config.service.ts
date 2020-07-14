@@ -83,6 +83,7 @@ export class ConfigService implements OnModuleInit {
 
   async getNetwork(chainId: number): Promise<providers.Network> {
     const network = await this.getEthProvider(chainId).getNetwork();
+    network.chainId = chainId; // just in case we're using ganache which hardcodes it's chainId..
     if (network.name === `unknown` && network.chainId === 1337) {
       network.name = `ganache`;
     } else if (network.chainId === 1) {
@@ -94,6 +95,7 @@ export class ConfigService implements OnModuleInit {
   getContractAddresses(chainId: number): ContractAddresses {
     const ethAddresses = { [chainId]: {} } as any;
     const ethAddressBook = this.getAddressBook();
+    console.log(`Getting contract addresses for chain ${chainId}`);
     Object.keys(ethAddressBook[chainId]).forEach(
       (contract: string) =>
         (ethAddresses[chainId][contract] = getAddress(ethAddressBook[chainId][contract].address)),

@@ -215,7 +215,7 @@ watch-ui: node-modules
 	bash ops/test/ui.sh --watch
 
 watch-node: node
-	bash ops/test/node.sh --watch
+	bash ops/test/node.sh watch
 
 ########################################
 # Begin Real Build Rules

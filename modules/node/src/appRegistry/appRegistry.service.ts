@@ -185,6 +185,7 @@ export class AppRegistryService implements OnModuleInit {
   public generateMiddleware = async (): Promise<
     (protocol: ProtocolName, cxt: MiddlewareContext) => Promise<void>
   > => {
+    // TODO: I don't think this is how we should be getting the chain id...
     const chainId = this.configService.getSupportedChains()[0];
     const contractAddresses = await this.configService.getContractAddresses(chainId);
     const provider = this.configService.getEthProvider(chainId);

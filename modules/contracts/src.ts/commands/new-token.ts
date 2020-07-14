@@ -9,7 +9,7 @@ import { getProvider } from "../utils";
 const initialSupply = utils.parseEther("100000000");
 
 const newToken = async (wallet: Wallet, addressBookPath: string, force: boolean) => {
-  const chainId = (await wallet.provider.getNetwork()).chainId;
+  const chainId = process?.env?.REAL_CHAIN_ID || (await wallet.provider.getNetwork()).chainId;
   const addressBook = getAddressBook(addressBookPath, chainId.toString());
   const savedAddress = addressBook.getEntry("Token").address;
   if (force || !(await isContractDeployed("Token", savedAddress, addressBook, wallet.provider))) {

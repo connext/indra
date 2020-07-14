@@ -10,7 +10,7 @@ fi
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/.."
 ganache="$dir/node_modules/.bin/ganache-cli"
 
-address_book="${ADDRESS_BOOK:-$dir/address-book.json}"
+address_book="${ADDRESS_BOOK:-/tmpfs/address-book.json}"
 data_dir="${DATA_DIR:-/data}"
 chain_id="${CHAIN_ID:-1337}"
 mnemonic="${MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
@@ -33,6 +33,9 @@ $ganache \
 pid=$!
 
 wait-for localhost:8545
+
+# Because stupid ganache hardcoded it's chainId, prefer this env var over ethProvider.getNetwork()
+export REAL_CHAIN_ID=$chain_id
 
 touch $address_book
 

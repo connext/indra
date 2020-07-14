@@ -49,7 +49,7 @@ export const deployContract = async (
 ): Promise<Contract> => {
   const chainId = (await wallet.provider.getNetwork()).chainId;
   // special case for drippable token
-  const deployDrippable = name === "Token" && (chainId === 1337 || chainId === 1338);
+  const deployDrippable = name === "Token" && chainId === 1337;
   deployDrippable && console.log(`Deploying drippable token`);
   const solidity = deployDrippable ? artifacts["ConnextToken"] : artifacts[name];
   const factory = ContractFactory.fromSolidity(solidity).connect(wallet);
