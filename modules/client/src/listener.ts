@@ -449,7 +449,7 @@ export class ConnextListener {
     appContext?: AppInstanceJson,
   ): Promise<void> => {
     const appInstance =
-      appContext || (await this.connext.getAppInstance(appIdentityHash)).appInstance;
+      appContext || ((await this.connext.getAppInstance(appIdentityHash)) || {}).appInstance;
     if (!appInstance) {
       this.log.info(
         `Could not find app instance, this likely means the app has been uninstalled, doing nothing`,

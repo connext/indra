@@ -1,4 +1,4 @@
-import { ProtocolName } from "@connext/types";
+import { ProtocolName, CF_METHOD_TIMEOUT } from "@connext/types";
 import { utils } from "ethers";
 
 const { parseEther } = utils;
@@ -12,7 +12,7 @@ export const WRONG_ADDRESS = "0xdeadbeef";
 
 // error messages
 export const APP_PROTOCOL_TOO_LONG = (protocol: ProtocolName): string => {
-  const base = `IO_SEND_AND_WAIT timed out after 5s`;
+  const base = `IO_SEND_AND_WAIT timed out after ${CF_METHOD_TIMEOUT / 2000}s`;
   return `${base} waiting for counterparty reply in ${protocol}`;
 };
 export const CLIENT_INSTALL_FAILED = (wasRejected: boolean = false): string => {
