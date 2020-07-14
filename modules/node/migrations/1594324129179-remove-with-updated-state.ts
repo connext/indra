@@ -4,6 +4,10 @@ export class removeWithUpdatedState1594324129179 implements MigrationInterface {
   name = "removeWithUpdatedState1594324129179";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(
+      `DELETE FROM "set_state_commitment" WHERE "appIdentityHash" IN (SELECT "identityHash" FROM "app_instance" WHERE "type" = 'REJECTED');`,
+      undefined,
+    );
     await queryRunner.query(`DELETE FROM "app_instance" WHERE "type" = 'REJECTED'`, undefined);
     await queryRunner.query(
       `ALTER TYPE "public"."app_instance_type_enum" RENAME TO "app_instance_type_enum_old"`,
