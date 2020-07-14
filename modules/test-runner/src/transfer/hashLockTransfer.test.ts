@@ -493,6 +493,8 @@ describe("HashLock Transfers", () => {
         preImage: HashZero,
       },
     );
+  });
+
   // FIXME: may not work depending on collateral, will expect some payment
   // errors even with a small number of payments until this is handled better
   it.skip("can send concurrent hashlock transfers", async () => {
