@@ -1,4 +1,3 @@
-import dotenvExtended from "dotenv-extended";
 import { Wallet, providers, utils } from "ethers";
 
 import { deployTestArtifactsToChain } from "./contracts";
@@ -6,9 +5,9 @@ import { A_PRIVATE_KEY, B_PRIVATE_KEY, C_PRIVATE_KEY } from "./test-constants.je
 
 const { parseEther } = utils;
 
-dotenvExtended.load();
 const env = {
   ETHPROVIDER_URL: process.env.ETHPROVIDER_URL || "http://localhost:8545",
+  LOG_LEVEL: parseInt(process.env.LOG_LEVEL || "0", 10),
   SUGAR_DADDY:
     process.env.SUGAR_DADDY ||
     "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat",
