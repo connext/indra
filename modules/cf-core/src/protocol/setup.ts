@@ -80,7 +80,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         },
       }),
     ];
-    console.log(`IO_SEND_AND_WAIT returned`, m2);
     logTime(log, substart, `[${loggerId}] Received responder's sigs`);
     const {
       data: {
