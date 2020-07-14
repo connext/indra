@@ -53,12 +53,12 @@ docker run \
     echo "CF tester container launched!"
     echo "Waiting for ethprovider to wake up.."
     wait-for ${ETHPROVIDER_URL#*://}
+    while ! curl -s $ETHPROVIDER_URL > /dev/null
+    do sleep 1
+    done
+    echo "Good morning!"
     cd modules/cf-core
     export PATH=./node_modules/.bin:$PATH
-    function finish {
-      echo && echo "CF tester container exiting.." && exit
-    }
-    trap finish SIGTERM SIGINT
     echo "Launching tests!";echo
     npm run '"$cmd"' -- '"$@"'
   '

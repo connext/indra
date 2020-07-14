@@ -11,4 +11,4 @@ COPY ops ops
 COPY artifacts artifacts
 COPY dist dist
 COPY buidler.config.ts buidler.config.ts
-ENTRYPOINT ["bash", "ops/ganache.entry.sh"]
+ENTRYPOINT ["bash", "ops/start.sh"]
