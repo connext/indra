@@ -83,7 +83,7 @@ export abstract class AbstractController {
     if (!!res) {
       throw new Error(
         `Failed to install app: ${
-          res["error"] || "Node rejected install" + res["reason"]
+          res["error"] || "Node rejected install: " + res["reason"]
         }. Identity hash: ${appIdentityHash}`,
       );
     }

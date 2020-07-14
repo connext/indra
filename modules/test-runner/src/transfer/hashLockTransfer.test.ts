@@ -8,7 +8,7 @@ import {
   PublicParams,
   ConditionalTransferCreatedEventData,
 } from "@connext/types";
-import { getRandomBytes32, getChainId } from "@connext/utils";
+import { getRandomBytes32, getChainId, delay, stringify } from "@connext/utils";
 import { BigNumber, providers, constants, utils } from "ethers";
 
 import {
@@ -19,6 +19,7 @@ import {
   fundChannel,
   TOKEN_AMOUNT,
   env,
+  requestCollateral,
 } from "../util";
 
 const { AddressZero, HashZero } = constants;
@@ -492,5 +493,109 @@ describe("HashLock Transfers", () => {
         preImage: HashZero,
       },
     );
+  // FIXME: may not work depending on collateral, will expect some payment
+  // errors even with a small number of payments until this is handled better
+  it.skip("can send concurrent hashlock transfers", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT.div(5), assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount.mul(5), transfer.assetId);
+    await fundChannel(clientB, transfer.amount.mul(5), transfer.assetId);
+    await requestCollateral(clientA, transfer.assetId, true);
+    await requestCollateral(clientB, transfer.assetId, true);
+
+    // add in assertions that will cause the test to fail once these
+    // events are thrown
+    const registerAssertions = (client: IConnextClient): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        let reclaimed = 0;
+        client.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, (data) => {
+          return reject(`${EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT}: ${stringify(data)}`);
+        });
+        // client.once(EventNames.PROPOSE_INSTALL_FAILED_EVENT, (data) => {
+        //   return reject(`${EventNames.PROPOSE_INSTALL_FAILED_EVENT}: ${stringify(data)}`);
+        // });
+        // client.once(EventNames.INSTALL_FAILED_EVENT, (data) => {
+        //   return reject(`${EventNames.INSTALL_FAILED_EVENT}: ${stringify(data)}`);
+        // });
+        // client.once(EventNames.UNINSTALL_FAILED_EVENT, (data) => {
+        //   return reject(`${EventNames.UNINSTALL_FAILED_EVENT}: ${stringify(data)}`);
+        // });
+        client.once(EventNames.SYNC_FAILED_EVENT, (data) => {
+          return reject(`${EventNames.SYNC_FAILED_EVENT}: ${stringify(data)}`);
+        });
+        client.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (data) => {
+          if (data.sender !== client.publicIdentifier) {
+            return;
+          }
+          reclaimed += 1;
+          if (reclaimed === 2) {
+            return resolve();
+          }
+        });
+      });
+    };
+    const a = registerAssertions(clientA);
+    const b = registerAssertions(clientB);
+
+    const timelock = (5000).toString();
+
+    let preImage = getRandomBytes32();
+    let lockHash = soliditySha256(["bytes32"], [preImage]);
+
+    const t1 = clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
+      recipient: clientB.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+
+    preImage = getRandomBytes32();
+    lockHash = soliditySha256(["bytes32"], [preImage]);
+
+    const t2 = clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
+      recipient: clientB.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+
+    await delay(100);
+
+    preImage = getRandomBytes32();
+    lockHash = soliditySha256(["bytes32"], [preImage]);
+
+    const t3 = clientB.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientB.publicIdentifier },
+      recipient: clientA.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+
+    preImage = getRandomBytes32();
+    lockHash = soliditySha256(["bytes32"], [preImage]);
+
+    const t4 = clientB.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientB.publicIdentifier },
+      recipient: clientA.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
+
+    const [aRes, bRes] = await Promise.all([a, b, t1, t2, t3, t4]);
+    expect(aRes).to.be.undefined;
+    expect(bRes).to.be.undefined;
+
+    // await delay(20000);
   });
 });

@@ -85,12 +85,16 @@ export class UninstallController extends MethodController {
     const { protocolRunner, publicIdentifier, router } = requestHandler;
     const { appIdentityHash } = params;
 
+    if (!preProtocolStateChannel) {
+      throw new Error("Could not find state channel in store to begin uninstall protocol with");
+    }
+
     const { updatedChannel, uninstalledApp, action } = await uninstallAppInstanceFromChannel(
-      preProtocolStateChannel!,
+      preProtocolStateChannel,
       router,
       protocolRunner,
       publicIdentifier,
-      preProtocolStateChannel!.userIdentifiers.find((id) => id !== publicIdentifier)!,
+      preProtocolStateChannel.userIdentifiers.find((id) => id !== publicIdentifier)!,
       params,
     );
 
