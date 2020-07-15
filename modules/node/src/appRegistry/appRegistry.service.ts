@@ -315,6 +315,7 @@ export class AppRegistryService implements OnModuleInit {
             getAddressFromAssetId(params.initiatorDepositAssetId),
             getAddressFromAssetId(params.responderDepositAssetId),
             stateChannel.chainId,
+            stateChannel.chainId, // swap within a channel is only on a single chain
           ),
           responderDecimals,
         );

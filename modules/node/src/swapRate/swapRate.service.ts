@@ -1,5 +1,10 @@
 import { MessagingService } from "@connext/messaging";
-import { AllowedSwap, PriceOracleTypes, SwapRate } from "@connext/types";
+import {
+  AllowedSwap,
+  PriceOracleTypes,
+  SwapRate,
+  CONVENTION_FOR_ETH_ASSET_ID,
+} from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { getMarketDetails, getTokenReserves } from "@uniswap/sdk";
 import { constants, utils } from "ethers";
@@ -23,19 +28,66 @@ export class SwapRateService implements OnModuleInit {
     this.log.setContext("SwapRateService");
   }
 
-  async getOrFetchRate(from: string, to: string, chainId: number): Promise<string> {
-    const swap = this.latestSwapRates
-      .get(chainId)
-      .find((s: SwapRate) => s.from === from && s.to === to);
+  hardcodedDemoSwapRate(
+    from: string,
+    to: string,
+    fromChainId: number,
+    toChainId: number,
+  ): string | undefined {
+    const supportedTokens = this.config.getSupportedTokens();
+    const fromIsConfigToken = supportedTokens[fromChainId].includes(from);
+    const toIsConfigToken = supportedTokens[toChainId].includes(to);
+
+    // rethink this before enabling mainnet
+    if (fromChainId === 1 || toChainId === 1) {
+      return undefined;
+    }
+
+    // TOKEN TO ETH = 0.01
+    if (fromIsConfigToken && to === CONVENTION_FOR_ETH_ASSET_ID) {
+      return "0.01";
+    }
+
+    // ETH TO TOKEN = 100
+    if (from === CONVENTION_FOR_ETH_ASSET_ID && toIsConfigToken) {
+      return "100";
+    }
+
+    // ETH TO ETH = 1
+    if (from === CONVENTION_FOR_ETH_ASSET_ID && to === CONVENTION_FOR_ETH_ASSET_ID) {
+      return "1";
+    }
+
+    // TOKEN TO TOKEN = 1
+    if (fromIsConfigToken && toIsConfigToken) {
+      return "1";
+    }
+
+    return undefined;
+  }
+
+  async getOrFetchRate(
+    from: string,
+    to: string,
+    fromChainId: number,
+    toChainId: number,
+  ): Promise<string> {
     let rate: string;
+    rate = this.hardcodedDemoSwapRate(from, to, fromChainId, toChainId);
+    const swap = this.latestSwapRates
+      .get(fromChainId)
+      .find((s: SwapRate) => s.from === from && s.to === to);
+    if (rate) {
+      return rate;
+    }
     if (swap) {
       rate = swap.rate;
     } else {
       const targetSwap = this.config
-        .getAllowedSwaps(chainId)
+        .getAllowedSwaps(fromChainId)
         .find((s) => s.from === from && s.to === to);
       if (targetSwap) {
-        rate = await this.fetchSwapRate(from, to, targetSwap.priceOracleType, chainId);
+        rate = await this.fetchSwapRate(from, to, targetSwap.priceOracleType, fromChainId);
       } else {
         throw new Error(`No valid swap exists for ${from} to ${to}`);
       }
@@ -107,7 +159,15 @@ export class SwapRateService implements OnModuleInit {
       }
     }
 
-    const newSwap: SwapRate = { from, to, rate: newRate, priceOracleType, blockNumber };
+    const newSwap: SwapRate = {
+      from,
+      to,
+      rate: newRate,
+      priceOracleType,
+      blockNumber,
+      fromChainId: chainId,
+      toChainId: chainId,
+    };
     if (rateIndex !== -1) {
       oldRate = this.latestSwapRates[rateIndex].rate;
       this.latestSwapRates[rateIndex] = newSwap;

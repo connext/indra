@@ -86,6 +86,7 @@ export class TransferService {
       this.log.info(`Installing receiver app to chainId ${receiverChainId}`);
       const receiverInstallPromise = this.installReceiverAppByPaymentId(
         from,
+        installerChannel.chainId,
         proposeInstallParams.meta.recipient,
         receiverChainId,
         paymentId,
@@ -112,6 +113,7 @@ export class TransferService {
 
   async installReceiverAppByPaymentId(
     senderIdentifier: string,
+    senderChainId: number,
     receiverIdentifier: string,
     receiverChainId: number,
     paymentId: Bytes32,
@@ -134,11 +136,12 @@ export class TransferService {
     // inflight swap
     const receiverAssetId = meta.receiverAssetId ? meta.receiverAssetId : senderAssetId;
     let receiverAmount = senderAmount;
-    if (receiverAssetId !== senderAssetId) {
+    if (receiverAssetId !== senderAssetId || senderChainId !== receiverChainId) {
       this.log.warn(`Detected an inflight swap from ${senderAssetId} to ${receiverAssetId}!`);
       const currentRate = await this.swapRateService.getOrFetchRate(
         senderAssetId,
         receiverAssetId,
+        senderChainId,
         receiverChainId,
       );
       this.log.warn(`Using swap rate ${currentRate} for inflight swap`);
@@ -276,6 +279,7 @@ export class TransferService {
 
     return this.installReceiverAppByPaymentId(
       senderApp.initiatorIdentifier,
+      senderApp.channel.chainId,
       receiverIdentifier,
       receiverChainId,
       paymentId,

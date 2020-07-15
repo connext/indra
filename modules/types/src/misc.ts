@@ -42,6 +42,8 @@ export type PriceOracleTypes = typeof PriceOracleTypes[keyof typeof PriceOracleT
 export type AllowedSwap = {
   from: Address;
   to: Address;
+  fromChainId: number;
+  toChainId: number;
   priceOracleType: PriceOracleTypes;
 };
 

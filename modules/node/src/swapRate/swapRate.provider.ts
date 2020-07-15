@@ -23,8 +23,13 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
   }
 
   async getLatestSwapRate(subject: string): Promise<string> {
-    const [, , , , from, to, chainId] = subject.split(".");
-    return this.swapRateService.getOrFetchRate(getAddress(from), getAddress(to), parseInt(chainId));
+    const [, , , , from, to, fromChainId, toChainId] = subject.split(".");
+    return this.swapRateService.getOrFetchRate(
+      getAddress(from),
+      getAddress(to),
+      parseInt(fromChainId),
+      parseInt(toChainId),
+    );
   }
 
   async setupSubscriptions(): Promise<void> {
