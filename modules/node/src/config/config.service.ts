@@ -95,7 +95,6 @@ export class ConfigService implements OnModuleInit {
   getContractAddresses(chainId: number): ContractAddresses {
     const ethAddresses = { [chainId]: {} } as any;
     const ethAddressBook = this.getAddressBook();
-    console.log(`Getting contract addresses for chain ${chainId}`);
     Object.keys(ethAddressBook[chainId]).forEach(
       (contract: string) =>
         (ethAddresses[chainId][contract] = getAddress(ethAddressBook[chainId][contract].address)),

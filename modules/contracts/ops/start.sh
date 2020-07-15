@@ -16,7 +16,7 @@ chain_id="${CHAIN_ID:-1337}"
 mnemonic="${MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 eth_provider="${ETH_PROVIDER:-http://localhost:8545}"
 
-mkdir -p $data_dir
+mkdir -p $data_dir /data /tmpfs
 
 # TODO: the gasLimit shouldn't need to be 1000x higher than mainnet but cf tests fail otherwise..
 

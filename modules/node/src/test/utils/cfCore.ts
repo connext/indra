@@ -60,14 +60,14 @@ export const createAppInstanceJson = (
 export const createStateChannelJSON = (
   overrides: Partial<StateChannelJSON> = {},
 ): StateChannelJSON => {
-  const userIdentifiers = [getRandomAddress(), getRandomAddress()];
+  const userIdentifiers = overrides.userIdentifiers || [getRandomAddress(), getRandomAddress()];
   const channelData: Omit<StateChannelJSON, "freeBalanceAppInstance"> = {
     addresses: {
-      MinimumViableMultisig: "",
-      ProxyFactory: "",
+      MinimumViableMultisig: getRandomAddress(),
+      ProxyFactory: getRandomAddress(),
     },
-    chainId: 1337,
     appInstances: [],
+    chainId: null, // must be provided by overrides
     monotonicNumProposedApps: 0,
     multisigAddress: getRandomAddress(),
     proposedAppInstances: [],

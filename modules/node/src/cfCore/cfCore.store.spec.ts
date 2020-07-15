@@ -33,11 +33,13 @@ import { CacheModule } from "../caching/cache.module";
 import { CacheService } from "../caching/cache.service";
 
 const createTestStateChannelJSONs = (
+  chainId: number,
   nodeIdentifier: string,
   userIdentifier: string = getRandomIdentifier(),
   multisigAddress: string = getRandomAddress(),
 ) => {
   const channelJson = createStateChannelJSON({
+    chainId,
     multisigAddress,
     userIdentifiers: [nodeIdentifier, userIdentifier],
   });
@@ -49,12 +51,14 @@ const createTestStateChannelJSONs = (
 };
 
 const createTestChannel = async (
+  chainId: number,
   cfCoreStore: CFCoreStore,
   nodeIdentifier: string,
   userIdentifier: string = getRandomIdentifier(),
   multisigAddress: string = getRandomAddress(),
 ) => {
   const { channelJson, setupCommitment, freeBalanceUpdate } = createTestStateChannelJSONs(
+    chainId,
     nodeIdentifier,
     userIdentifier,
     multisigAddress,
@@ -65,12 +69,14 @@ const createTestChannel = async (
 };
 
 const createTestChannelWithAppInstance = async (
+  chainId: number,
   cfCoreStore: CFCoreStore,
   nodeIdentifier: string,
   userIdentifier: string = getRandomIdentifier(),
   multisigAddress: string = getRandomAddress(),
 ) => {
   const { channelJson } = await createTestChannel(
+    chainId,
     cfCoreStore,
     nodeIdentifier,
     userIdentifier,
@@ -131,6 +137,7 @@ const createTestChannelWithAppInstance = async (
 };
 
 const createTestChallengeWithAppInstanceAndChannel = async (
+  chainId: number,
   cfCoreStore: CFCoreStore,
   nodeIdentifier: string,
   userIdentifierParam: string = getRandomAddress(),
@@ -143,6 +150,7 @@ const createTestChallengeWithAppInstanceAndChannel = async (
     appInstance,
     updatedFreeBalance,
   } = await createTestChannelWithAppInstance(
+    chainId,
     cfCoreStore,
     nodeIdentifier,
     userIdentifierParam,
@@ -170,6 +178,7 @@ describe("CFCoreStore", () => {
   let configService: ConfigService;
   let channelRepository: ChannelRepository;
   let cacheService: CacheService;
+  let chainId: number;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -197,6 +206,7 @@ describe("CFCoreStore", () => {
     configService = moduleRef.get<ConfigService>(ConfigService);
     cacheService = moduleRef.get<CacheService>(CacheService);
     channelRepository = moduleRef.get<ChannelRepository>(ChannelRepository);
+    chainId = configService.getSupportedChains()[0];
   });
 
   afterEach(async () => {
@@ -209,6 +219,7 @@ describe("CFCoreStore", () => {
     it("createStateChannel + getStateChannel + getSetupCommitment + getSetStateCommitment", async () => {
       const nodeIdentifier = configService.getPublicIdentifier();
       const { channelJson, setupCommitment, freeBalanceUpdate } = createTestStateChannelJSONs(
+        chainId,
         nodeIdentifier,
       );
 
@@ -232,6 +243,7 @@ describe("CFCoreStore", () => {
     it("incrementNumProposedApps", async () => {
       const nodeIdentifier = configService.getPublicIdentifier();
       const { channelJson, setupCommitment, freeBalanceUpdate } = createTestStateChannelJSONs(
+        chainId,
         nodeIdentifier,
       );
 
@@ -259,6 +271,7 @@ describe("CFCoreStore", () => {
   describe("App Proposal", () => {
     it("createAppProposal", async () => {
       const { multisigAddress } = await createTestChannel(
+        chainId,
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
@@ -270,7 +283,7 @@ describe("CFCoreStore", () => {
 
       const conditionalTx = createConditionalTransactionCommitmentJSON({
         appIdentityHash: appProposal.identityHash,
-        contractAddresses: configService.getContractAddresses(1337),
+        contractAddresses: configService.getContractAddresses(chainId),
       });
 
       for (let index = 0; index < 3; index++) {
@@ -305,6 +318,7 @@ describe("CFCoreStore", () => {
 
     it("removeAppProposal", async () => {
       const { multisigAddress } = await createTestChannel(
+        chainId,
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
@@ -344,6 +358,7 @@ describe("CFCoreStore", () => {
     // TODO: revisit this at some point
     it.skip("should not create an app instance if there is no app proposal", async () => {
       const { multisigAddress, channelJson } = await createTestChannel(
+        chainId,
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
@@ -371,7 +386,7 @@ describe("CFCoreStore", () => {
         channelJson,
         userIdentifier,
         freeBalanceUpdate,
-      } = await createTestChannel(cfCoreStore, configService.getPublicIdentifier());
+      } = await createTestChannel(chainId, cfCoreStore, configService.getPublicIdentifier());
 
       const appProposal = createAppInstanceJson({
         appSeqNo: APP_SEQ_NO,
@@ -441,6 +456,7 @@ describe("CFCoreStore", () => {
 
     it("updateAppInstance", async () => {
       const { multisigAddress, appInstance } = await createTestChannelWithAppInstance(
+        chainId,
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
@@ -472,6 +488,7 @@ describe("CFCoreStore", () => {
 
     it("removeAppInstance", async () => {
       const { multisigAddress, channelJson, appInstance } = await createTestChannelWithAppInstance(
+        chainId,
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
@@ -482,7 +499,7 @@ describe("CFCoreStore", () => {
       };
       const updatedFreeBalanceCommitment = createSetStateCommitmentJSON({
         appIdentityHash: channelJson.freeBalanceAppInstance!.identityHash,
-        versionNumber: toBNJson(1337),
+        versionNumber: toBNJson(chainId),
       });
 
       for (let index = 0; index < 3; index++) {
@@ -511,6 +528,7 @@ describe("CFCoreStore", () => {
   describe("Challenges", () => {
     it("creates a challenge", async () => {
       const { appInstance } = await createTestChannelWithAppInstance(
+        chainId,
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
@@ -526,6 +544,7 @@ describe("CFCoreStore", () => {
 
     it("updates a challenge", async () => {
       const { challenge } = await createTestChallengeWithAppInstanceAndChannel(
+        chainId,
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
@@ -542,6 +561,7 @@ describe("CFCoreStore", () => {
   describe("State Progressed Event", () => {
     it("creates a state progressed event", async () => {
       const { appInstance } = await createTestChallengeWithAppInstanceAndChannel(
+        chainId,
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
@@ -557,6 +577,7 @@ describe("CFCoreStore", () => {
   describe("Challenge updated Event", () => {
     it("creates a challenge updated event", async () => {
       const { appInstance } = await createTestChallengeWithAppInstanceAndChannel(
+        chainId,
         cfCoreStore,
         configService.getPublicIdentifier(),
       );

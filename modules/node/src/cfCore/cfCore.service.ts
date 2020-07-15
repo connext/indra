@@ -43,7 +43,7 @@ import { CFCoreRecordRepository } from "./cfCore.repository";
 
 const { Zero } = constants;
 
-Injectable();
+@Injectable()
 export class CFCoreService {
   private appRegistryMap: Map<string, DefaultApp>;
   public emitter: TypedEmitter;
@@ -155,10 +155,7 @@ export class CFCoreService {
     const amount = toBN(params.amount);
     const { assetId, nonce, recipient } = params;
     const { data: channel } = await this.getStateChannel(multisigAddress);
-    // TODO: do something more like this:
-    // const chainId = await this.channelRepository.getChainIdByMultisigAddress(multisigAddress);
-    const chainId = await this.configService.getSupportedChains()[0];
-    const contractAddresses = await this.configService.getContractAddresses(chainId);
+    const contractAddresses = await this.configService.getContractAddresses(channel.chainId);
     const multisigOwners = [
       getSignerAddressFromPublicIdentifier(channel.userIdentifiers[0]),
       getSignerAddressFromPublicIdentifier(channel.userIdentifiers[1]),
