@@ -3,14 +3,13 @@ set -e
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+tag="cf_tester"
 
 cmd="${1:-test}"
-shift # $1 is the command to npm run. Extra options, if any, come after
+shift || true # $1 is the command to npm run. Extra options, if any, come after
 
 ########################################
 # Start testnet & stop it when we're done
-
-tag="cf_tester"
 
 ethprovider_host="${project}_testnet_$tag"
 ethprovider_port="8547"
@@ -48,17 +47,4 @@ docker run \
   --name="${project}_test_cf_core" \
   --rm \
   --volume="`pwd`:/root" \
-  ${project}_builder -c '
-    set -e
-    echo "CF tester container launched!"
-    echo "Waiting for ethprovider to wake up.."
-    wait-for ${ETHPROVIDER_URL#*://}
-    while ! curl -s $ETHPROVIDER_URL > /dev/null
-    do sleep 1
-    done
-    echo "Good morning!"
-    cd modules/cf-core
-    export PATH=./node_modules/.bin:$PATH
-    echo "Launching tests!";echo
-    npm run '"$cmd"' -- '"$@"'
-  '
+  ${project}_builder -c 'cd modules/cf-core && npm run '"$cmd"' -- '"$@"

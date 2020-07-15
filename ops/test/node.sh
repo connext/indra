@@ -111,17 +111,7 @@ bash ops/start-eth-provider.sh $chain_id_1 $chain_tag_1
 export INDRA_TESTNET_PORT=$chain_port_2
 bash ops/start-eth-provider.sh $chain_id_2 $chain_tag_2
 
-while ! curl -s $chain_url_1 > /dev/null
-do sleep 1
-done
-
-while ! curl -s $chain_url_2 > /dev/null
-do sleep 1
-done
-
-echo "$chain_host_1 & $chain_host_2 are done migrating contracts & are ready to go"
-
-# Pull the tmp address books out of chain providers & merge them into one
+# Pull the tmp address books out of each chain provider & merge them into one
 address_book_1=`docker exec $chain_host_1 cat /tmpfs/address-book.json`
 address_book_2=`docker exec $chain_host_2 cat /tmpfs/address-book.json`
 eth_contract_addresses=`echo $address_book_1 $address_book_2 | jq -s '.[0] * .[1]'`

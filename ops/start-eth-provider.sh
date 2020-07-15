@@ -52,3 +52,8 @@ then
 else
   echo 'Expected INDRA_TESTNET_IMAGE to be either "builder" or "ethprovider"'
 fi
+
+while ! curl -s http://localhost:$port > /dev/null
+do sleep 1
+done
+echo "Provider for chain ${chain_id} is awake & ready to go on port ${port}!"
