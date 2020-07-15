@@ -54,6 +54,10 @@ export class AppRegistryService implements OnModuleInit {
     this.log.setContext("AppRegistryService");
   }
 
+  handleUninstall(channel: Channel) {
+    return this.transferService.pruneExpiredApps(channel);
+  }
+
   async installOrReject(
     appIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
