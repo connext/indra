@@ -8,6 +8,7 @@ import {
   AddressBook,
   AllowedSwap,
   PriceOracleTypes,
+  NetworkContexts,
 } from "@connext/types";
 import { ChannelSigner } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
@@ -128,18 +129,23 @@ export class ConfigService implements OnModuleInit {
     return ethAddresses as ContractAddressBook;
   }
 
-  async getNetworkContexts(): Promise<{ [chainId: number]: ContractAddresses }> {
+  getNetworkContexts(): NetworkContexts {
     const ethAddressBook = this.getAddressBook();
     const supportedChains = this.getSupportedChains();
 
-    const ethAddresses = {};
-    supportedChains.forEach((chainId) => {
-      Object.keys(ethAddressBook[chainId]).forEach(
-        (contract: string) =>
-          (ethAddresses[chainId][contract] = getAddress(ethAddressBook[chainId][contract].address)),
-      );
-    });
-    return ethAddresses as { [chainId: string]: ContractAddresses };
+    return supportedChains.reduce((contexts, chainId) => {
+      contexts[chainId] = {
+        contractAddresses: Object.keys(ethAddressBook[chainId]).reduce(
+          (addresses, contractName) => {
+            addresses[contractName] = getAddress(ethAddressBook[chainId][contractName].address);
+            return addresses;
+          },
+          {},
+        ),
+        provider: this.getEthProvider(chainId),
+      };
+      return contexts;
+    }, {});
   }
 
   async getTokenAddress(chainId: number): Promise<string> {
@@ -147,25 +153,27 @@ export class ConfigService implements OnModuleInit {
     return getAddress(ethAddressBook[chainId].Token.address);
   }
 
-  getAllowedSwaps(): AllowedSwap[] {
+  getAllowedSwaps(chainId: number): AllowedSwap[] {
     const supportedTokens = this.getSupportedTokens();
     const priceOracleType =
       this.get("NODE_ENV") === "development"
         ? PriceOracleTypes.HARDCODED
         : PriceOracleTypes.UNISWAP;
     const allowedSwaps: AllowedSwap[] = [];
-    supportedTokens.forEach((token) => {
+    supportedTokens[chainId].forEach((token) => {
       allowedSwaps.push({ from: token, to: AddressZero, priceOracleType });
       allowedSwaps.push({ from: AddressZero, to: token, priceOracleType });
     });
     return allowedSwaps;
   }
 
-  getSupportedTokens(): string[] {
+  getSupportedTokens(): { [chainId: number]: Address[] } {
     const addressBook = this.getAddressBook();
     const chains = this.getSupportedChains();
-    const tokens = chains.map((chainId) => addressBook[chainId].Token.address).filter((a) => !!a);
-    return [...new Set([AddressZero].concat(tokens))];
+    return chains.reduce((tokens, chainId) => {
+      tokens[chainId] = addressBook[chainId].Token.address;
+      return tokens;
+    }, {});
   }
 
   async getHardcodedRate(from: string, to: string): Promise<string | undefined> {

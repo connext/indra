@@ -199,7 +199,7 @@ export class CFCoreStore implements IStoreService {
     channel.chainId = chainId;
     const tokens = this.configService.getSupportedTokens();
     const activeCollateralizations = {};
-    tokens.forEach((token) => {
+    tokens[chainId].forEach((token) => {
       activeCollateralizations[token] = false;
     });
     channel.activeCollateralizations = activeCollateralizations;

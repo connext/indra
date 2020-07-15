@@ -98,8 +98,13 @@ export const createCFChannelProvider = async ({
   cfCore.injectMiddleware(
     Opcode.OP_VALIDATE,
     await generateValidationMiddleware(
-      { provider: ethProvider, contractAddresses },
-      supportedTokenAddresses,
+      {
+        [network.chainId]: {
+          contractAddresses,
+          provider: ethProvider,
+        },
+      },
+      { [network.chainId]: supportedTokenAddresses[network.chainId] },
     ),
   );
 

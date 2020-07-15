@@ -13,7 +13,7 @@ const { parseEther } = utils;
 
 @Injectable()
 export class SwapRateService implements OnModuleInit {
-  private latestSwapRates: SwapRate[] = [];
+  private latestSwapRates: Map<number, SwapRate[]> = new Map();
 
   constructor(
     private readonly config: ConfigService,
@@ -23,15 +23,19 @@ export class SwapRateService implements OnModuleInit {
     this.log.setContext("SwapRateService");
   }
 
-  async getOrFetchRate(from: string, to: string): Promise<string> {
-    const swap = this.latestSwapRates.find((s: SwapRate) => s.from === from && s.to === to);
+  async getOrFetchRate(from: string, to: string, chainId: number): Promise<string> {
+    const swap = this.latestSwapRates
+      .get(chainId)
+      .find((s: SwapRate) => s.from === from && s.to === to);
     let rate: string;
     if (swap) {
       rate = swap.rate;
     } else {
-      const targetSwap = this.config.getAllowedSwaps().find((s) => s.from === from && s.to === to);
+      const targetSwap = this.config
+        .getAllowedSwaps(chainId)
+        .find((s) => s.from === from && s.to === to);
       if (targetSwap) {
-        rate = await this.fetchSwapRate(from, to, targetSwap.priceOracleType);
+        rate = await this.fetchSwapRate(from, to, targetSwap.priceOracleType, chainId);
       } else {
         throw new Error(`No valid swap exists for ${from} to ${to}`);
       }
@@ -43,14 +47,17 @@ export class SwapRateService implements OnModuleInit {
     from: string,
     to: string,
     priceOracleType: PriceOracleTypes,
+    chainId: number,
     blockNumber: number = 0,
   ): Promise<string | undefined> {
-    if (!this.config.getAllowedSwaps().find((s: AllowedSwap) => s.from === from && s.to === to)) {
+    if (
+      !this.config.getAllowedSwaps(chainId).find((s: AllowedSwap) => s.from === from && s.to === to)
+    ) {
       throw new Error(`No valid swap exists for ${from} to ${to}`);
     }
-    const rateIndex = this.latestSwapRates.findIndex(
-      (s: SwapRate) => s.from === from && s.to === to,
-    );
+    const rateIndex = this.latestSwapRates
+      .get(chainId)
+      .findIndex((s: SwapRate) => s.from === from && s.to === to);
     let oldRate: string | undefined;
     if (rateIndex !== -1) {
       oldRate = this.latestSwapRates[rateIndex].rate;
@@ -69,7 +76,7 @@ export class SwapRateService implements OnModuleInit {
     try {
       newRate = (await Promise.race([
         new Promise(
-          async (resolve, reject): Promise<void> => {
+          async (resolve): Promise<void> => {
             switch (priceOracleType) {
               case PriceOracleTypes.UNISWAP:
                 resolve(await this.getUniswapRate(from, to));
@@ -105,13 +112,15 @@ export class SwapRateService implements OnModuleInit {
       oldRate = this.latestSwapRates[rateIndex].rate;
       this.latestSwapRates[rateIndex] = newSwap;
     } else {
-      this.latestSwapRates.push(newSwap);
+      const rates = this.latestSwapRates.get(chainId);
+      rates.push(newSwap);
+      this.latestSwapRates.set(chainId, rates);
     }
     const oldRateBn = parseEther(oldRate || "0");
     const newRateBn = parseEther(newRate);
     if (!oldRateBn.eq(newRateBn)) {
       this.log.info(`Got swap rate from Uniswap at block ${blockNumber}: ${newRate}`);
-      this.broadcastRate(from, to); // Only broadcast the rate if it's changed
+      this.broadcastRate(from, to, chainId); // Only broadcast the rate if it's changed
     }
     return newRate;
   }
@@ -122,8 +131,10 @@ export class SwapRateService implements OnModuleInit {
     return getMarketDetails(fromReserves, toReserves).marketRate.rate.toString();
   }
 
-  async broadcastRate(from: string, to: string): Promise<void> {
-    const swap = this.latestSwapRates.find((s: SwapRate) => s.from === from && s.to === to);
+  async broadcastRate(from: string, to: string, chainId: number): Promise<void> {
+    const swap = this.latestSwapRates
+      .get(chainId)
+      .find((s: SwapRate) => s.from === from && s.to === to);
     if (!swap) {
       throw new Error(`No rate exists for ${from} to ${to}`);
     }
@@ -133,18 +144,21 @@ export class SwapRateService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    const swaps = this.config.getAllowedSwaps();
-
-    this.config.getEthProviders().forEach((provider) => {
+    this.config.providers.forEach((provider, chainId) => {
       // setup interval for swaps
+      const swaps = this.config.getAllowedSwaps(chainId);
       setInterval(async () => {
         const blockNumber = await provider.getBlockNumber();
         for (const swap of swaps) {
           if (swap.priceOracleType === PriceOracleTypes.UNISWAP) {
-            this.log.info(`Querying chain listener for swaps from ${swap.from} to ${swap.to}`);
+            this.log.info(
+              `Querying chain listener for swaps from ${swap.from} to ${swap.to} on chain ${chainId}`,
+            );
             this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber);
           } else if (swap.priceOracleType === PriceOracleTypes.HARDCODED) {
-            this.log.info(`Using hardcoded value for swaps from ${swap.from} to ${swap.to}`);
+            this.log.info(
+              `Using hardcoded value for swaps from ${swap.from} to ${swap.to} on chain ${chainId}`,
+            );
           }
         }
       }, 15_000);

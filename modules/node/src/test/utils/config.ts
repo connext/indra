@@ -3,6 +3,7 @@ import { providers, Wallet } from "ethers";
 
 import { ConfigService } from "../../config/config.service";
 import { LoggerService } from "../../logger/logger.service";
+import { Address } from "@connext/types";
 
 export const env = {
   ethProviderUrl: process.env.INDRA_ETH_RPC_URL,
@@ -21,17 +22,23 @@ export const defaultSigner = new ChannelSigner(
 // add overrides as needed in tests
 export type ConfigOverrides = {
   signer: ChannelSigner;
-  extraSupportedTokens: string[];
+  extraSupportedTokens: { [chainId: number]: string[] };
 };
 
 export class MockConfigService extends ConfigService {
   private nodeSigner: ChannelSigner;
-  private supportedTokens: string[];
+  private supportedTokens: { [chainId: number]: Address[] };
 
   constructor(overrides: Partial<ConfigOverrides> = {}) {
     super(new LoggerService("Test"));
     this.nodeSigner = overrides.signer || defaultSigner;
-    this.supportedTokens = super.getSupportedTokens().concat(overrides.extraSupportedTokens || []);
+    const realSupported = super.getSupportedTokens();
+    Object.keys(overrides.extraSupportedTokens || []).forEach((chainId) => {
+      realSupported[chainId] = realSupported[chainId].concat(
+        overrides.extraSupportedTokens[chainId],
+      );
+    });
+    this.supportedTokens = realSupported;
   }
   getEthProvider = () => new providers.JsonRpcProvider(this.getProviderUrls()[0]);
   getProviderUrls = () => [env.ethProviderUrl!];
@@ -39,5 +46,5 @@ export class MockConfigService extends ConfigService {
   getPublicIdentifier = () => this.getSigner().publicIdentifier;
   getSigner = () => this.nodeSigner;
   getSignerAddress = async () => this.getSigner().address;
-  getSupportedTokens = (): string[] => this.supportedTokens;
+  getSupportedTokens = (): { [chainId: number]: Address[] } => this.supportedTokens;
 }

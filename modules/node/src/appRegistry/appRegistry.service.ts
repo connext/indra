@@ -185,15 +185,9 @@ export class AppRegistryService implements OnModuleInit {
   public generateMiddleware = async (): Promise<
     (protocol: ProtocolName, cxt: MiddlewareContext) => Promise<void>
   > => {
-    // TODO: I don't think this is how we should be getting the chain id...
-    const chainId = this.configService.getSupportedChains()[0];
-    const contractAddresses = await this.configService.getContractAddresses(chainId);
-    const provider = this.configService.getEthProvider(chainId);
+    const networkContexts = this.configService.getNetworkContexts();
     const defaultValidation = await generateValidationMiddleware(
-      {
-        contractAddresses,
-        provider: provider as providers.JsonRpcProvider,
-      },
+      networkContexts,
       this.configService.getSupportedTokens(),
     );
 
@@ -305,21 +299,22 @@ export class AppRegistryService implements OnModuleInit {
   };
 
   private proposeMiddleware = async (cxt: ProposeMiddlewareContext) => {
-    const { proposal, params } = cxt;
-    const contractAddresses = this.configService.getContractAddresses(cxt.stateChannel.chainId);
+    const { proposal, params, stateChannel } = cxt;
+    const contractAddresses = this.configService.getContractAddresses(stateChannel.chainId);
 
     switch (proposal.appDefinition) {
       case contractAddresses.SimpleTwoPartySwapApp: {
         const responderDecimals = await this.configService.getTokenDecimals(
-          cxt.stateChannel.chainId,
+          stateChannel.chainId,
           params.responderDepositAssetId,
         );
         return validateSimpleSwapApp(
           params as any,
-          this.configService.getAllowedSwaps(),
+          this.configService.getAllowedSwaps(stateChannel.chainId),
           await this.swapRateService.getOrFetchRate(
             getAddressFromAssetId(params.initiatorDepositAssetId),
             getAddressFromAssetId(params.responderDepositAssetId),
+            stateChannel.chainId,
           ),
           responderDecimals,
         );

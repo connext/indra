@@ -56,7 +56,7 @@ type GetConfigResponse = {
   nodeIdentifier: PublicIdentifier;
   messagingUrl: string[];
   signerAddress: Address;
-  supportedTokenAddresses: Address[];
+  supportedTokenAddresses: { [chainId: number]: Address[] };
 };
 
 type GetChannelResponse = {
