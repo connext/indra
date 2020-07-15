@@ -1,4 +1,4 @@
-import { Wallet, constants, utils } from "ethers";
+import { Wallet, constants, providers, utils } from "ethers";
 
 import { Argv } from "yargs";
 
@@ -7,7 +7,7 @@ import { cliOpts } from "../constants";
 import { isContractDeployed, deployContract } from "../deploy";
 import { getProvider } from "../utils";
 
-const { EtherSymbol } = constants;
+const { EtherSymbol, Zero } = constants;
 const { formatEther } = utils;
 
 export const coreContracts = [
@@ -37,11 +37,14 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
   const chainId = process?.env?.REAL_CHAIN_ID || (await wallet.provider.getNetwork()).chainId;
   const balance = await wallet.getBalance();
   const nonce = await wallet.getTransactionCount();
+  const providerUrl = (wallet.provider as providers.JsonRpcProvider).connection.url;
 
-  console.log(`\nPreparing to migrate contracts to chain w id: ${chainId}`);
-  console.log(
-    `Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${formatEther(balance)}\n`,
-  );
+  console.log(`\nPreparing to migrate contracts to provider ${providerUrl} w chainId: ${chainId}`);
+  console.log(`Deployer address=${wallet.address} nonce=${nonce} balance=${formatEther(balance)}\n`);
+
+  if (balance.eq(Zero)) {
+    throw new Error(`Account ${wallet.address} has zero balance on chain ${chainId}, aborting contract migration`);
+  }
 
   const addressBook = getAddressBook(addressBookPath, chainId.toString());
 

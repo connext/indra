@@ -159,25 +159,20 @@ chain_host_2="${project}_testnet_$chain_id_2"
 chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
 
 echo "Starting $chain_host_1 & $chain_host_2.."
-export INDRA_TESTNET_DATA_DIR=/tmpfs
-export INDRA_TESTNET_MNEMONIC=$mnemonic
+export INDRA_TESTNET_MNEMONIC=$eth_mnemonic
 
 export INDRA_TESTNET_PORT=$chain_port_1
+export INDRA_TESTNET_ENGINE=ganache
 bash ops/start-eth-provider.sh $chain_id_1 $chain_tag_1
 
 export INDRA_TESTNET_PORT=$chain_port_2
+export INDRA_TESTNET_ENGINE=buidler
 bash ops/start-eth-provider.sh $chain_id_2 $chain_tag_2
 
 # Pull the tmp address books out of each chain provider & merge them into one
 address_book_1=`docker exec $chain_host_1 cat /tmpfs/address-book.json`
 address_book_2=`docker exec $chain_host_2 cat /tmpfs/address-book.json`
 eth_contract_addresses=`echo $address_book_1 $address_book_2 | jq -s '.[0] * .[1]'`
-
-# Prefer top-level address-book override otherwise default to one in contracts
-if [[ -f address-book.json ]]
-then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
-else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
-fi
 
 ####################
 # Launch Indra stack

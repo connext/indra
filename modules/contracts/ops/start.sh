@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
-
 echo "Ethereum testnet entrypoint activated!"
 
 if [[ -d "modules/contracts" ]]
@@ -13,7 +11,6 @@ address_book="${ADDRESS_BOOK:-/tmpfs/address-book.json}"
 data_dir="${DATA_DIR:-/data}"
 chain_id="${CHAIN_ID:-1337}"
 mnemonic="${MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
-eth_provider="${ETH_PROVIDER:-http://localhost:8545}"
 engine="${ENGINE:-buidler}"
 
 mkdir -p $data_dir /data /tmpfs
@@ -30,36 +27,33 @@ then
       buidlerevm: {
         chainId: '$chain_id',
         loggingEnabled: false,
-        accounts: { mnemonic: "'$mnemonic'" },
-        blockGasLimit: "9000000000",
-        gasPrice: "1000000000",
+        accounts: [{
+          privateKey: "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3",
+          balance: "1000000000000000000000000000"
+        }],
+        blockGasLimit: 9000000000,
+        gasPrice: 1000000000,
       },
     },
-  }' > buidler.config.js
-
-  launch="
-    $dir/node_modules/.bin/buidler node
-      --hostname 0.0.0.0
-      --port 8545
-  "
+  }' > /tmpfs/buidler.config.js
+  launch="./node_modules/.bin/buidler node --config /tmpfs/buidler.config.js --emoji --port 8545 "
+  expose="--hostname 0.0.0.0"
 
 else
   echo "Using ganache EVM engine"  
-  launch="
-    $dir/node_modules/.bin/ganache-cli
-      --db="$data_dir" \
-      --defaultBalanceEther="1000000000" \
-      --gasLimit="9000000000" \
-      --gasPrice="1000000000" \
-      --host="127.0.0.1" \
-      --mnemonic="$mnemonic" \
-      --networkId="$chain_id" \
-      --port="8545" \
-  "
+  launch='./node_modules/.bin/ganache-cli \
+    --db='$data_dir' \
+    --defaultBalanceEther=2000000000 \
+    --gasLimit=9000000000 \
+    --gasPrice=1000000000 \
+    --mnemonic="'"$mnemonic"'" \
+    --networkId='$chain_id' \
+    --port=8545 '
+  expose="--host 0.0.0.0"
 fi
 
 echo "Starting isolated testnet to migrate contracts.."
-$launch > /dev/null &
+eval "$launch > /dev/null &"
 pid=$!
 
 wait-for localhost:8545
@@ -68,18 +62,12 @@ wait-for localhost:8545
 export REAL_CHAIN_ID=$chain_id
 
 echo "Deploying contracts.."
-node dist/src.ts/cli.js migrate \
-  --address-book "$address_book" \
-  --eth-provider "$eth_provider" \
-  --mnemonic "$mnemonic"
+node dist/src.ts/cli.js migrate --address-book "$address_book" --mnemonic "$mnemonic"
 
 echo "Deploying testnet token.."
-node dist/src.ts/cli.js new-token \
-  --address-book "$address_book" \
-  --eth-provider "$eth_provider" \
-  --mnemonic "$mnemonic"
+node dist/src.ts/cli.js new-token --address-book "$address_book" --mnemonic "$mnemonic"
 
 kill $pid
 
 echo "Starting publically available testnet.."
-exec $launch
+eval "$launch $expose"
