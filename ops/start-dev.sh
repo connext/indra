@@ -33,6 +33,7 @@ function dotEnv {
 }
 
 export INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-`dotEnv INDRA_ADMIN_TOKEN`}"
+export INDRA_CHAIN_PROVIDERS="${INDRA_CHAIN_PROVIDERS:-`dotEnv INDRA_CHAIN_PROVIDERS`}"
 export INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER:-`dotEnv INDRA_ETH_PROVIDER`}"
 export INDRA_ETH_PROVIDER_2="${PROVIDER_2:-`dotEnv PROVIDER_2`}"
 export INDRA_LOG_LEVEL="${INDRA_LOG_LEVEL:-`dotEnv INDRA_LOG_LEVEL`}"
@@ -56,55 +57,10 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 
 number_of_services=6 # NOTE: Gotta update this manually when adding/removing services :(
 
-ganacheProvider="http://ethprovider_1337:8545"
-buidlerProvider="http://ethprovider_1338:8545"
-
 nats_port=4222
 node_port=8080
 dash_port=9999
 webserver_port=3000
-ganacheId="1337"
-buidlerId="1338"
-
-# TODO: should be able to take in an array of providers
-# Fetch chainId from provider 1
-if [[ "$INDRA_ETH_PROVIDER" == "$ganacheProvider" ]]
-then chainId_1="$ganacheId"
-else
-  chainId_1="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_ETH_PROVIDER | jq .result | tr -d '"'`"
-  echo "Fetched chainId from ${INDRA_ETH_PROVIDER}: $chainId_1"
-fi
-
-# Fetch chainId from provider 2
-if [[ "$INDRA_ETH_PROVIDER_2" == "$buidlerProvider" ]]
-then chainId_2="$buidlerId"
-else
-  chainId_2="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_ETH_PROVIDER_2 | jq .result | tr -d '"'`"
-  echo "Fetched chainId from ${INDRA_ETH_PROVIDER_2}: $chainId_2"
-fi
-
-
-if [[ "$chainId_1" == "$ganacheId" ]]
-then make deployed-contracts
-fi
-
-# Prefer top-level address-book override otherwise default to one in contracts
-if [[ -f address-book.json ]]
-then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
-else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
-fi
-eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-
-token_address_1="`echo $eth_contract_addresses | jq '.["'"$chainId_1"'"].Token.address' | tr -d '"'`"
-token_address_2="`echo $eth_contract_addresses | jq '.["'"$chainId_2"'"].Token.address' | tr -d '"'`"
-
-# chainId and provider should be aligned in order
-chain_providers='{"'$chainId_1'":"'$INDRA_ETH_PROVIDER'","'$chainId_2'":"'$INDRA_ETH_PROVIDER_2'"}'
-
-if [[ -z "$chainId_1" || "$chainId_1" == "null" ]]
-then echo "Failed to fetch chainId from provider ${INDRA_ETH_PROVIDER}" && exit 1;
-else echo "Got chainId $chainId_1, using token $token_address_1"
-fi
 
 # database connection settings
 pg_db="$project"
@@ -127,7 +83,7 @@ proxy_image="${project}_proxy"
 redis_image="redis:5-alpine"
 
 ####################
-# Deploy according to above configuration
+# Configure UI
 
 if [[ "$INDRA_UI" == "headless" ]]
 then
@@ -158,6 +114,9 @@ else
   "
 fi
 
+####################
+# Make sure images are pulled & external secrets are created
+
 # Get images that we aren't building locally
 function pull_if_unavailable {
   if [[ -z "`docker image ls | grep ${1%:*} | grep ${1#*:}`" ]]
@@ -165,7 +124,6 @@ function pull_if_unavailable {
   fi
 }
 pull_if_unavailable "$database_image"
-pull_if_unavailable "$ethprovider_image"
 pull_if_unavailable "$nats_image"
 pull_if_unavailable "$redis_image"
 
@@ -182,6 +140,47 @@ function new_secret {
   fi
 }
 new_secret "${project}_database_dev" "$project"
+
+########################################
+# Start Ethereum testnets
+
+eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+
+chain_id_1=1337
+chain_port_1=8545
+chain_url_1="http://172.17.0.1:$chain_port_1"
+chain_host_1="${project}_testnet_$chain_id_1"
+
+chain_id_2=1338
+chain_port_2=8546
+chain_url_2="http://172.17.0.1:$chain_port_2"
+chain_host_2="${project}_testnet_$chain_id_2"
+
+chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
+
+echo "Starting $chain_host_1 & $chain_host_2.."
+export INDRA_TESTNET_DATA_DIR=/tmpfs
+export INDRA_TESTNET_MNEMONIC=$mnemonic
+
+export INDRA_TESTNET_PORT=$chain_port_1
+bash ops/start-eth-provider.sh $chain_id_1 $chain_tag_1
+
+export INDRA_TESTNET_PORT=$chain_port_2
+bash ops/start-eth-provider.sh $chain_id_2 $chain_tag_2
+
+# Pull the tmp address books out of each chain provider & merge them into one
+address_book_1=`docker exec $chain_host_1 cat /tmpfs/address-book.json`
+address_book_2=`docker exec $chain_host_2 cat /tmpfs/address-book.json`
+eth_contract_addresses=`echo $address_book_1 $address_book_2 | jq -s '.[0] * .[1]'`
+
+# Prefer top-level address-book override otherwise default to one in contracts
+if [[ -f address-book.json ]]
+then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
+fi
+
+####################
+# Launch Indra stack
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
@@ -251,34 +250,6 @@ services:
       - '${project}_database_dev'
     volumes:
       - '`pwd`:/root'
-
-  ethprovider_1337:
-    image: '$ethprovider_image'
-    entrypoint: bash modules/contracts/ops/ganache.entry.sh
-    command: 'start'
-    environment:
-      ETH_MNEMONIC: '$eth_mnemonic'
-    networks:
-      - '$project'
-    ports:
-      - '8545:8545'
-    volumes:
-      - '`pwd`:/root'
-      - 'chain_1337:/data'
-
-  ethprovider_1338:
-    image: '$ethprovider_image'
-    entrypoint: bash modules/contracts/ops/buidler.entry.sh
-    command: 'start'
-    environment:
-      ETH_MNEMONIC: '$eth_mnemonic'
-    networks:
-      - '$project'
-    ports:
-      - '8546:8545'
-    volumes:
-      - '`pwd`:/root'
-      - 'chain_1338:/data'
 
   database:
     image: '$database_image'

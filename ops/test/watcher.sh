@@ -9,7 +9,7 @@ cmd="${1:-test}"
 shift || true # $1 is the command to npm run. Extra options, if any, come after
 
 ########################################
-# Start testnet & make sure it stops when tests finish
+# Start testnet & stop it when we're done
 
 ethprovider_host="${project}_testnet_$tag"
 ethprovider_port="8550"
@@ -39,11 +39,11 @@ else echo "Running in non-interactive mode"
 fi
 
 docker run \
+  $interactive \
   --entrypoint="bash" \
   --env="ETHPROVIDER_URL=http://172.17.0.1:$ethprovider_port" \
-  --env="SUGAR_DADDY=$eth_mnemonic" \
   --env="LOG_LEVEL=$LOG_LEVEL" \
-  $interactive \
+  --env="SUGAR_DADDY=$eth_mnemonic" \
   --name="${project}_$tag" \
   --rm \
   --volume="`pwd`:/root" \

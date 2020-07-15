@@ -30,12 +30,12 @@ export INDRA_TESTNET_MNEMONIC=$eth_mnemonic
 bash ops/start-eth-provider.sh $ethprovider_chain_id $tag
 
 ########################################
-# Run Tests
+# Launch tests
 
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
 if [[ -t 0 && -t 1 && -t 2 ]]
 then interactive="--interactive --tty"
-else echo "Running in non-interactive mode."
+else echo "Running in non-interactive mode"
 fi
 
 docker run \
@@ -44,7 +44,7 @@ docker run \
   --env="ETHPROVIDER_URL=http://172.17.0.1:$ethprovider_port" \
   --env="LOG_LEVEL=$LOG_LEVEL" \
   --env="SUGAR_DADDY=$eth_mnemonic" \
-  --name="${project}_test_cf_core" \
+  --name="${project}_$tag" \
   --rm \
   --volume="`pwd`:/root" \
   ${project}_builder -c 'cd modules/cf-core && npm run '"$cmd"' -- '"$@"
