@@ -128,6 +128,9 @@ export class OnchainTransactionService implements OnModuleInit {
     this.log.info(`retryFailedTransactions started`);
     const failed = await this.onchainTransactionRepository.findFailedTransactions(KNOWN_ERRORS);
     // FIXME: search for error messages in query!
+    // NOTE: could alternatively look only for withdrawals that are
+    // finalized but have no onchain tx id. however, no reason not to retry
+    // all failed txs
     const toResend = failed.filter((tx) => {
       let knownCause = false;
       Object.values(tx.errors).forEach((error) => {
