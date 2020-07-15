@@ -47,15 +47,9 @@ export const deployContract = async (
   wallet: Wallet,
   addressBook: AddressBook,
 ): Promise<Contract> => {
-  const chainId = (await wallet.provider.getNetwork()).chainId;
-  // special case for drippable token
-  const deployDrippable = name === "Token" && chainId === 1337;
-  deployDrippable && console.log(`Deploying drippable token`);
-  const solidity = deployDrippable ? artifacts["ConnextToken"] : artifacts[name];
-  const factory = ContractFactory.fromSolidity(solidity).connect(wallet);
-  const constructorArgs = deployDrippable
-    ? ["CXT", "ConnextToken", "1.0", chainId]
-    : args.map((a) => a.value);
+  // NOTE: No special case for testnet token bc non-testnet-tokens are not mintable & throw errors
+  const factory = ContractFactory.fromSolidity(artifacts[name]).connect(wallet);
+  const constructorArgs = args.map((a) => a.value);
   const deployTx = factory.getDeployTransaction(...constructorArgs);
   const tx = await wallet.sendTransaction({
     ...deployTx,
@@ -66,7 +60,7 @@ export const deployContract = async (
   // const { gasUsed, cumulativeGasUsed } = receipt;
   // console.log(`Gas from deploy:`, stringify({ gasUsed, cumulativeGasUsed }));
   const address = Contract.getContractAddress(tx);
-  const contract = new Contract(address, solidity.abi, wallet);
+  const contract = new Contract(address, artifacts[name].abi, wallet);
   console.log(`${name} has been deployed to address: ${address}\n`);
   const runtimeCodeHash = hash(await wallet.provider.getCode(address));
   const creationCodeHash = hash(artifacts[name].bytecode);

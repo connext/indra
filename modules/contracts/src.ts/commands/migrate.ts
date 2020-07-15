@@ -34,8 +34,8 @@ export const migrate = async (wallet: Wallet, addressBookPath: string): Promise<
   ////////////////////////////////////////
   // Environment Setup
 
-  const balance = await wallet.getBalance();
   const chainId = process?.env?.REAL_CHAIN_ID || (await wallet.provider.getNetwork()).chainId;
+  const balance = await wallet.getBalance();
   const nonce = await wallet.getTransactionCount();
 
   console.log(`\nPreparing to migrate contracts to chain w id: ${chainId}`);

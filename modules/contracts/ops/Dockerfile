@@ -10,5 +10,4 @@ RUN npm install --only=production > /dev/null 2>&1
 COPY ops ops
 COPY artifacts artifacts
 COPY dist dist
-COPY buidler.config.ts buidler.config.ts
 ENTRYPOINT ["bash", "ops/start.sh"]
