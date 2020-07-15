@@ -131,7 +131,7 @@ export class MiniFreeBalance {
       toBN(appIds.length + 1),
       appIds,
     );
-    const channel = {
+    const channel: StateChannelJSON = {
       schemaVersion: StateSchemaVersion,
       multisigAddress,
       addresses: {
@@ -146,6 +146,7 @@ export class MiniFreeBalance {
       ][],
       freeBalanceAppInstance: freeBalance.toJson(),
       monotonicNumProposedApps: channelNonce.toNumber(),
+      chainId: 1337,
     };
     return [freeBalance, channel];
   }
