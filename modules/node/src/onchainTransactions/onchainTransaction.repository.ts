@@ -9,6 +9,7 @@ import {
   AnonymizedOnchainTransaction,
   TransactionStatus,
 } from "./onchainTransaction.entity";
+import { toBN } from "@connext/utils";
 const { Zero } = constants;
 
 export const onchainEntityToReceipt = (
@@ -47,6 +48,19 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     });
   }
 
+  async findFailedTransactions(withErrors: string[]): Promise<OnchainTransaction[]> {
+    return (
+      this.createQueryBuilder("onchain_transaction")
+        .leftJoinAndSelect("onchain_transaction.channel", "channel")
+        .where("onchain_transaction.status = :status", { status: TransactionStatus.FAILED })
+        // FIXME: search for error messages within stored txs!!
+        // .andWhere(
+        //   `onchain_transaction."errors"::JSONB @> '{"coinTransfers",0,"to"}' = '"${nodeSignerAddress}"'`,
+        // )
+        .getMany()
+    );
+  }
+
   async findByUserPublicIdentifier(
     userIdentifier: string,
   ): Promise<OnchainTransaction[] | undefined> {
@@ -83,8 +97,28 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return tx;
   }
 
-  async addPending(
-    tx: providers.TransactionResponse,
+  async addResponse(tx: providers.TransactionResponse): Promise<void> {
+    return getManager().transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(OnchainTransaction)
+        .set({
+          hash: tx.hash,
+          blockHash: tx.blockHash,
+          blockNumber: tx.blockNumber,
+          raw: tx.raw,
+          chainId: tx.chainId.toString(),
+          gasUsed: Zero,
+        })
+        .where("onchain_transaction.data = :data", { data: tx.data })
+        .andWhere("onchain_transaction.to = :to", { to: tx.to })
+        .andWhere("onchain_transaction.value = :value", { value: tx.value })
+        .execute();
+    });
+  }
+
+  async addRequest(
+    tx: providers.TransactionRequest,
     reason: TransactionReason,
     channel: Channel,
   ): Promise<void> {
@@ -95,7 +129,12 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
         .into(OnchainTransaction)
         .values({
           ...tx,
-          gasUsed: Zero,
+          data: tx.data.toString(),
+          value: toBN(tx.value),
+          gasPrice: toBN(tx.gasPrice),
+          gasLimit: toBN(tx.gasLimit),
+          nonce: toBN(tx.nonce).toNumber(),
+          chainId: tx.chainId.toString(),
           reason,
           status: TransactionStatus.PENDING,
           channel,

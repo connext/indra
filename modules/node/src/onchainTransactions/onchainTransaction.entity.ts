@@ -62,8 +62,11 @@ export class OnchainTransaction {
   @Column("text")
   from!: string;
 
-  @Column("text")
+  @Column("text", { unique: true, nullable: true })
   hash!: string;
+
+  @Column("text", { nullable: true })
+  chainId!: string;
 
   @Column("integer", { nullable: true })
   blockNumber!: number;

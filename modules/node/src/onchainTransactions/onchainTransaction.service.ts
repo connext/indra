@@ -1,6 +1,6 @@
 import { MinimalTransaction } from "@connext/types";
 import { stringify } from "@connext/utils";
-import { Injectable } from "@nestjs/common";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 import { providers } from "ethers";
 import PriorityQueue from "p-queue";
 
@@ -11,12 +11,13 @@ import { OnchainTransactionRepository } from "./onchainTransaction.repository";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction, TransactionReason } from "./onchainTransaction.entity";
 
+const BAD_NONCE = "the tx doesn't have the correct nonce";
 const NO_TX_HASH = "no transaction hash found in tx response";
 export const MAX_RETRIES = 5;
-export const KNOWN_ERRORS = ["the tx doesn't have the correct nonce", NO_TX_HASH];
+export const KNOWN_ERRORS = [BAD_NONCE, NO_TX_HASH];
 
 @Injectable()
-export class OnchainTransactionService {
+export class OnchainTransactionService implements OnModuleInit {
   private nonce = Promise.resolve(0);
   private readonly queue: PriorityQueue;
 
@@ -87,20 +88,23 @@ export class OnchainTransactionService {
         const chainNonce = await wallet.getTransactionCount();
         const memoryNonce = await this.nonce;
         const nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
-        tx = await wallet.sendTransaction({
-          ...transaction,
-          nonce,
-        });
-        this.nonce = Promise.resolve(nonce + 1);
+        const req = await wallet.populateTransaction({ ...transaction, nonce });
         if (attempt === 1) {
-          // create the pending transaction in the db
-          await this.onchainTransactionRepository.addPending(tx, reason, channel);
+          // create the pending transaction in the db, only insert on first
+          // attempt
+          await this.onchainTransactionRepository.addRequest(req, reason, channel);
         }
+        tx = await wallet.sendTransaction(req);
+        // add fields from tx response
+        await this.onchainTransactionRepository.addResponse(tx);
+        this.nonce = Promise.resolve(nonce + 1);
         const receipt = await tx.wait();
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
         }
-        this.log.info(`Success sending transaction! Tx mined at block ${receipt.blockNumber}: ${receipt.transactionHash}`);
+        this.log.info(
+          `Success sending transaction! Tx mined at block ${receipt.blockNumber}: ${receipt.transactionHash}`,
+        );
         await this.onchainTransactionRepository.addReceipt(receipt);
         return;
       } catch (e) {
@@ -120,7 +124,40 @@ export class OnchainTransactionService {
     throw new Error(`Failed to send transaction (errors indexed by attempt): ${stringify(errors)}`);
   }
 
-  private enqueue(task: () => Promise<void>): Promise<void> {
-    return this.queue.add(task);
-  }
+  private retryFailedTransactions = async (): Promise<void> => {
+    this.log.info(`retryFailedTransactions started`);
+    const failed = await this.onchainTransactionRepository.findFailedTransactions(KNOWN_ERRORS);
+    // FIXME: search for error messages in query!
+    const toResend = failed.filter((tx) => {
+      let knownCause = false;
+      Object.values(tx.errors).forEach((error) => {
+        if (knownCause) {
+          return;
+        }
+        if (KNOWN_ERRORS.toString().includes(error)) {
+          knownCause = true;
+        }
+      });
+      return knownCause;
+    });
+    this.log.info(`Found ${toResend.length} transactions to resend`);
+    for (const stored of toResend) {
+      try {
+        await this.sendTransaction(
+          { to: stored.to, value: stored.value, data: stored.data },
+          stored.reason,
+          stored.channel,
+        );
+      } catch (e) {
+        this.log.warn(
+          `Failed to send transaction, will retry on next startup, hash: ${stored.hash}. ${e.message}`,
+        );
+      }
+    }
+    this.log.info(`retryFailedTransactions completed`);
+  };
+
+  onModuleInit = (): Promise<void> => {
+    return this.retryFailedTransactions();
+  };
 }
