@@ -953,14 +953,14 @@ async function syncChannel(
 
 function syncRejectedApps(
   myChannel: StateChannel,
-  counterpartyProposals: string[],
+  counterpartyProposals: string[] = [],
 ): [StateChannel, AppInstance[]] {
   const myProposals = [...myChannel.proposedAppInstances.keys()];
 
   // find any rejected proposals and update your channel
   const rejectedIds = myProposals
-    .filter((x) => !(counterpartyProposals || []).includes(x))
-    .concat(counterpartyProposals.filter((x) => !(myProposals || []).includes(x)));
+    .filter((x) => !counterpartyProposals.includes(x))
+    .concat(counterpartyProposals.filter((x) => !myProposals.includes(x)));
 
   let postRejectChannel = StateChannel.fromJson(myChannel.toJson());
   const rejected: AppInstance[] = [];
