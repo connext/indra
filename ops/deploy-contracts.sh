@@ -40,11 +40,9 @@ then
   if [[ "$ETH_PROVIDER" == *"8545" ]]
   then
     mount="--mount=type=volume,source=${project}_chain_1337,target=/data" 
-    entry="ops/ganache.entry.sh"
   elif [[ "$ETH_PROVIDER" == *"8546" ]]
   then
     mount="--mount=type=volume,source=${project}_chain_1338,target=/data" 
-    entry="ops/buidler.entry.sh"
   fi
 
 else
@@ -78,7 +76,7 @@ then
     "$mount" \
     --name="$name" \
     --rm \
-    $image -c "cd modules/contracts && bash $entry deploy"
+    $image -c "cd modules/contracts && bash ops/deploy.sh"
   exit
 
 elif [[ "$mode" == "release" ]]
