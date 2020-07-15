@@ -8,6 +8,7 @@ import {
   PublicParams,
   EventPayloads,
   UnlockedHashLockTransferMeta,
+  ConditionalTransferCreatedEventData,
 } from "@connext/types";
 import { getRandomBytes32, getChainId, delay, stringify } from "@connext/utils";
 import { BigNumber, providers, constants, utils } from "ethers";
@@ -407,7 +408,9 @@ describe("HashLock Transfers", () => {
     const timelock = 101;
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
-    await new Promise((resolve, reject) => {
+    const { appIdentityHash } = ((await new Promise((resolve, reject) => {
+      clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, (data) => resolve(data));
+      clientA.once(EventNames.REJECT_INSTALL_EVENT, reject);
       clientA.conditionalTransfer({
         amount: transfer.amount.toString(),
         conditionType: ConditionalTransferTypes.HashLockTransfer,
@@ -417,9 +420,9 @@ describe("HashLock Transfers", () => {
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer);
-      clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, resolve);
-      clientA.once(EventNames.REJECT_INSTALL_EVENT, reject);
-    });
+    })) as unknown) as ConditionalTransferCreatedEventData<"HashLockTransferApp">;
+    let app = await clientB.getAppInstance(appIdentityHash);
+    expect(app).to.be.ok;
 
     // Wait for more than one block if blocktime > 0
     // for (let i = 0; i < 5; i++) {
@@ -427,13 +430,43 @@ describe("HashLock Transfers", () => {
     await new Promise((resolve) => provider.once("block", resolve));
     // }
 
-    await expect(
-      clientB.resolveCondition({
-        conditionType: ConditionalTransferTypes.HashLockTransfer,
-        preImage,
-        assetId: transfer.assetId,
-      } as PublicParams.ResolveHashLockTransfer),
-    ).to.be.rejectedWith(/Cannot take action if expiry is expired/);
+    await Promise.all([
+      new Promise(async (resolve, reject) => {
+        try {
+          await expect(
+            clientB.resolveCondition({
+              conditionType: ConditionalTransferTypes.HashLockTransfer,
+              preImage,
+              assetId: transfer.assetId,
+            } as PublicParams.ResolveHashLockTransfer),
+          ).to.be.rejectedWith(/Cannot take action if expiry is expired/);
+          // take some other channel action to force an uninstall event
+          // and expired app cleanup in receiver channel
+          await fundChannel(clientB, transfer.amount, tokenAddress);
+          resolve();
+        } catch (e) {
+          reject(e.message);
+        }
+      }),
+      new Promise((resolve) => {
+        clientB.once(
+          EventNames.UNINSTALL_EVENT,
+          (msg) => resolve(msg),
+          (msg) => msg.appIdentityHash === appIdentityHash,
+        );
+      }),
+    ]);
+    // await expect(
+    //   clientB.resolveCondition({
+    //     conditionType: ConditionalTransferTypes.HashLockTransfer,
+    //     preImage,
+    //     assetId: transfer.assetId,
+    //   } as PublicParams.ResolveHashLockTransfer),
+    // ).to.be.rejectedWith(/Cannot take action if expiry is expired/);
+
+    // make sure the app was uninstalled by the node
+    app = await clientB.getAppInstance(appIdentityHash);
+    expect(app).to.be.undefined;
   });
 
   it("cannot install receiver app without sender app installed", async () => {

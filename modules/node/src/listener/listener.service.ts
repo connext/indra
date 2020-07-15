@@ -205,6 +205,7 @@ export default class ListenerService implements OnModuleInit {
       this.log.error(`Caught error rebalancing channel ${channel.multisigAddress}: ${e.stack}`);
     }
 
+    // TODO: should this happen on a poller independently of listener events?
     // Prune all expired apps on uninstall
     await this.appRegistryService.handleUninstall(channel);
   }
