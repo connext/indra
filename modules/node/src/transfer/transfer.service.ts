@@ -19,6 +19,7 @@ import {
   toBN,
 } from "@connext/utils";
 import { TRANSFER_TIMEOUT } from "@connext/apps";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import { constants } from "ethers";
 import { isEqual } from "lodash";
 
@@ -52,6 +53,7 @@ export class TransferService {
     this.log.setContext("TransferService");
   }
 
+  @Cron(CronExpression.EVERY_HOUR)
   async pruneExpiredApps(channel: Channel): Promise<void> {
     this.log.info(`Start pruneExpiredApps for channel ${channel.multisigAddress}`);
 
