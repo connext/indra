@@ -34,7 +34,6 @@ function dotEnv {
 
 export INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-`dotEnv INDRA_ADMIN_TOKEN`}"
 export INDRA_CHAIN_PROVIDERS="${INDRA_CHAIN_PROVIDERS:-`dotEnv INDRA_CHAIN_PROVIDERS`}"
-export INDRA_ETH_PROVIDER_2="${PROVIDER_2:-`dotEnv PROVIDER_2`}"
 export INDRA_LOG_LEVEL="${INDRA_LOG_LEVEL:-`dotEnv INDRA_LOG_LEVEL`}"
 INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PRIVATE_KEY`}"
 INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PUBLIC_KEY`}"
@@ -125,39 +124,59 @@ pull_if_unavailable "$redis_image"
 bash ops/save-secret.sh "${project}_database_dev" "$project"
 
 ########################################
-# Start Ethereum testnets
+# Configure or launch Ethereum testnets
 
-eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+eth_mnemonic_name="${project}_mnemonic"
 
-chain_id_1=1337
-chain_port_1=8545
-chain_url_1="http://172.17.0.1:$chain_port_1"
-chain_host_1="${project}_testnet_$chain_id_1"
+# If no chain providers provided, spin up local testnets & use those
+if [[ -z "$INDRA_CHAIN_PROVIDERS" ]]
+then
 
-chain_id_2=1338
-chain_port_2=8546
-chain_url_2="http://172.17.0.1:$chain_port_2"
-chain_host_2="${project}_testnet_$chain_id_2"
+  echo 'No $INDRA_CHAIN_PROVIDERS provided, spinning up local testnets & using those.'
 
-chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
+  eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+  bash ops/save-secret.sh "$eth_mnemonic_name" "$eth_mnemonic"
 
-echo "Starting $chain_host_1 & $chain_host_2.."
-export INDRA_TESTNET_MNEMONIC=$eth_mnemonic
+  chain_id_1=1337
+  chain_port_1=8545
+  chain_url_1="http://172.17.0.1:$chain_port_1"
+  chain_host_1="${project}_testnet_$chain_id_1"
 
-# NOTE: Start script for buidler testnet will return before it's actually ready to go.
-# Run buidlerevm first so that it can finish while we're waiting for ganache to get set up
-export INDRA_TESTNET_PORT=$chain_port_2
-export INDRA_TESTNET_ENGINE=buidler
-bash ops/start-eth-provider.sh $chain_id_2 $chain_tag_2
+  chain_id_2=1338
+  chain_port_2=8546
+  chain_url_2="http://172.17.0.1:$chain_port_2"
+  chain_host_2="${project}_testnet_$chain_id_2"
 
-export INDRA_TESTNET_PORT=$chain_port_1
-export INDRA_TESTNET_ENGINE=ganache
-bash ops/start-eth-provider.sh $chain_id_1 $chain_tag_1
+  chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
 
-# Pull the tmp address books out of each chain provider & merge them into one
-address_book_1=`docker exec $chain_host_1 cat /tmpfs/address-book.json`
-address_book_2=`docker exec $chain_host_2 cat /tmpfs/address-book.json`
-eth_contract_addresses=`echo $address_book_1 $address_book_2 | jq -s '.[0] * .[1]'`
+  echo "Starting $chain_host_1 & $chain_host_2.."
+  export INDRA_TESTNET_MNEMONIC=$eth_mnemonic
+
+  # NOTE: Start script for buidler testnet will return before it's actually ready to go.
+  # Run buidlerevm first so that it can finish while we're waiting for ganache to get set up
+  export INDRA_TESTNET_PORT=$chain_port_2
+  export INDRA_TESTNET_ENGINE=buidler
+  bash ops/start-eth-provider.sh $chain_id_2 $chain_tag_2
+
+  export INDRA_TESTNET_PORT=$chain_port_1
+  export INDRA_TESTNET_ENGINE=ganache
+  bash ops/start-eth-provider.sh $chain_id_1 $chain_tag_1
+
+  # Pull the tmp address books out of each chain provider & merge them into one
+  address_book_1=`docker exec $chain_host_1 cat /tmpfs/address-book.json`
+  address_book_2=`docker exec $chain_host_2 cat /tmpfs/address-book.json`
+  eth_contract_addresses=`echo $address_book_1 $address_book_2 | jq -s '.[0] * .[1]'`
+
+# If chain providers are provided, use those
+else
+
+  # Prefer top-level address-book override otherwise default to one in contracts
+  if [[ -f address-book.json ]]
+  then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+  else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
+  fi
+
+fi
 
 ####################
 # Launch Indra stack

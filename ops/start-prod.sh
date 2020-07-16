@@ -36,7 +36,6 @@ export INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-`dotEnv INDRA
 export INDRA_CHAIN_PROVIDERS="${INDRA_CHAIN_PROVIDERS:-`dotEnv INDRA_CHAIN_PROVIDERS`}"
 export INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-`dotEnv INDRA_DOMAINNAME`}"
 export INDRA_EMAIL="${INDRA_EMAIL:-`dotEnv INDRA_EMAIL`}"
-export INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER:-`dotEnv INDRA_ETH_PROVIDER`}"
 export INDRA_LOG_LEVEL="${INDRA_LOG_LEVEL:-`dotEnv INDRA_LOG_LEVEL`}"
 export INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-`dotEnv INDRA_LOGDNA_KEY`}"
 export INDRA_MODE="${INDRA_MODE:-`dotEnv INDRA_MODE`}"
@@ -172,50 +171,62 @@ pull_if_unavailable "$redis_image"
 pull_if_unavailable "$webserver_image"
 
 ########################################
-# Configure & maybe start Ethereum testnets
+# Configure or launch Ethereum testnets
 
 eth_mnemonic_name="${project}_mnemonic"
 
-if [[ -z "$INDRA_ETH_PROVIDER" ]]
-then echo "An env var called INDRA_ETH_PROVIDER is required" && exit 1
-elif [[ "$INDRA_ETH_PROVIDER" =~ .*://localhost:.* ]]
-then chainId="$ganache_chain_id"
-else chainId="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_ETH_PROVIDER | jq .result | tr -d '"'`"
-fi
-
-echo "eth provider: $INDRA_ETH_PROVIDER w chainId: $chainId"
-
-# Prefer top-level address-book override otherwise default to one in contracts
-if [[ -f address-book.json ]]
-then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
-else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
-fi
-
-if [[ "$chainId" == "$ganache_chain_id" ]]
+# If no chain providers provided, spin up local testnets & use those
+if [[ -z "$INDRA_CHAIN_PROVIDERS" ]]
 then
-  ethprovider_image="$registry${project}_ethprovider:$version"
-  pull_if_unavailable "$ethprovider_image"
+
+  echo 'No $INDRA_CHAIN_PROVIDERS provided, spinning up local testnets & using those.'
+
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-  new_secret "$eth_mnemonic_name" "$eth_mnemonic"
-  eth_volume="chain_dev:"
-  ethprovider_service="
-  ethprovider:
-    image: '$ethprovider_image'
-    command: 'start'
-    environment:
-      ETH_MNEMONIC: '$eth_mnemonic'
-    ports:
-      - '8545:8545'
-    volumes:
-      - '$eth_volume/data'
-    $network
-  "
-  INDRA_ETH_PROVIDER="http://ethprovider:8545"
-  MODE=${INDRA_MODE#*-} bash ops/deploy-contracts.sh
+  bash ops/save-secret.sh "$eth_mnemonic_name" "$eth_mnemonic"
+
+  chain_id_1=1337
+  chain_port_1=8545
+  chain_url_1="http://172.17.0.1:$chain_port_1"
+  chain_host_1="${project}_testnet_$chain_id_1"
+
+  chain_id_2=1338
+  chain_port_2=8546
+  chain_url_2="http://172.17.0.1:$chain_port_2"
+  chain_host_2="${project}_testnet_$chain_id_2"
+
+  chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
+
+  echo "Starting $chain_host_1 & $chain_host_2.."
+  export INDRA_TESTNET_MNEMONIC=$eth_mnemonic
+
+  # NOTE: Start script for buidler testnet will return before it's actually ready to go.
+  # Run buidlerevm first so that it can finish while we're waiting for ganache to get set up
+  export INDRA_TESTNET_PORT=$chain_port_2
+  export INDRA_TESTNET_ENGINE=buidler
+  bash ops/start-eth-provider.sh $chain_id_2 $chain_tag_2
+
+  export INDRA_TESTNET_PORT=$chain_port_1
+  export INDRA_TESTNET_ENGINE=ganache
+  bash ops/start-eth-provider.sh $chain_id_1 $chain_tag_1
+
+  # Pull the tmp address books out of each chain provider & merge them into one
+  address_book_1=`docker exec $chain_host_1 cat /tmpfs/address-book.json`
+  address_book_2=`docker exec $chain_host_2 cat /tmpfs/address-book.json`
+  eth_contract_addresses=`echo $address_book_1 $address_book_2 | jq -s '.[0] * .[1]'`
+
+# If chain providers are provided, use those
+else
+
+  # Prefer top-level address-book override otherwise default to one in contracts
+  if [[ -f address-book.json ]]
+  then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+  else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
+  fi
+
 fi
 
-########################################
-## Deploy according to configuration
+####################
+# Launch Indra stack
 
 echo "Deploying $node_image to $INDRA_DOMAINNAME"
 
@@ -243,7 +254,6 @@ services:
     environment:
       DOMAINNAME: '$INDRA_DOMAINNAME'
       EMAIL: '$INDRA_EMAIL'
-      ETH_PROVIDER_URL: '$INDRA_ETH_PROVIDER'
       MESSAGING_TCP_URL: 'nats:4222'
       MESSAGING_WS_URL: 'nats:4221'
       NODE_URL: 'node:8080'
