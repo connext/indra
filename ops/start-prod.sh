@@ -217,6 +217,9 @@ then
 # If chain providers are provided, use those
 else
 
+  chain_providers="$INDRA_CHAIN_PROVIDERS"
+  chain_url_1="`echo $chain_providers | jq '.[]' | head -n 1 | tr -d '"'`"
+
   # Prefer top-level address-book override otherwise default to one in contracts
   if [[ -f address-book.json ]]
   then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
@@ -254,6 +257,7 @@ services:
     environment:
       DOMAINNAME: '$INDRA_DOMAINNAME'
       EMAIL: '$INDRA_EMAIL'
+      ETH_PROVIDER_URL: '$chain_url_1'
       MESSAGING_TCP_URL: 'nats:4222'
       MESSAGING_WS_URL: 'nats:4221'
       NODE_URL: 'node:8080'
