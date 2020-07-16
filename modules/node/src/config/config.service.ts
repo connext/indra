@@ -165,7 +165,7 @@ export class ConfigService implements OnModuleInit {
       return [];
     }
     const priceOracleType =
-      this.get("NODE_ENV") === "development"
+      chainId.toString() === "1"
         ? PriceOracleTypes.HARDCODED
         : PriceOracleTypes.UNISWAP;
     const allowedSwaps: AllowedSwap[] = [];
