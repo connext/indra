@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 tag="watcher_tester"
 
 cmd="${1:-test}"
@@ -27,7 +27,7 @@ echo "Starting $ethprovider_host.."
 export INDRA_DATA_DIR=/tmpfs
 export INDRA_TAG=$ethprovider_tag
 export INDRA_MNEMONIC=$eth_mnemonic
-bash ops/start-eth-provider.sh $ethprovider_chain_id $ethprovider_port
+bash ops/start-chain.sh $ethprovider_chain_id $ethprovider_port
 
 ########################################
 # Launch tests
@@ -46,5 +46,5 @@ docker run \
   --env="SUGAR_DADDY=$eth_mnemonic" \
   --name="${project}_$tag" \
   --rm \
-  --volume="`pwd`:/root" \
+  --volume="$root:/root" \
   ${project}_builder -c 'cd modules/watcher && npm run '"$cmd"' -- '"$@"

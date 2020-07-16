@@ -1,31 +1,17 @@
 #!/usr/bin/env bash
 set -e
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 cmd="${1:-test}"
 shift || true # $1 is the command to npm run. Extra options, if any, come after
 
 tag="node_tester"
 
-source $dir/../../dev.env
+source $root/dev.env
 
 mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-
-chain_id_1=1340
-chain_port_1=8548
-chain_url_1="http://172.17.0.1:$chain_port_1"
-chain_tag_1="${chain_id_1}_$tag"
-chain_host_1="${project}_testnet_$chain_tag_1"
-
-chain_id_2=1341
-chain_port_2=8549
-chain_url_2="http://172.17.0.1:$chain_port_2"
-chain_tag_2="${chain_id_2}_$tag"
-chain_host_2="${project}_testnet_$chain_tag_2"
-
-chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
 
 ####################
 # Internal Config
@@ -68,7 +54,6 @@ fi
 
 ########################################
 # Start dependencies
-cwd="`pwd`"
 
 echo "Node tester activated!";echo;
 
@@ -101,20 +86,30 @@ docker run \
   --rm \
   redis:5-alpine
 
-echo "Starting $chain_host_1 & $chain_host_2.."
-export INDRA_DATA_DIR=/tmpfs
-export INDRA_MNEMONIC=$mnemonic
+export INDRA_CHAIN_ID_1=1339
+export INDRA_CHAIN_ID_2=1340
+bash ops/start-testnet.sh
 
-export INDRA_PORT=$chain_port_1
-bash ops/start-eth-provider.sh $chain_id_1 $chain_tag_1
+chain_id_1=1340
+chain_port_1=8548
+chain_url_1="http://172.17.0.1:$chain_port_1"
+chain_tag_1="${chain_id_1}_$tag"
+chain_host_1="${project}_testnet_$chain_tag_1"
 
-export INDRA_PORT=$chain_port_2
-bash ops/start-eth-provider.sh $chain_id_2 $chain_tag_2
+chain_id_2=1341
+chain_port_2=8549
+chain_url_2="http://172.17.0.1:$chain_port_2"
+chain_tag_2="${chain_id_2}_$tag"
+chain_host_2="${project}_testnet_$chain_tag_2"
+
+chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
 
 # Pull the tmp address books out of each chain provider & merge them into one
-address_book_1=`docker exec $chain_host_1 cat /tmpfs/address-book.json`
-address_book_2=`docker exec $chain_host_2 cat /tmpfs/address-book.json`
+address_book_1=`docker exec $chain_host_1 cat /data/address-book.json`
+address_book_2=`docker exec $chain_host_2 cat /data/address-book.json`
 eth_contract_addresses=`echo $address_book_1 $address_book_2 | jq -s '.[0] * .[1]'`
+
+eth_contract_addresses=``
 
 ########################################
 # Run Tests
@@ -145,7 +140,7 @@ docker run \
   --name="$node_host" \
   --network="$network" \
   --rm \
-  --volume="`pwd`:/root" \
+  --volume="$root:/root" \
   ${project}_builder -c '
     echo "Node Tester Container launched!";echo
     shopt -s globstar

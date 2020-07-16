@@ -1,12 +1,12 @@
 #!/bin/bash
 set -e
 
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
+
 # Make sure docker swarm mode is enabled so we can use the secret store
 docker swarm init 2> /dev/null || true
-
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
-registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
 localProvider="http://localhost:8545"
 ETH_PROVIDER="${1:-$localProvider}"
@@ -16,17 +16,15 @@ echo ethprovider: $ETH_PROVIDER
 ########################################
 # Calculate stuff based on env
 
-cwd="`pwd`"
-
 registry="docker.io/connextproject"
 
 commit="`git rev-parse HEAD | head -c 8`"
 release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 name=${project}_contract_deployer
 
-if [[ -f "$cwd/address-book.json" ]]
-then address_book="$cwd/address-book.json"
-else address_book="$cwd/modules/contracts/address-book.json"
+if [[ -f "$root/address-book.json" ]]
+then address_book="$root/address-book.json"
+else address_book="$root/modules/contracts/address-book.json"
 fi
 
 ########################################
@@ -72,7 +70,7 @@ then
     "$SECRET_ENV" \
     --entrypoint="bash" \
     --env="ETH_PROVIDER=$ETH_PROVIDER" \
-    --mount="type=bind,source=$cwd,target=/root" \
+    --mount="type=bind,source=$root,target=/root" \
     "$mount" \
     --name="$name" \
     --rm \

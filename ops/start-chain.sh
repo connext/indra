@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 set -e
 
-here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $here/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+## This script will start a testnet chain & store that chain's data in indra/.chaindata/${chainId}
+
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 chain_id="${1:-1337}"
-port="${2:-8545}"
 
-data_dir="${INDRA_DATA_DIR:-/tmpfs}"
+port="${INDRA_CHAIN_PORT:-`expr 8545 - 1337 + $chain_id`}"
 tag="${INDRA_TAG:-$chain_id}"
 mnemonic="${INDRA_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 image="${INDRA_IMAGE:-builder}"
-engine="${INDRA_EVM:-ganache}"
+engine="${INDRA_EVM:-`if [[ "$chain_id" == "1337" ]]; then echo "ganache"; else echo "buidler"; fi`}"
 logLevel="${INDRA_LOG_LEVEL:-0}"
 
 ethprovider_host="${project}_testnet_$tag"
@@ -22,22 +23,19 @@ then
   exit
 fi
 
-if [[ "$data_dir" == "/data" ]]
-then persist="--mount type=volume,source=${project}_chain_${chain_id},target=/data"
-else persist=""
-fi
+chain_data="$root/.chaindata/$chain_id"
+mkdir -p $chain_data
 
 if [[ "$image" == "builder" ]]
 then
   docker run \
-    $persist \
     --detach \
     --entrypoint "bash" \
     --env "CHAIN_ID=$chain_id" \
-    --env "DATA_DIR=$data_dir" \
     --env "ENGINE=$engine" \
     --env "MNEMONIC=$mnemonic" \
-    --mount "type=bind,source=`pwd`,target=/root" \
+    --mount "type=bind,source=$chain_data,target=/data" \
+    --mount "type=bind,source=$root,target=/root" \
     --name "$ethprovider_host" \
     --publish "$port:8545" \
     --rm \
@@ -47,12 +45,11 @@ then
 elif [[ "$image" == "ethprovider" ]]
 then
   docker run \
-    $persist \
     --detach \
     --env "CHAIN_ID=$chain_id" \
-    --env "DATA_DIR=$data_dir" \
     --env "ENGINE=$engine" \
     --env "MNEMONIC=$mnemonic" \
+    --mount "type=bind,source=$chain_data,target=/data" \
     --name "$ethprovider_host" \
     --publish "$port:8545" \
     --tmpfs "/tmpfs" \

@@ -3,8 +3,8 @@ set -e
 
 args=$@
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 suffix="test_store"
 
@@ -55,7 +55,7 @@ docker run \
   --name="${project}_test_store" \
   --network="$network" \
   --rm \
-  --volume="`pwd`:/root" \
+  --volume="$root:/root" \
   ${project}_builder -c "
     set -e
     echo 'Test-store container launched!'

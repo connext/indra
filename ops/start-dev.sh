@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
@@ -104,7 +104,7 @@ else
     networks:
       - '$project'
     volumes:
-      - '`pwd`:/root'
+      - '$root:/root'
     working_dir: '$webserver_working_dir'
   "
 fi
@@ -132,39 +132,13 @@ eth_mnemonic_name="${project}_mnemonic"
 if [[ -z "$INDRA_CHAIN_PROVIDERS" ]]
 then
 
-  echo 'No $INDRA_CHAIN_PROVIDERS provided, spinning up local testnets & using those.'
+  export INDRA_CHAIN_ID_1=1337
+  export INDRA_CHAIN_ID_2=1338
+  export INDRA_TESTNET_PORT_1=8545
+  export INDRA_TESTNET_PORT_2=8546
+  bash ops/start-testnet.sh
 
-  eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-  bash ops/save-secret.sh "$eth_mnemonic_name" "$eth_mnemonic"
-
-  chain_id_1=1337
-  chain_port_1=8545
   chain_url_1="http://172.17.0.1:$chain_port_1"
-  chain_host_1="${project}_testnet_$chain_id_1"
-
-  chain_id_2=1338
-  chain_port_2=8546
-  chain_url_2="http://172.17.0.1:$chain_port_2"
-  chain_host_2="${project}_testnet_$chain_id_2"
-
-  chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
-
-  echo "Starting $chain_host_1 & $chain_host_2.."
-  export INDRA_MNEMONIC=$eth_mnemonic
-
-  # NOTE: Start script for buidler testnet will return before it's actually ready to go.
-  # Run buidlerevm first so that it can finish while we're waiting for ganache to get set up
-  export INDRA_TAG=$chain_tag_2
-  export INDRA_EVM=buidler
-  bash ops/start-eth-provider.sh $chain_id_2 $chain_port_2
-
-  export INDRA_TAG=$chain_tag_1
-  export INDRA_EVM=ganache
-  bash ops/start-eth-provider.sh $chain_id_1 $chain_port_1
-
-  # Pull the tmp address books out of each chain provider & merge them into one
-  address_book_1=`docker exec $chain_host_1 cat /tmpfs/address-book.json`
-  address_book_2=`docker exec $chain_host_2 cat /tmpfs/address-book.json`
   eth_contract_addresses=`echo $address_book_1 $address_book_2 | jq -s '.[0] * .[1]'`
 
 # If chain providers are provided, use those
@@ -250,7 +224,7 @@ services:
     secrets:
       - '${project}_database_dev'
     volumes:
-      - '`pwd`:/root'
+      - '$root:/root'
 
   database:
     image: '$database_image'

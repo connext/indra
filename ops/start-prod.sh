@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
-registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
@@ -150,7 +150,7 @@ fi
 if [[ "$INDRA_MODE" == *"staging" ]]
 then version="`git rev-parse HEAD | head -c 8`"
 elif [[ "$INDRA_MODE" == *"release" ]]
-then version="`cat $dir/../package.json | grep '"version":' | head -n 1 | cut -d '"' -f 4`"
+then version="`cat $root/package.json | grep '"version":' | head -n 1 | cut -d '"' -f 4`"
 else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
 fi
 
@@ -204,11 +204,11 @@ then
   export INDRA_PORT=$chain_port_2
   export INDRA_EVM=buidler
   export INDRA_IMAGE=ethprovider
-  bash ops/start-eth-provider.sh $chain_id_2 $chain_tag_2
+  bash ops/start-chain.sh $chain_id_2 $chain_tag_2
 
   export INDRA_PORT=$chain_port_1
   export INDRA_EVM=ganache
-  bash ops/start-eth-provider.sh $chain_id_1 $chain_tag_1
+  bash ops/start-chain.sh $chain_id_1 $chain_tag_1
 
   # Pull the tmp address books out of each chain provider & merge them into one
   address_book_1=`docker exec $chain_host_1 cat /tmpfs/address-book.json`
@@ -234,7 +234,7 @@ fi
 
 echo "Deploying $node_image to $INDRA_DOMAINNAME"
 
-mkdir -p `pwd`/ops/database/snapshots
+mkdir -p $root/ops/database/snapshots
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
@@ -328,7 +328,7 @@ services:
       - '$db_secret'
     volumes:
       - '$db_volume:/var/lib/postgresql/data'
-      - '`pwd`/ops/database/snapshots:/root/snapshots'
+      - '$root/ops/database/snapshots:/root/snapshots'
     $network
 
   nats:

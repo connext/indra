@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 mode="${TEST_MODE:-local}"
 name="${project}_test_runner"
@@ -41,7 +41,7 @@ else
     --env="INDRA_PROXY_URL=http://proxy:80" \
     --env="NODE_ENV=development" \
     --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
-    --mount="type=bind,source=`pwd`,target=/root" \
+    --mount="type=bind,source=$root,target=/root" \
     --name="$name" \
     --network="$project" \
     --rm \

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+
 agents="$1"
 interval="$2"
 limit="$3"
 echo "Starting bot test with options: $agents agents | interval $interval | limit $limit"
-
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:8545}"
 INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:3000}"
@@ -31,7 +31,7 @@ exec docker run \
   --name="$tps_name" \
   --publish="9231:9229" \
   --rm \
-  --volume="`pwd`:/root" \
+  --volume="$root:/root" \
   ${project}_builder -c '
     set -e
     echo "Bot tps launched!"
