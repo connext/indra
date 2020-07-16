@@ -53,7 +53,8 @@ export class TransferService {
     this.log.setContext("TransferService");
   }
 
-  @Interval(this.configService.getAppCleanupInterval())
+  // TODO: make this interval configurable
+  @Interval(3600_000)
   async pruneExpiredApps(channel: Channel): Promise<void> {
     this.log.info(`Start pruneExpiredApps for channel ${channel.multisigAddress}`);
 
