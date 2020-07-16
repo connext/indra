@@ -7,14 +7,12 @@ registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' 
 
 chain_url="${1:-http://localhost:8545}"
 mode="${MODE:-local}"
-echo chain provider url: $chain_url
+echo "mode=$mode chain_url=$chain_url"
 
 ########################################
 # Calculate stuff based on env
 
-commit="`git rev-parse HEAD | head -c 8`"
 release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
-name=${project}_contract_deployer
 
 if [[ -f "$root/address-book.json" ]]
 then address_book="$root/address-book.json"
@@ -28,14 +26,16 @@ chain_host="${chain_url#*://}"
 chain_host="${chain_host%/*}"
 chain_port="${chain_host#*:}"
 
-if [[ "$chain_url" == "http://localhost:"* && -n `docker container ls -f publish=8545 | grep "0.0.0.0:$chain_port" | grep "indra_"` ]]
+if [[ \
+  "$chain_url" == "http://localhost:$chain_port" && \
+  -n `docker container ls -f publish=8545 | grep "0.0.0.0:$chain_port" | grep "indra_"` \
+  ]]
 then mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 else
   echo "Copy the mnemonic for the account that will pay for gas"
   echo "Paste it below & hit enter (no echo)"
   echo -n "> "
   read -s mnemonic
-  SECRET_ENV="$secret"
   echo
 fi
 
@@ -59,7 +59,7 @@ then
     --env=ETH_PROVIDER="`echo $chain_url | sed 's/localhost/172.17.0.1/'`" \
     --mount="type=bind,source=$root,target=/root" \
     --mount="type=bind,source=$address_book,target=/data/address-book.json" \
-    --name="$name" \
+    --name="${project}_contract_deployer" \
     --rm \
     $image modules/contracts/ops/deploy.sh
   exit
@@ -67,7 +67,7 @@ then
 elif [[ "$mode" == "release" ]]
 then image="${registry}/${project}_ethprovider:$release"
 elif [[ "$mode" == "staging" ]]
-then image="${project}_ethprovider:$commit"
+then image="${project}_ethprovider:`git rev-parse HEAD | head -c 8`"
 fi
 
 echo "Deploying $mode-mode contract deployer (image: $image)..."
@@ -77,6 +77,6 @@ docker run \
   --env=ETH_MNEMONIC="$mnemonic" \
   --env=ETH_PROVIDER="`echo $chain_url | sed 's/localhost/172.17.0.1/'`" \
   --mount="type=bind,source=$address_book,target=/data/address-book.json" \
-  --name="$name" \
+  --name="${project}_contract_deployer" \
   --rm \
   $image deploy
