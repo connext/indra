@@ -195,7 +195,7 @@ export class SwapRateService implements OnModuleInit {
     const oldRateBn = parseEther(oldRate || "0");
     const newRateBn = parseEther(newRate);
     if (!oldRateBn.eq(newRateBn)) {
-      this.log.info(`Got swap rate from Uniswap at block ${blockNumber}: ${newRate}`);
+      this.log.info(`Got swap rate at block ${blockNumber}: ${newRate}`);
       this.broadcastRate(from, to, chainId); // Only broadcast the rate if it's changed
     }
     return newRate;

@@ -166,8 +166,8 @@ export class ConfigService implements OnModuleInit {
     }
     const priceOracleType =
       chainId.toString() === "1"
-        ? PriceOracleTypes.HARDCODED
-        : PriceOracleTypes.UNISWAP;
+        ? PriceOracleTypes.UNISWAP
+        : PriceOracleTypes.HARDCODED;
     const allowedSwaps: AllowedSwap[] = [];
     // allow token <> eth swaps per chain
     supportedTokens[chainId].forEach((token) => {
