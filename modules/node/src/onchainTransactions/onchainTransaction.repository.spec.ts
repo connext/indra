@@ -69,7 +69,7 @@ describe("OnchainTransactionRepository", () => {
     await getConnection().close();
   });
 
-  it.only("should get failed transactions", async () => {
+  it("should get failed transactions", async () => {
     const { multisigAddress } = await createTestChannel(
       cfCoreStore,
       configService.getPublicIdentifier(),
