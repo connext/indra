@@ -126,7 +126,7 @@ bash ops/save-secret.sh "${project}_database_dev" "$project"
 ########################################
 # Configure or launch Ethereum testnets
 
-eth_mnemonic_name="${project}_mnemonic"
+eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
 # If no chain providers provided, spin up local testnets & use those
 if [[ -z "$INDRA_CHAIN_PROVIDERS" ]]
@@ -134,12 +134,20 @@ then
 
   export INDRA_CHAIN_ID_1=1337
   export INDRA_CHAIN_ID_2=1338
-  export INDRA_TESTNET_PORT_1=8545
-  export INDRA_TESTNET_PORT_2=8546
   bash ops/start-testnet.sh
 
+  chain_port_1="`expr 8545 - 1337 + $INDRA_CHAIN_ID_1`"
+  chain_port_2="`expr 8545 - 1337 + $INDRA_CHAIN_ID_2`"
   chain_url_1="http://172.17.0.1:$chain_port_1"
-  eth_contract_addresses=`echo $address_book_1 $address_book_2 | jq -s '.[0] * .[1]'`
+  chain_url_2="http://172.17.0.1:$chain_port_2"
+  chain_providers='{"'$INDRA_CHAIN_ID_2'":"'$chain_url_1'","'$INDRA_CHAIN_ID_2'":"'$chain_url_2'"}'
+
+  # Merge relevant address books
+  eth_contract_addresses=`cat \
+    $root/.chaindata/$INDRA_CHAIN_ID_1/address-book.json \
+    $root/.chaindata/$INDRA_CHAIN_ID_2/address-book.json \
+    | jq -s '.[0] * .[1]'
+  `
 
 # If chain providers are provided, use those
 else

@@ -94,7 +94,7 @@ export INDRA_CHAIN_ID_1=$chain_id_1
 export INDRA_CHAIN_ID_2=$chain_id_2
 bash ops/start-testnet.sh
 
-# Pull the tmp address books out of each chain provider & merge them into one
+# Merge relevant address books
 eth_contract_addresses=`cat \
   $root/.chaindata/$chain_id_1/address-book.json \
   $root/.chaindata/$chain_id_2/address-book.json \
