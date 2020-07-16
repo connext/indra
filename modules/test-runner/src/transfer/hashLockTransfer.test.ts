@@ -421,7 +421,7 @@ describe("HashLock Transfers", () => {
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer);
     })) as unknown) as ConditionalTransferCreatedEventData<"HashLockTransferApp">;
-    let app = await clientB.getAppInstance(appIdentityHash);
+    const app = await clientB.getAppInstance(appIdentityHash);
     expect(app).to.be.ok;
 
     // Wait for more than one block if blocktime > 0
@@ -429,44 +429,13 @@ describe("HashLock Transfers", () => {
     // eslint-disable-next-line no-loop-func
     await new Promise((resolve) => provider.once("block", resolve));
     // }
-
-    await Promise.all([
-      new Promise(async (resolve, reject) => {
-        try {
-          await expect(
-            clientB.resolveCondition({
-              conditionType: ConditionalTransferTypes.HashLockTransfer,
-              preImage,
-              assetId: transfer.assetId,
-            } as PublicParams.ResolveHashLockTransfer),
-          ).to.be.rejectedWith(/Cannot take action if expiry is expired/);
-          // take some other channel action to force an uninstall event
-          // and expired app cleanup in receiver channel
-          await fundChannel(clientB, transfer.amount, tokenAddress);
-          resolve();
-        } catch (e) {
-          reject(e.message);
-        }
-      }),
-      new Promise((resolve) => {
-        clientB.once(
-          EventNames.UNINSTALL_EVENT,
-          (msg) => resolve(msg),
-          (msg) => msg.appIdentityHash === appIdentityHash,
-        );
-      }),
-    ]);
-    // await expect(
-    //   clientB.resolveCondition({
-    //     conditionType: ConditionalTransferTypes.HashLockTransfer,
-    //     preImage,
-    //     assetId: transfer.assetId,
-    //   } as PublicParams.ResolveHashLockTransfer),
-    // ).to.be.rejectedWith(/Cannot take action if expiry is expired/);
-
-    // make sure the app was uninstalled by the node
-    app = await clientB.getAppInstance(appIdentityHash);
-    expect(app).to.be.undefined;
+    await expect(
+      clientB.resolveCondition({
+        conditionType: ConditionalTransferTypes.HashLockTransfer,
+        preImage,
+        assetId: transfer.assetId,
+      } as PublicParams.ResolveHashLockTransfer),
+    ).to.be.rejectedWith(/Cannot take action if expiry is expired/);
   });
 
   it("cannot install receiver app without sender app installed", async () => {
