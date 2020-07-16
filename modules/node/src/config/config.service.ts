@@ -1,4 +1,4 @@
-import { ERC20 } from "@connext/contracts";
+import { ConnextToken } from "@connext/contracts";
 import {
   Address,
   ContractAddresses,
@@ -105,7 +105,7 @@ export class ConfigService implements OnModuleInit {
 
   async getTokenDecimals(chainId: number, providedAddress?: Address): Promise<number> {
     const address = providedAddress || (await this.getTokenAddress(chainId));
-    const tokenContract = new Contract(address, ERC20.abi, this.getSigner(chainId));
+    const tokenContract = new Contract(address, ConnextToken.abi, this.getSigner(chainId));
     let decimals = DEFAULT_DECIMALS;
     try {
       decimals = await tokenContract.decimals();
@@ -184,7 +184,10 @@ export class ConfigService implements OnModuleInit {
     const addressBook = this.getAddressBook();
     const chains = this.getSupportedChains();
     return chains.reduce((tokens, chainId) => {
-      tokens[chainId] = addressBook[chainId].Token.address;
+      if (!tokens[chainId]) {
+        tokens[chainId] = [];
+      }
+      tokens[chainId].push(addressBook[chainId].Token.address);
       return tokens;
     }, {});
   }

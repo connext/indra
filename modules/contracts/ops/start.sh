@@ -36,10 +36,10 @@ then
       },
     },
   }' > /tmpfs/buidler.config.js
-  launch="./node_modules/.bin/buidler node --config /tmpfs/buidler.config.js --emoji --port 8545 "
-  expose="--hostname 0.0.0.0"
+  launch="./node_modules/.bin/buidler node --config /tmpfs/buidler.config.js --emoji --hostname 0.0.0.0 --port 8545 "
 
-else
+elif [[ "$engine" == "ganache" ]]
+then
   echo "Using ganache EVM engine"  
   launch='./node_modules/.bin/ganache-cli \
     --db='$data_dir' \
@@ -50,6 +50,9 @@ else
     --networkId='$chain_id' \
     --port=8545 '
   expose="--host 0.0.0.0"
+else
+  echo 'Expected $ENGINE to be either "ganache" or "buidler"'
+  exit 1
 fi
 
 echo "Starting isolated testnet to migrate contracts.."
@@ -67,7 +70,11 @@ node dist/src.ts/cli.js migrate --address-book "$address_book" --mnemonic "$mnem
 echo "Deploying testnet token.."
 node dist/src.ts/cli.js new-token --address-book "$address_book" --mnemonic "$mnemonic"
 
-kill $pid
-
-echo "Starting publically available testnet.."
-eval "$launch $expose"
+# Buidler does not persist chain data: it will start with a fresh chain every time
+# Ganache persists chain data so we can restart it & this time we'll expose it to the outside world
+if [[ "$engine" == "ganache" ]]
+then
+  kill $pid
+  echo "Starting publically available testnet.."
+  eval "$launch $expose"
+fi
