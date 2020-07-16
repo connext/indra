@@ -22,9 +22,15 @@ then
   exit
 fi
 
+if [[ "$data_dir" == "/data" ]]
+then persist="--mount type=volume,source=${project}_chain_${chain_id},target=/data"
+else persist=""
+fi
+
 if [[ "$image" == "builder" ]]
 then
   docker run \
+    $persist \
     --detach \
     --entrypoint "bash" \
     --env "CHAIN_ID=$chain_id" \
@@ -32,7 +38,6 @@ then
     --env "ENGINE=$engine" \
     --env "MNEMONIC=$mnemonic" \
     --mount "type=bind,source=`pwd`,target=/root" \
-    --mount "type=volume,source=${project}_chain_${chain_id},target=/data" \
     --name "$ethprovider_host" \
     --publish "$port:8545" \
     --rm \
@@ -42,12 +47,12 @@ then
 elif [[ "$image" == "ethprovider" ]]
 then
   docker run \
+    $persist \
     --detach \
     --env "CHAIN_ID=$chain_id" \
     --env "DATA_DIR=$data_dir" \
     --env "ENGINE=$engine" \
     --env "MNEMONIC=$mnemonic" \
-    --mount "type=volume,source=${project}_chain_${chain_id},target=/data" \
     --name "$ethprovider_host" \
     --publish "$port:8545" \
     --tmpfs "/tmpfs" \

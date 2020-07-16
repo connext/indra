@@ -8,7 +8,7 @@ then cd modules/contracts
 fi
 
 address_book="${ADDRESS_BOOK:-/tmpfs/address-book.json}"
-data_dir="${DATA_DIR:-/data}"
+data_dir="${DATA_DIR:-/tmpfs}"
 chain_id="${CHAIN_ID:-1337}"
 mnemonic="${MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 engine="${ENGINE:-buidler}"
