@@ -203,6 +203,7 @@ then
   # Run buidlerevm first so that it can finish while we're waiting for ganache to get set up
   export INDRA_TESTNET_PORT=$chain_port_2
   export INDRA_TESTNET_ENGINE=buidler
+  export INDRA_TESTNET_IMAGE=ethprovider
   bash ops/start-eth-provider.sh $chain_id_2 $chain_tag_2
 
   export INDRA_TESTNET_PORT=$chain_port_1
