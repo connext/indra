@@ -49,15 +49,14 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
   }
 
   async findFailedTransactions(withErrors: string[]): Promise<OnchainTransaction[]> {
-    return (
-      this.createQueryBuilder("onchain_transaction")
-        .leftJoinAndSelect("onchain_transaction.channel", "channel")
-        .where("onchain_transaction.status = :status", { status: TransactionStatus.FAILED })
-        // FIXME: search for error messages within stored txs!!
-        // .andWhere(
-        //   `onchain_transaction."errors"::JSONB @> '{"coinTransfers",0,"to"}' = '"${nodeSignerAddress}"'`,
-        // )
-        .getMany()
+    const txes = await this.createQueryBuilder("onchain_transaction")
+      .leftJoinAndSelect("onchain_transaction.channel", "channel")
+      .where("onchain_transaction.status = :status", { status: TransactionStatus.FAILED })
+      .getMany();
+
+    // could do this in the query, but it was hard and probably doesn't matter
+    return txes.filter((tx) =>
+      Object.values(tx.errors).some((error) => withErrors.includes(error)),
     );
   }
 

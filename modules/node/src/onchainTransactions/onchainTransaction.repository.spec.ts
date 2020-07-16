@@ -116,11 +116,7 @@ describe("OnchainTransactionRepository", () => {
     await onchainTxRepository.addResponse(response, TransactionReason.COLLATERALIZATION, channel);
     await onchainTxRepository.markFailed(response, { 1: KNOWN_ERRORS[1] });
 
-    const all = await onchainTxRepository.find();
-    console.log("all: ", all);
-
     const transactions = await onchainTxRepository.findFailedTransactions(KNOWN_ERRORS);
-    console.log("transactions: ", transactions);
 
     expect(transactions.length).to.eq(2);
   });
