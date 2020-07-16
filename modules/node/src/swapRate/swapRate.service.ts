@@ -83,6 +83,7 @@ export class SwapRateService implements OnModuleInit {
     if (swap) {
       rate = swap.rate;
     } else {
+      this.log.debug(`Getting or fetching rate from chain ${fromChainId} to chain ${toChainId}`);
       const targetSwap = this.config
         .getAllowedSwaps(fromChainId)
         .find((s) => s.from === from && s.to === to);
@@ -102,14 +103,16 @@ export class SwapRateService implements OnModuleInit {
     chainId: number,
     blockNumber: number = 0,
   ): Promise<string | undefined> {
+    this.log.debug(`Fetching swap rate for chain ${chainId}`);
     if (
       !this.config.getAllowedSwaps(chainId).find((s: AllowedSwap) => s.from === from && s.to === to)
     ) {
       throw new Error(`No valid swap exists for ${from} to ${to}`);
     }
-    const rateIndex = this.latestSwapRates
-      .get(chainId)
-      .findIndex((s: SwapRate) => s.from === from && s.to === to);
+    const latestRate = this.latestSwapRates.get(chainId);
+    const rateIndex = latestRate
+      ? latestRate.findIndex((s: SwapRate) => s.from === from && s.to === to)
+      : -1;
     let oldRate: string | undefined;
     if (rateIndex !== -1) {
       oldRate = this.latestSwapRates[rateIndex].rate;
@@ -172,7 +175,10 @@ export class SwapRateService implements OnModuleInit {
       oldRate = this.latestSwapRates[rateIndex].rate;
       this.latestSwapRates[rateIndex] = newSwap;
     } else {
-      const rates = this.latestSwapRates.get(chainId);
+      let rates: SwapRate[] = this.latestSwapRates.get(chainId);
+      if (!rates) {
+        rates = [];
+      }
       rates.push(newSwap);
       this.latestSwapRates.set(chainId, rates);
     }
@@ -204,24 +210,31 @@ export class SwapRateService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    this.config.providers.forEach((provider, chainId) => {
+    this.config.providers.forEach(async (provider, chainId) => {
       // setup interval for swaps
       const swaps = this.config.getAllowedSwaps(chainId);
-      setInterval(async () => {
-        const blockNumber = await provider.getBlockNumber();
-        for (const swap of swaps) {
-          if (swap.priceOracleType === PriceOracleTypes.UNISWAP) {
+      for (const swap of swaps) {
+
+        // If uniswap, poll for a new swap rate every 15s
+        if (swap.priceOracleType === PriceOracleTypes.UNISWAP) {
+          setInterval(async () => {
+            const blockNumber = await provider.getBlockNumber();
             this.log.info(
               `Querying chain listener for swaps from ${swap.from} to ${swap.to} on chain ${chainId}`,
             );
-            this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber);
-          } else if (swap.priceOracleType === PriceOracleTypes.HARDCODED) {
-            this.log.info(
-              `Using hardcoded value for swaps from ${swap.from} to ${swap.to} on chain ${chainId}`,
-            );
-          }
+            this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, chainId, blockNumber);
+          }, 15_000);
+
+        // If hardcoded, set the swap rate once & then we're done
+        } else if (swap.priceOracleType === PriceOracleTypes.HARDCODED) {
+          const blockNumber = await provider.getBlockNumber();
+          this.log.info(
+            `Using hardcoded value for swaps from ${swap.from} to ${swap.to} on chain ${chainId}`,
+          );
+          this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, chainId, blockNumber);
         }
-      }, 15_000);
+
+      }
     });
   }
 }

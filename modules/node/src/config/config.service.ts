@@ -46,6 +46,7 @@ export class ConfigService implements OnModuleInit {
       const provider = new providers.JsonRpcProvider(urls[idx], chainId);
       this.providers.set(chainId, provider);
       this.signers.set(chainId, new ChannelSigner(this.getPrivateKey(), provider));
+      this.log.debug(`Registered new provider & signer for chain ${chainId}`);
     });
   }
 
@@ -83,7 +84,11 @@ export class ConfigService implements OnModuleInit {
   }
 
   async getNetwork(chainId: number): Promise<providers.Network> {
-    const network = await this.getEthProvider(chainId).getNetwork();
+    const provider = this.getEthProvider(chainId);
+    if (!provider) {
+      throw new Error(`Node is not configured for chain ${chainId}`);
+    }
+    const network = await provider.getNetwork();
     network.chainId = chainId; // just in case we're using ganache which hardcodes it's chainId..
     if (network.name === `unknown` && network.chainId === 1337) {
       network.name = `ganache`;
@@ -155,6 +160,10 @@ export class ConfigService implements OnModuleInit {
 
   getAllowedSwaps(chainId: number): AllowedSwap[] {
     const supportedTokens = this.getSupportedTokens();
+    if (!supportedTokens[chainId]) {
+      this.log.warn(`There are no supportd tokens for chain ${chainId}`);
+      return [];
+    }
     const priceOracleType =
       this.get("NODE_ENV") === "development"
         ? PriceOracleTypes.HARDCODED

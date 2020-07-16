@@ -39,12 +39,6 @@ wait_for "database" "$INDRA_PG_HOST:$INDRA_PG_PORT"
 wait_for "nats" "$INDRA_NATS_SERVERS"
 wait_for "redis" "$INDRA_REDIS_URL"
 
-
-# FIXME: the below works, as in it parses the connection info correctly:
-# Waiting for ethprovider_1337 at http://ethprovider_1337:8545 (ethprovider_1337:8545) to wake up...
-# Waiting for ethprovider_1338 at http://ethprovider_1338:8545 (ethprovider_1338:8545) to wake up...
-# But it seems the second eth provider is not found....
-
 # Wait for all eth providers
 chains=()
 urls=()
