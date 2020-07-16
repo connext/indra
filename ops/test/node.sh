@@ -4,10 +4,9 @@ set -e
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." >/dev/null 2>&1 && pwd )"
 project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
+tag="node_tester"
 cmd="${1:-test}"
 shift || true # $1 is the command to npm run. Extra options, if any, come after
-
-tag="node_tester"
 
 source $root/dev.env
 
@@ -17,20 +16,36 @@ mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet t
 # Internal Config
 # config & hard-coded stuff you might want to change
 
-network="${project}_$tag"
+chain_id_1=1339
+chain_id_2=1340
 
+chain_url_1="http://172.17.0.1:$chain_port_1"
+chain_url_2="http://172.17.0.1:$chain_port_2"
+
+chain_host_1="${project}_testnet_$chain_id_1"
+chain_host_2="${project}_testnet_$chain_id_2"
+chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
+nats_host="${project}_nats_$tag"
+network="${project}_$tag"
+node_host="${project}_$tag"
+node_port="8080"
 postgres_db="${project}_$tag"
 postgres_host="${project}_database_$tag"
 postgres_password="$project"
 postgres_port="5432"
 postgres_user="$project"
-
-nats_host="${project}_nats_$tag"
-
 redis_host="${project}_redis_$tag"
 
-node_port="8080"
-node_host="${project}_$tag"
+docker network create --attachable $network 2> /dev/null || true
+
+# If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
+if [[ -t 0 && -t 1 && -t 2 ]]
+then interactive="--interactive --tty"
+else echo "Running in non-interactive mode"
+fi
+
+########################################
+# Start dependencies
 
 # Kill the dependency containers when this script exits
 function cleanup {
@@ -43,17 +58,6 @@ function cleanup {
   docker container stop $node_host 2> /dev/null || true
 }
 trap cleanup EXIT
-
-docker network create --attachable $network 2> /dev/null || true
-
-# If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
-if [[ -t 0 && -t 1 && -t 2 ]]
-then interactive="--interactive --tty"
-else echo "Running in non-interactive mode"
-fi
-
-########################################
-# Start dependencies
 
 echo "Node tester activated!";echo;
 
@@ -86,30 +90,16 @@ docker run \
   --rm \
   redis:5-alpine
 
-export INDRA_CHAIN_ID_1=1339
-export INDRA_CHAIN_ID_2=1340
+export INDRA_CHAIN_ID_1=$chain_id_1
+export INDRA_CHAIN_ID_2=$chain_id_2
 bash ops/start-testnet.sh
 
-chain_id_1=1340
-chain_port_1=8548
-chain_url_1="http://172.17.0.1:$chain_port_1"
-chain_tag_1="${chain_id_1}_$tag"
-chain_host_1="${project}_testnet_$chain_tag_1"
-
-chain_id_2=1341
-chain_port_2=8549
-chain_url_2="http://172.17.0.1:$chain_port_2"
-chain_tag_2="${chain_id_2}_$tag"
-chain_host_2="${project}_testnet_$chain_tag_2"
-
-chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
-
 # Pull the tmp address books out of each chain provider & merge them into one
-address_book_1=`docker exec $chain_host_1 cat /data/address-book.json`
-address_book_2=`docker exec $chain_host_2 cat /data/address-book.json`
-eth_contract_addresses=`echo $address_book_1 $address_book_2 | jq -s '.[0] * .[1]'`
-
-eth_contract_addresses=``
+eth_contract_addresses=`cat \
+  $root/.chaindata/$chain_id_1/address-book.json \
+  $root/.chaindata/$chain_id_2/address-book.json \
+  | jq -s '.[0] * .[1]'
+`
 
 ########################################
 # Run Tests
