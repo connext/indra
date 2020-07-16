@@ -126,6 +126,8 @@ export class TransferService {
       `installReceiverAppByPaymentId for ${receiverIdentifier} paymentId ${paymentId} started`,
     );
 
+    console.log("receiverIdentifier: ", receiverIdentifier);
+    console.log("receiverChainId: ", receiverChainId);
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
       receiverIdentifier,
       receiverChainId,
@@ -137,7 +139,9 @@ export class TransferService {
     const receiverAssetId = meta.receiverAssetId ? meta.receiverAssetId : senderAssetId;
     let receiverAmount = senderAmount;
     if (receiverAssetId !== senderAssetId || senderChainId !== receiverChainId) {
-      this.log.warn(`Detected an inflight swap from ${senderAssetId} to ${receiverAssetId}!`);
+      this.log.warn(
+        `Detected an inflight swap from ${senderAssetId} on ${senderChainId} to ${receiverAssetId} on ${receiverChainId}!`,
+      );
       const currentRate = await this.swapRateService.getOrFetchRate(
         senderAssetId,
         receiverAssetId,
@@ -293,13 +297,13 @@ export class TransferService {
   async findSenderAppByPaymentId<
     T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
   >(paymentId: string): Promise<AppInstance<T>> {
-    this.log.info(`findSenderAppByPaymentId ${paymentId} started`);
+    this.log.debug(`findSenderAppByPaymentId ${paymentId} started`);
     // node receives from sender
     const app = await this.transferRepository.findTransferAppByPaymentIdAndReceiver<T>(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
     );
-    this.log.info(`findSenderAppByPaymentId ${paymentId} completed: ${JSON.stringify(app)}`);
+    this.log.debug(`findSenderAppByPaymentId ${paymentId} completed: ${JSON.stringify(app)}`);
     return app;
   }
 

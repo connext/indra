@@ -153,7 +153,7 @@ export class ConfigService implements OnModuleInit {
     }, {});
   }
 
-  async getTokenAddress(chainId: number): Promise<string> {
+  getTokenAddress(chainId: number): string {
     const ethAddressBook = this.getAddressBook();
     return getAddress(ethAddressBook[chainId].Token.address);
   }

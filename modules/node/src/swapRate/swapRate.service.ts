@@ -34,9 +34,12 @@ export class SwapRateService implements OnModuleInit {
     fromChainId: number,
     toChainId: number,
   ): string | undefined {
-    const supportedTokens = this.config.getSupportedTokens();
-    const fromIsConfigToken = supportedTokens[fromChainId].includes(from);
-    const toIsConfigToken = supportedTokens[toChainId].includes(to);
+    const TOKEN_TO_ETH = "0.01";
+    const ETH_TO_TOKEN = "0.01";
+    const SAME_ASSET = "1";
+
+    const fromIsConfigToken = from === this.config.getTokenAddress(fromChainId);
+    const toIsConfigToken = to === this.config.getTokenAddress(toChainId);
 
     // rethink this before enabling mainnet
     if (fromChainId === 1 || toChainId === 1) {
@@ -45,21 +48,25 @@ export class SwapRateService implements OnModuleInit {
 
     // TOKEN TO ETH = 0.01
     if (fromIsConfigToken && to === CONVENTION_FOR_ETH_ASSET_ID) {
-      return "0.01";
+      this.log.info(`Using hardcoded swap rate for token to ETH: ${TOKEN_TO_ETH}`);
+      return TOKEN_TO_ETH;
     }
 
     // ETH TO TOKEN = 100
     if (from === CONVENTION_FOR_ETH_ASSET_ID && toIsConfigToken) {
+      this.log.info(`Using hardcoded swap rate for ETH to token: ${ETH_TO_TOKEN}`);
       return "100";
     }
 
     // ETH TO ETH = 1
     if (from === CONVENTION_FOR_ETH_ASSET_ID && to === CONVENTION_FOR_ETH_ASSET_ID) {
+      this.log.info(`Using hardcoded swap rate for same asset across chains: ${SAME_ASSET}`);
       return "1";
     }
 
     // TOKEN TO TOKEN = 1
     if (fromIsConfigToken && toIsConfigToken) {
+      this.log.info(`Using hardcoded swap rate for same asset across chains: ${SAME_ASSET}`);
       return "1";
     }
 
@@ -73,13 +80,16 @@ export class SwapRateService implements OnModuleInit {
     toChainId: number,
   ): Promise<string> {
     let rate: string;
+
+    // HARDCODED RATES FOR DEMO
     rate = this.hardcodedDemoSwapRate(from, to, fromChainId, toChainId);
-    const swap = this.latestSwapRates
-      .get(fromChainId)
-      .find((s: SwapRate) => s.from === from && s.to === to);
     if (rate) {
       return rate;
     }
+
+    const swap = this.latestSwapRates
+      .get(fromChainId)
+      .find((s: SwapRate) => s.from === from && s.to === to);
     if (swap) {
       rate = swap.rate;
     } else {
@@ -214,7 +224,6 @@ export class SwapRateService implements OnModuleInit {
       // setup interval for swaps
       const swaps = this.config.getAllowedSwaps(chainId);
       for (const swap of swaps) {
-
         // If uniswap, poll for a new swap rate every 15s
         if (swap.priceOracleType === PriceOracleTypes.UNISWAP) {
           setInterval(async () => {
@@ -225,7 +234,7 @@ export class SwapRateService implements OnModuleInit {
             this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, chainId, blockNumber);
           }, 15_000);
 
-        // If hardcoded, set the swap rate once & then we're done
+          // If hardcoded, set the swap rate once & then we're done
         } else if (swap.priceOracleType === PriceOracleTypes.HARDCODED) {
           const blockNumber = await provider.getBlockNumber();
           this.log.info(
@@ -233,7 +242,6 @@ export class SwapRateService implements OnModuleInit {
           );
           this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, chainId, blockNumber);
         }
-
       }
     });
   }
