@@ -6,7 +6,7 @@ import { expect } from "../util";
 
 const { AddressZero, Zero } = constants;
 
-describe.only("Multichain clients", () => {
+describe("Multichain clients", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
 
