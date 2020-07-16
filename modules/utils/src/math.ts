@@ -57,3 +57,45 @@ export const calculateExchangeWad = (
   const outputWad = toWad(outputAmount, outputDecimals);
   return outputWad;
 };
+
+const roundFractional = (fractional: string, precision = 2): string => {
+  return String(
+    Math.round(
+      Number(
+        fractional.substring(0, precision) + "." + fractional.substring(precision, precision + 1),
+      ),
+    ),
+  );
+};
+
+function padString(str: string, length: number, left: boolean, padding = "0"): string {
+  const diff = length - str.length;
+  let result = str;
+  if (diff > 0) {
+    const pad = padding.repeat(diff);
+    result = left ? pad + str : str + pad;
+  }
+  return result;
+}
+
+function padRight(str: string, length: number, padding = "0"): string {
+  return padString(str, length, false, padding);
+}
+
+export const formatDisplayAmount = (amount: string, precision = 2, symbol = "") => {
+  const _symbol = symbol.trim() ? `${symbol.trim()} ` : "";
+  const [integer, fractional] = amount.split(".");
+  let _fractional = fractional
+    ? fractional.length < precision
+      ? fractional
+      : roundFractional(fractional, precision)
+    : "";
+  let _integer = integer;
+  if (_fractional.length > precision) {
+    _fractional = _fractional.substring(_fractional.length - precision, _fractional.length);
+    _integer = String(Number(integer) + 1);
+  }
+  _fractional = padRight(_fractional, precision);
+  const _amount = [_integer, _fractional].join(".");
+  return `${_symbol}${_amount}`;
+};
