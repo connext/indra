@@ -54,8 +54,8 @@ start-headless: dev
 start-daicard: dev
 	INDRA_UI=daicard bash ops/start-dev.sh
 
-start-testnet:
-	INDRA_TESTNET_LOG_LEVEL=1 INDRA_TESTNET_ENGINE=buidler bash ops/start-eth-provider.sh
+start-testnet: contracts
+	INDRA_LOG_LEVEL=1 bash ops/start-testnet.sh
 
 start-test: start-test-staging
 start-test-staging:

@@ -150,17 +150,17 @@ then
   chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
 
   echo "Starting $chain_host_1 & $chain_host_2.."
-  export INDRA_TESTNET_MNEMONIC=$eth_mnemonic
+  export INDRA_MNEMONIC=$eth_mnemonic
 
   # NOTE: Start script for buidler testnet will return before it's actually ready to go.
   # Run buidlerevm first so that it can finish while we're waiting for ganache to get set up
-  export INDRA_TESTNET_PORT=$chain_port_2
-  export INDRA_TESTNET_ENGINE=buidler
-  bash ops/start-eth-provider.sh $chain_id_2 $chain_tag_2
+  export INDRA_TAG=$chain_tag_2
+  export INDRA_EVM=buidler
+  bash ops/start-eth-provider.sh $chain_id_2 $chain_port_2
 
-  export INDRA_TESTNET_PORT=$chain_port_1
-  export INDRA_TESTNET_ENGINE=ganache
-  bash ops/start-eth-provider.sh $chain_id_1 $chain_tag_1
+  export INDRA_TAG=$chain_tag_1
+  export INDRA_EVM=ganache
+  bash ops/start-eth-provider.sh $chain_id_1 $chain_port_1
 
   # Pull the tmp address books out of each chain provider & merge them into one
   address_book_1=`docker exec $chain_host_1 cat /tmpfs/address-book.json`

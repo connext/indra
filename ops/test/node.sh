@@ -102,13 +102,13 @@ docker run \
   redis:5-alpine
 
 echo "Starting $chain_host_1 & $chain_host_2.."
-export INDRA_TESTNET_DATA_DIR=/tmpfs
-export INDRA_TESTNET_MNEMONIC=$mnemonic
+export INDRA_DATA_DIR=/tmpfs
+export INDRA_MNEMONIC=$mnemonic
 
-export INDRA_TESTNET_PORT=$chain_port_1
+export INDRA_PORT=$chain_port_1
 bash ops/start-eth-provider.sh $chain_id_1 $chain_tag_1
 
-export INDRA_TESTNET_PORT=$chain_port_2
+export INDRA_PORT=$chain_port_2
 bash ops/start-eth-provider.sh $chain_id_2 $chain_tag_2
 
 # Pull the tmp address books out of each chain provider & merge them into one

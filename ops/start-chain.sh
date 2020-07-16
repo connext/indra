@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 set -e
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $here/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 chain_id="${1:-1337}"
-tag="${2:-$chain_id}"
+port="${2:-8545}"
 
-data_dir="${INDRA_TESTNET_DATA_DIR:-/data}"
-port="${INDRA_TESTNET_PORT:-8545}"
-mnemonic="${INDRA_TESTNET_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
-image="${INDRA_TESTNET_IMAGE:-builder}"
-engine="${INDRA_TESTNET_ENGINE:-ganache}"
-logLevel="${INDRA_TESTNET_LOG_LEVEL:-0}"
+data_dir="${INDRA_DATA_DIR:-/tmpfs}"
+tag="${INDRA_TAG:-$chain_id}"
+mnemonic="${INDRA_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
+image="${INDRA_IMAGE:-builder}"
+engine="${INDRA_EVM:-ganache}"
+logLevel="${INDRA_LOG_LEVEL:-0}"
 
 ethprovider_host="${project}_testnet_$tag"
 
@@ -42,7 +42,7 @@ then
     --publish "$port:8545" \
     --rm \
     --tmpfs "/tmpfs" \
-    ${project}_builder -c "cd modules/contracts && bash ops/start.sh"
+    ${project}_builder -c "cd modules/contracts && bash ops/entry.sh"
 
 elif [[ "$image" == "ethprovider" ]]
 then
@@ -59,7 +59,7 @@ then
     ${project}_ethprovider
 
 else
-  echo 'Expected INDRA_TESTNET_IMAGE to be either "builder" or "ethprovider"'
+  echo 'Expected INDRA_IMAGE to be either "builder" or "ethprovider"'
   exit 1
 fi
 

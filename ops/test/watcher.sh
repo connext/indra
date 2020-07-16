@@ -24,10 +24,10 @@ function cleanup {
 trap cleanup EXIT SIGINT SIGTERM
 
 echo "Starting $ethprovider_host.."
-export INDRA_TESTNET_DATA_DIR=/tmpfs
-export INDRA_TESTNET_PORT=$ethprovider_port
-export INDRA_TESTNET_MNEMONIC=$eth_mnemonic
-bash ops/start-eth-provider.sh $ethprovider_chain_id $tag
+export INDRA_DATA_DIR=/tmpfs
+export INDRA_TAG=$ethprovider_tag
+export INDRA_MNEMONIC=$eth_mnemonic
+bash ops/start-eth-provider.sh $ethprovider_chain_id $ethprovider_port
 
 ########################################
 # Launch tests

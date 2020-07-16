@@ -10,4 +10,4 @@ RUN npm install --only=production > /dev/null 2>&1
 COPY ops ops
 COPY artifacts artifacts
 COPY dist dist
-ENTRYPOINT ["bash", "ops/start.sh"]
+ENTRYPOINT ["bash", "ops/entry.sh"]
