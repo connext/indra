@@ -1,5 +1,11 @@
 import { ERC20 } from "@connext/contracts";
-import { Address, ContractAddresses, IChannelSigner, MessagingConfig, SwapRate } from "@connext/types";
+import {
+  Address,
+  ContractAddresses,
+  IChannelSigner,
+  MessagingConfig,
+  SwapRate,
+} from "@connext/types";
 import { ChannelSigner, getChainId } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet, Contract, providers, constants, utils } from "ethers";
@@ -32,9 +38,7 @@ export class ConfigService implements OnModuleInit {
   private readonly signer: IChannelSigner;
   private ethProvider: providers.JsonRpcProvider;
 
-  constructor(
-    private readonly log: LoggerService,
-  ) {
+  constructor(private readonly log: LoggerService) {
     this.log.setContext("ConfigService");
     this.envConfig = process.env;
     // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY WAITS FOR)
@@ -92,7 +96,7 @@ export class ConfigService implements OnModuleInit {
   }
 
   async getTokenDecimals(providedAddress?: Address): Promise<number> {
-    const address = providedAddress || await this.getTokenAddress();
+    const address = providedAddress || (await this.getTokenAddress());
     const tokenContract = new Contract(address, ERC20.abi, this.getSigner());
     let decimals = DEFAULT_DECIMALS;
     try {
@@ -238,6 +242,10 @@ export class ConfigService implements OnModuleInit {
 
   getRebalancingServiceUrl(): string | undefined {
     return this.get(`INDRA_REBALANCING_SERVICE_URL`);
+  }
+
+  getAppCleanupInterval(): number {
+    return parseInt(this.get(`INDRA_APP_CLEANUP_INTERVAL`) || "3600000");
   }
 
   async getDefaultRebalanceProfile(
