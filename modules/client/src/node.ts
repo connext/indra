@@ -262,7 +262,7 @@ export class NodeApiClient implements INodeApiClient {
 
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
     return this.send(
-      `${this.userIdentifier}.${this.nodeIdentifier}.${this.chainId}.swap-rate.${from}.${to}`,
+      `${this.userIdentifier}.${this.nodeIdentifier}.swap-rate.${from}.${to}.${this.chainId}.${this.chainId}`,
     );
   }
 
