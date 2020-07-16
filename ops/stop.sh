@@ -5,7 +5,11 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 docker stack rm $project 2> /dev/null || true
-docker container ls -f name=${project}_* -q | xargs docker container stop 2> /dev/null || true
+
+# Only stop the core indra stack unless an arg "all" is provided in which case stop everything
+if [[ "$1" == "all" ]]
+then docker container ls -f name=${project}_* -q | xargs docker container stop 2> /dev/null || true
+fi
 
 echo -n "Waiting for the $project stack to shutdown."
 

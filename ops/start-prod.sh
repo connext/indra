@@ -33,6 +33,7 @@ function dotEnv {
 export INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-`dotEnv INDRA_ADMIN_TOKEN`}"
 export INDRA_AWS_ACCESS_KEY_ID="${INDRA_AWS_ACCESS_KEY_ID:-`dotEnv INDRA_AWS_ACCESS_KEY_ID`}"
 export INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-`dotEnv INDRA_AWS_SECRET_ACCESS_KEY`}"
+export INDRA_CHAIN_PROVIDERS="${INDRA_CHAIN_PROVIDERS:-`dotEnv INDRA_CHAIN_PROVIDERS`}"
 export INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-`dotEnv INDRA_DOMAINNAME`}"
 export INDRA_EMAIL="${INDRA_EMAIL:-`dotEnv INDRA_EMAIL`}"
 export INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER:-`dotEnv INDRA_ETH_PROVIDER`}"
@@ -46,7 +47,6 @@ INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-`dotEnv IN
 if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" ]]
 then
   echo "WARNING: Generating new nats jwt signing keys & saving them in .env"
-  echo "         You should back up .env to a safe location"
   keyFile=/tmp/indra/id_rsa
   mkdir -p /tmp/indra
   ssh-keygen -t rsa -b 4096 -m PEM -f $keyFile -N ""
@@ -78,7 +78,6 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 
 ganache_chain_id="1337"
 node_port="8080"
-number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
 
 ####################
 # Helper Functions
@@ -173,7 +172,7 @@ pull_if_unavailable "$redis_image"
 pull_if_unavailable "$webserver_image"
 
 ########################################
-## Ethereum Config
+# Configure & maybe start Ethereum testnets
 
 eth_mnemonic_name="${project}_mnemonic"
 
@@ -192,8 +191,6 @@ then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
 fi
 
-token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.address' | tr -d '"'`"
-
 if [[ "$chainId" == "$ganache_chain_id" ]]
 then
   ethprovider_image="$registry${project}_ethprovider:$version"
@@ -201,7 +198,6 @@ then
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   new_secret "$eth_mnemonic_name" "$eth_mnemonic"
   eth_volume="chain_dev:"
-  number_of_services=$(( $number_of_services + 1 ))
   ethprovider_service="
   ethprovider:
     image: '$ethprovider_image'
@@ -218,14 +214,10 @@ then
   MODE=${INDRA_MODE#*-} bash ops/deploy-contracts.sh
 fi
 
-allowed_swaps='[{"from":"'"$token_address"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"UNISWAP"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address"'","priceOracleType":"UNISWAP"}]'
-
-supported_tokens="$token_address,0x0000000000000000000000000000000000000000"
-
 ########################################
 ## Deploy according to configuration
 
-echo "Deploying $number_of_services services eg node=$node_image to $INDRA_DOMAINNAME"
+echo "Deploying $node_image to $INDRA_DOMAINNAME"
 
 mkdir -p `pwd`/ops/database/snapshots
 mkdir -p /tmp/$project
@@ -246,8 +238,6 @@ volumes:
   $eth_volume
 
 services:
-  $ethprovider_service
-
   proxy:
     image: '$proxy_image'
     environment:
@@ -277,14 +267,11 @@ services:
 
   node:
     image: '$node_image'
-    entrypoint: 'bash ops/entry.sh'
     environment:
       INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
-      INDRA_ALLOWED_SWAPS: '$allowed_swaps'
-      INDRA_SUPPORTED_TOKENS: '$supported_tokens'
+      INDRA_CHAIN_PROVIDERS: '$chain_providers'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC_FILE: '/run/secrets/$eth_mnemonic_name'
-      INDRA_ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
       INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
@@ -355,7 +342,7 @@ EOF
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
 
 echo -n "Waiting for the $project stack to wake up."
-while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" != "$number_of_services" ]]
+while ! curl -s http://localhost:80 > /dev/null
 do echo -n "." && sleep 2
 done
 echo " Good Morning!"

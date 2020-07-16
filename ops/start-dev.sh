@@ -34,7 +34,6 @@ function dotEnv {
 
 export INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-`dotEnv INDRA_ADMIN_TOKEN`}"
 export INDRA_CHAIN_PROVIDERS="${INDRA_CHAIN_PROVIDERS:-`dotEnv INDRA_CHAIN_PROVIDERS`}"
-export INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER:-`dotEnv INDRA_ETH_PROVIDER`}"
 export INDRA_ETH_PROVIDER_2="${PROVIDER_2:-`dotEnv PROVIDER_2`}"
 export INDRA_LOG_LEVEL="${INDRA_LOG_LEVEL:-`dotEnv INDRA_LOG_LEVEL`}"
 INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PRIVATE_KEY`}"
@@ -54,8 +53,6 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 ####################
 # Internal Config
 # config & hard-coded stuff you might want to change
-
-number_of_services=6 # NOTE: Gotta update this manually when adding/removing services :(
 
 nats_port=4222
 node_port=8080
@@ -98,7 +95,6 @@ else
     echo "INDRA_UI: Expected headless, dashboard, or daicard"
     exit 1
   fi
-  number_of_services=$(( $number_of_services + 1 ))
   webserver_url="webserver:3000"
   webserver_services="
   webserver:
@@ -126,20 +122,7 @@ function pull_if_unavailable {
 pull_if_unavailable "$database_image"
 pull_if_unavailable "$nats_image"
 pull_if_unavailable "$redis_image"
-
-# Initialize random new secrets
-function new_secret {
-  secret=$2
-  if [[ -z "$secret" ]]
-  then secret=`head -c 32 /dev/urandom | xxd -plain -c 32 | tr -d '\n\r'`
-  fi
-  if [[ -z "`docker secret ls -f name=$1 | grep -w $1`" ]]
-  then
-    id=`echo $secret | tr -d '\n\r' | docker secret create $1 -`
-    echo "Created secret called $1 with id $id"
-  fi
-}
-new_secret "${project}_database_dev" "$project"
+bash ops/save-secret.sh "${project}_database_dev" "$project"
 
 ########################################
 # Start Ethereum testnets
@@ -204,8 +187,6 @@ services:
   proxy:
     image: '$proxy_image'
     environment:
-      ETH_PROVIDER_URL: '$INDRA_ETH_PROVIDER'
-      ETH_PROVIDER_URL_2: '$INDRA_ETH_PROVIDER_2'
       MESSAGING_TCP_URL: 'nats:4222'
       MESSAGING_WS_URL: 'nats:4221'
       NODE_URL: 'node:8080'
@@ -222,9 +203,9 @@ services:
     entrypoint: 'bash modules/node/ops/entry.sh'
     environment:
       INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
+      INDRA_CHAIN_PROVIDERS: '$chain_providers'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC: '$eth_mnemonic'
-      INDRA_CHAIN_PROVIDERS: '$chain_providers'
       INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
@@ -289,7 +270,7 @@ EOF
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
 
 echo -n "Waiting for the $project stack to wake up."
-while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" != "$number_of_services" ]]
+while ! curl -s http://localhost:3000 > /dev/null
 do echo -n "." && sleep 2
 done
 echo " Good Morning!"

@@ -76,6 +76,9 @@ start-bot-farm: bot
 stop:
 	bash ops/stop.sh
 
+stop-all:
+	bash ops/stop.sh all
+
 restart-headless: dev
 	bash ops/stop.sh
 	INDRA_UI=headless bash ops/start-dev.sh
@@ -90,7 +93,7 @@ restart-prod:
 	bash ops/stop.sh
 	bash ops/start-prod.sh
 
-clean: stop
+clean: stop-all
 	docker container prune -f
 	rm -rf .flags/*
 	rm -rf node_modules/@connext modules/*/node_modules/@connext
@@ -113,7 +116,7 @@ quick-reset:
 	rm -rf modules/*/.connext-store
 	touch modules/node/src/main.ts
 
-reset: stop
+reset: stop-all
 	docker container prune -f
 	docker network rm $(project) $(project)_cf_tester $(project)_node_tester $(project)_test_store 2> /dev/null || true
 	docker secret rm $(project)_database_dev 2> /dev/null || true

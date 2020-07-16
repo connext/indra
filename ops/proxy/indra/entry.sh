@@ -1,49 +1,8 @@
 #!/bin/bash
 
-if [[ "${ETH_PROVIDER_URL%%://*}" == "https" ]]
-then export ETH_PROVIDER_PROTOCOL="ssl"
-else export ETH_PROVIDER_PROTOCOL=""
-fi
-
-if [[ "${ETH_PROVIDER_URL_2%%://*}" == "https" ]]
-then export ETH_PROVIDER_PROTOCOL_2="ssl"
-else export ETH_PROVIDER_PROTOCOL_2=""
-fi
-
-ETH_PROVIDER_URL=${ETH_PROVIDER_URL#*://}
-ETH_PROVIDER_URL_2=${ETH_PROVIDER_URL_2#*://}
-
-if [[ "$ETH_PROVIDER_PROTOCOL" == "ssl" ]]
-then export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}:443"
-else export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}"
-fi
-
-if [[ "$ETH_PROVIDER_PROTOCOL_2" == "ssl" ]]
-then export ETH_PROVIDER_HOST_2="${ETH_PROVIDER_URL_2%%/*}:443"
-else export ETH_PROVIDER_HOST_2="${ETH_PROVIDER_URL_2%%/*}"
-fi
-
-if [[ "$ETH_PROVIDER_URL" == *"/"* ]]
-then export ETH_PROVIDER_PATH="/${ETH_PROVIDER_URL#*/}"
-else export ETH_PROVIDER_PATH="/"
-fi
-
-if [[ "$ETH_PROVIDER_URL_2" == *"/"* ]]
-then export ETH_PROVIDER_PATH_2="/${ETH_PROVIDER_URL_2#*/}"
-else export ETH_PROVIDER_PATH_2="/"
-fi
-
 echo "Proxy container launched in env:"
 echo "DOMAINNAME=$DOMAINNAME"
 echo "EMAIL=$EMAIL"
-echo "ETH_PROVIDER_PROTOCOL=$ETH_PROVIDER_PROTOCOL"
-echo "ETH_PROVIDER_HOST=$ETH_PROVIDER_HOST"
-echo "ETH_PROVIDER_PATH=$ETH_PROVIDER_PATH"
-echo "ETH_PROVIDER_URL=$ETH_PROVIDER_URL"
-echo "ETH_PROVIDER_PROTOCOL_2=$ETH_PROVIDER_PROTOCOL_2"
-echo "ETH_PROVIDER_HOST_2=$ETH_PROVIDER_HOST_2"
-echo "ETH_PROVIDER_PATH_2=$ETH_PROVIDER_PATH_2"
-echo "ETH_PROVIDER_UR_2=$ETH_PROVIDER_UR_2"
 echo "MESSAGING_TCP_URL=$MESSAGING_TCP_URL"
 echo "MESSAGING_WS_URL=$MESSAGING_WS_URL"
 echo "NODE_URL=$NODE_URL"
@@ -61,18 +20,6 @@ loading_pid="$!"
 ########################################
 # Wait for downstream services to wake up
 # Define service hostnames & ports we depend on
-
-echo "waiting for $ETH_PROVIDER_HOST..."
-wait-for -t 60 $ETH_PROVIDER_HOST 2> /dev/null
-while ! curl -s $ETH_PROVIDER_HOST > /dev/null
-do sleep 2
-done
-
-echo "waiting for $ETH_PROVIDER_HOST_2..."
-wait-for -t 60 $ETH_PROVIDER_HOST_2 2> /dev/null
-while ! curl -s $ETH_PROVIDER_HOST_2 > /dev/null
-do sleep 2
-done
 
 echo "waiting for $MESSAGING_WS_URL..."
 wait-for -t 60 $MESSAGING_WS_URL 2> /dev/null
