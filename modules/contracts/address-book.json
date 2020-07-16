@@ -707,10 +707,28 @@
       "txHash": "0x55c6f62b25ddcae5c03962ed4f4774702ab3f10e6018d4263f2dda137dbf97d7"
     },
     "Token": {
-      "address": "0x38cF23C52Bb4B13F051Aec09580a2dE845a7FA35",
-      "creationCodeHash": "0x58857d9ae95648f3c072c3f1ac949067b6b93dfeb8a1988d763d921edfa443a8",
+      "address": "0xbaAA2a3237035A2c7fA2A33c76B44a8C6Fe18e87",
+      "constructorArgs": [
+        {
+          "name": "symbol",
+          "value": "CXT"
+        },
+        {
+          "name": "name",
+          "value": "ConnextToken"
+        },
+        {
+          "name": "version",
+          "value": "1.0"
+        },
+        {
+          "name": "chainId",
+          "value": "1337"
+        }
+      ],
+      "creationCodeHash": "0xa97c8e987f37ee4c25b13296adac55bafc9f6e5bb3fd6e89f13ba5df24cbdb95",
       "runtimeCodeHash": "0xf995caffd143622dde4976800a7b57d98dade82728d7ff68ad96eb5004ab95b0",
-      "txHash": "0x520926dc07ab000736227efafe0c06ac419d55e986a04ead1d72a40700d72330"
+      "txHash": "0x042fd78ca875f4c7fc4d998fc7f7ce55ed217dfdca4d1b0faa87112f6a54d3b9"
     },
     "WithdrawInterpreter": {
       "address": "0xEcFcaB0A285d3380E488A39B4BB21e777f8A4EaC",
@@ -829,10 +847,28 @@
       "txHash": "0x1e787801c045702c8b8d6bcfea5ec0c3118dd088fb17e21e6248a730dbb6a572"
     },
     "Token": {
-      "address": "0x38cF23C52Bb4B13F051Aec09580a2dE845a7FA35",
-      "creationCodeHash": "0x58857d9ae95648f3c072c3f1ac949067b6b93dfeb8a1988d763d921edfa443a8",
+      "address": "0xbaAA2a3237035A2c7fA2A33c76B44a8C6Fe18e87",
+      "constructorArgs": [
+        {
+          "name": "symbol",
+          "value": "CXT"
+        },
+        {
+          "name": "name",
+          "value": "ConnextToken"
+        },
+        {
+          "name": "version",
+          "value": "1.0"
+        },
+        {
+          "name": "chainId",
+          "value": "1338"
+        }
+      ],
+      "creationCodeHash": "0xa97c8e987f37ee4c25b13296adac55bafc9f6e5bb3fd6e89f13ba5df24cbdb95",
       "runtimeCodeHash": "0xf995caffd143622dde4976800a7b57d98dade82728d7ff68ad96eb5004ab95b0",
-      "txHash": "0x58d5a1206f7d4fa3a01226881a565803733d969518b0aa4e1b9abd5407bfc3df"
+      "txHash": "0x6a649cb7a2f9edd76ff7875f5bfc4ecdc188b06c6636aa8bf764002f7f82207e"
     }
   }
 }
