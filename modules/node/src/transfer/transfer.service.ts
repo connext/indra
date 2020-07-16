@@ -16,8 +16,10 @@ import {
   stringify,
   getSignerAddressFromPublicIdentifier,
   calculateExchangeWad,
+  toBN,
 } from "@connext/utils";
 import { TRANSFER_TIMEOUT } from "@connext/apps";
+import { Interval } from "@nestjs/schedule";
 import { constants } from "ethers";
 import { isEqual } from "lodash";
 
@@ -32,6 +34,7 @@ import { Channel } from "../channel/channel.entity";
 import { SwapRateService } from "../swapRate/swapRate.service";
 
 import { TransferRepository } from "./transfer.repository";
+import { ConfigService } from "../config/config.service";
 
 const { Zero, HashZero } = constants;
 
@@ -43,10 +46,32 @@ export class TransferService {
     private readonly channelService: ChannelService,
     private readonly depositService: DepositService,
     private readonly swapRateService: SwapRateService,
+    private readonly configService: ConfigService,
     private readonly transferRepository: TransferRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("TransferService");
+  }
+
+  // TODO: make this interval configurable
+  @Interval(3600_000)
+  async pruneExpiredApps(channel: Channel): Promise<void> {
+    this.log.info(`Start pruneExpiredApps for channel ${channel.multisigAddress}`);
+
+    const current = await this.configService.getEthProvider().getBlockNumber();
+    const expiredApps = channel.appInstances.filter((app) => {
+      return app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current);
+    });
+    this.log.debug(`Removing ${expiredApps.length} expired apps`);
+    for (const app of expiredApps) {
+      try {
+        // Uninstall all expired apps without taking action
+        await this.cfCoreService.uninstallApp(app.identityHash, channel.multisigAddress);
+      } catch (e) {
+        this.log.warn(`Failed to uninstall expired app ${app.identityHash}: ${e.message}`);
+      }
+    }
+    this.log.info(`Finish pruneExpiredApps for channel ${channel.multisigAddress}`);
   }
 
   // NOTE: designed to be called from the proposal event handler to enforce
