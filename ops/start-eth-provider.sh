@@ -12,6 +12,7 @@ port="${INDRA_TESTNET_PORT:-8545}"
 mnemonic="${INDRA_TESTNET_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 image="${INDRA_TESTNET_IMAGE:-builder}"
 engine="${INDRA_TESTNET_ENGINE:-ganache}"
+logLevel="${INDRA_TESTNET_LOG_LEVEL:-0}"
 
 ethprovider_host="${project}_testnet_$tag"
 
@@ -55,6 +56,12 @@ then
 else
   echo 'Expected INDRA_TESTNET_IMAGE to be either "builder" or "ethprovider"'
   exit 1
+fi
+
+if [[ "$logLevel" -gt "0" ]]
+then
+  docker container logs --follow $ethprovider_host &
+  pid=$!
 fi
 
 while ! curl -s http://localhost:$port > /dev/null

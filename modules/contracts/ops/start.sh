@@ -77,4 +77,6 @@ then
   kill $pid
   echo "Starting publically available testnet.."
   eval "$launch $expose"
+else
+  wait $pid
 fi
