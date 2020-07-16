@@ -293,7 +293,7 @@ EOF
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
 
 echo -n "Waiting for the $project stack to wake up."
-while ! curl -s http://localhost:8080/api/config/$chain_id_1 > /dev/null
+while ! curl -s http://localhost:3000 > /dev/null
 do echo -n "." && sleep 2
 done
 echo " Good Morning!"

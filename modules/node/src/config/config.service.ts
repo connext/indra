@@ -155,6 +155,12 @@ export class ConfigService implements OnModuleInit {
 
   getTokenAddress(chainId: number): string {
     const ethAddressBook = this.getAddressBook();
+    if (!ethAddressBook[chainId]) {
+      throw new Error(`Chain ${chainId} is not supported`);
+    }
+    if (!ethAddressBook[chainId].Token) {
+      throw new Error(`Chain ${chainId} does not contain any supported tokens`);
+    }
     return getAddress(ethAddressBook[chainId].Token.address);
   }
 
