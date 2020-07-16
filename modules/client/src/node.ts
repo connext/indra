@@ -144,6 +144,7 @@ export class NodeApiClient implements INodeApiClient {
     return node;
   }
 
+  public chainId: number;
   public nodeUrl: string;
   public messaging: IMessagingService;
   public latestSwapRates: StringMapping = {};
@@ -161,6 +162,7 @@ export class NodeApiClient implements INodeApiClient {
     this._nodeIdentifier = opts.nodeIdentifier;
     this._channelProvider = opts.channelProvider;
     this.nodeUrl = opts.nodeUrl;
+    this.chainId = parseInt(opts.chainId.toString(), 10);
   }
 
   ////////////////////////////////////////
@@ -183,10 +185,6 @@ export class NodeApiClient implements INodeApiClient {
 
   get config(): NodeResponses.GetConfig | undefined {
     return this._config;
-  }
-
-  get chainId(): number | undefined {
-    return this._config?.ethNetwork?.chainId;
   }
 
   set config(config: NodeResponses.GetConfig) {

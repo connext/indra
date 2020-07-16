@@ -194,7 +194,7 @@ export class ConfigService implements OnModuleInit {
     const chains = this.getSupportedChains();
     return chains.reduce((tokens, chainId) => {
       if (!tokens[chainId]) {
-        tokens[chainId] = [];
+        tokens[chainId] = [AddressZero];
       }
       tokens[chainId].push(addressBook[chainId].Token.address);
       return tokens;

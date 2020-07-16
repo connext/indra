@@ -30,6 +30,7 @@ export interface AsyncNodeInitializationParameters extends NodeInitializationPar
 }
 
 export interface NodeInitializationParameters {
+  chainId: number;
   nodeUrl: string;
   messaging: IMessagingService;
   logger?: ILoggerService;
