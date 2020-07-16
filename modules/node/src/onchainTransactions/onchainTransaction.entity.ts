@@ -62,7 +62,7 @@ export class OnchainTransaction {
   @Column("text")
   from!: string;
 
-  @Column("text", { unique: true, nullable: true })
+  @Column("text", { unique: true })
   hash!: string;
 
   @Column("text", { nullable: true })

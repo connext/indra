@@ -89,14 +89,9 @@ export class OnchainTransactionService implements OnModuleInit {
         const memoryNonce = await this.nonce;
         const nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
         const req = await wallet.populateTransaction({ ...transaction, nonce });
-        if (attempt === 1) {
-          // create the pending transaction in the db, only insert on first
-          // attempt
-          await this.onchainTransactionRepository.addRequest(req, reason, channel);
-        }
         tx = await wallet.sendTransaction(req);
         // add fields from tx response
-        await this.onchainTransactionRepository.addResponse(tx);
+        await this.onchainTransactionRepository.addResponse(tx, reason, channel);
         this.nonce = Promise.resolve(nonce + 1);
         const receipt = await tx.wait();
         if (!tx.hash) {
@@ -160,7 +155,7 @@ export class OnchainTransactionService implements OnModuleInit {
     this.log.info(`retryFailedTransactions completed`);
   };
 
-  onModuleInit = (): Promise<void> => {
-    return this.retryFailedTransactions();
-  };
+  async onModuleInit(): Promise<void> {
+    await this.retryFailedTransactions();
+  }
 }

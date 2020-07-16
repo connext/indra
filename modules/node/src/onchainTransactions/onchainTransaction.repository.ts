@@ -97,33 +97,13 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return tx;
   }
 
-  async addResponse(tx: providers.TransactionResponse): Promise<void> {
-    return getManager().transaction(async (transactionalEntityManager) => {
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .update(OnchainTransaction)
-        .set({
-          hash: tx.hash,
-          blockHash: tx.blockHash,
-          blockNumber: tx.blockNumber,
-          raw: tx.raw,
-          chainId: tx.chainId.toString(),
-          gasUsed: Zero,
-        })
-        .where("onchain_transaction.data = :data", { data: tx.data })
-        .andWhere("onchain_transaction.to = :to", { to: tx.to })
-        .andWhere("onchain_transaction.value = :value", { value: tx.value })
-        .execute();
-    });
-  }
-
-  async addRequest(
-    tx: providers.TransactionRequest,
+  async addResponse(
+    tx: providers.TransactionResponse,
     reason: TransactionReason,
     channel: Channel,
   ): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
-      const { identifiers } = await transactionalEntityManager
+      await transactionalEntityManager
         .createQueryBuilder()
         .insert()
         .into(OnchainTransaction)
@@ -138,14 +118,15 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
           reason,
           status: TransactionStatus.PENDING,
           channel,
+          hash: tx.hash,
+          blockHash: tx.blockHash,
+          blockNumber: tx.blockNumber,
+          raw: tx.raw,
+          gasUsed: Zero,
         })
+        .onConflict(`("hash") DO UPDATE SET "nonce" = :nonce`)
+        .setParameter("nonce", toBN(tx.nonce).toNumber())
         .execute();
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .relation(Channel, "transactions")
-        .of(channel.multisigAddress)
-        .add((identifiers[0] as OnchainTransaction).id);
     });
   }
 
