@@ -161,7 +161,7 @@ chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_
 echo "Starting $chain_host_1 & $chain_host_2.."
 export INDRA_TESTNET_MNEMONIC=$eth_mnemonic
 
-# NOTE: Starting buidler testnet will return before it's actually ready to go.
+# NOTE: Start script for buidler testnet will return before it's actually ready to go.
 # Run buidlerevm first so that it can finish while we're waiting for ganache to get set up
 export INDRA_TESTNET_PORT=$chain_port_2
 export INDRA_TESTNET_ENGINE=buidler

@@ -115,7 +115,7 @@ export class SwapRateService implements OnModuleInit {
       : -1;
     let oldRate: string | undefined;
     if (rateIndex !== -1) {
-      oldRate = this.latestSwapRates[rateIndex].rate;
+      oldRate = this.latestSwapRates[rateIndex]?.rate;
     }
 
     if (
@@ -172,7 +172,7 @@ export class SwapRateService implements OnModuleInit {
       toChainId: chainId,
     };
     if (rateIndex !== -1) {
-      oldRate = this.latestSwapRates[rateIndex].rate;
+      oldRate = this.latestSwapRates[rateIndex]?.rate;
       this.latestSwapRates[rateIndex] = newSwap;
     } else {
       let rates: SwapRate[] = this.latestSwapRates.get(chainId);
