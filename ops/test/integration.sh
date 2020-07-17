@@ -87,7 +87,6 @@ exec docker run \
   --env="INDRA_PROXY_URL=https://proxy:443" \
   --env="NODE_ENV=production" \
   --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
-  --mount="type=bind,source=$root,target=/root" \
   --name="$name" \
   --network="$project" \
   --rm \
