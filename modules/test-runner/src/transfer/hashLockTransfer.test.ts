@@ -90,7 +90,6 @@ describe("HashLock Transfers", () => {
       }),
       // new Promise((reso) => {
       //   clientA.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, (eventPayload) => {
-      //     console.log("clientAeventPayload: ", eventPayload);
       //     expect(eventPayload).to.deep.contain({
       //       amount: transfer.amount,
       //       assetId: transfer.assetId,
@@ -103,7 +102,6 @@ describe("HashLock Transfers", () => {
       //       lockHash,
       //       expiry,
       //     });
-      //     console.log("RESOLVING A");
       //     return reso();
       //   });
       // }),
@@ -454,9 +452,6 @@ describe("HashLock Transfers", () => {
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer)
-      .catch((e) => {
-        console.log("Expected this error: ", e.message);
-      });
 
     await expect(
       new Promise((res, rej) => {

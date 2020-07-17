@@ -29,7 +29,7 @@ source $root/dev.env
 chain_id_1=1337; chain_id_2=1338
 
 providers_file="$root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json"
-addressse_file="$root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json"
+addresses_file="$root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json"
 if [[ ! -f "$providers_file" ]]
 then echo "File ${providers_file} does not exist, make sure the testnet chains are running" && exit 1
 elif [[ ! -f "$addresses_file" ]]
@@ -48,6 +48,8 @@ then image=$name:$release;
 elif [[ "$mode" == "staging" ]]
 then image=$name:$commit;
 else
+
+  echo "Executing image ${project}_builder"
 
   exec docker run \
     $interactive \

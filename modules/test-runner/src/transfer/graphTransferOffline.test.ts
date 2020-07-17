@@ -105,7 +105,6 @@ describe("Graph Signed Transfer Offline", () => {
       // register event listeners
       let unlockedCount = 0;
       receiver.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (msg) => {
-        console.log(`receiver got conditional transfer, resolving`);
         if (!sender) {
           return resolve(msg.amount);
         }
@@ -141,7 +140,6 @@ describe("Graph Signed Transfer Offline", () => {
           return reject(new Error(msg.error));
         });
         sender.once(EventNames.UNINSTALL_FAILED_EVENT, (msg) => {
-          console.log(`sender got uninstall failed event, rejecting`);
           return reject(new Error(msg.error));
         });
       }
@@ -418,7 +416,6 @@ describe("Graph Signed Transfer Offline", () => {
         return resolve(msg);
       });
       await resolveSignedTransfer(receiver, paymentId);
-      console.log(`transfer resolved, waiting for sender failure event`);
     })) as any;
     expect(failureEvent.data.params).to.be.ok;
     expect(failureEvent.data.error).to.include(APP_PROTOCOL_TOO_LONG(ProtocolNames.uninstall));

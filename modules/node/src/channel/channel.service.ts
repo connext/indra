@@ -113,7 +113,7 @@ export class ChannelService {
     const normalizedAssetId = getAddress(assetId);
     if (channel.activeCollateralizations[assetId]) {
       this.log.warn(
-        `Channel has collateralization in flight for ${normalizedAssetId}, doing nothing`,
+        `Channel ${channel.multisigAddress} has collateralization in flight for ${normalizedAssetId}, doing nothing`,
       );
       return undefined;
     }

@@ -1,4 +1,3 @@
-import { stringify } from "@connext/utils";
 import { config } from "dotenv";
 import { Wallet } from "ethers";
 config();
@@ -18,5 +17,3 @@ export const env = {
   natsPublicKey: process.env.INDRA_NATS_JWT_SIGNER_PUBLIC_KEY,
   nodePubId: Wallet.fromMnemonic(process.env.INDRA_MNEMONIC!).address,
 };
-
-console.log(`Starting tests in env ${stringify(env)}`);

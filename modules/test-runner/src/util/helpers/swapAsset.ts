@@ -41,7 +41,9 @@ export async function swapAsset(
   } = await client.getFreeBalance(tokenAssetId);
   expect(preSwapFreeBalanceClientToken).to.be.eq(preSwap.freeBalanceClientToken);
 
+  console.log(`Getting latest swap rate...`);
   const rate = await client.getLatestSwapRate(ethAddress, tokenAddress);
+  console.log(`Got latest swap rate: ${rate}`);
   const swapRate = ethToToken ? rate : inverse(rate);
 
   const inputSwapAmount = input.amount;
