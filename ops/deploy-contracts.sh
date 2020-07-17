@@ -4,15 +4,14 @@ set -e
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
+release="`cat $root/package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
 chain_url="${1:-http://localhost:8545}"
 mode="${MODE:-local}"
-echo "mode=$mode chain_url=$chain_url"
 
 ########################################
 # Calculate stuff based on env
 
-release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
 if [[ -f "$root/address-book.json" ]]
 then address_book="$root/address-book.json"
@@ -48,8 +47,11 @@ then interactive="--interactive --tty"
 else echo "Running in non-interactive mode"
 fi
 
-if [[ "$mode" == "local" ]]
-then
+if [[ "$mode" == "release" ]]
+then image="${registry}/${project}_ethprovider:$release"
+elif [[ "$mode" == "staging" ]]
+then image="${project}_ethprovider:`git rev-parse HEAD | head -c 8`"
+else
   image=${project}_builder
   echo "Deploying $mode-mode contract deployer (image: $image)..."
   docker run \
@@ -63,11 +65,6 @@ then
     --rm \
     $image modules/contracts/ops/deploy.sh
   exit
-
-elif [[ "$mode" == "release" ]]
-then image="${registry}/${project}_ethprovider:$release"
-elif [[ "$mode" == "staging" ]]
-then image="${project}_ethprovider:`git rev-parse HEAD | head -c 8`"
 fi
 
 echo "Deploying $mode-mode contract deployer (image: $image)..."
