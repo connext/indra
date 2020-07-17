@@ -35,6 +35,7 @@ import {
   GraphSignedTransferAppState,
   GraphSignedTransferAppAction,
   UnlockedGraphSignedTransferMeta,
+  ConditionalTransferAppNames,
 } from "@connext/types";
 import { bigNumberifyJson, stringify, TypedEmitter, toBN } from "@connext/utils";
 import { constants } from "ethers";
@@ -301,31 +302,35 @@ export class ConnextListener {
       throw new Error(`Could not find registry info for app ${params.appDefinition}`);
     }
     // install or reject app
-    try {
-      // NOTE: by trying to install here, if the installation fails,
-      // the proposal is automatically removed from the store
-      this.log.info(`Installing ${registryAppInfo.name} with id: ${appIdentityHash}`);
-      await this.connext.installApp(appIdentityHash);
-      this.log.info(`App ${appIdentityHash} installed`);
-    } catch (e) {
-      // TODO: first proposal after reset is responded to
-      // twice
-      if (e.message.includes("No proposed AppInstance exists")) {
-        return;
-      } else {
-        this.log.error(`Caught error, rejecting install of ${appIdentityHash}: ${e.message}`);
-        await this.connext.rejectInstallApp(appIdentityHash, e.message);
-        return;
+    if (!Object.values(ConditionalTransferAppNames).includes(registryAppInfo.name as any)) {
+      try {
+        // NOTE: by trying to install here, if the installation fails,
+        // the proposal is automatically removed from the store
+        this.log.info(`Installing ${registryAppInfo.name} with id: ${appIdentityHash}`);
+        await this.connext.installApp(appIdentityHash);
+        this.log.info(`App ${appIdentityHash} installed`);
+        // install and run post-install tasks
+        await this.runPostInstallTasks(appIdentityHash, registryAppInfo, params);
+        this.log.info(
+          `handleAppProposal for app ${registryAppInfo.name} ${appIdentityHash} completed`,
+        );
+        const { appInstance } = await this.connext.getAppInstance(appIdentityHash);
+        await this.connext.node.messaging.publish(
+          `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
+          stringify(appInstance),
+        );
+      } catch (e) {
+        // TODO: first proposal after reset is responded to
+        // twice
+        if (e.message.includes("No proposed AppInstance exists")) {
+          return;
+        } else {
+          this.log.error(`Caught error, rejecting install of ${appIdentityHash}: ${e.message}`);
+          await this.connext.rejectInstallApp(appIdentityHash, e.message);
+          return;
+        }
       }
     }
-    // install and run post-install tasks
-    await this.runPostInstallTasks(appIdentityHash, registryAppInfo, params);
-    this.log.info(`handleAppProposal for app ${registryAppInfo.name} ${appIdentityHash} completed`);
-    const { appInstance } = await this.connext.getAppInstance(appIdentityHash);
-    await this.connext.node.messaging.publish(
-      `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
-      stringify(appInstance),
-    );
   };
 
   private runPostInstallTasks = async (
