@@ -195,6 +195,7 @@ describe("Deposit offline tests", () => {
       ceiling: { [RECEIVED]: 0 },
       signer,
       store,
+      id: "A-Initial",
     });
 
     await makeFailingDepositCall({
@@ -205,7 +206,7 @@ describe("Deposit offline tests", () => {
     const messaging = client.messaging! as TestMessagingService;
     expect(messaging.uninstallCount[RECEIVED]).to.be.eq(0);
 
-    await recreateClientAndRetryDepositCall(signer, client, store);
+    await recreateClientAndRetryDepositCall(signer, client, store, { id: "A-recreated" });
   });
 
   it("client successfully installed deposit app, but went offline during uninstall protocol", async () => {
