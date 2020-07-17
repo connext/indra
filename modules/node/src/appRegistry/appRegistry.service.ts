@@ -24,7 +24,7 @@ import {
 } from "@connext/types";
 import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { BigNumber, providers } from "ethers";
+import { BigNumber } from "ethers";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
