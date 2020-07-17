@@ -285,8 +285,8 @@ services:
     environment:
       INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
       INDRA_CHAIN_PROVIDERS: '$chain_providers'
-      INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
-      INDRA_ETH_MNEMONIC_FILE: '/run/secrets/$eth_mnemonic_name'
+      INDRA_CONTRACT_ADDRESSES: '$eth_contract_addresses'
+      INDRA_MNEMONIC_FILE: '/run/secrets/$eth_mnemonic_name'
       INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'

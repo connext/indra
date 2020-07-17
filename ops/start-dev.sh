@@ -131,36 +131,21 @@ eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble swe
 # If no chain providers provided, spin up local testnets & use those
 if [[ -z "$INDRA_CHAIN_PROVIDERS" ]]
 then
-
-  export INDRA_CHAIN_ID_1=1337
-  export INDRA_CHAIN_ID_2=1338
-  bash ops/start-testnet.sh
-
-  chain_port_1="`expr 8545 - 1337 + $INDRA_CHAIN_ID_1`"
-  chain_port_2="`expr 8545 - 1337 + $INDRA_CHAIN_ID_2`"
-  chain_url_1="http://172.17.0.1:$chain_port_1"
-  chain_url_2="http://172.17.0.1:$chain_port_2"
-  chain_providers='{"'$INDRA_CHAIN_ID_2'":"'$chain_url_1'","'$INDRA_CHAIN_ID_2'":"'$chain_url_2'"}'
-
-  # Merge relevant address books
-  eth_contract_addresses=`cat \
-    $root/.chaindata/$INDRA_CHAIN_ID_1/address-book.json \
-    $root/.chaindata/$INDRA_CHAIN_ID_2/address-book.json \
-    | jq -s '.[0] * .[1]'
-  `
+  chain_id_1=1337; chain_id_2=1338;
+  bash ops/start-testnet.sh $chain_id_1 $chain_id_2
+  chain_providers="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
+  contract_addresses="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json`"
+  chain_url_1="`echo $chain_providers | jq '.[]' | head -n 1 | tr -d '"'`"
 
 # If chain providers are provided, use those
 else
-
   chain_providers="$INDRA_CHAIN_PROVIDERS"
   chain_url_1="`echo $chain_providers | jq '.[]' | head -n 1 | tr -d '"'`"
-
   # Prefer top-level address-book override otherwise default to one in contracts
   if [[ -f address-book.json ]]
-  then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
-  else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
+  then contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+  else contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
   fi
-
 fi
 
 ####################
@@ -209,8 +194,8 @@ services:
     environment:
       INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
       INDRA_CHAIN_PROVIDERS: '$chain_providers'
-      INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
-      INDRA_ETH_MNEMONIC: '$eth_mnemonic'
+      INDRA_CONTRACT_ADDRESSES: '$contract_addresses'
+      INDRA_MNEMONIC: '$eth_mnemonic'
       INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'

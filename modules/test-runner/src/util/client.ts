@@ -59,7 +59,7 @@ export const createClient = async (
       ERC20.abi,
       ethWallet,
     );
-    log.info(`sending client tokens`);
+    log.info(`sending client ${client.config.contractAddresses[client.chainId].Token} tokens on chain ${client.chainId} from funding account ${ethWallet.address} with balance ${await token.balanceOf(ethWallet.address)}`);
     const tokenTx = await token.transfer(client.signerAddress, TOKEN_AMOUNT);
     log.debug(`transaction sent ${tokenTx.hash}, waiting...`);
     await tokenTx.wait();

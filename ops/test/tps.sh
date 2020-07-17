@@ -9,10 +9,10 @@ interval="$2"
 limit="$3"
 echo "Starting bot test with options: $agents agents | interval $interval | limit $limit"
 
-INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:8545}"
+INDRA_CHAIN_URL="${INDRA_CHAIN_URL:-http://172.17.0.1:8545}"
 INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:3000}"
 
-echo "Starting bot in env: LOG_LEVEL=$LOG_LEVEL | INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL | INDRA_NODE_URL=$INDRA_NODE_URL"
+echo "Starting bot in env: LOG_LEVEL=$LOG_LEVEL | INDRA_CHAIN_URL=$INDRA_CHAIN_URL | INDRA_NODE_URL=$INDRA_NODE_URL"
 
 tps_name="${project}_bot_tps"
 
@@ -24,7 +24,7 @@ fi
 exec docker run \
   $interactive \
   --entrypoint="bash" \
-  --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
+  --env="INDRA_CHAIN_URL=$INDRA_CHAIN_URL" \
   --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
   --env="LOG_LEVEL=$LOG_LEVEL" \
   --env="MNEMONIC=$MNEMONIC" \

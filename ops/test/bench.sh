@@ -8,7 +8,7 @@ agents="$1"
 payments="$2"
 echo "Starting bench test with $agents agents and $payments payments"
 
-INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:8545}"
+INDRA_CHAIN_URL="${INDRA_CHAIN_URL:-http://172.17.0.1:8545}"
 INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:8080}"
 INDRA_NATS_URL="${INDRA_NATS_URL:-nats://172.17.0.1:4222}"
 BOT_REGISTRY_URL="${BOT_REGISTRY_URL:-http://172.17.0.1:3333}"
@@ -94,7 +94,7 @@ do
     --detach \
     --entrypoint="bash" \
     --env="BOT_REGISTRY_URL"="$BOT_REGISTRY_URL" \
-    --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
+    --env="INDRA_CHAIN_URL=$INDRA_CHAIN_URL" \
     --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
     --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
     --env="LOG_LEVEL=$LOG_LEVEL" \

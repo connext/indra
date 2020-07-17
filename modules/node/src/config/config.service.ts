@@ -55,7 +55,7 @@ export class ConfigService implements OnModuleInit {
   }
 
   private getPrivateKey(): string {
-    return Wallet.fromMnemonic(this.get(`INDRA_ETH_MNEMONIC`)).privateKey;
+    return Wallet.fromMnemonic(this.get(`INDRA_MNEMONIC`)).privateKey;
   }
 
   getSigner(chainId: number): IChannelSigner {
@@ -76,7 +76,7 @@ export class ConfigService implements OnModuleInit {
   }
 
   getAddressBook(): AddressBook {
-    return JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
+    return JSON.parse(this.get(`INDRA_CONTRACT_ADDRESSES`));
   }
 
   getSupportedChains(): number[] {

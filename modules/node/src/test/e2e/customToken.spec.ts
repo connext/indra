@@ -32,7 +32,7 @@ describe.skip("Custom token", () => {
     const start = Date.now();
 
     ethProviderUrl = env.ethProviderUrl;
-    sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC!).connect(
+    sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_MNEMONIC!).connect(
       new providers.JsonRpcProvider(ethProviderUrl, await getChainId(ethProviderUrl)),
     );
 

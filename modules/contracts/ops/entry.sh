@@ -76,7 +76,7 @@ if [[ "$engine" == "ganache" ]]
 then
   kill $pid
   echo "Starting publically available testnet.."
-  eval "$launch $expose"
+  eval "$launch $expose > /tmpfs/ganache.log"
 else
   wait $pid
 fi

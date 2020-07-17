@@ -18,13 +18,9 @@ mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet t
 
 chain_id_1=1339
 chain_id_2=1340
-
-chain_url_1="http://172.17.0.1:$chain_port_1"
-chain_url_2="http://172.17.0.1:$chain_port_2"
-
 chain_host_1="${project}_testnet_$chain_id_1"
 chain_host_2="${project}_testnet_$chain_id_2"
-chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
+
 nats_host="${project}_nats_$tag"
 network="${project}_$tag"
 node_host="${project}_$tag"
@@ -90,16 +86,9 @@ docker run \
   --rm \
   redis:5-alpine
 
-export INDRA_CHAIN_ID_1=$chain_id_1
-export INDRA_CHAIN_ID_2=$chain_id_2
-bash ops/start-testnet.sh
-
-# Merge relevant address books
-eth_contract_addresses=`cat \
-  $root/.chaindata/$chain_id_1/address-book.json \
-  $root/.chaindata/$chain_id_2/address-book.json \
-  | jq -s '.[0] * .[1]'
-`
+bash ops/start-testnet.sh $chain_id_1 $chain_id_2
+chain_providers="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
+contract_addresses="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json`"
 
 ########################################
 # Run Tests
@@ -109,8 +98,8 @@ docker run \
   --entrypoint="bash" \
   --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
   --env="INDRA_CHAIN_PROVIDERS=$chain_providers" \
-  --env="INDRA_ETH_CONTRACT_ADDRESSES=$eth_contract_addresses" \
-  --env="INDRA_ETH_MNEMONIC=$mnemonic" \
+  --env="INDRA_CONTRACT_ADDRESSES=$contract_addresses" \
+  --env="INDRA_MNEMONIC=$mnemonic" \
   --env="INDRA_LOG_LEVEL=${INDRA_LOG_LEVEL:-0}" \
   --env="INDRA_NATS_CLUSTER_ID=" \
   --env="INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" \

@@ -3,18 +3,21 @@ set -e
 
 if [[ -d "modules/node" ]]
 then cd modules/node
-elif [[ ! -f "src/main.ts" && ! -f "dist/src/main.js" ]]
-then echo "Fatal: couldn't find file to run" && exit 1
 fi
+
+########################################
+# Convert secrets to env vars
 
 if [[ -z "$INDRA_PG_PASSWORD" && -n "$INDRA_PG_PASSWORD_FILE" ]]
 then export INDRA_PG_PASSWORD="`cat $INDRA_PG_PASSWORD_FILE`"
 fi
 
-if [[ -z "$INDRA_ETH_MNEMONIC" && -n "$INDRA_ETH_MNEMONIC_FILE" ]]
-then
-  export INDRA_ETH_MNEMONIC="`cat $INDRA_ETH_MNEMONIC_FILE`"
+if [[ -z "$INDRA_MNEMONIC" && -n "$INDRA_MNEMONIC_FILE" ]]
+then export INDRA_MNEMONIC="`cat $INDRA_MNEMONIC_FILE`"
 fi
+
+########################################
+# Wait for indra stack dependencies
 
 function wait_for {
   name=$1
@@ -39,24 +42,23 @@ wait_for "database" "$INDRA_PG_HOST:$INDRA_PG_PORT"
 wait_for "nats" "$INDRA_NATS_SERVERS"
 wait_for "redis" "$INDRA_REDIS_URL"
 
-# Wait for all eth providers
+########################################
+# Wait for all chain providers
+
 chains=()
+for chain in `echo $INDRA_CHAIN_PROVIDERS | jq 'keys[]' | tr -d '"'`
+do chains+=("$chain")
+done
 urls=()
-
-# Parse json string
-for chain in `echo ${INDRA_CHAIN_PROVIDERS} | jq 'keys[]' | sed -e 's/^"//' -e 's/"$//'`
-do
-  chains+=($chain)
+for url in `echo $INDRA_CHAIN_PROVIDERS | jq '.[]' | tr -d '"'`
+do urls+=("$url")
 done
-for url in `echo ${INDRA_CHAIN_PROVIDERS} | jq '.[]' | sed -e 's/^"//' -e 's/"$//'`
-do
-  urls+=("$url")
-done
-
 for index in "${!chains[@]}"
-do
-  wait_for "ethprovider_${chains[$index]}" "${urls[$index]}"
+do wait_for "ethprovider_${chains[$index]}" "${urls[$index]}"
 done
+
+########################################
+# Launch Node
 
 if [[ "$NODE_ENV" == "development" ]]
 then

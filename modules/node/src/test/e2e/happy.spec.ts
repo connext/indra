@@ -48,7 +48,7 @@ describe("Happy path", () => {
     chainId = configService.getSupportedChains()[0];
     const ethProviderUrl = Object.values(configService.getProviderUrls())[0];
     const ethProvider = configService.getEthProvider(chainId);
-    const sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC!).connect(ethProvider);
+    const sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_MNEMONIC!).connect(ethProvider);
     log.info(`node: ${await configService.getSignerAddress()}`);
 
     clientA = await connect({
