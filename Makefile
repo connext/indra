@@ -55,7 +55,7 @@ start-daicard: dev
 	INDRA_UI=daicard bash ops/start-dev.sh
 
 start-testnet: contracts
-	INDRA_LOG_LEVEL=1 bash ops/start-testnet.sh
+	INDRA_CHAIN_LOG_LEVEL=1 bash ops/start-testnet.sh
 
 start-test: start-test-staging
 start-test-staging:

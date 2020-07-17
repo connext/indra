@@ -1,19 +1,18 @@
+import { connect } from "@connext/client";
+import { getMemoryStore } from "@connext/store";
 import { ColorfulLogger, logTime, getRandomChannelSigner, getChainId } from "@connext/utils";
 import { INestApplication } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { Wallet, ContractFactory, Contract, providers, BigNumber } from "ethers";
-import { connect } from "@connext/client";
-import { getMemoryStore } from "@connext/store";
-
-import { AppModule } from "../../app.module";
-import { ConfigService } from "../../config/config.service";
-import { env, expect, MockConfigService } from "../utils";
-import token from "../utils/contractArtifacts/NineDecimalToken.json";
-import { ChannelService, RebalanceType } from "../../channel/channel.service";
-import { ChannelRepository } from "../../channel/channel.repository";
 import { parseUnits } from "ethers/lib/utils";
 
-const nodeUrl = "http://localhost:8080";
+import { AppModule } from "../../app.module";
+import { ChannelRepository } from "../../channel/channel.repository";
+import { ChannelService, RebalanceType } from "../../channel/channel.service";
+import { ConfigService } from "../../config/config.service";
+
+import { env, ethProviderUrl, expect, MockConfigService } from "../utils";
+import token from "../utils/contractArtifacts/NineDecimalToken.json";
 
 // TODO: unskip this. currently fails with DB error
 describe.skip("Custom token", () => {
@@ -21,7 +20,6 @@ describe.skip("Custom token", () => {
 
   let app: INestApplication;
   let configService: ConfigService;
-  let ethProviderUrl: string;
   let channelService: ChannelService;
   let tokenContract: Contract;
   let sugarDaddy: Wallet;
@@ -31,7 +29,6 @@ describe.skip("Custom token", () => {
   before(async () => {
     const start = Date.now();
 
-    ethProviderUrl = env.ethProviderUrl;
     sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_MNEMONIC!).connect(
       new providers.JsonRpcProvider(ethProviderUrl, await getChainId(ethProviderUrl)),
     );
@@ -91,7 +88,7 @@ describe.skip("Custom token", () => {
       signer: getRandomChannelSigner(configService.getEthProvider()),
       ethProviderUrl,
       messagingUrl: configService.getMessagingConfig().messagingUrl[0],
-      nodeUrl,
+      nodeUrl: env.nodeUrl,
       loggerService: new ColorfulLogger("", 0, true, "A"),
     });
     log.info(`clientA: ${clientA.signerAddress}`);

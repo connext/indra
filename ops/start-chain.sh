@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-## This script will start a testnet chain & store that chain's data in indra/.chaindata/${chainId}
+## This script will start a testnet chain & store that chain's data in indra/.chaindata/${chain_id}
 
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
@@ -13,7 +13,7 @@ tag="${INDRA_TAG:-$chain_id}"
 mnemonic="${INDRA_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 image="${INDRA_IMAGE:-builder}"
 engine="${INDRA_EVM:-`if [[ "$chain_id" == "1337" ]]; then echo "ganache"; else echo "buidler"; fi`}"
-logLevel="${INDRA_LOG_LEVEL:-0}"
+logLevel="${INDRA_CHAIN_LOG_LEVEL:-0}"
 
 ethprovider_host="${project}_testnet_$tag"
 
@@ -61,9 +61,7 @@ else
 fi
 
 if [[ "$logLevel" -gt "0" ]]
-then
-  docker container logs --follow $ethprovider_host &
-  pid=$!
+then docker container logs --follow $ethprovider_host &
 fi
 
 while ! curl -s http://localhost:$port > /dev/null
@@ -73,4 +71,9 @@ do
   else sleep 1
   fi
 done
+
+while [[ -z "`docker exec $ethprovider_host cat /data/address-book.json | grep $chain_id || true`" ]]
+do sleep 1
+done
+
 echo "Provider for chain ${chain_id} is awake & ready to go on port ${port}!"

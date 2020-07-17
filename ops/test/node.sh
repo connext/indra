@@ -10,6 +10,17 @@ shift || true # $1 is the command to npm run. Extra options, if any, come after
 
 source $root/dev.env
 
+# Make sure keys have proper newlines inserted (bc GitHub Actions strips newlines from secrets)
+export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=`
+  echo $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY | tr -d '\n\r' |\
+  sed 's/-----BEGIN RSA PRIVATE KEY-----/\\\n-----BEGIN RSA PRIVATE KEY-----\\\n/' |\
+  sed 's/-----END RSA PRIVATE KEY-----/\\\n-----END RSA PRIVATE KEY-----\\\n/'`
+
+export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
+  echo $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY | tr -d '\n\r' |\
+  sed 's/-----BEGIN PUBLIC KEY-----/\\\n-----BEGIN PUBLIC KEY-----\\\n/' | \
+  sed 's/-----END PUBLIC KEY-----/\\\n-----END PUBLIC KEY-----\\\n/'`
+
 mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
 ####################
@@ -46,8 +57,6 @@ fi
 # Kill the dependency containers when this script exits
 function cleanup {
   echo;echo "Tests finished, stopping test containers.."
-  docker container stop $chain_host_1 2> /dev/null || true
-  docker container stop $chain_host_2 2> /dev/null || true
   docker container stop $postgres_host 2> /dev/null || true
   docker container stop $nats_host 2> /dev/null || true
   docker container stop $redis_host 2> /dev/null || true
@@ -95,13 +104,15 @@ contract_addresses="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.
 
 echo "Starting $node_host.."
 docker run \
+  $interactive \
   --entrypoint="bash" \
+  --env="CLIENT_LOG_LEVEL=${LOG_LEVEL:-0}" \
   --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
   --env="INDRA_CHAIN_PROVIDERS=$chain_providers" \
   --env="INDRA_CONTRACT_ADDRESSES=$contract_addresses" \
+  --env="INDRA_DEFAULT_CHAIN=$chain_id_1" \
+  --env="INDRA_LOG_LEVEL=${SERVER_LOG_LEVEL:-0}" \
   --env="INDRA_MNEMONIC=$mnemonic" \
-  --env="INDRA_LOG_LEVEL=${INDRA_LOG_LEVEL:-0}" \
-  --env="INDRA_NATS_CLUSTER_ID=" \
   --env="INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" \
   --env="INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY" \
   --env="INDRA_NATS_SERVERS=nats://$nats_host:4222" \
@@ -113,9 +124,7 @@ docker run \
   --env="INDRA_PG_USERNAME=$postgres_user" \
   --env="INDRA_PORT=$node_port" \
   --env="INDRA_REDIS_URL=redis://$redis_host:6379" \
-  --env="LOG_LEVEL=${LOG_LEVEL:-0}" \
   --env="NODE_ENV=development" \
-  $interactive \
   --name="$node_host" \
   --network="$network" \
   --rm \

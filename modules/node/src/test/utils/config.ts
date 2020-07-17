@@ -6,17 +6,21 @@ import { LoggerService } from "../../logger/logger.service";
 import { Address } from "@connext/types";
 
 export const env = {
-  ethProviderUrl: process.env.INDRA_CHAIN_URL,
-  nodeUrl: "http://localhost:8080",
+  chainProviders: JSON.parse(process.env.INDRA_CHAIN_PROVIDERS),
+  defaultChain: process.env.INDRA_DEFAULT_CHAIN,
+  contractAddresses: JSON.parse(process.env.INDRA_CONTRACT_ADDRESSES),
+  logLevel: parseInt(process.env.CLIENT_LOG_LEVEL || "0", 10),
   messagingUrl: "nats://indra_nats_node_tester:4222",
-  indraLogLevel: parseInt(process.env.INDRA_LOG_LEVEL || "0", 10),
-  logLevel: parseInt(process.env.LOG_LEVEL || "0", 10),
   mnemonic: process.env.INDRA_MNEMONIC,
+  nodeUrl: "http://localhost:8080",
+  serverLogLevel: parseInt(process.env.INDRA_LOG_LEVEL || "0", 10),
 };
+
+export const ethProviderUrl = env.chainProviders[env.defaultChain];
 
 export const defaultSigner = new ChannelSigner(
   Wallet.fromMnemonic(env.mnemonic).privateKey,
-  env.ethProviderUrl,
+  ethProviderUrl,
 );
 
 // add overrides as needed in tests
@@ -41,8 +45,8 @@ export class MockConfigService extends ConfigService {
     this.supportedTokens = realSupported;
   }
   getEthProvider = () => new providers.JsonRpcProvider(this.getProviderUrls()[0]);
-  getProviderUrls = () => [env.ethProviderUrl!];
-  getLogLevel = (): number => env.indraLogLevel;
+  getProviderUrls = () => [ethProviderUrl!];
+  getLogLevel = (): number => env.serverLogLevel;
   getPublicIdentifier = () => this.getSigner().publicIdentifier;
   getSigner = () => this.nodeSigner;
   getSignerAddress = async () => this.getSigner().address;

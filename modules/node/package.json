@@ -12,8 +12,8 @@
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
     "migration:generate": "typeorm migration:generate -d migrations -n ",
     "start": "ts-node -r tsconfig-paths/register src/main.ts",
-    "test": "ts-mocha --bail --check-leaks --exit --timeout 60000 src/**/*.spec.ts ",
-    "watch": "ts-mocha --bail --check-leaks --watch --timeout 60000 src/**/*.spec.ts "
+    "test": "ts-mocha --bail --check-leaks --exit --timeout 60000 'src/**/*.spec.ts'",
+    "watch": "ts-mocha --bail --check-leaks --watch --timeout 60000 'src/**/*.spec.ts'"
   },
   "dependencies": {
     "@connext/apps": "7.0.0-alpha.20",

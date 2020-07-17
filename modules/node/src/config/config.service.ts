@@ -200,7 +200,7 @@ export class ConfigService implements OnModuleInit {
       if (!tokens[chainId]) {
         tokens[chainId] = [AddressZero];
       }
-      tokens[chainId].push(addressBook[chainId].Token.address);
+      tokens[chainId].push(addressBook[chainId]?.Token?.address);
       return tokens;
     }, {});
   }
