@@ -126,8 +126,6 @@ export class TransferService {
       `installReceiverAppByPaymentId for ${receiverIdentifier} paymentId ${paymentId} started`,
     );
 
-    console.log("receiverIdentifier: ", receiverIdentifier);
-    console.log("receiverChainId: ", receiverChainId);
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
       receiverIdentifier,
       receiverChainId,
