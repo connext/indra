@@ -73,9 +73,11 @@ export class ChannelRepository extends Repository<Channel> {
   // NODE-SPECIFIC METHODS
 
   async getChainIdByMultisigAddress(multisigAddress: string): Promise<number | undefined> {
-    return (await this.createQueryBuilder("channel")
-      .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
-      .getOne()).chainId;
+    return (
+      await this.createQueryBuilder("channel")
+        .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
+        .getOne()
+    ).chainId;
   }
 
   async findAll(available: boolean = true): Promise<Channel[]> {

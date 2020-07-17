@@ -622,14 +622,7 @@ export class CFCoreStore implements IStoreService {
     const commitment = await this.conditionalTransactionCommitmentRepository.findByAppIdentityHash(
       appIdentityHash,
     );
-    const channel = await this.channelRepository.getStateChannelByAppIdentityHash(appIdentityHash);
-    return (
-      commitment &&
-      convertConditionalCommitmentToJson(
-        commitment,
-        await this.configService.getContractAddresses(channel.chainId),
-      )
-    );
+    return commitment && convertConditionalCommitmentToJson(commitment);
   }
 
   clear(): Promise<void> {

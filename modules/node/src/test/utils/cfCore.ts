@@ -110,6 +110,30 @@ export const createSetStateCommitmentJSON = (
   });
 };
 
+const getContractAddresses = (overrides: Partial<ContractAddresses> = {}): ContractAddresses => {
+  return {
+    ProxyFactory: getRandomAddress(),
+    MinimumViableMultisig: getRandomAddress(),
+    ChallengeRegistry: getRandomAddress(),
+    ConditionalTransactionDelegateTarget: getRandomAddress(),
+    DepositApp: getRandomAddress(),
+    WithdrawApp: getRandomAddress(),
+    HashLockTransferApp: getRandomAddress(),
+    IdentityApp: getRandomAddress(),
+    MultiAssetMultiPartyCoinTransferInterpreter: getRandomAddress(),
+    GraphSignedTransferApp: getRandomAddress(),
+    SimpleLinkedTransferApp: getRandomAddress(),
+    SimpleSignedTransferApp: getRandomAddress(),
+    SimpleTwoPartySwapApp: getRandomAddress(),
+    SingleAssetTwoPartyCoinTransferInterpreter: getRandomAddress(),
+    TimeLockedPassThrough: getRandomAddress(),
+    Token: getRandomAddress(),
+    TwoPartyFixedOutcomeInterpreter: getRandomAddress(),
+    WithdrawInterpreter: getRandomAddress(),
+    ...overrides,
+  };
+};
+
 export const createConditionalTransactionCommitmentJSON = (
   overrides: Partial<ConditionalTransactionCommitmentJSON> = {},
 ): ConditionalTransactionCommitmentJSON => {
@@ -120,7 +144,7 @@ export const createConditionalTransactionCommitmentJSON = (
     interpreterParams: "",
     multisigAddress: getRandomAddress(),
     multisigOwners: [getRandomAddress(), getRandomAddress()],
-    contractAddresses: {} as ContractAddresses,
+    contractAddresses: getContractAddresses(),
     signatures: [getRandomSignature(), getRandomSignature()],
     transactionData: getRandomBytes32(),
     ...overrides,

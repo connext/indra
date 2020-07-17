@@ -64,6 +64,7 @@ import { addChainId1593805719084 } from "../../migrations/1593805719084-add-chai
 import { txDataToCommitments1594196149518 } from "../../migrations/1594196149518-tx-data-to-commitments";
 import { txDataStoredProcedures1594196572552 } from "../../migrations/1594196572552-tx-data-stored-procedures";
 import { removeWithUpdatedState1594324129179 } from "../../migrations/1594324129179-remove-with-updated-state";
+import { conditionalTxJson1594978485558 } from "../../migrations/1594978485558-conditional-tx-json";
 
 export const entities = [
   AppInstance,
@@ -127,6 +128,7 @@ export const migrations = [
   txDataToCommitments1594196149518,
   txDataStoredProcedures1594196572552,
   removeWithUpdatedState1594324129179,
+  conditionalTxJson1594978485558,
 ];
 
 @Injectable()

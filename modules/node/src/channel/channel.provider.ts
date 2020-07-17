@@ -141,14 +141,13 @@ class ChannelMessaging extends AbstractMessagingProvider {
     const conditionalCommitments = await this.conditionalTransactionCommitmentRepository.findAllActiveCommitmentsByMultisig(
       channel.multisigAddress,
     );
-    const network = await this.configService.getContractAddresses(chainId);
     return {
       channel,
       setupCommitment: convertSetupEntityToMinimalTransaction(setupCommitment),
       setStateCommitments: setStateCommitments.map((s) => [s.app.identityHash, setStateToJson(s)]),
       conditionalCommitments: conditionalCommitments.map((c) => [
         c.app.identityHash,
-        convertConditionalCommitmentToJson(c, network),
+        convertConditionalCommitmentToJson(c),
       ]),
     };
   }
