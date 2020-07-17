@@ -8,6 +8,10 @@ const { parseEther } = utils;
 
 export const ethProviderUrl = env.chainProviders[env.defaultChain];
 export const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
+
+export const ethProviderUrlForChain = (chainId: number) => env.chainProviders[chainId];
+export const ethProviderForChain = (chainId: number) =>
+  new providers.JsonRpcProvider(ethProviderUrlForChain(chainId));
 export const sugarDaddy = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
 export const ethWallet = Wallet.createRandom().connect(ethProvider);
 

@@ -1,7 +1,14 @@
 import { IConnextClient, EventNames } from "@connext/types";
 import { constants } from "ethers";
 
-import { AssetOptions, createClient, ETH_AMOUNT_SM, ethProviderUrl, fundChannel } from "../util";
+import {
+  AssetOptions,
+  createClient,
+  ETH_AMOUNT_SM,
+  ethProviderUrl,
+  fundChannel,
+  ethProviderUrlForChain,
+} from "../util";
 import { expect } from "../util";
 
 const { AddressZero, Zero } = constants;
@@ -12,7 +19,7 @@ describe("Multichain clients", () => {
 
   beforeEach(async () => {
     clientA = await createClient({ id: "A", ethProviderUrl });
-    clientB = await createClient({ id: "B", ethProviderUrl });
+    clientB = await createClient({ id: "B", ethProviderUrl: ethProviderUrlForChain(1338) });
   });
 
   afterEach(async () => {
