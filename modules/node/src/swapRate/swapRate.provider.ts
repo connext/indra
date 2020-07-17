@@ -23,7 +23,7 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
   }
 
   async getLatestSwapRate(subject: string): Promise<string> {
-    const [, , , , from, to, fromChainId, toChainId] = subject.split(".");
+    const [userId, nodeId, topic, from, to, fromChainId, toChainId] = subject.split(".");
     return this.swapRateService.getOrFetchRate(
       getAddress(from),
       getAddress(to),
@@ -34,7 +34,7 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.*.swap-rate.>`,
+      `*.${this.configService.getPublicIdentifier()}.swap-rate.>`,
       this.getLatestSwapRate.bind(this),
     );
   }
