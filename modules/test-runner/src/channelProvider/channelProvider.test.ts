@@ -52,9 +52,7 @@ describe("ChannelProvider", () => {
     ////////////////////////////////////////
     // DEPOSIT FLOW
     await fundChannel(client, input.amount, input.assetId);
-    console.log("DEPOSIT");
     await remoteClient.requestCollateral(getAddressFromAssetId(output.assetId));
-    console.log("REquest COLLATErAL 1");
 
     ////////////////////////////////////////
     // SWAP FLOW
@@ -65,13 +63,11 @@ describe("ChannelProvider", () => {
     const transfer: AssetOptions = { amount: One, assetId: tokenAddress };
     const clientB = await createClient({ id: "B" });
     await clientB.requestCollateral(tokenAddress);
-    console.log("REquest COLLATErAL 2");
 
     const transferFinished = clientB.waitFor(
       EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
       10_000,
     );
-    console.log("TRANSFER");
 
     await remoteClient.transfer({
       amount: transfer.amount.toString(),
