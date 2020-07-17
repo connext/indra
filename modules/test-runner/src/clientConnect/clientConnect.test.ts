@@ -4,7 +4,7 @@ import { ClientOptions } from "@connext/types";
 import { ColorfulLogger, getRandomChannelSigner } from "@connext/utils";
 import { Wallet, constants, utils } from "ethers";
 
-import { createClient, env, expect, sendOnchainValue, fundChannel, ETH_AMOUNT_SM } from "../util";
+import { createClient, env, ethProviderUrl, expect, sendOnchainValue, fundChannel, ETH_AMOUNT_SM } from "../util";
 
 const { AddressZero, One } = constants;
 const { hexlify, randomBytes } = utils;
@@ -13,7 +13,7 @@ describe("Client Connect", () => {
   it("Client should be able to connect to proxy w/out a messaging url", async () => {
     const signer = getRandomChannelSigner();
     const client = await connect({
-      ethProviderUrl: env.ethProviderUrl,
+      ethProviderUrl,
       loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
       nodeUrl: env.proxyUrl,
       signer,
@@ -25,7 +25,7 @@ describe("Client Connect", () => {
   it("Client should be able to connect to node w a messaging url", async () => {
     const signer = getRandomChannelSigner();
     const client = await connect({
-      ethProviderUrl: env.ethProviderUrl,
+      ethProviderUrl,
       loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
       messagingUrl: env.natsUrl,
       nodeUrl: env.nodeUrl,

@@ -20,7 +20,7 @@ import {
   SEND,
   withdrawFromChannel,
   ZERO_ZERO_ZERO_FIVE_ETH,
-  env,
+  ethProviderUrl,
   APP_PROTOCOL_TOO_LONG,
   CLIENT_INSTALL_FAILED,
   RECEIVED,
@@ -91,7 +91,7 @@ describe("Withdraw offline tests", () => {
   };
 
   beforeEach(async () => {
-    signer = getRandomChannelSigner(env.ethProviderUrl);
+    signer = getRandomChannelSigner(ethProviderUrl);
   });
 
   it("client goes offline during withdrawal app proposal", async () => {

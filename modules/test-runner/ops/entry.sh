@@ -1,7 +1,10 @@
 #!/bin/bash
 set -e
 
-project="indra"
+if [[ -d "modules/test-runner" ]]
+then cd modules/test-runner
+fi
+
 cmd="${1:-test}"
 
 export INDRA_ADMIN_TOKEN="$INDRA_ADMIN_TOKEN"
@@ -15,13 +18,8 @@ export INDRA_REDIS_URL="${INDRA_REDIS_URL:-redis://redis:6379}"
 export NODE_ENV="${NODE_ENV:-development}"
 export STORE_DIR="./.test-store"
 
-echo "Integration Tester Container launched!"
-echo
-
-function finish {
-  echo && echo "Integration tester container exiting.." && exit
-}
-trap finish SIGTERM SIGINT
+########################################
+# Wait for indra stack dependencies
 
 function wait_for {
   name=$1
@@ -43,11 +41,27 @@ function wait_for {
 }
 
 wait_for "database" "$INDRA_PG_HOST:$INDRA_PG_PORT"
-wait_for "ethprovider_1337" "$INDRA_ETH_PROVIDER_1337"
-wait_for "ethprovider_1338" "$INDRA_ETH_PROVIDER_1338"
 wait_for "node" "$INDRA_NODE_URL"
 wait_for "redis" "$INDRA_REDIS_URL"
 wait_for "nats" "$INDRA_NATS_URL"
+
+########################################
+# Wait for all eth providers
+
+chains=()
+for chain in `echo $INDRA_CHAIN_PROVIDERS | jq 'keys[]' | tr -d '"'`
+do chains+=("$chain")
+done
+urls=()
+for url in `echo $INDRA_CHAIN_PROVIDERS | jq '.[]' | tr -d '"'`
+do urls+=("$url")
+done
+for index in "${!chains[@]}"
+do wait_for "ethprovider_${chains[$index]}" "${urls[$index]}"
+done
+
+########################################
+# Launch tests
 
 bundle=dist/tests.bundle.js
 
@@ -68,5 +82,3 @@ then
 else
   mocha --slow 1000 --timeout 180000 --bail --check-leaks --exit $noOnly $bundle
 fi
-
-rm -rf $STORE_DIR

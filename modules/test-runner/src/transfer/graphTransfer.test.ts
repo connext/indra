@@ -25,11 +25,10 @@ import {
   AssetOptions,
   createClient,
   ETH_AMOUNT_SM,
+  ethProviderUrl,
   expect,
   fundChannel,
   TOKEN_AMOUNT,
-  env,
-  requestCollateral,
 } from "../util";
 
 const { AddressZero } = constants;
@@ -47,8 +46,8 @@ describe("Graph Signed Transfers", () => {
   let provider: providers.JsonRpcProvider;
   before(async () => {
     provider = new providers.JsonRpcProvider(
-      env.ethProviderUrl,
-      await getChainId(env.ethProviderUrl),
+      ethProviderUrl,
+      await getChainId(ethProviderUrl),
     );
     const currBlock = await provider.getBlockNumber();
     // the node uses a `TIMEOUT_BUFFER` on recipient of 100 blocks

@@ -15,6 +15,7 @@ import axios, { AxiosResponse } from "axios";
 import { Wallet } from "ethers";
 
 import { env } from "./env";
+import { ethProviderUrl } from "./ethprovider";
 import { combineObjects } from "./misc";
 import { expect } from "./assertions";
 
@@ -166,7 +167,7 @@ const defaultOpts = (): TestMessagingConfig => {
     },
     apiLimits: getDefaultApiLimits(),
     protocolLimits: getDefaultProtocolLimits(),
-    signer: new ChannelSigner(Wallet.createRandom().privateKey, env.ethProviderUrl),
+    signer: new ChannelSigner(Wallet.createRandom().privateKey, ethProviderUrl),
     stopOnCeilingReached: false,
   };
 };
@@ -208,7 +209,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       ...combineObjects(opts, defaults),
       signer:
         opts.signer && typeof opts.signer === "string"
-          ? new ChannelSigner(opts.signer, env.ethProviderUrl)
+          ? new ChannelSigner(opts.signer, ethProviderUrl)
           : opts.signer || defaults.signer,
     } as InternalMessagingConfig;
     const getSignature = (msg: string) => this.options.signer.signMessage(msg);

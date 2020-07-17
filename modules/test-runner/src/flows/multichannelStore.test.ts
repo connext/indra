@@ -5,14 +5,14 @@ import {
   PublicParams,
   ConditionalTransferTypes,
   Address,
-  PrivateKey,
   Bytes32,
   GraphReceipt,
 } from "@connext/types";
-import { getPostgresStore } from "@connext/store";
+import { getFileStore } from "@connext/store";
 import { ConnextClient } from "@connext/client";
 import {
   abrv,
+  ChannelSigner,
   getRandomBytes32,
   getRandomPrivateKey,
   getTestGraphReceiptToSign,
@@ -23,7 +23,7 @@ import {
 import { Sequelize } from "sequelize";
 import { BigNumber } from "ethers";
 
-import { createClient, fundChannel, ETH_AMOUNT_MD, expect, env } from "../util";
+import { createClient, ethProviderUrl, fundChannel, ETH_AMOUNT_MD, expect, env } from "../util";
 
 // NOTE: only groups correct number of promises associated with a payment.
 // there is no validation done to ensure the events correspond to the payments,
@@ -139,9 +139,11 @@ const performConditionalTransfer = async (params: {
 };
 
 describe("Full Flow: Multichannel stores (clients share single sequelize instance)", () => {
-  let senderPrivateKey: PrivateKey;
+  let senderKey: string;
+  let senderSigner: ChannelSigner;
   let sender: ConnextClient;
-  let recipientPrivateKey: PrivateKey;
+  let recipientKey: string;
+  let recipientSigner: ChannelSigner;
   let recipient: ConnextClient;
   let receipt: GraphReceipt;
   let chainId: number;
@@ -153,29 +155,28 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
   const ASSET = CONVENTION_FOR_ETH_ASSET_ID;
 
   beforeEach(async () => {
-    const { host, port, user: username, password, database } = env.dbConfig;
-    const sequelize = new Sequelize({
-      host,
-      port,
-      username,
-      password,
-      database,
-      dialect: "postgres",
-      logging: false,
-    });
-    // create stores with different prefixes
-    const senderStore = getPostgresStore(sequelize, { prefix: "sender" });
-    const recipientStore = getPostgresStore(sequelize, { prefix: "recipient" });
+    senderKey = getRandomPrivateKey();
+    recipientKey = getRandomPrivateKey();
+    senderSigner = new ChannelSigner(senderKey, ethProviderUrl);
+    recipientSigner = new ChannelSigner(recipientKey, ethProviderUrl);
+    const sequelize = new Sequelize(`sqlite:${env.storeDir}/store.sqlite`);
+    // create stores with same sequelize instance but with different prefixes
+    const senderStore = getFileStore(
+      env.storeDir,
+      { sequelize, prefix: senderSigner.publicIdentifier },
+    );
+    const recipientStore = getFileStore(
+      env.storeDir,
+      { sequelize, prefix: recipientSigner.publicIdentifier },
+    );
     // create clients with shared store
-    senderPrivateKey = getRandomPrivateKey();
     sender = (await createClient({
-      signer: senderPrivateKey,
+      signer: senderSigner,
       store: senderStore,
       id: "S",
     })) as ConnextClient;
-    recipientPrivateKey = getRandomPrivateKey();
     recipient = (await createClient({
-      signer: recipientPrivateKey,
+      signer: recipientSigner,
       store: recipientStore,
       id: "R",
     })) as ConnextClient;
@@ -228,7 +229,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
         receipt,
         chainId,
         verifyingContract,
-        recipientPrivateKey,
+        recipientKey,
       );
 
       await recipient.resolveCondition({
@@ -354,7 +355,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
         receipt,
         chainId,
         verifyingContract,
-        recipientPrivateKey,
+        recipientKey,
       );
       await recipient.resolveCondition({
         conditionType: ConditionalTransferTypes.GraphTransfer,

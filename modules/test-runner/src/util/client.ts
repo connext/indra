@@ -22,7 +22,7 @@ import { Contract, Wallet } from "ethers";
 
 import { ETH_AMOUNT_LG, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
-import { ethWallet } from "./ethprovider";
+import { ethProviderUrl, ethWallet } from "./ethprovider";
 import { TestMessagingService, SendReceiveCounter, RECEIVED, SEND, NO_LIMIT } from "./messaging";
 
 export const createClient = async (
@@ -34,7 +34,7 @@ export const createClient = async (
   await store.init();
   const clientOpts: ClientOptions = {
     ...opts,
-    ethProviderUrl: opts.ethProviderUrl || env.ethProviderUrl,
+    ethProviderUrl: opts.ethProviderUrl || ethProviderUrl,
     loggerService: new ColorfulLogger("Client", opts.logLevel || env.logLevel, true, opts.id),
     signer: opts.signer || getRandomPrivateKey(),
     nodeUrl: opts.nodeUrl || env.nodeUrl,
@@ -75,7 +75,7 @@ export const createRemoteClient = async (
 ): Promise<IConnextClient> => {
   const clientOpts: ClientOptions = {
     channelProvider,
-    ethProviderUrl: env.ethProviderUrl,
+    ethProviderUrl: ethProviderUrl,
     loggerService: new ColorfulLogger("TestRunner", env.logLevel, true),
     messagingUrl: env.natsUrl,
   };
@@ -88,7 +88,7 @@ export const createRemoteClient = async (
 export const createDefaultClient = async (network: string, opts?: Partial<ClientOptions>) => {
   // TODO: allow test-runner to access external urls
   const urlOptions = {
-    ethProviderUrl: env.ethProviderUrl,
+    ethProviderUrl: ethProviderUrl,
     nodeUrl: env.nodeUrl,
     messagingUrl: env.natsUrl,
   };
@@ -122,7 +122,7 @@ export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> & { id?: string; logLevel?: number } = {},
 ): Promise<IConnextClient> => {
   const { protocol, ceiling, params } = opts;
-  const signer = opts.signer || getRandomChannelSigner(env.ethProviderUrl);
+  const signer = opts.signer || getRandomChannelSigner(ethProviderUrl);
   // no defaults specified, exit early
   if (Object.keys(opts).length === 0) {
     const messaging = new TestMessagingService({ signer: signer as ChannelSigner });

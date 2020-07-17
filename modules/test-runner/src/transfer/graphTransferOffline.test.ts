@@ -30,7 +30,7 @@ import {
   ClientTestMessagingInputOpts,
   createClient,
   createClientWithMessagingLimits,
-  env,
+  ethProviderUrl,
   expect,
   fundChannel,
   RECEIVED,
@@ -49,9 +49,9 @@ describe("Graph Signed Transfer Offline", () => {
   let receiverSigner: IChannelSigner;
 
   beforeEach(async () => {
-    senderSigner = getRandomChannelSigner(env.ethProviderUrl);
+    senderSigner = getRandomChannelSigner(ethProviderUrl);
     receiverPrivateKey = getRandomPrivateKey();
-    receiverSigner = new ChannelSigner(receiverPrivateKey, env.ethProviderUrl);
+    receiverSigner = new ChannelSigner(receiverPrivateKey, ethProviderUrl);
   });
 
   const createAndFundClients = async (
