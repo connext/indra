@@ -56,22 +56,29 @@ export class TransferService {
   // TODO: make this interval configurable
   @Interval(3600_000)
   async pruneExpiredApps(channel: Channel): Promise<void> {
-    this.log.info(`Start pruneExpiredApps for channel ${channel.multisigAddress}`);
-
-    const current = await this.configService.getEthProvider().getBlockNumber();
-    const expiredApps = channel.appInstances.filter((app) => {
-      return app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current);
-    });
-    this.log.debug(`Removing ${expiredApps.length} expired apps`);
-    for (const app of expiredApps) {
-      try {
-        // Uninstall all expired apps without taking action
-        await this.cfCoreService.uninstallApp(app.identityHash, channel.multisigAddress);
-      } catch (e) {
-        this.log.warn(`Failed to uninstall expired app ${app.identityHash}: ${e.message}`);
+    for (const chainId of this.configService.getSupportedChains()) {
+      this.log.info(
+        `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${chainId}`,
+      );
+      const current = await this.configService.getEthProvider(chainId).getBlockNumber();
+      const expiredApps = channel.appInstances.filter((app) => {
+        return (
+          app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current)
+        );
+      });
+      this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${chainId}`);
+      for (const app of expiredApps) {
+        try {
+          // Uninstall all expired apps without taking action
+          await this.cfCoreService.uninstallApp(app.identityHash, channel.multisigAddress);
+        } catch (e) {
+          this.log.warn(`Failed to uninstall expired app ${app.identityHash}: ${e.message}`);
+        }
       }
+      this.log.info(
+        `Finish pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${chainId}`,
+      );
     }
-    this.log.info(`Finish pruneExpiredApps for channel ${channel.multisigAddress}`);
   }
 
   // NOTE: designed to be called from the proposal event handler to enforce
