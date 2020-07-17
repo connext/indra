@@ -1,4 +1,3 @@
-import { addressBook } from "@connext/contracts";
 import {
   IChannelSigner,
   IConnextClient,
@@ -30,6 +29,7 @@ import {
   ClientTestMessagingInputOpts,
   createClient,
   createClientWithMessagingLimits,
+  env,
   ethProviderUrl,
   expect,
   fundChannel,
@@ -41,8 +41,8 @@ import {
 const { Zero } = constants;
 
 describe("Graph Signed Transfer Offline", () => {
-  const tokenAddress = addressBook[1337].Token.address;
-  const addr = addressBook[1337].GraphSignedTransferApp.address;
+  const tokenAddress = env.contractAddresses[1337].Token.address;
+  const addr = env.contractAddresses[1337].GraphSignedTransferApp.address;
 
   let senderSigner: IChannelSigner;
   let receiverPrivateKey: PrivateKey;

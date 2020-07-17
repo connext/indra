@@ -1,4 +1,4 @@
-import { ConditionalTransferTypes, IConnextClient, EventNames, PublicParams } from "@connext/types";
+import { IConnextClient, EventNames } from "@connext/types";
 import { constants } from "ethers";
 
 import { AssetOptions, createClient, ETH_AMOUNT_SM, fundChannel, requestCollateral } from "../util";

@@ -13,6 +13,7 @@ import {
   ClientTestMessagingInputOpts,
   createClient,
   createClientWithMessagingLimits,
+  env,
   ETH_AMOUNT_SM,
   ethProvider,
   expect,
@@ -25,13 +26,12 @@ import {
   CLIENT_INSTALL_FAILED,
   RECEIVED,
 } from "../util";
-import { addressBook } from "@connext/contracts";
 
 const { AddressZero } = constants;
 
 describe("Withdraw offline tests", () => {
   let signer: IChannelSigner;
-  const addr = addressBook[1337].WithdrawApp.address;
+  const addr = env.contractAddresses[1337].WithdrawApp.address;
 
   const createAndFundChannel = async (
     messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
