@@ -19,7 +19,7 @@ import {
   calculateExchangeWad,
   toBN,
 } from "@connext/utils";
-import { TRANSFER_TIMEOUT } from "@connext/apps";
+import { TRANSFER_TIMEOUT, MINIMUM_APP_TIMEOUT } from "@connext/apps";
 import { Interval } from "@nestjs/schedule";
 import { constants } from "ethers";
 import { isEqual } from "lodash";
@@ -106,6 +106,9 @@ export class TransferService {
 
     // RECEIVER PROPOSAL
     let receiverProposeRes: MethodResults.ProposeInstall;
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      proposeInstallParams.meta.recipient,
+    );
     try {
       receiverProposeRes = await this.proposeReceiverAppByPaymentId(
         from,
@@ -115,13 +118,11 @@ export class TransferService {
         proposeInstallParams.initialState as AppStates[typeof transferType],
         proposeInstallParams.meta,
         transferType,
+        receiverChannel,
       );
     } catch (e) {
       this.log.error(`Error proposing receiver app: ${e.message || e}`);
       if (allowed === "RequireOnline") {
-        const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-          proposeInstallParams.meta.recipient,
-        );
         await this.cfCoreService.rejectInstallApp(
           receiverProposeRes.appIdentityHash,
           receiverChannel.multisigAddress,
@@ -134,15 +135,18 @@ export class TransferService {
       return;
     }
 
-    // REQUIRE ONLINE SENDER INSTALL
+    // REQUIRE ONLINE RECEIVER INSTALL
     if (allowed === "RequireOnline") {
       try {
         this.log.info(
-          `Installing sender app ${appIdentityHash} in channel ${senderChannel.multisigAddress}`,
+          `Installing receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
         );
-        await this.cfCoreService.installApp(appIdentityHash, senderChannel.multisigAddress);
+        await this.cfCoreService.installApp(
+          receiverProposeRes.appIdentityHash,
+          receiverChannel.multisigAddress,
+        );
         this.log.info(
-          `Sender app ${appIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
+          `Receiver app ${appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
         );
       } catch (e) {
         this.log.error(`Error installing receiver app: ${e.message || e}`);
@@ -161,13 +165,17 @@ export class TransferService {
     senderAppState: AppStates[ConditionalTransferAppNames],
     meta: any = {},
     transferType: ConditionalTransferAppNames,
+    receiverChannel?: Channel,
   ): Promise<MethodResults.ProposeInstall> {
     this.log.info(
       `installReceiverAppByPaymentId for ${receiverIdentifier} paymentId ${paymentId} started`,
     );
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      receiverIdentifier,
-    );
+
+    if (!receiverChannel) {
+      receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+        receiverIdentifier,
+      );
+    }
 
     const senderAmount = senderAppState.coinTransfers[0].amount;
 
@@ -279,7 +287,7 @@ export class TransferService {
       responderIdentifier: receiverIdentifier,
       responderDeposit: Zero,
       responderDepositAssetId: receiverAssetId, // receiverAssetId is same because swap happens between sender and receiver apps, not within the app
-      defaultTimeout: TRANSFER_TIMEOUT,
+      defaultTimeout: MINIMUM_APP_TIMEOUT,
       stateTimeout: Zero,
     });
   }
@@ -299,7 +307,11 @@ export class TransferService {
       throw new Error(`Sender app has action, refusing to redeem`);
     }
 
-    return this.proposeReceiverAppByPaymentId(
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      receiverIdentifier,
+    );
+
+    const proposeRes = await this.proposeReceiverAppByPaymentId(
       senderApp.initiatorIdentifier,
       receiverIdentifier,
       paymentId,
@@ -307,7 +319,24 @@ export class TransferService {
       senderApp.latestState,
       senderApp.meta,
       transferType,
+      receiverChannel,
     );
+
+    await this.cfCoreService.installApp(
+      proposeRes.appIdentityHash,
+      receiverChannel.multisigAddress,
+    );
+
+    return {
+      amount: senderApp.latestState.coinTransfers[0].amount,
+      appIdentityHash: proposeRes.appIdentityHash,
+      assetId: senderApp.meta.receiverAssetId
+        ? senderApp.meta.receiverAssetId
+        : senderApp.initiatorDepositAssetId,
+      paymentId,
+      sender: senderApp.channel.userIdentifier,
+      meta: senderApp.meta,
+    };
   }
 
   async findSenderAppByPaymentId<

@@ -206,7 +206,7 @@ export class AppRegistryService implements OnModuleInit {
           return this.proposeMiddleware(cxt as ProposeMiddlewareContext);
         }
         case ProtocolNames.install: {
-          return this.installMiddleware(cxt as InstallMiddlewareContext);
+          return;
         }
         case ProtocolNames.uninstall: {
           return this.uninstallMiddleware(cxt as UninstallMiddlewareContext);
@@ -217,88 +217,6 @@ export class AppRegistryService implements OnModuleInit {
         }
       }
     };
-  };
-
-  /**
-   * For `RequireOnline` transfers, the flow is:
-   * - Sender initiates propose with node <LOCK MULTISIG SENDER-NODE>
-   * - Node responds to sender propose and creates app proposal <UNLOCK MULTISIG SENDER-NODE>
-   * - Node hears PROPOSE_INSTALL event for sender app and initiates propose with receiver <LOCK MULTISIG RECEIVER-NODE>
-   * - Receiver responds to node propose and creates app proposal <UNLOCK MULTISIG RECEIVER-NODE>
-   * - Receiver initiates install with node <LOCK MULTISIG RECEIVER-NODE>
-   * - Node responds to install with receiver and hits this installTransferMiddleware function:
-   *   - Node asserts that there is a sender app proposal that corresponds to the receiver app proposal
-   *   - Node initiates install with sender <LOCK MULTISIG SENDER-NODE>
-   *   - Sender responds to install and installs app <UNLOCK MULTISIG SENDER-NODE>
-   * - Node finishes responding to receiver install and installs app <UNLOCK MULTISIG RECEIVER-NODE>
-   */
-  private installTransferMiddleware = async (appInstance: AppInstanceJson) => {
-    const latestState = appInstance.latestState as HashLockTransferAppState;
-    const installingAppSender = latestState.coinTransfers[0].to;
-
-    const nodeSignerAddress = await this.configService.getSignerAddress();
-
-    // if node is not sending funds, we dont need to do anything
-    if (installingAppSender !== nodeSignerAddress) {
-      return;
-    }
-
-    const registryAppInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
-      appInstance.appDefinition,
-    );
-
-    // this middleware is only relevant for require online
-    if (
-      getTransferTypeFromAppName(registryAppInfo.name as SupportedApplicationNames) !==
-      "RequireOnline"
-    ) {
-      return;
-    }
-
-    const existingSenderApp = await this.transferService.findSenderAppByPaymentId(
-      appInstance.meta.paymentId,
-    );
-
-    if (!existingSenderApp) {
-      throw new Error(`Sender app not installed`);
-    }
-
-    if (existingSenderApp.type === AppType.INSTANCE) {
-      this.log.info(`Sender app was already installed, doing nothing.`);
-      return;
-    }
-
-    if (existingSenderApp.type !== AppType.PROPOSAL) {
-      throw new Error(`Sender app has not been proposed: ${appInstance.identityHash}`);
-    }
-
-    try {
-      this.log.info(`Installing sender app from app proposal: ${appInstance.identityHash}`);
-      await this.cfCoreService.installApp(
-        existingSenderApp.identityHash,
-        existingSenderApp.channel.multisigAddress,
-      );
-    } catch (e) {
-      // reject if error
-      this.log.warn(`App install failed: ${e.stack || e.message}`);
-      await this.cfCoreService.rejectInstallApp(
-        existingSenderApp.identityHash,
-        existingSenderApp.channel.multisigAddress,
-        e.message,
-      );
-      return;
-    }
-  };
-
-  private installMiddleware = async (cxt: InstallMiddlewareContext) => {
-    const { appInstance } = cxt;
-    const appDef = appInstance.appDefinition;
-
-    const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(appDef);
-
-    if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo.name)) {
-      await this.installTransferMiddleware(appInstance);
-    }
   };
 
   private proposeMiddleware = async (cxt: ProposeMiddlewareContext) => {

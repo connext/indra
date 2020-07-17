@@ -108,8 +108,21 @@ export class ConnextListener {
       this.log.info(`Deposit started: ${msg.data.hash}`);
       this.emitAndLog(DEPOSIT_STARTED_EVENT, msg.data);
     },
-    INSTALL_EVENT: (msg): void => {
+    INSTALL_EVENT: async (msg): Promise<void> => {
       this.emitAndLog(INSTALL_EVENT, msg.data);
+      const { appIdentityHash, appInstance } = msg.data;
+      const registryAppInfo = this.connext.appRegistry.find(
+        (app: DefaultApp): boolean => app.appDefinitionAddress === appInstance.appDefinition,
+      );
+      // install and run post-install tasks
+      await this.runPostInstallTasks(appIdentityHash, registryAppInfo, appInstance);
+      this.log.info(
+        `handleAppProposal for app ${registryAppInfo.name} ${appIdentityHash} completed`,
+      );
+      await this.connext.node.messaging.publish(
+        `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
+        stringify(appInstance),
+      );
     },
     INSTALL_FAILED_EVENT: (msg): void => {
       this.emitAndLog(INSTALL_FAILED_EVENT, msg.data);
@@ -251,7 +264,9 @@ export class ConnextListener {
 
   private registerLinkedTranferSubscription = async (): Promise<void> => {
     this.attach(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
-      this.log.info(`Received event CONDITIONAL_TRANSFER_CREATED_EVENT: ${stringify(payload)}`);
+      this.log.info(
+        `Received event CONDITIONAL_TRANSFER_CREATED_EVENT: ${stringify(payload, true, 0)}`,
+      );
       const start = Date.now();
       const time = () => `in ${Date.now() - start} ms`;
 
@@ -296,39 +311,32 @@ export class ConnextListener {
     this.log.info(
       `handleAppProposal for app ${registryAppInfo.name} ${appIdentityHash} started: ${stringify(
         params,
+        true,
+        0,
       )}`,
     );
     if (!registryAppInfo) {
       throw new Error(`Could not find registry info for app ${params.appDefinition}`);
     }
     // install or reject app
-    if (!Object.values(ConditionalTransferAppNames).includes(registryAppInfo.name as any)) {
-      try {
-        // NOTE: by trying to install here, if the installation fails,
-        // the proposal is automatically removed from the store
-        this.log.info(`Installing ${registryAppInfo.name} with id: ${appIdentityHash}`);
-        await this.connext.installApp(appIdentityHash);
-        this.log.info(`App ${appIdentityHash} installed`);
-        // install and run post-install tasks
-        await this.runPostInstallTasks(appIdentityHash, registryAppInfo, params);
-        this.log.info(
-          `handleAppProposal for app ${registryAppInfo.name} ${appIdentityHash} completed`,
-        );
-        const { appInstance } = await this.connext.getAppInstance(appIdentityHash);
-        await this.connext.node.messaging.publish(
-          `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
-          stringify(appInstance),
-        );
-      } catch (e) {
-        // TODO: first proposal after reset is responded to
-        // twice
-        if (e.message.includes("No proposed AppInstance exists")) {
-          return;
-        } else {
-          this.log.error(`Caught error, rejecting install of ${appIdentityHash}: ${e.message}`);
-          await this.connext.rejectInstallApp(appIdentityHash, e.message);
-          return;
-        }
+    if (Object.values(ConditionalTransferAppNames).includes(registryAppInfo.name as any)) {
+      return;
+    }
+    try {
+      // NOTE: by trying to install here, if the installation fails,
+      // the proposal is automatically removed from the store
+      this.log.info(`Installing ${registryAppInfo.name} with id: ${appIdentityHash}`);
+      await this.connext.installApp(appIdentityHash);
+      this.log.info(`App ${appIdentityHash} installed`);
+    } catch (e) {
+      // TODO: first proposal after reset is responded to
+      // twice
+      if (e.message.includes("No proposed AppInstance exists")) {
+        return;
+      } else {
+        this.log.error(`Caught error, rejecting install of ${appIdentityHash}: ${e.message}`);
+        await this.connext.rejectInstallApp(appIdentityHash, e.message);
+        return;
       }
     }
   };
@@ -336,15 +344,9 @@ export class ConnextListener {
   private runPostInstallTasks = async (
     appIdentityHash: string,
     registryAppInfo: DefaultApp,
-    params: ProtocolParams.Propose,
+    appInstance: AppInstanceJson,
   ): Promise<void> => {
-    this.log.info(
-      `runPostInstallTasks for app ${registryAppInfo.name} ${appIdentityHash} started: ${stringify(
-        params,
-        true,
-        0,
-      )}`,
-    );
+    this.log.info(`runPostInstallTasks for app ${registryAppInfo.name} ${appIdentityHash} started`);
     switch (registryAppInfo.name) {
       case WithdrawAppName: {
         const { appInstance } = (await this.connext.getAppInstance(appIdentityHash)) || {};
@@ -355,8 +357,8 @@ export class ConnextListener {
         break;
       }
       case GraphSignedTransferAppName: {
-        const initialState = params.initialState as GraphSignedTransferAppState;
-        const { initiatorDepositAssetId: assetId, meta } = params;
+        const initialState = appInstance.latestState as GraphSignedTransferAppState;
+        const { initiatorDepositAssetId: assetId, meta } = appInstance;
         const amount = initialState.coinTransfers[0].amount;
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
@@ -378,8 +380,8 @@ export class ConnextListener {
         break;
       }
       case SimpleSignedTransferAppName: {
-        const initialState = params.initialState as SimpleSignedTransferAppState;
-        const { initiatorDepositAssetId: assetId, meta } = params;
+        const initialState = appInstance.latestState as SimpleSignedTransferAppState;
+        const { initiatorDepositAssetId: assetId, meta } = appInstance;
         const amount = initialState.coinTransfers[0].amount;
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
@@ -399,8 +401,8 @@ export class ConnextListener {
         break;
       }
       case HashLockTransferAppName: {
-        const initialState = params.initialState as HashLockTransferAppState;
-        const { initiatorDepositAssetId: assetId, meta } = params;
+        const initialState = appInstance.latestState as HashLockTransferAppState;
+        const { initiatorDepositAssetId: assetId, meta } = appInstance;
         const amount = initialState.coinTransfers[0].amount;
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
@@ -420,8 +422,8 @@ export class ConnextListener {
         break;
       }
       case SimpleLinkedTransferAppName: {
-        const initialState = params.initialState as SimpleLinkedTransferAppState;
-        const { initiatorDepositAssetId: assetId, meta } = params;
+        const initialState = appInstance.latestState as SimpleLinkedTransferAppState;
+        const { initiatorDepositAssetId: assetId, meta } = appInstance;
         const amount = initialState.coinTransfers[0].amount;
         this.log.info(
           `Emitting event CONDITIONAL_TRANSFER_CREATED_EVENT for paymentId ${meta["paymentId"]}`,

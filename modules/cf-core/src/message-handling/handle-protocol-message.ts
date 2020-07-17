@@ -109,6 +109,7 @@ async function getOutgoingEventDataFromProtocol(
         type: EventNames.INSTALL_EVENT,
         data: {
           appIdentityHash: (params as ProtocolParams.Install).proposal.identityHash,
+          appInstance: appContext?.toJson(),
         },
       } as ProtocolEventMessage<typeof EventNames.INSTALL_EVENT>;
     }
