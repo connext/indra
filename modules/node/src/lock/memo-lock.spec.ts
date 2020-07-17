@@ -96,7 +96,7 @@ describe("MemoLock", () => {
           const lock = await module.acquireLock("foo");
           await new Promise((resolve) => setTimeout(resolve, 800));
           await module.releaseLock("foo", lock);
-          expect(Date.now() - start).to.be.gte(800 * i);
+          expect(Date.now() - start).to.be.gte(700 * i);
         }),
       );
     });
