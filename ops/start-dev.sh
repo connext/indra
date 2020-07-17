@@ -84,7 +84,7 @@ redis_image="redis:5-alpine"
 if [[ "$INDRA_UI" == "headless" ]]
 then
   webserver_service=""
-  webserver_url="localhost"
+  webserver_url="localhost:80"
 else
   if [[ "$INDRA_UI" == "dashboard" ]]
   then webserver_working_dir=/root/modules/dashboard
@@ -180,7 +180,7 @@ services:
       MESSAGING_TCP_URL: 'nats:4222'
       MESSAGING_WS_URL: 'nats:4221'
       NODE_URL: 'node:8080'
-      WEBSERVER_URL: 'webserver:3000'
+      WEBSERVER_URL: '$webserver_url'
     networks:
       - '$project'
     ports:
@@ -259,8 +259,8 @@ EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
 
-echo -n "Waiting for the $project stack to wake up."
-while ! curl -s http://localhost:3000 > /dev/null
-do echo -n "." && sleep 2
+echo "The $project stack has been deployed, waiting for the proxy to start responding.."
+while [[ "`curl -s http://localhost:3000`" == "Waiting for Indra to wake up" ]]
+do sleep 2
 done
-echo " Good Morning!"
+echo "Good Morning!"

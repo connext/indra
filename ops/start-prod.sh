@@ -356,8 +356,8 @@ EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
 
-echo -n "Waiting for the $project stack to wake up."
-while ! curl -s http://localhost:80 > /dev/null
-do echo -n "." && sleep 2
+echo "The $project stack has been deployed, waiting for the proxy to start responding.."
+while [[ "`curl -s http://localhost:80`" == "Waiting for Indra to wake up" ]]
+do sleep 2
 done
-echo " Good Morning!"
+echo "Good Morning!"
