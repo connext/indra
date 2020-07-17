@@ -16,8 +16,10 @@ import {
   stringify,
   getSignerAddressFromPublicIdentifier,
   calculateExchangeWad,
+  toBN,
 } from "@connext/utils";
 import { TRANSFER_TIMEOUT } from "@connext/apps";
+import { Interval } from "@nestjs/schedule";
 import { constants } from "ethers";
 import { isEqual } from "lodash";
 
@@ -32,6 +34,7 @@ import { Channel } from "../channel/channel.entity";
 import { SwapRateService } from "../swapRate/swapRate.service";
 
 import { TransferRepository } from "./transfer.repository";
+import { ConfigService } from "../config/config.service";
 
 const { Zero, HashZero } = constants;
 
@@ -43,10 +46,39 @@ export class TransferService {
     private readonly channelService: ChannelService,
     private readonly depositService: DepositService,
     private readonly swapRateService: SwapRateService,
+    private readonly configService: ConfigService,
     private readonly transferRepository: TransferRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("TransferService");
+  }
+
+  // TODO: make this interval configurable
+  @Interval(3600_000)
+  async pruneExpiredApps(channel: Channel): Promise<void> {
+    for (const chainId of this.configService.getSupportedChains()) {
+      this.log.info(
+        `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${chainId}`,
+      );
+      const current = await this.configService.getEthProvider(chainId).getBlockNumber();
+      const expiredApps = channel.appInstances.filter((app) => {
+        return (
+          app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current)
+        );
+      });
+      this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${chainId}`);
+      for (const app of expiredApps) {
+        try {
+          // Uninstall all expired apps without taking action
+          await this.cfCoreService.uninstallApp(app.identityHash, channel.multisigAddress);
+        } catch (e) {
+          this.log.warn(`Failed to uninstall expired app ${app.identityHash}: ${e.message}`);
+        }
+      }
+      this.log.info(
+        `Finish pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${chainId}`,
+      );
+    }
   }
 
   // NOTE: designed to be called from the proposal event handler to enforce
@@ -62,7 +94,6 @@ export class TransferService {
 
     const paymentId = proposeInstallParams.meta["paymentId"];
     const allowed = getTransferTypeFromAppName(transferType as SupportedApplicationNames);
-    // in the allow offline case, we want both receiver and sender apps to install in parallel
     // if allow offline, resolve after sender app install
     // if not, will be installed in middleware
     if (allowed === "AllowOffline") {

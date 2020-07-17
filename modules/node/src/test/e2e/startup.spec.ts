@@ -28,7 +28,7 @@ describe("Startup", () => {
       .useClass(MockConfigService)
       .compile();
     app = moduleFixture.createNestApplication();
-    expect(app.init()).to.not.be.rejected;
+    await app.init();
     const configService = moduleFixture.get<ConfigService>(ConfigService);
     await app.listen(configService.getPort());
   });
@@ -44,7 +44,7 @@ describe("Startup", () => {
       .useValue(configService)
       .compile();
     app = moduleFixture.createNestApplication();
-    expect(app.init()).to.not.be.rejected;
+    await app.init();
     await app.listen(configService.getPort());
   });
 });

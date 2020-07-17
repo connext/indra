@@ -8,6 +8,7 @@ import {
   PublicParams,
   EventPayloads,
   UnlockedHashLockTransferMeta,
+  ConditionalTransferCreatedEventData,
 } from "@connext/types";
 import { getRandomBytes32, getChainId, delay, stringify } from "@connext/utils";
 import { BigNumber, providers, constants, utils } from "ethers";
@@ -405,7 +406,9 @@ describe("HashLock Transfers", () => {
     const timelock = 101;
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
-    await new Promise((resolve, reject) => {
+    const { appIdentityHash } = ((await new Promise((resolve, reject) => {
+      clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, (data) => resolve(data));
+      clientA.once(EventNames.REJECT_INSTALL_EVENT, reject);
       clientA.conditionalTransfer({
         amount: transfer.amount.toString(),
         conditionType: ConditionalTransferTypes.HashLockTransfer,
@@ -415,16 +418,15 @@ describe("HashLock Transfers", () => {
         meta: { foo: "bar", sender: clientA.publicIdentifier },
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer);
-      clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, resolve);
-      clientA.once(EventNames.REJECT_INSTALL_EVENT, reject);
-    });
+    })) as unknown) as ConditionalTransferCreatedEventData<"HashLockTransferApp">;
+    const app = await clientB.getAppInstance(appIdentityHash);
+    expect(app).to.be.ok;
 
     // Wait for more than one block if blocktime > 0
     // for (let i = 0; i < 5; i++) {
     // eslint-disable-next-line no-loop-func
     await new Promise((resolve) => provider.once("block", resolve));
     // }
-
     await expect(
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,

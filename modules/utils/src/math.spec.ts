@@ -8,6 +8,7 @@ import {
   removeDecimals,
   calculateExchangeAmount,
   calculateExchangeWad,
+  formatDisplayAmount,
 } from "./math";
 
 describe("Math", () => {
@@ -54,5 +55,13 @@ describe("Math", () => {
     expect(calculateExchangeWad(toWad("21.25"), 8, inverse("212.5"), 18).toString()).to.be.equal(
       "999999999999999900000000000",
     );
+  });
+  it("formatDisplayAmount", () => {
+    expect(formatDisplayAmount("0.1", 2, "DAI")).to.be.equal("DAI 0.10");
+    expect(formatDisplayAmount("0.1")).to.be.equal("0.10");
+    expect(formatDisplayAmount("0.123544235", 4)).to.be.equal("0.1235");
+    expect(formatDisplayAmount("0.999999999", 4)).to.be.equal("1.0000");
+    expect(formatDisplayAmount("10")).to.be.equal("10.00");
+    expect(formatDisplayAmount("10.0")).to.be.equal("10.00");
   });
 });

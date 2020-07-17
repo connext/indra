@@ -171,9 +171,7 @@ export class ConfigService implements OnModuleInit {
       return [];
     }
     const priceOracleType =
-      chainId.toString() === "1"
-        ? PriceOracleTypes.UNISWAP
-        : PriceOracleTypes.HARDCODED;
+      chainId.toString() === "1" ? PriceOracleTypes.UNISWAP : PriceOracleTypes.HARDCODED;
     const allowedSwaps: AllowedSwap[] = [];
     // allow token <> eth swaps per chain
     supportedTokens[chainId].forEach((token) => {
@@ -271,6 +269,10 @@ export class ConfigService implements OnModuleInit {
 
   getRebalancingServiceUrl(): string | undefined {
     return this.get(`INDRA_REBALANCING_SERVICE_URL`);
+  }
+
+  getAppCleanupInterval(): number {
+    return parseInt(this.get(`INDRA_APP_CLEANUP_INTERVAL`) || "3600000");
   }
 
   async getDefaultRebalanceProfile(
