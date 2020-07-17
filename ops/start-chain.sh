@@ -5,13 +5,15 @@ set -e
 
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
+release="`cat $root/package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
 chain_id="${1:-1337}"
 
+mode="${INDRA_CHAIN_MODE:-local}"
 port="${INDRA_CHAIN_PORT:-`expr 8545 - 1337 + $chain_id`}"
 tag="${INDRA_TAG:-$chain_id}"
 mnemonic="${INDRA_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
-image="${INDRA_IMAGE:-builder}"
 engine="${INDRA_EVM:-`if [[ "$chain_id" == "1337" ]]; then echo "ganache"; else echo "buidler"; fi`}"
 logLevel="${INDRA_CHAIN_LOG_LEVEL:-0}"
 
@@ -26,39 +28,27 @@ fi
 chain_data="$root/.chaindata/$chain_id"
 mkdir -p $chain_data
 
-if [[ "$image" == "builder" ]]
-then
-  docker run \
-    --detach \
-    --entrypoint "bash" \
-    --env "CHAIN_ID=$chain_id" \
-    --env "ENGINE=$engine" \
-    --env "MNEMONIC=$mnemonic" \
-    --mount "type=bind,source=$chain_data,target=/data" \
-    --mount "type=bind,source=$root,target=/root" \
-    --name "$ethprovider_host" \
-    --publish "$port:8545" \
-    --rm \
-    --tmpfs "/tmpfs" \
-    ${project}_builder -c "cd modules/contracts && bash ops/entry.sh"
-
-elif [[ "$image" == "ethprovider" ]]
-then
-  docker run \
-    --detach \
-    --env "CHAIN_ID=$chain_id" \
-    --env "ENGINE=$engine" \
-    --env "MNEMONIC=$mnemonic" \
-    --mount "type=bind,source=$chain_data,target=/data" \
-    --name "$ethprovider_host" \
-    --publish "$port:8545" \
-    --tmpfs "/tmpfs" \
-    ${project}_ethprovider
-
+if [[ "$mode" == "release" ]]
+then image="${registry}/${project}_ethprovider:$release"
+elif [[ "$mode" == "staging" ]]
+then image="${project}_ethprovider:`git rev-parse HEAD | head -c 8`"
 else
-  echo 'Expected INDRA_IMAGE to be either "builder" or "ethprovider"'
-  exit 1
+  image="${project}_builder"
+  arg="modules/contracts/ops/entry.sh"
+  opts="--entrypoint bash --mount type=bind,source=$root,target=/root"
 fi
+
+docker run $opts \
+  --detach \
+  --env "CHAIN_ID=$chain_id" \
+  --env "ENGINE=$engine" \
+  --env "MNEMONIC=$mnemonic" \
+  --mount "type=bind,source=$chain_data,target=/data" \
+  --name "$ethprovider_host" \
+  --publish "$port:8545" \
+  --rm \
+  --tmpfs "/tmpfs" \
+  $image $arg
 
 if [[ "$logLevel" -gt "0" ]]
 then docker container logs --follow $ethprovider_host &
