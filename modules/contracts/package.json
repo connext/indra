@@ -55,6 +55,6 @@
     "solc": "0.6.9",
     "ts-mocha": "7.0.0",
     "ts-node": "8.10.2",
-    "typescript": "3.9.6"
+    "typescript": "3.9.7"
   }
 }
