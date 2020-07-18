@@ -132,8 +132,6 @@ describe("Graph Signed Transfers", () => {
       privateKeyB,
     );
 
-    console.log(`CREATED`);
-
     const unlockedPromise = clientA.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 10_000);
     const uninstalledPromise = clientA.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
     await clientB.resolveCondition({

@@ -94,6 +94,7 @@ export class TransferService {
       this.log.info(
         `Installing sender app ${appIdentityHash} in channel ${senderChannel.multisigAddress}`,
       );
+      // if errors, it will reject in the calling function
       await this.cfCoreService.installApp(appIdentityHash, senderChannel.multisigAddress);
       this.log.info(
         `Sender app ${appIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
@@ -123,6 +124,7 @@ export class TransferService {
     } catch (e) {
       this.log.error(`Error proposing receiver app: ${e.message || e}`);
       if (allowed === "RequireOnline") {
+        // TODO: proposal might not exist at this point?
         await this.cfCoreService.rejectInstallApp(
           receiverProposeRes.appIdentityHash,
           receiverChannel.multisigAddress,
@@ -135,8 +137,18 @@ export class TransferService {
       return;
     }
 
-    // REQUIRE ONLINE RECEIVER INSTALL
+    // REQUIRE ONLINE SENDER AND RECEIVER INSTALL
     if (allowed === "RequireOnline") {
+      this.log.info(
+        `Installing sender app ${appIdentityHash} in channel ${senderChannel.multisigAddress}`,
+      );
+      // this should throw so it doesn't install receiver app in case of error
+      // will reject in caller function
+      await this.cfCoreService.installApp(appIdentityHash, senderChannel.multisigAddress);
+      this.log.info(
+        `Sender app ${appIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
+      );
+
       try {
         this.log.info(
           `Installing receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,

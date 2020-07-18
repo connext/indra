@@ -357,7 +357,9 @@ export class ConnextListener {
         break;
       }
       case GraphSignedTransferAppName: {
-        const initialState = appInstance.latestState as GraphSignedTransferAppState;
+        const initialState = bigNumberifyJson(
+          appInstance.latestState as GraphSignedTransferAppState,
+        );
         const { initiatorDepositAssetId: assetId, meta } = appInstance;
         const amount = initialState.coinTransfers[0].amount;
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
@@ -380,7 +382,9 @@ export class ConnextListener {
         break;
       }
       case SimpleSignedTransferAppName: {
-        const initialState = appInstance.latestState as SimpleSignedTransferAppState;
+        const initialState = bigNumberifyJson(
+          appInstance.latestState as SimpleSignedTransferAppState,
+        );
         const { initiatorDepositAssetId: assetId, meta } = appInstance;
         const amount = initialState.coinTransfers[0].amount;
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
@@ -401,7 +405,7 @@ export class ConnextListener {
         break;
       }
       case HashLockTransferAppName: {
-        const initialState = appInstance.latestState as HashLockTransferAppState;
+        const initialState = bigNumberifyJson(appInstance.latestState as HashLockTransferAppState);
         const { initiatorDepositAssetId: assetId, meta } = appInstance;
         const amount = initialState.coinTransfers[0].amount;
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
@@ -422,7 +426,9 @@ export class ConnextListener {
         break;
       }
       case SimpleLinkedTransferAppName: {
-        const initialState = appInstance.latestState as SimpleLinkedTransferAppState;
+        const initialState = bigNumberifyJson(
+          appInstance.latestState as SimpleLinkedTransferAppState,
+        );
         const { initiatorDepositAssetId: assetId, meta } = appInstance;
         const amount = initialState.coinTransfers[0].amount;
         this.log.info(
