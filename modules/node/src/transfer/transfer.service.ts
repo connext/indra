@@ -137,7 +137,7 @@ export class TransferService {
       return;
     }
 
-    // REQUIRE ONLINE SENDER AND RECEIVER INSTALL
+    // REQUIRE ONLINE SENDER INSTALL
     if (allowed === "RequireOnline") {
       this.log.info(
         `Installing sender app ${appIdentityHash} in channel ${senderChannel.multisigAddress}`,
@@ -148,23 +148,24 @@ export class TransferService {
       this.log.info(
         `Sender app ${appIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
       );
+    }
 
-      try {
-        this.log.info(
-          `Installing receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
-        );
-        await this.cfCoreService.installApp(
-          receiverProposeRes.appIdentityHash,
-          receiverChannel.multisigAddress,
-        );
-        this.log.info(
-          `Receiver app ${appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
-        );
-      } catch (e) {
-        this.log.error(`Error installing receiver app: ${e.message || e}`);
-        // cancel sender
-        // https://github.com/ConnextProject/indra/issues/942
-      }
+    // RECEIVER INSTALL
+    try {
+      this.log.info(
+        `Installing receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
+      );
+      await this.cfCoreService.installApp(
+        receiverProposeRes.appIdentityHash,
+        receiverChannel.multisigAddress,
+      );
+      this.log.info(
+        `Receiver app ${appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
+      );
+    } catch (e) {
+      this.log.error(`Error installing receiver app: ${e.message || e}`);
+      // cancel sender
+      // https://github.com/ConnextProject/indra/issues/942
     }
     this.log.info(`TransferAppInstallFlow for appIdentityHash ${appIdentityHash} complete`);
   }
