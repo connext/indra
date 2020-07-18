@@ -115,7 +115,7 @@ export class ConnextListener {
         (app: DefaultApp): boolean => app.appDefinitionAddress === appInstance.appDefinition,
       );
       // install and run post-install tasks
-      await this.runPostInstallTasks(appIdentityHash, registryAppInfo, appInstance);
+      await this.runPostInstallTasks(appIdentityHash, registryAppInfo, appInstance, msg.from);
       this.log.info(
         `handleAppProposal for app ${registryAppInfo.name} ${appIdentityHash} completed`,
       );
@@ -345,10 +345,15 @@ export class ConnextListener {
     appIdentityHash: string,
     registryAppInfo: DefaultApp,
     appInstance: AppInstanceJson,
+    from: string,
   ): Promise<void> => {
     this.log.info(`runPostInstallTasks for app ${registryAppInfo.name} ${appIdentityHash} started`);
     switch (registryAppInfo.name) {
       case WithdrawAppName: {
+        // withdraw actions only needed if we initiated the install on withdraw
+        if (from !== this.connext.publicIdentifier) {
+          break;
+        }
         const { appInstance } = (await this.connext.getAppInstance(appIdentityHash)) || {};
         if (!appInstance) {
           this.log.warn(`Could not fund app instance for node withdraw to respond to, ignoring.`);
