@@ -1,5 +1,5 @@
 import { AppInstanceJson } from "@connext/types";
-import { getRandomAddress, getRandomIdentifier, toBN, toBNJson } from "@connext/utils";
+import { toBN, toBNJson } from "@connext/utils";
 import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { getConnection } from "typeorm";
@@ -17,12 +17,14 @@ import {
   createAppInstanceJson,
   createChallengeUpdatedEventPayload,
   createConditionalTransactionCommitmentJSON,
-  createMinimalTransaction,
   createSetStateCommitmentJSON,
-  createStateChannelJSON,
   createStateProgressedEventPayload,
   createStoredAppChallenge,
+  createTestStateChannelJSONs,
   expect,
+  createTestChannel,
+  createTestChannelWithAppInstance,
+  createTestChallengeWithAppInstanceAndChannel,
 } from "../test/utils";
 import { ConfigService } from "../config/config.service";
 
@@ -31,139 +33,6 @@ import { CFCoreStore } from "./cfCore.store";
 import { ChallengeRepository, ProcessedBlockRepository } from "../challenge/challenge.repository";
 import { CacheModule } from "../caching/cache.module";
 import { CacheService } from "../caching/cache.service";
-
-const createTestStateChannelJSONs = (
-  nodeIdentifier: string,
-  userIdentifier: string = getRandomIdentifier(),
-  multisigAddress: string = getRandomAddress(),
-) => {
-  const channelJson = createStateChannelJSON({
-    multisigAddress,
-    userIdentifiers: [nodeIdentifier, userIdentifier],
-  });
-  const setupCommitment = createMinimalTransaction();
-  const freeBalanceUpdate = createSetStateCommitmentJSON({
-    appIdentityHash: channelJson.freeBalanceAppInstance!.identityHash,
-  });
-  return { channelJson, setupCommitment, freeBalanceUpdate };
-};
-
-const createTestChannel = async (
-  cfCoreStore: CFCoreStore,
-  nodeIdentifier: string,
-  userIdentifier: string = getRandomIdentifier(),
-  multisigAddress: string = getRandomAddress(),
-) => {
-  const { channelJson, setupCommitment, freeBalanceUpdate } = createTestStateChannelJSONs(
-    nodeIdentifier,
-    userIdentifier,
-    multisigAddress,
-  );
-  await cfCoreStore.createStateChannel(channelJson, setupCommitment, freeBalanceUpdate);
-
-  return { multisigAddress, userIdentifier, channelJson, setupCommitment, freeBalanceUpdate };
-};
-
-const createTestChannelWithAppInstance = async (
-  cfCoreStore: CFCoreStore,
-  nodeIdentifier: string,
-  userIdentifier: string = getRandomIdentifier(),
-  multisigAddress: string = getRandomAddress(),
-) => {
-  const { channelJson } = await createTestChannel(
-    cfCoreStore,
-    nodeIdentifier,
-    userIdentifier,
-    multisigAddress,
-  );
-
-  const appProposal = createAppInstanceJson({
-    appSeqNo: 2,
-    initiatorIdentifier: userIdentifier,
-    responderIdentifier: nodeIdentifier,
-    multisigAddress,
-  });
-  const setStateCommitment = createSetStateCommitmentJSON({
-    appIdentityHash: appProposal.identityHash,
-  });
-  const conditionalCommitment = createConditionalTransactionCommitmentJSON({
-    appIdentityHash: appProposal.identityHash,
-  });
-  await cfCoreStore.createAppProposal(
-    multisigAddress,
-    appProposal,
-    2,
-    setStateCommitment,
-    conditionalCommitment,
-  );
-
-  const appInstance = createAppInstanceJson({
-    identityHash: appProposal.identityHash,
-    multisigAddress,
-    initiatorIdentifier: userIdentifier,
-    responderIdentifier: nodeIdentifier,
-    appSeqNo: appProposal.appSeqNo,
-  });
-  const updatedFreeBalance: AppInstanceJson = {
-    ...channelJson.freeBalanceAppInstance!,
-    latestState: { appState: "updated" },
-  };
-  const freeBalanceUpdateCommitment = createSetStateCommitmentJSON({
-    appIdentityHash: channelJson.freeBalanceAppInstance!.identityHash,
-    versionNumber: toBNJson(100),
-  });
-  await cfCoreStore.createAppInstance(
-    multisigAddress,
-    appInstance,
-    updatedFreeBalance,
-    freeBalanceUpdateCommitment,
-  );
-
-  return {
-    multisigAddress,
-    userIdentifier,
-    channelJson,
-    appInstance,
-    updatedFreeBalance,
-    conditionalCommitment,
-    freeBalanceUpdateCommitment,
-  };
-};
-
-const createTestChallengeWithAppInstanceAndChannel = async (
-  cfCoreStore: CFCoreStore,
-  nodeIdentifier: string,
-  userIdentifierParam: string = getRandomAddress(),
-  multisigAddressParam: string = getRandomAddress(),
-) => {
-  const {
-    multisigAddress,
-    userIdentifier,
-    channelJson,
-    appInstance,
-    updatedFreeBalance,
-  } = await createTestChannelWithAppInstance(
-    cfCoreStore,
-    nodeIdentifier,
-    userIdentifierParam,
-    multisigAddressParam,
-  );
-
-  // add challenge
-  const challenge = createStoredAppChallenge({
-    identityHash: appInstance.identityHash,
-  });
-  await cfCoreStore.saveAppChallenge(challenge);
-
-  return {
-    challenge,
-    multisigAddress,
-    userIdentifier,
-    channelJson,
-    appInstance,
-    updatedFreeBalance,
-  };
-};
 
 describe("CFCoreStore", () => {
   let cfCoreStore: CFCoreStore;
