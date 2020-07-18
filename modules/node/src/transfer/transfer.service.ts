@@ -87,7 +87,6 @@ export class TransferService {
 
     const paymentId = proposeInstallParams.meta["paymentId"];
     const allowed = getTransferTypeFromAppName(transferType as SupportedApplicationNames);
-    // in the allow offline case, we want both receiver and sender apps to install in parallel
     // if allow offline, resolve after sender app install
     // if not, will be installed in middleware
     if (allowed === "AllowOffline") {
