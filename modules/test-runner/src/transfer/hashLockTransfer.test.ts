@@ -336,7 +336,6 @@ describe("HashLock Transfers", () => {
     const { paymentId } = await sendHashlockTransfer(clientA, clientB, opts);
 
     await new Promise((resolve) => provider.once("block", resolve));
-
     await expect(
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
