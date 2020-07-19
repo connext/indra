@@ -12,6 +12,13 @@ import {
   getTransferTypeFromAppName,
   SupportedApplicationNames,
   MethodResults,
+  HashLockTransferAppAction,
+  SimpleSignedTransferAppAction,
+  GraphSignedTransferAppAction,
+  SimpleLinkedTransferAppAction,
+  ConditionalTransferTypes,
+  PublicParams,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import {
   stringify,
@@ -38,6 +45,40 @@ import { TransferRepository } from "./transfer.repository";
 import { ConfigService } from "../config/config.service";
 
 const { Zero, HashZero } = constants;
+
+export const getCancelAction = (
+  transferType: ConditionalTransferTypes,
+):
+  | HashLockTransferAppAction
+  | SimpleSignedTransferAppAction
+  | GraphSignedTransferAppAction
+  | SimpleLinkedTransferAppAction => {
+  let action:
+    | HashLockTransferAppAction
+    | SimpleSignedTransferAppAction
+    | GraphSignedTransferAppAction
+    | SimpleLinkedTransferAppAction;
+  switch (transferType) {
+    case ConditionalTransferTypes.LinkedTransfer:
+    case ConditionalTransferTypes.HashLockTransfer: {
+      action = { preImage: HashZero } as HashLockTransferAppAction;
+      break;
+    }
+    case ConditionalTransferTypes.GraphTransfer: {
+      action = { responseCID: HashZero, signature: "0x" } as GraphSignedTransferAppAction;
+      break;
+    }
+    case ConditionalTransferTypes.SignedTransfer: {
+      action = { data: HashZero, signature: "0x" } as SimpleSignedTransferAppAction;
+      break;
+    }
+    default: {
+      const c: never = transferType;
+      this.log.error(`Unsupported conditionType ${c}`);
+    }
+  }
+  return action;
+};
 
 @Injectable()
 export class TransferService {
@@ -78,13 +119,13 @@ export class TransferService {
   // NOTE: designed to be called from the proposal event handler to enforce
   // receivers are online if needed
   async transferAppInstallFlow(
-    appIdentityHash: string,
+    senderAppIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
     senderChannel: Channel,
-    transferType: ConditionalTransferAppNames,
+    transferType: ConditionalTransferTypes,
   ): Promise<void> {
-    this.log.info(`Start transferAppInstallFlow for appIdentityHash ${appIdentityHash}`);
+    this.log.info(`Start transferAppInstallFlow for appIdentityHash ${senderAppIdentityHash}`);
 
     const paymentId = proposeInstallParams.meta["paymentId"];
     const allowed = getTransferTypeFromAppName(transferType as SupportedApplicationNames);
@@ -92,12 +133,12 @@ export class TransferService {
     // ALLOW OFFLINE SENDER INSTALL
     if (allowed === "AllowOffline") {
       this.log.info(
-        `Installing sender app ${appIdentityHash} in channel ${senderChannel.multisigAddress}`,
+        `Installing sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress}`,
       );
       // if errors, it will reject the sender's proposal in the calling function
-      await this.cfCoreService.installApp(appIdentityHash, senderChannel.multisigAddress);
+      await this.cfCoreService.installApp(senderAppIdentityHash, senderChannel.multisigAddress);
       this.log.info(
-        `Sender app ${appIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
+        `Sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
       );
     }
 
@@ -124,15 +165,16 @@ export class TransferService {
     } catch (e) {
       this.log.error(`Error proposing receiver app: ${e.message || e}`);
       if (allowed === "RequireOnline") {
-        // TODO: proposal might not exist at this point?
-        await this.cfCoreService.rejectInstallApp(
-          receiverProposeRes.appIdentityHash,
-          receiverChannel.multisigAddress,
-          `Receiver offline for transfer`,
-        );
+        if (receiverProposeRes?.appIdentityHash) {
+          await this.cfCoreService.rejectInstallApp(
+            receiverProposeRes.appIdentityHash,
+            receiverChannel.multisigAddress,
+            `Receiver offline for transfer`,
+          );
+        }
       }
       this.log.warn(
-        `TransferAppInstallFlow for appIdentityHash ${appIdentityHash} complete, receiver was offline`,
+        `TransferAppInstallFlow for appIdentityHash ${senderAppIdentityHash} complete, receiver was offline`,
       );
       return;
     }
@@ -140,34 +182,52 @@ export class TransferService {
     // REQUIRE ONLINE SENDER INSTALL
     if (allowed === "RequireOnline") {
       this.log.info(
-        `Installing sender app ${appIdentityHash} in channel ${senderChannel.multisigAddress}`,
+        `Installing sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress}`,
       );
       // this should throw so it doesn't install receiver app in case of error
       // will reject in caller function
-      await this.cfCoreService.installApp(appIdentityHash, senderChannel.multisigAddress);
+      await this.cfCoreService.installApp(senderAppIdentityHash, senderChannel.multisigAddress);
       this.log.info(
-        `Sender app ${appIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
+        `Sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
       );
     }
 
     // RECEIVER INSTALL
     try {
-      this.log.info(
-        `Installing receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
-      );
-      await this.cfCoreService.installApp(
-        receiverProposeRes.appIdentityHash,
-        receiverChannel.multisigAddress,
-      );
-      this.log.info(
-        `Receiver app ${appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
-      );
+      if (receiverProposeRes?.appIdentityHash) {
+        this.log.info(
+          `Installing receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
+        );
+        await this.cfCoreService.installApp(
+          receiverProposeRes.appIdentityHash,
+          receiverChannel.multisigAddress,
+        );
+        this.log.info(
+          `Receiver app ${senderAppIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
+        );
+      }
     } catch (e) {
       this.log.error(`Error installing receiver app: ${e.message || e}`);
-      // cancel sender
-      // https://github.com/ConnextProject/indra/issues/942
+      if (allowed === "RequireOnline") {
+        // cancel sender
+        // https://github.com/ConnextProject/indra/issues/942
+        this.log.warn(`Canceling sender payment`);
+        await this.cfCoreService.uninstallApp(
+          senderAppIdentityHash,
+          senderChannel.multisigAddress,
+          getCancelAction(transferType),
+        );
+        this.log.warn(`Sender payment canceled`);
+        if (receiverProposeRes?.appIdentityHash) {
+          await this.cfCoreService.rejectInstallApp(
+            receiverProposeRes.appIdentityHash,
+            receiverChannel.multisigAddress,
+            `Receiver offline for transfer`,
+          );
+        }
+      }
     }
-    this.log.info(`TransferAppInstallFlow for appIdentityHash ${appIdentityHash} complete`);
+    this.log.info(`TransferAppInstallFlow for appIdentityHash ${senderAppIdentityHash} complete`);
   }
 
   async proposeReceiverAppByPaymentId(

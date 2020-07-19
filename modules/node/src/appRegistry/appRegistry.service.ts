@@ -23,6 +23,7 @@ import {
   SupportedApplicationNames,
   AppState,
   HashLockTransferAppAction,
+  ConditionalTransferTypes,
 } from "@connext/types";
 import { getAddressFromAssetId, safeJsonStringify, toBN } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
@@ -89,7 +90,7 @@ export class AppRegistryService implements OnModuleInit {
       // TODO: break into flows for deposit, withdraw, swap, and transfers
       if (
         Object.values(ConditionalTransferAppNames).includes(
-          registryAppInfo.name as ConditionalTransferAppNames,
+          registryAppInfo.name as ConditionalTransferTypes,
         )
       ) {
         await this.transferService.transferAppInstallFlow(
@@ -97,7 +98,7 @@ export class AppRegistryService implements OnModuleInit {
           proposeInstallParams,
           from,
           installerChannel,
-          registryAppInfo.name as ConditionalTransferAppNames,
+          registryAppInfo.name as ConditionalTransferTypes,
         );
         return;
       }
