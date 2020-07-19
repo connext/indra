@@ -201,7 +201,7 @@ export class TransferService {
           receiverChannel.multisigAddress,
         );
         this.log.info(
-          `Receiver app ${senderAppIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
+          `Receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
         );
       }
     } catch (e) {
@@ -277,7 +277,12 @@ export class TransferService {
         amount: receiverAmount,
         assetId: receiverAssetId,
       };
-      this.log.warn(`Found existing transfer app, returning: ${stringify(result)}`);
+      this.log.warn(
+        `Found existing transfer app, returning: ${stringify({
+          ...result,
+          appType: existing.type,
+        })}`,
+      );
       return { ...result, appType: existing.type };
     }
 
@@ -394,10 +399,18 @@ export class TransferService {
       receiverChannel,
     );
 
-    await this.cfCoreService.installApp(
-      proposeRes.appIdentityHash,
-      receiverChannel.multisigAddress,
-    );
+    if (proposeRes?.appIdentityHash && proposeRes?.appType === AppType.PROPOSAL) {
+      this.log.info(
+        `Installing receiver app ${proposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
+      );
+      await this.cfCoreService.installApp(
+        proposeRes.appIdentityHash,
+        receiverChannel.multisigAddress,
+      );
+      this.log.info(
+        `Receiver app ${proposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
+      );
+    }
 
     return {
       amount: senderApp.latestState.coinTransfers[0].amount,

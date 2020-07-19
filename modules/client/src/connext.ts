@@ -720,9 +720,18 @@ export class ConnextClient implements IConnextClient {
   };
 
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
+    let installedTransfers: NodeResponses.GetPendingAsyncTransfers;
+    const appInstances = await this.getAppInstances();
+    for (const app of appInstances) {
+      if (app.meta.recipient === this.publicIdentifier) {
+        this.log.info(`Found transfer to unlock: ${app.meta.paymentId}`);
+        await this.reclaimPendingAsyncTransfer(app.meta.paymentId, app.meta.encryptedPreImage);
+        this.log.info(`Unlocked transfer: ${app.meta.paymentId}`);
+      }
+    }
     try {
       this.log.info(`Attempting to install pending transfers`);
-      const installedTransfers = await this.node.installPendingTransfers();
+      installedTransfers = await this.node.installPendingTransfers();
       this.log.info(
         `Installed ${installedTransfers.length} transfers, should unlock automatically`,
       );
