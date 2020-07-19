@@ -94,7 +94,7 @@ export class TransferService {
       this.log.info(
         `Installing sender app ${appIdentityHash} in channel ${senderChannel.multisigAddress}`,
       );
-      // if errors, it will reject in the calling function
+      // if errors, it will reject the sender's proposal in the calling function
       await this.cfCoreService.installApp(appIdentityHash, senderChannel.multisigAddress);
       this.log.info(
         `Sender app ${appIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
@@ -131,7 +131,7 @@ export class TransferService {
           `Receiver offline for transfer`,
         );
       }
-      this.log.info(
+      this.log.warn(
         `TransferAppInstallFlow for appIdentityHash ${appIdentityHash} complete, receiver was offline`,
       );
       return;
