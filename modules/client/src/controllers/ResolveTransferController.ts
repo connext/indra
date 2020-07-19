@@ -80,23 +80,6 @@ export class ResolveTransferController extends AbstractController {
         .coinTransfers[0].amount;
       assetId = existingReceiverApp.outcomeInterpreterParameters["tokenAddress"];
       meta = existingReceiverApp.meta;
-    } else if (existingReceiverAppProposal) {
-      try {
-        this.log.debug(
-          `[${paymentId}] Found existing transfer proposal, proceeding with install of ${
-            existingReceiverAppProposal.identityHash
-          } using state: ${JSON.stringify(existingReceiverAppProposal.latestState)}`,
-        );
-        await this.connext.installApp(existingReceiverAppProposal.identityHash);
-        appIdentityHash = existingReceiverAppProposal.identityHash;
-        amount = (existingReceiverAppProposal.latestState as GenericConditionalTransferAppState)
-          .coinTransfers[0].amount;
-        assetId = existingReceiverAppProposal.outcomeInterpreterParameters["tokenAddress"];
-        meta = existingReceiverAppProposal.meta;
-      } catch (e) {
-        emitFailureEvent(e);
-        throw e;
-      }
     } else {
       try {
         // App is not installed

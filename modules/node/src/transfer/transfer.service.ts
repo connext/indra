@@ -17,8 +17,6 @@ import {
   GraphSignedTransferAppAction,
   SimpleLinkedTransferAppAction,
   ConditionalTransferTypes,
-  PublicParams,
-  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import {
   stringify,
@@ -26,7 +24,7 @@ import {
   calculateExchangeWad,
   toBN,
 } from "@connext/utils";
-import { TRANSFER_TIMEOUT, MINIMUM_APP_TIMEOUT } from "@connext/apps";
+import { MINIMUM_APP_TIMEOUT } from "@connext/apps";
 import { Interval } from "@nestjs/schedule";
 import { constants } from "ethers";
 import { isEqual } from "lodash";
@@ -147,7 +145,7 @@ export class TransferService {
     }
 
     // RECEIVER PROPOSAL
-    let receiverProposeRes: MethodResults.ProposeInstall;
+    let receiverProposeRes: MethodResults.ProposeInstall & { appType: AppType };
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       proposeInstallParams.meta.recipient,
     );
@@ -194,7 +192,7 @@ export class TransferService {
 
     // RECEIVER INSTALL
     try {
-      if (receiverProposeRes?.appIdentityHash) {
+      if (receiverProposeRes?.appIdentityHash && receiverProposeRes?.appType === AppType.PROPOSAL) {
         this.log.info(
           `Installing receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
         );
@@ -239,7 +237,7 @@ export class TransferService {
     meta: any = {},
     transferType: ConditionalTransferAppNames,
     receiverChannel?: Channel,
-  ): Promise<MethodResults.ProposeInstall> {
+  ): Promise<MethodResults.ProposeInstall & { appType: AppType }> {
     this.log.info(
       `installReceiverAppByPaymentId for ${receiverIdentifier} paymentId ${paymentId} started`,
     );
@@ -280,7 +278,7 @@ export class TransferService {
         assetId: receiverAssetId,
       };
       this.log.warn(`Found existing transfer app, returning: ${stringify(result)}`);
-      return result;
+      return { ...result, appType: existing.type };
     }
 
     const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
@@ -345,7 +343,7 @@ export class TransferService {
       stateEncoding,
     } = this.cfCoreService.getAppInfoByName(transferType as SupportedApplicationNames);
 
-    return this.cfCoreService.proposeInstallApp({
+    const res = await this.cfCoreService.proposeInstallApp({
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -363,6 +361,7 @@ export class TransferService {
       defaultTimeout: MINIMUM_APP_TIMEOUT,
       stateTimeout: Zero,
     });
+    return { ...res, appType: AppType.PROPOSAL };
   }
 
   async resolveByPaymentId(
