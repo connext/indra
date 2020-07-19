@@ -34,7 +34,7 @@ import {
 const { AddressZero } = constants;
 const { hexlify, randomBytes } = utils;
 
-describe("Graph Signed Transfers", () => {
+describe.only("Graph Signed Transfers", () => {
   let privateKeyA: PrivateKey;
   let clientA: IConnextClient;
   let privateKeyB: PrivateKey;
@@ -143,8 +143,6 @@ describe("Graph Signed Transfers", () => {
 
     const eventData = await unlockedPromise;
     await uninstalledPromise;
-
-    console.log(`UNLOCKED`);
 
     expect(eventData).to.deep.contain({
       amount: transfer.amount,
