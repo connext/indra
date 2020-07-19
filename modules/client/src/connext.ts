@@ -723,7 +723,7 @@ export class ConnextClient implements IConnextClient {
     let installedTransfers: NodeResponses.GetPendingAsyncTransfers;
     const appInstances = await this.getAppInstances();
     for (const app of appInstances) {
-      if (app.meta.recipient === this.publicIdentifier) {
+      if (app.meta?.recipient === this.publicIdentifier && app.meta?.encryptedPreImage) {
         this.log.info(`Found transfer to unlock: ${app.meta.paymentId}`);
         await this.reclaimPendingAsyncTransfer(app.meta.paymentId, app.meta.encryptedPreImage);
         this.log.info(`Unlocked transfer: ${app.meta.paymentId}`);
