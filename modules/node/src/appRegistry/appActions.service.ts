@@ -27,7 +27,7 @@ export class AppActionsService {
     private readonly transferService: TransferService,
     private readonly withdrawRepository: WithdrawRepository,
   ) {
-    this.log.setContext("AppRegistryService");
+    this.log.setContext("AppActionsService");
   }
 
   async handleAppAction(
@@ -95,10 +95,7 @@ export class AppActionsService {
     await this.withdrawService.submitWithdrawToChain(appInstance.multisigAddress, tx);
   }
 
-  private async handleTransferAppAction(
-    senderApp: AppInstance<any>,
-    action: AppAction,
-  ): Promise<void> {
+  private async handleTransferAppAction(senderApp: AppInstance, action: AppAction): Promise<void> {
     // App could be uninstalled, which means the channel is no longer
     // associated with this app instance
     if (senderApp.type !== AppType.INSTANCE) {

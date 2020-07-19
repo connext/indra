@@ -409,7 +409,7 @@ export class ConnextListener {
             timelock: meta["timelock"],
           } as CreatedHashLockTransferMeta,
           type: ConditionalTransferTypes.HashLockTransfer,
-          paymentId: initialState.lockHash,
+          paymentId: meta["paymentId"],
           recipient: meta["recipient"],
         } as EventPayloads.HashLockTransferCreated);
         break;
