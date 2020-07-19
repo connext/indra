@@ -38,6 +38,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
       action,
       stateTimeout,
+      initiatorIdentifier,
     } = params as ProtocolParams.TakeAction;
 
     if (!preProtocolStateChannel) {
@@ -67,12 +68,10 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
       await preAppInstance.computeStateTransition(
+        getSignerAddressFromPublicIdentifier(initiatorIdentifier),
         action,
         network.provider,
-        getPureBytecode(
-          preAppInstance.appDefinition,
-          network.contractAddresses,
-        ),
+        getPureBytecode(preAppInstance.appDefinition, network.contractAddresses),
       ),
       stateTimeout,
     );
@@ -200,12 +199,10 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
       await preAppInstance.computeStateTransition(
+        getSignerAddressFromPublicIdentifier(initiatorIdentifier),
         action,
         network.provider,
-        getPureBytecode(
-          preAppInstance.appDefinition,
-          network.contractAddresses,
-        ),
+        getPureBytecode(preAppInstance.appDefinition, network.contractAddresses),
       ),
       stateTimeout,
     );

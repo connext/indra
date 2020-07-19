@@ -16,7 +16,6 @@ import { LoggerService } from "../logger/logger.service";
 import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { ChannelRepository } from "../channel/channel.repository";
-import { stringify } from "@connext/utils";
 
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
@@ -196,6 +195,7 @@ export default class ListenerService implements OnModuleInit {
         action as AppAction,
       );
     }
+
     const assetIdResponder = (
       await this.appInstanceRepository.findByIdentityHashOrThrow(data.data.appIdentityHash)
     ).responderDepositAssetId;
