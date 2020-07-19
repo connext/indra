@@ -122,7 +122,7 @@ describe("Node method follows spec - takeAction", () => {
             result: {
               result: { newState },
             },
-          } = await nodeA.rpcRouter.dispatch(takeActionReq);
+          } = await nodeB.rpcRouter.dispatch(takeActionReq);
           // allow nodeA to confirm its messages
           await new Promise((resolve) => {
             nodeA.once(EventNames.UPDATE_STATE_EVENT, () => {

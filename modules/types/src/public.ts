@@ -123,7 +123,7 @@ type ResolveSignedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.SignedTransfer;
   paymentId: Bytes32;
   data: Bytes32;
-  signature: SignatureString;
+  signature?: SignatureString;
 };
 
 type ResolveSignedTransferResponse = {
@@ -160,7 +160,7 @@ type ResolveGraphSignedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.GraphTransfer;
   paymentId: Bytes32;
   responseCID: Bytes32;
-  signature: SignatureString;
+  signature?: SignatureString;
 };
 
 type ResolveGraphSignedTransferResponse = {

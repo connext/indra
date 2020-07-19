@@ -48,6 +48,15 @@ export class ResolveTransferController extends AbstractController {
       return;
     };
 
+    // Extract the secret object from the params;
+    if (!this.hasSecret(params)) {
+      const error = new Error(
+        `Cannot resolve payment without providing a secret. Params: ${stringify(params)}`,
+      );
+      emitFailureEvent(error);
+      throw error;
+    }
+
     // Install app with receiver
     let appIdentityHash: string;
     let amount: BigNumber;
@@ -210,4 +219,32 @@ export class ResolveTransferController extends AbstractController {
     this.log.info(`[${paymentId}] resolveCondition complete: ${stringify(result)}`);
     return result;
   };
+
+  // Helper functions
+  private hasSecret(params: PublicParams.ResolveCondition): boolean {
+    const { conditionType, paymentId } = params;
+    switch (conditionType) {
+      case ConditionalTransferTypes.HashLockTransfer: {
+        const { preImage } = params as PublicParams.ResolveHashLockTransfer;
+        return !!preImage;
+      }
+      case ConditionalTransferTypes.GraphTransfer: {
+        const { responseCID, signature } = params as PublicParams.ResolveGraphTransfer;
+        return !!responseCID && !!signature;
+      }
+      case ConditionalTransferTypes.SignedTransfer: {
+        const { data, signature } = params as PublicParams.ResolveSignedTransfer;
+        return !!data && !!signature;
+      }
+      case ConditionalTransferTypes.LinkedTransfer: {
+        const { preImage } = params as PublicParams.ResolveLinkedTransfer;
+        return !!preImage;
+      }
+      default: {
+        const c: never = conditionType;
+        this.log.error(`[${paymentId}] Unsupported conditionType ${c}`);
+      }
+    }
+    throw new Error(`Invalid condition type: ${conditionType}`);
+  }
 }

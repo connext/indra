@@ -21,10 +21,12 @@ import {
   getTransferTypeFromAppName,
   DefaultApp,
   SupportedApplicationNames,
+  AppState,
+  HashLockTransferAppAction,
 } from "@connext/types";
-import { getAddressFromAssetId } from "@connext/utils";
+import { getAddressFromAssetId, safeJsonStringify, toBN } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { BigNumber, providers } from "ethers";
+import { BigNumber, providers, constants } from "ethers";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -37,6 +39,8 @@ import { LoggerService } from "../logger/logger.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { TransferService } from "../transfer/transfer.service";
+
+const { HashZero } = constants;
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -381,14 +385,18 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    // double check that the app was uninstalled
-    if (receiverApp.type !== AppType.UNINSTALLED) {
-      throw new Error(`Receiver app was unable to be uninstalled`);
+    // double check that receiver app state has not been finalized
+    // only allow sender uninstall prior to receiver uninstall IFF the hub
+    // has not paid receiver. Receiver app will be uninstalled again on event
+    if (
+      toBN(senderAppLatestState.coinTransfers[1].amount).isZero() && // not reclaimed
+      toBN(receiverApp.latestState.coinTransfers[0].amount).isZero() // finalized
+    ) {
+      throw new Error(
+        `Cannot uninstall unfinalized sender app, receiver app has payment has been completed`,
+      );
     }
 
-    if (!senderAppLatestState.finalized && receiverApp.latestState.finalized) {
-      throw new Error(`Cannot uninstall unfinalized sender app, receiver app has been finalized`);
-    }
     this.log.info(`Finished uninstallTransferMiddleware for ${appInstance.identityHash}`);
   };
 
