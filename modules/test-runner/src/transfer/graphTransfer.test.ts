@@ -34,7 +34,7 @@ import {
 const { AddressZero } = constants;
 const { hexlify, randomBytes } = utils;
 
-describe.only("Graph Signed Transfers", () => {
+describe("Graph Signed Transfers", () => {
   let privateKeyA: PrivateKey;
   let clientA: IConnextClient;
   let privateKeyB: PrivateKey;
