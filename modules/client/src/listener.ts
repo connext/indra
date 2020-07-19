@@ -354,10 +354,6 @@ export class ConnextListener {
         if (from !== this.connext.publicIdentifier) {
           break;
         }
-        const { appInstance } = (await this.connext.getAppInstance(appIdentityHash)) || {};
-        if (!appInstance) {
-          this.log.warn(`Could not fund app instance for node withdraw to respond to, ignoring.`);
-        }
         await this.connext.respondToNodeWithdraw(appInstance);
         break;
       }
