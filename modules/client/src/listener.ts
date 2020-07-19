@@ -362,95 +362,93 @@ export class ConnextListener {
         break;
       }
       case GraphSignedTransferAppName: {
-        const initialState = bigNumberifyJson(
-          appInstance.latestState as GraphSignedTransferAppState,
-        );
-        const { initiatorDepositAssetId: assetId, meta } = appInstance;
-        const amount = initialState.coinTransfers[0].amount;
+        const initialState =
+          appInstance && bigNumberifyJson(appInstance.latestState as GraphSignedTransferAppState);
+        const { initiatorDepositAssetId: assetId, meta } = appInstance || {};
+        const amount = initialState?.coinTransfers[0].amount;
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
           appIdentityHash,
           assetId,
           meta,
-          sender: meta["sender"],
+          sender: meta?.sender,
           transferMeta: {
-            signerAddress: initialState.signerAddress,
-            chainId: initialState.chainId,
-            verifyingContract: initialState.verifyingContract,
-            requestCID: initialState.requestCID,
-            subgraphDeploymentID: initialState.subgraphDeploymentID,
+            signerAddress: initialState?.signerAddress,
+            chainId: initialState?.chainId,
+            verifyingContract: initialState?.verifyingContract,
+            requestCID: initialState?.requestCID,
+            subgraphDeploymentID: initialState?.subgraphDeploymentID,
           } as CreatedGraphSignedTransferMeta,
           type: ConditionalTransferTypes.GraphTransfer,
-          paymentId: initialState.paymentId,
-          recipient: meta["recipient"],
+          paymentId: initialState?.paymentId,
+          recipient: meta?.recipient,
         } as EventPayloads.GraphTransferCreated);
         break;
       }
       case SimpleSignedTransferAppName: {
-        const initialState = bigNumberifyJson(
-          appInstance.latestState as SimpleSignedTransferAppState,
-        );
-        const { initiatorDepositAssetId: assetId, meta } = appInstance;
-        const amount = initialState.coinTransfers[0].amount;
+        const initialState =
+          appInstance && bigNumberifyJson(appInstance.latestState as SimpleSignedTransferAppState);
+        const { initiatorDepositAssetId: assetId, meta } = appInstance || {};
+        const amount = initialState?.coinTransfers[0].amount;
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
           appIdentityHash,
           assetId,
           meta,
-          sender: meta["sender"],
+          sender: meta?.sender,
           transferMeta: {
-            signerAddress: initialState.signerAddress,
-            chainId: initialState.chainId,
-            verifyingContract: initialState.verifyingContract,
+            signerAddress: initialState?.signerAddress,
+            chainId: initialState?.chainId,
+            verifyingContract: initialState?.verifyingContract,
           } as CreatedSignedTransferMeta,
           type: ConditionalTransferTypes.SignedTransfer,
-          paymentId: initialState.paymentId,
-          recipient: meta["recipient"],
+          paymentId: initialState?.paymentId,
+          recipient: meta?.recipient,
         } as EventPayloads.SignedTransferCreated);
         break;
       }
       case HashLockTransferAppName: {
-        const initialState = bigNumberifyJson(appInstance.latestState as HashLockTransferAppState);
-        const { initiatorDepositAssetId: assetId, meta } = appInstance;
-        const amount = initialState.coinTransfers[0].amount;
+        const initialState =
+          appInstance && bigNumberifyJson(appInstance.latestState as HashLockTransferAppState);
+        const { initiatorDepositAssetId: assetId, meta } = appInstance || {};
+        const amount = initialState?.coinTransfers[0].amount;
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
           appIdentityHash,
           assetId,
           meta,
-          sender: meta["sender"],
+          sender: meta?.sender,
           transferMeta: {
-            lockHash: initialState.lockHash,
-            expiry: initialState.expiry,
-            timelock: meta["timelock"],
+            lockHash: initialState?.lockHash,
+            expiry: initialState?.expiry,
+            timelock: meta?.timelock,
           } as CreatedHashLockTransferMeta,
           type: ConditionalTransferTypes.HashLockTransfer,
-          paymentId: meta["paymentId"],
-          recipient: meta["recipient"],
+          paymentId: meta?.paymentId,
+          recipient: meta?.recipient,
         } as EventPayloads.HashLockTransferCreated);
         break;
       }
       case SimpleLinkedTransferAppName: {
-        const initialState = bigNumberifyJson(
-          appInstance.latestState as SimpleLinkedTransferAppState,
-        );
-        const { initiatorDepositAssetId: assetId, meta } = appInstance;
-        const amount = initialState.coinTransfers[0].amount;
+        const initialState =
+          appInstance && bigNumberifyJson(appInstance.latestState as SimpleLinkedTransferAppState);
+        const { initiatorDepositAssetId: assetId, meta } = appInstance || {};
+        const amount = initialState?.coinTransfers[0].amount;
         this.log.info(
-          `Emitting event CONDITIONAL_TRANSFER_CREATED_EVENT for paymentId ${meta["paymentId"]}`,
+          `Emitting event CONDITIONAL_TRANSFER_CREATED_EVENT for paymentId ${meta?.paymentId}`,
         );
         this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
           amount,
           appIdentityHash,
           assetId,
           meta,
-          sender: meta["sender"],
+          sender: meta?.sender,
           transferMeta: {
-            encryptedPreImage: meta["encryptedPreImage"],
+            encryptedPreImage: meta?.encryptedPreImage,
           } as CreatedLinkedTransferMeta,
           type: ConditionalTransferTypes.LinkedTransfer,
-          paymentId: meta["paymentId"],
-          recipient: meta["recipient"],
+          paymentId: meta?.paymentId,
+          recipient: meta?.recipient,
         } as EventPayloads.LinkedTransferCreated);
         break;
       }
