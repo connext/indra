@@ -80,7 +80,9 @@ export class ConfigService implements OnModuleInit {
   }
 
   getSupportedChains(): number[] {
-    return Object.keys(JSON.parse(this.get("INDRA_CHAIN_PROVIDERS"))).map((k) => parseInt(k, 10));
+    return (
+      Object.keys(JSON.parse(this.get("INDRA_CHAIN_PROVIDERS"))).map((k) => parseInt(k, 10)) || []
+    );
   }
 
   async getNetwork(chainId: number): Promise<providers.Network> {

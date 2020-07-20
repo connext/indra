@@ -69,7 +69,7 @@ export const createStateChannelJSON = (
       ProxyFactory: getRandomAddress(),
     },
     appInstances: [],
-    chainId: null, // must be provided by overrides
+    chainId: 1337,
     monotonicNumProposedApps: 0,
     multisigAddress: getRandomAddress(),
     proposedAppInstances: [],
