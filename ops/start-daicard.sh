@@ -39,6 +39,17 @@ services:
       - '4222:4222'
     volumes:
       - 'certs:/etc/letsencrypt'
+
+  webserver:
+    image: '$webserver_image'
+    entrypoint: 'npm start'
+    environment:
+      NODE_ENV: 'development'
+    networks:
+      - '$project'
+    volumes:
+      - '$root:/root'
+    working_dir: '$webserver_working_dir'
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project

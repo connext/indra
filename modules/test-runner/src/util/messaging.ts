@@ -219,7 +219,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       getSignature: (nonce: string) => Promise<string>,
     ): Promise<string> => {
       try {
-        const authUrl = `${this.options.nodeUrl.replace(/\/api$/, "")}/api/auth`;
+        const authUrl = `${this.options.nodeUrl}/auth`;
         const nonce = await axios.get(`${authUrl}/${userIdentifier}`);
         const sig = await getSignature(nonce.data);
         const bearerToken: AxiosResponse<string> = await axios.post(

@@ -5,7 +5,7 @@ import { LoggerService } from "../logger/logger.service";
 import { VerifyNonceDto } from "./auth.dto";
 import { AuthService } from "./auth.service";
 
-@Controller("api/auth")
+@Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService, private readonly log: LoggerService) {
     this.log.setContext("AuthController");

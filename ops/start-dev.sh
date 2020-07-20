@@ -56,7 +56,6 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 nats_port=4222
 node_port=8080
 dash_port=9999
-webserver_port=3000
 
 # database connection settings
 pg_db="$project"
@@ -70,44 +69,12 @@ nats_ws_port="4221"
 
 # docker images
 builder_image="${project}_builder"
-webserver_image="$builder_image"
 database_image="${project}_database"
 ethprovider_image="$builder_image"
 nats_image="provide/nats-server:indra"
 node_image="$builder_image"
 proxy_image="${project}_proxy"
 redis_image="redis:5-alpine"
-
-####################
-# Configure UI
-
-if [[ "$INDRA_UI" == "headless" ]]
-then
-  webserver_service=""
-  webserver_url="localhost:80"
-else
-  if [[ "$INDRA_UI" == "dashboard" ]]
-  then webserver_working_dir=/root/modules/dashboard
-  elif [[ "$INDRA_UI" == "daicard" ]]
-  then webserver_working_dir=/root/modules/daicard
-  else
-    echo "INDRA_UI: Expected headless, dashboard, or daicard"
-    exit 1
-  fi
-  webserver_url="webserver:3000"
-  webserver_services="
-  webserver:
-    image: '$webserver_image'
-    entrypoint: 'npm start'
-    environment:
-      NODE_ENV: 'development'
-    networks:
-      - '$project'
-    volumes:
-      - '$root:/root'
-    working_dir: '$webserver_working_dir'
-  "
-fi
 
 ####################
 # Make sure images are pulled & external secrets are created
@@ -170,9 +137,6 @@ volumes:
   database_dev:
 
 services:
-
-  $webserver_services
-
   proxy:
     image: '$proxy_image'
     environment:
@@ -180,7 +144,6 @@ services:
       MESSAGING_TCP_URL: 'nats:4222'
       MESSAGING_WS_URL: 'nats:4221'
       NODE_URL: 'node:8080'
-      WEBSERVER_URL: '$webserver_url'
     networks:
       - '$project'
     ports:
