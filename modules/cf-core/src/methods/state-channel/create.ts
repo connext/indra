@@ -29,14 +29,14 @@ export class CreateChannelController extends MethodController {
 
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockName(
+  protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: MethodParams.CreateChannel,
-  ): Promise<string> {
+  ): Promise<string[]> {
     if (!params.owners) {
       throw new Error(`No owners provided in params. ${stringify(params)}`);
     }
-    return `${MethodNames.chan_create}:${params.owners.sort().toString()}`;
+    return [`${MethodNames.chan_create}:${params.owners.sort().toString()}`];
   }
 
   protected async executeMethodImplementation(
