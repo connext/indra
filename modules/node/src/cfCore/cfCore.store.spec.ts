@@ -366,6 +366,14 @@ describe("CFCoreStore", () => {
         const channelEntity = await channelRepository.findByMultisigAddressOrThrow(multisigAddress);
         expect(channelEntity.appInstances.length).to.equal(1);
 
+        // verify app commitments are also removed
+        const conditional = await cfCoreStore.getConditionalTransactionCommitment(
+          appInstance.identityHash,
+        );
+        expect(conditional).to.be.undefined;
+        const setState = await cfCoreStore.getSetStateCommitments(appInstance.identityHash);
+        expect(setState).to.be.deep.eq([]);
+
         const channel = await cfCoreStore.getStateChannel(multisigAddress);
         expect(channel.appInstances.length).to.equal(0);
         expect(channel).to.containSubset({
