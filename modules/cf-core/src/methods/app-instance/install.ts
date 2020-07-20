@@ -110,7 +110,7 @@ export class InstallAppInstanceController extends MethodController {
     const msg = {
       from: publicIdentifier,
       type: EventNames.INSTALL_EVENT,
-      data: { appIdentityHash: params.appIdentityHash },
+      data: { appIdentityHash: params.appIdentityHash, appInstance: returnValue.appInstance },
     } as InstallMessage;
 
     await router.emit(msg.type, msg, `outgoing`);

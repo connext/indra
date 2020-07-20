@@ -23,7 +23,7 @@ describe("Withdrawal", () => {
   let tokenAddress: string;
 
   beforeEach(async () => {
-    client = await createClient();
+    client = await createClient({ id: "A" });
     tokenAddress = client.config.contractAddresses.Token!;
   });
 

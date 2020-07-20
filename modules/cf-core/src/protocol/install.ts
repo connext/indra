@@ -290,6 +290,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         },
       ),
       stateChannelAfter,
+      newAppInstance,
     ] as any;
 
     // 272ms

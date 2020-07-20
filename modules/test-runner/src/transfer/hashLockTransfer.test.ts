@@ -8,7 +8,13 @@ import {
   PublicParams,
   ConditionalTransferCreatedEventData,
 } from "@connext/types";
-import { getRandomBytes32, getChainId, delay, stringify } from "@connext/utils";
+import {
+  getRandomBytes32,
+  getChainId,
+  delay,
+  stringify,
+  getRandomIdentifier,
+} from "@connext/utils";
 import { BigNumber, providers, constants, utils } from "ethers";
 
 import {
@@ -232,6 +238,37 @@ describe("HashLock Transfers", () => {
     await waitForResolve(clientA, clientB, opts);
 
     await assertPostTransferBalances(clientA, clientB, opts);
+  });
+
+  it("transfer is cancelled if receiver is offline", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const preImage = getRandomBytes32();
+    const timelock = (5000).toString();
+
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+
+    // Create transfer parameters
+    const expiry = BigNumber.from(timelock).add(await provider.getBlockNumber());
+    const lockHash = soliditySha256(["bytes32"], [preImage]);
+
+    // return promise with [sender ret, receiver event data]
+    // sender result
+    clientB.messaging.disconnect();
+    clientB.off();
+    await expect(
+      clientA.conditionalTransfer({
+        amount: transfer.amount.toString(),
+        conditionType: ConditionalTransferTypes.HashLockTransfer,
+        lockHash,
+        timelock: expiry,
+        assetId: transfer.assetId,
+        meta: { foo: "bar", sender: clientA.publicIdentifier },
+        recipient: clientB.publicIdentifier,
+      }),
+    ).to.be.rejected;
+
+    const fb = await clientA.getFreeBalance(transfer.assetId);
+    expect(fb[clientA.signerAddress]).to.eq(transfer.amount);
   });
 
   it("gets a pending hashlock transfer by lock hash", async () => {

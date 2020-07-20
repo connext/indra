@@ -19,6 +19,7 @@ import { RequestHandler } from "../request-handler";
 import { RpcRouter } from "../rpc-router";
 import { StateChannel, AppInstance } from "../models";
 import { generateProtocolMessageData } from "../protocol/utils";
+import { getOutgoingEventFailureDataFromProtocol } from "../machine/protocol-runner";
 
 /**
  * Forwards all received Messages that are for the machine's internal
@@ -63,6 +64,8 @@ export async function handleReceivedProtocolMessage(
       messageForCounterparty.data.to,
       messageForCounterparty,
     );
+    const outgoingData = getOutgoingEventFailureDataFromProtocol(protocol, params!, e);
+    await emitOutgoingMessage(router, outgoingData);
     return;
   }
 
@@ -110,6 +113,7 @@ function getOutgoingEventDataFromProtocol(
         type: EventNames.INSTALL_EVENT,
         data: {
           appIdentityHash: (params as ProtocolParams.Install).proposal.identityHash,
+          appInstance: appContext?.toJson(),
         },
       } as ProtocolEventMessage<typeof EventNames.INSTALL_EVENT>;
     }
