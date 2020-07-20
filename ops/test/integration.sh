@@ -30,6 +30,12 @@ chain_id_1=1337; chain_id_2=1338
 
 providers_file="$root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json"
 addresses_file="$root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json"
+if [[ "$mode" == "staging" ]]
+then 
+  mkdir -p $providers_file
+  mkdir -p $addresses_file
+else
+
 if [[ ! -f "$providers_file" ]]
 then echo "File ${providers_file} does not exist, make sure the testnet chains are running" && exit 1
 elif [[ ! -f "$addresses_file" ]]
