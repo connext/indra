@@ -15,7 +15,7 @@ port="${INDRA_CHAIN_PORT:-`expr 8545 - 1337 + $chain_id`}"
 tag="${INDRA_TAG:-$chain_id}"
 mnemonic="${INDRA_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 engine="${INDRA_EVM:-`if [[ "$chain_id" == "1337" ]]; then echo "ganache"; else echo "buidler"; fi`}"
-logLevel="${INDRA_CHAIN_LOG_LEVEL:-0}"
+logLevel="${INDRA_CHAIN_LOG_LEVEL:1}"
 
 ethprovider_host="${project}_testnet_$tag"
 
@@ -31,12 +31,14 @@ mkdir -p $chain_data
 if [[ "$mode" == "release" ]]
 then image="${registry}/${project}_ethprovider:$release"
 elif [[ "$mode" == "staging" ]]
-then image="${project}_ethprovider:`git rev-parse HEAD | head -c 8`"
+then image="${registry}/${project}_ethprovider:`git rev-parse HEAD | head -c 8`"
 else
   image="${project}_builder"
   arg="modules/contracts/ops/entry.sh"
   opts="--entrypoint bash --mount type=bind,source=$root,target=/root"
 fi
+
+echo "Running ${mode}-mode image for testnet ${chain_id}: ${image}"
 
 docker run $opts \
   --detach \

@@ -50,7 +50,7 @@ fi
 if [[ "$mode" == "release" ]]
 then image="${registry}/${project}_ethprovider:$release"
 elif [[ "$mode" == "staging" ]]
-then image="${project}_ethprovider:`git rev-parse HEAD | head -c 8`"
+then image="${registry}/${project}_ethprovider:`git rev-parse HEAD | head -c 8`"
 else
   image=${project}_builder
   echo "Deploying $mode-mode contract deployer (image: $image)..."
