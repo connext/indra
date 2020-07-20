@@ -90,6 +90,10 @@ export abstract class MethodController {
         preProtocolStateChannel.responderIdentifier,
       ].find((identifier) => identifier !== publicIdentifier)!;
       try {
+        // NOTE: should only provide the appIdentityHash if the protocol
+        // also provides it in the params. These include:
+        // - takeAction
+        // - uninstall
         const { channel } = await protocolRunner.initiateProtocol(
           router,
           ProtocolNames.sync,
@@ -97,6 +101,7 @@ export abstract class MethodController {
             multisigAddress: preProtocolStateChannel.multisigAddress,
             initiatorIdentifier: publicIdentifier,
             responderIdentifier,
+            appIdentityHash: (params as any).appIdentityHash || undefined,
           },
           preProtocolStateChannel,
         );
