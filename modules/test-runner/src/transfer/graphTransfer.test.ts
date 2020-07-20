@@ -28,6 +28,7 @@ import {
   expect,
   fundChannel,
   TOKEN_AMOUNT,
+  env,
 } from "../util";
 
 const { AddressZero } = constants;
