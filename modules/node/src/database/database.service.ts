@@ -64,6 +64,7 @@ import { txDataToCommitments1594196149518 } from "../../migrations/1594196149518
 import { txDataStoredProcedures1594196572552 } from "../../migrations/1594196572552-tx-data-stored-procedures";
 import { removeWithUpdatedState1594324129179 } from "../../migrations/1594324129179-remove-with-updated-state";
 import { updateOnchain1594840136529 } from "../../migrations/1594840136529-update-onchain";
+import { removeAppCommitments1595210814094 } from "../../migrations/1595210814094-remove-app-commitments";
 
 export const entities = [
   AppInstance,
@@ -127,6 +128,7 @@ export const migrations = [
   txDataStoredProcedures1594196572552,
   removeWithUpdatedState1594324129179,
   updateOnchain1594840136529,
+  removeAppCommitments1595210814094,
 ];
 
 @Injectable()
