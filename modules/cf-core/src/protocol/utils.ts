@@ -58,7 +58,9 @@ export const parseProtocolMessage = (message?: ProtocolMessage): ProtocolMessage
   // verify the correct protocol version
   if (!protocolVersion || protocolVersion !== CHANNEL_PROTOCOL_VERSION) {
     throw new Error(
-      `Incorrect protocol version number detected. Got ${protocolVersion}, expected: ${CHANNEL_PROTOCOL_VERSION}. Update packages.`,
+      `Incorrect protocol version number detected. Got ${protocolVersion}, expected: ${CHANNEL_PROTOCOL_VERSION}. Please update packages. Message payload: ${stringify(
+        data,
+      )}`,
     );
   }
 
@@ -130,7 +132,7 @@ export const generateProtocolMessageData = (
   return {
     processID, // uuid
     protocol,
-    protocolVersion: CHANNEL_PROTOCOL_VERSION,
+    protocolVersion: CHANNEL_PROTOCOL_VERSION || "1.0.0",
     params,
     to,
     error,
