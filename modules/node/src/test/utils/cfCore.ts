@@ -22,7 +22,10 @@ import {
   toBNJson,
 } from "@connext/utils";
 import { constants, utils } from "ethers";
+
 import { CFCoreStore } from "../../cfCore/cfCore.store";
+
+import { env } from "./config";
 
 const { AddressZero, HashZero, Zero, One } = constants;
 const { defaultAbiCoder } = utils;
@@ -69,7 +72,7 @@ export const createStateChannelJSON = (
       ProxyFactory: getRandomAddress(),
     },
     appInstances: [],
-    chainId: 1337,
+    chainId: env.defaultChain,
     monotonicNumProposedApps: 0,
     multisigAddress: getRandomAddress(),
     proposedAppInstances: [],

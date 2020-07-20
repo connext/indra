@@ -7,7 +7,7 @@ import { Address } from "@connext/types";
 
 export const env = {
   chainProviders: JSON.parse(process.env.INDRA_CHAIN_PROVIDERS),
-  defaultChain: process.env.INDRA_DEFAULT_CHAIN,
+  defaultChain: parseInt(process.env.INDRA_DEFAULT_CHAIN || "0", 10),
   contractAddresses: JSON.parse(process.env.INDRA_CONTRACT_ADDRESSES),
   logLevel: parseInt(process.env.CLIENT_LOG_LEVEL || "0", 10),
   messagingUrl: "nats://indra_nats_node_tester:4222",

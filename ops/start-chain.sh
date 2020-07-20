@@ -62,7 +62,7 @@ do
   fi
 done
 
-while [[ -z "`docker exec $ethprovider_host cat /data/address-book.json | grep $chain_id || true`" ]]
+while [[ -z "`docker exec $ethprovider_host cat /data/address-book.json | grep '"Token":' || true`" ]]
 do sleep 1
 done
 
