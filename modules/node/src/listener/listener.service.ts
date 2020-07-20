@@ -138,7 +138,7 @@ export default class ListenerService implements OnModuleInit {
       },
       UPDATE_STATE_EVENT: async (data): Promise<void> => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
-          this.log.debug(`Received update state from our own node. Doing nothing.`);
+          this.log.debug(`Received update state where we were initiator. Doing nothing.`);
           return;
         }
         // if this is for a recipient of a transfer
@@ -158,6 +158,7 @@ export default class ListenerService implements OnModuleInit {
           app,
           newState as any, // AppState (excluding simple swap app)
           action as AppAction,
+          data.from,
         );
       },
       UPDATE_STATE_FAILED_EVENT: (data): void => {
@@ -193,6 +194,7 @@ export default class ListenerService implements OnModuleInit {
         uninstalledApp,
         uninstalledApp.latestState as any, // AppState (excluding simple swap app)
         action as AppAction,
+        data.from,
       );
     }
 

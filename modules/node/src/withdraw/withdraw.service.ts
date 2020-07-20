@@ -81,9 +81,6 @@ export class WithdrawService {
     const hash = generatedCommitment.hashToSign();
     const counterpartySignatureOnWithdrawCommitment = await signer.signMessage(hash);
 
-    await this.cfCoreService.takeAction(appInstance.identityHash, appInstance.multisigAddress, {
-      signature: counterpartySignatureOnWithdrawCommitment,
-    } as WithdrawAppAction);
     state = (await this.cfCoreService.getAppInstance(appInstance.identityHash))
       .latestState as WithdrawAppState;
 
@@ -99,7 +96,9 @@ export class WithdrawService {
       counterpartySignatureOnWithdrawCommitment,
     );
 
-    await this.cfCoreService.uninstallApp(appInstance.identityHash, appInstance.multisigAddress);
+    await this.cfCoreService.uninstallApp(appInstance.identityHash, appInstance.multisigAddress, {
+      signature: counterpartySignatureOnWithdrawCommitment,
+    } as WithdrawAppAction);
 
     await generatedCommitment.addSignatures(
       counterpartySignatureOnWithdrawCommitment, // our sig
@@ -117,6 +116,7 @@ export class WithdrawService {
       this.log.error(
         `Unable to find withdraw entity that we just uninstalled. AppId ${appInstance.identityHash}`,
       );
+      return;
     }
 
     await this.withdrawRepository.addOnchainTransaction(withdraw, onchainTransaction);
