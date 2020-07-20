@@ -116,6 +116,7 @@ export class WithdrawService {
       this.log.error(
         `Unable to find withdraw entity that we just uninstalled. AppId ${appInstance.identityHash}`,
       );
+      return;
     }
 
     await this.withdrawRepository.addOnchainTransaction(withdraw, onchainTransaction);

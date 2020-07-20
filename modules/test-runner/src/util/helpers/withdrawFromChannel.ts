@@ -1,7 +1,7 @@
 import { IConnextClient } from "@connext/types";
 import { ColorfulLogger } from "@connext/utils";
 import { ERC20 } from "@connext/contracts";
-import { BigNumber, Contract, Wallet, constants, utils } from "ethers";
+import { BigNumber, Contract, Wallet, constants } from "ethers";
 
 import { env } from "../env";
 import { expect } from "../";
