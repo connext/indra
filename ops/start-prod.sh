@@ -184,7 +184,7 @@ then
   bash ops/save-secret.sh "$eth_mnemonic_name" "$eth_mnemonic"
 
   chain_id_1=1337; chain_port_1=8545;
-  chain_url_1="http://172.17.0.1:'$chain_port_1'"
+  chain_url_1="http://172.17.0.1:$chain_port_1"
   INDRA_CHAIN_MODE="${INDRA_MODE#test-}" bash ops/start-chain.sh $chain_id_1 $chain_port_1
   chain_providers='{"'$chain_id_1'":"'$chain_url_1'"}'
   contract_addresses="`cat $root/.chaindata/${chain_id_1}/address-book.json`"
