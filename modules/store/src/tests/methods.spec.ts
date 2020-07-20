@@ -243,6 +243,13 @@ describe("Methods", () => {
           TEST_STORE_MINIMAL_TX,
           freeBalanceSetState0,
         );
+        await store.createAppProposal(
+          multisigAddress,
+          app,
+          channel.monotonicNumProposedApps,
+          { ...TEST_STORE_SET_STATE_COMMITMENT, versionNumber: toBNJson(app.latestVersionNumber) },
+          TEST_STORE_CONDITIONAL_COMMITMENT,
+        );
         await store.createAppInstance(
           multisigAddress,
           app,
@@ -265,6 +272,10 @@ describe("Methods", () => {
             ...channel,
             proposedAppInstances: [],
           });
+          const conditional = await store.getConditionalTransactionCommitment(app.identityHash);
+          const setState = await store.getSetStateCommitments(app.identityHash);
+          expect(conditional).to.be.undefined;
+          expect(setState).to.be.deep.eq([]);
           const freeBalance = await store.getSetStateCommitments(
             channel.freeBalanceAppInstance!.identityHash,
           );

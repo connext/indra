@@ -76,15 +76,15 @@ describe("Node method follows spec - toke action", () => {
 
         let appsTakenActionOn = 0;
 
-        nodeB.on(EventNames.UPDATE_STATE_EVENT, () => {
+        nodeA.on(EventNames.UPDATE_STATE_EVENT, () => {
           appsTakenActionOn += 1;
           if (appsTakenActionOn === 2) done();
         });
 
-        nodeA.rpcRouter.dispatch(
+        nodeB.rpcRouter.dispatch(
           constructTakeActionRpc(appIdentityHashes[0], multisigAddress, validAction),
         );
-        nodeA.rpcRouter.dispatch(
+        nodeB.rpcRouter.dispatch(
           constructTakeActionRpc(appIdentityHashes[1], multisigAddress, validAction),
         );
       });

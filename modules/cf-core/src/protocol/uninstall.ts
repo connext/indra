@@ -42,6 +42,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       appIdentityHash,
       action,
       stateTimeout,
+      initiatorIdentifier,
     } = params as ProtocolParams.Uninstall;
 
     if (!preProtocolStateChannel) {
@@ -72,6 +73,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       // apply action
       substart = Date.now();
       const newState = await appToUninstall.computeStateTransition(
+        getSignerAddressFromPublicIdentifier(initiatorIdentifier),
         action,
         network.provider,
         getPureBytecode(appToUninstall.appDefinition, network.contractAddresses),
@@ -209,6 +211,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       // apply action
       substart = Date.now();
       const newState = await appToUninstall.computeStateTransition(
+        getSignerAddressFromPublicIdentifier(initiatorIdentifier),
         action,
         network.provider,
         getPureBytecode(appToUninstall.appDefinition, network.contractAddresses),

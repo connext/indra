@@ -299,6 +299,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         seq: UNASSIGNED_SEQ_NO,
       } as ProtocolMessageData,
       stateChannelAfter,
+      newAppInstance,
     ] as any;
 
     // 272ms

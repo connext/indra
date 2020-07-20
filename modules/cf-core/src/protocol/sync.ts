@@ -10,12 +10,11 @@ import {
   ConditionalTransactionCommitmentJSON,
   AppInstanceJson,
 } from "@connext/types";
-import { stringify, logTime, toBN } from "@connext/utils";
-
-import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
+import { stringify, logTime, toBN, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { stateChannelClassFromStoreByMultisig, getPureBytecode } from "./utils";
 import { StateChannel, AppInstance, FreeBalanceClass } from "../models";
+import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 import {
   SetStateCommitment,
   ConditionalTransactionCommitment,
@@ -188,6 +187,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         postSyncStateChannel = postSyncStateChannel.setState(
           app,
           await app.computeStateTransition(
+            getSignerAddressFromPublicIdentifier(initiatorIdentifier),
             affectedApp!.latestAction,
             provider,
             getPureBytecode(app.appDefinition, contractAddresses),
@@ -394,6 +394,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
         postSyncStateChannel = postSyncStateChannel.setState(
           app,
           await app.computeStateTransition(
+            getSignerAddressFromPublicIdentifier(initiatorIdentifier),
             affectedApp!.latestAction,
             provider,
             getPureBytecode(app.appDefinition, contractAddresses),

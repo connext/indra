@@ -11,6 +11,12 @@ import {
   MethodParams,
   getTransferTypeFromAppName,
   SupportedApplicationNames,
+  MethodResults,
+  HashLockTransferAppAction,
+  SimpleSignedTransferAppAction,
+  GraphSignedTransferAppAction,
+  SimpleLinkedTransferAppAction,
+  ConditionalTransferTypes,
 } from "@connext/types";
 import {
   stringify,
@@ -18,7 +24,7 @@ import {
   calculateExchangeWad,
   toBN,
 } from "@connext/utils";
-import { TRANSFER_TIMEOUT } from "@connext/apps";
+import { MINIMUM_APP_TIMEOUT } from "@connext/apps";
 import { Interval } from "@nestjs/schedule";
 import { constants } from "ethers";
 import { isEqual } from "lodash";
@@ -37,6 +43,40 @@ import { TransferRepository } from "./transfer.repository";
 import { ConfigService } from "../config/config.service";
 
 const { Zero, HashZero } = constants;
+
+export const getCancelAction = (
+  transferType: ConditionalTransferTypes,
+):
+  | HashLockTransferAppAction
+  | SimpleSignedTransferAppAction
+  | GraphSignedTransferAppAction
+  | SimpleLinkedTransferAppAction => {
+  let action:
+    | HashLockTransferAppAction
+    | SimpleSignedTransferAppAction
+    | GraphSignedTransferAppAction
+    | SimpleLinkedTransferAppAction;
+  switch (transferType) {
+    case ConditionalTransferTypes.LinkedTransfer:
+    case ConditionalTransferTypes.HashLockTransfer: {
+      action = { preImage: HashZero } as HashLockTransferAppAction;
+      break;
+    }
+    case ConditionalTransferTypes.GraphTransfer: {
+      action = { responseCID: HashZero, signature: "0x" } as GraphSignedTransferAppAction;
+      break;
+    }
+    case ConditionalTransferTypes.SignedTransfer: {
+      action = { data: HashZero, signature: "0x" } as SimpleSignedTransferAppAction;
+      break;
+    }
+    default: {
+      const c: never = transferType;
+      this.log.error(`Unsupported conditionType ${c}`);
+    }
+  }
+  return action;
+};
 
 @Injectable()
 export class TransferService {
@@ -84,40 +124,48 @@ export class TransferService {
   // NOTE: designed to be called from the proposal event handler to enforce
   // receivers are online if needed
   async transferAppInstallFlow(
-    appIdentityHash: string,
+    senderAppIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
-    installerChannel: Channel,
-    transferType: ConditionalTransferAppNames,
+    senderChannel: Channel,
+    transferType: ConditionalTransferTypes,
   ): Promise<void> {
-    this.log.info(`Start transferAppInstallFlow for appIdentityHash ${appIdentityHash}`);
+    this.log.info(`Start transferAppInstallFlow for appIdentityHash ${senderAppIdentityHash}`);
 
     const paymentId = proposeInstallParams.meta["paymentId"];
     const allowed = getTransferTypeFromAppName(transferType as SupportedApplicationNames);
-    // if allow offline, resolve after sender app install
-    // if not, will be installed in middleware
+
+    // ALLOW OFFLINE SENDER INSTALL
     if (allowed === "AllowOffline") {
       this.log.info(
-        `Installing sender app ${appIdentityHash} in channel ${installerChannel.multisigAddress}`,
+        `Installing sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress}`,
       );
-      await this.cfCoreService.installApp(appIdentityHash, installerChannel.multisigAddress);
+      // if errors, it will reject the sender's proposal in the calling function
+      await this.cfCoreService.installApp(senderAppIdentityHash, senderChannel.multisigAddress);
       this.log.info(
-        `Sender app ${appIdentityHash} in channel ${installerChannel.multisigAddress} installed`,
+        `Sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
       );
     }
 
-    // install for receiver or error
-    // https://github.com/ConnextProject/indra/issues/942
-    if (proposeInstallParams.meta.recipient) {
-      // get receiverChainId from meta if it is included
-      const receiverChainId = proposeInstallParams.meta.receiverChainId
+    if (!proposeInstallParams.meta.recipient) {
+      return;
+    }
+
+    // RECEIVER PROPOSAL
+    let receiverProposeRes: MethodResults.ProposeInstall & { appType: AppType };
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      proposeInstallParams.meta.recipient,
+    );
+    const receiverChainId = proposeInstallParams.meta.receiverChainId
         ? proposeInstallParams.meta.receiverChainId
-        : installerChannel.chainId;
+        : senderChannel.chainId;
 
       this.log.info(`Installing receiver app to chainId ${receiverChainId}`);
-      const receiverInstallPromise = this.installReceiverAppByPaymentId(
+
+    try {
+      receiverProposeRes = await this.proposeReceiverAppByPaymentId(
         from,
-        installerChannel.chainId,
+        senderChannel.chainId,
         proposeInstallParams.meta.recipient,
         receiverChainId,
         paymentId,
@@ -125,24 +173,77 @@ export class TransferService {
         proposeInstallParams.initialState as AppStates[typeof transferType],
         proposeInstallParams.meta,
         transferType,
-      )
-        .then((receiverInstall) => {
-          this.log.info(`Installed receiver app ${receiverInstall.appIdentityHash}`);
-        })
-        .catch((e) => {
-          this.log.error(`Error installing receiver app: ${e.message || e}`);
-          if (allowed === "RequireOnline") {
-            throw e;
-          }
-        });
+        receiverChannel,
+      );
+    } catch (e) {
+      this.log.error(`Error proposing receiver app: ${e.message || e}`);
       if (allowed === "RequireOnline") {
-        await receiverInstallPromise;
+        if (receiverProposeRes?.appIdentityHash) {
+          await this.cfCoreService.rejectInstallApp(
+            receiverProposeRes.appIdentityHash,
+            receiverChannel.multisigAddress,
+            `Receiver offline for transfer`,
+          );
+        }
       }
-      this.log.info(`TransferAppInstallFlow for appIdentityHash ${appIdentityHash} complete`);
+      this.log.warn(
+        `TransferAppInstallFlow for appIdentityHash ${senderAppIdentityHash} complete, receiver was offline`,
+      );
+      return;
     }
+
+    // REQUIRE ONLINE SENDER INSTALL
+    if (allowed === "RequireOnline") {
+      this.log.info(
+        `Installing sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress}`,
+      );
+      // this should throw so it doesn't install receiver app in case of error
+      // will reject in caller function
+      await this.cfCoreService.installApp(senderAppIdentityHash, senderChannel.multisigAddress);
+      this.log.info(
+        `Sender app ${senderAppIdentityHash} in channel ${senderChannel.multisigAddress} installed`,
+      );
+    }
+
+    // RECEIVER INSTALL
+    try {
+      if (receiverProposeRes?.appIdentityHash && receiverProposeRes?.appType === AppType.PROPOSAL) {
+        this.log.info(
+          `Installing receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
+        );
+        await this.cfCoreService.installApp(
+          receiverProposeRes.appIdentityHash,
+          receiverChannel.multisigAddress,
+        );
+        this.log.info(
+          `Receiver app ${receiverProposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
+        );
+      }
+    } catch (e) {
+      this.log.error(`Error installing receiver app: ${e.message || e}`);
+      if (allowed === "RequireOnline") {
+        // cancel sender
+        // https://github.com/ConnextProject/indra/issues/942
+        this.log.warn(`Canceling sender payment`);
+        await this.cfCoreService.uninstallApp(
+          senderAppIdentityHash,
+          senderChannel.multisigAddress,
+          getCancelAction(transferType),
+        );
+        this.log.warn(`Sender payment canceled`);
+        if (receiverProposeRes?.appIdentityHash) {
+          await this.cfCoreService.rejectInstallApp(
+            receiverProposeRes.appIdentityHash,
+            receiverChannel.multisigAddress,
+            `Receiver offline for transfer`,
+          );
+        }
+      }
+    }
+    this.log.info(`TransferAppInstallFlow for appIdentityHash ${senderAppIdentityHash} complete`);
   }
 
-  async installReceiverAppByPaymentId(
+  async proposeReceiverAppByPaymentId(
     senderIdentifier: string,
     senderChainId: number,
     receiverIdentifier: string,
@@ -152,15 +253,17 @@ export class TransferService {
     senderAppState: AppStates[ConditionalTransferAppNames],
     meta: any = {},
     transferType: ConditionalTransferAppNames,
-  ): Promise<PublicResults.ResolveCondition> {
+    receiverChannel?: Channel,
+  ): Promise<MethodResults.ProposeInstall & { appType: AppType }> {
     this.log.info(
       `installReceiverAppByPaymentId for ${receiverIdentifier} paymentId ${paymentId} started`,
     );
 
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
-      receiverIdentifier,
-      receiverChainId,
-    );
+    if (!receiverChannel) {
+      receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+        receiverIdentifier,
+      );
+    }
 
     const senderAmount = senderAppState.coinTransfers[0].amount;
 
@@ -198,8 +301,13 @@ export class TransferService {
         amount: receiverAmount,
         assetId: receiverAssetId,
       };
-      this.log.warn(`Found existing transfer app, returning: ${stringify(result)}`);
-      return result;
+      this.log.warn(
+        `Found existing transfer app, returning: ${stringify({
+          ...result,
+          appType: existing.type,
+        })}`,
+      );
+      return { ...result, appType: existing.type };
     }
 
     const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
@@ -258,8 +366,19 @@ export class TransferService {
       );
     }
 
-    const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
-      receiverChannel,
+    const {
+      actionEncoding,
+      appDefinitionAddress: appDefinition,
+      outcomeType,
+      stateEncoding,
+    } = this.cfCoreService.getAppInfoByName(transferType as SupportedApplicationNames);
+
+    const res = await this.cfCoreService.proposeInstallApp({
+      abiEncodings: {
+        actionEncoding,
+        stateEncoding,
+      },
+      appDefinition,
       initialState,
       receiverAmount,
       receiverAssetId,
@@ -270,28 +389,15 @@ export class TransferService {
         receiverChainId,
       ),
       meta,
-      TRANSFER_TIMEOUT,
-    );
-
-    if (!receiverAppInstallRes || !receiverAppInstallRes.appIdentityHash) {
-      throw new Error(`Could not install app on receiver side.`);
-    }
-
-    const result: PublicResults.ResolveCondition = {
-      appIdentityHash: receiverAppInstallRes.appIdentityHash,
-      paymentId,
-      sender: senderIdentifier,
-      meta,
-      amount: receiverAmount,
-      assetId: receiverAssetId,
-    };
-
-    this.log.info(
-      `installReceiverAppByPaymentId for ${receiverIdentifier} paymentId ${paymentId} complete: ${JSON.stringify(
-        result,
-      )}`,
-    );
-    return result;
+      multisigAddress: receiverChannel.multisigAddress,
+      outcomeType,
+      responderIdentifier: receiverIdentifier,
+      responderDeposit: Zero,
+      responderDepositAssetId: receiverAssetId, // receiverAssetId is same because swap happens between sender and receiver apps, not within the app
+      defaultTimeout: MINIMUM_APP_TIMEOUT,
+      stateTimeout: Zero,
+    });
+    return { ...res, appType: AppType.PROPOSAL };
   }
 
   async resolveByPaymentId(
@@ -310,7 +416,11 @@ export class TransferService {
       throw new Error(`Sender app has action, refusing to redeem`);
     }
 
-    return this.installReceiverAppByPaymentId(
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      receiverIdentifier,
+    );
+
+    const proposeRes = await this.proposeReceiverAppByPaymentId(
       senderApp.initiatorIdentifier,
       senderApp.channel.chainId,
       receiverIdentifier,
@@ -320,7 +430,32 @@ export class TransferService {
       senderApp.latestState,
       senderApp.meta,
       transferType,
+      receiverChannel,
     );
+
+    if (proposeRes?.appIdentityHash && proposeRes?.appType === AppType.PROPOSAL) {
+      this.log.info(
+        `Installing receiver app ${proposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress}`,
+      );
+      await this.cfCoreService.installApp(
+        proposeRes.appIdentityHash,
+        receiverChannel.multisigAddress,
+      );
+      this.log.info(
+        `Receiver app ${proposeRes.appIdentityHash} in channel ${receiverChannel.multisigAddress} installed`,
+      );
+    }
+
+    return {
+      amount: senderApp.latestState.coinTransfers[0].amount,
+      appIdentityHash: proposeRes.appIdentityHash,
+      assetId: senderApp.meta.receiverAssetId
+        ? senderApp.meta.receiverAssetId
+        : senderApp.initiatorDepositAssetId,
+      paymentId,
+      sender: senderApp.channel.userIdentifier,
+      meta: senderApp.meta,
+    };
   }
 
   async findSenderAppByPaymentId<

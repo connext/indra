@@ -389,6 +389,15 @@ export class StoreService implements IStoreService {
           toBN(oldFreeBalanceUpdate.versionNumber).toString(),
         );
       }
+      this.log.debug(`Removing app commitments from store`);
+      updatedStore = this.unsetConditionalTransactionCommitment(
+        this.unsetSetStateCommitment(
+          updatedStore,
+          appInstance.identityHash,
+          toBN(appInstance.latestVersionNumber).toString(),
+        ),
+        appInstance.identityHash,
+      );
       this.log.debug(`Updating channel with new free balance updates without app instance`);
       updatedStore = this.setSetStateCommitment(
         this.setStateChannel(store, {
@@ -753,9 +762,17 @@ export class StoreService implements IStoreService {
     store: any,
     appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<any> {
+  ): any {
     const conditionalCommitmentKey = this.getKey(storeKeys.CONDITIONAL_COMMITMENT, appIdentityHash);
     store[conditionalCommitmentKey] = commitment;
+    return store;
+  }
+
+  private unsetConditionalTransactionCommitment(store: any, appIdentityHash: string): any {
+    const conditionalCommitmentKey = this.getKey(storeKeys.CONDITIONAL_COMMITMENT, appIdentityHash);
+    if (store[conditionalCommitmentKey]) {
+      delete store[conditionalCommitmentKey];
+    }
     return store;
   }
 
@@ -779,7 +796,11 @@ export class StoreService implements IStoreService {
     const remaining = existing.filter((commitment) =>
       toBN(commitment.versionNumber).gt(versionNumber),
     );
-    store[setStateKey] = remaining;
+    if (remaining.length === 0) {
+      delete store[setStateKey];
+    } else {
+      store[setStateKey] = remaining;
+    }
     return store;
   }
 

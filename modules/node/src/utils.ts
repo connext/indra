@@ -7,7 +7,7 @@ import {
   HashLockTransferAppState,
   GenericConditionalTransferAppState,
 } from "@connext/types";
-import { bigNumberifyJson, toBN } from "@connext/utils";
+import { bigNumberifyJson, toBN, stringify } from "@connext/utils";
 import { BigNumber, constants } from "ethers";
 
 import { AppInstance, AppType } from "./appInstance/appInstance.entity";
@@ -93,7 +93,6 @@ export function appStatusesToTransferWithExpiryStatus<T extends AppName>(
     return undefined;
   }
   const statusWithoutExpiry = appStatusesToTransferStatus(senderApp, receiverApp);
-  // TODO: will transfer statuses always trump expiries?
   if (statusWithoutExpiry !== TransferStatuses.PENDING) {
     return statusWithoutExpiry;
   }
@@ -101,8 +100,8 @@ export function appStatusesToTransferWithExpiryStatus<T extends AppName>(
     receiverApp?.latestState || {},
   ) as HashLockTransferAppState;
   const senderState = bigNumberifyJson(senderApp.latestState) as HashLockTransferAppState;
-  const isSenderExpired = senderState.expiry && senderState.expiry.lt(currentBlockNumber);
-  const isReceiverExpired = receiverState.expiry && receiverState.expiry.lt(currentBlockNumber);
+  const isSenderExpired = senderState.expiry && senderState.expiry.lte(currentBlockNumber);
+  const isReceiverExpired = receiverState.expiry && receiverState.expiry.lte(currentBlockNumber);
   return isSenderExpired || isReceiverExpired
     ? TransferWithExpiryStatuses.EXPIRED
     : TransferWithExpiryStatuses.PENDING;

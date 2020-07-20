@@ -1,5 +1,4 @@
 import { CFCore } from "../../cfCore";
-import { INVALID_ACTION } from "../../errors";
 
 import { constructTakeActionRpc, createChannel, getContractAddresses, installApp } from "../utils";
 import { setup, SetupContext } from "../setup";
@@ -34,7 +33,7 @@ describe("Node method follows spec - fails with improper action taken", () => {
       const takeActionReq = constructTakeActionRpc(appIdentityHash, multisigAddress, validAction);
 
       await expect(nodeA.rpcRouter.dispatch(takeActionReq)).to.eventually.be.rejectedWith(
-        INVALID_ACTION,
+        "Cannot compute state transition",
       );
     });
   });

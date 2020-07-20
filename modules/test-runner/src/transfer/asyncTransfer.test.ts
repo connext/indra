@@ -1,5 +1,5 @@
-import { getLocalStore } from "@connext/store";
-import { ConditionalTransferTypes, IConnextClient } from "@connext/types";
+import { getLocalStore, getMemoryStore } from "@connext/store";
+import { ConditionalTransferTypes, IConnextClient, EventNames } from "@connext/types";
 import {
   ColorfulLogger,
   getRandomBytes32,
@@ -76,10 +76,16 @@ describe("Async Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const receiverPk = getRandomPrivateKey();
-    let receiver = await createClient({ id: "C", signer: receiverPk });
+    const recevierStore = getMemoryStore();
+    let receiver = await createClient({
+      id: "C-initial",
+      signer: receiverPk,
+      store: recevierStore,
+    });
     await requestCollateral(receiver, transfer.assetId);
     await receiver.messaging.disconnect();
     receiver.off();
+
     const paymentId = getRandomBytes32();
     await clientA.transfer({
       amount: transfer.amount.toString(),
@@ -87,8 +93,14 @@ describe("Async Transfers", () => {
       recipient: receiver.publicIdentifier,
       paymentId,
     });
-    receiver = await createClient({ id: "C", signer: receiverPk });
-    await delay(5000);
+    // transfer returns on the sender side when the sender app is installed only
+    await delay(30_000);
+    const senderUnlock = clientA.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 30000);
+    receiver = await createClient(
+      { id: "C-recreated", signer: receiverPk, store: recevierStore },
+      false,
+    );
+    await senderUnlock;
 
     const { [receiver.signerAddress]: receiverFreeBalance } = await receiver.getFreeBalance(
       transfer.assetId,
