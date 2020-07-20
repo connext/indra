@@ -65,7 +65,11 @@ do
 done
 
 while [[ -z "`docker exec $ethprovider_host cat /data/address-book.json | grep '"Token":' || true`" ]]
-do sleep 1
+do
+  if [[ -z `docker container ls -f name=$ethprovider_host -q` ]]
+  then echo "$ethprovider_host was not able to start up successfully" && exit 1
+  else sleep 1
+  fi
 done
 
 echo "Provider for chain ${chain_id} is awake & ready to go on port ${port}!"
