@@ -95,6 +95,13 @@ export class TransferService {
 
   // TODO: make this interval configurable
   @Interval(3600_000)
+  async pruneChannels() {
+    const channels = await this.channelRepository.findAll();
+    for (const channel of channels) {
+      await this.pruneExpiredApps(channel);
+    }
+  }
+
   async pruneExpiredApps(channel: Channel): Promise<void> {
     for (const chainId of this.configService.getSupportedChains()) {
       this.log.info(

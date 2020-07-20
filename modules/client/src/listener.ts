@@ -166,6 +166,7 @@ export class ConnextListener {
       await this.handleAppUninstall(
         msg.data.appIdentityHash,
         latestState as AppState,
+        msg.from,
         msg.data.action as AppAction,
         msg.data.uninstalledApp,
       );
@@ -457,6 +458,7 @@ export class ConnextListener {
   private handleAppUninstall = async (
     appIdentityHash: string,
     state: AppState,
+    from: string,
     action?: AppAction,
     appContext?: AppInstanceJson,
   ): Promise<void> => {
@@ -473,6 +475,19 @@ export class ConnextListener {
     });
 
     switch (registryAppInfo.name) {
+      case WithdrawAppName: {
+        if (from !== this.connext.publicIdentifier) {
+          const withdrawState = state as WithdrawAppState;
+          const params = {
+            amount: withdrawState.transfers[0].amount,
+            recipient: withdrawState.transfers[0].to,
+            assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
+            nonce: withdrawState.nonce,
+          };
+          await this.connext.saveWithdrawCommitmentToStore(params, withdrawState.signatures);
+        }
+        break;
+      }
       case SimpleLinkedTransferAppName: {
         const transferState = state as SimpleLinkedTransferAppState;
         const transferAction = action as SimpleLinkedTransferAppAction;

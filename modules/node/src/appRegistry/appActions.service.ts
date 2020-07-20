@@ -17,11 +17,13 @@ import { WithdrawRepository } from "../withdraw/withdraw.repository";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { TransferService } from "../transfer/transfer.service";
+import { ConfigService } from "../config/config.service";
 
 @Injectable()
 export class AppActionsService {
   constructor(
     private readonly log: LoggerService,
+    private readonly configService: ConfigService,
     private readonly withdrawService: WithdrawService,
     private readonly cfCoreService: CFCoreService,
     private readonly transferService: TransferService,
@@ -35,6 +37,7 @@ export class AppActionsService {
     app: AppInstanceJson,
     newState: AppState,
     action: AppAction,
+    from: string,
   ): Promise<void> {
     this.log.info(
       `handleAppAction for app name ${appName} ${app.identityHash}, action ${JSON.stringify(
@@ -51,11 +54,13 @@ export class AppActionsService {
       }
       await this.handleTransferAppAction(senderApp, action);
     } else if (appName === WithdrawAppName) {
-      await this.handleWithdrawAppAction(
-        app,
-        action as WithdrawAppAction,
-        newState as WithdrawAppState,
-      );
+      if (from !== this.configService.getPublicIdentifier()) {
+        await this.handleWithdrawAppAction(
+          app,
+          action as WithdrawAppAction,
+          newState as WithdrawAppState,
+        );
+      }
     }
     this.log.info(`handleAppAction for app name ${appName} ${app.identityHash} complete`);
   }
