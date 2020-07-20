@@ -28,7 +28,6 @@ import {
   expect,
   fundChannel,
   TOKEN_AMOUNT,
-  env,
 } from "../util";
 
 const { AddressZero } = constants;
@@ -291,6 +290,7 @@ describe("Graph Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
 
+    const receiverInstall = clientB.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
     await clientA.conditionalTransfer({
       amount: transfer.amount,
       conditionType: ConditionalTransferTypes.GraphTransfer,
@@ -304,6 +304,7 @@ describe("Graph Signed Transfers", () => {
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.GraphTransfer);
+    await receiverInstall;
     // disconnect so that it cant be unlocked
     await clientA.messaging.disconnect();
 
