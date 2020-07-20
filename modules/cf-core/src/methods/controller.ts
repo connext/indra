@@ -90,10 +90,8 @@ export abstract class MethodController {
         preProtocolStateChannel.responderIdentifier,
       ].find((identifier) => identifier !== publicIdentifier)!;
       try {
-        // NOTE: should only provide the appIdentityHash if the protocol
-        // also provides it in the params. These include:
-        // - takeAction
-        // - uninstall
+        // NOTE: sync always requires the multisig lock since the free balance
+        // or channel nonce could be out of sync even in takeAction failures
         const { channel } = await protocolRunner.initiateProtocol(
           router,
           ProtocolNames.sync,

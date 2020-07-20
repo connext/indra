@@ -539,17 +539,6 @@ function makeSyncDetermination(
     );
   }
 
-  // NOTE: we should always consider the cases where we have unsynced
-  // free balance/channel nonces, but are *not* under the multisig lock.
-  // I.e. installation of app is out of sync, someone tries to take action,
-  // which fails, but we should *not* sync the free balance state since we are
-  // *not* under multisig lock.
-
-  // It is always safe to update a channel if the appIdentityHash is undefined
-  // meaning that only `install`, `propose`, or `reject` could have errored
-  let safeToSyncChannel = appIdentityHash === undefined;
-  throw new Error("This was git stashed, read all comments and fix.");
-
   // Important to "prioritize" channel sync issues. The top most priority
   // is the discrepancy between free balance versions. This happens when
   // an app is installed or uninstalled *only*
@@ -573,13 +562,6 @@ function makeSyncDetermination(
       counterpartyIsBehind = false;
       // if we have more apps, we missed install
       type = apps!.length > myChannel.appInstances.size ? "install" : "uninstall";
-    }
-
-    // in the case where an uninstall is being synced, the appIdentityHash would
-    // be provided but it is still safe to sync the channel
-    if (type === "uninstall" && true) {
-      safeToSyncChannel = true;
-      // FIXME: THIS IS THE CONDITION YOU NEED TO FIX LAYNE
     }
 
     const myApps = [...myChannel.appInstances.values()].map((app) => app.identityHash);
@@ -656,8 +638,7 @@ function makeSyncDetermination(
   // protocol. This would come from a discrepancy in app version numbers.
   // To get to this point in the function, we know that the channel fell out of
   // sync while taking action on the app. This means that we *know* this app has
-  // to be synced. We will use this information to determine what app to sync
-  // and who is behind
+  // to be synced
   if (!appIdentityHash) {
     // assume that there is no problem with the apps
     // while this is not technically true, we know that if the appId was not
