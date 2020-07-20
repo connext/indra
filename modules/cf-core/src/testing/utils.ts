@@ -24,6 +24,7 @@ import {
   ProtocolEventMessage,
   SimpleLinkedTransferAppStateEncoding,
   SimpleLinkedTransferAppActionEncoding,
+  CF_METHOD_TIMEOUT,
 } from "@connext/types";
 import {
   bigNumberifyJson,
@@ -32,6 +33,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   toBN,
   getRandomAddress,
+  delay,
 } from "@connext/utils";
 import { BigNumber, Contract, Wallet, providers, constants } from "ethers";
 
@@ -765,7 +767,6 @@ export async function installApp(
       );
       resolve(msg.data.appInstanceId);
     });
-
     await nodeA.rpcRouter.dispatch(installationProposalRpc);
   });
 
@@ -1005,11 +1006,15 @@ export async function uninstallApp(
 ): Promise<string> {
   await Promise.all([
     node.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash, multisigAddress)),
-    new Promise((resolve) => {
-      counterparty.once(EventNames.UNINSTALL_EVENT, (msg: UninstallMessage) => {
-        expect(msg.data.appIdentityHash).to.eq(appIdentityHash);
-        resolve(appIdentityHash);
+    new Promise((resolve, reject) => {
+      counterparty.on(EventNames.UNINSTALL_EVENT, (msg: UninstallMessage) => {
+        if (msg.data.appIdentityHash === appIdentityHash) {
+          resolve();
+        }
       });
+      delay(CF_METHOD_TIMEOUT).then(() =>
+        reject("Did not get counterparty uninstall event for too long"),
+      );
     }),
   ]);
   return appIdentityHash;

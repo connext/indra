@@ -1,7 +1,6 @@
 import {
   Opcode,
   ProposeMiddlewareContext,
-  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
@@ -13,7 +12,12 @@ import { getSetStateCommitment, getConditionalTransactionCommitment } from "../e
 import { AppInstance } from "../models";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
-import { assertIsValidSignature, computeInterpreterParameters } from "./utils";
+import {
+  assertIsValidSignature,
+  computeInterpreterParameters,
+  generateProtocolMessageData,
+  parseProtocolMessage,
+} from "./utils";
 
 const protocol = ProtocolNames.propose;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
@@ -28,7 +32,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
-    const { processID, params } = message;
+    const { processID, params } = message.data;
     const loggerId = params?.multisigAddress || processID;
     log.info(`[${loggerId}] Initiation started`);
     log.debug(`[${loggerId}] Initiation started: ${stringify(params)}`);
@@ -125,22 +129,17 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       `[${loggerId}] Signed set state commitment ${setStateCommitmentHash} & conditional transfer commitment ${conditionalTxCommitmentHash}`,
     );
 
-    const m1 = {
-      protocol,
-      processID,
-      params,
-      seq: 1,
-      to: responderIdentifier,
+    const m1 = generateProtocolMessageData(responderIdentifier, protocol, processID, 1, params, {
       customData: {
         signature: initiatorSignatureOnInitialState,
         signature2: initiatorSignatureOnConditionalTransaction,
       },
-    } as ProtocolMessageData;
-
+      prevMessageReceived: start,
+    });
     substart = Date.now();
 
     // 200ms
-    const m2 = yield [IO_SEND_AND_WAIT, m1];
+    const { message: m2 } = (yield [IO_SEND_AND_WAIT, m1])!;
     logTime(log, substart, `[${loggerId}] Received responder's m2`);
     substart = Date.now();
 
@@ -151,7 +150,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
           signature2: responderSignatureOnConditionalTransaction,
         },
       },
-    } = m2!;
+    } = parseProtocolMessage(m2);
 
     substart = Date.now();
     await assertIsValidSignature(
@@ -209,7 +208,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
   1 /* Responding */: async function* (context: Context) {
     const { message, preProtocolStateChannel } = context;
-    const { params, processID } = message;
+    const { params, processID } = message.data;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
@@ -238,7 +237,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         signature: initiatorSignatureOnInitialState,
         signature2: initiatorSignatureOnConditionalTransaction,
       },
-    } = message;
+    } = message.data;
 
     if (!params) {
       throw new Error("No params found for proposal");
@@ -366,17 +365,20 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     yield [
       IO_SEND,
-      {
+      generateProtocolMessageData(
+        initiatorIdentifier,
         protocol,
         processID,
-        seq: UNASSIGNED_SEQ_NO,
-        to: initiatorIdentifier,
-        prevMessageReceived: start,
-        customData: {
-          signature: responderSignatureOnInitialState,
-          signature2: responderSignatureOnConditionalTransaction,
+        UNASSIGNED_SEQ_NO,
+        params,
+        {
+          prevMessageReceived: start,
+          customData: {
+            signature: responderSignatureOnInitialState,
+            signature2: responderSignatureOnConditionalTransaction,
+          },
         },
-      } as ProtocolMessageData,
+      ),
       postProtocolStateChannel,
     ];
 

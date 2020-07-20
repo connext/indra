@@ -12,7 +12,12 @@ import {
 } from "@connext/types";
 import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 import { stringify, logTime, toBN, getSignerAddressFromPublicIdentifier } from "@connext/utils";
-import { stateChannelClassFromStoreByMultisig, getPureBytecode } from "./utils";
+import {
+  stateChannelClassFromStoreByMultisig,
+  getPureBytecode,
+  generateProtocolMessageData,
+  parseProtocolMessage,
+} from "./utils";
 import { StateChannel, AppInstance, FreeBalanceClass } from "../models";
 import {
   SetStateCommitment,
@@ -36,7 +41,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-SyncProtocol");
     const start = Date.now();
     let substart = start;
-    const { processID, params } = message;
+    const { processID, params } = message.data;
     const loggerId = (params as ProtocolParams.Sync).multisigAddress || processID;
     log.info(`[${loggerId}] Initiation started: ${stringify(params)}`);
     const {
@@ -57,17 +62,13 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       store,
     );
     const syncDeterminationData = getSyncDeterminationData(preProtocolStateChannel);
-    const m2 = yield [
+    const { message: m2 } = (yield [
       IO_SEND_AND_WAIT,
-      {
-        protocol,
-        processID,
-        params,
-        seq: 1,
-        to: counterpartyIdentifier,
+      generateProtocolMessageData(counterpartyIdentifier, protocol, processID, 1, params!, {
         customData: { ...syncDeterminationData },
-      },
-    ];
+        prevMessageReceived: substart,
+      }),
+    ] as any)!;
     logTime(
       log,
       substart,
@@ -78,7 +79,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     // Parse responder's m2. This should contain all of the information
     // we sent in m1 to determine if we should sync, in addition to all
     // the information they had for us to sync from
-    const counterpartyData = (m2! as ProtocolMessage).data.customData as SyncDeterminationData &
+    const counterpartyData = parseProtocolMessage(m2).data.customData as SyncDeterminationData &
       SyncFromDataJson;
 
     // Determine how channel is out of sync, and get the info needed
@@ -213,20 +214,16 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     // counterparty so rejections may be synced
     const mySyncedProposals = [...postSyncStateChannel.proposedAppInstances.keys()];
 
-    const m4 = yield [
+    const { message: m4 } = (yield [
       IO_SEND_AND_WAIT,
-      {
-        protocol,
-        processID,
-        params,
-        seq: 1,
-        to: responderIdentifier,
+      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, params!, {
         customData: {
           ...syncInfoForCounterparty,
           syncedProposals: mySyncedProposals,
         },
-      },
-    ];
+        prevMessageReceived: substart,
+      }),
+    ])!;
     logTime(
       log,
       substart,
@@ -236,7 +233,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     // m4 includes the responders post-sync proposal ids. Handle all
     // unsynced rejections using these values
-    const { syncedProposals: counterpartySyncedProposals } = (m4! as ProtocolMessage).data
+    const { syncedProposals: counterpartySyncedProposals } = parseProtocolMessage(m4).data
       .customData as { syncedProposals: string[] };
 
     // find any rejected proposals and update your channel
@@ -260,7 +257,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       network: { contractAddresses, provider },
       preProtocolStateChannel,
     } = context;
-    const { params, processID } = m1;
+    const { params, processID, customData } = m1.data;
     const log = context.log.newContext("CF-SyncProtocol");
     const start = Date.now();
     let substart = start;
@@ -275,29 +272,25 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
 
     // Determine the sync type needed, and fetch any information the
     // counterparty would need to sync and send to them
-    log.debug(`Response started with m1: ${stringify(m1.customData)}`);
+    log.debug(`Response started with m1: ${stringify(customData)}`);
     const syncType = makeSyncDetermination(
-      m1.customData as SyncDeterminationData,
+      customData as SyncDeterminationData,
       preProtocolStateChannel,
       log,
     );
     log.info(`Responder syncing with: ${stringify(syncType)}`);
     const syncInfoForCounterparty = await getInfoForSync(syncType, preProtocolStateChannel, store);
 
-    const m3 = yield [
+    const { message: m3 } = (yield [
       IO_SEND_AND_WAIT,
-      {
-        protocol,
-        processID,
-        params,
-        seq: 0,
-        to: counterpartyIdentifier,
+      generateProtocolMessageData(counterpartyIdentifier, protocol, processID, 0, params!, {
         customData: {
           ...getSyncDeterminationData(preProtocolStateChannel),
           ...syncInfoForCounterparty,
         },
-      },
-    ];
+        prevMessageReceived: substart,
+      }),
+    ])!;
     logTime(
       log,
       substart,
@@ -306,7 +299,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
 
     // Determine how channel is out of sync + sync channel
-    const counterpartyData = (m3! as ProtocolMessage).data.customData as {
+    const counterpartyData = parseProtocolMessage(m3).data.customData as {
       syncedProposals: string[];
     } & SyncFromDataJson;
 
@@ -440,16 +433,19 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     // send counterparty final list of proposal IDs
     yield [
       IO_SEND,
-      {
+      generateProtocolMessageData(
+        initiatorIdentifier,
         protocol,
         processID,
-        params,
-        seq: UNASSIGNED_SEQ_NO,
-        to: initiatorIdentifier,
-        customData: {
-          syncedProposals: [...postRejectChannel.proposedAppInstances.keys()],
+        UNASSIGNED_SEQ_NO,
+        params!,
+        {
+          customData: {
+            syncedProposals: [...postRejectChannel.proposedAppInstances.keys()],
+          },
+          prevMessageReceived: substart,
         },
-      },
+      ),
       postSyncStateChannel,
     ];
     logTime(log, start, `[${loggerId}] Response finished`);

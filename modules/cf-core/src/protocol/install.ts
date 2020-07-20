@@ -1,7 +1,6 @@
 import {
   InstallMiddlewareContext,
   Opcode,
-  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
@@ -20,7 +19,7 @@ import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../model
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
-import { assertIsValidSignature } from "./utils";
+import { assertIsValidSignature, generateProtocolMessageData, parseProtocolMessage } from "./utils";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH } from "../errors";
 
 const protocol = ProtocolNames.install;
@@ -46,7 +45,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
     const {
       preProtocolStateChannel,
-      message: { params, processID },
+      message: {
+        data: { params, processID },
+      },
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
@@ -111,23 +112,18 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateDataHash];
 
     // 124ms
+    const { message: m2 } = yield [
+      IO_SEND_AND_WAIT,
+      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, params!, {
+        customData: { signature: mySignatureOnFreeBalanceStateUpdate },
+        prevMessageReceived: start,
+      }),
+    ];
     const {
       data: {
         customData: { signature: counterpartySignatureOnFreeBalanceStateUpdate },
       },
-    } = yield [
-      IO_SEND_AND_WAIT,
-      {
-        processID,
-        params,
-        protocol,
-        to: responderIdentifier,
-        customData: {
-          signature: mySignatureOnFreeBalanceStateUpdate,
-        },
-        seq: 1,
-      } as ProtocolMessageData,
-    ] as any;
+    } = parseProtocolMessage(m2);
 
     // 7ms
     // free balance addr signs conditional transactions
@@ -178,9 +174,11 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
   1 /* Responding */: async function* (context: Context) {
     const {
       message: {
-        params,
-        processID,
-        customData: { signature },
+        data: {
+          params,
+          processID,
+          customData: { signature },
+        },
       },
       preProtocolStateChannel,
     } = context;
@@ -280,16 +278,17 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 154ms
     yield [
       IO_SEND,
-      {
-        processID,
+      generateProtocolMessageData(
+        initiatorIdentifier,
         protocol,
-        to: initiatorIdentifier,
-        prevMessageReceived: start,
-        customData: {
-          signature: mySignatureOnFreeBalanceStateUpdate,
+        processID,
+        UNASSIGNED_SEQ_NO,
+        params!,
+        {
+          customData: { signature: mySignatureOnFreeBalanceStateUpdate },
+          prevMessageReceived: start,
         },
-        seq: UNASSIGNED_SEQ_NO,
-      } as ProtocolMessageData,
+      ),
       stateChannelAfter,
       newAppInstance,
     ] as any;
