@@ -184,7 +184,7 @@ then
   bash ops/save-secret.sh "$eth_mnemonic_name" "$eth_mnemonic"
 
   chain_id_1=1337; chain_id_2=1338;
-  bash ops/start-testnet.sh $chain_id_1 $chain_id_2
+  INDRA_CHAIN_MODE="${INDRA_MODE#test-}" bash ops/start-testnet.sh $chain_id_1 $chain_id_2
   chain_providers="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
   contract_addresses="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json`"
   chain_url_1="`echo $chain_providers | jq '.[]' | head -n 1 | tr -d '"'`"
