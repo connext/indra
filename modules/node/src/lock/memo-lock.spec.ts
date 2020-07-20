@@ -60,7 +60,7 @@ describe("MemoLock", () => {
       const start = Date.now();
       setTimeout(() => {
         module.releaseLock("foo", lock);
-      }, 100);
+      }, 101);
       const nextLock = await module.acquireLock("foo");
       expect(Date.now() - start).to.be.at.least(100);
       await module.releaseLock("foo", nextLock);
