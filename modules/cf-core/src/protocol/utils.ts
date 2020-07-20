@@ -132,6 +132,7 @@ export const generateProtocolMessageData = (
   return {
     processID, // uuid
     protocol,
+    // FIXME: remove optional default after publishing
     protocolVersion: CHANNEL_PROTOCOL_VERSION || "1.0.0",
     params,
     to,
