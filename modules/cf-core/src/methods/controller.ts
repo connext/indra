@@ -97,6 +97,15 @@ export abstract class MethodController {
       try {
         // NOTE: sync always requires the multisig lock since the free balance
         // or channel nonce could be out of sync even in takeAction failures
+        if (!lockNames.includes(preProtocolStateChannel.multisigAddress)) {
+          // acquire the multisig lock
+          const lockValue = await requestHandler.lockService.acquireLock(
+            preProtocolStateChannel.multisigAddress,
+          );
+          lockValues.set(preProtocolStateChannel.multisigAddress, lockValue);
+          // add to the lockNames variable so it can be properly released
+          lockNames.push(preProtocolStateChannel.multisigAddress);
+        }
         const { channel } = await protocolRunner.initiateProtocol(
           router,
           ProtocolNames.sync,
