@@ -153,14 +153,15 @@ export class TransferService {
 
     // RECEIVER PROPOSAL
     let receiverProposeRes: MethodResults.ProposeInstall & { appType: AppType };
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      proposeInstallParams.meta.recipient,
-    );
     const receiverChainId = proposeInstallParams.meta.receiverChainId
-        ? proposeInstallParams.meta.receiverChainId
-        : senderChannel.chainId;
+      ? proposeInstallParams.meta.receiverChainId
+      : senderChannel.chainId;
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
+      proposeInstallParams.meta.recipient,
+      receiverChainId,
+    );
 
-      this.log.info(`Installing receiver app to chainId ${receiverChainId}`);
+    this.log.info(`Installing receiver app to chainId ${receiverChainId}`);
 
     try {
       receiverProposeRes = await this.proposeReceiverAppByPaymentId(
@@ -260,8 +261,9 @@ export class TransferService {
     );
 
     if (!receiverChannel) {
-      receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
         receiverIdentifier,
+        receiverChainId,
       );
     }
 
@@ -371,7 +373,10 @@ export class TransferService {
       appDefinitionAddress: appDefinition,
       outcomeType,
       stateEncoding,
-    } = this.cfCoreService.getAppInfoByName(transferType as SupportedApplicationNames);
+    } = this.cfCoreService.getAppInfoByNameAndChain(
+      transferType as SupportedApplicationNames,
+      receiverChainId,
+    );
 
     const res = await this.cfCoreService.proposeInstallApp({
       abiEncodings: {
@@ -380,14 +385,8 @@ export class TransferService {
       },
       appDefinition,
       initialState,
-      receiverAmount,
-      receiverAssetId,
-      Zero,
-      receiverAssetId, // receiverAssetId is same because swap happens between sender and receiver apps, not within the app
-      this.cfCoreService.getAppInfoByNameAndChain(
-        transferType as SupportedApplicationNames,
-        receiverChainId,
-      ),
+      initiatorDeposit: receiverAmount,
+      initiatorDepositAssetId: receiverAssetId,
       meta,
       multisigAddress: receiverChannel.multisigAddress,
       outcomeType,
@@ -416,8 +415,9 @@ export class TransferService {
       throw new Error(`Sender app has action, refusing to redeem`);
     }
 
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
       receiverIdentifier,
+      receiverChainId,
     );
 
     const proposeRes = await this.proposeReceiverAppByPaymentId(
