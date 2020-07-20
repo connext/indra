@@ -34,7 +34,7 @@ if [[ "$mode" == "staging" ]]
 then 
   mkdir -p $providers_file
   mkdir -p $addresses_file
-else
+fi
 
 if [[ ! -f "$providers_file" ]]
 then echo "File ${providers_file} does not exist, make sure the testnet chains are running" && exit 1
