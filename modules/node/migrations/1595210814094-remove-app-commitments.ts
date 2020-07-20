@@ -6,7 +6,7 @@ export class removeAppCommitments1595210814094 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Update remove app instance to set the latest state of the app
     await queryRunner.query(
-      `DROP FUNCTION IF EXISTS remove_app_instance(text,jsonb,jsonb);`,
+      `DROP FUNCTION IF EXISTS remove_app_instance(jsonb,jsonb,jsonb);`,
       undefined,
     );
 
@@ -35,12 +35,10 @@ export class removeAppCommitments1595210814094 implements MigrationInterface {
       RETURNING "identityHash" INTO remove_app_result;
 
       DELETE FROM "set_state_commitment"
-      WHERE "identityHash" = removed_app->>'identityHash'
-      RETURNING "identityHash" INTO remove_set_state_result;
+      WHERE "appIdentityHash" = removed_app->>'identityHash';
 
       DELETE FROM "conditional_transaction_commitment"
-      WHERE "identityHash" = removed_app->>'identityHash'
-      RETURNING "identityHash" INTO remove_conditional_result;
+      WHERE "appIdentityHash" = removed_app->>'identityHash';
     
       UPDATE "app_instance" SET 
         "latestState" = free_balance_app_instance->'latestState',
@@ -62,7 +60,7 @@ export class removeAppCommitments1595210814094 implements MigrationInterface {
       WHERE "appIdentityHash" = free_balance_app_instance->>'identityHash'
       RETURNING "appIdentityHash" INTO update_set_state_result;
 
-      IF remove_app_result IS NULL OR remove_set_state_result IS NULL OR remove_conditional_result IS NULL OR update_free_balance_result IS NULL OR update_set_state_result IS NULL
+      IF remove_app_result IS NULL OR update_free_balance_result IS NULL OR update_set_state_result IS NULL
       THEN
         RAISE EXCEPTION 
         'Operation could not be completed: remove_app_result -> %, remove_set_state_result -> %, remove_conditional_result -> %, update_free_balance_result -> %, update_set_state_result -> %', 
@@ -84,7 +82,7 @@ export class removeAppCommitments1595210814094 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Return procedure to previous migration (remove-with-updated-state)
     await queryRunner.query(
-      `DROP FUNCTION IF EXISTS remove_app_instance(text,jsonb,jsonb);`,
+      `DROP FUNCTION IF EXISTS remove_app_instance(jsonb,jsonb,jsonb);`,
       undefined,
     );
 
