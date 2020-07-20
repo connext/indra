@@ -46,10 +46,12 @@ release: database ethprovider proxy node-release test-runner-release webserver b
 ########################################
 # Command & Control Shortcuts
 
-start: start-daicard
+start: dev
+	bash ops/start-dev.sh
+	bash ops/start-daicard.sh
 
 start-headless: dev
-	INDRA_UI=headless bash ops/start-dev.sh
+	bash ops/start-dev.sh
 
 start-daicard: dev
 	INDRA_UI=daicard bash ops/start-dev.sh
@@ -79,18 +81,11 @@ stop:
 stop-all:
 	bash ops/stop.sh all
 
-restart-headless: dev
-	bash ops/stop.sh
-	INDRA_UI=headless bash ops/start-dev.sh
+restart: stop
+	bash ops/start-dev.sh
+	bash ops/start-daicard.sh
 
-restart-daicard: dev
-	bash ops/stop.sh
-	INDRA_UI=daicard bash ops/start-dev.sh
-
-restart: restart-daicard
-
-restart-prod:
-	bash ops/stop.sh
+restart-prod: stop
 	bash ops/start-prod.sh
 
 clean: stop-all

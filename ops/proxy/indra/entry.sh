@@ -27,7 +27,6 @@ echo "ETH_PROVIDER_URL=$ETH_PROVIDER_URL"
 echo "MESSAGING_TCP_URL=$MESSAGING_TCP_URL"
 echo "MESSAGING_WS_URL=$MESSAGING_WS_URL"
 echo "NODE_URL=$NODE_URL"
-echo "WEBSERVER_URL=$WEBSERVER_URL"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
@@ -59,18 +58,6 @@ wait-for -t 60 $NODE_URL 2> /dev/null
 while ! curl -s $NODE_URL > /dev/null
 do sleep 2
 done
-
-if [[ -n "$WEBSERVER_URL" ]]
-then
-  echo "waiting for $WEBSERVER_URL..."
-  wait-for -t 60 $WEBSERVER_URL 2> /dev/null
-  while ! curl -s $WEBSERVER_URL > /dev/null
-  do sleep 2
-  done
-else
-  # This won't return anything useful but must be provided so that haproxy doesn't crash on startup
-  WEBSERVER_URL="localhost:80"
-fi
 
 # Kill the loading message server
 kill "$loading_pid" && pkill nc
