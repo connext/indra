@@ -56,9 +56,11 @@ export const parseProtocolMessage = (message?: ProtocolMessage): ProtocolMessage
   } = data || {};
 
   // verify the correct protocol version
-  if (!protocolVersion || protocolVersion !== CHANNEL_PROTOCOL_VERSION) {
+  // FIXME: remove when types package is published
+  const toCompare = CHANNEL_PROTOCOL_VERSION || "1.0.0";
+  if (!protocolVersion || protocolVersion !== toCompare) {
     throw new Error(
-      `Incorrect protocol version number detected. Got ${protocolVersion}, expected: ${CHANNEL_PROTOCOL_VERSION}. Please update packages. Message payload: ${stringify(
+      `Incorrect protocol version number detected. Got ${protocolVersion}, expected: ${toCompare}. Please update packages. Message payload: ${stringify(
         data,
       )}`,
     );
