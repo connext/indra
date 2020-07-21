@@ -185,20 +185,11 @@ then
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   bash ops/save-secret.sh "$eth_mnemonic_name" "$eth_mnemonic"
 
-  chain_id_1=1337; chain_port_1=8545;
-  chain_url_1="http://172.17.0.1:$chain_port_1"
-  INDRA_CHAIN_MODE="${INDRA_MODE#test-}" bash ops/start-chain.sh $chain_id_1
-  chain_providers='{"'$chain_id_1'":"'$chain_url_1'"}'
-  contract_addresses="`cat $root/.chaindata/${chain_id_1}/address-book.json`"
-  mkdir -p  $root/.chaindata/addresses
-  cp $root/.chaindata/${chain_id_1}/address-book.json $root/.chaindata/addresses/1337-1338.json
-
-  # TODO: use two-chain testnet instead of manually spinning up just one chain
-  # chain_id_1=1337; chain_id_2=1338;
-  # INDRA_CHAIN_MODE="${INDRA_MODE#test-}" bash ops/start-testnet.sh $chain_id_1 $chain_id_2
-  # chain_providers="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
-  # contract_addresses="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json`"
-  # chain_url_1="`echo $chain_providers | jq '.[]' | head -n 1 | tr -d '"'`"
+  chain_id_1=1337; chain_id_2=1338;
+  INDRA_CHAIN_MODE="${INDRA_MODE#test-}" bash ops/start-testnet.sh $chain_id_1 $chain_id_2
+  chain_providers="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
+  contract_addresses="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json`"
+  chain_url_1="`echo $chain_providers | jq '.[]' | head -n 1 | tr -d '"'`"
 
 # If chain providers are provided, use those
 else
