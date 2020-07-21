@@ -33,6 +33,10 @@ export class txDataToCommitments1594196149518 implements MigrationInterface {
       undefined,
     );
     await queryRunner.query(
+      `UPDATE "onchain_transaction" SET "gasUsed" = '{"_hex":"0x00","_isBigNumber":true}' WHERE "gasUsed" IS NULL`,
+      undefined,
+    );
+    await queryRunner.query(
       `ALTER TABLE "onchain_transaction" ALTER COLUMN "gasUsed" SET NOT NULL`,
       undefined,
     );
