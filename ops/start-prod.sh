@@ -187,7 +187,7 @@ then
 
   chain_id_1=1337; chain_port_1=8545;
   chain_url_1="http://172.17.0.1:$chain_port_1"
-  INDRA_CHAIN_MODE="${INDRA_MODE#test-}" bash ops/start-chain.sh $chain_id_1 $chain_port_1
+  INDRA_CHAIN_MODE="${INDRA_MODE#test-}" bash ops/start-chain.sh $chain_id_1
   chain_providers='{"'$chain_id_1'":"'$chain_url_1'"}'
   contract_addresses="`cat $root/.chaindata/${chain_id_1}/address-book.json`"
   mkdir -p  $root/.chaindata/addresses
@@ -342,7 +342,7 @@ echo "The $project stack has been deployed, waiting for the proxy to start respo
 timeout=$(expr `date +%s` + 30)
 while true
 do
-  res="`curl -s $proxy_url || true`"
+  res="`curl -m 5 -s $proxy_url || true`"
   if [[ -z "$res" || "$res" == "Waiting for Indra to wake up" ]]
   then
     if [[ "`date +%s`" -gt "$timeout" ]]
