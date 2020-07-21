@@ -78,6 +78,8 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 ganache_chain_id="1337"
 node_port="8080"
 
+proxy_url="http://localhost:80"
+
 ####################
 # Helper Functions
 
@@ -337,7 +339,16 @@ EOF
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
 
 echo "The $project stack has been deployed, waiting for the proxy to start responding.."
-while [[ "`curl -s http://localhost:80`" == "Waiting for Indra to wake up" ]]
-do sleep 2
+timeout=$(expr `date +%s` + 30)
+while true
+do
+  res="`curl -s $proxy_url || true`"
+  if [[ -z "$res" || "$res" == "Waiting for Indra to wake up" ]]
+  then
+    if [[ "`date +%s`" -gt "$timeout" ]]
+    then echo "Timed out waiting for proxy to respond.." && exit
+    else sleep 2
+    fi
+  else echo "Good Morning!" && exit;
+  fi
 done
-echo "Good Morning!"
