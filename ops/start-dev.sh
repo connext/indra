@@ -57,7 +57,7 @@ nats_port=4222
 node_port=8080
 dash_port=9999
 
-proxy_url="http://localhost:3001"
+proxy_url="http://localhost:3000"
 
 # database connection settings
 pg_db="$project"
