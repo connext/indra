@@ -120,6 +120,8 @@ reset: stop-all
 	rm -rf .chaindata/*
 	rm -rf .flags/deployed-contracts
 
+purge: clean reset
+
 push-commit:
 	bash ops/push-images.sh $(commit)
 
