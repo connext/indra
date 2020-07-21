@@ -99,6 +99,7 @@ export abstract class MethodController {
         // or channel nonce could be out of sync even in takeAction failures
         if (!lockNames.includes(preProtocolStateChannel.multisigAddress)) {
           // acquire the multisig lock
+          log.info("Acquiring multisig lock before syncing");
           const lockValue = await requestHandler.lockService.acquireLock(
             preProtocolStateChannel.multisigAddress,
           );
@@ -106,6 +107,7 @@ export abstract class MethodController {
           // add to the lockNames variable so it can be properly released
           lockNames.push(preProtocolStateChannel.multisigAddress);
         }
+        log.info("All locks acquired, syncing");
         // only sync apps in cases for uninstall and take action protocols,
         // otherwise sync channel only
         const shouldProvideAppId =
