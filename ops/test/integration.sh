@@ -32,17 +32,16 @@ providers_file="$root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json"
 addresses_file="$root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json"
 if [[ "$mode" == "staging" ]]
 then
-  # Remove files if they exist
-  if [[ -f "$providers_file" ]]
-  then rm -rf $providers_file
-  fi
-  if [[ -f "$addresses_file" ]]
-  then rm -rf $addresses_file
-  fi
 
   # create local dir for files
-  mkdir -p $providers_file
-  mkdir -p $addresses_file
+  if [[ ! -f "$providers_file" ]]
+  then mkdir -p $providers_file
+  fi
+
+  if [[ ! -f "$addresses_file" ]]
+  then mkdir -p $addresses_file
+  fi
+
 fi
 
 if [[ ! -f "$providers_file" ]]
