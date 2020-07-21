@@ -106,6 +106,17 @@ export abstract class MethodController {
           // add to the lockNames variable so it can be properly released
           lockNames.push(preProtocolStateChannel.multisigAddress);
         }
+        // only sync apps in cases for uninstall and take action protocols,
+        // otherwise sync channel only
+        const shouldProvideAppId =
+          this.methodName === MethodNames.chan_uninstall ||
+          this.methodName === MethodNames.chan_takeAction;
+        const appIdentityHash =
+          shouldProvideAppId &&
+          (params as any).appIdentityHash &&
+          (params as any).appIdentityHash !== preProtocolStateChannel.freeBalance.identityHash
+            ? (params as any).appIdentityHash
+            : undefined;
         const { channel } = await protocolRunner.initiateProtocol(
           router,
           ProtocolNames.sync,
@@ -113,7 +124,7 @@ export abstract class MethodController {
             multisigAddress: preProtocolStateChannel.multisigAddress,
             initiatorIdentifier: publicIdentifier,
             responderIdentifier,
-            appIdentityHash: (params as any).appIdentityHash || undefined,
+            appIdentityHash,
           },
           preProtocolStateChannel,
         );
