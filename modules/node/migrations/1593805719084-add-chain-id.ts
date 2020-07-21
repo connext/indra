@@ -6,10 +6,7 @@ export class addChainId1593805719084 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE "channel" ADD "chainId" integer`, undefined);
     await queryRunner.query(`UPDATE "channel" SET "chainId" = 0`, undefined);
-    await queryRunner.query(
-      `ALTER TABLE "channel" ALTER COLUMN "chainId" integer SET NOT NULL`,
-      undefined,
-    );
+    await queryRunner.query(`ALTER TABLE "channel" ALTER COLUMN "chainId" SET NOT NULL`, undefined);
     await queryRunner.query(
       `ALTER TABLE "onchain_transaction" ALTER COLUMN "gasUsed" SET NOT NULL`,
       undefined,
