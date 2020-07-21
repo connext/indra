@@ -347,7 +347,7 @@ do
   then
     if [[ "`date +%s`" -gt "$timeout" ]]
     then echo "Timed out waiting for proxy to respond.." && exit
-    else echo "Waiting for $(expr $timeout - `date +%s`) more seconds.." && sleep 2
+    else sleep 2
     fi
   else echo "Good Morning!" && exit;
   fi
