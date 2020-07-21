@@ -11,7 +11,7 @@ address_book="${ADDRESS_BOOK:-/data/address-book.json}"
 data_dir="${DATA_DIR:-/tmpfs}"
 chain_id="${CHAIN_ID:-1337}"
 mnemonic="${MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
-engine="${ENGINE:-buidler}"
+engine="${ENGINE:-`if [[ "$chain_id" == "1337" ]]; then echo "ganache"; else echo "buidler"; fi`}"
 
 mkdir -p $data_dir /data /tmpfs
 touch $address_book
@@ -36,12 +36,13 @@ then
       },
     },
   }' > /tmpfs/buidler.config.js
-  launch="./node_modules/.bin/buidler node --config /tmpfs/buidler.config.js --emoji --hostname 0.0.0.0 --port 8545 "
+  launch="/root/node_modules/.bin/buidler node --config /tmpfs/buidler.config.js --hostname 0.0.0.0 --port 8545 "
+  cd /tmpfs # bc we need to run buidler node in same dir as buidler.config.js
 
 elif [[ "$engine" == "ganache" ]]
 then
   echo "Using ganache EVM engine"  
-  launch='./node_modules/.bin/ganache-cli \
+  launch='/root/node_modules/.bin/ganache-cli \
     --db='$data_dir' \
     --defaultBalanceEther=2000000000 \
     --gasLimit=9000000000 \
@@ -65,10 +66,10 @@ wait-for localhost:8545
 export REAL_CHAIN_ID=$chain_id
 
 echo "Deploying contracts.."
-node dist/src.ts/cli.js migrate --address-book "$address_book" --mnemonic "$mnemonic"
+node /root/dist/src.ts/cli.js migrate --address-book "$address_book" --mnemonic "$mnemonic"
 
 echo "Deploying testnet token.."
-node dist/src.ts/cli.js new-token --address-book "$address_book" --mnemonic "$mnemonic"
+node /root/dist/src.ts/cli.js new-token --address-book "$address_book" --mnemonic "$mnemonic"
 
 # Buidler does not persist chain data: it will start with a fresh chain every time
 # Ganache persists chain data so we can restart it & this time we'll expose it to the outside world

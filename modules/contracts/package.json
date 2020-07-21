@@ -36,6 +36,7 @@
     "@openzeppelin/contracts": "3.0.2",
     "ethers": "5.0.5",
     "ganache-cli": "6.9.1",
+    "keccak": "3.0.1",
     "yargs": "15.4.1"
   },
   "devDependencies": {
