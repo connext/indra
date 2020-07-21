@@ -56,6 +56,9 @@ export class Channel {
   @Column("integer", { nullable: true })
   monotonicNumProposedApps!: number;
 
+  @Column("integer")
+  chainId!: number;
+
   @OneToMany(
     (type: any) => WithdrawCommitment,
     (withdrawalCommitment: WithdrawCommitment) => withdrawalCommitment.channel,

@@ -31,6 +31,7 @@ type SetupProtocolParams = {
   initiatorIdentifier: PublicIdentifier;
   responderIdentifier: PublicIdentifier;
   multisigAddress: Address;
+  chainId: number;
 };
 
 type SyncProtocolParams = {

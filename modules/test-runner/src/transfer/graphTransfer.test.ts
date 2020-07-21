@@ -25,6 +25,7 @@ import {
   AssetOptions,
   createClient,
   ETH_AMOUNT_SM,
+  ethProviderUrl,
   expect,
   fundChannel,
   TOKEN_AMOUNT,
@@ -45,10 +46,7 @@ describe("Graph Signed Transfers", () => {
   let verifyingContract: Address;
   let provider: providers.JsonRpcProvider;
   before(async () => {
-    provider = new providers.JsonRpcProvider(
-      env.ethProviderUrl,
-      await getChainId(env.ethProviderUrl),
-    );
+    provider = new providers.JsonRpcProvider(ethProviderUrl, await getChainId(ethProviderUrl));
     const currBlock = await provider.getBlockNumber();
     // the node uses a `TIMEOUT_BUFFER` on recipient of 100 blocks
     // so make sure the current block
@@ -67,7 +65,7 @@ describe("Graph Signed Transfers", () => {
     clientA = await createClient({ signer: privateKeyA, id: "A" });
     privateKeyB = getRandomPrivateKey();
     clientB = await createClient({ signer: privateKeyB, id: "B" });
-    tokenAddress = clientA.config.contractAddresses.Token!;
+    tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
     receipt = getTestGraphReceiptToSign();
     chainId = (await clientA.ethProvider.getNetwork()).chainId;
     verifyingContract = getTestVerifyingContract();
@@ -291,6 +289,7 @@ describe("Graph Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
 
+    const receiverInstall = clientB.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
     await clientA.conditionalTransfer({
       amount: transfer.amount,
       conditionType: ConditionalTransferTypes.GraphTransfer,
@@ -304,6 +303,7 @@ describe("Graph Signed Transfers", () => {
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.GraphTransfer);
+    await receiverInstall;
     // disconnect so that it cant be unlocked
     await clientA.messaging.disconnect();
 

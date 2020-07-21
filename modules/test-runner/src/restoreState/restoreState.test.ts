@@ -4,14 +4,14 @@ import { getRandomChannelSigner, stringify, toBN, delay } from "@connext/utils";
 import { constants } from "ethers";
 
 import {
-  expect,
-  TOKEN_AMOUNT,
   createClient,
   ETH_AMOUNT_SM,
+  ethProviderUrl,
+  expect,
   fundChannel,
-  TOKEN_AMOUNT_SM,
-  env,
   getNatsClient,
+  TOKEN_AMOUNT,
+  TOKEN_AMOUNT_SM,
 } from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 
@@ -25,9 +25,9 @@ describe("Restore State", () => {
 
   beforeEach(async () => {
     const nats = getNatsClient();
-    signerA = getRandomChannelSigner(env.ethProviderUrl);
+    signerA = getRandomChannelSigner(ethProviderUrl);
     clientA = await createClient({ signer: signerA, store: getLocalStore() });
-    tokenAddress = clientA.config.contractAddresses.Token!;
+    tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
     nodeSignerAddress = clientA.nodeSignerAddress;
 
     const REBALANCE_PROFILE = {

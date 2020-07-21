@@ -5,6 +5,10 @@ export const NO_MULTISIG_IN_PARAMS = (params: any): string => {
   return `No multisig address provided in params: ${stringify(params)}`;
 };
 
+export const NO_APP_IDENTITY_HASH_IN_PARAMS = (params: any): string => {
+  return `No multisig address provided in params: ${stringify(params)}`;
+};
+
 export const APP_ALREADY_UNINSTALLED = (appIdentityHash: string): string =>
   `Cannot uninstall app ${appIdentityHash}, it has already been uninstalled`;
 
@@ -56,6 +60,9 @@ export const INVALID_MASTERCOPY_ADDRESS = (address: string): string =>
 
 export const NO_NETWORK_PROVIDER_CREATE2 =
   "`getCreate2MultisigAddress` needs access to an eth provider within the network context";
+
+export const NO_NETWORK_PROVIDER_FOR_CHAIN_ID = (chainId: number): string =>
+  `Method needs access to an eth provider within the network context for chainId ${chainId}`;
 
 export const INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT = (
   address: string,

@@ -11,7 +11,7 @@ import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { ChannelService } from "../channel/channel.service";
 import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
-import { AdminService, RepairCriticalAddressesResponse } from "./admin.service";
+import { AdminService } from "./admin.service";
 
 class AdminMessaging extends AbstractMessagingProvider {
   constructor(
@@ -38,18 +38,21 @@ class AdminMessaging extends AbstractMessagingProvider {
    * This method will return the userAddress and the multisig address for all
    * channels that fit this description.
    */
-  async getNoFreeBalance(): Promise<{ multisigAddress: string; userAddress: string; error: any }[]> {
+  async getNoFreeBalance(): Promise<
+    { multisigAddress: string; userAddress: string; error: any }[]
+  > {
     return this.adminService.getNoFreeBalance();
   }
 
-  async getStateChannelByUserPublicIdentifier(data: {
+  async getStateChannelByUserPublicIdentifierAndChain(data: {
     userIdentifier: string;
+    chainId: number;
   }): Promise<StateChannelJSON> {
-    const { userIdentifier } = data;
+    const { userIdentifier, chainId } = data;
     if (!userIdentifier) {
       throw new RpcException(`No public identifier supplied: ${stringify(data)}`);
     }
-    return this.adminService.getStateChannelByUserPublicIdentifier(userIdentifier);
+    return this.adminService.getStateChannelByUserPublicIdentifierAndChain(userIdentifier, chainId);
   }
 
   async getStateChannelByMultisig(
@@ -84,46 +87,48 @@ class AdminMessaging extends AbstractMessagingProvider {
   }
 
   async addRebalanceProfile(subject: string, data: { profile: RebalanceProfile }): Promise<void> {
-    const address = subject.split(".")[1];
+    const [, address, chainId] = subject.split(".");
     const profile = bigNumberifyJson(data.profile) as RebalanceProfile;
-    await this.channelService.addRebalanceProfileToChannel(address, profile);
+    await this.channelService.addRebalanceProfileToChannel(address, parseInt(chainId), profile);
   }
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "admin.get-no-free-balance",
+      "admin.*.get-no-free-balance",
       this.getNoFreeBalance.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.get-state-channel-by-address",
-      this.getStateChannelByUserPublicIdentifier.bind(this),
+      "admin.*.get-state-channel-by-address",
+      this.getStateChannelByUserPublicIdentifierAndChain.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.get-state-channel-by-multisig",
+      "admin.*.get-state-channel-by-multisig",
       this.getStateChannelByMultisig.bind(this),
     );
 
-    await super.connectRequestReponse("admin.get-all-channels", this.getAllChannels.bind(this));
+    await super.connectRequestReponse("admin.*.get-all-channels", this.getAllChannels.bind(this));
 
     await super.connectRequestReponse(
-      "admin.get-all-linked-transfers",
+      "admin.*.get-all-linked-transfers",
       this.getAllLinkedTransfers.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.get-linked-transfer-by-payment-id",
+      "admin.*.get-linked-transfer-by-payment-id",
       this.getLinkedTransferByPaymentId.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.get-channels-for-merging",
+      "admin.*.get-channels-for-merging",
       this.getChannelsForMerging.bind(this),
     );
 
+    // e.g.
+    // `admin.${client.publicIdentifier}.${client.chainId}.channel.add-profile`
     await super.connectRequestReponse(
-      "admin.*.channel.add-profile",
+      "admin.*.*.channel.add-profile",
       this.addRebalanceProfile.bind(this),
     );
   }

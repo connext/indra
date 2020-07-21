@@ -1,3 +1,4 @@
+import { getMemoryStore } from "@connext/store";
 import {
   IConnextClient,
   IChannelSigner,
@@ -6,22 +7,21 @@ import {
   EventNames,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { getMemoryStore } from "@connext/store";
+import { getRandomChannelSigner, delay } from "@connext/utils";
 
 import {
   APP_PROTOCOL_TOO_LONG,
+  CLIENT_INSTALL_FAILED,
   createClient,
   createClientWithMessagingLimits,
+  ETH_AMOUNT_SM,
+  ethProviderUrl,
   expect,
   fundChannel,
   RECEIVED,
   SEND,
   TestMessagingService,
-  env,
-  ETH_AMOUNT_SM,
-  CLIENT_INSTALL_FAILED,
 } from "../util";
-import { getRandomChannelSigner, delay } from "@connext/utils";
 
 const makeFailingDepositCall = async (opts: {
   client: IConnextClient;
@@ -82,7 +82,7 @@ describe("Deposit offline tests", () => {
   let store: IStoreService;
 
   beforeEach(() => {
-    signer = getRandomChannelSigner(env.ethProviderUrl);
+    signer = getRandomChannelSigner(ethProviderUrl);
     store = getMemoryStore();
   });
 
@@ -195,6 +195,7 @@ describe("Deposit offline tests", () => {
       ceiling: { [RECEIVED]: 0 },
       signer,
       store,
+      id: "A-Initial",
     });
 
     await makeFailingDepositCall({
@@ -205,7 +206,7 @@ describe("Deposit offline tests", () => {
     const messaging = client.messaging! as TestMessagingService;
     expect(messaging.uninstallCount[RECEIVED]).to.be.eq(0);
 
-    await recreateClientAndRetryDepositCall(signer, client, store);
+    await recreateClientAndRetryDepositCall(signer, client, store, { id: "A-recreated" });
   });
 
   it("client successfully installed deposit app, but went offline during uninstall protocol", async () => {

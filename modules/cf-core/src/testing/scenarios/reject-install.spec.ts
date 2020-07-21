@@ -2,13 +2,13 @@ import { EventNames, ProposeMessage } from "@connext/types";
 
 import { CFCore } from "../../cfCore";
 
-import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
   collateralizeChannel,
   constructRejectInstallRpc,
   createChannel,
+  getContractAddresses,
   getInstalledAppInstances,
   getProposedAppInstances,
   makeAndSendProposeCall,
@@ -28,7 +28,7 @@ describe("Node method follows spec - rejectInstall", () => {
   describe("Rejects proposal with non-null initial state", () => {
     it("Node A installs, node b rejects", async () => {
       return new Promise(async (done) => {
-        const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+        const { TicTacToeApp } = getContractAddresses();
 
         const multisigAddress = await createChannel(nodeA, nodeB);
 
@@ -66,7 +66,7 @@ describe("Node method follows spec - rejectInstall", () => {
 
     it("Node A installs, node a rejects", async () => {
       return new Promise(async (done) => {
-        const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+        const { TicTacToeApp } = getContractAddresses();
         const multisigAddress = await createChannel(nodeA, nodeB);
 
         await collateralizeChannel(multisigAddress, nodeA, nodeB);

@@ -39,6 +39,7 @@ describe("CFCoreStore", () => {
   let configService: ConfigService;
   let channelRepository: ChannelRepository;
   let cacheService: CacheService;
+  let chainId: number;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -66,6 +67,7 @@ describe("CFCoreStore", () => {
     configService = moduleRef.get<ConfigService>(ConfigService);
     cacheService = moduleRef.get<CacheService>(CacheService);
     channelRepository = moduleRef.get<ChannelRepository>(ChannelRepository);
+    chainId = configService.getSupportedChains()[0];
   });
 
   afterEach(async () => {
@@ -139,7 +141,7 @@ describe("CFCoreStore", () => {
 
       const conditionalTx = createConditionalTransactionCommitmentJSON({
         appIdentityHash: appProposal.identityHash,
-        contractAddresses: await configService.getContractAddresses(),
+        contractAddresses: configService.getContractAddresses(chainId),
       });
 
       for (let index = 0; index < 3; index++) {
@@ -351,7 +353,7 @@ describe("CFCoreStore", () => {
       };
       const updatedFreeBalanceCommitment = createSetStateCommitmentJSON({
         appIdentityHash: channelJson.freeBalanceAppInstance!.identityHash,
-        versionNumber: toBNJson(1337),
+        versionNumber: toBNJson(chainId),
       });
 
       for (let index = 0; index < 3; index++) {
@@ -365,6 +367,14 @@ describe("CFCoreStore", () => {
         // make sure it got unbound in the db
         const channelEntity = await channelRepository.findByMultisigAddressOrThrow(multisigAddress);
         expect(channelEntity.appInstances.length).to.equal(1);
+
+        // verify app commitments are also removed
+        const conditional = await cfCoreStore.getConditionalTransactionCommitment(
+          appInstance.identityHash,
+        );
+        expect(conditional).to.be.undefined;
+        const setState = await cfCoreStore.getSetStateCommitments(appInstance.identityHash);
+        expect(setState).to.be.deep.eq([]);
 
         const channel = await cfCoreStore.getStateChannel(multisigAddress);
         expect(channel.appInstances.length).to.equal(0);

@@ -32,29 +32,30 @@
   "dependencies": {
     "@connext/types": "7.0.0-alpha.20",
     "@connext/utils": "7.0.0-alpha.20",
+    "@nomiclabs/buidler": "1.3.8",
     "@openzeppelin/contracts": "3.0.2",
     "ethers": "5.0.5",
     "ganache-cli": "6.9.1",
-    "yargs": "15.4.0"
+    "keccak": "3.0.1",
+    "yargs": "15.4.1"
   },
   "devDependencies": {
-    "@nomiclabs/buidler": "1.3.8",
     "@nomiclabs/buidler-ethers": "2.0.0",
     "@nomiclabs/buidler-waffle": "2.0.0",
     "@types/chai": "4.2.11",
     "@types/chai-subset": "1.3.3",
-    "@types/mocha": "7.0.2",
-    "@types/node": "14.0.20",
+    "@types/mocha": "8.0.0",
+    "@types/node": "14.0.23",
     "@types/sinon-chai": "3.2.4",
     "@types/yargs": "15.0.5",
     "chai": "4.2.0",
-    "ethereum-waffle": "3.0.1",
+    "ethereum-waffle": "3.0.2",
     "ethlint": "1.2.5",
     "event-target-shim": "5.0.1",
     "mocha": "8.0.1",
     "solc": "0.6.9",
     "ts-mocha": "7.0.0",
     "ts-node": "8.10.2",
-    "typescript": "3.9.6"
+    "typescript": "3.9.7"
   }
 }

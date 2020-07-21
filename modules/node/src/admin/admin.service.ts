@@ -29,8 +29,14 @@ export class AdminService implements OnApplicationBootstrap {
   ///// GENERAL PURPOSE ADMIN FNS
 
   /**  Get channels by address */
-  async getStateChannelByUserPublicIdentifier(userIdentifier: string): Promise<StateChannelJSON> {
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userIdentifier);
+  async getStateChannelByUserPublicIdentifierAndChain(
+    userIdentifier: string,
+    chainId: number,
+  ): Promise<StateChannelJSON> {
+    const channel = await this.channelRepository.findByUserPublicIdentifierAndChain(
+      userIdentifier,
+      chainId,
+    );
     return ChannelSerializer.toJSON(channel);
   }
 

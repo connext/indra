@@ -73,10 +73,8 @@ export const connect = async (
 
   // setup ethProvider
   logger.debug(`Creating ethereum provider from url: ${ethProviderUrl}`);
-  const ethProvider = new providers.JsonRpcProvider(
-    ethProviderUrl,
-    await getChainId(ethProviderUrl),
-  );
+  const chainId = await getChainId(ethProviderUrl);
+  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl, chainId);
 
   // setup messaging and node api
   let node: INodeApiClient;
@@ -103,6 +101,7 @@ export const connect = async (
       nodeUrl: channelProvider.config.nodeUrl,
       channelProvider,
       skipSync,
+      chainId,
     });
     config = node.config;
     messaging = node.messaging;
@@ -125,6 +124,7 @@ export const connect = async (
       nodeUrl,
       signer,
       skipSync,
+      chainId,
     });
     config = node.config;
     messaging = node.messaging;
@@ -134,7 +134,7 @@ export const connect = async (
   }
 
   // create a token contract based on the provided token
-  const token = new Contract(config.contractAddresses.Token, ERC20.abi, ethProvider);
+  const token = new Contract(config.contractAddresses[chainId].Token, ERC20.abi, ethProvider);
 
   // create appRegistry
   const appRegistry = await node.appRegistry();
@@ -152,6 +152,7 @@ export const connect = async (
     signer,
     store,
     token,
+    chainId,
   });
 
   logger.info(`Done creating connext client`);

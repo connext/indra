@@ -10,26 +10,28 @@ import {
 import { CFCore } from "../../cfCore";
 import { getCreate2MultisigAddress } from "../../utils";
 
-import { SetupContext, setup } from "../setup";
-import { createChannel, assertMessage } from "../utils";
 import { expect } from "../assertions";
+import { SetupContext, setup } from "../setup";
+import { assertMessage, createChannel, getChainId } from "../utils";
 
 describe("injected validation middleware", () => {
   let nodeA: CFCore;
   let nodeB: CFCore;
 
   let multisigAddress: string;
+  let chainId;
 
   beforeEach(async () => {
     const context: SetupContext = await setup(global);
+    chainId = getChainId();
     nodeA = context["A"].node;
     nodeB = context["B"].node;
 
     multisigAddress = await getCreate2MultisigAddress(
       nodeA.publicIdentifier,
       nodeB.publicIdentifier,
-      nodeA.networkContext.contractAddresses,
-      nodeA.networkContext.provider,
+      nodeA.networkContexts[chainId].contractAddresses,
+      nodeA.networkContexts[chainId].provider,
     );
   });
 
@@ -51,6 +53,7 @@ describe("injected validation middleware", () => {
         initiatorIdentifier: nodeA.publicIdentifier,
         responderIdentifier: nodeB.publicIdentifier,
         multisigAddress,
+        chainId,
       },
       role: ProtocolRoles.initiator,
     });

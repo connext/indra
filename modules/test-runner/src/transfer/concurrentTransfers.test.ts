@@ -14,7 +14,7 @@ import {
   getTestGraphReceiptToSign,
 } from "@connext/utils";
 
-import { createClient, fundChannel } from "../util";
+import { createClient, env, fundChannel } from "../util";
 
 const { AddressZero } = constants;
 const { hexlify, randomBytes, parseEther } = utils;
@@ -23,6 +23,8 @@ const generatePaymentId = () => hexlify(randomBytes(32));
 
 const TRANSFER_AMOUNT = parseEther("0.00001");
 const DEPOSIT_AMOUNT = parseEther("0.1");
+
+const log = new ColorfulLogger("ConcurrentTransfersTest", env.logLevel, true);
 
 describe("Concurrent transfers", async () => {
   let channel: IConnextClient;
@@ -50,13 +52,11 @@ describe("Concurrent transfers", async () => {
     verifyingContract = getTestVerifyingContract();
     receipt = getTestGraphReceiptToSign();
 
-    console.log("Signer address:", channel.signerAddress);
-
-    console.log("Deposit into state channel");
+    log.info("Deposit into state channel");
     await fundChannel(channel, DEPOSIT_AMOUNT, AddressZero);
     const balance: BigNumber = (await channel.getFreeBalance())[channel.signerAddress];
-    console.log("Free balance:", balance.toString());
-    console.log("Total # of payments possible: ", balance.div(parseEther("0.00001")).toString());
+    log.info(`Free balance: ${balance.toString()}`);
+    log.info(`Total # of payments possible: ${balance.div(parseEther(`0.00001`))}`);
 
     subgraphChannels = [
       {
@@ -75,11 +75,11 @@ describe("Concurrent transfers", async () => {
     let count = 0;
     indexerA.on("CONDITIONAL_TRANSFER_CREATED_EVENT", (data) => {
       count++;
-      console.log(`${data.paymentId} Payment created: ${count}`);
+      log.info(`${data.paymentId} Payment created: ${count}`);
     });
     indexerB.on("CONDITIONAL_TRANSFER_CREATED_EVENT", (data) => {
       count++;
-      console.log(`${data.paymentId} Payment created: ${count}`);
+      log.info(`${data.paymentId} Payment created: ${count}`);
     });
     const queue = new PQueue({ concurrency: 10 });
     const sendLoop = async () => {
@@ -91,7 +91,7 @@ describe("Concurrent transfers", async () => {
           // Send payment and query
           // eslint-disable-next-line no-loop-func
           queue.add(async () => {
-            console.log(paymentId, "Send payment");
+            log.info(`Send payment: ${paymentId}`);
             try {
               await channel.conditionalTransfer({
                 paymentId,
@@ -109,7 +109,7 @@ describe("Concurrent transfers", async () => {
             } catch (e) {
               console.error(`Failed to send payment: ${e}`);
             }
-            console.log(`${paymentId} Payment sent`);
+            log.info(`${paymentId} Payment sent`);
           });
         }
         await delay(100);

@@ -26,6 +26,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 
   async getLinkedTransferByPaymentId(
     pubId: string,
+    chainId: number,
     data: { paymentId: string },
   ): Promise<NodeResponses.GetLinkedTransfer | undefined> {
     const { paymentId } = data;
@@ -39,7 +40,10 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     const {
       senderApp,
       status,
-    } = await this.linkedTransferService.findSenderAndReceiverAppsWithStatus(paymentId);
+    } = await this.linkedTransferService.findSenderAndReceiverAppsWithStatusOnChain(
+      paymentId,
+      chainId,
+    );
     if (!senderApp) {
       return undefined;
     }
@@ -63,9 +67,11 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 
   async getPendingTransfers(
     userIdentifier: string,
+    chainId: number,
   ): Promise<NodeResponses.GetPendingAsyncTransfers> {
-    const transfers = await this.linkedTransferService.getLinkedTransfersForReceiverUnlock(
+    const transfers = await this.linkedTransferService.getLinkedTransfersForReceiverUnlockOnChain(
       userIdentifier,
+      chainId,
     );
     return transfers.map((transfer) => {
       return {
@@ -84,13 +90,9 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      `*.${this.configService.getPublicIdentifier()}.transfer.get-linked`,
-      this.authService.parseIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
+      `*.${this.configService.getPublicIdentifier()}.*.transfer.get-linked`,
+      this.authService.parseIdentifierAndChain(this.getLinkedTransferByPaymentId.bind(this)),
     );
-    // await super.connectRequestReponse(
-    //   "*.transfer.get-pending",
-    //   this.authService.parseIdentifier(this.getPendingTransfers.bind(this)),
-    // );
   }
 }
 

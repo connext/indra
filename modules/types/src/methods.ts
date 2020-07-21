@@ -12,6 +12,7 @@ import { enumify } from "./utils";
 
 type CreateChannelParams = {
   owners: PublicIdentifier[];
+  chainId: number;
 };
 
 type CreateChannelResult = {
@@ -68,6 +69,7 @@ type GetAppInstancesResult = {
 
 type GetStateDepositHolderAddressParams = {
   owners: Address[]; // [initiator, responder]
+  chainId: number;
 };
 
 type GetStateDepositHolderAddressResult = {

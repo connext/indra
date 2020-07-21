@@ -22,7 +22,10 @@ import {
   toBNJson,
 } from "@connext/utils";
 import { constants, utils } from "ethers";
+
 import { CFCoreStore } from "../../cfCore/cfCore.store";
+
+import { env } from "./config";
 
 const { AddressZero, HashZero, Zero, One } = constants;
 const { defaultAbiCoder } = utils;
@@ -62,13 +65,14 @@ export const createAppInstanceJson = (
 export const createStateChannelJSON = (
   overrides: Partial<StateChannelJSON> = {},
 ): StateChannelJSON => {
-  const userIdentifiers = [getRandomAddress(), getRandomAddress()];
+  const userIdentifiers = overrides.userIdentifiers || [getRandomAddress(), getRandomAddress()];
   const channelData: Omit<StateChannelJSON, "freeBalanceAppInstance"> = {
     addresses: {
-      MinimumViableMultisig: "",
-      ProxyFactory: "",
+      MinimumViableMultisig: getRandomAddress(),
+      ProxyFactory: getRandomAddress(),
     },
     appInstances: [],
+    chainId: env.defaultChain,
     monotonicNumProposedApps: 0,
     multisigAddress: getRandomAddress(),
     proposedAppInstances: [],
@@ -111,6 +115,30 @@ export const createSetStateCommitmentJSON = (
   });
 };
 
+const getContractAddresses = (overrides: Partial<ContractAddresses> = {}): ContractAddresses => {
+  return {
+    ProxyFactory: getRandomAddress(),
+    MinimumViableMultisig: getRandomAddress(),
+    ChallengeRegistry: getRandomAddress(),
+    ConditionalTransactionDelegateTarget: getRandomAddress(),
+    DepositApp: getRandomAddress(),
+    WithdrawApp: getRandomAddress(),
+    HashLockTransferApp: getRandomAddress(),
+    IdentityApp: getRandomAddress(),
+    MultiAssetMultiPartyCoinTransferInterpreter: getRandomAddress(),
+    GraphSignedTransferApp: getRandomAddress(),
+    SimpleLinkedTransferApp: getRandomAddress(),
+    SimpleSignedTransferApp: getRandomAddress(),
+    SimpleTwoPartySwapApp: getRandomAddress(),
+    SingleAssetTwoPartyCoinTransferInterpreter: getRandomAddress(),
+    TimeLockedPassThrough: getRandomAddress(),
+    Token: getRandomAddress(),
+    TwoPartyFixedOutcomeInterpreter: getRandomAddress(),
+    WithdrawInterpreter: getRandomAddress(),
+    ...overrides,
+  };
+};
+
 export const createConditionalTransactionCommitmentJSON = (
   overrides: Partial<ConditionalTransactionCommitmentJSON> = {},
 ): ConditionalTransactionCommitmentJSON => {
@@ -121,7 +149,7 @@ export const createConditionalTransactionCommitmentJSON = (
     interpreterParams: "",
     multisigAddress: getRandomAddress(),
     multisigOwners: [getRandomAddress(), getRandomAddress()],
-    contractAddresses: {} as ContractAddresses,
+    contractAddresses: getContractAddresses(),
     signatures: [getRandomSignature(), getRandomSignature()],
     transactionData: getRandomBytes32(),
     ...overrides,

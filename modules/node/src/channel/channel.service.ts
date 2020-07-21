@@ -58,8 +58,12 @@ export class ChannelService {
   // the provider method returns, and the query is *ACTUALLY* executed
   async getByUserPublicIdentifier(
     userIdentifier: string,
+    chainId: number,
   ): Promise<NodeResponses.GetChannel | undefined> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userIdentifier);
+    const channel = await this.channelRepository.findByUserPublicIdentifierAndChain(
+      userIdentifier,
+      chainId,
+    );
     this.log.debug(`Got channel for ${userIdentifier}: ${stringify(channel, true)}`);
     return !channel || !channel.multisigAddress
       ? undefined
@@ -76,17 +80,25 @@ export class ChannelService {
    * Starts create channel process within CF core
    * @param counterpartyIdentifier
    */
-  async create(counterpartyIdentifier: string): Promise<MethodResults.CreateChannel> {
+  async create(
+    counterpartyIdentifier: string,
+    chainId: number,
+  ): Promise<MethodResults.CreateChannel> {
     this.log.info(`create ${counterpartyIdentifier} started`);
-    const existing = await this.channelRepository.findByUserPublicIdentifier(
+    const existing = await this.channelRepository.findByUserPublicIdentifierAndChain(
       counterpartyIdentifier,
+      chainId,
     );
     if (existing) {
-      throw new Error(`Channel already exists for ${counterpartyIdentifier}`);
+      throw new Error(
+        `Channel already exists for ${counterpartyIdentifier} on ${chainId}: ${existing.multisigAddress}`,
+      );
     }
 
-    const createResult = await this.cfCoreService.createChannel(counterpartyIdentifier);
-    this.log.info(`create ${counterpartyIdentifier} finished: ${JSON.stringify(createResult)}`);
+    const createResult = await this.cfCoreService.createChannel(counterpartyIdentifier, chainId);
+    this.log.info(
+      `create ${counterpartyIdentifier} on ${chainId} finished: ${JSON.stringify(createResult)}`,
+    );
     return createResult;
   }
 
@@ -101,13 +113,14 @@ export class ChannelService {
     const normalizedAssetId = getAddress(assetId);
     if (channel.activeCollateralizations[assetId]) {
       this.log.warn(
-        `Channel has collateralization in flight for ${normalizedAssetId}, doing nothing`,
+        `Channel ${channel.multisigAddress} has collateralization in flight for ${normalizedAssetId}, doing nothing`,
       );
       return undefined;
     }
 
     const rebalancingTargets = await this.getRebalancingTargets(
       channel.userIdentifier,
+      channel.chainId,
       normalizedAssetId,
     );
 
@@ -164,12 +177,14 @@ export class ChannelService {
 
   async getCollateralAmountToCoverPaymentAndRebalance(
     userPublicIdentifier: string,
+    chainId: number,
     assetId: string,
     paymentAmount: BigNumber,
     currentBalance: BigNumber,
   ): Promise<BigNumber> {
     const { collateralizeThreshold, target } = await this.getRebalancingTargets(
       userPublicIdentifier,
+      chainId,
       assetId,
     );
     // if the payment reduces the nodes current balance to below the lower
@@ -191,10 +206,11 @@ export class ChannelService {
 
   async getRebalancingTargets(
     userPublicIdentifier: string,
+    chainId: number,
     assetId: string = AddressZero,
   ): Promise<RebalanceProfileType> {
     this.log.debug(
-      `Getting rebalancing targets for user: ${userPublicIdentifier}, assetId: ${assetId}`,
+      `Getting rebalancing targets for user: ${userPublicIdentifier} on ${chainId}, assetId: ${assetId}`,
     );
     let targets: RebalanceProfileType;
     // option 1: rebalancing service, option 2: rebalance profile, option 3: default
@@ -204,6 +220,7 @@ export class ChannelService {
       this.log.debug(`Unable to get rebalancing targets from service, falling back to profile`);
       targets = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
         userPublicIdentifier,
+        chainId,
         assetId,
       );
     }
@@ -221,7 +238,7 @@ export class ChannelService {
 
     // convert targets to proper units for token
     if (assetId !== AddressZero) {
-      const decimals = await this.configService.getTokenDecimals();
+      const decimals = await this.configService.getTokenDecimals(chainId, assetId);
       if (decimals !== DEFAULT_DECIMALS) {
         this.log.info(`Token has ${decimals} decimals, converting rebalance targets`);
         targets.collateralizeThreshold = BigNumber.from(
@@ -240,10 +257,13 @@ export class ChannelService {
 
   async addRebalanceProfileToChannel(
     userPublicIdentifier: string,
+    chainId: number,
     profile: RebalanceProfileType,
   ): Promise<RebalanceProfile> {
     this.log.info(
-      `addRebalanceProfileToChannel for ${userPublicIdentifier} with ${stringify(profile)}`,
+      `addRebalanceProfileToChannel for ${userPublicIdentifier} on ${chainId} with ${stringify(
+        profile,
+      )}`,
     );
     const { assetId, collateralizeThreshold, target, reclaimThreshold } = profile;
     if (reclaimThreshold.lt(target) || collateralizeThreshold.gt(target)) {
@@ -265,10 +285,11 @@ export class ChannelService {
     rebalanceProfile.reclaimThreshold = reclaimThreshold;
     const result = await this.channelRepository.addRebalanceProfileToChannel(
       userPublicIdentifier,
+      chainId,
       rebalanceProfile,
     );
     this.log.info(
-      `addRebalanceProfileToChannel for ${userPublicIdentifier} complete: ${JSON.stringify(
+      `addRebalanceProfileToChannel for ${userPublicIdentifier} on ${chainId} complete: ${JSON.stringify(
         result,
       )}`,
     );
@@ -359,21 +380,23 @@ export class ChannelService {
 
   async getRebalanceProfileForChannelAndAsset(
     userIdentifier: string,
+    chainId: number,
     assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
     // try to get rebalance profile configured
     const profile = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
       userIdentifier,
+      chainId,
       assetId,
     );
     return profile;
   }
 
-  async getStateChannel(userIdentifier: string): Promise<StateChannelJSON> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userIdentifier);
-    if (!channel) {
-      throw new Error(`No channel exists for userIdentifier ${userIdentifier}`);
-    }
+  async getStateChannel(userIdentifier: string, chainId: number): Promise<StateChannelJSON> {
+    const channel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
+      userIdentifier,
+      chainId,
+    );
     const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
 
     return state;

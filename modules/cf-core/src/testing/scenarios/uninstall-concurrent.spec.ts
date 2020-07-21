@@ -8,13 +8,12 @@ import { constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
-import { TestContractAddresses } from "../contracts";
-
 import { setup, SetupContext } from "../setup";
 import {
   collateralizeChannel,
   constructUninstallRpc,
   createChannel,
+  getContractAddresses,
   makeInstallCall,
   makeProposeCall,
 } from "../utils";
@@ -39,7 +38,7 @@ describe("Node method follows spec - uninstall", () => {
 
     it("uninstall apps with ETH concurrently", async () => {
       return new Promise(async (done) => {
-        const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+        const { TicTacToeApp } = getContractAddresses();
         const appIdentityHashes: string[] = [];
         let uninstalledApps = 0;
         await collateralizeChannel(

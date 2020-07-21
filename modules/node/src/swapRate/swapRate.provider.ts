@@ -23,8 +23,14 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
   }
 
   async getLatestSwapRate(subject: string): Promise<string> {
-    const [, , , from, to] = subject.split(".");
-    return this.swapRateService.getOrFetchRate(getAddress(from), getAddress(to));
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [userId, nodeId, topic, fromAsset, toAsset, fromChainId, toChainId] = subject.split(".");
+    return this.swapRateService.getOrFetchRate(
+      getAddress(fromAsset),
+      getAddress(toAsset),
+      parseInt(fromChainId),
+      parseInt(toChainId),
+    );
   }
 
   async setupSubscriptions(): Promise<void> {

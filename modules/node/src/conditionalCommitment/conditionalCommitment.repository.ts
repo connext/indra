@@ -1,16 +1,15 @@
 import { EntityRepository, Repository } from "typeorm";
 import { ConditionalTransactionCommitment } from "./conditionalCommitment.entity";
-import { ConditionalTransactionCommitmentJSON, ContractAddresses } from "@connext/types";
+import { ConditionalTransactionCommitmentJSON } from "@connext/types";
 import { AppType } from "../appInstance/appInstance.entity";
 
 export const convertConditionalCommitmentToJson = (
   commitment: ConditionalTransactionCommitment,
-  contractAddresses: ContractAddresses,
 ): ConditionalTransactionCommitmentJSON => {
   return {
     appIdentityHash: commitment.app.identityHash,
     freeBalanceAppIdentityHash: commitment.freeBalanceAppIdentityHash,
-    contractAddresses,
+    contractAddresses: commitment.contractAddresses,
     signatures: commitment.signatures,
     interpreterAddr: commitment.interpreterAddr,
     interpreterParams: commitment.interpreterParams,

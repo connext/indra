@@ -118,8 +118,13 @@ export class CFCoreStore implements IStoreService {
     return cacheRes;
   }
 
-  async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON> {
-    const multisig = await this.cache.get(`channel:owners:${this.canonicalizeOwners(owners)}`);
+  async getStateChannelByOwnersAndChainId(
+    owners: string[],
+    chainId: number,
+  ): Promise<StateChannelJSON> {
+    const multisig = await this.cache.get(
+      `channel:owners:${this.canonicalizeOwners(owners)}:${chainId}`,
+    );
     if (multisig) {
       return this.getStateChannel(JSON.parse(multisig));
     }
@@ -129,7 +134,10 @@ export class CFCoreStore implements IStoreService {
       return undefined;
     }
     await this.cache.set(
-      `channel:owners:${this.canonicalizeOwners([chan.nodeIdentifier, chan.userIdentifier])}`,
+      `channel:owners:${this.canonicalizeOwners([
+        chan.nodeIdentifier,
+        chan.userIdentifier,
+      ])}:${chainId}`,
       70,
       chan.multisigAddress,
     );
@@ -178,6 +186,7 @@ export class CFCoreStore implements IStoreService {
       addresses,
       freeBalanceAppInstance,
       monotonicNumProposedApps,
+      chainId,
     } = stateChannel;
 
     let channel = new Channel();
@@ -187,10 +196,11 @@ export class CFCoreStore implements IStoreService {
     channel.nodeIdentifier = nodeIdentifier;
     channel.addresses = addresses;
     channel.monotonicNumProposedApps = monotonicNumProposedApps;
-    const swaps = this.configService.getAllowedSwaps();
+    channel.chainId = chainId;
+    const tokens = this.configService.getSupportedTokens();
     const activeCollateralizations = {};
-    swaps.forEach((swap) => {
-      activeCollateralizations[swap.to] = false;
+    (tokens[chainId] || []).forEach((token) => {
+      activeCollateralizations[token] = false;
     });
     channel.activeCollateralizations = activeCollateralizations;
 
@@ -247,6 +257,7 @@ export class CFCoreStore implements IStoreService {
 
     channel.setupCommitment = setupCommitment;
 
+    // eslint-disable-next-line max-len
     let freeBalanceUpdateCommitment = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
       freeBalanceApp.identityHash,
       toBN(signedFreeBalanceUpdate.versionNumber),
@@ -611,13 +622,7 @@ export class CFCoreStore implements IStoreService {
     const commitment = await this.conditionalTransactionCommitmentRepository.findByAppIdentityHash(
       appIdentityHash,
     );
-    return (
-      commitment &&
-      convertConditionalCommitmentToJson(
-        commitment,
-        await this.configService.getContractAddresses(),
-      )
-    );
+    return commitment && convertConditionalCommitmentToJson(commitment);
   }
 
   clear(): Promise<void> {
@@ -703,6 +708,7 @@ export class CFCoreStore implements IStoreService {
   async addOnchainAction(appIdentityHash: string, provider: JsonRpcProvider): Promise<void> {
     const channel = await this.channelRepository.findByAppIdentityHashOrThrow(appIdentityHash);
     const app = channel.appInstances.find((a) => a.identityHash === appIdentityHash);
+    // eslint-disable-next-line max-len
     const latestSetState = await this.setStateCommitmentRepository.findByAppIdentityHashAndVersionNumber(
       appIdentityHash,
       toBN(app.latestVersionNumber),

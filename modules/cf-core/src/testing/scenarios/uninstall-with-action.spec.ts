@@ -14,17 +14,17 @@ import { constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
-import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
   collateralizeChannel,
   constructUninstallRpc,
   createChannel,
+  getAppInstance,
+  getContractAddresses,
   getFreeBalanceState,
   getInstalledAppInstances,
   installApp,
-  getAppInstance,
 } from "../utils";
 import { AppInstance } from "../../models";
 import { expect } from "../assertions";
@@ -68,7 +68,7 @@ describe("Node A and B install an app, then uninstall with a given action", () =
     const context: SetupContext = await setup(global);
     nodeA = context["A"].node;
     nodeB = context["B"].node;
-    provider = nodeA.networkContext.provider;
+    provider = (Object.values(global["networks"])[0] as any).provider;
 
     multisigAddress = await createChannel(nodeA, nodeB);
     await collateralizeChannel(multisigAddress, nodeA, nodeB, depositAmount);
@@ -86,7 +86,7 @@ describe("Node A and B install an app, then uninstall with a given action", () =
   });
 
   it("should take action + uninstall SimpleLinkedTransferApp app", async () => {
-    const { SimpleLinkedTransferApp } = global["contracts"] as TestContractAddresses;
+    const { SimpleLinkedTransferApp } = getContractAddresses();
     [appIdentityHash] = await installApp(
       nodeA,
       nodeB,

@@ -34,6 +34,6 @@
   "devDependencies": {
     "@babel/polyfill": "7.10.4",
     "@types/uuid": "8.0.0",
-    "typescript": "3.9.6"
+    "typescript": "3.9.7"
   }
 }

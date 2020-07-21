@@ -1,10 +1,10 @@
 import { LinkedTransferStatus, SimpleLinkedTransferAppName } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 
+import { AppInstance } from "../appInstance/appInstance.entity";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { LoggerService } from "../logger/logger.service";
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { AppInstance } from "../appInstance/appInstance.entity";
 import { appStatusesToTransferStatus } from "../utils";
 
 const appStatusesToLinkedTransferStatus = (
@@ -24,8 +24,9 @@ export class LinkedTransferService {
     this.log.setContext("LinkedTransferService");
   }
 
-  async findSenderAndReceiverAppsWithStatus(
+  async findSenderAndReceiverAppsWithStatusOnChain(
     paymentId: string,
+    chainId: number,
   ): Promise<
     { senderApp: AppInstance; receiverApp: AppInstance; status: LinkedTransferStatus } | undefined
   > {
@@ -34,13 +35,15 @@ export class LinkedTransferService {
     const senderApp = await this.appInstanceRepository.findTransferAppByAppDefinitionPaymentIdAndReceiver(
       paymentId,
       this.cfCoreService.cfCore.publicIdentifier,
-      this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByNameAndChain(SimpleLinkedTransferAppName, chainId)
+        .appDefinitionAddress,
     );
     // eslint-disable-next-line max-len
     const receiverApp = await this.appInstanceRepository.findTransferAppByAppDefinitionPaymentIdAndSender(
       paymentId,
       this.cfCoreService.cfCore.publicIdentifier,
-      this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByNameAndChain(SimpleLinkedTransferAppName, chainId)
+        .appDefinitionAddress,
     );
     // if sender app is uninstalled, transfer has been unlocked by node
     const status = appStatusesToLinkedTransferStatus(senderApp, receiverApp);
@@ -57,13 +60,17 @@ export class LinkedTransferService {
   // sender installs app, goes offline
   // receiver redeems, app is installed and uninstalled
   // if we don't check for uninstalled receiver app, receiver can keep redeeming
-  async getLinkedTransfersForReceiverUnlock(userIdentifier: string): Promise<AppInstance[]> {
+  async getLinkedTransfersForReceiverUnlockOnChain(
+    userIdentifier: string,
+    chainId: number,
+  ): Promise<AppInstance[]> {
     this.log.info(`getLinkedTransfersForReceiverUnlock for ${userIdentifier} started`);
     // eslint-disable-next-line max-len
     const transfersFromNodeToUser = await this.appInstanceRepository.findActiveTransferAppsByAppDefinitionToRecipient(
       userIdentifier,
       this.cfCoreService.cfCore.signerAddress,
-      this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByNameAndChain(SimpleLinkedTransferAppName, chainId)
+        .appDefinitionAddress,
     );
     const existingReceiverApps = (
       await Promise.all(
@@ -72,7 +79,8 @@ export class LinkedTransferService {
             await this.appInstanceRepository.findTransferAppByAppDefinitionPaymentIdAndSender(
               transfer.latestState["paymentId"],
               this.cfCoreService.cfCore.publicIdentifier,
-              this.cfCoreService.getAppInfoByName(SimpleLinkedTransferAppName).appDefinitionAddress,
+              this.cfCoreService.getAppInfoByNameAndChain(SimpleLinkedTransferAppName, chainId)
+                .appDefinitionAddress,
             ),
         ),
       )
@@ -86,7 +94,7 @@ export class LinkedTransferService {
       (transfer) => !alreadyRedeemedPaymentIds.includes(transfer.latestState["paymentId"]),
     );
     this.log.info(
-      `getLinkedTransfersForReceiverUnlock for ${userIdentifier} complete: ${JSON.stringify(
+      `getLinkedTransfersForReceiverUnlock for ${userIdentifier} on ${chainId} complete: ${JSON.stringify(
         redeemableTransfers,
       )}`,
     );

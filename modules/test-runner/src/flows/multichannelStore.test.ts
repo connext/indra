@@ -5,14 +5,15 @@ import {
   PublicParams,
   ConditionalTransferTypes,
   Address,
-  PrivateKey,
   Bytes32,
   GraphReceipt,
 } from "@connext/types";
-import { getPostgresStore } from "@connext/store";
+import { getFileStore } from "@connext/store";
 import { ConnextClient } from "@connext/client";
 import {
   abrv,
+  ChannelSigner,
+  ColorfulLogger,
   getRandomBytes32,
   getRandomPrivateKey,
   getTestGraphReceiptToSign,
@@ -23,7 +24,9 @@ import {
 import { Sequelize } from "sequelize";
 import { BigNumber } from "ethers";
 
-import { createClient, fundChannel, ETH_AMOUNT_MD, expect, env } from "../util";
+import { createClient, ethProviderUrl, fundChannel, ETH_AMOUNT_MD, expect, env } from "../util";
+
+const log = new ColorfulLogger("MultichannelStoreTest", env.logLevel, true);
 
 // NOTE: only groups correct number of promises associated with a payment.
 // there is no validation done to ensure the events correspond to the payments,
@@ -139,9 +142,11 @@ const performConditionalTransfer = async (params: {
 };
 
 describe("Full Flow: Multichannel stores (clients share single sequelize instance)", () => {
-  let senderPrivateKey: PrivateKey;
+  let senderKey: string;
+  let senderSigner: ChannelSigner;
   let sender: ConnextClient;
-  let recipientPrivateKey: PrivateKey;
+  let recipientKey: string;
+  let recipientSigner: ChannelSigner;
   let recipient: ConnextClient;
   let receipt: GraphReceipt;
   let chainId: number;
@@ -153,29 +158,28 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
   const ASSET = CONVENTION_FOR_ETH_ASSET_ID;
 
   beforeEach(async () => {
-    const { host, port, user: username, password, database } = env.dbConfig;
-    const sequelize = new Sequelize({
-      host,
-      port,
-      username,
-      password,
-      database,
-      dialect: "postgres",
-      logging: false,
-    });
-    // create stores with different prefixes
-    const senderStore = getPostgresStore(sequelize, { prefix: "sender" });
-    const recipientStore = getPostgresStore(sequelize, { prefix: "recipient" });
+    senderKey = getRandomPrivateKey();
+    recipientKey = getRandomPrivateKey();
+    senderSigner = new ChannelSigner(senderKey, ethProviderUrl);
+    recipientSigner = new ChannelSigner(recipientKey, ethProviderUrl);
+    const sequelize = new Sequelize(`sqlite:${env.storeDir}/store.sqlite`, { logging: false });
+    // create stores with same sequelize instance but with different prefixes
+    const senderStore = getFileStore(
+      env.storeDir,
+      { sequelize, prefix: senderSigner.publicIdentifier },
+    );
+    const recipientStore = getFileStore(
+      env.storeDir,
+      { sequelize, prefix: recipientSigner.publicIdentifier },
+    );
     // create clients with shared store
-    senderPrivateKey = getRandomPrivateKey();
     sender = (await createClient({
-      signer: senderPrivateKey,
+      signer: senderSigner,
       store: senderStore,
       id: "S",
     })) as ConnextClient;
-    recipientPrivateKey = getRandomPrivateKey();
     recipient = (await createClient({
-      signer: recipientPrivateKey,
+      signer: recipientSigner,
       store: recipientStore,
       id: "R",
     })) as ConnextClient;
@@ -228,7 +232,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
         receipt,
         chainId,
         verifyingContract,
-        recipientPrivateKey,
+        recipientKey,
       );
 
       await recipient.resolveCondition({
@@ -289,7 +293,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
           ASSET,
           TRANSFER_AMT,
         });
-        console.log(`[${intervals}/${MIN_TRANSFERS}] preImage: ${preImage}`);
+        log.info(`[${intervals}/${MIN_TRANSFERS}] preImage: ${preImage}`);
       } catch (e) {
         error = e;
       }
@@ -306,7 +310,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       // setup listeners (increment on reclaim)
       recipient.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, () => {
         receivedTransfers += 1;
-        console.log(`[${receivedTransfers}/${MIN_TRANSFERS}] redeemed`);
+        log.info(`[${receivedTransfers}/${MIN_TRANSFERS}] redeemed`);
         if (receivedTransfers >= MIN_TRANSFERS) {
           resolve();
         }
@@ -322,7 +326,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       }, 250);
     });
     const end = Date.now();
-    console.log(
+    log.info(
       `Average latency of ${MIN_TRANSFERS} transfers: ${(end - start) / MIN_TRANSFERS}ms`,
     );
 
@@ -349,12 +353,12 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
     const { chainId } = await sender.ethProvider.getNetwork();
 
     recipient.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, async (payload) => {
-      console.log(`[${receivedTransfers}/${MIN_TRANSFERS}] Received transfer ${abrv(payload.paymentId)}`);
+      log.info(`[${receivedTransfers}/${MIN_TRANSFERS}] Received transfer ${abrv(payload.paymentId)}`);
       const signature = await signGraphReceiptMessage(
         receipt,
         chainId,
         verifyingContract,
-        recipientPrivateKey,
+        recipientKey,
       );
       await recipient.resolveCondition({
         conditionType: ConditionalTransferTypes.GraphTransfer,
@@ -362,7 +366,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
         responseCID: receipt.responseCID,
         signature,
       } as PublicParams.ResolveGraphTransfer);
-      console.log(`Resolved signed transfer: ${payload.paymentId}`);
+      log.info(`Resolved signed transfer: ${payload.paymentId}`);
     });
 
     // call transfers on interval
@@ -387,7 +391,7 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
           assetId: ASSET,
           recipient: recipient.publicIdentifier,
         } as PublicParams.GraphTransfer);
-        console.log(`[${intervals}/${MIN_TRANSFERS}] Sent transfer with paymentId ${abrv(paymentId)}`);
+        log.info(`[${intervals}/${MIN_TRANSFERS}] Sent transfer with paymentId ${abrv(paymentId)}`);
       } catch (e) {
         clearInterval(interval);
         throw e;
@@ -401,14 +405,14 @@ describe("Full Flow: Multichannel stores (clients share single sequelize instanc
       // setup listeners (increment on reclaim)
       recipient.on(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (msg) => {
         receivedTransfers += 1;
-        console.log(`[${receivedTransfers}/${MIN_TRANSFERS}] Unlocked transfer with payment Id: ${abrv(msg.paymentId)}`);
+        log.info(`[${receivedTransfers}/${MIN_TRANSFERS}] Unlocked transfer with payment Id: ${abrv(msg.paymentId)}`);
         if (receivedTransfers >= MIN_TRANSFERS) {
           resolve();
         }
       });
     });
     const end = Date.now();
-    console.log(
+    log.info(
       `Average latency of ${MIN_TRANSFERS} transfers: ${(end - start) / MIN_TRANSFERS}ms`,
     );
 

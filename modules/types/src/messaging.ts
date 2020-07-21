@@ -19,10 +19,12 @@ export type ProtocolEventMessage<T extends EventName> = {
   type: T;
 };
 
+export const CHANNEL_PROTOCOL_VERSION = "1.0.0";
 export type ProtocolMessageData = {
   processID: string; // uuid?
   protocol: ProtocolName;
-  params?: ProtocolParam;
+  protocolVersion: string;
+  params: ProtocolParam;
   to: PublicIdentifier;
   error?: string;
   seq: number;

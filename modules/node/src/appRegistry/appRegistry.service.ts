@@ -10,24 +10,18 @@ import {
   ProtocolName,
   MiddlewareContext,
   ProtocolNames,
-  InstallMiddlewareContext,
   DepositAppState,
   ProtocolRoles,
   ProposeMiddlewareContext,
   ConditionalTransferAppNames,
-  HashLockTransferAppState,
   DepositAppName,
   GenericConditionalTransferAppState,
-  getTransferTypeFromAppName,
   DefaultApp,
-  SupportedApplicationNames,
-  AppState,
-  HashLockTransferAppAction,
   ConditionalTransferTypes,
 } from "@connext/types";
-import { getAddressFromAssetId, safeJsonStringify, toBN } from "@connext/utils";
+import { getAddressFromAssetId, toBN } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { BigNumber, providers, constants } from "ethers";
+import { BigNumber } from "ethers";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -40,8 +34,6 @@ import { LoggerService } from "../logger/logger.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { TransferService } from "../transfer/transfer.service";
-
-const { HashZero } = constants;
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -75,7 +67,7 @@ export class AppRegistryService implements OnModuleInit {
     // if error, reject install
     let installerChannel: Channel;
     try {
-      installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
+      installerChannel = await this.channelRepository.findByAppIdentityHashOrThrow(appIdentityHash);
       registryAppInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
         proposeInstallParams.appDefinition,
       );
@@ -115,6 +107,7 @@ export class AppRegistryService implements OnModuleInit {
         if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
           const amount = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
             from,
+            installerChannel.chainId,
             proposeInstallParams.responderDepositAssetId,
             responderDepositBigNumber,
             freeBal[this.cfCoreService.cfCore.signerAddress],
@@ -189,14 +182,10 @@ export class AppRegistryService implements OnModuleInit {
   public generateMiddleware = async (): Promise<
     (protocol: ProtocolName, cxt: MiddlewareContext) => Promise<void>
   > => {
-    const contractAddresses = await this.configService.getContractAddresses();
-    const provider = this.configService.getEthProvider();
+    const networkContexts = this.configService.getNetworkContexts();
     const defaultValidation = await generateValidationMiddleware(
-      {
-        contractAddresses,
-        provider: provider as providers.JsonRpcProvider,
-      },
-      this.configService.getSupportedTokenAddresses(),
+      networkContexts,
+      this.configService.getSupportedTokens(),
     );
 
     return async (protocol: ProtocolName, cxt: MiddlewareContext): Promise<void> => {
@@ -225,20 +214,23 @@ export class AppRegistryService implements OnModuleInit {
   };
 
   private proposeMiddleware = async (cxt: ProposeMiddlewareContext) => {
-    const { proposal, params } = cxt;
-    const contractAddresses = await this.configService.getContractAddresses();
+    const { proposal, params, stateChannel } = cxt;
+    const contractAddresses = this.configService.getContractAddresses(stateChannel.chainId);
 
     switch (proposal.appDefinition) {
       case contractAddresses.SimpleTwoPartySwapApp: {
         const responderDecimals = await this.configService.getTokenDecimals(
+          stateChannel.chainId,
           params.responderDepositAssetId,
         );
         return validateSimpleSwapApp(
           params as any,
-          this.configService.getAllowedSwaps(),
+          this.configService.getAllowedSwaps(stateChannel.chainId),
           await this.swapRateService.getOrFetchRate(
             getAddressFromAssetId(params.initiatorDepositAssetId),
             getAddressFromAssetId(params.responderDepositAssetId),
+            stateChannel.chainId,
+            stateChannel.chainId, // swap within a channel is only on a single chain
           ),
           responderDecimals,
         );

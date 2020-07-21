@@ -2,13 +2,13 @@ import { CONVENTION_FOR_ETH_ASSET_ID, EventNames, ProtocolEventMessage } from "@
 import { constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
-import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
   collateralizeChannel,
   constructUninstallRpc,
   createChannel,
+  getContractAddresses,
   getFreeBalanceState,
   getInstalledAppInstances,
   installApp,
@@ -37,6 +37,11 @@ function assertUninstallMessage(
 describe("Node A and B install apps of different outcome types, then uninstall them to test outcomes types and interpreters", () => {
   let nodeA: CFCore;
   let nodeB: CFCore;
+  let TicTacToeApp: string;
+
+  beforeEach(() => {
+    TicTacToeApp = getContractAddresses().TicTacToeApp;
+  });
 
   describe("Tests for different outcomes of the TwoPartyFixedOutcome type", () => {
     let appIdentityHash: string;
@@ -75,7 +80,6 @@ describe("Node A and B install apps of different outcome types, then uninstall t
     });
 
     it("installs an app with the TwoPartyFixedOutcome outcome and expects Node A to win total", async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       [appIdentityHash] = await installApp(
         nodeA,
         nodeB,
@@ -125,7 +129,6 @@ describe("Node A and B install apps of different outcome types, then uninstall t
     });
 
     it("installs an app with the TwoPartyFixedOutcome outcome and expects Node B to win total", async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       initialState.winner = 1;
 
       [appIdentityHash] = await installApp(
@@ -177,7 +180,6 @@ describe("Node A and B install apps of different outcome types, then uninstall t
     });
 
     it("installs an app with the TwoPartyFixedOutcome outcome and expects the funds to be split between the nodes", async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       initialState.winner = 3;
 
       [appIdentityHash] = await installApp(

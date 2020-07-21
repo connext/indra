@@ -20,7 +20,7 @@ export type ProtocolRole = keyof typeof ProtocolRoles;
 
 export type SetupMiddlewareContext = {
   role: ProtocolRole;
-  params: ProtocolParams.Setup;
+  params: Omit<ProtocolParams.Setup, "chainId">;
 };
 export type ProposeMiddlewareContext = {
   role: ProtocolRole;

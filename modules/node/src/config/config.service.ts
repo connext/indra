@@ -1,12 +1,16 @@
-import { ERC20 } from "@connext/contracts";
+import { ConnextToken } from "@connext/contracts";
 import {
   Address,
   ContractAddresses,
   IChannelSigner,
   MessagingConfig,
-  SwapRate,
+  ContractAddressBook,
+  AddressBook,
+  AllowedSwap,
+  PriceOracleTypes,
+  NetworkContexts,
 } from "@connext/types";
-import { ChannelSigner, getChainId } from "@connext/utils";
+import { ChannelSigner } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet, Contract, providers, constants, utils } from "ethers";
 
@@ -25,25 +29,25 @@ type PostgresConfig = {
   username: string;
 };
 
-type TestnetTokenConfig = TokenConfig[];
-
-type TokenConfig = {
-  chainId: number;
-  address: string;
-}[];
-
 @Injectable()
 export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
-  private readonly signer: IChannelSigner;
-  private ethProvider: providers.JsonRpcProvider;
+  // signer on same mnemonic, connected to different providers
+  public readonly signers: Map<number, IChannelSigner> = new Map();
+  // keyed on chainId
+  public readonly providers: Map<number, providers.JsonRpcProvider> = new Map();
 
   constructor(private readonly log: LoggerService) {
     this.log.setContext("ConfigService");
     this.envConfig = process.env;
     // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY WAITS FOR)
-    this.ethProvider = new providers.JsonRpcProvider(this.getEthRpcUrl());
-    this.signer = new ChannelSigner(this.getPrivateKey(), this.ethProvider);
+    const urls = this.getProviderUrls();
+    this.getSupportedChains().forEach((chainId, idx) => {
+      const provider = new providers.JsonRpcProvider(urls[idx], chainId);
+      this.providers.set(chainId, provider);
+      this.signers.set(chainId, new ChannelSigner(this.getPrivateKey(), provider));
+      this.log.debug(`Registered new provider & signer for chain ${chainId}`);
+    });
   }
 
   get(key: string): string {
@@ -51,53 +55,64 @@ export class ConfigService implements OnModuleInit {
   }
 
   private getPrivateKey(): string {
-    return Wallet.fromMnemonic(this.get(`INDRA_ETH_MNEMONIC`)).privateKey;
+    return Wallet.fromMnemonic(this.get(`INDRA_MNEMONIC`)).privateKey;
   }
 
-  getSigner(): IChannelSigner {
-    return this.signer;
+  getSigner(chainId: number): IChannelSigner {
+    return this.signers.get(chainId);
   }
 
-  getEthRpcUrl(): string {
-    return this.get(`INDRA_ETH_RPC_URL`);
+  getProviderUrls(): string[] {
+    // default to first option in env
+    return Object.values(JSON.parse(this.get(`INDRA_CHAIN_PROVIDERS`)));
   }
 
-  getEthProvider(): providers.JsonRpcProvider {
-    return this.ethProvider;
+  getEthProvider(chainId: number): providers.JsonRpcProvider {
+    return this.providers.get(chainId);
   }
 
-  async getEthNetwork(): Promise<providers.Network> {
-    const ethNetwork = await this.getEthProvider().getNetwork();
-    if (ethNetwork.name === `unknown` && ethNetwork.chainId === 1337) {
-      ethNetwork.name = `ganache`;
-    } else if (ethNetwork.chainId === 1) {
-      ethNetwork.name = `homestead`;
+  getEthProviders(): providers.JsonRpcProvider[] {
+    return Array.from(this.providers.values());
+  }
+
+  getAddressBook(): AddressBook {
+    return JSON.parse(this.get(`INDRA_CONTRACT_ADDRESSES`));
+  }
+
+  getSupportedChains(): number[] {
+    return (
+      Object.keys(JSON.parse(this.get("INDRA_CHAIN_PROVIDERS"))).map((k) => parseInt(k, 10)) || []
+    );
+  }
+
+  async getNetwork(chainId: number): Promise<providers.Network> {
+    const provider = this.getEthProvider(chainId);
+    if (!provider) {
+      throw new Error(`Node is not configured for chain ${chainId}`);
     }
-    return ethNetwork;
+    const network = await provider.getNetwork();
+    network.chainId = chainId; // just in case we're using ganache which hardcodes it's chainId..
+    if (network.name === `unknown` && network.chainId === 1337) {
+      network.name = `ganache`;
+    } else if (network.chainId === 1) {
+      network.name = `homestead`;
+    }
+    return network;
   }
 
-  getEthAddressBook() {
-    return JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
-  }
-
-  async getContractAddresses(chainId?: string): Promise<ContractAddresses> {
-    chainId = chainId ? chainId : (await this.getEthNetwork()).chainId.toString();
-    const ethAddresses = {} as any;
-    const ethAddressBook = this.getEthAddressBook();
+  getContractAddresses(chainId: number): ContractAddresses {
+    const ethAddresses = { [chainId]: {} } as any;
+    const ethAddressBook = this.getAddressBook();
     Object.keys(ethAddressBook[chainId]).forEach(
       (contract: string) =>
-        (ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address)),
+        (ethAddresses[chainId][contract] = getAddress(ethAddressBook[chainId][contract].address)),
     );
-    return ethAddresses as ContractAddresses;
+    return ethAddresses[chainId] as ContractAddresses;
   }
 
-  async getTokenAddress(): Promise<string> {
-    return getAddress((await this.getContractAddresses()).Token);
-  }
-
-  async getTokenDecimals(providedAddress?: Address): Promise<number> {
-    const address = providedAddress || (await this.getTokenAddress());
-    const tokenContract = new Contract(address, ERC20.abi, this.getSigner());
+  async getTokenDecimals(chainId: number, providedAddress?: Address): Promise<number> {
+    const address = providedAddress || (await this.getTokenAddress(chainId));
+    const tokenContract = new Contract(address, ConnextToken.abi, this.getSigner(chainId));
     let decimals = DEFAULT_DECIMALS;
     try {
       decimals = await tokenContract.decimals();
@@ -107,97 +122,111 @@ export class ConfigService implements OnModuleInit {
     return decimals;
   }
 
-  async getTestnetTokenConfig(): Promise<TestnetTokenConfig> {
-    const testnetTokenConfig: TokenConfig[] = this.get("INDRA_TESTNET_TOKEN_CONFIG")
-      ? JSON.parse(this.get("INDRA_TESTNET_TOKEN_CONFIG"))
-      : [];
-    const currentChainId = (await this.getEthNetwork()).chainId;
+  getContractAddressBook(): ContractAddressBook {
+    const ethAddresses = {};
+    const ethAddressBook = this.getAddressBook();
+    this.getSupportedChains().forEach((chainId) => {
+      ethAddresses[chainId] = {};
+      Object.keys(ethAddressBook[chainId]).forEach((contractName) => {
+        ethAddresses[chainId][contractName] = getAddress(
+          ethAddressBook[chainId][contractName].address,
+        );
+      });
+    });
+    return ethAddresses as ContractAddressBook;
+  }
 
-    // by default, map token address to mainnet token address
-    if (currentChainId !== 1) {
-      const contractAddresses = await this.getContractAddresses("1");
-      testnetTokenConfig.push([
-        {
-          address: contractAddresses.Token,
-          chainId: 1,
-        },
-        { address: await this.getTokenAddress(), chainId: currentChainId },
-      ]);
+  getNetworkContexts(): NetworkContexts {
+    const ethAddressBook = this.getAddressBook();
+    const supportedChains = this.getSupportedChains();
+
+    return supportedChains.reduce((contexts, chainId) => {
+      contexts[chainId] = {
+        contractAddresses: Object.keys(ethAddressBook[chainId]).reduce(
+          (addresses, contractName) => {
+            addresses[contractName] = getAddress(ethAddressBook[chainId][contractName].address);
+            return addresses;
+          },
+          {},
+        ),
+        provider: this.getEthProvider(chainId),
+      };
+      return contexts;
+    }, {});
+  }
+
+  getTokenAddress(chainId: number): string {
+    const ethAddressBook = this.getAddressBook();
+    if (!ethAddressBook[chainId]) {
+      throw new Error(`Chain ${chainId} is not supported`);
     }
-    return testnetTokenConfig;
-  }
-
-  async getTokenAddressForSwap(tokenAddress: string): Promise<string> {
-    const currentChainId = (await this.getEthNetwork()).chainId;
-
-    if (currentChainId !== 1) {
-      const tokenConfig = await this.getTestnetTokenConfig();
-      const configIndex = tokenConfig.findIndex((tc) =>
-        tc.find((t) => t.chainId === currentChainId && t.address === tokenAddress),
-      );
-      const configExists =
-        configIndex < 0 ? undefined : tokenConfig[configIndex].find((tc) => tc.chainId === 1);
-      tokenAddress = configExists ? configExists.address : tokenAddress;
+    if (!ethAddressBook[chainId].Token) {
+      throw new Error(`Chain ${chainId} does not contain any supported tokens`);
     }
-
-    return tokenAddress;
+    return getAddress(ethAddressBook[chainId].Token.address);
   }
 
-  /**
-   * Combination of swaps plus extra supported tokens.
-   */
-  getSupportedTokenAddresses(): string[] {
-    const swaps = this.getAllowedSwaps();
-    const tokens = swaps.reduce(
-      (tokensArray, swap) => tokensArray.concat([swap.from, swap.to]),
-      [],
-    );
-    tokens.push(AddressZero);
-    tokens.push(...this.getSupportedTokens());
-    const tokenSet = new Set(tokens);
-    return [...tokenSet].map((token) => getAddress(token));
+  getAllowedSwaps(chainId: number): AllowedSwap[] {
+    const supportedTokens = this.getSupportedTokens();
+    if (!supportedTokens[chainId]) {
+      this.log.warn(`There are no supportd tokens for chain ${chainId}`);
+      return [];
+    }
+    const priceOracleType =
+      chainId.toString() === "1" ? PriceOracleTypes.UNISWAP : PriceOracleTypes.HARDCODED;
+    const allowedSwaps: AllowedSwap[] = [];
+    // allow token <> eth swaps per chain
+    supportedTokens[chainId].forEach((token) => {
+      allowedSwaps.push({
+        from: token,
+        to: AddressZero,
+        priceOracleType,
+        fromChainId: chainId,
+        toChainId: chainId,
+      });
+      allowedSwaps.push({
+        from: AddressZero,
+        to: token,
+        priceOracleType,
+        fromChainId: chainId,
+        toChainId: chainId,
+      });
+    });
+    return allowedSwaps;
   }
 
-  getAllowedSwaps(): SwapRate[] {
-    return JSON.parse(this.get("INDRA_ALLOWED_SWAPS"));
-  }
-
-  /**
-   * Can add supported tokens to collateralize in addition to swap based tokens.
-   */
-  getSupportedTokens(): string[] {
-    const tokens = this.get("INDRA_SUPPORTED_TOKENS")?.split(",");
-    const dedup = new Set(tokens || []);
-    return [...dedup];
+  getSupportedTokens(): { [chainId: number]: Address[] } {
+    const addressBook = this.getAddressBook();
+    const chains = this.getSupportedChains();
+    return chains.reduce((tokens, chainId) => {
+      if (!tokens[chainId]) {
+        tokens[chainId] = [AddressZero];
+      }
+      tokens[chainId].push(addressBook[chainId]?.Token?.address);
+      return tokens;
+    }, {});
   }
 
   async getHardcodedRate(from: string, to: string): Promise<string | undefined> {
-    const swaps = this.getAllowedSwaps();
-    const swap = swaps.find((s) => s.from === from && s.to === to);
-    if (swap && swap.rate) {
-      return swap.rate;
-    } else {
-      return this.getDefaultSwapRate(from, to);
-    }
-  }
-
-  async getDefaultSwapRate(from: string, to: string): Promise<string | undefined> {
-    const tokenAddress = await this.getTokenAddress();
-    if (from === AddressZero && to === tokenAddress) {
+    if (from === AddressZero && to !== AddressZero) {
       return "100.0";
     }
-    if (from === tokenAddress && to === AddressZero) {
+    if (from !== AddressZero && to === AddressZero) {
       return "0.01";
     }
-    return undefined;
+    return "1";
   }
 
+  // NOTE: assumes same signer accross chains
   getPublicIdentifier(): string {
-    return this.signer.publicIdentifier;
+    const [signer] = [...this.signers.values()];
+    return signer.publicIdentifier;
   }
 
+  // NOTE: assumes same signer accross chains
   async getSignerAddress(): Promise<string> {
-    return this.signer.getAddress();
+    const [signer] = [...this.signers.values()];
+    return signer.getAddress();
   }
 
   getLogLevel(): number {
@@ -294,9 +323,5 @@ export class ConfigService implements OnModuleInit {
     };
   }
 
-  async onModuleInit(): Promise<void> {
-    const providerUrl = this.getEthRpcUrl();
-    this.ethProvider = new providers.JsonRpcProvider(providerUrl, await getChainId(providerUrl));
-    this.signer.connect(this.ethProvider);
-  }
+  async onModuleInit(): Promise<void> {}
 }

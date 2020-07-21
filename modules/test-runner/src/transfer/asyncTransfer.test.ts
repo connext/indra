@@ -1,6 +1,7 @@
 import { getLocalStore, getMemoryStore } from "@connext/store";
 import { ConditionalTransferTypes, IConnextClient, EventNames } from "@connext/types";
 import {
+  ColorfulLogger,
   getRandomBytes32,
   getRandomPrivateKey,
   getPublicKeyFromPrivateKey,
@@ -14,6 +15,7 @@ import {
   AssetOptions,
   asyncTransferAsset,
   createClient,
+  env,
   ETH_AMOUNT_LG,
   ETH_AMOUNT_MD,
   ETH_AMOUNT_SM,
@@ -27,6 +29,8 @@ import {
   ZERO_ZERO_ONE_ETH,
 } from "../util";
 
+const log = new ColorfulLogger("MultichannelStoreTest", env.logLevel, true);
+
 const { AddressZero } = constants;
 
 describe("Async Transfers", () => {
@@ -37,7 +41,7 @@ describe("Async Transfers", () => {
   beforeEach(async () => {
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
-    tokenAddress = clientA.config.contractAddresses.Token!;
+    tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
   });
 
   afterEach(async () => {
@@ -311,9 +315,9 @@ describe("Async Transfers", () => {
       const start = Date.now();
       await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
       runTime[i] = Date.now() - start;
-      console.log(`Run: ${i}, Runtime: ${runTime[i]}`);
+      log.info(`Run: ${i}, Runtime: ${runTime[i]}`);
       sum = sum + runTime[i];
     }
-    console.log(`Average = ${sum / numberOfRuns} ms`);
+    log.info(`Average = ${sum / numberOfRuns} ms`);
   });
 });

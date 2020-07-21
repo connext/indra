@@ -21,11 +21,11 @@ import {
   AssetOptions,
   createClient,
   ETH_AMOUNT_SM,
+  ethProviderUrl,
   expect,
   fundChannel,
-  TOKEN_AMOUNT,
-  env,
   requestCollateral,
+  TOKEN_AMOUNT,
 } from "../util";
 
 const { AddressZero, HashZero } = constants;
@@ -40,10 +40,7 @@ describe("HashLock Transfers", () => {
   let provider: providers.JsonRpcProvider;
 
   before(async () => {
-    provider = new providers.JsonRpcProvider(
-      env.ethProviderUrl,
-      await getChainId(env.ethProviderUrl),
-    );
+    provider = new providers.JsonRpcProvider(ethProviderUrl, await getChainId(ethProviderUrl));
     const currBlock = await provider.getBlockNumber();
     if (currBlock > TIMEOUT_BUFFER) {
       // no adjustment needed, return
@@ -202,7 +199,7 @@ describe("HashLock Transfers", () => {
   beforeEach(async () => {
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
-    tokenAddress = clientA.config.contractAddresses.Token!;
+    tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
   });
 
   afterEach(async () => {
@@ -391,19 +388,15 @@ describe("HashLock Transfers", () => {
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
 
-    clientA
-      .conditionalTransfer({
-        amount: transfer.amount.toString(),
-        conditionType: ConditionalTransferTypes.HashLockTransfer,
-        lockHash,
-        timelock,
-        assetId: transfer.assetId,
-        meta: { foo: "bar", sender: clientA.publicIdentifier },
-        recipient: clientB.publicIdentifier,
-      } as PublicParams.HashLockTransfer)
-      .catch((e) => {
-        console.log("Expected this error: ", e.message);
-      });
+    clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
+      recipient: clientB.publicIdentifier,
+    } as PublicParams.HashLockTransfer);
 
     await expect(
       new Promise((res, rej) => {

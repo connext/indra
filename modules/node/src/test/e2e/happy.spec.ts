@@ -15,7 +15,8 @@ import { Wallet, constants, utils } from "ethers";
 import { AppModule } from "../../app.module";
 import { ConfigService } from "../../config/config.service";
 
-import { env, expect, MockConfigService } from "../utils";
+import { env, ethProviderUrl, expect, MockConfigService } from "../utils";
+import { TransactionResponse } from "@ethersproject/providers";
 
 const { AddressZero } = constants;
 const { parseEther } = utils;
@@ -27,10 +28,11 @@ describe("Happy path", () => {
   let configService: ConfigService;
   let clientA: IConnextClient;
   let clientB: IConnextClient;
+  let chainId: number;
 
   before(async () => {
     const start = Date.now();
-    let tx;
+    let tx: TransactionResponse;
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -43,14 +45,16 @@ describe("Happy path", () => {
     configService = moduleFixture.get<ConfigService>(ConfigService);
     await app.listen(configService.getPort());
 
-    const ethProvider = configService.getEthProvider();
-    const sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC!).connect(ethProvider);
+    chainId = configService.getSupportedChains()[0];
+    const ethProvider = configService.getEthProvider(chainId);
+    const sugarDaddy = Wallet.fromMnemonic(process.env.INDRA_MNEMONIC!).connect(ethProvider);
     log.info(`node: ${await configService.getSignerAddress()}`);
+    log.info(`ethProviderUrl: ${ethProviderUrl}`);
 
     clientA = await connect({
       store: getMemoryStore(),
       signer: getRandomChannelSigner(ethProvider),
-      ethProviderUrl: configService.getEthRpcUrl(),
+      ethProviderUrl,
       messagingUrl: env.messagingUrl,
       nodeUrl: env.nodeUrl,
       loggerService: new ColorfulLogger("", env.logLevel, true, "A"),
@@ -63,7 +67,7 @@ describe("Happy path", () => {
     clientB = await connect({
       store: getMemoryStore(),
       signer: getRandomPrivateKey(),
-      ethProviderUrl: configService.getEthRpcUrl(),
+      ethProviderUrl,
       messagingUrl: env.messagingUrl,
       nodeUrl: env.nodeUrl,
       loggerService: new ColorfulLogger("", env.logLevel, true, "B"),

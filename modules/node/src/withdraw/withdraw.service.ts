@@ -7,7 +7,6 @@ import {
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
-  TransactionReceipt,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
@@ -75,15 +74,14 @@ export class WithdrawService {
       appInstance.multisigAddress,
     );
 
-    const signer = this.configService.getSigner();
+    const signer = this.configService.getSigner(
+      await this.channelRepository.getChainIdByMultisigAddress(appInstance.multisigAddress),
+    );
 
     // Sign commitment
     const hash = generatedCommitment.hashToSign();
     const counterpartySignatureOnWithdrawCommitment = await signer.signMessage(hash);
 
-    await this.cfCoreService.takeAction(appInstance.identityHash, appInstance.multisigAddress, {
-      signature: counterpartySignatureOnWithdrawCommitment,
-    } as WithdrawAppAction);
     state = (await this.cfCoreService.getAppInstance(appInstance.identityHash))
       .latestState as WithdrawAppState;
 
@@ -99,7 +97,9 @@ export class WithdrawService {
       counterpartySignatureOnWithdrawCommitment,
     );
 
-    await this.cfCoreService.uninstallApp(appInstance.identityHash, appInstance.multisigAddress);
+    await this.cfCoreService.uninstallApp(appInstance.identityHash, appInstance.multisigAddress, {
+      signature: counterpartySignatureOnWithdrawCommitment,
+    } as WithdrawAppAction);
 
     await generatedCommitment.addSignatures(
       counterpartySignatureOnWithdrawCommitment, // our sig
@@ -117,6 +117,7 @@ export class WithdrawService {
       this.log.error(
         `Unable to find withdraw entity that we just uninstalled. AppId ${appInstance.identityHash}`,
       );
+      return;
     }
 
     await this.withdrawRepository.addOnchainTransaction(withdraw, onchainTransaction);
@@ -137,7 +138,7 @@ export class WithdrawService {
     );
     this.log.info(`Deploy multisig tx: ${deployTx}`);
 
-    const wallet = this.configService.getSigner();
+    const wallet = this.configService.getSigner(channel.chainId);
     if (deployTx !== HashZero) {
       this.log.info(`Waiting for deployment transaction...`);
       wallet.provider.waitForTransaction(deployTx);
@@ -176,14 +177,15 @@ export class WithdrawService {
     return this.withdrawRepository.save(withdraw);
   }
 
-  async getLatestWithdrawal(userIdentifier: string): Promise<OnchainTransaction | undefined> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userIdentifier);
-    if (!channel) {
-      throw new Error(`No channel exists for userIdentifier ${userIdentifier}`);
-    }
+  async getLatestWithdrawal(
+    userIdentifier: string,
+    chainId: number,
+  ): Promise<OnchainTransaction | undefined> {
+    await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(userIdentifier, chainId);
 
-    return this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
+    return this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifierAndChain(
       userIdentifier,
+      chainId,
     );
   }
 
@@ -205,7 +207,7 @@ export class WithdrawService {
       channel.multisigAddress,
     );
 
-    const signer = this.configService.getSigner();
+    const signer = this.configService.getSigner(channel.chainId);
     const hash = commitment.hashToSign();
     const withdrawerSignatureOnCommitment = await signer.signMessage(hash);
 
@@ -234,7 +236,7 @@ export class WithdrawService {
       assetId,
       Zero,
       assetId,
-      this.cfCoreService.getAppInfoByName(WithdrawAppName),
+      this.cfCoreService.getAppInfoByNameAndChain(WithdrawAppName, channel.chainId),
       { reason: "Node withdrawal" },
       WITHDRAW_STATE_TIMEOUT,
     );

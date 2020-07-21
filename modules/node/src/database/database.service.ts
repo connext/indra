@@ -60,10 +60,13 @@ import { storedProcedureCreateAppInstance1592291092044 } from "../../migrations/
 import { storedProcedureUpdateAppInstance1592309341833 } from "../../migrations/1592309341833-stored-procedure-update-app-instance";
 import { storedProcedureRemoveAppInstance1592310334011 } from "../../migrations/1592310334011-stored-procedure-remove-app-instance";
 import { pendingTransactions1593637047546 } from "../../migrations/1593637047546-pending-transactions";
+import { addChainId1593805719084 } from "../../migrations/1593805719084-add-chain-id";
 import { txDataToCommitments1594196149518 } from "../../migrations/1594196149518-tx-data-to-commitments";
 import { txDataStoredProcedures1594196572552 } from "../../migrations/1594196572552-tx-data-stored-procedures";
 import { removeWithUpdatedState1594324129179 } from "../../migrations/1594324129179-remove-with-updated-state";
+import { conditionalTxJson1594978485558 } from "../../migrations/1594978485558-conditional-tx-json";
 import { updateOnchain1594840136529 } from "../../migrations/1594840136529-update-onchain";
+import { removeAppCommitments1595210814094 } from "../../migrations/1595210814094-remove-app-commitments";
 
 export const entities = [
   AppInstance,
@@ -123,10 +126,13 @@ export const migrations = [
   storedProcedureUpdateAppInstance1592309341833,
   storedProcedureRemoveAppInstance1592310334011,
   pendingTransactions1593637047546,
+  addChainId1593805719084,
   txDataToCommitments1594196149518,
   txDataStoredProcedures1594196572552,
   removeWithUpdatedState1594324129179,
+  conditionalTxJson1594978485558,
   updateOnchain1594840136529,
+  removeAppCommitments1595210814094,
 ];
 
 @Injectable()

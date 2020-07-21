@@ -2,13 +2,14 @@ import { StateChannelJSON } from "@connext/types";
 import { bigNumberifyJson, getRandomAddress, getRandomBytes32, toBN } from "@connext/utils";
 import { BigNumberish, utils, constants } from "ethers";
 
+import { expect } from "../../testing/assertions";
 import { getRandomContractAddresses } from "../../testing/mocks";
+import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
+import { getChainId } from "../../testing/utils";
 
 import { StateChannel } from "../state-channel";
-import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 import { FreeBalanceClass } from "../free-balance";
 import { flipTokenIndexedBalances } from "../utils";
-import { expect } from "../../testing/assertions";
 
 const { getAddress } = utils;
 const { AddressZero } = constants;
@@ -22,6 +23,7 @@ describe("StateChannel", () => {
 
     const sc = new StateChannel(
       multisigAddress,
+      getChainId(),
       { ProxyFactory, MinimumViableMultisig },
       initiator,
       responder,
@@ -57,6 +59,7 @@ describe("StateChannel", () => {
         IdentityApp,
         { ProxyFactory, MinimumViableMultisig },
         multisigAddress,
+        getChainId(),
         initiator,
         responder,
       );
@@ -157,6 +160,7 @@ describe("StateChannel", () => {
         IdentityApp,
         { ProxyFactory, MinimumViableMultisig },
         multisigAddress,
+        getChainId(),
         initiator,
         responder,
       );
@@ -208,6 +212,7 @@ describe("StateChannel", () => {
         IdentityApp,
         { ProxyFactory, MinimumViableMultisig },
         multisigAddress,
+        getChainId(),
         initiator,
         responder,
       );
