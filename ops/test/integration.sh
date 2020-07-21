@@ -30,30 +30,6 @@ chain_id_1=1337; chain_id_2=1338
 
 providers_file="$root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json"
 addresses_file="$root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json"
-if [[ "$mode" == "staging" ]]
-then
-
-  # create local dir for files
-  if [[ ! -f "$providers_file" ]]
-  then mkdir -p $providers_file
-  fi
-
-  if [[ ! -f "$addresses_file" ]]
-  then mkdir -p $addresses_file
-  fi
-
-fi
-
-if [[ ! -f "$root/.chaindata" ]]
-then echo "No chaindata dir" && exit 1
-elif [[ ! -f "$root/.chaindata/providers" ]]
-then echo "No providers dir" && exit 1
-elif [[ ! -f "$root/.chaindata/addresses" ]]
-then echo "No addresses dir" && exit 1
-fi
-
-cd $root/.chaindata && ls -l && cd $root
-
 if [[ ! -f "$providers_file" ]]
 then echo "File ${providers_file} does not exist, make sure the testnet chains are running" && exit 1
 elif [[ ! -f "$addresses_file" ]]
