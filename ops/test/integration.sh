@@ -44,6 +44,16 @@ then
 
 fi
 
+if [[ ! -f "$root/.chaindata" ]]
+then echo "No chaindata dir" && exit 1
+elif [[ ! -f "$root/.chaindata/providers" ]]
+then echo "No providers dir" && exit 1
+elif [[ ! -f "$root/.chaindata/addresses" ]]
+then echo "No addresses dir" && exit 1
+fi
+
+cd $root/.chaindata && ls -l && cd $root
+
 if [[ ! -f "$providers_file" ]]
 then echo "File ${providers_file} does not exist, make sure the testnet chains are running" && exit 1
 elif [[ ! -f "$addresses_file" ]]
