@@ -27,20 +27,30 @@ export const fundChannel = async (
       log.info(`Got deposit confirmed event, helper wrapper is returning`);
       return resolve();
     });
+    let syncFailed = false;
+    client.once(EventNames.SYNC_FAILED_EVENT, (msg) => {
+      syncFailed = true;
+    });
     // register failure listeners
     client.once(EventNames.DEPOSIT_FAILED_EVENT, async (msg: EventPayloads.DepositFailed) => {
       return reject(new Error(msg.error));
     });
-    client.once(
-      EventNames.PROPOSE_INSTALL_FAILED_EVENT,
-      async (msg: EventPayloads.ProposeFailed) => {
-        return reject(new Error(msg.error));
-      },
-    );
-    client.once(EventNames.INSTALL_FAILED_EVENT, async (msg: EventPayloads.InstallFailed) => {
+    client.on(EventNames.PROPOSE_INSTALL_FAILED_EVENT, async (msg: EventPayloads.ProposeFailed) => {
+      if (!syncFailed) {
+        return;
+      }
       return reject(new Error(msg.error));
     });
-    client.once(EventNames.UNINSTALL_FAILED_EVENT, async (msg: EventPayloads.UninstallFailed) => {
+    client.on(EventNames.INSTALL_FAILED_EVENT, async (msg: EventPayloads.InstallFailed) => {
+      if (!syncFailed) {
+        return;
+      }
+      return reject(new Error(msg.error));
+    });
+    client.on(EventNames.UNINSTALL_FAILED_EVENT, async (msg: EventPayloads.UninstallFailed) => {
+      if (!syncFailed) {
+        return;
+      }
       return reject(new Error(msg.error));
     });
 
