@@ -11,7 +11,7 @@ export class conditionalTxJson1594978485558 implements MigrationInterface {
       `ALTER TABLE "conditional_transaction_commitment" ALTER COLUMN "contractAddresses" SET DEFAULT '{}'`,
     );
     await queryRunner.query(
-      `UPDATE "conditional_transaction_commitment" SET "contractAddresses" = '{}' WHERE "contractAddresses" IS NOT NULL`,
+      `UPDATE "conditional_transaction_commitment" SET "contractAddresses" = '{}' WHERE "contractAddresses" IS NULL`,
     );
     await queryRunner.query(
       `ALTER TABLE "conditional_transaction_commitment" ALTER COLUMN "contractAddresses" SET NOT NULL`,
