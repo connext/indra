@@ -12,14 +12,11 @@ mnemonic="${INDRA_MNEMONIC:-candy maple cake sugar pudding cream honey rich smoo
 ########################################
 # Configure or launch Ethereum testnets
 
-chain_port_1=`expr 8545 - 1337 + $chain_id_1`
-chain_port_2=`expr 8545 - 1337 + $chain_id_2`
-
-chain_url_1="http://172.17.0.1:$chain_port_1"
 chain_host_1="${project}_testnet_$chain_id_1"
-
-chain_url_2="http://172.17.0.1:$chain_port_2"
 chain_host_2="${project}_testnet_$chain_id_2"
+
+chain_url_1="http://172.17.0.1:`expr 8545 - 1337 + $chain_id_1`"
+chain_url_2="http://172.17.0.1:`expr 8545 - 1337 + $chain_id_2`"
 
 chain_providers='{"'$chain_id_1'":"'$chain_url_1'","'$chain_id_2'":"'$chain_url_2'"}'
 
@@ -28,9 +25,9 @@ export INDRA_MNEMONIC=$mnemonic
 
 # NOTE: Start script for buidler testnet will return before it's actually ready to go.
 # Run buidlerevm first so that it can finish while we're waiting for ganache to get set up
-bash ops/start-chain.sh $chain_id_2 $chain_port_2
+bash ops/start-chain.sh $chain_id_2
 
-bash ops/start-chain.sh $chain_id_1 $chain_port_1
+bash ops/start-chain.sh $chain_id_1
 
 # Pull the tmp address books out of each chain provider & merge them into one
 address_book_1=`docker exec $chain_host_1 cat /data/address-book.json`
