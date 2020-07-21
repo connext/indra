@@ -16,8 +16,6 @@ mnemonic="${MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth cru
 mkdir -p $data_dir /data /tmpfs
 touch $address_book
 
-wait-for ${eth_provider#*://}
-
 echo "Deploying contracts.."
 node dist/src.ts/cli.js migrate \
   --address-book "$address_book" \
