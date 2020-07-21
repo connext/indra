@@ -113,7 +113,7 @@ export abstract class MethodController {
           this.methodName === MethodNames.chan_takeAction;
         const appIdentityHash =
           shouldProvideAppId &&
-          (params as any).appIdentityHash &&
+          !!(params as any).appIdentityHash &&
           (params as any).appIdentityHash !== preProtocolStateChannel.freeBalance.identityHash
             ? (params as any).appIdentityHash
             : undefined;
