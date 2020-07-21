@@ -8,9 +8,10 @@ set -e
 docker swarm init 2> /dev/null || true
 
 project="daicard"
-domainname="$1"
-indra_url="$2"
+domainname="${1:-http://localhost}"
+indra_url="${2:-http://localhost:3000}"
 proxy_image="connextproject/daicard_proxy:latest"
+webserver_image="connextproject/daicard_webserver:latest"
 
 if [[ -z "$domainname" || -z "$indra_url" ]]
 then echo "daicard domain name (1st arg) and indra url (2nd arg) are required." && exit 1
@@ -45,8 +46,6 @@ services:
     entrypoint: 'npm start'
     environment:
       NODE_ENV: 'development'
-    networks:
-      - '$project'
     volumes:
       - '$root:/root'
     working_dir: '$webserver_working_dir'
