@@ -57,7 +57,7 @@ else
   docker run \
     $interactive \
     --entrypoint="bash" \
-    --env=ETH_MNEMONIC="$mnemonic" \
+    --env=MNEMONIC="$mnemonic" \
     --env=ETH_PROVIDER="`echo $chain_url | sed 's/localhost/172.17.0.1/'`" \
     --mount="type=bind,source=$root,target=/root" \
     --mount="type=bind,source=$address_book,target=/data/address-book.json" \
@@ -71,7 +71,7 @@ echo "Deploying $mode-mode contract deployer (image: $image)..."
 
 docker run \
   $interactive \
-  --env=ETH_MNEMONIC="$mnemonic" \
+  --env=MNEMONIC="$mnemonic" \
   --env=ETH_PROVIDER="`echo $chain_url | sed 's/localhost/172.17.0.1/'`" \
   --mount="type=bind,source=$address_book,target=/data/address-book.json" \
   --name="${project}_contract_deployer" \
