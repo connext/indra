@@ -1,6 +1,5 @@
 import {
   Opcode,
-  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
@@ -12,7 +11,12 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import { Context, PersistAppType, ProtocolExecutionFlow } from "../types";
 
-import { assertIsValidSignature, getPureBytecode } from "./utils";
+import {
+  assertIsValidSignature,
+  getPureBytecode,
+  parseProtocolMessage,
+  generateProtocolMessageData,
+} from "./utils";
 
 const protocol = ProtocolNames.takeAction;
 const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } = Opcode;
@@ -28,7 +32,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
     let substart = start;
-    const { processID, params } = message;
+    const { processID, params } = message.data;
     const loggerId = (params as ProtocolParams.TakeAction).appIdentityHash || processID;
     log.info(`[${loggerId}] Initiation started`);
     log.debug(`[${loggerId}] Protocol initiated with params: ${stringify(params)}`);
@@ -108,23 +112,20 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 117ms
+    const { message: m2 } = yield [
+      IO_SEND_AND_WAIT,
+      generateProtocolMessageData(responderIdentifier, protocol, processID, 1, params!, {
+        customData: {
+          signature: mySignature,
+        },
+        prevMessageReceived: start,
+      }),
+    ];
     const {
       data: {
         customData: { signature: counterpartySig },
       },
-    } = yield [
-      IO_SEND_AND_WAIT,
-      {
-        protocol,
-        processID,
-        params,
-        seq: 1,
-        to: responderIdentifier,
-        customData: {
-          signature: mySignature,
-        },
-      } as ProtocolMessageData,
-    ] as any;
+    } = parseProtocolMessage(m2);
 
     // 10ms
     await assertIsValidSignature(
@@ -162,7 +163,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       processID,
       params,
       customData: { signature: counterpartySignature },
-    } = message;
+    } = message.data;
     const loggerId = (params as ProtocolParams.TakeAction).appIdentityHash || processID;
     log.info(`[${loggerId}] Response started`);
     log.debug(`[${loggerId}] Protocol response started with parameters ${stringify(params)}`);
@@ -251,16 +252,19 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     yield [
       IO_SEND,
-      {
+      generateProtocolMessageData(
+        initiatorIdentifier,
         protocol,
         processID,
-        to: initiatorIdentifier,
-        seq: UNASSIGNED_SEQ_NO,
-        prevMessageReceived: start,
-        customData: {
-          signature: mySignature,
+        UNASSIGNED_SEQ_NO,
+        params!,
+        {
+          prevMessageReceived: start,
+          customData: {
+            signature: mySignature,
+          },
         },
-      } as ProtocolMessageData,
+      ),
       postProtocolStateChannel,
     ];
 

@@ -419,7 +419,7 @@ export class ConnextClient implements IConnextClient {
       inBlock: number,
     ): Promise<[WithdrawalMonitorObject, providers.TransactionResponse][]> => {
       const pendingTxs = await this.getUserWithdrawals();
-      this.log.debug(`Checking block ${inBlock} for withdrawals`);
+      this.log.info(`Checking block ${inBlock} for withdrawals`);
       if (pendingTxs.length === 0) {
         this.log.debug("No transaction found in store.");
         return [];

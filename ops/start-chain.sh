@@ -15,7 +15,7 @@ port="${INDRA_CHAIN_PORT:-`expr 8545 - 1337 + $chain_id`}"
 tag="${INDRA_TAG:-$chain_id}"
 mnemonic="${INDRA_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 engine="${INDRA_EVM:-`if [[ "$chain_id" == "1337" ]]; then echo "ganache"; else echo "buidler"; fi`}"
-logLevel="${INDRA_CHAIN_LOG_LEVEL:-0}"
+logLevel="${INDRA_CHAIN_LOG_LEVEL:0}"
 
 ethprovider_host="${project}_testnet_$tag"
 
@@ -37,6 +37,8 @@ else
   arg="modules/contracts/ops/entry.sh"
   opts="--entrypoint bash --mount type=bind,source=$root,target=/root"
 fi
+
+echo "Running ${mode}-mode image for testnet ${chain_id}: ${image}"
 
 docker run $opts \
   --detach \
@@ -63,7 +65,11 @@ do
 done
 
 while [[ -z "`docker exec $ethprovider_host cat /data/address-book.json | grep '"Token":' || true`" ]]
-do sleep 1
+do
+  if [[ -z `docker container ls -f name=$ethprovider_host -q` ]]
+  then echo "$ethprovider_host was not able to start up successfully" && exit 1
+  else sleep 1
+  fi
 done
 
 echo "Provider for chain ${chain_id} is awake & ready to go on port ${port}!"

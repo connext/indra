@@ -134,14 +134,13 @@ export class WithdrawalController extends AbstractController {
     this.log.debug(`Signing withdrawal commitment: ${hash}`);
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment =
-      await this.connext.channelProvider.signMessage(hash);
-    this.log.debug(`Taking action on ${appInstance.identityHash}`);
-    await this.connext.takeAction(appInstance.identityHash, {
+    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
+      hash,
+    );
+    this.log.debug(`Uninstalling with action ${appInstance.identityHash}`);
+    await this.connext.uninstallApp(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
     } as WithdrawAppAction);
-    this.log.debug(`Uninstalling ${appInstance.identityHash}`);
-    await this.connext.uninstallApp(appInstance.identityHash);
   }
 
   private async createWithdrawCommitment(

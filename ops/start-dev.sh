@@ -57,6 +57,8 @@ nats_port=4222
 node_port=8080
 dash_port=9999
 
+proxy_url="http://localhost:3001"
+
 # database connection settings
 pg_db="$project"
 pg_password_file="/run/secrets/${project}_database_dev"
@@ -223,7 +225,16 @@ EOF
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
 
 echo "The $project stack has been deployed, waiting for the proxy to start responding.."
-while [[ "`curl -s http://localhost:3000`" == "Waiting for Indra to wake up" ]]
-do sleep 2
+timeout=$(expr `date +%s` + 30)
+while true
+do
+  res="`curl -s $proxy_url || true`"
+  if [[ -z "$res" || "$res" == "Waiting for Indra to wake up" ]]
+  then
+    if [[ "`date +%s`" -gt "$timeout" ]]
+    then echo "Timed out waiting for proxy to respond.." && exit
+    else sleep 2
+    fi
+  else echo "Good Morning!" && exit;
+  fi
 done
-echo "Good Morning!"

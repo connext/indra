@@ -19,7 +19,7 @@ import {
   STATE_OBJECT_NOT_ENCODABLE,
   NO_APP_INSTANCE_FOR_GIVEN_HASH,
   NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
-  NO_MULTISIG_IN_PARAMS,
+  NO_APP_IDENTITY_HASH_IN_PARAMS,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { StateChannel } from "../../models/state-channel";
@@ -33,14 +33,14 @@ export class TakeActionController extends MethodController {
 
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockName(
+  protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
-  ): Promise<string> {
-    if (!params.multisigAddress) {
-      throw new Error(NO_MULTISIG_IN_PARAMS(params));
+  ): Promise<string[]> {
+    if (!params.appIdentityHash) {
+      throw new Error(NO_APP_IDENTITY_HASH_IN_PARAMS(params));
     }
-    return params.multisigAddress;
+    return [params.appIdentityHash];
   }
 
   protected async beforeExecution(

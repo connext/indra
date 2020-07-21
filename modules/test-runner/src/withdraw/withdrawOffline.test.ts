@@ -161,7 +161,8 @@ describe("Withdraw offline tests", () => {
     await recreateClientAndRetryWithdraw(client, withdrawParams);
   });
 
-  it("client goes offline before node finishes submitting withdrawal (commitment is written to store and retried)", async () => {
+  // SKIPPED because withdraw doesn't use takeAction anymore
+  it.skip("client goes offline before node finishes submitting withdrawal (commitment is written to store and retried)", async () => {
     const client = await createAndFundChannel();
     const withdrawParams = {
       amount: ZERO_ZERO_ZERO_FIVE_ETH,

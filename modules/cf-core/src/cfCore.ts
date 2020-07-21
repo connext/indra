@@ -226,7 +226,7 @@ export class CFCore {
           data,
           from: this.publicIdentifier,
           type: EventNames.PROTOCOL_MESSAGE_EVENT,
-        } as ProtocolMessage);
+        });
 
         return { channel, appContext };
       },
@@ -234,7 +234,7 @@ export class CFCore {
 
     protocolRunner.register(
       Opcode.IO_SEND_AND_WAIT,
-      async (args: [ProtocolMessageData, StateChannel, AppInstance]) => {
+      async (args: [ProtocolMessageData, StateChannel?, AppInstance?]) => {
         const [data, channel, appContext] = args;
 
         const deferral = new Deferred<ProtocolMessage>();
@@ -247,7 +247,7 @@ export class CFCore {
           data,
           from: this.publicIdentifier,
           type: EventNames.PROTOCOL_MESSAGE_EVENT,
-        } as ProtocolMessage);
+        });
 
         // 10 seconds is the default lock acquiring time time
         const msg = await Promise.race<ProtocolMessage | void>([
@@ -282,7 +282,7 @@ export class CFCore {
           );
         }
 
-        return { data: msg.data, channel, appContext };
+        return { message: msg, channel, appContext };
       },
     );
 

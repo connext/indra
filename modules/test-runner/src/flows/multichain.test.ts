@@ -13,7 +13,7 @@ import { expect } from "../util";
 
 const { AddressZero, Zero } = constants;
 
-describe("Multichain clients", () => {
+describe.skip("Multichain clients", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
 
