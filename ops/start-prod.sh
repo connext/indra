@@ -19,6 +19,10 @@ docker network create --attachable --driver overlay $project 2> /dev/null || tru
 function extractEnv {
   grep "$1" "$2" | cut -d "=" -f 2- | tr -d '\n\r"' | sed 's/ *#.*//'
 }
+# extracts json string from .env file without stripping ""
+function extractJsonStringFromEnv {
+  grep "$1" "$2" | cut -d "=" -f 2- | tr -d '\n\r' | sed 's/ *#.*//'
+}
 
 # First choice: use existing env vars (dotEnv not called)
 function dotEnv {
@@ -29,11 +33,20 @@ function dotEnv {
   then extractEnv $key prod.env
   fi
 }
+# Uses `extractJsonStringFromEnv`
+function dotEnvJsonStr {
+  key="$1"
+  if [[ -f .env && -n "`extractJsonStringFromEnv $key .env`" ]] # Second choice: load from custom secret env
+  then extractJsonStringFromEnv $key .env
+  elif [[ -f dev.env && -n "`extractJsonStringFromEnv $key dev.env`" ]] # Third choice: load from public defaults
+  then extractJsonStringFromEnv $key dev.env
+  fi
+}
 
 export INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-`dotEnv INDRA_ADMIN_TOKEN`}"
 export INDRA_AWS_ACCESS_KEY_ID="${INDRA_AWS_ACCESS_KEY_ID:-`dotEnv INDRA_AWS_ACCESS_KEY_ID`}"
 export INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-`dotEnv INDRA_AWS_SECRET_ACCESS_KEY`}"
-export INDRA_CHAIN_PROVIDERS="${INDRA_CHAIN_PROVIDERS:-`dotEnv INDRA_CHAIN_PROVIDERS`}"
+export INDRA_CHAIN_PROVIDERS="${INDRA_CHAIN_PROVIDERS:-`dotEnvJsonStr INDRA_CHAIN_PROVIDERS`}"
 export INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-`dotEnv INDRA_DOMAINNAME`}"
 export INDRA_EMAIL="${INDRA_EMAIL:-`dotEnv INDRA_EMAIL`}"
 export INDRA_LOG_LEVEL="${INDRA_LOG_LEVEL:-`dotEnv INDRA_LOG_LEVEL`}"
@@ -189,12 +202,13 @@ then
   INDRA_CHAIN_MODE="${INDRA_MODE#test-}" bash ops/start-testnet.sh $chain_id_1 $chain_id_2
   chain_providers="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
   contract_addresses="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json`"
-  chain_url_1="`echo $chain_providers | jq '.[]' | head -n 1 | tr -d '"'`"
+  chain_url_1="`echo $chain_providers | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"
 
 # If chain providers are provided, use those
 else
-  chain_providers="$INDRA_CHAIN_PROVIDERS"
-  chain_url_1="`echo $chain_providers | jq '.[]' | head -n 1 | tr -d '"'`"
+  echo "Using chain providers:" $INDRA_CHAIN_PROVIDERS
+  eval chain_providers="$INDRA_CHAIN_PROVIDERS"
+  chain_url_1="`echo $chain_providers | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"
   # Prefer top-level address-book override otherwise default to one in contracts
   if [[ -f address-book.json ]]
   then contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
