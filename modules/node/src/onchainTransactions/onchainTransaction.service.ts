@@ -86,7 +86,7 @@ export class OnchainTransactionService implements OnModuleInit {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(json.multisigAddress);
     await this.queues
       .get(channel.chainId)
-      .add(() => this.sendTransaction(transaction, TransactionReason.COLLATERALIZATION, channel));
+      .add(() => this.sendTransaction(transaction, TransactionReason.MULTISIG_DEPLOY, channel));
     const tx = await this.onchainTransactionRepository.findLatestTransactionToChannel(
       channel.multisigAddress,
       TransactionReason.MULTISIG_DEPLOY,
