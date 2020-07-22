@@ -5,12 +5,12 @@ import {
   IMessagingService,
   IStoreService,
   MethodName,
-  NetworkContext,
   ProtocolMessage,
   PublicIdentifier,
   ILockService,
   EventName,
   ProtocolEventMessage,
+  NetworkContexts,
 } from "@connext/types";
 import { logTime } from "@connext/utils";
 import EventEmitter from "eventemitter3";
@@ -34,7 +34,7 @@ export class RequestHandler {
     readonly store: IStoreService,
     readonly messagingService: IMessagingService,
     readonly protocolRunner: ProtocolRunner,
-    readonly networkContext: NetworkContext,
+    readonly networkContexts: NetworkContexts,
     readonly signer: IChannelSigner,
     readonly blocksNeededForConfirmation: number,
     readonly lockService: ILockService,

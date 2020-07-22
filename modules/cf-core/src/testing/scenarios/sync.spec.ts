@@ -1,33 +1,33 @@
-import { EventEmitter } from "events";
+import { getMemoryStore } from "@connext/store";
 import {
-  JsonRpcProvider,
-  IStoreService,
+  Address,
   EventNames,
-  StateChannelJSON,
-  ProtocolNames,
+  IStoreService,
   MethodNames,
   MethodParams,
+  ProtocolNames,
+  StateChannelJSON,
 } from "@connext/types";
-import { getMemoryStore } from "@connext/store";
+import { deBigNumberifyJson, ChannelSigner, bigNumberifyJson } from "@connext/utils";
 import { utils } from "ethers";
+import { EventEmitter } from "events";
 
 import { env } from "../setup";
 import { CFCore } from "../../cfCore";
 import {
-  createChannel,
-  makeProposeCall,
   constructInstallRpc,
-  makeAndSendProposeCall,
-  installApp,
-  constructUninstallRpc,
   constructTakeActionRpc,
-  uninstallApp,
+  constructUninstallRpc,
+  createChannel,
+  getContractAddresses,
+  installApp,
+  makeAndSendProposeCall,
   makeInstallCall,
+  makeProposeCall,
+  uninstallApp,
 } from "../utils";
 import { MemoryMessagingServiceWithLimits } from "../services/memory-messaging-service-limits";
-import { deBigNumberifyJson, ChannelSigner, bigNumberifyJson } from "@connext/utils";
 import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
-import { TestContractAddresses } from "../contracts";
 import { MemoryLockService } from "../services";
 import { Logger } from "../logger";
 import { validAction } from "../tic-tac-toe";
@@ -44,14 +44,13 @@ describe("Sync", () => {
   let storeServiceB: IStoreService;
   let sharedEventEmitter: EventEmitter;
   let ethUrl: string;
-  let provider: JsonRpcProvider;
-  let nodeConfig: any;
   let lockService: MemoryLockService;
   let channelSignerA: ChannelSigner;
   let channelSignerB: ChannelSigner;
   let expectedChannel: StateChannelJSON | undefined;
   let messagingServiceA: MemoryMessagingServiceWithLimits;
   let messagingServiceB: MemoryMessagingServiceWithLimits;
+  let TicTacToeApp: Address;
 
   const log = new Logger("SyncTest", env.logLevel, true);
 
@@ -64,15 +63,14 @@ describe("Sync", () => {
     // test global fixtures
     sharedEventEmitter = new EventEmitter();
     ethUrl = global["wallet"]["provider"].connection.url;
-    provider = new JsonRpcProvider(ethUrl);
-    nodeConfig = { STORE_KEY_PREFIX: "test" };
+    TicTacToeApp = getContractAddresses().TicTacToeApp;
+    log.info(`TicTacToeApp: ${TicTacToeApp}`);
     lockService = new MemoryLockService();
 
     // create nodeA values
-    storeServiceA = getMemoryStore();
     channelSignerA = new ChannelSigner(A_PRIVATE_KEY, ethUrl);
+    storeServiceA = getMemoryStore({ prefix: channelSignerA.publicIdentifier });
     await storeServiceA.init();
-    await storeServiceA.clear();
 
     // create nodeB values
     messagingServiceB = new MemoryMessagingServiceWithLimits(
@@ -82,16 +80,13 @@ describe("Sync", () => {
       undefined,
       "NodeB",
     );
-    storeServiceB = getMemoryStore();
     channelSignerB = new ChannelSigner(B_PRIVATE_KEY, ethUrl);
+    storeServiceB = getMemoryStore({ prefix: channelSignerB.publicIdentifier });
     await storeServiceB.init();
-    await storeServiceB.clear();
     nodeB = await CFCore.create(
       messagingServiceB,
       storeServiceB,
-      global["contracts"],
-      nodeConfig,
-      provider,
+      global["networks"],
       channelSignerB,
       lockService,
       0,
@@ -102,16 +97,12 @@ describe("Sync", () => {
   describe("Sync::propose", () => {
     let identityHash: string;
     beforeEach(async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
-
       // propose-specific setup
       messagingServiceA = new MemoryMessagingServiceWithLimits(sharedEventEmitter, 0, "propose");
       nodeA = await CFCore.create(
         messagingServiceA,
         storeServiceA,
-        global["contracts"],
-        nodeConfig,
-        provider,
+        global["networks"],
         channelSignerA,
         lockService,
         0,
@@ -149,9 +140,7 @@ describe("Sync", () => {
       const newNodeA = await CFCore.create(
         new MemoryMessagingServiceWithLimits(sharedEventEmitter),
         storeServiceA,
-        global["contracts"],
-        nodeConfig,
-        provider,
+        global["networks"],
         channelSignerA,
         lockService,
         0,
@@ -188,9 +177,7 @@ describe("Sync", () => {
         CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
-          global["contracts"],
-          nodeConfig,
-          provider,
+          global["networks"],
           channelSignerB,
           lockService,
           0,
@@ -260,7 +247,6 @@ describe("Sync", () => {
 
   describe("Sync::propose + rejectInstall", () => {
     beforeEach(async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       // propose-specific setup
       messagingServiceA = new MemoryMessagingServiceWithLimits(
         sharedEventEmitter,
@@ -272,9 +258,7 @@ describe("Sync", () => {
       nodeA = await CFCore.create(
         messagingServiceA,
         storeServiceA,
-        global["contracts"],
-        nodeConfig,
-        provider,
+        global["networks"],
         channelSignerA,
         lockService,
         0,
@@ -319,7 +303,6 @@ describe("Sync", () => {
     });
 
     it("sync protocol responder is missing a proposal held by the protocol initiator, sync on startup", async function () {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve, reject) => {
           nodeB.on(EventNames.SYNC, (data) => resolve(data));
@@ -334,9 +317,7 @@ describe("Sync", () => {
             "A-Recreated",
           ),
           storeServiceA,
-          global["contracts"],
-          nodeConfig,
-          provider,
+          global["networks"],
           channelSignerA,
           lockService,
           0,
@@ -380,7 +361,6 @@ describe("Sync", () => {
     });
 
     it("sync protocol initiator is missing a proposal held by the protocol responder, sync on startup", async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       messagingServiceA.clearLimits();
       await messagingServiceB.disconnect();
       const [eventData, newNodeB] = await Promise.all([
@@ -391,9 +371,7 @@ describe("Sync", () => {
         CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
-          global["contracts"],
-          nodeConfig,
-          provider,
+          global["networks"],
           channelSignerB,
           lockService,
           0,
@@ -437,7 +415,6 @@ describe("Sync", () => {
     });
 
     it("sync protocol responder is missing a proposal held by the protocol initiator, sync on error", async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       messagingServiceA.clearLimits();
       const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const res: any = await new Promise(async (resolve) => {
@@ -467,7 +444,6 @@ describe("Sync", () => {
     });
 
     it("sync protocol initiator is missing a proposal held by the protocol responder, sync on error", async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       messagingServiceA.clearLimits();
       const rpc = makeProposeCall(nodeA, TicTacToeApp, multisigAddress);
       const res: any = await new Promise(async (resolve) => {
@@ -511,9 +487,7 @@ describe("Sync", () => {
       nodeA = await CFCore.create(
         messagingServiceA,
         storeServiceA,
-        global["contracts"],
-        nodeConfig,
-        provider,
+        global["networks"],
         channelSignerA,
         lockService,
         0,
@@ -524,7 +498,6 @@ describe("Sync", () => {
       multisigAddress = await createChannel(nodeA, nodeB);
 
       // load stores with proposal
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
 
       // verify channel in stores are in sync post-proposal
@@ -555,9 +528,7 @@ describe("Sync", () => {
         CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
-          global["contracts"],
-          nodeConfig,
-          provider,
+          global["networks"],
           channelSignerA,
           lockService,
           0,
@@ -574,7 +545,6 @@ describe("Sync", () => {
       expect(syncedChannel).to.deep.eq(expectedChannel!);
 
       // propose new app
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       await installApp(newNodeA, nodeB, multisigAddress, TicTacToeApp);
     });
 
@@ -588,9 +558,7 @@ describe("Sync", () => {
         CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
-          global["contracts"],
-          nodeConfig,
-          provider,
+          global["networks"],
           channelSignerB,
           lockService,
           0,
@@ -607,7 +575,6 @@ describe("Sync", () => {
       expect(syncedChannel).to.deep.eq(expectedChannel!);
 
       // propose new app
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       await installApp(newNodeB, nodeA, multisigAddress, TicTacToeApp);
     });
 
@@ -634,7 +601,6 @@ describe("Sync", () => {
     let unsynced: StateChannelJSON | undefined;
     // TODO: figure out how to fast-forward IO_SEND_AND_WAIT
     beforeEach(async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       // install-specific setup
       messagingServiceA = new MemoryMessagingServiceWithLimits(
         sharedEventEmitter,
@@ -645,9 +611,7 @@ describe("Sync", () => {
       nodeA = await CFCore.create(
         messagingServiceA,
         storeServiceA,
-        global["contracts"],
-        nodeConfig,
-        provider,
+        global["networks"],
         channelSignerA,
         lockService,
         0,
@@ -696,9 +660,7 @@ describe("Sync", () => {
         CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
-          global["contracts"],
-          nodeConfig,
-          provider,
+          global["networks"],
           channelSignerB,
           lockService,
           0,
@@ -731,9 +693,7 @@ describe("Sync", () => {
         CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
-          global["contracts"],
-          nodeConfig,
-          provider,
+          global["networks"],
           channelSignerA,
           lockService,
           0,
@@ -778,7 +738,6 @@ describe("Sync", () => {
     let unsynced: StateChannelJSON | undefined;
     // TODO: figure out how to fast-forward IO_SEND_AND_WAIT
     beforeEach(async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       // install-specific setup
       messagingServiceA = new MemoryMessagingServiceWithLimits(
         sharedEventEmitter,
@@ -789,9 +748,7 @@ describe("Sync", () => {
       nodeA = await CFCore.create(
         messagingServiceA,
         storeServiceA,
-        global["contracts"],
-        nodeConfig,
-        provider,
+        global["networks"],
         channelSignerA,
         lockService,
         0,
@@ -852,9 +809,7 @@ describe("Sync", () => {
         CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
-          global["contracts"],
-          nodeConfig,
-          provider,
+          global["networks"],
           channelSignerB,
           lockService,
           0,
@@ -887,9 +842,7 @@ describe("Sync", () => {
         CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
-          global["contracts"],
-          nodeConfig,
-          provider,
+          global["networks"],
           channelSignerA,
           lockService,
           0,
@@ -932,7 +885,6 @@ describe("Sync", () => {
   describe("Sync::uninstall", () => {
     let identityHash: string;
     beforeEach(async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       // uninstall-specific setup
       messagingServiceA = new MemoryMessagingServiceWithLimits(
         sharedEventEmitter,
@@ -943,9 +895,7 @@ describe("Sync", () => {
       nodeA = await CFCore.create(
         messagingServiceA,
         storeServiceA,
-        global["contracts"],
-        nodeConfig,
-        provider,
+        global["networks"],
         channelSignerA,
         lockService,
         0,
@@ -978,7 +928,6 @@ describe("Sync", () => {
     });
 
     it("sync protocol -- initiator has an app uninstalled by responder, sync on startup", async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       await messagingServiceB.disconnect();
       messagingServiceA.clearLimits();
       const [eventData, newNodeB] = await Promise.all([
@@ -988,9 +937,7 @@ describe("Sync", () => {
         CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceB,
-          global["contracts"],
-          nodeConfig,
-          provider,
+          global["networks"],
           channelSignerB,
           lockService,
           0,
@@ -1027,7 +974,6 @@ describe("Sync", () => {
     });
 
     it("sync protocol -- responder has an app uninstalled by initiator, sync on startup", async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       await messagingServiceA.disconnect();
       const [eventData, newNodeA] = await Promise.all([
         new Promise(async (resolve) => {
@@ -1036,9 +982,7 @@ describe("Sync", () => {
         CFCore.create(
           new MemoryMessagingServiceWithLimits(sharedEventEmitter),
           storeServiceA,
-          global["contracts"],
-          nodeConfig,
-          provider,
+          global["networks"],
           channelSignerA,
           lockService,
           0,
@@ -1075,7 +1019,6 @@ describe("Sync", () => {
     });
 
     it("sync protocol -- initiator has an app uninstalled by responder, sync on error", async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       messagingServiceA.clearLimits();
       // create new app
       [identityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
@@ -1098,7 +1041,6 @@ describe("Sync", () => {
     });
 
     it("sync protocol -- responder has an app uninstalled by initiator, sync on error", async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       messagingServiceA.clearLimits();
       // create new app
       [identityHash] = await installApp(nodeB, nodeA, multisigAddress, TicTacToeApp);
@@ -1124,7 +1066,6 @@ describe("Sync", () => {
   describe("Sync::takeAction", () => {
     let appIdentityHash: string;
     beforeEach(async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
       // uninstall-specific setup
       messagingServiceA = new MemoryMessagingServiceWithLimits(
         sharedEventEmitter,
@@ -1134,9 +1075,7 @@ describe("Sync", () => {
       nodeA = await CFCore.create(
         messagingServiceA,
         storeServiceA,
-        global["contracts"],
-        nodeConfig,
-        provider,
+        global["networks"],
         channelSignerA,
         lockService,
         0,

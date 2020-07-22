@@ -29,7 +29,7 @@ const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } 
  */
 export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
-    const { message, network, preProtocolStateChannel } = context;
+    const { message, networks, preProtocolStateChannel } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
     let substart = start;
@@ -65,6 +65,8 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       throw new Error(error);
     }
     logTime(log, substart, `[${loggerId}] Validated uninstall request`);
+
+    const network = networks[preProtocolStateChannel.chainId];
 
     let preUninstallStateChannel: StateChannel;
     if (action) {
@@ -110,7 +112,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const responderFreeBalanceKey = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
     const uninstallCommitment = getSetStateCommitment(
-      context,
+      network,
       postProtocolStateChannel.freeBalance,
     );
     const uninstallCommitmentHash = uninstallCommitment.hashToSign();
@@ -163,7 +165,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   } as any,
 
   1 /* Responding */: async function* (context: Context) {
-    const { message, preProtocolStateChannel, network } = context;
+    const { message, preProtocolStateChannel, networks } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
     let substart = start;
@@ -198,6 +200,8 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       throw new Error(error);
     }
     logTime(log, substart, `[${loggerId}] Validated uninstall request`);
+
+    const network = networks[preProtocolStateChannel.chainId];
 
     let preUninstallStateChannel: StateChannel;
     if (action) {
@@ -243,7 +247,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const initiatorFreeBalanceKey = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
 
     const uninstallCommitment = getSetStateCommitment(
-      context,
+      network,
       postProtocolStateChannel.freeBalance,
     );
 

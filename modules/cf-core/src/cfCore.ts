@@ -1,7 +1,6 @@
 import {
   Address,
   AppInstanceJson,
-  ContractAddresses,
   EventNames,
   IChannelSigner,
   ILockService,
@@ -14,7 +13,7 @@ import {
   MethodParams,
   MiddlewareContext,
   MinimalTransaction,
-  NetworkContext,
+  NetworkContexts,
   Opcode,
   ProtocolMessage,
   ProtocolMessageData,
@@ -25,7 +24,6 @@ import {
   EventName,
 } from "@connext/types";
 import { abrv, delay, nullLogger, stringify } from "@connext/utils";
-import { providers } from "ethers";
 import EventEmitter from "eventemitter3";
 
 import { UNASSIGNED_SEQ_NO, IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
@@ -49,8 +47,6 @@ export class CFCore {
   private readonly ioSendDeferrals = new Map<string, Deferred<ProtocolMessage>>();
   private readonly protocolRunner: ProtocolRunner;
 
-  public readonly networkContext: NetworkContext;
-
   /**
    * These properties don't have initializers in the constructor, since they must be initialized
    * asynchronously. This is done via the `asynchronouslySetupUsingRemoteServices` function.
@@ -64,9 +60,7 @@ export class CFCore {
   static create(
     messagingService: IMessagingService,
     storeService: IStoreService,
-    contractAddresses: ContractAddresses,
-    nodeConfig: NodeConfig,
-    provider: providers.JsonRpcProvider,
+    networkContexts: NetworkContexts,
     signer: IChannelSigner,
     lockService: ILockService,
     blocksNeededForConfirmation?: number,
@@ -77,9 +71,7 @@ export class CFCore {
       signer,
       messagingService,
       storeService,
-      nodeConfig,
-      provider,
-      contractAddresses,
+      networkContexts,
       blocksNeededForConfirmation,
       logger,
       lockService,
@@ -92,18 +84,16 @@ export class CFCore {
     private readonly signer: IChannelSigner,
     private readonly messagingService: IMessagingService,
     private readonly storeService: IStoreService,
-    private readonly nodeConfig: NodeConfig,
-    private readonly provider: providers.JsonRpcProvider,
-    public readonly contractAddresses: ContractAddresses,
+    public readonly networkContexts: NetworkContexts,
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
     public readonly log: ILoggerService = nullLogger,
     private readonly lockService: ILockService,
   ) {
     this.log = log.newContext("CFCore");
-    this.networkContext = { contractAddresses: this.contractAddresses, provider: this.provider };
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
     this.protocolRunner = this.buildProtocolRunner();
+    this.log.info(`Using network contexts with chain ids: ${Object.keys(networkContexts)}`);
   }
 
   get signerAddress(): Address {
@@ -125,7 +115,7 @@ export class CFCore {
       this.storeService,
       this.messagingService,
       this.protocolRunner,
-      this.networkContext,
+      this.networkContexts,
       this.signer,
       this.blocksNeededForConfirmation!,
       this.lockService,
@@ -197,7 +187,7 @@ export class CFCore {
    */
   private buildProtocolRunner(): ProtocolRunner {
     const protocolRunner = new ProtocolRunner(
-      this.networkContext,
+      this.networkContexts,
       this.storeService,
       this.log.newContext("CF-ProtocolRunner"),
     );

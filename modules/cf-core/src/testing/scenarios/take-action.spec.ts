@@ -4,15 +4,15 @@ import { constants } from "ethers";
 import { CFCore } from "../../cfCore";
 import { NO_MULTISIG_IN_PARAMS, NO_APP_INSTANCE_FOR_GIVEN_HASH } from "../../errors";
 
-import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import { validAction } from "../tic-tac-toe";
 import {
-  getAppInstance,
+  assertMessage,
   constructTakeActionRpc,
   createChannel,
+  getAppInstance,
+  getContractAddresses,
   installApp,
-  assertMessage,
 } from "../utils";
 import { toBN, deBigNumberifyJson } from "@connext/utils";
 import { expect } from "../assertions";
@@ -41,11 +41,13 @@ function confirmMessages(
 describe("Node method follows spec - takeAction", () => {
   let nodeA: CFCore;
   let nodeB: CFCore;
+  let TicTacToeApp: string;
 
   beforeEach(async () => {
     const context: SetupContext = await setup(global);
     nodeA = context["A"].node;
     nodeB = context["B"].node;
+    TicTacToeApp = getContractAddresses().TicTacToeApp;
   });
 
   describe(
@@ -69,7 +71,6 @@ describe("Node method follows spec - takeAction", () => {
 
       it("can take action", async () => {
         return new Promise(async (done) => {
-          const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
           const multisigAddress = await createChannel(nodeA, nodeB);
           const [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 

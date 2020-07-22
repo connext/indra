@@ -8,6 +8,7 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   DepositAppState,
   DepositAppStateEncoding,
+  EventName,
   EventNames,
   JsonRpcResponse,
   MethodNames,
@@ -15,24 +16,23 @@ import {
   MethodParams,
   MethodResults,
   OutcomeType,
+  ProtocolEventMessage,
   ProtocolParams,
   PublicIdentifier,
   Rpc,
+  SimpleLinkedTransferAppActionEncoding,
+  SimpleLinkedTransferAppStateEncoding,
   SolidityValueType,
   UninstallMessage,
-  EventName,
-  ProtocolEventMessage,
-  SimpleLinkedTransferAppStateEncoding,
-  SimpleLinkedTransferAppActionEncoding,
   CF_METHOD_TIMEOUT,
 } from "@connext/types";
 import {
   bigNumberifyJson,
   deBigNumberifyJson,
   getAddressFromAssetId,
+  getRandomAddress,
   getSignerAddressFromPublicIdentifier,
   toBN,
-  getRandomAddress,
   delay,
 } from "@connext/utils";
 import { BigNumber, Contract, Wallet, providers, constants } from "ethers";
@@ -54,6 +54,11 @@ interface AppContext {
   initialState: SolidityValueType;
   outcomeType: OutcomeType;
 }
+
+export const getChainId = (): number => parseInt(Object.keys(global["networks"])[0], 10);
+
+export const getContractAddresses = (chainId?: string): TestContractAddresses =>
+  (chainId ? global["networks"][chainId] : Object.values(global["networks"])[0]).contractAddresses;
 
 export const newWallet = (wallet: Wallet) =>
   new Wallet(
@@ -137,7 +142,7 @@ export async function rescindDepositRights(
   multisigAddress: string,
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ) {
-  const { DepositApp } = global[`contracts`] as TestContractAddresses;
+  const { DepositApp } = getContractAddresses();
   const apps = await getInstalledAppInstances(node, multisigAddress);
   const depositAppInstance = apps.filter(
     (app) =>
@@ -157,7 +162,7 @@ export async function getDepositApps(
   multisigAddr: string,
   tokenAddresses: string[] = [],
 ): Promise<AppInstanceJson[]> {
-  const { DepositApp } = global[`contracts`] as TestContractAddresses;
+  const { DepositApp } = getContractAddresses();
   const apps = await getInstalledAppInstances(node, multisigAddr);
   if (apps.length === 0) {
     return [];
@@ -258,6 +263,7 @@ export function constructChannelCreationRpc(owners: string[]) {
     methodName: MethodNames.chan_create,
     parameters: {
       owners,
+      chainId: getChainId(),
     } as MethodParams.CreateChannel,
   };
 }
@@ -420,7 +426,7 @@ export async function getProposeDepositAppParams(
   responderIdentifier: string,
   assetId: string = CONVENTION_FOR_ETH_ASSET_ID,
 ): Promise<MethodParams.ProposeInstall> {
-  const { DepositApp } = global[`contracts`] as TestContractAddresses;
+  const { DepositApp } = getContractAddresses();
   const tokenAddress = getAddressFromAssetId(assetId);
   const startingTotalAmountWithdrawn = await getMultisigAmountWithdrawn(
     multisigAddress,
@@ -919,7 +925,7 @@ export async function transferERC20Tokens(
   contractABI: ContractABI = ERC20.abi as any,
   amount: BigNumber = One,
 ): Promise<BigNumber> {
-  const { DolphinCoin } = global[`contracts`] as TestContractAddresses;
+  const { DolphinCoin } = getContractAddresses();
 
   tokenAddress = tokenAddress === "" ? DolphinCoin : tokenAddress;
 
@@ -938,9 +944,7 @@ export function getAppContext(
   senderAddress?: string, // needed for both types of transfer apps
   receiverAddress?: string, // needed for both types of transfer apps
 ): AppContext {
-  const { DepositApp, TicTacToeApp, SimpleLinkedTransferApp } = global[
-    `contracts`
-  ] as TestContractAddresses;
+  const { DepositApp, SimpleLinkedTransferApp, TicTacToeApp } = getContractAddresses();
   const checkForInitialState = () => {
     if (!initialState) {
       throw new Error(`Must have initial state to generate app context`);

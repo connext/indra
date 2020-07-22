@@ -3,9 +3,14 @@ import { constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
-import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
-import { collateralizeChannel, createChannel, makeInstallCall, makeProposeCall } from "../utils";
+import {
+  collateralizeChannel,
+  createChannel,
+  getContractAddresses,
+  makeInstallCall,
+  makeProposeCall,
+} from "../utils";
 
 const { One } = constants;
 const { parseEther } = utils;
@@ -36,7 +41,7 @@ describe(`Node method follows spec - install`, () => {
 
       it(`install app with ETH`, async () => {
         return new Promise(async (done) => {
-          const { TicTacToeApp } = global[`contracts`] as TestContractAddresses;
+          const { TicTacToeApp } = getContractAddresses();
 
           let completedInstalls = 0;
 

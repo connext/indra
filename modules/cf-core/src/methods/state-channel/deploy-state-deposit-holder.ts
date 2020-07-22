@@ -1,8 +1,4 @@
-import {
-  MethodNames,
-  MethodParams,
-  MethodResults,
-} from "@connext/types";
+import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { delay, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Contract, Signer, utils, constants, providers } from "ethers";
 
@@ -39,32 +35,35 @@ export class DeployStateDepositController extends MethodController {
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: MethodParams.DeployStateDepositHolder,
+    preProtocolStateChannel: StateChannel,
   ): Promise<MethodResults.DeployStateDepositHolder | undefined> {
-    const { store, networkContext } = requestHandler;
+    const { networkContexts } = requestHandler;
     const { multisigAddress } = params;
 
-    const json = await store.getStateChannel(multisigAddress);
-    if (!json) {
+    if (!preProtocolStateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
     }
-    const channel = StateChannel.fromJson(json);
 
-    if (!channel.addresses.ProxyFactory) {
-      throw new Error(INVALID_FACTORY_ADDRESS(channel.addresses.ProxyFactory));
+    if (!preProtocolStateChannel.addresses.ProxyFactory) {
+      throw new Error(INVALID_FACTORY_ADDRESS(preProtocolStateChannel.addresses.ProxyFactory));
     }
 
-    if (!channel.addresses.MinimumViableMultisig) {
-      throw new Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.MinimumViableMultisig));
+    if (!preProtocolStateChannel.addresses.MinimumViableMultisig) {
+      throw new Error(
+        INVALID_MASTERCOPY_ADDRESS(preProtocolStateChannel.addresses.MinimumViableMultisig),
+      );
     }
+
+    const networkContext = networkContexts[preProtocolStateChannel.chainId];
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
-      channel.userIdentifiers[0],
-      channel.userIdentifiers[1],
-      channel.addresses,
+      preProtocolStateChannel.userIdentifiers[0],
+      preProtocolStateChannel.userIdentifiers[1],
+      preProtocolStateChannel.addresses,
       networkContext.provider,
     );
 
-    if (expectedMultisigAddress !== channel.multisigAddress) {
+    if (expectedMultisigAddress !== preProtocolStateChannel.multisigAddress) {
       throw new Error(INCORRECT_MULTISIG_ADDRESS);
     }
     return undefined;
@@ -73,14 +72,15 @@ export class DeployStateDepositController extends MethodController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: MethodParams.DeployStateDepositHolder,
+    preProtocolStateChannel: StateChannel,
   ): Promise<MethodResults.DeployStateDepositHolder> {
     const multisigAddress = params.multisigAddress;
     const retryCount = params.retryCount || 1;
-    const { networkContext, store, signer } = requestHandler;
+    const { networkContexts, signer } = requestHandler;
     const log = requestHandler.log.newContext("CF-DeployStateDepositHolder");
+    const networkContext = networkContexts[preProtocolStateChannel.chainId];
 
     // No need to re-assert what we already asserted in beforeExecution
-    const channel = StateChannel.fromJson((await store.getStateChannel(multisigAddress))!);
 
     if (!signer.provider || !Signer.isSigner(signer)) {
       throw new Error(`Signer must be connected to provider`);
@@ -102,7 +102,7 @@ export class DeployStateDepositController extends MethodController {
       });
     }
 
-    let error;
+    let error: any;
     let result = { transactionHash: HashZero };
 
     // Check if the contract has already been deployed on-chain
@@ -115,17 +115,17 @@ export class DeployStateDepositController extends MethodController {
           log.debug(`chainNonce ${chainNonce} vs memoryNonce ${memoryNonce}`);
           memoryNonce = nonce;
           const proxyFactory = new Contract(
-            channel.addresses.ProxyFactory,
+            preProtocolStateChannel.addresses.ProxyFactory,
             ProxyFactory.abi,
             signer,
           );
           const tx: providers.TransactionResponse = await proxyFactory.createProxyWithNonce(
             networkContext.contractAddresses.MinimumViableMultisig,
             new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
-              channel.multisigOwners,
+              preProtocolStateChannel.multisigOwners,
             ]),
             // hash chainId plus nonce for x-chain replay protection
-            solidityKeccak256(["uint256", "uint256"], [(await provider.getNetwork()).chainId, 0]),
+            solidityKeccak256(["uint256", "uint256"], [preProtocolStateChannel.chainId, 0]),
             {
               gasLimit: CREATE_PROXY_AND_SETUP_GAS,
               gasPrice: provider.getGasPrice(),
@@ -142,13 +142,13 @@ export class DeployStateDepositController extends MethodController {
           log.info(`Done waiting for tx hash: ${tx.hash}`);
 
           const multisig = new Contract(
-            channel.multisigAddress,
+            preProtocolStateChannel.multisigAddress,
             MinimumViableMultisig.abi,
             provider,
           );
           const expectedOwners = [
-            getSignerAddressFromPublicIdentifier(channel.userIdentifiers[0]),
-            getSignerAddressFromPublicIdentifier(channel.userIdentifiers[1]),
+            getSignerAddressFromPublicIdentifier(preProtocolStateChannel.userIdentifiers[0]),
+            getSignerAddressFromPublicIdentifier(preProtocolStateChannel.userIdentifiers[1]),
           ];
           const actualOwners = await multisig.getOwners();
 
@@ -160,10 +160,9 @@ export class DeployStateDepositController extends MethodController {
             );
           }
 
-          log.info(`Multisig deployment complete for ${channel.multisigAddress}`);
+          log.info(`Multisig deployment complete for ${preProtocolStateChannel.multisigAddress}`);
           result = { transactionHash: tx.hash! };
           break;
-
         } catch (e) {
           const message = e?.body?.error?.message || e.message;
           log.warn(e.message);
@@ -185,6 +184,5 @@ export class DeployStateDepositController extends MethodController {
       throw new Error(`${CHANNEL_CREATION_FAILED}: ${stringify(error)}`);
     }
     return result;
-
   }
 }

@@ -113,3 +113,17 @@ export const PureActionApps = [
   SimpleLinkedTransferAppName,
   SimpleTwoPartySwapAppName,
 ];
+
+export type AddressBookEntry = {
+  address: string;
+  constructorArgs?: Array<{ name: string; value: string }>;
+  creationCodeHash?: string;
+  runtimeCodeHash?: string;
+  txHash?: string;
+};
+
+export type AddressBookJson = {
+  [chainId: string]: {
+    [contractName: string]: AddressBookEntry;
+  };
+};

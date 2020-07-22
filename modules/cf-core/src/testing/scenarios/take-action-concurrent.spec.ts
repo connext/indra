@@ -8,13 +8,13 @@ import { constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
-import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import { validAction } from "../tic-tac-toe";
 import {
   collateralizeChannel,
   constructTakeActionRpc,
   createChannel,
+  getContractAddresses,
   makeInstallCall,
   makeProposeCall,
 } from "../utils";
@@ -38,7 +38,7 @@ describe("Node method follows spec - toke action", () => {
 
     it("can take actions on two different apps concurrently", async () => {
       return new Promise(async (done) => {
-        const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+        const { TicTacToeApp } = getContractAddresses();
         const appIdentityHashes: string[] = [];
 
         await collateralizeChannel(

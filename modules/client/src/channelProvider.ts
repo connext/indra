@@ -5,7 +5,6 @@ import {
   CFChannelProviderOptions,
   ChannelMethods,
   ChannelProviderConfig,
-  ConnextClientStorePrefix,
   ConnextEventEmitter,
   CreateChannelMessage,
   EventName,
@@ -53,21 +52,20 @@ export const createCFChannelProvider = async ({
   } else {
     config = node.config;
   }
-  const { contractAddresses, supportedTokenAddresses } = config;
+  const { contractAddresses: addressBook, supportedTokenAddresses } = config;
   const messaging = node.messaging;
-  const nodeConfig = { STORE_KEY_PREFIX: ConnextClientStorePrefix };
   const lockService = {
     acquireLock: node.acquireLock.bind(node),
     releaseLock: node.releaseLock.bind(node),
   };
+  const network = await ethProvider.getNetwork();
+  const contractAddresses = addressBook[network.chainId];
   let cfCore: CFCore;
   try {
     cfCore = await CFCore.create(
       messaging,
       store,
-      contractAddresses,
-      nodeConfig,
-      ethProvider,
+      { [network.chainId]: { contractAddresses, provider: ethProvider } },
       signer,
       lockService,
       undefined,
@@ -82,9 +80,12 @@ export const createCFChannelProvider = async ({
     cfCore = await CFCore.create(
       messaging,
       store,
-      contractAddresses,
-      nodeConfig,
-      ethProvider,
+      {
+        [network.chainId]: {
+          contractAddresses,
+          provider: ethProvider,
+        },
+      },
       signer,
       lockService,
       undefined,
@@ -97,8 +98,13 @@ export const createCFChannelProvider = async ({
   cfCore.injectMiddleware(
     Opcode.OP_VALIDATE,
     await generateValidationMiddleware(
-      { provider: ethProvider, contractAddresses },
-      supportedTokenAddresses,
+      {
+        [network.chainId]: {
+          contractAddresses,
+          provider: ethProvider,
+        },
+      },
+      { [network.chainId]: supportedTokenAddresses[network.chainId] },
     ),
   );
 

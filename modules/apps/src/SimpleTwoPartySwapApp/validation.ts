@@ -1,4 +1,4 @@
-import { AllowedSwap, SwapRate, ProtocolParams } from "@connext/types";
+import { AllowedSwap, ProtocolParams } from "@connext/types";
 import { calculateExchangeWad, getAddressFromAssetId, stringify } from "@connext/utils";
 import { BigNumber } from "ethers";
 
@@ -6,7 +6,7 @@ const ALLOWED_DISCREPANCY_PCT = 5;
 
 export const validateSimpleSwapApp = (
   params: ProtocolParams.Propose,
-  allowedSwaps: SwapRate[],
+  allowedSwaps: AllowedSwap[],
   ourRate: string,
   responderDecimals: number,
 ) => {

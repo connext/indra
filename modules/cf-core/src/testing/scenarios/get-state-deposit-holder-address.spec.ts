@@ -4,6 +4,7 @@ import { CFCore } from "../../cfCore";
 
 import { setup, SetupContext } from "../setup";
 import { expect } from "../assertions";
+import { getChainId } from "../utils";
 
 describe(`Node method follows spec - getStateDepositHolderAddress`, () => {
   let nodeA: CFCore;
@@ -25,7 +26,7 @@ describe(`Node method follows spec - getStateDepositHolderAddress`, () => {
     } = await nodeA.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_getStateDepositHolderAddress,
-      parameters: { owners },
+      parameters: { owners, chainId: getChainId() },
     });
 
     expect(address.length).to.eq(42);

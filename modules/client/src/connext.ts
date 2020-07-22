@@ -63,6 +63,7 @@ export class ConnextClient implements IConnextClient {
   public channelProvider: IChannelProvider;
   public config: NodeResponses.GetConfig;
   public ethProvider: providers.JsonRpcProvider;
+  public chainId: number;
   public listener: ConnextListener;
   public log: ILoggerService;
   public messaging: IMessagingService;
@@ -91,6 +92,7 @@ export class ConnextClient implements IConnextClient {
     this.channelProvider = opts.channelProvider;
     this.config = opts.config;
     this.ethProvider = opts.ethProvider;
+    this.chainId = opts.chainId;
     this.signer = opts.signer;
     this.log = opts.logger.newContext("ConnextClient");
     this.messaging = opts.messaging;
@@ -172,6 +174,7 @@ export class ConnextClient implements IConnextClient {
       logger: this.log,
       store: this.store,
       userIdentifier: this.publicIdentifier,
+      chainId: this.chainId,
     });
     this.channelProvider = this.node.channelProvider;
     this.listener = new ConnextListener(this);
@@ -912,7 +915,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   private handleInstalledDepositApps = async () => {
-    const assetIds = this.config.supportedTokenAddresses;
+    const assetIds = this.config.supportedTokenAddresses[this.chainId];
     for (const assetId of assetIds) {
       const { appIdentityHash } = await this.checkDepositRights({ assetId });
       if (!appIdentityHash) {

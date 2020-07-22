@@ -6,7 +6,13 @@ First step: get a server via AWS or DigitalOcean or hardware at home. For best r
 
 Set up DNS so that `$DOMAINNAME` points to this server's IP address. If you're using CloudFlare name servers, turn on CloudFlare's built-in SSL support & make sure it's set to "Full (strict)".
 
-Every Indra node needs access to a hot wallet, you should generate a fresh mnemonic for your node's wallet that isn't used anywhere else. You can generate a new mnemonic from a node console with ethers by doing something like this: `require('ethers').Wallet.createRandom()`.
+Next: Clone the repo and cd into it.
+```
+git clone git@github.com:connext/indra.git
+cd indra
+```
+
+Every Indra node needs access to a hot wallet, you should generate a fresh mnemonic for your node's wallet that isn't used anywhere else. You can generate a new mnemonic from a node console with ethers by doing something like this: `require('ethers').Wallet.createRandom()`. Alternatively, you can generate one [here](https://iancoleman.io/bip39/).
 
 Save this mnemonic somewhere safe, copy it to your clipboard, and then run:
 
@@ -39,15 +45,21 @@ Host new-indra
   ServerAliveInterval 120
 ```
 
-Now you can login to this server with just `ssh new-indra`. Once the server wakes up again after rebooting at the end of `ops/setup-ubuntu`, login to finish setup.
+Now you can login to this server with just `ssh new-indra`.
 
-We need to add a couple env vars before launching our indra node. We'll be pulling from the public default prod-mode env vars & updating a couple as needed.
+We need to add a couple env vars before logging in and launching our indra node. We'll be pulling from the public default prod-mode env vars in your local cloned repo & updating a couple as needed.
 
 ```bash
 cp prod.env .env
 ```
 
-Ensure you've added correct values for two important env vars: `INDRA_DOMAINNAME` and `INDRA_ETH_PROVIDER`.
+Ensure you've added correct values for two important env vars: `INDRA_DOMAINNAME` and `INDRA_CHAIN_PROVIDERS`.
+
+The `INDRA_CHAIN_PROVIDERS` env var is a tricky one, there is no default provided as it's value depends entirely on which chains you want to support (if this env var is not provided, a local testnet will be started up & Indra will use this). The format is very specific: it must be valid JSON where the key is a chain id (eg `"4"`) and the value is that chain's provider url (eg `"https://eth-rinkeby.alchemyapi.io/v2/abc123"`). The double quotes within this env var must be preserved, this is accomplished most reliably by both single-quoting the env var value and escaping the double quotes with back slashes. When you're done, you should have a line in your `.env` file that looks something like this:
+
+```bash
+export INDRA_CHAIN_PROVIDERS='{\"4\":\"https://eth-rinkeby.alchemyapi.io/v2/abc123\"}'
+```
 
 Upload the prod env vars to the indra server. If you're using a custom address book, upload that too:
 

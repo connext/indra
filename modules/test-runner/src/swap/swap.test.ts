@@ -26,7 +26,7 @@ describe("Swaps", () => {
 
   beforeEach(async () => {
     client = await createClient();
-    tokenAddress = client.config.contractAddresses.Token!;
+    tokenAddress = client.config.contractAddresses[client.chainId].Token!;
     nodeSignerAddress = client.nodeSignerAddress;
   });
 

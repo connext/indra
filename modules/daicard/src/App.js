@@ -246,7 +246,8 @@ class App extends React.Component {
     }
     console.log(`Successfully connected channel`);
 
-    const token = new Contract(channel.config.contractAddresses.Token, ERC20.abi, ethProvider);
+    const chainId = channel.chainId;
+    const token = new Contract(channel.config.contractAddresses[chainId].Token, ERC20.abi, ethProvider);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     console.log(`Client created successfully!`);
@@ -297,10 +298,11 @@ class App extends React.Component {
 
   getSaiBalance = async (wallet) => {
     const { channel } = this.state;
-    if (!channel.config.contractAddresses.SAIToken) {
+    const chainId = channel.chainId;
+    if (!channel.config.contractAddresses[chainId].SAIToken) {
       return Zero;
     }
-    const saiToken = new Contract(channel.config.contractAddresses.SAIToken, ERC20.abi, wallet);
+    const saiToken = new Contract(channel.config.contractAddresses[chainId].SAIToken, ERC20.abi, wallet);
     const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
     const mySaiBalance = freeSaiBalance[channel.signerAddress];
     return mySaiBalance;

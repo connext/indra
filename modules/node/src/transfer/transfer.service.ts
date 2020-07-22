@@ -103,22 +103,29 @@ export class TransferService {
   }
 
   async pruneExpiredApps(channel: Channel): Promise<void> {
-    this.log.info(`Start pruneExpiredApps for channel ${channel.multisigAddress}`);
-
-    const current = await this.configService.getEthProvider().getBlockNumber();
-    const expiredApps = channel.appInstances.filter((app) => {
-      return app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current);
-    });
-    this.log.debug(`Removing ${expiredApps.length} expired apps`);
-    for (const app of expiredApps) {
-      try {
-        // Uninstall all expired apps without taking action
-        await this.cfCoreService.uninstallApp(app.identityHash, channel.multisigAddress);
-      } catch (e) {
-        this.log.warn(`Failed to uninstall expired app ${app.identityHash}: ${e.message}`);
+    for (const chainId of this.configService.getSupportedChains()) {
+      this.log.info(
+        `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${chainId}`,
+      );
+      const current = await this.configService.getEthProvider(chainId).getBlockNumber();
+      const expiredApps = channel.appInstances.filter((app) => {
+        return (
+          app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current)
+        );
+      });
+      this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${chainId}`);
+      for (const app of expiredApps) {
+        try {
+          // Uninstall all expired apps without taking action
+          await this.cfCoreService.uninstallApp(app.identityHash, channel.multisigAddress);
+        } catch (e) {
+          this.log.warn(`Failed to uninstall expired app ${app.identityHash}: ${e.message}`);
+        }
       }
+      this.log.info(
+        `Finish pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${chainId}`,
+      );
     }
-    this.log.info(`Finish pruneExpiredApps for channel ${channel.multisigAddress}`);
   }
 
   // NOTE: designed to be called from the proposal event handler to enforce
@@ -153,13 +160,22 @@ export class TransferService {
 
     // RECEIVER PROPOSAL
     let receiverProposeRes: MethodResults.ProposeInstall & { appType: AppType };
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+    const receiverChainId = proposeInstallParams.meta.receiverChainId
+      ? proposeInstallParams.meta.receiverChainId
+      : senderChannel.chainId;
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
       proposeInstallParams.meta.recipient,
+      receiverChainId,
     );
+
+    this.log.info(`Installing receiver app to chainId ${receiverChainId}`);
+
     try {
       receiverProposeRes = await this.proposeReceiverAppByPaymentId(
         from,
+        senderChannel.chainId,
         proposeInstallParams.meta.recipient,
+        receiverChainId,
         paymentId,
         proposeInstallParams.initiatorDepositAssetId,
         proposeInstallParams.initialState as AppStates[typeof transferType],
@@ -237,7 +253,9 @@ export class TransferService {
 
   async proposeReceiverAppByPaymentId(
     senderIdentifier: string,
-    receiverIdentifier: Address,
+    senderChainId: number,
+    receiverIdentifier: string,
+    receiverChainId: number,
     paymentId: Bytes32,
     senderAssetId: Address,
     senderAppState: AppStates[ConditionalTransferAppNames],
@@ -250,8 +268,9 @@ export class TransferService {
     );
 
     if (!receiverChannel) {
-      receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
         receiverIdentifier,
+        receiverChainId,
       );
     }
 
@@ -260,9 +279,16 @@ export class TransferService {
     // inflight swap
     const receiverAssetId = meta.receiverAssetId ? meta.receiverAssetId : senderAssetId;
     let receiverAmount = senderAmount;
-    if (receiverAssetId !== senderAssetId) {
-      this.log.warn(`Detected an inflight swap from ${senderAssetId} to ${receiverAssetId}!`);
-      const currentRate = await this.swapRateService.getOrFetchRate(senderAssetId, receiverAssetId);
+    if (receiverAssetId !== senderAssetId || senderChainId !== receiverChainId) {
+      this.log.warn(
+        `Detected an inflight swap from ${senderAssetId} on ${senderChainId} to ${receiverAssetId} on ${receiverChainId}!`,
+      );
+      const currentRate = await this.swapRateService.getOrFetchRate(
+        senderAssetId,
+        receiverAssetId,
+        senderChainId,
+        receiverChainId,
+      );
       this.log.warn(`Using swap rate ${currentRate} for inflight swap`);
       const senderDecimals = 18;
       const receiverDecimals = 18;
@@ -308,6 +334,7 @@ export class TransferService {
       );
       const deposit = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
         receiverIdentifier,
+        receiverChainId,
         receiverAssetId,
         receiverAmount,
         freeBal[freeBalanceAddr],
@@ -353,7 +380,10 @@ export class TransferService {
       appDefinitionAddress: appDefinition,
       outcomeType,
       stateEncoding,
-    } = this.cfCoreService.getAppInfoByName(transferType as SupportedApplicationNames);
+    } = this.cfCoreService.getAppInfoByNameAndChain(
+      transferType as SupportedApplicationNames,
+      receiverChainId,
+    );
 
     const res = await this.cfCoreService.proposeInstallApp({
       abiEncodings: {
@@ -378,6 +408,7 @@ export class TransferService {
 
   async resolveByPaymentId(
     receiverIdentifier: string,
+    receiverChainId: number,
     paymentId: string,
     transferType: ConditionalTransferAppNames,
   ): Promise<PublicResults.ResolveCondition> {
@@ -391,13 +422,16 @@ export class TransferService {
       throw new Error(`Sender app has action, refusing to redeem`);
     }
 
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierAndChainOrThrow(
       receiverIdentifier,
+      receiverChainId,
     );
 
     const proposeRes = await this.proposeReceiverAppByPaymentId(
       senderApp.initiatorIdentifier,
+      senderApp.channel.chainId,
       receiverIdentifier,
+      receiverChainId,
       paymentId,
       senderApp.initiatorDepositAssetId,
       senderApp.latestState,
@@ -434,13 +468,13 @@ export class TransferService {
   async findSenderAppByPaymentId<
     T extends ConditionalTransferAppNames = typeof GenericConditionalTransferAppName
   >(paymentId: string): Promise<AppInstance<T>> {
-    this.log.info(`findSenderAppByPaymentId ${paymentId} started`);
+    this.log.debug(`findSenderAppByPaymentId ${paymentId} started`);
     // node receives from sender
     const app = await this.transferRepository.findTransferAppByPaymentIdAndReceiver<T>(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
     );
-    this.log.info(`findSenderAppByPaymentId ${paymentId} completed: ${JSON.stringify(app)}`);
+    this.log.debug(`findSenderAppByPaymentId ${paymentId} completed: ${JSON.stringify(app)}`);
     return app;
   }
 

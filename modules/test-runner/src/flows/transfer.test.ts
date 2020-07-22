@@ -25,7 +25,7 @@ describe("Full Flow: Transfer", () => {
     clientB = await createClient({ id: "B" });
     clientC = await createClient({ id: "C" });
     clientD = await createClient({ id: "D" });
-    tokenAddress = clientA.config.contractAddresses.Token!;
+    tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
   });
 
   afterEach(async () => {

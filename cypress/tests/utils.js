@@ -1,7 +1,7 @@
 /* global Cypress, cy */
 const eth = require("ethers");
 const tokenArtifacts = require("@openzeppelin/contracts/build/contracts/ERC20Mintable.json");
-const addressBook = require("../../modules/contracts/address-book.json");
+const addressBook = require("../../.chaindata/addresses/1337-1338.json");
 
 const provider = new eth.providers.JsonRpcProvider(Cypress.env("provider"));
 const funder = eth.Wallet.fromMnemonic(Cypress.env("funder")).connect(provider);

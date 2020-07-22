@@ -31,6 +31,9 @@ export class ConditionalTransactionCommitment {
   @Column("text")
   transactionData!: HexString;
 
+  @Column("jsonb")
+  contractAddresses!: any;
+
   @Column("text", { array: true, nullable: true })
   signatures!: string[];
 

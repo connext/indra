@@ -54,9 +54,12 @@ start-headless: dev
 start-daicard: dev
 	INDRA_UI=daicard bash ops/start-dev.sh
 
+start-testnet: contracts
+	INDRA_CHAIN_LOG_LEVEL=1 bash ops/start-testnet.sh
+
 start-test: start-test-staging
 start-test-staging:
-	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test-staging bash ops/start-prod.sh
+	INDRA_MODE=test-staging bash ops/start-prod.sh
 
 start-test-release:
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test-release bash ops/start-prod.sh
@@ -73,6 +76,9 @@ start-bot-farm: bot
 stop:
 	bash ops/stop.sh
 
+stop-all:
+	bash ops/stop.sh all
+
 restart-headless: dev
 	bash ops/stop.sh
 	INDRA_UI=headless bash ops/start-dev.sh
@@ -87,7 +93,7 @@ restart-prod:
 	bash ops/stop.sh
 	bash ops/start-prod.sh
 
-clean: stop
+clean: stop-all
 	docker container prune -f
 	rm -rf .flags/*
 	rm -rf node_modules/@connext modules/*/node_modules/@connext
@@ -110,12 +116,13 @@ quick-reset:
 	rm -rf modules/*/.connext-store
 	touch modules/node/src/main.ts
 
-reset: stop
+reset: stop-all
 	docker container prune -f
 	docker network rm $(project) $(project)_cf_tester $(project)_node_tester $(project)_test_store 2> /dev/null || true
 	docker secret rm $(project)_database_dev 2> /dev/null || true
-	docker volume rm $(project)_chain_dev $(project)_database_dev  2> /dev/null || true
+	docker volume rm $(project)_chain_1337 $(project)_chain_1338 $(project)_database_dev  2> /dev/null || true
 	docker volume rm `docker volume ls -q -f name=$(project)_database_test_*` 2> /dev/null || true
+	rm -rf .chaindata/*
 	rm -rf .flags/deployed-contracts
 
 push-commit:
@@ -135,10 +142,6 @@ pull-release:
 
 pull-backwards-compatible:
 	bash ops/pull-images.sh $(backwards_compatible_version)
-
-deployed-contracts: contracts
-	bash ops/deploy-contracts.sh
-	touch .flags/$@
 
 build-report:
 	bash ops/build-report.sh
@@ -175,7 +178,7 @@ test-tps-lg: bot
 	bash ops/test/tps.sh 40 0 10
 
 test-cf: cf-core
-	bash ops/test/cf.sh
+	bash ops/test/cf.sh test
 
 test-contracts: contracts utils
 	bash ops/test/unit.sh contracts
@@ -202,7 +205,7 @@ test-watcher: watcher
 	bash ops/test/watcher.sh
 
 watch-cf: cf-core
-	bash ops/test/cf.sh --watch
+	bash ops/test/cf.sh watch
 
 watch-integration:
 	bash ops/test/integration.sh watch
@@ -211,7 +214,7 @@ watch-ui: node-modules
 	bash ops/test/ui.sh --watch
 
 watch-node: node
-	bash ops/test/node.sh --watch
+	bash ops/test/node.sh watch
 
 ########################################
 # Begin Real Build Rules

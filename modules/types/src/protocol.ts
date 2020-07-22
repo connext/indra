@@ -39,6 +39,7 @@ type SetupProtocolParams = {
   initiatorIdentifier: PublicIdentifier;
   responderIdentifier: PublicIdentifier;
   multisigAddress: Address;
+  chainId: number;
 };
 
 // NOTE: should only provide the appIdentityHash if the protocol

@@ -4,7 +4,7 @@ import { ClientOptions } from "@connext/types";
 import { ColorfulLogger, getRandomChannelSigner } from "@connext/utils";
 import { Wallet, constants, utils } from "ethers";
 
-import { createClient, expect, sendOnchainValue, env, fundChannel, ETH_AMOUNT_SM } from "../util";
+import { createClient, env, ethProviderUrl, expect, sendOnchainValue, fundChannel, ETH_AMOUNT_SM } from "../util";
 
 const { AddressZero, One } = constants;
 const { hexlify, randomBytes } = utils;
@@ -13,7 +13,7 @@ describe("Client Connect", () => {
   it("Client should be able to connect to proxy w/out a messaging url", async () => {
     const signer = getRandomChannelSigner();
     const client = await connect({
-      ethProviderUrl: env.ethProviderUrl,
+      ethProviderUrl,
       loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
       nodeUrl: env.proxyUrl,
       signer,
@@ -25,7 +25,7 @@ describe("Client Connect", () => {
   it("Client should be able to connect to node w a messaging url", async () => {
     const signer = getRandomChannelSigner();
     const client = await connect({
-      ethProviderUrl: env.ethProviderUrl,
+      ethProviderUrl,
       loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
       messagingUrl: env.natsUrl,
       nodeUrl: env.nodeUrl,
@@ -42,7 +42,7 @@ describe("Client Connect", () => {
       assetId: AddressZero,
     });
     const { appIdentityHash: tokenDeposit } = await client.requestDepositRights({
-      assetId: client.config.contractAddresses.Token!,
+      assetId: client.config.contractAddresses[client.chainId].Token!,
     });
 
     // verify
@@ -52,7 +52,7 @@ describe("Client Connect", () => {
     expect(retrievedEth).to.eq(ethDeposit);
 
     const { appIdentityHash: retrievedToken } = await client.checkDepositRights({
-      assetId: client.config.contractAddresses.Token!,
+      assetId: client.config.contractAddresses[client.chainId].Token!,
     });
     expect(retrievedToken).to.eq(tokenDeposit);
 
@@ -68,7 +68,7 @@ describe("Client Connect", () => {
     expect(retrievedEth2).to.eq(ethDeposit);
 
     const { appIdentityHash: retrievedToken2 } = await client.checkDepositRights({
-      assetId: client.config.contractAddresses.Token!,
+      assetId: client.config.contractAddresses[client.chainId].Token!,
     });
     expect(retrievedToken2).to.eq(tokenDeposit);
   });
@@ -78,24 +78,30 @@ describe("Client Connect", () => {
     const store = getMemoryStore();
     let client = await createClient({ signer: pk, store } as Partial<ClientOptions>);
     await client.requestDepositRights({ assetId: AddressZero });
-    await client.requestDepositRights({ assetId: client.config.contractAddresses.Token! });
+    await client.requestDepositRights({
+      assetId: client.config.contractAddresses[client.chainId].Token!,
+    });
     let apps = await client.getAppInstances();
     const initDepositApps = apps.filter(
       (app) =>
-        app.appDefinition === client.config.contractAddresses.DepositApp &&
+        app.appDefinition === client.config.contractAddresses[client.chainId].DepositApp &&
         app.initiatorIdentifier === client.publicIdentifier,
     );
     expect(initDepositApps.length).to.be.eq(2);
     await client.messaging.disconnect();
 
     await sendOnchainValue(client.multisigAddress, One);
-    await sendOnchainValue(client.multisigAddress, One, client.config.contractAddresses.Token!);
+    await sendOnchainValue(
+      client.multisigAddress,
+      One,
+      client.config.contractAddresses[client.chainId].Token!,
+    );
 
     client = await createClient({ signer: pk, store });
     apps = await client.getAppInstances();
     const depositApps = apps.filter(
       (app) =>
-        app.appDefinition === client.config.contractAddresses.DepositApp &&
+        app.appDefinition === client.config.contractAddresses[client.chainId].DepositApp &&
         app.initiatorIdentifier === client.publicIdentifier,
     );
     expect(depositApps.length).to.be.eq(0);

@@ -41,10 +41,10 @@ export abstract class MethodController {
         return json && StateChannel.fromJson(json);
       } else if ((params as any).responderIdentifier) {
         // TODO: should be able to to all of this with multisig address but its not showing up in some cases
-        const json = await requestHandler.store.getStateChannelByOwners([
-          (params as any).responderIdentifier,
-          requestHandler.publicIdentifier,
-        ]);
+        const json = await requestHandler.store.getStateChannelByOwnersAndChainId(
+          [(params as any).responderIdentifier, requestHandler.publicIdentifier],
+          (params as any).chainId,
+        );
         return json && StateChannel.fromJson(json);
       }
       return undefined;
@@ -77,7 +77,9 @@ export abstract class MethodController {
 
     // retry if error
     const syncable =
-      this.methodName !== MethodNames.chan_sync && this.methodName !== MethodNames.chan_create;
+      this.methodName !== MethodNames.chan_sync &&
+      this.methodName !== MethodNames.chan_create &&
+      this.methodName !== MethodNames.chan_deployStateDepositHolder;
     if (preProtocolStateChannel && !!error && syncable) {
       // dispatch sync rpc call
       log.warn(
@@ -127,6 +129,7 @@ export abstract class MethodController {
             initiatorIdentifier: publicIdentifier,
             responderIdentifier,
             appIdentityHash,
+            chainId: preProtocolStateChannel.chainId,
           },
           preProtocolStateChannel,
         );

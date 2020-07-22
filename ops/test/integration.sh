@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 mode="${TEST_MODE:-local}"
 name="${project}_test_runner"
@@ -21,6 +21,26 @@ then
   echo "Created ATTACHABLE network with id $id"
 fi
 
+source $root/dev.env
+
+########################################
+## Retrieve testnet env vars
+
+chain_id_1=1337; chain_id_2=1338
+
+providers_file="$root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json"
+addresses_file="$root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json"
+if [[ ! -f "$providers_file" ]]
+then echo "File ${providers_file} does not exist, make sure the testnet chains are running" && exit 1
+elif [[ ! -f "$addresses_file" ]]
+then echo "File ${addresses_file} does not exist, make sure the testnet chains are running" && exit 1
+fi
+chain_providers="`cat $providers_file`"
+contract_addresses="`cat $addresses_file`"
+
+########################################
+## Launch test image
+
 if [[ -n "`docker image ls -q $name:$1`" ]]
 then image=$name:$1; shift # rm $1 from $@
 elif [[ "$mode" == "release" ]]
@@ -29,21 +49,26 @@ elif [[ "$mode" == "staging" ]]
 then image=$name:$commit;
 else
 
+  echo "Executing image ${project}_builder"
+
   exec docker run \
     $interactive \
     --entrypoint="bash" \
     --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
+    --env="INDRA_CHAIN_PROVIDERS=$chain_providers" \
     --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
-    --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
-    --env="INDRA_NATS_URL=$NATS_URL" \
-    --env="INDRA_NODE_URL=$NODE_URL" \
+    --env="INDRA_CONTRACT_ADDRESSES=$contract_addresses" \
+    --env="INDRA_MNEMONIC=$INDRA_MNEMONIC" \
+    --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
+    --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
     --env="INDRA_PROXY_URL=http://proxy:80" \
     --env="NODE_ENV=development" \
     --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
-    --mount="type=bind,source=`pwd`,target=/root" \
+    --mount="type=bind,source=$root,target=/root" \
     --name="$name" \
     --network="$project" \
     --rm \
+    --tmpfs "/tmpfs" \
     ${project}_builder -c "cd modules/test-runner && bash ops/entry.sh $@"
 fi
 
@@ -52,15 +77,18 @@ echo "Executing image $image"
 exec docker run \
   $interactive \
   $watchOptions \
-  --env="INDRA_ADMIN_TOKEN=${INDRA_ADMIN_TOKEN}" \
-  --env="INDRA_CLIENT_LOG_LEVEL=0" \
-  --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
-  --env="INDRA_NATS_URL=$NATS_URL" \
-  --env="INDRA_NODE_URL=$NODE_URL" \
+  --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
+  --env="INDRA_CHAIN_PROVIDERS=$chain_providers" \
+  --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
+  --env="INDRA_CONTRACT_ADDRESSES=$contract_addresses" \
+  --env="INDRA_MNEMONIC=$INDRA_MNEMONIC" \
+  --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
+  --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
   --env="INDRA_PROXY_URL=https://proxy:443" \
   --env="NODE_ENV=production" \
   --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
   --name="$name" \
   --network="$project" \
   --rm \
+  --tmpfs "/tmpfs" \
   $image $@

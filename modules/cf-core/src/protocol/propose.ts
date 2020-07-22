@@ -28,7 +28,7 @@ const { OP_SIGN, OP_VALIDATE, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE } 
  */
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
-    const { message, preProtocolStateChannel } = context;
+    const { message, preProtocolStateChannel, networks } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
@@ -108,10 +108,13 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     // 0 ms
     const postProtocolStateChannel = preProtocolStateChannel!.addProposal(proposalJson);
 
-    const setStateCommitment = getSetStateCommitment(context, proposal as AppInstance);
+    const setStateCommitment = getSetStateCommitment(
+      networks[preProtocolStateChannel.chainId],
+      proposal as AppInstance,
+    );
 
     const conditionalTxCommitment = getConditionalTransactionCommitment(
-      context,
+      networks[preProtocolStateChannel.chainId],
       postProtocolStateChannel,
       proposal as AppInstance,
     );
@@ -207,7 +210,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Responding */: async function* (context: Context) {
-    const { message, preProtocolStateChannel } = context;
+    const { message, preProtocolStateChannel, networks } = context;
     const { params, processID } = message.data;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
@@ -298,11 +301,14 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     const postProtocolStateChannel = preProtocolStateChannel!.addProposal(proposalJson);
 
-    const setStateCommitment = getSetStateCommitment(context, proposal as AppInstance);
+    const setStateCommitment = getSetStateCommitment(
+      networks[preProtocolStateChannel.chainId],
+      proposal as AppInstance,
+    );
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     const conditionalTxCommitment = getConditionalTransactionCommitment(
-      context,
+      networks[preProtocolStateChannel.chainId],
       postProtocolStateChannel,
       proposal as AppInstance,
     );

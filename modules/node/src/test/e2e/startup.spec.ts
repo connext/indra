@@ -5,7 +5,7 @@ import { INestApplication } from "@nestjs/common";
 import { AppModule } from "../../app.module";
 import { ConfigService } from "../../config/config.service";
 
-import { env, expect, MockConfigService } from "../utils";
+import { env, ethProviderUrl, MockConfigService } from "../utils";
 
 describe("Startup", () => {
   const log = new ColorfulLogger("TestStartup", env.logLevel, true, "T");
@@ -35,7 +35,7 @@ describe("Startup", () => {
 
   it("should still start up even if the node has zero balance", async () => {
     const configService = new MockConfigService({
-      signer: getRandomChannelSigner(env.ethProviderUrl),
+      signer: getRandomChannelSigner(ethProviderUrl),
     });
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],

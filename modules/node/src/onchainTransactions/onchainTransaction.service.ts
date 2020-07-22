@@ -13,13 +13,14 @@ import { OnchainTransaction, TransactionReason } from "./onchainTransaction.enti
 
 const BAD_NONCE = "the tx doesn't have the correct nonce";
 const NO_TX_HASH = "no transaction hash found in tx response";
+const UNDERPRICED_REPLACEMENT = "replacement transaction underpriced";
 export const MAX_RETRIES = 5;
-export const KNOWN_ERRORS = [BAD_NONCE, NO_TX_HASH];
+export const KNOWN_ERRORS = [BAD_NONCE, NO_TX_HASH, UNDERPRICED_REPLACEMENT];
 
 @Injectable()
 export class OnchainTransactionService implements OnModuleInit {
-  private nonce = Promise.resolve(0);
-  private readonly queue: PriorityQueue;
+  private nonces: Map<number, Promise<number>> = new Map();
+  private queues: Map<number, PriorityQueue> = new Map();
 
   constructor(
     private readonly configService: ConfigService,
@@ -27,17 +28,19 @@ export class OnchainTransactionService implements OnModuleInit {
     private readonly log: LoggerService,
   ) {
     this.log.setContext("OnchainTransactionService");
-    this.nonce = this.configService.getSigner().getTransactionCount();
-    this.queue = new PriorityQueue({ concurrency: 1 });
+    this.configService.signers.forEach((signer, chainId) => {
+      this.nonces.set(chainId, signer.getTransactionCount());
+      this.queues.set(chainId, new PriorityQueue({ concurrency: 1 }));
+    });
   }
 
   async sendUserWithdrawal(
     channel: Channel,
     transaction: MinimalTransaction,
   ): Promise<OnchainTransaction> {
-    await this.queue.add(() =>
-      this.sendTransaction(transaction, TransactionReason.USER_WITHDRAWAL, channel),
-    );
+    await this.queues
+      .get(channel.chainId)
+      .add(() => this.sendTransaction(transaction, TransactionReason.USER_WITHDRAWAL, channel));
     return this.onchainTransactionRepository.findLatestTransactionToChannel(
       channel.multisigAddress,
       TransactionReason.USER_WITHDRAWAL,
@@ -48,9 +51,9 @@ export class OnchainTransactionService implements OnModuleInit {
     channel: Channel,
     transaction: MinimalTransaction,
   ): Promise<OnchainTransaction> {
-    await this.queue.add(() =>
-      this.sendTransaction(transaction, TransactionReason.NODE_WITHDRAWAL, channel),
-    );
+    await this.queues
+      .get(channel.chainId)
+      .add(() => this.sendTransaction(transaction, TransactionReason.NODE_WITHDRAWAL, channel));
     return this.onchainTransactionRepository.findLatestTransactionToChannel(
       channel.multisigAddress,
       TransactionReason.NODE_WITHDRAWAL,
@@ -61,9 +64,9 @@ export class OnchainTransactionService implements OnModuleInit {
     channel: Channel,
     transaction: MinimalTransaction,
   ): Promise<OnchainTransaction> {
-    await this.queue.add(() =>
-      this.sendTransaction(transaction, TransactionReason.COLLATERALIZATION, channel),
-    );
+    await this.queues
+      .get(channel.chainId)
+      .add(() => this.sendTransaction(transaction, TransactionReason.COLLATERALIZATION, channel));
     return this.onchainTransactionRepository.findLatestTransactionToChannel(
       channel.multisigAddress,
       TransactionReason.COLLATERALIZATION,
@@ -79,20 +82,20 @@ export class OnchainTransactionService implements OnModuleInit {
     reason: TransactionReason,
     channel: Channel,
   ): Promise<void> {
-    const wallet = this.configService.getSigner();
+    const wallet = this.configService.getSigner(channel.chainId);
     const errors: { [k: number]: string } = [];
     let tx: providers.TransactionResponse;
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
       try {
         this.log.info(`Attempt ${attempt}/${MAX_RETRIES} to send transaction to ${transaction.to}`);
         const chainNonce = await wallet.getTransactionCount();
-        const memoryNonce = await this.nonce;
+        const memoryNonce = await this.nonces.get(channel.chainId);
         const nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
         const req = await wallet.populateTransaction({ ...transaction, nonce });
         tx = await wallet.sendTransaction(req);
         // add fields from tx response
         await this.onchainTransactionRepository.addResponse(tx, reason, channel);
-        this.nonce = Promise.resolve(nonce + 1);
+        this.nonces.set(channel.chainId, Promise.resolve(nonce + 1));
         const receipt = await tx.wait();
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);

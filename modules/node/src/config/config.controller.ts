@@ -1,4 +1,4 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Param } from "@nestjs/common";
 import { NodeResponses } from "@connext/types";
 
 import { ConfigService } from "./config.service";
@@ -7,12 +7,13 @@ import { ConfigService } from "./config.service";
 export class ConfigController {
   constructor(private readonly configService: ConfigService) {}
 
-  @Get()
-  async getConfig(): Promise<string> {
+  @Get("/:chainId")
+  async getConfigByChain(@Param("chainId") chainId: string): Promise<string> {
+    const chainIdInt = parseInt(chainId);
     return JSON.stringify({
-      contractAddresses: await this.configService.getContractAddresses(),
-      ethNetwork: await this.configService.getEthNetwork(),
-      supportedTokenAddresses: this.configService.getSupportedTokenAddresses(),
+      contractAddresses: this.configService.getContractAddressBook(),
+      ethNetwork: await this.configService.getNetwork(chainIdInt),
+      supportedTokenAddresses: this.configService.getSupportedTokens(),
       messagingUrl: this.configService.getMessagingConfig().messagingUrl,
       nodeIdentifier: this.configService.getPublicIdentifier(),
       signerAddress: await this.configService.getSignerAddress(),

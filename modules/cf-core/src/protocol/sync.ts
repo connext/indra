@@ -11,8 +11,8 @@ import {
   AppInstanceJson,
   HexString,
 } from "@connext/types";
-import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 import { stringify, logTime, toBN, getSignerAddressFromPublicIdentifier } from "@connext/utils";
+
 import {
   stateChannelClassFromStoreByMultisig,
   getPureBytecode,
@@ -20,6 +20,7 @@ import {
   parseProtocolMessage,
 } from "./utils";
 import { StateChannel, AppInstance, FreeBalanceClass } from "../models";
+import { Context, ProtocolExecutionFlow, PersistStateChannelType } from "../types";
 import {
   SetStateCommitment,
   ConditionalTransactionCommitment,
@@ -33,24 +34,21 @@ const { IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, OP_SIGN, OP_VALIDATE }
 
 export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function* (context: Context) {
-    // Parse information from context
-    const {
-      message,
-      store,
-      network: { contractAddresses, provider },
-    } = context;
+    const { message, store, networks } = context;
     const log = context.log.newContext("CF-SyncProtocol");
     const start = Date.now();
     let substart = start;
     const { processID, params } = message.data;
     const loggerId = (params as ProtocolParams.Sync).multisigAddress || processID;
     log.info(`[${loggerId}] Initiation started: ${stringify(params)}`);
+
     const {
       multisigAddress,
       responderIdentifier,
       initiatorIdentifier,
       appIdentityHash,
     } = params as ProtocolParams.Sync;
+
     const myIdentifier = initiatorIdentifier;
     const counterpartyIdentifier = responderIdentifier;
 
@@ -63,6 +61,13 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       store,
     );
+
+    if (!preProtocolStateChannel) {
+      throw new Error("No state channel found for sync");
+    }
+
+    const { contractAddresses, provider } = networks[preProtocolStateChannel.chainId];
+
     const syncDeterminationData = getSyncDeterminationData(preProtocolStateChannel);
     const { message: m2 } = (yield [
       IO_SEND_AND_WAIT,
@@ -258,12 +263,7 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, start, `[${loggerId}] Initiation finished`);
   },
   1 /* Responding */: async function* (context: Context) {
-    const {
-      message: m1,
-      store,
-      network: { contractAddresses, provider },
-      preProtocolStateChannel,
-    } = context;
+    const { message: m1, store, networks, preProtocolStateChannel } = context;
     const { params, processID, customData } = m1.data;
     const log = context.log.newContext("CF-SyncProtocol");
     const start = Date.now();
@@ -272,18 +272,20 @@ export const SYNC_PROTOCOL: ProtocolExecutionFlow = {
     if (!preProtocolStateChannel) {
       throw new Error("No state channel found for sync");
     }
-    log.info(`[${loggerId}] Response started ${stringify(params)}`);
-    const {
-      responderIdentifier,
-      initiatorIdentifier,
-      appIdentityHash,
-    } = params as ProtocolParams.Sync;
-    const counterpartyIdentifier = initiatorIdentifier;
-    const myIdentifier = responderIdentifier;
+
+    const { contractAddresses, provider } = networks[preProtocolStateChannel.chainId];
 
     // Determine the sync type needed, and fetch any information the
     // counterparty would need to sync and send to them
-    log.debug(`Response started with m1: ${stringify(customData)}`);
+    log.debug(`[${loggerId}] Response started with m1: ${stringify(customData)}`);
+    const {
+      initiatorIdentifier,
+      responderIdentifier,
+      appIdentityHash,
+    } = params as ProtocolParams.Sync;
+    const myIdentifier = responderIdentifier;
+    const counterpartyIdentifier = initiatorIdentifier;
+
     const syncType = makeSyncDetermination(
       customData as SyncDeterminationData,
       preProtocolStateChannel,
@@ -869,7 +871,10 @@ async function syncChannel(
         getTokenBalanceDecrementForInstall(myChannel, affectedApp),
       );
       // verify the expected commitment is included
-      const generatedSetState = getSetStateCommitment(context, updatedChannel.freeBalance);
+      const generatedSetState = getSetStateCommitment(
+        context.networks[myChannel.chainId],
+        updatedChannel.freeBalance,
+      );
       const setState = commitments.find((c) => c.hashToSign === generatedSetState.hashToSign);
       if (!setState) {
         throw new Error(

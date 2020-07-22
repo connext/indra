@@ -84,13 +84,17 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return tx;
   }
 
-  async findLatestWithdrawalByUserPublicIdentifier(
+  async findLatestWithdrawalByUserPublicIdentifierAndChain(
     userIdentifier: string,
+    chainId: number,
   ): Promise<OnchainTransaction | undefined> {
     const tx = await this.createQueryBuilder("onchainTransaction")
       .leftJoinAndSelect("onchainTransaction.channel", "channel")
       .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
-      .where("onchainTransaction.reason = :reason", { reason: TransactionReason.USER_WITHDRAWAL })
+      .andWhere("channel.chainId = :chainId", { chainId })
+      .andWhere("onchainTransaction.reason = :reason", {
+        reason: TransactionReason.USER_WITHDRAWAL,
+      })
       .orderBy("onchainTransaction.id", "DESC")
       .getOne();
     return tx;

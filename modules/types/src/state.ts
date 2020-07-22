@@ -10,6 +10,7 @@ export const StateSchemaVersion = 2;
 export type StateChannelJSON = {
   readonly schemaVersion: number;
   readonly multisigAddress: Address; // TODO: rm & calculate from critical addresses on rehydrate?
+  readonly chainId: number;
   readonly addresses: CriticalStateChannelAddresses;
   readonly userIdentifiers: PublicIdentifier[];
   readonly proposedAppInstances: [Bytes32, AppInstanceJson][];
@@ -19,5 +20,5 @@ export type StateChannelJSON = {
 };
 
 export type FullChannelJSON = StateChannelJSON & {
-  freeBalanceSetStateCommitment: SetStateCommitmentJSON
-}
+  freeBalanceSetStateCommitment: SetStateCommitmentJSON;
+};

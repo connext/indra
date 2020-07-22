@@ -91,8 +91,4 @@ The auto-deployer needs an ssh key so it can login to the prod server, we should
 
 Env vars controlling CD are store in: GitHub -> Indra Repo -> Settings -> Secrets. The following env vars are used:
 - `DOCKER_USER` & `DOCKER_PASSWORD`: Login credentials for someone with push access to the docker repository specified by the `registry` vars at the top of the Makefile & `ops/start-prod.sh`.
-- `INDRA_ADMIN_TOKEN`: an admin token for controlling access to sensitive parts of the dashboard.
-- `INDRA_AWS_ACCESS_KEY_ID` & `INDRA_AWS_SECRET_ACCESS_KEY`: Login credentials for an AWS storage repo, if provided the database will automatically send DB snapshots to AWS.
-- `INDRA_LOGDNA_KEY`: Credentials for LogDNA. If provided, all logs will be sent to this service for further analysis.
-- `MAINNET_ETH_PROVIDER` & `RINKEBY_ETH_PROVIDER`: Ethereum RPC Urls eg [Alchemy](https://alchemyapi.io/) or Infura that let us read from/write to blockchain.
 - `SSH_KEY`: The autodeployer private ssh key

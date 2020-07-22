@@ -3,15 +3,14 @@ set -e
 
 args=$@
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 suffix="test_store"
 
 postgres_db="${project}_$suffix"
 postgres_host="${project}_database_$suffix"
 postgres_password="$project_$suffix"
-postgres_port="5432"
 postgres_user="$project_$suffix"
 
 network="${project}_$suffix"
@@ -49,14 +48,14 @@ docker run \
   --env="INDRA_PG_DATABASE=$postgres_db" \
   --env="INDRA_PG_HOST=$postgres_host" \
   --env="INDRA_PG_PASSWORD=$postgres_password" \
-  --env="INDRA_PG_PORT=$postgres_port" \
+  --env="INDRA_PG_PORT=5432" \
   --env="INDRA_PG_USERNAME=$postgres_user" \
   --env="LOG_LEVEL=$LOG_LEVEL" \
   $interactive \
   --name="${project}_test_store" \
   --network="$network" \
   --rm \
-  --volume="`pwd`:/root" \
+  --volume="$root:/root" \
   ${project}_builder -c "
     set -e
     echo 'Test-store container launched!'
