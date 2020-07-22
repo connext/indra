@@ -47,7 +47,13 @@ We need to add a couple env vars before launching our indra node. We'll be pulli
 cp prod.env .env
 ```
 
-Ensure you've added correct values for two important env vars: `INDRA_DOMAINNAME` and `INDRA_ETH_PROVIDER`.
+Ensure you've added correct values for two important env vars: `INDRA_DOMAINNAME` and `INDRA_CHAIN_PROVIDERS`.
+
+The `INDRA_CHAIN_PROVIDERS` env var is a tricky one, there is no default provided as it's value depends entirely on which chains you want to support (if this env var is not provided, a local testnet will be started up & Indra will use this). The format is very specific: it must be valid JSON where the key is a chain id (eg `"4"`) and the value is that chain's provider url (eg `"https://eth-rinkeby.alchemyapi.io/v2/abc123"`). The double quotes within this env var must be preserved, this is accomplished most reliably by both single-quoting the env var value and escaping the double quotes with back slashes. When you're done, you should have a line in your `.env` file that looks something like this:
+
+```bash
+export INDRA_CHAIN_PROVIDERS='{\"4\":\"https://eth-rinkeby.alchemyapi.io/v2/abc123\"}'
+```
 
 Upload the prod env vars to the indra server. If you're using a custom address book, upload that too:
 
