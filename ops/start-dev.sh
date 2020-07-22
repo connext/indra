@@ -39,9 +39,7 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 # Internal Config
 # config & hard-coded stuff you might want to change
 
-nats_port=4222
 node_port=8080
-dash_port=9999
 
 proxy_url="http://localhost:3000"
 

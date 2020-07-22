@@ -47,14 +47,7 @@ release: database ethprovider proxy node-release test-runner-release webserver b
 # Command & Control Shortcuts
 
 start: dev
-	bash ops/start-dev.sh
-	bash ops/start-daicard.sh
-
-start-headless: dev
-	bash ops/start-dev.sh
-
-start-daicard: dev
-	bash ops/start-daicard.sh
+	bash ops/start-indra.sh
 
 start-testnet: contracts
 	INDRA_CHAIN_LOG_LEVEL=1 bash ops/start-testnet.sh
@@ -65,6 +58,10 @@ start-test-staging:
 
 start-test-release:
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test-release bash ops/start-prod.sh
+
+start-daicard: dev
+	bash ops/start-indra.sh
+	bash ops/start-daicard.sh
 
 start-prod:
 	bash ops/start-prod.sh

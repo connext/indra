@@ -8,6 +8,7 @@
 **/node_modules/**
 **/tsconfig.tsbuildinfo
 modules/*/package-lock.json
+docker-compose.yml
 
 # Cache
 **/.bot-store
