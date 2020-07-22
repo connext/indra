@@ -8,6 +8,7 @@ then echo "One arg required: bash ops/search.sh <target>" && exit 1
 fi
 
 grep "$@" --exclude=*.swp --exclude=*.pdf --exclude-dir=snapshots --color=auto -r "$target" \
+  .github/workflows/* \
   ops \
   docs \
   modules/*/src.ts \
