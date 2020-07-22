@@ -50,6 +50,7 @@ Now you can login to this server with just `ssh new-indra`. Once the server wake
 We need to add a couple env vars before launching our indra node. We'll be pulling from the public default prod-mode env vars & updating a couple as needed.
 
 ```bash
+cd indra
 cp prod.env .env
 ```
 
