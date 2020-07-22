@@ -15,43 +15,14 @@ docker network create --attachable --driver overlay $project 2> /dev/null || tru
 ####################
 # Load env vars
 
+if [[ -f ".env" ]]
+then source .env
+elif [[ -f "dev.env" ]]
+then source dev.env
+fi
+
 # alias env var
 INDRA_LOG_LEVEL="$LOG_LEVEL";
-
-function extractEnv {
-  grep "$1" "$2" | cut -d "=" -f 2- | tr -d '\n\r"' | sed 's/ *#.*//'
-}
-
-# extracts json string from .env file without stripping ""
-function extractJsonStringFromEnv {
-  grep "$1" "$2" | cut -d "=" -f 2- | tr -d '\n\r' | sed 's/ *#.*//'
-}
-
-# First choice: use existing env vars (dotEnv not called)
-function dotEnv {
-  key="$1"
-  if [[ -f .env && -n "`extractEnv $key .env`" ]] # Second choice: load from custom secret env
-  then extractEnv $key .env
-  elif [[ -f dev.env && -n "`extractEnv $key dev.env`" ]] # Third choice: load from public defaults
-  then extractEnv $key dev.env
-  fi
-}
-
-# Uses `extractJsonStringFromEnv`
-function dotEnvJsonStr {
-  key="$1"
-  if [[ -f .env && -n "`extractJsonStringFromEnv $key .env`" ]] # Second choice: load from custom secret env
-  then extractJsonStringFromEnv $key .env
-  elif [[ -f dev.env && -n "`extractJsonStringFromEnv $key dev.env`" ]] # Third choice: load from public defaults
-  then extractJsonStringFromEnv $key dev.env
-  fi
-}
-
-export INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-`dotEnv INDRA_ADMIN_TOKEN`}"
-export INDRA_CHAIN_PROVIDERS="${INDRA_CHAIN_PROVIDERS:-`dotEnvJsonStr INDRA_CHAIN_PROVIDERS`}"
-export INDRA_LOG_LEVEL="${INDRA_LOG_LEVEL:-`dotEnv INDRA_LOG_LEVEL`}"
-INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PRIVATE_KEY`}"
-INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PUBLIC_KEY`}"
 
 # Make sure keys have proper newlines inserted (bc GitHub Actions strips newlines from secrets)
 export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=`
