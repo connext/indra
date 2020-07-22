@@ -10,21 +10,18 @@ import {
   ProtocolName,
   MiddlewareContext,
   ProtocolNames,
-  InstallMiddlewareContext,
   DepositAppState,
   ProtocolRoles,
   ProposeMiddlewareContext,
   ConditionalTransferAppNames,
-  HashLockTransferAppState,
   DepositAppName,
   GenericConditionalTransferAppState,
-  getTransferTypeFromAppName,
   DefaultApp,
-  SupportedApplicationNames,
+  ConditionalTransferTypes,
 } from "@connext/types";
-import { getAddressFromAssetId } from "@connext/utils";
+import { getAddressFromAssetId, toBN } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { BigNumber, providers } from "ethers";
+import { BigNumber } from "ethers";
 
 import { AppType } from "../appInstance/appInstance.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -70,7 +67,7 @@ export class AppRegistryService implements OnModuleInit {
     // if error, reject install
     let installerChannel: Channel;
     try {
-      installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
+      installerChannel = await this.channelRepository.findByAppIdentityHashOrThrow(appIdentityHash);
       registryAppInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
         proposeInstallParams.appDefinition,
       );
@@ -85,7 +82,7 @@ export class AppRegistryService implements OnModuleInit {
       // TODO: break into flows for deposit, withdraw, swap, and transfers
       if (
         Object.values(ConditionalTransferAppNames).includes(
-          registryAppInfo.name as ConditionalTransferAppNames,
+          registryAppInfo.name as ConditionalTransferTypes,
         )
       ) {
         await this.transferService.transferAppInstallFlow(
@@ -93,7 +90,7 @@ export class AppRegistryService implements OnModuleInit {
           proposeInstallParams,
           from,
           installerChannel,
-          registryAppInfo.name as ConditionalTransferAppNames,
+          registryAppInfo.name as ConditionalTransferTypes,
         );
         return;
       }
@@ -110,6 +107,7 @@ export class AppRegistryService implements OnModuleInit {
         if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
           const amount = await this.channelService.getCollateralAmountToCoverPaymentAndRebalance(
             from,
+            installerChannel.chainId,
             proposeInstallParams.responderDepositAssetId,
             responderDepositBigNumber,
             freeBal[this.cfCoreService.cfCore.signerAddress],
@@ -184,14 +182,10 @@ export class AppRegistryService implements OnModuleInit {
   public generateMiddleware = async (): Promise<
     (protocol: ProtocolName, cxt: MiddlewareContext) => Promise<void>
   > => {
-    const contractAddresses = await this.configService.getContractAddresses();
-    const provider = this.configService.getEthProvider();
+    const networkContexts = this.configService.getNetworkContexts();
     const defaultValidation = await generateValidationMiddleware(
-      {
-        contractAddresses,
-        provider: provider as providers.JsonRpcProvider,
-      },
-      this.configService.getSupportedTokenAddresses(),
+      networkContexts,
+      this.configService.getSupportedTokens(),
     );
 
     return async (protocol: ProtocolName, cxt: MiddlewareContext): Promise<void> => {
@@ -206,7 +200,7 @@ export class AppRegistryService implements OnModuleInit {
           return this.proposeMiddleware(cxt as ProposeMiddlewareContext);
         }
         case ProtocolNames.install: {
-          return this.installMiddleware(cxt as InstallMiddlewareContext);
+          return;
         }
         case ProtocolNames.uninstall: {
           return this.uninstallMiddleware(cxt as UninstallMiddlewareContext);
@@ -219,103 +213,24 @@ export class AppRegistryService implements OnModuleInit {
     };
   };
 
-  /**
-   * For `RequireOnline` transfers, the flow is:
-   * - Sender initiates propose with node <LOCK MULTISIG SENDER-NODE>
-   * - Node responds to sender propose and creates app proposal <UNLOCK MULTISIG SENDER-NODE>
-   * - Node hears PROPOSE_INSTALL event for sender app and initiates propose with receiver <LOCK MULTISIG RECEIVER-NODE>
-   * - Receiver responds to node propose and creates app proposal <UNLOCK MULTISIG RECEIVER-NODE>
-   * - Receiver initiates install with node <LOCK MULTISIG RECEIVER-NODE>
-   * - Node responds to install with receiver and hits this installTransferMiddleware function:
-   *   - Node asserts that there is a sender app proposal that corresponds to the receiver app proposal
-   *   - Node initiates install with sender <LOCK MULTISIG SENDER-NODE>
-   *   - Sender responds to install and installs app <UNLOCK MULTISIG SENDER-NODE>
-   * - Node finishes responding to receiver install and installs app <UNLOCK MULTISIG RECEIVER-NODE>
-   */
-  private installTransferMiddleware = async (appInstance: AppInstanceJson) => {
-    const latestState = appInstance.latestState as HashLockTransferAppState;
-    const installingAppSender = latestState.coinTransfers[0].to;
-
-    const nodeSignerAddress = await this.configService.getSignerAddress();
-
-    // if node is not sending funds, we dont need to do anything
-    if (installingAppSender !== nodeSignerAddress) {
-      return;
-    }
-
-    const registryAppInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
-      appInstance.appDefinition,
-    );
-
-    // this middleware is only relevant for require online
-    if (
-      getTransferTypeFromAppName(registryAppInfo.name as SupportedApplicationNames) !==
-      "RequireOnline"
-    ) {
-      return;
-    }
-
-    const existingSenderApp = await this.transferService.findSenderAppByPaymentId(
-      appInstance.meta.paymentId,
-    );
-
-    if (!existingSenderApp) {
-      throw new Error(`Sender app not installed`);
-    }
-
-    if (existingSenderApp.type === AppType.INSTANCE) {
-      this.log.info(`Sender app was already installed, doing nothing.`);
-      return;
-    }
-
-    if (existingSenderApp.type !== AppType.PROPOSAL) {
-      throw new Error(`Sender app has not been proposed: ${appInstance.identityHash}`);
-    }
-
-    try {
-      this.log.info(`Installing sender app from app proposal: ${appInstance.identityHash}`);
-      await this.cfCoreService.installApp(
-        existingSenderApp.identityHash,
-        existingSenderApp.channel.multisigAddress,
-      );
-    } catch (e) {
-      // reject if error
-      this.log.warn(`App install failed: ${e.stack || e.message}`);
-      await this.cfCoreService.rejectInstallApp(
-        existingSenderApp.identityHash,
-        existingSenderApp.channel.multisigAddress,
-        e.message,
-      );
-      return;
-    }
-  };
-
-  private installMiddleware = async (cxt: InstallMiddlewareContext) => {
-    const { appInstance } = cxt;
-    const appDef = appInstance.appDefinition;
-
-    const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(appDef);
-
-    if (Object.keys(ConditionalTransferAppNames).includes(appRegistryInfo.name)) {
-      await this.installTransferMiddleware(appInstance);
-    }
-  };
-
   private proposeMiddleware = async (cxt: ProposeMiddlewareContext) => {
-    const { proposal, params } = cxt;
-    const contractAddresses = await this.configService.getContractAddresses();
+    const { proposal, params, stateChannel } = cxt;
+    const contractAddresses = this.configService.getContractAddresses(stateChannel.chainId);
 
     switch (proposal.appDefinition) {
       case contractAddresses.SimpleTwoPartySwapApp: {
         const responderDecimals = await this.configService.getTokenDecimals(
+          stateChannel.chainId,
           params.responderDepositAssetId,
         );
         return validateSimpleSwapApp(
           params as any,
-          this.configService.getAllowedSwaps(),
+          this.configService.getAllowedSwaps(stateChannel.chainId),
           await this.swapRateService.getOrFetchRate(
             getAddressFromAssetId(params.initiatorDepositAssetId),
             getAddressFromAssetId(params.responderDepositAssetId),
+            stateChannel.chainId,
+            stateChannel.chainId, // swap within a channel is only on a single chain
           ),
           responderDecimals,
         );
@@ -381,14 +296,18 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    // double check that the app was uninstalled
-    if (receiverApp.type !== AppType.UNINSTALLED) {
-      throw new Error(`Receiver app was unable to be uninstalled`);
+    // double check that receiver app state has not been finalized
+    // only allow sender uninstall prior to receiver uninstall IFF the hub
+    // has not paid receiver. Receiver app will be uninstalled again on event
+    if (
+      toBN(senderAppLatestState.coinTransfers[1].amount).isZero() && // not reclaimed
+      toBN(receiverApp.latestState.coinTransfers[0].amount).isZero() // finalized
+    ) {
+      throw new Error(
+        `Cannot uninstall unfinalized sender app, receiver app has payment has been completed`,
+      );
     }
 
-    if (!senderAppLatestState.finalized && receiverApp.latestState.finalized) {
-      throw new Error(`Cannot uninstall unfinalized sender app, receiver app has been finalized`);
-    }
     this.log.info(`Finished uninstallTransferMiddleware for ${appInstance.identityHash}`);
   };
 

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -e
 
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+
 agents="$1"
 payments="$2"
 echo "Starting bench test with $agents agents and $payments payments"
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
-
-INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:8545}"
+INDRA_CHAIN_URL="${INDRA_CHAIN_URL:-http://172.17.0.1:8545}"
 INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:8080}"
 INDRA_NATS_URL="${INDRA_NATS_URL:-nats://172.17.0.1:4222}"
 BOT_REGISTRY_URL="${BOT_REGISTRY_URL:-http://172.17.0.1:3333}"
@@ -60,7 +60,7 @@ echo "Starting bot registry container"
     --name="bot-registry" \
     --publish "3333:3333" \
     --publish="$((n + 8330)):9229" \
-    --volume="`pwd`:/root" \
+    --volume="$root:/root" \
     ${project}_builder -c '
       set -e
       echo "Bot registry container launched!"
@@ -94,13 +94,13 @@ do
     --detach \
     --entrypoint="bash" \
     --env="BOT_REGISTRY_URL"="$BOT_REGISTRY_URL" \
-    --env="INDRA_ETH_RPC_URL=$INDRA_ETH_RPC_URL" \
+    --env="INDRA_CHAIN_URL=$INDRA_CHAIN_URL" \
     --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
     --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
     --env="LOG_LEVEL=$LOG_LEVEL" \
     --name="$agent" \
     --publish="$((n + 9330)):9229" \
-    --volume="`pwd`:/root" \
+    --volume="$root:/root" \
     ${project}_builder -c '
       set -e
       echo "Benchmark container launched!"

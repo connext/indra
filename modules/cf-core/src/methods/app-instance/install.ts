@@ -32,14 +32,14 @@ export class InstallAppInstanceController extends MethodController {
 
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockName(
+  protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: MethodParams.Install,
-  ): Promise<string> {
+  ): Promise<string[]> {
     if (!params.multisigAddress) {
       throw new Error(NO_MULTISIG_IN_PARAMS(params));
     }
-    return params.multisigAddress;
+    return [params.multisigAddress];
   }
 
   // should return true IFF the channel is in the correct state before
@@ -110,7 +110,7 @@ export class InstallAppInstanceController extends MethodController {
     const msg = {
       from: publicIdentifier,
       type: EventNames.INSTALL_EVENT,
-      data: { appIdentityHash: params.appIdentityHash },
+      data: { appIdentityHash: params.appIdentityHash, appInstance: returnValue.appInstance },
     } as InstallMessage;
 
     await router.emit(msg.type, msg, `outgoing`);

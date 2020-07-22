@@ -1,6 +1,6 @@
 import { MinimalTransaction } from "@connext/types";
 import { stringify } from "@connext/utils";
-import { Injectable } from "@nestjs/common";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 import { providers } from "ethers";
 import PriorityQueue from "p-queue";
 
@@ -11,14 +11,16 @@ import { OnchainTransactionRepository } from "./onchainTransaction.repository";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction, TransactionReason } from "./onchainTransaction.entity";
 
+const BAD_NONCE = "the tx doesn't have the correct nonce";
 const NO_TX_HASH = "no transaction hash found in tx response";
+const UNDERPRICED_REPLACEMENT = "replacement transaction underpriced";
 export const MAX_RETRIES = 5;
-export const KNOWN_ERRORS = ["the tx doesn't have the correct nonce", NO_TX_HASH];
+export const KNOWN_ERRORS = [BAD_NONCE, NO_TX_HASH, UNDERPRICED_REPLACEMENT];
 
 @Injectable()
-export class OnchainTransactionService {
-  private nonce = Promise.resolve(0);
-  private readonly queue: PriorityQueue;
+export class OnchainTransactionService implements OnModuleInit {
+  private nonces: Map<number, Promise<number>> = new Map();
+  private queues: Map<number, PriorityQueue> = new Map();
 
   constructor(
     private readonly configService: ConfigService,
@@ -26,17 +28,19 @@ export class OnchainTransactionService {
     private readonly log: LoggerService,
   ) {
     this.log.setContext("OnchainTransactionService");
-    this.nonce = this.configService.getSigner().getTransactionCount();
-    this.queue = new PriorityQueue({ concurrency: 1 });
+    this.configService.signers.forEach((signer, chainId) => {
+      this.nonces.set(chainId, signer.getTransactionCount());
+      this.queues.set(chainId, new PriorityQueue({ concurrency: 1 }));
+    });
   }
 
   async sendUserWithdrawal(
     channel: Channel,
     transaction: MinimalTransaction,
   ): Promise<OnchainTransaction> {
-    await this.queue.add(() =>
-      this.sendTransaction(transaction, TransactionReason.USER_WITHDRAWAL, channel),
-    );
+    await this.queues
+      .get(channel.chainId)
+      .add(() => this.sendTransaction(transaction, TransactionReason.USER_WITHDRAWAL, channel));
     return this.onchainTransactionRepository.findLatestTransactionToChannel(
       channel.multisigAddress,
       TransactionReason.USER_WITHDRAWAL,
@@ -47,9 +51,9 @@ export class OnchainTransactionService {
     channel: Channel,
     transaction: MinimalTransaction,
   ): Promise<OnchainTransaction> {
-    await this.queue.add(() =>
-      this.sendTransaction(transaction, TransactionReason.NODE_WITHDRAWAL, channel),
-    );
+    await this.queues
+      .get(channel.chainId)
+      .add(() => this.sendTransaction(transaction, TransactionReason.NODE_WITHDRAWAL, channel));
     return this.onchainTransactionRepository.findLatestTransactionToChannel(
       channel.multisigAddress,
       TransactionReason.NODE_WITHDRAWAL,
@@ -60,9 +64,9 @@ export class OnchainTransactionService {
     channel: Channel,
     transaction: MinimalTransaction,
   ): Promise<OnchainTransaction> {
-    await this.queue.add(() =>
-      this.sendTransaction(transaction, TransactionReason.COLLATERALIZATION, channel),
-    );
+    await this.queues
+      .get(channel.chainId)
+      .add(() => this.sendTransaction(transaction, TransactionReason.COLLATERALIZATION, channel));
     return this.onchainTransactionRepository.findLatestTransactionToChannel(
       channel.multisigAddress,
       TransactionReason.COLLATERALIZATION,
@@ -78,29 +82,27 @@ export class OnchainTransactionService {
     reason: TransactionReason,
     channel: Channel,
   ): Promise<void> {
-    const wallet = this.configService.getSigner();
+    const wallet = this.configService.getSigner(channel.chainId);
     const errors: { [k: number]: string } = [];
     let tx: providers.TransactionResponse;
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
       try {
         this.log.info(`Attempt ${attempt}/${MAX_RETRIES} to send transaction to ${transaction.to}`);
         const chainNonce = await wallet.getTransactionCount();
-        const memoryNonce = await this.nonce;
+        const memoryNonce = await this.nonces.get(channel.chainId);
         const nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
-        tx = await wallet.sendTransaction({
-          ...transaction,
-          nonce,
-        });
-        this.nonce = Promise.resolve(nonce + 1);
-        if (attempt === 1) {
-          // create the pending transaction in the db
-          await this.onchainTransactionRepository.addPending(tx, reason, channel);
-        }
+        const req = await wallet.populateTransaction({ ...transaction, nonce });
+        tx = await wallet.sendTransaction(req);
+        // add fields from tx response
+        await this.onchainTransactionRepository.addResponse(tx, reason, channel);
+        this.nonces.set(channel.chainId, Promise.resolve(nonce + 1));
         const receipt = await tx.wait();
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
         }
-        this.log.info(`Success sending transaction! Tx mined at block ${receipt.blockNumber}: ${receipt.transactionHash}`);
+        this.log.info(
+          `Success sending transaction! Tx mined at block ${receipt.blockNumber}: ${receipt.transactionHash}`,
+        );
         await this.onchainTransactionRepository.addReceipt(receipt);
         return;
       } catch (e) {
@@ -120,7 +122,30 @@ export class OnchainTransactionService {
     throw new Error(`Failed to send transaction (errors indexed by attempt): ${stringify(errors)}`);
   }
 
-  private enqueue(task: () => Promise<void>): Promise<void> {
-    return this.queue.add(task);
+  private retryFailedTransactions = async (): Promise<void> => {
+    this.log.info(`retryFailedTransactions started`);
+    const toResend = await this.onchainTransactionRepository.findFailedTransactions(KNOWN_ERRORS);
+    // NOTE: could alternatively look only for withdrawals that are
+    // finalized but have no onchain tx id. however, no reason not to retry
+    // all failed txs
+    this.log.info(`Found ${toResend.length} transactions to resend`);
+    for (const stored of toResend) {
+      try {
+        await this.sendTransaction(
+          { to: stored.to, value: stored.value, data: stored.data },
+          stored.reason,
+          stored.channel,
+        );
+      } catch (e) {
+        this.log.warn(
+          `Failed to send transaction, will retry on next startup, hash: ${stored.hash}. ${e.message}`,
+        );
+      }
+    }
+    this.log.info(`retryFailedTransactions completed`);
+  };
+
+  async onModuleInit(): Promise<void> {
+    await this.retryFailedTransactions();
   }
 }

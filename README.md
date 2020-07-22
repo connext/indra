@@ -93,6 +93,10 @@ If you want to use custom contracts or a new network though, you'll have to depl
 For example: to deploy to Goerli testnet, you'll first need to retrieve the mnemonic for an account that has enough funds to pay the gas fees. Copy that mnemonic to your clipboard & then run:
 
 ```bash
+make contracts
+```
+then
+```bash
 bash ops/deploy-contracts.sh https://goerli.infura.io/abc123
 ```
 

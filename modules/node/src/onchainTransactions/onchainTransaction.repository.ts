@@ -9,6 +9,7 @@ import {
   AnonymizedOnchainTransaction,
   TransactionStatus,
 } from "./onchainTransaction.entity";
+import { toBN } from "@connext/utils";
 const { Zero } = constants;
 
 export const onchainEntityToReceipt = (
@@ -47,6 +48,18 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     });
   }
 
+  async findFailedTransactions(withErrors: string[]): Promise<OnchainTransaction[]> {
+    const txes = await this.createQueryBuilder("onchain_transaction")
+      .leftJoinAndSelect("onchain_transaction.channel", "channel")
+      .where("onchain_transaction.status = :status", { status: TransactionStatus.FAILED })
+      .getMany();
+
+    // could do this in the query, but it was hard and probably doesn't matter
+    return txes.filter((tx) =>
+      Object.values(tx.errors).some((error) => withErrors.includes(error)),
+    );
+  }
+
   async findByUserPublicIdentifier(
     userIdentifier: string,
   ): Promise<OnchainTransaction[] | undefined> {
@@ -71,42 +84,52 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return tx;
   }
 
-  async findLatestWithdrawalByUserPublicIdentifier(
+  async findLatestWithdrawalByUserPublicIdentifierAndChain(
     userIdentifier: string,
+    chainId: number,
   ): Promise<OnchainTransaction | undefined> {
     const tx = await this.createQueryBuilder("onchainTransaction")
       .leftJoinAndSelect("onchainTransaction.channel", "channel")
       .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
-      .where("onchainTransaction.reason = :reason", { reason: TransactionReason.USER_WITHDRAWAL })
+      .andWhere("channel.chainId = :chainId", { chainId })
+      .andWhere("onchainTransaction.reason = :reason", {
+        reason: TransactionReason.USER_WITHDRAWAL,
+      })
       .orderBy("onchainTransaction.id", "DESC")
       .getOne();
     return tx;
   }
 
-  async addPending(
+  async addResponse(
     tx: providers.TransactionResponse,
     reason: TransactionReason,
     channel: Channel,
   ): Promise<void> {
     return getManager().transaction(async (transactionalEntityManager) => {
-      const { identifiers } = await transactionalEntityManager
+      await transactionalEntityManager
         .createQueryBuilder()
         .insert()
         .into(OnchainTransaction)
         .values({
           ...tx,
-          gasUsed: Zero,
+          data: tx.data.toString(),
+          value: toBN(tx.value),
+          gasPrice: toBN(tx.gasPrice),
+          gasLimit: toBN(tx.gasLimit),
+          nonce: toBN(tx.nonce).toNumber(),
+          chainId: tx.chainId.toString(),
           reason,
           status: TransactionStatus.PENDING,
           channel,
+          hash: tx.hash,
+          blockHash: tx.blockHash,
+          blockNumber: tx.blockNumber,
+          raw: tx.raw,
+          gasUsed: Zero,
         })
+        .onConflict(`("hash") DO UPDATE SET "nonce" = :nonce`)
+        .setParameter("nonce", toBN(tx.nonce).toNumber())
         .execute();
-
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .relation(Channel, "transactions")
-        .of(channel.multisigAddress)
-        .add((identifiers[0] as OnchainTransaction).id);
     });
   }
 

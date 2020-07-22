@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
@@ -15,31 +15,16 @@ docker network create --attachable --driver overlay $project 2> /dev/null || tru
 ####################
 # Load env vars
 
+if [[ -f ".env" ]]
+then source .env
+elif [[ -f "dev.env" ]]
+then source dev.env
+fi
+
 # alias env var
 INDRA_LOG_LEVEL="$LOG_LEVEL";
 
-function extractEnv {
-  grep "$1" "$2" | cut -d "=" -f 2- | tr -d '\n\r"' | sed 's/ *#.*//'
-}
-
-# First choice: use existing env vars (dotEnv not called)
-function dotEnv {
-  key="$1"
-  if [[ -f .env && -n "`extractEnv $key .env`" ]] # Second choice: load from custom secret env
-  then extractEnv $key .env
-  elif [[ -f dev.env && -n "`extractEnv $key dev.env`" ]] # Third choice: load from public defaults
-  then extractEnv $key dev.env
-  fi
-}
-
-export INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-`dotEnv INDRA_ADMIN_TOKEN`}"
-export INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER:-`dotEnv INDRA_ETH_PROVIDER`}"
-export INDRA_LOG_LEVEL="${INDRA_LOG_LEVEL:-`dotEnv INDRA_LOG_LEVEL`}"
-INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PRIVATE_KEY`}"
-INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PUBLIC_KEY`}"
-
-# Make sure keys have proper newlines inserted
-# (bc GitHub Actions strips newlines from secrets)
+# Make sure keys have proper newlines inserted (bc GitHub Actions strips newlines from secrets)
 export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=`
   echo $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY | tr -d '\n\r' |\
   sed 's/-----BEGIN RSA PRIVATE KEY-----/\\\n-----BEGIN RSA PRIVATE KEY-----\\\n/' |\
@@ -54,42 +39,11 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 # Internal Config
 # config & hard-coded stuff you might want to change
 
-ganacheProvider="http://ethprovider:8545"
-number_of_services=6 # NOTE: Gotta update this manually when adding/removing services :(
-
 nats_port=4222
 node_port=8080
 dash_port=9999
-webserver_port=3000
-ganacheId="1337"
 
-if [[ "$INDRA_ETH_PROVIDER" == "$ganacheProvider" ]]
-then chainId="$ganacheId"
-else
-  echo "Fetching chainId from ${INDRA_ETH_PROVIDER}"
-  chainId="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_ETH_PROVIDER | jq .result | tr -d '"'`"
-fi
-
-if [[ "$chainId" == "$ganacheId" ]]
-then make deployed-contracts
-fi
-
-# Prefer top-level address-book override otherwise default to one in contracts
-if [[ -f address-book.json ]]
-then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
-else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
-fi
-eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-
-token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.address' | tr -d '"'`"
-allowed_swaps='[{"from":"'"$token_address"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"HARDCODED"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address"'","priceOracleType":"HARDCODED"}]'
-
-supported_tokens="$token_address,0x0000000000000000000000000000000000000000"
-
-if [[ -z "$chainId" || "$chainId" == "null" ]]
-then echo "Failed to fetch chainId from provider ${INDRA_ETH_PROVIDER}" && exit 1;
-else echo "Got chainId $chainId, using token $token_address"
-fi
+proxy_url="http://localhost:3000"
 
 # database connection settings
 pg_db="$project"
@@ -112,12 +66,12 @@ proxy_image="${project}_proxy"
 redis_image="redis:5-alpine"
 
 ####################
-# Deploy according to above configuration
+# Configure UI
 
 if [[ "$INDRA_UI" == "headless" ]]
 then
   webserver_service=""
-  webserver_url="localhost"
+  webserver_url="localhost:80"
 else
   if [[ "$INDRA_UI" == "dashboard" ]]
   then webserver_working_dir=/root/modules/dashboard
@@ -127,10 +81,8 @@ else
     echo "INDRA_UI: Expected headless, dashboard, or daicard"
     exit 1
   fi
-  number_of_services=$(( $number_of_services + 1 ))
   webserver_url="webserver:3000"
   webserver_services="
-
   webserver:
     image: '$webserver_image'
     entrypoint: 'npm start'
@@ -139,10 +91,13 @@ else
     networks:
       - '$project'
     volumes:
-      - '`pwd`:/root'
+      - '$root:/root'
     working_dir: '$webserver_working_dir'
   "
 fi
+
+####################
+# Make sure images are pulled & external secrets are created
 
 # Get images that we aren't building locally
 function pull_if_unavailable {
@@ -151,23 +106,37 @@ function pull_if_unavailable {
   fi
 }
 pull_if_unavailable "$database_image"
-pull_if_unavailable "$ethprovider_image"
 pull_if_unavailable "$nats_image"
 pull_if_unavailable "$redis_image"
+bash ops/save-secret.sh "${project}_database_dev" "$project"
 
-# Initialize random new secrets
-function new_secret {
-  secret=$2
-  if [[ -z "$secret" ]]
-  then secret=`head -c 32 /dev/urandom | xxd -plain -c 32 | tr -d '\n\r'`
+########################################
+# Configure or launch Ethereum testnets
+
+eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+
+# If no chain providers provided, spin up local testnets & use those
+if [[ -z "$INDRA_CHAIN_PROVIDERS" ]]
+then
+  chain_id_1=1337; chain_id_2=1338;
+  bash ops/start-testnet.sh $chain_id_1 $chain_id_2
+  chain_providers="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
+  contract_addresses="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json`"
+  chain_url_1="`echo $chain_providers | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"
+
+# If chain providers are provided, use those
+else
+  eval chain_providers="$INDRA_CHAIN_PROVIDERS"
+  chain_url_1="`echo $chain_providers | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"
+  # Prefer top-level address-book override otherwise default to one in contracts
+  if [[ -f address-book.json ]]
+  then contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+  else contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
   fi
-  if [[ -z "`docker secret ls -f name=$1 | grep -w $1`" ]]
-  then
-    id=`echo $secret | tr -d '\n\r' | docker secret create $1 -`
-    echo "Created secret called $1 with id $id"
-  fi
-}
-new_secret "${project}_database_dev" "$project"
+fi
+
+####################
+# Launch Indra stack
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
@@ -183,7 +152,8 @@ secrets:
 
 volumes:
   certs:
-  chain_dev:
+  chain_1337:
+  chain_1338:
   database_dev:
 
 services:
@@ -193,7 +163,7 @@ services:
   proxy:
     image: '$proxy_image'
     environment:
-      ETH_PROVIDER_URL: '$INDRA_ETH_PROVIDER'
+      ETH_PROVIDER_URL: '$chain_url_1'
       MESSAGING_TCP_URL: 'nats:4222'
       MESSAGING_WS_URL: 'nats:4221'
       NODE_URL: 'node:8080'
@@ -210,11 +180,9 @@ services:
     entrypoint: 'bash modules/node/ops/entry.sh'
     environment:
       INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
-      INDRA_ALLOWED_SWAPS: '$allowed_swaps'
-      INDRA_SUPPORTED_TOKENS: '$supported_tokens'
-      INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
-      INDRA_ETH_MNEMONIC: '$eth_mnemonic'
-      INDRA_ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
+      INDRA_CHAIN_PROVIDERS: '$chain_providers'
+      INDRA_CONTRACT_ADDRESSES: '$contract_addresses'
+      INDRA_MNEMONIC: '$eth_mnemonic'
       INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
@@ -236,21 +204,7 @@ services:
     secrets:
       - '${project}_database_dev'
     volumes:
-      - '`pwd`:/root'
-
-  ethprovider:
-    image: '$ethprovider_image'
-    entrypoint: bash modules/contracts/ops/entry.sh
-    command: 'start'
-    environment:
-      ETH_MNEMONIC: '$eth_mnemonic'
-    networks:
-      - '$project'
-    ports:
-      - '8545:8545'
-    volumes:
-      - '`pwd`:/root'
-      - 'chain_dev:/data'
+      - '$root:/root'
 
   database:
     image: '$database_image'
@@ -292,8 +246,17 @@ EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
 
-echo -n "Waiting for the $project stack to wake up."
-while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" != "$number_of_services" ]]
-do echo -n "." && sleep 2
+echo "The $project stack has been deployed, waiting for the proxy to start responding.."
+timeout=$(expr `date +%s` + 30)
+while true
+do
+  res="`curl -m 5 -s $proxy_url || true`"
+  if [[ -z "$res" || "$res" == "Waiting for Indra to wake up" ]]
+  then
+    if [[ "`date +%s`" -gt "$timeout" ]]
+    then echo "Timed out waiting for proxy to respond.." && exit
+    else sleep 2
+    fi
+  else echo "Good Morning!" && exit;
+  fi
 done
-echo " Good Morning!"

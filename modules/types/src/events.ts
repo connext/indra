@@ -103,6 +103,7 @@ const INSTALL_EVENT = "INSTALL_EVENT";
 
 type InstallEventData = {
   appIdentityHash: Bytes32;
+  appInstance: AppInstanceJson;
 };
 
 const INSTALL_FAILED_EVENT = "INSTALL_FAILED_EVENT";

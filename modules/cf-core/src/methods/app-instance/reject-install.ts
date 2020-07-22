@@ -16,14 +16,14 @@ export class RejectInstallController extends MethodController {
   public readonly methodName = MethodNames.chan_rejectInstall;
 
   public executeMethod = super.executeMethod;
-  protected async getRequiredLockName(
+  protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: MethodParams.RejectInstall,
-  ): Promise<string> {
+  ): Promise<string[]> {
     if (!params.multisigAddress) {
       throw new Error(NO_MULTISIG_IN_PARAMS(params));
     }
-    return params.multisigAddress;
+    return [params.multisigAddress];
   }
 
   protected async beforeExecution(

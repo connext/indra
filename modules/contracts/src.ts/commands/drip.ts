@@ -17,7 +17,7 @@ export const drip = async (
     throw new Error("Missing required arguments");
   }
   const dripAttempt = async () => {
-    const chainId = (await recipient.provider.getNetwork()).chainId;
+    const chainId = process?.env?.REAL_CHAIN_ID || (await recipient.provider.getNetwork()).chainId;
     const addressBook = getAddressBook(addressBookPath, chainId.toString());
     const tokenAddress = addressBook.getEntry("Token").address;
     // NOTE: ConnextToken has drippable abi

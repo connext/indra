@@ -18,6 +18,8 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { RequestHandler } from "../request-handler";
 import { RpcRouter } from "../rpc-router";
 import { StateChannel, AppInstance } from "../models";
+import { generateProtocolMessageData } from "../protocol/utils";
+import { getOutgoingEventFailureDataFromProtocol } from "../machine/protocol-runner";
 
 /**
  * Forwards all received Messages that are for the machine's internal
@@ -44,14 +46,14 @@ export async function handleReceivedProtocolMessage(
   try {
     const { channel, appContext } = await protocolRunner.runProtocolWithMessage(
       router,
-      data,
+      msgBn,
       json && StateChannel.fromJson(json),
     );
     postProtocolStateChannel = channel;
     appInstance = appContext || undefined;
   } catch (e) {
     log.warn(
-      `Caught error running ${data.protocol} protocol, aborting. Will be retried after syncing. ${
+      `Caught error running ${protocol} protocol, aborting. Will be retried after syncing. ${
         e.stack || e.message
       }`,
     );
@@ -62,12 +64,14 @@ export async function handleReceivedProtocolMessage(
       messageForCounterparty.data.to,
       messageForCounterparty,
     );
+    const outgoingData = getOutgoingEventFailureDataFromProtocol(protocol, params!, e);
+    await emitOutgoingMessage(router, outgoingData);
     return;
   }
 
-  const outgoingEventData = await getOutgoingEventDataFromProtocol(
+  const outgoingEventData = getOutgoingEventDataFromProtocol(
     protocol,
-    params!,
+    params,
     postProtocolStateChannel,
     appInstance,
   );
@@ -82,12 +86,12 @@ function emitOutgoingMessage(router: RpcRouter, msg: ProtocolEventMessage<any>) 
   return router.emit(msg["type"], msg, "outgoing");
 }
 
-async function getOutgoingEventDataFromProtocol(
+function getOutgoingEventDataFromProtocol(
   protocol: ProtocolName,
   params: ProtocolParam,
   postProtocolStateChannel: StateChannel,
   appContext?: AppInstance,
-): Promise<ProtocolEventMessage<any> | undefined> {
+): ProtocolEventMessage<any> | undefined {
   // default to the pubId that initiated the protocol
   const baseEvent = { from: params.initiatorIdentifier };
 
@@ -109,11 +113,12 @@ async function getOutgoingEventDataFromProtocol(
         type: EventNames.INSTALL_EVENT,
         data: {
           appIdentityHash: (params as ProtocolParams.Install).proposal.identityHash,
+          appInstance: appContext?.toJson(),
         },
       } as ProtocolEventMessage<typeof EventNames.INSTALL_EVENT>;
     }
     case ProtocolNames.uninstall: {
-      if (!appContext) {
+      if (appContext === undefined || appContext === null) {
         throw new Error("Could not find app context to process event for uninstall protocol");
       }
       return {
@@ -185,18 +190,13 @@ const prepareProtocolErrorMessage = (
   error: string,
 ): ProtocolMessage => {
   const {
-    data: { protocol, processID, to },
+    data: { protocol, processID, to, params },
     from,
   } = latestMsg;
   return {
-    data: {
-      protocol,
-      processID,
-      seq: UNASSIGNED_SEQ_NO,
-      to: from,
+    data: generateProtocolMessageData(from, protocol, processID, UNASSIGNED_SEQ_NO, params, {
       error,
-      customData: {},
-    },
+    }),
     type: EventNames.PROTOCOL_MESSAGE_EVENT,
     from: to,
   };

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
-registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
+root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
 registry_url="https://index.docker.io/v1/repositories/${registry#*/}"
 patch=".deploy-indra.patch"

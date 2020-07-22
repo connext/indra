@@ -44,7 +44,10 @@ export class DepositService {
       `Deposit started: ${JSON.stringify({ channel: channel.multisigAddress, amount, assetId })}`,
     );
     // don't allow deposit if user's balance refund app is installed
-    const depositRegistry = this.cfCoreService.getAppInfoByName(DepositAppName);
+    const depositRegistry = this.cfCoreService.getAppInfoByNameAndChain(
+      DepositAppName,
+      channel.chainId,
+    );
     const depositApp: AppInstance<"DepositApp"> = channel.appInstances.find(
       (app) =>
         app.appDefinition === depositRegistry.appDefinitionAddress &&
@@ -148,15 +151,19 @@ export class DepositService {
     assetId: string,
   ): Promise<string[] | undefined> {
     this.log.info(`Collateralization in flight for user ${userId}, waiting`);
-    const ethProvider = this.configService.getEthProvider();
+    const ethProvider = this.configService.getEthProvider(
+      await this.channelRepository.getChainIdByMultisigAddress(multisigAddress),
+    );
     const signerAddr = await this.configService.getSignerAddress();
     const startingBlock = await ethProvider.getBlockNumber();
     const BLOCKS_TO_WAIT = 5;
 
     // get all deposit appIds
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     const depositApps = await this.cfCoreService.getAppInstancesByAppDefinition(
       multisigAddress,
-      this.cfCoreService.getAppInfoByName(DepositAppName).appDefinitionAddress,
+      this.cfCoreService.getAppInfoByNameAndChain(DepositAppName, channel.chainId)
+        .appDefinitionAddress,
     );
     const ourDepositAppIds = depositApps
       .filter((app) => {
@@ -224,7 +231,11 @@ export class DepositService {
         data: "0x",
       };
     } else {
-      const token = new Contract(tokenAddress, ERC20.abi, this.configService.getEthProvider());
+      const token = new Contract(
+        tokenAddress,
+        ERC20.abi,
+        this.configService.getEthProvider(channel.chainId),
+      );
       tx = {
         to: tokenAddress,
         value: 0,
@@ -239,7 +250,7 @@ export class DepositService {
     channel: Channel,
     tokenAddress: string = AddressZero,
   ): Promise<string | undefined> {
-    const ethProvider = this.configService.getEthProvider();
+    const ethProvider = this.configService.getEthProvider(channel.chainId);
 
     // generate initial totalAmountWithdrawn
     const multisig = new Contract(channel.multisigAddress, MinimumViableMultisig.abi, ethProvider);
@@ -260,9 +271,13 @@ export class DepositService {
     const startingMultisigBalance =
       tokenAddress === AddressZero
         ? await ethProvider.getBalance(channel.multisigAddress)
-        : await new Contract(tokenAddress, ERC20.abi, this.configService.getSigner()).balanceOf(
-            channel.multisigAddress,
-          );
+        : await new Contract(
+          tokenAddress,
+          ERC20.abi,
+          this.configService.getSigner(channel.chainId),
+        ).balanceOf(
+          channel.multisigAddress,
+        );
 
     const initialState: DepositAppState = {
       transfers: [
@@ -288,7 +303,7 @@ export class DepositService {
       tokenAddress,
       Zero,
       tokenAddress,
-      this.cfCoreService.getAppInfoByName(DepositAppName),
+      this.cfCoreService.getAppInfoByNameAndChain(DepositAppName, channel.chainId),
       { reason: "Node deposit" }, // meta
       DEPOSIT_STATE_TIMEOUT,
     );

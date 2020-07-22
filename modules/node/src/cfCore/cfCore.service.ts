@@ -40,10 +40,11 @@ import { CFCoreProviderId, MessagingProviderId, TIMEOUT_BUFFER } from "../consta
 import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
+import { MAX_RETRIES, KNOWN_ERRORS } from "../onchainTransactions/onchainTransaction.service";
 
 const { Zero } = constants;
 
-Injectable();
+@Injectable()
 export class CFCoreService {
   private appRegistryMap: Map<string, DefaultApp>;
   public emitter: TypedEmitter;
@@ -116,12 +117,16 @@ export class CFCoreService {
     return getStateChannelRes.result.result;
   }
 
-  async createChannel(counterpartyIdentifier: string): Promise<MethodResults.CreateChannel> {
+  async createChannel(
+    counterpartyIdentifier: string,
+    chainId: number,
+  ): Promise<MethodResults.CreateChannel> {
     const params = {
       id: Date.now(),
       methodName: MethodNames.chan_create,
       parameters: {
         owners: [this.cfCore.publicIdentifier, counterpartyIdentifier],
+        chainId,
       } as MethodParams.CreateChannel,
     };
     this.logCfCoreMethodStart(MethodNames.chan_create, params.parameters);
@@ -139,9 +144,30 @@ export class CFCoreService {
       } as MethodParams.DeployStateDepositHolder,
     };
     this.logCfCoreMethodStart(MethodNames.chan_deployStateDepositHolder, params.parameters);
-    const deployRes = await this.cfCore.rpcRouter.dispatch(params);
-    this.logCfCoreMethodResult(MethodNames.chan_deployStateDepositHolder, deployRes.result.result);
-    return deployRes.result.result as MethodResults.DeployStateDepositHolder;
+    const errors: { [k: number]: string } = [];
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const deployRes = await this.cfCore.rpcRouter.dispatch(params);
+        this.logCfCoreMethodResult(
+          MethodNames.chan_deployStateDepositHolder,
+          deployRes.result.result,
+        );
+        return deployRes.result.result as MethodResults.DeployStateDepositHolder;
+      } catch (e) {
+        errors[attempt] = e.message;
+        const knownErr = KNOWN_ERRORS.find((err) => e.message.includes(err));
+        if (!knownErr) {
+          this.log.error(
+            `Failed to deploy multisig with unknown error: ${e.message}. Should use onchain transaction service for this`,
+          );
+          throw new Error(e.stack || e.message);
+        }
+        this.log.warn(
+          `Sending transaction attempt ${attempt}/${MAX_RETRIES} failed: ${e.message}. Retrying multisig deployment. Use onchain tx service.`,
+        );
+      }
+    }
+    throw new Error(`Failed to deploy multisig (errors indexed by attempt): ${stringify(errors)}`);
   }
 
   async createWithdrawCommitment(
@@ -151,9 +177,7 @@ export class CFCoreService {
     const amount = toBN(params.amount);
     const { assetId, nonce, recipient } = params;
     const { data: channel } = await this.getStateChannel(multisigAddress);
-    const contractAddresses = await this.configService.getContractAddresses(
-      (await this.configService.getEthNetwork()).chainId.toString(),
-    );
+    const contractAddresses = await this.configService.getContractAddresses(channel.chainId);
     const multisigOwners = [
       getSignerAddressFromPublicIdentifier(channel.userIdentifiers[0]),
       getSignerAddressFromPublicIdentifier(channel.userIdentifiers[1]),
@@ -425,9 +449,12 @@ export class CFCoreService {
     multisigAddress: Address,
     appName: SupportedApplicationNames,
   ): Promise<AppInstanceJson[]> {
+    const { data: channel } = await this.getStateChannel(multisigAddress);
     const apps = await this.getAppInstances(multisigAddress);
     return apps.filter(
-      (app) => app.appDefinition === this.getAppInfoByName(appName).appDefinitionAddress,
+      (app) =>
+        app.appDefinition ===
+        this.getAppInfoByNameAndChain(appName, channel.chainId).appDefinitionAddress,
     );
   }
 
@@ -456,42 +483,47 @@ export class CFCoreService {
     return this.appRegistryMap.get(appDefinition);
   }
 
-  public getAppInfoByName(name: SupportedApplicationNames): DefaultApp {
-    return this.appRegistryMap.get(name);
+  public getAppInfoByDefinition(addr: Address): DefaultApp {
+    return this.appRegistryMap.get(addr);
   }
 
-  public getAppRegistry(): AppRegistry {
-    return Object.values(SupportedApplicationNames).map((name) => this.getAppInfoByName(name));
+  public getAppInfoByNameAndChain(name: SupportedApplicationNames, chainId: number): DefaultApp {
+    return this.appRegistryMap.get(`${name}:${chainId}`);
+  }
+
+  public getAppRegistry(chainId: number): AppRegistry {
+    return Object.values(SupportedApplicationNames).map((name) =>
+      this.getAppInfoByNameAndChain(name, chainId),
+    );
   }
 
   async onModuleInit() {
-    const ethNetwork = await this.configService.getEthNetwork();
-    const contractAddresses = await this.configService.getContractAddresses();
-    this.appRegistryMap = RegistryOfApps.reduce((appMap, app) => {
-      const appDefinitionAddress = contractAddresses[app.name];
-      this.log.info(
-        `Creating ${app.name} app on chain ${ethNetwork.chainId}: ${appDefinitionAddress}`,
-      );
-      // set both name and app definition as keys for better lookup
-      appMap.set(appDefinitionAddress, {
-        actionEncoding: app.actionEncoding,
-        appDefinitionAddress: appDefinitionAddress,
-        name: app.name,
-        chainId: ethNetwork.chainId,
-        outcomeType: app.outcomeType,
-        stateEncoding: app.stateEncoding,
-        allowNodeInstall: app.allowNodeInstall,
-      } as DefaultApp);
-      appMap.set(app.name, {
-        actionEncoding: app.actionEncoding,
-        appDefinitionAddress: appDefinitionAddress,
-        name: app.name,
-        chainId: ethNetwork.chainId,
-        outcomeType: app.outcomeType,
-        stateEncoding: app.stateEncoding,
-        allowNodeInstall: app.allowNodeInstall,
-      } as DefaultApp);
-      return appMap;
-    }, new Map<string, DefaultApp>());
+    this.appRegistryMap = new Map();
+    this.configService.getSupportedChains().forEach((chainId) => {
+      const contractAddresses = this.configService.getContractAddresses(chainId);
+      RegistryOfApps.forEach((app) => {
+        const appDefinitionAddress = contractAddresses[app.name];
+        this.log.info(`Creating ${app.name} app on chain ${chainId}: ${appDefinitionAddress}`);
+        // set both name and app definition as keys for better lookup
+        this.appRegistryMap.set(appDefinitionAddress, {
+          actionEncoding: app.actionEncoding,
+          appDefinitionAddress: appDefinitionAddress,
+          name: app.name,
+          chainId: chainId,
+          outcomeType: app.outcomeType,
+          stateEncoding: app.stateEncoding,
+          allowNodeInstall: app.allowNodeInstall,
+        } as DefaultApp);
+        this.appRegistryMap.set(`${app.name}:${chainId}`, {
+          actionEncoding: app.actionEncoding,
+          appDefinitionAddress: appDefinitionAddress,
+          name: app.name,
+          chainId: chainId,
+          outcomeType: app.outcomeType,
+          stateEncoding: app.stateEncoding,
+          allowNodeInstall: app.allowNodeInstall,
+        } as DefaultApp);
+      });
+    });
   }
 }

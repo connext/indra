@@ -10,7 +10,6 @@ export * from "./assertions";
 export * from "./channelProvider";
 export * from "./client";
 export * from "./constants";
-export * from "./db";
 export * from "./env";
 export * from "./ethprovider";
 export * from "./messaging";

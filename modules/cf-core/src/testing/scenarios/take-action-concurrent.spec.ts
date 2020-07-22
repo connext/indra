@@ -8,13 +8,13 @@ import { constants, utils } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
-import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import { validAction } from "../tic-tac-toe";
 import {
   collateralizeChannel,
   constructTakeActionRpc,
   createChannel,
+  getContractAddresses,
   makeInstallCall,
   makeProposeCall,
 } from "../utils";
@@ -38,7 +38,7 @@ describe("Node method follows spec - toke action", () => {
 
     it("can take actions on two different apps concurrently", async () => {
       return new Promise(async (done) => {
-        const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+        const { TicTacToeApp } = getContractAddresses();
         const appIdentityHashes: string[] = [];
 
         await collateralizeChannel(
@@ -76,15 +76,15 @@ describe("Node method follows spec - toke action", () => {
 
         let appsTakenActionOn = 0;
 
-        nodeB.on(EventNames.UPDATE_STATE_EVENT, () => {
+        nodeA.on(EventNames.UPDATE_STATE_EVENT, () => {
           appsTakenActionOn += 1;
           if (appsTakenActionOn === 2) done();
         });
 
-        nodeA.rpcRouter.dispatch(
+        nodeB.rpcRouter.dispatch(
           constructTakeActionRpc(appIdentityHashes[0], multisigAddress, validAction),
         );
-        nodeA.rpcRouter.dispatch(
+        nodeB.rpcRouter.dispatch(
           constructTakeActionRpc(appIdentityHashes[1], multisigAddress, validAction),
         );
       });

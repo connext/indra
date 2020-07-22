@@ -5,9 +5,9 @@ import {
   MethodName,
   MethodParam,
   MethodResult,
-  NetworkContext,
   Opcode,
-  ProtocolMessageData,
+  NetworkContexts,
+  ProtocolMessage,
 } from "@connext/types";
 import { StateChannel } from "./models";
 
@@ -52,8 +52,8 @@ export type Instruction = Function | Opcode;
 export interface Context {
   store: IStoreService;
   log: ILoggerService;
-  message: ProtocolMessageData;
-  network: NetworkContext;
+  message: ProtocolMessage;
+  networks: NetworkContexts;
   preProtocolStateChannel?: StateChannel;
 }
 

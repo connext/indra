@@ -29,6 +29,8 @@ const clearAndClose = async (store) => {
   await store.close();
 };
 
+const chainId = TEST_STORE_CHANNEL.chainId;
+
 describe("Methods", () => {
   describe("getSchemaVersion", () => {
     storeTypes.forEach((type) => {
@@ -78,21 +80,21 @@ describe("Methods", () => {
     });
   });
 
-  describe("getStateChannelByOwners", () => {
+  describe("getStateChannelByOwnersAndChainId", () => {
     storeTypes.forEach((type) => {
       it(`${type} - should work`, async () => {
         const store = await createStore(type as StoreTypes);
         await store.updateSchemaVersion();
         const channel = TEST_STORE_CHANNEL;
         const owners = channel.userIdentifiers;
-        const nullValue = await store.getStateChannelByOwners(owners);
+        const nullValue = await store.getStateChannelByOwnersAndChainId(owners, chainId);
         expect(nullValue).to.be.undefined;
         await store.createStateChannel(
           channel,
           TEST_STORE_MINIMAL_TX,
           TEST_STORE_SET_STATE_COMMITMENT,
         );
-        const retrieved = await store.getStateChannelByOwners(owners);
+        const retrieved = await store.getStateChannelByOwnersAndChainId(owners, chainId);
         expect(retrieved).to.deep.eq(channel);
         await clearAndClose(store);
       });
@@ -106,7 +108,7 @@ describe("Methods", () => {
         await store.updateSchemaVersion();
         const channel = TEST_STORE_CHANNEL;
         const owners = channel.userIdentifiers;
-        const nullValue = await store.getStateChannelByOwners(owners);
+        const nullValue = await store.getStateChannelByOwnersAndChainId(owners, chainId);
         expect(nullValue).to.be.undefined;
         await store.createStateChannel(
           channel,
@@ -121,7 +123,7 @@ describe("Methods", () => {
             monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
           },
         );
-        const retrieved = await store.getStateChannelByOwners(owners);
+        const retrieved = await store.getStateChannelByOwnersAndChainId(owners, chainId);
         expect(retrieved).to.deep.eq({
           ...channel,
           monotonicNumProposedApps: channel.monotonicNumProposedApps + 1,
@@ -241,6 +243,13 @@ describe("Methods", () => {
           TEST_STORE_MINIMAL_TX,
           freeBalanceSetState0,
         );
+        await store.createAppProposal(
+          multisigAddress,
+          app,
+          channel.monotonicNumProposedApps,
+          { ...TEST_STORE_SET_STATE_COMMITMENT, versionNumber: toBNJson(app.latestVersionNumber) },
+          TEST_STORE_CONDITIONAL_COMMITMENT,
+        );
         await store.createAppInstance(
           multisigAddress,
           app,
@@ -263,6 +272,10 @@ describe("Methods", () => {
             ...channel,
             proposedAppInstances: [],
           });
+          const conditional = await store.getConditionalTransactionCommitment(app.identityHash);
+          const setState = await store.getSetStateCommitments(app.identityHash);
+          expect(conditional).to.be.undefined;
+          expect(setState).to.be.deep.eq([]);
           const freeBalance = await store.getSetStateCommitments(
             channel.freeBalanceAppInstance!.identityHash,
           );

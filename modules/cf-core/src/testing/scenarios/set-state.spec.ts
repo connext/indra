@@ -3,10 +3,11 @@ import { ContractAddresses } from "@connext/types";
 import { getRandomAddress, toBN } from "@connext/utils";
 import { Contract, Wallet, constants, utils } from "ethers";
 
+import { expect } from "../assertions";
 import { SetStateCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
 import { getRandomChannelSigners } from "../random-signing-keys";
-import { expect } from "../assertions";
+import { getChainId, getContractAddresses } from "../utils";
 
 const { WeiPerEther, AddressZero } = constants;
 const { getAddress } = utils;
@@ -21,12 +22,7 @@ let appRegistry: Contract;
 
 before(async () => {
   wallet = global["wallet"];
-  contracts = global["contracts"];
-  if (!contracts) {
-    throw new Error(
-      `Contracts missing: ${JSON.stringify(global["contracts"])} | ${Object.keys(global)}`,
-    );
-  }
+  contracts = getContractAddresses();
   appRegistry = new Contract(contracts.ChallengeRegistry, ChallengeRegistry.abi, wallet);
 });
 
@@ -41,6 +37,7 @@ describe("set state on free balance", () => {
       contracts.IdentityApp,
       contracts,
       getAddress(getRandomAddress()),
+      getChainId(),
       initiatorNode.publicIdentifier,
       responderNode.publicIdentifier,
     );

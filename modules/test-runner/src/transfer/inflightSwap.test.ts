@@ -1,4 +1,4 @@
-import { ConditionalTransferTypes, IConnextClient, EventNames, PublicParams } from "@connext/types";
+import { IConnextClient, EventNames } from "@connext/types";
 import { constants } from "ethers";
 
 import { AssetOptions, createClient, ETH_AMOUNT_SM, fundChannel, requestCollateral } from "../util";
@@ -14,7 +14,7 @@ describe("Inflight swap", () => {
   beforeEach(async () => {
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
-    tokenAddress = clientA.config.contractAddresses.Token!;
+    tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
   });
 
   afterEach(async () => {

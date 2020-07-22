@@ -4,14 +4,17 @@ import { enumify, tidy } from "../utils";
 ////////////////////////////////////////
 // Generic contract ops & network config
 
+export type AddressBookEntry = {
+  address: Address;
+  constructorArgs?: Array<{ name: string; value: string }>;
+  txHash?: string;
+  creationCodeHash?: string;
+  runtimeCodeHash?: string;
+};
+
 export type AddressBook = {
   [chainId: string]: {
-    [contractName: string]: {
-      address: Address;
-      txHash?: string;
-      creationCodeHash?: string;
-      runtimeCodeHash?: string;
-    };
+    [contractName: string]: AddressBookEntry;
   };
 };
 
@@ -48,6 +51,10 @@ export type ContractAddresses = CriticalStateChannelAddresses & {
   TwoPartyFixedOutcomeInterpreter: Address;
   WithdrawInterpreter: Address;
 };
+
+export interface NetworkContexts {
+  [chainId: number]: NetworkContext;
+}
 
 export interface NetworkContext {
   contractAddresses: ContractAddresses;

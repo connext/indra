@@ -1,11 +1,11 @@
 import { CFCore } from "../../cfCore";
 
-import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   confirmAppInstanceInstallation,
   createChannel,
   getAppInstance,
+  getContractAddresses,
   installApp,
 } from "../utils";
 
@@ -20,7 +20,7 @@ describe("Node method follows spec - getAppInstance", () => {
   });
 
   it("can accept a valid call to get the desired AppInstance details", async () => {
-    const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+    const { TicTacToeApp } = getContractAddresses();
 
     const multisigAddress = await createChannel(nodeA, nodeB);
 

@@ -23,8 +23,8 @@ describe("Withdrawal", () => {
   let tokenAddress: string;
 
   beforeEach(async () => {
-    client = await createClient();
-    tokenAddress = client.config.contractAddresses.Token!;
+    client = await createClient({ id: "A" });
+    tokenAddress = client.config.contractAddresses[client.chainId].Token!;
   });
 
   it("happy case: client successfully withdraws eth and node submits the tx", async () => {

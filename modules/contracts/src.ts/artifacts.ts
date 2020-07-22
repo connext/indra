@@ -10,7 +10,7 @@ import * as ConnextToken from "../artifacts/ConnextToken.json";
 import * as CounterfactualApp from "../artifacts/CounterfactualApp.json";
 import * as DelegateProxy from "../artifacts/DelegateProxy.json";
 import * as DepositApp from "../artifacts/DepositApp.json";
-import * as Token from "../artifacts/DolphinCoin.json";
+import * as DolphinCoin from "../artifacts/DolphinCoin.json";
 import * as Echo from "../artifacts/Echo.json";
 import * as ERC20 from "../artifacts/ERC20.json";
 import * as GraphSignedTransferApp from "../artifacts/GraphSignedTransferApp.json";
@@ -44,7 +44,7 @@ type Artifact = {
 type Artifacts = { [contractName: string]: Artifact };
 
 // Alias for easy access
-const DolphinCoin = Token;
+const Token = ConnextToken;
 
 export const artifacts: Artifacts = {
   AppApplyActionFails,

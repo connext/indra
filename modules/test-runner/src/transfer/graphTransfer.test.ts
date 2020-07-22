@@ -25,11 +25,11 @@ import {
   AssetOptions,
   createClient,
   ETH_AMOUNT_SM,
+  ethProviderUrl,
   expect,
   fundChannel,
   TOKEN_AMOUNT,
   env,
-  requestCollateral,
 } from "../util";
 
 const { AddressZero } = constants;
@@ -46,10 +46,7 @@ describe("Graph Signed Transfers", () => {
   let verifyingContract: Address;
   let provider: providers.JsonRpcProvider;
   before(async () => {
-    provider = new providers.JsonRpcProvider(
-      env.ethProviderUrl,
-      await getChainId(env.ethProviderUrl),
-    );
+    provider = new providers.JsonRpcProvider(ethProviderUrl, await getChainId(ethProviderUrl));
     const currBlock = await provider.getBlockNumber();
     // the node uses a `TIMEOUT_BUFFER` on recipient of 100 blocks
     // so make sure the current block
@@ -68,7 +65,7 @@ describe("Graph Signed Transfers", () => {
     clientA = await createClient({ signer: privateKeyA, id: "A" });
     privateKeyB = getRandomPrivateKey();
     clientB = await createClient({ signer: privateKeyB, id: "B" });
-    tokenAddress = clientA.config.contractAddresses.Token!;
+    tokenAddress = clientA.config.contractAddresses[clientA.chainId].Token!;
     receipt = getTestGraphReceiptToSign();
     chainId = (await clientA.ethProvider.getNetwork()).chainId;
     verifyingContract = getTestVerifyingContract();
@@ -83,26 +80,21 @@ describe("Graph Signed Transfers", () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-
-    const [, installed] = await Promise.all([
-      clientA.conditionalTransfer({
-        amount: transfer.amount,
-        conditionType: ConditionalTransferTypes.GraphTransfer,
-        paymentId,
-        signerAddress: clientB.signerAddress,
-        chainId,
-        verifyingContract,
-        requestCID: receipt.requestCID,
-        subgraphDeploymentID: receipt.subgraphDeploymentID,
-        assetId: transfer.assetId,
-        recipient: clientB.publicIdentifier,
-        meta: { foo: "bar", sender: clientA.publicIdentifier },
-      } as PublicParams.GraphTransfer),
-      new Promise((res, rej) => {
-        clientB.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
-        clientA.once(EventNames.REJECT_INSTALL_EVENT, rej);
-      }),
-    ]);
+    const transferPromise = clientB.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
+    await clientA.conditionalTransfer({
+      amount: transfer.amount,
+      conditionType: ConditionalTransferTypes.GraphTransfer,
+      paymentId,
+      signerAddress: clientB.signerAddress,
+      chainId,
+      verifyingContract,
+      requestCID: receipt.requestCID,
+      subgraphDeploymentID: receipt.subgraphDeploymentID,
+      assetId: transfer.assetId,
+      recipient: clientB.publicIdentifier,
+      meta: { foo: "bar", sender: clientA.publicIdentifier },
+    } as PublicParams.GraphTransfer);
+    const installed = await transferPromise;
 
     expect(installed).deep.contain({
       amount: transfer.amount,
@@ -138,20 +130,18 @@ describe("Graph Signed Transfers", () => {
       privateKeyB,
     );
 
-    const [eventData] = await Promise.all([
-      new Promise(async (res) => {
-        clientA.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, res);
-      }),
-      new Promise((res) => {
-        clientA.once(EventNames.UNINSTALL_EVENT, res);
-      }),
-      clientB.resolveCondition({
-        conditionType: ConditionalTransferTypes.GraphTransfer,
-        paymentId,
-        responseCID: receipt.responseCID,
-        signature,
-      } as PublicParams.ResolveGraphTransfer),
-    ]);
+    const unlockedPromise = clientA.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 10_000);
+    const uninstalledPromise = clientA.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
+    await clientB.resolveCondition({
+      conditionType: ConditionalTransferTypes.GraphTransfer,
+      paymentId,
+      responseCID: receipt.responseCID,
+      signature,
+    } as PublicParams.ResolveGraphTransfer);
+
+    const eventData = await unlockedPromise;
+    await uninstalledPromise;
+
     expect(eventData).to.deep.contain({
       amount: transfer.amount,
       assetId: transfer.assetId,
@@ -299,6 +289,7 @@ describe("Graph Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
 
+    const receiverInstall = clientB.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
     await clientA.conditionalTransfer({
       amount: transfer.amount,
       conditionType: ConditionalTransferTypes.GraphTransfer,
@@ -312,6 +303,7 @@ describe("Graph Signed Transfers", () => {
       assetId: transfer.assetId,
       meta: { foo: "bar", sender: clientA.publicIdentifier },
     } as PublicParams.GraphTransfer);
+    await receiverInstall;
     // disconnect so that it cant be unlocked
     await clientA.messaging.disconnect();
 

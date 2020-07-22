@@ -3,10 +3,10 @@ import { deBigNumberifyJson } from "@connext/utils";
 
 import { CFCore } from "../../cfCore";
 
-import { TestContractAddresses } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   assertMessage,
+  getContractAddresses,
   createChannel,
   getAppInstanceJson,
   getProposedAppInstances,
@@ -48,7 +48,7 @@ describe("Node method follows spec - propose install", () => {
     });
 
     it("propose install an app with eth and a meta", async () => {
-      const { TicTacToeApp } = global["contracts"] as TestContractAddresses;
+      const { TicTacToeApp } = getContractAddresses();
 
       const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const params = {

@@ -16,16 +16,21 @@ export abstract class MethodController {
     );
     const start = Date.now();
     let substart = start;
-    let lockValue: string = "";
+    const lockValues: Map<string, string> = new Map();
 
     log.info(`Executing with params: ${stringify(params, true, 0)}`);
 
-    const lockName = await this.getRequiredLockName(requestHandler, params);
+    const lockNames = await this.getRequiredLockNames(requestHandler, params);
 
     // Dont lock for static functions
-    if (lockName !== "") {
-      lockValue = await requestHandler.lockService.acquireLock(lockName);
-      logTime(log, substart, `Acquired lock ${lockName}`);
+    if (lockNames.length > 0) {
+      await Promise.all(
+        lockNames.map(async (lockName) => {
+          const lockValue = await requestHandler.lockService.acquireLock(lockName);
+          lockValues.set(lockName, lockValue);
+        }),
+      );
+      logTime(log, substart, `Acquired locks ${lockNames}`);
       substart = Date.now();
     }
 
@@ -36,10 +41,10 @@ export abstract class MethodController {
         return json && StateChannel.fromJson(json);
       } else if ((params as any).responderIdentifier) {
         // TODO: should be able to to all of this with multisig address but its not showing up in some cases
-        const json = await requestHandler.store.getStateChannelByOwners([
-          (params as any).responderIdentifier,
-          requestHandler.publicIdentifier,
-        ]);
+        const json = await requestHandler.store.getStateChannelByOwnersAndChainId(
+          [(params as any).responderIdentifier, requestHandler.publicIdentifier],
+          (params as any).chainId,
+        );
         return json && StateChannel.fromJson(json);
       }
       return undefined;
@@ -72,7 +77,9 @@ export abstract class MethodController {
 
     // retry if error
     const syncable =
-      this.methodName !== MethodNames.chan_sync && this.methodName !== MethodNames.chan_create;
+      this.methodName !== MethodNames.chan_sync &&
+      this.methodName !== MethodNames.chan_create &&
+      this.methodName !== MethodNames.chan_deployStateDepositHolder;
     if (preProtocolStateChannel && !!error && syncable) {
       // dispatch sync rpc call
       log.warn(
@@ -97,6 +104,7 @@ export abstract class MethodController {
             multisigAddress: preProtocolStateChannel.multisigAddress,
             initiatorIdentifier: publicIdentifier,
             responderIdentifier,
+            chainId: preProtocolStateChannel.chainId,
           },
           preProtocolStateChannel,
         );
@@ -119,14 +127,19 @@ export abstract class MethodController {
 
     // don't do this in a finally to ensure any errors with releasing the
     // lock do not swallow any protocol or controller errors
-    if (lockName !== "") {
-      try {
-        await requestHandler.lockService.releaseLock(lockName, lockValue);
-      } catch (e) {
-        log.error(`Caught error trying to release lock: ${e.message}`);
-        error = error || e;
-      }
-      logTime(log, substart, `Released lock ${lockName}`);
+    if (lockNames.length > 0) {
+      await Promise.all(
+        lockNames.map(async (lockName) => {
+          try {
+            await requestHandler.lockService.releaseLock(lockName, lockValues.get(lockName)!);
+            lockValues.delete(lockName);
+          } catch (e) {
+            log.error(`Caught error trying to release lock ${lockName}: ${e.message}`);
+            error = error || e;
+          }
+        }),
+      );
+      logTime(log, substart, `Acquired locks ${lockNames}`);
       substart = Date.now();
     }
 
@@ -139,11 +152,11 @@ export abstract class MethodController {
     return result;
   }
 
-  protected async getRequiredLockName(
+  protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: MethodParam,
-  ): Promise<string> {
-    return "";
+  ): Promise<string[]> {
+    return [];
   }
 
   // should return true IFF the channel is in the correct state before

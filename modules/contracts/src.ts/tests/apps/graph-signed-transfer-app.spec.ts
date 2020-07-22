@@ -21,7 +21,7 @@ import { GraphSignedTransferApp } from "../../artifacts";
 
 import { expect, provider } from "../utils";
 
-const { Zero } = constants;
+const { HashZero, Zero } = constants;
 const { defaultAbiCoder } = utils;
 
 function mkAddress(prefix: string = "0xa"): string {
@@ -142,6 +142,48 @@ describe("GraphSignedTransferApp", () => {
           },
           {
             amount: transferAmount,
+            to: receiverAddr,
+          },
+        ],
+        paymentId,
+        signerAddress,
+        chainId,
+        verifyingContract,
+        requestCID: receipt.requestCID,
+        subgraphDeploymentID: receipt.subgraphDeploymentID,
+        finalized: true,
+      };
+
+      expect(afterActionState.finalized).to.eq(expectedPostState.finalized);
+      expect(afterActionState.coinTransfers[0].amount).to.eq(
+        expectedPostState.coinTransfers[0].amount,
+      );
+      expect(afterActionState.coinTransfers[1].amount).to.eq(
+        expectedPostState.coinTransfers[1].amount,
+      );
+
+      ret = await computeOutcome(afterActionState);
+      validateOutcome(ret, expectedPostState);
+    });
+
+    it("will cancel a payment if an empty action is given", async () => {
+      const action: GraphSignedTransferAppAction = {
+        ...receipt,
+        responseCID: HashZero,
+        signature: goodSig,
+      };
+
+      let ret = await applyAction(preState, action);
+      const afterActionState = decodeAppState(ret);
+
+      const expectedPostState: GraphSignedTransferAppState = {
+        coinTransfers: [
+          {
+            amount: transferAmount,
+            to: senderAddr,
+          },
+          {
+            amount: Zero,
             to: receiverAddr,
           },
         ],

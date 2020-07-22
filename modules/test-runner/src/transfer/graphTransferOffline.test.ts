@@ -1,4 +1,3 @@
-import { addressBook } from "@connext/contracts";
 import {
   IChannelSigner,
   IConnextClient,
@@ -31,6 +30,7 @@ import {
   createClient,
   createClientWithMessagingLimits,
   env,
+  ethProviderUrl,
   expect,
   fundChannel,
   RECEIVED,
@@ -41,17 +41,17 @@ import {
 const { Zero } = constants;
 
 describe("Graph Signed Transfer Offline", () => {
-  const tokenAddress = addressBook[1337].Token.address;
-  const addr = addressBook[1337].GraphSignedTransferApp.address;
+  const tokenAddress = env.contractAddresses[1337].Token.address;
+  const addr = env.contractAddresses[1337].GraphSignedTransferApp.address;
 
   let senderSigner: IChannelSigner;
   let receiverPrivateKey: PrivateKey;
   let receiverSigner: IChannelSigner;
 
   beforeEach(async () => {
-    senderSigner = getRandomChannelSigner(env.ethProviderUrl);
+    senderSigner = getRandomChannelSigner(ethProviderUrl);
     receiverPrivateKey = getRandomPrivateKey();
-    receiverSigner = new ChannelSigner(receiverPrivateKey, env.ethProviderUrl);
+    receiverSigner = new ChannelSigner(receiverPrivateKey, ethProviderUrl);
   });
 
   const createAndFundClients = async (
@@ -105,7 +105,6 @@ describe("Graph Signed Transfer Offline", () => {
       // register event listeners
       let unlockedCount = 0;
       receiver.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, (msg) => {
-        console.log(`receiver got conditional transfer, resolving`);
         if (!sender) {
           return resolve(msg.amount);
         }
@@ -141,7 +140,6 @@ describe("Graph Signed Transfer Offline", () => {
           return reject(new Error(msg.error));
         });
         sender.once(EventNames.UNINSTALL_FAILED_EVENT, (msg) => {
-          console.log(`sender got uninstall failed event, rejecting`);
           return reject(new Error(msg.error));
         });
       }
@@ -418,7 +416,6 @@ describe("Graph Signed Transfer Offline", () => {
         return resolve(msg);
       });
       await resolveSignedTransfer(receiver, paymentId);
-      console.log(`transfer resolved, waiting for sender failure event`);
     })) as any;
     expect(failureEvent.data.params).to.be.ok;
     expect(failureEvent.data.error).to.include(APP_PROTOCOL_TOO_LONG(ProtocolNames.uninstall));
