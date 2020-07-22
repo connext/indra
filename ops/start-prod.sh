@@ -206,7 +206,7 @@ then
 
 # If chain providers are provided, use those
 else
-  chain_providers="$INDRA_CHAIN_PROVIDERS"
+  eval chain_providers="$INDRA_CHAIN_PROVIDERS"
   chain_url_1="`echo $chain_providers | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"
   # Prefer top-level address-book override otherwise default to one in contracts
   if [[ -f address-book.json ]]
@@ -270,7 +270,7 @@ services:
     image: '$node_image'
     environment:
       INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
-      INDRA_CHAIN_PROVIDERS: $chain_providers
+      INDRA_CHAIN_PROVIDERS: '$chain_providers'
       INDRA_CONTRACT_ADDRESSES: '$contract_addresses'
       INDRA_MNEMONIC_FILE: '/run/secrets/$eth_mnemonic_name'
       INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
