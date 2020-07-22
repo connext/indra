@@ -1,5 +1,4 @@
-n
-      key:  ame: CD Staging
+name: CD Staging
 
 on:
   push:
