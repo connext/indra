@@ -16,44 +16,15 @@ docker network create --attachable --driver overlay $project 2> /dev/null || tru
 ####################
 # Load env vars
 
-function extractEnv {
-  grep "$1" "$2" | cut -d "=" -f 2- | tr -d '\n\r"' | sed 's/ *#.*//'
-}
-# extracts json string from .env file without stripping ""
-function extractJsonStringFromEnv {
-  grep "$1" "$2" | cut -d "=" -f 2- | tr -d '\n\r' | sed 's/ *#.*//'
-}
+mode_override="$INDRA_MODE"
 
-# First choice: use existing env vars (dotEnv not called)
-function dotEnv {
-  key="$1"
-  if [[ -f .env && -n "`extractEnv $key .env`" ]] # Second choice: load from custom secret env
-  then extractEnv $key .env
-  elif [[ -f prod.env && -n "`extractEnv $key prod.env`" ]] # Third choice: load from public defaults
-  then extractEnv $key prod.env
-  fi
-}
-# Uses `extractJsonStringFromEnv`
-function dotEnvJsonStr {
-  key="$1"
-  if [[ -f .env && -n "`extractJsonStringFromEnv $key .env`" ]] # Second choice: load from custom secret env
-  then extractJsonStringFromEnv $key .env
-  elif [[ -f dev.env && -n "`extractJsonStringFromEnv $key dev.env`" ]] # Third choice: load from public defaults
-  then extractJsonStringFromEnv $key dev.env
-  fi
-}
+if [[ -f ".env" ]]
+then source .env
+elif [[ -f "prod.env" ]]
+then source prod.env
+fi
 
-export INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-`dotEnv INDRA_ADMIN_TOKEN`}"
-export INDRA_AWS_ACCESS_KEY_ID="${INDRA_AWS_ACCESS_KEY_ID:-`dotEnv INDRA_AWS_ACCESS_KEY_ID`}"
-export INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-`dotEnv INDRA_AWS_SECRET_ACCESS_KEY`}"
-export INDRA_CHAIN_PROVIDERS="${INDRA_CHAIN_PROVIDERS:-`dotEnvJsonStr INDRA_CHAIN_PROVIDERS`}"
-export INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-`dotEnv INDRA_DOMAINNAME`}"
-export INDRA_EMAIL="${INDRA_EMAIL:-`dotEnv INDRA_EMAIL`}"
-export INDRA_LOG_LEVEL="${INDRA_LOG_LEVEL:-`dotEnv INDRA_LOG_LEVEL`}"
-export INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-`dotEnv INDRA_LOGDNA_KEY`}"
-export INDRA_MODE="${INDRA_MODE:-`dotEnv INDRA_MODE`}"
-INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PRIVATE_KEY`}"
-INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-`dotEnv INDRA_NATS_JWT_SIGNER_PUBLIC_KEY`}"
+INDRA_MODE=${mode_override}
 
 # Generate custom, secure JWT signing keys if we don't have any yet
 if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" ]]
@@ -66,8 +37,8 @@ then
   pubKey="`ssh-keygen -f $keyFile.pub -e -m PKCS8 | tr -d '\n\r'`"
   touch .env
   sed -i '/INDRA_NATS_JWT_SIGNER_/d' .env
-  echo "INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=$pubKey" >> .env
-  echo "INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=$prvKey" >> .env
+  echo "export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=\"$pubKey\"" >> .env
+  echo "export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=\"$prvKey\"" >> .env
   export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="$pubKey"
   export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="$prvKey"
   rm $keyFile $keyFile.pub
