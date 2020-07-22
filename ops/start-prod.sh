@@ -206,6 +206,7 @@ then
 
 # If chain providers are provided, use those
 else
+  echo "Using chain providers:" $INDRA_CHAIN_PROVIDERS
   eval chain_providers="$INDRA_CHAIN_PROVIDERS"
   chain_url_1="`echo $chain_providers | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"
   # Prefer top-level address-book override otherwise default to one in contracts
