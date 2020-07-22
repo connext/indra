@@ -45,12 +45,11 @@ Host new-indra
   ServerAliveInterval 120
 ```
 
-Now you can login to this server with just `ssh new-indra`. Once the server wakes up again after rebooting at the end of `ops/setup-ubuntu`, login to finish setup.
+Now you can login to this server with just `ssh new-indra`.
 
-We need to add a couple env vars before launching our indra node. We'll be pulling from the public default prod-mode env vars & updating a couple as needed.
+We need to add a couple env vars before logging in and launching our indra node. We'll be pulling from the public default prod-mode env vars in your local cloned repo & updating a couple as needed.
 
 ```bash
-cd indra
 cp prod.env .env
 ```
 
