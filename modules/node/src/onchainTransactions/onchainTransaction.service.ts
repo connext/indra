@@ -1,4 +1,4 @@
-import { MinimalTransaction } from "@connext/types";
+import { MinimalTransaction, TransactionReceipt, StateChannelJSON } from "@connext/types";
 import { stringify } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { providers } from "ethers";
@@ -10,6 +10,7 @@ import { ConfigService } from "../config/config.service";
 import { OnchainTransactionRepository } from "./onchainTransaction.repository";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction, TransactionReason } from "./onchainTransaction.entity";
+import { ChannelRepository } from "../channel/channel.repository";
 
 const BAD_NONCE = "the tx doesn't have the correct nonce";
 const NO_TX_HASH = "no transaction hash found in tx response";
@@ -25,6 +26,7 @@ export class OnchainTransactionService implements OnModuleInit {
   constructor(
     private readonly configService: ConfigService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
+    private readonly channelRepository: ChannelRepository,
     private readonly log: LoggerService,
   ) {
     this.log.setContext("OnchainTransactionService");
@@ -75,6 +77,29 @@ export class OnchainTransactionService implements OnModuleInit {
 
   findByHash(hash: string): Promise<OnchainTransaction | undefined> {
     return this.onchainTransactionRepository.findByHash(hash);
+  }
+
+  async sendMultisigDeployment(
+    transaction: MinimalTransaction,
+    json: StateChannelJSON,
+  ): Promise<TransactionReceipt> {
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(json.multisigAddress);
+    await this.queues
+      .get(channel.chainId)
+      .add(() => this.sendTransaction(transaction, TransactionReason.COLLATERALIZATION, channel));
+    const tx = await this.onchainTransactionRepository.findLatestTransactionToChannel(
+      channel.multisigAddress,
+      TransactionReason.MULTISIG_DEPLOY,
+    );
+    return {
+      to: tx.to,
+      from: tx.from,
+      gasUsed: tx.gasUsed,
+      logsBloom: tx.logsBloom,
+      blockHash: tx.blockHash,
+      transactionHash: tx.hash,
+      blockNumber: tx.blockNumber,
+    } as TransactionReceipt;
   }
 
   private async sendTransaction(

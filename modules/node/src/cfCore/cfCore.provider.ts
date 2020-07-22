@@ -11,18 +11,27 @@ import { LoggerService } from "../logger/logger.service";
 
 import { CFCoreStore } from "./cfCore.store";
 import { formatUnits } from "ethers/lib/utils";
-import { NetworkContexts } from "@connext/types";
+import { NetworkContexts, MinimalTransaction, StateChannelJSON } from "@connext/types";
+import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 
 const { EtherSymbol } = constants;
 const { formatEther } = utils;
 
 export const cfCoreProviderFactory: Provider = {
-  inject: [ConfigService, LockService, LoggerService, MessagingProviderId, CFCoreStore],
+  inject: [
+    ConfigService,
+    LockService,
+    LoggerService,
+    OnchainTransactionService,
+    MessagingProviderId,
+    CFCoreStore,
+  ],
   provide: CFCoreProviderId,
   useFactory: async (
     config: ConfigService,
     lockService: LockService,
     log: LoggerService,
+    onchainTransactionService: OnchainTransactionService,
     messaging: MessagingService,
     store: CFCoreStore,
   ): Promise<CFCore> => {
@@ -51,6 +60,11 @@ export const cfCoreProviderFactory: Provider = {
       undefined,
       log.newContext("CFCore"),
       false, // only clients sync on cf core start
+      {
+        sendTransaction: (tx: MinimalTransaction, json: StateChannelJSON) => {
+          return onchainTransactionService.sendMultisigDeployment(tx, json);
+        },
+      },
     );
     log.info(`Created CF Core!`);
 
