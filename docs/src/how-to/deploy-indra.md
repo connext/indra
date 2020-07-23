@@ -6,7 +6,13 @@ First step: get a server via AWS or DigitalOcean or hardware at home. For best r
 
 Set up DNS so that `$DOMAINNAME` points to this server's IP address. If you're using CloudFlare name servers, turn on CloudFlare's built-in SSL support & make sure it's set to "Full (strict)".
 
-Every Indra node needs access to a hot wallet, you should generate a fresh mnemonic for your node's wallet that isn't used anywhere else. You can generate a new mnemonic from a node console with ethers by doing something like this: `require('ethers').Wallet.createRandom()`.
+Next: Clone the repo and cd into it.
+```
+git clone git@github.com:connext/indra.git
+cd indra
+```
+
+Every Indra node needs access to a hot wallet, you should generate a fresh mnemonic for your node's wallet that isn't used anywhere else. You can generate a new mnemonic from a node console with ethers by doing something like this: `require('ethers').Wallet.createRandom()`. Alternatively, you can generate one [here](https://iancoleman.io/bip39/).
 
 Save this mnemonic somewhere safe, copy it to your clipboard, and then run:
 
@@ -39,9 +45,9 @@ Host new-indra
   ServerAliveInterval 120
 ```
 
-Now you can login to this server with just `ssh new-indra`. Once the server wakes up again after rebooting at the end of `ops/setup-ubuntu`, login to finish setup.
+Now you can login to this server with just `ssh new-indra`.
 
-We need to add a couple env vars before launching our indra node. We'll be pulling from the public default prod-mode env vars & updating a couple as needed.
+We need to add a couple env vars before logging in and launching our indra node. We'll be pulling from the public default prod-mode env vars in your local cloned repo & updating a couple as needed.
 
 ```bash
 cp prod.env .env
