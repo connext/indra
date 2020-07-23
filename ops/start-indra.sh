@@ -70,7 +70,7 @@ function new_secret {
   fi
 }
 
-echo "Using docker images indra_name:${version} "
+echo "Using docker images ${project}_name:${version} "
 
 ####################
 # Misc Config
@@ -241,9 +241,16 @@ echo "Chain providers configured"
 ####################
 # Launch Indra stack
 
-echo "Launching indra"
+echo "Launching ${project}"
 
-cat - > $root/docker-compose.yml <<EOF
+common="networks:
+      - '$project'
+    logging:
+      driver: 'json-file'
+      options:
+          max-size: '100m'"
+
+cat - > $root/${project}.docker-compose.yml <<EOF
 version: '3.4'
 
 networks:
@@ -261,7 +268,10 @@ volumes:
   $db_volume:
 
 services:
-  proxy:
+
+  ${project}:
+    $common
+    $proxy_ports
     image: '$proxy_image'
     environment:
       DOMAINNAME: '$INDRA_DOMAINNAME'
@@ -271,17 +281,11 @@ services:
       MESSAGING_WS_URL: 'nats:4221'
       NODE_URL: 'node:$node_port'
       WEBSERVER_URL: 'webserver:80'
-    logging:
-      driver: 'json-file'
-      options:
-          max-size: '100m'
     volumes:
       - 'certs:/etc/letsencrypt'
-    networks:
-      - '$project'
-    $proxy_ports
 
   node:
+    $common
     $node_image
     environment:
       INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
@@ -303,17 +307,12 @@ services:
       NODE_ENV: '`
         if [[ "$INDRA_ENV" == "prod" ]]; then echo "production"; else echo "development"; fi
       `'
-    logging:
-      driver: 'json-file'
-      options:
-          max-size: '100m'
-    networks:
-      - '$project'
     secrets:
       - '$db_secret'
       - '$mnemonic_secret_name'
 
   database:
+    $common
     image: '$database_image'
     deploy:
       mode: 'global'
@@ -323,47 +322,34 @@ services:
       POSTGRES_DB: '$project'
       POSTGRES_PASSWORD_FILE: '$pg_password_file'
       POSTGRES_USER: '$project'
-    logging:
-      driver: 'json-file'
-      options:
-          max-size: '100m'
     secrets:
       - '$db_secret'
     volumes:
       - '$db_volume:/var/lib/postgresql/data'
       - '$snapshots_dir:/root/snapshots'
-    networks:
-      - '$project'
 
   nats:
+    $common
     image: '$nats_image'
     command: '-D -V'
     environment:
       JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
-    logging:
-      driver: 'json-file'
-      options:
-          max-size: '100m'
-    networks:
-      - '$project'
 
   redis:
+    $common
     image: '$redis_image'
-    networks:
-      - '$project'
 
   logdna:
+    $common
     image: '$logdna_image'
     environment:
       LOGDNA_KEY: '$INDRA_LOGDNA_KEY'
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'
-    networks:
-      - '$project'
 
 EOF
 
-docker stack deploy -c $root/docker-compose.yml $project
+docker stack deploy -c $root/${project}.docker-compose.yml $project
 
 echo "The $project stack has been deployed, waiting for the proxy to start responding.."
 timeout=$(expr `date +%s` + 30)

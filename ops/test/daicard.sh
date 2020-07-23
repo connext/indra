@@ -3,8 +3,7 @@ set -e
 
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." >/dev/null 2>&1 && pwd )"
 project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
-cypress="node_modules/.bin/cypress"
-ui="${1:-daicard}"
+cypress="$root/node_modules/.bin/cypress"
 
 # Make sure bare minimum dependencies are installed
 if [[ ! -f "$cypress" || ! -d "./node_modules/ethers" ]]
@@ -30,4 +29,4 @@ fi
 ## Start the UI e2e tests if in standalone test mode
 
 export ELECTRON_ENABLE_LOGGING=true
-$cypress run $env --spec cypress/tests/$ui.js
+$cypress run $env --spec cypress/tests/daicard.js

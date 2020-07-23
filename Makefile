@@ -37,35 +37,46 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 ########################################
 # Build Shortcuts
 
-default: dev
-all: dev staging release
-dev: bot database proxy node test-runner
-staging: database ethprovider proxy node-staging test-runner-staging bot-staging
-release: database ethprovider proxy node-release test-runner-release bot-staging
+default: indra
+all: indra staging release daicard
+
+indra: database indra-proxy node
+indra-prod: staging release
+daicard: daicard-webserver daicard-proxy
+daicard-prod: daicard-webserver daicard-proxy
+staging: indra ethprovider node-staging test-runner-staging bot-staging
+release: indra ethprovider node-release test-runner-release bot-staging
 
 ########################################
 # Command & Control Shortcuts
 
-start: dev
+start: start-indra
+stop: stop-daicard stop-indra
+start-prod: start-indra-prod
+
+start-indra: indra
 	bash ops/start-indra.sh
 
-start-prod:
+start-indra-prod:
 	INDRA_ENV=prod bash ops/start-indra.sh
-
-start-testnet: contracts
-	INDRA_CHAIN_LOG_LEVEL=1 bash ops/start-testnet.sh
 
 start-daicard: daicard
 	bash ops/start-daicard.sh
 
+start-daicard-prod:
+	INDRA_ENV=prod bash ops/start-daicard.sh
+
+start-testnet: contracts
+	INDRA_CHAIN_LOG_LEVEL=1 bash ops/start-testnet.sh
+
 start-bot: bot
 	bash ops/test/tps.sh 2 1000
 
-start-bot-farm: bot
-	bash ops/test/tps.sh 10 1000
+stop-indra:
+	bash ops/stop.sh indra
 
-stop:
-	bash ops/stop.sh
+stop-daicard:
+	bash ops/stop.sh daicard
 
 stop-all:
 	bash ops/stop.sh all
@@ -125,9 +136,6 @@ pull-commit:
 pull-release:
 	bash ops/pull-images.sh $(release)
 
-pull-backwards-compatible:
-	bash ops/pull-images.sh $(backwards_compatible_version)
-
 build-report:
 	bash ops/build-report.sh
 
@@ -148,58 +156,39 @@ dls:
 ########################################
 # Test Runner Shortcuts
 
-test: test-integration
-watch: watch-integration
-
-test-backwards-compatibility: pull-backwards-compatible
-	bash ops/test/integration.sh $(backwards_compatible_version)
-
-test-tps: test-tps-md
-test-tps-sm: bot
-	bash ops/test/tps.sh 2 0 10
-test-tps-md: bot
-	bash ops/test/tps.sh 10 0 10
-test-tps-lg: bot
-	bash ops/test/tps.sh 40 0 10
-
-test-cf: cf-core
-	bash ops/test/cf.sh test
-
-test-contracts: contracts utils
-	bash ops/test/unit.sh contracts
-
-test-daicard:
-	bash ops/test/ui.sh daicard
-
-test-docs: docs
-	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b linkcheck -d build/linkcheck . build/html"
-
-test-integration:
-	bash ops/test/integration.sh
-
-test-node: node
-	bash ops/test/node.sh
+test-utils: utils
+	bash ops/test/unit.sh utils
 
 test-store: store
 	bash ops/test/store.sh
 
-test-utils: utils
-	bash ops/test/unit.sh utils
+test-contracts: contracts utils
+	bash ops/test/unit.sh contracts
+
+test-cf: cf-core
+	bash ops/test/cf.sh test
 
 test-watcher: watcher
 	bash ops/test/watcher.sh
 
-watch-cf: cf-core
-	bash ops/test/cf.sh watch
+test-node: node
+	bash ops/test/node.sh
 
-watch-integration:
-	bash ops/test/integration.sh watch
+test-tps: bot
+	bash ops/test/tps.sh 10 0 10
 
-watch-ui: node-modules
-	bash ops/test/ui.sh --watch
+test-integration:
+	bash ops/test/integration.sh
 
-watch-node: node
-	bash ops/test/node.sh watch
+test-backwards-compatibility: pull-backwards-compatible
+	bash ops/pull-images.sh $(backwards_compatible_version)
+	bash ops/test/integration.sh $(backwards_compatible_version)
+
+test-daicard:
+	bash ops/test/daicard.sh
+
+test-docs: docs
+	$(docker_run) "source .pyEnv/bin/activate && cd docs && sphinx-build -b linkcheck -d build/linkcheck . build/html"
 
 ########################################
 # Begin Real Build Rules
@@ -296,11 +285,6 @@ node: types utils messaging store contracts cf-core apps client $(shell find mod
 	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-daicard: types utils store client $(shell find modules/daicard $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/daicard && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
 test-runner: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/test-runner $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/test-runner && npm run build"
@@ -311,8 +295,25 @@ watcher: types utils contracts store $(shell find modules/watcher $(find_options
 	$(docker_run) "cd modules/watcher && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
+daicard-bundle: types utils store client $(shell find modules/daicard $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/daicard && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
 ########################################
 # Build Docker Images
+
+daicard-proxy: $(shell find ops/proxy/daicard $(find_options))
+	$(log_start)
+	docker build --file ops/proxy/daicard/Dockerfile $(image_cache) --tag daicard_proxy ops
+	docker tag daicard_proxy daicard_proxy:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+daicard-webserver: daicard-bundle $(shell find ops/webserver $(find_options))
+	$(log_start)
+	docker build --file ops/webserver/nginx.dockerfile $(image_cache) --tag $(project)_webserver .
+	docker tag $(project)_webserver $(project)_webserver:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 database: $(shell find ops/database $(find_options))
 	$(log_start)
@@ -347,16 +348,10 @@ bot-staging: bot $(shell find modules/bot/ops $(find_options))
 	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-proxy: $(shell find ops/proxy $(find_options))
+indra-proxy: $(shell find ops/proxy/indra $(find_options))
 	$(log_start)
 	docker build --file ops/proxy/indra/Dockerfile $(image_cache) --tag $(project)_proxy ops
 	docker tag $(project)_proxy $(project)_proxy:$(commit)
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-proxy-daicard: $(shell find ops/proxy $(find_options))
-	$(log_start)
-	docker build --file ops/proxy/daicard/Dockerfile $(image_cache) --tag daicard_proxy ops
-	docker tag daicard_proxy daicard_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ssh-action: $(shell find ops/ssh-action $(find_options))
@@ -375,10 +370,4 @@ test-runner-staging: test-runner $(shell find modules/test-runner/ops $(find_opt
 	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build"
 	docker build --file modules/test-runner/ops/Dockerfile $(image_cache) --tag $(project)_test_runner .
 	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-webserver: daicard $(shell find ops/webserver $(find_options))
-	$(log_start)
-	docker build --file ops/webserver/nginx.dockerfile $(image_cache) --tag $(project)_webserver .
-	docker tag $(project)_webserver $(project)_webserver:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
