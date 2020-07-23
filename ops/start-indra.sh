@@ -17,22 +17,17 @@ docker network create --attachable --driver overlay $project 2> /dev/null || tru
 ####################
 # Load env vars
 
-indra_env="${INDRA_ENV:-dev}"
-
-env_override="$indra_env"
+INDRA_ENV="${INDRA_ENV:-dev}"
 
 # Load the default env
-if [[ -f "${indra_env}.env" ]]
-then source "${indra_env}.env"
+if [[ -f "${INDRA_ENV}.env" ]]
+then source "${INDRA_ENV}.env"
 fi
 
 # Load instance-specific env vars & overrides
 if [[ -f ".env" ]]
 then source .env
 fi
-
-# Reset env in case we overrode this in .env
-indra_env="${INDRA_ENV:-dev}"
 
 # log level alias can override default for easy `LOG_LEVEL=5 make start`
 INDRA_LOG_LEVEL="${LOG_LEVEL:-INDRA_LOG_LEVEL}";
@@ -63,6 +58,39 @@ function pull_if_unavailable {
     fi
   fi
 }
+
+########################################
+## Docker Image Config
+
+if [[ "$INDRA_ENV" == "test"* ]]
+then registry=""
+else registry="${registry%/}/"
+fi
+
+# prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
+if [[ "$INDRA_ENV" == "prod" ]]
+then
+  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
+  if [[ -n "$git_tag" ]]
+  then version="`$git_tag | sed 's/indra-//'`"
+  else version="`cat $root/package.json | grep '"version":' | head -n 1 | cut -d '"' -f 4`"
+  fi
+else version="latest"
+fi
+
+builder_image="${project}_builder"
+logdna_image="logdna/logspout:v1.2.0";
+nats_image="provide/nats-server:indra";
+proxy_image="$registry${project}_proxy:$version";
+redis_image="redis:5-alpine";
+webserver_image="$registry${project}_webserver:$version";
+
+
+pull_if_unavailable "$logdna_image"
+pull_if_unavailable "$nats_image"
+pull_if_unavailable "$proxy_image"
+pull_if_unavailable "$redis_image"
+pull_if_unavailable "$webserver_image"
 
 ####################
 # Misc Config
@@ -107,19 +135,27 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
   sed 's/-----END PUBLIC KEY-----/\\\n-----END PUBLIC KEY-----\\\n/'`
 
 ########################################
-## Node Conig
+## Node Config
 
-node_port="8080"
-
-if [[ "$indra_env" == "dev" ]]
-then node_ports=""
-else node_ports=""
+if [[ $INDRA_ENV == "prod" ]]
+then
+  node_image_name="$registry${project}_node:$version"
+  pull_if_unavailable "$node_image_name"
+  node_image="image: '$node_image_name'"
+else
+  node_image="image: '${project}_builder'
+    entrypoint: 'bash modules/node/ops/entry.sh'
+    volumes:
+      - '$root:/root'"
 fi
 
 ########################################
 ## Database Conig
 
-if [[ "$indra_env" == "test"* ]]
+database_image="$registry${project}_database:$version";
+pull_if_unavailable "$database_image"
+
+if [[ "$INDRA_ENV" == "test"* ]]
 then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
@@ -144,63 +180,33 @@ pg_port="5432"
 pg_user="$project"
 
 ########################################
-## Docker Image Config
+# Configure or launch chain providers
 
-if [[ "$indra_env" == "test"* ]]
-then registry=""
-else registry="${registry%/}/"
-fi
-
-# prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
-if [[ "$indra_env" == "prod" ]]
-then
-  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
-  if [[ -n "$git_tag" ]]
-  then version="`$git_tag | sed 's/indra-//'`"
-  else version="`cat $root/package.json | grep '"version":' | head -n 1 | cut -d '"' -f 4`"
-  fi
-else version="latest"
-fi
-
-builder_image="${project}_builder"
-database_image="$registry${project}_database:$version"; pull_if_unavailable "$database_image"
-logdna_image="logdna/logspout:v1.2.0"; pull_if_unavailable "$logdna_image"
-nats_image="provide/nats-server:indra"; pull_if_unavailable "$nats_image"
-node_image="$registry${project}_node:$version"; pull_if_unavailable "$node_image"
-proxy_image="$registry${project}_proxy:$version"; pull_if_unavailable "$proxy_image"
-redis_image="redis:5-alpine"; pull_if_unavailable "$redis_image"
-webserver_image="$registry${project}_webserver:$version"; pull_if_unavailable "$webserver_image"
-
-########################################
-# Configure or launch Ethereum testnets
-
-eth_mnemonic_name="${project}_mnemonic"
+mnemonic_secret_name="${project}_mnemonic"
+INDRA_MNEMONIC_FILE="/run/secrets/$mnemonic_secret_name"
 
 # If no chain providers provided, spin up local testnets & use those
 if [[ -z "$INDRA_CHAIN_PROVIDERS" ]]
 then
-
   echo 'No $INDRA_CHAIN_PROVIDERS provided, spinning up local testnets & using those.'
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-  bash ops/save-secret.sh "$eth_mnemonic_name" "$eth_mnemonic"
-
+  bash ops/save-secret.sh "$mnemonic_secret_name" "$eth_mnemonic"
   chain_id_1=1337; chain_id_2=1338;
-  INDRA_CHAIN_MODE="${indra_env#test-}" bash ops/start-testnet.sh $chain_id_1 $chain_id_2
-  chain_providers="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
-  contract_addresses="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json`"
-  chain_url_1="`echo $chain_providers | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"
+  INDRA_CHAIN_MODE="${INDRA_ENV#test-}" bash ops/start-testnet.sh $chain_id_1 $chain_id_2
+  INDRA_CHAIN_PROVIDERS="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
+  INDRA_CONTRACT_ADDRESSES="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json`"
 
 # If chain providers are provided, use those
 else
   echo "Using chain providers:" $INDRA_CHAIN_PROVIDERS
-  eval chain_providers="$INDRA_CHAIN_PROVIDERS"
-  chain_url_1="`echo $chain_providers | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"
   # Prefer top-level address-book override otherwise default to one in contracts
   if [[ -f address-book.json ]]
-  then contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
-  else contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
+  then INDRA_CONTRACT_ADDRESSES="`cat address-book.json | tr -d ' \n\r'`"
+  else INDRA_CONTRACT_ADDRESSES="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
   fi
 fi
+
+ETH_PROVIDER_URL="`echo $INDRA_CHAIN_PROVIDERS | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"
 
 ####################
 # Launch Indra stack
@@ -216,7 +222,7 @@ $stack_network
 secrets:
   $db_secret:
     external: true
-  $eth_mnemonic_name:
+  $mnemonic_secret_name:
     external: true
 
 volumes:
@@ -230,7 +236,7 @@ services:
     environment:
       DOMAINNAME: '$INDRA_DOMAINNAME'
       EMAIL: '$INDRA_EMAIL'
-      ETH_PROVIDER_URL: '$chain_url_1'
+      ETH_PROVIDER_URL: '$ETH_PROVIDER_URL'
       MESSAGING_TCP_URL: 'nats:4222'
       MESSAGING_WS_URL: 'nats:4221'
       NODE_URL: 'node:8080'
@@ -248,17 +254,13 @@ services:
       - 'certs:/etc/letsencrypt'
     $network
 
-  webserver:
-    image: '$webserver_image'
-    $network
-
   node:
-    image: '$node_image'
+    $node_image
     environment:
       INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
-      INDRA_CHAIN_PROVIDERS: '$chain_providers'
-      INDRA_CONTRACT_ADDRESSES: '$contract_addresses'
-      INDRA_MNEMONIC_FILE: '/run/secrets/$eth_mnemonic_name'
+      INDRA_CHAIN_PROVIDERS: '$INDRA_CHAIN_PROVIDERS'
+      INDRA_CONTRACT_ADDRESSES: '$INDRA_CONTRACT_ADDRESSES'
+      INDRA_MNEMONIC_FILE: '$INDRA_MNEMONIC_FILE'
       INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
@@ -269,10 +271,10 @@ services:
       INDRA_PG_PASSWORD_FILE: '$pg_password_file'
       INDRA_PG_PORT: '$pg_port'
       INDRA_PG_USERNAME: '$pg_user'
-      INDRA_PORT: '$node_port'
+      INDRA_PORT: '8080'
       INDRA_REDIS_URL: '$redis_url'
       NODE_ENV: '`
-        if [[ "$indra_env" == "prod" ]]; then echo "production"; else echo "development"; fi
+        if [[ "$INDRA_ENV" == "prod" ]]; then echo "production"; else echo "development"; fi
       `'
     logging:
       driver: 'json-file'
@@ -282,8 +284,8 @@ services:
       - '$project'
     secrets:
       - '$db_secret'
-      - '$eth_mnemonic_name'
-    $network $node_ports
+      - '$mnemonic_secret_name'
+    $network
 
   database:
     image: '$database_image'
