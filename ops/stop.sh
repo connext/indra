@@ -1,26 +1,33 @@
 #!/usr/bin/env bash
 set -e
 
-root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
-project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+stacks="indra daicard"
+target=$1 # one of: indra, daicard, all
+shift
 
-docker stack rm $project 2> /dev/null || true
+function stop_stack {
+  stack_name="`docker stack ls --format '{{.Name}}' | grep "$1" | head -n 1`"
+  if [[ -n "$stack_name" ]]
+  then
+    docker stack rm $stack_name
+    echo "Waiting for the $stack_name stack to shutdown.."
+    while [[ -n "`docker container ls -q --filter label=com.docker.stack.namespace=$stack_name`" ]]
+    do sleep 3 # wait until there are no more containers in this stack
+    done
+    while [[ -n "`docker network ls -q --filter label=com.docker.stack.namespace=$stack_name`" ]]
+    do sleep 3 # wait until the stack's network has been removed
+    done
+    echo "Waiting for the $stack_name stack's helper containers to shutdown.."
+    docker container ls -f name=${stack}_* -q | xargs docker container stop 2> /dev/null || true
+    echo "Goodnight $stack_name!"
+  else
+    echo "Stack $stack is not running"
+  fi
+}
 
-# Only stop the core indra stack unless an arg "all" is provided in which case stop everything
-if [[ "$1" == "all" ]]
-then docker container ls -f name=${project}_* -q | xargs docker container stop 2> /dev/null || true
-fi
-
-echo -n "Waiting for the $project stack to shutdown."
-
-# wait until there are no more containers in this stack
-while [[ -n "`docker container ls --quiet --filter label=com.docker.stack.namespace=$project`" ]]
-do echo -n '.' && sleep 3
+for stack in $stacks
+do
+  if [[ "$target" == "$stack" || "$target" == "all" ]]
+  then stop_stack $stack
+  fi
 done
-
-# wait until the stack's network has been removed
-while [[ -n "`docker network ls --quiet --filter label=com.docker.stack.namespace=$project`" ]]
-do echo -n '.' && sleep 3
-done
-
-echo ' Goodnight!'
