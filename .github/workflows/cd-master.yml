@@ -165,7 +165,7 @@ jobs:
         CMD: '
           git checkout --force master;
           git reset --hard $GITHUB_SHA;
-          export INDRA_MODE="release";
+          export INDRA_ENV="release";
           export INDRA_DOMAINNAME="$RINKEBY_DOMAINNAME";
           make restart-prod;
           docker container prune -f;
@@ -187,7 +187,7 @@ jobs:
         CMD: '
           git checkout --force master;
           git reset --hard $GITHUB_SHA;
-          export INDRA_MODE="release";
+          export INDRA_ENV="release";
           export INDRA_DOMAINNAME="$MAINNET_DOMAINNAME";
           make restart-prod;
           docker container prune -f;

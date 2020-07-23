@@ -4,12 +4,10 @@ set -e
 ########################################
 ## Setup Env
 
-export CHAIN_ID=$CHAIN_ID
-
 # 60 sec/min * 30 min = 1800
 backup_frequency="1800"
 mkdir -p snapshots
-backup_file="snapshots/`ls snapshots | grep "^$CHAIN_ID-" | sort -r | head -n 1`"
+backup_file="snapshots/`ls snapshots | sort -r | head -n 1`"
 
 ########################################
 ## Helper functions
@@ -37,7 +35,7 @@ function unlock {
 # Set an exit trap so that the database will do one final backup before shutting down
 function cleanup {
   log "Database exiting, creating final snapshot"
-  bash backup.sh $CHAIN_ID
+  bash backup.sh
   log "Shutting the database down"
   kill "$db_pid"
   unlock smart
@@ -91,7 +89,7 @@ cat /var/lib/postgresql/data/postgresql.conf
 # Start backing up the db periodically
 log "===> Starting backer upper"
 while true
-do sleep $backup_frequency && bash backup.sh $CHAIN_ID
+do sleep $backup_frequency && bash backup.sh
 done &
 
 # Start database to serve requests from clients

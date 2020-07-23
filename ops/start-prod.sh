@@ -16,7 +16,7 @@ docker network create --attachable --driver overlay $project 2> /dev/null || tru
 ####################
 # Load env vars
 
-mode_override="$INDRA_MODE"
+mode_override="$INDRA_ENV"
 
 if [[ -f ".env" ]]
 then source .env
@@ -24,7 +24,7 @@ elif [[ -f "prod.env" ]]
 then source prod.env
 fi
 
-INDRA_MODE=${mode_override}
+INDRA_ENV=${mode_override}
 
 # Generate custom, secure JWT signing keys if we don't have any yet
 if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" ]]
@@ -94,7 +94,7 @@ function pull_if_unavailable {
 ########################################
 ## Database Conig
 
-if [[ "$INDRA_MODE" == "test"* ]]
+if [[ "$INDRA_ENV" == "test"* ]]
 then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
@@ -128,16 +128,16 @@ redis_url="redis://redis:6379"
 ########################################
 ## Docker Image Config
 
-if [[ "$INDRA_MODE" == "test"* ]]
+if [[ "$INDRA_ENV" == "test"* ]]
 then registry=""
 else registry="${registry%/}/"
 fi
 
-if [[ "$INDRA_MODE" == *"staging" ]]
+if [[ "$INDRA_ENV" == *"staging" ]]
 then version="`git rev-parse HEAD | head -c 8`"
-elif [[ "$INDRA_MODE" == *"release" ]]
+elif [[ "$INDRA_ENV" == *"release" ]]
 then version="`cat $root/package.json | grep '"version":' | head -n 1 | cut -d '"' -f 4`"
-else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
+else echo "Unknown mode ($INDRA_ENV) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
 fi
 
 database_image="$registry${project}_database:$version"
@@ -170,7 +170,7 @@ then
   bash ops/save-secret.sh "$eth_mnemonic_name" "$eth_mnemonic"
 
   chain_id_1=1337; chain_id_2=1338;
-  INDRA_CHAIN_MODE="${INDRA_MODE#test-}" bash ops/start-testnet.sh $chain_id_1 $chain_id_2
+  INDRA_CHAIN_MODE="${INDRA_ENV#test-}" bash ops/start-testnet.sh $chain_id_1 $chain_id_2
   chain_providers="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
   contract_addresses="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json`"
   chain_url_1="`echo $chain_providers | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"

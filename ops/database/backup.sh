@@ -4,15 +4,10 @@ set -e
 project="indra"
 bucket_name=backups.indra.connext.network
 lifecycle=backup-lifecycle.json
-chainId="$1"
-
-if [[ -z "$chainId" ]]
-then echo "A chainId must be provided" && exit 1;
-fi
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 timestamp="`date +"%y%m%d-%H%M%S"`"
-backup_file=$chainId-$timestamp.sql
+backup_file=$timestamp.sql
 backup_dir=$dir/snapshots
 backup_path=$backup_dir/$backup_file
 mkdir -p "`dirname $backup_path`"

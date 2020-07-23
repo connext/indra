@@ -29,6 +29,8 @@ if [[ -f ".env" ]]
 then source .env
 fi
 
+echo "Launching indra in env `env | grep INDRA_`"
+
 # log level alias can override default for easy `LOG_LEVEL=5 make start`
 INDRA_LOG_LEVEL="${LOG_LEVEL:-INDRA_LOG_LEVEL}";
 
@@ -78,31 +80,52 @@ then
 else version="latest"
 fi
 
-builder_image="${project}_builder"
-logdna_image="logdna/logspout:v1.2.0";
-nats_image="provide/nats-server:indra";
-proxy_image="$registry${project}_proxy:$version";
-redis_image="redis:5-alpine";
-webserver_image="$registry${project}_webserver:$version";
-
-
-pull_if_unavailable "$logdna_image"
-pull_if_unavailable "$nats_image"
-pull_if_unavailable "$proxy_image"
-pull_if_unavailable "$redis_image"
-pull_if_unavailable "$webserver_image"
+echo "Using docker images ${registry}indra_name:${version} "
 
 ####################
 # Misc Config
 
-# accessible from host
-proxy_url="http://localhost:80"
+builder_image="${project}_builder"
 
-# accessible from other containers
+logdna_image="logdna/logspout:v1.2.0";
+pull_if_unavailable "$logdna_image"
+
+redis_image="redis:5-alpine";
+pull_if_unavailable "$redis_image"
+
+# to access from other containers
 redis_url="redis://redis:6379"
 
 ####################
-# Config nats
+# Proxy config
+
+# to access from host
+proxy_url="http://localhost:80"
+
+proxy_image="$registry${project}_proxy:$version";
+pull_if_unavailable "$proxy_image"
+
+if [[ "$INDRA_ENV" == "prod" ]]
+then
+  proxy_ports="ports:
+      - '80:80'
+      - '443:443'
+      - '4221:4221'
+      - '4222:4222'"
+else
+  proxy_ports="ports:
+      - '3000:80'
+      - '4221:4221'
+      - '4222:4222'"
+fi
+
+echo "Proxy configured"
+
+####################
+# Nats config
+
+nats_image="provide/nats-server:indra";
+pull_if_unavailable "$nats_image"
 
 nats_port="4222"
 nats_ws_port="4221"
@@ -134,8 +157,10 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
   sed 's/-----BEGIN PUBLIC KEY-----/\\\n-----BEGIN PUBLIC KEY-----\\\n/' | \
   sed 's/-----END PUBLIC KEY-----/\\\n-----END PUBLIC KEY-----\\\n/'`
 
+echo "Nats configured"
+
 ########################################
-## Node Config
+## Node config
 
 if [[ $INDRA_ENV == "prod" ]]
 then
@@ -146,23 +171,29 @@ else
   node_image="image: '${project}_builder'
     entrypoint: 'bash modules/node/ops/entry.sh'
     volumes:
-      - '$root:/root'"
+      - '$root:/root'
+    ports:
+      - '$node_port:$node_port'
+      - '9229:9229'"
 fi
 
+echo "Node configured"
+
 ########################################
-## Database Conig
+## Database config
 
 database_image="$registry${project}_database:$version";
 pull_if_unavailable "$database_image"
+
+snapshots_dir="$root/.db-snapshots"
+
+mkdir -p $snapshots_dir
 
 if [[ "$INDRA_ENV" == "test"* ]]
 then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
   new_secret "$db_secret" "$project"
-  network="networks:
-      - '$project'
-    "
   stack_network="networks:
   $project:
     external: true"
@@ -179,8 +210,10 @@ pg_password_file="/run/secrets/$db_secret"
 pg_port="5432"
 pg_user="$project"
 
+echo "Database configured"
+
 ########################################
-# Configure or launch chain providers
+# Chain provider config
 
 mnemonic_secret_name="${project}_mnemonic"
 INDRA_MNEMONIC_FILE="/run/secrets/$mnemonic_secret_name"
@@ -208,12 +241,15 @@ fi
 
 ETH_PROVIDER_URL="`echo $INDRA_CHAIN_PROVIDERS | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"
 
+# TODO: filter out contract addresses that are not for our chain providers
+
+echo "Chain providers configured"
+
 ####################
 # Launch Indra stack
 
-echo "Deploying $node_image to $INDRA_DOMAINNAME"
+echo "Launching indra"
 
-mkdir -p $root/ops/database/snapshots
 cat - > $root/docker-compose.yml <<EOF
 version: '3.4'
 
@@ -245,14 +281,11 @@ services:
       driver: 'json-file'
       options:
           max-size: '100m'
-    ports:
-      - '80:80'
-      - '443:443'
-      - '4221:4221'
-      - '4222:4222'
     volumes:
       - 'certs:/etc/letsencrypt'
-    $network
+    networks:
+      - '$project'
+    $proxy_ports
 
   node:
     $node_image
@@ -285,7 +318,6 @@ services:
     secrets:
       - '$db_secret'
       - '$mnemonic_secret_name'
-    $network
 
   database:
     image: '$database_image'
@@ -294,7 +326,6 @@ services:
     environment:
       AWS_ACCESS_KEY_ID: '$INDRA_AWS_ACCESS_KEY_ID'
       AWS_SECRET_ACCESS_KEY: '$INDRA_AWS_SECRET_ACCESS_KEY'
-      CHAIN_ID: '$chainId'
       POSTGRES_DB: '$project'
       POSTGRES_PASSWORD_FILE: '$pg_password_file'
       POSTGRES_USER: '$project'
@@ -306,8 +337,9 @@ services:
       - '$db_secret'
     volumes:
       - '$db_volume:/var/lib/postgresql/data'
-      - '$root/ops/database/snapshots:/root/snapshots'
-    $network
+      - '$snapshots_dir:/root/snapshots'
+    networks:
+      - '$project'
 
   nats:
     image: '$nats_image'
@@ -318,11 +350,13 @@ services:
       driver: 'json-file'
       options:
           max-size: '100m'
-    $network
+    networks:
+      - '$project'
 
   redis:
     image: '$redis_image'
-    $network
+    networks:
+      - '$project'
 
   logdna:
     image: '$logdna_image'
@@ -330,6 +364,9 @@ services:
       LOGDNA_KEY: '$INDRA_LOGDNA_KEY'
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'
+    networks:
+      - '$project'
+
 EOF
 
 docker stack deploy -c $root/docker-compose.yml $project

@@ -54,10 +54,10 @@ start-testnet: contracts
 
 start-test: start-test-staging
 start-test-staging:
-	INDRA_MODE=test-staging bash ops/start-prod.sh
+	INDRA_ENV=test-staging bash ops/start-prod.sh
 
 start-test-release:
-	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test-release bash ops/start-prod.sh
+	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_ENV=test-release bash ops/start-prod.sh
 
 start-daicard: dev
 	bash ops/start-indra.sh
