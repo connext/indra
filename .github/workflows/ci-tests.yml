@@ -24,6 +24,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - name: Cache node modules
+        uses: actions/cache@v1
+        with:
+          path: .npm
+          key: npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-
       - run: make store
       - run: make test-store
 
@@ -90,10 +96,8 @@ jobs:
           key: npm-${{ hashFiles('package-lock.json') }}
           restore-keys: npm-
       - run: make pull-latest
-      - run: make
-      - run: make start-headless
-      - run: make build-report
-      - run: sleep 15 && make dls
+      - run: make && make build-report
+      - run: make start && make dls
       - run: make test-integration
       - name: Print logs
         if: failure()

@@ -16,6 +16,14 @@ if [[ -z "$INDRA_MNEMONIC" && -n "$INDRA_MNEMONIC_FILE" ]]
 then export INDRA_MNEMONIC="`cat $INDRA_MNEMONIC_FILE`"
 fi
 
+if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" && -n "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY_FILE" ]]
+then export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="`cat $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY_FILE`"
+fi
+
+if [[ -z "$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY" && -n "$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY_FILE" ]]
+then export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="`cat $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY_FILE`"
+fi
+
 ########################################
 # Wait for indra stack dependencies
 

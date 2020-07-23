@@ -99,28 +99,15 @@ jobs:
         SSH_KEY: ${{ secrets.SSH_KEY }}
         CMD: 'echo "Successfully connected to $MAINNET_DOMAINNAME: `hostname`";'
 
-#  test-bot-farm:
-#    runs-on: ubuntu-latest
-#    needs: [build]
-#    steps:
-#    - uses: actions/checkout@v1
-#    - run: make pull-commit
-#    - run: make start-test-staging
-#    - run: sleep 15 && make dls
-#    - run: make test-bot-farm
-#    - name: Print logs
-#      if: failure()
-#      run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
-
   test-integration:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
     - uses: actions/checkout@v1
     - run: make pull-release
-    - run: make start-test-release
+    - run: make start-prod
     - run: sleep 15 && make dls
-    - run: TEST_MODE=release make test-integration
+    - run: INDRA_ENV=release make test-integration
     - name: Print logs
       if: failure()
       run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
@@ -131,7 +118,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-release
-    - run: make start-test-release
+    - run: make start-prod
     - run: sleep 15 && make dls
     - run: make test-backwards-compatibility
     - name: Print logs
@@ -144,7 +131,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-release
-    - run: make start-test-release
+    - run: make start-prod
     - run: make test-daicard
     - name: Print logs
       if: failure()

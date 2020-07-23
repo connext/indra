@@ -4,7 +4,7 @@ set -e
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." >/dev/null 2>&1 && pwd )"
 project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
-mode="${TEST_MODE:-local}"
+mode="${INDRA_ENV:-local}"
 name="${project}_test_runner"
 commit="`git rev-parse HEAD | head -c 8`"
 release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"

@@ -27,8 +27,9 @@ docker-compose.yml
 **/cache/**
 
 # Data Storage
-modules/bot/.connext-store/
-.chaindata
+**/.bot-store/
+**/.chaindata
+**/.db-snapshots
 
 # Docs
 modules/client/docs
@@ -58,7 +59,6 @@ cypress/videos
 # Sensitive Data
 **/.env
 **/react-app-env.d.ts
-ops/database/snapshots
 .secret
 
 # Local address book

@@ -40,8 +40,8 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 default: dev
 all: dev staging release
 dev: bot database proxy node test-runner
-staging: database ethprovider proxy node-staging test-runner-staging webserver bot-staging
-release: database ethprovider proxy node-release test-runner-release webserver bot-staging
+staging: database ethprovider proxy node-staging test-runner-staging bot-staging
+release: database ethprovider proxy node-release test-runner-release bot-staging
 
 ########################################
 # Command & Control Shortcuts
@@ -49,22 +49,14 @@ release: database ethprovider proxy node-release test-runner-release webserver b
 start: dev
 	bash ops/start-indra.sh
 
+start-prod:
+	INDRA_ENV=prod bash ops/start-indra.sh
+
 start-testnet: contracts
 	INDRA_CHAIN_LOG_LEVEL=1 bash ops/start-testnet.sh
 
-start-test: start-test-staging
-start-test-staging:
-	INDRA_ENV=test-staging bash ops/start-prod.sh
-
-start-test-release:
-	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_ENV=test-release bash ops/start-prod.sh
-
-start-daicard: dev
-	bash ops/start-indra.sh
+start-daicard: daicard
 	bash ops/start-daicard.sh
-
-start-prod:
-	bash ops/start-prod.sh
 
 start-bot: bot
 	bash ops/test/tps.sh 2 1000
@@ -79,11 +71,10 @@ stop-all:
 	bash ops/stop.sh all
 
 restart: stop
-	bash ops/start-dev.sh
-	bash ops/start-daicard.sh
+	bash ops/start-indra.sh
 
 restart-prod: stop
-	bash ops/start-prod.sh
+	INDRA_ENV=prod bash ops/start-indra.sh
 
 clean: stop-all
 	docker container prune -f
@@ -96,6 +87,15 @@ clean: stop-all
 	rm -rf modules/*/.*cache* modules/*/node_modules/.cache modules/contracts/cache/*.json
 	rm -rf modules/*/package-lock.json
 
+reset: stop-all
+	docker container prune -f
+	docker network rm $(project) $(project)_cf_tester $(project)_node_tester $(project)_test_store 2> /dev/null || true
+	docker secret rm $(project)_database_dev 2> /dev/null || true
+	docker volume rm $(project)_chain_1337 $(project)_chain_1338 $(project)_database_dev  2> /dev/null || true
+	docker volume rm `docker volume ls -q -f name=$(project)_database_test_*` 2> /dev/null || true
+	rm -rf .chaindata/*
+	rm -rf .flags/deployed-contracts
+
 quick-reset:
 	bash ops/db.sh 'truncate table app_registry cascade;'
 	bash ops/db.sh 'truncate table channel cascade;'
@@ -107,15 +107,6 @@ quick-reset:
 	bash ops/redis.sh 'flushall'
 	rm -rf modules/*/.connext-store
 	touch modules/node/src/main.ts
-
-reset: stop-all
-	docker container prune -f
-	docker network rm $(project) $(project)_cf_tester $(project)_node_tester $(project)_test_store 2> /dev/null || true
-	docker secret rm $(project)_database_dev 2> /dev/null || true
-	docker volume rm $(project)_chain_1337 $(project)_chain_1338 $(project)_database_dev  2> /dev/null || true
-	docker volume rm `docker volume ls -q -f name=$(project)_database_test_*` 2> /dev/null || true
-	rm -rf .chaindata/*
-	rm -rf .flags/deployed-contracts
 
 purge: clean reset
 

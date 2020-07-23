@@ -90,5 +90,5 @@ All auto-deployment config can be found in `.github/workflows/`. See [GitHub Act
 The auto-deployer needs an ssh key so it can login to the prod server, we should use a fresh one instead of re-using existing ssh keys. Run this command to generate a new ssh key pair: `ssh-keygen -t rsa -b 4096 -C "autodeployer" -m pem -f .ssh/autodeployer`. The `ops/setup-ubuntu.sh` script will look for a public key called `$HOME/.ssh/autodeployer.pub` and try to add it to the server's `~/.ssh/authorized_keys`. If we ever change the autodeployer's ssh key, we can add the new keys to our servers by re-running `bash ops/setup-ubuntu.sh $SERVER_IP`.
 
 Env vars controlling CD are store in: GitHub -> Indra Repo -> Settings -> Secrets. The following env vars are used:
-- `DOCKER_USER` & `DOCKER_PASSWORD`: Login credentials for someone with push access to the docker repository specified by the `registry` vars at the top of the Makefile & `ops/start-prod.sh`.
+- `DOCKER_USER` & `DOCKER_PASSWORD`: Login credentials for someone with push access to the docker repository specified by the `registry` key in package.json
 - `SSH_KEY`: The autodeployer private ssh key

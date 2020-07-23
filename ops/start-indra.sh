@@ -29,13 +29,33 @@ if [[ -f ".env" ]]
 then source .env
 fi
 
-echo "Launching indra in env `env | grep INDRA_`"
-
 # log level alias can override default for easy `LOG_LEVEL=5 make start`
 INDRA_LOG_LEVEL="${LOG_LEVEL:-INDRA_LOG_LEVEL}";
 
-####################
-# Helper Functions
+########################################
+## Docker registry & version config
+
+# prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
+if [[ "$INDRA_ENV" == "prod" ]]
+then
+  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
+  if [[ -n "$git_tag" ]]
+  then version="`echo $git_tag | sed 's/indra-//'`"
+  else version="`git rev-parse HEAD | head -c 8`"
+  fi
+else version="latest"
+fi
+
+# Get images that we aren't building locally
+function pull_if_unavailable {
+  if [[ -z "`docker image ls | grep ${1%:*} | grep ${1#*:}`" ]]
+  then
+    full_name="${registry%/}/$1"
+    echo "Can't find image $1 locally, attempting to pull $full_name"
+    docker pull ${registry%/}/$1
+    docker tag $full_name $1
+  fi
+}
 
 # Initialize new secrets (random if no value is given)
 function new_secret {
@@ -50,37 +70,7 @@ function new_secret {
   fi
 }
 
-# Get images that we aren't building locally
-function pull_if_unavailable {
-  if [[ -z "`docker image ls | grep ${1%:*} | grep ${1#*:}`" ]]
-  then
-    # But actually don't pull images if we're running locally
-    if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
-    then docker pull $1
-    fi
-  fi
-}
-
-########################################
-## Docker Image Config
-
-if [[ "$INDRA_ENV" == "test"* ]]
-then registry=""
-else registry="${registry%/}/"
-fi
-
-# prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
-if [[ "$INDRA_ENV" == "prod" ]]
-then
-  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
-  if [[ -n "$git_tag" ]]
-  then version="`$git_tag | sed 's/indra-//'`"
-  else version="`cat $root/package.json | grep '"version":' | head -n 1 | cut -d '"' -f 4`"
-  fi
-else version="latest"
-fi
-
-echo "Using docker images ${registry}indra_name:${version} "
+echo "Using docker images indra_name:${version} "
 
 ####################
 # Misc Config
@@ -99,20 +89,22 @@ redis_url="redis://redis:6379"
 ####################
 # Proxy config
 
-# to access from host
-proxy_url="http://localhost:80"
-
-proxy_image="$registry${project}_proxy:$version";
+proxy_image="${project}_proxy:$version";
 pull_if_unavailable "$proxy_image"
 
 if [[ "$INDRA_ENV" == "prod" ]]
 then
+  if [[ -z "$INDRA_DOMAINNAME" ]]
+  then public_url="https://localhost:80"
+  else public_url="https://localhost:443"
+  fi
   proxy_ports="ports:
       - '80:80'
       - '443:443'
       - '4221:4221'
       - '4222:4222'"
 else
+  public_url="http://localhost:3000"
   proxy_ports="ports:
       - '3000:80'
       - '4221:4221'
@@ -120,6 +112,60 @@ else
 fi
 
 echo "Proxy configured"
+
+########################################
+## Node config
+
+node_port="8080"
+
+if [[ $INDRA_ENV == "prod" ]]
+then
+  node_image_name="${project}_node:$version"
+  pull_if_unavailable "$node_image_name"
+  node_image="image: '$node_image_name'"
+else
+  node_image="image: '${project}_builder'
+    entrypoint: 'bash modules/node/ops/entry.sh'
+    volumes:
+      - '$root:/root'
+    ports:
+      - '$node_port:$node_port'
+      - '9229:9229'"
+fi
+
+echo "Node configured"
+
+########################################
+## Database config
+
+database_image="${project}_database:$version";
+pull_if_unavailable "$database_image"
+
+snapshots_dir="$root/.db-snapshots"
+
+mkdir -p $snapshots_dir
+
+db_volume="database_${INDRA_ENV}"
+
+if [[ "$INDRA_ENV" == "test"* ]]
+then
+  db_volume="database_test_`date +%y%m%d_%H%M%S`"
+  db_secret="${project}_database_test"
+  new_secret "$db_secret" "$project"
+  stack_network=""
+else
+  db_secret="${project}_database"
+  new_secret $db_secret
+fi
+
+# database connection settings
+pg_db="$project"
+pg_host="database"
+pg_password_file="/run/secrets/$db_secret"
+pg_port="5432"
+pg_user="$project"
+
+echo "Database configured"
 
 ####################
 # Nats config
@@ -158,59 +204,6 @@ export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
   sed 's/-----END PUBLIC KEY-----/\\\n-----END PUBLIC KEY-----\\\n/'`
 
 echo "Nats configured"
-
-########################################
-## Node config
-
-if [[ $INDRA_ENV == "prod" ]]
-then
-  node_image_name="$registry${project}_node:$version"
-  pull_if_unavailable "$node_image_name"
-  node_image="image: '$node_image_name'"
-else
-  node_image="image: '${project}_builder'
-    entrypoint: 'bash modules/node/ops/entry.sh'
-    volumes:
-      - '$root:/root'
-    ports:
-      - '$node_port:$node_port'
-      - '9229:9229'"
-fi
-
-echo "Node configured"
-
-########################################
-## Database config
-
-database_image="$registry${project}_database:$version";
-pull_if_unavailable "$database_image"
-
-snapshots_dir="$root/.db-snapshots"
-
-mkdir -p $snapshots_dir
-
-if [[ "$INDRA_ENV" == "test"* ]]
-then
-  db_volume="database_test_`date +%y%m%d_%H%M%S`"
-  db_secret="${project}_database_test"
-  new_secret "$db_secret" "$project"
-  stack_network="networks:
-  $project:
-    external: true"
-else
-  db_volume="database"
-  db_secret="${project}_database"
-  new_secret $db_secret
-fi
-
-# database connection settings
-pg_db="$project"
-pg_host="database"
-pg_password_file="/run/secrets/$db_secret"
-pg_port="5432"
-pg_user="$project"
-
-echo "Database configured"
 
 ########################################
 # Chain provider config
@@ -253,7 +246,9 @@ echo "Launching indra"
 cat - > $root/docker-compose.yml <<EOF
 version: '3.4'
 
-$stack_network
+networks:
+  $project:
+    external: true
 
 secrets:
   $db_secret:
@@ -264,7 +259,6 @@ secrets:
 volumes:
   certs:
   $db_volume:
-  $eth_volume
 
 services:
   proxy:
@@ -275,7 +269,7 @@ services:
       ETH_PROVIDER_URL: '$ETH_PROVIDER_URL'
       MESSAGING_TCP_URL: 'nats:4222'
       MESSAGING_WS_URL: 'nats:4221'
-      NODE_URL: 'node:8080'
+      NODE_URL: 'node:$node_port'
       WEBSERVER_URL: 'webserver:80'
     logging:
       driver: 'json-file'
@@ -304,7 +298,7 @@ services:
       INDRA_PG_PASSWORD_FILE: '$pg_password_file'
       INDRA_PG_PORT: '$pg_port'
       INDRA_PG_USERNAME: '$pg_user'
-      INDRA_PORT: '8080'
+      INDRA_PORT: '$node_port'
       INDRA_REDIS_URL: '$redis_url'
       NODE_ENV: '`
         if [[ "$INDRA_ENV" == "prod" ]]; then echo "production"; else echo "development"; fi
@@ -375,7 +369,7 @@ echo "The $project stack has been deployed, waiting for the proxy to start respo
 timeout=$(expr `date +%s` + 30)
 while true
 do
-  res="`curl -m 5 -s $proxy_url || true`"
+  res="`curl -m 5 -s $public_url || true`"
   if [[ -z "$res" || "$res" == "Waiting for Indra to wake up" ]]
   then
     if [[ "`date +%s`" -gt "$timeout" ]]

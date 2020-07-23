@@ -52,7 +52,7 @@ export const startBot = async (
     ...env,
     signer,
     loggerService: new ColorfulLogger(NAME, logLevel, true, concurrencyIndex),
-    store: getFileStore(`.connext-store/${signer.publicIdentifier}`),
+    store: getFileStore(`.bot-store/${signer.publicIdentifier}`),
   });
 
   log.info(`Client ${concurrencyIndex}:
