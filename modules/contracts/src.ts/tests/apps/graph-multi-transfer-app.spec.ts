@@ -1,231 +1,222 @@
 import {
-    CoinTransfer,
-    GraphMultiTransferAppAction,
-    GraphMultiTransferAppActionEncoding,
-    GraphMultiTransferAppState,
-    GraphMultiTransferAppStateEncoding,
-    singleAssetTwoPartyCoinTransferEncoding,
-    PrivateKey,
-    GraphReceipt,
-  } from "@connext/types";
-  import {
-    getTestVerifyingContract,
-    getRandomBytes32,
-    getAddressFromPrivateKey,
-    getTestGraphReceiptToSign,
-    signGraphReceiptMessage,
-  } from "@connext/utils";
-  import { BigNumber, Contract, ContractFactory, constants, utils } from "ethers";
-  
-  import { GraphMultiTransferApp } from "../../artifacts";
-  
-  import { expect, provider, mkAddress } from "../utils";
-  
-  const { HashZero, Zero } = constants;
-  const { defaultAbiCoder } = utils;
-  
-  const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
-    defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
-  
-  const decodeAppState = (encodedAppState: string): GraphMultiTransferAppState =>
-    defaultAbiCoder.decode([GraphMultiTransferAppStateEncoding], encodedAppState)[0];
-  
-  const encodeAppState = (
+  CoinTransfer,
+  GraphMultiTransferAppAction,
+  GraphMultiTransferAppActionEncoding,
+  GraphMultiTransferAppState,
+  GraphMultiTransferAppStateEncoding,
+  singleAssetTwoPartyCoinTransferEncoding,
+  GraphReceipt,
+  GraphActionType,
+} from "@connext/types";
+import {
+  getTestVerifyingContract,
+  getAddressFromPrivateKey,
+  getTestGraphReceiptToSign,
+  signGraphReceiptMessage,
+  keyify,
+} from "@connext/utils";
+import { BigNumber, Contract, ContractFactory, constants, utils, Wallet } from "ethers";
+
+import { GraphMultiTransferApp } from "../../artifacts";
+
+import { expect, provider, mkAddress } from "../utils";
+import { hexZeroPad, hexlify } from "ethers/lib/utils";
+
+const { HashZero, Zero, One } = constants;
+const { defaultAbiCoder } = utils;
+
+const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
+  defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
+
+const decodeAppState = (encodedAppState: string): GraphMultiTransferAppState =>
+  defaultAbiCoder.decode([GraphMultiTransferAppStateEncoding], encodedAppState)[0];
+
+const encodeAppState = (
+  state: GraphMultiTransferAppState,
+  onlyCoinTransfers: boolean = false,
+): string => {
+  if (!onlyCoinTransfers)
+    return defaultAbiCoder.encode([GraphMultiTransferAppStateEncoding], [state]);
+  return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
+};
+
+function encodeAppAction(state: GraphMultiTransferAppAction): string {
+  return defaultAbiCoder.encode([GraphMultiTransferAppActionEncoding], [state]);
+}
+
+describe("GraphMultiTransferApp", () => {
+  let wallet: Wallet;
+  let graphMultiTransferApp: Contract;
+
+  async function computeOutcome(
     state: GraphMultiTransferAppState,
-    onlyCoinTransfers: boolean = false,
-  ): string => {
-    if (!onlyCoinTransfers)
-      return defaultAbiCoder.encode([GraphMultiTransferAppStateEncoding], [state]);
-    return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
-  };
-  
-  function encodeAppAction(state: GraphMultiTransferAppAction): string {
-    return defaultAbiCoder.encode([GraphMultiTransferAppActionEncoding], [state]);
+  ): Promise<CoinTransfer[]> {
+    let ret = await graphMultiTransferApp.computeOutcome(encodeAppState(state));
+    return keyify(state.coinTransfers, decodeTransfers(ret));
   }
-  
-//   describe("GraphMultiTransferApp", () => {
-//     let privateKey: PrivateKey;
-//     let signerAddress: string;
-//     let chainId: number;
-//     let verifyingContract: string;
-//     let receipt: GraphReceipt;
-//     let goodSig: string;
-//     let badSig: string;
-//     let graphMultiTransferApp: Contract;
-//     let senderAddr: string;
-//     let receiverAddr: string;
-//     let transferAmount: BigNumber;
-//     let preState: GraphMultiTransferAppState;
-//     let paymentId: string;
-  
-//     async function computeOutcome(state: GraphMultiTransferAppState): Promise<string> {
-//       return graphMultiTransferApp.computeOutcome(encodeAppState(state));
-//     }
-  
-//     async function applyAction(
-//       state: GraphMultiTransferAppState,
-//       action: GraphMultiTransferAppAction,
-//     ): Promise<string> {
-//       return graphMultiTransferApp.applyAction(encodeAppState(state), encodeAppAction(action));
-//     }
-  
-//     async function validateOutcome(encodedTransfers: string, postState: GraphMultiTransferAppState) {
-//       const decoded = decodeTransfers(encodedTransfers);
-//       expect(encodedTransfers).to.eq(encodeAppState(postState, true));
-//       expect(decoded[0].to).eq(postState.coinTransfers[0].to);
-//       expect(decoded[0].amount.toString()).eq(postState.coinTransfers[0].amount.toString());
-//       expect(decoded[1].to).eq(postState.coinTransfers[1].to);
-//       expect(decoded[1].amount.toString()).eq(postState.coinTransfers[1].amount.toString());
-//     }
-  
-//     beforeEach(async () => {
-//       const wallet = provider.getWallets()[0];
-//       graphMultiTransferApp = await new ContractFactory(
-//         GraphMultiTransferApp.abi,
-//         GraphMultiTransferApp.bytecode,
-//         wallet,
-//       ).deploy();
-  
-//       privateKey = wallet.privateKey;
-//       signerAddress = getAddressFromPrivateKey(privateKey);
-  
-//       chainId = (await wallet.provider.getNetwork()).chainId;
-//       receipt = getTestGraphReceiptToSign();
-//       verifyingContract = getTestVerifyingContract();
-//       goodSig = await signGraphReceiptMessage(receipt, chainId, verifyingContract, privateKey);
-//       badSig = getRandomBytes32();
-//       paymentId = getRandomBytes32();
-  
-//       senderAddr = mkAddress("0xa");
-//       receiverAddr = mkAddress("0xB");
-//       transferAmount = BigNumber.from(10000);
-//       preState = {
-//         coinTransfers: [
-//           {
-//             amount: transferAmount,
-//             to: senderAddr,
-//           },
-//           {
-//             amount: Zero,
-//             to: receiverAddr,
-//           },
-//         ],
-//         finalized: false,
-//         paymentId,
-//         signerAddress,
-//         chainId,
-//         verifyingContract,
-//         requestCID: receipt.requestCID,
-//         subgraphDeploymentID: receipt.subgraphDeploymentID,
-//       };
-//     });
-  
-//     describe("update state", () => {
-//       it("will redeem a payment with correct signature", async () => {
-//         const action: GraphMultiTransferAppAction = {
-//           ...receipt,
-//           signature: goodSig,
-//         };
-  
-//         let ret = await applyAction(preState, action);
-//         const afterActionState = decodeAppState(ret);
-  
-//         const expectedPostState: GraphMultiTransferAppState = {
-//           coinTransfers: [
-//             {
-//               amount: Zero,
-//               to: senderAddr,
-//             },
-//             {
-//               amount: transferAmount,
-//               to: receiverAddr,
-//             },
-//           ],
-//           paymentId,
-//           signerAddress,
-//           chainId,
-//           verifyingContract,
-//           requestCID: receipt.requestCID,
-//           subgraphDeploymentID: receipt.subgraphDeploymentID,
-//           finalized: true,
-//         };
-  
-//         expect(afterActionState.finalized).to.eq(expectedPostState.finalized);
-//         expect(afterActionState.coinTransfers[0].amount).to.eq(
-//           expectedPostState.coinTransfers[0].amount,
-//         );
-//         expect(afterActionState.coinTransfers[1].amount).to.eq(
-//           expectedPostState.coinTransfers[1].amount,
-//         );
-  
-//         ret = await computeOutcome(afterActionState);
-//         validateOutcome(ret, expectedPostState);
-//       });
-  
-//       it("will cancel a payment if an empty action is given", async () => {
-//         const action: GraphMultiTransferAppAction = {
-//           ...receipt,
-//           responseCID: HashZero,
-//           signature: goodSig,
-//         };
-  
-//         let ret = await applyAction(preState, action);
-//         const afterActionState = decodeAppState(ret);
-  
-//         const expectedPostState: GraphMultiTransferAppState = {
-//           coinTransfers: [
-//             {
-//               amount: transferAmount,
-//               to: senderAddr,
-//             },
-//             {
-//               amount: Zero,
-//               to: receiverAddr,
-//             },
-//           ],
-//           paymentId,
-//           signerAddress,
-//           chainId,
-//           verifyingContract,
-//           requestCID: receipt.requestCID,
-//           subgraphDeploymentID: receipt.subgraphDeploymentID,
-//           finalized: true,
-//         };
-  
-//         expect(afterActionState.finalized).to.eq(expectedPostState.finalized);
-//         expect(afterActionState.coinTransfers[0].amount).to.eq(
-//           expectedPostState.coinTransfers[0].amount,
-//         );
-//         expect(afterActionState.coinTransfers[1].amount).to.eq(
-//           expectedPostState.coinTransfers[1].amount,
-//         );
-  
-//         ret = await computeOutcome(afterActionState);
-//         validateOutcome(ret, expectedPostState);
-//       });
-  
-//       it("will revert action with incorrect signature", async () => {
-//         const action: GraphMultiTransferAppAction = {
-//           ...receipt,
-//           signature: badSig,
-//         };
-  
-//         await expect(applyAction(preState, action)).revertedWith(
-//           "revert ECDSA: invalid signature length",
-//         );
-//       });
-  
-//       it("will revert action if already finalized", async () => {
-//         const action: GraphMultiTransferAppAction = {
-//           ...receipt,
-//           signature: goodSig,
-//         };
-//         preState.finalized = true;
-  
-//         await expect(applyAction(preState, action)).revertedWith(
-//           "Cannot take action on finalized state",
-//         );
-//       });
-//     });
-//   });
-  
+
+  async function applyAction(
+    state: GraphMultiTransferAppState,
+    action: GraphMultiTransferAppAction,
+  ): Promise<GraphMultiTransferAppState> {
+    let ret = await graphMultiTransferApp.applyAction(
+      encodeAppState(state),
+      encodeAppAction(action),
+    );
+    return keyify(state, decodeAppState(ret));
+  }
+
+  async function validateOutcome(outcome: CoinTransfer[], postState: GraphMultiTransferAppState) {
+    expect(outcome[0].to).eq(postState.coinTransfers[0].to);
+    expect(outcome[0].amount.toString()).eq(postState.coinTransfers[0].amount.toString());
+    expect(outcome[1].to).eq(postState.coinTransfers[1].to);
+    expect(outcome[1].amount.toString()).eq(postState.coinTransfers[1].amount.toString());
+  }
+
+  async function validateAction(
+    preState: GraphMultiTransferAppState,
+    postState: GraphMultiTransferAppState,
+    action: GraphMultiTransferAppAction,
+  ): Promise<void> {
+    switch (action.actionType) {
+      case GraphActionType.CREATE: {
+        expect(postState).to.deep.eq({
+          ...preState,
+          lockedPayment: {
+            requestCID: action.requestCID,
+            price: action.price,
+          },
+          chainId: BigNumber.from(preState.chainId),
+          turnNum: BigNumber.from(preState.turnNum).add(One),
+        });
+        break;
+      }
+      case GraphActionType.UNLOCK: {
+        expect(postState).to.deep.eq({
+          ...preState,
+          lockedPayment: {
+            requestCID: HashZero,
+            price: Zero,
+          },
+          coinTransfers: [
+            {
+              ...preState.coinTransfers[0],
+              amount: preState.coinTransfers[0].amount.sub(preState.lockedPayment.price),
+            },
+            {
+              ...preState.coinTransfers[1],
+              amount: preState.coinTransfers[1].amount.add(preState.lockedPayment.price),
+            },
+          ],
+          turnNum: BigNumber.from(preState.turnNum).add(One),
+        });
+        break;
+      }
+      case GraphActionType.FINALIZE: {
+        expect(postState).to.deep.eq({
+          ...preState,
+          finalized: true,
+          turnNum: BigNumber.from(preState.turnNum).add(One),
+        });
+        break;
+      }
+      default:
+        throw new Error(`Unrecognized action type: ${action.actionType}`);
+    }
+  }
+
+  async function getInitialState(receipt: GraphReceipt): Promise<GraphMultiTransferAppState> {
+    return {
+      coinTransfers: [
+        {
+          amount: BigNumber.from(10000),
+          to: mkAddress("0xa"),
+        },
+        {
+          amount: Zero,
+          to: mkAddress("0xB"),
+        },
+      ],
+      signerAddress: getAddressFromPrivateKey(wallet.privateKey),
+      chainId: (await wallet.provider.getNetwork()).chainId,
+      verifyingContract: getTestVerifyingContract(),
+      subgraphDeploymentID: receipt.subgraphDeploymentID,
+      lockedPayment: {
+        requestCID: HashZero,
+        price: Zero,
+      },
+      turnNum: 0,
+      finalized: false,
+    };
+  }
+
+  async function getCreateAction(receipt: GraphReceipt): Promise<GraphMultiTransferAppAction> {
+    return {
+      actionType: GraphActionType.CREATE,
+      requestCID: receipt.requestCID,
+      price: BigNumber.from(10),
+      responseCID: HashZero,
+      signature: hexZeroPad(hexlify(0), 65),
+    };
+  }
+
+  async function getUnlockAction(
+    receipt: GraphReceipt,
+    signature: string,
+  ): Promise<GraphMultiTransferAppAction> {
+    return {
+      actionType: GraphActionType.UNLOCK,
+      requestCID: HashZero,
+      price: Zero,
+      responseCID: receipt.responseCID,
+      signature,
+    };
+  }
+
+  async function getFinalizeAction(): Promise<GraphMultiTransferAppAction> {
+    return {
+      actionType: GraphActionType.FINALIZE,
+      requestCID: HashZero,
+      price: Zero,
+      responseCID: HashZero,
+      signature: hexZeroPad(hexlify(0), 65),
+    };
+  }
+
+  beforeEach(async () => {
+    wallet = provider.getWallets()[0];
+    graphMultiTransferApp = await new ContractFactory(
+      GraphMultiTransferApp.abi,
+      GraphMultiTransferApp.bytecode,
+      wallet,
+    ).deploy();
+  });
+
+  describe("update state", () => {
+    it.only("happy case: sender creates transfer, receiver unlocks, sender finalizes, computesOutcome", async () => {
+      const receipt = getTestGraphReceiptToSign();
+      const state0 = await getInitialState(receipt);
+
+      const action0 = await getCreateAction(receipt);
+      const state1 = await applyAction(state0, action0);
+      await validateAction(state0, state1, action0);
+
+      const signature = await signGraphReceiptMessage(
+        receipt,
+        state0.chainId,
+        state0.verifyingContract,
+        wallet.privateKey,
+      );
+      const action1 = await getUnlockAction(receipt, signature);
+      const state2 = await applyAction(state1, action1);
+      await validateAction(state1, state2, action1);
+
+      const action2 = await getFinalizeAction();
+      const state3 = await applyAction(state2, action2);
+      await validateAction(state2, state3, action2);
+
+      const outcome = await computeOutcome(state3);
+      await validateOutcome(outcome, state3);
+    });
+  });
+});
