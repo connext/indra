@@ -17,6 +17,8 @@ import {
   GraphSignedTransferAppAction,
   SimpleLinkedTransferAppAction,
   ConditionalTransferTypes,
+  GraphMultiTransferAppAction,
+  GraphActionType,
 } from "@connext/types";
 import {
   stringify,
@@ -24,11 +26,7 @@ import {
   calculateExchangeWad,
   toBN,
 } from "@connext/utils";
-import {
-  MINIMUM_APP_TIMEOUT,
-  DEFAULT_APP_TIMEOUT,
-  GRAPH_MULTI_TRANSFER_STATE_TIMEOUT,
-} from "@connext/apps";
+import { DEFAULT_APP_TIMEOUT, GRAPH_MULTI_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import { Interval } from "@nestjs/schedule";
 import { constants } from "ethers";
 import { isEqual } from "lodash";
@@ -54,11 +52,13 @@ export const getCancelAction = (
   | HashLockTransferAppAction
   | SimpleSignedTransferAppAction
   | GraphSignedTransferAppAction
+  | GraphMultiTransferAppAction
   | SimpleLinkedTransferAppAction => {
   let action:
     | HashLockTransferAppAction
     | SimpleSignedTransferAppAction
     | GraphSignedTransferAppAction
+    | GraphMultiTransferAppAction
     | SimpleLinkedTransferAppAction;
   switch (transferType) {
     case ConditionalTransferTypes.LinkedTransfer:
@@ -69,6 +69,15 @@ export const getCancelAction = (
     case ConditionalTransferTypes.GraphTransfer: {
       action = { responseCID: HashZero, signature: "0x" } as GraphSignedTransferAppAction;
       break;
+    }
+    case ConditionalTransferTypes.GraphMultiTransfer: {
+      action = {
+        actionType: GraphActionType.UNLOCK,
+        requestCID: HashZero,
+        price: Zero,
+        responseCID: HashZero,
+        signature: "0x",
+      } as GraphMultiTransferAppAction;
     }
     case ConditionalTransferTypes.SignedTransfer: {
       action = { data: HashZero, signature: "0x" } as SimpleSignedTransferAppAction;
