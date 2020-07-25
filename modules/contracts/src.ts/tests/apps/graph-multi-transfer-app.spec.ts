@@ -14,6 +14,7 @@ import {
   getTestGraphReceiptToSign,
   signGraphReceiptMessage,
   keyify,
+  getRandomBytes32,
 } from "@connext/utils";
 import { BigNumber, Contract, ContractFactory, constants, utils, Wallet } from "ethers";
 
@@ -21,6 +22,7 @@ import { GraphMultiTransferApp } from "../../artifacts";
 
 import { expect, provider, mkAddress } from "../utils";
 import { hexZeroPad, hexlify } from "ethers/lib/utils";
+import { randomBytes } from "crypto";
 
 const { HashZero, Zero, One } = constants;
 const { defaultAbiCoder } = utils;
@@ -44,7 +46,7 @@ function encodeAppAction(state: GraphMultiTransferAppAction): string {
   return defaultAbiCoder.encode([GraphMultiTransferAppActionEncoding], [state]);
 }
 
-describe("GraphMultiTransferApp", () => {
+describe.only("GraphMultiTransferApp", () => {
   let wallet: Wallet;
   let graphMultiTransferApp: Contract;
 
@@ -107,6 +109,7 @@ describe("GraphMultiTransferApp", () => {
             },
           ],
           turnNum: BigNumber.from(preState.turnNum).add(One),
+          chainId: BigNumber.from(preState.chainId),
         });
         break;
       }
@@ -115,6 +118,7 @@ describe("GraphMultiTransferApp", () => {
           ...preState,
           finalized: true,
           turnNum: BigNumber.from(preState.turnNum).add(One),
+          chainId: BigNumber.from(preState.chainId),
         });
         break;
       }
@@ -253,19 +257,142 @@ describe("GraphMultiTransferApp", () => {
     );
   });
 
-  /*
-        Test cases:
-        - Cannot take action when state is finalized
-        - Create:
-            - Cannot call with odd turnNum
-            - Cannot create for more value than you have
-        - Unlock:
-            - Cannot call with even turnNum
-            - Fails if incorrect signature
-            - Does not update balances if cancelled
-        - Finalize:
-            - Can finalize on evens
-            - Can finalize on odds
-        - Can get the correct turntaker
-    */
+  it("cannot take action when state is finalized", async () => {
+    const receipt = getTestGraphReceiptToSign();
+    const state0 = await getInitialState(receipt);
+    const finalizedState = {
+      ...state0,
+      finalized: true,
+    };
+
+    const action0 = await getCreateAction(receipt);
+    await expect(applyAction(finalizedState, action0)).revertedWith(
+      "Cannot take action on finalized state",
+    );
+  });
+
+  it("cannot call create with odd turnNum", async () => {
+    const receipt = getTestGraphReceiptToSign();
+    const state0 = await getInitialState(receipt);
+    const oddState = {
+      ...state0,
+      turnNum: state0.turnNum + 1,
+    };
+
+    const action0 = await getCreateAction(receipt);
+    await expect(applyAction(oddState, action0)).revertedWith(
+      "Transfers can only be created by the app initiator",
+    );
+  });
+
+  it("cannot create for more value than you have", async () => {
+    const receipt = getTestGraphReceiptToSign();
+    const state0 = await getInitialState(receipt);
+    const poorState = {
+      ...state0,
+      coinTransfers: [
+        {
+          ...state0.coinTransfers[0],
+          amount: BigNumber.from(5),
+        },
+        {
+          ...state0.coinTransfers[1],
+        },
+      ],
+    };
+
+    const action0 = await getCreateAction(receipt);
+    await expect(applyAction(poorState, action0)).revertedWith(
+      "Cannot create transfer for more value than in balance",
+    );
+  });
+
+  it("cannot call unlock with even turnNum", async () => {
+    const receipt = getTestGraphReceiptToSign();
+    const state0 = await getInitialState(receipt);
+
+    const signature = await signGraphReceiptMessage(
+        receipt,
+        state0.chainId,
+        state0.verifyingContract,
+        wallet.privateKey,
+      );
+    const action0 = await getUnlockAction(receipt, signature);
+    await expect(applyAction(state0, action0)).revertedWith(
+      "Transfers can only be unlocked by the app responder",
+    );
+  });
+
+  it("cannot call unlock with incorrect signature", async () => {
+    const receipt = getTestGraphReceiptToSign();
+    const state0 = await getInitialState(receipt);
+
+    const action0 = await getCreateAction(receipt);
+    const state1 = await applyAction(state0, action0);
+    await validateAction(state0, state1, action0);
+
+    const badSignature = hexZeroPad(hexlify(1), 65);
+    const action1 = await getUnlockAction(receipt, badSignature);
+    await expect(applyAction(state1, action1)).revertedWith(
+      "ECDSA: invalid signature 'v' value",
+    );
+  });
+
+  it("does not update balances if cancelled", async () => {
+    const receipt = getTestGraphReceiptToSign();
+    const state0 = await getInitialState(receipt);
+
+    const action0 = await getCreateAction(receipt);
+    const state1 = await applyAction(state0, action0);
+    await validateAction(state0, state1, action0);
+
+    const emptySignature = hexZeroPad(hexlify(0), 65);
+    let action1 = await getUnlockAction(receipt, emptySignature);
+    action1 = {
+        ...action1,
+        responseCID: HashZero,
+    }
+    const state2 = await applyAction(state1, action1);
+    expect(state2).to.deep.eq({
+        ...state0,
+        turnNum: BigNumber.from(state0.turnNum + 2),
+        chainId: BigNumber.from(state0.chainId)
+    })
+  });
+
+  it("can finalize on either turntaker", async () => {
+    const receipt = getTestGraphReceiptToSign();
+    const state0 = await getInitialState(receipt);
+    const finalizeAction = await getFinalizeAction()
+
+    const finalizeEvens = await applyAction(state0, finalizeAction)
+    await validateAction(state0, finalizeEvens, finalizeAction)
+
+    const action0 = await getCreateAction(receipt);
+    const state1 = await applyAction(state0, action0);
+    await validateAction(state0, state1, action0);
+
+    const finalizeOdds = await applyAction(state1, finalizeAction)
+    await validateAction(state1, finalizeOdds, finalizeAction)
+  })
+
+  it("can get the correct turntaker", async () => {
+    const receipt = getTestGraphReceiptToSign();
+    const evenState = await getInitialState(receipt);
+    const participants = [
+        mkAddress("0xa"),
+        mkAddress("0xB")
+    ]
+
+    const turnTakerEven = await graphMultiTransferApp.getTurnTaker(encodeAppState(evenState), participants);
+    expect(turnTakerEven).to.be.eq(participants[0])
+
+    const oddState = {
+        ...evenState,
+        turnNum: evenState.turnNum+1,
+    }
+    const turnTakerOdd = await graphMultiTransferApp.getTurnTaker(encodeAppState(oddState), participants);
+    expect(turnTakerOdd).to.be.eq(participants[1])
+
+  })
 });
