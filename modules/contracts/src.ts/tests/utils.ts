@@ -22,6 +22,10 @@ export const mineBlocks = async (n: number = 1) => {
   }
 };
 
+export const mkAddress = (prefix: string = "0xa") : string => {
+  return prefix.padEnd(42, "0");
+}
+
 export const snapshot = async () => await provider.send("evm_snapshot", []);
 
 export const restore = async (snapshotId: any) => await provider.send("evm_revert", [snapshotId]);
