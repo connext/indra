@@ -24,7 +24,11 @@ import {
   calculateExchangeWad,
   toBN,
 } from "@connext/utils";
-import { MINIMUM_APP_TIMEOUT } from "@connext/apps";
+import {
+  MINIMUM_APP_TIMEOUT,
+  DEFAULT_APP_TIMEOUT,
+  GRAPH_MULTI_TRANSFER_STATE_TIMEOUT,
+} from "@connext/apps";
 import { Interval } from "@nestjs/schedule";
 import { constants } from "ethers";
 import { isEqual } from "lodash";
@@ -385,6 +389,12 @@ export class TransferService {
       receiverChainId,
     );
 
+    const defaultTimeout = DEFAULT_APP_TIMEOUT.sub(TIMEOUT_BUFFER);
+    const stateTimeout =
+      transferType == ConditionalTransferTypes.GraphMultiTransfer
+        ? GRAPH_MULTI_TRANSFER_STATE_TIMEOUT.sub(TIMEOUT_BUFFER)
+        : Zero;
+
     const res = await this.cfCoreService.proposeInstallApp({
       abiEncodings: {
         actionEncoding,
@@ -400,8 +410,8 @@ export class TransferService {
       responderIdentifier: receiverIdentifier,
       responderDeposit: Zero,
       responderDepositAssetId: receiverAssetId, // receiverAssetId is same because swap happens between sender and receiver apps, not within the app
-      defaultTimeout: MINIMUM_APP_TIMEOUT,
-      stateTimeout: Zero,
+      defaultTimeout,
+      stateTimeout,
     });
     return { ...res, appType: AppType.PROPOSAL };
   }
