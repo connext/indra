@@ -7,6 +7,7 @@ import {
   SupportedApplicationNames,
   GenericConditionalTransferAppName,
   GraphSignedTransferAppName,
+  GraphMultiTransferAppName,
 } from "./contracts";
 
 ////////////////////////////////////////
@@ -14,10 +15,11 @@ import {
 
 const RequireOnlineAppNames: SupportedApplicationNames[] = [
   SupportedApplicationNames.GraphSignedTransferApp,
+  SupportedApplicationNames.GraphMultiTransferApp,
+  SupportedApplicationNames.SimpleSignedTransferApp,
   SupportedApplicationNames.HashLockTransferApp,
 ];
 const AllowOfflineAppNames: SupportedApplicationNames[] = [
-  SupportedApplicationNames.SimpleSignedTransferApp,
   SupportedApplicationNames.SimpleLinkedTransferApp,
 ];
 
@@ -40,6 +42,7 @@ export const ConditionalTransferTypes = enumify({
   LinkedTransfer: SimpleLinkedTransferAppName,
   SignedTransfer: SimpleSignedTransferAppName,
   GraphTransfer: GraphSignedTransferAppName,
+  GraphMultiTransfer: GraphMultiTransferAppName,
 });
 export type ConditionalTransferTypes = typeof ConditionalTransferTypes[keyof typeof ConditionalTransferTypes];
 
@@ -48,6 +51,7 @@ export const ConditionalTransferAppNames = enumify({
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [GraphSignedTransferAppName]: GraphSignedTransferAppName,
+  [GraphMultiTransferAppName]: GraphMultiTransferAppName,
   [GenericConditionalTransferAppName]: GenericConditionalTransferAppName,
 });
 export type ConditionalTransferAppNames = typeof ConditionalTransferAppNames[keyof typeof ConditionalTransferAppNames];
@@ -60,6 +64,7 @@ export interface CreatedConditionalTransferMetaMap {
   [ConditionalTransferTypes.SignedTransfer]: CreatedSignedTransferMeta;
   [ConditionalTransferTypes.LinkedTransfer]: CreatedLinkedTransferMeta;
   [ConditionalTransferTypes.GraphTransfer]: CreatedGraphSignedTransferMeta;
+  [ConditionalTransferTypes.GraphMultiTransfer]: CreatedGraphMultiTransferMeta
 }
 export type CreatedConditionalTransferMeta = {
   [P in keyof CreatedConditionalTransferMetaMap]: CreatedConditionalTransferMetaMap[P];
@@ -70,6 +75,7 @@ export interface UnlockedConditionalTransferMetaMap {
   [ConditionalTransferTypes.SignedTransfer]: UnlockedSignedTransferMeta;
   [ConditionalTransferTypes.LinkedTransfer]: UnlockedLinkedTransferMeta;
   [ConditionalTransferTypes.GraphTransfer]: UnlockedGraphSignedTransferMeta;
+  [ConditionalTransferTypes.GraphMultiTransfer]: UnlockedGraphMultiTransferMeta;
 }
 export type UnlockedConditionalTransferMeta = {
   [P in keyof UnlockedConditionalTransferMetaMap]: UnlockedConditionalTransferMetaMap[P];
@@ -99,6 +105,13 @@ export type CreatedGraphSignedTransferMeta = {
   subgraphDeploymentID: Bytes32;
 };
 
+export type CreatedGraphMultiTransferMeta = {
+  signerAddress: Address;
+  chainId: number;
+  verifyingContract: Address;
+  subgraphDeploymentID: Bytes32;
+};
+
 export type UnlockedLinkedTransferMeta = {
   preImage: string;
 };
@@ -111,6 +124,9 @@ export type UnlockedHashLockTransferMeta = {
 export type UnlockedGraphSignedTransferMeta = {
   responseCID: Bytes32;
   signature: SignatureString;
+};
+
+export type UnlockedGraphMultiTransferMeta = {
 };
 
 export type UnlockedSignedTransferMeta = {
