@@ -20,6 +20,7 @@ import { proposeSwapMiddleware } from "./SimpleTwoPartySwapApp";
 import { commonAppProposalValidation } from "./shared/validation";
 import { AppRegistry } from "./registry";
 import { proposeGraphSignedTransferMiddleware } from "./GraphSignedTransferApp";
+import { proposeGraphMultiTransferMiddleware } from "./GraphMultiTransferApp";
 
 const getNameFromAddress = (contractAddress: ContractAddresses, appDefinition: Address) => {
   const [name] =
@@ -117,6 +118,10 @@ const proposeMiddleware = async (
     }
     case contractAddresses.GraphSignedTransferApp: {
       proposeGraphSignedTransferMiddleware(middlewareContext);
+      break;
+    }
+    case contractAddresses.GraphMultiTransferApp: {
+      proposeGraphMultiTransferMiddleware(middlewareContext);
       break;
     }
     case contractAddresses.SimpleTwoPartySwapApp: {
