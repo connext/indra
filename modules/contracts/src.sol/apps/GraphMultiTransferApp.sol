@@ -110,14 +110,14 @@ contract GraphMultiTransferApp is CounterfactualApp {
 
     require(!state.finalized, "Cannot take action on finalized state");
 
-    if (action.actionType == CREATE) {
+    if (action.actionType == ActionType.CREATE) {
         // can only be called by sender
         require(state.turnNum % 2 == 0, "Transfers can only be created by the app initiator");
-        require(state.coinTransfers[0] >= action.price, "Cannot create transfer for more value than in balance");
+        require(state.coinTransfers[0].amount >= action.price, "Cannot create transfer for more value than in balance");
 
         state.lockedPayment.requestCID = action.requestCID;
         state.lockedPayment.price = action.price;
-    } else if (action.actionType == UNLOCK) {
+    } else if (action.actionType == ActionType.UNLOCK) {
         // can only be called by receiver
         require(state.turnNum % 2 == 1, "Transfers can only be unlocked by the app responder");
 
@@ -137,7 +137,7 @@ contract GraphMultiTransferApp is CounterfactualApp {
         state.lockedPayment.requestCID = bytes32(0);
         state.lockedPayment.price = uint256(0);
 
-    } else if (action.actionType == FINALIZE) {
+    } else if (action.actionType == ActionType.FINALIZE) {
         state.finalized = true;
     }
 
@@ -157,10 +157,11 @@ contract GraphMultiTransferApp is CounterfactualApp {
   }
 
   function getTurnTaker(
-    bytes calldata, /* encodedState */
+    bytes calldata encodedState,
     address[] calldata participants
   ) external override view returns (address) 
   {
+    AppState memory state = abi.decode(encodedState, (AppState));
     return participants[state.turnNum % 2]; //receiver odd
   }
 
