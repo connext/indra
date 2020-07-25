@@ -18,6 +18,9 @@ import {
   GraphSignedTransferAppName,
   GraphSignedTransferAppAction,
   GraphSignedTransferAppState,
+  GraphMultiTransferAppName,
+  GraphMultiTransferAppAction,
+  GraphMultiTransferAppState,
 } from "./apps";
 import { enumify } from "../utils";
 import { CoinTransfer } from "./funding";
@@ -39,6 +42,7 @@ export const AppNames = {
   [DepositAppName]: DepositAppName,
   [HashLockTransferAppName]: HashLockTransferAppName,
   [GraphSignedTransferAppName]: GraphSignedTransferAppName,
+  [GraphMultiTransferAppName]: GraphMultiTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
@@ -51,6 +55,7 @@ interface AppActionMap {
   [DepositAppName]: {}; // no action
   [HashLockTransferAppName]: HashLockTransferAppAction;
   [GraphSignedTransferAppName]: GraphSignedTransferAppAction;
+  [GraphMultiTransferAppName]: GraphMultiTransferAppAction;
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppAction;
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppAction;
   [SimpleTwoPartySwapAppName]: {}; // no action
@@ -65,6 +70,7 @@ interface AppStateMap {
   [DepositAppName]: DepositAppState;
   [HashLockTransferAppName]: HashLockTransferAppState;
   [GraphSignedTransferAppName]: GraphSignedTransferAppState;
+  [GraphMultiTransferAppName]: GraphMultiTransferAppState;
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppState;
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppState;
   [SimpleTwoPartySwapAppName]: SimpleSwapAppState;
@@ -94,6 +100,7 @@ export type AppState =
 
 export const SupportedApplicationNames = enumify({
   [GraphSignedTransferAppName]: GraphSignedTransferAppName,
+  [GraphMultiTransferAppName]: GraphMultiTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
@@ -109,6 +116,7 @@ export type SupportedApplicationNames = typeof SupportedApplicationNames[keyof t
 // computeOutcome or computeStateTransition in a local evm vs needing to make an eth_call
 export const PureActionApps = [
   GraphSignedTransferAppName,
+  GraphMultiTransferAppName,
   SimpleSignedTransferAppName,
   SimpleLinkedTransferAppName,
   SimpleTwoPartySwapAppName,
