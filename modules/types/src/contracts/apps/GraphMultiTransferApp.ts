@@ -38,9 +38,9 @@ export type GraphMultiTransferAppState = {
 };
 
 export const GraphActionType = enumify({
-    CREATE: "CREATE",
-    UNLOCK: "UNLOCK",
-    FINALIZE: "FINALIZE"
+    CREATE: "0",
+    UNLOCK: "1",
+    FINALIZE: "2"
   });
 
   export type GraphActionType = typeof GraphActionType[keyof typeof GraphActionType];
