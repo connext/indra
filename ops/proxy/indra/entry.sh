@@ -20,9 +20,9 @@ fi
 echo "Proxy container launched in env:"
 echo "DOMAINNAME=$DOMAINNAME"
 echo "EMAIL=$EMAIL"
-echo "ETH_PROVIDER_PROTOCOL=$ETH_PROVIDER_PROTOCOL"
 echo "ETH_PROVIDER_HOST=$ETH_PROVIDER_HOST"
 echo "ETH_PROVIDER_PATH=$ETH_PROVIDER_PATH"
+echo "ETH_PROVIDER_PROTOCOL=$ETH_PROVIDER_PROTOCOL"
 echo "ETH_PROVIDER_URL=$ETH_PROVIDER_URL"
 echo "MESSAGING_TCP_URL=$MESSAGING_TCP_URL"
 echo "MESSAGING_WS_URL=$MESSAGING_WS_URL"
@@ -31,7 +31,7 @@ echo "NODE_URL=$NODE_URL"
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
   while true # unix.stackexchange.com/a/37762
-  do echo -e "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nWaiting for Indra to wake up" | nc -lk -p 80
+  do echo -e "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nWaiting for proxy to wake up" | nc -lk -p 80
   done > /dev/null
 }
 loading_msg &

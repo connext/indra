@@ -12,8 +12,8 @@ mnemonic="${INDRA_MNEMONIC:-candy maple cake sugar pudding cream honey rich smoo
 ########################################
 # Configure or launch Ethereum testnets
 
-chain_host_1="${project}_testnet_$chain_id_1"
-chain_host_2="${project}_testnet_$chain_id_2"
+chain_host_1="testnet_$chain_id_1"
+chain_host_2="testnet_$chain_id_2"
 
 chain_url_1="http://172.17.0.1:`expr 8545 - 1337 + $chain_id_1`"
 chain_url_2="http://172.17.0.1:`expr 8545 - 1337 + $chain_id_2`"

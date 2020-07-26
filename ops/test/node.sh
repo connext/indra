@@ -29,8 +29,8 @@ mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet t
 
 chain_id_1=1339
 chain_id_2=1340
-chain_host_1="${project}_testnet_$chain_id_1"
-chain_host_2="${project}_testnet_$chain_id_2"
+chain_host_1="testnet_$chain_id_1"
+chain_host_2="testnet_$chain_id_2"
 
 nats_host="${project}_nats_$tag"
 network="${project}_$tag"

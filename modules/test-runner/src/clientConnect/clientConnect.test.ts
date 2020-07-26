@@ -10,19 +10,19 @@ const { AddressZero, One } = constants;
 const { hexlify, randomBytes } = utils;
 
 describe("Client Connect", () => {
-  it("Client should be able to connect to proxy w/out a messaging url", async () => {
+  it("Client should be able to connect to indra w/out a messaging url", async () => {
     const signer = getRandomChannelSigner();
     const client = await connect({
       ethProviderUrl,
       loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
-      nodeUrl: env.proxyUrl,
+      nodeUrl: env.nodeUrl,
       signer,
       store: getMemoryStore({ prefix: signer.publicIdentifier }),
     });
     expect(client.publicIdentifier).to.eq(signer.publicIdentifier);
   });
 
-  it("Client should be able to connect to node w a messaging url", async () => {
+  it("Client should be able to connect to indra w a messaging url", async () => {
     const signer = getRandomChannelSigner();
     const client = await connect({
       ethProviderUrl,

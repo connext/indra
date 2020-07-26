@@ -9,6 +9,10 @@ tmp="$root/.tmp"; mkdir -p $tmp
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
+# make sure a network for this project has been created
+network="indra"
+docker network create --attachable --driver overlay $network 2> /dev/null || true
+
 ########################################
 ## Docker registry & version config
 
@@ -52,9 +56,8 @@ echo "Using docker images ${project}_name:${version} "
 ####################
 # Proxy config
 
-domainname="${DAICARD_DOMAINNAME:-http://localhost}"
 email="${DAICARD_EMAIL:-noreply@gmail.com}"
-indra_url="${DAICARD_INDRA_URL:-http://localhost:3000}"
+indra_url="${DAICARD_INDRA_URL:-http://172.17.0.1:3000}"
 
 proxy_image="${project}_proxy:$version";
 pull_if_unavailable "$proxy_image"
@@ -86,7 +89,7 @@ then
   webserver_image="image: '$webserver_image_name'"
 else
   webserver_image="image: 'indra_builder'
-    entrypoint: 'cd modules/daicard && npm run start'
+    entrypoint: bash -c 'cd modules/daicard && npm run start'
     volumes:
       - '$root:/root'"
 fi
@@ -97,7 +100,7 @@ fi
 echo "Launching ${project}"
 
 common="networks:
-      - '$project'
+      - '$network'
     logging:
       driver: 'json-file'
       options:
@@ -105,6 +108,10 @@ common="networks:
 
 cat - > $root/${project}.docker-compose.yml <<EOF
 version: '3.4'
+
+networks:
+  $network:
+    external: true
 
 volumes:
   certs:
@@ -116,14 +123,11 @@ services:
     $proxy_ports
     image: '$proxy_image'
     environment:
-      DOMAINNAME: '$domainname'
+      DOMAINNAME: '$DAICARD_DOMAINNAME'
       EMAIL: '$email'
       INDRA_URL: '$indra_url'
-    ports:
-      - '80:80'
-      - '443:443'
-      - '4221:4221'
-      - '4222:4222'
+      ETH_PROVIDER_URL: 'http://testnet_1337:8545'
+      WEB_SERVER_URL: 'http://webserver:3000'
     volumes:
       - 'certs:/etc/letsencrypt'
 
@@ -140,7 +144,7 @@ timeout=$(expr `date +%s` + 30)
 while true
 do
   res="`curl -m 5 -s $public_url || true`"
-  if [[ -z "$res" || "$res" == "Waiting for Indra to wake up" ]]
+  if [[ -z "$res" || "$res" == "Waiting for proxy to wake up" ]]
   then
     if [[ "`date +%s`" -gt "$timeout" ]]
     then echo "Timed out waiting for proxy to respond.." && exit

@@ -61,7 +61,6 @@ else
     --env="INDRA_MNEMONIC=$INDRA_MNEMONIC" \
     --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
     --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
-    --env="INDRA_PROXY_URL=http://proxy:80" \
     --env="NODE_ENV=development" \
     --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
     --mount="type=bind,source=$root,target=/root" \
@@ -84,7 +83,6 @@ exec docker run \
   --env="INDRA_MNEMONIC=$INDRA_MNEMONIC" \
   --env="INDRA_NATS_URL=$INDRA_NATS_URL" \
   --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
-  --env="INDRA_PROXY_URL=https://proxy:443" \
   --env="NODE_ENV=production" \
   --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
   --name="$name" \

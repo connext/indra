@@ -38,11 +38,13 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 # Build Shortcuts
 
 default: indra
-all: indra staging release daicard
+all: indra staging release daicard 
+dev: indra daicard
+prod: ethprovider staging release daicard-prod
 
 indra: database indra-proxy node
 indra-prod: staging release
-daicard: daicard-webserver daicard-proxy
+daicard: daicard-proxy client
 daicard-prod: daicard-webserver daicard-proxy
 staging: indra ethprovider node-staging test-runner-staging bot-staging
 release: indra ethprovider node-release test-runner-release bot-staging
@@ -51,8 +53,10 @@ release: indra ethprovider node-release test-runner-release bot-staging
 # Command & Control Shortcuts
 
 start: start-indra
+restart: restart-indra
 stop: stop-daicard stop-indra
 start-prod: start-indra-prod
+restart-prod: restart-indra-prod
 
 start-indra: indra
 	bash ops/start-indra.sh
@@ -81,11 +85,17 @@ stop-daicard:
 stop-all:
 	bash ops/stop.sh all
 
-restart: stop
+restart-indra: indra stop-indra
 	bash ops/start-indra.sh
 
 restart-prod: stop
 	INDRA_ENV=prod bash ops/start-indra.sh
+
+restart-daicard-prod: stop-daicard
+	DAICARD_ENV=prod bash ops/start-daicard.sh
+
+restart-daicard: daicard stop-daicard
+	bash ops/start-daicard.sh
 
 clean: stop-all
 	docker container prune -f
@@ -162,7 +172,7 @@ test-utils: utils
 test-store: store
 	bash ops/test/store.sh
 
-test-contracts: contracts utils
+test-contracts: contracts
 	bash ops/test/unit.sh contracts
 
 test-cf: cf-core
@@ -177,10 +187,10 @@ test-node: node
 test-tps: bot
 	bash ops/test/tps.sh 10 0 10
 
-test-integration:
+test-integration: test-runner
 	bash ops/test/integration.sh
 
-test-backwards-compatibility: pull-backwards-compatible
+test-backwards-compatibility: pull-backwards-compatible test-runner
 	bash ops/pull-images.sh $(backwards_compatible_version)
 	bash ops/test/integration.sh $(backwards_compatible_version)
 
@@ -305,7 +315,7 @@ daicard-bundle: types utils store client $(shell find modules/daicard $(find_opt
 
 daicard-proxy: $(shell find ops/proxy/daicard $(find_options))
 	$(log_start)
-	docker build --file ops/proxy/daicard/Dockerfile $(image_cache) --tag daicard_proxy ops
+	docker build $(image_cache) --tag daicard_proxy ops/proxy/daicard
 	docker tag daicard_proxy daicard_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
@@ -350,7 +360,7 @@ bot-staging: bot $(shell find modules/bot/ops $(find_options))
 
 indra-proxy: $(shell find ops/proxy/indra $(find_options))
 	$(log_start)
-	docker build --file ops/proxy/indra/Dockerfile $(image_cache) --tag $(project)_proxy ops
+	docker build $(image_cache) --tag $(project)_proxy ops/proxy/indra
 	docker tag $(project)_proxy $(project)_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 

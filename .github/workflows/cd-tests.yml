@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: make pull-latest
-      - run: make staging
+      - run: make prod
       - run: make build-report
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       - run: make push-commit
@@ -94,7 +94,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: make pull-commit
-      - run: make start-prod
+      - run: make start-indra-prod
       - run: make start-daicard
       - run: make test-daicard
       - name: Print logs

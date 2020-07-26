@@ -9,9 +9,7 @@ tmp="$root/.tmp"; mkdir -p $tmp
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
-# Deploy with an attachable network in test-mode
-# Delete/recreate the network first to delay docker network slowdowns that have been happening
-docker network rm $project 2> /dev/null || true
+# make sure a network for this project has been created
 docker network create --attachable --driver overlay $project 2> /dev/null || true
 
 ####################
@@ -356,7 +354,7 @@ timeout=$(expr `date +%s` + 30)
 while true
 do
   res="`curl -m 5 -s $public_url || true`"
-  if [[ -z "$res" || "$res" == "Waiting for Indra to wake up" ]]
+  if [[ -z "$res" || "$res" == "Waiting for proxy to wake up" ]]
   then
     if [[ "`date +%s`" -gt "$timeout" ]]
     then echo "Timed out waiting for proxy to respond.." && exit

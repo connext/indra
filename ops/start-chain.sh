@@ -8,6 +8,9 @@ project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`
 registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 release="`cat $root/package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
+# make sure a network for this project has been created
+docker network create --attachable --driver overlay $project 2> /dev/null || true
+
 chain_id="${1:-1337}"
 
 mode="${INDRA_CHAIN_MODE:-local}"
@@ -17,7 +20,7 @@ mnemonic="${INDRA_MNEMONIC:-candy maple cake sugar pudding cream honey rich smoo
 engine="${INDRA_EVM:-`if [[ "$chain_id" == "1337" ]]; then echo "ganache"; else echo "buidler"; fi`}"
 logLevel="${INDRA_CHAIN_LOG_LEVEL:0}"
 
-ethprovider_host="${project}_testnet_$tag"
+ethprovider_host="testnet_$tag"
 
 if [[ -n `docker container ls | grep ${ethprovider_host}` ]]
 then
@@ -47,6 +50,7 @@ docker run $opts \
   --env "MNEMONIC=$mnemonic" \
   --mount "type=bind,source=$chain_data,target=/data" \
   --name "$ethprovider_host" \
+  --network "$project" \
   --publish "$port:8545" \
   --rm \
   --tmpfs "/tmpfs" \
