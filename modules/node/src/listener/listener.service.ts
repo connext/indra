@@ -199,11 +199,12 @@ export default class ListenerService implements OnModuleInit {
         data.from,
       );
     } else if (appRegistryInfo.name === SupportedApplicationNames.GraphMultiTransferApp) {
-      // Need to uninstall corresponding app
       const senderApp = await this.transferService.findSenderAppByPaymentId(uninstalledApp.meta.paymentId);
       const receiverApp = await this.transferService.findReceiverAppByPaymentId(uninstalledApp.meta.paymentId);
-      const appToUninstall = uninstalledApp.identityHash === senderApp.identityHash ? receiverApp : senderApp;
-      await this.cfCoreService.uninstallApp(appToUninstall.identityHash, multisigAddress)
+      // Uninstall sender app if this was receiver app uninstalled
+      if (uninstalledApp.identityHash === receiverApp.identityHash) {
+        await this.cfCoreService.uninstallApp(senderApp.identityHash, senderApp.channel.multisigAddress)
+      }
     }
 
     const assetIdResponder = (
