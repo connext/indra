@@ -36,6 +36,11 @@ import {
   GraphSignedTransferAppAction,
   UnlockedGraphSignedTransferMeta,
   ConditionalTransferAppNames,
+  GraphMultiTransferAppName,
+  CreatedGraphMultiTransferMeta,
+  GraphMultiTransferAppState,
+  GraphMultiTransferAppAction,
+  UnlockedGraphMultiTransferMeta,
 } from "@connext/types";
 import { bigNumberifyJson, stringify, TypedEmitter, toBN } from "@connext/utils";
 import { constants } from "ethers";
@@ -382,6 +387,29 @@ export class ConnextListener {
         } as EventPayloads.GraphTransferCreated);
         break;
       }
+      case GraphMultiTransferAppName: {
+        const initialState =
+          appInstance && bigNumberifyJson(appInstance.latestState as GraphSignedTransferAppState);
+        const { initiatorDepositAssetId: assetId, meta } = appInstance || {};
+        const amount = initialState?.coinTransfers[0].amount;
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, {
+          amount,
+          appIdentityHash,
+          assetId,
+          meta,
+          sender: meta?.sender,
+          transferMeta: {
+            signerAddress: initialState?.signerAddress,
+            chainId: initialState?.chainId,
+            verifyingContract: initialState?.verifyingContract,
+            subgraphDeploymentID: initialState?.subgraphDeploymentID,
+          } as CreatedGraphMultiTransferMeta,
+          type: ConditionalTransferTypes.GraphMultiTransfer,
+          paymentId: initialState?.paymentId,
+          recipient: meta?.recipient,
+        } as EventPayloads.GraphMultiTransferCreated);
+        break;
+      }
       case SimpleSignedTransferAppName: {
         const initialState =
           appInstance && bigNumberifyJson(appInstance.latestState as SimpleSignedTransferAppState);
@@ -548,6 +576,23 @@ export class ConnextListener {
             responseCID: transferAction?.responseCID,
           } as UnlockedGraphSignedTransferMeta,
         } as EventPayloads.GraphTransferUnlocked);
+        break;
+      }
+      case GraphMultiTransferAppName: {
+        const transferState = state as GraphMultiTransferAppState;
+        const transferAmount = toBN(transferState.coinTransfers[0].amount).isZero()
+          ? toBN(transferState.coinTransfers[1].amount)
+          : toBN(transferState.coinTransfers[0].amount);
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
+          type: ConditionalTransferTypes.GraphMultiTransfer,
+          amount: transferAmount,
+          assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
+          paymentId: appInstance.meta.paymentId,
+          sender: appInstance.meta.sender,
+          recipient: appInstance.meta.recipient,
+          meta: appInstance.meta,
+          transferMeta: {} as UnlockedGraphMultiTransferMeta,
+        } as EventPayloads.GraphMultiTransferUnlocked);
         break;
       }
       case SimpleSignedTransferAppName: {
