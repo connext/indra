@@ -18,6 +18,8 @@ import {
   DOMAIN_NAME,
   DOMAIN_VERSION,
   DOMAIN_SALT,
+  GraphMultiTransferAppState,
+  CreatedGraphMultiTransferMeta,
 } from "@connext/types";
 import { toBN, stringify, hashDomainSeparator } from "@connext/utils";
 import { constants, utils } from "ethers";
@@ -60,7 +62,8 @@ export class CreateTransferController extends AbstractController {
       | SimpleLinkedTransferAppState
       | HashLockTransferAppState
       | SimpleSignedTransferAppState
-      | GraphSignedTransferAppState;
+      | GraphSignedTransferAppState
+      | GraphMultiTransferAppState;
 
     switch (conditionType) {
       case ConditionalTransferTypes.LinkedTransfer: {
@@ -142,6 +145,40 @@ export class CreateTransferController extends AbstractController {
 
         break;
       }
+      case ConditionalTransferTypes.GraphMultiTransfer: {
+        const {
+          signerAddress,
+          chainId,
+          verifyingContract,
+          subgraphDeploymentID,
+          paymentId,
+        } = params as PublicParams.GraphMultiTransfer;
+
+        initialState = {
+          ...baseInitialState,
+          signerAddress,
+          chainId,
+          verifyingContract,
+          subgraphDeploymentID,
+          paymentId,
+          lockedPayment: {
+            requestCID: HashZero,
+            price: Zero
+          },
+          turnNum: 0
+        } as GraphMultiTransferAppState;
+
+        transferMeta = {
+          signerAddress,
+          chainId,
+          verifyingContract,
+          subgraphDeploymentID,
+        } as CreatedGraphMultiTransferMeta;
+
+        submittedMeta.paymentId = paymentId;
+
+        break;
+      }
       case ConditionalTransferTypes.SignedTransfer: {
         const {
           signerAddress,
@@ -194,7 +231,9 @@ export class CreateTransferController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
+      stateTimeout
     } = transferAppRegistryInfo;
+
     const proposeInstallParams: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
@@ -211,7 +250,7 @@ export class CreateTransferController extends AbstractController {
       responderDeposit: Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
-      stateTimeout: Zero,
+      stateTimeout,
     };
     this.log.debug(`Installing transfer app ${conditionType}`);
     const appIdentityHash = await this.proposeAndInstallLedgerApp(proposeInstallParams);
