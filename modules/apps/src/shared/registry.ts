@@ -1,5 +1,6 @@
 import { OutcomeType, SupportedApplicationNames } from "@connext/types";
 import { toBN } from "@connext/utils";
+import { BigNumber } from "ethers";
 
 export type AppRegistryInfo = {
   actionEncoding?: string;
@@ -7,6 +8,7 @@ export type AppRegistryInfo = {
   name: SupportedApplicationNames;
   outcomeType: OutcomeType;
   stateEncoding: string;
+  stateTimeout: BigNumber
 };
 
 export type AppRegistryType = AppRegistryInfo[];
