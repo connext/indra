@@ -5,6 +5,7 @@ import {
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
   TwoPartyFixedOutcomeInterpreterParamsJson,
 } from "./contracts";
+import { BigNumber } from "ethers";
 
 ////////////////////////////////////
 // App Instances
@@ -51,6 +52,7 @@ export type DefaultApp = {
   name: string;
   outcomeType: OutcomeType;
   stateEncoding: ABIEncoding;
+  stateTimeout: BigNumber
 };
 
 export type AppRegistry = DefaultApp[];
