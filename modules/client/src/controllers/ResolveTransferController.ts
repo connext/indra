@@ -10,11 +10,16 @@ import {
   SimpleLinkedTransferAppAction,
   GraphSignedTransferAppAction,
   AppInstanceJson,
+  GraphMultiTransferAppAction,
+  GraphActionType,
 } from "@connext/types";
 import { stringify } from "@connext/utils";
-import { BigNumber } from "ethers";
+import { BigNumber, constants } from "ethers";
+
+const { HashZero, Zero } = constants;
 
 import { AbstractController } from "./AbstractController";
+import { zeroPad, hexlify } from "ethers/lib/utils";
 
 export class ResolveTransferController extends AbstractController {
   public resolveTransfer = async (
@@ -152,7 +157,9 @@ export class ResolveTransferController extends AbstractController {
         | HashLockTransferAppAction
         | SimpleSignedTransferAppAction
         | GraphSignedTransferAppAction
-        | SimpleLinkedTransferAppAction;
+        | SimpleLinkedTransferAppAction
+        | GraphMultiTransferAppAction
+        | undefined
       switch (conditionType) {
         case ConditionalTransferTypes.HashLockTransfer: {
           const { preImage } = params as PublicParams.ResolveHashLockTransfer;
@@ -165,6 +172,10 @@ export class ResolveTransferController extends AbstractController {
             responseCID &&
             signature &&
             ({ responseCID, signature } as GraphSignedTransferAppAction);
+          break;
+        }
+        case ConditionalTransferTypes.GraphMultiTransfer: {
+          // Don't define an action because we just want to uninstall
           break;
         }
         case ConditionalTransferTypes.SignedTransfer: {
@@ -222,6 +233,10 @@ export class ResolveTransferController extends AbstractController {
       case ConditionalTransferTypes.LinkedTransfer: {
         const { preImage } = params as PublicParams.ResolveLinkedTransfer;
         return !!preImage;
+      }
+      case ConditionalTransferTypes.GraphMultiTransfer: {
+        // This one doesn't need a secret at the resolve step, so default to true
+        return true;
       }
       default: {
         const c: never = conditionType;
