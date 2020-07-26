@@ -393,16 +393,13 @@ export class TransferService {
       appDefinitionAddress: appDefinition,
       outcomeType,
       stateEncoding,
+      stateTimeout
     } = this.cfCoreService.getAppInfoByNameAndChain(
       transferType as SupportedApplicationNames,
       receiverChainId,
     );
 
     const defaultTimeout = DEFAULT_APP_TIMEOUT.sub(TIMEOUT_BUFFER);
-    const stateTimeout =
-      transferType == ConditionalTransferTypes.GraphMultiTransfer
-        ? GRAPH_MULTI_TRANSFER_STATE_TIMEOUT.sub(TIMEOUT_BUFFER)
-        : Zero;
 
     const res = await this.cfCoreService.proposeInstallApp({
       abiEncodings: {
