@@ -15,6 +15,7 @@ export const coreContracts = [
   "ConditionalTransactionDelegateTarget",
   "DepositApp",
   "GraphSignedTransferApp",
+  "GraphMultiTransferApp",
   "HashLockTransferApp",
   "IdentityApp",
   "MinimumViableMultisig",
