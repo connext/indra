@@ -8,6 +8,8 @@ import {
   ConditionalTransferAppNames,
   SupportedApplicationNames,
   SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
+  GraphMultiTransferAppAction,
+  GraphActionType,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 
@@ -123,12 +125,13 @@ export class AppActionsService {
       return;
     }
 
-    if (appName === ConditionalTransferAppNames.GraphMultiTransferApp && !counterpartyApp.latestState.finalized) {
+    if (appName === ConditionalTransferAppNames.GraphMultiTransferApp) {
       await this.cfCoreService.takeAction(
         counterpartyApp.identityHash,
         counterpartyApp.channel.multisigAddress,
         action
       )
+      return;
     }
 
     await this.cfCoreService.uninstallApp(

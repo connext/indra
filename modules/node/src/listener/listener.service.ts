@@ -14,6 +14,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { AppActionsService } from "../appRegistry/appActions.service";
+import { TransferService } from "../transfer/transfer.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { ChannelRepository } from "../channel/channel.repository";
 
@@ -54,6 +55,7 @@ export default class ListenerService implements OnModuleInit {
     private readonly appActionsService: AppActionsService,
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
+    private readonly transferService: TransferService,
     private readonly log: LoggerService,
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
@@ -185,10 +187,10 @@ export default class ListenerService implements OnModuleInit {
       return;
     }
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
+      uninstalledApp.appDefinition,
+    );
     if (action) {
-      const appRegistryInfo = this.cfCoreService.getAppInfoByAppDefinitionAddress(
-        uninstalledApp.appDefinition,
-      );
       await this.appActionsService.handleAppAction(
         appRegistryInfo.name as SupportedApplicationNames,
         uninstalledApp,
@@ -196,6 +198,12 @@ export default class ListenerService implements OnModuleInit {
         action as AppAction,
         data.from,
       );
+    } else if (appRegistryInfo.name === SupportedApplicationNames.GraphMultiTransferApp) {
+      // Need to uninstall corresponding app
+      const senderApp = await this.transferService.findSenderAppByPaymentId(uninstalledApp.meta.paymentId);
+      const receiverApp = await this.transferService.findReceiverAppByPaymentId(uninstalledApp.meta.paymentId);
+      const appToUninstall = uninstalledApp.identityHash === senderApp.identityHash ? receiverApp : senderApp;
+      await this.cfCoreService.uninstallApp(appToUninstall.identityHash, multisigAddress)
     }
 
     const assetIdResponder = (
