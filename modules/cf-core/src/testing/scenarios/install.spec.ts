@@ -3,13 +3,17 @@ import {
   ProtocolParams,
   ProtocolEventMessage,
   IStoreService,
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  EventNames,
 } from "@connext/types";
 import { delay, getAddressFromAssetId } from "@connext/utils";
 import { BigNumber, constants, utils } from "ethers";
 
 import { expect } from "../assertions";
 import { CFCore } from "../../cfCore";
-import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
+import { NULL_INITIAL_STATE_FOR_PROPOSAL, TOO_MANY_APPS_IN_CHANNEL } from "../../errors";
 import { setup, SetupContext } from "../setup";
 import {
   assertInstallMessage,
@@ -26,6 +30,7 @@ import {
   makeInstallCall,
   transferERC20Tokens,
 } from "../utils";
+import { MAX_CHANNEL_APPS } from "../../constants";
 
 const { One } = constants;
 const { isHexString } = utils;
@@ -234,6 +239,67 @@ describe("Node method follows spec - install", () => {
             CONVENTION_FOR_ETH_ASSET_ID,
           );
         });
+      });
+
+      it("cannot install more than the max number of apps", async () => {
+        const { TicTacToeApp } = getContractAddresses();
+
+        nodeB.on(EventNames.PROPOSE_INSTALL_EVENT, async (msg) => {
+          await makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress);
+        });
+
+        for (let i = 0; i < MAX_CHANNEL_APPS; i++) {
+          // eslint-disable-next-line no-loop-func
+          const installed = new Promise((res) => nodeA.once(EventNames.INSTALL_EVENT, res));
+          await makeAndSendProposeCall(
+            nodeA,
+            nodeB,
+            TicTacToeApp,
+            multisigAddress,
+            undefined,
+            constants.Zero,
+            CONVENTION_FOR_ETH_ASSET_ID,
+            constants.Zero,
+            CONVENTION_FOR_ETH_ASSET_ID,
+          );
+          await installed;
+        }
+
+        const {
+          result: {
+            result: { appInstances },
+          },
+        } = (await nodeA.rpcRouter.dispatch({
+          id: Date.now(),
+          methodName: MethodNames.chan_getAppInstances,
+          parameters: { multisigAddress } as MethodParams.GetAppInstances,
+        })) as { result: { result: MethodResults.GetAppInstances } };
+        expect(appInstances.length).to.be.eq(MAX_CHANNEL_APPS);
+
+        nodeB.off(EventNames.PROPOSE_INSTALL_EVENT);
+
+        const failed = new Promise((res) =>
+          nodeB.on(EventNames.PROPOSE_INSTALL_EVENT, async (msg) => {
+            // await makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress);
+            await expect(
+              makeInstallCall(nodeB, msg.data.appInstanceId, multisigAddress),
+            ).to.be.rejectedWith(TOO_MANY_APPS_IN_CHANNEL);
+            res();
+          }),
+        );
+
+        makeAndSendProposeCall(
+          nodeA,
+          nodeB,
+          TicTacToeApp,
+          multisigAddress,
+          undefined,
+          constants.Zero,
+          CONVENTION_FOR_ETH_ASSET_ID,
+          constants.Zero,
+          CONVENTION_FOR_ETH_ASSET_ID,
+        );
+        await failed;
       });
     },
   );

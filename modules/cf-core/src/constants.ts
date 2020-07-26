@@ -22,3 +22,5 @@ export const HARD_CODED_ASSUMPTIONS = {
 // 1 messaging timeout there, 1 messaging timeout back
 // assume messaging timeout of 10s
 export const IO_SEND_AND_WAIT_TIMEOUT = CF_METHOD_TIMEOUT / 2;
+
+export const MAX_CHANNEL_APPS = 30;

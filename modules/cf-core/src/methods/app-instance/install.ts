@@ -14,6 +14,7 @@ import {
   NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
   NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH,
   NO_MULTISIG_IN_PARAMS,
+  TOO_MANY_APPS_IN_CHANNEL,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { StateChannel } from "../../models";
@@ -21,6 +22,7 @@ import { RequestHandler } from "../../request-handler";
 import { RpcRouter } from "../../rpc-router";
 
 import { MethodController } from "../controller";
+import { MAX_CHANNEL_APPS } from "../../constants";
 
 /**
  * This converts a proposed app instance to an installed app instance while
@@ -58,6 +60,11 @@ export class InstallAppInstanceController extends MethodController {
     if (!appIdentityHash || !appIdentityHash.trim()) {
       throw new Error(NO_APP_IDENTITY_HASH_TO_INSTALL);
     }
+
+    if (preProtocolStateChannel.appInstances.size >= MAX_CHANNEL_APPS) {
+      throw new Error(TOO_MANY_APPS_IN_CHANNEL);
+    }
+
     const installed = preProtocolStateChannel.appInstances.get(appIdentityHash);
     if (installed) {
       return { appInstance: installed.toJson() };

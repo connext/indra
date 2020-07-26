@@ -1,5 +1,11 @@
-import { MethodParams } from "@connext/types";
+import {
+  MethodParams,
+  MethodNames,
+  MethodResults,
+  CONVENTION_FOR_ETH_ASSET_ID,
+} from "@connext/types";
 import { deBigNumberifyJson } from "@connext/utils";
+import { constants } from "ethers";
 
 import { CFCore } from "../../cfCore";
 
@@ -11,8 +17,11 @@ import {
   getAppInstanceJson,
   getProposedAppInstances,
   makeProposeCall,
+  makeAndSendProposeCall,
 } from "../utils";
 import { expect } from "../assertions";
+import { MAX_CHANNEL_APPS } from "../../constants";
+import { TOO_MANY_APPS_IN_CHANNEL } from "../../errors";
 
 async function assertEqualProposedApps(
   nodeA: CFCore,
@@ -89,6 +98,49 @@ describe("Node method follows spec - propose install", () => {
         }
       });
       await assertEqualProposedApps(nodeA, nodeB, multisigAddress, [appId] as string[]);
+    });
+
+    it("cannot propose more than the max number of apps", async () => {
+      const { TicTacToeApp } = getContractAddresses();
+
+      for (let i = 0; i < MAX_CHANNEL_APPS; i++) {
+        await makeAndSendProposeCall(
+          nodeA,
+          nodeB,
+          TicTacToeApp,
+          multisigAddress,
+          undefined,
+          constants.Zero,
+          CONVENTION_FOR_ETH_ASSET_ID,
+          constants.Zero,
+          CONVENTION_FOR_ETH_ASSET_ID,
+        );
+      }
+
+      const {
+        result: {
+          result: { appInstances },
+        },
+      } = (await nodeA.rpcRouter.dispatch({
+        id: Date.now(),
+        methodName: MethodNames.chan_getProposedAppInstances,
+        parameters: { multisigAddress } as MethodParams.GetProposedAppInstances,
+      })) as { result: { result: MethodResults.GetProposedAppInstances } };
+      expect(appInstances.length).to.be.eq(MAX_CHANNEL_APPS);
+
+      await expect(
+        makeAndSendProposeCall(
+          nodeA,
+          nodeB,
+          TicTacToeApp,
+          multisigAddress,
+          undefined,
+          constants.Zero,
+          CONVENTION_FOR_ETH_ASSET_ID,
+          constants.Zero,
+          CONVENTION_FOR_ETH_ASSET_ID,
+        ),
+      ).to.be.rejectedWith(TOO_MANY_APPS_IN_CHANNEL);
     });
   });
 });
