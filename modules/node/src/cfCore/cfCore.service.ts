@@ -511,6 +511,7 @@ export class CFCoreService {
           name: app.name,
           chainId: chainId,
           outcomeType: app.outcomeType,
+          stateTimeout: app.stateTimeout,
           stateEncoding: app.stateEncoding,
           allowNodeInstall: app.allowNodeInstall,
         } as DefaultApp);
@@ -520,6 +521,7 @@ export class CFCoreService {
           name: app.name,
           chainId: chainId,
           outcomeType: app.outcomeType,
+          stateTimeout: app.stateTimeout,
           stateEncoding: app.stateEncoding,
           allowNodeInstall: app.allowNodeInstall,
         } as DefaultApp);
