@@ -19,7 +19,7 @@ const { hexlify, randomBytes } = utils;
 
 describe("Client Connect", () => {
   // TODO: reenable
-  it.only("Client should be able to connect to proxy w/out a messaging url", async () => {
+  it.skip("Client should be able to connect to proxy w/out a messaging url", async () => {
     const signer = getRandomChannelSigner();
     const client = await connect({
       ethProviderUrl,
