@@ -123,11 +123,11 @@ services:
     $proxy_ports
     image: '$proxy_image'
     environment:
-      DOMAINNAME: '$DAICARD_DOMAINNAME'
-      EMAIL: '$email'
-      INDRA_URL: '$indra_url'
-      ETH_PROVIDER_URL: 'http://testnet_1337:8545'
-      WEB_SERVER_URL: 'http://webserver:3000'
+      DAICARD_DOMAINNAME: '$DAICARD_DOMAINNAME'
+      DAICARD_EMAIL: '$email'
+      DAICARD_INDRA_URL: '$indra_url'
+      DAICARD_ETH_PROVIDER_URL: 'http://testnet_1337:8545'
+      DAICARD_WEB_SERVER_URL: 'http://webserver:3000'
     volumes:
       - 'certs:/etc/letsencrypt'
 

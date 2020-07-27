@@ -1,32 +1,32 @@
 #!/bin/bash
 
-if [[ "${ETH_PROVIDER_URL%%://*}" == "https" ]]
-then export ETH_PROVIDER_PROTOCOL="ssl"
-else export ETH_PROVIDER_PROTOCOL=""
+if [[ "${INDRA_ETH_PROVIDER_URL%%://*}" == "https" ]]
+then export INDRA_ETH_PROVIDER_PROTOCOL="ssl"
+else export INDRA_ETH_PROVIDER_PROTOCOL=""
 fi
 
-ETH_PROVIDER_URL=${ETH_PROVIDER_URL#*://}
+INDRA_ETH_PROVIDER_URL=${INDRA_ETH_PROVIDER_URL#*://}
 
-if [[ "$ETH_PROVIDER_PROTOCOL" == "ssl" ]]
-then export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}:443"
-else export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}"
+if [[ "$INDRA_ETH_PROVIDER_PROTOCOL" == "ssl" ]]
+then export INDRA_ETH_PROVIDER_HOST="${INDRA_ETH_PROVIDER_URL%%/*}:443"
+else export INDRA_ETH_PROVIDER_HOST="${INDRA_ETH_PROVIDER_URL%%/*}"
 fi
 
-if [[ "$ETH_PROVIDER_URL" == *"/"* ]]
-then export ETH_PROVIDER_PATH="/${ETH_PROVIDER_URL#*/}"
-else export ETH_PROVIDER_PATH="/"
+if [[ "$INDRA_ETH_PROVIDER_URL" == *"/"* ]]
+then export INDRA_ETH_PROVIDER_PATH="/${INDRA_ETH_PROVIDER_URL#*/}"
+else export INDRA_ETH_PROVIDER_PATH="/"
 fi
 
 echo "Proxy container launched in env:"
-echo "DOMAINNAME=$DOMAINNAME"
-echo "EMAIL=$EMAIL"
-echo "ETH_PROVIDER_HOST=$ETH_PROVIDER_HOST"
-echo "ETH_PROVIDER_PATH=$ETH_PROVIDER_PATH"
-echo "ETH_PROVIDER_PROTOCOL=$ETH_PROVIDER_PROTOCOL"
-echo "ETH_PROVIDER_URL=$ETH_PROVIDER_URL"
-echo "MESSAGING_TCP_URL=$MESSAGING_TCP_URL"
-echo "MESSAGING_WS_URL=$MESSAGING_WS_URL"
-echo "NODE_URL=$NODE_URL"
+echo "INDRA_ETH_PROVIDER_HOST=$INDRA_ETH_PROVIDER_HOST"
+echo "INDRA_ETH_PROVIDER_PATH=$INDRA_ETH_PROVIDER_PATH"
+echo "INDRA_ETH_PROVIDER_PROTOCOL=$INDRA_ETH_PROVIDER_PROTOCOL"
+echo "INDRA_DOMAINNAME=$INDRA_DOMAINNAME"
+echo "INDRA_EMAIL=$INDRA_EMAIL"
+echo "INDRA_INDRA_ETH_PROVIDER_URL=$INDRA_INDRA_ETH_PROVIDER_URL"
+echo "INDRA_MESSAGING_TCP_URL=$INDRA_MESSAGING_TCP_URL"
+echo "INDRA_MESSAGING_WS_URL=$INDRA_MESSAGING_WS_URL"
+echo "INDRA_NODE_URL=$INDRA_NODE_URL"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
@@ -41,31 +41,31 @@ loading_pid="$!"
 # Wait for downstream services to wake up
 # Define service hostnames & ports we depend on
 
-echo "waiting for $ETH_PROVIDER_HOST..."
-wait-for -t 60 $ETH_PROVIDER_HOST 2> /dev/null
-while ! curl -s $ETH_PROVIDER_HOST > /dev/null
+echo "waiting for $INDRA_ETH_PROVIDER_HOST..."
+wait-for -t 60 $INDRA_ETH_PROVIDER_HOST 2> /dev/null
+while ! curl -s $INDRA_ETH_PROVIDER_HOST > /dev/null
 do sleep 2
 done
 
-echo "waiting for $MESSAGING_WS_URL..."
-wait-for -t 60 $MESSAGING_WS_URL 2> /dev/null
+echo "waiting for $INDRA_MESSAGING_WS_URL..."
+wait-for -t 60 $INDRA_MESSAGING_WS_URL 2> /dev/null
 
-echo "waiting for $MESSAGING_TCP_URL..."
-wait-for -t 60 $MESSAGING_TCP_URL 2> /dev/null
+echo "waiting for $INDRA_MESSAGING_TCP_URL..."
+wait-for -t 60 $INDRA_MESSAGING_TCP_URL 2> /dev/null
 
-echo "waiting for $NODE_URL..."
-wait-for -t 60 $NODE_URL 2> /dev/null
-while ! curl -s $NODE_URL > /dev/null
+echo "waiting for $INDRA_NODE_URL..."
+wait-for -t 60 $INDRA_NODE_URL 2> /dev/null
+while ! curl -s $INDRA_NODE_URL > /dev/null
 do sleep 2
 done
 
 # Kill the loading message server
 kill "$loading_pid" && pkill nc
 
-if [[ -z "$DOMAINNAME" ]]
+if [[ -z "$INDRA_DOMAINNAME" ]]
 then
   cp /etc/ssl/cert.pem ca-certs.pem
-  echo "Entrypoint finished, executing haproxy..."; echo
+  echo "Entrypoint finished, executing haproxy in http mode..."; echo
   exec haproxy -db -f http.cfg
 fi
 
@@ -73,11 +73,11 @@ fi
 # Setup SSL Certs
 
 letsencrypt=/etc/letsencrypt/live
-certsdir=$letsencrypt/$DOMAINNAME
+certsdir=$letsencrypt/$INDRA_DOMAINNAME
 mkdir -p /etc/haproxy/certs
 mkdir -p /var/www/letsencrypt
 
-if [[ "$DOMAINNAME" == "localhost" && ! -f "$certsdir/privkey.pem" ]]
+if [[ "$INDRA_DOMAINNAME" == "localhost" && ! -f "$certsdir/privkey.pem" ]]
 then
   echo "Developing locally, generating self-signed certs"
   mkdir -p $certsdir
@@ -86,8 +86,8 @@ fi
 
 if [[ ! -f "$certsdir/privkey.pem" ]]
 then
-  echo "Couldn't find certs for $DOMAINNAME, using certbot to initialize those now.."
-  certbot certonly --standalone -m $EMAIL --agree-tos --no-eff-email -d $DOMAINNAME -n
+  echo "Couldn't find certs for $INDRA_DOMAINNAME, using certbot to initialize those now.."
+  certbot certonly --standalone -m $INDRA_EMAIL --agree-tos --no-eff-email -d $INDRA_DOMAINNAME -n
   code=$?
   if [[ "$code" -ne 0 ]]
   then
@@ -97,15 +97,15 @@ then
   fi
 fi
 
-echo "Using certs for $DOMAINNAME"
+echo "Using certs for $INDRA_DOMAINNAME"
 
-export CERTBOT_PORT=31820
+export INDRA_CERTBOT_PORT=31820
 
 function copycerts {
   if [[ -f $certsdir/fullchain.pem && -f $certsdir/privkey.pem ]]
-  then cat $certsdir/fullchain.pem $certsdir/privkey.pem > "$DOMAINNAME.pem"
+  then cat $certsdir/fullchain.pem $certsdir/privkey.pem > "$INDRA_DOMAINNAME.pem"
   elif [[ -f "$certsdir-0001/fullchain.pem" && -f "$certsdir-0001/privkey.pem" ]]
-  then cat "$certsdir-0001/fullchain.pem" "$certsdir-0001/privkey.pem" > "$DOMAINNAME.pem"
+  then cat "$certsdir-0001/fullchain.pem" "$certsdir-0001/privkey.pem" > "$INDRA_DOMAINNAME.pem"
   else
     echo "Couldn't find certs, freezing to debug"
     sleep 9999;
@@ -121,8 +121,8 @@ function renewcerts {
     echo -n "Preparing to renew certs... "
     if [[ -d "$certsdir" ]]
     then
-      echo -n "Found certs to renew for $DOMAINNAME... "
-      certbot renew -n --standalone --http-01-port=$CERTBOT_PORT
+      echo -n "Found certs to renew for $INDRA_DOMAINNAME... "
+      certbot renew -n --standalone --http-01-port=$INDRA_CERTBOT_PORT
       copycerts
       echo "Done!"
     fi
@@ -136,5 +136,5 @@ copycerts
 
 cp /etc/ssl/cert.pem ca-certs.pem
 
-echo "Entrypoint finished, executing haproxy..."; echo
+echo "Entrypoint finished, executing haproxy in https mode..."; echo
 exec haproxy -db -f https.cfg

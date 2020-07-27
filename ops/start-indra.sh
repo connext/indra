@@ -28,7 +28,7 @@ then source .env
 fi
 
 # log level alias can override default for easy `LOG_LEVEL=5 make start`
-INDRA_LOG_LEVEL="${LOG_LEVEL:-INDRA_LOG_LEVEL}";
+INDRA_LOG_LEVEL="${LOG_LEVEL:-$INDRA_LOG_LEVEL}";
 
 ########################################
 ## Docker registry & version config
@@ -74,9 +74,6 @@ echo "Using docker images ${project}_name:${version} "
 # Misc Config
 
 builder_image="${project}_builder"
-
-logdna_image="logdna/logspout:v1.2.0";
-pull_if_unavailable "$logdna_image"
 
 redis_image="redis:5-alpine";
 pull_if_unavailable "$redis_image"
@@ -237,6 +234,23 @@ ETH_PROVIDER_URL="`echo $INDRA_CHAIN_PROVIDERS | tr -d "'" | jq '.[]' | head -n 
 echo "Chain providers configured"
 
 ####################
+# LogDNA Config
+
+logdna_image="logdna/logspout:v1.2.0";
+pull_if_unavailable "$logdna_image"
+
+if [[ "$INDRA_ENV" == "prod" ]]
+then logdna_service="logdna:
+    $common
+    image: '$logdna_image'
+    environment:
+      LOGDNA_KEY: '$INDRA_LOGDNA_KEY'
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock'"
+else logdna_service=""
+fi
+
+####################
 # Launch Indra stack
 
 echo "Launching ${project}"
@@ -272,13 +286,12 @@ services:
     $proxy_ports
     image: '$proxy_image'
     environment:
-      DOMAINNAME: '$INDRA_DOMAINNAME'
-      EMAIL: '$INDRA_EMAIL'
-      ETH_PROVIDER_URL: '$ETH_PROVIDER_URL'
-      MESSAGING_TCP_URL: 'nats:4222'
-      MESSAGING_WS_URL: 'nats:4221'
-      NODE_URL: 'node:$node_port'
-      WEBSERVER_URL: 'webserver:80'
+      INDRA_DOMAINNAME: '$INDRA_DOMAINNAME'
+      INDRA_EMAIL: '$INDRA_EMAIL'
+      INDRA_ETH_PROVIDER_URL: '$ETH_PROVIDER_URL'
+      INDRA_MESSAGING_TCP_URL: 'nats:4222'
+      INDRA_MESSAGING_WS_URL: 'nats:4221'
+      INDRA_NODE_URL: 'node:$node_port'
     volumes:
       - 'certs:/etc/letsencrypt'
 
@@ -337,13 +350,7 @@ services:
     $common
     image: '$redis_image'
 
-  logdna:
-    $common
-    image: '$logdna_image'
-    environment:
-      LOGDNA_KEY: '$INDRA_LOGDNA_KEY'
-    volumes:
-      - '/var/run/docker.sock:/var/run/docker.sock'
+  $logdna_service
 
 EOF
 
