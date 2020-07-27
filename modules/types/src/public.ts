@@ -3,7 +3,7 @@ import { providers, BigNumberish } from "ethers";
 import { Address, BigNumber, Bytes32, HexString, PublicIdentifier, SignatureString } from "./basic";
 import { ConditionalTransferTypes, CreatedConditionalTransferMetaMap } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
-import { Attestation } from "./contracts";
+import { Attestation, GraphActionType, AppAction, AppState } from "./contracts";
 import { enumify } from "./utils";
 
 ////////////////////////////////////////
@@ -207,7 +207,9 @@ type ResolveGraphMultiTransferResponse = {
 };
 
 type UpdateGraphMultiTransferParameters = {
+  paymentId: string;
   conditionType: typeof ConditionalTransferTypes.GraphMultiTransfer;
+  actionType: GraphActionType;
   requestCID?: Bytes32;
   price?: BigNumber;
   responseCID?: Bytes32;
@@ -215,7 +217,9 @@ type UpdateGraphMultiTransferParameters = {
 }
 
 type UpdateGraphMultiTransferResponse = {
-
+  paymentId: string;
+  newState: AppState;
+  action: AppAction;
 }
 
 ////////////////////////////////////////
@@ -246,8 +250,8 @@ type ConditionalTransferResponse = {
 type UpdateConditionalTransferParameters =
   | UpdateGraphMultiTransferParameters;
 
-type UpdateConditionalTransferResponse = {
-};
+type UpdateConditionalTransferResponse =
+  | UpdateGraphMultiTransferResponse;
 
 ////////////////////////////////////////
 // resolve condition

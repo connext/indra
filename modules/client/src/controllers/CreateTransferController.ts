@@ -93,7 +93,9 @@ export class CreateTransferController extends AbstractController {
         // convert to block height
         const currentBlock = await this.connext.ethProvider.getBlockNumber();
         const expiry = toBN(timelock).add(currentBlock);
-        this.log.info(`HashLockTransfer with timelock ${timelock} will expire at block ${expiry} (currentBlock=${currentBlock})`);
+        this.log.info(
+          `HashLockTransfer with timelock ${timelock} will expire at block ${expiry} (currentBlock=${currentBlock})`,
+        );
         initialState = {
           ...baseInitialState,
           lockHash,
@@ -163,9 +165,9 @@ export class CreateTransferController extends AbstractController {
           paymentId,
           lockedPayment: {
             requestCID: HashZero,
-            price: Zero
+            price: Zero,
           },
-          turnNum: 0
+          turnNum: 0,
         } as GraphMultiTransferAppState;
 
         transferMeta = {
@@ -231,7 +233,7 @@ export class CreateTransferController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-      stateTimeout
+      stateTimeout,
     } = transferAppRegistryInfo;
 
     const proposeInstallParams: MethodParams.ProposeInstall = {
