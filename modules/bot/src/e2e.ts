@@ -1,25 +1,15 @@
-import { artifacts } from "@connext/contracts";
-import {
-  abrv,
-  toBN,
-  ChannelSigner,
-  ColorfulLogger,
-  abbreviate,
-  getRandomPrivateKey,
-} from "@connext/utils";
-import { constants, Contract, providers, utils, Wallet, BigNumber } from "ethers";
+import { abrv, ChannelSigner, ColorfulLogger, getRandomPrivateKey } from "@connext/utils";
+import { constants, providers, utils, Wallet } from "ethers";
 import { Argv } from "yargs";
 
-import { startBot } from "./agents/bot";
 import { env } from "./env";
-import { internalBotRegistry } from "./helpers/agentIndex";
 import { connect } from "@connext/client";
-import { getFileStore, getMemoryStore } from "@connext/store";
+import { getMemoryStore } from "@connext/store";
 import { Agent } from "./agents/agent";
 import { EventNames } from "@connext/types";
 
-const { AddressZero, HashZero, Two } = constants;
-const { formatEther, sha256, parseEther } = utils;
+const { AddressZero, Two } = constants;
+const { formatEther, parseEther } = utils;
 
 export const command = {
   command: "e2e",

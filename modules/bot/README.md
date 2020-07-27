@@ -5,5 +5,5 @@
 ### E2E
 
 ```sh
-bash ops/test/e2e.sh <CHAIN_ID>
+INDRA_CHAIN_URL=<CHAIN_PROVIDER_URL> bash ops/test/e2e.sh <CHAIN_ID>
 ```
