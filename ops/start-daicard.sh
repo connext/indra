@@ -10,8 +10,7 @@ tmp="$root/.tmp"; mkdir -p $tmp
 docker swarm init 2> /dev/null || true
 
 # make sure a network for this project has been created
-network="indra"
-docker network create --attachable --driver overlay $network 2> /dev/null || true
+docker network create --attachable --driver overlay $project 2> /dev/null || true
 
 ########################################
 ## Docker registry & version config
@@ -100,7 +99,7 @@ fi
 echo "Launching ${project}"
 
 common="networks:
-      - '$network'
+      - '$project'
     logging:
       driver: 'json-file'
       options:
@@ -110,7 +109,7 @@ cat - > $root/${project}.docker-compose.yml <<EOF
 version: '3.4'
 
 networks:
-  $network:
+  $project:
     external: true
 
 volumes:
@@ -126,7 +125,7 @@ services:
       DAICARD_DOMAINNAME: '$DAICARD_DOMAINNAME'
       DAICARD_EMAIL: '$email'
       DAICARD_INDRA_URL: '$indra_url'
-      DAICARD_ETH_PROVIDER_URL: 'http://testnet_1337:8545'
+      DAICARD_ETH_PROVIDER_URL: 'http://172.17.0.1:8545'
       DAICARD_WEB_SERVER_URL: 'http://webserver:3000'
     volumes:
       - 'certs:/etc/letsencrypt'
@@ -140,7 +139,7 @@ EOF
 docker stack deploy -c $root/${project}.docker-compose.yml $project
 
 echo "The $project stack has been deployed, waiting for the proxy to start responding.."
-timeout=$(expr `date +%s` + 30)
+timeout=$(expr `date +%s` + 180)
 while true
 do
   res="`curl -m 5 -s $public_url || true`"

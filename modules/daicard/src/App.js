@@ -35,8 +35,8 @@ const { formatEther } = utils;
 
 const urls = {
   ethProviderUrl:
-    process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
-  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin}`,
+    process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/ethprovider`,
+  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin}/indra`,
   legacyUrl: (chainId) =>
     chainId.toString() === "1"
       ? "https://hub.connext.network/api/hub"
@@ -247,7 +247,11 @@ class App extends React.Component {
     console.log(`Successfully connected channel`);
 
     const chainId = channel.chainId;
-    const token = new Contract(channel.config.contractAddresses[chainId].Token, ERC20.abi, ethProvider);
+    const token = new Contract(
+      channel.config.contractAddresses[chainId].Token,
+      ERC20.abi,
+      ethProvider,
+    );
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     console.log(`Client created successfully!`);
@@ -302,7 +306,11 @@ class App extends React.Component {
     if (!channel.config.contractAddresses[chainId].SAIToken) {
       return Zero;
     }
-    const saiToken = new Contract(channel.config.contractAddresses[chainId].SAIToken, ERC20.abi, wallet);
+    const saiToken = new Contract(
+      channel.config.contractAddresses[chainId].SAIToken,
+      ERC20.abi,
+      wallet,
+    );
     const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
     const mySaiBalance = freeSaiBalance[channel.signerAddress];
     return mySaiBalance;

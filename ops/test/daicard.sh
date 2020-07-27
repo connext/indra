@@ -14,8 +14,8 @@ $cypress install
 ########################################
 ## Start the UI e2e watcher if in watch mode
 
-# If there's no response from port 3000 we're in prod mode using ssl
-if [[ -z "`curl -s http://localhost:3000`" ]]
+# If there's no response from port 3001 we're in prod mode using ssl
+if [[ -z "`curl -s http://localhost:3001`" ]]
 then env="--env publicUrl=https://localhost"
 fi
 

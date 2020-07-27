@@ -22,6 +22,18 @@ describe("Client Connect", () => {
     expect(client.publicIdentifier).to.eq(signer.publicIdentifier);
   });
 
+  it("Client should be able to connect to indra url w /api suffix", async () => {
+    const signer = getRandomChannelSigner();
+    const client = await connect({
+      ethProviderUrl,
+      loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
+      nodeUrl: `${env.nodeUrl}/api`,
+      signer,
+      store: getMemoryStore({ prefix: signer.publicIdentifier }),
+    });
+    expect(client.publicIdentifier).to.eq(signer.publicIdentifier);
+  });
+
   it("Client should be able to connect to indra w a messaging url", async () => {
     const signer = getRandomChannelSigner();
     const client = await connect({
