@@ -85,6 +85,9 @@ export interface IConnextClient {
   conditionalTransfer(
     params: PublicParams.ConditionalTransfer,
   ): Promise<PublicResults.ConditionalTransfer>;
+  updateConditionalTransfer(
+    params: PublicParams.UpdateConditionalTransfer,
+  ): Promise<PublicResults.UpdateConditionalTransfer>;
   deposit(params: PublicParams.Deposit): Promise<PublicResults.Deposit>;
   requestDepositRights(
     params: PublicParams.RequestDepositRights,

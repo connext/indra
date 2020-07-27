@@ -49,6 +49,7 @@ import {
   SwapController,
   WithdrawalController,
   CreateTransferController,
+  UpdateTransferController,
   ResolveTransferController,
 } from "./controllers";
 import { ConnextListener } from "./listener";
@@ -82,6 +83,7 @@ export class ConnextClient implements IConnextClient {
 
   private depositController: DepositController;
   private createTransferController: CreateTransferController;
+  private updateTransferController: UpdateTransferController;
   private resolveTransferController: ResolveTransferController;
   private swapController: SwapController;
   private withdrawalController: WithdrawalController;
@@ -115,6 +117,7 @@ export class ConnextClient implements IConnextClient {
     this.swapController = new SwapController("SwapController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
     this.createTransferController = new CreateTransferController("CreateTransferController", this);
+    this.updateTransferController = new UpdateTransferController("UpdateTransferController", this);
     this.resolveTransferController = new ResolveTransferController(
       "ResolveTransferController",
       this,
@@ -343,6 +346,12 @@ export class ConnextClient implements IConnextClient {
     params.assetId = params.assetId || CONVENTION_FOR_ETH_ASSET_ID;
     return this.createTransferController.createTransfer(params);
   };
+
+  public updateConditionalTransfer = async (
+    params: PublicParams.UpdateConditionalTransfer,
+  ): Promise<PublicResults.UpdateConditionalTransfer> => {
+    return this.updateTransferController.updateTransfer(params);
+  }
 
   public getHashLockTransfer = async (
     lockHash: string,

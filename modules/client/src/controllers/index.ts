@@ -3,3 +3,4 @@ export { SwapController } from "./SwapController";
 export { WithdrawalController } from "./WithdrawalController";
 export { CreateTransferController } from "./CreateTransferController";
 export { ResolveTransferController } from "./ResolveTransferController";
+export { UpdateTransferController } from "./UpdateTransferController";
