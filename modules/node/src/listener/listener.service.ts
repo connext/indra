@@ -21,6 +21,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
   CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+  CONDITIONAL_TRANSFER_UPDATED_EVENT,
   CONDITIONAL_TRANSFER_FAILED_EVENT,
   WITHDRAWAL_CONFIRMED_EVENT,
   WITHDRAWAL_FAILED_EVENT,
@@ -78,6 +79,9 @@ export default class ListenerService implements OnModuleInit {
       },
       CONDITIONAL_TRANSFER_UNLOCKED_EVENT: (data): void => {
         this.logEvent(CONDITIONAL_TRANSFER_UNLOCKED_EVENT, data);
+      },
+      CONDITIONAL_TRANSFER_UPDATED_EVENT: (data): void => {
+        this.logEvent(CONDITIONAL_TRANSFER_UPDATED_EVENT, data);
       },
       CONDITIONAL_TRANSFER_FAILED_EVENT: (data): void => {
         this.logEvent(CONDITIONAL_TRANSFER_FAILED_EVENT, data);

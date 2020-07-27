@@ -41,6 +41,7 @@ import {
   GraphMultiTransferAppState,
   GraphMultiTransferAppAction,
   UnlockedGraphMultiTransferMeta,
+  GraphActionType,
 } from "@connext/types";
 import { bigNumberifyJson, stringify, TypedEmitter, toBN } from "@connext/utils";
 import { constants } from "ethers";
@@ -52,6 +53,7 @@ const { HashZero } = constants;
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
   CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+  CONDITIONAL_TRANSFER_UPDATED_EVENT,
   CONDITIONAL_TRANSFER_FAILED_EVENT,
   WITHDRAWAL_CONFIRMED_EVENT,
   WITHDRAWAL_FAILED_EVENT,
@@ -99,6 +101,9 @@ export class ConnextListener {
     },
     CONDITIONAL_TRANSFER_UNLOCKED_EVENT: (msg): void => {
       this.emitAndLog(CONDITIONAL_TRANSFER_UNLOCKED_EVENT, msg.data);
+    },
+    CONDITIONAL_TRANSFER_UPDATED_EVENT: (msg): void => {
+      this.emitAndLog(CONDITIONAL_TRANSFER_UPDATED_EVENT, msg.data);
     },
     CONDITIONAL_TRANSFER_FAILED_EVENT: (msg: any): void => {
       this.emitAndLog(CONDITIONAL_TRANSFER_FAILED_EVENT, msg.data);
@@ -651,6 +656,15 @@ export class ConnextListener {
         };
         await this.connext.saveWithdrawCommitmentToStore(params, withdrawState.signatures);
         break;
+      }
+      case GraphMultiTransferAppName: {
+        const eventData = {
+          type: ConditionalTransferTypes.GraphMultiTransfer,
+          paymentId: appInstance.meta.paymentId,
+          newState: state,
+          action
+        } as EventPayloads.GraphMultiTransferUpdated;
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UPDATED_EVENT, eventData);
       }
       default: {
         this.log.info(

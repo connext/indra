@@ -13,6 +13,7 @@ import { ProtocolMessageData } from "./messaging";
 import { PublicParams } from "./public";
 import { MinimalTransaction } from "./commitments";
 import { StateChannelJSON } from "./state";
+import { AppAction, AppState } from "./contracts";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type GraphTransfer = typeof ConditionalTransferTypes.GraphTransfer;
@@ -33,6 +34,16 @@ export type ConditionalTransferCreatedEventData<T extends ConditionalTransferTyp
   meta: any;
   type: T;
   transferMeta: CreatedConditionalTransferMetaMap[T];
+};
+
+////////////////////////////////////////
+const CONDITIONAL_TRANSFER_UPDATED_EVENT = "CONDITIONAL_TRANSFER_UPDATED_EVENT";
+
+export type ConditionalTransferUpdatedEventData<T extends ConditionalTransferTypes> = {
+  paymentId?: Bytes32;
+  type: T;
+  newState: AppState;
+  action: AppAction;
 };
 
 ////////////////////////////////////////
@@ -217,6 +228,9 @@ interface EventPayloadMap {
   [CONDITIONAL_TRANSFER_UNLOCKED_EVENT]: ConditionalTransferUnlockedEventData<
     HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphMultiTransfer
   >;
+  [CONDITIONAL_TRANSFER_UPDATED_EVENT]: ConditionalTransferUpdatedEventData<
+    GraphMultiTransfer
+  >;
   [CONDITIONAL_TRANSFER_FAILED_EVENT]: ConditionalTransferFailedEventData<
     HashLockTransfer | LinkedTransfer | SignedTransfer | GraphTransfer | GraphMultiTransfer
   >;
@@ -247,6 +261,7 @@ interface EventPayloadMap {
 export const EventNames = {
   [CONDITIONAL_TRANSFER_CREATED_EVENT]: CONDITIONAL_TRANSFER_CREATED_EVENT,
   [CONDITIONAL_TRANSFER_UNLOCKED_EVENT]: CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+  [CONDITIONAL_TRANSFER_UPDATED_EVENT]: CONDITIONAL_TRANSFER_UPDATED_EVENT,
   [CONDITIONAL_TRANSFER_FAILED_EVENT]: CONDITIONAL_TRANSFER_FAILED_EVENT,
   [CREATE_CHANNEL_EVENT]: CREATE_CHANNEL_EVENT,
   [SETUP_FAILED_EVENT]: SETUP_FAILED_EVENT,
@@ -326,6 +341,7 @@ export namespace EventPayloads {
   export type SignedTransferUnlocked = ConditionalTransferUnlockedEventData<SignedTransfer>;
   export type GraphTransferUnlocked = ConditionalTransferUnlockedEventData<GraphTransfer>;
   export type GraphMultiTransferUnlocked = ConditionalTransferUnlockedEventData<GraphMultiTransfer>;
+  export type GraphMultiTransferUpdated = ConditionalTransferUpdatedEventData<GraphMultiTransfer>;
   export type HashLockTransferFailed = ConditionalTransferFailedEventData<HashLockTransfer>;
   export type LinkedTransferFailed = ConditionalTransferFailedEventData<LinkedTransfer>;
   export type SignedTransferFailed = ConditionalTransferFailedEventData<SignedTransfer>;
