@@ -165,6 +165,9 @@ export type SignedTransferStatus = TransferStatus;
 export const GraphSignedTransferStatus = TransferStatuses;
 export type GraphSignedTransferStatus = TransferStatus;
 
+export const GraphMultiTransferStatus = TransferStatuses;
+export type GraphMultiTransferStatus = TransferStatus;
+
 ////////////////////////////////////////
 // Misc
 
