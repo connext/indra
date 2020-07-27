@@ -14,7 +14,7 @@ docker network create --attachable --driver overlay $project 2> /dev/null || tru
 
 chain_id="${1:-1337}"
 
-mode="${INDRA_CHAIN_MODE:-local}"
+mode="${INDRA_CHAIN_MODE:-dev}"
 port="${INDRA_CHAIN_PORT:-`expr 8545 - 1337 + $chain_id`}"
 tag="${INDRA_TAG:-$chain_id}"
 mnemonic="${INDRA_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
@@ -32,10 +32,16 @@ fi
 chain_data="$root/.chaindata/$chain_id"
 mkdir -p $chain_data
 
-if [[ "$mode" == "release" ]]
-then image="${registry}/${project}_ethprovider:$release"
-elif [[ "$mode" == "staging" ]]
-then image="${project}_ethprovider:`git rev-parse HEAD | head -c 8`"
+# prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
+if [[ "$mode" == "prod" ]]
+then
+  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
+  if [[ -n "$git_tag" ]]
+  then version="`echo $git_tag | sed 's/indra-//'`"
+  else version="`git rev-parse HEAD | head -c 8`"
+  fi
+  image="${project}_ethprovider:$version"
+
 else
   image="${project}_builder"
   arg="modules/contracts/ops/entry.sh"

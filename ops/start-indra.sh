@@ -145,15 +145,14 @@ mkdir -p $snapshots_dir
 
 db_volume="database_${INDRA_ENV}"
 
-if [[ "$INDRA_ENV" == "test"* ]]
+if [[ "$INDRA_ENV" == "prod" ]]
 then
-  db_volume="database_test_`date +%y%m%d_%H%M%S`"
-  db_secret="${project}_database_test"
-  new_secret "$db_secret" "$project"
-  stack_network=""
-else
   db_secret="${project}_database"
   new_secret $db_secret
+else
+  db_volume="database_dev"
+  db_secret="${project}_database_dev"
+  new_secret "$db_secret" "$project"
 fi
 
 # database connection settings

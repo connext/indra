@@ -88,7 +88,7 @@ stop-all:
 restart-indra: indra stop-indra
 	bash ops/start-indra.sh
 
-restart-prod: stop
+restart-indra-prod: stop
 	INDRA_ENV=prod bash ops/start-indra.sh
 
 restart-daicard-prod: stop-daicard
