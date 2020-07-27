@@ -91,6 +91,7 @@ export class DeployStateDepositController extends MethodController {
       throw new Error(`Signer must be connected to provider`);
     }
     const provider = networkContext.provider!;
+    await signer.connectProvider(provider);
 
     // If this is called twice concurrently, the second attempt should wait until the first is done
     if (this.inProgress) {
