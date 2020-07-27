@@ -30,9 +30,12 @@ fi
 function pull_if_unavailable {
   if [[ -z "`docker image ls | grep ${1%:*} | grep ${1#*:}`" ]]
   then
-    full_name="${registry%/}/$1"
+    if [[ -n "`echo $1 | grep "${project}_"`" ]]
+    then full_name="${registry%/}/$1"
+    else full_name="$1"
+    fi
     echo "Can't find image $1 locally, attempting to pull $full_name"
-    docker pull ${registry%/}/$1
+    docker pull $full_name
     docker tag $full_name $1
   fi
 }

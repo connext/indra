@@ -53,7 +53,7 @@ function pull_if_unavailable {
     else full_name="$1"
     fi
     echo "Can't find image $1 locally, attempting to pull $full_name"
-    docker pull ${registry%/}/$1
+    docker pull $full_name
     docker tag $full_name $1
   fi
 }
