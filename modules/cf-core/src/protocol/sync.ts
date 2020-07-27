@@ -649,7 +649,8 @@ function makeSyncDetermination(
   // To get to this point in the function, we know that the channel fell out of
   // sync while taking action on the app. This means that we *know* this app has
   // to be synced
-  if (!appIdentityHash) {
+  const sameApps = myChannel.appInstances.size === apps!.length;
+  if (!appIdentityHash || sameApps) {
     // assume that there is no problem with the apps
     // while this is not technically true, we know that if the appId was not
     // provided and we are syncing on error, the retry of the fn should work
@@ -659,7 +660,7 @@ function makeSyncDetermination(
   const myApp = myChannel.appInstances.get(appIdentityHash);
   if (!myApp) {
     throw new Error(
-      `Counterparty channel has record of app we do not, despite free balance nonces being in sync. Our apps: ${stringify(
+      `Counterparty channel has record of app we do not (${appIdentityHash}), despite free balance nonces being in sync. Our apps: ${stringify(
         [...myChannel.appInstances.keys()],
         true,
         0,
