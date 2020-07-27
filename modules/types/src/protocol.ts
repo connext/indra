@@ -1,5 +1,13 @@
 import { AppABIEncodings, AppInstanceJson } from "./app";
-import { Address, BigNumber, Bytes32, AssetId, PublicIdentifier, SolidityValueType } from "./basic";
+import {
+  Address,
+  BigNumber,
+  Bytes32,
+  AssetId,
+  PublicIdentifier,
+  SolidityValueType,
+  HexString,
+} from "./basic";
 import { OutcomeType } from "./contracts";
 import { enumify } from "./utils";
 
@@ -34,10 +42,15 @@ type SetupProtocolParams = {
   chainId: number;
 };
 
+// NOTE: should only provide the appIdentityHash if the protocol
+// also provides it in the params. These include:
+// - takeAction
+// - uninstall
 type SyncProtocolParams = {
   initiatorIdentifier: PublicIdentifier;
   responderIdentifier: PublicIdentifier;
   multisigAddress: Address;
+  appIdentityHash: HexString | undefined;
 };
 
 type TakeActionProtocolParams = {
