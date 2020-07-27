@@ -65,7 +65,7 @@ export class NodeApiClient implements INodeApiClient {
     const nodeUrl = opts.nodeUrl;
 
     // If no messagingUrl given, attempt to derive one from the nodeUrl
-    const nodeHost = nodeUrl.replace(/^.*:\/\//, "");
+    const nodeHost = nodeUrl.replace(/^.*:\/\//, "").replace(/\/.*/, "");
     const messagingUrl = opts.messagingUrl ||
       (isNode()
         ? `nats://${nodeHost.replace(/:[0-9]+$/, "")}:4222`

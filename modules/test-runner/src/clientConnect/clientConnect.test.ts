@@ -24,10 +24,12 @@ describe("Client Connect", () => {
 
   it("Client should be able to connect to indra url w /api suffix", async () => {
     const signer = getRandomChannelSigner();
+    const protocol = env.nodeUrl.replace(/:\/\/.*/, "://");
+    const nodeHost = env.nodeUrl.replace(/.*:\/\//, "").replace(/\/.*/, "");
     const client = await connect({
       ethProviderUrl,
       loggerService: new ColorfulLogger("ClientConnect", env.logLevel, true),
-      nodeUrl: `${env.nodeUrl}/api`,
+      nodeUrl: `${protocol}${nodeHost}/api`,
       signer,
       store: getMemoryStore({ prefix: signer.publicIdentifier }),
     });
