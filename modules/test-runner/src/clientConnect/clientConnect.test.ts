@@ -27,6 +27,7 @@ describe("Client Connect", () => {
       nodeUrl: env.proxyUrl,
       signer,
       store: getMemoryStore({ prefix: signer.publicIdentifier }),
+      logLevel: 4,
     });
     expect(client.publicIdentifier).to.eq(signer.publicIdentifier);
   });

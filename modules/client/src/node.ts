@@ -57,9 +57,10 @@ export class NodeApiClient implements INodeApiClient {
       signer,
       logger,
       messaging: providedMessaging,
-      skipSync,
       chainId,
     } = opts;
+    // Don't sync channel on startup by default
+    const skipSync = typeof opts.skipSync === "boolean" ? opts.skipSync : true;
     const log = logger.newContext("NodeApiClient");
 
     // Removes the protocol + path
@@ -73,7 +74,7 @@ export class NodeApiClient implements INodeApiClient {
     const messagingUrl =
       opts.messagingUrl ||
       (isNode()
-        ? `nats://${extractHost(nodeUrl).replace(/:[0-9]+$/, "")}:4222`
+        ? `nats://${extractHost(nodeUrl).replace(/:[0-9]+$/, "")}:4222/api/messaging`
         : nodeUrl.startsWith("https://")
         ? `wss://${extractHost(nodeUrl)}/api/messaging`
         : `ws://${extractHost(nodeUrl)}/api/messaging`);
