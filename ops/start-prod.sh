@@ -16,8 +16,6 @@ docker network create --attachable --driver overlay $project 2> /dev/null || tru
 ####################
 # Load env vars
 
-mode_override="$INDRA_MODE"
-
 if [[ -f "prod.env" ]]
 then source prod.env
 fi
@@ -25,8 +23,6 @@ fi
 if [[ -f ".env" ]]
 then source .env
 fi
-
-INDRA_MODE=${mode_override}
 
 # Generate custom, secure JWT signing keys if we don't have any yet
 if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" ]]
