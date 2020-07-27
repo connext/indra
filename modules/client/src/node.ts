@@ -74,7 +74,7 @@ export class NodeApiClient implements INodeApiClient {
     const messagingUrl =
       opts.messagingUrl ||
       (isNode()
-        ? `nats://${extractHost(nodeUrl).replace(/:[0-9]+$/, "")}:4222/api/messaging`
+        ? `nats://${extractHost(nodeUrl).replace(/:[0-9]+$/, "")}:4222`
         : nodeUrl.startsWith("https://")
         ? `wss://${extractHost(nodeUrl)}/api/messaging`
         : `ws://${extractHost(nodeUrl)}/api/messaging`);

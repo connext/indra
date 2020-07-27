@@ -18,10 +18,12 @@ docker network create --attachable --driver overlay $project 2> /dev/null || tru
 
 mode_override="$INDRA_MODE"
 
+if [[ -f "prod.env" ]]
+then source prod.env
+fi
+
 if [[ -f ".env" ]]
 then source .env
-elif [[ -f "prod.env" ]]
-then source prod.env
 fi
 
 INDRA_MODE=${mode_override}

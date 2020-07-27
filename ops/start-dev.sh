@@ -15,10 +15,12 @@ docker network create --attachable --driver overlay $project 2> /dev/null || tru
 ####################
 # Load env vars
 
+if [[ -f "dev.env" ]]
+then source dev.env
+fi
+
 if [[ -f ".env" ]]
 then source .env
-elif [[ -f "dev.env" ]]
-then source dev.env
 fi
 
 # alias env var
