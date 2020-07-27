@@ -9,8 +9,8 @@ registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' 
 release="`cat $root/package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
 # make sure a network for this project has been created
-docker network create --attachable --driver overlay $project || true
-docker network ls
+docker swarm init 2> /dev/null || true
+docker network create --attachable --driver overlay $project 2> /dev/null || true
 
 chain_id="${1:-1337}"
 
