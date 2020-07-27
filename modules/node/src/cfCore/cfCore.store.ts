@@ -13,6 +13,7 @@ import {
   SetStateCommitmentJSON,
   StateChannelJSON,
   StateProgressedEventPayload,
+  StateSchemaVersion,
   STORE_SCHEMA_VERSION,
   StoredAppChallenge,
   StoredAppChallengeStatus,
@@ -191,7 +192,7 @@ export class CFCoreStore implements IStoreService {
 
     let channel = new Channel();
     channel.multisigAddress = multisigAddress;
-    channel.schemaVersion = this.schemaVersion;
+    channel.schemaVersion = StateSchemaVersion;
     channel.userIdentifier = userIdentifier;
     channel.nodeIdentifier = nodeIdentifier;
     channel.addresses = addresses;
