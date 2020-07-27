@@ -12,6 +12,7 @@ import "../funding/libs/LibOutcome.sol";
 ///         the application if the specified signer submits the correct
 ///         signature for the provided data over many updates.
 contract GraphMultiTransferApp is CounterfactualApp {
+
   using SafeMath for uint256;
 
   struct LockedPayment {
@@ -129,16 +130,20 @@ contract GraphMultiTransferApp is CounterfactualApp {
                 "Incorrect signer recovered from signature"
             );
             // handle payment
-            state.coinTransfers[1].amount += state.lockedPayment.price;
-            state.coinTransfers[0].amount -= state.lockedPayment.price;
+            state.coinTransfers[1].amount = state.coinTransfers[1].amount.add(state.lockedPayment.price);
+            state.coinTransfers[0].amount = state.coinTransfers[0].amount.sub(state.lockedPayment.price);
         }
 
         // now clear the payment from state for completeness
         state.lockedPayment.requestCID = bytes32(0);
         state.lockedPayment.price = uint256(0);
 
-    } else if (action.actionType == ActionType.FINALIZE) {
+    } else { // actionType == FINALIZE
         state.finalized = true;
+
+        // clear the payment from state for completeness
+        state.lockedPayment.requestCID = bytes32(0);
+        state.lockedPayment.price = uint256(0);
     }
 
     state.turnNum += 1;

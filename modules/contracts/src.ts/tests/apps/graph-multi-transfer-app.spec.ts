@@ -117,6 +117,10 @@ describe.only("GraphMultiTransferApp", () => {
         expect(postState).to.deep.eq({
           ...preState,
           finalized: true,
+          lockedPayment: {
+            requestCID: HashZero,
+            price: Zero,
+          },
           turnNum: BigNumber.from(preState.turnNum).add(One),
           chainId: BigNumber.from(preState.chainId),
         });

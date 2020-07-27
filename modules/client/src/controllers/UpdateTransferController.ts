@@ -39,7 +39,6 @@ export class UpdateTransferController extends AbstractController {
     };
 
     let action: GraphMultiTransferAppAction;
-    let update: any;
 
     switch (conditionType) {
       case ConditionalTransferTypes.GraphMultiTransfer: {
