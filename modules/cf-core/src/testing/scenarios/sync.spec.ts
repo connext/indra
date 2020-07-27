@@ -52,7 +52,6 @@ describe("Sync", () => {
   let messagingServiceB: MemoryMessagingServiceWithLimits;
   let TicTacToeApp: Address;
 
-
   const log = new Logger("SyncTest", env.logLevel, true);
 
   afterEach(async () => {
@@ -1115,72 +1114,6 @@ describe("Sync", () => {
       expect(behindApp).to.be.ok;
       const unsyncedAppInstance = behindApp![1];
       expect(unsyncedAppInstance.latestVersionNumber).to.eq(1);
-    });
-
-    it("initiator has an app that has a single signed update that the responder does not have, sync on startup", async () => {
-      const [eventData, newNodeA] = await Promise.all([
-        new Promise(async (resolve) => {
-          nodeB.on(EventNames.SYNC, (data) => resolve(data));
-        }),
-        CFCore.create(
-          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
-          storeServiceA,
-          global["networks"],
-          channelSignerA,
-          lockService,
-          0,
-          new Logger("CreateClient", env.logLevel, true, "A"),
-        ),
-      ]);
-
-      expect(eventData).to.deep.eq({
-        from: nodeA.publicIdentifier,
-        type: EventNames.SYNC,
-        data: { syncedChannel: expectedChannel },
-      });
-
-      // attempt to uninstall
-      await uninstallApp(newNodeA as CFCore, nodeB, appIdentityHash, multisigAddress);
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
-      expect(newChannelA!.appInstances.length).to.eq(0);
-      expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).to.eq(3);
-      expect(newChannelA!.monotonicNumProposedApps).to.eq(2);
-    });
-
-    it("responder has an app that has a single signed update that the initiator does not have, sync on startup", async () => {
-      messagingServiceA.clearLimits();
-      await messagingServiceB.disconnect();
-      const [eventData, newNodeB] = await Promise.all([
-        new Promise(async (resolve) => {
-          nodeA.on(EventNames.SYNC, (data) => resolve(data));
-        }),
-        CFCore.create(
-          new MemoryMessagingServiceWithLimits(sharedEventEmitter),
-          storeServiceB,
-          global["networks"],
-          channelSignerB,
-          lockService,
-          0,
-          new Logger("CreateClient", env.logLevel, true, "B"),
-        ),
-      ]);
-
-      expect(eventData).to.deep.eq({
-        from: nodeB.publicIdentifier,
-        type: EventNames.SYNC,
-        data: { syncedChannel: expectedChannel },
-      });
-
-      //attempt to uninstall
-      await uninstallApp(nodeA, newNodeB as CFCore, appIdentityHash, multisigAddress);
-      const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
-      const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
-      expect(newChannelB!.appInstances.length).to.eq(0);
-      expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).to.eq(3);
-      expect(newChannelB!.monotonicNumProposedApps).to.eq(2);
     });
 
     it("initiator has an app that has a single signed update that the responder does not have, sync on error", async () => {
