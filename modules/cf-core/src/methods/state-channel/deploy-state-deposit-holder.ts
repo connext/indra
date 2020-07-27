@@ -9,6 +9,7 @@ import {
   INVALID_FACTORY_ADDRESS,
   INVALID_MASTERCOPY_ADDRESS,
   NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
+  NO_NETWORK_PROVIDER_FOR_CHAIN_ID,
 } from "../../errors";
 import { MinimumViableMultisig, ProxyFactory } from "../../contracts";
 import { StateChannel } from "../../models";
@@ -56,6 +57,10 @@ export class DeployStateDepositController extends MethodController {
 
     const networkContext = networkContexts[preProtocolStateChannel.chainId];
 
+    if (!networkContext?.provider) {
+      throw new Error(NO_NETWORK_PROVIDER_FOR_CHAIN_ID(preProtocolStateChannel.chainId));
+    }
+
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       preProtocolStateChannel.userIdentifiers[0],
       preProtocolStateChannel.userIdentifiers[1],
@@ -85,7 +90,7 @@ export class DeployStateDepositController extends MethodController {
     if (!signer.provider || !Signer.isSigner(signer)) {
       throw new Error(`Signer must be connected to provider`);
     }
-    const provider = signer.provider!;
+    const provider = networkContext.provider!;
 
     // If this is called twice concurrently, the second attempt should wait until the first is done
     if (this.inProgress) {
