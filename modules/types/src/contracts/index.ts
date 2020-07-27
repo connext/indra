@@ -83,6 +83,7 @@ export type AppStates = {
 
 export type AppAction =
   | HashLockTransferAppAction
+  | GraphMultiTransferAppAction
   | GraphSignedTransferAppAction
   | SimpleLinkedTransferAppAction
   | SimpleSignedTransferAppAction
@@ -92,6 +93,7 @@ export type AppState =
   | DepositAppState
   | HashLockTransferAppState
   | GraphSignedTransferAppState
+  | GraphMultiTransferAppState
   | SimpleLinkedTransferAppState
   | SimpleSignedTransferAppState
   | SimpleSwapAppState
