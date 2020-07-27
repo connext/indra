@@ -1,9 +1,4 @@
 const path = require("path");
-const nodeExternals = require("webpack-node-externals");
-
-const mode = process.env.MODE === "release" ? "release" : "staging";
-const allowlist = mode === "release" ? "" : /@connext\/[^p].*/;
-console.log(`Building ${mode}-mode bundle`);
 
 module.exports = {
   mode: "development",
@@ -13,16 +8,23 @@ module.exports = {
 
   entry: path.join(__dirname, "../src/main.ts"),
 
-  externals: [
-    nodeExternals({
-      modulesDir: path.join(__dirname, "../../../node_modules"),
-      allowlist,
-    }),
-  ],
+  externals: {
+    "@nestjs/websockets/socket-module": "commonjs2 @nestjs/websockets/socket-module",
+    "amqp-connection-manager": "commonjs2 amqp-connection-manager",
+    "amqplib": "commonjs2 amqplib",
+    "cache-manager": "commonjs2 cache-manager",
+    "class-transformer": "commonjs2 class-transformer",
+    "grpc": "commonjs2 grpc",
+    "kafkajs": "commonjs2 kafkajs",
+    "mqtt": "commonjs2 mqtt",
+    "pg-native": "commonjs2 pg-native",
+    "redis": "commonjs2 redis",
+    "sqlite3": "commonjs2 sqlite3",
+  },
 
   node: {
-    __filename: true,
-    __dirname: true,
+    __filename: false,
+    __dirname: false,
   },
 
   resolve: {
@@ -32,8 +34,8 @@ module.exports = {
   },
 
   output: {
-    path: path.join(__dirname, "../dist/src"),
-    filename: "main.js",
+    path: path.join(__dirname, "../dist"),
+    filename: "bundle.js",
   },
 
   module: {

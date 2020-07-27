@@ -43,11 +43,13 @@ dev: indra daicard
 prod: ethprovider staging release daicard-prod
 
 indra: database indra-proxy node
-indra-prod: staging release
+indra-prod: database ethprovider indra-proxy node-prod # test-runner-prod bot-prod
+
 daicard: daicard-proxy client
 daicard-prod: daicard-webserver daicard-proxy
-staging: indra ethprovider node-staging test-runner-staging bot-staging
-release: indra ethprovider node-release test-runner-release bot-staging
+
+staging: indra ethprovider node-prod test-runner-staging bot-staging
+release: indra ethprovider node-prod test-runner-release bot-staging
 
 ########################################
 # Command & Control Shortcuts
@@ -334,16 +336,9 @@ ethprovider: contracts $(shell find modules/contracts/ops $(find_options))
 	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-node-release: node $(shell find modules/node/ops $(find_options))
+node-prod: node $(shell find modules/node/ops $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/node && MODE=release npm run build-bundle"
-	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node modules/node
-	docker tag $(project)_node $(project)_node:$(commit)
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-node-staging: node $(shell find modules/node/ops $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/node && MODE=staging npm run build-bundle"
+	$(docker_run) "cd modules/node && npm run build-bundle"
 	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node modules/node
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
