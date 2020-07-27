@@ -97,6 +97,30 @@ export abstract class MethodController {
         preProtocolStateChannel.responderIdentifier,
       ].find((identifier) => identifier !== publicIdentifier)!;
       try {
+        // NOTE: sync always requires the multisig lock since the free balance
+        // or channel nonce could be out of sync even in takeAction failures
+        if (!lockNames.includes(preProtocolStateChannel.multisigAddress)) {
+          // acquire the multisig lock
+          log.info("Acquiring multisig lock before syncing");
+          const lockValue = await requestHandler.lockService.acquireLock(
+            preProtocolStateChannel.multisigAddress,
+          );
+          lockValues.set(preProtocolStateChannel.multisigAddress, lockValue);
+          // add to the lockNames variable so it can be properly released
+          lockNames.push(preProtocolStateChannel.multisigAddress);
+        }
+        log.info("All locks acquired, syncing");
+        // only sync apps in cases for uninstall and take action protocols,
+        // otherwise sync channel only
+        const shouldProvideAppId =
+          this.methodName === MethodNames.chan_uninstall ||
+          this.methodName === MethodNames.chan_takeAction;
+        const appIdentityHash =
+          shouldProvideAppId &&
+          !!(params as any).appIdentityHash &&
+          (params as any).appIdentityHash !== preProtocolStateChannel.freeBalance.identityHash
+            ? (params as any).appIdentityHash
+            : undefined;
         const { channel } = await protocolRunner.initiateProtocol(
           router,
           ProtocolNames.sync,
@@ -104,6 +128,7 @@ export abstract class MethodController {
             multisigAddress: preProtocolStateChannel.multisigAddress,
             initiatorIdentifier: publicIdentifier,
             responderIdentifier,
+            appIdentityHash,
             chainId: preProtocolStateChannel.chainId,
           },
           preProtocolStateChannel,
