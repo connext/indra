@@ -104,17 +104,17 @@ export class TransferService {
     }
   }
 
-  async pruneExpiredApps(channel: Channel): Promise<void> {
-    const stateChannel = await this.cfCoreStore.getStateChannel(channel.multisigAddress);
+  async pruneExpiredApps(_channel: Channel): Promise<void> {
+    const channel = await this.cfCoreStore.getStateChannel(_channel.multisigAddress);
     this.log.info(
-      `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${stateChannel.chainId}`,
+      `Start pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${channel.chainId}`,
     );
-    const current = await this.configService.getEthProvider(stateChannel.chainId).getBlockNumber();
-    const expiredApps = channel.appInstances.filter((app) => {
+    const current = await this.configService.getEthProvider(channel.chainId).getBlockNumber();
+    const expiredApps = channel.appInstances.filter(([, app]) => {
       return app.latestState && app.latestState.expiry && toBN(app.latestState.expiry).lte(current);
     });
-    this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${stateChannel.chainId}`);
-    for (const app of expiredApps) {
+    this.log.info(`Removing ${expiredApps.length} expired apps on chainId ${channel.chainId}`);
+    for (const [, app] of expiredApps) {
       try {
         // Uninstall all expired apps without taking action
         await this.cfCoreService.uninstallApp(app.identityHash, channel.multisigAddress);
@@ -123,7 +123,7 @@ export class TransferService {
       }
     }
     this.log.info(
-      `Finish pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${stateChannel.chainId}`,
+      `Finish pruneExpiredApps for channel ${channel.multisigAddress} on chainId ${channel.chainId}`,
     );
   }
 
