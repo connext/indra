@@ -94,40 +94,34 @@ describe("Restore State", () => {
     clientA.off();
 
     // send the transfer
-    await Promise.all([
-      new Promise((resolve, reject) => {
-        senderClient.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, () => {
-          return resolve();
-        });
-        senderClient.on(EventNames.REJECT_INSTALL_EVENT, () => {
-          return reject();
-        });
-      }),
-      senderClient.transfer({
-        amount: transferAmount,
-        assetId,
-        recipient,
-      }),
-    ]);
+    const sent = senderClient.waitFor(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, 10_000);
+    await senderClient.transfer({
+      amount: transferAmount,
+      assetId,
+      recipient,
+    });
+    await sent;
+
+    // delay so that the node -> receiver proposal times out
+    await delay(30_000);
+
     const freeBalanceSender = await senderClient.getFreeBalance(assetId);
     expect(freeBalanceSender[senderClient.signerAddress]).to.be.eq(
       TOKEN_AMOUNT.sub(TOKEN_AMOUNT_SM),
     );
 
     // bring clientA back online
-    await new Promise(async (resolve, reject) => {
-      clientA.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, (msg) => {
-        return reject(`${clientA.publicIdentifier} failed to transfer: ${stringify(msg)}`);
-      });
-      clientA = await createClient({
+    const unlocked = senderClient.waitFor(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 10_000);
+    clientA = await createClient(
+      {
         signer: signerA,
-        id: "A2",
-      });
-      expect(clientA.signerAddress).to.be.eq(signerA.address);
-      expect(clientA.publicIdentifier).to.be.eq(signerA.publicIdentifier);
-      await delay(5000);
-      return resolve();
-    });
+        id: "A-recreated",
+      },
+      false,
+    );
+    expect(clientA.signerAddress).to.be.eq(signerA.address);
+    expect(clientA.publicIdentifier).to.be.eq(signerA.publicIdentifier);
+    await unlocked;
 
     const freeBalanceA = await clientA.getFreeBalance(assetId);
     expect(freeBalanceA[clientA.signerAddress]).to.be.eq(transferAmount);

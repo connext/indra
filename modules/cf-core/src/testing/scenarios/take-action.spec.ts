@@ -58,9 +58,7 @@ describe("Node method follows spec - takeAction", () => {
         const multisigAddress = await createChannel(nodeA, nodeB);
         const takeActionReq = constructTakeActionRpc("0xfail", multisigAddress, validAction);
 
-        await expect(nodeA.rpcRouter.dispatch(takeActionReq)).to.eventually.be.rejectedWith(
-          NO_APP_INSTANCE_FOR_GIVEN_HASH("0xfail"),
-        );
+        await expect(nodeA.rpcRouter.dispatch(takeActionReq)).to.eventually.be.rejected;
       });
 
       it("sends takeAction with invalid multisig address", async () => {

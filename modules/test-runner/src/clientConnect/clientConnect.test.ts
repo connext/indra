@@ -4,7 +4,15 @@ import { ClientOptions } from "@connext/types";
 import { ColorfulLogger, getRandomChannelSigner } from "@connext/utils";
 import { Wallet, constants, utils } from "ethers";
 
-import { createClient, env, ethProviderUrl, expect, sendOnchainValue, fundChannel, ETH_AMOUNT_SM } from "../util";
+import {
+  createClient,
+  env,
+  ethProviderUrl,
+  expect,
+  sendOnchainValue,
+  fundChannel,
+  ETH_AMOUNT_SM,
+} from "../util";
 
 const { AddressZero, One } = constants;
 const { hexlify, randomBytes } = utils;
@@ -32,6 +40,7 @@ describe("Client Connect", () => {
       nodeUrl: `${protocol}${nodeHost}/api`,
       signer,
       store: getMemoryStore({ prefix: signer.publicIdentifier }),
+      logLevel: 4,
     });
     expect(client.publicIdentifier).to.eq(signer.publicIdentifier);
   });

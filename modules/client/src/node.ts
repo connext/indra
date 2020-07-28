@@ -57,9 +57,10 @@ export class NodeApiClient implements INodeApiClient {
       signer,
       logger,
       messaging: providedMessaging,
-      skipSync,
       chainId,
     } = opts;
+    // Don't sync channel on startup by default
+    const skipSync = typeof opts.skipSync === "boolean" ? opts.skipSync : true;
     const log = logger.newContext("NodeApiClient");
 
     const nodeUrl = opts.nodeUrl;
