@@ -83,6 +83,7 @@ export class WithdrawalController extends AbstractController {
         (data) => data.uninstalledApp.identityHash === withdrawAppId,
       );
 
+      // TODO: if no transaction, we should probably send it ourselves?
       transaction = await this.connext.ethProvider.getTransaction(
         uninstallEvent.protocolMeta?.withdrawTx,
       );
