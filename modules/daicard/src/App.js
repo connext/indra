@@ -45,6 +45,8 @@ const urls = {
       : undefined,
 };
 
+console.log("Using urls:", urls);
+
 // LogLevel for testing ChannelProvider
 const LOG_LEVEL = 5;
 
