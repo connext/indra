@@ -25,6 +25,7 @@ export interface IBackupService {
 export type WithdrawalMonitorObject = {
   retry: number;
   tx: MinimalTransaction;
+  withdrawalTx: string;
 };
 
 export const STORE_SCHEMA_VERSION = 1;
