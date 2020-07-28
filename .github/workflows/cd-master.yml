@@ -82,6 +82,19 @@ jobs:
       - run: make node
       - run: make test-node
 
+  test-tps:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v1
+      - run: make pull-release
+      - run: make start-indra-prod
+      - run: make dls
+      - run: make test-tps
+      - name: Print logs
+        if: failure()
+        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_indra
+
   test-integration:
     runs-on: ubuntu-latest
     needs: [build]

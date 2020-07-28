@@ -359,7 +359,7 @@ EOF
 docker stack deploy -c $root/${project}.docker-compose.yml $project
 
 echo "The $project stack has been deployed, waiting for the proxy to start responding.."
-timeout=$(expr `date +%s` + 30)
+timeout=$(expr `date +%s` + 60)
 while true
 do
   res="`curl -m 5 -s $public_url || true`"
