@@ -7,6 +7,7 @@ on:
       - staging
 
 jobs:
+
   build:
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
@@ -20,12 +21,12 @@ jobs:
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       - run: make push-commit
 
-  test-cf:
+  test-utils:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - run: make cf-core
-      - run: make test-cf
+      - run: make utils
+      - run: make test-utils
 
   test-store:
     runs-on: ubuntu-latest
@@ -34,13 +35,6 @@ jobs:
       - run: make store
       - run: make test-store
 
-  test-watcher:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - run: make watcher
-      - run: make test-watcher
-
   test-contracts:
     runs-on: ubuntu-latest
     steps:
@@ -48,12 +42,19 @@ jobs:
       - run: make contracts
       - run: make test-contracts
 
-  test-utils:
+  test-cf:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - run: make utils
-      - run: make test-utils
+      - run: make cf-core
+      - run: make test-cf
+
+  test-watcher:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - run: make watcher
+      - run: make test-watcher
 
   test-node:
     runs-on: ubuntu-latest
@@ -68,12 +69,12 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: make pull-commit
-      - run: make start-prod
+      - run: make start-indra-prod
       - run: make dls
       - run: INDRA_ENV=staging make test-integration
       - name: Print logs
         if: failure()
-        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
+        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_indra
 
   test-backwards-compatibility:
     runs-on: ubuntu-latest
@@ -81,12 +82,12 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: make pull-commit
-      - run: make start-prod
-      - run: sleep 20 && make dls
+      - run: make start-indra-prod
+      - run: make dls
       - run: make test-backwards-compatibility
       - name: Print logs
         if: failure()
-        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
+        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_indra
 
   test-daicard:
     runs-on: ubuntu-16.04
@@ -95,8 +96,9 @@ jobs:
       - uses: actions/checkout@v1
       - run: make pull-commit
       - run: make start-indra-prod
-      - run: make start-daicard
+      - run: make start-daicard-prod
+      - run: make dls
       - run: make test-daicard
       - name: Print logs
         if: failure()
-        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
+        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_indra
