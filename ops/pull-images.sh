@@ -8,7 +8,7 @@ indra_images="database ethprovider node proxy test_runner bot"
 daicard_images="proxy webserver"
 
 # prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
-if [[ -n "$1" ]]
+if [[ -z "$1" ]]
 then
   git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
   if [[ -n "$git_tag" ]]

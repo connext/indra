@@ -6,7 +6,7 @@ project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`
 registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
 # prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
-if [[ -n "$1" ]]
+if [[ -z "$1" ]]
 then
   git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
   if [[ -n "$git_tag" ]]
