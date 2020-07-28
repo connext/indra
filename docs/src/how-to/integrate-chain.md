@@ -2,6 +2,18 @@
 
 ## Prerequisites
 
+To integrate with connext your chain must have:
+
+- evm compatability
+- `ABIEncoderV2` support
+- `EC_RECOVER` support
+- `keccak256` support
+- same math quirks as solidity (i.e. must underflow and overflow in the same way if your contract is NOT using safe math)
+- blocktime/timestamp support (important during channel adjudication and for any time dependent apps)
+- solidity v6 support
+
+If your contracts meet some, but not all, of the requirements contact the Connext team for more detailed integration steps.
+
 ## Integration
 
 ### Contract Deployment
@@ -28,11 +40,16 @@ Before restarting the node, make sure there is sufficient collateral at the node
 
 ### Testing
 
-To test out the changes on your deployed node, run the following:
+To test out the changes on your deployed node, you will need to run the bot tests. First, fire up your local node by updating the mnemonic and chain providers in your local `.env` file:
+
+```bash
+> make start
+```
+
+Then run the bot tests by running the following:
 
 ```bash
 > export INDRA_CHAIN_URL="<CHAIN_PROVIDER_URL>"
-> export INDRA_NODE_URL="<NODE_URL>"
 > export MNEMONIC="<BOT_FUNDER_MNEMONIC>"
 > bash ops/test/e2e.sh <CHAIN_ID>
 
@@ -40,4 +57,6 @@ To test out the changes on your deployed node, run the following:
 INDRA_CHAIN_URL=<CHAIN_PROVIDER_URL> bash ops/test/e2e.sh <CHAIN_ID>
 ```
 
-If the values for the environment variables are not exported, the default dev values will be used.
+If the values for the environment variables are not exported, the default dev values will be used. NOTE: depending on your chain congestion, these tests may timeout.
+
+Once the tests pass, submit the changes as a PR for review.
