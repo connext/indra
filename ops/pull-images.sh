@@ -4,7 +4,7 @@ set -e
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
-indra_images="database ethprovider node proxy test_runner bot"
+indra_images="bot builder database ethprovider node proxy test_runner"
 daicard_images="proxy webserver"
 
 # prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash

@@ -16,7 +16,7 @@ then
 else version="$1"
 fi
 
-indra_images="database ethprovider node proxy test_runner bot"
+indra_images="bot builder database ethprovider node proxy test_runner"
 daicard_images="proxy webserver"
 
 commit=`git rev-parse HEAD | head -c 8`
