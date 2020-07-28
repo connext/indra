@@ -81,7 +81,7 @@ kill "$loading_pid" && pkill nc
 if [[ -z "$DAICARD_DOMAINNAME" ]]
 then
   cp /etc/ssl/cert.pem ca-certs.pem
-  echo "Entrypoint finished, executing haproxy..."; echo
+  echo "Entrypoint finished, executing http haproxy..."; echo
   exec haproxy -db -f http.cfg
 fi
 
@@ -147,5 +147,5 @@ copycerts
 
 cp /etc/ssl/cert.pem ca-certs.pem
 
-echo "Entrypoint finished, executing haproxy..."; echo
+echo "Entrypoint finished, executing https haproxy..."; echo
 exec haproxy -db -f https.cfg

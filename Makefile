@@ -289,12 +289,12 @@ client: types utils channel-provider messaging store contracts cf-core apps $(sh
 
 bot: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/bot $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/bot && npm run build"
+	$(docker_run) "cd modules/bot && npm run build && npm run build-bundle"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 node: types utils messaging store contracts cf-core apps client $(shell find modules/node $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
+	$(docker_run) "cd modules/node && npm run build && npm run build-bundle && touch src/main.ts"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 test-runner: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/test-runner $(find_options))
@@ -347,14 +347,12 @@ ethprovider: contracts $(shell find modules/contracts/ops $(find_options))
 
 node-prod: node $(shell find modules/node/ops $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/node && npm run build-bundle"
 	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node modules/node
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 bot-prod: bot $(shell find modules/bot/ops $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/bot && npm run build-bundle"
 	docker build --file modules/bot/ops/Dockerfile $(image_cache) --tag $(project)_bot modules/bot
 	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
@@ -368,4 +366,5 @@ test-runner-prod: test-runner $(shell find modules/test-runner/ops $(find_option
 ssh-action: $(shell find ops/ssh-action $(find_options))
 	$(log_start)
 	docker build --file ops/ssh-action/Dockerfile --tag $(project)_ssh_action ops/ssh-action
+	docker tag $(project)_ssh_action $(project)_ssh_action:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@

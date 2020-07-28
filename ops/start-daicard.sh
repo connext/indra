@@ -64,19 +64,17 @@ indra_url="${DAICARD_INDRA_URL:-http://172.17.0.1:3000}"
 proxy_image="${project}_proxy:$version";
 pull_if_unavailable "$proxy_image"
 
-if [[ "$DAICARD_ENV" == "prod" ]]
+
+if [[ -z "$INDRA_DOMAINNAME" ]]
 then
-  if [[ -z "$DAICARD_DOMAINNAME" ]]
-  then public_url="http://localhost:80"
-  else public_url="https://localhost:443"
-  fi
-  proxy_ports="ports:
-      - '80:80'
-      - '443:443'"
-else
   public_url="http://localhost:3001"
   proxy_ports="ports:
       - '3001:80'"
+else
+  public_url="https://localhost:443"
+  proxy_ports="ports:
+      - '80:80'
+      - '443:443'"
 fi
 
 echo "Proxy configured"
