@@ -374,6 +374,12 @@ export class CFCoreService {
     });
 
     this.logCfCoreMethodResult(MethodNames.chan_uninstall, uninstallResponse.result.result);
+    // TODO: this is only here for channelProvider, fix this eventually
+    const uninstallSubject = `${this.cfCore.publicIdentifier}.channel.${multisigAddress}.app-instance.${appIdentityHash}.uninstall`;
+    await this.messagingService.publish(uninstallSubject, {
+      ...uninstallResponse.result.result,
+      protocolMeta,
+    });
     return uninstallResponse.result.result as MethodResults.Uninstall;
   }
 

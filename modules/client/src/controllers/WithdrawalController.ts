@@ -12,7 +12,7 @@ import {
   WithdrawAppState,
   DefaultApp,
   CF_METHOD_TIMEOUT,
-  EventPayloads,
+  GenericMessage,
 } from "@connext/types";
 import {
   getSignerAddressFromPublicIdentifier,
@@ -77,17 +77,26 @@ export class WithdrawalController extends AbstractController {
       });
 
       this.log.info(`Waiting for node to provide withdrawl tx hash`);
-      const uninstallEvent = await this.listener.waitFor(
-        EventNames.UNINSTALL_EVENT,
-        CF_METHOD_TIMEOUT * 3,
-        (data) => data.uninstalledApp.identityHash === withdrawAppId,
-      );
+      const subject = `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${withdrawAppId}.uninstall`;
+
+      const uninstallEvent: any = await Promise.race([
+        this.listener.waitFor(
+          EventNames.UNINSTALL_EVENT,
+          CF_METHOD_TIMEOUT * 3,
+          (data) => data.uninstalledApp.identityHash === withdrawAppId,
+        ),
+        new Promise((resolve) =>
+          this.connext.node.messaging.subscribe(subject, (msg: GenericMessage) =>
+            resolve(msg.data),
+          ),
+        ),
+      ]);
 
       // TODO: if no transaction, we should probably send it ourselves?
       transaction = await this.connext.ethProvider.getTransaction(
         uninstallEvent.protocolMeta?.withdrawTx,
       );
-      this.log.info(`Uninstall event: ${stringify(uninstallEvent, true, 0)}`);
+      this.log.info(`Data from withdrawal app uninstall: ${stringify(uninstallEvent, true, 0)}`);
 
       transaction.wait().then(async (receipt) => {
         this.connext.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction: receipt });
