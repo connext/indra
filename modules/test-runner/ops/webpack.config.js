@@ -7,6 +7,12 @@ module.exports = {
 
   entry: path.join(__dirname, "../src/index.ts"),
 
+  externals: {
+    "mocha": "commonjs2 mocha",
+    "sequelize": "commonjs2 sequelize",
+    "sqlite3": "commonjs2 sqlite3",
+  },
+
   node: {
     __filename: false,
     __dirname: false,
