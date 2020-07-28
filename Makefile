@@ -129,6 +129,9 @@ quick-reset:
 	rm -rf modules/*/.connext-store
 	touch modules/node/src/main.ts
 
+reset-images:
+	rm -f .flags/bot-* .flags/database  .flags/ethprovider .flags/node-release .flags/node-staging .flags/*-proxy .flags/test-runner-* .flags/*-webserver
+
 purge: clean reset
 
 push-commit:
@@ -190,7 +193,7 @@ test-tps: bot
 test-integration: test-runner
 	bash ops/test/integration.sh
 
-test-backwards-compatibility: pull-backwards-compatible test-runner
+test-backwards-compatibility:
 	bash ops/pull-images.sh $(backwards_compatible_version)
 	bash ops/test/integration.sh $(backwards_compatible_version)
 

@@ -4,6 +4,9 @@ set -e
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." >/dev/null 2>&1 && pwd )"
 project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
+version="$1"
+shift || true
+
 mode="${INDRA_ENV:-local}"
 name="${project}_test_runner"
 commit="`git rev-parse HEAD | head -c 8`"
@@ -41,8 +44,8 @@ contract_addresses="`cat $addresses_file`"
 ########################################
 ## Launch test image
 
-if [[ -n "`docker image ls -q $name:$1`" ]]
-then image=$name:$1; shift # rm $1 from $@
+if [[ -n "`docker image ls -q $name:$version`" ]]
+then image=$name:$version
 elif [[ "$mode" == "release" ]]
 then image=$name:$release;
 elif [[ "$mode" == "staging" ]]
