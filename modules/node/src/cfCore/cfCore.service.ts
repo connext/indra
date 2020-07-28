@@ -358,11 +358,13 @@ export class CFCoreService {
     appIdentityHash: string,
     multisigAddress: string,
     action?: AppAction,
+    protocolMeta?: any,
   ): Promise<MethodResults.Uninstall> {
     const parameters = {
       appIdentityHash,
       multisigAddress,
       action,
+      protocolMeta,
     } as MethodParams.Uninstall;
     this.logCfCoreMethodStart(MethodNames.chan_uninstall, parameters);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({

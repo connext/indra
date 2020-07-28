@@ -635,12 +635,14 @@ export function constructUninstallRpc(
   appIdentityHash: string,
   multisigAddress: string,
   action?: SolidityValueType,
+  protocolMeta?: any,
 ): Rpc {
   return {
     parameters: {
       appIdentityHash,
       multisigAddress,
       action,
+      protocolMeta,
     } as MethodParams.Uninstall,
     id: Date.now(),
     methodName: MethodNames.chan_uninstall,

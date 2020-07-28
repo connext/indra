@@ -46,12 +46,12 @@ export class WithdrawalController extends AbstractController {
     }
 
     const { assetId, recipient } = params;
-    let transaction: providers.TransactionResponse | undefined;
 
     this.throwIfAny(getAddressError(recipient), getAddressError(assetId));
 
     let withdrawCommitment: WithdrawCommitment;
     let withdrawerSignatureOnWithdrawCommitment: string;
+    let transaction: providers.TransactionResponse | undefined;
     try {
       this.log.debug(`Creating withdraw commitment`);
       withdrawCommitment = await this.createWithdrawCommitment(params);
@@ -76,32 +76,23 @@ export class WithdrawalController extends AbstractController {
         withdrawerSignatureOnWithdrawCommitment,
       });
 
-      this.log.debug(`Watching chain for user withdrawal`);
-      const raceRes = (await Promise.race([
-        this.listener.waitFor(
-          EventNames.UPDATE_STATE_FAILED_EVENT,
-          CF_METHOD_TIMEOUT * 3,
-          (msg) => msg.params.appIdentityHash === withdrawAppId,
-        ),
-        new Promise(async (resolve, reject) => {
-          try {
-            const [tx] = await this.connext.watchForUserWithdrawal();
-            return resolve(tx);
-          } catch (e) {
-            return reject(new Error(e));
-          }
-        }),
-      ])) as EventPayloads.UpdateStateFailed | providers.TransactionResponse;
-      if ((raceRes as EventPayloads.UpdateStateFailed)?.error) {
-        throw new Error((raceRes as EventPayloads.UpdateStateFailed).error);
-      }
-      transaction = raceRes as providers.TransactionResponse;
-      this.log.debug(`Transaction details: ${stringify(transaction)}`);
+      this.log.info(`Waiting for node to provide withdrawl tx hash`);
+      const uninstallEvent = await this.listener.waitFor(
+        EventNames.UNINSTALL_EVENT,
+        CF_METHOD_TIMEOUT * 3,
+        (data) => data.uninstalledApp.identityHash === withdrawAppId,
+      );
 
-      this.connext.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction });
+      transaction = await this.connext.ethProvider.getTransaction(
+        uninstallEvent.protocolMeta?.withdrawTx,
+      );
+      this.log.info(`Uninstall event: ${stringify(uninstallEvent, true, 0)}`);
 
-      this.log.debug(`Removing withdraw commitment`);
-      await this.removeWithdrawCommitmentFromStore(transaction);
+      transaction.wait().then(async (receipt) => {
+        this.connext.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction: receipt });
+        this.log.debug(`Removing withdraw commitment`);
+        await this.removeWithdrawCommitmentFromStore(transaction);
+      });
     } catch (e) {
       this.connext.emit(EventNames.WITHDRAWAL_FAILED_EVENT, {
         params,

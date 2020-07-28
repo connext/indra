@@ -104,6 +104,7 @@ const INSTALL_EVENT = "INSTALL_EVENT";
 type InstallEventData = {
   appIdentityHash: Bytes32;
   appInstance: AppInstanceJson;
+  protocolMeta?: any;
 };
 
 const INSTALL_FAILED_EVENT = "INSTALL_FAILED_EVENT";
@@ -119,6 +120,7 @@ const PROPOSE_INSTALL_EVENT = "PROPOSE_INSTALL_EVENT";
 type ProposeEventData = {
   params: ProtocolParams.Propose;
   appInstanceId: string;
+  protocolMeta?: any;
 };
 
 const PROPOSE_INSTALL_FAILED_EVENT = "PROPOSE_INSTALL_FAILED_EVENT";
@@ -147,6 +149,7 @@ type UninstallEventData = {
   multisigAddress: string;
   uninstalledApp: AppInstanceJson;
   action?: SolidityValueType;
+  protocolMeta?: any;
 };
 
 const UNINSTALL_FAILED_EVENT = "UNINSTALL_FAILED_EVENT";
@@ -163,6 +166,7 @@ type UpdateStateEventData = {
   appIdentityHash: Bytes32;
   newState: SolidityValueType;
   action?: SolidityValueType;
+  protocolMeta?: any;
 };
 
 const UPDATE_STATE_FAILED_EVENT = "UPDATE_STATE_FAILED_EVENT";
@@ -176,7 +180,7 @@ type UpdateStateFailedEventData = {
 const WITHDRAWAL_CONFIRMED_EVENT = "WITHDRAWAL_CONFIRMED_EVENT";
 
 type WithdrawalConfirmedEventData = {
-  transaction: providers.TransactionResponse;
+  transaction: providers.TransactionReceipt;
 };
 
 ////////////////////////////////////////
