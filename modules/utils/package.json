@@ -12,7 +12,7 @@
     "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
     "rebuild": "npm run clean && npm run build",
     "clean": "rm -rf ./dist",
-    "test": "./node_modules/.bin/ts-mocha --bail --check-leaks --exit src/**/*.spec.ts"
+    "test": "./node_modules/.bin/ts-mocha --bail --check-leaks --exit 'src/**/*.spec.ts'"
   },
   "dependencies": {
     "axios": "0.19.2",
