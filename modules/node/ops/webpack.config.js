@@ -2,7 +2,7 @@ const CopyPlugin = require("copy-webpack-plugin");
 const path = require("path");
 
 module.exports = {
-  mode: "development",
+  mode: "production",
   target: "node",
 
   context: path.join(__dirname, ".."),
@@ -80,4 +80,5 @@ module.exports = {
     }),
   ],
 
+  stats: { warnings: false },
 };
