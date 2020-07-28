@@ -66,6 +66,7 @@ nats_image="provide/nats-server:indra"
 node_image="$builder_image"
 proxy_image="${project}_proxy"
 redis_image="redis:5-alpine"
+grafana_image="grafana/grafana:latest"
 
 ####################
 # Configure UI
@@ -157,6 +158,7 @@ volumes:
   chain_1337:
   chain_1338:
   database_dev:
+  grafana-storage:
 
 services:
 
@@ -243,6 +245,15 @@ services:
       - '$project'
     ports:
       - '6379:6379'
+  
+  grafana:
+    image: '$grafana_image'
+    networks:
+      - '$project'
+    ports:
+      - '3001:3000'
+    volumes:
+      - 'grafana-storage:/var/lib/grafana'
 
 EOF
 
