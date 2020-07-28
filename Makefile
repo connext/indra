@@ -134,20 +134,14 @@ reset-images:
 
 purge: clean reset
 
-push-commit:
-	bash ops/push-images.sh $(commit)
+push:
+	bash ops/push-images.sh
 
-push-release:
-	bash ops/push-images.sh $(release)
+pull:
+	bash ops/pull-images.sh
 
 pull-latest:
 	bash ops/pull-images.sh latest
-
-pull-commit:
-	bash ops/pull-images.sh $(commit)
-
-pull-release:
-	bash ops/pull-images.sh $(release)
 
 build-report:
 	bash ops/build-report.sh

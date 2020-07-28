@@ -18,7 +18,7 @@ jobs:
       - run: make staging
       - run: make build-report
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-      - run: make push-commit
+      - run: make push
 
   test-ssh:
     env:
@@ -80,7 +80,7 @@ jobs:
     needs: [build]
     steps:
       - uses: actions/checkout@v1
-      - run: make pull-commit
+      - run: make pull
       - run: make start-indra-prod
       - run: make dls
       - run: make test-tps
@@ -93,7 +93,7 @@ jobs:
     needs: [build]
     steps:
       - uses: actions/checkout@v1
-      - run: make pull-commit
+      - run: make pull
       - run: make start-indra-prod
       - run: make dls
       - run: INDRA_ENV=staging make test-integration
@@ -106,7 +106,7 @@ jobs:
     needs: [build]
     steps:
       - uses: actions/checkout@v1
-      - run: make pull-commit
+      - run: make pull
       - run: make start-indra-prod
       - run: make dls
       - run: make test-backwards-compatibility
@@ -119,7 +119,7 @@ jobs:
     needs: [build]
     steps:
       - uses: actions/checkout@v1
-      - run: make pull-commit
+      - run: make pull
       - run: make start-indra-prod
       - run: make start-daicard-prod
       - run: make dls

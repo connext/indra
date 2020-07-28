@@ -5,14 +5,25 @@ root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
-version="$1"
+# prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
+if [[ -n "$1" ]]
+then
+  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
+  if [[ -n "$git_tag" ]]
+  then version="`echo $git_tag | sed 's/indra-//'`"
+  else version="`git rev-parse HEAD | head -c 8`"
+  fi
+else version="$1"
+fi
+
+indra_images="database ethprovider node proxy test_runner bot"
+daicard_images="proxy webserver"
 
 commit=`git rev-parse HEAD | head -c 8`
-images="database ethprovider node proxy test_runner webserver bot"
 registry_url="https://index.docker.io/v1/repositories/${registry#*/}"
 
 function safePush {
-  image=${project}_$1
+  image=$1
   echo;echo "Pushing $registry/$image:$version"
   if [[ -n "`curl -sflL "$registry_url/$image/tags/$version"`" ]]
   then
@@ -27,6 +38,10 @@ function safePush {
   fi
 }
 
-for image in $images
-do safePush $image
+for image in $indra_images
+do safePush indra_$image
+done
+
+for image in $daicard_images
+do safePush daicard_$image
 done
