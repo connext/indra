@@ -115,13 +115,13 @@ bash ops/save-secret.sh "${project}_database_dev" "$project"
 ########################################
 # Configure or launch Ethereum testnets
 
-eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+eth_mnemonic="${INDRA_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 
 # If no chain providers provided, spin up local testnets & use those
 if [[ -z "$INDRA_CHAIN_PROVIDERS" ]]
 then
   chain_id_1=1337; chain_id_2=1338;
-  bash ops/start-testnet.sh $chain_id_1 $chain_id_2
+  INDRA_MNEMONIC="$eth_mnemonic" bash ops/start-testnet.sh $chain_id_1 $chain_id_2
   chain_providers="`cat $root/.chaindata/providers/${chain_id_1}-${chain_id_2}.json`"
   contract_addresses="`cat $root/.chaindata/addresses/${chain_id_1}-${chain_id_2}.json`"
   chain_url_1="`echo $chain_providers | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"
