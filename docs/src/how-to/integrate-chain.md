@@ -28,6 +28,16 @@ Before restarting the node, make sure there is sufficient collateral at the node
 
 ### Testing
 
-To test out the changes, run the following in your local terminal window:
+To test out the changes on your deployed node, run the following:
 
+```bash
+> export INDRA_CHAIN_URL="<CHAIN_PROVIDER_URL>"
+> export INDRA_NODE_URL="<NODE_URL>"
+> export MNEMONIC="<BOT_FUNDER_MNEMONIC>"
+> bash ops/test/e2e.sh <CHAIN_ID>
+
+# or
 INDRA_CHAIN_URL=<CHAIN_PROVIDER_URL> bash ops/test/e2e.sh <CHAIN_ID>
+```
+
+If the values for the environment variables are not exported, the default dev values will be used.
