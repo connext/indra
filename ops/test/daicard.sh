@@ -14,12 +14,6 @@ $cypress install
 ########################################
 ## Start the UI e2e watcher if in watch mode
 
-# If we're listening on 3001 then use that else it's probably prod mode
-if [[ -n "`docker container ls --format '{{.Ports}}' | grep "0.0.0.0:3001"`" ]]
-then env="--env publicUrl=http://localhost:3001"
-else env="--env publicUrl=https://localhost:433"
-fi
-
 if [[ "$1" == "--watch" ]]
 then
   $cypress open $env
