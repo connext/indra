@@ -34,6 +34,8 @@ then interactive="--interactive --tty"
 else echo "Running in non-interactive mode"
 fi
 
+make bot
+
 exec docker run \
   $interactive \
   --entrypoint="bash" \
