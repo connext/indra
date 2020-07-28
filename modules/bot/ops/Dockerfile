@@ -5,12 +5,7 @@ RUN apk add --update --no-cache bash curl g++ gcc git jq make python
 RUN npm config set unsafe-perm true
 RUN npm install -g npm@6.14.5
 RUN curl https://raw.githubusercontent.com/vishnubob/wait-for-it/ed77b63706ea721766a62ff22d3a251d8b4a6a30/wait-for-it.sh > /bin/wait-for && chmod +x /bin/wait-for
-COPY modules/bot/package.json package.json
-RUN npm install --only=production > /dev/null 2>&1
-COPY modules/bot/ops ops
-COPY modules/bot/dist dist
-# used to fund agents
-COPY modules/contracts/dist contracts/dist
+COPY ops ops
+COPY dist dist
 ENV PATH="./node_modules/.bin:${PATH}"
-EXPOSE 3333
 ENTRYPOINT ["bash", "ops/entry.sh"]

@@ -5,6 +5,7 @@
   "main": "dist/src/index.js",
   "scripts": {
     "build": "rm -rf dist && tsc --project tsconfig.json",
+    "build-bundle": "webpack --config ops/webpack.config.js",
     "start": "node --inspect=0.0.0.0:9229 dist/src/index.js",
     "start:registry": "node dist/src/registry.js"
   },
@@ -25,7 +26,12 @@
   },
   "devDependencies": {
     "@types/yargs": "15.0.5",
+    "babel-loader": "8.1.0",
+    "copy-webpack-plugin": "6.0.3",
+    "ts-loader": "8.0.1",
     "ts-node": "8.10.2",
-    "typescript": "3.9.7"
+    "typescript": "3.9.7",
+    "webpack": "4.43.0",
+    "webpack-cli": "3.3.12"
   }
 }

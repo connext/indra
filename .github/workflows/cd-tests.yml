@@ -71,7 +71,7 @@ jobs:
       - run: make pull
       - run: make start-indra-prod
       - run: make dls
-      - run: make test-tps
+      - run: make test-tps-prod
       - name: Print logs
         if: failure()
         run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_indra

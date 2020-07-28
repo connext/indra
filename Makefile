@@ -182,6 +182,9 @@ test-node: node
 test-tps: bot
 	bash ops/test/tps.sh 10 0 10
 
+test-tps-prod:
+	bash ops/test/tps.sh 10 0 10
+
 test-integration: test-runner
 	bash ops/test/integration.sh
 
@@ -323,6 +326,12 @@ daicard-webserver: daicard-bundle $(shell find ops/webserver $(find_options))
 	docker tag daicard_webserver daicard_webserver:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
+indra-proxy: $(shell find ops/proxy/indra $(find_options))
+	$(log_start)
+	docker build $(image_cache) --tag $(project)_proxy ops/proxy/indra
+	docker tag $(project)_proxy $(project)_proxy:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
 database: $(shell find ops/database $(find_options))
 	$(log_start)
 	docker build --file ops/database/db.dockerfile $(image_cache) --tag $(project)_database ops/database
@@ -344,23 +353,18 @@ node-prod: node $(shell find modules/node/ops $(find_options))
 
 bot-prod: bot $(shell find modules/bot/ops $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/bot && npm run build"
-	docker build --file modules/bot/ops/Dockerfile $(image_cache) --tag $(project)_bot .
+	$(docker_run) "cd modules/bot && npm run build-bundle"
+	docker build --file modules/bot/ops/Dockerfile $(image_cache) --tag $(project)_bot modules/bot
 	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-indra-proxy: $(shell find ops/proxy/indra $(find_options))
+test-runner-prod: test-runner $(shell find modules/test-runner/ops $(find_options))
 	$(log_start)
-	docker build $(image_cache) --tag $(project)_proxy ops/proxy/indra
-	docker tag $(project)_proxy $(project)_proxy:$(commit)
+	docker build --file modules/test-runner/ops/Dockerfile $(image_cache) --tag $(project)_test_runner modules/test-runner
+	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ssh-action: $(shell find ops/ssh-action $(find_options))
 	$(log_start)
 	docker build --file ops/ssh-action/Dockerfile --tag $(project)_ssh_action ops/ssh-action
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-test-runner-prod: test-runner $(shell find modules/test-runner/ops $(find_options))
-	$(log_start)
-	docker build --file modules/test-runner/ops/Dockerfile $(image_cache) --tag $(project)_test_runner:$(commit) modules/test-runner
 	$(log_finish) && mv -f $(totalTime) .flags/$@
