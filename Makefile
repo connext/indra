@@ -39,7 +39,7 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 default: indra
 all: dev prod
 dev: indra daicard
-prod: ethprovider node-prod test-runner-prod bot-prod daicard-prod
+prod: ethprovider indra-prod test-runner-prod bot-prod daicard-prod
 
 indra: database indra-proxy node
 indra-prod: database ethprovider indra-proxy node-prod # test-runner-prod bot-prod
