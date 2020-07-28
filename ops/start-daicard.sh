@@ -67,7 +67,7 @@ pull_if_unavailable "$proxy_image"
 if [[ "$DAICARD_ENV" == "prod" ]]
 then
   if [[ -z "$DAICARD_DOMAINNAME" ]]
-  then public_url="https://localhost:80"
+  then public_url="http://localhost:80"
   else public_url="https://localhost:443"
   fi
   proxy_ports="ports:
@@ -145,7 +145,7 @@ echo "The $project stack has been deployed, waiting for the proxy to start respo
 timeout=$(expr `date +%s` + 180)
 while true
 do
-  res="`curl -m 5 -s $public_url || true`"
+  res="`curl -k -m 5 -s $public_url || true`"
   if [[ -z "$res" || "$res" == "Waiting for proxy to wake up" ]]
   then
     if [[ "`date +%s`" -gt "$timeout" ]]
