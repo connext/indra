@@ -362,7 +362,7 @@ echo "The $project stack has been deployed, waiting for the proxy to start respo
 timeout=$(expr `date +%s` + 60)
 while true
 do
-  res="`curl -m 5 -s $public_url || true`"
+  res="`curl -k -m 5 -s $public_url || true`"
   if [[ -z "$res" || "$res" == "Waiting for proxy to wake up" ]]
   then
     if [[ "`date +%s`" -gt "$timeout" ]]

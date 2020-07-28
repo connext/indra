@@ -185,9 +185,12 @@ test-tps: bot
 test-integration: test-runner
 	bash ops/test/integration.sh
 
+test-integration-prod:
+	INDRA_ENV=prod bash ops/test/integration.sh
+
 test-backwards-compatibility:
 	bash ops/pull-images.sh $(backwards_compatible_version)
-	bash ops/test/integration.sh $(backwards_compatible_version)
+	INDRA_ENV=prod bash ops/test/integration.sh $(backwards_compatible_version)
 
 test-daicard:
 	bash ops/test/daicard.sh
@@ -359,6 +362,5 @@ ssh-action: $(shell find ops/ssh-action $(find_options))
 
 test-runner-prod: test-runner $(shell find modules/test-runner/ops $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/test-runner && npm run build"
-	docker build --file modules/test-runner/ops/Dockerfile $(image_cache) --tag $(project)_test_runner:$(commit) .
+	docker build --file modules/test-runner/ops/Dockerfile $(image_cache) --tag $(project)_test_runner:$(commit) modules/test-runner
 	$(log_finish) && mv -f $(totalTime) .flags/$@
