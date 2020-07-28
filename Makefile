@@ -66,7 +66,7 @@ start-daicard: daicard
 	bash ops/start-daicard.sh
 
 start-daicard-prod:
-	INDRA_ENV=prod bash ops/start-daicard.sh
+	DAICARD_ENV=prod bash ops/start-daicard.sh
 
 start-testnet: contracts
 	INDRA_CHAIN_LOG_LEVEL=1 bash ops/start-testnet.sh
@@ -319,8 +319,8 @@ daicard-proxy: $(shell find ops/proxy/daicard $(find_options))
 
 daicard-webserver: daicard-bundle $(shell find ops/webserver $(find_options))
 	$(log_start)
-	docker build --file ops/webserver/nginx.dockerfile $(image_cache) --tag $(project)_webserver .
-	docker tag $(project)_webserver $(project)_webserver:$(commit)
+	docker build --file ops/webserver/nginx.dockerfile $(image_cache) --tag daicard_webserver .
+	docker tag daicard_webserver daicard_webserver:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 database: $(shell find ops/database $(find_options))

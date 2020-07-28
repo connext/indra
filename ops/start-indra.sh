@@ -90,21 +90,18 @@ redis_url="redis://redis:6379"
 proxy_image="${project}_proxy:$version";
 pull_if_unavailable "$proxy_image"
 
-if [[ "$INDRA_ENV" == "prod" ]]
+if [[ -z "$INDRA_DOMAINNAME" ]]
 then
-  if [[ -z "$INDRA_DOMAINNAME" ]]
-  then public_url="https://localhost:80"
-  else public_url="https://localhost:443"
-  fi
-  proxy_ports="ports:
-      - '80:80'
-      - '443:443'
-      - '4221:4221'
-      - '4222:4222'"
-else
   public_url="http://localhost:3000"
   proxy_ports="ports:
       - '3000:80'
+      - '4221:4221'
+      - '4222:4222'"
+else
+  public_url="https://localhost:443"
+  proxy_ports="ports:
+      - '80:80'
+      - '443:443'
       - '4221:4221'
       - '4222:4222'"
 fi

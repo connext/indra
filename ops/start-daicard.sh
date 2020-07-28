@@ -16,7 +16,7 @@ docker network create --attachable --driver overlay $project 2> /dev/null || tru
 ## Docker registry & version config
 
 # prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
-if [[ "$INDRA_ENV" == "prod" ]]
+if [[ "$DAICARD_ENV" == "prod" ]]
 then
   git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
   if [[ -n "$git_tag" ]]

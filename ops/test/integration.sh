@@ -60,7 +60,7 @@ then
     --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
     --env="INDRA_CONTRACT_ADDRESSES=$contract_addresses" \
     --env="INDRA_NATS_URL=nats://indra:4222" \
-    --env="INDRA_NODE_URL=https://indra" \
+    --env="INDRA_NODE_URL=http://indra" \
     --env="NODE_ENV=production" \
     --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
     --name="$name" \
