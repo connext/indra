@@ -12,7 +12,6 @@ registry=$(shell cat $(dir)/package.json | grep '"registry":' | head -n 1 | cut 
 
 cwd=$(shell pwd)
 commit=$(shell git rev-parse HEAD | head -c 8)
-release=$(shell cat package.json | grep '"version"' | head -n 1 | cut -d '"' -f 4)
 
 # version that will be tested against for backwards compatibility checks
 backwards_compatible_version=$(shell cat package.json | grep '"backwardsCompatibleWith"' | head -n 1 | cut -d '"' -f 4)
@@ -38,18 +37,15 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 # Build Shortcuts
 
 default: indra
-all: indra staging release daicard 
+all: dev prod
 dev: indra daicard
-prod: ethprovider staging release daicard-prod
+prod: ethprovider node-prod test-runner-prod bot-prod daicard-prod
 
 indra: database indra-proxy node
 indra-prod: database ethprovider indra-proxy node-prod # test-runner-prod bot-prod
 
 daicard: daicard-proxy client
 daicard-prod: daicard-webserver daicard-proxy
-
-staging: indra ethprovider node-prod test-runner-staging bot-staging
-release: indra ethprovider node-prod test-runner-release bot-staging
 
 ########################################
 # Command & Control Shortcuts
@@ -132,7 +128,7 @@ quick-reset:
 	touch modules/node/src/main.ts
 
 reset-images:
-	rm -f .flags/bot-* .flags/database  .flags/ethprovider .flags/node-release .flags/node-staging .flags/*-proxy .flags/test-runner-* .flags/*-webserver
+	rm -f .flags/bot-* .flags/database  .flags/ethprovider .flags/node-prod .flags/*-proxy .flags/test-runner-* .flags/*-webserver
 
 purge: clean reset
 
@@ -343,9 +339,9 @@ node-prod: node $(shell find modules/node/ops $(find_options))
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-bot-staging: bot $(shell find modules/bot/ops $(find_options))
+bot-prod: bot $(shell find modules/bot/ops $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/bot && MODE=staging npm run build"
+	$(docker_run) "cd modules/bot && npm run build"
 	docker build --file modules/bot/ops/Dockerfile $(image_cache) --tag $(project)_bot .
 	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
@@ -361,15 +357,8 @@ ssh-action: $(shell find ops/ssh-action $(find_options))
 	docker build --file ops/ssh-action/Dockerfile --tag $(project)_ssh_action ops/ssh-action
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-test-runner-release: test-runner $(shell find modules/test-runner/ops $(find_options))
+test-runner-prod: test-runner $(shell find modules/test-runner/ops $(find_options))
 	$(log_start)
-	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build"
+	$(docker_run) "cd modules/test-runner && npm run build"
 	docker build --file modules/test-runner/ops/Dockerfile $(image_cache) --tag $(project)_test_runner:$(commit) .
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-test-runner-staging: test-runner $(shell find modules/test-runner/ops $(find_options))
-	$(log_start)
-	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build"
-	docker build --file modules/test-runner/ops/Dockerfile $(image_cache) --tag $(project)_test_runner .
-	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@

@@ -6,7 +6,6 @@ set -e
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
-release="`cat $root/package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
 # make sure a network for this project has been created
 docker swarm init 2> /dev/null || true

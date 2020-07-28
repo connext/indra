@@ -63,11 +63,11 @@ Situation: staging needs some repairs before it's ready to be deployed but there
 ### Hot-fixing (skip CD)
 Situation: we need to get a change deployed to prod as quickly as possible.
 - Write hotfix and push change to master.
-- Build/push images: If you have a beefy laptop & fast internet you can do this manually via `make prod && make push-release` (or use `make push-staging` to hotfix staging). Otherwise, it's probably faster to just wait for CD to build/push stuff as part of the build step.
+- Build/push images: If you have a beefy laptop & fast internet you can do this manually via `make prod && make push`. Otherwise, it's probably faster to just wait for CD to build/push stuff as part of the build step.
 - Once images are pushed:
     -  ssh onto the target server & cd into indra clone
     - `git fetch` `--``all`
-    - `git checkout <target commit/release>` 
+    - `git checkout <target commit/tag>` 
     - `make restart-prod`
 - Check to make sure your hotfix got deployed & does what we expect. Be aware that CD is probably still testing this commit in the background and it will be redeployed maybe 10 mins after you manually deployed it.
 
@@ -76,11 +76,11 @@ Docker images are tagged & pushed automatically during CD, you shouldn't ever ha
 There are 3 important image tag types:
 - Commit tags eg `3dffdc17`, these are built & pushed during the first step of either feature or staging CD. Later steps of feature/staging CD will pull & run tests against these images (and deploy them if staging and tests pass). These are built using local code (ie local modules aren't pulled from the npm registry).
 - Release tags eg `1.2.3`, these are built & pushed during the first step of master CD and then tested/deployed during later steps. These images use code from the npm registry, not local code. 
-- `latest` tag is always pushed when pushing either commit or release tagged images, these latest images are only used in CD as a cache to make building go faster so if they're corrupted then everything'll be fine but building will take longer. These images will be overwritten frequently so don't pull them expecting anything specific (if you want specific images, use commit-tagged ones). Local images built & run by `make start` will be tagged `latest` so beware: they will be overwritten if you `make pull-latest` (which shouldn't ever be necessary to do during normal dev workflows)
+- `latest` tag is always pushed when pushing either commit or semver-tagged images, these latest images are only used in CD as a cache to make building go faster so if they're corrupted then everything'll be fine but building will take longer. These images will be overwritten frequently so don't pull them expecting anything specific (if you want specific images, use commit-tagged ones). Local images built & run by `make start` will be tagged `latest` so beware: they will be overwritten if you `make pull-latest` (which shouldn't ever be necessary to do during normal dev workflows)
 Under the hood: the helper scripts `ops/push-images` and `ops/pull-image` are used by `make` commands, they:
 - Both accept one arg: the version to push or pull eg `3dffdc17` or `1.2.3`
 - Contain a list of all the images to push/pull (eg node, database, proxy, etc)
-- Push latest images too whenever we ask to push commit or release tagged images
+- Push latest images too whenever we ask to push commit or semver-tagged images
 - Protect us from overwriting an already pushed image eg can't push images tagged `3dffdc17` more than once.
 
 ## Setting up CI/CD

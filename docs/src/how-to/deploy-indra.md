@@ -76,7 +76,7 @@ git checkout master # staging is the default branch. It's cutting edge but maybe
 make restart-prod
 ```
 
-The above will download & run docker images associated with the commit/release you have checked out. If you want to launch a specific version of indra, checkout that version's tag & restart:
+The above will download & run docker images associated with the commit/tag you have checked out. If you want to launch a specific version of indra, checkout that version's tag & restart:
 
 ```bash
 git checkout indra-6.0.8 && make restart-prod

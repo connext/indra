@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: make pull-latest
-      - run: make release
+      - run: make prod
       - run: make build-report
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       - run: make push
@@ -103,7 +103,7 @@ jobs:
       - run: make pull
       - run: make start-indra-prod
       - run: make dls
-      - run: INDRA_ENV=release make test-integration
+      - run: make test-integration
       - name: Print logs
         if: failure()
         run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_indra

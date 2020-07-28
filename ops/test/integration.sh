@@ -9,8 +9,6 @@ shift || true
 
 mode="${INDRA_ENV:-local}"
 name="${project}_test_runner"
-commit="`git rev-parse HEAD | head -c 8`"
-release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
 if [[ -t 0 && -t 1 && -t 2 ]]
@@ -44,16 +42,35 @@ contract_addresses="`cat $addresses_file`"
 ########################################
 ## Launch test image
 
-if [[ -n "`docker image ls -q $name:$version`" ]]
-then image=$name:$version
-elif [[ "$mode" == "release" ]]
-then image=$name:$release;
-elif [[ "$mode" == "staging" ]]
-then image=$name:$commit;
+# prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
+if [[ "$INDRA_ENV" == "prod" ]]
+then
+  git_tag="`git tag --points-at HEAD | grep "indra-" | head -n 1`"
+  if [[ -n "$git_tag" ]]
+  then version="`echo $git_tag | sed 's/indra-//'`"
+  else version="`git rev-parse HEAD | head -c 8`"
+  fi
+  image=$name:$version
+  echo "Executing image $image"
+  exec docker run \
+    $interactive \
+    $watchOptions \
+    --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
+    --env="INDRA_CHAIN_PROVIDERS=$chain_providers" \
+    --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
+    --env="INDRA_CONTRACT_ADDRESSES=$contract_addresses" \
+    --env="INDRA_NATS_URL=nats://indra:4222" \
+    --env="INDRA_NODE_URL=https://indra" \
+    --env="NODE_ENV=production" \
+    --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
+    --name="$name" \
+    --network="$project" \
+    --rm \
+    --tmpfs "/tmpfs" \
+    $image $@
+
 else
-
   echo "Executing image ${project}_builder"
-
   exec docker run \
     $interactive \
     --entrypoint="bash" \
@@ -72,22 +89,3 @@ else
     --tmpfs "/tmpfs" \
     ${project}_builder -c "cd modules/test-runner && bash ops/entry.sh $@"
 fi
-
-echo "Executing image $image"
-
-exec docker run \
-  $interactive \
-  $watchOptions \
-  --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
-  --env="INDRA_CHAIN_PROVIDERS=$chain_providers" \
-  --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
-  --env="INDRA_CONTRACT_ADDRESSES=$contract_addresses" \
-  --env="INDRA_NATS_URL=nats://indra:4222" \
-  --env="INDRA_NODE_URL=https://indra" \
-  --env="NODE_ENV=production" \
-  --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
-  --name="$name" \
-  --network="$project" \
-  --rm \
-  --tmpfs "/tmpfs" \
-  $image $@

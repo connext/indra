@@ -1,11 +1,5 @@
 const path = require("path");
-const nodeExternals = require("webpack-node-externals");
 const webpack = require("webpack");
-
-const mode = process.env.MODE === "release" ? "release" : "staging";
-const allowlist = mode === "release" ? "" : [/@connext\/[^p].*/];
-
-console.log(`Building ${mode}-mode bundle`);
 
 module.exports = {
   mode: "development",
@@ -13,12 +7,10 @@ module.exports = {
 
   entry: path.join(__dirname, "../src/index.ts"),
 
-  externals: [
-    nodeExternals({
-      modulesDir: path.resolve(__dirname, "../../../node_modules"),
-      allowlist,
-    }),
-  ],
+  externals: {
+    "pg-native": "commonjs2 pg-native",
+    "sqlite3": "commonjs2 sqlite3",
+  },
 
   node: {
     __filename: true,
