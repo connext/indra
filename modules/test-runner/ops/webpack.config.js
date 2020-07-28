@@ -1,5 +1,5 @@
+const CopyPlugin = require("copy-webpack-plugin");
 const path = require("path");
-const webpack = require("webpack");
 
 module.exports = {
   mode: "development",
@@ -7,14 +7,9 @@ module.exports = {
 
   entry: path.join(__dirname, "../src/index.ts"),
 
-  externals: {
-    "pg-native": "commonjs2 pg-native",
-    "sqlite3": "commonjs2 sqlite3",
-  },
-
   node: {
-    __filename: true,
-    __dirname: true,
+    __filename: false,
+    __dirname: false,
   },
 
   resolve: {
@@ -59,8 +54,14 @@ module.exports = {
   },
 
   plugins: [
-    new webpack.DefinePlugin({
-      window: {},
+    new CopyPlugin({
+      patterns: [
+        {
+          from: `${path.join(__dirname, "../../../node_modules/@connext/pure-evm-wasm/")}*.wasm`,
+          to: path.join(__dirname, "../dist"),
+        },
+      ],
     }),
   ],
+
 };

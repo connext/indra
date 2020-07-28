@@ -1,3 +1,4 @@
+const CopyPlugin = require("copy-webpack-plugin");
 const path = require("path");
 
 module.exports = {
@@ -67,4 +68,16 @@ module.exports = {
       },
     ],
   },
+
+  plugins: [
+    new CopyPlugin({
+      patterns: [
+        {
+          from: `${path.join(__dirname, "../../../node_modules/@connext/pure-evm-wasm/")}*.wasm`,
+          to: path.join(__dirname, "../dist"),
+        },
+      ],
+    }),
+  ],
+
 };

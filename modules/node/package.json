@@ -63,6 +63,7 @@
     "chai-as-promised": "7.1.1",
     "chai-subset": "1.6.0",
     "concurrently": "5.2.0",
+    "copy-webpack-plugin": "6.0.3",
     "mocha": "8.0.1",
     "nodemon": "2.0.4",
     "supertest": "4.0.2",
