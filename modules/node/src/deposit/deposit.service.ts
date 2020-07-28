@@ -271,7 +271,7 @@ export class DepositService {
 
     // generate starting multisig balance
     this.log.info(
-      `Checking starting multisig balance using ethProvider ${ethProvider.connection.url}`,
+      `Checking starting multisig balance of ${tokenAddress} on chain ${channel.chainId} using ethProvider ${ethProvider.connection.url}`,
     );
     const startingMultisigBalance =
       tokenAddress === AddressZero
