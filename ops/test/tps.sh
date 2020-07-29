@@ -33,6 +33,8 @@ args="--concurrency $agents \
   --limit $limit \
   --log-level $LOG_LEVEL"
 
+make bot
+
 # prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
 if [[ "$INDRA_ENV" == "prod" ]]
 then
