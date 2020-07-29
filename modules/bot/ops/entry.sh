@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-echo "Bot registry container launched!"
+if [[ -d "modules/bot" ]]
+then cd modules/bot
+fi
 
-function finish {
-  echo && echo "Bot container exiting.." && exit
-}
-
-trap finish SIGTERM SIGINT
-echo "Launching registry!";echo
-npm run start:registry
+node dist/bundle.js $@

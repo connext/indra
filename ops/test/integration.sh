@@ -44,7 +44,6 @@ common="$interactive \
   --env=INDRA_CONTRACT_ADDRESSES=$contract_addresses \
   --env=INDRA_NATS_URL=nats://proxy:4222 \
   --env=INDRA_NODE_URL=http://proxy:80 \
-  --env=NODE_ENV=production \
   --env=NODE_TLS_REJECT_UNAUTHORIZED=0 \
   --name=${project}_test_runner \
   --network=$project \
@@ -61,7 +60,7 @@ then
   fi
   image=${project}_test_runner:$version
   echo "Executing image $image"
-  exec docker run $common $image
+  exec docker run --env=NODE_ENV=production $common $image
 
 else
   echo "Executing image ${project}_builder"
@@ -69,5 +68,5 @@ else
     $common \
     --entrypoint=bash \
     --volume="$root:/root" \
-    ${project}_builder -c "env && cd modules/test-runner && bash ops/entry.sh"
+    ${project}_builder -c "cd modules/test-runner && bash ops/entry.sh"
 fi

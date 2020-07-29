@@ -96,6 +96,7 @@ reset: stop-all
 	docker volume rm `docker volume ls -q -f name=$(project)_database_test_*` 2> /dev/null || true
 	rm -rf .chaindata/*
 	rm -rf .flags/deployed-contracts
+	rm -rf modules/bot/.bot-store
 
 quick-reset:
 	bash ops/db.sh 'truncate table app_registry cascade;'
@@ -106,7 +107,7 @@ quick-reset:
 	bash ops/db.sh 'truncate table rebalance_profile cascade;'
 	bash ops/db.sh 'truncate table app_instance cascade;'
 	bash ops/redis.sh 'flushall'
-	rm -rf modules/*/.connext-store
+	rm -rf modules/bot/.bot-store
 	touch modules/node/src/main.ts
 
 reset-images:
@@ -165,7 +166,7 @@ test-tps: bot
 	bash ops/test/tps.sh 10 0 10
 
 test-tps-prod:
-	INDRA_ENV=prod bash ops/test/tps.sh 10 0 10
+	bash ops/test/tps.sh 10 0 10
 
 test-integration: test-runner
 	bash ops/test/integration.sh

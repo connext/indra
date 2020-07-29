@@ -7,6 +7,11 @@ module.exports = {
 
   entry: path.join(__dirname, "../src/index.ts"),
 
+  externals: {
+    "sequelize": "commonjs2 sequelize",
+    "sqlite3": "commonjs2 sqlite3",
+  },
+
   node: {
     __filename: false,
     __dirname: false,
@@ -20,7 +25,7 @@ module.exports = {
 
   output: {
     path: path.join(__dirname, "../dist"),
-    filename: `tests.bundle.js`,
+    filename: `bundle.js`,
   },
 
   module: {

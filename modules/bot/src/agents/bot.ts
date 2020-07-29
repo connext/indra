@@ -36,7 +36,7 @@ export const startBot = async (
   txTimestamps: number[];
 }> => {
   const NAME = `Bot #${concurrencyIndex}`;
-  const log = new ColorfulLogger(NAME, 2, true, concurrencyIndex);
+  const log = new ColorfulLogger(NAME, logLevel, true, concurrencyIndex);
   log.info(`Launched ${NAME}, paying in ${tokenAddress}`);
   const TRANSFER_AMT = parseEther("0.001");
   const DEPOSIT_AMT = parseEther("0.01"); // Note: max amount in signer address is 1 eth
@@ -48,12 +48,18 @@ export const startBot = async (
   log.info(`Using random inteval: ${randomInterval}`);
 
   const signer = new ChannelSigner(privateKey, env.ethProviderUrl);
-  const client = await connect({
-    ...env,
-    signer,
-    loggerService: new ColorfulLogger(NAME, logLevel, true, concurrencyIndex),
-    store: getFileStore(`.bot-store/${signer.publicIdentifier}`),
-  });
+  let client;
+  try {
+    client = await connect({
+      ...env,
+      signer,
+      loggerService: new ColorfulLogger(NAME, logLevel, true, concurrencyIndex),
+      store: getFileStore(`.bot-store/${signer.publicIdentifier}`),
+    });
+  } catch (e) {
+    log.error(`Couldn't create client for ${NAME}: ${e.stack}`);
+    throw e;
+  }
 
   log.info(`Client ${concurrencyIndex}:
       publicIdentifier: ${client.publicIdentifier}

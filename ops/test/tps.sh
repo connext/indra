@@ -21,14 +21,17 @@ fi
 ########################################
 ## Launch bot
 
-common="$interactive \
+opts="$interactive \
   --env=INDRA_CHAIN_URL=http://172.17.0.1:8545 \
   --env=INDRA_NODE_URL=http://proxy:80 \
-  --env=LOG_LEVEL=$LOG_LEVEL \
-  --env=MNEMONIC=$MNEMONIC \
   --name=${project}_bot_tps \
   --network=$project \
   --rm"
+
+args="--concurrency $agents \
+  --interval $interval \
+  --limit $limit \
+  --log-level $LOG_LEVEL"
 
 # prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
 if [[ "$INDRA_ENV" == "prod" ]]
@@ -40,21 +43,13 @@ then
   fi
   image=${project}_bot:$version
   echo "Executing image $image"
-  exec docker run $common $image
+  exec docker run $opts $image tps $args
 
 else
   echo "Executing image ${project}_builder"
   exec docker run \
-    $common \
+    $opts \
     --entrypoint=bash \
     --volume="$root:/root" \
-    ${project}_builder -c '
-      cd modules/bot
-      node dist/src/index.js tps \
-        --concurrency '$agents' \
-        --funder-mnemonic $MNEMONIC \
-        --interval '$interval' \
-        --limit '$limit' \
-        --log-level $LOG_LEVEL
-    '
+    ${project}_builder -c "cd modules/bot && node dist/src/index.js tps $args"
 fi
