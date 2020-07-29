@@ -63,21 +63,16 @@ export class NodeApiClient implements INodeApiClient {
     const skipSync = typeof opts.skipSync === "boolean" ? opts.skipSync : true;
     const log = logger.newContext("NodeApiClient");
 
-    // Removes the protocol + path
-    const extractHost = (url: string): string =>
-      url.replace(/^.*:\/\//, "").replace(/\/[\s\S]*$/, "");
-
-    const nodeProtocol = opts.nodeUrl.replace(/:\/\/.*/, "://");
-    const nodeUrl = `${nodeProtocol}${extractHost(opts.nodeUrl)}/api`;
+    const nodeUrl = opts.nodeUrl;
 
     // If no messagingUrl given, attempt to derive one from the nodeUrl
-    const messagingUrl =
-      opts.messagingUrl ||
+    const nodeHost = nodeUrl.replace(/^.*:\/\//, "").replace(/\/.*/, "");
+    const messagingUrl = opts.messagingUrl ||
       (isNode()
-        ? `nats://${extractHost(nodeUrl).replace(/:[0-9]+$/, "")}:4222`
+        ? `nats://${nodeHost.replace(/:[0-9]+$/, "")}:4222`
         : nodeUrl.startsWith("https://")
-        ? `wss://${extractHost(nodeUrl)}/api/messaging`
-        : `ws://${extractHost(nodeUrl)}/api/messaging`);
+        ? `wss://${nodeHost}/api/messaging`
+        : `ws://${nodeHost}/api/messaging`);
 
     if (!opts.messagingUrl) {
       log.info(`No messagingUrl provided, using ${messagingUrl} derived from nodeUrl ${nodeUrl}`);

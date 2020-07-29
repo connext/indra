@@ -76,10 +76,10 @@ git checkout master # staging is the default branch. It's cutting edge but maybe
 make restart-prod
 ```
 
-The above will download & run docker images associated with the commit/release you have checked out. If you want to launch a specific version of indra, checkout that version's tag & restart:
+The above will download & run docker images associated with the commit/tag you have checked out. If you want to launch a specific version of indra, checkout that version's tag & restart:
 
 ```bash
 git checkout indra-6.0.8 && make restart-prod
 ```
 
-Before you are able to start sending payments, you will have to make sure to properly collateralize your node. The signer address is available as `accounts[0]` off of your mnemonic and can also be found by querying the `/api/config` endpoint under `signerAddress`. Node's should have collateral in all supported tokens, as well as sufficient eth to pay for all transactions from the wallet to the channels. By default, the supported token addresses will include ETH and the `Token` address from the network context of your node (available in `address-book.json`).
+Before you are able to start sending payments, you will have to make sure to properly collateralize your node. The signer address is available as `accounts[0]` off of your mnemonic and can also be found by querying the `/config` endpoint under `signerAddress`. Node's should have collateral in all supported tokens, as well as sufficient eth to pay for all transactions from the wallet to the channels. By default, the supported token addresses will include ETH and the `Token` address from the network context of your node (available in `address-book.json`).

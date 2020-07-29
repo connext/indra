@@ -14,8 +14,8 @@
     "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -b .",
     "build:ts": "node_modules/.bin/tsc -b .",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
-    "test": "exec ts-mocha --bail --check-leaks --global wallet,networks --exit --timeout 60000 src/**/**/*.spec.ts --require src/testing/global-hooks.ts",
-    "watch": "ts-mocha --bail --check-leaks --global wallet,networks --exit --timeout 60000 src/**/**/*.spec.ts --require src/testing/global-hooks.ts"
+    "test": "exec ts-mocha --bail --check-leaks --global wallet,networks --exit --timeout 60000 --require src/testing/global-hooks.ts 'src/**/**/*.spec.ts'",
+    "watch": "ts-mocha --bail --check-leaks --global wallet,networks --exit --timeout 60000 --require src/testing/global-hooks.ts 'src/**/**/*.spec.ts'"
   },
   "dependencies": {
     "@connext/contracts": "3.4.1",

@@ -8,7 +8,7 @@
   "scripts": {
     "build": "rm -rf ./dist/* && tsc -p tsconfig.json",
     "build-bundle": "webpack --config ops/webpack.config.js",
-    "format": "prettier --write \"src/**/*.ts\"",
+    "format": "prettier --write 'src/**/*.ts'",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
     "migration:generate": "typeorm migration:generate -d migrations -n ",
     "start": "ts-node -r tsconfig-paths/register src/main.ts",
@@ -28,7 +28,7 @@
     "@nestjs/core": "7.3.2",
     "@nestjs/microservices": "7.3.2",
     "@nestjs/platform-express": "7.3.2",
-    "@nestjs/schedule": "^0.4.0",
+    "@nestjs/schedule": "0.4.0",
     "@nestjs/typeorm": "7.1.0",
     "@uniswap/sdk": "1.0.0-beta.4",
     "bs58check": "2.1.2",
@@ -37,7 +37,7 @@
     "ethers": "5.0.5",
     "evt": "1.7.13",
     "ioredis": "4.17.3",
-    "lodash": "^4.17.15",
+    "lodash": "4.17.15",
     "nats": "1.4.9",
     "p-queue": "6.5.0",
     "pg": "8.3.0",
@@ -63,6 +63,7 @@
     "chai-as-promised": "7.1.1",
     "chai-subset": "1.6.0",
     "concurrently": "5.2.0",
+    "copy-webpack-plugin": "6.0.3",
     "mocha": "8.0.1",
     "nodemon": "2.0.4",
     "supertest": "4.0.2",
@@ -72,7 +73,6 @@
     "typescript": "3.9.7",
     "wait-on": "5.1.0",
     "webpack": "4.43.0",
-    "webpack-cli": "3.3.12",
-    "webpack-node-externals": "2.5.0"
+    "webpack-cli": "3.3.12"
   }
 }
