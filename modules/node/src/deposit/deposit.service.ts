@@ -11,7 +11,7 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
-import { BigNumber, constants } from "ethers";
+import { BigNumber, constants, providers } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
@@ -39,7 +39,7 @@ export class DepositService {
     this.log.setContext("DepositService");
   }
 
-  async deposit(channel: Channel, amount: BigNumber, assetId: string): Promise<OnchainTransaction> {
+  async deposit(channel: Channel, amount: BigNumber, assetId: string): Promise<providers.TransactionResponse> {
     this.log.info(
       `Deposit started: ${JSON.stringify({ channel: channel.multisigAddress, amount, assetId })}`,
     );
@@ -89,7 +89,7 @@ export class DepositService {
     // deposit app for asset id with node as initiator is already installed
     // send deposit to chain
     let appIdentityHash: Bytes32;
-    let receipt: OnchainTransaction;
+    let response: providers.TransactionResponse;
 
     const cleanUpDepositRights = async () => {
       if (appIdentityHash) {
@@ -109,14 +109,14 @@ export class DepositService {
       this.log.info(`Set in flight collateralization`);
       appIdentityHash = await this.requestDepositRights(channel, assetId);
       this.log.info(`Requested deposit rights, sending deposit to chain`);
-      receipt = await this.sendDepositToChain(channel, amount, assetId);
+      response = await this.sendDepositToChain(channel, amount, assetId);
       this.log.info(`Finished sending deposit to chain`);
     } catch (e) {
       this.log.error(`Caught error collateralizing: ${e.stack}`);
     } finally {
       await cleanUpDepositRights();
     }
-    return receipt;
+    return response;
   }
 
   async requestDepositRights(
@@ -220,7 +220,7 @@ export class DepositService {
     channel: Channel,
     amount: BigNumber,
     tokenAddress: Address,
-  ): Promise<OnchainTransaction> {
+  ): Promise<providers.TransactionResponse> {
     // derive the proper minimal transaction for the
     // onchain transaction service
     let tx: MinimalTransaction;

@@ -73,12 +73,12 @@ class ChannelMessaging extends AbstractMessagingProvider {
       chainId,
     );
     try {
-      const tx = await this.channelService.rebalance(
+      const response = await this.channelService.rebalance(
         channel,
         getAddress(data.assetId),
         RebalanceType.COLLATERALIZE,
       );
-      return onchainEntityToReceipt(tx);
+      return response.wait();
     } catch (e) {
       this.log.warn(`Failed to collateralize: ${e.message}`);
       return undefined;
