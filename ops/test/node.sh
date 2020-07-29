@@ -106,12 +106,12 @@ echo "Starting $node_host.."
 docker run \
   $interactive \
   --entrypoint="bash" \
-  --env="CLIENT_LOG_LEVEL=${LOG_LEVEL:-0}" \
+  --env="CLIENT_LOG_LEVEL=${LOG_LEVEL:-3}" \
   --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
   --env="INDRA_CHAIN_PROVIDERS=$chain_providers" \
   --env="INDRA_CONTRACT_ADDRESSES=$contract_addresses" \
   --env="INDRA_DEFAULT_CHAIN=$chain_id_1" \
-  --env="INDRA_LOG_LEVEL=${SERVER_LOG_LEVEL:-0}" \
+  --env="INDRA_LOG_LEVEL=${SERVER_LOG_LEVEL:-3}" \
   --env="INDRA_MNEMONIC=$mnemonic" \
   --env="INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" \
   --env="INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY" \

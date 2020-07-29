@@ -14,7 +14,7 @@ import {
   ETH_AMOUNT_SM,
 } from "../util";
 
-const { AddressZero, One } = constants;
+const { AddressZero, One, HashZero } = constants;
 const { hexlify, randomBytes } = utils;
 
 describe("Client Connect", () => {
@@ -140,6 +140,7 @@ describe("Client Connect", () => {
         data: hexlify(randomBytes(32)),
       },
       retry: 0,
+      withdrawalTx: HashZero,
     });
     expect(await createClient({ signer: pk, store })).rejectedWith("Something");
   });

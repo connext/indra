@@ -151,13 +151,13 @@ describe("Sync", () => {
       await (newNodeA as CFCore).rpcRouter.dispatch(
         constructInstallRpc(identityHash, multisigAddress),
       );
-      expect(syncedChannel).to.deep.eq(expectedChannel!);
+      expect(syncedChannel).to.containSubset(expectedChannel!);
       const newAppInstanceA = await storeServiceA.getAppInstance(identityHash);
       const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
-      expect(newAppInstanceA!).to.deep.eq(newAppInstanceB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
+      expect(newAppInstanceA!).to.containSubset(newAppInstanceB!);
       expect(newAppInstanceA!.identityHash).to.eq(identityHash);
       expect(newAppInstanceA!.appSeqNo).to.eq(2);
       expect(newAppInstanceA!.latestVersionNumber).to.eq(1);
@@ -191,7 +191,7 @@ describe("Sync", () => {
         type: EventNames.SYNC,
         data: { syncedChannel: bigNumberifyJson(expectedChannel) },
       });
-      expect(syncedChannel).to.deep.eq(expectedChannel!);
+      expect(syncedChannel).to.containSubset(expectedChannel!);
       await (newNodeB as CFCore).rpcRouter.dispatch(
         constructInstallRpc(identityHash, multisigAddress),
       );
@@ -199,8 +199,8 @@ describe("Sync", () => {
       const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
-      expect(newAppInstanceA!).to.deep.eq(newAppInstanceB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
+      expect(newAppInstanceA!).to.containSubset(newAppInstanceB!);
       expect(newAppInstanceB!.identityHash).to.eq(identityHash);
       expect(newAppInstanceB!.appSeqNo).to.eq(2);
       expect(newAppInstanceB!.latestVersionNumber).to.eq(1);
@@ -217,8 +217,8 @@ describe("Sync", () => {
       const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
-      expect(newAppInstanceA!).to.deep.eq(newAppInstanceB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
+      expect(newAppInstanceA!).to.containSubset(newAppInstanceB!);
       expect(newAppInstanceA!.identityHash).to.eq(identityHash);
       expect(newAppInstanceA!.appSeqNo).to.eq(2);
       expect(newAppInstanceA!.latestVersionNumber).to.eq(1);
@@ -234,8 +234,8 @@ describe("Sync", () => {
       const newAppInstanceB = await storeServiceB.getAppInstance(identityHash);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
-      expect(newAppInstanceA!).to.deep.eq(newAppInstanceB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
+      expect(newAppInstanceA!).to.containSubset(newAppInstanceB!);
       expect(newAppInstanceB!.identityHash).to.eq(identityHash);
       expect(newAppInstanceB!.appSeqNo).to.eq(2);
       expect(newAppInstanceB!.latestVersionNumber).to.eq(1);
@@ -326,12 +326,12 @@ describe("Sync", () => {
       ]);
 
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      expect(bigNumberifyJson(eventData)).to.deep.eq({
+      expect(bigNumberifyJson(eventData)).to.containSubset({
         from: nodeA.publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: bigNumberifyJson(expectedChannel) },
       });
-      expect(syncedChannel).to.deep.eq(expectedChannel!);
+      expect(syncedChannel).to.containSubset(expectedChannel!);
 
       const rpc = makeProposeCall(newNodeA as CFCore, TicTacToeApp, multisigAddress);
       const res: any = await new Promise(async (resolve) => {
@@ -350,8 +350,8 @@ describe("Sync", () => {
       const newAppInstanceB = await storeServiceB.getAppProposal(res.data.appInstanceId);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
-      expect(newAppInstanceA!).to.deep.eq(newAppInstanceB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
+      expect(newAppInstanceA!).to.containSubset(newAppInstanceB!);
       expect(newAppInstanceB!.identityHash).to.eq(res.data.appInstanceId);
       expect(newAppInstanceB!.appSeqNo).to.eq(3);
       expect(newAppInstanceB!.latestVersionNumber).to.eq(1);
@@ -380,12 +380,12 @@ describe("Sync", () => {
       ]);
 
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      expect(bigNumberifyJson(eventData)).to.deep.eq({
+      expect(bigNumberifyJson(eventData)).to.containSubset({
         from: (newNodeB as CFCore).publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: bigNumberifyJson(expectedChannel) },
       });
-      expect(syncedChannel).to.deep.eq(expectedChannel!);
+      expect(syncedChannel).to.containSubset(expectedChannel!);
 
       const rpc = makeProposeCall(nodeA, TicTacToeApp, multisigAddress);
       const res: any = await new Promise(async (resolve) => {
@@ -404,8 +404,8 @@ describe("Sync", () => {
       const newAppInstanceB = await storeServiceB.getAppProposal(res.data.appInstanceId);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
-      expect(newAppInstanceA!).to.deep.eq(newAppInstanceB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
+      expect(newAppInstanceA!).to.containSubset(newAppInstanceB!);
       expect(newAppInstanceB!.identityHash).to.eq(res.data.appInstanceId);
       expect(newAppInstanceB!.appSeqNo).to.eq(3);
       expect(newAppInstanceB!.latestVersionNumber).to.eq(1);
@@ -433,8 +433,8 @@ describe("Sync", () => {
       const newAppInstanceB = await storeServiceB.getAppProposal(res.data.appInstanceId);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
-      expect(newAppInstanceA!).to.deep.eq(newAppInstanceB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
+      expect(newAppInstanceA!).to.containSubset(newAppInstanceB!);
       expect(newAppInstanceB!.identityHash).to.eq(res.data.appInstanceId);
       expect(newAppInstanceB!.appSeqNo).to.eq(3);
       expect(newAppInstanceB!.latestVersionNumber).to.eq(1);
@@ -462,8 +462,8 @@ describe("Sync", () => {
       const newAppInstanceB = await storeServiceB.getAppProposal(res.data.appInstanceId);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
-      expect(newAppInstanceA!).to.deep.eq(newAppInstanceB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
+      expect(newAppInstanceA!).to.containSubset(newAppInstanceB!);
       expect(newAppInstanceB!.identityHash).to.eq(res.data.appInstanceId);
       expect(newAppInstanceB!.appSeqNo).to.eq(3);
       expect(newAppInstanceB!.latestVersionNumber).to.eq(1);
@@ -542,7 +542,7 @@ describe("Sync", () => {
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).to.deep.eq(expectedChannel!);
+      expect(syncedChannel).to.containSubset(expectedChannel!);
 
       // propose new app
       await installApp(newNodeA, nodeB, multisigAddress, TicTacToeApp);
@@ -572,7 +572,7 @@ describe("Sync", () => {
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).to.deep.eq(expectedChannel!);
+      expect(syncedChannel).to.containSubset(expectedChannel!);
 
       // propose new app
       await installApp(newNodeB, nodeA, multisigAddress, TicTacToeApp);
@@ -669,17 +669,17 @@ describe("Sync", () => {
       ]);
 
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      expect(eventData).to.deep.eq({
+      expect(eventData).to.containSubset({
         from: nodeB.publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).to.deep.eq(expectedChannel!);
+      expect(syncedChannel).to.containSubset(expectedChannel!);
 
       await uninstallApp(newNodeB as CFCore, nodeA, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
       expect(newChannelA!.appInstances.length).to.eq(0);
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).to.eq(3);
       expect(newChannelA!.monotonicNumProposedApps).to.eq(2);
@@ -702,17 +702,17 @@ describe("Sync", () => {
       ]);
 
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      expect(eventData).to.deep.eq({
+      expect(eventData).to.containSubset({
         from: nodeA.publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).to.deep.eq(expectedChannel!);
+      expect(syncedChannel).to.containSubset(expectedChannel!);
 
       await uninstallApp(nodeB, newNodeA as CFCore, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
       expect(newChannelB!.appInstances.length).to.eq(0);
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).to.eq(3);
       expect(newChannelB!.monotonicNumProposedApps).to.eq(2);
@@ -726,7 +726,7 @@ describe("Sync", () => {
 
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
       expect(newChannelA!.appInstances.length).to.eq(0);
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).to.eq(3);
       expect(newChannelA!.monotonicNumProposedApps).to.eq(2);
@@ -818,17 +818,17 @@ describe("Sync", () => {
       ]);
 
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      expect(eventData).to.deep.eq({
+      expect(eventData).to.containSubset({
         from: nodeB.publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).to.deep.eq(expectedChannel!);
+      expect(syncedChannel).to.containSubset(expectedChannel!);
 
       await uninstallApp(newNodeB as CFCore, nodeA, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
       expect(newChannelA!.appInstances.length).to.eq(0);
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).to.eq(3);
       expect(newChannelA!.monotonicNumProposedApps).to.eq(2);
@@ -851,17 +851,17 @@ describe("Sync", () => {
       ]);
 
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      expect(eventData).to.deep.eq({
+      expect(eventData).to.containSubset({
         from: nodeA.publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).to.deep.eq(expectedChannel!);
+      expect(syncedChannel).to.containSubset(expectedChannel!);
 
       await uninstallApp(nodeB, newNodeA as CFCore, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
       expect(newChannelB!.appInstances.length).to.eq(0);
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).to.eq(3);
       expect(newChannelB!.monotonicNumProposedApps).to.eq(2);
@@ -875,7 +875,7 @@ describe("Sync", () => {
 
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
       expect(newChannelA!.appInstances.length).to.eq(0);
       expect(newChannelA!.freeBalanceAppInstance!.latestVersionNumber).to.eq(3);
       expect(newChannelA!.monotonicNumProposedApps).to.eq(2);
@@ -946,12 +946,12 @@ describe("Sync", () => {
       ]);
 
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      expect(eventData).to.deep.eq({
+      expect(eventData).to.containSubset({
         from: nodeB.publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).to.deep.eq(expectedChannel!);
+      expect(syncedChannel).to.containSubset(expectedChannel!);
 
       // create new app
       [identityHash] = await installApp(newNodeB as CFCore, nodeA, multisigAddress, TicTacToeApp);
@@ -963,8 +963,8 @@ describe("Sync", () => {
         storeServiceA.getStateChannel(multisigAddress),
         storeServiceB.getStateChannel(multisigAddress),
       ]);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
-      expect(newAppInstanceA!).to.deep.eq(newAppInstanceB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
+      expect(newAppInstanceA!).to.containSubset(newAppInstanceB!);
       expect(newAppInstanceA!.identityHash).to.eq(identityHash);
       expect(newAppInstanceA!.appSeqNo).to.eq(3);
       expect(newAppInstanceA!.latestVersionNumber).to.eq(1);
@@ -991,12 +991,12 @@ describe("Sync", () => {
       ]);
 
       const syncedChannel = await storeServiceA.getStateChannel(multisigAddress);
-      expect(eventData).to.deep.eq({
+      expect(eventData).to.containSubset({
         from: nodeA.publicIdentifier,
         type: EventNames.SYNC,
         data: { syncedChannel: expectedChannel },
       });
-      expect(syncedChannel).to.deep.eq(expectedChannel!);
+      expect(syncedChannel).to.containSubset(expectedChannel!);
 
       // create new app
       [identityHash] = await installApp(nodeB, newNodeA as CFCore, multisigAddress, TicTacToeApp);
@@ -1008,8 +1008,8 @@ describe("Sync", () => {
         storeServiceA.getStateChannel(multisigAddress),
         storeServiceB.getStateChannel(multisigAddress),
       ]);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
-      expect(newAppInstanceA!).to.deep.eq(newAppInstanceB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
+      expect(newAppInstanceA!).to.containSubset(newAppInstanceB!);
       expect(newAppInstanceB!.identityHash).to.eq(identityHash);
       expect(newAppInstanceB!.appSeqNo).to.eq(3);
       expect(newAppInstanceB!.latestVersionNumber).to.eq(1);
@@ -1030,8 +1030,8 @@ describe("Sync", () => {
         storeServiceA.getStateChannel(multisigAddress),
         storeServiceB.getStateChannel(multisigAddress),
       ]);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
-      expect(newAppInstanceA!).to.deep.eq(newAppInstanceB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
+      expect(newAppInstanceA!).to.containSubset(newAppInstanceB!);
       expect(newAppInstanceA!.identityHash).to.eq(identityHash);
       expect(newAppInstanceA!.appSeqNo).to.eq(3);
       expect(newAppInstanceA!.latestVersionNumber).to.eq(1);
@@ -1052,8 +1052,8 @@ describe("Sync", () => {
         storeServiceA.getStateChannel(multisigAddress),
         storeServiceB.getStateChannel(multisigAddress),
       ]);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
-      expect(newAppInstanceA!).to.deep.eq(newAppInstanceB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
+      expect(newAppInstanceA!).to.containSubset(newAppInstanceB!);
       expect(newAppInstanceB!.identityHash).to.eq(identityHash);
       expect(newAppInstanceB!.appSeqNo).to.eq(3);
       expect(newAppInstanceB!.latestVersionNumber).to.eq(1);
@@ -1122,7 +1122,7 @@ describe("Sync", () => {
       await uninstallApp(nodeA, nodeB, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
       expect(newChannelB!.appInstances.length).to.eq(0);
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).to.eq(3);
       expect(newChannelB!.monotonicNumProposedApps).to.eq(2);
@@ -1134,7 +1134,7 @@ describe("Sync", () => {
       await uninstallApp(nodeB, nodeA, appIdentityHash, multisigAddress);
       const newChannelA = await storeServiceA.getStateChannel(multisigAddress);
       const newChannelB = await storeServiceB.getStateChannel(multisigAddress);
-      expect(newChannelA!).to.deep.eq(newChannelB!);
+      expect(newChannelA!).to.containSubset(newChannelB!);
       expect(newChannelB!.appInstances.length).to.eq(0);
       expect(newChannelB!.freeBalanceAppInstance!.latestVersionNumber).to.eq(3);
       expect(newChannelB!.monotonicNumProposedApps).to.eq(2);
