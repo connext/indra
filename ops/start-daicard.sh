@@ -49,6 +49,8 @@ docker run $opts \
   --rm \
   $image $flag "$arg"
 
+docker container logs --follow ${project}_daicard &
+
 echo "Daicard has been started, waiting for it to start responding.."
 timeout=$(expr `date +%s` + 180)
 while true
