@@ -11,17 +11,17 @@ then npm i --no-save
 fi
 $cypress install
 
+make start-daicard
+
 ########################################
 ## Start the UI e2e watcher if in watch mode
 
 if [[ "$1" == "--watch" ]]
-then
-  $cypress open $env
-  exit 0
+then exec $cypress open
 fi
 
 ########################################
 ## Start the UI e2e tests if in standalone test mode
 
 export ELECTRON_ENABLE_LOGGING=true
-$cypress run $env --spec cypress/tests/daicard.js
+$cypress run --spec cypress/tests/daicard.js

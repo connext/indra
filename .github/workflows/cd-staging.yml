@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: make pull-latest
-      - run: make prod
+      - run: make all
       - run: make build-report
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       - run: make push

@@ -280,7 +280,7 @@ volumes:
 
 services:
 
-  ${project}:
+  proxy:
     $common
     $proxy_ports
     image: '$proxy_image'

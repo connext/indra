@@ -16,8 +16,7 @@ then
 else version="$1"
 fi
 
-indra_images="bot builder database ethprovider node proxy test_runner"
-daicard_images="proxy webserver"
+images="bot builder database ethprovider node proxy test_runner"
 
 commit=`git rev-parse HEAD | head -c 8`
 registry_url="https://index.docker.io/v1/repositories/${registry#*/}"
@@ -38,10 +37,6 @@ function safePush {
   fi
 }
 
-for image in $indra_images
+for image in $images
 do safePush indra_$image
-done
-
-for image in $daicard_images
-do safePush daicard_$image
 done

@@ -6,11 +6,8 @@ $(shell mkdir -p $(VPATH))
 ########################################
 # Run shell commands to fetch info from environment
 
-dir=$(shell cd "$(shell dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )
-project=$(shell cat $(dir)/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4)
-registry=$(shell cat $(dir)/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4)
-
-cwd=$(shell pwd)
+root=$(shell cd "$(shell dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )
+project=$(shell cat $(root)/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4)
 commit=$(shell git rev-parse HEAD | head -c 8)
 
 # version that will be tested against for backwards compatibility checks
@@ -18,7 +15,10 @@ backwards_compatible_version=$(shell cat package.json | grep '"backwardsCompatib
 
 # If Linux, give the container our uid & gid so we know what to reset permissions to. If Mac, the docker-VM takes care of this for us so pass root's id (ie noop)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo "`id -u`:`id -g`"; fi)
-image_cache=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_builder"; else echo ""; fi) # Pool of images to pull cached layers from during docker build steps
+
+# Pool of images to pull cached layers from during docker build steps
+image_cache=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_builder"; else echo ""; fi)
+
 interactive=$(shell if [[ -t 0 && -t 2 ]]; then echo "--interactive"; else echo ""; fi)
 
 ########################################
@@ -26,7 +26,7 @@ interactive=$(shell if [[ -t 0 && -t 2 ]]; then echo "--interactive"; else echo 
 
 find_options=-type f -not -path "*/node_modules/*" -not -name "address-book.json" -not -name "*.swp" -not -path "*/.*" -not -path "*/cache/*" -not -path "*/build/*" -not -path "*/dist/*" -not -name "*.log"
 
-docker_run=docker run --name=$(project)_builder $(interactive) --tty --rm --volume=$(cwd):/root $(project)_builder $(id)
+docker_run=docker run --name=$(project)_builder $(interactive) --tty --rm --volume=$(root):/root $(project)_builder $(id)
 
 startTime=.flags/.startTime
 totalTime=.flags/.totalTime
@@ -37,36 +37,21 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 # Build Shortcuts
 
 default: indra
-all: dev prod
-dev: indra daicard
-prod: ethprovider indra-prod test-runner-prod bot-prod daicard-prod
-
-indra: database indra-proxy node
-indra-prod: database ethprovider indra-proxy node-prod # test-runner-prod bot-prod
-
-daicard: daicard-proxy client
-daicard-prod: daicard-webserver daicard-proxy
+indra: database proxy node
+extras: bot ethprovider test-runner
+all: indra extras
 
 ########################################
 # Command & Control Shortcuts
 
-start: start-indra
-restart: restart-indra
-stop: stop-daicard stop-indra
-start-prod: start-indra-prod
-restart-prod: restart-indra-prod
-
-start-indra: indra
+start: indra
 	bash ops/start-indra.sh
 
-start-indra-prod:
+start-prod:
 	INDRA_ENV=prod bash ops/start-indra.sh
 
-start-daicard: daicard
+start-daicard:
 	bash ops/start-daicard.sh
-
-start-daicard-prod:
-	DAICARD_ENV=prod bash ops/start-daicard.sh
 
 start-testnet: contracts
 	INDRA_CHAIN_LOG_LEVEL=1 bash ops/start-testnet.sh
@@ -74,26 +59,23 @@ start-testnet: contracts
 start-bot: bot
 	bash ops/test/tps.sh 2 1000
 
-stop-indra:
+stop:
 	bash ops/stop.sh indra
+	bash ops/stop.sh daicard
 
 stop-daicard:
 	bash ops/stop.sh daicard
 
 stop-all:
-	bash ops/stop.sh all
+	bash ops/stop.sh indra
+	bash ops/stop.sh daicard
+	bash ops/stop.sh testnet
 
-restart-indra: indra stop-indra
+restart: indra stop-indra
 	bash ops/start-indra.sh
 
-restart-indra-prod: stop
+restart-prod: stop
 	INDRA_ENV=prod bash ops/start-indra.sh
-
-restart-daicard-prod: stop-daicard
-	DAICARD_ENV=prod bash ops/start-daicard.sh
-
-restart-daicard: daicard stop-daicard
-	bash ops/start-daicard.sh
 
 clean: stop-all
 	docker container prune -f
@@ -128,7 +110,7 @@ quick-reset:
 	touch modules/node/src/main.ts
 
 reset-images:
-	rm -f .flags/bot-* .flags/database  .flags/ethprovider .flags/node-prod .flags/*-proxy .flags/test-runner-* .flags/*-webserver
+	rm -f .flags/bot .flags/daicard .flags/database .flags/ethprovider .flags/node .flags/proxy .flags/test-runner
 
 purge: clean reset
 
@@ -238,8 +220,7 @@ documentation: py-requirements $(shell find docs $(find_options))
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ########################################
-# Build JS & bundles
-
+# Build Core JS libs & bundles
 # Keep prerequisites synced w the @connext/* dependencies of each module's package.json
 
 types: node-modules $(shell find modules/types $(find_options))
@@ -287,21 +268,6 @@ client: types utils channel-provider messaging store contracts cf-core apps $(sh
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-bot: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/bot $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/bot && npm run build && npm run build-bundle"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-node: types utils messaging store contracts cf-core apps client $(shell find modules/node $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/node && npm run build && npm run build-bundle && touch src/main.ts"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-test-runner: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/test-runner $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/test-runner && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
 watcher: types utils contracts store $(shell find modules/watcher $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/watcher && npm run build"
@@ -312,25 +278,34 @@ daicard-bundle: types utils store client $(shell find modules/daicard $(find_opt
 	$(docker_run) "cd modules/daicard && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
+bot-bundle: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/bot $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/bot && npm run build && npm run build-bundle"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+node-bundle: types utils messaging store contracts cf-core apps client $(shell find modules/node $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/node && npm run build && npm run build-bundle && touch src/main.ts"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+test-runner-bundle: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/test-runner $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/test-runner && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
 ########################################
 # Build Docker Images
 
-daicard-proxy: $(shell find ops/proxy/daicard $(find_options))
+bot: bot-bundle $(shell find modules/bot/ops $(find_options))
 	$(log_start)
-	docker build $(image_cache) --tag daicard_proxy ops/proxy/daicard
-	docker tag daicard_proxy daicard_proxy:$(commit)
+	docker build --file modules/bot/ops/Dockerfile $(image_cache) --tag $(project)_bot modules/bot
+	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-daicard-webserver: daicard-bundle $(shell find ops/webserver $(find_options))
+daicard: daicard-bundle $(shell find modules/daicard/ops $(find_options))
 	$(log_start)
-	docker build --file ops/webserver/nginx.dockerfile $(image_cache) --tag daicard_webserver .
-	docker tag daicard_webserver daicard_webserver:$(commit)
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-indra-proxy: $(shell find ops/proxy/indra $(find_options))
-	$(log_start)
-	docker build $(image_cache) --tag $(project)_proxy ops/proxy/indra
-	docker tag $(project)_proxy $(project)_proxy:$(commit)
+	docker build --file modules/daicard/ops/Dockerfile $(image_cache) --tag ${project}_daicard modules/daicard
+	docker tag ${project}_daicard ${project}_daicard:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 database: $(shell find ops/database $(find_options))
@@ -345,26 +320,26 @@ ethprovider: contracts $(shell find modules/contracts/ops $(find_options))
 	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-node-prod: node $(shell find modules/node/ops $(find_options))
+node: node-bundle $(shell find modules/node/ops $(find_options))
 	$(log_start)
 	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node modules/node
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-bot-prod: bot $(shell find modules/bot/ops $(find_options))
+proxy: $(shell find ops/proxy $(find_options))
 	$(log_start)
-	docker build --file modules/bot/ops/Dockerfile $(image_cache) --tag $(project)_bot modules/bot
-	docker tag $(project)_bot $(project)_bot:$(commit)
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-test-runner-prod: test-runner $(shell find modules/test-runner/ops $(find_options))
-	$(log_start)
-	docker build --file modules/test-runner/ops/Dockerfile $(image_cache) --tag $(project)_test_runner modules/test-runner
-	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
+	docker build $(image_cache) --tag $(project)_proxy ops/proxy
+	docker tag $(project)_proxy $(project)_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ssh-action: $(shell find ops/ssh-action $(find_options))
 	$(log_start)
 	docker build --file ops/ssh-action/Dockerfile --tag $(project)_ssh_action ops/ssh-action
 	docker tag $(project)_ssh_action $(project)_ssh_action:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+test-runner: test-runner-bundle $(shell find modules/test-runner/ops $(find_options))
+	$(log_start)
+	docker build --file modules/test-runner/ops/Dockerfile $(image_cache) --tag $(project)_test_runner modules/test-runner
+	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@

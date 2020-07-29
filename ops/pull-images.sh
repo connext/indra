@@ -2,10 +2,10 @@
 set -e
 
 root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+project="`cat $root/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 registry="`cat $root/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
-indra_images="bot builder database ethprovider node proxy test_runner"
-daicard_images="proxy webserver"
+images="bot builder database ethprovider node proxy test_runner"
 
 # prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
 if [[ -z "$1" ]]
@@ -18,17 +18,8 @@ then
 else version="$1"
 fi
 
-for image in $indra_images
+for image in $images
 do
-  project="indra"
-  echo "Pulling image: $registry/${project}_$image:$version"
-  docker pull $registry/${project}_$image:$version || true
-  docker tag $registry/${project}_$image:$version ${project}_$image:$version || true
-done
-
-for image in $daicard_images
-do
-  project="daicard"
   echo "Pulling image: $registry/${project}_$image:$version"
   docker pull $registry/${project}_$image:$version || true
   docker tag $registry/${project}_$image:$version ${project}_$image:$version || true

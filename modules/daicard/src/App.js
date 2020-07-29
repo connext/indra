@@ -35,8 +35,8 @@ const { formatEther } = utils;
 
 const urls = {
   ethProviderUrl:
-    process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/ethprovider`,
-  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin}/indra`,
+  process.env.REACT_APP_ETH_URL_OVERRIDE || `http://${window.location.hostname}:8545`,
+  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `http://${window.location.hostname}:3000`,
   legacyUrl: (chainId) =>
     chainId.toString() === "1"
       ? "https://hub.connext.network/api/hub"

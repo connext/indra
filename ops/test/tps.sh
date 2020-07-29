@@ -13,10 +13,22 @@ interval="$2"
 limit="$3"
 echo "Starting bot test with options: $agents agents | interval $interval | limit $limit"
 
-INDRA_CHAIN_URL="${INDRA_CHAIN_URL:-http://172.17.0.1:8545}"
-INDRA_NODE_URL="${INDRA_NODE_URL:-http://indra}"
+if [[ -t 0 && -t 1 && -t 2 ]]
+then interactive="--interactive --tty"
+else echo "Running in non-interactive mode"
+fi
 
-echo "Starting bot in env: LOG_LEVEL=$LOG_LEVEL | INDRA_CHAIN_URL=$INDRA_CHAIN_URL | INDRA_NODE_URL=$INDRA_NODE_URL"
+########################################
+## Launch bot
+
+common="$interactive \
+  --env=INDRA_CHAIN_URL=http://172.17.0.1:8545 \
+  --env=INDRA_NODE_URL=http://proxy:80 \
+  --env=LOG_LEVEL=$LOG_LEVEL \
+  --env=MNEMONIC=$MNEMONIC \
+  --name=${project}_bot_tps \
+  --network=$project \
+  --rm"
 
 # prod version: if we're on a tagged commit then use the tagged semvar, otherwise use the hash
 if [[ "$INDRA_ENV" == "prod" ]]
@@ -26,34 +38,23 @@ then
   then version="`echo $git_tag | sed 's/indra-//'`"
   else version="`git rev-parse HEAD | head -c 8`"
   fi
-else version="latest"
+  image=${project}_bot:$version
+  echo "Executing image $image"
+  exec docker run $common $image
+
+else
+  echo "Executing image ${project}_builder"
+  exec docker run \
+    $common \
+    --entrypoint=bash \
+    --volume="$root:/root" \
+    ${project}_builder -c '
+      cd modules/bot
+      node dist/src/index.js tps \
+        --concurrency '$agents' \
+        --funder-mnemonic $MNEMONIC \
+        --interval '$interval' \
+        --limit '$limit' \
+        --log-level $LOG_LEVEL
+    '
 fi
-
-if [[ -t 0 && -t 1 && -t 2 ]]
-then interactive="--interactive --tty"
-else echo "Running in non-interactive mode"
-fi
-
-make bot
-
-exec docker run \
-  $interactive \
-  --entrypoint="bash" \
-  --env="INDRA_CHAIN_URL=$INDRA_CHAIN_URL" \
-  --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
-  --env="LOG_LEVEL=$LOG_LEVEL" \
-  --env="MNEMONIC=$MNEMONIC" \
-  --name="${project}_bot_tps" \
-  --network="$project" \
-  --publish="9231:9229" \
-  --rm \
-  --volume="$root:/root" \
-  ${project}_builder:$version -c '
-    cd modules/bot
-    node --inspect=0.0.0.0:9229 dist/src/index.js tps \
-      --concurrency "'$agents'" \
-      --funder-mnemonic $MNEMONIC \
-      --interval "'$interval'" \
-      --limit "'$limit'" \
-      --log-level "$LOG_LEVEL"
-  '

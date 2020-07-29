@@ -23,9 +23,7 @@ logLevel="${INDRA_CHAIN_LOG_LEVEL:0}"
 ethprovider_host="testnet_$tag"
 
 if [[ -n `docker container ls | grep ${ethprovider_host}` ]]
-then
-  echo "A container called $ethprovider_host already exists"
-  exit
+then echo "A container called $ethprovider_host already exists" && exit
 fi
 
 chain_data="$root/.chaindata/$chain_id"
