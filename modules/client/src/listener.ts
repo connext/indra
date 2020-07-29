@@ -169,6 +169,7 @@ export class ConnextListener {
         msg.from,
         msg.data.action as AppAction,
         msg.data.uninstalledApp,
+        msg.data.protocolMeta,
       );
       this.emitAndLog(UNINSTALL_EVENT, msg.data);
     },
@@ -461,6 +462,7 @@ export class ConnextListener {
     from: string,
     action?: AppAction,
     appContext?: AppInstanceJson,
+    protocolMeta?: any,
   ): Promise<void> => {
     const appInstance =
       appContext || ((await this.connext.getAppInstance(appIdentityHash)) || {}).appInstance;
@@ -484,7 +486,11 @@ export class ConnextListener {
             assetId: appInstance.outcomeInterpreterParameters["tokenAddress"],
             nonce: withdrawState.nonce,
           };
-          await this.connext.saveWithdrawCommitmentToStore(params, withdrawState.signatures);
+          await this.connext.saveWithdrawCommitmentToStore(
+            params,
+            withdrawState.signatures,
+            protocolMeta.withdrawTx,
+          );
         }
         break;
       }

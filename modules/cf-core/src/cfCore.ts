@@ -204,8 +204,8 @@ export class CFCore {
 
     protocolRunner.register(
       Opcode.IO_SEND,
-      async (args: [ProtocolMessageData, StateChannel, AppInstance]) => {
-        const [data, channel, appContext] = args;
+      async (args: [ProtocolMessageData, StateChannel, AppInstance, any]) => {
+        const [data, channel, appContext, protocolMeta] = args;
 
         // check if the protocol start time exists within the message
         // and if it is a final protocol message (see note in
@@ -228,7 +228,7 @@ export class CFCore {
           type: EventNames.PROTOCOL_MESSAGE_EVENT,
         });
 
-        return { channel, appContext };
+        return { channel, appContext, protocolMeta };
       },
     );
 
