@@ -15,10 +15,11 @@ import {
 const RequireOnlineAppNames: SupportedApplicationNames[] = [
   SupportedApplicationNames.GraphSignedTransferApp,
   SupportedApplicationNames.HashLockTransferApp,
+  SupportedApplicationNames.SimpleLinkedTransferApp,
 ];
 const AllowOfflineAppNames: SupportedApplicationNames[] = [
   SupportedApplicationNames.SimpleSignedTransferApp,
-  SupportedApplicationNames.SimpleLinkedTransferApp,
+  // SupportedApplicationNames.SimpleLinkedTransferApp,
 ];
 
 export type TransferType = "RequireOnline" | "AllowOffline";
