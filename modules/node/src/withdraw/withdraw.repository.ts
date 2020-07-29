@@ -26,6 +26,9 @@ export class WithdrawRepository extends Repository<Withdraw> {
     withdraw: Withdraw,
     onchainTransaction: OnchainTransaction,
   ): Promise<Withdraw> {
+    if (withdraw.onchainTransaction?.hash === onchainTransaction.hash) {
+      return withdraw;
+    }
     withdraw.onchainTransaction = onchainTransaction;
     return this.save(withdraw);
   }
