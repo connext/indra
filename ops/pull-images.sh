@@ -23,4 +23,5 @@ do
   echo "Pulling image: $registry/${project}_$image:$version"
   docker pull $registry/${project}_$image:$version || true
   docker tag $registry/${project}_$image:$version ${project}_$image:$version || true
+  docker tag $registry/${project}_$image:$version ${project}_$image:latest || true
 done
