@@ -50,7 +50,7 @@ start: indra
 start-prod:
 	INDRA_ENV=prod bash ops/start-indra.sh
 
-start-daicard:
+start-daicard: client
 	bash ops/start-daicard.sh
 
 start-testnet: contracts

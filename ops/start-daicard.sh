@@ -41,6 +41,8 @@ fi
 ####################
 # Launch Daicard container
 
+echo "Starting daicard image ${image} w arg '$arg'"
+
 docker run $opts \
   --detach \
   --name "${project}_daicard" \
