@@ -323,5 +323,16 @@ export class ConfigService implements OnModuleInit {
     };
   }
 
-  async onModuleInit(): Promise<void> {}
+  async onModuleInit(): Promise<void> {
+    // Make sure all signers are properly connected
+    for (const signer of [...this.signers.values()]) {
+      const chain = await signer.getChainId();
+      const provider = this.providers.get(chain);
+      if (!provider) {
+        this.log.warn(`Unable to reconnect signer to provider to ${chain}`);
+        continue;
+      }
+      await signer.connectProvider(provider);
+    }
+  }
 }

@@ -10,7 +10,7 @@ export enum Network {
 }
 
 // should account for error handling in cf method timeout
-export const LOCK_SERVICE_TTL = CF_METHOD_TIMEOUT + 1_000;
+export const LOCK_SERVICE_TTL = CF_METHOD_TIMEOUT * 3;
 export const TIMEOUT_BUFFER = 100;
 export const DEFAULT_DECIMALS = 18;
 

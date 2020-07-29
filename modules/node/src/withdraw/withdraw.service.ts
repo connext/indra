@@ -97,18 +97,24 @@ export class WithdrawService {
       counterpartySignatureOnWithdrawCommitment,
     );
 
-    await this.cfCoreService.uninstallApp(appInstance.identityHash, appInstance.multisigAddress, {
-      signature: counterpartySignatureOnWithdrawCommitment,
-    } as WithdrawAppAction);
-
     await generatedCommitment.addSignatures(
       counterpartySignatureOnWithdrawCommitment, // our sig
       state.signatures[0], // user sig
     );
+
     const signedWithdrawalCommitment = await generatedCommitment.getSignedTransaction();
     const onchainTransaction = await this.submitWithdrawToChain(
       appInstance.multisigAddress,
       signedWithdrawalCommitment,
+    );
+
+    await this.cfCoreService.uninstallApp(
+      appInstance.identityHash,
+      appInstance.multisigAddress,
+      {
+        signature: counterpartySignatureOnWithdrawCommitment,
+      } as WithdrawAppAction,
+      { withdrawTx: onchainTransaction.hash },
     );
 
     // Update db entry again

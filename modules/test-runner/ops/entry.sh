@@ -7,16 +7,15 @@ fi
 
 cmd="${1:-test}"
 
+# Set defaults in src/util/env instead of here
 export INDRA_ADMIN_TOKEN="$INDRA_ADMIN_TOKEN"
 export INDRA_CHAIN_PROVIDERS="$INDRA_CHAIN_PROVIDERS"
-export INDRA_CLIENT_LOG_LEVEL="${INDRA_CLIENT_LOG_LEVEL:-0}"
+export INDRA_CLIENT_LOG_LEVEL="$INDRA_CLIENT_LOG_LEVEL"
 export INDRA_CONTRACT_ADDRESSES="$INDRA_CONTRACT_ADDRESSES"
-export INDRA_MNEMONIC="${INDRA_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
-export INDRA_NATS_URL="${INDRA_NATS_URL:-nats://nats:4222}"
-export INDRA_NODE_URL="${INDRA_NODE_URL:-http://node:8080}"
-export INDRA_REDIS_URL="${INDRA_REDIS_URL:-redis://redis:6379}"
+export INDRA_NATS_URL="$INDRA_NATS_URL"
+export INDRA_NODE_URL="$INDRA_NODE_URL"
+
 export NODE_ENV="${NODE_ENV:-development}"
-export STORE_DIR="./.test-store"
 
 ########################################
 # Wait for indra stack dependencies
@@ -41,23 +40,7 @@ function wait_for {
 }
 
 wait_for "node" "$INDRA_NODE_URL"
-wait_for "redis" "$INDRA_REDIS_URL"
 wait_for "nats" "$INDRA_NATS_URL"
-
-########################################
-# Wait for all eth providers
-
-chains=()
-for chain in `echo $INDRA_CHAIN_PROVIDERS | jq 'keys[]' | tr -d '"'`
-do chains+=("$chain")
-done
-urls=()
-for url in `echo $INDRA_CHAIN_PROVIDERS | jq '.[]' | tr -d '"'`
-do urls+=("$url")
-done
-for index in "${!chains[@]}"
-do wait_for "ethprovider_${chains[$index]}" "${urls[$index]}"
-done
 
 ########################################
 # Launch tests

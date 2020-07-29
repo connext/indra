@@ -192,6 +192,7 @@ export class Agent {
     assetId: Address = AddressZero,
     id: string = getRandomBytes32(),
     type: ConditionalTransferTypes = ConditionalTransferTypes.GraphTransfer,
+    timeout: number = 10_000,
   ) {
     const params = await this.getTransferParameters(
       receiverIdentifier,
@@ -219,7 +220,6 @@ export class Agent {
         reject,
       };
 
-      const timeout = 10_000;
       delay(timeout).then(() => {
         if (this.payments[id]) {
           delete this.payments[id];

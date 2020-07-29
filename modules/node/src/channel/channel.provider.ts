@@ -80,7 +80,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
       );
       return onchainEntityToReceipt(tx);
     } catch (e) {
-      this.log.debug(`Failed to collateralize: ${e.message}`);
+      this.log.warn(`Failed to collateralize: ${e.message}`);
       return undefined;
     }
   }

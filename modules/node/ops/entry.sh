@@ -16,6 +16,14 @@ if [[ -z "$INDRA_MNEMONIC" && -n "$INDRA_MNEMONIC_FILE" ]]
 then export INDRA_MNEMONIC="`cat $INDRA_MNEMONIC_FILE`"
 fi
 
+if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" && -n "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY_FILE" ]]
+then export INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="`cat $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY_FILE`"
+fi
+
+if [[ -z "$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY" && -n "$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY_FILE" ]]
+then export INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="`cat $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY_FILE`"
+fi
+
 ########################################
 # Wait for indra stack dependencies
 
@@ -43,21 +51,6 @@ wait_for "nats" "$INDRA_NATS_SERVERS"
 wait_for "redis" "$INDRA_REDIS_URL"
 
 ########################################
-# Wait for all chain providers
-
-chains=()
-for chain in `echo $INDRA_CHAIN_PROVIDERS | jq 'keys[]' | tr -d '"'`
-do chains+=("$chain")
-done
-urls=()
-for url in `echo $INDRA_CHAIN_PROVIDERS | jq '.[]' | tr -d '"'`
-do urls+=("$url")
-done
-for index in "${!chains[@]}"
-do wait_for "ethprovider_${chains[$index]}" "${urls[$index]}"
-done
-
-########################################
 # Launch Node
 
 if [[ "$NODE_ENV" == "development" ]]
@@ -75,11 +68,6 @@ then
     ./src/main.ts
 else
   echo "Starting indra node in prod-mode"
-  if [[ -n "$INSPECT" ]]
-  then
-    exec node --inspect=0.0.0.0:9229 --no-deprecation dist/src/main.js
-  else
-    exec node --no-deprecation dist/src/main.js
-  fi
+  exec node --no-deprecation dist/bundle.js
 fi
 

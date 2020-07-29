@@ -134,7 +134,7 @@ export class ProtocolRunner {
     instruction: (context: Context) => AsyncIterableIterator<any>,
     message: ProtocolMessage,
     preProtocolStateChannel?: StateChannel,
-  ): Promise<{ channel: StateChannel; data: any; appContext: AppInstance }> {
+  ): Promise<{ channel: StateChannel; data: any; appContext: AppInstance; protocolMeta: any }> {
     const context: Context = {
       log: this.log,
       message,

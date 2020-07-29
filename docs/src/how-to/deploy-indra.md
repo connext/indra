@@ -7,7 +7,6 @@ First step: get a server via AWS or DigitalOcean or hardware at home. For best r
 Set up DNS so that `$DOMAINNAME` points to this server's IP address. If you're using CloudFlare name servers, turn on CloudFlare's built-in SSL support & make sure it's set to "Full (strict)".
 
 Next: Clone the repo and cd into it.
-
 ```
 git clone git@github.com:connext/indra.git
 cd indra
@@ -59,7 +58,7 @@ Ensure you've added correct values for two important env vars: `INDRA_DOMAINNAME
 The `INDRA_CHAIN_PROVIDERS` env var is a tricky one, there is no default provided as it's value depends entirely on which chains you want to support (if this env var is not provided, a local testnet will be started up & Indra will use this). The format is very specific: it must be valid JSON where the key is a chain id (eg `"4"`) and the value is that chain's provider url (eg `"https://eth-rinkeby.alchemyapi.io/v2/abc123"`). The double quotes within this env var must be preserved, this is accomplished most reliably by both single-quoting the env var value and escaping the double quotes with back slashes. When you're done, you should have a line in your `.env` file that looks something like this:
 
 ```bash
-export INDRA_CHAIN_PROVIDERS='{\"4\":\"https://rinkeby.infura.io/v3/19b854cad0bc4089bffd0c93f23ece9f\",\"42\":\""https://kovan.infura.io/v3/19b854cad0bc4089bffd0c93f23ece9f"\"}'
+export INDRA_CHAIN_PROVIDERS='{\"4\":\"https://eth-rinkeby.alchemyapi.io/v2/abc123\"}'
 ```
 
 Upload the prod env vars to the indra server. If you're using a custom address book, upload that too:
@@ -77,10 +76,10 @@ git checkout master # staging is the default branch. It's cutting edge but maybe
 make restart-prod
 ```
 
-The above will download & run docker images associated with the commit/release you have checked out. If you want to launch a specific version of indra, checkout that version's tag & restart:
+The above will download & run docker images associated with the commit/tag you have checked out. If you want to launch a specific version of indra, checkout that version's tag & restart:
 
 ```bash
 git checkout indra-6.0.8 && make restart-prod
 ```
 
-Before you are able to start sending payments, you will have to make sure to properly collateralize your node. The signer address is available as `accounts[0]` off of your mnemonic and can also be found by querying the `/api/config` endpoint under `signerAddress`. Node's should have collateral in all supported tokens, as well as sufficient eth to pay for all transactions from the wallet to the channels. By default, the supported token addresses will include ETH and the `Token` address from the network context of your node (available in `address-book.json`).
+Before you are able to start sending payments, you will have to make sure to properly collateralize your node. The signer address is available as `accounts[0]` off of your mnemonic and can also be found by querying the `/config` endpoint under `signerAddress`. Node's should have collateral in all supported tokens, as well as sufficient eth to pay for all transactions from the wallet to the channels. By default, the supported token addresses will include ETH and the `Token` address from the network context of your node (available in `address-book.json`).

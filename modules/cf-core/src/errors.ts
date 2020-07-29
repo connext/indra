@@ -1,5 +1,6 @@
 import { stringify } from "@connext/utils";
 import { BigNumber } from "ethers";
+import { MAX_CHANNEL_APPS } from "./constants";
 
 export const NO_MULTISIG_IN_PARAMS = (params: any): string => {
   return `No multisig address provided in params: ${stringify(params)}`;
@@ -139,6 +140,8 @@ export const NULL_INITIAL_STATE_FOR_PROPOSAL =
 
 export const STATE_OBJECT_NOT_ENCODABLE =
   "The state object is not encodable by the AppInstance's state encoding";
+
+export const TOO_MANY_APPS_IN_CHANNEL = `Will not propose or install more than ${MAX_CHANNEL_APPS} apps`;
 
 export const TWO_PARTY_OUTCOME_DIFFERENT_ASSETS = (assetA: string, assetB: string): string =>
   `For a TWO_PARTY_FIXED_OUTCOME there cannot be two kinds of tokens deposited: ${assetA} and ${assetB}`;

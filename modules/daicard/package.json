@@ -9,14 +9,14 @@
     "build": "react-app-rewired --max_old_space_size=4096 build",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*.js'",
     "logs": "bash ops/logs.sh",
-    "format": "prettier --write \"src/**/*.js\""
+    "format": "prettier --write 'src/**/*.js'"
   },
   "dependencies": {
-    "@connext/client": "7.0.0",
+    "@connext/client": "7.0.2",
     "@connext/contracts": "3.4.1",
-    "@connext/utils": "7.0.0",
-    "@connext/store": "7.0.0",
-    "@connext/types": "7.0.0",
+    "@connext/utils": "7.0.2",
+    "@connext/store": "7.0.2",
+    "@connext/types": "7.0.2",
     "@material-ui/core": "4.11.0",
     "@material-ui/icons": "4.9.1",
     "@walletconnect/browser": "1.0.0",

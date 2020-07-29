@@ -15,6 +15,7 @@ import {
   INVALID_FACTORY_ADDRESS,
   INVALID_MASTERCOPY_ADDRESS,
   NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
+  NO_NETWORK_PROVIDER_FOR_CHAIN_ID,
 } from "../../errors";
 import { MinimumViableMultisig, ProxyFactory } from "../../contracts";
 import { StateChannel } from "../../models";
@@ -62,6 +63,10 @@ export class DeployStateDepositController extends MethodController {
 
     const networkContext = networkContexts[preProtocolStateChannel.chainId];
 
+    if (!networkContext?.provider) {
+      throw new Error(NO_NETWORK_PROVIDER_FOR_CHAIN_ID(preProtocolStateChannel.chainId));
+    }
+
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       preProtocolStateChannel.userIdentifiers[0],
       preProtocolStateChannel.userIdentifiers[1],
@@ -91,7 +96,8 @@ export class DeployStateDepositController extends MethodController {
     if (!signer.provider || !Signer.isSigner(signer)) {
       throw new Error(`Signer must be connected to provider`);
     }
-    const provider = signer.provider!;
+    const provider = networkContext.provider!;
+    await signer.connectProvider(provider);
 
     // If this is called twice concurrently, the second attempt should wait until the first is done
     if (this.inProgress) {
@@ -169,11 +175,17 @@ export class DeployStateDepositController extends MethodController {
           break;
         } catch (e) {
           const message = e?.body?.error?.message || e.message;
-          log.warn(e.message);
+          log.warn(message);
           if (message.includes("the tx doesn't have the correct nonce")) {
             log.warn(`Nonce conflict, trying again real quick: ${message}`);
             tryCount -= 1; // Nonce conflicts don't count as retrys bc no gas spent
             memoryNonce = parseInt(message.match(/account has nonce of: (\d+)/)[1], 10);
+            continue;
+          }
+          if (message.includes("Invalid nonce")) {
+            log.warn(`Nonce conflict, trying again real quick: ${message}`);
+            tryCount -= 1; // Nonce conflicts don't count as retrys bc no gas spent
+            memoryNonce = parseInt(message.match(/Expected (\d+)/)[1], 10);
             continue;
           }
           error = e;

@@ -256,6 +256,7 @@ export class DepositService {
     const multisig = new Contract(channel.multisigAddress, MinimumViableMultisig.abi, ethProvider);
     let startingTotalAmountWithdrawn: BigNumber;
     try {
+      this.log.info(`Checking withdrawn amount using ethProvider ${ethProvider.connection.url}`);
       startingTotalAmountWithdrawn = await multisig.totalAmountWithdrawn(tokenAddress);
     } catch (e) {
       const NOT_DEPLOYED_ERR = `CALL_EXCEPTION`;
@@ -266,18 +267,24 @@ export class DepositService {
       // deployed withdrawal amount is 0
       startingTotalAmountWithdrawn = Zero;
     }
+    this.log.info(`startingTotalAmountWithdrawn: ${startingTotalAmountWithdrawn.toString()}`);
 
     // generate starting multisig balance
+    this.log.info(
+      `Checking starting multisig balance of ${channel.multisigAddress} asset ${tokenAddress} on chain ${channel.chainId} using ethProvider ${ethProvider.connection.url}`,
+    );
     const startingMultisigBalance =
       tokenAddress === AddressZero
         ? await ethProvider.getBalance(channel.multisigAddress)
-        : await new Contract(
-          tokenAddress,
-          ERC20.abi,
-          this.configService.getSigner(channel.chainId),
-        ).balanceOf(
-          channel.multisigAddress,
-        );
+        : await new Contract(tokenAddress, ERC20.abi, ethProvider).balanceOf(
+            channel.multisigAddress,
+          );
+
+    this.log.info(
+      `startingMultisigBalance of ${channel.multisigAddress} asset ${tokenAddress} on chain ${
+        channel.chainId
+      }: ${startingMultisigBalance.toString()}`,
+    );
 
     const initialState: DepositAppState = {
       transfers: [
