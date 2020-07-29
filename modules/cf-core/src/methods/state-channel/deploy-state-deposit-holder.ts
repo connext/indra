@@ -171,11 +171,17 @@ export class DeployStateDepositController extends MethodController {
           break;
         } catch (e) {
           const message = e?.body?.error?.message || e.message;
-          log.warn(e.message);
+          log.warn(message);
           if (message.includes("the tx doesn't have the correct nonce")) {
             log.warn(`Nonce conflict, trying again real quick: ${message}`);
             tryCount -= 1; // Nonce conflicts don't count as retrys bc no gas spent
             memoryNonce = parseInt(message.match(/account has nonce of: (\d+)/)[1], 10);
+            continue;
+          }
+          if (message.includes("Invalid nonce")) {
+            log.warn(`Nonce conflict, trying again real quick: ${message}`);
+            tryCount -= 1; // Nonce conflicts don't count as retrys bc no gas spent
+            memoryNonce = parseInt(message.match(/Expected (\d+)/)[1], 10);
             continue;
           }
           error = e;
