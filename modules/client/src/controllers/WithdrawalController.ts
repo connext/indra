@@ -93,9 +93,17 @@ export class WithdrawalController extends AbstractController {
       ]);
 
       // TODO: if no transaction, we should probably send it ourselves?
+      if (!uninstallEvent.protocolMeta?.withdrawTx) {
+        throw new Error(
+          `Cannot find withdrawal tx in uninstall event data: ${stringify(uninstallEvent)}`,
+        );
+      }
       transaction = await this.connext.ethProvider.getTransaction(
         uninstallEvent.protocolMeta?.withdrawTx,
       );
+      if (!transaction) {
+        throw new Error(`Cannot find withdrawal tx: ${uninstallEvent.protocolMeta?.withdrawTx}`);
+      }
       this.log.info(`Data from withdrawal app uninstall: ${stringify(uninstallEvent, true, 0)}`);
 
       transaction.wait().then(async (receipt) => {
