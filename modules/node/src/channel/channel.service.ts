@@ -8,7 +8,7 @@ import {
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
-import { BigNumber, constants, utils } from "ethers";
+import { BigNumber, constants, utils, providers } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -106,7 +106,7 @@ export class ChannelService {
     channel: Channel,
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
-  ): Promise<OnchainTransaction | undefined> {
+  ): Promise<providers.TransactionResponse | undefined> {
     this.log.info(
       `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started`,
     );
@@ -141,7 +141,7 @@ export class ChannelService {
       normalizedAssetId,
     );
 
-    let receipt: OnchainTransaction | undefined = undefined;
+    let response: providers.TransactionResponse | undefined = undefined;
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // If free balance is too low, collateralize up to upper bound
       if (nodeFreeBalance.lt(collateralizeThreshold)) {
@@ -149,7 +149,7 @@ export class ChannelService {
           `nodeFreeBalance ${nodeFreeBalance.toString()} < collateralizeThreshold ${collateralizeThreshold.toString()}, depositing`,
         );
         const amount = target.sub(nodeFreeBalance);
-        receipt = await this.depositService.deposit(channel, amount, normalizedAssetId);
+        response = await this.depositService.deposit(channel, amount, normalizedAssetId);
       } else {
         this.log.debug(
           `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${collateralizeThreshold.toString()}`,
@@ -172,7 +172,7 @@ export class ChannelService {
       }
     }
     this.log.info(`Rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`);
-    return receipt;
+    return response;
   }
 
   async getCollateralAmountToCoverPaymentAndRebalance(
