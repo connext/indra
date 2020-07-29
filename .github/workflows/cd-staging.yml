@@ -81,7 +81,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: make pull
-      - run: make start-indra-prod
+      - run: make start-prod
       - run: make dls
       - run: make test-tps-prod
       - name: Print logs
@@ -94,7 +94,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: make pull
-      - run: make start-indra-prod
+      - run: make start-prod
       - run: make dls
       - run: make test-integration-prod
       - name: Print logs
@@ -107,7 +107,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: make pull
-      - run: make start-indra-prod
+      - run: make start-prod
       - run: make dls
       - run: make test-backwards-compatibility
       - name: Print logs
@@ -120,7 +120,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: make pull
-      - run: make start-indra-prod
+      - run: make start-prod
       - run: make start-daicard-prod
       - run: make dls
       - run: make test-daicard
@@ -145,7 +145,7 @@ jobs:
             git reset --hard $GITHUB_SHA;
             export INDRA_DOMAINNAME="$STAGING_DOMAINNAME";
             export INDRA_ENV="prod";
-            make restart-indra-prod;
+            make restart-prod;
             docker container prune -f;
             docker image ls -q | xargs docker image rm || true;
           '

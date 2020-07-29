@@ -57,7 +57,7 @@ jobs:
       - run: make pull-latest
       - run: make indra && make test-runner
       - run: make build-report
-      - run: make start-indra
+      - run: make start
       - run: make dls
       - run: make test-integration
       - name: Print logs
