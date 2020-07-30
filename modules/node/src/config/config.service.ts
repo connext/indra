@@ -43,7 +43,10 @@ export class ConfigService implements OnModuleInit {
     // NOTE: will be reassigned in module-init (WHICH NOTHING ACTUALLY WAITS FOR)
     const urls = this.getProviderUrls();
     this.getSupportedChains().forEach((chainId, idx) => {
-      const provider = new providers.JsonRpcProvider(urls[idx], chainId);
+      const provider = new providers.JsonRpcProvider(
+        urls[idx],
+        chainId === 61 ? "classic" : chainId,
+      );
       this.providers.set(chainId, provider);
       this.signers.set(chainId, new ChannelSigner(this.getPrivateKey(), provider));
       this.log.debug(`Registered new provider & signer for chain ${chainId}`);
