@@ -6,7 +6,7 @@ import { env } from "./env";
 import { connect } from "@connext/client";
 import { getMemoryStore } from "@connext/store";
 import { Agent } from "./agents/agent";
-import { EventNames } from "@connext/types";
+import { EventNames, ConditionalTransferTypes } from "@connext/types";
 
 const { AddressZero, Two } = constants;
 const { formatEther, parseEther } = utils;
@@ -151,7 +151,7 @@ export const command = {
       TRANSFER_AMT,
       undefined,
       undefined,
-      undefined,
+      ConditionalTransferTypes.LinkedTransfer,
       ONE_MINUTE,
     );
     await receiverUnlocked;

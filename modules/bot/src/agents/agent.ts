@@ -256,6 +256,7 @@ export class Agent {
       amount,
       assetId,
       recipient: receiverIdentifier,
+      paymentId: id,
     };
     switch (type) {
       case ConditionalTransferTypes.GraphTransfer: {
@@ -264,13 +265,18 @@ export class Agent {
         const verifyingContract = getTestVerifyingContract();
         return {
           ...baseParams,
-          paymentId: id,
           signerAddress,
           chainId,
           verifyingContract,
           requestCID: receipt.requestCID,
           subgraphDeploymentID: receipt.subgraphDeploymentID,
         };
+      }
+      case ConditionalTransferTypes.LinkedTransfer: {
+        return {
+          ...baseParams,
+          preImage: getRandomBytes32(),
+        } as PublicParams.LinkedTransfer;
       }
       default: {
         throw new Error("Unrecognized payment type");
