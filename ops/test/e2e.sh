@@ -28,6 +28,7 @@ common="$interactive \
   --rm"
 
 args="--chain-id $chainid \
+  --token-address '$ASSET_ID' \
   --funder-mnemonic '$MNEMONIC' \
   --log-level $LOG_LEVEL"
 
@@ -36,7 +37,7 @@ exec docker run \
     --env="INDRA_CHAIN_URL=$INDRA_CHAIN_URL" \
     --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
     --env="LOG_LEVEL=$LOG_LEVEL" \
-    --env="TOKEN_ADDRESS=$ASSET" \
+    --env="ASSET_ID=$ASSET_ID" \
     --env="MNEMONIC=$MNEMONIC" \
     --entrypoint=bash \
     --volume="$root:/root" \
