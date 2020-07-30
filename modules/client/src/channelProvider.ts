@@ -33,7 +33,7 @@ import {
   stringify,
   toBN,
 } from "@connext/utils";
-import { Contract, constants } from "ethers";
+import { Contract, constants, BigNumber } from "ethers";
 import { ERC20 } from "@connext/contracts";
 
 const { AddressZero } = constants;
@@ -236,6 +236,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   }
 
   private walletDeposit = async (params: WalletDepositParams): Promise<string> => {
+    const chainId = await this.signer.getChainId();
     const recipient = this.config.multisigAddress;
     if (!recipient) {
       throw new Error(`Cannot make deposit without channel created - missing multisigAddress`);
@@ -245,12 +246,15 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       const tx = await this.signer.sendTransaction({
         to: recipient,
         value: toBN(params.amount),
+        gasPrice: chainId === 100 ? BigNumber.from(1) : undefined,
       });
       hash = tx.hash;
       await tx.wait();
     } else {
       const erc20 = new Contract(params.assetId, ERC20.abi, this.signer);
-      const tx = await erc20.transfer(recipient, toBN(params.amount));
+      const tx = await erc20.functions.transfer(recipient, toBN(params.amount), {
+        gasPrice: chainId === 100 ? BigNumber.from(1) : undefined,
+      });
       hash = tx.hash;
       await tx.wait();
     }

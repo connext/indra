@@ -54,8 +54,14 @@ export const command = {
     };
     const sendChainBalance = (addr: string, amount: BigNumber) => {
       return assetId === AddressZero
-        ? sugarDaddy.sendTransaction({ to: addr, value: amount })
-        : new Contract(assetId, Token.abi, sugarDaddy).transfer(addr, amount);
+        ? sugarDaddy.sendTransaction({
+            to: addr,
+            value: amount,
+            gasPrice: argv.chainId === 100 ? BigNumber.from(1) : undefined,
+          })
+        : new Contract(assetId, Token.abi, sugarDaddy).functions.transfer(addr, amount, {
+            gasPrice: argv.chainId === 100 ? BigNumber.from(1) : undefined,
+          });
     };
     const startingAssetBalance = await getChainBalance(sugarDaddy.address);
 

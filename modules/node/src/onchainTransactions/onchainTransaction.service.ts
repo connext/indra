@@ -1,7 +1,7 @@
 import { MinimalTransaction } from "@connext/types";
 import { stringify } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { providers } from "ethers";
+import { providers, BigNumber } from "ethers";
 import PriorityQueue from "p-queue";
 
 import { Channel } from "../channel/channel.entity";
@@ -11,6 +11,8 @@ import { OnchainTransactionRepository } from "./onchainTransaction.repository";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction, TransactionReason } from "./onchainTransaction.entity";
 
+const MIN_GAS_LIMIT = BigNumber.from(100_000);
+const MIN_GAS_PRICE = BigNumber.from(1);
 const BAD_NONCE = "the tx doesn't have the correct nonce";
 const NO_TX_HASH = "no transaction hash found in tx response";
 const UNDERPRICED_REPLACEMENT = "replacement transaction underpriced";
@@ -96,7 +98,16 @@ export class OnchainTransactionService implements OnModuleInit {
         const chainNonce = await wallet.getTransactionCount();
         const memoryNonce = await this.nonces.get(channel.chainId);
         const nonce = chainNonce > memoryNonce ? chainNonce : memoryNonce;
-        const req = await wallet.populateTransaction({ ...transaction, nonce });
+        const calculatedReq = await wallet.populateTransaction({ ...transaction, nonce });
+        const req = {
+          ...calculatedReq,
+          gasLimit: BigNumber.from(calculatedReq.gasLimit || 0).lt(MIN_GAS_LIMIT)
+            ? MIN_GAS_LIMIT
+            : calculatedReq.gasLimit,
+          // FIXME: remove special case of xdai
+          gasPrice: calculatedReq.chainId === 100 ? MIN_GAS_PRICE : calculatedReq.gasPrice,
+        };
+
         tx = await wallet.sendTransaction(req);
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);
