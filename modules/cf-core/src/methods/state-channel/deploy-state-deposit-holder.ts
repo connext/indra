@@ -128,6 +128,9 @@ export class DeployStateDepositController extends MethodController {
             ProxyFactory.abi,
             signer,
           );
+          log.info(
+            `Sending multisig deploy tx onto chain ${preProtocolStateChannel.chainId} using provider ${provider.connection.url}`,
+          );
           const tx: providers.TransactionResponse = await proxyFactory.createProxyWithNonce(
             networkContext.contractAddresses.MinimumViableMultisig,
             new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
