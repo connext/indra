@@ -128,8 +128,9 @@ export class DepositService {
       response = await this.sendDepositToChain(channel, amount, assetId);
       this.log.info(`Deposit transaction broadcast: ${response.hash}`);
     } catch (e) {
-      this.log.error(`Caught error collateralizing: ${e.stack}`);
+      this.log.error(`Caught error collateralizing: ${e.stack || e}`);
       await cleanUpDepositRights();
+      return undefined;
     }
     // remove the deposit rights when transaction fails or is mined
     response
