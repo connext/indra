@@ -51,7 +51,7 @@ describe("Restore State", () => {
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
 
     // TODO: rm 'as any' once type returned by requestCollateral is fixed
-    const tx = await clientA.requestCollateral(tokenAddress) as any;
+    const tx = (await clientA.requestCollateral(tokenAddress)) as any;
     await ethProvider.waitForTransaction(tx.hash);
     await clientA.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
 
