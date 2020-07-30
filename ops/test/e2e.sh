@@ -23,7 +23,7 @@ else echo "Running in non-interactive mode"
 fi
 
 common="$interactive \
-  --name=${project}_e2e_test \
+  --name=${project}_e2e_test_${chainid} \
   --network=$project \
   --rm"
 
