@@ -87,6 +87,12 @@ export const command = {
       store: getMemoryStore(),
     });
 
+    console.log(`Sender:
+      publicIdentifier: ${sender.publicIdentifier}
+      signer: ${sender.signerAddress}
+      nodeIdentifier: ${sender.nodeIdentifier}
+      nodeSignerAddress: ${sender.nodeSignerAddress}`);
+
     const bot = new Wallet(privateKey, ethProvider);
     if ((await getChainBalance(bot.address)).lt(DEPOSIT_AMT.div(Two))) {
       console.log(`Sending ${DEPOSIT_AMT} asset to sender: ${abrv(sender.signerAddress)}`);
@@ -95,12 +101,6 @@ export const command = {
       await tx.wait();
       console.log(`Tx mined on ${tx.chainId}`);
     }
-
-    console.log(`Sender:
-      publicIdentifier: ${sender.publicIdentifier}
-      signer: ${sender.signerAddress}
-      nodeIdentifier: ${sender.nodeIdentifier}
-      nodeSignerAddress: ${sender.nodeSignerAddress}`);
 
     const senderAgent = new Agent(
       new ColorfulLogger("SenderAgent", argv.logLevel, true),
