@@ -83,6 +83,11 @@ export class OnchainTransactionService implements OnModuleInit {
     channel: Channel,
   ): Promise<providers.TransactionResponse> {
     const wallet = this.configService.getSigner(channel.chainId);
+    this.log.info(
+      `sendTransaction: Using provider URL ${
+        (wallet.provider as providers.JsonRpcProvider)?.connection?.url
+      }`,
+    );
     const errors: { [k: number]: string } = [];
     let tx: providers.TransactionResponse;
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
