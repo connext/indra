@@ -86,7 +86,7 @@ export class OnchainTransactionService implements OnModuleInit {
     this.log.info(
       `sendTransaction: Using provider URL ${
         (wallet.provider as providers.JsonRpcProvider)?.connection?.url
-      }`,
+      } on chain ${channel.chainId}`,
     );
     const errors: { [k: number]: string } = [];
     let tx: providers.TransactionResponse;
@@ -106,7 +106,7 @@ export class OnchainTransactionService implements OnModuleInit {
         this.nonces.set(channel.chainId, Promise.resolve(nonce + 1));
         tx.wait().then(async (receipt) => {
           this.log.info(
-            `Success sending transaction! Tx mined at block ${receipt.blockNumber}: ${receipt.transactionHash}`,
+            `Success sending transaction! Tx mined at block ${receipt.blockNumber} on chain ${channel.chainId}: ${receipt.transactionHash}`,
           );
           await this.onchainTransactionRepository.addReceipt(receipt);
         });

@@ -74,7 +74,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     );
     try {
       const response = await this.channelService.rebalance(
-        channel,
+        channel.multisigAddress,
         getAddress(data.assetId),
         RebalanceType.COLLATERALIZE,
       );
