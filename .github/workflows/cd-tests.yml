@@ -74,7 +74,7 @@ jobs:
       - run: make test-integration-prod
       - name: Print logs
         if: failure()
-        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_indra
+        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
 
   test-backwards-compatibility:
     runs-on: ubuntu-latest
@@ -87,7 +87,7 @@ jobs:
       - run: make test-backwards-compatibility
       - name: Print logs
         if: failure()
-        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_indra
+        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
 
   test-tps:
     runs-on: ubuntu-latest
@@ -100,7 +100,7 @@ jobs:
       - run: make test-tps-prod
       - name: Print logs
         if: failure()
-        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_indra
+        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy
 
   test-daicard:
     runs-on: ubuntu-16.04
@@ -114,4 +114,4 @@ jobs:
       - run: make test-daicard
       - name: Print logs
         if: failure()
-        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_indra
+        run: docker service logs --tail 200 indra_node && docker service logs --tail 200 indra_proxy

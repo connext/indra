@@ -63,13 +63,15 @@ export class DepositService {
         getSignerAddressFromPublicIdentifier(channel.userIdentifier)
     ) {
       throw new Error(
-        `Cannot deposit, user has deposit app installed for asset ${assetId}, app: ${depositApp.identityHash}`,
+        `Cannot deposit, user has deposit app installed for asset ${assetId} on chain ${channel.chainId}, app: ${depositApp.identityHash}`,
       );
     }
 
     // don't allow deposit if an active deposit is in process
     if (channel.activeCollateralizations[assetId]) {
-      this.log.warn(`Collateral request is in flight for ${assetId}, waiting for transaction`);
+      this.log.warn(
+        `Collateral request is in flight for ${assetId} on chain ${channel.chainId}, waiting for transaction`,
+      );
       const preDeposit = await this.cfCoreService.getFreeBalance(
         channel.userIdentifier,
         channel.multisigAddress,
@@ -81,7 +83,7 @@ export class DepositService {
       );
       if (!waited) {
         throw new Error(
-          `Attempted to wait for ongoing transaction, but it took longer than 5 blocks, retry later.`,
+          `Attempted to wait for ongoing transaction on chain ${channel.chainId}, but it took longer than 5 blocks, retry later.`,
         );
       }
       const postDeposit = await this.cfCoreService.getFreeBalance(
@@ -109,27 +111,50 @@ export class DepositService {
 
     const cleanUpDepositRights = async () => {
       if (appIdentityHash) {
-        this.log.info(`Releasing deposit rights`);
+        this.log.info(
+          `Releasing deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
+        );
         await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
-        this.log.info(`Released deposit rights`);
+        this.log.info(
+          `Released deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
+        );
       }
-      this.log.info(`Releasing in flight collateralization`);
+      this.log.info(
+        `Releasing in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      );
       await this.channelRepository.setInflightCollateralization(channel, assetId, false);
-      this.log.info(`Released in flight collateralization`);
+      this.log.info(
+        `Released in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      );
     };
 
     try {
-      this.log.info(`Requesting deposit rights before depositing`);
-      this.log.info(`Setting in flight collateralization`);
+      this.log.info(
+        `Requesting deposit rights before depositing on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      );
+      this.log.info(
+        `Setting in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      );
       await this.channelRepository.setInflightCollateralization(channel, assetId, true);
-      this.log.info(`Set in flight collateralization`);
+      this.log.info(
+        `Set in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      );
       appIdentityHash = await this.requestDepositRights(channel, assetId);
-      this.log.info(`Requested deposit rights, sending deposit to chain`);
+      this.log.info(
+        `Requested deposit rights, sending deposit to chain on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      );
       response = await this.sendDepositToChain(channel, amount, assetId);
-      this.log.info(`Deposit transaction broadcast: ${response.hash}`);
+      this.log.info(
+        `Deposit transaction broadcast on chain ${channel.chainId} for ${channel.multisigAddress}: ${response.hash}`,
+      );
     } catch (e) {
-      this.log.error(`Caught error collateralizing: ${e.stack}`);
+      this.log.error(
+        `Caught error collateralizing on chain ${channel.chainId} for ${channel.multisigAddress}: ${
+          e.stack || e
+        }`,
+      );
       await cleanUpDepositRights();
+      return undefined;
     }
     // remove the deposit rights when transaction fails or is mined
     response
@@ -170,7 +195,7 @@ export class DepositService {
     multisigAddress: string,
     assetId: string,
   ): Promise<string[] | undefined> {
-    this.log.info(`Collateralization in flight for user ${userId}, waiting`);
+    this.log.info(`Collateralization in flight for user ${userId} on ${multisigAddress}, waiting`);
     const ethProvider = this.configService.getEthProvider(
       await this.channelRepository.getChainIdByMultisigAddress(multisigAddress),
     );
@@ -262,7 +287,11 @@ export class DepositService {
         data: token.interface.encodeFunctionData("transfer", [channel.multisigAddress, amount]),
       };
     }
-    this.log.info(`Creating transaction for amount ${amount.toString()}: ${stringify(tx)}`);
+    this.log.info(
+      `Creating transaction on ${channel.chainId} for ${
+        channel.multisigAddress
+      } for amount ${amount.toString()}: ${stringify(tx)}`,
+    );
     return this.onchainTransactionService.sendDeposit(channel, tx);
   }
 

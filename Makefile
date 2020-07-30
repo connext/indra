@@ -71,7 +71,7 @@ stop-all:
 	bash ops/stop.sh daicard
 	bash ops/stop.sh testnet
 
-restart: indra stop-indra
+restart: indra stop
 	bash ops/start-indra.sh
 
 restart-prod: stop
