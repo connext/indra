@@ -339,15 +339,19 @@ export class TransferService {
         freeBal[freeBalanceAddr],
       );
       // request collateral and wait for deposit to come through
-      const depositReceipt = await this.depositService.deposit(
+      const depositResponse = await this.depositService.deposit(
         receiverChannel,
         deposit,
         receiverAssetId,
       );
-      if (!depositReceipt) {
-        throw new Error(
-          `Could not deposit sufficient collateral to resolve transfer for receiver: ${receiverIdentifier}`,
-        );
+      if (depositResponse) {
+        try {
+          await depositResponse.wait();
+        } catch (e) {
+          throw new Error(
+            `Could not deposit sufficient collateral to resolve transfer for receiver: ${receiverIdentifier}. ${e.message}`,
+          );
+        }
       }
     }
 

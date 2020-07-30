@@ -88,6 +88,7 @@ export const command = {
     });
 
     console.log(`Sender:
+      multisig: ${sender.multisigAddress}
       publicIdentifier: ${sender.publicIdentifier}
       signer: ${sender.signerAddress}
       nodeIdentifier: ${sender.nodeIdentifier}
@@ -125,6 +126,7 @@ export const command = {
     });
 
     console.log(`Receiver:
+      multisig: ${receiver.multisigAddress}
       publicIdentifier: ${receiver.publicIdentifier}
       signer: ${receiver.signerAddress}
       nodeIdentifier: ${receiver.nodeIdentifier}
@@ -142,9 +144,20 @@ export const command = {
     console.log("Receiver started.");
 
     // COLLATERAL
-    console.log("Receiver client requesting collateral.");
+    const starting = await receiver.getFreeBalance(assetId);
+    console.log(
+      `Receiver client requesting collateral (precollateral balance: ${formatEther(
+        starting[receiver.nodeSignerAddress],
+      )}).`,
+    );
+    const start = Date.now();
     await receiverAgent.requestCollateral(assetId);
-    console.log("Collateral request complete");
+    const postCollateral = await receiver.getFreeBalance(assetId);
+    console.log(
+      `Collateral request complete (postcollateral balance: ${formatEther(
+        postCollateral[receiver.nodeSignerAddress],
+      )}, elapsed: ${Date.now() - start}).`,
+    );
 
     // SENDER DEPOSIT
     console.log(
