@@ -9,8 +9,9 @@ chainid="$1"
 
 INDRA_CHAIN_URL="${INDRA_CHAIN_URL:-http://172.17.0.1:8545}"
 INDRA_NODE_URL="${INDRA_NODE_URL:-http://172.17.0.1:3000}"
+ASSET_ID="${ASSET_ID:-0x0000000000000000000000000000000000000000}"
 
-echo "Starting bot in env: LOG_LEVEL=$LOG_LEVEL | INDRA_CHAIN_URL=$INDRA_CHAIN_URL | INDRA_NODE_URL=$INDRA_NODE_URL | MNEMONIC=$MNEMONIC"
+echo "Starting bot in env: LOG_LEVEL=$LOG_LEVEL | INDRA_CHAIN_URL=$INDRA_CHAIN_URL | ASSET_ID=$ASSET_ID | INDRA_NODE_URL=$INDRA_NODE_URL | MNEMONIC=$MNEMONIC"
 
 if [[ -t 0 && -t 1 && -t 2 ]]
 then interactive="--interactive --tty"
@@ -31,6 +32,7 @@ exec docker run \
     --env="INDRA_CHAIN_URL=$INDRA_CHAIN_URL" \
     --env="INDRA_NODE_URL=$INDRA_NODE_URL" \
     --env="LOG_LEVEL=$LOG_LEVEL" \
+    --env="TOKEN_ADDRESS=$ASSET" \
     --env="MNEMONIC=$MNEMONIC" \
     --entrypoint=bash \
     --volume="$root:/root" \

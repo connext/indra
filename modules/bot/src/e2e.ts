@@ -1,5 +1,5 @@
 import { abrv, ChannelSigner, ColorfulLogger, getRandomPrivateKey } from "@connext/utils";
-import { constants, providers, utils, Wallet } from "ethers";
+import { constants, providers, utils, Wallet, Contract, BigNumber } from "ethers";
 import { Argv } from "yargs";
 
 import { env } from "./env";
@@ -7,6 +7,8 @@ import { connect } from "@connext/client";
 import { getMemoryStore } from "@connext/store";
 import { Agent } from "./agents/agent";
 import { EventNames, ConditionalTransferTypes } from "@connext/types";
+import { getAddress } from "ethers/lib/utils";
+import { Token } from "@connext/contracts";
 
 const { AddressZero, Two } = constants;
 const { formatEther, parseEther } = utils;
@@ -38,20 +40,39 @@ export const command = {
       });
   },
   handler: async (argv: { [key: string]: any } & Argv["argv"]) => {
-    const ethProvider = new providers.JsonRpcProvider(env.ethProviderUrl);
+    const ethProvider = new providers.JsonRpcProvider(
+      env.ethProviderUrl,
+      argv.chainId === 61 ? "classic" : argv.chainId,
+    );
     const sugarDaddy = Wallet.fromMnemonic(argv.funderMnemonic).connect(ethProvider);
+    const assetId = getAddress(argv.tokenAddress);
     const startEthBalance = await sugarDaddy.getBalance();
+    const getChainBalance = (addr: string) => {
+      return assetId === AddressZero
+        ? ethProvider.getBalance(addr)
+        : new Contract(assetId, Token.abi, sugarDaddy).balanceOf(addr);
+    };
+    const sendChainBalance = (addr: string, amount: BigNumber) => {
+      return assetId === AddressZero
+        ? sugarDaddy.sendTransaction({ to: addr, value: amount })
+        : new Contract(assetId, Token.abi, sugarDaddy).transfer(addr, amount);
+    };
+    const startingAssetBalance = await getChainBalance(sugarDaddy.address);
 
     // sugarDaddy grants each bot some funds to start with
     const TRANSFER_AMT = parseEther("0.0001");
     const DEPOSIT_AMT = parseEther("0.001"); // Note: max amount in signer address is 1 eth
 
-    // Abort if sugarDaddy doesn't have enough ETH to fund all the bots
-    if (startEthBalance.lt(DEPOSIT_AMT.mul(2))) {
+    if (startEthBalance.lt(TRANSFER_AMT)) {
+      throw new Error(`Account ${sugarDaddy.address} does not have sufficient eth for gas`);
+    }
+
+    // Abort if sugarDaddy doesn't have enough gas + asset to fund all the bots
+    if (startingAssetBalance.lt(DEPOSIT_AMT.mul(2))) {
       throw new Error(
-        `Account ${sugarDaddy.address} has insufficient ETH. ${DEPOSIT_AMT.mul(
-          2,
-        )} required, got ${formatEther(startEthBalance)}`,
+        `Account ${sugarDaddy.address} has insufficient ${
+          assetId === AddressZero ? "ETH" : "ERC20"
+        }. ${DEPOSIT_AMT.mul(2)} required, got ${formatEther(startingAssetBalance)}`,
       );
     }
 
@@ -67,13 +88,10 @@ export const command = {
     });
 
     const bot = new Wallet(privateKey, ethProvider);
-    if ((await bot.getBalance()).lt(DEPOSIT_AMT.div(Two))) {
-      console.log(`Sending ${DEPOSIT_AMT} ETH to sender: ${abrv(sender.signerAddress)}`);
-      const tx = await sugarDaddy.sendTransaction({
-        to: sender.signerAddress,
-        value: DEPOSIT_AMT,
-      });
-      console.log(`Tx sent: ${tx.hash}`);
+    if ((await getChainBalance(bot.address)).lt(DEPOSIT_AMT.div(Two))) {
+      console.log(`Sending ${DEPOSIT_AMT} asset to sender: ${abrv(sender.signerAddress)}`);
+      const tx = await sendChainBalance(bot.address, DEPOSIT_AMT);
+      console.log(`Tx sent: ${tx.hash}, waiting for it to be mined..`);
       await tx.wait();
       console.log(`Tx mined on ${tx.chainId}`);
     }
@@ -123,15 +141,22 @@ export const command = {
     await receiverAgent.start();
     console.log("Receiver started.");
 
+    // COLLATERAL
+    console.log("Receiver client requesting collateral.");
+    await receiverAgent.requestCollateral(assetId);
+    console.log("Collateral request complete");
+
     // SENDER DEPOSIT
-    console.log(`Sender depositing ETH (onchain balance: ${formatEther(await bot.getBalance())})`);
-    await senderAgent.depositIfNeeded(TRANSFER_AMT, TRANSFER_AMT);
+    console.log(
+      `Sender depositing (onchain balance: ${formatEther(await getChainBalance(bot.address))})`,
+    );
+    await senderAgent.depositIfNeeded(TRANSFER_AMT, TRANSFER_AMT, assetId);
     console.log(`Deposit complete`);
 
-    let preTransferBalance = await sender.getFreeBalance();
+    let preTransferBalance = await sender.getFreeBalance(assetId);
     console.log(`Pre-transfer balance sender: ${preTransferBalance[sender.signerAddress]}`);
 
-    preTransferBalance = await receiver.getFreeBalance();
+    preTransferBalance = await receiver.getFreeBalance(assetId);
     console.log(`Pre-transfer balance receiver: ${preTransferBalance[receiver.signerAddress]}`);
 
     // SENDER TRANSFER TO RECEIVER
@@ -149,7 +174,7 @@ export const command = {
       receiver.publicIdentifier,
       receiver.signerAddress,
       TRANSFER_AMT,
-      undefined,
+      assetId,
       undefined,
       ConditionalTransferTypes.LinkedTransfer,
       ONE_MINUTE,
@@ -158,10 +183,10 @@ export const command = {
     await senderUnlocked;
     console.log(`Transfer complete`);
 
-    const postTransferBalanceSender = await sender.getFreeBalance();
+    const postTransferBalanceSender = await sender.getFreeBalance(assetId);
     console.log(`Post-transfer balance sender: ${postTransferBalanceSender[sender.signerAddress]}`);
 
-    const postTransferBalanceReceiver = await receiver.getFreeBalance();
+    const postTransferBalanceReceiver = await receiver.getFreeBalance(assetId);
     console.log(
       `Post-transfer balance receiver: ${postTransferBalanceReceiver[receiver.signerAddress]}`,
     );
@@ -171,10 +196,11 @@ export const command = {
     await receiver.withdraw({
       amount: postTransferBalanceReceiver[receiver.signerAddress],
       recipient: receiver.nodeSignerAddress,
+      assetId,
     });
     console.log(`Withdrawal complete`);
 
-    const postWithdrawalBalanceReceiver = await receiver.getFreeBalance();
+    const postWithdrawalBalanceReceiver = await receiver.getFreeBalance(assetId);
     console.log(
       `Post-Withdrawal balance receiver: ${postWithdrawalBalanceReceiver[receiver.signerAddress]}`,
     );
