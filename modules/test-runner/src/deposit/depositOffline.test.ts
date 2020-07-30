@@ -54,6 +54,9 @@ const makeFailingDepositCall = async (opts: {
       return reject(e.message);
     }
   });
+  // disable client
+  await client.messaging.disconnect();
+  client.off();
 };
 
 const recreateClientAndRetryDepositCall = async (
@@ -62,9 +65,8 @@ const recreateClientAndRetryDepositCall = async (
   store: IStoreService,
   opts: { id?: string; logLevel?: number } = {},
 ) => {
-  await client.messaging.disconnect();
   // Add delay to make sure messaging properly disconnects
-  await delay(1000);
+  await delay(3000);
   const newClient = await createClient({ signer, store, id: opts.id, logLevel: opts.logLevel });
 
   // Check that client can recover and continue
