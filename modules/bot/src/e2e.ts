@@ -69,7 +69,8 @@ export const command = {
     const TRANSFER_AMT = parseEther("0.0001");
     const DEPOSIT_AMT = parseEther("0.001"); // Note: max amount in signer address is 1 eth
 
-    if (startEthBalance.lt(TRANSFER_AMT)) {
+    // NOTE: OVM does not have native eth
+    if (startEthBalance.lt(TRANSFER_AMT) && argv.chainId !== 108) {
       throw new Error(`Account ${sugarDaddy.address} does not have sufficient eth for gas`);
     }
 

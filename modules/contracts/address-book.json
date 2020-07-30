@@ -1496,6 +1496,12 @@
       "runtimeCodeHash": "0x4e1174745f65f3f7ec4dd5505a044135251175f13c4d16950d9d051ade9892e7",
       "txHash": "0x092a1b0782606688e54980136d1e497f89d45f50cfa40ee5bdfa5b5f6164b047"
     },
+    "ProxyFactory": {
+      "address": "0x930D01C1f9D7bd183D15B155f9E0695151299534",
+      "creationCodeHash": "0x997daacc277a3d46fd441edae8c0a24a7e04d150572936279a2d12ed5404bdbb",
+      "runtimeCodeHash": "0x220891f732da29678bc1da3d4bfcbebdd5544268ec0f85bfbc21d860701e483f",
+      "txHash": "0xe0d441ef53e99997f60e951e26a996ec4475d33abbb79e694c08761ed6335240"
+    },
     "SimpleLinkedTransferApp": {
       "address": "0x57ddE3476737814922d6af520D5960E2c654b3aE",
       "creationCodeHash": "0x7fcc840c3892066bd6e309edd231e2fc34027c5b008772d3966035bdbffdc1a2",
