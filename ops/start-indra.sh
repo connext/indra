@@ -202,12 +202,11 @@ echo "Nats configured"
 ########################################
 # Chain provider config
 
-mnemonic_secret_name="${project}_mnemonic"
-INDRA_MNEMONIC_FILE="/run/secrets/$mnemonic_secret_name"
 
 # If no chain providers provided, spin up local testnets & use those
 if [[ -z "$INDRA_CHAIN_PROVIDERS" ]]
 then
+  mnemonic_secret_name="${project}_mnemonic_dev"
   echo 'No $INDRA_CHAIN_PROVIDERS provided, spinning up local testnets & using those.'
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   bash ops/save-secret.sh "$mnemonic_secret_name" "$eth_mnemonic"
@@ -218,6 +217,7 @@ then
 
 # If chain providers are provided, use those
 else
+  mnemonic_secret_name="${project}_mnemonic"
   echo "Using chain providers:" $INDRA_CHAIN_PROVIDERS
   # Prefer top-level address-book override otherwise default to one in contracts
   if [[ -f address-book.json ]]
@@ -226,6 +226,7 @@ else
   fi
 fi
 
+INDRA_MNEMONIC_FILE="/run/secrets/$mnemonic_secret_name"
 ETH_PROVIDER_URL="`echo $INDRA_CHAIN_PROVIDERS | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"
 
 # TODO: filter out contract addresses that are not for our chain providers
