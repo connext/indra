@@ -1,6 +1,6 @@
 import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { delay, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
-import { Contract, Signer, utils, constants, providers } from "ethers";
+import { Contract, Signer, utils, constants, providers, BigNumber } from "ethers";
 
 import {
   CHANNEL_CREATION_FAILED,
@@ -140,7 +140,11 @@ export class DeployStateDepositController extends MethodController {
             solidityKeccak256(["uint256", "uint256"], [preProtocolStateChannel.chainId, 0]),
             {
               gasLimit: CREATE_PROXY_AND_SETUP_GAS,
-              gasPrice: provider.getGasPrice(),
+              // FIXME: xDai special case
+              gasPrice:
+                preProtocolStateChannel.chainId === 100
+                  ? BigNumber.from(5)
+                  : await provider.getGasPrice(),
               nonce,
             },
           );

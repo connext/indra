@@ -12,7 +12,7 @@ import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction, TransactionReason } from "./onchainTransaction.entity";
 
 const MIN_GAS_LIMIT = BigNumber.from(100_000);
-const MIN_GAS_PRICE = BigNumber.from(1);
+const MIN_GAS_PRICE = BigNumber.from(5);
 const BAD_NONCE = "the tx doesn't have the correct nonce";
 const NO_TX_HASH = "no transaction hash found in tx response";
 const UNDERPRICED_REPLACEMENT = "replacement transaction underpriced";
