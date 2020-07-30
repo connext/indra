@@ -9,6 +9,7 @@ import {
   AllowedSwap,
   PriceOracleTypes,
   NetworkContexts,
+  JsonRpcProvider,
 } from "@connext/types";
 import { ChannelSigner } from "@connext/utils";
 import { Injectable, OnModuleInit } from "@nestjs/common";
@@ -62,7 +63,10 @@ export class ConfigService implements OnModuleInit {
   }
 
   getSigner(chainId: number): IChannelSigner {
-    return this.signers.get(chainId);
+    const providers = this.getIndraChainProviders();
+    const provider = new JsonRpcProvider(providers[chainId], chainId === 61 ? "classic" : chainId);
+    const signer = new ChannelSigner(this.getPrivateKey(), provider);
+    return signer;
   }
 
   getProviderUrls(): string[] {
@@ -88,7 +92,7 @@ export class ConfigService implements OnModuleInit {
     );
   }
 
-  getIndraChainProviders(): number[] {
+  getIndraChainProviders(): { [k: string]: string } {
     return JSON.parse(this.get("INDRA_CHAIN_PROVIDERS") || "{}");
   }
 
