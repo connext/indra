@@ -435,7 +435,7 @@ export class NodeApiClient implements INodeApiClient {
     try {
       msg = await this.messaging.request(subject, timeout, payload);
     } catch (e) {
-      throw new Error(`Failed to send message: ${e.message}`);
+      throw new Error(`Failed to send message: ${e.message || e}`);
     }
     const parsedData = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
     const error = msg
