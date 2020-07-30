@@ -331,19 +331,9 @@ export class ConfigService implements OnModuleInit {
     for (const [providerMappedChain, provider] of [...this.providers.entries()]) {
       const actualChain = BigNumber.from(await provider.send("eth_chainId", [])).toNumber();
       if (actualChain !== providerMappedChain) {
-        this.log.warn(
-          `onModuleInit: Incorrect provider at chainId ${providerMappedChain}, remapping`,
+        throw new Error(
+          `actualChain !== providerMappedChain, ${actualChain} !== ${providerMappedChain}`,
         );
-        const provider = this.providers.get(actualChain);
-        if (!provider) {
-          this.log.warn(`Unable to get provider from ${actualChain}`);
-          continue;
-        }
-        this.log.warn(
-          `onModuleInit: signer for ${actualChain} reconnected to provider ${provider.connection.url}`,
-        );
-        this.providers.delete(providerMappedChain);
-        this.providers.set(actualChain, provider);
       }
     }
 
@@ -351,21 +341,11 @@ export class ConfigService implements OnModuleInit {
     for (const [signerMappedChain, signer] of [...this.signers.entries()]) {
       const actualChain = await signer.getChainId();
       if (actualChain !== signerMappedChain) {
-        this.log.warn(
-          `onModuleInit: Incorrect provider for signer at chainId ${signerMappedChain}, remapping`,
+        throw new Error(
+          `actualChain !== signerMappedChain, ${actualChain} !== ${signerMappedChain}`,
         );
-        const provider = this.providers.get(actualChain);
-        if (!provider) {
-          this.log.warn(`Unable to reconnect signer to provider to ${actualChain}`);
-          continue;
-        }
-        await signer.connectProvider(provider);
-        this.log.warn(
-          `onModuleInit: signer for ${actualChain} reconnected to provider ${provider.connection.url}`,
-        );
-        this.signers.delete(signerMappedChain);
-        this.signers.set(actualChain, signer);
       }
+      await signer.connectProvider(this.getEthProvider(signerMappedChain));
     }
   }
 }

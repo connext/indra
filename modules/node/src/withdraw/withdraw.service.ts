@@ -126,7 +126,7 @@ export class WithdrawService {
       return;
     }
 
-    const onchainTransaction = await this.onchainTransactionRepository.findByHash(txRes.hash)
+    const onchainTransaction = await this.onchainTransactionRepository.findByHash(txRes.hash);
 
     await this.withdrawRepository.addUserOnchainTransaction(withdraw, onchainTransaction);
     this.log.info(`Node responded with transaction: ${onchainTransaction.hash}`);

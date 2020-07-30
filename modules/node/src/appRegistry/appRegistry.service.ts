@@ -131,7 +131,6 @@ export class AppRegistryService implements OnModuleInit {
       }
       await this.cfCoreService.installApp(appIdentityHash, installerChannel.multisigAddress);
       // any tasks that need to happen after install, i.e. DB writes
-      await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams);
     } catch (e) {
       // reject if error
       this.log.warn(`App install failed: ${e.stack || e.message}`);
@@ -141,6 +140,12 @@ export class AppRegistryService implements OnModuleInit {
         e.message,
       );
       return;
+    }
+    try {
+      await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams);
+    } catch (e) {
+      this.log.warn(`Run post install tasks failed: ${e.stack || e}`);
+      await this.cfCoreService.uninstallApp(appIdentityHash, installerChannel.multisigAddress);
     }
   }
 

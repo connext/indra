@@ -102,17 +102,21 @@ export class ChannelService {
   }
 
   async rebalance(
-    channel: Channel,
+    multisigAddress: string,
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
   ): Promise<providers.TransactionResponse | undefined> {
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     this.log.info(
-      `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started`,
+      `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started on chain ${channel.chainId}`,
     );
     const normalizedAssetId = getAddress(assetId);
-    if (channel.activeCollateralizations[assetId]) {
+    if (
+      channel.activeCollateralizations[assetId] &&
+      rebalanceType === RebalanceType.COLLATERALIZE
+    ) {
       this.log.warn(
-        `Channel ${channel.multisigAddress} has collateralization in flight for ${normalizedAssetId}, doing nothing`,
+        `Channel ${channel.multisigAddress} has collateralization in flight for ${normalizedAssetId} on chain ${channel.chainId}, doing nothing`,
       );
       return undefined;
     }
@@ -170,7 +174,9 @@ export class ChannelService {
         );
       }
     }
-    this.log.info(`Rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`);
+    this.log.info(
+      `Rebalance finished for ${channel.userIdentifier} on chain ${channel.chainId}, assetId: ${assetId}`,
+    );
     return response;
   }
 
