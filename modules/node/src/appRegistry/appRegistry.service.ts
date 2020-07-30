@@ -115,14 +115,16 @@ export class AppRegistryService implements OnModuleInit {
           this.log.info(
             `Calculated collateral amount to cover payment and rebalance: ${amount.toString()}`,
           );
-          const depositReceipt = await this.depositService.deposit(
+          const depositResponse = await this.depositService.deposit(
             installerChannel,
             amount,
             proposeInstallParams.responderDepositAssetId,
           );
-          if (!depositReceipt) {
+          try {
+            await depositResponse.wait();
+          } catch (e) {
             throw new Error(
-              `Could not obtain sufficient collateral to install app for channel ${installerChannel.multisigAddress}.`,
+              `Could not obtain sufficient collateral to install app for channel ${installerChannel.multisigAddress}. ${e.message}`,
             );
           }
         }

@@ -20,7 +20,6 @@ import { DEFAULT_DECIMALS } from "../constants";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
-import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 
 const { AddressZero } = constants;
 const { getAddress, toUtf8Bytes, sha256, formatUnits } = utils;

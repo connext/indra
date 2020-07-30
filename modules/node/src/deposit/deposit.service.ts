@@ -39,7 +39,11 @@ export class DepositService {
     this.log.setContext("DepositService");
   }
 
-  async deposit(channel: Channel, amount: BigNumber, assetId: string): Promise<providers.TransactionResponse> {
+  async deposit(
+    channel: Channel,
+    amount: BigNumber,
+    assetId: string,
+  ): Promise<providers.TransactionResponse | undefined> {
     this.log.info(
       `Deposit started: ${JSON.stringify({ channel: channel.multisigAddress, amount, assetId })}`,
     );
@@ -66,6 +70,10 @@ export class DepositService {
     // don't allow deposit if an active deposit is in process
     if (channel.activeCollateralizations[assetId]) {
       this.log.warn(`Collateral request is in flight for ${assetId}, waiting for transaction`);
+      const preDeposit = await this.cfCoreService.getFreeBalance(
+        channel.userIdentifier,
+        channel.multisigAddress,
+      );
       const waited = await this.waitForActiveDeposits(
         channel.userIdentifier,
         channel.multisigAddress,
@@ -76,15 +84,23 @@ export class DepositService {
           `Attempted to wait for ongoing transaction, but it took longer than 5 blocks, retry later.`,
         );
       }
-      const fb = await this.cfCoreService.getFreeBalance(
+      const postDeposit = await this.cfCoreService.getFreeBalance(
         channel.userIdentifier,
         channel.multisigAddress,
       );
       this.log.warn(
         `Waited for active deposit, new collateral: ${stringify(
-          fb[getSignerAddressFromPublicIdentifier(channel.nodeIdentifier)],
+          postDeposit[getSignerAddressFromPublicIdentifier(channel.nodeIdentifier)],
         )}`,
       );
+      const diff = postDeposit[getSignerAddressFromPublicIdentifier(channel.nodeIdentifier)].sub(
+        preDeposit[getSignerAddressFromPublicIdentifier(channel.nodeIdentifier)],
+      );
+      if (diff.gte(amount)) {
+        // Do not continue with deposit
+        // TODO: choose right response?
+        return undefined;
+      }
     }
     // deposit app for asset id with node as initiator is already installed
     // send deposit to chain
@@ -110,12 +126,16 @@ export class DepositService {
       appIdentityHash = await this.requestDepositRights(channel, assetId);
       this.log.info(`Requested deposit rights, sending deposit to chain`);
       response = await this.sendDepositToChain(channel, amount, assetId);
-      this.log.info(`Finished sending deposit to chain`);
+      this.log.info(`Deposit transaction broadcast: ${response.hash}`);
     } catch (e) {
       this.log.error(`Caught error collateralizing: ${e.stack}`);
-    } finally {
       await cleanUpDepositRights();
     }
+    // remove the deposit rights when transaction fails or is mined
+    response
+      .wait()
+      .then(async () => await cleanUpDepositRights())
+      .catch(async (e) => await cleanUpDepositRights());
     return response;
   }
 
