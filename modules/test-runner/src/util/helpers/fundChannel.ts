@@ -8,7 +8,7 @@ import {
 import { ColorfulLogger, getAddressFromAssetId, delayAndThrow } from "@connext/utils";
 import { BigNumber } from "ethers";
 
-import { env, expect } from "../";
+import { env, ethProvider, expect } from "../";
 
 export const fundChannel = async (
   client: IConnextClient,
@@ -79,8 +79,12 @@ export const requestCollateral = async (
   log.debug(`client.requestCollateral() called`);
   const start = Date.now();
   if (!enforce) {
-    await client.requestCollateral(assetId);
+    // TODO: rm 'as any' once type returned by requestCollateral is fixed
+    const tx = await client.requestCollateral(assetId) as any;
     log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
+    await ethProvider.waitForTransaction(tx.hash);
+    await client.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
+    log.info(`collateralization finished for real in ${Date.now() - start}`);
     return;
   }
   return new Promise(async (resolve, reject) => {
@@ -100,7 +104,10 @@ export const requestCollateral = async (
             // otherwise resolve
             return res();
           });
-          await client.requestCollateral(assetId);
+          // TODO: rm 'as any' once type returned by requestCollateral is fixed
+          const tx = await client.requestCollateral(assetId) as any;
+          await ethProvider.waitForTransaction(tx.hash);
+          await client.waitFor(EventNames.UNINSTALL_EVENT, 10_000);
         }),
       ]);
       log.info(`client.requestCollateral() returned in ${Date.now() - start}`);

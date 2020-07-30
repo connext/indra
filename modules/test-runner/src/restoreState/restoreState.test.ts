@@ -1,6 +1,6 @@
 import { getLocalStore } from "@connext/store";
 import { IConnextClient, IChannelSigner, EventNames } from "@connext/types";
-import { getRandomChannelSigner, stringify, toBN, delay } from "@connext/utils";
+import { getRandomChannelSigner, toBN, delay } from "@connext/utils";
 import { constants } from "ethers";
 
 import {
