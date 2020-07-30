@@ -56,11 +56,12 @@ Then run the bot tests by running the following:
 
 ```bash
 > export INDRA_CHAIN_URL="<CHAIN_PROVIDER_URL>"
+> export MNEMONIC="<MNEMONIC>" # to fund created bots
 > make bot # build the bot dist
 > bash ops/test/e2e.sh <CHAIN_ID>
 
 # or
-INDRA_CHAIN_URL=<CHAIN_PROVIDER_URL> bash ops/test/e2e.sh <CHAIN_ID>
+INDRA_CHAIN_URL=<CHAIN_PROVIDER_URL> MNEMONIC="<MNEMONIC>" bash ops/test/e2e.sh <CHAIN_ID>
 ```
 
 If the values for the environment variables are not exported, the default dev values will be used. NOTE: depending on your chain congestion, these tests may timeout.
