@@ -22,6 +22,7 @@ import { SignedTransferModule } from "./signedTransfer/signedTransfer.module";
 import { SwapRateModule } from "./swapRate/swapRate.module";
 import { TransferModule } from "./transfer/transfer.module";
 import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
 
 @Module({
   controllers: [AppController],
@@ -49,6 +50,6 @@ import { AppController } from "./app.controller";
     SwapRateModule,
     TransferModule,
   ],
-  providers: [],
+  providers: [AppService],
 })
 export class AppModule {}
