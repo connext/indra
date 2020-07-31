@@ -52,6 +52,7 @@ docker run $opts \
   $image $flag "$arg"
 
 docker container logs --follow ${project}_daicard &
+pid=$!
 
 echo "Daicard has been started, waiting for it to start responding.."
 timeout=$(expr `date +%s` + 180)
@@ -61,9 +62,10 @@ do
   if [[ -z "$res" || "$res" == "Waiting for daicard to wake up" ]]
   then
     if [[ "`date +%s`" -gt "$timeout" ]]
-    then echo "Timed out waiting for daicard to respond.." && exit
+    then echo "Timed out waiting for daicard to respond.." && break
     else sleep 2
     fi
-  else echo "Good Morning!" && exit;
+  else echo "Good Morning!" && break;
   fi
 done
+kill $pid
