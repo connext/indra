@@ -1,9 +1,3 @@
-# Bot Tests
+# Bot
 
-## Test Types
-
-### E2E
-
-```sh
-INDRA_CHAIN_URL=<CHAIN_PROVIDER_URL> bash ops/test/e2e.sh <CHAIN_ID>
-```
+Documentation for this module can be found [here](https://docs.connext.network/en/latest/reference/bot.html)

@@ -1,5 +1,3 @@
 # @connext/store
 
-Store module for Connext client
-
-Find documentation at [https://docs.connext.network/](https://docs.connext.network/)
+Documentation for this module can be found [here](https://docs.connext.network/en/latest/reference/store.html)

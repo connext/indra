@@ -20,6 +20,16 @@ Indra contains several packages to help developers interact with the Connext sta
 - [@connext/types](https://docs.connext.network/en/latest/reference/types.html): type definitions
 - [@connext/utils](https://docs.connext.network/en/latest/reference/utils.html): core channel utilities and helpers
 - [@connext/watcher](https://docs.connext.network/en/latest/reference/watcher.html): watchtower package for responding to and managing channel disputes
+- [@connext/apps](https://docs.connext.network/en/latest/reference/apps.html): typescript code for supported state channel applications
+- [@connext/channel-provider](https://docs.connext.network/en/latest/reference/channel-provider.html): rpc provider for channel operations
+- [@connext/contracts](https://docs.connext.network/en/latest/reference/contracts.html): solidity source files and typescript code for core protocol contracts
+- [@connext/messaging](https://docs.connext.network/en/latest/reference/messaging.html): messaging package for client and node
+
+If you are hosting a node or contributing to the software, the following modules are also provided:
+
+- [node](https://docs.connext.network/en/latest/reference/node.html): logic for the Connext node
+- [bot](https://docs.connext.network/en/latest/reference/bot.html): automated load and client testing utilities
+- [test-runner](https://docs.connext.network/en/latest/reference/test-runner.html): integration testing for the stack
 
 ## Launch Indra Locally
 

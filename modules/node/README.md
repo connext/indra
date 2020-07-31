@@ -1,6 +1,8 @@
-## Description
+# Node
 
-Indra built with [Nest](https://github.com/nestjs/nest) framework.
+Complete documentation for the best practices and reference for this module can be found [here](https://docs.connext.network/en/latest/reference/node.html).
+
+The following will detail how to run this module as a standalone package.
 
 ## Installation
 
@@ -19,12 +21,14 @@ Note: Update these instructions when Docker setup is live.
 #### Install Prerequisites
 
 - Postgres
+
 ```bash
 # macOS
 $ brew install postgresql
 ```
 
 - NATS
+
 ```bash
 $ docker pull provide/nats-server:latest
 ```
@@ -36,17 +40,20 @@ Create `.env` in the root by filling in the values from the `.env.example`. At t
 #### Run App
 
 - Run Postgres locally
+
 ```bash
 # macOS
 $ brew services start postgresql
 ```
 
 - Run NATS server locally
+
 ```bash
 $ docker run -p 4222:4222 -ti provide/nats-server:latest
 ```
 
 - Run Nest app
+
 ```bash
 # development
 $ npm run start
