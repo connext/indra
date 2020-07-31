@@ -12,20 +12,20 @@ There is WIP proposal to abstract away the pain of having to pay gas for the sec
 
 Sometimes, the above deposit mechanism is either not possible or has poor UX. An example of this is if the user is purchasing funds directly into their channel using Wyre or some other fiat->crypto onramp.
 
-In these cases, it may make sense to access the lower level `requestDepositRights` and `rescindDepositRights` functions directly. When a client controls deposit rights in their channel for a given asset, they can deposit that asset into the channel from any source simply by sending funds to the channel multisig contract directly. Note that once the rights have been requested, *all* transfers of that asset to the multisig are credited to the client’s channel balance. This means that a node will *not* be able to deposit into a channel until the client explicitly calls `rescindDepositRights`.
+In these cases, it may make sense to access the lower level `requestDepositRights` and `rescindDepositRights` functions directly. When a client controls deposit rights in their channel for a given asset, they can deposit that asset into the channel from any source simply by sending funds to the channel multisig contract directly. Note that once the rights have been requested, _all_ transfers of that asset to the multisig are credited to the client’s channel balance. This means that a node will _not_ be able to deposit into a channel until the client explicitly calls `rescindDepositRights`.
 
 checkDepositRights is a convenience method to get the current state of the channel’s deposit rights.
 
-For example: 
+For example:
 
 ```typescript
 // Transfer an ERC20 token manually
 // create Ethers.js contract abstraction
-const assetId = "0x..." // token address
+const assetId = "0x..."; // token address
 const tokenContract = new Contract(
   assetId,
   erc20Abi,
-  ethers.getDefaultProvider('homestead'), // mainnet
+  ethers.getDefaultProvider("homestead"), // mainnet
 );
 // request deposit rights
 await client.requestDepositRights({ assetId });
@@ -42,10 +42,11 @@ await client.rescindDepositRights({ assetId });
 ```
 
 Note that depositing this way has some additional security considerations:
-1. The transaction **must** be both sent and confirmed after deposit rights are requested but *before* they are rescinded.
+
+1. The transaction **must** be both sent and confirmed after deposit rights are requested but _before_ they are rescinded.
 2. Sending funds directly to the multisig contract address without reqeusting deposit rights **will result in the loss of those funds**.
 
-This makes `requestDepositRights` and `rescindDepositRights` only suitable for certain specific usecases where you can deterministically and reliably expect a deposit into the multisig *only* at a certain time.
+This makes `requestDepositRights` and `rescindDepositRights` only suitable for certain specific usecases where you can deterministically and reliably expect a deposit into the multisig _only_ at a certain time.
 
 ## Withdraw Commitments
 
@@ -58,4 +59,3 @@ In these cases, the client implementer needs to recover and submit these commitm
 ```typescript
 client.store.getWithdrawalCommitments(client.multisigAddress);
 ```
-

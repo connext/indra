@@ -52,8 +52,8 @@ npm install --save-dev tradle/rn-nodeify
 ./node_modules/.bin/rn-nodeify --hack --install
 
 // import the generated shim into index.js (or index.ios.js or index.android.js)
-// make sure you use `import` and not require! 
-import './shim.js' // 
+// make sure you use `import` and not require!
+import './shim.js' //
 ```
 
 Now you can install the Connext client from NPM:
@@ -69,12 +69,13 @@ Add the postinstall script to your project's package.json as follows:
 ```json
 {
   "scripts": {
-    "postinstall": "bash ops/post-install.sh",
-  },
+    "postinstall": "bash ops/post-install.sh"
+  }
 }
 ```
 
 ## Connecting to the Blockchain and to a Connext Node
+
 Clients are unopinionated to however you choose to implement nodes for both Connext and the base chain. They simply expect to be able to connect to Ethereum (or any EVM chain) using some URL, and the Connext node over http.
 
 For `ethProviderUrl`, this means you can use either an Infura or Alchemy url, or expose your own geth node.
@@ -82,6 +83,7 @@ For `ethProviderUrl`, this means you can use either an Infura or Alchemy url, or
 For `nodeUrl` on testnet, you can either set up your own node or use our hosted testnet node on Rinkeby at `https://rinkeby.indra.connext.network"`. For mainnet, we recommend running your own node -- reach out to us directly about this on [our discord](https://discord.gg/VPVVFMd).
 
 ## Creating and Passing in a ChannelSigner
+
 The Connext client must be instantiated with a signer API that uses a Connext-specific message prefix. This can be done unsafely by passing in a private key directly (the client will create an internal `ChannelSigner`) or by letting the client generate it's own private key like we do in [QuickStart](https://docs.connext.network/en/latest/user/quickStart.html). For production use, however, it is recommended that implementers create and pass in their own `ChannelSigner`.
 
 The `ChannelSigner` must conform to the `IChannelSigner` API with the following specifications:
@@ -91,23 +93,21 @@ The `ChannelSigner` must conform to the `IChannelSigner` API with the following 
 
 All clients have to be set up with some store that holds a copy of local state. We ship the client with a bunch of prebuilt default stores designed with different environments and usecases in mind:
 
-|     StoreType     |     Context    | 
-|:------------:|:--------------:|
-| LocalStorage |     Browser local storage    |
-| AsyncStorage |  React Native local storage  | 
-|   Postgres   | Server-side database |
-|    File      |    JSON File   |
-|   Memory     |    In-memory (for testing) |
+|  StoreType   |          Context           |
+| :----------: | :------------------------: |
+| LocalStorage |   Browser local storage    |
+| AsyncStorage | React Native local storage |
+|   Postgres   |    Server-side database    |
+|     File     |        SQLite File         |
+|    Memory    |  In-memory (for testing)   |
 
 You can use a default store by passing in it's `StoreType` as part of the client opts:
 
 ```javascript
-import AsyncStorage from "@react-native-community/async-storage";
-import { StoreTypes } from "@connext/types";
-import { ConnextStore } from "@connext/store";
+import { getFileStore } from "@connext/store";
 import * as connext from "@connext/client";
 
-const store = new ConnextStore(StoreTypes.AsyncStorage, { storage: AsyncStorage });
+const store = getFileStore();
 const channel = await connext.connect("rinkeby", { store });
 ```
 
@@ -134,12 +134,14 @@ interface IBackupService {
 For more info, see [Creating a Custom Backup Service](https://docs.connext.network/en/latest/user/advanced.html#creating-a-custom-backup-service).
 
 ## ChannelProviders
+
 A channel provider is an interface that allows an application to safely communicate with a remote Connext client over RPC. Wallets can inject a `ChannelProvider` into a browser context for web-dApps similarly to how they currently inject an existing `ethProvider` (without exposing keys or the signer to the dApp directly).
 
 You can create a channelProvider by following along with our [example implementation](https://github.com/ConnextProject/indra/blob/staging/modules/daicard/src/utils/wc.js) using WalletConnect in the Dai Card.
 
 ## Logging
-You may also provide a Logger to the client that corresponds to the `ILoggerService` interface: 
+
+You may also provide a Logger to the client that corresponds to the `ILoggerService` interface:
 
 ```typescript
 export interface ILogger {
@@ -155,4 +157,5 @@ export interface ILoggerService extends ILogger {
   newContext(context: string): ILoggerService;
 }
 ```
+
 The client accepts a `LogLevel` of 1-5 where 1 corresponds to minimal logging (only errors) and 5 corresponds to oppressive logging. Note that this interface is consistent with logging services such as Winston.
