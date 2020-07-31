@@ -14,64 +14,74 @@ To integrate with connext your chain must have:
 
 If your contracts meet some, but not all, of the requirements contact the Connext team for more detailed integration steps.
 
-## Integration
+## Contract Deployment
 
-### Contract Deployment
+Before deploying the contracts, make sure you have a funded mnemonic on the chain of your choice. This account will be used to deploy contracts, and will have 100% of the CXT tokens deployed minted to it.
 
-Before deploying the contracts, make sure you have a funded mnemonic on the chain of your choice. This account will be used to deploy contracts, and will have 100% of the tokens deployed minted to it.
-
-Once the account is properly funded, run the following:
+Once the account is properly funded with the chains native asset, run the following:
 
 ```bash
 > git checkout -b "add-your-chain" # checkout a new branch
-> make # build all images
-> bash ops/deploy.sh "<CHAIN_PROVIDER_URL>" # deploy local artifacts
+> make all # build all images
+> bash ops/deploy.sh <CHAIN_PROVIDER_URL> # deploy local artifacts
 ```
 
 and follow the on screen prompts.
 
-### Testing
+Once the deployment is complete, you should see changes to your local `address-book.json`. These will include the newly deployed contract addresses for your chain. Commit these changes to your branch.
+
+## E2E Local Testing
 
 To test out the changes on a local node pointed at a remote chain, you will need to run the e2e bot test.
 
-First, fire up your local node by updating the mnemonic and chain providers in your local `.env` file:
+Before starting your local node, you must configure your environment to have a funded node mnemonic, as well as the proper chain providers (see [note](./deploy-indra.md) on chain provider formatting):
 
 ```bash
-# 1. Make sure root .env has INDRA_CHAIN_PROVIDERS env var properly set
+# Add the following to your .env
+INDRA_CHAIN_PROVIDERS='{"<CHAIN_ID>":"<PROVIDER_URL>"}'
 
-# 2. Change your local mnemonic to the funded node mnemonic on the remote
-#    chain
+# Set the node mnemonic to be a mnemonic with a funded acccounts[0] on your chain
+# Ideally, this would be the mnemonic you deployed the contracts with.
 > bash ops/save-secret.sh
 # NOTE: if the docker secret already exists, run:
 # docker secret rm indra_mnemonic
-
-# 3. Make sure you have commented out the ethprovider waiting in the proxy
-#    entry script, lines 44-48
-
-# 4. Start a local node pointed at the remote chain
-> make start
 ```
 
-Then run the bot tests by running the following:
+Once you have updated the environment, build all local images and start the node. Note that you may need to make some changes to the `ops/proxy/entry.sh` file:
+
+```bash
+# NOTE: Make sure you have commented out the ethprovider waiting in the proxy
+#       entry script, lines 44-48, if the chain cannot accept localhost requests
+
+# Build all images
+> make all
+
+# Start a local node pointed at the remote chain
+> make start
+
+# Monitor node logs
+> bash ops/logs.sh node
+```
+
+Then run the bot tests against the local node by running the following:
 
 ```bash
 > export INDRA_CHAIN_URL="<CHAIN_PROVIDER_URL>"
-> export MNEMONIC="<MNEMONIC>" # to fund created bots
-> make bot # build the bot dist
+> export MNEMONIC="<MNEMONIC>" # to fund created bots, can be node or deployer mnemonic
 > bash ops/test/e2e.sh <CHAIN_ID>
 
-# or
-INDRA_CHAIN_URL=<CHAIN_PROVIDER_URL> MNEMONIC="<MNEMONIC>" bash ops/test/e2e.sh <CHAIN_ID>
+# or without exporting:
+> INDRA_CHAIN_URL=<CHAIN_PROVIDER_URL> MNEMONIC=<MNEMONIC> bash ops/test/e2e.sh <CHAIN_ID>
 ```
 
-If the values for the environment variables are not exported, the default dev values will be used. NOTE: depending on your chain congestion, these tests may timeout.
+If the values for the environment variables are not set, the default dev values will be used. NOTE: depending on your chain congestion, these tests may timeout.
 
 Once the tests pass, submit the changes as a PR for review.
 
 ### Node Updates
 
-Once the contracts are deployed, you should have a change in the `address-book.json` including the addresses for all latest contracts. Commit these changes to your branch.
+If you would like to add these changes to a deployed node, make sure to edit the `INDRA_CHAIN_PROVIDERS` and `INDRA_CONTRACT_ADDRESSES` environment variables.
 
-To add support for the new chain in the node, you must update the `INDRA_CONTRACT_ADDRESSES` and `INDRA_CHAIN_PROVIDERS` environment variable. If you are running using the `make` or `start-prod` scripts, the address book changes should be automatically propagated. Otherwise, update the values accordingly. Make sure to read the notes in the [node deployment guide](./deploy-indra.md) for updating the node environment.
+If you are using the default `make start-prod` or `make restart-prod` scripts, you can change the `INDRA_CHAIN_PROVIDERS` in your root `.env` and edit the `INDRA_CONTRACT_ADDRESSES` variable by changing the root `address-book.json` to include your newly deployed chain. Once those changes are made, running `make restart-prod` will incorporate the chain into the running node.
 
 Before restarting the node, make sure there is sufficient collateral at the nodes signer address in the new token and native asset. If you deployed the contracts using the node mnemonic and you are using the deployed token, the node should already own the entire token supply.
