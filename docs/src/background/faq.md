@@ -1,5 +1,101 @@
 # FAQ
 
+## Interacting with Indra
+
+### What's wrong with Indra?
+
+If you encounter problems while the app is running, the first thing to do is check the logs of each component:
+
+`make dls`: which services are running? Any services that aren't running (labeled has having `0/1` replicas) are worth investigating further.
+
+If the node isn't running for example, check it's logs with: `bash ops/logs.sh node`.
+
+If a fix isn't obvious, then ask us for help on [Discord](https://discord.gg/SmMSFf) & make sure to provide the output from `make dls` and the logs of any services that aren't running.
+
+### Have you tried turning it off and back on again?
+
+Restarting: the debugger's most valuable tool.
+
+Some problems will be fixed by just restarting the app so try this first: `make restart`
+
+If this doesn't work, try resetting all persistent data (database + the ethprovider's chain data) and starting the app again: `make reset && make start`. After doing this, you'll likely need to reset your MetaMask account to get your tx nonces synced up correctly.
+
+If that still doesn't work either, try rebuilding everything with `make clean && make start`.
+
+### `The container name "/indra_buidler" is already in use`
+
+Full error message:
+
+```bash
+docker: Error response from daemon: Conflict. The container name "/indra_buidler" is already in use by container "6d37b932d8047e16f4a8fdf58780fe6974e6beef58bf4cc5e48d00d3e94a67c3". You have to remove (or rename) that container to be able to reuse that name.
+```
+
+You probably started to build something and then stopped it with ctrl-c. It only looks like the build stopped: the builder process is still hanging out in the background wrapping up what it was working on. If you wait for a few seconds, this problem will usually go away as the builder finishes & exits.
+
+To speed things up, run `make stop` to tell the builder to hurry up and finish.
+
+### Improperly installed dependencies
+
+You'll notice this by an error that looks like this in some module's logs:
+
+```node
+2019-03-04T15:13:46.213763000Z internal/modules/cjs/loader.js:718
+2019-03-04T15:13:46.213801600Z   return process.dlopen(module, path.toNamespacedPath(filename));
+2019-03-04T15:13:46.213822300Z                  ^
+2019-03-04T15:13:46.213842600Z
+2019-03-04T15:13:46.213862700Z Error: Error loading shared library /root/node_modules/scrypt/build/Release/scrypt.node: Exec format error
+2019-03-04T15:13:46.213882900Z     at Object.Module._extensions..node (internal/modules/cjs/loader.js:718:18)
+2019-03-04T15:13:46.213903000Z     at Module.load (internal/modules/cjs/loader.js:599:32)
+2019-03-04T15:13:46.213923100Z     at tryModuleLoad (internal/modules/cjs/loader.js:538:12)
+2019-03-04T15:13:46.213943100Z     at Function.Module._load (internal/modules/cjs/loader.js:530:3)
+2019-03-04T15:13:46.213963100Z     at Module.require (internal/modules/cjs/loader.js:637:17)
+2019-03-04T15:13:46.213983100Z     at require (internal/modules/cjs/helpers.js:22:18)
+2019-03-04T15:13:46.214003200Z     at Object.<anonymous> (/root/node_modules/scrypt/index.js:3:20)
+2019-03-04T15:13:46.214023700Z     at Module._compile (internal/modules/cjs/loader.js:689:30)
+```
+
+If you notice this kind of error in the node logs, for example, you can reinstall dependencies by running `make clean && make start` (this will take a few minutes).
+
+This happen when you run `npm install` manually and then try to deploy the app using docker. Some dependencies (eg scrypt) have pieces in C that need to be compiled. If they get compiled for your local machine, they won't work in docker & vice versa.
+
+In general, if you manually run `npm install` or add any new dependencies, you'll need to rebuild and restart (`make && make restart`) before the Indra stack will start up properly again.
+
+### Ethprovider or Ganache not working
+
+```bash
+cat -> curleth.sh <<EOF
+#!/bin/bash
+url=$ETH_PROVIDER; [[ $url ]] || url=http://localhost:8545
+echo "Sending $1 query to provider: $url"
+curl -H "Content-Type: application/json" -X POST --data '{"id":31415,"jsonrpc":"2.0","method":"'$1'","params":'$2'}' $url
+EOF
+```
+
+This lets us do a simple `bash curleth.sh net_version '[]'` as a sanity check to make sure the ethprovider is alive & listening. If not, curl might give more useful errors that direct you towards investigating either metamask or ganache.
+
+One other sanity check is to run `make dls` and make sure that you see an ethprovider service that has port 8545 exposed (PORTS should look like: `*:8545->8545/tcp`).
+
+You can also run `docker exec -it indra_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping http://localhost:8545 here to see if ganache is listening & run `ps` to see if it's even alive.
+
+### How to generate node db migrations
+
+Typeorm is cool, if we update db entity files then typeorm can automatically generate SQL db migrations from the entity changes.
+
+Start up the stack in a clean state (eg `make clean && make reset && make start`) then something like the following should work to generate migrations called "foo":
+
+```bash
+$ cd modules/node && npm run migration:generate foo
+
+> indra-node@4.0.12 migration:generate /home/username/Documents/connext/indra/modules/node
+> typeorm migration:generate -d migrations -n  "foo"
+
+Migration /home/username/Documents/connext/indra/modules/node/migrations/1581311685857-foo.ts has been generated successfully.
+```
+
+Note: if entity files have _not_ changed since the last db migration, the above will print something like "No changes detected" & not generate anything.
+
+Once the migrations are generated, you should skim them & make sure the auto-generated code is sane & doing what you expect it to do. If it looks good, import it & add it to the migrations array in `modules/node/src/database/database.service.ts`.
+
 ## General
 
 ### What Connext is:
