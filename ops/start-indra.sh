@@ -84,6 +84,13 @@ pull_if_unavailable "$redis_image"
 # to access from other containers
 redis_url="redis://redis:6379"
 
+common="networks:
+      - '$project'
+    logging:
+      driver: 'json-file'
+      options:
+          max-size: '100m'"
+
 ####################
 # Proxy config
 
@@ -111,7 +118,7 @@ echo "Proxy configured"
 ########################################
 ## Node config
 
-node_port="8080"
+node_port="8888"
 
 if [[ $INDRA_ENV == "prod" ]]
 then
@@ -202,7 +209,6 @@ echo "Nats configured"
 ########################################
 # Chain provider config
 
-
 # If no chain providers provided, spin up local testnets & use those
 if [[ -z "$INDRA_CHAIN_PROVIDERS" ]]
 then
@@ -229,7 +235,7 @@ fi
 INDRA_MNEMONIC_FILE="/run/secrets/$mnemonic_secret_name"
 ETH_PROVIDER_URL="`echo $INDRA_CHAIN_PROVIDERS | tr -d "'" | jq '.[]' | head -n 1 | tr -d '"'`"
 
-# TODO: filter out contract addresses that are not for our chain providers
+# TODO: filter out extra contract addresses that we don't have any chain providers for?
 
 echo "Chain providers configured"
 
@@ -242,6 +248,30 @@ pull_if_unavailable "$logdna_image"
 grafana_image="grafana/grafana:latest"
 pull_if_unavailable "$grafana_image"
 
+prometheus_image="prom/prometheus:latest"
+pull_if_unavailable "$prometheus_image"
+
+cadvisor_image="gcr.io/google-containers/cadvisor:latest"
+pull_if_unavailable "$cadvisor_image"
+
+prometheus_services="prometheus:
+    image: $prometheus_image
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+    volumes:
+      - $root/ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  cadvisor:
+    image: $cadvisor_image
+    ports:
+      - 8080:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro"
+
 grafana_service="grafana:
     image: '$grafana_image'
     networks:
@@ -251,31 +281,29 @@ grafana_service="grafana:
     volumes:
       - 'grafana:/var/lib/grafana'"
 
-if [[ "$INDRA_ENV" == "prod" ]]
-then observability_services="logdna:
+logdna_service="logdna:
     $common
     image: '$logdna_image'
     environment:
       LOGDNA_KEY: '$INDRA_LOGDNA_KEY'
     volumes:
-      - '/var/run/docker.sock:/var/run/docker.sock'
+      - '/var/run/docker.sock:/var/run/docker.sock'"
 
-    $grafana_service"
+# TODO we probably want to remove observability from dev env once it's working
+# bc these make indra take a log longer to wake up
 
-else observability_services="$grafana_service"
+if [[ "$INDRA_ENV" == "prod" ]]
+then observability_services="$logdna_service
+  $prometheus_services
+  $grafana_service"
+else observability_services="$prometheus_services
+  $grafana_service"
 fi
 
 ####################
 # Launch Indra stack
 
 echo "Launching ${project}"
-
-common="networks:
-      - '$project'
-    logging:
-      driver: 'json-file'
-      options:
-          max-size: '100m'"
 
 cat - > $root/${project}.docker-compose.yml <<EOF
 version: '3.4'
