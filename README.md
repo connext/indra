@@ -61,7 +61,7 @@ privateKey: "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
 address: "0x627306090abaB3A6e1400e9345bC60c78a8BEf57";
 ```
 
-For more information on developing with Indra stack, see the [quickstart](https://docs.connext.network/en/latest/quickstart/introduction.html)
+For more information on developing with Indra stack, see the [quickstart](https://docs.connext.network/en/latest/quickstart/introduction.html).
 
 ## Resources
 
@@ -79,7 +79,7 @@ For more information on developing with Indra stack, see the [quickstart](https:
 - [Integrating clients in node](https://docs.connext.network/en/latest/how-to/integrate-node.html)
 - [Integrating clients in the browser](https://docs.connext.network/en/latest/how-to/integrate-browser.html)
 - [Integrating clients in react native](https://docs.connext.network/en/latest/how-to/integrate-react-native.html)
-- [FAQ](dhttps://docs.connext.network/en/latest/background/faq.html)
+- [FAQ](https://docs.connext.network/en/latest/background/faq.html)
 
 ### Contributing
 
