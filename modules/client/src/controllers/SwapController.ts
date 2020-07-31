@@ -46,12 +46,8 @@ export class SwapController extends AbstractController {
       notLessThanOrEqualTo(amount, userBal),
       notGreaterThan(amount, Zero),
       notPositive(toWad(swapRate)),
+      notLessThanOrEqualTo(amount, toBN(preSwapFromBal[this.connext.signerAddress])),
     );
-
-    const error = notLessThanOrEqualTo(amount, toBN(preSwapFromBal[this.connext.signerAddress]));
-    if (error) {
-      throw new Error(error);
-    }
 
     // get app definition
     const network = await this.ethProvider.getNetwork();
