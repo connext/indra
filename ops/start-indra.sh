@@ -341,11 +341,10 @@ services:
   database:
     $common
     image: '$database_image'
-    deploy:
-      mode: 'global'
     environment:
       AWS_ACCESS_KEY_ID: '$INDRA_AWS_ACCESS_KEY_ID'
       AWS_SECRET_ACCESS_KEY: '$INDRA_AWS_SECRET_ACCESS_KEY'
+      INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
       POSTGRES_DB: '$project'
       POSTGRES_PASSWORD_FILE: '$pg_password_file'
       POSTGRES_USER: '$project'
