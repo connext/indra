@@ -33,10 +33,10 @@ make start
 
 That's all! But beware: the first time `make start` is run, it will take a very long time (maybe 10 minutes, depends on your internet speed) but have no fear: downloads will be cached & most build steps won't ever need to be repeated again so subsequent `make start` runs will go much more quickly. Get this started asap & browse the rest of the README while the first `make start` runs.
 
-By default, Indra will launch using a local blockchain (ganache) but you can also run a local Indra stack against a public chain such as Rinkeby. To do so, run `make start` with a custom `INDRA_ETH_PROVIDER` environment variable:
+By default, Indra will launch using a local blockchain (ganache) but you can also run a local Indra stack against a public chain (or multiple chains!) such as Rinkeby. To do so, run `make start` with a custom `INDRA_CHAIN_PROVIDERS` environment variable. The variable is formatted as a JSON string with a chainId:providerUrl mapping:
 
 ```bash
-INDRA_ETH_PROVIDER="https://rinkeby.infura.io/abc123" make start
+INDRA_CHAIN_PROVIDERS='{"4":"https://rinkeby.infura.io/abc123","42":"https://kovan.infura.io/abc123"}' make start
 ```
 
 ### Interacting with your Local Node
@@ -95,7 +95,9 @@ For example: to deploy to Goerli testnet, you'll first need to retrieve the mnem
 ```bash
 make contracts
 ```
+
 then
+
 ```bash
 bash ops/deploy-contracts.sh https://goerli.infura.io/abc123
 ```
@@ -133,12 +135,13 @@ SSH_KEY=$HOME/.ssh/id_rsa bash ops/setup-ubuntu.sh $SERVER_IP
 ```
 
 If this is a fresh Ubuntu server from DigitalOcean or AWS then the above script should:
- - configure an "ubuntu" user and disable root login (if enabled)
- - give an additional ssh public key login access if provided (useful for CD/auto-deployment)
- - install docker & make & other dependencies
- - upgrade everything to the latest version
- - save your mnemonic in a docker secret called `indra_mnemonic`
- - reboot
+
+- configure an "ubuntu" user and disable root login (if enabled)
+- give an additional ssh public key login access if provided (useful for CD/auto-deployment)
+- install docker & make & other dependencies
+- upgrade everything to the latest version
+- save your mnemonic in a docker secret called `indra_mnemonic`
+- reboot
 
 Note: this script is idempotent aka you can run it over and over again w/out causing any problems. In fact, re-running it every month or so will help keep things up-to-date (you can skip inputting the mnemonic on subsequent runs).
 
@@ -277,6 +280,6 @@ $ cd modules/node && npm run migration:generate foo
 Migration /home/username/Documents/connext/indra/modules/node/migrations/1581311685857-foo.ts has been generated successfully.
 ```
 
-Note: if entity files have *not* changed since the last db migration, the above will print something like "No changes detected" & not generate anything.
+Note: if entity files have _not_ changed since the last db migration, the above will print something like "No changes detected" & not generate anything.
 
 Once the migrations are generated, you should skim them & make sure the auto-generated code is sane & doing what you expect it to do. If it looks good, import it & add it to the migrations array in `modules/node/src/database/database.service.ts`.
