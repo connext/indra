@@ -11,8 +11,8 @@ import { OnchainTransactionRepository } from "./onchainTransaction.repository";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction, TransactionReason } from "./onchainTransaction.entity";
 
-const MIN_GAS_LIMIT = BigNumber.from(100_000);
-const MIN_GAS_PRICE = BigNumber.from(5);
+const MIN_GAS_LIMIT = BigNumber.from(500_000);
+const MIN_GAS_PRICE = BigNumber.from(1_000);
 const BAD_NONCE = "the tx doesn't have the correct nonce";
 const NO_TX_HASH = "no transaction hash found in tx response";
 const UNDERPRICED_REPLACEMENT = "replacement transaction underpriced";
@@ -115,9 +115,12 @@ export class OnchainTransactionService implements OnModuleInit {
         // add fields from tx response
         await this.onchainTransactionRepository.addResponse(tx, reason, channel);
         this.nonces.set(channel.chainId, Promise.resolve(nonce + 1));
+        const start = Date.now();
         tx.wait().then(async (receipt) => {
           this.log.info(
-            `Success sending transaction! Tx mined at block ${receipt.blockNumber} on chain ${channel.chainId}: ${receipt.transactionHash}`,
+            `Success sending transaction! Tx mined at block ${receipt.blockNumber} on chain ${
+              channel.chainId
+            }: ${receipt.transactionHash} in ${Date.now() - start}ms`,
           );
           await this.onchainTransactionRepository.addReceipt(receipt);
         });
