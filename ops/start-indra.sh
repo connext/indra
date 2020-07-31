@@ -256,6 +256,7 @@ pull_if_unavailable "$cadvisor_image"
 
 prometheus_services="prometheus:
     image: $prometheus_image
+    $common
     command:
       - --config.file=/etc/prometheus/prometheus.yml
     ports:
@@ -274,6 +275,7 @@ prometheus_services="prometheus:
 
 grafana_service="grafana:
     image: '$grafana_image'
+    $common
     networks:
       - '$project'
     ports:
