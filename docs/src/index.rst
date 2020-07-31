@@ -51,6 +51,7 @@ Contents
     :caption: Guides
 
     how-to/deploy-indra
+    how-to/integrate-chain
     how-to/integrate-browser
     how-to/integrate-react-native
     how-to/integrate-node
