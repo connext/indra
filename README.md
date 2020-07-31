@@ -68,8 +68,8 @@ For more information on developing with Indra stack, see the [quickstart](https:
 ### Further Reading
 
 - [Indra architecture and protocol](https://docs.connext.network/en/latest/background/architecture.html)
-- [State channels for babies](https://medium.com/connext/state-channels-for-babies-c39a8001d9af)
-- [Counterfactual for dummies](https://medium.com/blockchannel/counterfactual-for-dummies-part-1-8ff164f78540)
+- [State channels background](https://docs.connext.network/en/latest/quickstart/introduction.html#state-channel-basics)
+- [What is Connext](https://docs.connext.network/en/latest/quickstart/introduction.html#what-is-connext)
 
 ### Developer Resources and Guides
 
