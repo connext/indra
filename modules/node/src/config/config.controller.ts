@@ -3,7 +3,7 @@ import { NodeResponses } from "@connext/types";
 
 import { ConfigService } from "./config.service";
 
-@Controller("api/config")
+@Controller("config")
 export class ConfigController {
   constructor(private readonly configService: ConfigService) {}
 

@@ -8,7 +8,7 @@ import {
 import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
-import { BigNumber, constants, utils } from "ethers";
+import { BigNumber, constants, utils, providers } from "ethers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -20,7 +20,6 @@ import { DEFAULT_DECIMALS } from "../constants";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
-import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 
 const { AddressZero } = constants;
 const { getAddress, toUtf8Bytes, sha256, formatUnits } = utils;
@@ -103,17 +102,21 @@ export class ChannelService {
   }
 
   async rebalance(
-    channel: Channel,
+    multisigAddress: string,
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
-  ): Promise<OnchainTransaction | undefined> {
+  ): Promise<providers.TransactionResponse | undefined> {
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     this.log.info(
-      `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started`,
+      `Rebalance type ${rebalanceType} for ${channel.userIdentifier} asset ${assetId} started on chain ${channel.chainId}`,
     );
     const normalizedAssetId = getAddress(assetId);
-    if (channel.activeCollateralizations[assetId]) {
+    if (
+      channel.activeCollateralizations[assetId] &&
+      rebalanceType === RebalanceType.COLLATERALIZE
+    ) {
       this.log.warn(
-        `Channel ${channel.multisigAddress} has collateralization in flight for ${normalizedAssetId}, doing nothing`,
+        `Channel ${channel.multisigAddress} has collateralization in flight for ${normalizedAssetId} on chain ${channel.chainId}, doing nothing`,
       );
       return undefined;
     }
@@ -141,7 +144,7 @@ export class ChannelService {
       normalizedAssetId,
     );
 
-    let receipt: OnchainTransaction | undefined = undefined;
+    let response: providers.TransactionResponse | undefined = undefined;
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // If free balance is too low, collateralize up to upper bound
       if (nodeFreeBalance.lt(collateralizeThreshold)) {
@@ -149,7 +152,7 @@ export class ChannelService {
           `nodeFreeBalance ${nodeFreeBalance.toString()} < collateralizeThreshold ${collateralizeThreshold.toString()}, depositing`,
         );
         const amount = target.sub(nodeFreeBalance);
-        receipt = await this.depositService.deposit(channel, amount, normalizedAssetId);
+        response = await this.depositService.deposit(channel, amount, normalizedAssetId);
       } else {
         this.log.debug(
           `Free balance ${nodeFreeBalance} is greater than or equal to lower collateralization bound: ${collateralizeThreshold.toString()}`,
@@ -171,8 +174,10 @@ export class ChannelService {
         );
       }
     }
-    this.log.info(`Rebalance finished for ${channel.userIdentifier}, assetId: ${assetId}`);
-    return receipt;
+    this.log.info(
+      `Rebalance finished for ${channel.userIdentifier} on chain ${channel.chainId}, assetId: ${assetId}`,
+    );
+    return response;
   }
 
   async getCollateralAmountToCoverPaymentAndRebalance(

@@ -152,6 +152,7 @@ export async function uninstallAppInstanceFromChannel(
       appIdentityHash: appInstance.identityHash,
       action: params.action,
       stateTimeout: toBN(0), // Explicitly finalized states
+      protocolMeta: params.protocolMeta,
     },
     preProtocolStateChannel,
   );

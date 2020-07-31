@@ -96,7 +96,7 @@ git add .
 git commit --amend --no-edit
 git push origin master --no-verify
 
-# Push a new release tag
+# Push a new semver tag
 git tag $project-$version
 git push origin $project-$version --no-verify
 

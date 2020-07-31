@@ -13,7 +13,7 @@ shift || true # $1 is the command to npm run. Extra options, if any, come after
 chain_id="1342"
 
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-ethprovider_host="${project}_testnet_$chain_id"
+ethprovider_host="testnet_$chain_id"
 ethprovider_port=`expr 8545 - 1337 + $chain_id`
 
 # Kill the dependency containers when this script exits

@@ -29,7 +29,7 @@ let memoryNonce = 0;
 
 export class DeployStateDepositController extends MethodController {
   public readonly methodName = MethodNames.chan_deployStateDepositHolder;
-  private inProgress = false;
+  private inProgress: { [multisig: string]: boolean } = {};
 
   public executeMethod = super.executeMethod;
 
@@ -94,11 +94,14 @@ export class DeployStateDepositController extends MethodController {
     await signer.connectProvider(provider);
 
     // If this is called twice concurrently, the second attempt should wait until the first is done
-    if (this.inProgress) {
+    if (this.inProgress[multisigAddress]) {
       log.warn(`Another deployment is in progress`);
       await new Promise(async (res) => {
         while (true) {
-          if (!this.inProgress || (await provider.getCode(multisigAddress)) !== "0x") {
+          if (
+            !this.inProgress[multisigAddress] ||
+            (await provider.getCode(multisigAddress)) !== "0x"
+          ) {
             log.info(`Other deployment completed`);
             return res();
           } else {
@@ -113,7 +116,7 @@ export class DeployStateDepositController extends MethodController {
 
     // Check if the contract has already been deployed on-chain
     if ((await provider.getCode(multisigAddress)) === `0x`) {
-      this.inProgress = true;
+      this.inProgress[multisigAddress] = true;
       for (let tryCount = 1; tryCount <= retryCount; tryCount += 1) {
         try {
           const chainNonce = await provider.getTransactionCount(await signer.getAddress());
@@ -171,11 +174,17 @@ export class DeployStateDepositController extends MethodController {
           break;
         } catch (e) {
           const message = e?.body?.error?.message || e.message;
-          log.warn(e.message);
+          log.warn(message);
           if (message.includes("the tx doesn't have the correct nonce")) {
             log.warn(`Nonce conflict, trying again real quick: ${message}`);
             tryCount -= 1; // Nonce conflicts don't count as retrys bc no gas spent
             memoryNonce = parseInt(message.match(/account has nonce of: (\d+)/)[1], 10);
+            continue;
+          }
+          if (message.includes("Invalid nonce")) {
+            log.warn(`Nonce conflict, trying again real quick: ${message}`);
+            tryCount -= 1; // Nonce conflicts don't count as retrys bc no gas spent
+            memoryNonce = parseInt(message.match(/Expected (\d+)/)[1], 10);
             continue;
           }
           error = e;
@@ -185,7 +194,7 @@ export class DeployStateDepositController extends MethodController {
       }
     }
 
-    this.inProgress = false;
+    this.inProgress[multisigAddress] = false;
     if (error) {
       throw new Error(`${CHANNEL_CREATION_FAILED}: ${stringify(error)}`);
     }
