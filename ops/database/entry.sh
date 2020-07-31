@@ -8,6 +8,7 @@ set -e
 backup_frequency="1800"
 mkdir -p snapshots
 backup_file="snapshots/`ls snapshots | sort -r | head -n 1`"
+readonly_password="${INDRA_ADMIN_TOKEN:-cxt1234}"
 
 ########################################
 ## Helper functions
@@ -45,7 +46,7 @@ function cleanup {
 trap cleanup SIGTERM
 
 ########################################
-## Execute
+## Initialize against an isolated, temporary pg instance
 
 log "Good morning"
 if [[ ! -f "/var/lib/postgresql/data/PG_VERSION" ]]
@@ -73,18 +74,24 @@ else
   log "Not restoring: Database exists ($isFresh) or no snapshots found ($backup_file)"
 fi
 
+# Create a readonly user
+psql --username=$POSTGRES_USER $POSTGRES_DB <<EOF
+CREATE USER readonly;
+ALTER USER readonly PASSWORD '$readonly_password';
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO readonly;
+EOF
+
 log "Stopping old database.."
 kill $PID
 unlock smart
 
+########################################
+## Done w setup, launch the publically exposed pg instance
+
 # Now that we've initialized the db, we can inject our custom config file
 mkdir -p /var/lib/postgresql/data/pg_log
 cp -f postgresql.conf /var/lib/postgresql/data/postgresql.conf
-pwd
-echo "Local config:"
-cat postgresql.conf
-echo "Using config:"
-cat /var/lib/postgresql/data/postgresql.conf
 
 # Start backing up the db periodically
 log "===> Starting backer upper"
