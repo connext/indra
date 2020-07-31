@@ -259,8 +259,6 @@ prometheus_services="prometheus:
     $common
     command:
       - --config.file=/etc/prometheus/prometheus.yml
-    ports:
-      - 9090:9090
     volumes:
       - $root/ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
   cadvisor:
