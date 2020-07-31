@@ -75,7 +75,7 @@ For more information on developing with Indra stack, see the [quickstart](https:
 
 - [Quick Start Guide](https://docs.connext.network/en/latest/quickstart/introduction.html)
 - [Deploying indra](https://docs.connext.network/en/latest/how-to/deploy-indra.html)
-- [Integrating additional chains](https://github.com/connext/indra/blob/staging/docs/src/how-to/integrate-chain.md)
+- [Integrating additional chains](https://docs.connext.network/en/latest/how-to/integrate-chain.html)
 - [Integrating clients in node](https://docs.connext.network/en/latest/how-to/integrate-node.html)
 - [Integrating clients in the browser](https://docs.connext.network/en/latest/how-to/integrate-browser.html)
 - [Integrating clients in react native](https://docs.connext.network/en/latest/how-to/integrate-react-native.html)
