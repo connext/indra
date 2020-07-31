@@ -131,6 +131,7 @@ export class DeployStateDepositController extends MethodController {
           log.error(
             `Sending multisig deploy tx onto chain ${preProtocolStateChannel.chainId} using provider ${provider.connection.url}`,
           );
+          const price = await provider.getGasPrice();
           const tx: providers.TransactionResponse = await proxyFactory.createProxyWithNonce(
             networkContext.contractAddresses.MinimumViableMultisig,
             new Interface(MinimumViableMultisig.abi).encodeFunctionData("setup", [
@@ -142,9 +143,9 @@ export class DeployStateDepositController extends MethodController {
               gasLimit: CREATE_PROXY_AND_SETUP_GAS,
               // FIXME: xDai special case
               gasPrice:
-                preProtocolStateChannel.chainId === 100
-                  ? BigNumber.from(5)
-                  : await provider.getGasPrice(),
+                preProtocolStateChannel.chainId === 100 && price.lt(1_000)
+                  ? BigNumber.from(1_000)
+                  : price,
               nonce,
             },
           );
