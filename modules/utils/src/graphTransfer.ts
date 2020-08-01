@@ -1,4 +1,4 @@
-import { PrivateKey, GraphReceipt, Address, SignatureString } from "@connext/types";
+import { PrivateKey, GraphReceipt, Address, SignatureString, HexString } from "@connext/types";
 import { utils, BigNumber } from "ethers";
 import { sign, recover } from "eccrypto-js";
 import * as bs58 from "bs58";
@@ -23,11 +23,15 @@ export const hashGraphReceiptData = (receipt: GraphReceipt) =>
     [receipt.requestCID, receipt.responseCID, receipt.subgraphDeploymentID],
   );
 
-  export const hashGraphConsumerData = (receipt: GraphReceipt, totalPaid: BigNumber) =>
+export const hashGraphConsumerData = (
+  receipt: GraphReceipt,
+  totalPaid: BigNumber,
+  appIdentityHash: string,
+) =>
   hashStruct(
     GRAPH_RECEIPT_TYPE_HASH,
-    ["bytes32", "uint256"],
-    [receipt.requestCID, totalPaid],
+    ["bytes32", "bytes32", "uint256"],
+    [appIdentityHash, receipt.requestCID, totalPaid],
   );
 
 export const hashGraphReceiptMessage = (
@@ -75,37 +79,41 @@ export const recoverGraphAttestationSigner = async (
     ),
   );
 
-  export const hashGraphConsumerMessage = (
-    hashGraphConsumerMessage: number,
-    verifyingContract: string,
-    receipt: GraphReceipt,
-    totalPaid: BigNumber,
-  ): string =>
-    hashTypedMessage(
-      hashDomainSeparator({
-        chainId: hashGraphConsumerMessage,
-        name: DOMAIN_NAME,
-        salt: DOMAIN_SALT,
-        verifyingContract,
-        version: DOMAIN_VERSION,
-      }),
-      hashGraphConsumerData(receipt, totalPaid),
-    );
+export const hashGraphConsumerMessage = (
+  hashGraphConsumerMessage: number,
+  verifyingContract: string,
+  receipt: GraphReceipt,
+  totalPaid: BigNumber,
+  appIdentityHash: string,
+): string =>
+  hashTypedMessage(
+    hashDomainSeparator({
+      chainId: hashGraphConsumerMessage,
+      name: DOMAIN_NAME,
+      salt: DOMAIN_SALT,
+      verifyingContract,
+      version: DOMAIN_VERSION,
+    }),
+    hashGraphConsumerData(receipt, totalPaid, appIdentityHash),
+  );
 
-    export const signGraphConsumerMessage = async (
-      receipt: GraphReceipt,
-      chainId: number,
-      verifyingContract: Address,
-      totalPaid: BigNumber,
-      privateKey: PrivateKey,
-    ) =>
-      hexlify(
-        await sign(
-          bufferify(privateKey),
-          bufferify(hashGraphConsumerMessage(chainId, verifyingContract, receipt, totalPaid)),
-          true,
-        ),
-      );
+export const signGraphConsumerMessage = async (
+  receipt: GraphReceipt,
+  chainId: number,
+  verifyingContract: Address,
+  totalPaid: BigNumber,
+  appIdentityHash: string,
+  privateKey: PrivateKey,
+) =>
+  hexlify(
+    await sign(
+      bufferify(privateKey),
+      bufferify(
+        hashGraphConsumerMessage(chainId, verifyingContract, receipt, totalPaid, appIdentityHash),
+      ),
+      true,
+    ),
+  );
 
 export const getTestVerifyingContract = () => "0x1d85568eEAbad713fBB5293B45ea066e552A90De";
 
