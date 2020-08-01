@@ -42,6 +42,9 @@ contract GraphBatchedTransferApp is CounterfactualApp {
   bytes32 private constant RECEIPT_TYPE_HASH = keccak256(
     "Receipt(bytes32 requestCID,bytes32 responseCID,bytes32 subgraphDeploymentID)"
   );
+  bytes32 private constant CONSUMER_TYPE_HASH = keccak256(
+    "Consumer(bytes32 appIdentityHash,bytes32 requestCID,uint256 totalPaid)"
+  );
 
   // EIP-712 DOMAIN SEPARATOR CONSTANTS
 
@@ -104,7 +107,7 @@ contract GraphBatchedTransferApp is CounterfactualApp {
                 DOMAIN_SALT
               )
             ),
-            keccak256(abi.encode(RECEIPT_TYPE_HASH, state.appIdentityHash, action.requestCID, action.totalPaid))
+            keccak256(abi.encode(CONSUMER_TYPE_HASH, state.appIdentityHash, action.requestCID, action.totalPaid))
           )
         ),
         action.consumerSignature

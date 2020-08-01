@@ -12,6 +12,10 @@ export const GRAPH_RECEIPT_TYPE_HASH = hashString(
   "Receipt(bytes32 requestCID,bytes32 responseCID,bytes32 subgraphDeploymentID)",
 );
 
+export const GRAPH_CONSUMER_TYPE_HASH = hashString(
+  "Consumer(bytes32 appIdentityHash,bytes32 requestCID,uint256 totalPaid)",
+);
+
 const DOMAIN_NAME = "Graph Protocol";
 const DOMAIN_VERSION = "0";
 const DOMAIN_SALT = "0xa070ffb1cd7409649bf77822cce74495468e06dbfaef09556838bf188679b9c2";
@@ -29,7 +33,7 @@ export const hashGraphConsumerData = (
   appIdentityHash: string,
 ) =>
   hashStruct(
-    GRAPH_RECEIPT_TYPE_HASH,
+    GRAPH_CONSUMER_TYPE_HASH,
     ["bytes32", "bytes32", "uint256"],
     [appIdentityHash, receipt.requestCID, totalPaid],
   );
