@@ -3,7 +3,7 @@ import { tidy } from "../../utils";
 
 import { CoinTransfer } from "../funding";
 import { singleAssetTwoPartyCoinTransferEncoding } from "../misc";
-import { BigNumber, Bytes } from "ethers";
+import { BigNumber } from "ethers";
 
 export const GraphBatchedTransferAppName = "GraphBatchedTransferApp";
 
@@ -17,7 +17,7 @@ export interface GraphReceipt {
 }
 
 export interface GraphAttestation extends GraphReceipt {
-  attestationSignature: SignatureString;
+  signature: SignatureString;
 }
 
 // ABI Encoding TS Typess
@@ -29,6 +29,7 @@ export type GraphBatchedTransferAppState = {
   verifyingContract: Address;
   subgraphDeploymentID: Bytes32;
   swapRate: BigNumber;
+  appIdentityHash: Bytes32;
   finalized: boolean;
 };
 
@@ -41,6 +42,7 @@ export const GraphBatchedTransferAppStateEncoding = tidy(`tuple(
   address verifyingContract;
   bytes32 subgraphDeploymentID;
   uint256 swapRate;
+  bytes32 appIdentityHash;
   bool finalized;
 )`);
 

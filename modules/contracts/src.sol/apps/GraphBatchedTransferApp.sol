@@ -22,6 +22,7 @@ contract GraphBatchedTransferApp is CounterfactualApp {
     address verifyingContract;
     bytes32 subgraphDeploymentID;
     uint256 swapRate; // MUST be 1 unless explicitly set otherwise
+    bytes32 appIdentityHash;
     bool finalized;
   }
 
@@ -103,7 +104,7 @@ contract GraphBatchedTransferApp is CounterfactualApp {
                 DOMAIN_SALT
               )
             ),
-            keccak256(abi.encode(RECEIPT_TYPE_HASH, action.requestCID, action.totalPaid))
+            keccak256(abi.encode(RECEIPT_TYPE_HASH, state.appIdentityHash, action.requestCID, action.totalPaid))
           )
         ),
         action.consumerSignature
