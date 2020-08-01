@@ -1,4 +1,4 @@
-import { Address, Bytes32, SignatureString } from "../../basic";
+import { Address, Bytes32, SignatureString, HexString } from "../../basic";
 import { tidy } from "../../utils";
 
 import { CoinTransfer } from "../funding";
@@ -29,21 +29,21 @@ export type GraphBatchedTransferAppState = {
   verifyingContract: Address;
   subgraphDeploymentID: Bytes32;
   swapRate: BigNumber;
-  appIdentityHash: Bytes32;
+  appIdentityHash: HexString;
   finalized: boolean;
 };
 
 // ABI Encodings
 export const GraphBatchedTransferAppStateEncoding = tidy(`tuple(
   ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
-  address attestationSigner;
-  address consumerSigner;
-  uint256 chainId;
-  address verifyingContract;
-  bytes32 subgraphDeploymentID;
-  uint256 swapRate;
-  bytes32 appIdentityHash;
-  bool finalized;
+  address attestationSigner,
+  address consumerSigner,
+  uint256 chainId,
+  address verifyingContract,
+  bytes32 subgraphDeploymentID,
+  uint256 swapRate,
+  bytes32 appIdentityHash,
+  bool finalized
 )`);
 
 export type GraphBatchedTransferAppAction = {
@@ -55,9 +55,9 @@ export type GraphBatchedTransferAppAction = {
 };
 
 export const GraphBatchedTransferAppActionEncoding = tidy(`tuple(
-    uint256 totalPaid;
-    bytes32 requestCID;
-    bytes32 responseCID;
-    bytes consumerSignature;
-    bytes attestationSignature;
+    uint256 totalPaid,
+    bytes32 requestCID,
+    bytes32 responseCID,
+    bytes consumerSignature,
+    bytes attestationSignature
 )`);
