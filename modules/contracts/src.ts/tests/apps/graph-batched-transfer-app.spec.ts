@@ -113,7 +113,7 @@ describe.only("GraphBatchedTransferApp", () => {
       chainId: (await indexerWallet.provider.getNetwork()).chainId,
       verifyingContract: getTestVerifyingContract(),
       subgraphDeploymentID: receipt.subgraphDeploymentID,
-      swapRate: BigNumber.from(1),
+      swapRate: BigNumber.from(1).mul(10^18),
       appIdentityHash: getRandomBytes32(),
       finalized: false,
     };
@@ -159,14 +159,31 @@ describe.only("GraphBatchedTransferApp", () => {
     ).deploy();
   });
 
-  it("can unlock a batched payment of 1 with correct signatures", async () => {
+  it("can unlock a batched payment with correct signatures and no swap rate", async () => {
     const receipt = getTestGraphReceiptToSign();
-    const state0 = await getInitialState(receipt);
-    const totalPaid = BigNumber.from(1);
+    const totalPaid = BigNumber.from(500);
+    let state0 = await getInitialState(receipt);
+
+    console.log(`Calculated: ${(totalPaid.mul(state0.swapRate).div(10^18)).toString()}`)
 
     const action = await getAction(receipt, totalPaid, state0);
     const state1 = await applyAction(state0, action);
     await validateAction(state0, state1, action);
+
+    const outcome = await computeOutcome(state1);
+    await validateOutcome(outcome, state1);
+  });
+
+  it("can unlock a batched payment with correct signatures and a swap rate", async () => {
+    const receipt = getTestGraphReceiptToSign();
+    const totalPaid = BigNumber.from(500);
+    let state0 = await getInitialState(receipt);
+    state0.swapRate = BigNumber.from(0.5*10^18)
+
+    const action = await getAction(receipt, totalPaid, state0);
+    const state1 = await applyAction(state0, action);
+    await validateAction(state0, state1, action);
+    console.log(`stringify: ${state1}`)
 
     const outcome = await computeOutcome(state1);
     await validateOutcome(outcome, state1);

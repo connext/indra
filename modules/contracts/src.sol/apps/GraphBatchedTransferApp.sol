@@ -21,7 +21,7 @@ contract GraphBatchedTransferApp is CounterfactualApp {
     uint256 chainId;
     address verifyingContract;
     bytes32 subgraphDeploymentID;
-    uint256 swapRate; // MUST be 1 unless explicitly set otherwise
+    uint256 swapRate; // MUST be in units of E18
     bytes32 appIdentityHash;
     bool finalized;
   }
@@ -45,6 +45,8 @@ contract GraphBatchedTransferApp is CounterfactualApp {
   bytes32 private constant CONSUMER_TYPE_HASH = keccak256(
     "Consumer(bytes32 appIdentityHash,bytes32 requestCID,uint256 totalPaid)"
   );
+
+  uint256 constant SWAP_CONVERSION = 10^18;
 
   // EIP-712 DOMAIN SEPARATOR CONSTANTS
 
@@ -116,7 +118,7 @@ contract GraphBatchedTransferApp is CounterfactualApp {
 
   function applyAction(bytes calldata encodedState, bytes calldata encodedAction)
     external
-    override
+    override 
     view
     returns (bytes memory)
   {
@@ -142,8 +144,8 @@ contract GraphBatchedTransferApp is CounterfactualApp {
         "Cannot pay more funds than in balance"
     );
 
-    state.coinTransfers[1].amount = state.coinTransfers[1].amount.add(action.totalPaid.mul(state.swapRate));
-    state.coinTransfers[0].amount = state.coinTransfers[0].amount.sub(action.totalPaid.mul(state.swapRate));
+    state.coinTransfers[1].amount = state.coinTransfers[1].amount.add(action.totalPaid.mul((state.swapRate.div(SWAP_CONVERSION))));
+    state.coinTransfers[0].amount = state.coinTransfers[0].amount.sub(action.totalPaid.mul((state.swapRate.div(SWAP_CONVERSION))));
     state.finalized = true;
 
     return abi.encode(state);
