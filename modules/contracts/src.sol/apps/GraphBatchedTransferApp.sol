@@ -48,7 +48,7 @@ contract GraphBatchedTransferApp is CounterfactualApp {
         "Consumer(bytes32 appIdentityHash,bytes32 requestCID,uint256 totalPaid)"
     );
 
-    uint256 constant SWAP_CONVERSION = 10^18;
+    uint256 constant SWAP_CONVERSION = 10**18;
 
     // EIP-712 DOMAIN SEPARATOR CONSTANTS
 
@@ -80,12 +80,12 @@ contract GraphBatchedTransferApp is CounterfactualApp {
 
         // to return a clean error
         require(
-            action.totalPaid.mul(state.swapRate) <= state.coinTransfers[0].amount,
+            action.totalPaid.mul(state.swapRate).div(SWAP_CONVERSION) <= state.coinTransfers[0].amount,
             "Cannot pay more funds than in balance"
         );
 
-        state.coinTransfers[1].amount = state.coinTransfers[1].amount.add(action.totalPaid.mul((state.swapRate.div(SWAP_CONVERSION))));
-        state.coinTransfers[0].amount = state.coinTransfers[0].amount.sub(action.totalPaid.mul((state.swapRate.div(SWAP_CONVERSION))));
+        state.coinTransfers[1].amount = state.coinTransfers[1].amount.add(action.totalPaid.mul(state.swapRate).div(SWAP_CONVERSION));
+        state.coinTransfers[0].amount = state.coinTransfers[0].amount.sub(action.totalPaid.mul(state.swapRate).div(SWAP_CONVERSION));
         state.finalized = true;
 
         return abi.encode(state);

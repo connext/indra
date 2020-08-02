@@ -25,6 +25,7 @@ import { expect, provider, mkAddress } from "../utils";
 const { Zero } = constants;
 const { defaultAbiCoder } = utils;
 
+const SWAP_CONVERSION = BigNumber.from(10).pow(18);
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
 
@@ -44,7 +45,7 @@ function encodeAppAction(state: GraphBatchedTransferAppAction): string {
   return defaultAbiCoder.encode([GraphBatchedTransferAppActionEncoding], [state]);
 }
 
-describe.only("GraphBatchedTransferApp", () => {
+describe("GraphBatchedTransferApp", () => {
   let indexerWallet: Wallet;
   let consumerWallet: Wallet;
   let graphBatchedTransferApp: Contract;
@@ -81,11 +82,15 @@ describe.only("GraphBatchedTransferApp", () => {
       ...preState,
       coinTransfers: [
         {
-          amount: preState.coinTransfers[0].amount.sub(action.totalPaid.mul(preState.swapRate)),
+          amount: preState.coinTransfers[0].amount.sub(
+            action.totalPaid.mul(preState.swapRate).div(SWAP_CONVERSION),
+          ),
           to: preState.coinTransfers[0].to,
         },
         {
-          amount: preState.coinTransfers[1].amount.add(action.totalPaid.mul(preState.swapRate)),
+          amount: preState.coinTransfers[1].amount.add(
+            action.totalPaid.mul(preState.swapRate).div(SWAP_CONVERSION),
+          ),
           to: preState.coinTransfers[1].to,
         },
       ],
@@ -112,7 +117,7 @@ describe.only("GraphBatchedTransferApp", () => {
       chainId: (await indexerWallet.provider.getNetwork()).chainId,
       verifyingContract: getTestVerifyingContract(),
       subgraphDeploymentID: receipt.subgraphDeploymentID,
-      swapRate: BigNumber.from(1).mul(10 ^ 18),
+      swapRate: BigNumber.from(1).mul(SWAP_CONVERSION),
       appIdentityHash: getRandomBytes32(),
       finalized: false,
     };
@@ -163,13 +168,6 @@ describe.only("GraphBatchedTransferApp", () => {
     const totalPaid = BigNumber.from(500);
     const state0 = await getInitialState(receipt);
 
-    console.log(
-      `Calculated: ${totalPaid
-        .mul(state0.swapRate)
-        .div(10 ^ 18)
-        .toString()}`,
-    );
-
     const action = await getAction(receipt, totalPaid, state0);
     const state1 = await applyAction(state0, action);
     await validateAction(state0, state1, action);
@@ -182,12 +180,11 @@ describe.only("GraphBatchedTransferApp", () => {
     const receipt = getTestGraphReceiptToSign();
     const totalPaid = BigNumber.from(500);
     const state0 = await getInitialState(receipt);
-    state0.swapRate = BigNumber.from((0.5 * 10) ^ 18);
+    state0.swapRate = BigNumber.from(1).mul(SWAP_CONVERSION).div(2); // 0.5
 
     const action = await getAction(receipt, totalPaid, state0);
     const state1 = await applyAction(state0, action);
     await validateAction(state0, state1, action);
-    console.log(`stringify: ${state1}`);
 
     const outcome = await computeOutcome(state1);
     await validateOutcome(outcome, state1);
