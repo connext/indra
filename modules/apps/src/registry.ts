@@ -6,10 +6,12 @@ import { SimpleSignedTransferAppRegistryInfo } from "./SimpleSignedTransferApp";
 import { GraphBatchSignedTransferAppRegistryInfo } from "./GraphBatchedTransferApp";
 import { SimpleTwoPartySwapAppRegistryInfo } from "./SimpleTwoPartySwapApp";
 import { WithdrawAppRegistryInfo } from "./WithdrawApp";
+import { GraphSignedTransferAppRegistryInfo } from "./GraphSignedTransferApp";
 
 export const AppRegistry: AppRegistryType = [
   SimpleLinkedTransferAppRegistryInfo,
   SimpleSignedTransferAppRegistryInfo,
+  GraphSignedTransferAppRegistryInfo,
   GraphBatchSignedTransferAppRegistryInfo,
   SimpleTwoPartySwapAppRegistryInfo,
   WithdrawAppRegistryInfo,
