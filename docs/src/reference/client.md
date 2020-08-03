@@ -1,27 +1,140 @@
 # @connext/client
 
-All methods return promises.
+This module contains the client logic for interacting with the Connext Network.
 
-## Management Methods
+## Resources
 
-### transfer
+### Integration Guides
 
-Makes a simple end-to-end transfer from one user's balance to another.
+There are several integration guides available depending on the environment your client will operate in:
+
+- [NodeJS](https://docs.connext.network/en/latest/how-to/integrate-node.html)
+- [Browser](https://docs.connext.network/en/latest/how-to/integrate-browser.html)
+- [React Native](https://docs.connext.network/en/latest/how-to/integrate-react-native.html)
+
+### Supplementary Packages
+
+In addition to the client package, there are several other implementations and modules that are available:
+
+- [A hosted REST API client](https://github.com/connext/rest-api-client)
+- [A sample React Native App](https://github.com/connext/react-native-client)
+- [A sample React App w/a single chain](https://github.com/connext/indra/tree/staging/modules/daicard)
+- [A sample React App w/multiple chains](https://github.com/connext/spacefold)
+
+## API Reference
+
+### Properties
+
+#### chainId
+
+The ID of the ethereum chain your client is connected to and has a channel on.
+
+#### signerAddress
+
+The signing address of the client. Either corresponds to the address of the private key passed in on instantiation, or to the `0th` address off the mnemonic.
+
+#### publicIdentifier
+
+The Connext-specific public identifier for your client. It is derived from the public key of your signer address account. Has the prefix `indra...`
+
+#### multisigAddress
+
+The address of the multisig wallet that holds channel funds on your client's chain.
+
+#### nodeIdentifier
+
+The Connext-specific public identifier of the node your client has a channel with on the given chain.
+
+#### nodeSignerAddress
+
+The signing address of the node.
+
+### Methods
+
+#### connect
+
+The connect method is a static method used to instantitate and connect a new Connext client. For more information on client instantation, see [here](https://docs.connext.network/en/latest/quickstart/clientInstantiation.html).
+
+_Parameters_
+
+The connect function can either be called using a network string (i.e. `localhost`, `rinkeby`, etc.) or an options object with the following fields:
+
+| Property       | Type                     | Description                                              |
+| -------------- | ------------------------ | -------------------------------------------------------- |
+| ethProviderUrl | string                   | URL of chain provider                                    |
+| chainId        | number (optional)        | Chain identifier                                         |
+| nodeUrl        | string                   | URL of Connext node                                      |
+| signer         | string \| IChannelSigner | Private key for signing account or ChannelSigner object  |
+| store          | IStoreService (optional) | Store for client, if not provided local storage is used  |
+| logLevel       | number (optional)        | Log level to print from client (5 = all, 1 = error only) |
+
+_Returns_
+
+A connected instance of the Connext client, associated with the given network and signer.
+
+_Example_
 
 ```typescript
-transfer: (TransferParams) =>  Promise<ChannelState>
+import { Wallet } from "ethers";
+import { connect } from "@connext/client";
+// 1. Create client with network string
+const clientA = await connect("mainnet");
+
+// Available network strings are:
+// - localhost (dev mode)
+// - mainnet
+// - rinkeby
+
+// 2. Create client using user generated options
+const options = {
+  ethProviderUrl: "https://yourprovider.url.com",
+  nodeUrl: "https://yournode.url.com",
+  signer: Wallet.createRandom().privateKey,
+};
+const clientB = await connect(options);
+
+// All options that are not provided by the user will use default values.
+// The default values used will correspond to browser client environments,
+// so make sure to read the appropriate documentation for your client environment
 ```
 
-#### Example
+#### transfer
+
+Makes a simple end-to-end transfer from one user's balance to another. This transfer uses the `LinkedTransfer` type, and by default allows the recipient to be offline.
+
+_Parameters_
+
+| Property  | Type              | Description                                                                       |
+| --------- | ----------------- | --------------------------------------------------------------------------------- |
+| recipient | string            | Public identifier of recipient                                                    |
+| amount    | string            | Transfer amount in wei                                                            |
+| assetId   | string (optional) | Address of asset in transfer (if not provided uses ETH convention of AddressZero) |
+| meta      | object (optional) | Meta associated with transfer                                                     |
+
+_Returns_
+
+An object containing information about the created transfer:
+
+| Property        | Type              | Description                                                                       |
+| --------------- | ----------------- | --------------------------------------------------------------------------------- |
+| recipient       | string            | Public identifier of recipient                                                    |
+| amount          | string            | Transfer amount in wei                                                            |
+| assetId         | string            | Address of asset in transfer (if not provided uses ETH convention of AddressZero) |
+| meta            | object (optional) | Meta associated with transfer if included                                         |
+| appIdentityHash | string            | App identifier of the transfer app for the sender channel                         |
+| paymentId       | string            | Unique ID for payment                                                             |
+| preImage        | string            | Secret for recipient to unlock payment                                            |
+| sender          | string            | Public identifier of sender                                                       |
+
+_Example_
 
 ```typescript
 const payload: TransferParams = {
-  recipient: "xpub123abc...", // channel.publicIdentifier of recipient
-  amount: "1000", // in Wei
+  recipient: "indra123abc...", // channel.publicIdentifier of recipient
+  amount: "1000", // in wei units
   assetId: "0x0000000000000000000000000000000000000000", // represents ETH
 };
-
-await transfer(payload);
+await client.transfer(payload);
 ```
 
 ### deposit
