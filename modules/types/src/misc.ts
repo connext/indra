@@ -1,8 +1,6 @@
 import { Address, BigNumber, Bytes32, PublicIdentifier } from "./basic";
 import { enumify } from "./utils";
 
-export type Collateralizations = { [assetId: string]: boolean };
-
 export type RebalanceProfile = {
   assetId: Address;
   collateralizeThreshold: BigNumber;
