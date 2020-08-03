@@ -1,9 +1,8 @@
 import { providers, BigNumberish } from "ethers";
 
 import { Address, BigNumber, Bytes32, HexString, PublicIdentifier, SignatureString } from "./basic";
-import { ConditionalTransferTypes, CreatedConditionalTransferMetaMap } from "./transfers";
+import { ConditionalTransferTypes } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
-import { Attestation } from "./contracts";
 
 ////////////////////////////////////////
 // deposit
@@ -137,12 +136,11 @@ type ResolveSignedTransferResponse = {
 ////////////////////////////////////////
 // graph signed transfer
 
-type GraphSignedTransferParameters = {
+type GraphBatchedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.GraphTransfer;
   amount: BigNumber;
   assetId: Address;
   paymentId: Bytes32;
-  signerAddress: Address;
   chainId: number;
   verifyingContract: Address;
   requestCID: Bytes32;
@@ -151,19 +149,19 @@ type GraphSignedTransferParameters = {
   meta?: any;
 };
 
-type GraphSignedTransferResponse = {
+type GraphBatchedTransferResponse = {
   appIdentityHash: Bytes32;
   paymentId: Bytes32;
 };
 
-type ResolveGraphSignedTransferParameters = {
+type ResolveGraphBatchedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.GraphTransfer;
   paymentId: Bytes32;
   responseCID: Bytes32;
   signature?: SignatureString;
 };
 
-type ResolveGraphSignedTransferResponse = {
+type ResolveGraphBatchedTransferResponse = {
   appIdentityHash: Bytes32;
   assetId: Address;
   amount: BigNumber;
@@ -178,7 +176,7 @@ type ConditionalTransferParameters =
   | LinkedTransferParameters
   | HashLockTransferParameters
   | SignedTransferParameters
-  | GraphSignedTransferParameters;
+  | GraphBatchedTransferParameters;
 
 type ConditionalTransferResponse = {
   amount: BigNumber;
@@ -199,7 +197,7 @@ type ResolveConditionParameters =
   | ResolveHashLockTransferParameters
   | ResolveLinkedTransferParameters
   | ResolveSignedTransferParameters
-  | ResolveGraphSignedTransferParameters;
+  | ResolveGraphBatchedTransferParameters;
 
 // type ResolveConditionResponse =
 //   | ResolveHashLockTransferResponse
@@ -275,9 +273,9 @@ export namespace PublicParams {
   export type ResolveHashLockTransfer = ResolveHashLockTransferParameters;
   export type ResolveLinkedTransfer = ResolveLinkedTransferParameters;
   export type ResolveSignedTransfer = ResolveSignedTransferParameters;
-  export type ResolveGraphTransfer = ResolveGraphSignedTransferParameters;
+  export type ResolveGraphTransfer = ResolveGraphBatchedTransferResponse;
   export type SignedTransfer = SignedTransferParameters;
-  export type GraphTransfer = GraphSignedTransferParameters;
+  export type GraphTransfer = GraphBatchedTransferParameters;
   export type Swap = SwapParameters;
   export type Transfer = TransferParameters;
   export type Withdraw = WithdrawParameters;
@@ -296,7 +294,7 @@ export type PublicParam =
   | ResolveLinkedTransferParameters
   | ResolveSignedTransferParameters
   | SignedTransferParameters
-  | GraphSignedTransferParameters
+  | GraphBatchedTransferParameters
   | SwapParameters
   | TransferParameters
   | WithdrawParameters;
@@ -311,11 +309,11 @@ export namespace PublicResults {
   export type ResolveHashLockTransfer = ResolveHashLockTransferResponse;
   export type ResolveLinkedTransfer = ResolveLinkedTransferResponse;
   export type ResolveSignedTransfer = ResolveSignedTransferResponse;
-  export type ResolveGraphTransfer = ResolveGraphSignedTransferResponse;
+  export type ResolveGraphTransfer = ResolveGraphBatchedTransferResponse;
   export type HashLockTransfer = HashLockTransferResponse;
   export type LinkedTransfer = LinkedTransferResponse;
   export type SignedTransfer = SignedTransferResponse;
-  export type GraphTransfer = GraphSignedTransferResponse;
+  export type GraphTransfer = GraphBatchedTransferResponse;
   export type Swap = SwapResponse;
   export type Transfer = TransferResponse;
   export type Withdraw = WithdrawResponse;
@@ -333,9 +331,9 @@ export type PublicResult =
   | ResolveHashLockTransferResponse
   | ResolveLinkedTransferResponse
   | ResolveSignedTransferResponse
-  | ResolveGraphSignedTransferResponse
+  | ResolveGraphBatchedTransferResponse
   | SignedTransferResponse
-  | GraphSignedTransferResponse
+  | GraphBatchedTransferResponse
   | SwapResponse
   | TransferResponse
   | WithdrawResponse;

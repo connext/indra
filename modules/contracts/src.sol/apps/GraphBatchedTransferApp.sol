@@ -24,7 +24,7 @@ contract GraphBatchedTransferApp is CounterfactualApp {
         address verifyingContract;
         bytes32 subgraphDeploymentID;
         uint256 swapRate; // MUST be in units of E18
-        bytes32 appIdentityHash;
+        bytes32 paymentId;
         bool finalized;
     }
 
@@ -45,7 +45,7 @@ contract GraphBatchedTransferApp is CounterfactualApp {
         "Receipt(bytes32 requestCID,bytes32 responseCID,bytes32 subgraphDeploymentID)"
     );
     bytes32 private constant CONSUMER_TYPE_HASH = keccak256(
-        "Consumer(bytes32 appIdentityHash,bytes32 requestCID,uint256 totalPaid)"
+        "Consumer(bytes32 paymentId,bytes32 requestCID,uint256 totalPaid)"
     );
 
     uint256 constant SWAP_CONVERSION = 10**18;
@@ -172,7 +172,7 @@ contract GraphBatchedTransferApp is CounterfactualApp {
                         keccak256(
                             abi.encode(
                                 CONSUMER_TYPE_HASH,
-                                state.appIdentityHash,
+                                state.paymentId,
                                 action.requestCID,
                                 action.totalPaid
                             )

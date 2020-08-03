@@ -92,12 +92,13 @@ export type CreatedSignedTransferMeta = {
 };
 
 export type CreatedGraphBatchedTransferMeta = {
-  signerAddress: Address;
   chainId: number;
   verifyingContract: Address;
   requestCID: Bytes32;
   subgraphDeploymentID: Bytes32;
-  swapRate: string;
+  swapRate: BigNumber;
+  attestationSigner: Address;
+  consumerSigner: Address;
 };
 
 export type UnlockedLinkedTransferMeta = {

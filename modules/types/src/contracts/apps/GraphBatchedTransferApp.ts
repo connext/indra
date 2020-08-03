@@ -1,4 +1,4 @@
-import { Address, Bytes32, SignatureString, HexString } from "../../basic";
+import { Address, Bytes32, SignatureString } from "../../basic";
 import { tidy } from "../../utils";
 
 import { CoinTransfer } from "../funding";
@@ -6,6 +6,8 @@ import { singleAssetTwoPartyCoinTransferEncoding } from "../misc";
 import { BigNumber } from "ethers";
 
 export const GraphBatchedTransferAppName = "GraphBatchedTransferApp";
+
+export const GRAPH_BATCHED_SWAP_CONVERSION = BigNumber.from(10).pow(18);
 
 ////////////////////////////////////////
 // keep synced w contracts/app/GraphBatchedTransferApp.sol
@@ -29,7 +31,7 @@ export type GraphBatchedTransferAppState = {
   verifyingContract: Address;
   subgraphDeploymentID: Bytes32;
   swapRate: BigNumber;
-  appIdentityHash: HexString;
+  paymentId: Bytes32;
   finalized: boolean;
 };
 
@@ -42,7 +44,7 @@ export const GraphBatchedTransferAppStateEncoding = tidy(`tuple(
   address verifyingContract,
   bytes32 subgraphDeploymentID,
   uint256 swapRate,
-  bytes32 appIdentityHash,
+  bytes32 paymentId,
   bool finalized
 )`);
 

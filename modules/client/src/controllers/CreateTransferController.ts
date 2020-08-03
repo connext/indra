@@ -12,15 +12,21 @@ import {
   SimpleLinkedTransferAppState,
   SimpleSignedTransferAppState,
   HashLockTransferAppState,
-  GraphSignedTransferAppState,
-  CreatedGraphSignedTransferMeta,
+  GraphBatchedTransferAppState,
+  CreatedGraphBatchedTransferMeta,
   EIP712Domain,
   DOMAIN_NAME,
   DOMAIN_VERSION,
   DOMAIN_SALT,
+  GRAPH_BATCHED_SWAP_CONVERSION,
 } from "@connext/types";
-import { toBN, stringify, hashDomainSeparator } from "@connext/utils";
-import { constants, utils } from "ethers";
+import {
+  toBN,
+  stringify,
+  hashDomainSeparator,
+  getSignerAddressFromPublicIdentifier,
+} from "@connext/utils";
+import { constants, utils, BigNumber } from "ethers";
 
 import { AbstractController } from "./AbstractController";
 
@@ -60,7 +66,7 @@ export class CreateTransferController extends AbstractController {
       | SimpleLinkedTransferAppState
       | HashLockTransferAppState
       | SimpleSignedTransferAppState
-      | GraphSignedTransferAppState;
+      | GraphBatchedTransferAppState;
 
     switch (conditionType) {
       case ConditionalTransferTypes.LinkedTransfer: {
@@ -90,7 +96,9 @@ export class CreateTransferController extends AbstractController {
         // convert to block height
         const currentBlock = await this.connext.ethProvider.getBlockNumber();
         const expiry = toBN(timelock).add(currentBlock);
-        this.log.info(`HashLockTransfer with timelock ${timelock} will expire at block ${expiry} (currentBlock=${currentBlock})`);
+        this.log.info(
+          `HashLockTransfer with timelock ${timelock} will expire at block ${expiry} (currentBlock=${currentBlock})`,
+        );
         initialState = {
           ...baseInitialState,
           lockHash,
@@ -112,7 +120,6 @@ export class CreateTransferController extends AbstractController {
       }
       case ConditionalTransferTypes.GraphTransfer: {
         const {
-          signerAddress,
           chainId,
           verifyingContract,
           requestCID,
@@ -120,23 +127,31 @@ export class CreateTransferController extends AbstractController {
           paymentId,
         } = params as PublicParams.GraphTransfer;
 
+        const consumerSigner = this.connext.signerAddress;
+        const attestationSigner = getSignerAddressFromPublicIdentifier(recipient);
+        const swapRate = BigNumber.from(1).mul(GRAPH_BATCHED_SWAP_CONVERSION);
+
         initialState = {
           ...baseInitialState,
-          signerAddress,
           chainId,
           verifyingContract,
           requestCID,
           subgraphDeploymentID,
           paymentId,
-        } as GraphSignedTransferAppState;
+          attestationSigner, // indexer
+          consumerSigner,
+          swapRate,
+        } as GraphBatchedTransferAppState;
 
         transferMeta = {
-          signerAddress,
+          attestationSigner,
+          consumerSigner,
           chainId,
           verifyingContract,
           requestCID,
           subgraphDeploymentID,
-        } as CreatedGraphSignedTransferMeta;
+          swapRate,
+        } as CreatedGraphBatchedTransferMeta;
 
         submittedMeta.paymentId = paymentId;
 
