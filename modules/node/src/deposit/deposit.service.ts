@@ -22,6 +22,7 @@ import { ConfigService } from "../config/config.service";
 import {
   OnchainTransaction,
   TransactionReason,
+  TransactionStatus,
 } from "../onchainTransactions/onchainTransaction.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
 
@@ -80,8 +81,8 @@ export class DepositService {
         channel.userIdentifier,
         channel.multisigAddress,
       );
-      const waited = await this.waitForActiveDeposit(channel, depositApp.identityHash);
-      if (!waited) {
+      const uninstalledApp = await this.handleActiveDeposit(channel, depositApp.identityHash);
+      if (!uninstalledApp) {
         throw new Error(
           `Attempted to wait for ongoing transaction on chain ${channel.chainId}, but it took longer than 5 blocks, retry later. For deposit app: ${depositApp.identityHash} `,
         );
@@ -120,25 +121,11 @@ export class DepositService {
           `Released deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
         );
       }
-      this.log.info(
-        `Releasing in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
-      );
-      await this.channelRepository.setInflightCollateralization(channel, assetId, false);
-      this.log.info(
-        `Released in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
-      );
     };
 
     try {
       this.log.info(
         `Requesting deposit rights before depositing on chain ${channel.chainId} for ${channel.multisigAddress}`,
-      );
-      this.log.info(
-        `Setting in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
-      );
-      await this.channelRepository.setInflightCollateralization(channel, assetId, true);
-      this.log.info(
-        `Set in flight collateralization on chain ${channel.chainId} for ${channel.multisigAddress}`,
       );
       appIdentityHash = await this.requestDepositRights(channel, assetId);
       this.log.info(
@@ -191,7 +178,7 @@ export class DepositService {
     return tx;
   }
 
-  private async waitForActiveDeposit(
+  private async handleActiveDeposit(
     channel: Channel,
     appIdentityHash: string,
   ): Promise<string | undefined> {
@@ -211,6 +198,22 @@ export class DepositService {
       );
     }
 
+    // Hit in cases where client was offline for uninstallation of collateral
+    if (transaction.status !== TransactionStatus.PENDING) {
+      // the deposit tx has either failed or succeeded, regardless
+      // the deposit app should not exist at this point.
+      // uninstall and rescind deposit rights, then return string
+      this.log.info(
+        `Onchain tx (hash: ${transaction.hash}) associated with deposit app ${appIdentityHash} has been mined with status: ${transaction.status}`,
+      );
+      await this.rescindDepositRights(appIdentityHash, channel.multisigAddress);
+      this.log.info(
+        `Released deposit rights on chain ${channel.chainId} for ${channel.multisigAddress}`,
+      );
+      return appIdentityHash;
+    }
+
+    // transaction is still pending, wait until it is broadcast
     const result = await Promise.race([
       new Promise((resolve, reject) => {
         this.cfCoreService.emitter.attachOnce(
