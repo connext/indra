@@ -100,6 +100,15 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return tx;
   }
 
+  async findByAppId(appIdentityHash: string): Promise<OnchainTransaction | undefined> {
+    const tx = await this.createQueryBuilder("onchainTransaction")
+      .where("onchainTransaction.appIdentityHash = :appIdentityHash", {
+        appIdentityHash,
+      })
+      .getOne();
+    return tx;
+  }
+
   async addResponse(
     tx: providers.TransactionResponse,
     reason: TransactionReason,

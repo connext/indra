@@ -34,6 +34,10 @@ export class OnchainTransactionService implements OnModuleInit {
     });
   }
 
+  async findByAppId(appIdentityHash: string): Promise<OnchainTransaction | undefined> {
+    return this.onchainTransactionRepository.findByAppId(appIdentityHash);
+  }
+
   async sendUserWithdrawal(
     channel: Channel,
     transaction: MinimalTransaction,
