@@ -10,7 +10,6 @@ import {
   UpdateDateColumn,
   PrimaryColumn,
 } from "typeorm";
-import { constants } from "ethers";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
@@ -18,8 +17,6 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsValidPublicIdentifier } from "../validate";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
-
-const { AddressZero } = constants;
 
 @Entity()
 export class Channel {
